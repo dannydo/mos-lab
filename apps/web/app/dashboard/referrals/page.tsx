@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import { removeVietnameseTones } from '@mos-lab/shared';
+import { DataTable } from '../../../components/ui';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 
@@ -305,7 +306,10 @@ export default function ReferralsPage() {
   );
 
   return (
-    <div style={{ padding: '24px', minHeight: '100vh', background: themeMode === 'dark' ? '#0f172a' : '#f8fafc' }}>
+    <div
+      className="responsive-page responsive-workspace referrals-page"
+      style={{ padding: '24px', minHeight: '100vh', background: themeMode === 'dark' ? '#0f172a' : '#f8fafc' }}
+    >
       {/* Header card */}
       <Card
         style={{
@@ -399,7 +403,7 @@ export default function ReferralsPage() {
             <Spin size="large" />
           </div>
         ) : (
-          <Table
+          <DataTable
             dataSource={filteredReferrers}
             columns={columns}
             rowKey="referrerId"
@@ -416,6 +420,7 @@ export default function ReferralsPage() {
             }}
             bordered
             locale={{ emptyText: 'Không tìm thấy dữ liệu khách giới thiệu.' }}
+            stickyPrimaryColumn
           />
         )}
       </Card>

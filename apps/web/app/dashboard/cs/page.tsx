@@ -269,7 +269,7 @@ function CsContent() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="responsive-page responsive-workspace cs-page space-y-4">
       <PageHeader title="Trung Tâm CSKH" subtitle="🎧 Chăm sóc khách hàng sau dịch vụ & Giám sát hiệu suất" />
 
       {/* Global Date Filter Header Bar */}

@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
 import { Card, Table, Select, Button, Spin, Space, Tooltip, Input, theme as antTheme } from 'antd';
 import { ReloadOutlined, ThunderboltOutlined, UserOutlined, SearchOutlined } from '@ant-design/icons';
@@ -80,7 +82,7 @@ export function CvSpeedMatrixSection({
 
   const matrixColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       fixed: 'left' as const,
       width: 55,

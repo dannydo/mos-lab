@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, Form, Select, Input, Alert, Tag, message } from 'antd';
+import { Form, Select, Input, Alert, Tag, message } from 'antd';
 import { WarningOutlined, CloseCircleOutlined, UserOutlined } from '@ant-design/icons';
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../lib/api-client';
+import { AdaptiveModal } from '../ui/AdaptiveOverlay';
 
 export interface CancelBookingModalProps {
   open: boolean;
@@ -77,7 +78,9 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
   const isDark = themeMode === 'dark';
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="confirm"
+      className="booking-cancel-modal"
       open={open}
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isDark ? '#f87171' : '#dc2626' }}>
@@ -94,7 +97,6 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
         onCancel();
       }}
       destroyOnClose
-      width={540}
     >
       <div style={{ marginTop: '12px', marginBottom: '16px' }}>
         {booking?.customerName && (
@@ -143,7 +145,12 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
             label={<span style={{ fontWeight: '600' }}>Vui lòng chọn Lý do Hủy Lịch *</span>}
             rules={[{ required: true, message: 'Vui lòng chọn lý do hủy' }]}
           >
-            <Select options={CANCEL_REASON_OPTIONS} placeholder="Chọn lý do hủy..." size="large" />
+            <Select
+              options={CANCEL_REASON_OPTIONS}
+              placeholder="Chọn lý do hủy..."
+              size="large"
+              getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+            />
           </Form.Item>
 
           <Form.Item
@@ -159,6 +166,6 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
           </Form.Item>
         </Form>
       </div>
-    </Modal>
+    </AdaptiveModal>
   );
 };

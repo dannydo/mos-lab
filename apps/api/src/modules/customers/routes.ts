@@ -7753,6 +7753,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, ...params);
       const t4 = performance.now();
 
+      // The CRM branch catalog owns the short display code. Keep it alongside
+      // the legacy store name so every schedule consumer receives the same
+      // canonical code instead of deriving EP/DT/PXL in the browser.
+      const appointmentStoreIds = Array.from(
+        new Set(
+          result.map((order) => Number(order.storeId)).filter((storeId) => Number.isInteger(storeId) && storeId > 0)
+        )
+      );
+      const branchCodeByStoreId = new Map<number, string>();
+      if (appointmentStoreIds.length > 0) {
+        const branchRows = await fastify.prisma.crm.crmStore.findMany({
+          where: { legacyClientStoreId: { in: appointmentStoreIds } },
+          select: { legacyClientStoreId: true, code: true },
+        });
+        branchRows.forEach((branch) => {
+          if (branch.legacyClientStoreId) {
+            branchCodeByStoreId.set(branch.legacyClientStoreId, branch.code);
+          }
+        });
+      }
+
       fastify.log.info(
         `[APPOINTMENTS TIMING] candidateOrders: ${Math.round(t1 - t0)}ms, reportRows: ${Math.round(t2 - t1)}ms, countResult: ${Math.round(t3 - t2)}ms, mainSql: ${Math.round(t4 - t3)}ms`
       );
@@ -8022,6 +8043,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           technicianAvatar: row.technicianAvatar || null,
           storeId: row.storeId ? Number(row.storeId) : null,
           branchName: row.branchName || 'Estella Place',
+          branchCode: branchCodeByStoreId.get(Number(row.storeId)) || null,
           bookerName: row.bookerName || crmStaffMap.get(Number(row.createdStaffId)) || null,
           missedLog: missedLogsMap.get(Number(row.id)) || null,
         };
@@ -8033,12 +8055,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
         {
           workingKtvCount: number;
           maxCapacity: number;
-          workingStaffList?: Array<{ id: number; name: string; branchName?: string; shift?: string }>;
+          workingStaffList?: Array<{
+            id: number;
+            name: string;
+            branchName?: string;
+            branchCode?: string;
+            shift?: string;
+          }>;
           offStaffList?: Array<{
             id: number;
             name: string;
             avatarUrl?: string | null;
             branchName?: string;
+            branchCode?: string;
             reason: string;
             type?: string;
           }>;
@@ -8083,12 +8112,41 @@ export async function customerRoutes(fastify: FastifyInstance) {
             WHERE is_disabled = 0 AND user_id IN (${cvStaffIds.join(',')})
             GROUP BY user_id
           `);
-          const cvStoreMap = new Map<number, string>();
+          const effectiveStoreIds = Array.from(
+            new Set(
+              cvStaffIds.map((uid: number) => {
+                const scheduleStore = dayOffStores.find((store) => Number(store.user_id) === uid)?.client_store_id;
+                return scheduleStore ? Number(scheduleStore) : cvProfileStoreMap.get(uid) || 6;
+              })
+            )
+          );
+          const storeRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT
+              cs.id,
+              UPPER(NULLIF(cs.client_store_key, '')) AS store_code,
+              csl.client_store_name AS store_name
+            FROM client_store cs
+            LEFT JOIN client_store_language csl
+              ON csl.client_store_id = cs.id AND csl.language_id = 1
+            WHERE cs.id IN (${effectiveStoreIds.join(',')})
+          `);
+          const storeDetailsById = new Map<number, { name: string; code: string }>(
+            storeRows.map((store: SafeAny) => [
+              Number(store.id),
+              {
+                name: String(store.store_name || (Number(store.id) === 16 ? 'Estella Place' : 'Đề Thám')),
+                code: String(store.store_code || (Number(store.id) === 16 ? 'EP' : 'DT')),
+              },
+            ])
+          );
+          const cvStoreMap = new Map<number, { name: string; code: string }>();
           cvStaffIds.forEach((uid: number) => {
             const schedStore = dayOffStores.find((s) => Number(s.user_id) === uid)?.client_store_id;
             const finalStoreId = schedStore ? Number(schedStore) : cvProfileStoreMap.get(uid) || 6;
-            const storeName = finalStoreId === 16 ? 'Estella Place' : 'Đề Thám';
-            cvStoreMap.set(uid, storeName);
+            const store =
+              storeDetailsById.get(finalStoreId) ||
+              (finalStoreId === 16 ? { name: 'Estella Place', code: 'EP' } : { name: 'Đề Thám', code: 'DT' });
+            cvStoreMap.set(uid, store);
           });
 
           // Query exact working shifts per staff from staff_working_shift_schedule
@@ -8326,22 +8384,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
               return !isWeeklyOff && !isDateOff;
             });
 
-            const workingStaffList = workingCvIds.map((id: number) => ({
-              id,
-              name: cvNameMap.get(id) || `CV #${id}`,
-              avatarUrl: cvAvatarMap.get(id) || null,
-              branchName: cvStoreMap.get(id) || 'Đề Thám',
-              shift: cvShiftMap.get(id) || 'Ca Full',
-              bookedCount: dayBookedMap.get(id) || 0,
-              doneCount: dayDoneMap.get(id) || 0,
-              avgDurationMinutes: staffSpeedMap.get(id),
-            }));
+            const workingStaffList = workingCvIds.map((id: number) => {
+              const store = cvStoreMap.get(id) || { name: 'Đề Thám', code: 'DT' };
+              return {
+                id,
+                name: cvNameMap.get(id) || `CV #${id}`,
+                avatarUrl: cvAvatarMap.get(id) || null,
+                branchName: store.name,
+                branchCode: store.code,
+                shift: cvShiftMap.get(id) || 'Ca Full',
+                bookedCount: dayBookedMap.get(id) || 0,
+                doneCount: dayDoneMap.get(id) || 0,
+                avgDurationMinutes: staffSpeedMap.get(id),
+              };
+            });
 
             const offStaffList: Array<{
               id: number;
               name: string;
               avatarUrl?: string | null;
               branchName?: string;
+              branchCode?: string;
               reason: string;
               type?: string;
             }> = [];
@@ -8364,7 +8427,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
                   id,
                   name: cvNameMap.get(id) || `CV #${id}`,
                   avatarUrl: cvAvatarMap.get(id) || null,
-                  branchName: cvStoreMap.get(id) || 'Đề Thám',
+                  branchName: cvStoreMap.get(id)?.name || 'Đề Thám',
+                  branchCode: cvStoreMap.get(id)?.code || 'DT',
                   reason: finalReason,
                   type: finalType,
                 });
@@ -8373,7 +8437,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
                   id,
                   name: cvNameMap.get(id) || `CV #${id}`,
                   avatarUrl: cvAvatarMap.get(id) || null,
-                  branchName: cvStoreMap.get(id) || 'Đề Thám',
+                  branchName: cvStoreMap.get(id)?.name || 'Đề Thám',
+                  branchCode: cvStoreMap.get(id)?.code || 'DT',
                   reason: `Nghỉ hàng tuần (${weekdayNames[legacyWeekday] || ''})`,
                   type: 'weekly_off',
                 });

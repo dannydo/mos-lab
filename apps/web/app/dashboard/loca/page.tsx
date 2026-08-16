@@ -3,7 +3,6 @@
 import '../../suppress-warnings';
 import React, { useEffect, useState } from 'react';
 import {
-  Table,
   Avatar,
   Tabs,
   Input,
@@ -31,6 +30,7 @@ import {
   ConfigProvider,
 } from 'antd';
 import { GoogleSheetColorPicker } from '../../../components/GoogleSheetColorPicker';
+import { DataTable } from '../../../components/ui';
 import {
   SearchOutlined,
   EyeOutlined,
@@ -79,6 +79,17 @@ import { formatDuration, formatVND } from '../../../lib/format-utils';
 import { useOmiCall } from '../../../context/OmiCallContext';
 
 const { Title, Text } = Typography;
+
+const LOCA_CANONICAL_COLUMN_TITLES = {
+  stt: null,
+  expiryDate: 'HSD',
+  daysSinceLastVisit: 'Đã Ghé',
+  totalSpent: '∑ Chi Tiêu',
+  lastCallDate: 'Last Called',
+  lastCallDuration: 'Duration',
+  lastCallResult: 'Call Status',
+  lastCallNote: 'Call Notes',
+} as const;
 
 export interface TouchpointPalette {
   bg: string;
@@ -426,7 +437,7 @@ export default function LocaCampaignPage() {
     closeConfig: closeLocaConfig,
     saveConfig: saveLocaConfig,
     resetConfig: resetLocaConfig,
-  } = useTableConfig('loca_campaign_table', columns);
+  } = useTableConfig('loca_campaign_table', columns, { canonicalTitles: LOCA_CANONICAL_COLUMN_TITLES });
 
   const activeTouchpointsList = configs['LOCA_ALL'] || [];
 
@@ -450,7 +461,7 @@ export default function LocaCampaignPage() {
   }
 
   return (
-    <div>
+    <div className="responsive-page responsive-workspace loca-page">
       {/* HEADER SECTION (Compact Single-Line Layout) */}
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>
@@ -463,7 +474,7 @@ export default function LocaCampaignPage() {
               letterSpacing: '0.5px',
             }}
           >
-            <HeartOutlined style={{ color: '#ff4d4f' }} /> CHIẾN DỊCH KHÁCH HÀNG LoCa (Lớp Care)
+            <HeartOutlined style={{ color: '#ff4d4f' }} /> Chiến Dịch LoCa
           </Title>
           <Text style={{ color: themeMode === 'dark' ? token.colorTextDescription : '#555555' }}>
             Hệ thống chăm sóc đặc biệt dành cho khách hàng Combo Live (còn hạn, còn lần sử dụng).
@@ -490,13 +501,14 @@ export default function LocaCampaignPage() {
             <Tooltip title="Đặt lịch mới">
               <Button
                 type="primary"
+                aria-label="Đặt lịch mới"
                 icon={<CalendarPlusIcon fontSize={18} />}
                 style={{
                   backgroundColor: '#D4A84B',
                   borderColor: '#D4A84B',
                   color: '#ffffff',
-                  height: '36px',
-                  width: '36px',
+                  height: '32px',
+                  width: '32px',
                   padding: 0,
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -526,7 +538,7 @@ export default function LocaCampaignPage() {
             }}
           >
             <Text type="secondary" style={{ fontSize: '13px' }}>
-              Tổng KH LoCa (Combo Live)
+              ∑ KH LoCa (Combo Live)
             </Text>
             <div style={{ fontSize: '26px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}>
               {overallStats.totalComboLive}{' '}
@@ -879,7 +891,7 @@ export default function LocaCampaignPage() {
                           role="button"
                           tabIndex={0}
                           aria-pressed={isSelected}
-                          aria-label={`Lọc tùy chỉnh từ ${ctp.daysMin} đến ${ctp.daysMax} ngày`}
+                          aria-label={`Lọc tùy chỉnh từ ${ctp.daysMin} đến ${ctp.daysMax} ngày`}
                           onClick={() => setActiveTouchpointKey(ctp.key)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
@@ -1238,13 +1250,13 @@ export default function LocaCampaignPage() {
           </div>
 
           {/* CUSTOMERS DATA TABLE */}
-          <Table
+          <DataTable
             size="small"
             columns={activeTab === 'NEW_LOCA' ? newLocaColumns : locaConfigColumns}
             dataSource={customers}
             rowKey="id"
             loading={loading}
-            className="antd-custom-table"
+            className="antd-custom-table loca-customer-table"
             scroll={{ x: 'max-content' }}
             onChange={(pagination, filters, sorter: SafeAny) => {
               if (sorter && sorter.field) {
@@ -1284,6 +1296,7 @@ export default function LocaCampaignPage() {
                 cell: ResizableHeaderCell,
               },
             }}
+            stickyPrimaryColumn
           />
         </>
       )}
@@ -1505,6 +1518,19 @@ export default function LocaCampaignPage() {
         customer={selectedCustomer}
         onSuccess={fetchCustomerList}
       />
+
+      <style jsx global>{`
+        /* Ant's reset removes pagination item margins.  A flex gap keeps the
+           total, page buttons and page-size selector visually distinct. */
+        .loca-page .loca-customer-table .ant-pagination {
+          column-gap: 6px;
+          row-gap: 8px;
+        }
+
+        .loca-page .loca-customer-table .ant-pagination-total-text {
+          margin-inline-end: 8px;
+        }
+      `}</style>
     </div>
   );
 }

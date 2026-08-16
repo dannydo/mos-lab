@@ -1,0 +1,101 @@
+.page {
+  --catalog-toolbar-gap: var(--mos-density-gap);
+  display: grid;
+  gap: var(--mos-section-gap);
+  min-width: 0;
+}
+
+/* The tab card provides one tokenized surface gutter. Pane content must not
+   add a second page-local padding layer or its left edge drifts from the
+   Catalog header and sibling surfaces. */
+.tabsCard.tabsCard > :global(.ant-card-body) {
+  padding: var(--mos-surface-padding) !important;
+}
+
+.tabPane {
+  min-width: 0;
+}
+
+.header {
+  align-items: flex-start;
+}
+
+.reportControls,
+.reportFilters {
+  align-items: center;
+  display: flex;
+  gap: var(--catalog-toolbar-gap);
+}
+
+.reportControls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.reportFilters {
+  min-width: 0;
+}
+
+.reportTypeSelect {
+  flex: 0 0 144px;
+  width: 144px;
+}
+
+.reportSearch {
+  flex: 0 1 220px;
+  min-width: 160px;
+  width: 220px;
+}
+
+.tabContent {
+  display: grid;
+  gap: var(--mos-section-gap);
+}
+
+:global(.responsive-workspace) .listSearch {
+  max-width: 260px !important;
+  width: 260px !important;
+}
+
+@media (max-width: 1199px) {
+  .header {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reportControls {
+    justify-content: flex-start;
+  }
+
+  .header :global(.responsive-page-header-actions > .ant-space) {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  .reportControls,
+  .reportFilters {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .reportControls {
+    justify-content: flex-start;
+  }
+
+  .reportFilters {
+    flex-direction: column;
+  }
+
+  :global(.responsive-workspace) .listSearch {
+    max-width: none;
+    width: 100%;
+  }
+
+  .reportTypeSelect,
+  .reportSearch {
+    flex-basis: auto;
+    width: 100%;
+  }
+}

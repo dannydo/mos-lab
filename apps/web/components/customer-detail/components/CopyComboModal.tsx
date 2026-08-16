@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Input, Button, Tag, Space, message, Tooltip } from 'antd';
+import { Input, Button, Tag, Space, message, Tooltip } from 'antd';
 import {
   CopyOutlined,
   SaveOutlined,
@@ -11,6 +11,7 @@ import {
   ExpandOutlined,
   FullscreenOutlined,
 } from '@ant-design/icons';
+import { AdaptiveModal } from '../../ui';
 
 const { TextArea } = Input;
 
@@ -224,7 +225,9 @@ export const CopyComboModal: React.FC<CopyComboModalProps> = ({
   };
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="form"
+      className="customer-copy-combo-overlay"
       open={open}
       onCancel={onClose}
       title={
@@ -478,6 +481,6 @@ export const CopyComboModal: React.FC<CopyComboModalProps> = ({
           </div>
         </div>
       </div>
-    </Modal>
+    </AdaptiveModal>
   );
 };

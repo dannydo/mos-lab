@@ -30,6 +30,7 @@ export interface StaffWorkingItem {
   name: string;
   avatarUrl?: string | null;
   branchName?: string;
+  branchCode?: string;
   shift?: string;
   bookedCount?: number;
   doneCount?: number;
@@ -46,6 +47,7 @@ export interface StaffOffItem {
   name: string;
   avatarUrl?: string | null;
   branchName?: string;
+  branchCode?: string;
   reason: string;
   type?: string;
 }

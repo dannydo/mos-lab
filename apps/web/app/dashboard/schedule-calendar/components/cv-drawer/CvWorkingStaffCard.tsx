@@ -198,7 +198,7 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
           <div className="text-right shrink-0 flex flex-col items-end gap-1 ml-2">
             <div className="flex items-center gap-1">
               <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
-                {staff.branchName || 'Đề Thám'}
+                {staff.branchCode || staff.branchName || 'DT'}
               </span>
               {onBookCv && (
                 <Tooltip title="Đặt lịch cho CV này">

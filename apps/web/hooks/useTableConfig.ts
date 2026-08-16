@@ -15,7 +15,35 @@ import {
 
 export { AVAILABLE_ICONS, getDefaultIcon, renderIconHelper, getDynamicLucideIcon, getCustomIconComponent };
 
-export function useTableConfig<T = Record<string, unknown>>(tableId: string, staticColumns: TableColumnType<T>[]) {
+export type CanonicalColumnTitles = Readonly<Record<string, string | null>>;
+
+export interface UseTableConfigOptions {
+  /**
+   * Product-owned header copy that must not be replaced by a stale saved
+   * column title. `null` retains the static React title (for icon-only
+   * headers) while preserving its accessible name in table configuration.
+   */
+  canonicalTitles?: CanonicalColumnTitles;
+}
+
+const EMPTY_CANONICAL_COLUMN_TITLES: CanonicalColumnTitles = {};
+
+export function resolveCanonicalColumnTitle(
+  key: string,
+  staticTitle: string,
+  configuredTitle: string | undefined,
+  canonicalTitles: CanonicalColumnTitles
+) {
+  const canonicalTitle = canonicalTitles[key];
+  if (canonicalTitle !== undefined) return canonicalTitle ?? staticTitle;
+  return configuredTitle?.trim() || staticTitle;
+}
+
+export function useTableConfig<T = Record<string, unknown>>(
+  tableId: string,
+  staticColumns: TableColumnType<T>[],
+  { canonicalTitles = EMPTY_CANONICAL_COLUMN_TITLES }: UseTableConfigOptions = {}
+) {
   const [loading, setLoading] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [rawConfig, setRawConfig] = useState<ColumnConfig[]>([]);
@@ -27,56 +55,64 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
   }, [staticColumns]);
 
   // 1. Initial Column Metadata Constructor
-  const createDefaultConfigFromStatic = useCallback((staticCols: TableColumnType<T>[]): ColumnConfig[] => {
-    const list: ColumnConfig[] = [];
-    const extractCols = (col: TableColumnType<T>) => {
-      if ((col as SafeAny).children && Array.isArray((col as SafeAny).children)) {
-        (col as SafeAny).children.forEach(extractCols);
-      } else {
-        const key = String(col.key || col.dataIndex || '');
-        if (!key) return;
+  const createDefaultConfigFromStatic = useCallback(
+    (staticCols: TableColumnType<T>[]): ColumnConfig[] => {
+      const list: ColumnConfig[] = [];
+      const extractCols = (col: TableColumnType<T>) => {
+        if ((col as SafeAny).children && Array.isArray((col as SafeAny).children)) {
+          (col as SafeAny).children.forEach(extractCols);
+        } else {
+          const key = String(col.key || col.dataIndex || '');
+          if (!key) return;
 
-        let titleText = '';
-        if (typeof col.title === 'string') {
-          titleText = col.title;
-        } else if (React.isValidElement(col.title)) {
-          const props = (col.title as SafeAny).props;
-          if (props && props.title && typeof props.title === 'string') {
-            titleText = props.title;
-          } else if (props && props.children && typeof props.children === 'string') {
-            titleText = props.children;
-          } else if (props && props.children && Array.isArray(props.children)) {
-            const strChild = props.children.find((c: SafeAny) => typeof c === 'string');
-            titleText = strChild || key;
+          let titleText = '';
+          if (typeof col.title === 'string') {
+            titleText = col.title;
+          } else if (React.isValidElement(col.title)) {
+            const props = (col.title as SafeAny).props;
+            if (props && props.title && typeof props.title === 'string') {
+              titleText = props.title;
+            } else if (props && props['aria-label'] && typeof props['aria-label'] === 'string') {
+              titleText = props['aria-label'];
+            } else if (props && props.children && typeof props.children === 'string') {
+              titleText = props.children;
+            } else if (props && props.children && Array.isArray(props.children)) {
+              const strChild = props.children.find((c: SafeAny) => typeof c === 'string');
+              titleText = strChild || key;
+            } else {
+              titleText = key;
+            }
           } else {
             titleText = key;
           }
-        } else {
-          titleText = key;
+
+          // Clean titles for touchpoints (removed "Chạm" and "n", keep 24h, 17, 19, 21, 23, 25, 30, 30+)
+          if (key.startsWith('tp_')) {
+            const subKey = key.replace('tp_', '');
+            if (subKey === '24h') titleText = '24h';
+            else if (subKey === '30plus') titleText = '30+';
+            else titleText = subKey;
+          }
+
+          const canonicalTitle = canonicalTitles[key];
+          if (typeof canonicalTitle === 'string') titleText = canonicalTitle;
+
+          list.push({
+            key,
+            title: titleText,
+            originalTitle: titleText,
+            width: typeof col.width === 'number' ? col.width : undefined,
+            visible: true,
+            icon: '',
+          });
         }
+      };
 
-        // Clean titles for touchpoints (removed "Chạm" and "n", keep 24h, 17, 19, 21, 23, 25, 30, 30+)
-        if (key.startsWith('tp_')) {
-          const subKey = key.replace('tp_', '');
-          if (subKey === '24h') titleText = '24h';
-          else if (subKey === '30plus') titleText = '30+';
-          else titleText = subKey;
-        }
-
-        list.push({
-          key,
-          title: titleText,
-          originalTitle: titleText,
-          width: typeof col.width === 'number' ? col.width : undefined,
-          visible: true,
-          icon: '',
-        });
-      }
-    };
-
-    staticCols.forEach(extractCols);
-    return list;
-  }, []);
+      staticCols.forEach(extractCols);
+      return list;
+    },
+    [canonicalTitles]
+  );
 
   // 2. Fetch and merge table configurations
   const loadConfig = useCallback(async () => {
@@ -104,7 +140,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
             col.key === 'actions' && col.width === 200 ? 95 : col.width !== undefined ? col.width : staticDef.width;
           return {
             ...col,
-            title: col.title || staticDef.title,
+            title: resolveCanonicalColumnTitle(col.key, staticDef.title, col.title, canonicalTitles),
             originalTitle: staticDef.originalTitle,
             width,
           };
@@ -128,7 +164,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
     } finally {
       setLoading(false);
     }
-  }, [tableId, createDefaultConfigFromStatic]);
+  }, [tableId, createDefaultConfigFromStatic, canonicalTitles]);
 
   useEffect(() => {
     loadConfig();
@@ -269,6 +305,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
 
         const key = (staticCol.key || staticCol.dataIndex) as string;
         const config = configMap.get(key);
+        const canonicalTitle = canonicalTitles[key];
 
         if (config) {
           const colIcon = config.icon !== undefined && config.icon !== '' ? config.icon : getDefaultIcon(key);
@@ -279,10 +316,26 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
                 ? staticCol.width
                 : 120;
 
-          const displayTitle =
-            typeof config.title === 'string' && config.title.trim() !== ''
-              ? config.title
-              : (staticCol.title as React.ReactNode);
+          if (canonicalTitle === null) {
+            return {
+              ...staticCol,
+              title: staticCol.title,
+              width: effectiveWidth,
+              visible: config.visible,
+              orderIndex: config.index,
+              onHeaderCell: (column: TableColumnType<T>) => ({
+                width: column.width as number,
+                onResize: (newWidth: number) => handleColumnResize(key, newWidth),
+              }),
+            };
+          }
+
+          const displayTitle = resolveCanonicalColumnTitle(
+            key,
+            typeof staticCol.title === 'string' ? staticCol.title : '',
+            config.title,
+            canonicalTitles
+          );
 
           return {
             ...staticCol,
@@ -303,14 +356,33 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
         }
 
         // Newly added column in code that was not in DB
+        if (canonicalTitle === null) {
+          return {
+            ...staticCol,
+            title: staticCol.title,
+            visible: true,
+            orderIndex: 9999,
+            onHeaderCell: (column: TableColumnType<T>) => ({
+              width: column.width as number,
+              onResize: (newWidth: number) => handleColumnResize(key, newWidth),
+            }),
+          };
+        }
+
         const defaultColIcon = getDefaultIcon(key);
+        const displayTitle = resolveCanonicalColumnTitle(
+          key,
+          typeof staticCol.title === 'string' ? staticCol.title : '',
+          undefined,
+          canonicalTitles
+        );
         return {
           ...staticCol,
           title: React.createElement(
             'span',
             { style: { display: 'inline-flex', alignItems: 'center' } },
             defaultColIcon !== 'none' ? renderIconHelper(defaultColIcon) : null,
-            React.createElement('span', null, staticCol.title as React.ReactNode)
+            React.createElement('span', null, displayTitle)
           ),
           visible: true,
           orderIndex: 9999,
@@ -324,7 +396,7 @@ export function useTableConfig<T = Record<string, unknown>>(tableId: string, sta
       .sort((a, b) => ((a as SafeAny).orderIndex ?? 9999) - ((b as SafeAny).orderIndex ?? 9999));
 
     return merged as TableColumnType<T>[];
-  }, [rawConfig, staticColumns, handleColumnResize]);
+  }, [rawConfig, staticColumns, handleColumnResize, canonicalTitles]);
 
   return {
     loading,

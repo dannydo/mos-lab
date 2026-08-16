@@ -21,6 +21,9 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
   ({ comboBalances, customerName, themeMode, getComboDisplayInfo, onOpenComboModal }) => {
     const [selectedCopyCombo, setSelectedCopyCombo] = useState<SafeAny | null>(null);
     const [isCopyModalOpen, setIsCopyModalOpen] = useState<boolean>(false);
+    const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
+    const warningTextColor = themeMode === 'dark' ? '#fbbf24' : '#92400e';
+    const infoTextColor = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
 
     const activeCombos = comboBalances.filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0);
 
@@ -79,7 +82,7 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
                         gap: '8px',
                       }}
                     >
-                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fa8c16', flex: 1 }}>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: warningTextColor, flex: 1 }}>
                         {cb.serviceName} {cb.packageKey ? `(${cb.packageKey})` : ''}
                       </div>
                       <Space size={4}>
@@ -156,19 +159,19 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
                       }}
                     >
                       <Space size={4}>
-                        <SunOutlined style={{ color: '#fa8c16', fontSize: '13px' }} />
+                        <SunOutlined style={{ color: warningTextColor, fontSize: '13px' }} />
                         <strong>{cb.normalCount}</strong>
                       </Space>
 
                       <Space size={4}>
-                        <SyncOutlined style={{ color: '#1890ff', fontSize: '12px' }} />
+                        <SyncOutlined style={{ color: infoTextColor, fontSize: '12px' }} />
                         <strong>{cb.retainCount}</strong>
                       </Space>
 
                       {cb.dateExpired && (
                         <Space size={4} style={{ marginLeft: 'auto' }}>
                           <span style={{ fontSize: '12px' }}>💀</span>
-                          <span style={{ fontSize: '11px', color: '#888' }}>
+                          <span style={{ fontSize: '11px', color: mutedTextColor }}>
                             {new Date(cb.dateExpired).toLocaleDateString('vi-VN')}
                           </span>
                         </Space>
@@ -182,7 +185,7 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
                         gap: '2px',
                         fontSize: '10.5px',
                         marginTop: '6px',
-                        color: '#888',
+                        color: mutedTextColor,
                         borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#f0f0f0'}`,
                         paddingTop: '4px',
                       }}
@@ -213,7 +216,7 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
               })}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', color: '#888', fontSize: '12px', padding: '12px 0' }}>
+            <div style={{ textAlign: 'center', color: mutedTextColor, fontSize: '12px', padding: '12px 0' }}>
               Không có gói combo nào đang chạy.
             </div>
           )}

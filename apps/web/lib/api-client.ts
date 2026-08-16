@@ -45,6 +45,7 @@ import {
   CcDiamondDetailsResponse,
   CvXoayReportResponse,
   CvTipLeaderboardResponse,
+  CvTipCustomerHistoryResponse,
   CvTipResponse,
   CvPaystubResponse,
   CvWorkLogDetailResponse,
@@ -174,6 +175,8 @@ import {
   QaSaveAuditInput,
   QaImportSheetInput,
   QaShopBranchCode,
+  DashboardTodayResponse,
+  RevenueHourlyResponse,
 } from '@mos-lab/shared';
 
 // In-flight request deduplication & short-term cache map for GET endpoints
@@ -749,10 +752,10 @@ export const apiClient = {
       return response.data;
     },
     getTrends: async (params: {
-      date_from: string;
-      date_to: string;
-      staff_id?: string;
-      booker?: string;
+      startDate: string;
+      endDate: string;
+      staffId?: string;
+      role?: string;
     }): Promise<TrendsResponse> => {
       const response = await api.get('/kpi/trends', { params });
       return response.data;
@@ -863,6 +866,13 @@ export const apiClient = {
     },
     getCvTipRecords: async (params?: Record<string, unknown>): Promise<CvTipResponse> => {
       const response = await api.get('/kpi/cv-tip/records', { params });
+      return response.data;
+    },
+    getCvTipCustomerHistory: async (params: {
+      clientId: number;
+      limit?: number;
+    }): Promise<CvTipCustomerHistoryResponse> => {
+      const response = await api.get('/kpi/cv-tip/customer-history', { params });
       return response.data;
     },
     getCvPaystub: async (params?: Record<string, unknown>): Promise<CvPaystubResponse> => {
@@ -1137,7 +1147,7 @@ export const apiClient = {
     },
   },
   dashboard: {
-    getToday: async (params?: Record<string, unknown>): Promise<unknown> => {
+    getToday: async (params?: Record<string, unknown>): Promise<DashboardTodayResponse> => {
       const response = await api.get('/dashboard/today', { params });
       return response.data;
     },
@@ -1146,7 +1156,7 @@ export const apiClient = {
       dateTo: string;
       branchKey?: string;
       bookerFilter?: string;
-    }): Promise<unknown> => {
+    }): Promise<RevenueHourlyResponse> => {
       const response = await api.get('/dashboard/today/revenue-hourly', { params });
       return response.data;
     },

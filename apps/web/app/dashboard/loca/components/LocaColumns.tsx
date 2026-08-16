@@ -1,9 +1,11 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
 import { Space, Avatar, Typography, Tag, Tooltip, Button } from 'antd';
-import { UserOutlined, PhoneOutlined, CheckCircleOutlined, PlusOutlined, MessageOutlined } from '@ant-design/icons';
-import { Sparkles, Calendar, Clock, Bell, Heart, ShieldCheck, RefreshCw, UserPlus } from 'lucide-react';
+import { UserOutlined, PhoneOutlined, CheckCircleOutlined, MessageOutlined } from '@ant-design/icons';
+import { CalendarPlus } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Customer, TouchpointStatus, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import { LocaTouchpointCell } from './LocaTouchpointCell';
@@ -132,7 +134,7 @@ export const getLocaColumns = ({
   });
   return [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 55,
       align: 'center' as const,
@@ -255,7 +257,7 @@ export const getLocaColumns = ({
       },
     },
     {
-      title: 'Last Visited',
+      title: 'Đã Ghé',
       dataIndex: 'daysSinceLastVisit',
       key: 'daysSinceLastVisit',
       width: 160,
@@ -321,7 +323,7 @@ export const getLocaColumns = ({
     },
 
     {
-      title: 'LTV',
+      title: '∑ Chi Tiêu',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
       width: 130,
@@ -404,7 +406,7 @@ export const getLocaColumns = ({
       },
     },
     {
-      title: 'Thời lượng',
+      title: 'Duration',
       key: 'lastCallDuration',
       width: 95,
       render: (_: SafeAny, record: Customer) => {
@@ -476,7 +478,7 @@ export const getLocaColumns = ({
     {
       title: 'Action',
       key: 'actions',
-      width: 95,
+      width: 104,
       align: 'center' as const,
       fixed: 'right' as const,
       render: (_: SafeAny, record: Customer) => {
@@ -486,32 +488,52 @@ export const getLocaColumns = ({
           <Space size={4} align="center" style={{ justifyContent: 'center' }}>
             <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}>
               <Button
-                type={isPlanned ? 'dashed' : 'primary'}
-                ghost={!isPlanned}
-                size="small"
+                type="text"
+                aria-label={isPlanned ? 'Đã lên lịch gọi' : 'Thêm vào kế hoạch gọi'}
                 loading={isAdding}
-                icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
+                icon={
+                  isPlanned ? (
+                    <CheckCircleOutlined style={{ color: '#34D399', fontSize: 16 }} />
+                  ) : (
+                    <CalendarPlus size={16} strokeWidth={2.4} color="#D4A84B" />
+                  )
+                }
                 onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
                 style={
-                  !isPlanned
+                  isPlanned
                     ? {
-                        borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                        color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                        width: 30,
+                        height: 30,
+                        minWidth: 30,
+                        padding: 0,
+                        border: '1px solid rgba(52, 211, 153, 0.45)',
+                        background: 'rgba(52, 211, 153, 0.12)',
                       }
-                    : {}
+                    : {
+                        width: 30,
+                        height: 30,
+                        minWidth: 30,
+                        padding: 0,
+                        border: '1px solid #D4A84B',
+                        background: 'rgba(212, 168, 75, 0.12)',
+                      }
                 }
                 disabled={isPlanned || isAdding}
               />
             </Tooltip>
             <Tooltip title="Gửi tin nhắn SMS">
               <Button
-                type="default"
-                size="small"
-                icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
+                type="text"
+                aria-label="Gửi tin nhắn SMS"
+                icon={<MessageOutlined style={{ color: '#D4A84B', fontSize: 16 }} />}
                 onClick={() => handleOpenSmsModal?.(record)}
                 style={{
-                  borderColor: '#D4A84B',
-                  color: '#D4A84B',
+                  width: 30,
+                  height: 30,
+                  minWidth: 30,
+                  padding: 0,
+                  border: '1px solid #D4A84B',
+                  background: 'rgba(212, 168, 75, 0.12)',
                 }}
               />
             </Tooltip>
@@ -538,7 +560,7 @@ export const getNewLocaColumns = ({
 }: LocaColumnsOptions): ColumnsType<Customer> => {
   return [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 60,
       align: 'center' as const,
@@ -707,7 +729,7 @@ export const getNewLocaColumns = ({
     {
       title: 'Action',
       key: 'actions',
-      width: 95,
+      width: 104,
       align: 'center' as const,
       fixed: 'right' as const,
       render: (_: SafeAny, record: Customer) => {
@@ -717,32 +739,52 @@ export const getNewLocaColumns = ({
           <Space size={4} align="center" style={{ justifyContent: 'center' }}>
             <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}>
               <Button
-                type={isPlanned ? 'dashed' : 'primary'}
-                ghost={!isPlanned}
-                size="small"
+                type="text"
+                aria-label={isPlanned ? 'Đã lên lịch gọi' : 'Thêm vào kế hoạch gọi'}
                 loading={isAdding}
-                icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
+                icon={
+                  isPlanned ? (
+                    <CheckCircleOutlined style={{ color: '#34D399', fontSize: 16 }} />
+                  ) : (
+                    <CalendarPlus size={16} strokeWidth={2.4} color="#D4A84B" />
+                  )
+                }
                 onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
                 style={
-                  !isPlanned
+                  isPlanned
                     ? {
-                        borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                        color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                        width: 30,
+                        height: 30,
+                        minWidth: 30,
+                        padding: 0,
+                        border: '1px solid rgba(52, 211, 153, 0.45)',
+                        background: 'rgba(52, 211, 153, 0.12)',
                       }
-                    : {}
+                    : {
+                        width: 30,
+                        height: 30,
+                        minWidth: 30,
+                        padding: 0,
+                        border: '1px solid #D4A84B',
+                        background: 'rgba(212, 168, 75, 0.12)',
+                      }
                 }
                 disabled={isPlanned || isAdding}
               />
             </Tooltip>
             <Tooltip title="Gửi tin nhắn SMS">
               <Button
-                type="default"
-                size="small"
-                icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
+                type="text"
+                aria-label="Gửi tin nhắn SMS"
+                icon={<MessageOutlined style={{ color: '#D4A84B', fontSize: 16 }} />}
                 onClick={() => handleOpenSmsModal?.(record)}
                 style={{
-                  borderColor: '#D4A84B',
-                  color: '#D4A84B',
+                  width: 30,
+                  height: 30,
+                  minWidth: 30,
+                  padding: 0,
+                  border: '1px solid #D4A84B',
+                  background: 'rgba(212, 168, 75, 0.12)',
                 }}
               />
             </Tooltip>

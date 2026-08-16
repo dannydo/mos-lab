@@ -4,7 +4,6 @@ import { formatOrGenerateCustomerPhone } from './booking/constants';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Table,
   DatePicker,
   Radio,
   Button,
@@ -19,16 +18,8 @@ import {
   message,
   Select,
 } from 'antd';
-import {
-  PhoneOutlined,
-  UserOutlined,
-  SettingOutlined,
-  LeftOutlined,
-  RightOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { PhoneOutlined, UserOutlined } from '@ant-design/icons';
+import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../context/ThemeContext';
@@ -38,6 +29,8 @@ import { ResizableHeaderCell } from './ResizableHeaderCell';
 import { apiClient } from '../lib/api-client';
 import { formatVND, formatDuration } from '../lib/format-utils';
 import { DailyCallEntry, vietnameseSearchFilter } from '@mos-lab/shared';
+import { AppIcon, DataTable, TableSettingsTrigger } from './ui';
+import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
 const CustomerDetailDrawer = dynamic(() => import('./CustomerDetailDrawer'), { ssr: false });
 const TableConfigDrawer = dynamic(() => import('./TableConfigDrawer').then((m) => m.TableConfigDrawer), { ssr: false });
@@ -54,6 +47,8 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const { makeCall } = useOmiCall();
+  const responsiveTier = useResponsiveTier();
+  const isMobile = responsiveTier === 'mobile';
 
   // Filter & Navigation states
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
@@ -555,10 +550,76 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
     resetConfig,
   } = useTableConfig('daily_calls_table', staticColumns);
 
+  const visibleData = useMemo(() => {
+    if (!isMobile) return data;
+    const start = (currentPage - 1) * pageSize;
+    return data.slice(start, start + pageSize);
+  }, [currentPage, data, isMobile, pageSize]);
+
+  const renderMobileCall = useCallback(
+    (record: DailyCallEntry) => {
+      const phone = record.customer?.phone;
+      const duration = record.durationSec ? formatDuration(record.durationSec) : '00:00';
+      const statusLabel =
+        record.callResult === 'ANSWERED'
+          ? 'Có bắt máy'
+          : record.callResult === 'NO_ANSWER'
+            ? 'Không trả lời'
+            : record.callResult === 'WRONG_NUMBER'
+              ? 'Sai số'
+              : record.callResult === 'BUSY'
+                ? 'Máy bận'
+                : record.callResult === 'FAILED'
+                  ? 'Lỗi cuộc gọi'
+                  : record.callResult || 'Chưa rõ';
+      const statusColor =
+        record.callResult === 'ANSWERED' ? 'success' : record.callResult === 'NO_ANSWER' ? 'warning' : 'default';
+
+      return (
+        <div className="daily-call-mobile-card">
+          <div className="daily-call-mobile-card-header">
+            <Button
+              type="link"
+              className="daily-call-mobile-customer"
+              onClick={() => record.customer && openCustomerDetail(record.customer.id)}
+            >
+              <Avatar size="small" src={record.customer?.avatar || undefined} icon={<UserOutlined />} />
+              <span>{record.customer?.name || 'Khách hàng chưa xác định'}</span>
+            </Button>
+            <span className="daily-call-mobile-time tabular-nums">{dayjs(record.createdAt).format('HH:mm')}</span>
+          </div>
+          <div className="daily-call-mobile-meta">
+            {phone ? (
+              <Button
+                type="link"
+                size="small"
+                icon={<PhoneOutlined />}
+                onClick={() =>
+                  makeCall(phone, record.customer?.name, record.customer?.id, record.customer?.avatar || undefined)
+                }
+              >
+                {phone}
+              </Button>
+            ) : (
+              <span>Chưa có số điện thoại</span>
+            )}
+            <Tag color={statusColor} className="tabular-nums">
+              {duration}
+            </Tag>
+            <Tag color={statusColor}>{statusLabel}</Tag>
+          </div>
+          {record.note && <p className="daily-call-mobile-note">{record.note}</p>}
+        </div>
+      );
+    },
+    [makeCall]
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
       {/* Table Headers Controls */}
       <div
+        className="daily-calls-toolbar"
         style={{
           display: 'flex',
           flexDirection: 'row',
@@ -572,10 +633,14 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           border: `1px solid ${token.colorBorderSecondary}`,
         }}
       >
-        <Space size="middle" style={{ flexWrap: 'wrap' }}>
+        <Space className="daily-calls-toolbar-controls" size="middle" style={{ flexWrap: 'wrap' }}>
           {/* Date controls */}
           <Space.Compact>
-            <Button icon={<LeftOutlined />} onClick={handlePrevDay} />
+            <Button
+              aria-label="Ngày trước"
+              icon={<AppIcon icon={ChevronLeft} size="action" />}
+              onClick={handlePrevDay}
+            />
             <DatePicker
               value={selectedDate}
               onChange={(date) => {
@@ -588,9 +653,14 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
               }}
               format="DD/MM/YYYY"
               allowClear={false}
+              suffixIcon={<AppIcon icon={CalendarDays} size="disclosure" />}
               style={{ width: '130px', textAlign: 'center' }}
             />
-            <Button icon={<RightOutlined />} onClick={handleNextDay} />
+            <Button
+              aria-label="Ngày sau"
+              icon={<AppIcon icon={ChevronRight} size="action" />}
+              onClick={handleNextDay}
+            />
           </Space.Compact>
 
           <Button type="default" onClick={handleToday} disabled={selectedDate.isSame(dayjs(), 'day')}>
@@ -637,15 +707,13 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           )}
         </Space>
 
-        <Space>
-          <Tooltip title="Cấu hình cột">
-            <Button icon={<SettingOutlined />} onClick={openConfig} />
-          </Tooltip>
+        <Space className="daily-calls-toolbar-actions">
+          <TableSettingsTrigger onClick={openConfig} />
           <Tooltip title="Tải lại dữ liệu">
             <Button
               type="primary"
-              icon={<ReloadOutlined />}
-              style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
+              aria-label="Tải lại dữ liệu"
+              icon={<AppIcon icon={RefreshCw} size="action" />}
               onClick={() => fetchDailyCalls(selectedDate, scope, selectedStaffId)}
               loading={loading}
             />
@@ -655,19 +723,20 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
 
       {/* Table Section */}
       <div className="antd-custom-table" style={{ width: '100%' }}>
-        <Table<DailyCallEntry>
+        <DataTable<DailyCallEntry>
           components={{
             header: {
               cell: ResizableHeaderCell,
             },
           }}
           columns={configuredColumns}
-          dataSource={data}
+          dataSource={visibleData}
           rowKey="id"
           loading={loading || configLoading || !isReady}
           pagination={{
             current: currentPage,
             pageSize: pageSize,
+            total: data.length,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50'],
             onChange: (page, size) => {
@@ -685,6 +754,22 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           bordered
           scroll={{ x: 'max-content' }}
           className="daily-calls-custom-table"
+          columnPriority={{
+            customerId: 'tertiary',
+            client: 'primary',
+            makeCall: 'primary',
+            lastTimeInBed: 'tertiary',
+            lifetimeValue: 'secondary',
+            assignedStaff: 'secondary',
+            lastCall: 'secondary',
+            duration: 'primary',
+            callStatus: 'primary',
+            callNotes: 'secondary',
+            action: 'secondary',
+          }}
+          mobileRenderer={renderMobileCall}
+          mobileRecordKey={(record) => record.id}
+          mobileEmptyDescription="Chưa có cuộc gọi trong ngày được chọn"
         />
       </div>
 

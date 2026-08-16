@@ -11,7 +11,10 @@ export default function CallsPage() {
   const { token } = theme.useToken();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div
+      className="responsive-page responsive-workspace calls-page"
+      style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+    >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <Title level={3} style={{ color: token.colorPrimary, margin: 0 }}>
           Lịch sử cuộc gọi toàn bộ

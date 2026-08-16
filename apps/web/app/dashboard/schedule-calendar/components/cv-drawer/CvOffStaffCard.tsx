@@ -94,7 +94,7 @@ export const CvOffStaffCard: React.FC<CvOffStaffCardProps> = React.memo(({ staff
 
         <div className="text-right shrink-0 ml-2">
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${badgeStyleOff}`}>
-            {staff.branchName || 'Đề Thám'}
+            {staff.branchCode || staff.branchName || 'DT'}
           </span>
         </div>
       </div>

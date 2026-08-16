@@ -1,5 +1,7 @@
 'use client';
 
+import { DataTable, ReportPeriodNavigator, TableIndexHeader } from '~/components/ui';
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
@@ -7,18 +9,15 @@ import {
   Avatar,
   Button,
   Card,
-  DatePicker,
   Descriptions,
   Divider,
   Drawer,
   Form,
   Input,
   Modal,
-  Radio,
   Select,
   Space,
   Steps,
-  Table,
   Tag,
   Tooltip,
   Typography,
@@ -28,7 +27,6 @@ import {
   ArrowDownOutlined,
   ArrowUpOutlined,
   AuditOutlined,
-  CalendarOutlined,
   CheckCircleOutlined,
   CheckOutlined,
   ClockCircleOutlined,
@@ -37,17 +35,17 @@ import {
   EyeOutlined,
   FileTextOutlined,
   InfoCircleOutlined,
-  LeftOutlined,
   QuestionCircleOutlined,
   ReloadOutlined,
-  RightOutlined,
   SafetyCertificateOutlined,
-  ScheduleOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { FalLogExplanationRecord, FalReadModel } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { FalRulesModal } from './components/FalRulesModal';
+import { getViewportSize } from '../../../hooks/useResponsiveTier';
+import styles from './fal.module.css';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 
@@ -117,7 +115,7 @@ function toWingsAvatarUrl(value?: string | null) {
 }
 
 function formatMoney(value: number) {
-  return `${Math.round(value || 0).toLocaleString('vi-VN')} đ`;
+  return `${Math.round(value || 0).toLocaleString('vi-VN')} đ`;
 }
 
 function CompactDateTime({ value }: { value?: string | null }) {
@@ -146,7 +144,7 @@ function CompactPerson({
 }) {
   const displayName = name || '-';
   const content = (
-    <Space size={6} align="start" className="max-w-full">
+    <Space size={6} align={secondary ? 'start' : 'center'} className="max-w-full">
       <Avatar size={26} src={toWingsAvatarUrl(avatar)}>
         {displayName.slice(0, 1).toUpperCase() || '?'}
       </Avatar>
@@ -156,7 +154,7 @@ function CompactPerson({
         </Tooltip>
         {secondary ? (
           <Tooltip title={secondary}>
-            <Text type="secondary" className="block truncate text-[11px]">
+            <Text type="secondary" className="block truncate" style={{ fontSize: 10, lineHeight: '16px' }}>
               {secondary}
             </Text>
           </Tooltip>
@@ -184,25 +182,31 @@ function CompactOrigin({ service, onClick }: { service: TraceService | null; onC
         Chưa liên kết
       </Text>
     );
+  const displayName = service.cvName || 'Chưa gán CV';
   const meta = `${service.checkin ? dayjs(service.checkin).format('DD/MM HH:mm') : '-'} · ${service.serviceName || '-'}`;
   const content = (
-    <div className="min-w-0 leading-tight">
-      <Text strong className="text-xs">
-        #{service.orderServiceId}
-      </Text>
-      <Tooltip title={meta}>
-        <Text type="secondary" className="block truncate text-[11px]">
-          {meta}
-        </Text>
-      </Tooltip>
-    </div>
+    <Space size={6} align="center" className="max-w-full">
+      <Avatar size={26} src={toWingsAvatarUrl(service.cvAvatar)}>
+        {displayName.slice(0, 1).toUpperCase() || '?'}
+      </Avatar>
+      <div className="min-w-0 leading-tight">
+        <Tooltip title={displayName}>
+          <div className="truncate text-xs font-medium">{displayName}</div>
+        </Tooltip>
+        <Tooltip title={meta}>
+          <Text type="secondary" className="block truncate" style={{ fontSize: 10, lineHeight: '16px' }}>
+            {meta}
+          </Text>
+        </Tooltip>
+      </div>
+    </Space>
   );
   if (!onClick) return content;
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Mở Trace FAL cho ca gốc #${service.orderServiceId}`}
+      aria-label={`Mở Trace FAL cho ca gốc của ${displayName}`}
       className="block max-w-full rounded-md border-0 bg-transparent p-0 text-left transition-colors hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
     >
       {content}
@@ -258,7 +262,7 @@ function TraceStaff({ name, avatar }: { name?: string | null; avatar?: string | 
 
 function clampTraceDrawerWidth(value: number) {
   if (typeof window === 'undefined') return Math.max(TRACE_DRAWER_MIN_WIDTH, Math.min(TRACE_DRAWER_MAX_WIDTH, value));
-  const availableWidth = Math.max(320, window.innerWidth - 40);
+  const availableWidth = Math.max(320, getViewportSize().width - 40);
   return Math.round(
     Math.max(Math.min(TRACE_DRAWER_MIN_WIDTH, availableWidth), Math.min(TRACE_DRAWER_MAX_WIDTH, availableWidth, value))
   );
@@ -586,7 +590,7 @@ function LedgerList({
                     {item.bananaCredit.toLocaleString('vi-VN')} Chuối
                   </Tag>
                   <Tag color={item.bonusPoints === 0 ? 'default' : 'blue'}>
-                    {item.bonusPoints.toLocaleString('vi-VN')} điểm
+                    {item.bonusPoints.toLocaleString('vi-VN')} điểm
                   </Tag>
                   <Tag color={item.cash === 0 ? 'default' : 'green'}>{formatMoney(item.cash)}</Tag>
                 </Space>
@@ -771,7 +775,7 @@ export default function FalControlTowerPage() {
   }, [isTraceResizing, traceDrawerWidth, traceDrawerWidthRestored]);
 
   const startTraceResize = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (window.innerWidth < 640) return;
+    if (getViewportSize().width < 640) return;
     event.preventDefault();
     traceResizeStartX.current = event.clientX;
     traceResizeStartWidth.current = traceDrawerWidth;
@@ -887,84 +891,63 @@ export default function FalControlTowerPage() {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Title level={3} className="!mb-0">
-            FAL Control Tower
-          </Title>
-          <Text type="secondary">Danh sách Fix / Adjust / Log thực tế do CC chọn tại Wings. MOS không tạo FAL.</Text>
+    <div className={`responsive-page responsive-workspace fal-page ${styles.page}`}>
+      <div className={`responsive-page-header ${styles.header}`}>
+        <div className="responsive-page-header-main">
+          <div className="responsive-page-header-title-row">
+            <Title level={3} className="!mb-0">
+              FAL Control Tower
+            </Title>
+          </div>
+          <Text type="secondary" className="block">
+            Danh sách Fix / Adjust / Log thực tế do CC chọn tại Wings. MOS không tạo FAL.
+          </Text>
         </div>
-        <Space wrap>
-          <Radio.Group
-            value={dateRangeMode}
-            onChange={(event) => changeDateMode(event.target.value)}
-            optionType="button"
-            buttonStyle="solid"
-            size="small"
-          >
-            <Tooltip title="Xem theo Ngày">
-              <Radio.Button value="day">
-                <CalendarOutlined />
-              </Radio.Button>
-            </Tooltip>
-            <Tooltip title="Xem theo Tuần (Thứ 2 đến Chủ Nhật)">
-              <Radio.Button value="week">
-                <ScheduleOutlined />
-              </Radio.Button>
-            </Tooltip>
-            <Tooltip title="Xem theo Tháng">
-              <Radio.Button value="month">
-                <ClockCircleOutlined />
-              </Radio.Button>
-            </Tooltip>
-          </Radio.Group>
-          <Space.Compact size="small">
-            <Button aria-label="Khoảng thời gian trước" icon={<LeftOutlined />} onClick={() => moveDate(-1)} />
-            <DatePicker
+        <div className="responsive-page-header-actions">
+          <Space wrap size={8} className={styles.toolbar}>
+            <ReportPeriodNavigator
+              mode={dateRangeMode}
               value={selectedDate}
-              onChange={(value) => {
-                if (value) {
-                  setSelectedDate(value);
-                  setPage(1);
-                }
-              }}
-              picker={dateRangeMode === 'month' ? 'month' : undefined}
-              allowClear={false}
-              suffixIcon={<CalendarOutlined />}
-              format={(value) =>
+              label={
                 dateRangeMode === 'month'
-                  ? `Tháng ${value.format('MM/YYYY')}`
+                  ? `Tháng ${selectedDate.format('MM/YYYY')}`
                   : dateRangeMode === 'week'
-                    ? `Tuần ${value.isoWeek()} (${value.startOf('isoWeek').format('DD/MM')} - ${value.endOf('isoWeek').format('DD/MM/YYYY')})`
-                    : value.format('DD/MM/YYYY')
+                    ? `Tuần ${selectedDate.isoWeek()} (${selectedDate.startOf('isoWeek').format('DD/MM')} - ${selectedDate
+                        .endOf('isoWeek')
+                        .format('DD/MM/YYYY')})`
+                    : selectedDate.format('DD/MM/YYYY')
               }
-              className={dateRangeMode === 'week' ? 'w-[235px]' : dateRangeMode === 'month' ? 'w-[135px]' : 'w-[130px]'}
+              onModeChange={changeDateMode}
+              onPrevious={() => moveDate(-1)}
+              onNext={() => moveDate(1)}
+              onValueChange={(value) => {
+                setSelectedDate(value);
+                setPage(1);
+              }}
             />
-            <Button aria-label="Khoảng thời gian sau" icon={<RightOutlined />} onClick={() => moveDate(1)} />
-          </Space.Compact>
-          <Select
-            value={rule}
-            allowClear
-            placeholder="Tất cả FAL"
-            className="min-w-32"
-            onChange={(value) => {
-              setRule(value);
-              setPage(1);
-            }}
-            options={['Fix', 'Adjust', 'Log'].map((value) => ({ value }))}
-          />
-          <Tooltip title="Cách tính Fix / Adjust / Log">
-            <Button
-              aria-label="Giải thích business rules FAL"
-              icon={<InfoCircleOutlined />}
-              onClick={() => setRulesOpen(true)}
+            <Select
+              value={rule}
+              allowClear
+              placeholder="Tất cả FAL"
+              className={styles.ruleFilter}
+              onChange={(value) => {
+                setRule(value);
+                setPage(1);
+              }}
+              options={['Fix', 'Adjust', 'Log'].map((value) => ({ value }))}
             />
-          </Tooltip>
-          <Button icon={<ReloadOutlined />} onClick={() => load()}>
-            Làm mới
-          </Button>
-        </Space>
+            <Tooltip title="Cách tính Fix / Adjust / Log">
+              <Button
+                aria-label="Giải thích business rules FAL"
+                icon={<InfoCircleOutlined />}
+                onClick={() => setRulesOpen(true)}
+              />
+            </Tooltip>
+            <Tooltip title="Làm mới dữ liệu FAL">
+              <Button aria-label="Làm mới dữ liệu FAL" icon={<ReloadOutlined />} onClick={() => load()} />
+            </Tooltip>
+          </Space>
+        </div>
       </div>
 
       <Alert
@@ -974,7 +957,7 @@ export default function FalControlTowerPage() {
       />
 
       <Card title={`FAL từ Wings (${total.toLocaleString('vi-VN')} ca)`}>
-        <Table<FalCase>
+        <DataTable<FalCase>
           rowKey="orderServiceId"
           size="small"
           className="compact-table fal-control-table"
@@ -995,7 +978,7 @@ export default function FalControlTowerPage() {
           }}
           columns={[
             {
-              title: 'STT',
+              title: <TableIndexHeader />,
               width: 52,
               align: 'center',
               render: (_value, _record, index) => (page - 1) * pageSize + index + 1,
@@ -1042,7 +1025,7 @@ export default function FalControlTowerPage() {
               ),
             },
             {
-              title: 'CC chọn',
+              title: 'CC xử lý',
               width: 150,
               render: (_, record) => (
                 <CompactConsultant
@@ -1054,7 +1037,7 @@ export default function FalControlTowerPage() {
               ),
             },
             {
-              title: 'CV',
+              title: 'CV xử lý',
               width: 125,
               render: (_, record) => <CompactPerson name={record.cvName} avatar={record.cvAvatar} />,
             },
@@ -1121,7 +1104,8 @@ export default function FalControlTowerPage() {
                     <Button
                       aria-label={`Trace FAL #${record.orderServiceId}`}
                       size="small"
-                      icon={<AuditOutlined />}
+                      icon={<ShareAltOutlined />}
+                      className="!border-violet-500/50 !text-violet-600 hover:!border-violet-500 hover:!text-violet-500 dark:!text-violet-300"
                       onClick={() => {
                         setSelected(record);
                         setTraceOpen(true);
@@ -1161,6 +1145,54 @@ export default function FalControlTowerPage() {
               ),
             },
           ]}
+          columnPriority={{
+            clientName: 'primary',
+            falRule: 'primary',
+            checkin: 'secondary',
+            cvName: 'secondary',
+            action: 'primary',
+          }}
+          stickyPrimaryColumn
+          mobileRenderer={(record) => (
+            <div className="fal-mobile-record">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <strong className="block truncate">{record.clientName || 'Khách hàng'}</strong>
+                  <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                    {record.serviceName || '-'}
+                  </span>
+                </div>
+                <Tag
+                  className="!mr-0 shrink-0"
+                  color={record.falRule === 'Fix' ? 'red' : record.falRule === 'Adjust' ? 'orange' : 'blue'}
+                >
+                  {record.falRule}
+                </Tag>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                <span>{record.checkin ? dayjs(record.checkin).format('HH:mm · DD/MM') : '-'}</span>
+                <span>CC: {record.ccOutName || record.ccInName || '-'}</span>
+                <span>CV: {record.cvName || '-'}</span>
+                <span className="tabular-nums">{record.fal?.totalMinutes ?? '-'} phút</span>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button size="small" icon={<EyeOutlined />} onClick={() => openCustomerDetail(record.clientId)}>
+                  Khách
+                </Button>
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<AuditOutlined />}
+                  onClick={() => {
+                    setSelected(record);
+                    setTraceOpen(true);
+                  }}
+                >
+                  Trace
+                </Button>
+              </div>
+            </div>
+          )}
         />
       </Card>
 

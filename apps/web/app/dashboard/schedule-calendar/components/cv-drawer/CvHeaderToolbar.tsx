@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Tag, Space, Tooltip, Popover } from 'antd';
-import { LeftOutlined, RightOutlined, CalendarOutlined, CloseOutlined } from '@ant-design/icons';
+import { LeftOutlined, RightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Dayjs } from 'dayjs';
 import { CvDatePicker } from '../../../../../components/booking/CvDatePicker';
 import { useTheme } from '../../../../../context/ThemeContext';
@@ -20,8 +20,8 @@ export const CvHeaderToolbar: React.FC<CvHeaderToolbarProps> = React.memo(
     const { themeMode } = useTheme();
     const [popoverOpen, setPopoverOpen] = useState(false);
 
-    const weekdayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-    const formattedDayTitle = `${weekdayNames[currentDate.day()]}, ${currentDate.format('DD/MM/YYYY')}`;
+    const weekdayLabel = currentDate.day() === 0 ? 'CN' : `T${currentDate.day() + 1}`;
+    const formattedDayTitle = `${weekdayLabel}, ${currentDate.format('DD/MM/YYYY')}`;
 
     const datePickerContent = (
       <div style={{ width: 280, padding: '4px' }}>
@@ -66,8 +66,7 @@ export const CvHeaderToolbar: React.FC<CvHeaderToolbarProps> = React.memo(
                   type="button"
                   className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition-colors cursor-pointer border border-transparent hover:border-slate-300 dark:hover:border-slate-700"
                 >
-                  <CalendarOutlined className="text-emerald-500" />
-                  <span>Lịch CV — {formattedDayTitle}</span>
+                  <span>{formattedDayTitle}</span>
                 </button>
               </Tooltip>
             </Popover>

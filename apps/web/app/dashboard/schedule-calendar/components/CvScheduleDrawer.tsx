@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Drawer } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
+import { AdaptiveDrawer } from '../../../../components/ui';
 import { Appointment, CvRealtimeStatusResponse } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { getViewportSize } from '../../../../hooks/useResponsiveTier';
 
 import nextDynamic from 'next/dynamic';
 import {
@@ -80,8 +81,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
     const handleSelectSlotFromPicker = useCallback(
       (slotInfo: { cv: StaffWorkingItem; date: Dayjs; timeSlot: string; isOverbook: boolean }) => {
         setIsTimePickerOpen(false);
-        const branchNameStr = (slotInfo.cv.branchName || '').toLowerCase();
-        const storeId = branchNameStr.includes('estella') ? '6' : '16';
+        const storeId = slotInfo.cv.branchCode === 'EP' ? '16' : '6';
 
         setBookingPreFill({
           cv: slotInfo.cv,
@@ -222,7 +222,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
 
         animationFrameId = requestAnimationFrame(() => {
           animationFrameId = null;
-          const newWidth = window.innerWidth - moveEvent.clientX;
+          const newWidth = getViewportSize().width - moveEvent.clientX;
           if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
             setDrawerWidth(newWidth);
           }
@@ -314,6 +314,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
               name: rt.name,
               avatarUrl: rt.avatar,
               branchName: rt.storeName,
+              branchCode: rt.storeId === 16 ? 'EP' : 'DT',
               shift: 'Ca Full',
               bookedCount: 0,
               doneCount: 0,
@@ -411,11 +412,12 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
     const offStaffList = serverCap?.offStaffList || [];
 
     return (
-      <Drawer
+      <AdaptiveDrawer
         placement="right"
         open={open}
         onClose={onClose}
         width={drawerWidth}
+        intent="detail"
         closeIcon={null}
         styles={{
           header: {
@@ -441,7 +443,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
         {/* Resizable Left Edge Drag Handle */}
         <div
           onMouseDown={handleMouseDown}
-          className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-emerald-500/50 active:bg-emerald-600 transition-colors z-50 flex items-center justify-center group"
+          className="cv-schedule-resize-handle absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-emerald-500/50 active:bg-emerald-600 transition-colors z-50 flex items-center justify-center group"
           title="Kéo thả để thay đổi chiều rộng Side Slide (Tự lưu F5)"
           role="separator"
           aria-orientation="vertical"
@@ -592,7 +594,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
             booking={editingAppointment}
           />
         )}
-      </Drawer>
+      </AdaptiveDrawer>
     );
   }
 );

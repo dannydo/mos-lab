@@ -173,7 +173,7 @@ export default function StaffPage() {
   });
 
   return (
-    <div style={{ padding: '4px' }}>
+    <div className="responsive-page responsive-workspace staff-page" style={{ padding: '4px' }}>
       {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
@@ -1024,7 +1024,7 @@ export default function StaffPage() {
                   <Descriptions.Item label="Lương cứng (Base Salary)">
                     {selectedStaff.baseSalary !== undefined && selectedStaff.baseSalary !== null ? (
                       <Text style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
-                        {Math.round(selectedStaff.baseSalary).toLocaleString('vi-VN')} đ
+                        {Math.round(selectedStaff.baseSalary).toLocaleString('vi-VN')} đ
                       </Text>
                     ) : (
                       <Text type="secondary" italic>
@@ -1035,7 +1035,7 @@ export default function StaffPage() {
                   <Descriptions.Item label="Lương giờ (Hourly Wage)">
                     {selectedStaff.hourlyWage !== undefined && selectedStaff.hourlyWage !== null ? (
                       <Text style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
-                        {Math.round(selectedStaff.hourlyWage).toLocaleString('vi-VN')} đ/h
+                        {Math.round(selectedStaff.hourlyWage).toLocaleString('vi-VN')} đ/h
                       </Text>
                     ) : (
                       <Text type="secondary" italic>

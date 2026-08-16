@@ -9,6 +9,8 @@ export interface ContentSurfaceProps {
   style?: React.CSSProperties;
   padding?: number | string;
   elevated?: boolean;
+  /** Lets data surfaces use the whole mobile viewport width without a nested card edge. */
+  fullBleedOnMobile?: boolean;
 }
 
 /** A shared themed surface for feature toolbars, tables, and content blocks. */
@@ -16,15 +18,16 @@ export function ContentSurface({
   children,
   className = '',
   style,
-  padding = 16,
+  padding = 'var(--mos-density-padding, var(--mos-surface-padding))',
   elevated = false,
+  fullBleedOnMobile = false,
 }: ContentSurfaceProps) {
   const { token } = theme.useToken();
 
   return (
     <Card
       variant="outlined"
-      className={`rounded-xl ${className}`}
+      className={`responsive-container rounded-xl ${fullBleedOnMobile ? 'responsive-surface-full-bleed' : ''} ${className}`}
       style={{
         background: token.colorBgContainer,
         borderColor: token.colorBorderSecondary,

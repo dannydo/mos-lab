@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
 import { Row, Col, Table, Space, Tag, Badge, Typography } from 'antd';
 import { TeamOutlined, UserOutlined } from '@ant-design/icons';
@@ -16,7 +18,33 @@ interface TodayStaffAttendanceProps {
 }
 
 const TodayStaffAttendance = React.memo(
-  function TodayStaffAttendance({ token, ccList, cvList }: TodayStaffAttendanceProps) {
+  function TodayStaffAttendance({ themeMode = 'light', token, ccList, cvList }: TodayStaffAttendanceProps) {
+    const tableRegionRef = React.useRef<HTMLDivElement>(null);
+    const goldText = themeMode === 'dark' ? '#D4A84B' : '#855b0e';
+    const infoText = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
+    const mutedText = themeMode === 'dark' ? '#cbd5e1' : '#475569';
+
+    React.useEffect(() => {
+      const region = tableRegionRef.current;
+      if (!region) return undefined;
+      const labelScrollableTables = () => {
+        const tables = [...region.querySelectorAll<HTMLElement>('.ant-table-content')].filter(
+          (table) => table.scrollWidth > table.clientWidth
+        );
+        tables.forEach((table, index) => {
+          table.tabIndex = 0;
+          table.setAttribute('role', 'region');
+          table.setAttribute(
+            'aria-label',
+            index === 0 ? 'Bảng chuyên viên, có thể cuộn ngang' : 'Bảng tư vấn viên, có thể cuộn ngang'
+          );
+        });
+      };
+      labelScrollableTables();
+      const observer = new MutationObserver(labelScrollableTables);
+      observer.observe(region, { childList: true, subtree: true });
+      return () => observer.disconnect();
+    }, []);
     const renderShiftAndAttendance = (
       shift: 'sáng' | 'chiều' | 'full' | 'off',
       attendance: 'none' | 'checked_in' | 'checked_out' | 'late'
@@ -35,7 +63,7 @@ const TodayStaffAttendance = React.memo(
                   verticalAlign: 'middle',
                 }}
               />
-              <span style={{ fontSize: '12px', color: '#bfbfbf', fontWeight: 500 }}>Off</span>
+              <span style={{ fontSize: '12px', color: mutedText, fontWeight: 500 }}>Off</span>
             </Space>
           </span>
         );
@@ -75,7 +103,7 @@ const TodayStaffAttendance = React.memo(
                 verticalAlign: 'middle',
               }}
             />
-            <span style={{ fontSize: '12px', color: '#8c8c8c', fontWeight: 500 }}>{shiftText}</span>
+            <span style={{ fontSize: '12px', color: mutedText, fontWeight: 500 }}>{shiftText}</span>
           </Space>
         </span>
       );
@@ -84,12 +112,14 @@ const TodayStaffAttendance = React.memo(
     const cvColumns = React.useMemo(
       () => [
         {
-          title: 'STT',
+          title: <TableIndexHeader />,
           key: 'stt',
           width: 50,
           align: 'center' as const,
           render: (_: SafeAny, __: ShopCVData, idx: number) => (
-            <span className="tabular-nums font-mono text-xs text-slate-400 font-semibold">#{idx + 1}</span>
+            <span className="tabular-nums font-mono text-xs font-semibold" style={{ color: mutedText }}>
+              #{idx + 1}
+            </span>
           ),
         },
         {
@@ -138,7 +168,11 @@ const TodayStaffAttendance = React.memo(
             const booked = rec.bookedCount ?? rec.clients ?? 0;
             const done = rec.doneCount ?? 0;
             if (rec.isOff || rec.shift === 'off') {
-              return <span className="text-slate-400 text-xs font-mono">-</span>;
+              return (
+                <span className="text-xs font-mono" style={{ color: mutedText }}>
+                  -
+                </span>
+              );
             }
             return (
               <span className="tabular-nums font-mono text-xs inline-flex items-center gap-1">
@@ -153,18 +187,20 @@ const TodayStaffAttendance = React.memo(
           },
         },
       ],
-      []
+      [mutedText]
     );
 
     const ccColumns = React.useMemo(
       () => [
         {
-          title: 'STT',
+          title: <TableIndexHeader />,
           key: 'stt',
           width: 50,
           align: 'center' as const,
           render: (_: SafeAny, __: ShopCCData, idx: number) => (
-            <span className="tabular-nums font-mono text-xs text-slate-400 font-semibold">#{idx + 1}</span>
+            <span className="tabular-nums font-mono text-xs font-semibold" style={{ color: mutedText }}>
+              #{idx + 1}
+            </span>
           ),
         },
         {
@@ -218,8 +254,8 @@ const TodayStaffAttendance = React.memo(
           key: 'revCombo',
           align: 'right' as const,
           render: (r: number) => (
-            <span className="tabular-nums font-mono" style={{ color: '#D4A84B' }}>
-              {(r || 0).toLocaleString('vi-VN')} đ
+            <span className="tabular-nums font-mono" style={{ color: goldText }}>
+              {(r || 0).toLocaleString('vi-VN')} đ
             </span>
           ),
         },
@@ -230,7 +266,7 @@ const TodayStaffAttendance = React.memo(
           align: 'right' as const,
           render: (r: number) => (
             <span className="tabular-nums font-mono" style={{ color: token.colorTextDescription }}>
-              {(r || 0).toLocaleString('vi-VN')} đ
+              {(r || 0).toLocaleString('vi-VN')} đ
             </span>
           ),
         },
@@ -241,7 +277,7 @@ const TodayStaffAttendance = React.memo(
           align: 'right' as const,
           render: (r: number) => (
             <span className="tabular-nums font-mono" style={{ color: '#52c41a' }}>
-              {(r || 0).toLocaleString('vi-VN')} đ
+              {(r || 0).toLocaleString('vi-VN')} đ
             </span>
           ),
         },
@@ -251,69 +287,71 @@ const TodayStaffAttendance = React.memo(
           key: 'revenue',
           align: 'right' as const,
           render: (r: number) => (
-            <strong className="tabular-nums font-mono" style={{ color: '#1890ff' }}>
-              {(r || 0).toLocaleString('vi-VN')} đ
+            <strong className="tabular-nums font-mono" style={{ color: infoText }}>
+              {(r || 0).toLocaleString('vi-VN')} đ
             </strong>
           ),
         },
       ],
-      [token.colorTextDescription]
+      [goldText, infoText, mutedText, token.colorTextDescription]
     );
 
     return (
-      <Row gutter={[24, 24]}>
-        {/* CV list */}
-        <Col xs={24} xl={12}>
-          <SectionCard
-            title={
-              <Space>
-                <UserOutlined style={{ color: '#D4A84B' }} />
-                <span className="text-sm font-bold">[CV] Chuyên viên đang làm gì? Bao nhiêu khách?</span>
-              </Space>
-            }
-            bodyPadding={0}
-          >
-            <Table
-              dataSource={cvList}
-              rowKey="name"
-              rowClassName={(record) =>
-                record.shift === 'off' || record.attendance === 'checked_out' ? 'opacity-40 pointer-events-none' : ''
+      <div ref={tableRegionRef}>
+        <Row gutter={[24, 24]}>
+          {/* CV list */}
+          <Col xs={24} xl={12}>
+            <SectionCard
+              title={
+                <Space>
+                  <UserOutlined style={{ color: '#D4A84B' }} />
+                  <span className="text-sm font-bold">CV đang làm gì?</span>
+                </Space>
               }
-              pagination={false}
-              size="small"
-              scroll={{ x: 'max-content' }}
-              columns={cvColumns}
-              className="antd-custom-table"
-            />
-          </SectionCard>
-        </Col>
+              bodyPadding={0}
+            >
+              <Table
+                dataSource={cvList}
+                rowKey="name"
+                rowClassName={(record) =>
+                  record.shift === 'off' || record.attendance === 'checked_out' ? 'today-staff-inactive' : ''
+                }
+                pagination={false}
+                size="small"
+                scroll={{ x: 'max-content' }}
+                columns={cvColumns}
+                className="antd-custom-table"
+              />
+            </SectionCard>
+          </Col>
 
-        {/* CC list */}
-        <Col xs={24} xl={12}>
-          <SectionCard
-            title={
-              <Space>
-                <TeamOutlined style={{ color: '#D4A84B' }} />
-                <span className="text-sm font-bold">[CC] Client Consultant đang làm gì? Bao nhiêu khách?</span>
-              </Space>
-            }
-            bodyPadding={0}
-          >
-            <Table
-              dataSource={ccList}
-              rowKey="name"
-              rowClassName={(record) =>
-                record.shift === 'off' || record.attendance === 'checked_out' ? 'opacity-40 pointer-events-none' : ''
+          {/* CC list */}
+          <Col xs={24} xl={12}>
+            <SectionCard
+              title={
+                <Space>
+                  <TeamOutlined style={{ color: '#D4A84B' }} />
+                  <span className="text-sm font-bold">CC đang làm gì?</span>
+                </Space>
               }
-              pagination={false}
-              size="small"
-              scroll={{ x: 'max-content' }}
-              columns={ccColumns}
-              className="antd-custom-table"
-            />
-          </SectionCard>
-        </Col>
-      </Row>
+              bodyPadding={0}
+            >
+              <Table
+                dataSource={ccList}
+                rowKey="name"
+                rowClassName={(record) =>
+                  record.shift === 'off' || record.attendance === 'checked_out' ? 'today-staff-inactive' : ''
+                }
+                pagination={false}
+                size="small"
+                scroll={{ x: 'max-content' }}
+                columns={ccColumns}
+                className="antd-custom-table"
+              />
+            </SectionCard>
+          </Col>
+        </Row>
+      </div>
     );
   },
   (prevProps, nextProps) => {

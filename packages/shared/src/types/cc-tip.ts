@@ -21,6 +21,8 @@ export interface CcTipRecord {
   serviceName: string;
   ccInName: string;
   ccOutName: string;
+  ccInAvatar?: string | null;
+  ccOutAvatar?: string | null;
   consultantName: string;
   avatar?: string | null;
   totalCustomerTip: number;

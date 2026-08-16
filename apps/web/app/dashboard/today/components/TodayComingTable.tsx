@@ -1,13 +1,17 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
-import { Tabs, Select, Button, Table, Space, Avatar, Tag, Typography, theme } from 'antd';
+import { Tabs, Select, Button, Space, Avatar, Tag, Tooltip, Typography, theme } from 'antd';
 import { SettingOutlined, PhoneOutlined, EyeOutlined } from '@ant-design/icons';
 import { useOmiCall } from '../../../../context/OmiCallContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { ComingClientData } from '../hooks/useTodayData';
-import { SectionCard } from '../../../../components/ui';
+import { DataTable, SectionCard } from '../../../../components/ui';
+import { getContrastingTextColor } from '../../../../lib/color-utils';
 
 const { Text } = Typography;
 
@@ -55,7 +59,10 @@ const TodayComingTable = React.memo(function TodayComingTable({
   allComingList,
 }: TodayComingTableProps) {
   const { token } = theme.useToken();
+  const { themeMode } = useTheme();
   const { makeCall } = useOmiCall();
+  const goldText = themeMode === 'dark' ? '#D4A84B' : '#855b0e';
+  const infoText = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
 
@@ -114,7 +121,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
 
   const comingColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'index',
       width: 50,
       align: 'center' as const,
@@ -124,7 +131,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
       title: 'Giờ Hẹn',
       dataIndex: 'time',
       key: 'time',
-      render: (t: string) => <strong style={{ color: '#D4A84B' }}>{t}</strong>,
+      render: (t: string) => <strong style={{ color: goldText }}>{t}</strong>,
     },
     {
       title: 'Chi nhánh',
@@ -152,9 +159,10 @@ const TodayComingTable = React.memo(function TodayComingTable({
         <Space size="middle" style={{ cursor: 'pointer' }} onClick={() => openCustomerDrawer(record)}>
           <Avatar
             src={record.avatar || undefined}
+            alt=""
             style={{
               backgroundColor: record.avatarColor || '#D4A84B',
-              color: '#fff',
+              color: getContrastingTextColor(record.avatarColor || '#D4A84B'),
               fontSize: '11px',
               fontWeight: 'bold',
             }}
@@ -177,7 +185,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
             onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
             style={{ color: token.colorText, fontWeight: '600' }}
           >
-            <PhoneOutlined style={{ color: '#D4A84B' }} />
+            <PhoneOutlined style={{ color: goldText }} />
             <span>{t}</span>
           </span>
         ) : (
@@ -236,7 +244,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
       title: 'CC',
       dataIndex: 'cc',
       key: 'cc',
-      render: (cc: string) => <strong style={{ color: '#1890ff' }}>{cc}</strong>,
+      render: (cc: string) => <strong style={{ color: infoText }}>{cc}</strong>,
     },
     {
       title: 'CV',
@@ -261,7 +269,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
         <Button
           size="small"
           type="link"
-          icon={<EyeOutlined style={{ fontSize: '16px', color: '#D4A84B' }} />}
+          icon={<EyeOutlined style={{ fontSize: '16px', color: goldText }} />}
           onClick={() => openCustomerDrawer(record)}
           style={{ padding: 0 }}
         />
@@ -288,6 +296,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
           </span>
           <Space>
             <Select
+              aria-label="Lọc chi nhánh khách đến"
               value={comingBranch}
               onChange={(val) => {
                 setComingBranch(val);
@@ -301,9 +310,14 @@ const TodayComingTable = React.memo(function TodayComingTable({
 
               style={{ width: '180px' }}
             />
-            <Button icon={<SettingOutlined />} onClick={openComingConfig}>
-              Cấu hình cột
-            </Button>
+            <Tooltip title="Cấu hình cột">
+              <Button
+                aria-label="Cấu hình cột"
+                className="today-table-config-button"
+                icon={<SettingOutlined />}
+                onClick={openComingConfig}
+              />
+            </Tooltip>
           </Space>
         </div>
       }
@@ -347,7 +361,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
             type="link"
             size="small"
             danger
-            className="text-xs p-0 h-auto font-medium"
+            className="text-xs p-0 font-medium"
             onClick={() => {
               setComingBranch('all');
               if (setSelectedBooker) setSelectedBooker(null);
@@ -358,7 +372,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
         </div>
       )}
 
-      <Table
+      <DataTable
         dataSource={activeComingList}
         columns={comingConfigColumns}
         rowKey={(record) => record.key || `${record.customer}-${record.time}`}
@@ -376,7 +390,53 @@ const TodayComingTable = React.memo(function TodayComingTable({
         }}
         size="small"
         bordered
-        className="antd-custom-table"
+        className="today-coming-data-table"
+        columnPriority={{
+          customer: 'primary',
+          phone: 'primary',
+          time: 'primary',
+          status: 'primary',
+          service: 'secondary',
+          cv: 'secondary',
+          action: 'primary',
+        }}
+        stickyPrimaryColumn
+        mobileRenderer={(record) => (
+          <div className="today-mobile-record">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <strong className="block truncate">{record.customer}</strong>
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {record.service || 'Chưa xác định dịch vụ'}
+                </span>
+              </div>
+              <Tag
+                className="!mr-0 shrink-0"
+                color={record.status === 'completed' ? 'success' : record.status === 'late' ? 'error' : 'processing'}
+              >
+                {record.status || 'pending'}
+              </Tag>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+              <span>Giờ: {record.time || '-'}</span>
+              <span>CV: {record.cv || '-'}</span>
+              <span>CC: {record.cc || '-'}</span>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                size="small"
+                icon={<PhoneOutlined />}
+                disabled={!record.phone}
+                onClick={() => makeCall(record.phone, record.customer, record.customerId, record.avatar || undefined)}
+              >
+                Gọi
+              </Button>
+              <Button size="small" type="primary" icon={<EyeOutlined />} onClick={() => openCustomerDrawer(record)}>
+                Chi tiết
+              </Button>
+            </div>
+          </div>
+        )}
       />
 
       <TableConfigDrawer

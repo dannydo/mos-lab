@@ -12,6 +12,9 @@ interface ProfileDetailsCardProps {
 
 export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = React.memo(
   ({ customer, themeMode, onToggleForeign }) => {
+    const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
+    const dangerTextColor = themeMode === 'dark' ? '#f87171' : '#b91c1c';
+    const infoTextColor = themeMode === 'dark' ? '#38bdf8' : '#0369a1';
     return (
       <Card
         title={
@@ -28,7 +31,7 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = React.memo(
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#888', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ color: mutedTextColor, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <GlobalOutlined /> Quốc tịch:
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -39,7 +42,13 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = React.memo(
                 <Button
                   size="small"
                   type="link"
-                  style={{ padding: 0, height: 'auto', fontSize: '11px', color: '#D4A84B', fontWeight: 600 }}
+                  style={{
+                    padding: 0,
+                    minHeight: '24px',
+                    fontSize: '11px',
+                    color: themeMode === 'dark' ? '#D4A84B' : '#855b0e',
+                    fontWeight: 600,
+                  }}
                   onClick={onToggleForeign}
                 >
                   [Đổi]
@@ -48,11 +57,11 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = React.memo(
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#888' }}>Giới tính:</span>
+            <span style={{ color: mutedTextColor }}>Giới tính:</span>
             <span style={{ fontWeight: 'bold' }}>{customer.gender || 'N/A'}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#888' }}>Ngày sinh:</span>
+            <span style={{ color: mutedTextColor }}>Ngày sinh:</span>
             <span style={{ fontWeight: 'bold' }}>
               {(() => {
                 if (!customer.dob) return 'N/A';
@@ -70,18 +79,18 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = React.memo(
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#888' }}>Nhóm phân loại:</span>
+            <span style={{ color: mutedTextColor }}>Nhóm phân loại:</span>
             <Tag color="warning" style={{ margin: 0 }}>
               {customer.bucket}
             </Tag>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#888' }}>Số ngày chưa quay lại:</span>
-            <span style={{ fontWeight: 'bold', color: '#ff4d4f' }}>{customer.daysSinceLastVisit || 0} ngày</span>
+            <span style={{ color: mutedTextColor }}>Số ngày chưa quay lại:</span>
+            <span style={{ fontWeight: 'bold', color: dangerTextColor }}>{customer.daysSinceLastVisit || 0} ngày</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#888' }}>Phụ trách (OC):</span>
-            <span style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#38bdf8' : '#0284c7' }}>
+            <span style={{ color: mutedTextColor }}>Phụ trách (OC):</span>
+            <span style={{ fontWeight: 'bold', color: infoTextColor }}>
               {customer.onlineConsultant || 'Chưa phân bổ'}
             </span>
           </div>

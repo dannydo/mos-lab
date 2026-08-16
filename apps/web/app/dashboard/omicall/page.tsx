@@ -504,7 +504,7 @@ export default function OmicallLogsPage() {
   ];
 
   return (
-    <div>
+    <div className="responsive-page responsive-workspace omicall-page">
       {/* HEADER SECTION */}
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>

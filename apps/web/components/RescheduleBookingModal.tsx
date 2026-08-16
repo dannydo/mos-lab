@@ -2,7 +2,7 @@
 // Mandatory Customer Phone Number Display Enforced
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Drawer, Steps, Button, Select, DatePicker, Input, theme, message, notification, Card, Tag, Modal } from 'antd';
+import { Steps, Button, Select, DatePicker, Input, theme, message, notification, Card, Tag } from 'antd';
 import {
   FormOutlined,
   HomeOutlined,
@@ -34,6 +34,8 @@ import { useCustomerInsights } from './booking/useCustomerInsights';
 import { TechnicianSelector } from './booking/TechnicianSelector';
 import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
+import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
+import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
 const { TextArea } = Input;
 
@@ -52,6 +54,8 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
 
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -122,7 +126,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         const nextDateStr = nextDate.format('DD/MM/YYYY');
 
         message.warning({
-          content: `⚠️ CẢNH BÁO LỊCH NGHỈ TUẦN: CV ${staffNameStr} nghỉ tuần ngày ${dateStr}. Tiệm đã gợi ý dời sang ngày ${nextDateStr} (${staffNameStr} đi làm lại).`,
+          content: `⚠️ CẢNH BÁO LỊCH NGHỈ TUẦN: CV ${staffNameStr} nghỉ tuần ngày ${dateStr}. Tiệm đã gợi ý dời sang ngày ${nextDateStr} (${staffNameStr} đi làm lại).`,
           duration: 8,
         });
 
@@ -656,7 +660,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   };
 
   return (
-    <Drawer
+    <AdaptiveDrawer
+      intent="form"
+      className="booking-reschedule-overlay"
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#D4A84B' }}>
           <FormOutlined style={{ fontSize: '18px' }} />
@@ -670,7 +676,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       }
       open={open}
       onClose={onClose}
-      width={560}
       destroyOnClose
       styles={{
         body: {
@@ -689,10 +694,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             }
           }}
           items={[
-            { title: 'Chuyên viên' },
-            { title: 'Dịch Vụ & Thời Gian' },
-            { title: 'Xác Nhận' },
-            { title: 'Gửi Tin Nhắn' },
+            { title: isCompact ? 'CV' : 'Chuyên viên' },
+            { title: isCompact ? 'Lịch' : 'Dịch Vụ & Thời Gian' },
+            { title: isCompact ? 'Xác nhận' : 'Xác Nhận' },
+            { title: isCompact ? 'Nhắn' : 'Gửi Tin Nhắn' },
           ]}
           style={{ marginBottom: '24px' }}
         />
@@ -742,7 +747,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                 message.info(
                   `Đã đổi lịch sang ngày ${targetNext.format('DD/MM/YYYY')} (${
                     offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'
-                  } đi làm)`
+                  } đi làm)`
                 );
                 setIsOffDayWarningOpen(false);
               }}
@@ -751,7 +756,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
               {offDayStaffInfo?.nextWorkingDate && dayjs.isDayjs(offDayStaffInfo.nextWorkingDate)
                 ? offDayStaffInfo.nextWorkingDate.format('DD/MM')
                 : '12/08'}{' '}
-              ({offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'} đi làm)
+              ({offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'} đi làm)
             </Button>
             <Button
               size="small"
@@ -879,6 +884,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
               showSearch
               filterOption={vietnameseSearchFilter}
               style={{ width: '100%' }}
+              getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
               placeholder="Chọn hoặc tìm dịch vụ..."
               value={selectedService?.id}
               onChange={(val) => {
@@ -1114,6 +1120,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                 </div>
                 <Select
                   style={{ width: '100%' }}
+                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                   value={selectedTemplateId}
                   loading={loadingTemplates}
                   onChange={(val) => {
@@ -1266,7 +1273,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       />
 
       {/* 20:00 Late Slot Policy Confirmation Modal */}
-      <Modal
+      <AdaptiveModal
+        intent="confirm"
+        className="booking-late-slot-confirmation"
         open={isLateSlotModalOpen}
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fa8c16', fontSize: '15px' }}>
@@ -1334,8 +1343,8 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             Bạn đã thông báo quy định 20:15 này cho khách hàng chưa?
           </div>
         </div>
-      </Modal>
-    </Drawer>
+      </AdaptiveModal>
+    </AdaptiveDrawer>
   );
 };
 export default RescheduleBookingModal;

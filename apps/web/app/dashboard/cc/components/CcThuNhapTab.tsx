@@ -44,6 +44,9 @@ import { apiClient } from '../../../../lib/api-client';
 import dayjs from 'dayjs';
 import CcAvatar from './CcAvatar';
 import { useTheme } from '../../../../context/ThemeContext';
+import { formatCompactVND, formatStoreCode, formatVND } from '../../../../lib/format-utils';
+import { AdaptiveModal, AdaptiveOverlayFooter, DataTable, MobileRecordList } from '~/components/ui';
+import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 const { Text } = Typography;
 
@@ -64,6 +67,8 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+  const tier = useResponsiveTier();
+  const isMobile = tier === 'mobile';
   const [loading, setLoading] = useState(false);
   const [paystubData, setPaystubData] = useState<CcPaystubRecord[]>([]);
   const [summary, setSummary] = useState({
@@ -92,6 +97,12 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
     totalWorkHours: 0,
     hourlyRate: 25000,
     totalWage: 0,
+  });
+  const [workLogPage, setWorkLogPage] = useState(1);
+  const [workLogPageSize, setWorkLogPageSize] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const savedSize = Number(localStorage.getItem('cc_worklog_modal_page_size'));
+    return [10, 20, 50, 100].includes(savedSize) ? savedSize : 10;
   });
 
   // CC Xoay Detail Modal State
@@ -253,6 +264,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
     setWorkLogRecord(record);
     setWorkLogModalOpen(true);
     setWorkLogLoading(true);
+    setWorkLogPage(1);
 
     try {
       const startStr = dateRange && dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : undefined;
@@ -325,7 +337,6 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       key: 'displayName',
       width: 240,
       render: (name: string, record: CcPaystubRecord, index: number) => {
-        const isPxl = record.store === 'PXL';
         return (
           <Space
             className="group cursor-pointer"
@@ -344,33 +355,13 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
             </span>
             <CcAvatar name={name} src={record.avatar} size={32} />
-            <div>
+            <div className="min-w-0">
               <div className="font-bold text-sm" style={{ color: token.colorText }}>
                 {name}
               </div>
-              <Tag
-                style={{
-                  background: isPxl
-                    ? isDark
-                      ? 'rgba(59, 130, 246, 0.2)'
-                      : '#e6f7ff'
-                    : isDark
-                      ? 'rgba(168, 85, 247, 0.2)'
-                      : '#f9f0ff',
-                  borderColor: isPxl
-                    ? isDark
-                      ? 'rgba(59, 130, 246, 0.4)'
-                      : '#91d5ff'
-                    : isDark
-                      ? 'rgba(168, 85, 247, 0.4)'
-                      : '#d3ade6',
-                  color: isPxl ? (isDark ? '#60a5fa' : '#096dd9') : isDark ? '#c084fc' : '#722ed1',
-                  fontWeight: 600,
-                }}
-                className="text-[10px] m-0 border"
-              >
-                CN: {record.store}
-              </Tag>
+              <span className="block text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                {formatStoreCode(record.store)}
+              </span>
             </div>
           </Space>
         );
@@ -401,9 +392,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               }}
             >
               <div
-                className={`tabular-nums font-bold text-sm group-hover:underline underline-offset-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+                className={`tabular-nums whitespace-nowrap font-bold text-sm group-hover:underline underline-offset-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
               >
-                +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                +{formatVND(val)}
               </div>
               <div
                 className={`text-[11px] tabular-nums flex items-center justify-end gap-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}
@@ -441,9 +432,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             }}
           >
             <div
-              className={`tabular-nums font-bold text-sm group-hover:underline underline-offset-2 ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
+              className={`tabular-nums whitespace-nowrap font-bold text-sm group-hover:underline underline-offset-2 ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
             >
-              +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+              +{formatVND(val)}
             </div>
             <div
               className={`text-[11px] tabular-nums flex items-center justify-end gap-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}
@@ -465,8 +456,10 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       render: (val: number, record: CcPaystubRecord) => (
         <Tooltip title={`${record.comboCount} combo + ${record.productCount} sản phẩm`}>
           <div className="text-right">
-            <span className={`tabular-nums font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-              +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+            <span
+              className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
+            >
+              +{formatVND(val)}
             </span>
             <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
               ({record.comboCount} combo / {record.productCount} SP)
@@ -483,8 +476,10 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       render: (val: number, record: CcPaystubRecord) => (
         <Tooltip title={`Nhận 20% tiền tip từ ${record.tippedVisitsCount || 0} lượt khách`}>
           <div className="text-right">
-            <span className={`tabular-nums font-bold text-sm ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
-              +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+            <span
+              className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
+            >
+              +{formatVND(val)}
             </span>
             <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
               ({record.tippedVisitsCount || 0} ca tip)
@@ -501,8 +496,10 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       render: (val: number, record: CcPaystubRecord) => (
         <Tooltip title={`Giới thiệu ${record.diamondCount || 0} khách hàng mới`}>
           <div className="text-right">
-            <span className={`tabular-nums font-bold text-sm ${isDark ? 'text-cyan-300' : 'text-cyan-600'}`}>
-              +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+            <span
+              className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-cyan-300' : 'text-cyan-600'}`}
+            >
+              +{formatVND(val)}
             </span>
             <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
               ({record.diamondCount || 0} khách 💎)
@@ -517,8 +514,10 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       key: 'minigameBonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className={`tabular-nums font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-          +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+        <span
+          className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
+        >
+          +{formatVND(val)}
         </span>
       ),
     },
@@ -528,8 +527,10 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       key: 'totalIncome',
       align: 'right' as const,
       render: (val: number) => (
-        <span className={`tabular-nums font-extrabold text-base ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+        <span
+          className={`tabular-nums whitespace-nowrap font-extrabold text-base ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
+        >
+          {formatVND(val)}
         </span>
       ),
     },
@@ -546,7 +547,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
           onClick={() => handleOpenDetailModal(record)}
           style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: '500' }}
         >
-          Xem Paystub
+          Chi Tiết
         </Button>
       ),
     },
@@ -591,9 +592,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
     : [];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 md:gap-4">
       {/* SUMMARY STAT CARDS AT TOP */}
-      <Row gutter={[16, 16]} className="mb-4">
+      <Row gutter={[16, 16]} className="cc-income-summary-row mb-4">
         <Col xs={12} sm={8} lg={4}>
           <Card
             size="small"
@@ -601,7 +602,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           >
             <Statistic
-              title="Tổng Lương Giờ"
+              title="∑ Lương Giờ"
               value={summary.totalHourlyWage}
               suffix="đ"
               precision={0}
@@ -621,7 +622,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           >
             <Statistic
-              title="Tổng Thưởng CC Xoay"
+              title="Thưởng Xoay"
               value={summary.totalCcXoayBonus}
               suffix="đ"
               precision={0}
@@ -641,7 +642,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           >
             <Statistic
-              title="Tổng Thưởng Combo & SP"
+              title="∑ Thưởng Combo & SP"
               value={summary.totalComboProductBonus}
               suffix="đ"
               precision={0}
@@ -661,7 +662,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           >
             <Statistic
-              title="Tổng Thưởng CC Tip (20%)"
+              title="Thưởng Tip"
               value={summary.totalCcTipBonus}
               suffix="đ"
               precision={0}
@@ -681,7 +682,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           >
             <Statistic
-              title="Tổng Thưởng Minigame"
+              title="∑ Thưởng Minigame"
               value={summary.totalMinigameBonus}
               suffix="đ"
               precision={0}
@@ -701,7 +702,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             style={{ background: token.colorBgContainer, borderColor: isDark ? '#fbbf24' : '#d4a84b' }}
           >
             <Statistic
-              title="Tổng Thu Nhập Tất Cả CC"
+              title="Thu Nhập"
               value={summary.grandTotalIncome}
               suffix="đ"
               precision={0}
@@ -724,7 +725,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             <div className="flex items-center gap-2">
               <WalletOutlined className="text-amber-500 text-lg" />
               <span className="font-bold text-base" style={{ color: token.colorText }}>
-                Bảng Tổng Hợp Thu Nhập Live Tất Cả CC (CC Live Paystub)
+                Thu Nhập CC Live
               </span>
             </div>
 
@@ -744,31 +745,122 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
         styles={{ body: { padding: 0 } }}
         className="full-bleed-card shadow-sm rounded-xl"
       >
-        <Table
-          dataSource={filteredData}
-          columns={columns}
-          rowKey="consultantId"
-          loading={loading}
-          pagination={false}
-          size="middle"
-          bordered
-          className="antd-custom-table"
-          locale={{ emptyText: 'Không tìm thấy dữ liệu thu nhập CC' }}
-        />
+        {isMobile ? (
+          <div className="p-2 sm:p-3">
+            <MobileRecordList
+              records={filteredData}
+              loading={loading}
+              getKey={(record) => String(record.consultantId)}
+              emptyDescription="Không tìm thấy dữ liệu thu nhập CC"
+              className="cc-income-mobile-record-list"
+              renderRecord={(record, index) => (
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                    </span>
+                    <CcAvatar name={record.displayName} src={record.avatar} size={32} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
+                        {record.displayName}
+                      </div>
+                      <div className="text-xs text-slate-400">{formatStoreCode(record.store)}</div>
+                    </div>
+                    <Tooltip title={`Xem giờ làm của ${record.displayName}`}>
+                      <Button
+                        aria-label={`Xem giờ làm của ${record.displayName}`}
+                        className="!flex !h-8 !w-8 !min-w-8 !items-center !justify-center rounded-lg"
+                        icon={<ClockCircleOutlined />}
+                        size="small"
+                        type="text"
+                        onClick={() => handleOpenWorkLogModal(record)}
+                      />
+                    </Tooltip>
+                  </div>
+                  <dl className="mt-2 grid grid-cols-3 gap-x-2 gap-y-2 border-t border-slate-200 pt-2 dark:border-slate-800">
+                    {[
+                      { label: 'Lương giờ', value: record.hourlyWage || 0, color: 'text-sky-500 dark:text-sky-400' },
+                      { label: 'Xoay', value: record.ccXoayBonus || 0, color: 'text-purple-500 dark:text-purple-400' },
+                      {
+                        label: 'Combo & SP',
+                        value: record.comboProductBonus || 0,
+                        color: 'text-emerald-500 dark:text-emerald-400',
+                      },
+                      { label: 'Tip', value: record.ccTipBonus || 0, color: 'text-amber-600 dark:text-amber-300' },
+                      {
+                        label: 'Kim cương',
+                        value: record.diamondBonus || 0,
+                        color: 'text-cyan-500 dark:text-cyan-300',
+                      },
+                      {
+                        label: 'Minigame',
+                        value: record.minigameBonus || 0,
+                        color: 'text-yellow-600 dark:text-yellow-300',
+                      },
+                    ].map((income) => (
+                      <div className="min-w-0" key={income.label}>
+                        <dt className="truncate text-[10px] leading-4 text-slate-500" title={income.label}>
+                          {income.label}
+                        </dt>
+                        <Tooltip title={`${income.label}: +${formatVND(income.value)}`}>
+                          <dd className={`truncate whitespace-nowrap text-xs font-bold tabular-nums ${income.color}`}>
+                            +{formatCompactVND(income.value)}
+                          </dd>
+                        </Tooltip>
+                      </div>
+                    ))}
+                  </dl>
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-2">
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium text-slate-500">∑ Thu nhập</div>
+                      <Tooltip title={`Thu nhập: ${formatVND(record.totalIncome || 0)}`}>
+                        <div className="overflow-hidden text-ellipsis whitespace-nowrap text-base font-bold tabular-nums text-amber-600 dark:text-amber-300">
+                          {formatCompactVND(record.totalIncome || 0)}
+                        </div>
+                      </Tooltip>
+                    </div>
+                    <Button
+                      icon={<EyeOutlined />}
+                      size="small"
+                      type="primary"
+                      onClick={() => handleOpenDetailModal(record)}
+                    >
+                      Chi tiết
+                    </Button>
+                  </div>
+                </div>
+              )}
+            />
+          </div>
+        ) : (
+          <Table
+            dataSource={filteredData}
+            columns={columns}
+            rowKey="consultantId"
+            loading={loading}
+            pagination={false}
+            size="middle"
+            bordered
+            className="antd-custom-table"
+            locale={{ emptyText: 'Không tìm thấy dữ liệu thu nhập CC' }}
+          />
+        )}
 
         <Divider style={{ margin: '16px 0' }} />
 
         <div className="flex justify-between items-center px-4 flex-wrap gap-4">
           <div>
             <Text className={`text-xs font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              TỔNG THU NHẬP TẠM TÍNH (LIVE SALARY):
+              ∑ THU NHẬP TẠM TÍNH (LIVE SALARY):
             </Text>
             <div className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
               💡 Mẹo: Click vào cột Lương Giờ để xem Báo cáo Ca làm việc IN/OUT chi tiết theo từng ngày.
             </div>
           </div>
-          <div className={`tabular-nums text-2xl font-extrabold ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
-            {Math.round(summary.grandTotalIncome || 0).toLocaleString('vi-VN')} đ
+          <div
+            className={`tabular-nums whitespace-nowrap text-2xl font-extrabold ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
+          >
+            {formatVND(summary.grandTotalIncome)}
           </div>
         </div>
       </Card>
@@ -816,9 +908,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 key: 'amount',
                 align: 'right' as const,
                 render: (val: number) => (
-                  <span className="tabular-nums font-bold text-emerald-500">
-                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-                  </span>
+                  <span className="tabular-nums whitespace-nowrap font-bold text-emerald-500">+{formatVND(val)}</span>
                 ),
               },
               {
@@ -839,14 +929,14 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
           <div className="flex justify-between items-center px-4 py-2 bg-amber-500/10 rounded-lg">
             <div>
               <Text type="secondary" className="text-xs font-bold uppercase text-amber-500">
-                TỔNG THU NHẬP TẠM TÍNH (LIVE SALARY):
+                ∑ THU NHẬP TẠM TÍNH (LIVE SALARY):
               </Text>
               <div className="text-xs text-gray-400">
                 Bao gồm lương cứng ca làm, CC Bonus Xoay, thưởng Combo/SP, Points và Minigame
               </div>
             </div>
-            <div className="tabular-nums text-2xl font-extrabold text-amber-500">
-              {Math.round(selectedRecord.totalIncome || 0).toLocaleString('vi-VN')} đ
+            <div className="tabular-nums whitespace-nowrap text-2xl font-extrabold text-amber-500">
+              {formatVND(selectedRecord.totalIncome)}
             </div>
           </div>
         </Modal>
@@ -854,23 +944,24 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
 
       {/* HOURLY WAGE / DAILY WORK LOG IN-OUT MODAL */}
       {workLogRecord && (
-        <Modal
+        <AdaptiveModal
           open={workLogModalOpen}
           onCancel={() => setWorkLogModalOpen(false)}
+          intent="data"
           width={modalWidth}
           style={{ top: 30 }}
+          className="cc-worklog-modal"
           title={
-            <div className="flex flex-wrap items-center justify-between gap-2 pr-6 select-none">
-              <div className="flex items-center gap-2">
+            <div className="cc-worklog-modal-title select-none">
+              <div className="cc-worklog-modal-title-main">
                 <ClockCircleOutlined className="text-blue-500 text-xl" />
-                <span className="font-bold text-lg">
+                <span className="cc-worklog-modal-title-text">
                   Báo Cáo Ca Làm Việc & Lương Giờ (IN/OUT) - CC: {workLogRecord.displayName}
                 </span>
                 <Tag color={workLogRecord.store === 'PXL' ? 'blue' : 'purple'}>CN: {workLogRecord.store}</Tag>
               </div>
 
-              {/* QUICK WIDTH PRESETS */}
-              <div className="flex items-center gap-1">
+              <div className="cc-worklog-modal-size-controls" aria-label="Chọn kích thước báo cáo">
                 <Text type="secondary" className="text-xs mr-1">
                   Kích thước:
                 </Text>
@@ -901,178 +992,221 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               </div>
             </div>
           }
-          footer={[
-            <div key="footer-row" className="flex items-center justify-between w-full">
-              <Text type="secondary" className="text-xs italic">
+          footer={null}
+        >
+          <div className="cc-worklog-modal-content">
+            {!isMobile && (
+              <div
+                onMouseDown={handleMouseDown}
+                className={`cc-worklog-modal-resize-handle ${isResizing ? 'is-resizing' : ''}`}
+                title="Kéo sang ngang để thay đổi chiều rộng Popup (Nhớ kích thước khi F5)"
+              >
+                <div />
+              </div>
+            )}
+
+            <Row gutter={[12, 12]} className="cc-worklog-modal-summary">
+              <Col xs={12} md={6}>
+                <Card size="small" variant="outlined">
+                  <Statistic
+                    title="∑ Ngày Đi Làm"
+                    value={workLogSummary.totalWorkDays}
+                    suffix="ngày"
+                    valueStyle={{
+                      fontSize: '15px',
+                      color: isDark ? '#60a5fa' : '#1890ff',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                    prefix={<CalendarOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col xs={12} md={6}>
+                <Card size="small" variant="outlined">
+                  <Statistic
+                    title="∑ Số Giờ Làm"
+                    value={formatHoursToHoursMinutes(workLogSummary.totalWorkHours)}
+                    valueStyle={{
+                      fontSize: '15px',
+                      color: isDark ? '#c084fc' : '#722ed1',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                    prefix={<ClockCircleOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col xs={12} md={6}>
+                <Card size="small" variant="outlined">
+                  <Statistic
+                    title="Đơn Giá Lương Giờ"
+                    value={workLogSummary.hourlyRate}
+                    suffix="đ/h"
+                    valueStyle={{
+                      fontSize: '15px',
+                      color: isDark ? '#4ade80' : '#52c41a',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                    prefix={<DollarOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col xs={12} md={6}>
+                <Card size="small" variant="outlined" style={{ borderColor: isDark ? '#60a5fa' : '#1890ff' }}>
+                  <Statistic
+                    title="∑ Lương Giờ Nhận"
+                    value={workLogSummary.totalWage}
+                    suffix="đ"
+                    precision={0}
+                    valueStyle={{
+                      fontSize: '15px',
+                      color: isDark ? '#60a5fa' : '#1890ff',
+                      fontVariantNumeric: 'tabular-nums',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+
+            <div className="cc-worklog-modal-table">
+              <DataTable
+                dataSource={workLogs}
+                rowKey={(r) => `${r.work_date || ''}-${r.first_in || ''}`}
+                loading={workLogLoading}
+                pagination={{
+                  current: workLogPage,
+                  pageSize: workLogPageSize,
+                  total: workLogs.length,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ngày`,
+                  onChange: (page, pageSize) => {
+                    setWorkLogPage(page);
+                    if (pageSize !== workLogPageSize) {
+                      setWorkLogPageSize(pageSize);
+                      localStorage.setItem('cc_worklog_modal_page_size', String(pageSize));
+                    }
+                  },
+                }}
+                size="small"
+                bordered
+                className="cc-worklog-table"
+                mobileEmptyDescription="Không có ca làm việc trong kỳ này"
+                mobileRenderer={(record) => (
+                  <div className="cc-worklog-mobile-card">
+                    <div className="cc-worklog-mobile-card-head">
+                      <span className="font-semibold tabular-nums">{record.work_date}</span>
+                      <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+                        +{formatVND(record.daily_wage)}
+                      </span>
+                    </div>
+                    <div className="cc-worklog-mobile-card-times">
+                      <Tag color="green" className="tabular-nums font-mono font-semibold m-0">
+                        <LoginOutlined /> {record.first_in}
+                      </Tag>
+                      <Tag color="volcano" className="tabular-nums font-mono font-semibold m-0">
+                        <LogoutOutlined /> {record.last_out}
+                      </Tag>
+                    </div>
+                    <div className="cc-worklog-mobile-card-meta">
+                      <span>{record.service_count} lượt phục vụ</span>
+                      <span className="tabular-nums font-semibold">
+                        {formatHoursToHoursMinutes(record.total_hours)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                columns={[
+                  {
+                    title: 'Ngày Làm Việc',
+                    dataIndex: 'work_date',
+                    key: 'work_date',
+                    width: 130,
+                    render: (val: string) => (
+                      <Space size={4}>
+                        <CalendarOutlined className="text-blue-500 text-xs" />
+                        <span className="tabular-nums font-semibold">{val}</span>
+                      </Space>
+                    ),
+                  },
+                  {
+                    title: 'Check-in Đầu (IN)',
+                    dataIndex: 'first_in',
+                    key: 'first_in',
+                    width: 140,
+                    align: 'center' as const,
+                    render: (val: string) => (
+                      <Tag color="green" className="tabular-nums font-mono font-semibold">
+                        <LoginOutlined className="mr-1" /> {val}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    title: 'Check-out Cuối (OUT)',
+                    dataIndex: 'last_out',
+                    key: 'last_out',
+                    width: 140,
+                    align: 'center' as const,
+                    render: (val: string) => (
+                      <Tag color="volcano" className="tabular-nums font-mono font-semibold">
+                        <LogoutOutlined className="mr-1" /> {val}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    title: 'Số Lượt Phục Vụ',
+                    dataIndex: 'service_count',
+                    key: 'service_count',
+                    align: 'right' as const,
+                    width: 130,
+                    render: (val: number) => (
+                      <span className="tabular-nums font-semibold text-gray-700 dark:text-gray-300">{val} lượt</span>
+                    ),
+                  },
+                  {
+                    title: 'Số Giờ Tính Lương',
+                    dataIndex: 'total_hours',
+                    key: 'total_hours',
+                    align: 'right' as const,
+                    width: 140,
+                    render: (val: number) => (
+                      <span className={`tabular-nums font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                        {formatHoursToHoursMinutes(val)}
+                      </span>
+                    ),
+                  },
+                  {
+                    title: 'Lương Giờ Trong Ngày',
+                    dataIndex: 'daily_wage',
+                    key: 'daily_wage',
+                    align: 'right' as const,
+                    width: 150,
+                    render: (val: number) => (
+                      <span
+                        className={`tabular-nums whitespace-nowrap font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
+                      >
+                        +{formatVND(val)}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+
+            <AdaptiveOverlayFooter className="cc-worklog-modal-footer">
+              <Text type="secondary" className="cc-worklog-modal-resize-hint text-xs italic">
                 💡 Kéo mép phải để chỉnh rộng / hẹp ({modalWidth}px) — Tự động ghi nhớ khi F5
               </Text>
               <Button
-                key="close-worklog"
                 type="primary"
                 onClick={() => setWorkLogModalOpen(false)}
                 style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
               >
                 Đóng Báo Cáo Ca Làm
               </Button>
-            </div>,
-          ]}
-        >
-          {/* DRAG RESIZE HANDLE ON RIGHT EDGE */}
-          <div
-            onMouseDown={handleMouseDown}
-            className={`absolute top-0 right-0 bottom-0 w-3 cursor-col-resize hover:bg-blue-500/30 transition-colors z-50 flex items-center justify-center ${
-              isResizing ? 'bg-blue-500/40' : ''
-            }`}
-            title="Kéo sang ngang để thay đổi chiều rộng Popup (Nhớ kích thước khi F5)"
-          >
-            <div className="w-1 h-8 bg-gray-400/50 rounded-full" />
+            </AdaptiveOverlayFooter>
           </div>
-          {/* Top Stat summary for Work Log Modal */}
-          <Row gutter={[12, 12]} className="my-4">
-            <Col span={6}>
-              <Card size="small" variant="outlined">
-                <Statistic
-                  title="Tổng Ngày Đi Làm"
-                  value={workLogSummary.totalWorkDays}
-                  suffix="ngày"
-                  valueStyle={{
-                    fontSize: '15px',
-                    color: isDark ? '#60a5fa' : '#1890ff',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                  prefix={<CalendarOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card size="small" variant="outlined">
-                <Statistic
-                  title="Tổng Số Giờ Làm"
-                  value={formatHoursToHoursMinutes(workLogSummary.totalWorkHours)}
-                  valueStyle={{
-                    fontSize: '15px',
-                    color: isDark ? '#c084fc' : '#722ed1',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                  prefix={<ClockCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card size="small" variant="outlined">
-                <Statistic
-                  title="Đơn Giá Lương Giờ"
-                  value={workLogSummary.hourlyRate}
-                  suffix="đ/h"
-                  valueStyle={{
-                    fontSize: '15px',
-                    color: isDark ? '#4ade80' : '#52c41a',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                  prefix={<DollarOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card size="small" variant="outlined" style={{ borderColor: isDark ? '#60a5fa' : '#1890ff' }}>
-                <Statistic
-                  title="Tổng Lương Giờ Nhận"
-                  value={workLogSummary.totalWage}
-                  suffix="đ"
-                  precision={0}
-                  valueStyle={{
-                    fontSize: '15px',
-                    color: isDark ? '#60a5fa' : '#1890ff',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontWeight: 'bold',
-                  }}
-                />
-              </Card>
-            </Col>
-          </Row>
-
-          <Table
-            dataSource={workLogs}
-            rowKey={(r) => `${r.work_date || ''}-${r.first_in || ''}`}
-            loading={workLogLoading}
-            pagination={{ defaultPageSize: 10, showSizeChanger: true }}
-            size="small"
-            bordered
-            className="antd-custom-table"
-            columns={[
-              {
-                title: 'Ngày Làm Việc',
-                dataIndex: 'work_date',
-                key: 'work_date',
-                width: 130,
-                render: (val: string) => (
-                  <Space size={4}>
-                    <CalendarOutlined className="text-blue-500 text-xs" />
-                    <span className="tabular-nums font-semibold">{val}</span>
-                  </Space>
-                ),
-              },
-              {
-                title: 'Check-in Đầu (IN)',
-                dataIndex: 'first_in',
-                key: 'first_in',
-                width: 140,
-                align: 'center' as const,
-                render: (val: string) => (
-                  <Tag color="green" className="tabular-nums font-mono font-semibold">
-                    <LoginOutlined className="mr-1" /> {val}
-                  </Tag>
-                ),
-              },
-              {
-                title: 'Check-out Cuối (OUT)',
-                dataIndex: 'last_out',
-                key: 'last_out',
-                width: 140,
-                align: 'center' as const,
-                render: (val: string) => (
-                  <Tag color="volcano" className="tabular-nums font-mono font-semibold">
-                    <LogoutOutlined className="mr-1" /> {val}
-                  </Tag>
-                ),
-              },
-              {
-                title: 'Số Lượt Phục Vụ',
-                dataIndex: 'service_count',
-                key: 'service_count',
-                align: 'right' as const,
-                width: 130,
-                render: (val: number) => (
-                  <span className="tabular-nums font-semibold text-gray-700 dark:text-gray-300">{val} lượt</span>
-                ),
-              },
-              {
-                title: 'Số Giờ Tính Lương',
-                dataIndex: 'total_hours',
-                key: 'total_hours',
-                align: 'right' as const,
-                width: 140,
-                render: (val: number) => (
-                  <span className={`tabular-nums font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                    {formatHoursToHoursMinutes(val)}
-                  </span>
-                ),
-              },
-              {
-                title: 'Lương Giờ Trong Ngày',
-                dataIndex: 'daily_wage',
-                key: 'daily_wage',
-                align: 'right' as const,
-                width: 150,
-                render: (val: number) => (
-                  <span className={`tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-                  </span>
-                ),
-              },
-            ]}
-          />
-        </Modal>
+        </AdaptiveModal>
       )}
 
       {/* CC Xoay Detail Modal */}
@@ -1103,7 +1237,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 <Col span={8}>
                   <Card size="small" variant="outlined">
                     <Statistic
-                      title="Tổng Lượt Check-in"
+                      title="∑ Lượt Check-in"
                       value={ccXoaySummary.totalCheckins}
                       suffix="lượt"
                       valueStyle={{
@@ -1118,7 +1252,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 <Col span={8}>
                   <Card size="small" variant="outlined">
                     <Statistic
-                      title="Tổng Điểm Tích Lũy"
+                      title="∑ Điểm Tích Lũy"
                       value={ccXoaySummary.totalPoints}
                       suffix="pts"
                       valueStyle={{
@@ -1133,7 +1267,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 <Col span={8}>
                   <Card size="small" variant="outlined" style={{ borderColor: isDark ? '#c084fc' : '#722ed1' }}>
                     <Statistic
-                      title="Tổng Thưởng CC Xoay"
+                      title="∑ Thưởng CC Xoay"
                       value={ccXoaySummary.totalBonus}
                       suffix="đ"
                       precision={0}
@@ -1209,8 +1343,8 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                     width: 140,
                     align: 'right' as const,
                     render: (val: number) => (
-                      <span className="tabular-nums font-bold text-purple-600 dark:text-purple-400">
-                        +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                      <span className="tabular-nums whitespace-nowrap font-bold text-purple-600 dark:text-purple-400">
+                        +{formatVND(val)}
                       </span>
                     ),
                   },

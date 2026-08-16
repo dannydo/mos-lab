@@ -31,6 +31,8 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
   themeMode,
 }) => {
   const { token } = theme.useToken();
+  const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
+  const dangerTextColor = themeMode === 'dark' ? '#f87171' : '#b91c1c';
   const [searchTerm, setSearchTerm] = useState('');
   const favoriteKTVs = getFavoriteKTVs();
   const groupedKTVs = getGroupedKTVs();
@@ -65,7 +67,7 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
 
   return (
     <div>
-      <h3 style={{ fontSize: '15px', color: '#888', marginBottom: '16px' }}>
+      <h3 style={{ fontSize: '15px', color: mutedTextColor, marginBottom: '16px' }}>
         Bước 1: Khách hàng muốn đặt Chuyên viên nào?
       </h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -85,7 +87,7 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
               <div style={{ fontWeight: 'bold', fontSize: '15px', color: token.colorText }}>
                 Không chỉ định chuyên viên (Chuyên viên Tự Do)
               </div>
-              <div style={{ fontSize: '12.5px', color: '#888', marginTop: '2px' }}>
+              <div style={{ fontSize: '12.5px', color: mutedTextColor, marginTop: '2px' }}>
                 Sắp xếp ngẫu nhiên chuyên viên trống lịch tại Chi nhánh
               </div>
             </div>
@@ -134,6 +136,7 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <Avatar
+                        alt=""
                         src={staff.avatar || staff.avatarUrl || undefined}
                         icon={<UserOutlined />}
                         style={{ backgroundColor: '#db2777', flexShrink: 0 }}
@@ -155,10 +158,10 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
                             Ưa thích nhất
                           </Tag>
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#888', marginTop: '2px' }}>
+                        <div style={{ fontSize: '11.5px', color: mutedTextColor, marginTop: '2px' }}>
                           Chi nhánh: {staff.notes || 'Khác'}
                           {staff.offDays && staff.offDays.length > 0 && (
-                            <span style={{ color: '#ef4444', marginLeft: '6px', fontWeight: 'bold' }}>
+                            <span style={{ color: dangerTextColor, marginLeft: '6px', fontWeight: 'bold' }}>
                               | {getOffDaysText(staff.offDays)}
                             </span>
                           )}
@@ -183,12 +186,12 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
             gap: '12px',
           }}
         >
-          <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#888', whiteSpace: 'nowrap' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '13px', color: mutedTextColor, whiteSpace: 'nowrap' }}>
             HOẶC CHỌN CHUYÊN VIÊN YÊU CẦU
           </div>
           <Input
             placeholder="Tìm theo tên CV, chi nhánh, ngày off..."
-            prefix={<SearchOutlined style={{ color: '#888' }} />}
+            prefix={<SearchOutlined style={{ color: mutedTextColor }} />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             allowClear
@@ -214,7 +217,7 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
             }}
           >
             <Spin />
-            <div style={{ color: '#888', fontSize: '13px' }}>Đang tải danh sách chuyên viên...</div>
+            <div style={{ color: mutedTextColor, fontSize: '13px' }}>Đang tải danh sách chuyên viên...</div>
           </div>
         ) : totalMatchingKTVs === 0 && searchTerm ? (
           <div
@@ -229,7 +232,7 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <span style={{ color: '#888', fontSize: '13px' }}>
+                <span style={{ color: mutedTextColor, fontSize: '13px' }}>
                   Không tìm thấy chuyên viên phù hợp với từ khóa &quot;<strong>{searchTerm}</strong>&quot;
                 </span>
               }
@@ -283,6 +286,7 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <Avatar
+                        alt=""
                         src={staff.avatar || staff.avatarUrl || undefined}
                         icon={<UserOutlined />}
                         style={{ backgroundColor: '#D4A84B', flexShrink: 0 }}
@@ -315,10 +319,10 @@ export const TechnicianSelector: React.FC<TechnicianSelectorProps> = ({
                               </Tag>
                             )}
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#888', marginTop: '2px' }}>
+                        <div style={{ fontSize: '11.5px', color: mutedTextColor, marginTop: '2px' }}>
                           Vai trò: Chuyên viên
                           {staff.offDays && staff.offDays.length > 0 && (
-                            <span style={{ color: '#ef4444', marginLeft: '6px', fontWeight: 'bold' }}>
+                            <span style={{ color: dangerTextColor, marginLeft: '6px', fontWeight: 'bold' }}>
                               | {getOffDaysText(staff.offDays)}
                             </span>
                           )}

@@ -340,7 +340,7 @@ export const FullBranchAuditReportTab: React.FC<FullBranchAuditReportTabProps> =
             style={{ background: isDark ? '#141414' : '#ffffff' }}
           >
             <Text className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-1">
-              🟢 Tổng Số Mục PASSED (ĐẠT)
+              🟢 ∑ Mục PASSED (ĐẠT)
             </Text>
             <div className="text-3xl font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">
               {totalPassed}{' '}
@@ -358,7 +358,7 @@ export const FullBranchAuditReportTab: React.FC<FullBranchAuditReportTabProps> =
             style={{ background: isDark ? 'rgba(136, 19, 55, 0.2)' : 'rgba(255, 241, 242, 0.8)' }}
           >
             <Text className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block mb-1">
-              🔴 Tổng Số Mục FAILED (LỖI)
+              🔴 ∑ Mục FAILED (LỖI)
             </Text>
             <div className="text-3xl font-extrabold tabular-nums text-rose-600 dark:text-rose-400">
               {totalFailed}{' '}
@@ -374,7 +374,7 @@ export const FullBranchAuditReportTab: React.FC<FullBranchAuditReportTabProps> =
             style={{ background: isDark ? '#141414' : '#ffffff' }}
           >
             <Text className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 block mb-1">
-              ⚪ Tổng Số Mục N/A (BỎ QUA)
+              ⚪ ∑ Mục N/A (BỎ QUA)
             </Text>
             <div className="text-3xl font-extrabold tabular-nums text-slate-600 dark:text-slate-400">
               {totalNa} <span className="text-xs font-normal text-slate-600 dark:text-slate-400">/ {totalItems}</span>

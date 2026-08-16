@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
 import dynamic from 'next/dynamic';
@@ -284,7 +286,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
 
   const detailColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 50,
       align: 'center' as const,
@@ -417,7 +419,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Tổng Booking Đã Tạo</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Booking Đã Tạo</span>}
               value={summary.totalBookings}
               valueStyle={{ color: '#2563eb', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CalendarOutlined className="mr-2" />}
@@ -472,7 +474,13 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
         leaderboard={leaderboard}
         loading={loading}
         columns={columns}
+        selectedBooker={selectedBookerId || undefined}
         onSelectBooker={(bId) => handleSelectBooker(bId)}
+        mobileMetrics={(record) => [
+          { label: 'Đã tạo', value: record.totalCreatedBookings ?? 0, tone: 'accent' },
+          { label: 'Done', value: record.doneBookings ?? 0, tone: 'success' },
+          { label: 'Tỷ lệ', value: `${record.conversionRate ?? 0}%`, tone: 'warning' },
+        ]}
         extraSummary={
           <Text type="secondary" className="text-xs flex items-center gap-1">
             <InfoCircleOutlined className="text-amber-500" />
@@ -553,7 +561,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             defaultPageSize: 50,
             pageSizeOptions: ['20', '50', '100', '200'],
             showSizeChanger: true,
-            showTotal: (total) => `Tổng cộng ${total} đơn booking`,
+            showTotal: (total) => `Tổng cộng ${total} đơn booking`,
           }}
           size="small"
           scroll={{ x: 'max-content' }}

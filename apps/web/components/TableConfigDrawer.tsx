@@ -1,21 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Drawer,
-  List,
-  Checkbox,
-  Input,
-  Button,
-  Space,
-  Divider,
-  Tooltip,
-  theme,
-  InputNumber,
-  Alert,
-  Select,
-  Tabs,
-} from 'antd';
+import { List, Checkbox, Input, Button, Space, Divider, Tooltip, theme, InputNumber, Alert, Select, Tabs } from 'antd';
 import {
   ArrowUpOutlined,
   ArrowDownOutlined,
@@ -31,6 +17,8 @@ import {
 import { ColumnConfig } from '@mos-lab/shared';
 import { AVAILABLE_ICONS, getDefaultIcon, renderIconHelper } from '../hooks/useTableConfig';
 import dynamic from 'next/dynamic';
+import { AdaptiveDrawer } from './ui/AdaptiveOverlay';
+import { getViewportSize, useResponsiveTier } from '../hooks/useResponsiveTier';
 
 const IconPickerModal = dynamic(() => import('./IconPickerModal').then((m) => m.IconPickerModal), { ssr: false });
 
@@ -56,6 +44,8 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
   extraTabTitle = 'Quy trình & Nghiệp vụ',
 }) => {
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isResizableDesktop = ['desktop', 'fhd', 'wide', 'uhd'].includes(responsiveTier);
   const [columns, setColumns] = useState<ColumnConfig[]>([]);
   const [user, setUser] = useState<SafeAny>(null);
   const [saving, setSaving] = useState(false);
@@ -194,7 +184,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = startX - moveEvent.clientX;
-      const newWidth = Math.min(Math.max(startWidth + deltaX, 420), window.innerWidth * 0.9);
+      const newWidth = Math.min(Math.max(startWidth + deltaX, 420), getViewportSize().width * 0.9);
       setDrawerWidth(newWidth);
       if (typeof window !== 'undefined') {
         localStorage.setItem('table_config_drawer_width', Math.round(newWidth).toString());
@@ -211,7 +201,10 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
   };
 
   const columnsContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
+    <div
+      className="table-config-columns"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}
+    >
       <div className="flex justify-between items-center gap-2">
         <Alert
           message="Kéo thả để sắp xếp lại thứ tự cột. Tích chọn để ẩn/hiển thị."
@@ -226,6 +219,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
 
       {/* Header Tiêu Đề Cột Cấu Hình */}
       <div
+        className="table-config-column-heading"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -263,6 +257,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}
+                className="table-config-column-row"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -305,6 +300,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
                     value={item.width}
                     onChange={(val) => handleResize(index, val)}
                     placeholder="Auto"
+                    className="table-config-column-width"
                     style={{ width: '65px', fontSize: '11px' }}
                   />
                 </Tooltip>
@@ -317,6 +313,8 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
                     onChange={(val) => handleSelectIcon(index, val)}
                     options={AVAILABLE_ICONS}
                     popupMatchSelectWidth={false}
+                    getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                    className="table-config-column-icon"
                   />
                 </Tooltip>
 
@@ -325,6 +323,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
                     size="small"
                     type="text"
                     icon={<SearchOutlined style={{ fontSize: '12px' }} />}
+                    className="table-config-column-icon-search"
                     onClick={() => {
                       setActiveColIndex(index);
                       setPickerOpen(true);
@@ -391,7 +390,9 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
   );
 
   return (
-    <Drawer
+    <AdaptiveDrawer
+      intent="data"
+      className="table-config-drawer"
       title={
         <Space>
           <SettingOutlined style={{ color: token.colorPrimary }} />
@@ -399,7 +400,7 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
         </Space>
       }
       placement="right"
-      width={drawerWidth}
+      width={isResizableDesktop ? drawerWidth : undefined}
       onClose={onClose}
       open={visible}
       styles={{
@@ -411,22 +412,24 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
       }}
     >
       {/* Resizable Left Handle */}
-      <div
-        onMouseDown={handleResizeMouseDown}
-        title="Kéo thả viền trái để thay đổi chiều rộng Drawer (Kích thước được lưu tự động)"
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: '6px',
-          cursor: 'ew-resize',
-          zIndex: 100,
-          backgroundColor: 'transparent',
-          transition: 'background-color 0.2s',
-        }}
-        className="hover:bg-blue-500/40 active:bg-blue-600/60"
-      />
+      {isResizableDesktop && (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          title="Kéo thả viền trái để thay đổi chiều rộng Drawer (Kích thước được lưu tự động)"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: '6px',
+            cursor: 'ew-resize',
+            zIndex: 1,
+            backgroundColor: 'transparent',
+            transition: 'background-color 0.2s',
+          }}
+          className="hover:bg-blue-500/40 active:bg-blue-600/60"
+        />
+      )}
       {extraTabContent ? (
         <Tabs
           defaultActiveKey="columns"
@@ -470,6 +473,6 @@ export const TableConfigDrawer: React.FC<TableConfigDrawerProps> = ({
         }}
         value={activeColIndex !== null ? columns[activeColIndex]?.icon || '' : ''}
       />
-    </Drawer>
+    </AdaptiveDrawer>
   );
 };

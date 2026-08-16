@@ -1,22 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  Row,
-  Col,
-  Table,
-  Tag,
-  Progress,
-  Button,
-  DatePicker,
-  Select,
-  Modal,
-  Input,
-  message,
-  Tooltip,
-  Spin,
-} from 'antd';
+import { Card, Row, Col, Table, Tag, Progress, Button, DatePicker, Select, Input, message, Tooltip, Spin } from 'antd';
 import {
   ReloadOutlined,
   UserOutlined,
@@ -30,6 +15,7 @@ import { AllocationAuditStatsResponse, CustomerAllocationBatch } from '@mos-lab/
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
 import dayjs from 'dayjs';
+import { AdaptiveModal } from '../ui/AdaptiveOverlay';
 
 export const AllocationAuditDashboard: React.FC = () => {
   const { themeMode } = useTheme();
@@ -119,7 +105,7 @@ export const AllocationAuditDashboard: React.FC = () => {
       align: 'center' as const,
       render: (_: any, record: any) => (
         <span className="font-semibold text-sm tabular-nums">
-          {record.totalBatches} đợt ({record.totalCustomers} KH)
+          {record.totalBatches} đợt ({record.totalCustomers} KH)
         </span>
       ),
     },
@@ -131,7 +117,7 @@ export const AllocationAuditDashboard: React.FC = () => {
       render: (val: number, record: any) => (
         <div className="text-center">
           <Tag color="emerald" className="font-bold">
-            {val} đợt
+            {val} đợt
           </Tag>
           <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
             {record.acceptanceRate}%
@@ -146,7 +132,7 @@ export const AllocationAuditDashboard: React.FC = () => {
       align: 'center' as const,
       render: (val: number) => (
         <Tag color="volcano" className="font-bold">
-          {val} đợt
+          {val} đợt
         </Tag>
       ),
     },
@@ -157,7 +143,7 @@ export const AllocationAuditDashboard: React.FC = () => {
       align: 'center' as const,
       render: (val: number) => (
         <Tag color="purple" className="font-bold">
-          {val} đợt
+          {val} đợt
         </Tag>
       ),
     },
@@ -168,7 +154,7 @@ export const AllocationAuditDashboard: React.FC = () => {
       align: 'center' as const,
       render: (val: number) => (
         <Tag color="gold" className="font-bold">
-          {val} đợt
+          {val} đợt
         </Tag>
       ),
     },
@@ -229,7 +215,7 @@ export const AllocationAuditDashboard: React.FC = () => {
             className="border border-slate-200 dark:border-slate-800 shadow-sm bg-indigo-50/50 dark:bg-slate-800"
           >
             <div className="text-xs font-medium text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">
-              Tổng Phân Bổ (Batch & KH)
+              ∑ Phân Bổ (Batch & KH)
             </div>
             <div className="text-2xl font-extrabold text-indigo-900 dark:text-indigo-100 mt-2 tabular-nums">
               {stats?.summary.totalBatches || 0} <span className="text-sm font-normal text-slate-500">đợt</span>
@@ -371,7 +357,8 @@ export const AllocationAuditDashboard: React.FC = () => {
       </Row>
 
       {/* Recall Batch Action Modal */}
-      <Modal
+      <AdaptiveModal
+        intent="confirm"
         title={
           <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
             <span>⚠️</span>
@@ -388,7 +375,7 @@ export const AllocationAuditDashboard: React.FC = () => {
             Xác nhận Thu hồi
           </Button>,
         ]}
-        className={themeMode === 'dark' ? 'dark-theme-modal' : ''}
+        className={`allocation-recall-modal ${themeMode === 'dark' ? 'dark-theme-modal' : ''}`}
       >
         <div className="space-y-4 py-2 text-sm">
           <p className="text-slate-600 dark:text-slate-300">
@@ -419,7 +406,7 @@ export const AllocationAuditDashboard: React.FC = () => {
             />
           </div>
         </div>
-      </Modal>
+      </AdaptiveModal>
     </div>
   );
 };

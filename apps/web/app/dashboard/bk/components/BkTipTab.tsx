@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
 import {
@@ -266,7 +268,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
 
   const detailColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 50,
       align: 'center' as const,
@@ -356,7 +358,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Tổng Tip Khách Cho</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Tip Khách Cho</span>}
               value={summary.totalCustomerTip}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#8b5cf6', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -370,9 +372,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={
-                <span className="text-xs font-semibold text-slate-500 uppercase">Tổng Thưởng BK Tip (% Share)</span>
-              }
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng BK Tip (% Share)</span>}
               value={summary.totalBkTipBonus}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#db2777', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -388,7 +388,17 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
         leaderboard={leaderboard}
         loading={loading}
         columns={columns}
+        selectedBooker={selectedBookerId || undefined}
         onSelectBooker={(bId) => handleSelectBooker(bId)}
+        mobileMetrics={(record) => [
+          {
+            label: 'Đơn tip',
+            value: `${record.tippedBookingsCount ?? 0}/${record.totalBookingsCount ?? 0}`,
+            tone: 'accent',
+          },
+          { label: 'Tip khách', value: formatCurrency(record.totalCustomerTip ?? 0), tone: 'default' },
+          { label: 'Thưởng', value: formatCurrency(record.totalBkTipBonus ?? 0), tone: 'accent' },
+        ]}
         extraSummary={
           <Text type="secondary" className="text-xs flex items-center gap-1">
             <InfoCircleOutlined className="text-amber-500" />
@@ -469,7 +479,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
             defaultPageSize: 50,
             pageSizeOptions: ['20', '50', '100', '200'],
             showSizeChanger: true,
-            showTotal: (total) => `Tổng cộng ${total} đơn hàng nhận tip`,
+            showTotal: (total) => `Tổng cộng ${total} đơn hàng nhận tip`,
           }}
           size="small"
           scroll={{ x: 'max-content' }}

@@ -3,33 +3,14 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Typography, Card, theme, Select, Tabs, Spin, message, Dropdown } from 'antd';
 import {
-  Typography,
-  Card,
-  theme,
-  DatePicker,
-  Select,
-  Radio,
-  Space,
-  Button,
-  Tabs,
-  Spin,
-  message,
-  Tooltip,
-  Switch,
-} from 'antd';
-import {
-  CalendarOutlined,
-  LeftOutlined,
-  RightOutlined,
-  TrophyOutlined,
-  TableOutlined,
-  GiftOutlined,
-  RocketOutlined,
-  DollarOutlined,
-  WalletOutlined,
-  SettingOutlined,
+  AccountBookOutlined,
+  DollarCircleOutlined,
+  MoneyCollectOutlined,
   SketchOutlined,
+  SyncOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -37,9 +18,10 @@ import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import { CcLeaderboardEntry, CcXoayRecord, vietnameseSearchFilter } from '@mos-lab/shared';
+import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 import CcLeaderboardCard from './components/CcLeaderboardCard';
-import { PageHeader } from '../../../components/ui';
+import { ReportPage, ReportPeriodNavigator, TableSettingsTrigger, ToolbarToggle } from '../../../components/ui';
 
 const CcXoayTab = dynamic(() => import('./components/CcXoayTab'), {
   ssr: false,
@@ -89,17 +71,26 @@ const CcThuNhapTab = dynamic(() => import('./components/CcThuNhapTab'), {
     </div>
   ),
 });
-const CcConfigDrawer = dynamic(() => import('./components/CcConfigDrawer'), { ssr: false });
+const CcThuongConfigModal = dynamic(() => import('./components/CcThuongConfigModal'), { ssr: false });
 
 dayjs.extend(isoWeek);
 
-const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
+const { Text } = Typography;
+
+function CcTabLabel({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className="cc-dashboard-tab-label">
+      {icon}
+      <span>{children}</span>
+    </span>
+  );
+}
 
 export default function CcDashboardPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const router = useRouter();
+  const responsiveTier = useResponsiveTier();
 
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>(() => {
     if (typeof window !== 'undefined') {
@@ -133,8 +124,8 @@ export default function CcDashboardPage() {
     }
     return [dayjs().startOf('month'), dayjs().endOf('month')];
   });
-
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [ccBonusConfigOpen, setCcBonusConfigOpen] = useState(false);
+  const [ccBonusConfigVersion, setCcBonusConfigVersion] = useState(0);
 
   const [selectedStore, setSelectedStore] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -159,6 +150,7 @@ export default function CcDashboardPage() {
     }
     return true;
   });
+  const activeCcFilterCount = Number(selectedStore !== 'ALL') + Number(selectedConsultant !== 'ALL');
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -305,8 +297,7 @@ export default function CcDashboardPage() {
   const tabItems = [
     {
       key: 'thuong',
-      icon: <GiftOutlined />,
-      label: 'CC Daily Bonus',
+      label: <CcTabLabel icon={<DollarCircleOutlined />}>Daily Bonus</CcTabLabel>,
       children:
         activeTab === 'thuong' ? (
           <CcThuongTab
@@ -315,6 +306,7 @@ export default function CcDashboardPage() {
             selectedStore={selectedStore}
             selectedConsultant={selectedConsultant}
             includeVat={includeVat}
+            refreshKey={ccBonusConfigVersion}
             onSelectConsultant={(ccName) => {
               setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
             }}
@@ -323,11 +315,10 @@ export default function CcDashboardPage() {
     },
     {
       key: 'xoay',
-      icon: <TableOutlined />,
-      label: 'CC Xoay',
+      label: <CcTabLabel icon={<SyncOutlined />}>Xoay</CcTabLabel>,
       children:
         activeTab === 'xoay' ? (
-          <div className="flex flex-col gap-4">
+          <div className={`flex flex-col cc-xoay-tab-stack ${responsiveTier === 'mobile' ? 'gap-2' : 'gap-4'}`}>
             <CcLeaderboardCard
               leaderboard={leaderboardData}
               loading={loading}
@@ -342,8 +333,7 @@ export default function CcDashboardPage() {
     },
     {
       key: 'tip',
-      icon: <DollarOutlined />,
-      label: 'CC Tip',
+      label: <CcTabLabel icon={<MoneyCollectOutlined />}>Tip</CcTabLabel>,
       children:
         activeTab === 'tip' ? (
           <CcTipTab
@@ -359,165 +349,110 @@ export default function CcDashboardPage() {
     },
     {
       key: 'diamond',
-      icon: <SketchOutlined />,
-      label: 'Kim Cương',
+      label: <CcTabLabel icon={<SketchOutlined />}>Kim Cương</CcTabLabel>,
       children:
         activeTab === 'diamond' ? (
-          <CcDiamondTab dateRange={dateRange} selectedStore={selectedStore} selectedConsultant={selectedConsultant} />
+          <CcDiamondTab
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedConsultant={selectedConsultant}
+            onClearConsultant={() => setSelectedConsultant('ALL')}
+          />
         ) : null,
     },
     {
       key: 'game',
-      icon: <RocketOutlined />,
-      label: 'CC Game',
+      label: <CcTabLabel icon={<TrophyOutlined />}>Game</CcTabLabel>,
       children: activeTab === 'game' ? <CcGameTab /> : null,
     },
     {
       key: 'thunhap',
-      icon: <WalletOutlined />,
-      label: 'CC Thu Nhập',
+      label: <CcTabLabel icon={<AccountBookOutlined />}>Thu Nhập</CcTabLabel>,
       children: activeTab === 'thunhap' ? <CcThuNhapTab dateRange={dateRange} selectedStore={selectedStore} /> : null,
     },
   ];
 
   return (
-    <div>
-      {/* HEADER & GLOBAL FILTER BAR */}
-      <PageHeader
-        title="Báo Cáo CC (Client Consultant)"
-        subtitle="Theo dõi dữ liệu CC Xoay, thưởng sản phẩm combo, gamification và thu nhập live của tư vấn viên"
-        extra={
-          <Space wrap size={8}>
-            {/* View Mode Switcher: Tháng / Tuần / Ngày */}
-            <Space.Compact>
-              <Button
-                aria-label="Xem theo tháng"
-                type={viewMode === 'month' ? 'primary' : 'default'}
-                onClick={() => setViewMode('month')}
-              >
-                Tháng
-              </Button>
-              <Button
-                aria-label="Xem theo tuần"
-                type={viewMode === 'week' ? 'primary' : 'default'}
-                onClick={() => setViewMode('week')}
-              >
-                Tuần
-              </Button>
-              <Button
-                aria-label="Xem theo ngày"
-                type={viewMode === 'day' ? 'primary' : 'default'}
-                onClick={() => setViewMode('day')}
-              >
-                Ngày
-              </Button>
-            </Space.Compact>
+    <ReportPage
+      className="cc-page"
+      title="CC Leaderboard"
+      subtitle="Theo dõi hiệu suất, thưởng và thu nhập của CC"
+      toolbarClassName="cc-page-toolbar"
+      period={{
+        mode: viewMode,
+        value: referenceDate,
+        label: getPeriodLabel(),
+        onModeChange: setViewMode,
+        onPrevious: () => handleNavigate(-1),
+        onNext: () => handleNavigate(1),
+        onValueChange: setReferenceDate,
+      }}
+      filterTitle="Bộ lọc CC"
+      filterTriggerLabel="Mở bộ lọc CC"
+      activeFilterCount={activeCcFilterCount}
+      filters={
+        <div className="cc-toolbar-filter-cluster" aria-label="Bộ lọc báo cáo CC">
+          <span className="cc-toolbar-filter-title">Bộ lọc</span>
+          <Select
+            aria-label="Lọc theo chi nhánh tiệm"
+            value={selectedStore}
+            onChange={(val) => setSelectedStore(val)}
+            className="cc-toolbar-filter-select cc-toolbar-store-select"
+            options={[
+              { value: 'ALL', label: 'Tất cả tiệm' },
+              { value: '6', label: 'Đề Thám' },
+              { value: '16', label: 'Estella Place' },
+            ]}
+          />
 
-            {/* Date Navigation & Selector */}
-            <Space
-              size={0}
-              className="border border-slate-200 dark:border-slate-700 rounded-md overflow-hidden bg-white dark:bg-slate-900/50 shadow-sm"
-            >
-              <Button
-                aria-label="Kỳ trước"
-                type="text"
-                icon={<LeftOutlined />}
-                onClick={() => handleNavigate(-1)}
-                className="text-slate-700 dark:text-slate-200 hover:text-amber-600 dark:hover:text-amber-400"
-              />
-              <Button
-                aria-label={`Chọn khoảng thời gian ${getPeriodLabel()}`}
-                type="text"
-                icon={<CalendarOutlined />}
-                onClick={() => setPickerOpen(true)}
-                className="text-slate-800 dark:text-slate-200 font-medium hover:text-amber-600 dark:hover:text-amber-400"
-              >
-                {getPeriodLabel()}
-              </Button>
-              <Button
-                aria-label="Kỳ sau"
-                type="text"
-                icon={<RightOutlined />}
-                onClick={() => handleNavigate(1)}
-                className="text-slate-700 dark:text-slate-200 hover:text-amber-600 dark:hover:text-amber-400"
-              />
-            </Space>
+          <Select
+            aria-label="Lọc theo tư vấn viên CC"
+            showSearch
+            filterOption={vietnameseSearchFilter}
+            value={selectedConsultant}
+            onChange={(val) => setSelectedConsultant(val)}
+            className="cc-toolbar-filter-select cc-toolbar-consultant-select"
+            options={[
+              { value: 'ALL', label: 'Tất cả CC' },
+              ...leaderboardData.map((s) => ({ value: s.displayName, label: s.displayName })),
+            ]}
+            placeholder="Chọn CC"
+          />
 
-            {/* Hidden DatePicker */}
-            {pickerOpen && (
-              <DatePicker
-                aria-label="Chọn ngày xem báo cáo"
-                open={true}
-                onOpenChange={(open) => {
-                  if (!open) setPickerOpen(false);
-                }}
-                picker={viewMode === 'month' ? 'month' : viewMode === 'week' ? 'week' : 'date'}
-                onChange={(val) => {
-                  if (val) {
-                    setReferenceDate(val);
-                    setPickerOpen(false);
-                  }
-                }}
-                style={{
-                  position: 'absolute',
-                  width: 0,
-                  height: 0,
-                  padding: 0,
-                  border: 'none',
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
-
-            {/* Store Filter */}
-            <Select
-              aria-label="Lọc theo chi nhánh tiệm"
-              value={selectedStore}
-              onChange={(val) => setSelectedStore(val)}
-              style={{ width: 140 }}
-              options={[
-                { value: 'ALL', label: 'Tất cả tiệm' },
-                { value: '6', label: 'Đề Thám' },
-                { value: '16', label: 'Estella Place' },
-              ]}
+          <span className="cc-toolbar-filter-divider" aria-hidden="true" />
+          <ToolbarToggle
+            label="VAT 8%"
+            aria-label="Công tắc VAT 8%"
+            checked={includeVat}
+            onChange={setIncludeVat}
+            className="cc-toolbar-vat-toggle text-amber-500 dark:text-amber-300"
+          />
+        </div>
+      }
+      toolbarActions={
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              { key: 'bonus', label: 'Cấu hình thưởng CC' },
+              { key: 'team', label: 'Quản lý nhân sự CC' },
+            ],
+            onClick: ({ key }) => {
+              if (key === 'bonus') setCcBonusConfigOpen(true);
+              if (key === 'team') router.push('/dashboard/staff/teams?selected=CC');
+            },
+          }}
+        >
+          <span>
+            <TableSettingsTrigger
+              title="Cấu hình CC"
+              data-ui="cc-settings-trigger"
+              className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
             />
-
-            {/* Consultant Filter */}
-            <Select
-              aria-label="Lọc theo tư vấn viên CC"
-              showSearch
-              filterOption={vietnameseSearchFilter}
-              value={selectedConsultant}
-              onChange={(val) => setSelectedConsultant(val)}
-              style={{ width: 180 }}
-              options={[
-                { value: 'ALL', label: 'Tất cả CC' },
-                ...leaderboardData.map((s) => ({ value: s.displayName, label: s.displayName })),
-              ]}
-              placeholder="Chọn CC"
-            />
-
-            {/* VAT 8% Global Toggle Switch */}
-            <div className="flex items-center gap-1.5 bg-slate-800/80 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/80 shadow-sm">
-              <Text className="text-xs text-amber-400 font-semibold select-none">VAT 8%</Text>
-              <Switch aria-label="Công tắc VAT 8%" checked={includeVat} onChange={setIncludeVat} size="small" />
-            </div>
-
-            {/* Config Button (Admin Global Config) */}
-            <Tooltip title="Cấu hình CC">
-              <Button
-                aria-label="Cấu hình CC"
-                type="primary"
-                icon={<SettingOutlined />}
-                onClick={() => router.push('/dashboard/staff/teams?selected=CC')}
-                style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
-              />
-            </Tooltip>
-          </Space>
-        }
-      />
-
+          </span>
+        </Dropdown>
+      }
+    >
       {/* 4 MAIN TABS */}
       <Card
         variant="outlined"
@@ -527,6 +462,12 @@ export default function CcDashboardPage() {
       >
         <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" destroyOnHidden />
       </Card>
-    </div>
+
+      <CcThuongConfigModal
+        open={ccBonusConfigOpen}
+        onClose={() => setCcBonusConfigOpen(false)}
+        onSaveSuccess={() => setCcBonusConfigVersion((version) => version + 1)}
+      />
+    </ReportPage>
   );
 }

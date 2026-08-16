@@ -54,6 +54,12 @@ import {
 } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
+import ReadyKitsTab from '../../../components/design-system/ReadyKitsTab';
+import {
+  UI_CATALOG_ITEMS,
+  type CatalogStatus,
+  type UiCatalogItem,
+} from '../../../components/design-system/catalog.manifest';
 import {
   PageHeader,
   StatCard,
@@ -61,41 +67,54 @@ import {
   StatusTag,
   IconText,
   DensityContainer,
-  DensityMode,
-  BreakpointPreset,
+  PageToolbar,
+  ContentSurface,
+  DataTable,
+  ResponsiveFormGrid,
+  ResponsiveFormField,
+  AdaptiveDrawer,
+  AdaptiveModal,
+  AdaptiveOverlayFooter,
 } from '../../../components/ui';
-import { themeTokens } from '@mos-lab/shared';
+import { themeTokens, type DesktopDensity } from '@mos-lab/shared';
 import { useRouter } from 'next/navigation';
+import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
+import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text, Paragraph } = Typography;
 
-export type AuditStatus = 'VERIFIED' | 'NEEDS_IMPROVEMENT' | 'NOT_SYNCED';
-
-export interface ComponentAuditItem {
-  id: string;
-  name: string;
-  category: string;
-  filePath: string;
-  status: AuditStatus;
-  statusText: string;
-  auditNotes: string;
-  demoType?: string;
+interface ResponsiveDemoRecord {
+  key: string;
+  customer: string;
+  status: string;
+  nextAction: string;
 }
 
+const responsiveDemoColumns: ColumnsType<ResponsiveDemoRecord> = [
+  { title: 'Khách hàng', dataIndex: 'customer', key: 'customer', width: 180 },
+  { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 150 },
+  { title: 'Thao tác tiếp', dataIndex: 'nextAction', key: 'nextAction', width: 180 },
+];
+
+const responsiveDemoRecords: ResponsiveDemoRecord[] = [
+  { key: '1', customer: 'Nguyễn An', status: 'Cần gọi lại', nextAction: 'Gọi lúc 14:30' },
+  { key: '2', customer: 'Trần Bình', status: 'Đã đặt lịch', nextAction: 'Xem hồ sơ' },
+];
+
 export default function DesignSystemPage() {
-  const { themeMode, toggleTheme } = useTheme();
+  const { themeMode, toggleTheme, desktopDensity, effectiveDensity, setDesktopDensity } = useTheme();
   const router = useRouter();
+  const responsiveTier = useResponsiveTier();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all-components');
+  const [activeTab, setActiveTab] = useState('ready-kits');
 
-  // Interactive Playground States
-  const [density, setDensity] = useState<DensityMode>('comfort');
-  const [breakpoint, setBreakpoint] = useState<BreakpointPreset>('desktop');
   const [auditFilter, setAuditFilter] = useState<string>('ALL');
 
   // Interactive Modals for Demo
   const [activeDemoModal, setActiveDemoModal] = useState<string | null>(null);
+  const [adaptiveModalOpen, setAdaptiveModalOpen] = useState(false);
+  const [adaptiveDrawerOpen, setAdaptiveDrawerOpen] = useState(false);
 
   // Tabular Nums Counter Test State
   const [counter, setCounter] = useState(123456);
@@ -171,251 +190,8 @@ export default function DesignSystemPage() {
 
   const currentTokens = themeMode === 'dark' ? themeTokens.colors.dark : themeTokens.colors.light;
 
-  // Complete List of ALL 25+ UI Components Categorized into 6 Human-Readable Sections
-  const allComponentsList: ComponentAuditItem[] = [
-    // 1. UI Primitives & Foundation
-    {
-      id: 'StatCard',
-      name: 'StatCard',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/StatCard.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Thẻ thống kê doanh thu/KPI chuẩn hóa với xu hướng phần trăm và highlight border.',
-    },
-    {
-      id: 'SectionCard',
-      name: 'SectionCard',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/SectionCard.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Khối bao bọc phần nội dung có tiêu đề và nút extra action đồng bộ theo theme container.',
-    },
-    {
-      id: 'PageHeader',
-      name: 'PageHeader',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/PageHeader.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Thanh tiêu đề trang chuẩn hóa bao gồm tiêu đề, mô tả và cụm nút thao tác chính.',
-    },
-    {
-      id: 'StatusTag',
-      name: 'StatusTag',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/StatusTag.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Thẻ trạng thái nhiều màu sắc (success, warning, error, processing) theo bảng màu HSL.',
-    },
-    {
-      id: 'IconText',
-      name: 'IconText',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/IconText.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Thành phần kết hợp icon và văn bản hiển thị gọn gàng.',
-    },
-    {
-      id: 'DensityContainer',
-      name: 'DensityContainer',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/DensityContainer.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Engine bọc bố cục tự động điều chỉnh padding/gap theo compact, comfort, spacious.',
-    },
-    {
-      id: 'ContentSurface',
-      name: 'ContentSurface',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/ContentSurface.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Bề mặt nội dung chuẩn cho toolbar, bảng và khối dữ liệu; tự nhận token light/dark.',
-    },
-    {
-      id: 'PageToolbar',
-      name: 'PageToolbar',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/PageToolbar.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Thanh tìm kiếm, lọc và action responsive cho các trang vận hành dữ liệu.',
-    },
-    {
-      id: 'DataTable',
-      name: 'DataTable',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/DataTable.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Vỏ Ant Design Table thống nhất surface/density; feature vẫn kiểm soát pagination và dữ liệu.',
-    },
-    {
-      id: 'StatePanel',
-      name: 'StatePanel',
-      category: '1. UI Primitives & Foundation',
-      filePath: 'apps/web/components/ui/StatePanel.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Trạng thái loading, empty và error nhất quán cho data surfaces.',
-    },
-
-    // 2. Bộ Lọc & Tìm Kiếm (Filter & Search)
-    {
-      id: 'ActiveFilterTags',
-      name: 'ActiveFilterTags',
-      category: '2. Bộ Lọc & Tìm Kiếm (Filter & Search)',
-      filePath: 'apps/web/components/filters/ActiveFilterTags.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Hiển thị các tag bộ lọc đang áp dụng kèm nút xóa từng tag hoặc xóa tất cả.',
-    },
-    {
-      id: 'SavedFilterDropdown',
-      name: 'SavedFilterDropdown',
-      category: '2. Bộ Lọc & Tìm Kiếm (Filter & Search)',
-      filePath: 'apps/web/components/filters/SavedFilterDropdown.tsx',
-      status: 'NEEDS_IMPROVEMENT',
-      statusText: 'Cần Cải Tiến UI',
-      auditNotes: 'Dropdown danh sách bộ lọc đã lưu cần căn chỉnh lại khoảng cách padding và badge đếm.',
-    },
-    {
-      id: 'SaveFilterModal',
-      name: 'SaveFilterModal',
-      category: '2. Bộ Lọc & Tìm Kiếm (Filter & Search)',
-      filePath: 'apps/web/components/filters/SaveFilterModal.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Modal nhập tên và lưu bộ lọc tìm kiếm khách hàng tùy chỉnh.',
-    },
-
-    // 3. Khối Thống Kê & Bảng Biểu (Analytics & Tables)
-    {
-      id: 'DailyCallsTable',
-      name: 'DailyCallsTable',
-      category: '3. Khối Thống Kê & Bảng Biểu (Analytics & Tables)',
-      filePath: 'apps/web/components/DailyCallsTable.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Bảng dữ liệu cuộc gọi chi tiết theo ca làm việc với phân trang kiểm soát.',
-    },
-    {
-      id: 'ResizableHeaderCell',
-      name: 'ResizableHeaderCell',
-      category: '3. Khối Thống Kê & Bảng Biểu (Analytics & Tables)',
-      filePath: 'apps/web/components/ResizableHeaderCell.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Thành phần hỗ trợ kéo thả thay đổi kích thước chiều rộng cột trong AntD Table.',
-    },
-    {
-      id: 'CampaignStats',
-      name: 'CampaignStats',
-      category: '3. Khối Thống Kê & Bảng Biểu (Analytics & Tables)',
-      filePath: 'apps/web/components/campaign/CampaignStats.tsx',
-      status: 'NEEDS_IMPROVEMENT',
-      statusText: 'Cần Cải Tiến UI',
-      auditNotes: 'Khối thống kê chiến dịch Marketing cần bổ sung responsive grid khi co nhỏ màn hình phone.',
-    },
-
-    // 4. Modals & Drawers Nghiệp Vụ (Dialogs & Drawers)
-    {
-      id: 'BookingWizardDrawer',
-      name: 'BookingWizardDrawer',
-      category: '4. Modals & Drawers Nghiệp Vụ',
-      filePath: 'apps/web/components/BookingWizardDrawer.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Drawer quy trình 4 bước tạo lịch hẹn dịch vụ mới (Khách -> Dịch vụ -> Giờ -> Xác nhận).',
-      demoType: 'drawer',
-    },
-    {
-      id: 'CustomerDetailDrawer',
-      name: 'CustomerDetailDrawer',
-      category: '4. Modals & Drawers Nghiệp Vụ',
-      filePath: 'apps/web/components/CustomerDetailDrawer.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Drawer xem hồ sơ khách hàng 360 độ (Thông tin, Lịch sử làm mi, Bán gói, Tip).',
-      demoType: 'drawer',
-    },
-    {
-      id: 'CallLogModal',
-      name: 'CallLogModal',
-      category: '4. Modals & Drawers Nghiệp Vụ',
-      filePath: 'apps/web/components/CallLogModal.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Modal nhật ký chi tiết lịch sử cuộc gọi telesales.',
-      demoType: 'modal',
-    },
-    {
-      id: 'TableConfigDrawer',
-      name: 'TableConfigDrawer',
-      category: '4. Modals & Drawers Nghiệp Vụ',
-      filePath: 'apps/web/components/TableConfigDrawer.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Drawer tùy chỉnh ẩn/hiện và sắp xếp các cột trong bảng khách hàng.',
-      demoType: 'drawer',
-    },
-    {
-      id: 'TelesalesDashboardModal',
-      name: 'TelesalesDashboardModal',
-      category: '4. Modals & Drawers Nghiệp Vụ',
-      filePath: 'apps/web/components/TelesalesDashboardModal.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Modal bảng điều khiển KPI và xếp hạng Leaderboard Booker.',
-      demoType: 'modal',
-    },
-    {
-      id: 'RescheduleBookingModal',
-      name: 'RescheduleBookingModal',
-      category: '4. Modals & Drawers Nghiệp Vụ',
-      filePath: 'apps/web/components/RescheduleBookingModal.tsx',
-      status: 'NEEDS_IMPROVEMENT',
-      statusText: 'Cần Cải Tiến UI',
-      auditNotes: 'Modal đổi lịch hẹn cần cập nhật lại bộ chọn DatePicker đồng bộ với Dark Theme.',
-      demoType: 'modal',
-    },
-    {
-      id: 'IconPickerModal',
-      name: 'IconPickerModal',
-      category: '4. Modals & Drawers Nghiệp Vụ',
-      filePath: 'apps/web/components/IconPickerModal.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Modal chọn biểu tượng icon đại diện cho dịch vụ/sản phẩm catalog.',
-      demoType: 'modal',
-    },
-
-    // 5. Tổng Đài & Voice Call (OmiCall & QA Player)
-    {
-      id: 'OmiCallWidget',
-      name: 'OmiCallWidget',
-      category: '5. Tổng Đài & Voice Call (OmiCall & QA Player)',
-      filePath: 'apps/web/components/OmiCallWidget.tsx',
-      status: 'VERIFIED',
-      statusText: 'Chuẩn Design System',
-      auditNotes: 'Widget bàn phím quay số tổng đài SIP WebRTC trực tuyến.',
-    },
-    {
-      id: 'QAPlayerDrawer',
-      name: 'QAPlayerDrawer',
-      category: '5. Tổng Đài & Voice Call (OmiCall & QA Player)',
-      filePath: 'apps/web/components/QAPlayerDrawer.tsx',
-      status: 'NEEDS_IMPROVEMENT',
-      statusText: 'Cần Cải Tiến UI',
-      auditNotes: 'Drawer nghe lại và chấm điểm cuộc gọi cần tối ưu lại thanh sóng âm Audio Waveform.',
-      demoType: 'drawer',
-    },
-  ];
+  // Catalog source: typed manifest, validated by check-ui-contract.
+  const allComponentsList = UI_CATALOG_ITEMS;
 
   // Filtered Component List based on Audit Badge Filter
   const filteredComponents = allComponentsList.filter((item) => {
@@ -430,11 +206,11 @@ export default function DesignSystemPage() {
       acc[item.category].push(item);
       return acc;
     },
-    {} as Record<string, ComponentAuditItem[]>
+    {} as Record<string, UiCatalogItem[]>
   );
 
-  const getStatusBadgeTag = (status: AuditStatus, statusText: string) => {
-    if (status === 'VERIFIED') {
+  const getStatusBadgeTag = (status: CatalogStatus, statusText: string) => {
+    if (status === 'FOUNDATION') {
       return (
         <span
           className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold leading-none border shadow-xs"
@@ -449,7 +225,7 @@ export default function DesignSystemPage() {
         </span>
       );
     }
-    if (status === 'NEEDS_IMPROVEMENT') {
+    if (status === 'MIGRATING') {
       return (
         <span
           className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold leading-none border shadow-xs"
@@ -480,12 +256,13 @@ export default function DesignSystemPage() {
   };
 
   const getCategoryBadgeInfo = (catName: string) => {
-    if (catName.includes('1.')) return { color: 'geekblue', label: 'Primitives' };
-    if (catName.includes('2.')) return { color: 'cyan', label: 'Filters' };
-    if (catName.includes('3.')) return { color: 'green', label: 'Tables' };
-    if (catName.includes('4.')) return { color: 'purple', label: 'Modals' };
-    if (catName.includes('5.')) return { color: 'magenta', label: 'Voice Call' };
-    return { color: 'gold', label: 'Tokens' };
+    if (catName === 'Foundation') return { color: 'geekblue', label: 'Foundation' };
+    if (catName === 'Page assemblies') return { color: 'gold', label: 'Assembly' };
+    if (catName === 'Data') return { color: 'green', label: 'Data' };
+    if (catName === 'Filters & period') return { color: 'cyan', label: 'Filters' };
+    if (catName === 'Forms & overlays') return { color: 'purple', label: 'Overlay' };
+    if (catName === 'Feedback & state') return { color: 'magenta', label: 'State' };
+    return { color: 'default', label: 'Shell' };
   };
 
   return (
@@ -501,7 +278,7 @@ export default function DesignSystemPage() {
             </Tag>
           </Space>
         }
-        subtitle="Quản lý tập trung 100% UI Components, kiểm duyệt trạng thái UI/UX và đồng bộ Kiến trúc Graphify"
+        subtitle="Catalog UI, ready kits và trạng thái kiểm duyệt của hệ thống"
         extra={
           <Space wrap>
             <Button icon={<ClusterOutlined />} onClick={() => router.push('/dashboard/architecture')}>
@@ -522,34 +299,34 @@ export default function DesignSystemPage() {
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={8} lg={6}>
           <StatCard
-            title="Tổng Số UI Components"
+            title="∑ Components trong inventory"
             value={`${allComponentsList.length} Components`}
             icon={<AppstoreOutlined className="text-blue-500" />}
-            subValue="Toàn bộ codebase apps/web"
+            subValue="Catalog UI đã audit"
           />
         </Col>
         <Col xs={24} sm={8} lg={6}>
           <StatCard
-            title="Chuẩn Design System"
-            value={`${allComponentsList.filter((i) => i.status === 'VERIFIED').length} Components`}
+            title="Foundation sẵn sàng"
+            value={`${allComponentsList.filter((i) => i.status === 'FOUNDATION').length} Components`}
             icon={<CheckCircleOutlined className="text-emerald-500" />}
-            subValue="Đạt 100% Theme Tokens"
+            subValue="Đã có public contract"
           />
         </Col>
         <Col xs={24} sm={8} lg={6}>
           <StatCard
-            title="Cần Cải Tiến UI / UX"
-            value={`${allComponentsList.filter((i) => i.status === 'NEEDS_IMPROVEMENT').length} Components`}
+            title="Đang migration"
+            value={`${allComponentsList.filter((i) => i.status === 'MIGRATING').length} Components`}
             icon={<ExclamationCircleOutlined className="text-amber-500" />}
-            subValue="Cần tối ưu giao diện"
+            subValue="Chưa áp dụng đồng đều"
           />
         </Col>
         <Col xs={24} sm={24} lg={6}>
           <StatCard
-            title="Tỷ Lệ Chuẩn Hóa UI"
-            value={`${Math.round((allComponentsList.filter((i) => i.status === 'VERIFIED').length / allComponentsList.length) * 100)}%`}
+            title="Tỷ Lệ Foundation"
+            value={`${Math.round((allComponentsList.filter((i) => i.status === 'FOUNDATION').length / allComponentsList.length) * 100)}%`}
             icon={<SafetyCertificateOutlined className="text-purple-500" />}
-            subValue="Tự động đồng bộ Graphify"
+            subValue="Không thay cho mức độ adoption"
           />
         </Col>
       </Row>
@@ -569,11 +346,21 @@ export default function DesignSystemPage() {
           type="card"
           items={[
             {
+              key: 'ready-kits',
+              label: (
+                <Space>
+                  <AppstoreOutlined />
+                  <span>Lắp ráp nhanh</span>
+                </Space>
+              ),
+              children: <ReadyKitsTab />,
+            },
+            {
               key: 'all-components',
               label: (
                 <Space>
                   <AppstoreOutlined />
-                  <span>100% UI Components Showcase ({filteredComponents.length})</span>
+                  <span>Inventory & Audit ({filteredComponents.length})</span>
                 </Space>
               ),
               children: (
@@ -600,23 +387,22 @@ export default function DesignSystemPage() {
                               <Space size={4}>
                                 <CheckCircleOutlined className="text-emerald-500" />
                                 <span>
-                                  Chuẩn Theme ({allComponentsList.filter((i) => i.status === 'VERIFIED').length})
+                                  Foundation ({allComponentsList.filter((i) => i.status === 'FOUNDATION').length})
                                 </span>
                               </Space>
                             ),
-                            value: 'VERIFIED',
+                            value: 'FOUNDATION',
                           },
                           {
                             label: (
                               <Space size={4}>
                                 <WarningOutlined className="text-amber-500" />
                                 <span>
-                                  Cần Cải Tiến (
-                                  {allComponentsList.filter((i) => i.status === 'NEEDS_IMPROVEMENT').length})
+                                  Đang migration ({allComponentsList.filter((i) => i.status === 'MIGRATING').length})
                                 </span>
                               </Space>
                             ),
-                            value: 'NEEDS_IMPROVEMENT',
+                            value: 'MIGRATING',
                           },
                         ]}
                       />
@@ -624,32 +410,33 @@ export default function DesignSystemPage() {
                   >
                     <Row gutter={[16, 16]} align="middle">
                       <Col xs={24} sm={12} md={8}>
-                        <Text strong>Mật độ hiển thị (Density Engine): </Text>
-                        <Select<DensityMode>
-                          value={density}
-                          onChange={setDensity}
+                        <Text strong>Mật độ desktop (lưu lựa chọn của bạn): </Text>
+                        <Select<DesktopDensity>
+                          value={desktopDensity}
+                          onChange={setDesktopDensity}
+                          disabled={responsiveTier === 'mobile'}
                           className="w-full mt-1"
                           options={[
-                            { value: 'compact', label: 'Compact (8px/12px padding - Nhỏ gọn)' },
-                            { value: 'comfort', label: 'Comfort (12px/16px padding - Vừa vặn)' },
-                            { value: 'spacious', label: 'Spacious (16px/24px padding - Rộng rãi)' },
+                            { value: 'compact', label: 'Compact — 32px control / 16px icon' },
+                            { value: 'standard', label: 'Standard — 36px control / 18px icon' },
+                            { value: 'comfortable', label: 'Comfortable — 44px control / 20px icon' },
                           ]}
                         />
                       </Col>
                       <Col xs={24} sm={12} md={8}>
-                        <Text strong>Kích thước thử nghiệm (Breakpoint): </Text>
-                        <Select<BreakpointPreset>
-                          value={breakpoint}
-                          onChange={setBreakpoint}
-                          className="w-full mt-1"
-                          options={[
-                            { value: 'phone', label: 'Phone (375px)' },
-                            { value: 'ipad', label: 'Tablet / iPad (768px)' },
-                            { value: 'laptop', label: 'Laptop (1024px)' },
-                            { value: 'desktop', label: 'Desktop (1440px)' },
-                            { value: 'fourK', label: '4K Ultrawide (2560px)' },
-                          ]}
-                        />
+                        <Text strong>Profile đang áp dụng: </Text>
+                        <div className="mt-1 flex items-center gap-2">
+                          <Tag color={effectiveDensity === 'mobileCompact' ? 'blue' : 'gold'}>
+                            {effectiveDensity === 'mobileCompact'
+                              ? 'MOBILE COMPACT — 44 / 20'
+                              : effectiveDensity.toUpperCase()}
+                          </Tag>
+                          <Text type="secondary" className="text-xs">
+                            {responsiveTier === 'mobile'
+                              ? 'Mobile luôn giữ vùng chạm 44px.'
+                              : 'Lựa chọn không đổi theo độ phân giải.'}
+                          </Text>
+                        </div>
                       </Col>
                       <Col xs={24} sm={24} md={8}>
                         <Text strong>Trạng thái Theme: </Text>
@@ -664,7 +451,7 @@ export default function DesignSystemPage() {
                   </SectionCard>
 
                   {/* Component Showcase Grouped by Category */}
-                  <DensityContainer density={density} className="space-y-6">
+                  <DensityContainer density={effectiveDensity} className="space-y-6">
                     {Object.keys(groupedCategories).map((catName) => (
                       <SectionCard
                         key={catName}
@@ -684,8 +471,7 @@ export default function DesignSystemPage() {
                                 className="h-full rounded-xl shadow-xs transition-all hover:border-amber-500 flex flex-col justify-between"
                                 style={{
                                   background: themeMode === 'dark' ? '#111827' : '#f8fafc',
-                                  borderColor:
-                                    item.status === 'NEEDS_IMPROVEMENT' ? '#f59e0b' : currentTokens.borderColor,
+                                  borderColor: item.status === 'MIGRATING' ? '#f59e0b' : currentTokens.borderColor,
                                 }}
                               >
                                 <div>
@@ -803,7 +589,7 @@ export default function DesignSystemPage() {
                         className="tabular-nums text-2xl font-bold text-amber-500"
                         style={themeTokens.typography.tabularNumsStyle}
                       >
-                        {counter.toLocaleString('vi-VN')} đ
+                        {counter.toLocaleString('vi-VN')} đ
                       </span>
                     </div>
                   </SectionCard>
@@ -837,21 +623,127 @@ export default function DesignSystemPage() {
                         </ul>
                       </Col>
                       <Col xs={24} md={12}>
-                        <Text strong>Density Spacing Presets Token:</Text>
+                        <Text strong>Display Density Contract:</Text>
                         <ul className="mt-2 space-y-1 text-sm">
                           <li>
-                            <strong>compact</strong>: padding 8px 12px, gap 8px
+                            <strong>Compact</strong>: control 32px, icon 16px, padding 8px 12px, gap 8px
                           </li>
                           <li>
-                            <strong>comfort</strong>: padding 12px 16px, gap 12px
+                            <strong>Standard</strong>: control 36px, icon 18px, padding 12px 16px, gap 12px
                           </li>
                           <li>
-                            <strong>spacious</strong>: padding 16px 24px, gap 16px
+                            <strong>Comfortable</strong>: control 44px, icon 20px, padding 16px 24px, gap 16px
+                          </li>
+                          <li>
+                            <strong>Mobile Compact</strong>: content compact, nhưng control 44px và icon 20px
                           </li>
                         </ul>
                       </Col>
                     </Row>
                   </SectionCard>
+                </div>
+              ),
+            },
+            {
+              key: 'responsive-foundation',
+              label: (
+                <Space>
+                  <MobileOutlined />
+                  <span>Responsive Foundation</span>
+                </Space>
+              ),
+              children: (
+                <div className="space-y-6 pt-2 responsive-page">
+                  <SectionCard
+                    title="Responsive contract đang chạy"
+                    extra={<Tag color="gold">Tier hiện tại: {responsiveTier.toUpperCase()}</Tag>}
+                  >
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} md={12}>
+                        <Text strong>Behavior breakpoints (CSS/JS)</Text>
+                        <ul className="mt-2 space-y-1 text-sm tabular-nums">
+                          {Object.entries(themeTokens.responsive.breakpoints).map(([name, width]) => (
+                            <li key={name}>
+                              <span className="font-medium">{name}</span>: ≥ {width}px
+                            </li>
+                          ))}
+                        </ul>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Text strong>Viewport QA tách biệt</Text>
+                        <ul className="mt-2 space-y-1 text-sm tabular-nums">
+                          <li>iPhone 12: 390 × 844</li>
+                          <li>iPad portrait: 768 × 1024</li>
+                          <li>FHD: 1920 × 1080</li>
+                          <li>4K: 3840 × 2160</li>
+                        </ul>
+                      </Col>
+                    </Row>
+                  </SectionCard>
+
+                  <SectionCard title="Page toolbar và information priority">
+                    <PageToolbar
+                      primary={<Input.Search aria-label="Demo tìm khách hàng" placeholder="Tìm khách hàng" />}
+                      actions={
+                        <>
+                          <Button>Filter</Button>
+                          <Button type="primary">+ Tạo lịch</Button>
+                        </>
+                      }
+                      secondary={<Text type="secondary">Phone stack action, desktop giữ thao tác cạnh search.</Text>}
+                    />
+                  </SectionCard>
+
+                  <SectionCard title="Adaptive data view">
+                    <DataTable<ResponsiveDemoRecord>
+                      columns={responsiveDemoColumns}
+                      dataSource={responsiveDemoRecords}
+                      rowKey="key"
+                      pagination={false}
+                      columnPriority={{ customer: 'primary', status: 'secondary', nextAction: 'tertiary' }}
+                      mobileRenderer={(record) => (
+                        <div className="space-y-1">
+                          <Text strong>{record.customer}</Text>
+                          <div>{record.status}</div>
+                          <Text type="secondary">{record.nextAction}</Text>
+                        </div>
+                      )}
+                    />
+                  </SectionCard>
+
+                  <SectionCard title="Responsive form grid và adaptive overlays">
+                    <ResponsiveFormGrid columns={3}>
+                      <ResponsiveFormField>
+                        <label className="block text-sm font-medium mb-1" htmlFor="demo-name">
+                          Khách hàng
+                        </label>
+                        <Input id="demo-name" placeholder="Tên khách" />
+                      </ResponsiveFormField>
+                      <ResponsiveFormField>
+                        <label className="block text-sm font-medium mb-1" htmlFor="demo-phone">
+                          Số điện thoại
+                        </label>
+                        <Input id="demo-phone" placeholder="090…" />
+                      </ResponsiveFormField>
+                      <ResponsiveFormField fullWidth>
+                        <label className="block text-sm font-medium mb-1" htmlFor="demo-note">
+                          Ghi chú
+                        </label>
+                        <Input.TextArea id="demo-note" rows={3} placeholder="Mở rộng toàn hàng theo field intent" />
+                      </ResponsiveFormField>
+                    </ResponsiveFormGrid>
+                    <Space wrap className="mt-4">
+                      <Button onClick={() => setAdaptiveModalOpen(true)}>Mở form modal</Button>
+                      <Button onClick={() => setAdaptiveDrawerOpen(true)}>Mở detail drawer</Button>
+                    </Space>
+                  </SectionCard>
+
+                  <ContentSurface elevated>
+                    <Text type="secondary">
+                      Các demo này dùng chính primitives Phase 1. Rollout Phase 2–7 dùng các patterns này theo
+                      archetype, không tự định nghĩa breakpoint mới.
+                    </Text>
+                  </ContentSurface>
                 </div>
               ),
             },
@@ -900,6 +792,49 @@ export default function DesignSystemPage() {
         </Paragraph>
         <StatusTag status="success" label="Verified Component" />
       </Modal>
+
+      <AdaptiveModal
+        intent="form"
+        title="Adaptive form modal"
+        open={adaptiveModalOpen}
+        onCancel={() => setAdaptiveModalOpen(false)}
+        footer={null}
+      >
+        <ResponsiveFormGrid columns={2}>
+          <ResponsiveFormField>
+            <label className="block text-sm font-medium mb-1" htmlFor="modal-subject">
+              Tiêu đề
+            </label>
+            <Input id="modal-subject" placeholder="Nội dung cần xử lý" />
+          </ResponsiveFormField>
+          <ResponsiveFormField>
+            <label className="block text-sm font-medium mb-1" htmlFor="modal-owner">
+              Người phụ trách
+            </label>
+            <Select id="modal-owner" className="w-full" options={[{ value: 'cc', label: 'Tư vấn viên' }]} />
+          </ResponsiveFormField>
+        </ResponsiveFormGrid>
+        <AdaptiveOverlayFooter>
+          <Button onClick={() => setAdaptiveModalOpen(false)}>Hủy</Button>
+          <Button type="primary" onClick={() => setAdaptiveModalOpen(false)}>
+            Lưu demo
+          </Button>
+        </AdaptiveOverlayFooter>
+      </AdaptiveModal>
+
+      <AdaptiveDrawer
+        intent="detail"
+        title="Adaptive detail drawer"
+        open={adaptiveDrawerOpen}
+        onClose={() => setAdaptiveDrawerOpen(false)}
+      >
+        <Paragraph>
+          Phone dùng toàn màn hình; tablet và desktop dùng chiều rộng theo intent để nội dung vẫn đọc được.
+        </Paragraph>
+        <AdaptiveOverlayFooter>
+          <Button onClick={() => setAdaptiveDrawerOpen(false)}>Đóng</Button>
+        </AdaptiveOverlayFooter>
+      </AdaptiveDrawer>
     </div>
   );
 }

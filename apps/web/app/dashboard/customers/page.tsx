@@ -2,8 +2,8 @@
 
 import '../../suppress-warnings';
 import React from 'react';
-import { Tabs, Input, Button, Select, theme, Tooltip, Space, Badge, Spin, message } from 'antd';
-import { SearchOutlined, HistoryOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+import { Tabs, Button, Select, Dropdown, theme, Tooltip, Space, Badge, message } from 'antd';
+import { HistoryOutlined, DeleteOutlined, SettingOutlined, SortAscendingOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import CalendarPlusIcon from '../../../components/icons/CalendarPlusIcon';
@@ -17,7 +17,8 @@ import CustomerTable from './components/CustomerTable';
 import { RetainDataButton } from './components/RetainDataButton';
 import AllocationBatchHeader from './components/AllocationBatchHeader';
 import CustomerRandomSelectorModal from './components/CustomerRandomSelectorModal';
-import { ContentSurface, PageHeader, PageToolbar } from '../../../components/ui';
+import { ContentSurface, ResourceListPage, SearchField, StatePanel } from '../../../components/ui';
+import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
 
 const UndoReasonModal = dynamic(() => import('./components/UndoReasonModal').then((m) => m.UndoReasonModal), {
   ssr: false,
@@ -68,6 +69,8 @@ const PRESET_FILTERS = [
 function CustomersPageContent() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isMobile = responsiveTier === 'mobile';
   const tableRef = React.useRef<{ openConfig: () => void } | null>(null);
 
   const data = useCustomerData({
@@ -174,56 +177,45 @@ function CustomersPageContent() {
 
   const userRole = data.currentUser?.role ? String(data.currentUser.role).toLowerCase() : '';
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+  const sortOptions = [
+    { value: 'id_desc', label: 'Mới nhất' },
+    { value: 'name_asc', label: 'Tên A → Z' },
+    { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé lâu nhất' },
+    { value: 'daysSinceLastVisit_asc', label: 'Chưa ghé gần đây' },
+    { value: 'totalSpent_desc', label: 'Chi tiêu giảm dần' },
+  ];
+  const activeSortLabel = sortOptions.find((option) => option.value === data.sortField)?.label ?? 'Sắp xếp';
+  const handleSortChange = (value: string) => {
+    data.setSortField(value);
+    data.setCurrentPage(1);
+  };
 
   return (
-    <div>
-      <UndoReasonModal
-        visible={undoModalState.visible}
-        batchId={undoModalState.batchId}
-        customerCount={undoModalState.customerCount}
-        onClose={() => setUndoModalState({ visible: false, batchId: null })}
-        onSuccess={() => {
-          data.fetchAssignmentHistory(data.historyPage);
-          data.refreshListAndStats();
-        }}
-      />
-
-      <RevokeAssignmentModal
-        visible={revokeBatchModalState.visible}
-        batchId={revokeBatchModalState.batchId}
-        onClose={() => setRevokeBatchModalState({ visible: false, customerIds: [], batchId: null })}
-        onSuccess={() => {
-          data.fetchAssignmentHistory(data.historyPage);
-          data.refreshListAndStats();
-        }}
-        customerIds={revokeBatchModalState.customerIds}
-        staffList={data.staffList}
-      />
-
-      <PageHeader
-        title="Danh Sách Khách Hàng"
-        subtitle="Quản lý phân loại và phân bổ data real-time"
-        extra={
-          <Tooltip title="Đặt lịch mới">
-            <Button
-              type="primary"
-              aria-label="Đặt lịch mới"
-              icon={<CalendarPlusIcon fontSize={18} />}
-              onClick={() => data.setBookingWizardVisible(true)}
-            />
-          </Tooltip>
-        }
-      />
-
-      <PageToolbar
-        primary={
+    <ResourceListPage
+      className="customer-page"
+      title="Danh Sách Khách Hàng"
+      subtitle="Quản lý phân loại và phân bổ data real-time"
+      headerActions={
+        <Tooltip title="Đặt lịch mới">
+          <Button
+            type="primary"
+            aria-label="Đặt lịch mới"
+            icon={<CalendarPlusIcon fontSize={18} />}
+            onClick={() => data.setBookingWizardVisible(true)}
+          />
+        </Tooltip>
+      }
+      toolbar={{
+        className: 'customer-toolbar',
+        primary: (
           <>
-            <Input.Search
+            <SearchField
               placeholder="Tìm tên hoặc SĐT..."
+              searchButtonLabel="Tìm khách hàng"
               allowClear
-              enterButton={<SearchOutlined />}
               size="middle"
               onSearch={data.handleSearch}
+              className="customer-search"
               style={{ maxWidth: 280 }}
             />
 
@@ -294,8 +286,8 @@ function CustomersPageContent() {
               onOpenRandomModal={isManagerOrAdmin ? () => data.setRandomModalVisible(true) : undefined}
             />
           </>
-        }
-        actions={
+        ),
+        actions: (
           <>
             <RetainDataButton
               mode="quota-badge"
@@ -339,23 +331,55 @@ function CustomersPageContent() {
               />
             </Tooltip>
 
-            <Select
-              defaultValue="id_desc"
-              style={{ width: 170 }}
-              onChange={(val) => {
-                data.setSortField(val);
-                data.setCurrentPage(1);
-              }}
-              options={[
-                { value: 'id_desc', label: 'Mới nhất' },
-                { value: 'name_asc', label: 'Tên A -> Z' },
-                { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé lâu nhất' },
-                { value: 'daysSinceLastVisit_asc', label: 'Chưa ghé gần đây' },
-                { value: 'totalSpent_desc', label: 'Chi tiêu giảm dần' },
-              ]}
-            />
+            {isMobile ? (
+              <Dropdown
+                menu={{
+                  items: sortOptions.map((option) => ({ key: option.value, label: option.label })),
+                  onClick: ({ key }) => handleSortChange(String(key)),
+                  selectable: true,
+                  selectedKeys: [data.sortField],
+                }}
+                trigger={['click']}
+              >
+                <Tooltip title={`Sắp xếp: ${activeSortLabel}`}>
+                  <Button icon={<SortAscendingOutlined />} aria-label={`Sắp xếp: ${activeSortLabel}`} />
+                </Tooltip>
+              </Dropdown>
+            ) : (
+              <Select
+                value={data.sortField}
+                className="customer-sort-control"
+                style={{ width: 170 }}
+                aria-label="Sắp xếp danh sách khách hàng"
+                onChange={handleSortChange}
+                options={sortOptions}
+              />
+            )}
           </>
-        }
+        ),
+      }}
+    >
+      <UndoReasonModal
+        visible={undoModalState.visible}
+        batchId={undoModalState.batchId}
+        customerCount={undoModalState.customerCount}
+        onClose={() => setUndoModalState({ visible: false, batchId: null })}
+        onSuccess={() => {
+          data.fetchAssignmentHistory(data.historyPage);
+          data.refreshListAndStats();
+        }}
+      />
+
+      <RevokeAssignmentModal
+        visible={revokeBatchModalState.visible}
+        batchId={revokeBatchModalState.batchId}
+        onClose={() => setRevokeBatchModalState({ visible: false, customerIds: [], batchId: null })}
+        onSuccess={() => {
+          data.fetchAssignmentHistory(data.historyPage);
+          data.refreshListAndStats();
+        }}
+        customerIds={revokeBatchModalState.customerIds}
+        staffList={data.staffList}
       />
 
       <CustomerBulkActions
@@ -382,6 +406,7 @@ function CustomersPageContent() {
       />
 
       <Tabs
+        className="customer-bucket-tabs"
         activeKey={data.activeTab}
         onChange={(key) => {
           data.setActiveTab(key);
@@ -570,19 +595,13 @@ function CustomersPageContent() {
 
       {/* SMS MODAL */}
       <SMSModal open={smsModalVisible} onClose={() => setSmsModalVisible(false)} customer={data.selectedCustomer} />
-    </div>
+    </ResourceListPage>
   );
 }
 
 export default function CustomersPage() {
   return (
-    <React.Suspense
-      fallback={
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
-          <Spin size="large" />
-        </div>
-      }
-    >
+    <React.Suspense fallback={<StatePanel kind="loading" title="Đang tải danh sách khách hàng" />}>
       <CustomersPageContent />
     </React.Suspense>
   );

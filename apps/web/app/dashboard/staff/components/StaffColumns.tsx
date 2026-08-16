@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
 import { Space, Badge, Avatar, Typography, Tag, Switch, Tooltip, Popconfirm, Button } from 'antd';
 import {
@@ -48,7 +50,7 @@ export const getStaffColumns = ({
 }: StaffColumnsOptions): ColumnsType<Staff> => {
   const columns: ColumnsType<Staff> = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 55,
       align: 'center' as const,
@@ -328,7 +330,7 @@ export const getStaffColumns = ({
             </Text>
             <Text className="tabular-nums" style={{ fontWeight: 500, color: token.colorText }}>
               {record.baseSalary !== undefined && record.baseSalary !== null
-                ? `${Math.round(record.baseSalary).toLocaleString('vi-VN')} đ`
+                ? `${Math.round(record.baseSalary).toLocaleString('vi-VN')} đ`
                 : '—'}
             </Text>
           </div>
@@ -338,7 +340,7 @@ export const getStaffColumns = ({
             </Text>
             <Text className="tabular-nums" style={{ fontWeight: 500, color: token.colorText }}>
               {record.hourlyWage !== undefined && record.hourlyWage !== null
-                ? `${Math.round(record.hourlyWage).toLocaleString('vi-VN')} đ/h`
+                ? `${Math.round(record.hourlyWage).toLocaleString('vi-VN')} đ/h`
                 : '—'}
             </Text>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Drawer, Form, Select, Button, Space, Badge, Tooltip } from 'antd';
+import { Form, Select, Button, Space, Badge, Tooltip } from 'antd';
 import {
   FilterOutlined,
   CalendarOutlined,
@@ -23,6 +23,8 @@ import RangeFilterField from '~/components/filters/RangeFilterField';
 import ActiveFilterTags from './filters/ActiveFilterTags';
 import SaveFilterModal from './filters/SaveFilterModal';
 import SavedFilterDropdown from './filters/SavedFilterDropdown';
+import { AdaptiveDrawer } from '../../../../components/ui';
+import { getViewportSize, useResponsiveTier } from '../../../../hooks/useResponsiveTier';
 
 interface CustomerFiltersProps {
   themeMode: string;
@@ -161,6 +163,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
   PRESET_FILTERS,
   onOpenRandomModal,
 }: CustomerFiltersProps) {
+  const responsiveTier = useResponsiveTier();
+  const isCompactTier = responsiveTier === 'mobile' || responsiveTier === 'tablet';
   const userRole = currentUser?.role ? String(currentUser.role).toLowerCase() : '';
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
 
@@ -295,7 +299,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
       const handleMouseMove = (moveEvent: MouseEvent) => {
         if (!isResizingRef.current) return;
         const deltaX = startXRef.current - moveEvent.clientX;
-        const maxAllowed = Math.min(1150, window.innerWidth - 60);
+        const maxAllowed = Math.min(1150, getViewportSize().width - 60);
         const newWidth = Math.max(400, Math.min(maxAllowed, startWidthRef.current + deltaX));
         setDrawerWidth(newWidth);
       };
@@ -362,7 +366,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
 
   return (
     <>
-      <Space wrap size="small">
+      <Space wrap size="small" className="customer-filter-controls">
         <SavedFilterDropdown
           savedFilters={savedFilters}
           presetFilters={PRESET_FILTERS}
@@ -373,6 +377,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
         <Tooltip title="Bộ lọc nâng cao">
           <Badge dot={hasActiveFilters} offset={[-2, 2]}>
             <Button
+              data-ui="customer-filter-trigger"
               icon={<FilterOutlined />}
               onClick={() => setFilterDrawerVisible(true)}
               style={{
@@ -422,7 +427,9 @@ const CustomerFilters = React.memo(function CustomerFilters({
       />
 
       {/* FILTER DRAWER */}
-      <Drawer
+      <AdaptiveDrawer
+        intent="data"
+        className="customer-filter-overlay"
         title={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -475,7 +482,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
           </div>
         }
         placement="right"
-        width={drawerWidth}
+        width={isCompactTier ? undefined : drawerWidth}
         onClose={() => setFilterDrawerVisible(false)}
         open={filterDrawerVisible}
         styles={{
@@ -532,6 +539,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                 style={{
                   backgroundColor: '#D4A84B',
                   borderColor: '#D4A84B',
+                  color: '#0f172a',
                   borderRadius: '8px',
                   height: '38px',
                   padding: '0 20px',
@@ -546,35 +554,37 @@ const CustomerFilters = React.memo(function CustomerFilters({
         }
       >
         {/* DRAGGABLE RESIZE HANDLE ON LEFT EDGE */}
-        <div
-          onMouseDown={handleMouseDown}
-          title="Kéo sang trái/phải để thay đổi kích thước side slide"
-          style={{
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            left: 0,
-            width: '12px',
-            cursor: 'col-resize',
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: isResizing ? 'rgba(212, 168, 75, 0.25)' : 'transparent',
-            transition: 'background 0.15s ease',
-          }}
-        >
+        {!isCompactTier && (
           <div
+            onMouseDown={handleMouseDown}
+            title="Kéo sang trái/phải để thay đổi kích thước side slide"
             style={{
-              width: '4px',
-              height: '48px',
-              borderRadius: '2px',
-              backgroundColor: isResizing ? '#D4A84B' : themeMode === 'dark' ? '#475569' : '#cbd5e1',
-              boxShadow: isResizing ? '0 0 10px rgba(212, 168, 75, 0.9)' : undefined,
-              transition: 'all 0.15s ease',
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: '12px',
+              cursor: 'col-resize',
+              zIndex: 100,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: isResizing ? 'rgba(212, 168, 75, 0.25)' : 'transparent',
+              transition: 'background 0.15s ease',
             }}
-          />
-        </div>
+          >
+            <div
+              style={{
+                width: '4px',
+                height: '48px',
+                borderRadius: '2px',
+                backgroundColor: isResizing ? '#D4A84B' : themeMode === 'dark' ? '#475569' : '#cbd5e1',
+                boxShadow: isResizing ? '0 0 10px rgba(212, 168, 75, 0.9)' : undefined,
+                transition: 'all 0.15s ease',
+              }}
+            />
+          </div>
+        )}
         <Form layout="vertical" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           {/* CARD 1: THÔNG TIN CÁ NHÂN (SINH NHẬT & ĐỘ TUỔI) */}
           <div
@@ -606,6 +616,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   Tháng sinh nhật
                 </div>
                 <Select
+                  aria-label="Lọc theo tháng sinh nhật"
                   allowClear
                   placeholder="Chọn tháng"
                   value={dobMonth ? String(dobMonth) : undefined}
@@ -756,6 +767,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                 🌐 Phân loại Quốc tịch
               </div>
               <Select
+                aria-label="Lọc theo quốc tịch khách hàng"
                 value={isForeignFilter || 'all'}
                 onChange={(val) => {
                   setIsForeignFilter?.(val as any);
@@ -887,6 +899,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   style={{ marginBottom: '8px' }}
                 >
                   <Select
+                    aria-label="Lọc trạng thái dùng khuyến mãi"
                     value={promoUsed}
                     style={{ width: '100%' }}
                     onChange={(val) => {
@@ -955,6 +968,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   style={{ marginBottom: '8px' }}
                 >
                   <Select
+                    aria-label="Lọc trạng thái giới thiệu"
                     value={referralUsed}
                     style={{ width: '100%' }}
                     onChange={(val) => {
@@ -1010,6 +1024,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   style={{ marginBottom: 0 }}
                 >
                   <Select
+                    aria-label="Lọc khách hàng đã giữ data"
                     value={retainedOnly ? 'yes' : 'all'}
                     style={{ width: '100%' }}
                     onChange={(val) => {
@@ -1049,6 +1064,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                     style={{ marginBottom: 0 }}
                   >
                     <Select
+                      aria-label="Lọc Booker phụ trách"
                       showSearch
                       filterOption={vietnameseSearchFilter}
                       value={assignedStaffId}
@@ -1122,6 +1138,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   style={{ marginBottom: 0 }}
                 >
                   <Select
+                    aria-label="Lọc trạng thái cuộc gọi gần nhất"
                     mode="multiple"
                     allowClear
                     placeholder="Chọn các trạng thái cuộc gọi..."
@@ -1169,7 +1186,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
             </div>
           </div>
         </Form>
-      </Drawer>
+      </AdaptiveDrawer>
 
       <SaveFilterModal
         visible={saveFilterModalVisible}

@@ -3,24 +3,23 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Card, theme, DatePicker, Select, Radio, Space, Button, Tabs, Tooltip } from 'antd';
+import { Typography, Card, theme, Select, Space, Tabs } from 'antd';
 import {
   CalendarOutlined,
-  LeftOutlined,
-  RightOutlined,
   CheckCircleOutlined,
   GiftOutlined,
   DollarOutlined,
   WalletOutlined,
-  SettingOutlined,
   ClockCircleOutlined,
   BarChartOutlined,
 } from '@ant-design/icons';
+import { Settings2 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 
 import { Spin } from 'antd';
+import { IconButton, ReportPeriodNavigator } from '../../../components/ui';
 
 const BkBookingTab = dynamic(() => import('./components/BkBookingTab'), {
   ssr: false,
@@ -91,7 +90,6 @@ const BkConfigDrawer = dynamic(() => import('./components/BkConfigDrawer'), { ss
 dayjs.extend(isoWeek);
 
 const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
 
 export default function BkDashboardPage() {
   const { token } = theme.useToken();
@@ -100,7 +98,6 @@ export default function BkDashboardPage() {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState<string>('ALL');
   const [selectedBooker] = useState<string>('ALL');
 
@@ -114,7 +111,10 @@ export default function BkDashboardPage() {
       const savedTab = localStorage.getItem('bk_active_tab');
       const initialTab = tabParam || savedTab;
 
-      if (initialTab && ['booking', 'done', 'tip', 'revenue', 'thunhap'].includes(initialTab)) {
+      if (
+        initialTab &&
+        ['booking', 'done', 'tip', 'revenue', 'thunhap', 'history-30d', 'alloc-audit'].includes(initialTab)
+      ) {
         setActiveTab(initialTab);
       }
     }
@@ -226,7 +226,7 @@ export default function BkDashboardPage() {
   ];
 
   return (
-    <div className="w-full space-y-6">
+    <div className="responsive-page responsive-workspace bk-page w-full space-y-6">
       {/* Top Header & Filter Navigation (Matching CV Page Compact Style) */}
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>
@@ -240,70 +240,19 @@ export default function BkDashboardPage() {
 
         {/* TOP FILTER CONTROLS BAR */}
         <div className="flex items-center gap-3 flex-wrap">
-          <Space wrap>
-            {/* View Mode Switcher: Tháng / Tuần / Ngày */}
-            <Space.Compact>
-              <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
-                Tháng
-              </Button>
-              <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
-                Tuần
-              </Button>
-              <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
-                Ngày
-              </Button>
-            </Space.Compact>
-
-            {/* Date Navigator: < Tháng 08/2026 📅 > */}
-            <Space.Compact>
-              <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
-              <div style={{ position: 'relative', display: 'inline-block' }}>
-                <Button
-                  onClick={() => setPickerOpen(true)}
-                  style={{
-                    fontWeight: '600',
-                    minWidth: '190px',
-                    textAlign: 'center',
-                    color: token.colorText,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                  className="tabular-nums"
-                >
-                  {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
-                </Button>
-                {pickerOpen && (
-                  <RangePicker
-                    open={true}
-                    onOpenChange={(open) => {
-                      if (!open) setPickerOpen(false);
-                    }}
-                    value={dateRange}
-                    onChange={(dates) => {
-                      if (dates && dates[0] && dates[1]) {
-                        setDateRange([dates[0], dates[1]]);
-                        setPickerOpen(false);
-                      }
-                    }}
-                    format="DD/MM/YYYY"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: 0,
-                      height: 0,
-                      padding: 0,
-                      border: 'none',
-                      visibility: 'hidden',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </div>
-              <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
-            </Space.Compact>
+          <Space wrap className="responsive-toolbar bk-report-toolbar">
+            <ReportPeriodNavigator
+              mode={viewMode}
+              value={referenceDate}
+              label={getPeriodLabel()}
+              onModeChange={setViewMode}
+              onPrevious={() => handleNavigate(-1)}
+              onNext={() => handleNavigate(1)}
+              onValueChange={setReferenceDate}
+              rangeValue={dateRange}
+              onRangeChange={setDateRange}
+              className="bk-report-period"
+            />
 
             {/* Store Filter */}
             <Select
@@ -317,20 +266,12 @@ export default function BkDashboardPage() {
               ]}
             />
 
-            {/* Config Button → Team Management */}
-            <Tooltip title="Cấu hình BK">
-              <Button
-                type="primary"
-                icon={<SettingOutlined />}
-                onClick={() => router.push('/dashboard/staff/teams?selected=BK')}
-                style={{
-                  backgroundColor: token.colorPrimary,
-                  borderColor: token.colorPrimary,
-                  color: '#000',
-                  fontWeight: '600',
-                }}
-              />
-            </Tooltip>
+            <IconButton
+              label="Cấu hình BK"
+              icon={Settings2}
+              tone="primary"
+              onClick={() => router.push('/dashboard/staff/teams?selected=BK')}
+            />
           </Space>
         </div>
       </div>

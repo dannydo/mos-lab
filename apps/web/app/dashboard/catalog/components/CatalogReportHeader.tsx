@@ -35,14 +35,14 @@ export default function CatalogReportHeader({ summary, loading = false }: Catalo
         >
           <div className="flex items-center justify-between mb-2">
             <Text className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              Tổng Doanh Thu Catalog
+              ∑ Doanh Thu Catalog
             </Text>
             <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500">
               <ShopOutlined className="text-base" />
             </div>
           </div>
           <div className="tabular-nums text-xl font-extrabold text-amber-500 dark:text-amber-400">
-            {Math.round(summary?.totalRevenue || 0).toLocaleString('vi-VN')} đ
+            {Math.round(summary?.totalRevenue || 0).toLocaleString('vi-VN')} đ
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex justify-between">
             <span>
@@ -72,14 +72,14 @@ export default function CatalogReportHeader({ summary, loading = false }: Catalo
         >
           <div className="flex items-center justify-between mb-2">
             <Text className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              Doanh Số Dịch Vụ ($ Single)
+              Doanh Số Single
             </Text>
             <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500">
               <AppstoreOutlined className="text-base" />
             </div>
           </div>
           <div className="tabular-nums text-xl font-extrabold text-blue-500 dark:text-blue-400">
-            {Math.round(summary?.singleServiceRevenue || 0).toLocaleString('vi-VN')} đ
+            {Math.round(summary?.singleServiceRevenue || 0).toLocaleString('vi-VN')} đ
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Dịch vụ làm lẻ trực tiếp tại tiệm</div>
         </Card>
@@ -100,14 +100,14 @@ export default function CatalogReportHeader({ summary, loading = false }: Catalo
         >
           <div className="flex items-center justify-between mb-2">
             <Text className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-              Doanh Số Gói Combo ($ Combo)
+              Doanh Số Combo
             </Text>
             <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500">
               <ProjectOutlined className="text-base" />
             </div>
           </div>
           <div className="tabular-nums text-xl font-extrabold text-purple-500 dark:text-purple-400">
-            {Math.round(summary?.comboRevenue || 0).toLocaleString('vi-VN')} đ
+            {Math.round(summary?.comboRevenue || 0).toLocaleString('vi-VN')} đ
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Khách đăng ký mua gói combo mới</div>
         </Card>
@@ -128,14 +128,14 @@ export default function CatalogReportHeader({ summary, loading = false }: Catalo
         >
           <div className="flex items-center justify-between mb-2">
             <Text className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Doanh Số Sản Phẩm ($ Product)
+              Doanh Số Sản Phẩm
             </Text>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
               <TagOutlined className="text-base" />
             </div>
           </div>
           <div className="tabular-nums text-xl font-extrabold text-emerald-500 dark:text-emerald-400">
-            {Math.round(summary?.productRevenue || 0).toLocaleString('vi-VN')} đ
+            {Math.round(summary?.productRevenue || 0).toLocaleString('vi-VN')} đ
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Bán lẻ sản phẩm & phụ kiện dưỡng</div>
         </Card>

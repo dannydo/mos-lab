@@ -10,7 +10,15 @@ import timezone from 'dayjs/plugin/timezone';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import 'dayjs/locale/vi';
 import { safeStorage } from '../lib/safe-storage';
-import { themeTokens } from '@mos-lab/shared';
+import {
+  getDensityMeasurements,
+  isDesktopDensity,
+  resolveDensityProfile,
+  themeTokens,
+  type DensityProfile,
+  type DesktopDensity,
+} from '@mos-lab/shared';
+import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
 // Force Asia/Ho_Chi_Minh (UTC+7) timezone and Monday-First weekStart (1 = Monday) across entire application
 dayjs.extend(utc);
@@ -27,9 +35,16 @@ dayjs.updateLocale('en', {
 
 type ThemeMode = 'light' | 'dark';
 
+export const DESKTOP_DENSITY_STORAGE_KEY = 'mos_desktop_density';
+
 interface ThemeContextType {
   themeMode: ThemeMode;
   toggleTheme: () => void;
+  /** Saved preference used whenever the viewport is not a phone. */
+  desktopDensity: DesktopDensity;
+  /** The active profile after applying the mobile touch-safety policy. */
+  effectiveDensity: DensityProfile;
+  setDesktopDensity: (density: DesktopDensity) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -43,6 +58,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return 'dark'; // Default to dark premium
   });
   const [mounted, setMounted] = useState(false);
+  const [desktopDensity, setDesktopDensityState] = useState<DesktopDensity>(() => {
+    const saved = safeStorage.getItem(DESKTOP_DENSITY_STORAGE_KEY);
+    return isDesktopDensity(saved) ? saved : 'standard';
+  });
+  const responsiveTier = useResponsiveTier();
+  const effectiveDensity = resolveDensityProfile(desktopDensity, responsiveTier);
 
   useEffect(() => {
     setMounted(true);
@@ -59,8 +80,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.classList.remove('light-theme');
         root.classList.add('dark-theme', 'dark');
       }
+      const semantic = themeTokens.semantic[themeMode];
+      const colors = themeTokens.colors[themeMode];
+      root.style.setProperty('--mos-surface-raised', semantic.surfaceRaised);
+      root.style.setProperty('--mos-surface-muted', semantic.surfaceMuted);
+      root.style.setProperty('--mos-surface-border', semantic.border);
+      root.style.setProperty('--mos-surface-border-strong', semantic.borderStrong);
+      root.style.setProperty('--mos-text', semantic.text);
+      root.style.setProperty('--mos-text-muted', semantic.textMuted);
+      root.style.setProperty('--mos-accent', semantic.accent);
+      root.style.setProperty('--mos-accent-contrast', semantic.accentContrast);
+      root.style.setProperty('--mos-focus-ring', semantic.focusRing);
+      root.style.setProperty('--mos-success', colors.success);
+      root.dataset.uiDensity = effectiveDensity;
+      root.dataset.desktopDensity = desktopDensity;
     } catch (_) {}
-  }, [themeMode, mounted]);
+  }, [desktopDensity, effectiveDensity, mounted, themeMode]);
 
   const toggleTheme = () => {
     const nextTheme = themeMode === 'light' ? 'dark' : 'light';
@@ -68,13 +103,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     safeStorage.setItem('mos_theme', nextTheme);
   };
 
+  const setDesktopDensity = (density: DesktopDensity) => {
+    setDesktopDensityState(density);
+    safeStorage.setItem(DESKTOP_DENSITY_STORAGE_KEY, density);
+  };
+
   const isDark = themeMode === 'dark';
   const currentTokens = isDark ? themeTokens.colors.dark : themeTokens.colors.light;
+  const semanticTokens = themeTokens.semantic[themeMode];
+  const density = getDensityMeasurements(effectiveDensity);
 
   return (
-    <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ themeMode, toggleTheme, desktopDensity, effectiveDensity, setDesktopDensity }}>
       <ConfigProvider
         locale={viVN}
+        pagination={{
+          showSizeChanger: true,
+        }}
         theme={{
           algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
           token: {
@@ -85,6 +130,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             colorError: currentTokens.error,
             controlOutline: isDark ? 'rgba(212, 168, 75, 0.25)' : 'rgba(158, 113, 24, 0.25)',
             controlOutlineWidth: 2,
+            controlHeight: density.controlHeight,
+            fontSize: density.fontSize,
             borderRadius: themeTokens.radii.md,
             borderRadiusLG: themeTokens.radii.xl,
             borderRadiusSM: themeTokens.radii.sm,
@@ -111,8 +158,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
               colorBorderSecondary: isDark ? '#1f2937' : '#e5e7eb',
             },
             Table: {
-              padding: 12,
-              paddingContentVertical: 10,
+              padding: density.cellPaddingInline,
+              paddingContentVertical: density.cellPaddingBlock,
               headerBg: isDark ? '#1e293b' : '#f1f5f9',
               headerColor: isDark ? '#f8fafc' : '#0f172a',
               headerSplitColor: isDark ? '#334155' : '#cbd5e1',
@@ -122,7 +169,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             Button: {
               borderRadius: 6,
               fontWeight: 500,
-              paddingInline: 14,
+              paddingInline: density.paddingInline,
             },
             Tag: {
               borderRadiusSM: 4,
@@ -147,6 +194,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             Select: {
               borderRadius: 6,
               colorBgContainer: isDark ? '#1a2234' : '#ffffff',
+            },
+            Pagination: {
+              // Pagination is an application control, not a table-specific
+              // afterthought. Keeping it in the same density pipeline makes
+              // every Ant table and standalone pager honour the selected
+              // Compact / Standard / Comfortable profile.
+              itemSize: density.controlHeight,
+              itemSizeSM: density.controlHeight,
+              itemBg: semanticTokens.surfaceRaised,
+              itemLinkBg: semanticTokens.surfaceRaised,
+              itemActiveBg: semanticTokens.accent,
+              itemActiveColor: semanticTokens.accentContrast,
+              itemActiveColorHover: semanticTokens.accentContrast,
+              itemActiveBgDisabled: semanticTokens.surfaceMuted,
+              itemActiveColorDisabled: semanticTokens.textMuted,
+              itemInputBg: semanticTokens.surfaceRaised,
             },
           },
         }}

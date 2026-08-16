@@ -2,6 +2,8 @@
  * Shared utility functions for formatting and calculations.
  */
 
+const VND_UNIT = '\u00A0đ';
+
 /**
  * Formats a number as Vietnamese Dong (VND).
  * e.g., 1000000 -> "1.000.000 đ"
@@ -15,7 +17,7 @@ export function formatVND(value: number | null | undefined): string {
     maximumFractionDigits: 0,
   })
     .format(rounded)
-    .replace(/\s?₫/g, ' đ');
+    .replace(/\s?₫/g, VND_UNIT);
 }
 
 /**
@@ -27,7 +29,7 @@ export function formatVND(value: number | null | undefined): string {
 export function formatCompactVND(value: number | null | undefined): string {
   if (value === null || value === undefined) return '0 đ';
   const absVal = Math.abs(value);
-  const suffix = ' đ';
+  const suffix = VND_UNIT;
   if (absVal >= 1_000_000_000) {
     return `${(value / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B${suffix}`;
   }
@@ -38,6 +40,18 @@ export function formatCompactVND(value: number | null | undefined): string {
     return `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}K${suffix}`;
   }
   return `${value}${suffix}`;
+}
+
+/**
+ * Returns the compact branch code used in dense operational tables.
+ */
+export function formatStoreCode(store?: string | null): string {
+  if (!store) return 'PXL';
+  const normalized = String(store).toUpperCase().trim();
+  if (normalized.includes('ESTELLA') || normalized === 'EP') return 'EP';
+  if (normalized.includes('THAM') || normalized.includes('DE') || normalized === 'DT') return 'DT';
+  if (normalized.includes('PXL') || normalized.includes('PHAN')) return 'PXL';
+  return normalized;
 }
 
 /**

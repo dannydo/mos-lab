@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import {
-  Modal,
   Select,
   Typography,
   Space,
@@ -32,6 +31,7 @@ import { apiClient } from '../../lib/api-client';
 import { Campaign, AddCustomerDetail, AddCampaignCustomersResponse } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
 import CampaignPlusIcon from '../icons/CampaignPlusIcon';
+import { AdaptiveModal } from '../ui';
 
 const { Text, Paragraph } = Typography;
 
@@ -389,7 +389,9 @@ export function AddToCampaignModal({
     ];
 
     return (
-      <Modal
+      <AdaptiveModal
+        intent="data"
+        className="customer-campaign-result-overlay"
         title={
           <Space align="center">
             <CheckCircleOutlined className="text-emerald-500 text-xl" />
@@ -540,12 +542,14 @@ export function AddToCampaignModal({
             size="small"
           />
         </div>
-      </Modal>
+      </AdaptiveModal>
     );
   }
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="form"
+      className="customer-add-to-campaign-overlay"
       title={
         <Space>
           <CampaignPlusIcon fontSize={18} badgeBg="#047857" />
@@ -581,7 +585,6 @@ export function AddToCampaignModal({
           Xác nhận thêm vào chiến dịch
         </Button>,
       ]}
-      width={540}
       destroyOnClose
     >
       <div className="py-2">
@@ -654,6 +657,6 @@ export function AddToCampaignModal({
           </div>
         )}
       </div>
-    </Modal>
+    </AdaptiveModal>
   );
 }

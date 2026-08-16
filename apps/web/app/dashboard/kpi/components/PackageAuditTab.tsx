@@ -317,7 +317,7 @@ export const PackageAuditTab: React.FC = () => {
         <Col xs={12} sm={6}>
           <Card size="small" style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}>
             <Statistic
-              title="Tổng lượt cộng thủ công"
+              title="∑ lượt cộng thủ công"
               value={summary.totalCount}
               prefix={<SafetyOutlined style={{ color: '#1890ff' }} />}
             />

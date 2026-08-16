@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Drawer, DatePicker, Avatar, Tag, Tooltip, Alert } from 'antd';
+import { DatePicker, Avatar, Tag, Tooltip, Alert } from 'antd';
 import {
   UserOutlined,
   CalendarOutlined,
@@ -16,6 +16,7 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { Appointment } from '@mos-lab/shared';
 import { useTheme } from '../../../../../context/ThemeContext';
+import { AdaptiveDrawer } from '../../../../../components/ui';
 import { CvDatePicker } from '../../../../../components/booking/CvDatePicker';
 import CalendarPlusIcon from '../../../../../components/icons/CalendarPlusIcon';
 import { StaffWorkingItem } from './cvDrawerUtils';
@@ -193,10 +194,11 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
   }, [staff]);
 
   return (
-    <Drawer
+    <AdaptiveDrawer
       title={null}
       placement="right"
       width={440}
+      intent="detail"
       open={open}
       onClose={onClose}
       closable={false}
@@ -222,7 +224,7 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
               <div className="font-extrabold text-sm truncate flex items-center gap-1.5">
                 <span>{staff?.name || 'Chuyên viên'}</span>
                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold">
-                  {staff?.branchName || 'Đề Thám'}
+                  {staff?.branchCode || staff?.branchName || 'DT'}
                 </span>
               </div>
               <div className="text-[11px] text-slate-400 flex items-center gap-2">
@@ -431,6 +433,6 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
           );
         })}
       </div>
-    </Drawer>
+    </AdaptiveDrawer>
   );
 };

@@ -1,7 +1,9 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
-import { Table, Tag, Button, Space, Tooltip, Typography } from 'antd';
+import { Tag, Button, Space, Tooltip, Typography } from 'antd';
 import {
   PhoneOutlined,
   CalendarOutlined,
@@ -20,6 +22,7 @@ import { useOmiCall } from '../../../../context/OmiCallContext';
 import { useTheme } from '../../../../context/ThemeContext';
 import { ResizableHeaderCell } from '../../../../components/ResizableHeaderCell';
 import { getBranchBadgeInfo } from './MultiDayColumnView';
+import { DataTable } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -175,7 +178,7 @@ export default function ScheduleListView({
 
   const columns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 60,
       align: 'center' as const,
@@ -211,16 +214,19 @@ export default function ScheduleListView({
     {
       title: 'Chi nhánh',
       key: 'branch',
-      width: 110,
+      width: 80,
       align: 'center' as const,
       render: (_: unknown, record: Appointment) => {
-        const branch = getBranchBadgeInfo(record.storeId, record.branchName);
+        const branch = getBranchBadgeInfo(record.storeId, record.branchName, record.branchCode);
         return (
-          <span
-            className={`text-xs font-extrabold px-2 py-0.5 rounded border uppercase tracking-tight ${branch.bgClass}`}
-          >
-            [{branch.code}] {branch.label}
-          </span>
+          <Tooltip title={branch.label}>
+            <span
+              aria-label={`Chi nhánh ${branch.label}`}
+              className={`text-xs font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-tight ${branch.bgClass}`}
+            >
+              {branch.code}
+            </span>
+          </Tooltip>
         );
       },
     },
@@ -352,7 +358,7 @@ export default function ScheduleListView({
 
   return (
     <div className="schedule-list-view-container w-full bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-4">
-      <Table
+      <DataTable
         loading={loading}
         dataSource={appointments}
         rowKey={getAppointmentKey}
@@ -373,6 +379,45 @@ export default function ScheduleListView({
           showTotal: (totalCount) => `Tổng cộng ${totalCount} lịch hẹn`,
         }}
         rowClassName="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+        className="schedule-agenda-data-table"
+        columnPriority={{
+          customer: 'primary',
+          appointmentTime: 'primary',
+          serviceName: 'secondary',
+          orderState: 'primary',
+          action: 'primary',
+        }}
+        stickyPrimaryColumn
+        mobileRenderer={(record) => (
+          <div className="schedule-mobile-agenda-card">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <strong className="block truncate">{record.customerName || 'Khách hàng'}</strong>
+                <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {record.serviceName || 'Chưa xác định dịch vụ'}
+                </span>
+              </div>
+              <Tag className="!mr-0 shrink-0">{record.orderState || 'Pending'}</Tag>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+              <span>{record.bookingDateStart ? dayjs(record.bookingDateStart).format('HH:mm · DD/MM') : '-'}</span>
+              <span>{record.technicianName || 'Chưa chọn CV'}</span>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                size="small"
+                icon={<PhoneOutlined />}
+                disabled={!record.customerPhone}
+                onClick={() => handleMakeCall(record.customerPhone, record.customerName || 'Khách hàng')}
+              >
+                Gọi
+              </Button>
+              <Button size="small" type="primary" icon={<CalendarOutlined />} onClick={() => onReschedule(record)}>
+                Đổi lịch
+              </Button>
+            </div>
+          </div>
+        )}
       />
     </div>
   );

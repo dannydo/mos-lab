@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   ClockCircleOutlined,
+  DashboardOutlined,
   TeamOutlined,
   HeartOutlined,
   CalendarOutlined,
@@ -11,12 +12,13 @@ import {
   ShopOutlined,
   ShareAltOutlined,
   BgColorsOutlined,
-  RocketOutlined,
   CustomerServiceOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
+import { Rocket, Settings2, Target, UserRound, UserRoundPlus, UsersRound } from 'lucide-react';
 
 import { SafeAny } from '@mos-lab/shared';
+import { AppIcon } from '../components/ui/AppIcon';
 
 export interface SidebarItemConfig {
   key: string;
@@ -49,6 +51,12 @@ export function getSidebarGroups(
     groupTitle: 'TRANG CHỦ',
     items: [
       {
+        key: 'dashboard',
+        label: 'Tổng quan',
+        icon: <DashboardOutlined />,
+        path: '/dashboard',
+      },
+      {
         key: 'today',
         label: 'Hôm nay',
         icon: <ClockCircleOutlined />,
@@ -69,6 +77,7 @@ export function getSidebarGroups(
     customerChildren.push({
       key: 'customers-all',
       label: 'Tất cả KH',
+      icon: <AppIcon icon={UsersRound} size="sm" />,
       path: '/dashboard/customers?assignedStaffId=all',
     });
   }
@@ -76,11 +85,13 @@ export function getSidebarGroups(
     {
       key: 'my-customers',
       label: 'KH của tôi',
+      icon: <AppIcon icon={UserRound} size="sm" />,
       path: '/dashboard/customers?assignedStaffId=me',
     },
     {
       key: 'referrals',
       label: 'KH giới thiệu',
+      icon: <AppIcon icon={UserRoundPlus} size="sm" />,
       path: '/dashboard/referrals',
     }
   );
@@ -89,6 +100,7 @@ export function getSidebarGroups(
     {
       key: 'nyc-main',
       label: 'NYC Chính',
+      icon: <AppIcon icon={Target} size="sm" />,
       path: '/dashboard/nyc',
     },
   ];
@@ -104,7 +116,7 @@ export function getSidebarGroups(
         nycChildren.push({
           key: `nyc-campaign-${c.slug}`,
           label: c.name,
-          icon: <RocketOutlined style={{ color: '#10b981', fontSize: '12px' }} />,
+          icon: <AppIcon icon={Rocket} size="sm" className="text-emerald-500" />,
           path: `/dashboard/nyc/campaigns/${c.slug}`,
         });
       }
@@ -114,6 +126,7 @@ export function getSidebarGroups(
   nycChildren.push({
     key: 'nyc-campaigns-mgmt',
     label: 'Quản lý Chiến dịch',
+    icon: <AppIcon icon={Settings2} size="sm" />,
     path: '/dashboard/nyc/campaigns',
   });
 
@@ -288,6 +301,7 @@ export function getSidebarGroups(
 }
 
 export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | null): string {
+  if (pathname === '/dashboard') return 'dashboard';
   if (pathname.includes('/dashboard/today')) return 'today';
   if (pathname.includes('/dashboard/fal')) return 'fal-control-tower';
   if (pathname.includes('/dashboard/customers')) {

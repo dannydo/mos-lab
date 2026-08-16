@@ -7,7 +7,7 @@ import {
   DollarOutlined,
   SearchOutlined,
   ReloadOutlined,
-  ThunderboltOutlined,
+  AppstoreOutlined,
   SafetyCertificateOutlined,
   FilterOutlined,
   SettingOutlined,
@@ -20,6 +20,8 @@ import { apiClient } from '../../../../lib/api-client';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import CcAvatar from '../../cc/components/CcAvatar';
+import { MobileRecordList } from '~/components/ui';
+import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 export const formatStoreCode = (store?: string | null): string => {
   if (!store) return 'PXL';
@@ -56,6 +58,8 @@ export default function CvXoayTab({
   selectedConsultant = 'ALL',
 }: CvXoayTabProps) {
   const { token } = theme.useToken();
+  const tier = useResponsiveTier();
+  const isMobile = tier === 'mobile';
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CvXoayRecord[]>([]);
@@ -226,23 +230,14 @@ export default function CvXoayTab({
       },
     },
     {
-      title: 'Cơ Sở',
-      dataIndex: 'store',
-      key: 'store',
-      width: 80,
-      render: (store: string) => (
-        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(store)}</span>
-      ),
-    },
-    {
-      title: 'Lượt Ca Dịch Vụ',
+      title: 'Bộ Mi',
       dataIndex: 'totalServices',
       key: 'totalServices',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold text-purple-400 text-xs">{val} ca</span>,
+      render: (val: number) => <span className="tabular-nums font-semibold text-purple-400 text-xs">{val} Bộ</span>,
     },
     {
-      title: 'Tổng Điểm Tích Luỹ',
+      title: '∑ Điểm Xoay',
       dataIndex: 'totalPoints',
       key: 'totalPoints',
       align: 'right' as const,
@@ -251,7 +246,7 @@ export default function CvXoayTab({
       ),
     },
     {
-      title: 'Thưởng Ca CV (đ)',
+      title: 'Thưởng Xoay',
       dataIndex: 'totalBonus',
       key: 'totalBonus',
       align: 'right' as const,
@@ -290,16 +285,12 @@ export default function CvXoayTab({
       title: 'Khách Hàng',
       dataIndex: 'clientName',
       key: 'clientName',
-      width: 130,
-      render: (text: string) => <span className="font-semibold text-xs text-sky-400">{text || 'Khách Vãng Lai'}</span>,
-    },
-    {
-      title: 'Cơ Sở',
-      dataIndex: 'store',
-      key: 'store',
-      width: 80,
-      render: (text: string) => (
-        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(text)}</span>
+      width: 150,
+      render: (text: string, record: CvXoayRecord) => (
+        <div className="flex items-center gap-1 whitespace-nowrap">
+          <span className="font-semibold text-xs text-sky-400">{text || 'Khách Vãng Lai'}</span>
+          <span className="text-[11px] font-medium text-slate-500">· {formatStoreCode(record.store)}</span>
+        </div>
       ),
     },
     {
@@ -380,7 +371,7 @@ export default function CvXoayTab({
       ),
     },
     {
-      title: 'Điểm Ca (+pts)',
+      title: 'Điểm Xoay',
       dataIndex: 'techPoints',
       key: 'techPoints',
       width: 100,
@@ -390,7 +381,7 @@ export default function CvXoayTab({
       ),
     },
     {
-      title: 'Điểm Tích Luỹ (Accu)',
+      title: '∑ Điểm Xoay',
       dataIndex: 'pointsAccu',
       key: 'pointsAccu',
       width: 110,
@@ -400,7 +391,7 @@ export default function CvXoayTab({
       ),
     },
     {
-      title: 'Thưởng Ca CV (đ)',
+      title: 'Thưởng Xoay',
       dataIndex: 'techBonus',
       key: 'techBonus',
       width: 110,
@@ -433,11 +424,11 @@ export default function CvXoayTab({
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Lượt Ca Làm"
+              title="∑ Bộ Mi"
               value={summary.totalServices}
-              suffix="lượt"
+              suffix="Bộ Mi"
               valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
-              prefix={<ThunderboltOutlined />}
+              prefix={<AppstoreOutlined />}
             />
           </Card>
         </Col>
@@ -448,7 +439,7 @@ export default function CvXoayTab({
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Điểm Tích Lũy (Points)"
+              title="∑ Điểm Xoay"
               value={summary.totalPoints}
               suffix="pts"
               valueStyle={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
@@ -463,7 +454,7 @@ export default function CvXoayTab({
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Thưởng Ca CV"
+              title="∑ Thưởng Xoay"
               value={summary.totalBonus}
               suffix="đ"
               valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
@@ -501,31 +492,95 @@ export default function CvXoayTab({
           )
         }
       >
-        <Table
-          dataSource={leaderboard}
-          columns={leaderboardColumns}
-          rowKey="techName"
-          size="small"
-          pagination={false}
-          loading={loading || parentLoading}
-          scroll={{ x: 'max-content' }}
-          className="antd-custom-table"
-          locale={{ emptyText: 'Chưa có dữ liệu xếp hạng Chuyên viên' }}
-          onRow={(record) => ({
-            onClick: () => {
-              if (selectedCvName && selectedCvName.toLowerCase() === record.techName.toLowerCase()) {
-                setSelectedCvName(null);
-              } else {
-                setSelectedCvName(record.techName);
-              }
-            },
-          })}
-          rowClassName={(record) =>
-            selectedCvName && selectedCvName.toLowerCase() === record.techName.toLowerCase()
-              ? 'bg-amber-500/10 dark:bg-amber-500/20 border-l-4 border-amber-500 font-bold cursor-pointer'
-              : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/60'
-          }
-        />
+        {isMobile ? (
+          <div className="p-3">
+            <MobileRecordList
+              records={leaderboard}
+              loading={loading || parentLoading}
+              getKey={(record) => record.techName}
+              emptyDescription="Chưa có dữ liệu xếp hạng Chuyên viên"
+              renderRecord={(record) => {
+                const isSelected = selectedCvName?.toLowerCase() === record.techName.toLowerCase();
+                return (
+                  <button
+                    type="button"
+                    className={`w-full min-w-0 text-left ${
+                      isSelected ? 'rounded-lg bg-amber-500/10 ring-1 ring-amber-400/60' : ''
+                    }`}
+                    aria-pressed={isSelected}
+                    onClick={() => setSelectedCvName(isSelected ? null : record.techName)}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
+                        {record.rank === 1
+                          ? '🥇'
+                          : record.rank === 2
+                            ? '🥈'
+                            : record.rank === 3
+                              ? '🥉'
+                              : `#${record.rank}`}
+                      </span>
+                      <CcAvatar name={record.techName} src={record.avatar} size={32} isSelected={isSelected} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
+                          {record.techName}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {formatStoreCode(record.store)} · L{record.techLevel}
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-xs text-amber-400">{isSelected ? 'Đang lọc' : 'Xem'}</span>
+                    </div>
+                    <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">Bộ Mi</dt>
+                        <dd className="truncate text-sm font-bold tabular-nums text-purple-400">
+                          {record.totalServices} Bộ
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">∑ Điểm Xoay</dt>
+                        <dd className="truncate text-sm font-bold tabular-nums text-sky-400">+{record.totalPoints}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">Thưởng</dt>
+                        <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
+                          {Math.round(record.totalBonus || 0).toLocaleString('vi-VN')} đ
+                        </dd>
+                      </div>
+                    </dl>
+                  </button>
+                );
+              }}
+            />
+          </div>
+        ) : (
+          <Table
+            dataSource={leaderboard}
+            columns={leaderboardColumns}
+            rowKey="techName"
+            size="small"
+            pagination={false}
+            loading={loading || parentLoading}
+            scroll={{ x: 'max-content' }}
+            className="antd-custom-table"
+            locale={{ emptyText: 'Chưa có dữ liệu xếp hạng Chuyên viên' }}
+            onRow={(record) => ({
+              onClick: () => {
+                if (selectedCvName && selectedCvName.toLowerCase() === record.techName.toLowerCase()) {
+                  setSelectedCvName(null);
+                } else {
+                  setSelectedCvName(record.techName);
+                }
+              },
+            })}
+            rowClassName={(record) =>
+              selectedCvName && selectedCvName.toLowerCase() === record.techName.toLowerCase()
+                ? 'bg-amber-500/10 dark:bg-amber-500/20 border-l-4 border-amber-500 font-bold cursor-pointer'
+                : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/60'
+            }
+          />
+        )}
       </Card>
 
       {/* Main Detailed Service Table Card */}
@@ -585,7 +640,7 @@ export default function CvXoayTab({
             pageSize: pageSize,
             showSizeChanger: true,
             pageSizeOptions: ['20', '50', '100', '200'],
-            showTotal: (total) => `Tổng số ${total} ca làm dịch vụ`,
+            showTotal: (total) => `∑ ${total} Bộ Mi`,
             onChange: (page, size) => {
               setPageSize(size);
               localStorage.setItem('cv_xoay_page_size', size.toString());

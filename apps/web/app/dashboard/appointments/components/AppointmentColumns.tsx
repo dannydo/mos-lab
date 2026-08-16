@@ -1,20 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Space, Avatar, Typography, Tag, Tooltip, Button, Popconfirm } from 'antd';
-import {
-  UserOutlined,
-  PhoneOutlined,
-  CalendarOutlined,
-  EyeOutlined,
-  CloseCircleOutlined,
-  EditOutlined,
-  FileTextOutlined,
-} from '@ant-design/icons';
+import { Space, Typography, Tag, Tooltip, Button, Popconfirm } from 'antd';
+import { CalendarOutlined, EyeOutlined, CloseCircleOutlined, EditOutlined, FileTextOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Appointment } from '@mos-lab/shared';
 import CalendarPlusIcon from '../../../../components/icons/CalendarPlusIcon';
 import CalendarRescheduleIcon from '../../../../components/icons/CalendarRescheduleIcon';
+import { CustomerIdentityCell, TableIndexHeader } from '~/components/ui';
 
 import { ColumnsType } from 'antd/es/table';
 
@@ -46,7 +39,7 @@ export const getPendingColumns = ({
 }: ColumnsOptions): ColumnsType<Appointment> => {
   return [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 55,
       align: 'center' as const,
@@ -60,64 +53,18 @@ export const getPendingColumns = ({
       title: 'Khách hàng',
       key: 'customerName',
       render: (record: Appointment) => (
-        <Space
-          size="middle"
-          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-          onClick={() => openDetailModal(record.customerId)}
-        >
-          <Avatar
-            src={record.customerAvatar || undefined}
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
-              color: '#D4A84B',
-              border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-              flexShrink: 0,
-            }}
-          />
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-              <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">
-                {record.customerName}
-              </div>
-              {(record as any).isForeign && (
-                <Tag
-                  color="purple"
-                  style={{
-                    margin: 0,
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    padding: '0 4px',
-                    borderRadius: '4px',
-                    lineHeight: '16px',
-                  }}
-                >
-                  🌐 Nước ngoài
-                </Tag>
-              )}
-            </div>
-            <div style={{ fontSize: '12px', color: token.colorTextDescription }}>ID: {record.customerId}</div>
-          </div>
-        </Space>
+        <CustomerIdentityCell
+          name={record.customerName}
+          phone={record.customerPhone}
+          avatar={record.customerAvatar}
+          accentColor="#D4A84B"
+          isForeign={Boolean((record as any).isForeign)}
+          onOpen={() => openDetailModal(record.customerId)}
+          onCall={() =>
+            makeCall(record.customerPhone, record.customerName, record.customerId, record.customerAvatar || undefined)
+          }
+        />
       ),
-    },
-    {
-      title: 'Số Điện Thoại',
-      dataIndex: 'customerPhone',
-      key: 'customerPhone',
-      render: (phone: string, record: Appointment) =>
-        phone ? (
-          <span
-            className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-            onClick={() => makeCall(phone, record.customerName, record.customerId, record.customerAvatar || undefined)}
-            style={{ color: token.colorText, fontWeight: '600' }}
-          >
-            <PhoneOutlined style={{ color: '#D4A84B' }} />
-            <span>{phone}</span>
-          </span>
-        ) : (
-          <Text type="secondary">-</Text>
-        ),
     },
     {
       title: 'Thời Gian Hẹn',
@@ -350,13 +297,14 @@ export const getCompletedColumns = ({
   token,
   formatVND,
   openDetailModal,
+  makeCall,
 }: Omit<
   ColumnsOptions,
-  'makeCall' | 'setSelectedBookingForReschedule' | 'setRescheduleModalVisible' | 'handleCancelBooking'
+  'setSelectedBookingForReschedule' | 'setRescheduleModalVisible' | 'handleCancelBooking'
 >): ColumnsType<Appointment> => {
   return [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 55,
       align: 'center' as const,
@@ -370,28 +318,16 @@ export const getCompletedColumns = ({
       title: 'Khách hàng',
       key: 'customerName',
       render: (record: Appointment) => (
-        <Space
-          size="middle"
-          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-          onClick={() => openDetailModal(record.customerId)}
-        >
-          <Avatar
-            src={record.customerAvatar || undefined}
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
-              color: '#D4A84B',
-              border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-              flexShrink: 0,
-            }}
-          />
-          <div>
-            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">
-              {record.customerName}
-            </div>
-            <div style={{ fontSize: '12px', color: token.colorTextDescription }}>ID: {record.customerId}</div>
-          </div>
-        </Space>
+        <CustomerIdentityCell
+          name={record.customerName}
+          phone={record.customerPhone}
+          avatar={record.customerAvatar}
+          accentColor="#D4A84B"
+          onOpen={() => openDetailModal(record.customerId)}
+          onCall={() =>
+            makeCall(record.customerPhone, record.customerName, record.customerId, record.customerAvatar || undefined)
+          }
+        />
       ),
     },
     {
@@ -607,7 +543,7 @@ export const getMissedColumns = ({
 
   return [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 55,
       align: 'center' as const,
@@ -621,47 +557,17 @@ export const getMissedColumns = ({
       title: 'Khách hàng',
       key: 'customerName',
       render: (record: Appointment) => (
-        <Space
-          size="middle"
-          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-          onClick={() => openDetailModal(record.customerId)}
-        >
-          <Avatar
-            src={record.customerAvatar || undefined}
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor: themeMode === 'dark' ? '#333' : '#f5f5f5',
-              color: '#FF4D4F',
-              border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#d9d9d9'}`,
-              flexShrink: 0,
-            }}
-          />
-          <div>
-            <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline">
-              {record.customerName}
-            </div>
-            <div style={{ fontSize: '12px', color: token.colorTextDescription }}>ID: {record.customerId}</div>
-          </div>
-        </Space>
+        <CustomerIdentityCell
+          name={record.customerName}
+          phone={record.customerPhone}
+          avatar={record.customerAvatar}
+          accentColor="#FF4D4F"
+          onOpen={() => openDetailModal(record.customerId)}
+          onCall={() =>
+            makeCall(record.customerPhone, record.customerName, record.customerId, record.customerAvatar || undefined)
+          }
+        />
       ),
-    },
-    {
-      title: 'Số Điện Thoại',
-      dataIndex: 'customerPhone',
-      key: 'customerPhone',
-      render: (phone: string, record: Appointment) =>
-        phone ? (
-          <span
-            className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-            onClick={() => makeCall(phone, record.customerName, record.customerId, record.customerAvatar || undefined)}
-            style={{ color: token.colorText, fontWeight: '600' }}
-          >
-            <PhoneOutlined style={{ color: '#FF4D4F' }} />
-            <span>{phone}</span>
-          </span>
-        ) : (
-          <Text type="secondary">-</Text>
-        ),
     },
     {
       title: 'Thời Gian Hẹn',

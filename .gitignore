@@ -4,6 +4,8 @@ node_modules/
 
 # Next.js build output
 .next/
+.next-performance/
+.next-qa/
 out/
 
 # Fastify/TypeScript build output
@@ -64,4 +66,3 @@ graph.json
 # Local browser and performance audit artifacts
 /.playwright-cli/
 /output/
-

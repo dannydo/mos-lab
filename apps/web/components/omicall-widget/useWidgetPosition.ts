@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getViewportSize } from '../../hooks/useResponsiveTier';
 
 export const useWidgetPosition = () => {
   const [widgetMinimized, setWidgetMinimizedState] = useState(false);
@@ -32,8 +33,9 @@ export const useWidgetPosition = () => {
     const currentWidth = isMinimized ? 56 : size.width;
     const currentHeight = isMinimized ? 56 : size.height;
 
-    const initialX = position?.x ?? window.innerWidth - currentWidth - 24;
-    const initialY = position?.y ?? window.innerHeight - currentHeight - 24;
+    const viewport = getViewportSize();
+    const initialX = position?.x ?? viewport.width - currentWidth - 24;
+    const initialY = position?.y ?? viewport.height - currentHeight - 24;
     let hasMoved = false;
 
     let animationFrameId: number | null = null;
@@ -47,8 +49,9 @@ export const useWidgetPosition = () => {
         hasMoved = true;
       }
 
-      const newX = Math.max(10, Math.min(window.innerWidth - currentWidth - 10, initialX + deltaX));
-      const newY = Math.max(10, Math.min(window.innerHeight - currentHeight - 10, initialY + deltaY));
+      const currentViewport = getViewportSize();
+      const newX = Math.max(10, Math.min(currentViewport.width - currentWidth - 10, initialX + deltaX));
+      const newY = Math.max(10, Math.min(currentViewport.height - currentHeight - 10, initialY + deltaY));
       latestPos = { x: newX, y: newY };
 
       if (animationFrameId === null) {
@@ -89,8 +92,9 @@ export const useWidgetPosition = () => {
     const startY = e.clientY;
     const startWidth = size.width;
     const startHeight = size.height;
-    const startXPos = position?.x ?? window.innerWidth - size.width - 24;
-    const startYPos = position?.y ?? window.innerHeight - size.height - 24;
+    const viewport = getViewportSize();
+    const startXPos = position?.x ?? viewport.width - size.width - 24;
+    const startYPos = position?.y ?? viewport.height - size.height - 24;
 
     let animationFrameId: number | null = null;
     let latestSize = { width: startWidth, height: startHeight };
@@ -163,13 +167,15 @@ export const useWidgetPosition = () => {
           const parsed = JSON.parse(savedPos);
           const currentWidth = savedMin === 'true' ? 56 : savedSize ? JSON.parse(savedSize).width : 384;
           const currentHeight = savedMin === 'true' ? 56 : savedSize ? JSON.parse(savedSize).height : 320;
-          const x = Math.max(10, Math.min(window.innerWidth - currentWidth - 10, parsed.x));
-          const y = Math.max(10, Math.min(window.innerHeight - currentHeight - 10, parsed.y));
+          const viewport = getViewportSize();
+          const x = Math.max(10, Math.min(viewport.width - currentWidth - 10, parsed.x));
+          const y = Math.max(10, Math.min(viewport.height - currentHeight - 10, parsed.y));
           setPosition({ x, y });
         } catch (e) {}
       } else {
-        const x = window.innerWidth - 384 - 24;
-        const y = window.innerHeight - 320 - 24;
+        const viewport = getViewportSize();
+        const x = viewport.width - 384 - 24;
+        const y = viewport.height - 320 - 24;
         setPosition({ x, y });
       }
       if (savedSize) {

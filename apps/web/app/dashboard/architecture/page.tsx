@@ -101,7 +101,7 @@ export default function ArchitecturePage() {
   }
 
   return (
-    <div className="space-y-4 p-2 sm:p-4">
+    <div className="responsive-page responsive-workspace architecture-page space-y-4 p-2 sm:p-4">
       {/* Header */}
       <PageHeader
         title={
@@ -150,8 +150,8 @@ export default function ArchitecturePage() {
           title="Graphify Monorepo Knowledge Graph"
           style={{
             width: '100%',
-            height: 'calc(100vh - 210px)',
-            minHeight: '650px',
+            height: 'clamp(420px, calc(100dvh - 210px), 900px)',
+            minHeight: '420px',
             border: 'none',
             display: 'block',
           }}

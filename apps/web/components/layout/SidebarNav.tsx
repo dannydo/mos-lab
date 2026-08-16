@@ -12,9 +12,10 @@ interface SidebarNavProps {
   themeMode: string;
   token: SafeAny;
   userRole?: string;
+  onNavigate?: () => void;
 }
 
-export default function SidebarNav({ collapsed, themeMode, token, userRole }: SidebarNavProps) {
+export default function SidebarNav({ collapsed, themeMode, token, userRole, onNavigate }: SidebarNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -113,6 +114,7 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole }: Si
       icon: item.icon,
       label: item.path ? (
         <span
+          className="sidebar-menu-label"
           onMouseEnter={() => item.path && router.prefetch(item.path)}
           style={{ display: 'inline-block', width: '100%' }}
         >
@@ -139,6 +141,7 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole }: Si
       onClick: () => {
         if (item.path) {
           router.push(item.path);
+          onNavigate?.();
         }
       },
     };
@@ -153,7 +156,7 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole }: Si
           collapsed ? 'hidden' : 'py-1 px-1'
         }`}
         style={{
-          color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
+          color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.55)',
           fontSize: '10px',
           fontWeight: 700,
           letterSpacing: '0.05em',
@@ -171,6 +174,8 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole }: Si
       <Menu
         theme={themeMode === 'dark' ? 'dark' : 'light'}
         mode="inline"
+        inlineCollapsed={collapsed}
+        inlineIndent={16}
         selectedKeys={[selectedKey]}
         // A collapsed rail must not retain an expanded submenu overlay above page content.
         // The remembered keys are restored when the user expands the sidebar again.

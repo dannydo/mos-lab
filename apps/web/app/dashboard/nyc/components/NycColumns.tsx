@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
 import { Space, Avatar, Typography, Tag, Tooltip, Button } from 'antd';
 import {
@@ -61,7 +63,7 @@ export const getNycColumns = ({
 
   return [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 60,
       align: 'center' as const,

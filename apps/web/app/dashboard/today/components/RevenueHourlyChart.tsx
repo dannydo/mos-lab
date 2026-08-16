@@ -81,7 +81,7 @@ export const RevenueHourlyChart: React.FC<RevenueHourlyChartProps> = ({
               fontWeight: 'bold',
             }}
           >
-            Mục tiêu ngày: {formatCompact(safeTarget)} đ
+            Mục tiêu ngày: {formatCompact(safeTarget)} đ
           </span>
         </div>
 

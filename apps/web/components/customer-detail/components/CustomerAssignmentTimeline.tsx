@@ -178,7 +178,7 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
     switch (action) {
       case 'ACCEPT':
       case 'ACCEPT_ALLOCATION':
-        return item.staffName ? `${item.staffName} đã chấp nhận nhận data` : 'Đã chấp nhận nhận data';
+        return item.staffName ? `${item.staffName} đã chấp nhận nhận data` : 'Đã chấp nhận nhận data';
       case 'DECLINE':
       case 'DECLINE_ALLOCATION':
         return item.prevStaffName || item.staffName

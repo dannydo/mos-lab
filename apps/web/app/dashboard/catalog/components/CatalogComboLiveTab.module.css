@@ -1,0 +1,120 @@
+.page {
+  display: grid;
+  gap: var(--mos-section-gap);
+}
+
+/* Combo Live has exactly four compact operational metrics. Keep all four on
+   the same desktop row from 1200px; the shared two-column/tablet contract is
+   still preserved below this breakpoint. */
+@media (min-width: 1200px) {
+  .metricGrid:global(.metric-grid)[data-columns='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+:global(.responsive-workspace) .searchField {
+  max-width: 320px !important;
+  width: 320px !important;
+}
+
+.dataSectionTitle,
+.expandedRowHeader,
+.comboNameCell,
+.comboNameCell > span,
+.ownerStatus,
+.phoneCell,
+.expiryCell {
+  align-items: center;
+  display: flex;
+}
+
+.dataSectionTitle {
+  gap: 8px;
+}
+
+.expandedRow {
+  background: var(--mos-surface-muted);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: var(--mos-radius);
+  margin: var(--mos-density-gap);
+  padding: var(--mos-density-padding);
+}
+
+.expandedRowHeader {
+  color: var(--mos-text);
+  gap: var(--mos-density-gap);
+  justify-content: space-between;
+  margin-bottom: var(--mos-density-gap);
+}
+
+.expandedRowHeader > span:first-child,
+.comboNameCell > span {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.ownerTable :global(.ant-table) {
+  margin-bottom: 0;
+}
+
+.indexCell,
+.mutedDate {
+  color: var(--mos-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.customerLink {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  height: auto;
+  padding: 0;
+}
+
+.phoneCell,
+.expiryCell {
+  color: var(--mos-text-muted);
+  gap: 6px;
+}
+
+.comboNameCell {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comboNameCell > span {
+  color: var(--mos-text);
+}
+
+.comboNameCell :global(.mos-app-icon) {
+  color: var(--mos-accent);
+}
+
+.currencyValue {
+  color: var(--mos-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.ownerStatus {
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  :global(.responsive-workspace) .searchField {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .expandedRow {
+    margin-inline: 0;
+  }
+
+  .expandedRowHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

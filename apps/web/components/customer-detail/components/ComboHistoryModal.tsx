@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Modal, Button, Table, Tag } from 'antd';
+import { Button, Table, Tag } from 'antd';
+import { AdaptiveModal } from '../../ui';
 
 import { ColumnsType } from 'antd/es/table';
 
@@ -58,7 +59,7 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
         if (val === 0) {
           return 'Miễn phí';
         }
-        return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{val.toLocaleString('vi-VN')} đ</span>;
+        return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{val.toLocaleString('vi-VN')} đ</span>;
       },
       width: '120px',
     },
@@ -100,7 +101,9 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
   ];
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="data"
+      className="customer-combo-history-overlay"
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
           <span>📦 Lịch sử mua Combo</span>
@@ -183,6 +186,6 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
         size="small"
         locale={{ emptyText: 'Không có lịch sử mua combo nào.' }}
       />
-    </Modal>
+    </AdaptiveModal>
   );
 };

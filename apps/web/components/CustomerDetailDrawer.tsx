@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
-import { Drawer, Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag } from 'antd';
+import { Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -18,6 +18,8 @@ import {
 import dynamic from 'next/dynamic';
 import { useTheme } from '../context/ThemeContext';
 import { useOmiCall } from '../context/OmiCallContext';
+import { AdaptiveDrawer } from './ui';
+import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
 const RescheduleBookingModal = dynamic(() => import('./RescheduleBookingModal').then((m) => m.RescheduleBookingModal), {
   ssr: false,
@@ -83,6 +85,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const { makeCall } = useOmiCall();
+  const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
+  const responsiveTier = useResponsiveTier();
+  const isCompactTier = responsiveTier === 'mobile' || responsiveTier === 'tablet';
 
   const [editForm] = Form.useForm();
 
@@ -306,10 +311,13 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   }, [tabDataMap, bookings]);
 
   return (
-    <Drawer
+    <AdaptiveDrawer
+      intent="detail"
+      className="customer-detail-overlay"
       title={
         customer && (
           <div
+            className="customer-detail-header"
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -318,8 +326,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
               paddingRight: '12px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="customer-detail-identity" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Avatar
+                className="customer-detail-avatar"
                 size={40}
                 src={customer.avatar || undefined}
                 icon={!customer.avatar && <UserOutlined />}
@@ -329,8 +338,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                 }}
               />
-              <div>
+              <div className="customer-detail-identity-copy">
                 <div
+                  className="customer-detail-name"
                   style={{
                     fontSize: '16px',
                     fontWeight: 'bold',
@@ -360,9 +370,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   )}
                 </div>
                 <div
+                  className="customer-detail-contact-row"
                   style={{
                     fontSize: '12px',
-                    color: '#888',
+                    color: mutedTextColor,
                     marginTop: '2px',
                     display: 'flex',
                     alignItems: 'center',
@@ -370,7 +381,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     flexWrap: 'wrap',
                   }}
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div
+                    className="customer-detail-phone-list"
+                    style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
+                  >
                     {customer.phones && customer.phones.length > 0 ? (
                       customer.phones.map((phoneObj: SafeAny) => (
                         <span
@@ -411,6 +425,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   </div>
                   <Tooltip title="Mở hồ sơ trên hệ thống Legacy">
                     <a
+                      className="customer-detail-legacy-profile"
                       href={legacyProfileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -433,7 +448,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   </Tooltip>
                   {customer.email && <span>Email: {customer.email}</span>}
                   {customer.dob && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <span
+                      className="customer-detail-birthday"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
                       🎂 {dayjs(customer.dob).format('DD/MM/YYYY')}
                       {customer.age !== undefined && customer.age !== null && (
                         <span
@@ -454,7 +472,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 </div>
               </div>
             </div>
-            <Space>
+            <Space className="customer-detail-actions">
               {isManagerOrAdmin &&
                 (customer.isDeleted ? (
                   <Popconfirm
@@ -467,6 +485,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   >
                     <Tooltip title="Khôi Phục Khách Hàng">
                       <Button
+                        className="customer-detail-action"
                         type="primary"
                         icon={<UndoOutlined />}
                         style={{ fontWeight: 'bold', background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
@@ -483,12 +502,19 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     okButtonProps={{ danger: true, loading: deleteLoading }}
                   >
                     <Tooltip title="Xóa Khách Hàng">
-                      <Button danger type="dashed" icon={<DeleteOutlined />} style={{ fontWeight: 'bold' }} />
+                      <Button
+                        className="customer-detail-action"
+                        danger
+                        type="dashed"
+                        icon={<DeleteOutlined />}
+                        style={{ fontWeight: 'bold' }}
+                      />
                     </Tooltip>
                   </Popconfirm>
                 ))}
               <Tooltip title="Sửa Thông Tin">
                 <Button
+                  className="customer-detail-action"
                   type="default"
                   icon={<EditOutlined />}
                   style={{
@@ -501,6 +527,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
               </Tooltip>
               <Tooltip title="Thêm Ghi Chú">
                 <Button
+                  className="customer-detail-action"
                   type="default"
                   icon={<FormOutlined />}
                   style={{
@@ -513,6 +540,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
               </Tooltip>
               <Tooltip title="Đặt Lịch Hẹn">
                 <Button
+                  className="customer-detail-action customer-detail-primary-action"
                   type="primary"
                   icon={<CalendarPlusIcon fontSize={18} />}
                   style={{
@@ -541,7 +569,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         )
       }
       placement="right"
-      width={drawerWidth}
+      width={isCompactTier ? undefined : responsiveTier === 'desktop' ? drawerWidth : 'min(88vw, 1280px)'}
       open={open}
       onClose={onClose}
       styles={{
@@ -556,27 +584,29 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       }}
     >
       {/* Drag handle for resizable drawer */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          bottom: 0,
-          width: '6px',
-          cursor: 'ew-resize',
-          zIndex: 10000,
-          background: isDragging ? '#D4A84B' : 'transparent',
-          borderLeft: isDragging ? '2px solid #D4A84B' : 'none',
-          transition: 'background 0.2s',
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
-        }}
-        onMouseLeave={(e) => {
-          if (!isDragging) e.currentTarget.style.background = 'transparent';
-        }}
-      />
+      {!isCompactTier && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: '6px',
+            cursor: 'ew-resize',
+            zIndex: 1000,
+            background: isDragging ? '#D4A84B' : 'transparent',
+            borderLeft: isDragging ? '2px solid #D4A84B' : 'none',
+            transition: 'background 0.2s',
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            if (!isDragging) e.currentTarget.style.background = 'transparent';
+          }}
+        />
+      )}
       <Spin spinning={loading}>
         {forbiddenError ? (
           <div
@@ -605,7 +635,15 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
             >
               Quyền Truy Cập Bị Hạn Chế
             </h3>
-            <p style={{ fontSize: '14px', color: '#888', maxWidth: '400px', marginBottom: '24px', lineHeight: '1.5' }}>
+            <p
+              style={{
+                fontSize: '14px',
+                color: mutedTextColor,
+                maxWidth: '400px',
+                marginBottom: '24px',
+                lineHeight: '1.5',
+              }}
+            >
               {forbiddenError}
             </p>
             <Button
@@ -618,9 +656,15 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           </div>
         ) : (
           customer && (
-            <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
+            <div
+              className="customer-detail-layout"
+              style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}
+            >
               {/* SIDEBAR: Info & Stats */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div
+                className="customer-detail-sidebar"
+                style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+              >
                 <KpiStatsCard
                   stats={stats}
                   themeMode={themeMode}
@@ -655,6 +699,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
 
               {/* MAIN PANEL: Timelines & History */}
               <div
+                className="customer-detail-history"
                 style={{
                   background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
                   border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
@@ -675,7 +720,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <PushpinFilled style={{ color: '#ff4d4f', fontSize: '15px' }} />
+                      <PushpinFilled
+                        style={{ color: themeMode === 'dark' ? '#f87171' : '#b91c1c', fontSize: '15px' }}
+                      />
                       <strong
                         style={{
                           color: themeMode === 'dark' ? '#f87171' : '#cf1322',
@@ -720,7 +767,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                                 >
                                   {n.note}
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                                <div style={{ fontSize: '11px', color: mutedTextColor, marginTop: '2px' }}>
                                   Bởi: <strong>{n.staffName}</strong> ({formattedDate})
                                 </div>
                               </div>
@@ -760,6 +807,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
 
                   return (
                     <Tabs
+                      className="customer-detail-tabs"
                       activeKey={activeTabKey}
                       onChange={handleTabChange}
                       items={[
@@ -922,7 +970,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           }}
         />
       )}
-    </Drawer>
+    </AdaptiveDrawer>
   );
 };
 

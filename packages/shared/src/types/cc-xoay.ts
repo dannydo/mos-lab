@@ -18,6 +18,8 @@ export interface CcXoayRecord {
   consultantPoints: number;
   ccInName: string;
   ccOutName: string;
+  ccInAvatar?: string | null;
+  ccOutAvatar?: string | null;
   class: string;
   classPts: number;
   fan: string;

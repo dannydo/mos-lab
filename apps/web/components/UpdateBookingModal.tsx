@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Select, Input, Button, message, Spin, Tag, Avatar } from 'antd';
+import { Form, Select, Input, Button, message, Spin, Tag, Avatar } from 'antd';
 import {
   EditOutlined,
   UserOutlined,
@@ -16,6 +16,7 @@ import { SafeAny } from '@mos-lab/shared';
 import { apiClient } from '../lib/api-client';
 import { useTheme } from '../context/ThemeContext';
 import { getStoreFullAddress, STORES } from './booking/constants';
+import { AdaptiveModal } from './ui/AdaptiveOverlay';
 
 interface UpdateBookingModalProps {
   visible: boolean;
@@ -161,7 +162,9 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
   };
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="form"
+      className="booking-update-modal"
       open={visible}
       onCancel={onClose}
       footer={null}
@@ -175,7 +178,6 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
           </Tag>
         </div>
       }
-      width={560}
       destroyOnClose
       style={{ top: 24 }}
       styles={{
@@ -232,7 +234,10 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
               </Tag>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
+            <div
+              className="booking-update-locked-grid"
+              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}
+            >
               <div>
                 <span
                   style={{
@@ -302,6 +307,7 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
                 showSearch
                 aria-label="Chọn Chuyên viên làm dịch vụ"
                 optionFilterProp="filterText"
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
               >
                 {staffList.map((st: SafeAny) => {
                   const labelName = st.displayName || st.name;
@@ -340,6 +346,7 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
                 showSearch
                 aria-label="Chọn Dịch vụ thực hiện"
                 optionFilterProp="filterText"
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
               >
                 {serviceList.map((sv: SafeAny) => {
                   const sName = sv.name || sv.serviceName;
@@ -419,6 +426,6 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
           </Form>
         </div>
       </Spin>
-    </Modal>
+    </AdaptiveModal>
   );
 };

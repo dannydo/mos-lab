@@ -2,16 +2,12 @@
 
 import '../suppress-warnings';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import { Layout, Menu, Button, Avatar, Space, Dropdown, theme, message, Tag, Badge } from 'antd';
+import { Layout, Button, Avatar, Space, Dropdown, Drawer, theme, message, Tag } from 'antd';
 import {
-  UserOutlined,
   TeamOutlined,
   CalendarOutlined,
-  PhoneOutlined,
   BarChartOutlined,
   LogoutOutlined,
-  SunOutlined,
-  MoonOutlined,
   LeftOutlined,
   RightOutlined,
   SolutionOutlined,
@@ -22,10 +18,13 @@ import {
   ShopOutlined,
   RocketOutlined,
   BgColorsOutlined,
+  ColumnHeightOutlined,
 } from '@ant-design/icons';
+import { Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRound } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
@@ -44,16 +43,34 @@ import { OmiCallProvider } from '../../context/OmiCallContext';
 const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
+import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
+import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
 
 const { Header, Sider, Content } = Layout;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { themeMode, toggleTheme } = useTheme();
+  const { themeMode, toggleTheme, desktopDensity, setDesktopDensity } = useTheme();
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isMobileTier = responsiveTier === 'mobile';
+  const isTabletTier = responsiveTier === 'tablet';
+  const desktopDensityLabel =
+    desktopDensity === 'compact' ? 'Compact' : desktopDensity === 'comfortable' ? 'Comfortable' : 'Standard';
+  const persistentNavWidth =
+    responsiveTier === 'uhd'
+      ? 248
+      : responsiveTier === 'wide'
+        ? 240
+        : responsiveTier === 'fhd'
+          ? 232
+          : isTabletTier
+            ? 216
+            : 224;
 
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
   const [isDashboardVisible, setIsDashboardVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>([]);
@@ -218,12 +235,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const saved = localStorage.getItem('mos_sidebar_collapsed');
-    if (saved) {
-      setCollapsed(saved === 'true');
-    }
-  }, []);
+    setCollapsed(saved ? saved === 'true' : isTabletTier);
+  }, [isTabletTier]);
+
+  useEffect(() => {
+    setIsMobileNavigationOpen(false);
+  }, [pathname]);
 
   const toggleSidebar = () => {
+    if (isMobileTier) {
+      setIsMobileNavigationOpen((open) => !open);
+      return;
+    }
     const nextVal = !collapsed;
     setCollapsed(nextVal);
     localStorage.setItem('mos_sidebar_collapsed', String(nextVal));
@@ -330,6 +353,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         disabled: true,
       },
       {
+        key: 'display-density',
+        icon: <ColumnHeightOutlined />,
+        label: isMobileTier
+          ? `Mật độ desktop: ${desktopDensityLabel} (mobile dùng Compact)`
+          : `Mật độ desktop: ${desktopDensityLabel}`,
+        children: [
+          {
+            key: 'display-density-compact',
+            label: 'Compact · 32px / 16px',
+            onClick: () => setDesktopDensity('compact'),
+          },
+          {
+            key: 'display-density-standard',
+            label: 'Standard · 36px / 18px',
+            onClick: () => setDesktopDensity('standard'),
+          },
+          {
+            key: 'display-density-comfortable',
+            label: 'Comfortable · 44px / 20px',
+            onClick: () => setDesktopDensity('comfortable'),
+          },
+        ],
+      },
+      {
         type: 'divider' as const,
       },
       {
@@ -354,62 +401,124 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ],
   };
 
-  return (
-    <OmiCallProvider>
-      <Layout style={{ minHeight: '100vh' }} suppressHydrationWarning>
-        <Sider
-          trigger={null}
-          collapsible
-          collapsed={collapsed}
-          collapsedWidth={48}
-          width={200}
-          suppressHydrationWarning
+  const mobileUtilityMenu = {
+    items: [
+      ...(pendingAllocationCount > 0
+        ? [
+            {
+              key: 'pending-allocation',
+              icon: <ClockCircleOutlined />,
+              label: `${pendingAllocationCount} đợt data chờ xác nhận`,
+              onClick: () => setIsPendingAllocationOpen(true),
+            },
+          ]
+        : []),
+      {
+        key: 'telesales-dashboard',
+        icon: <BarChartOutlined />,
+        label: 'KPI Đội Telesales',
+        onClick: () => {
+          setSelectedMemberId('DD');
+          setIsDashboardVisible(true);
+        },
+      },
+      ...(isImpersonating
+        ? [
+            {
+              key: 'exit-impersonation',
+              icon: <LogoutOutlined />,
+              danger: true,
+              label: 'Thoát giả lập',
+              onClick: handleExitImpersonation,
+            },
+          ]
+        : []),
+    ],
+  };
+
+  const renderSidebarContent = (navCollapsed: boolean) => (
+    <>
+      <h1 className="sr-only">WINGS LASHES Management System</h1>
+      <div
+        className="flex items-center justify-center transition-all duration-200"
+        style={{
+          height: navCollapsed ? '44px' : '52px',
+          background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          color: token.colorPrimary,
+          fontSize: navCollapsed ? '13px' : '17px',
+          fontWeight: 'bold',
+          letterSpacing: '1px',
+        }}
+      >
+        {navCollapsed ? 'WL' : 'WINGS LASHES'}
+      </div>
+      <Suspense fallback={null}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <SidebarNav
+            collapsed={navCollapsed}
+            themeMode={themeMode}
+            token={token}
+            userRole={user?.role}
+            onNavigate={() => setIsMobileNavigationOpen(false)}
+          />
+        </div>
+      </Suspense>
+      {deployedAt && (
+        <div
+          title={`Updated: ${dayjs(deployedAt).format('DD/MM/YYYY · HH:mm')}`}
           style={{
-            background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
-            borderRight: `1px solid ${token.colorBorderSecondary}`,
-            display: 'flex',
-            flexDirection: 'column',
+            flexShrink: 0,
+            padding: navCollapsed ? '10px 0' : '10px 12px',
+            textAlign: navCollapsed ? 'center' : 'left',
+            color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
+            borderTop: `1px solid ${token.colorBorderSecondary}`,
+            fontSize: '11px',
+            fontVariantNumeric: 'tabular-nums',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
           }}
         >
-          <h1 className="sr-only">WINGS LASHES Management System</h1>
-          <div
-            className="flex items-center justify-center transition-all duration-200"
+          {navCollapsed ? '●' : `Updated: ${dayjs(deployedAt).format('DD/MM · HH:mm')}`}
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <OmiCallProvider>
+      <Layout className="dashboard-shell" style={{ minHeight: '100dvh' }} suppressHydrationWarning>
+        {isMobileTier ? (
+          <Drawer
+            className="dashboard-mobile-nav"
+            closable={false}
+            open={isMobileNavigationOpen}
+            onClose={() => setIsMobileNavigationOpen(false)}
+            placement="left"
+            width="min(86vw, 344px)"
+            styles={{ body: { background: themeMode === 'dark' ? '#000000' : token.colorBgContainer } }}
+          >
+            {renderSidebarContent(false)}
+          </Drawer>
+        ) : (
+          <Sider
+            className="dashboard-sider"
+            trigger={null}
+            collapsible
+            collapsed={collapsed}
+            collapsedWidth={56}
+            width={persistentNavWidth}
+            suppressHydrationWarning
             style={{
-              height: collapsed ? '44px' : '52px',
               background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
-              borderBottom: `1px solid ${token.colorBorderSecondary}`,
-              color: token.colorPrimary,
-              fontSize: collapsed ? '13px' : '17px',
-              fontWeight: 'bold',
-              letterSpacing: '1px',
+              borderRight: `1px solid ${token.colorBorderSecondary}`,
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            {collapsed ? 'WL' : 'WINGS LASHES'}
-          </div>
-          <Suspense fallback={null}>
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-              <SidebarNav collapsed={collapsed} themeMode={themeMode} token={token} userRole={user?.role} />
-            </div>
-          </Suspense>
-          {deployedAt && (
-            <div
-              title={`Updated: ${dayjs(deployedAt).format('DD/MM/YYYY · HH:mm')}`}
-              style={{
-                flexShrink: 0,
-                padding: collapsed ? '10px 0' : '10px 12px',
-                textAlign: collapsed ? 'center' : 'left',
-                color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
-                borderTop: `1px solid ${token.colorBorderSecondary}`,
-                fontSize: '11px',
-                fontVariantNumeric: 'tabular-nums',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-              }}
-            >
-              {collapsed ? '●' : `Updated: ${dayjs(deployedAt).format('DD/MM · HH:mm')}`}
-            </div>
-          )}
-        </Sider>
+            {renderSidebarContent(collapsed)}
+          </Sider>
+        )}
 
         <div className="sidebar-toggle-container">
           <Button
@@ -422,8 +531,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="sidebar-toggle-btn"
             style={{
               position: 'absolute',
-              top: '64px',
-              left: collapsed ? '36px' : '188px',
+              top: 'var(--mos-header-height)',
+              left: collapsed ? '44px' : `${persistentNavWidth - 12}px`,
               width: '24px',
               height: '24px',
               borderRadius: '50%',
@@ -444,10 +553,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
         </div>
 
-        <Layout style={{ background: token.colorBgLayout }}>
+        <Layout style={{ background: token.colorBgLayout, minWidth: 0 }}>
           <Header
+            className="dashboard-header"
             style={{
-              padding: '0 24px',
               background: token.colorBgContainer,
               display: 'flex',
               alignItems: 'center',
@@ -455,10 +564,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               borderBottom: `1px solid ${token.colorBorderSecondary}`,
             }}
           >
-            <HeaderLeftToolbar onOpenCvDrawer={() => setIsCvDrawerOpen(true)} workingCvCount={workingCvCount} />
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="dashboard-header-left">
+              {isMobileTier && (
+                <HeaderIconButton action="navigation" label="Mở điều hướng" icon={Menu} onClick={toggleSidebar} />
+              )}
+              <HeaderLeftToolbar onOpenCvDrawer={() => setIsCvDrawerOpen(true)} workingCvCount={workingCvCount} />
+            </div>
+            <div className="dashboard-header-right">
               {isImpersonating && (
                 <Tag
+                  className="dashboard-desktop-only"
                   color="warning"
                   style={{
                     marginRight: '16px',
@@ -493,29 +608,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
               {/* Online User Avatar Bubbles Stack */}
               {onlineMembers.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }} className="flex-shrink-0">
+                <div className="dashboard-online-member-stack dashboard-desktop-only">
                   {onlineMembers.map((m, idx) => (
-                    <div
+                    <button
                       key={m.id}
+                      type="button"
+                      className="dashboard-online-member-action"
+                      aria-label={`Mở KPI đội telesales của ${m.name}`}
+                      title={m.name}
+                      onClick={() => {
+                        setSelectedMemberId(m.id || m.initials);
+                        setIsDashboardVisible(true);
+                      }}
                       style={{
                         position: 'relative',
-                        width: '32px',
-                        height: '32px',
-                        minWidth: '32px',
-                        minHeight: '32px',
-                        maxWidth: '32px',
-                        maxHeight: '32px',
-                        flexShrink: 0,
                         marginLeft: idx > 0 ? '-10px' : '0',
                         zIndex: 20 - idx,
                       }}
                     >
                       <div
-                        onClick={() => {
-                          setSelectedMemberId(m.id || m.initials);
-                          setIsDashboardVisible(true);
-                        }}
-                        className="avatar-breath cursor-pointer hover:scale-110 transition-all select-none"
+                        className="dashboard-online-member-avatar avatar-breath select-none"
                         style={{
                           width: '32px',
                           height: '32px',
@@ -542,7 +654,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           borderStyle: 'solid',
                           boxSizing: 'border-box',
                         }}
-                        title={m.name}
                       >
                         {m.avatarUrl ? (
                           <img
@@ -578,100 +689,86 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           pointerEvents: 'none',
                         }}
                       />
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
 
               {pendingAllocationCount > 0 && (
-                <Badge count={pendingAllocationCount} offset={[-8, 2]} size="small">
-                  <Button
-                    type="text"
-                    aria-label="Xác nhận data mới"
-                    icon={<ClockCircleOutlined style={{ color: '#F59E0B' }} />}
-                    onClick={() => setIsPendingAllocationOpen(true)}
-                    style={{
-                      fontSize: '16px',
-                      marginRight: '16px',
-                      color: token.colorText,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    title="Đợt phân bổ data chờ xác nhận 24h"
-                  >
-                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400 ml-1">
-                      {pendingAllocationCount} đợt data
-                    </span>
-                  </Button>
-                </Badge>
+                <HeaderIconButton
+                  action="pending-allocation"
+                  className="dashboard-desktop-only"
+                  label={`${pendingAllocationCount} đợt data chờ xác nhận`}
+                  desktopLabel={`${pendingAllocationCount} đợt data`}
+                  icon={Clock3}
+                  onClick={() => setIsPendingAllocationOpen(true)}
+                  tone="accent"
+                />
               )}
 
-              <Badge count={dailyCallsCount} offset={[-8, 2]} size="small" showZero={false}>
-                <Button
-                  type="text"
-                  aria-label="Cuộc gọi hôm nay"
-                  icon={<PhoneOutlined style={{ color: themeMode === 'dark' ? '#D4A84B' : '#0284c7' }} />}
-                  onClick={() => setIsDailyCallsOpen(true)}
-                  style={{
-                    fontSize: '16px',
-                    marginRight: '16px',
-                    color: token.colorText,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  title="Cuộc gọi hôm nay"
-                />
-              </Badge>
+              <HeaderIconButton
+                action="daily-calls"
+                label={dailyCallsCount > 0 ? `Cuộc gọi hôm nay, ${dailyCallsCount} cuộc` : 'Cuộc gọi hôm nay'}
+                icon={Phone}
+                onClick={() => setIsDailyCallsOpen(true)}
+              />
 
-              <Button
-                type="text"
-                aria-label={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
-                title={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
-                icon={
-                  themeMode === 'dark' ? (
-                    <SunOutlined style={{ color: '#f59e0b', fontSize: '18px' }} />
-                  ) : (
-                    <MoonOutlined style={{ color: '#4f46e5', fontSize: '18px' }} />
-                  )
-                }
+              {isMobileTier && (
+                <Dropdown menu={mobileUtilityMenu} placement="bottomRight" arrow>
+                  <HeaderActionIndicator
+                    variant="status"
+                    active={pendingAllocationCount > 0}
+                    color={token.colorWarning}
+                  >
+                    <HeaderIconButton
+                      action="utilities"
+                      label={
+                        pendingAllocationCount > 0
+                          ? `Thao tác phụ, ${pendingAllocationCount} đợt data chờ xác nhận`
+                          : 'Thao tác phụ'
+                      }
+                      icon={EllipsisVertical}
+                    />
+                  </HeaderActionIndicator>
+                </Dropdown>
+              )}
+
+              <HeaderIconButton
+                action="theme"
+                label={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
+                icon={themeMode === 'dark' ? Sun : Moon}
                 onClick={toggleTheme}
-                style={{
-                  fontSize: '16px',
-                  marginRight: '16px',
-                  color: token.colorText,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                aria-pressed={themeMode === 'dark'}
               />
               <Dropdown menu={userMenu} placement="bottomRight" arrow>
-                <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="mos-header-avatar-action"
+                  data-header-action="user-menu"
+                  aria-label="Mở menu người dùng"
+                  aria-haspopup="menu"
+                  title="Mở menu người dùng"
+                >
                   <Avatar
+                    className="mos-header-avatar"
                     src={
                       user?.avatarUrl
                         ? user.avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com')
                         : undefined
                     }
                     alt={user?.name ? `Ảnh đại diện ${user.name}` : 'Ảnh đại diện người dùng'}
-                    icon={<UserOutlined style={{ color: '#ffffff' }} />}
+                    icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
                     style={{ backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb', color: '#ffffff' }}
                   />
-                </div>
+                </button>
               </Dropdown>
             </div>
           </Header>
 
           <Content
+            className="dashboard-content"
             style={{
-              margin: '24px',
-              padding: '24px',
               background: token.colorBgContainer,
-              borderRadius: '8px',
-              minHeight: 280,
-              border: `1px solid ${token.colorBorderSecondary}`,
-              overflow: 'initial',
               color: token.colorText,
             }}
           >
@@ -700,17 +797,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
 
         <style jsx global>{`
-          /* Ultra-Compact Left Nav Sidebar Menu & 48px Collapsed Width */
-          .ant-layout-sider-collapsed {
-            flex: 0 0 48px !important;
-            max-width: 48px !important;
-            min-width: 48px !important;
-            width: 48px !important;
+          /* Compact persistent nav rail, never used for mobile navigation. */
+          .dashboard-shell .ant-layout-sider-collapsed {
+            flex: 0 0 56px !important;
+            max-width: 56px !important;
+            min-width: 56px !important;
+            width: 56px !important;
           }
           .ant-layout-sider-collapsed .ant-menu-item,
           .ant-layout-sider-collapsed .ant-menu-submenu-title {
             padding-inline: 0 !important;
-            margin-inline: 4px !important;
+            margin-inline: 3px !important;
+            justify-content: center !important;
             text-align: center !important;
           }
           .ant-layout-sider-collapsed .ant-menu-item .anticon,
@@ -718,25 +816,74 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             margin-inline: 0 !important;
             font-size: 16px !important;
           }
+          .ant-layout-sider-collapsed .ant-menu-submenu-title .ant-menu-submenu-arrow {
+            display: none !important;
+          }
+          /* Keep the semantic menu label available to assistive technology,
+             while preventing it from escaping the compact 64px nav rail. */
+          .dashboard-sider.ant-layout-sider-collapsed .sidebar-menu-label {
+            clip: rect(0 0 0 0);
+            clip-path: inset(50%);
+            height: 1px !important;
+            overflow: hidden;
+            position: absolute;
+            white-space: nowrap;
+            width: 1px !important;
+          }
+          .dashboard-sider.ant-layout-sider-collapsed .ant-menu-title-content {
+            margin-inline-start: 0 !important;
+            clip: rect(0 0 0 0);
+            clip-path: inset(50%);
+            height: 1px !important;
+            overflow: hidden;
+            position: absolute !important;
+            white-space: nowrap;
+            width: 1px !important;
+          }
           .antd-custom-menu .ant-menu-item,
           .antd-custom-menu .ant-menu-submenu-title {
             height: 36px !important;
-            line-height: 36px !important;
+            display: flex !important;
+            align-items: center !important;
+            line-height: 1.25 !important;
             margin-block: 2px !important;
             margin-inline: 4px !important;
             padding-inline: 10px !important;
             border-radius: 8px !important;
           }
+          .antd-custom-menu .ant-menu-title-content {
+            display: flex !important;
+            align-items: center !important;
+            min-width: 0;
+            line-height: 1.25 !important;
+          }
           .antd-custom-menu .ant-menu-item .anticon,
           .antd-custom-menu .ant-menu-submenu-title .anticon {
             font-size: 15px !important;
-            line-height: 36px !important;
+            line-height: 1 !important;
+          }
+          .antd-custom-menu .ant-menu-submenu-title .ant-menu-submenu-arrow {
+            margin-top: 0 !important;
+            inset-inline-end: 10px !important;
+          }
+          .antd-custom-menu .ant-menu-submenu > .ant-menu-submenu-title {
+            color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.76)' : 'rgba(0, 0, 0, 0.72)'} !important;
+            background-color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.025)' : 'rgba(0, 0, 0, 0.025)'} !important;
+            font-weight: 600;
+          }
+          .antd-custom-menu .ant-menu-submenu-open > .ant-menu-submenu-title {
+            color: ${themeMode === 'dark' ? '#e6c77a' : '#855b0e'} !important;
+            background-color: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.1)' : 'rgba(212, 168, 75, 0.1)'} !important;
+          }
+          .antd-custom-menu .ant-menu-submenu-title:hover {
+            color: #d4a84b !important;
+            background-color: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.13)' : 'rgba(212, 168, 75, 0.09)'} !important;
           }
           .antd-custom-menu .ant-menu-item-group-title {
-            padding-block: 2px 2px !important;
-            margin-top: 4px !important;
+            padding-block: 2px 1px !important;
+            margin-top: 3px !important;
             margin-bottom: 2px !important;
-            font-size: 10px !important;
+            font-size: 9px !important;
             line-height: 1.2 !important;
           }
           .antd-custom-menu .ant-menu-item-group-list {

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Drawer, Spin, theme, message, Row, Col } from 'antd';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
+import { getViewportSize } from '../hooks/useResponsiveTier';
 
 // Custom Hook
 import useAudioPlayer from './qa-player/useAudioPlayer';
@@ -70,7 +71,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
       if (savedWidth) {
         setDrawerWidth(parseInt(savedWidth, 10));
       } else {
-        const defaultWidth = Math.min(1100, window.innerWidth * 0.95);
+        const defaultWidth = Math.min(1100, getViewportSize().width * 0.95);
         setDrawerWidth(defaultWidth);
       }
     }
@@ -84,7 +85,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = startX - moveEvent.clientX; // Drag left -> positive
-      const newWidth = Math.max(500, Math.min(window.innerWidth * 0.98, startWidth + deltaX));
+      const newWidth = Math.max(500, Math.min(getViewportSize().width * 0.98, startWidth + deltaX));
       setDrawerWidth(newWidth);
     };
 
@@ -93,7 +94,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
       window.removeEventListener('mouseup', handleMouseUp);
 
       const currentWidth = startWidth + (startX - upEvent.clientX);
-      const finalWidth = Math.max(500, Math.min(window.innerWidth * 0.98, currentWidth));
+      const finalWidth = Math.max(500, Math.min(getViewportSize().width * 0.98, currentWidth));
       localStorage.setItem('qa_drawer_width', String(finalWidth));
     };
 

@@ -3,25 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from 'react';
-import {
-  Card,
-  Space,
-  Button,
-  Radio,
-  DatePicker,
-  Select,
-  Input,
-  Segmented,
-  Typography,
-  Tag,
-  Row,
-  Col,
-  Spin,
-  message,
-  Tooltip,
-  theme,
-  Modal,
-} from 'antd';
+import { Button, DatePicker, Select, Segmented, Typography, Spin, message, Tooltip, theme } from 'antd';
 import {
   CalendarOutlined,
   UnorderedListOutlined,
@@ -29,27 +11,24 @@ import {
   LeftOutlined,
   RightOutlined,
   PlusOutlined,
-  SearchOutlined,
   ReloadOutlined,
-  FilterOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  WarningOutlined,
-  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import nextDynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
+import { useMediaQuery, useResponsiveTier } from '../../../hooks/useResponsiveTier';
 import { apiClient } from '../../../lib/api-client';
 import { Appointment } from '@mos-lab/shared';
 import { removeVietnameseTones, vietnameseSearchFilter } from '../../../lib/utils/search';
 import { formatVND } from '../../../lib/format-utils';
 import { isStaffOffOnDate, formatOrGenerateCustomerPhone } from '../../../components/booking/constants';
+import { SearchField } from '~/components/ui';
 
 import ScheduleListView from './components/ScheduleListView';
 import MultiDayColumnView, { getBranchBadgeInfo } from './components/MultiDayColumnView';
 import FullCalendarGrid from './components/FullCalendarGrid';
+import { OffDayRescheduleWarningModal } from './components/OffDayRescheduleWarningModal';
 
 const CustomerDetailDrawer = nextDynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 const BookingWizardDrawer = nextDynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
@@ -65,6 +44,9 @@ const { RangePicker } = DatePicker;
 export default function ScheduleCalendarPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isPortrait = useMediaQuery('(orientation: portrait)');
+  const usesAgendaComposition = responsiveTier === 'mobile' || (responsiveTier === 'tablet' && isPortrait);
 
   // View state: 'overview' | 'list' | 'grid'
   const [viewMode, setViewMode] = useState<'overview' | 'list' | 'grid'>('overview');
@@ -74,6 +56,15 @@ export default function ScheduleCalendarPage() {
   const [daysCount, setDaysCount] = useState<number>(5);
   const [dateRangePreset, setDateRangePreset] = useState<string>('next5');
   const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null);
+
+  // Phones and portrait iPads start with a decision-oriented day agenda.  A
+  // user-selected list/grid view is never reset when rotating to a wider tier.
+  useEffect(() => {
+    if (!usesAgendaComposition) return;
+    setViewMode((current) => (current === 'overview' ? 'list' : current));
+    setDaysCount(1);
+    setDateRangePreset((current) => (current === 'custom' ? current : 'today'));
+  }, [usesAgendaComposition]);
 
   // Filters state
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
@@ -98,12 +89,20 @@ export default function ScheduleCalendarPage() {
           id: number;
           name: string;
           branchName?: string;
+          branchCode?: string;
           shift?: string;
           bookedCount?: number;
           doneCount?: number;
           avgDurationMinutes?: { normalAvg?: number; retainAvg?: number; removalAvg?: number; overallAvg?: number };
         }>;
-        offStaffList?: Array<{ id: number; name: string; branchName?: string; reason: string; type?: string }>;
+        offStaffList?: Array<{
+          id: number;
+          name: string;
+          branchName?: string;
+          branchCode?: string;
+          reason: string;
+          type?: string;
+        }>;
       }
     >
   >({});
@@ -114,7 +113,7 @@ export default function ScheduleCalendarPage() {
   const branchCounts = useMemo(() => {
     const counts = { all: appointments.length, EP: 0, DT: 0, PXL: 0 };
     appointments.forEach((appt) => {
-      const b = getBranchBadgeInfo(appt.storeId, appt.branchName);
+      const b = getBranchBadgeInfo(appt.storeId, appt.branchName, appt.branchCode);
       if (b.code === 'EP') counts.EP++;
       else if (b.code === 'DT') counts.DT++;
       else if (b.code === 'PXL') counts.PXL++;
@@ -324,7 +323,7 @@ export default function ScheduleCalendarPage() {
     return appointments.filter((appt) => {
       // Branch filter
       if (selectedBranch !== 'all') {
-        const b = getBranchBadgeInfo(appt.storeId, appt.branchName);
+        const b = getBranchBadgeInfo(appt.storeId, appt.branchName, appt.branchCode);
         if (b.code !== selectedBranch) return false;
       }
 
@@ -411,32 +410,52 @@ export default function ScheduleCalendarPage() {
     };
   }, [filteredAppointments]);
 
-  // Handlers for Preset Buttons
+  // A preset always starts from today; moving backward or forward afterwards
+  // keeps the selected period length while preserving the user's context.
   const handlePresetChange = (preset: string) => {
+    const today = dayjs();
+
+    setStartDate(today);
     setDateRangePreset(preset);
     setCustomRange(null);
-    if (preset === 'next3') setDaysCount(3);
+    if (preset === 'today') setDaysCount(1);
+    else if (preset === 'next3') setDaysCount(3);
     else if (preset === 'next5') setDaysCount(5);
     else if (preset === 'next7') setDaysCount(7);
+    else if (preset === 'thisWeek') setDaysCount(7);
+    else if (preset === 'thisMonth') setDaysCount(today.daysInMonth());
   };
 
   const handlePrevRange = () => {
+    if (customRange) {
+      const periodLength = customRange[1].startOf('day').diff(customRange[0].startOf('day'), 'day') + 1;
+      setCustomRange([
+        customRange[0].clone().subtract(periodLength, 'day'),
+        customRange[1].clone().subtract(periodLength, 'day'),
+      ]);
+      return;
+    }
     setStartDate((prev) => prev.clone().subtract(daysCount, 'day'));
   };
 
   const handleNextRange = () => {
+    if (customRange) {
+      const periodLength = customRange[1].startOf('day').diff(customRange[0].startOf('day'), 'day') + 1;
+      setCustomRange([
+        customRange[0].clone().add(periodLength, 'day'),
+        customRange[1].clone().add(periodLength, 'day'),
+      ]);
+      return;
+    }
     setStartDate((prev) => prev.clone().add(daysCount, 'day'));
   };
 
   const handleTodayReset = () => {
-    setStartDate(dayjs());
-    setDateRangePreset('next5');
-    setDaysCount(5);
-    setCustomRange(null);
+    handlePresetChange('next5');
   };
 
   return (
-    <div className="schedule-calendar-page w-full p-4 md:p-6 space-y-5">
+    <div className="responsive-page responsive-workspace schedule-calendar-page w-full p-4 md:p-6 space-y-5">
       {/* Header & Page Title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
         <div>
@@ -456,132 +475,147 @@ export default function ScheduleCalendarPage() {
         </div>
 
         {/* Action Controls & View Mode Selector */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            className="bg-emerald-500 hover:bg-emerald-600 border-none shadow-md shadow-emerald-500/20 font-semibold"
-            onClick={() => {
-              setBookingInitialCustomer(null);
-              setBookingWizardOpen(true);
-            }}
-          >
-            Đặt lịch mới
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Tooltip title="Đặt lịch mới">
+            <Button
+              type="primary"
+              aria-label="Đặt lịch mới"
+              icon={
+                <span aria-hidden className="relative inline-flex size-4 items-center justify-center">
+                  <CalendarOutlined className="text-base" />
+                  <PlusOutlined className="absolute -right-1.5 -bottom-1.5 rounded-full bg-emerald-500 p-px text-[8px] text-white ring-1 ring-white dark:ring-slate-900" />
+                </span>
+              }
+              className="!size-8 !min-w-8 !rounded-lg !border-none !bg-emerald-500 !p-0 text-white shadow-sm shadow-emerald-500/20 hover:!bg-emerald-600"
+              onClick={() => {
+                setBookingInitialCustomer(null);
+                setBookingWizardOpen(true);
+              }}
+            />
+          </Tooltip>
 
           <Segmented
             value={selectedBranch}
             onChange={(val) => setSelectedBranch(val as string)}
             options={[
-              { label: `Tất cả Chi nhánh (${branchCounts.all})`, value: 'all' },
+              {
+                label: usesAgendaComposition
+                  ? `Tất cả (${branchCounts.all})`
+                  : `Tất cả Chi nhánh (${branchCounts.all})`,
+                value: 'all',
+              },
               { label: `Đề Thám (${branchCounts.DT})`, value: 'DT' },
-              { label: `Estella Place (${branchCounts.EP})`, value: 'EP' },
+              {
+                label: usesAgendaComposition ? `Estella (${branchCounts.EP})` : `Estella Place (${branchCounts.EP})`,
+                value: 'EP',
+              },
             ]}
 
-            className="bg-slate-100 dark:bg-slate-800 p-1 font-semibold text-xs"
+            className="schedule-calendar-branch-control bg-slate-100 dark:bg-slate-800 p-1 font-semibold text-xs"
           />
 
           <Segmented
             value={viewMode}
             onChange={(val) => setViewMode(val as any)}
-            options={[
-              {
-                label: 'Overview Đa cột',
-                value: 'overview',
-                icon: <AppstoreOutlined />,
-              },
-              {
-                label: 'Danh sách',
-                value: 'list',
-                icon: <UnorderedListOutlined />,
-              },
-              {
-                label: 'Lịch lưới',
-                value: 'grid',
-                icon: <CalendarOutlined />,
-              },
-            ]}
-            className="bg-slate-100 dark:bg-slate-800 p-1 font-medium"
+            options={
+              usesAgendaComposition
+                ? [
+                    { label: 'Agenda', value: 'list', icon: <UnorderedListOutlined /> },
+                    { label: 'Lịch', value: 'grid', icon: <CalendarOutlined /> },
+                  ]
+                : [
+                    { label: 'Overview Đa cột', value: 'overview', icon: <AppstoreOutlined /> },
+                    { label: 'Danh sách', value: 'list', icon: <UnorderedListOutlined /> },
+                    { label: 'Lịch lưới', value: 'grid', icon: <CalendarOutlined /> },
+                  ]
+            }
+            className="schedule-calendar-view-control bg-slate-100 dark:bg-slate-800 p-1 font-medium"
           />
         </div>
       </div>
 
       {/* Date Range Navigation & Summary Strip */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
-        {/* Controls Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <Button icon={<LeftOutlined />} onClick={handlePrevRange} size="small" />
-            <Button onClick={handleTodayReset} size="small" className="font-medium">
-              Hôm nay
-            </Button>
-            <Button icon={<RightOutlined />} onClick={handleNextRange} size="small" />
-            <span className="font-semibold text-sm text-slate-700 dark:text-slate-200 tabular-nums px-2">
-              {computedDateRange[0].format('DD/MM/YYYY')} - {computedDateRange[1].format('DD/MM/YYYY')}
-            </span>
-          </div>
-
-          {/* Quick Presets */}
-          <div className="flex items-center gap-2">
-            <Radio.Group
-              value={dateRangePreset}
-              onChange={(e) => handlePresetChange(e.target.value)}
-              size="small"
-              buttonStyle="solid"
-            >
-              <Radio.Button value="today">Hôm nay</Radio.Button>
-              <Radio.Button value="next3">3 Ngày tới</Radio.Button>
-              <Radio.Button value="next5">5 Ngày tới</Radio.Button>
-              <Radio.Button value="next7">7 Ngày tới</Radio.Button>
-              <Radio.Button value="thisWeek">Tuần này</Radio.Button>
-              <Radio.Button value="thisMonth">Tháng này</Radio.Button>
-            </Radio.Group>
-
-            <RangePicker
-              aria-label="Chọn khoảng ngày tìm kiếm"
-              size="small"
-              className="w-56"
-              format="DD/MM/YYYY"
-              value={customRange}
-              onChange={(dates) => {
-                if (dates && dates[0] && dates[1]) {
-                  setCustomRange([dates[0], dates[1]]);
-                  setDateRangePreset('custom');
-                } else {
-                  setCustomRange(null);
-                  setDateRangePreset('next5');
-                }
-              }}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-3">
+        {/* One compact time toolbar keeps navigation, preset and custom range in one place. */}
+        <div className="schedule-calendar-date-toolbar flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+          <Tooltip title="Khoảng lịch trước">
+            <Button
+              icon={<LeftOutlined />}
+              aria-label="Khoảng lịch trước"
+              onClick={handlePrevRange}
+              className="!size-8 !min-w-8 !rounded-lg !p-0"
             />
+          </Tooltip>
 
-            <Tooltip title="Tải lại dữ liệu">
-              <Button
-                icon={<ReloadOutlined />}
-                aria-label="Tải lại dữ liệu lịch hẹn"
-                onClick={fetchAppointments}
-                size="small"
-                loading={loading}
-              />
-            </Tooltip>
-          </div>
+          <RangePicker
+            aria-label="Chọn khoảng ngày tìm kiếm"
+            className="schedule-calendar-range-picker !h-8 w-full sm:!w-[232px]"
+            format="DD/MM/YYYY"
+            value={customRange ?? computedDateRange}
+            onChange={(dates) => {
+              if (dates && dates[0] && dates[1]) {
+                const range: [Dayjs, Dayjs] = [dates[0].startOf('day'), dates[1].endOf('day')];
+                setCustomRange(range);
+                setDateRangePreset('custom');
+                setStartDate(range[0]);
+                setDaysCount(range[1].startOf('day').diff(range[0].startOf('day'), 'day') + 1);
+              } else {
+                handleTodayReset();
+              }
+            }}
+          />
+
+          <Tooltip title="Khoảng lịch tiếp theo">
+            <Button
+              icon={<RightOutlined />}
+              aria-label="Khoảng lịch tiếp theo"
+              onClick={handleNextRange}
+              className="!size-8 !min-w-8 !rounded-lg !p-0"
+            />
+          </Tooltip>
+
+          <Select
+            aria-label="Chọn khoảng xem lịch"
+            value={dateRangePreset}
+            onChange={handlePresetChange}
+            className="!h-8 w-full sm:!w-36"
+            options={[
+              { value: 'today', label: 'Hôm nay' },
+              { value: 'next3', label: '3 ngày tới' },
+              { value: 'next5', label: '5 ngày tới' },
+              { value: 'next7', label: '7 ngày tới' },
+              { value: 'thisWeek', label: 'Tuần này' },
+              { value: 'thisMonth', label: 'Tháng này' },
+              ...(dateRangePreset === 'custom' ? [{ value: 'custom', label: 'Tùy chọn' }] : []),
+            ]}
+          />
+
+          <Tooltip title="Tải lại dữ liệu">
+            <Button
+              icon={<ReloadOutlined />}
+              aria-label="Tải lại dữ liệu lịch hẹn"
+              onClick={fetchAppointments}
+              loading={loading}
+              className="!size-8 !min-w-8 !rounded-lg !p-0"
+            />
+          </Tooltip>
         </div>
 
         {/* Multi-dimensional Filters Row */}
-        <div className="flex items-center gap-2.5 w-full">
-          <Input
+        <div className="schedule-calendar-filters flex flex-wrap items-center w-full">
+          <SearchField
+            behavior="filter"
             id="calendar-search-input"
             name="calendarSearch"
             aria-label="Tìm theo Tên KH, SĐT, Dịch vụ"
             placeholder="Tìm theo Tên KH, SĐT, Dịch vụ..."
-            prefix={<SearchOutlined className="text-slate-400" />}
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="flex-1 min-w-[200px]"
+            className="schedule-calendar-filter-search"
             allowClear
-            size="small"
           />
 
           <Select
@@ -591,8 +625,7 @@ export default function ScheduleCalendarPage() {
               setSelectedStaffId(val);
               setCurrentPage(1);
             }}
-            size="small"
-            className="w-44"
+            className="schedule-calendar-filter-control"
             options={[
               { value: 'all', label: 'Tất cả Chuyên viên' },
               ...staffList.map((s) => ({ value: s.id, label: s.name })),
@@ -606,8 +639,7 @@ export default function ScheduleCalendarPage() {
               setSelectedStatus(val);
               setCurrentPage(1);
             }}
-            size="small"
-            className="w-40"
+            className="schedule-calendar-filter-control"
             options={[
               { value: 'all', label: 'Tất cả trạng thái' },
               { value: 'Pending', label: 'Chờ check-in' },
@@ -624,8 +656,7 @@ export default function ScheduleCalendarPage() {
               setSelectedChannel(val);
               setCurrentPage(1);
             }}
-            size="small"
-            className="w-40"
+            className="schedule-calendar-filter-control"
             options={[
               { value: 'all', label: 'Tất cả Kênh đặt' },
               { value: 'Facebook', label: 'Facebook' },
@@ -637,10 +668,10 @@ export default function ScheduleCalendarPage() {
         </div>
 
         {/* Summary Indicators Strip */}
-        <div className="grid grid-cols-4 gap-3 pt-2">
+        <div className="schedule-calendar-summary-grid grid grid-cols-2 gap-3 pt-2">
           <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
             <Text type="secondary" className="text-xs font-medium">
-              Tổng lịch hẹn
+              ∑ Lịch hẹn
             </Text>
             <div className="text-xl font-extrabold text-slate-800 dark:text-slate-100 tabular-nums">
               {statsSummary.totalCount}
@@ -733,93 +764,31 @@ export default function ScheduleCalendarPage() {
         />
       )}
 
-      {/* PRE-RESCHEDULE OFF-DAY WARNING MODAL */}
-      {preOffDayModalOpen && (
-        <Modal
-          open={preOffDayModalOpen}
-          destroyOnClose
-          onCancel={() => {
-            setPreOffDayModalOpen(false);
-            setPreOffDayAppt(null);
-          }}
-          width={500}
-          zIndex={2000}
-          title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fa541c', fontSize: '15px' }}>
-              <ExclamationCircleOutlined style={{ fontSize: '18px' }} />
-              <span>⚠️ CẢNH BÁO CHUYÊN VIÊN NGHỈ TUẦN</span>
-            </div>
-          }
-          footer={[
-            <Button
-              key="cancel"
-              onClick={() => {
-                setPreOffDayModalOpen(false);
-                setPreOffDayAppt(null);
-              }}
-            >
-              Hủy thao tác
-            </Button>,
-            <Button
-              key="continue"
-              type="primary"
-              style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B' }}
-              onClick={() => {
-                const apptToPass = {
-                  ...preOffDayAppt,
-                  targetBookingDate: preOffDayTargetDate,
-                  targetBookingTime: preOffDayTargetTime,
-                  isOffDayDrop: true,
-                };
-                setPreOffDayModalOpen(false);
-                setPreOffDayAppt(null);
-                setTimeout(() => {
-                  setSelectedRescheduleAppt(apptToPass);
-                  setRescheduleModalOpen(true);
-                }, 350);
-              }}
-            >
-              Tiếp tục dời lịch
-            </Button>,
-          ]}
-        >
-          <div style={{ padding: '8px 0', fontSize: '14px', lineHeight: '1.6' }}>
-            <p style={{ marginBottom: '12px' }}>
-              Lịch hẹn của chị{' '}
-              <strong>
-                {preOffDayAppt?.customerName ||
-                  preOffDayAppt?.customer_name ||
-                  preOffDayAppt?.customer?.displayName ||
-                  'Khách hàng'}
-              </strong>{' '}
-              đang được dời sang{' '}
-              <strong style={{ color: '#fa541c' }}>
-                {preOffDayTargetDate ? dayjs(preOffDayTargetDate).format('dddd (DD/MM/YYYY)') : 'ngày nghỉ'}
-              </strong>{' '}
-              – trùng với lịch nghỉ tuần cố định (<code>Off</code>) của{' '}
-              <strong style={{ color: '#fa541c' }}>{preOffDayAppt?.technicianName || 'Trancy'}</strong>.
-            </p>
-
-            <div
-              style={{
-                padding: '12px 14px',
-                borderRadius: '8px',
-                backgroundColor: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.12)' : '#fffbe6',
-                border: `1px solid ${themeMode === 'dark' ? '#d4a84b' : '#ffe58f'}`,
-                color: themeMode === 'dark' ? '#fef08a' : '#d48806',
-                fontSize: '13px',
-                marginBottom: '8px',
-              }}
-            >
-              💡 <strong>Gợi ý:</strong> {preOffDayAppt?.technicianName || 'Trancy'} sẽ đi làm lại vào{' '}
-              <strong>
-                {preOffDayNextWorkingDate ? preOffDayNextWorkingDate.format('dddd - DD/MM/YYYY') : 'Thứ 4 (12/08/2026)'}
-              </strong>
-              .
-            </div>
-          </div>
-        </Modal>
-      )}
+      <OffDayRescheduleWarningModal
+        open={preOffDayModalOpen}
+        appointment={preOffDayAppt}
+        targetDate={preOffDayTargetDate}
+        nextWorkingDate={preOffDayNextWorkingDate}
+        themeMode={themeMode}
+        onCancel={() => {
+          setPreOffDayModalOpen(false);
+          setPreOffDayAppt(null);
+        }}
+        onContinue={() => {
+          const apptToPass = {
+            ...preOffDayAppt,
+            targetBookingDate: preOffDayTargetDate,
+            targetBookingTime: preOffDayTargetTime,
+            isOffDayDrop: true,
+          };
+          setPreOffDayModalOpen(false);
+          setPreOffDayAppt(null);
+          setTimeout(() => {
+            setSelectedRescheduleAppt(apptToPass);
+            setRescheduleModalOpen(true);
+          }, 350);
+        }}
+      />
 
       {/* Drawers & Modals */}
       {customerDrawerOpen && (

@@ -7,20 +7,28 @@ import { ContentSurface } from './ContentSurface';
 export interface PageToolbarProps {
   primary: React.ReactNode;
   actions?: React.ReactNode;
+  /** Secondary controls intentionally follow actions on compact screens. */
+  secondary?: React.ReactNode;
   className?: string;
 }
 
 /** Standard responsive toolbar used above data-heavy screens. */
-export function PageToolbar({ primary, actions, className = '' }: PageToolbarProps) {
+export function PageToolbar({ primary, actions, secondary, className = '' }: PageToolbarProps) {
   return (
-    <ContentSurface padding="12px 16px" className={`mb-4 ${className}`}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-[280px] flex-1 flex-wrap items-center gap-2">{primary}</div>
+    <ContentSurface
+      padding="var(--mos-density-padding, var(--mos-toolbar-padding))"
+      className={`responsive-toolbar mb-4 ${className}`}
+    >
+      <div className="responsive-toolbar-layout">
+        <div className="responsive-toolbar-primary">{primary}</div>
         {actions && (
-          <Space wrap size={8}>
-            {actions}
-          </Space>
+          <div className="responsive-toolbar-actions">
+            <Space wrap size={8}>
+              {actions}
+            </Space>
+          </div>
         )}
+        {secondary && <div className="responsive-toolbar-secondary">{secondary}</div>}
       </div>
     </ContentSurface>
   );

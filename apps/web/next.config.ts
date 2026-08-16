@@ -4,6 +4,9 @@ import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const nextConfig: NextConfig = {
   compress: true,
+  // Keeps an explicit production build isolated from the live dev server when
+  // responsive performance QA runs locally. Defaults to Next's `.next`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   transpilePackages: [
     '@mos-lab/shared',
@@ -31,19 +34,13 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/dashboard/customers',
-        permanent: false,
-      },
-      {
-        source: '/dashboard',
-        destination: '/dashboard/customers',
-        permanent: false,
-      },
-    ];
+  async rewrites() {
+    // Production performance QA runs on a dedicated local port while the API
+    // remains on :4001. Proxy only in that opt-in mode so browser measurements
+    // use the same-origin path and are not distorted by a local CORS policy.
+    if (process.env.PERFORMANCE_QA_PROXY !== '1') return [];
+    const apiOrigin = process.env.PERFORMANCE_QA_API_ORIGIN || 'http://localhost:4001';
+    return [{ source: '/api/:path*', destination: `${apiOrigin}/api/:path*` }];
   },
 };
 

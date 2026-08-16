@@ -4,16 +4,68 @@ import React, { useState } from 'react';
 import { theme } from 'antd';
 import { IconPickerModal } from '../IconPickerModal';
 import { getAntdIconComponent, getDynamicLucideIcon, getCustomIconComponent } from '../IconSystem';
-import { Smile } from 'lucide-react';
+import {
+  BedDouble,
+  Bell,
+  Calendar,
+  Clock,
+  Handshake,
+  Heart,
+  MessageCircle,
+  Smile,
+  Sparkles,
+  UserPlus,
+  type LucideIcon,
+} from 'lucide-react';
+
+const STANDARD_TOUCHPOINT_ICONS: Record<string, LucideIcon> = {
+  smile: Smile,
+  handshake: Handshake,
+  heart: Heart,
+  beddouble: BedDouble,
+  sparkles: Sparkles,
+  calendar: Calendar,
+  clock: Clock,
+  bell: Bell,
+  userplus: UserPlus,
+  messagecircle: MessageCircle,
+};
 
 export const getIconComponent = (keyOrEmoji?: string): React.ReactNode => {
   if (!keyOrEmoji) return <Smile size={16} className="text-amber-400" />;
 
   const str = keyOrEmoji.trim();
+  const normalizedName = str
+    .replace(/^lucide:/i, '')
+    .replace(/(?:outlined|icon)$/i, '')
+    .replace(/[\s_-]/g, '')
+    .toLowerCase();
 
-  // Special Kiss emoji handling
-  if (str.toLowerCase() === 'kiss' || str === '😚') {
-    return <span className="text-sm">😚</span>;
+  // Some established campaigns persist their touchpoint icon as an emoji,
+  // not as a Lucide/Ant Design icon name. Render it before trying the icon
+  // registries: a deferred loader for an emoji name resolves to no component.
+  if (normalizedName === 'kiss') {
+    return (
+      <span aria-hidden="true" className="text-sm">
+        😚
+      </span>
+    );
+  }
+
+  if (/\p{Extended_Pictographic}/u.test(str)) {
+    return (
+      <span aria-hidden="true" className="text-sm leading-none">
+        {str}
+      </span>
+    );
+  }
+
+  // Campaign touchpoints appear in dense table headers. These known icons
+  // must render synchronously rather than waiting through nested dynamic
+  // imports, which leaves headers visually blank during (and after) hydration.
+  const StandardIcon = STANDARD_TOUCHPOINT_ICONS[normalizedName];
+  if (StandardIcon) {
+    return <StandardIcon aria-hidden="true" size={16} strokeWidth={2} />;
   }
 
   // 1. Antd Icon (e.g. AndroidOutlined, SmileOutlined)

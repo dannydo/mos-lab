@@ -3,14 +3,12 @@
 import '../../suppress-warnings';
 import React from 'react';
 import {
-  Table,
   Tabs,
   Button,
   Card,
   Space,
   Radio,
   DatePicker,
-  Typography,
   Select,
   theme,
   Popover,
@@ -21,13 +19,11 @@ import {
   Col,
   Spin,
   message,
-  Tooltip,
 } from 'antd';
 import {
   CalendarOutlined,
   LeftOutlined,
   RightOutlined,
-  SettingOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   PhoneOutlined,
@@ -56,15 +52,20 @@ import { apiClient } from '../../../lib/api-client';
 
 dayjs.extend(isoWeek);
 
-const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 import { formatVND } from '../../../lib/format-utils';
 import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
+import {
+  DataTable,
+  PageHeader,
+  PagePrimaryIconAction,
+  PageToolbar,
+  TableSettingsTrigger,
+} from '../../../components/ui';
 
 const defaultColumnConfig = {
   customerName: { visible: true, width: 220, label: 'Khách hàng' },
-  customerPhone: { visible: true, width: 140, label: 'Số Điện Thoại' },
   appointmentTime: { visible: true, width: 150, label: 'Thời Gian Hẹn' },
   serviceName: { visible: true, width: 200, label: 'Dịch vụ chính' },
   totalPrice: { visible: true, width: 130, label: 'Giá trị ước tính' },
@@ -215,8 +216,9 @@ export default function AppointmentsPage() {
         token,
         formatVND,
         openDetailModal,
+        makeCall,
       }),
-    [themeMode, token, openDetailModal]
+    [themeMode, token, openDetailModal, makeCall]
   );
 
   const baseColumns =
@@ -292,229 +294,212 @@ export default function AppointmentsPage() {
   );
 
   return (
-    <div>
-      {/* HEADER SECTION */}
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4" style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-          <div>
-            <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
-              Quản Lý Lịch Hẹn Của Tôi
-            </Title>
-            <Text style={{ color: token.colorTextDescription }}>
-              Theo dõi và quản lý lịch hẹn của khách hàng đã được phân bổ cho bạn
-            </Text>
-          </div>
-          <Tooltip title="Đặt lịch mới">
-            <Button
-              type="primary"
-              icon={<CalendarPlusIcon fontSize={18} />}
-              style={{
-                backgroundColor: '#D4A84B',
-                borderColor: '#D4A84B',
-                height: '38px',
-                width: '38px',
-                padding: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
-                marginTop: '4px',
-              }}
-              onClick={() => setBookingWizardVisible(true)}
-            />
-          </Tooltip>
-        </div>
+    <div className="responsive-page responsive-workspace appointments-page">
+      <PageHeader
+        title="Quản Lý Lịch Hẹn Của Tôi"
+        subtitle="Theo dõi và quản lý lịch hẹn của khách hàng đã được phân bổ cho bạn"
+        extra={
+          <PagePrimaryIconAction
+            title="Đặt lịch mới"
+            icon={<CalendarPlusIcon fontSize={18} />}
+            onClick={() => setBookingWizardVisible(true)}
+          />
+        }
+      />
 
-        {/* Date Filter & Staff Selection */}
-        <div className="flex items-center gap-3 flex-wrap">
-          {currentUser?.role === 'admin' && (
-            <Select
-              showSearch
-              filterOption={vietnameseSearchFilter}
-              value={selectedStaffId}
-              onChange={(value) => {
-                setSelectedStaffId(value);
-                localStorage.setItem('mos_appointments_selectedStaffId', value);
-              }}
-              style={{ width: '180px' }}
-              options={[
-                { value: 'all', label: 'Tất cả Booker' },
-                ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
-              ]}
-              placeholder="Chọn Booker"
-            />
-          )}
-
-          <Space wrap>
-            <Space.Compact>
-              <Button
-                type={viewMode === 'month' ? 'primary' : 'default'}
-                onClick={() => {
-                  setViewMode('month');
-                  setCustomRange(null);
-                  localStorage.setItem('mos_appointments_viewMode', 'month');
+      <PageToolbar
+        className="appointments-table-toolbar"
+        primary={
+          <div className="flex items-center gap-3 flex-wrap">
+            {currentUser?.role === 'admin' && (
+              <Select
+                showSearch
+                filterOption={vietnameseSearchFilter}
+                value={selectedStaffId}
+                onChange={(value) => {
+                  setSelectedStaffId(value);
+                  localStorage.setItem('mos_appointments_selectedStaffId', value);
                 }}
-              >
-                Tháng
-              </Button>
-              <Button
-                type={viewMode === 'week' ? 'primary' : 'default'}
-                onClick={() => {
-                  setViewMode('week');
-                  setCustomRange(null);
-                  localStorage.setItem('mos_appointments_viewMode', 'week');
-                }}
-              >
-                Tuần
-              </Button>
-              <Button
-                type={viewMode === 'day' ? 'primary' : 'default'}
-                onClick={() => {
-                  setViewMode('day');
-                  setCustomRange(null);
-                  localStorage.setItem('mos_appointments_viewMode', 'day');
-                }}
-              >
-                Ngày
-              </Button>
-            </Space.Compact>
-
-            <Space.Compact>
-              <Button
-                icon={<LeftOutlined />}
-                onClick={() => handleNavigate(-1)}
-                aria-label="Ngày trước đó"
-                title="Ngày trước đó"
+                style={{ width: '180px' }}
+                options={[
+                  { value: 'all', label: 'Tất cả Booker' },
+                  ...staffList.map((s) => ({ value: s.id.toString(), label: s.displayName })),
+                ]}
+                placeholder="Chọn Booker"
               />
-              <div style={{ position: 'relative', display: 'inline-block' }}>
+            )}
+
+            <Space wrap>
+              <Space.Compact>
                 <Button
-                  onClick={() => setPickerOpen(true)}
-                  style={{
-                    fontWeight: '600',
-                    minWidth: '210px',
-                    textAlign: 'center',
-                    color: token.colorText,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
+                  type={viewMode === 'month' ? 'primary' : 'default'}
+                  onClick={() => {
+                    setViewMode('month');
+                    setCustomRange(null);
+                    localStorage.setItem('mos_appointments_viewMode', 'month');
                   }}
                 >
-                  {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
+                  Tháng
                 </Button>
-                {pickerOpen && (
-                  <RangePicker
-                    value={dateRange}
-                    onChange={(dates) => {
-                      if (dates && dates[0] && dates[1]) {
-                        setCustomRange([dates[0]!, dates[1]!]);
-                        setPickerOpen(false);
-                      }
-                    }}
-                    format="DD/MM/YYYY"
-                    open={true}
-                    onOpenChange={(open) => {
-                      if (!open) setPickerOpen(false);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: 0,
-                      height: 0,
-                      padding: 0,
-                      border: 'none',
-                      visibility: 'hidden',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </div>
-              <Button
-                icon={<RightOutlined />}
-                onClick={() => handleNavigate(1)}
-                aria-label="Ngày tiếp theo"
-                title="Ngày tiếp theo"
-              />
-            </Space.Compact>
-
-            <Popover
-              title={
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px',
+                <Button
+                  type={viewMode === 'week' ? 'primary' : 'default'}
+                  onClick={() => {
+                    setViewMode('week');
+                    setCustomRange(null);
+                    localStorage.setItem('mos_appointments_viewMode', 'week');
                   }}
                 >
-                  <span style={{ fontWeight: 'bold' }}>Cấu hình hiển thị cột</span>
+                  Tuần
+                </Button>
+                <Button
+                  type={viewMode === 'day' ? 'primary' : 'default'}
+                  onClick={() => {
+                    setViewMode('day');
+                    setCustomRange(null);
+                    localStorage.setItem('mos_appointments_viewMode', 'day');
+                  }}
+                >
+                  Ngày
+                </Button>
+              </Space.Compact>
+
+              <Space.Compact>
+                <Button
+                  icon={<LeftOutlined />}
+                  onClick={() => handleNavigate(-1)}
+                  aria-label="Ngày trước đó"
+                  title="Ngày trước đó"
+                />
+                <div style={{ position: 'relative', display: 'inline-block' }}>
                   <Button
-                    type="link"
-                    size="small"
-                    onClick={() => saveColumnConfig(defaultColumnConfig)}
-                    style={{ padding: 0 }}
+                    onClick={() => setPickerOpen(true)}
+                    style={{
+                      fontWeight: '600',
+                      minWidth: '210px',
+                      textAlign: 'center',
+                      color: token.colorText,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
                   >
-                    Khôi phục
+                    {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
                   </Button>
+                  {pickerOpen && (
+                    <RangePicker
+                      value={dateRange}
+                      onChange={(dates) => {
+                        if (dates && dates[0] && dates[1]) {
+                          setCustomRange([dates[0]!, dates[1]!]);
+                          setPickerOpen(false);
+                        }
+                      }}
+                      format="DD/MM/YYYY"
+                      open={true}
+                      onOpenChange={(open) => {
+                        if (!open) setPickerOpen(false);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: 0,
+                        height: 0,
+                        padding: 0,
+                        border: 'none',
+                        visibility: 'hidden',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  )}
                 </div>
-              }
-              trigger="click"
-              placement="bottomRight"
-              content={
-                <div className="custom-scrollbar" style={{ width: '300px', maxHeight: '400px' }}>
-                  {Object.entries(columnConfig)
-                    .filter(([key]) => {
-                      if (activeTab === 'completed') {
-                        return !['totalPrice', 'bookingNote'].includes(key);
-                      } else {
-                        return !['netRevenue', 'tipAmount', 'bookingBonus', 'serviceName'].includes(key);
-                      }
-                    })
-                    .map(([key, config]) => (
-                      <div key={key} style={{ marginBottom: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Checkbox
-                            checked={config.visible}
-                            onChange={(e) => {
+                <Button
+                  icon={<RightOutlined />}
+                  onClick={() => handleNavigate(1)}
+                  aria-label="Ngày tiếp theo"
+                  title="Ngày tiếp theo"
+                />
+              </Space.Compact>
+            </Space>
+          </div>
+        }
+        actions={
+          <Popover
+            title={
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '8px',
+                }}
+              >
+                <span style={{ fontWeight: 'bold' }}>Cấu hình hiển thị cột</span>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => saveColumnConfig(defaultColumnConfig)}
+                  style={{ padding: 0 }}
+                >
+                  Khôi phục
+                </Button>
+              </div>
+            }
+            trigger="click"
+            placement="bottomRight"
+            content={
+              <div className="custom-scrollbar" style={{ width: '300px', maxHeight: '400px' }}>
+                {Object.entries(columnConfig)
+                  .filter(([key]) => {
+                    if (activeTab === 'completed') {
+                      return !['totalPrice', 'bookingNote'].includes(key);
+                    } else {
+                      return !['netRevenue', 'tipAmount', 'bookingBonus', 'serviceName'].includes(key);
+                    }
+                  })
+                  .map(([key, config]) => (
+                    <div key={key} style={{ marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Checkbox
+                          checked={config.visible}
+                          onChange={(e) => {
+                            saveColumnConfig({
+                              ...columnConfig,
+                              [key]: { ...config, visible: e.target.checked },
+                            });
+                          }}
+                        >
+                          <span style={{ fontWeight: '500' }}>{config.label}</span>
+                        </Checkbox>
+                        <span style={{ fontSize: '12px', color: token.colorTextDescription }}>{config.width}px</span>
+                      </div>
+                      {config.visible && (
+                        <div style={{ paddingLeft: '24px', marginTop: '4px' }}>
+                          <Slider
+                            min={80}
+                            max={400}
+                            step={10}
+                            value={config.width}
+                            onChange={(val) => {
                               saveColumnConfig({
                                 ...columnConfig,
-                                [key]: { ...config, visible: e.target.checked },
+                                [key]: { ...config, width: val },
                               });
                             }}
-                          >
-                            <span style={{ fontWeight: '500' }}>{config.label}</span>
-                          </Checkbox>
-                          <span style={{ fontSize: '12px', color: token.colorTextDescription }}>{config.width}px</span>
+                            tooltip={{ formatter: (v) => `${v}px` }}
+                          />
                         </div>
-                        {config.visible && (
-                          <div style={{ paddingLeft: '24px', marginTop: '4px' }}>
-                            <Slider
-                              min={80}
-                              max={400}
-                              step={10}
-                              value={config.width}
-                              onChange={(val) => {
-                                saveColumnConfig({
-                                  ...columnConfig,
-                                  [key]: { ...config, width: val },
-                                });
-                              }}
-                              tooltip={{ formatter: (v) => `${v}px` }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              }
-            >
-              <Button icon={<SettingOutlined />} title="Cấu hình cột" />
-            </Popover>
-          </Space>
-        </div>
-      </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            }
+          >
+            <TableSettingsTrigger />
+          </Popover>
+        }
+      />
 
       {/* ULTRA-COMPACT SEGMENTED PILL TAB BAR (macOS / iOS Control Center Style) */}
       <div
@@ -699,7 +684,7 @@ export default function AppointmentsPage() {
 
         {activeTab === 'completed' && summary && <DoneSummaryStrip summary={summary} />}
 
-        <Table
+        <DataTable
           components={tableComponents}
           dataSource={appointments}
           columns={columns}
@@ -729,7 +714,22 @@ export default function AppointmentsPage() {
             borderRadius: '8px',
             marginTop: '16px',
           }}
-          className="antd-custom-table"
+          className="appointments-data-table"
+          columnPriority={{
+            customerName: 'primary',
+            appointmentTime: 'primary',
+            orderState: 'primary',
+            serviceName: 'secondary',
+            totalPrice: 'secondary',
+            action: 'primary',
+            bookingNote: 'tertiary',
+            promotion: 'tertiary',
+            netRevenue: 'tertiary',
+            tipAmount: 'tertiary',
+            bookingBonus: 'tertiary',
+            bookingChannel: 'tertiary',
+          }}
+          stickyPrimaryColumn
           onRow={handleRow}
         />
       </Card>

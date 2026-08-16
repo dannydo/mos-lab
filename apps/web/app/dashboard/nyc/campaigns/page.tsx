@@ -3,7 +3,6 @@
 import '../../../suppress-warnings';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  Table,
   Button,
   Card,
   Tag,
@@ -53,6 +52,7 @@ import {
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
+import { DataTable } from '../../../../components/ui';
 import { apiClient } from '../../../../lib/api-client';
 import { removeVietnameseTones } from '../../../../lib/utils/search';
 import {
@@ -697,7 +697,7 @@ export default function CampaignManagementPage() {
   ];
 
   return (
-    <div>
+    <div className="responsive-page responsive-workspace nyc-campaigns-page">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
@@ -793,7 +793,7 @@ export default function CampaignManagementPage() {
       </Card>
 
       {/* Campaign Cards / Table */}
-      <Table
+      <DataTable
         columns={columns}
         dataSource={filteredCampaigns}
         rowKey="id"
@@ -805,6 +805,7 @@ export default function CampaignManagementPage() {
           showTotal: (t) => `Tổng số: ${t} chiến dịch`,
         }}
         className="antd-custom-table"
+        stickyPrimaryColumn
       />
 
       {/* Create / Edit Campaign Modal */}

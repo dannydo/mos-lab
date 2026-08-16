@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Table, Tag, Input, Space, Button, Typography, theme, Tooltip, Progress, Alert } from 'antd';
+import dayjs from 'dayjs';
 import {
   SearchOutlined,
   ReloadOutlined,
@@ -13,6 +14,7 @@ import {
 import { CcXoayRecord, removeVietnameseTones, calculateWheelBonusCap } from '@mos-lab/shared';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
+import { formatStoreCode } from '../../../../lib/format-utils';
 import CcAvatar from './CcAvatar';
 
 interface CcXoayTabProps {
@@ -110,30 +112,33 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         title: 'Check-in',
         dataIndex: 'checkin',
         key: 'checkin',
-        width: 150,
-        render: (val: string) => <span className="tabular-nums text-xs text-slate-600 dark:text-slate-400">{val}</span>,
+        width: 108,
+        render: (val: string) => {
+          const checkin = dayjs(val);
+
+          if (!checkin.isValid()) {
+            return <span className="tabular-nums text-xs text-slate-400 font-medium">{val || '-'}</span>;
+          }
+
+          return (
+            <span className="flex flex-col tabular-nums text-xs font-medium leading-5 text-slate-400 whitespace-nowrap">
+              <span>{checkin.format('DD/MM/YYYY')}</span>
+              <span>{checkin.format('HH:mm')}</span>
+            </span>
+          );
+        },
       },
       {
         title: 'Khách Hàng',
         dataIndex: 'clientName',
         key: 'clientName',
-        width: 140,
-        render: (val: string) => <span className="font-semibold text-slate-700 dark:text-slate-200">{val}</span>,
-      },
-      {
-        title: 'Chi Nhánh',
-        dataIndex: 'store',
-        key: 'store',
-        width: 90,
-        render: (val: string) => {
-          const storeCode =
-            val === 'ESTELLA-PLACE' || val === 'ESTELLA' ? 'EP' : val === 'DE-THAM' || val === 'Đề Thám' ? 'DT' : val;
-          return (
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
-              · {storeCode}
-            </span>
-          );
-        },
+        width: 150,
+        render: (val: string, record: CcXoayRecord) => (
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="truncate font-semibold text-xs text-sky-400">{val || 'Khách Vãng Lai'}</span>
+            <span className="text-[11px] font-medium leading-4 text-slate-400">{formatStoreCode(record.store)}</span>
+          </span>
+        ),
       },
       {
         title: 'Tên Dịch Vụ / Bộ Mi',
@@ -143,30 +148,42 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         render: (val: string) => <span className="font-medium text-amber-800 dark:text-amber-400">{val}</span>,
       },
       {
-        title: 'Loại',
-        dataIndex: 'serviceType',
-        key: 'serviceType',
-        width: 90,
-        render: (val: string) =>
-          val === 'Normal' ? (
-            <span className="text-xs text-slate-600 dark:text-slate-400">Normal</span>
-          ) : (
-            <Tag className="m-0 text-[11px] font-semibold text-amber-800 bg-amber-100 border-amber-300 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-700">
-              {val}
-            </Tag>
-          ),
-      },
-      {
-        title: 'CC Tư Vấn',
-        dataIndex: 'consultantName',
-        key: 'consultantName',
-        width: 160,
-        render: (val: string, record: CcXoayRecord) => (
-          <Space size={6}>
-            <CcAvatar name={val} src={record.avatar} size={24} />
-            <span className="font-semibold text-xs">{val}</span>
-          </Space>
-        ),
+        title: 'CC In/Out',
+        key: 'ccInOut',
+        width: 176,
+        render: (_: unknown, record: CcXoayRecord) => {
+          const ccInName = record.ccInName?.trim();
+          const ccOutName = record.ccOutName?.trim();
+          const isSameConsultant = Boolean(ccInName && ccOutName && ccInName === ccOutName);
+          const renderConsultant = (name: string, avatar: string | null | undefined, variant: 'in' | 'out') => (
+            <div className={`cc-in-out-row cc-in-out-row-${variant}`}>
+              <CcAvatar
+                name={name}
+                src={avatar}
+                size={20}
+                className={variant === 'out' ? 'cc-in-out-avatar-out' : ''}
+              />
+              <span className="truncate">{name}</span>
+            </div>
+          );
+
+          if (isSameConsultant) {
+            return (
+              <div className="cc-in-out-cell" title="CC In và CC Out là cùng một người">
+                {renderConsultant(ccInName!, record.ccInAvatar, 'in')}
+              </div>
+            );
+          }
+
+          if (!ccInName && !ccOutName) return <span className="text-slate-500 text-xs">-</span>;
+
+          return (
+            <div className="cc-in-out-cell">
+              {ccInName && renderConsultant(ccInName, record.ccInAvatar, 'in')}
+              {ccOutName && renderConsultant(ccOutName, record.ccOutAvatar, 'out')}
+            </div>
+          );
+        },
       },
       {
         title: 'Level CC',
@@ -205,7 +222,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
                     <div className="font-bold text-rose-300">⛔ ĐÃ ĐẠT TRẦN THƯỞNG VÒNG XOAY (1.5X)</div>
                     <div className="text-xs mt-1">
                       Tổng thưởng Vòng xoay đã đạt trần tối đa:{' '}
-                      <strong className="text-emerald-300">{maxAllowed.toLocaleString('vi-VN')} đ</strong> (1.5x CC
+                      <strong className="text-emerald-300">{maxAllowed.toLocaleString('vi-VN')} đ</strong> (1.5x CC
                       Daily Bonus). Phần tiền vượt quá bị khống chế theo quy định.
                     </div>
                   </div>
@@ -213,7 +230,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
               >
                 <div className="w-full text-right cursor-help">
                   <div className="tabular-nums font-bold text-rose-500 text-xs">
-                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
                   </div>
                   <div className="flex items-center justify-end gap-1 mt-0.5">
                     <Tag color="error" className="m-0 text-[10px] font-bold py-0 px-1 border-rose-500/40 animate-pulse">
@@ -234,7 +251,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
                     <div className="font-bold text-amber-300">⚠️ CẢNH BÁO: SẮP CHẠM TRẦN THƯỞNG (1.5X)</div>
                     <div className="text-xs mt-1">
                       Đã sử dụng <strong className="text-amber-300">{percent}%</strong> hạn mức thưởng Vòng xoay tháng
-                      (Tối đa: <strong>{maxAllowed.toLocaleString('vi-VN')} đ</strong>). Hãy nâng cao CC Daily Bonus để
+                      (Tối đa: <strong>{maxAllowed.toLocaleString('vi-VN')} đ</strong>). Hãy nâng cao CC Daily Bonus để
                       mở rộng trần!
                     </div>
                   </div>
@@ -242,7 +259,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
               >
                 <div className="w-full text-right cursor-help">
                   <div className="tabular-nums font-bold text-amber-400 text-xs">
-                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
                   </div>
                   <div className="flex items-center justify-end gap-1 mt-0.5">
                     <Tag color="warning" className="m-0 text-[10px] font-bold py-0 px-1 border-amber-500/40">
@@ -265,7 +282,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
             <Tooltip title={`Tiến độ sử dụng hạn mức Vòng xoay tháng: ${percent}% (Trần 1.5x Daily Bonus)`}>
               <div className="w-full text-right">
                 <span className="tabular-nums font-bold text-emerald-400 text-xs">
-                  +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                  +{Math.round(val || 0).toLocaleString('vi-VN')} đ
                 </span>
                 {percent > 0 && (
                   <Progress
@@ -282,7 +299,7 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         },
       },
       {
-        title: 'Points Accu',
+        title: '∑ Điểm CC',
         dataIndex: 'pointsAccu',
         key: 'pointsAccu',
         width: 110,
@@ -298,50 +315,6 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
         width: 90,
         align: 'right' as const,
         render: (val: number) => <span className="tabular-nums font-bold text-cyan-400 text-xs">+{val} pts</span>,
-      },
-      {
-        title: 'CC In',
-        dataIndex: 'ccInName',
-        key: 'ccInName',
-        width: 140,
-        render: (val: string, r: CcXoayRecord) => {
-          if (!val) return <span className="text-slate-500 text-xs">-</span>;
-          const isSame = !r.ccOutName || r.ccInName === r.ccOutName;
-          if (isSame) {
-            return (
-              <Space size={4} className="text-xs text-slate-600 dark:text-slate-300">
-                <CcAvatar name={val} size={20} />
-                <span>{val}</span>
-                <span className="text-emerald-400 font-bold text-[10px]" title="CC In/Out đồng nhất">
-                  ✓
-                </span>
-              </Space>
-            );
-          }
-          return (
-            <Tag color="orange" className="m-0 text-[11px] font-medium border-orange-500/30">
-              In: {val}
-            </Tag>
-          );
-        },
-      },
-      {
-        title: 'CC Out',
-        dataIndex: 'ccOutName',
-        key: 'ccOutName',
-        width: 140,
-        render: (val: string, r: CcXoayRecord) => {
-          if (!val) return <span className="text-slate-500 text-xs">-</span>;
-          const isSame = !r.ccInName || r.ccInName === r.ccOutName;
-          if (isSame) {
-            return <span className="text-slate-500 text-xs italic">Đồng nhất</span>;
-          }
-          return (
-            <Tag color="purple" className="m-0 text-[11px] font-medium border-purple-500/30">
-              Out: {val}
-            </Tag>
-          );
-        },
       },
       {
         title: 'Class',

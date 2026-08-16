@@ -473,7 +473,7 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
               </Checkbox>
 
               <span className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-semibold tabular-nums">
-                {selectedBkIds.length} / {allStaff.length} được chọn
+                {selectedBkIds.length} / {allStaff.length} được chọn
               </span>
             </div>
           </div>

@@ -32,6 +32,9 @@ export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = React.memo(
     getFavoriteTimeSlot,
     getRecentVisitTime,
   }) => {
+    const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
+    const infoTextColor = themeMode === 'dark' ? '#38bdf8' : '#0369a1';
+    const warningTextColor = themeMode === 'dark' ? '#fbbf24' : '#92400e';
     const favBranch = getFavoriteBranch(bookings);
     const favTech = getFavoriteTechnicians(bookings);
     const recentTech = getRecentTechnician(bookings);
@@ -51,7 +54,7 @@ export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = React.memo(
 
     const titleHeaderStyle = {
       fontSize: '11px',
-      color: '#888',
+      color: mutedTextColor,
       fontWeight: 'bold',
       textTransform: 'uppercase' as const,
       display: 'flex',
@@ -103,12 +106,12 @@ export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = React.memo(
               style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '18px', fontSize: '12px' }}
             >
               <div>
-                <span style={{ color: '#888' }}>Yêu thích:</span>{' '}
+                <span style={{ color: mutedTextColor }}>Yêu thích:</span>{' '}
                 <strong style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>{favTech}</strong>
               </div>
               <div style={{ marginTop: '2px' }}>
-                <span style={{ color: '#888' }}>Gần nhất:</span>{' '}
-                <strong style={{ color: themeMode === 'dark' ? '#38bdf8' : '#0284c7' }}>{recentTech}</strong>
+                <span style={{ color: mutedTextColor }}>Gần nhất:</span>{' '}
+                <strong style={{ color: infoTextColor }}>{recentTech}</strong>
               </div>
             </div>
           </div>
@@ -123,11 +126,11 @@ export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = React.memo(
               style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '18px', fontSize: '12px' }}
             >
               <div>
-                <span style={{ color: '#888' }}>Thứ thường đi:</span>{' '}
+                <span style={{ color: mutedTextColor }}>Thứ thường đi:</span>{' '}
                 <strong style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>{favDay}</strong>
               </div>
               <div style={{ marginTop: '2px' }}>
-                <span style={{ color: '#888' }}>Giờ thường đi:</span>{' '}
+                <span style={{ color: mutedTextColor }}>Giờ thường đi:</span>{' '}
                 <strong style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>{favTime}</strong>
               </div>
             </div>
@@ -136,10 +139,10 @@ export const BookingHabitsCard: React.FC<BookingHabitsCardProps> = React.memo(
           {/* Section 4: Lần gần nhất */}
           <div style={sectionStyle}>
             <div style={titleHeaderStyle}>
-              <HistoryOutlined style={{ color: '#fa8c16' }} />
+              <HistoryOutlined style={{ color: warningTextColor }} />
               <span>Lần đi gần nhất</span>
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fa8c16', paddingLeft: '18px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: warningTextColor, paddingLeft: '18px' }}>
               {recentVisit}
             </div>
           </div>

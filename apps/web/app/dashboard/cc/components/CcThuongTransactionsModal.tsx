@@ -261,10 +261,10 @@ export default function CcThuongTransactionsModal({
             )}
             {record.debt_amount && record.debt_amount > 0 ? (
               <Tooltip
-                title={`Đơn hàng có nợ: ${record.debt_amount.toLocaleString('vi-VN')} đ (Giá gốc: ${(record.gross_value || 0).toLocaleString('vi-VN')} đ - Nợ: ${record.debt_amount.toLocaleString('vi-VN')} đ = Thực thu: ${(record.net_value || 0).toLocaleString('vi-VN')} đ)`}
+                title={`Đơn hàng có nợ: ${record.debt_amount.toLocaleString('vi-VN')} đ (Giá gốc: ${(record.gross_value || 0).toLocaleString('vi-VN')} đ - Nợ: ${record.debt_amount.toLocaleString('vi-VN')} đ = Thực thu: ${(record.net_value || 0).toLocaleString('vi-VN')} đ)`}
               >
                 <Tag color="volcano" className="m-0 text-[10px] font-bold border-rose-500/30 tabular-nums">
-                  ⚠️ Nợ: {record.debt_amount.toLocaleString('vi-VN')} đ
+                  ⚠️ Nợ: {record.debt_amount.toLocaleString('vi-VN')} đ
                 </Tag>
               </Tooltip>
             ) : null}
@@ -333,14 +333,14 @@ export default function CcThuongTransactionsModal({
         if (record.is_split && fullVal > displayVal) {
           return (
             <Tooltip
-              title={`Doanh số 50% được ghi nhận: ${displayVal.toLocaleString('vi-VN')} đ (Tổng đơn gốc 100%: ${fullVal.toLocaleString('vi-VN')} đ)`}
+              title={`Doanh số 50% được ghi nhận: ${displayVal.toLocaleString('vi-VN')} đ (Tổng đơn gốc 100%: ${fullVal.toLocaleString('vi-VN')} đ)`}
             >
               <div className="flex flex-col items-end">
                 <span className="tabular-nums font-bold text-sky-400 text-sm">
-                  {Math.round(displayVal || 0).toLocaleString('vi-VN')} đ
+                  {Math.round(displayVal || 0).toLocaleString('vi-VN')} đ
                 </span>
                 <span className="text-[10px] text-slate-400 font-normal tabular-nums">
-                  50% of {fullVal.toLocaleString('vi-VN')} đ
+                  50% of {fullVal.toLocaleString('vi-VN')} đ
                 </span>
               </div>
             </Tooltip>
@@ -353,7 +353,7 @@ export default function CcThuongTransactionsModal({
               record.item_type !== 'Service' ? 'text-sky-400' : 'text-gray-400 dark:text-gray-400 opacity-75'
             }`}
           >
-            {Math.round(displayVal || 0).toLocaleString('vi-VN')} đ
+            {Math.round(displayVal || 0).toLocaleString('vi-VN')} đ
           </span>
         );
       },
@@ -369,10 +369,10 @@ export default function CcThuongTransactionsModal({
         if (record.item_type !== 'Service' && bonus > 0) {
           return (
             <Tooltip
-              title={`Được cộng ${activeTierRate}% thưởng trên giá trị ghi nhận ${displayVal.toLocaleString('vi-VN')} đ (${includeVat ? 'Có VAT' : 'Chưa VAT'})`}
+              title={`Được cộng ${activeTierRate}% thưởng trên giá trị ghi nhận ${displayVal.toLocaleString('vi-VN')} đ (${includeVat ? 'Có VAT' : 'Chưa VAT'})`}
             >
               <span className="tabular-nums font-bold text-emerald-400 text-sm">
-                +{bonus.toLocaleString('vi-VN')} đ
+                +{bonus.toLocaleString('vi-VN')} đ
               </span>
             </Tooltip>
           );
@@ -493,7 +493,7 @@ export default function CcThuongTransactionsModal({
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           >
             <Statistic
-              title="Tổng Giao Dịch"
+              title="∑ Giao Dịch"
               value={onlyHasRevenue ? `${displayTransactions.length} / ${transactions.length}` : transactions.length}
               suffix="đơn"
               valueStyle={{ fontSize: '16px', fontVariantNumeric: 'tabular-nums' }}
@@ -508,7 +508,7 @@ export default function CcThuongTransactionsModal({
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           >
             <Statistic
-              title="Tổng Doanh Số Phát Sinh"
+              title="∑ Doanh Số Phát Sinh"
               value={totalValue}
               suffix="đ"
               precision={0}
@@ -546,7 +546,7 @@ export default function CcThuongTransactionsModal({
             <Statistic
               title={
                 <div className="flex items-center justify-between">
-                  <span>Tổng Thưởng</span>
+                  <span>∑ Thưởng</span>
                   <Tag color="gold" className="m-0 text-[10px] font-bold">
                     Bậc {activeTierRate}%
                   </Tag>

@@ -1,7 +1,9 @@
 'use client';
 
+import { AppIcon, TableIndexHeader } from '~/components/ui';
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Badge, Tooltip } from 'antd';
+import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
 import dynamic from 'next/dynamic';
 import {
   CheckCircleOutlined,
@@ -15,6 +17,7 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
+import { CircleCheck, CircleX, ListFilter } from 'lucide-react';
 import { BkDoneLeaderboardEntry, BkDoneRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -34,6 +37,16 @@ export const formatStoreCode = (store?: string | null): string => {
   if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
   return s;
 };
+
+export const BK_DONE_LEADERBOARD_LABELS = {
+  booker: 'Booker',
+  done: 'Done',
+  missed: 'Missed',
+  doneBonus: 'Thưởng Done',
+  rankBonus: 'Thưởng Hạng',
+  missedBonus: 'Thưởng/Phạt Missed',
+  totalDoneBonus: '∑ Thưởng Done',
+} as const;
 
 interface BkDoneTabProps {
   dateRange: [any, any];
@@ -186,7 +199,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       },
     },
     {
-      title: 'Booker (Online Consultant)',
+      title: BK_DONE_LEADERBOARD_LABELS.booker,
       dataIndex: 'displayName',
       key: 'displayName',
       render: (name: string, record: BkDoneLeaderboardEntry) => {
@@ -230,14 +243,14 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       },
     },
     {
-      title: 'Lượt Done',
+      title: BK_DONE_LEADERBOARD_LABELS.done,
       dataIndex: 'doneCount',
       key: 'doneCount',
       align: 'center' as const,
       render: (val: number) => <span className="tabular-nums font-bold text-xs text-emerald-400">{val}</span>,
     },
     {
-      title: 'Lượt Missed',
+      title: BK_DONE_LEADERBOARD_LABELS.missed,
       dataIndex: 'missedCount',
       key: 'missedCount',
       align: 'center' as const,
@@ -265,7 +278,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       ),
     },
     {
-      title: 'Hoa hồng OC (Thưởng Check-in)',
+      title: BK_DONE_LEADERBOARD_LABELS.doneBonus,
       dataIndex: 'basicBonus',
       key: 'basicBonus',
       align: 'right' as const,
@@ -274,7 +287,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       ),
     },
     {
-      title: 'Thưởng Mốc Done',
+      title: BK_DONE_LEADERBOARD_LABELS.rankBonus,
       dataIndex: 'milestoneBonus',
       key: 'milestoneBonus',
       align: 'right' as const,
@@ -285,7 +298,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       ),
     },
     {
-      title: 'Thưởng / Phạt Missed Rate',
+      title: BK_DONE_LEADERBOARD_LABELS.missedBonus,
       dataIndex: 'penaltyBonus',
       key: 'penaltyBonus',
       align: 'right' as const,
@@ -296,7 +309,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       ),
     },
     {
-      title: 'Tổng Thưởng Done',
+      title: BK_DONE_LEADERBOARD_LABELS.totalDoneBonus,
       dataIndex: 'totalDoneBonus',
       key: 'totalDoneBonus',
       align: 'right' as const,
@@ -330,7 +343,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
   const detailColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 55,
       align: 'center' as const,
@@ -531,7 +544,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
           >
             <Statistic
               title={
-                <span className="text-xs font-semibold text-slate-500 uppercase">Tổng Hoa Hồng OC & Thưởng Done</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase">∑ Hoa Hồng OC & Thưởng Done</span>
               }
               value={summary.totalDoneBonus}
               formatter={(val) => formatCurrency(Number(val))}
@@ -544,11 +557,18 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
       {/* Done Leaderboard */}
       <BkLeaderboardCard
-        title="Bảng Xếp Hạng Thưởng Đơn Done & Hoa Hồng OC"
+        title="Bảng Xếp Hạng Thưởng Done Telesales"
+        description="Chỉ xếp hạng thành tích nhóm Telesales trong khoảng thời gian lọc"
         leaderboard={leaderboard}
         loading={loading}
         columns={columns}
+        selectedBooker={selectedBookerId || undefined}
         onSelectBooker={(bId) => handleSelectBooker(bId)}
+        mobileMetrics={(record) => [
+          { label: 'Done', value: record.doneCount ?? 0, tone: 'success' },
+          { label: 'Missed', value: `${record.missedCount ?? 0} (${record.missedRatePercent ?? 0}%)`, tone: 'danger' },
+          { label: 'Thưởng', value: formatCurrency(record.totalDoneBonus ?? 0), tone: 'success' },
+        ]}
         extraSummary={
           <Text type="secondary" className="text-xs flex items-center gap-1">
             <InfoCircleOutlined className="text-amber-500" />
@@ -597,36 +617,42 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
             <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
               <button
                 type="button"
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                aria-pressed={filterStatus === 'ALL'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
                   filterStatus === 'ALL'
                     ? 'bg-amber-500 text-white shadow-xs font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 onClick={() => setFilterStatus('ALL')}
               >
-                Tất cả
+                <AppIcon icon={ListFilter} size={14} />
+                <span>Tất cả</span>
               </button>
               <button
                 type="button"
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                aria-pressed={filterStatus === 'COMPLETED'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
                   filterStatus === 'COMPLETED'
                     ? 'bg-emerald-600 text-white shadow-xs font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 onClick={() => setFilterStatus('COMPLETED')}
               >
-                ✓ Đơn Done
+                <AppIcon icon={CircleCheck} size={14} />
+                <span>Đơn Done</span>
               </button>
               <button
                 type="button"
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                aria-pressed={filterStatus === 'MISSED'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
                   filterStatus === 'MISSED'
                     ? 'bg-rose-600 text-white shadow-xs font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 onClick={() => setFilterStatus('MISSED')}
               >
-                ❌ Đơn Missed
+                <AppIcon icon={CircleX} size={14} />
+                <span>Đơn Missed</span>
               </button>
             </div>
 
@@ -674,7 +700,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
               setCurrentPage(page);
               setPageSize(size);
             },
-            showTotal: (total) => `Tổng cộng ${total} đơn hàng`,
+            showTotal: (total) => `Tổng cộng ${total} đơn hàng`,
           }}
           size="small"
           scroll={{ x: 'max-content' }}

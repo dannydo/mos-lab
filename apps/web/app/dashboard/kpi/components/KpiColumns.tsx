@@ -63,7 +63,7 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
             (a.salary?.baseSalary || 0) - (b.salary?.baseSalary || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -73,7 +73,7 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
             (a.salary?.salesReward || 0) - (b.salary?.salesReward || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.salesReward || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.salesReward || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -83,7 +83,7 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
             (a.salary?.servicingReward || 0) - (b.salary?.servicingReward || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.servicingReward || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.servicingReward || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -93,7 +93,7 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
             (a.salary?.growthReward || 0) - (b.salary?.growthReward || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.growthReward || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.growthReward || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -103,7 +103,7 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
             (a.salary?.storeServicingReward || 0) - (b.salary?.storeServicingReward || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.storeServicingReward || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.storeServicingReward || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -113,14 +113,14 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalEarnings - b.totalEarnings,
           render: (record: LeaderboardEntry) => (
             <span className="tabular-nums" style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
-              {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
+              {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
             </span>
           ),
         },
       ]
     : [
         {
-          title: 'Online Consultant (Booker)',
+          title: 'Booker',
           key: 'name',
           render: (record: LeaderboardEntry) => (
             <Space>
@@ -200,7 +200,7 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
             (a.salary?.baseSalary || 0) - (b.salary?.baseSalary || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.baseSalary || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -210,7 +210,7 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) =>
             (a.salary?.clientBonus || 0) - (b.salary?.clientBonus || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.clientBonus || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.clientBonus || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -219,7 +219,7 @@ export const getLeaderboardColumns = ({
           align: 'right',
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.doneBonus || 0) - (b.salary?.doneBonus || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.doneBonus || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.doneBonus || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -233,7 +233,7 @@ export const getLeaderboardColumns = ({
             return (
               <span className="tabular-nums" style={{ color: val < 0 ? '#FF4D4F' : token.colorText }}>
                 {val >= 0 ? '+' : ''}
-                {val.toLocaleString('vi-VN')} đ
+                {val.toLocaleString('vi-VN')} đ
               </span>
             );
           },
@@ -244,7 +244,7 @@ export const getLeaderboardColumns = ({
           align: 'right',
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.tipBonus || 0) - (b.salary?.tipBonus || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.tipBonus || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.tipBonus || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -253,7 +253,7 @@ export const getLeaderboardColumns = ({
           align: 'right',
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => (a.salary?.revBonus || 0) - (b.salary?.revBonus || 0),
           render: (record: LeaderboardEntry) => (
-            <span className="tabular-nums">{(record.salary?.revBonus || 0).toLocaleString('vi-VN')} đ</span>
+            <span className="tabular-nums">{(record.salary?.revBonus || 0).toLocaleString('vi-VN')} đ</span>
           ),
         },
         {
@@ -263,7 +263,7 @@ export const getLeaderboardColumns = ({
           sorter: (a: LeaderboardEntry, b: LeaderboardEntry) => a.totalEarnings - b.totalEarnings,
           render: (record: LeaderboardEntry) => (
             <span className="tabular-nums" style={{ fontWeight: 'bold', color: '#D4A84B', fontSize: '15px' }}>
-              {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
+              {(record.totalEarnings || 0).toLocaleString('vi-VN')} đ
             </span>
           ),
         },

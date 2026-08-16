@@ -65,7 +65,7 @@ export default function FullCalendarGrid({
         <div className="flex justify-between items-center mb-1">
           <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: heatColor }} />
           <span className="font-bold text-[11px] text-slate-800 dark:text-slate-200 tabular-nums">
-            {dayAppts.length} đơn
+            {dayAppts.length} đơn
           </span>
         </div>
 

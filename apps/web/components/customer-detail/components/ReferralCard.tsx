@@ -10,6 +10,7 @@ interface ReferralCardProps {
 }
 
 export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) => {
+  const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
   return (
     <Card
       title={
@@ -31,7 +32,7 @@ export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) =
           <div
             style={{
               fontSize: '11px',
-              color: '#888',
+              color: mutedTextColor,
               fontWeight: 'bold',
               textTransform: 'uppercase',
               marginBottom: '6px',
@@ -52,10 +53,10 @@ export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) =
               <div style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#4ade80' : '#389e0d' }}>
                 {data.referrer.name}
               </div>
-              <div style={{ color: '#888', marginTop: '2px' }}>SĐT: {data.referrer.phone}</div>
+              <div style={{ color: mutedTextColor, marginTop: '2px' }}>SĐT: {data.referrer.phone}</div>
             </div>
           ) : (
-            <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>
+            <div style={{ fontSize: '12px', color: mutedTextColor, fontStyle: 'italic' }}>
               Tự đăng ký (Không có người giới thiệu)
             </div>
           )}
@@ -66,7 +67,7 @@ export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) =
           <div
             style={{
               fontSize: '11px',
-              color: '#888',
+              color: mutedTextColor,
               fontWeight: 'bold',
               textTransform: 'uppercase',
               marginBottom: '8px',
@@ -94,7 +95,7 @@ export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) =
                     <div style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>
                       {ru.name}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#888', marginTop: '1px' }}>
+                    <div style={{ fontSize: '11px', color: mutedTextColor, marginTop: '1px' }}>
                       {ru.phone} {ru.dateCreated ? `• ${new Date(ru.dateCreated).toLocaleDateString('vi-VN')}` : ''}
                     </div>
                   </div>
@@ -113,13 +114,15 @@ export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) =
                       <SketchOutlined style={{ color: '#0ea5e9' }} />
                     </Tag>
                   ) : (
-                    <span style={{ fontSize: '11px', color: '#888' }}>Chưa nhận thưởng</span>
+                    <span style={{ fontSize: '11px', color: mutedTextColor }}>Chưa nhận thưởng</span>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>Chưa giới thiệu khách hàng nào.</div>
+            <div style={{ fontSize: '12px', color: mutedTextColor, fontStyle: 'italic' }}>
+              Chưa giới thiệu khách hàng nào.
+            </div>
           )}
         </div>
       </div>

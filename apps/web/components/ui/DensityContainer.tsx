@@ -1,23 +1,39 @@
 'use client';
 
 import React from 'react';
-import { themeTokens, DensityTokens } from '@mos-lab/shared';
+import { resolveDensityProfile, themeTokens, type DensityProfile } from '@mos-lab/shared';
+import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
-export type DensityMode = keyof DensityTokens;
-export type BreakpointPreset = 'phone' | 'ipad' | 'laptop' | 'desktop' | 'fourK';
+export type DensityMode = DensityProfile | 'auto';
 
 export interface DensityContainerProps {
   children: React.ReactNode;
   density?: DensityMode;
-  breakpoint?: BreakpointPreset;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export function DensityContainer({ children, density = 'comfort', className = '', style = {} }: DensityContainerProps) {
-  const densityPreset = themeTokens.density[density] || themeTokens.density.comfort;
+type DensityStyleProperties = React.CSSProperties & Record<`--${string}`, string>;
 
-  const combinedStyle: React.CSSProperties = {
+/**
+ * Catalog/playground scope for the shared density contract. The app-wide
+ * preference lives on <html>; this wrapper is useful when documenting or
+ * previewing a profile without creating page-local pixel values.
+ */
+export function DensityContainer({ children, density = 'auto', className = '', style = {} }: DensityContainerProps) {
+  const tier = useResponsiveTier();
+  const requestedDensity = density === 'auto' ? themeTokens.responsive.densityByTier[tier] : density;
+  const resolvedDensity = tier === 'mobile' ? resolveDensityProfile('standard', tier) : requestedDensity;
+  const densityPreset = themeTokens.density[resolvedDensity] || themeTokens.density.standard;
+
+  const combinedStyle: DensityStyleProperties = {
+    '--mos-control-height': densityPreset.controlHeight,
+    '--mos-control-height-compact': densityPreset.controlHeight,
+    '--mos-action-icon-size': densityPreset.iconSize,
+    '--mos-density-padding': densityPreset.padding,
+    '--mos-density-gap': densityPreset.gap,
+    '--mos-density-font-size': densityPreset.fontSize,
+    '--mos-density-cell-padding': densityPreset.cellPadding,
     padding: densityPreset.padding,
     gap: densityPreset.gap,
     fontSize: densityPreset.fontSize,
@@ -26,7 +42,7 @@ export function DensityContainer({ children, density = 'comfort', className = ''
 
   return (
     <div
-      className={`density-container density-${density} flex flex-col w-full transition-all duration-200 ${className}`}
+      className={`density-container density-${resolvedDensity} flex flex-col w-full transition-all duration-200 ${className}`}
       style={combinedStyle}
     >
       {children}

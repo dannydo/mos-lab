@@ -5,6 +5,7 @@ import { useOmiCall } from '../context/OmiCallContext';
 import { useTheme } from '../context/ThemeContext';
 import { theme } from 'antd';
 import { PhoneOutlined } from '@ant-design/icons';
+import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
 // Custom Hooks
 import useWidgetPosition from './omicall-widget/useWidgetPosition';
@@ -56,6 +57,8 @@ export default function OmiCallWidget() {
   } = useOmiCall();
 
   const { themeMode } = useTheme();
+  const responsiveTier = useResponsiveTier();
+  const isMobileTier = responsiveTier === 'mobile';
 
   // Position & sizing hook
   const positionHook = useWidgetPosition();
@@ -120,7 +123,7 @@ export default function OmiCallWidget() {
     if (!omicallReady) {
       return (
         <div
-          className="fixed bottom-6 right-6 z-[9999] group cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95"
+          className="omicall-launcher fixed bottom-6 right-6 z-[9999] group cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95"
           onClick={() => setOmicallReady(true)}
         >
           {/* Pulse glow background */}
@@ -148,7 +151,7 @@ export default function OmiCallWidget() {
     // When omicallReady is true but not registered yet (connecting state)
     return (
       <div
-        className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 rounded-full shadow-lg border p-1 pr-4 transition-all duration-300"
+        className="omicall-launcher fixed bottom-6 right-6 z-[9999] flex items-center gap-2 rounded-full shadow-lg border p-1 pr-4 transition-all duration-300"
         style={{
           background: containerBg,
           borderColor: borderColor,
@@ -198,7 +201,7 @@ export default function OmiCallWidget() {
         callDuration={callDuration}
         formatDuration={formatDuration}
         onDragStart={(e) => handleDragStart(e, true)}
-        position={position}
+        position={isMobileTier ? null : position}
       />
     );
   }
@@ -214,19 +217,24 @@ export default function OmiCallWidget() {
 
   return (
     <div
-      className={`fixed rounded-2xl border overflow-hidden flex flex-col ${
+      className={`omicall-widget fixed rounded-2xl border overflow-hidden flex flex-col ${
         isMoving ? 'transition-none shadow-2xl scale-[1.01]' : 'backdrop-blur-xl transition-all duration-300'
       }`}
       style={{
         background: currentContainerBg,
         borderColor: borderColor,
         color: textColor,
-        width: `${size.width}px`,
-        height: `${size.height}px`,
-        left: position ? `${position.x}px` : undefined,
-        top: position ? `${position.y}px` : undefined,
-        right: position ? undefined : '24px',
-        bottom: position ? undefined : '24px',
+        width: isMobileTier
+          ? 'calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))'
+          : `${size.width}px`,
+        height: isMobileTier
+          ? 'min(620px, calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))'
+          : `${size.height}px`,
+        left: !isMobileTier && position ? `${position.x}px` : undefined,
+        top: !isMobileTier && position ? `${position.y}px` : undefined,
+        right: !isMobileTier && position ? undefined : 'calc(var(--mos-floating-offset) + env(safe-area-inset-right))',
+        bottom:
+          !isMobileTier && position ? undefined : 'calc(var(--mos-floating-offset) + env(safe-area-inset-bottom))',
         zIndex: 10040,
         boxShadow: isDark
           ? '0 20px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05)'

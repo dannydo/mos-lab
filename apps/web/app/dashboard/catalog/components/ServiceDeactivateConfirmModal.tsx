@@ -47,7 +47,7 @@ export const ServiceDeactivateConfirmModal: React.FC<ServiceDeactivateConfirmMod
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-mono font-semibold" style={{ color: isDark ? '#fbbf24' : '#b45309' }}>
-          {new Intl.NumberFormat('vi-VN').format(val)} đ
+          {new Intl.NumberFormat('vi-VN').format(val)} đ
         </span>
       ),
     },
@@ -132,8 +132,7 @@ export const ServiceDeactivateConfirmModal: React.FC<ServiceDeactivateConfirmMod
               className="text-xs font-medium flex items-center justify-center gap-1"
               style={{ color: isDark ? '#fbbf24' : '#b45309' }}
             >
-              <UsergroupAddOutlined className="mr-1" />
-              Tổng Khách Đang Giữ
+              <UsergroupAddOutlined className="mr-1" />∑ Khách Đang Giữ
             </div>
             <div className="text-2xl font-bold tabular-nums mt-0.5" style={{ color: isDark ? '#f59e0b' : '#b45309' }}>
               {data.totalOwners} <span className="text-xs font-normal opacity-80">khách</span>
@@ -148,7 +147,7 @@ export const ServiceDeactivateConfirmModal: React.FC<ServiceDeactivateConfirmMod
             }}
           >
             <div className="text-xs font-medium" style={{ color: isDark ? '#94a3b8' : '#475569' }}>
-              Tổng Lượt Nối Tồn
+              ∑ Lượt Nối Tồn
             </div>
             <div className="text-2xl font-bold tabular-nums mt-0.5" style={{ color: isDark ? '#f1f5f9' : '#1e293b' }}>
               {data.totalNormalBalance} <span className="text-xs font-normal opacity-80">lượt</span>
@@ -163,7 +162,7 @@ export const ServiceDeactivateConfirmModal: React.FC<ServiceDeactivateConfirmMod
             }}
           >
             <div className="text-xs font-medium" style={{ color: isDark ? '#22d3ee' : '#0891b2' }}>
-              Tổng Lượt Dặm Tồn
+              ∑ Lượt Dặm Tồn
             </div>
             <div className="text-2xl font-bold tabular-nums mt-0.5" style={{ color: isDark ? '#06b6d4' : '#0e7490' }}>
               {data.totalRetainBalance} <span className="text-xs font-normal opacity-80">lượt</span>

@@ -65,7 +65,7 @@ export const RevenueKpiCards: React.FC<RevenueKpiCardsProps> = ({
   const cards = [
     {
       type: 'revenue' as const,
-      title: isSingleDay ? 'Doanh thu ngày (💰)' : 'Tổng doanh thu (💰)',
+      title: isSingleDay ? 'Doanh thu ngày (💰)' : '∑ Doanh thu (💰)',
       color: '#10b981',
       value: formatVnd(totalRevenue),
       bg: isDark ? '#062016' : '#ecfdf5',
@@ -143,7 +143,7 @@ export const RevenueKpiCards: React.FC<RevenueKpiCardsProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: '#06b6d4', fontWeight: 500 }}>✅ Đơn hoàn thành:</span>
               <span style={{ fontWeight: 600, color: token.colorText }} className="tabular-nums">
-                {completedOrders} đơn
+                {completedOrders} đơn
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

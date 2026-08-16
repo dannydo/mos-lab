@@ -1,44 +1,67 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Tag, Typography, theme, Row, Col, Statistic, Button, Space, Tooltip, Input, message } from 'antd';
+import {
+  Card,
+  Table,
+  Tag,
+  Typography,
+  theme,
+  Row,
+  Col,
+  Statistic,
+  Button,
+  Space,
+  Tooltip,
+  message,
+  Pagination,
+} from 'antd';
 import {
   TrophyOutlined,
   UsergroupAddOutlined,
   DollarOutlined,
-  SearchOutlined,
-  ReloadOutlined,
   InfoCircleOutlined,
   CrownOutlined,
   EyeOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
+import { RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
 import { CcDiamondEntry, CcDiamondResponse, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
+import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
+import { MobileRecordList } from '../../../../components/ui/MobileRecordList';
+import { IconButton, SearchField } from '../../../../components/ui';
 import CcAvatar from './CcAvatar';
 import CcDiamondDetailModal from './CcDiamondDetailModal';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
+const MOBILE_DIAMOND_PAGE_SIZE = 15;
 
 interface CcDiamondTabProps {
   loading?: boolean;
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
   selectedStore?: string;
   selectedConsultant?: string;
+  onClearConsultant?: () => void;
 }
 
 export default function CcDiamondTab({
   dateRange,
   selectedStore = 'ALL',
   selectedConsultant = 'ALL',
+  onClearConsultant,
 }: CcDiamondTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
+  const responsiveTier = useResponsiveTier();
+  const isMobile = responsiveTier === 'mobile';
 
   const [loading, setLoading] = useState(false);
   const [diamondData, setDiamondData] = useState<CcDiamondResponse | null>(null);
   const [searchText, setSearchText] = useState('');
+  const [mobilePage, setMobilePage] = useState(1);
 
   // Drill-down Modal State
   const [selectedCcRecord, setSelectedCcRecord] = useState<CcDiamondEntry | null>(null);
@@ -70,23 +93,57 @@ export default function CcDiamondTab({
     fetchDiamondData();
   }, [dateRange]);
 
-  // Filtered rows
-  const filteredData = (diamondData?.data || []).filter((item) => {
+  const selectedPeriodKey = `${dateRange?.[0]?.valueOf() ?? ''}:${dateRange?.[1]?.valueOf() ?? ''}`;
+
+  useEffect(() => {
+    setMobilePage(1);
+  }, [selectedPeriodKey, selectedConsultant, selectedStore]);
+
+  const allDiamondRecords = diamondData?.data || [];
+  const consultantScopedData = allDiamondRecords.filter((item) => {
+    return (
+      selectedConsultant === 'ALL' || removeVietnameseTones(item.tenCc) === removeVietnameseTones(selectedConsultant)
+    );
+  });
+
+  // A text search narrows only the table/list. The global CC selector above also scopes the summary cards.
+  const filteredData = consultantScopedData.filter((item) => {
     const q = removeVietnameseTones(searchText);
     const matchesSearch =
       !searchText || removeVietnameseTones(item.tenCc).includes(q) || String(item.ccId).includes(searchText);
-    const matchesConsultant =
-      selectedConsultant === 'ALL' || removeVietnameseTones(item.tenCc) === removeVietnameseTones(selectedConsultant);
-    return matchesSearch && matchesConsultant;
+    return matchesSearch;
   });
 
-  const totalReferrals = diamondData?.totalReferralGuests || 0;
-  const totalBonus = diamondData?.totalDiamondBonus || 0;
-  const topCc = diamondData?.data && diamondData.data.length > 0 ? diamondData.data[0] : null;
+  const totalReferrals = consultantScopedData.reduce((sum, record) => sum + record.soKhachDiamond, 0);
+  const totalBonus = consultantScopedData.reduce((sum, record) => sum + record.thuongDiamond, 0);
+  const topCc = consultantScopedData[0] || null;
+  const rewardRecipientCount = consultantScopedData.filter((record) => record.thuongDiamond > 0).length;
+  const isConsultantFiltered = selectedConsultant !== 'ALL';
+  const periodLabel = dateRange?.[0]?.format('MM/YYYY');
+  const visibleDiamondRecordCount = filteredData.length;
+  const totalDiamondRecordCount = allDiamondRecords.length;
 
   // Format currency
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+
+  const getReferralRatio = (record: CcDiamondEntry) =>
+    record.tongKhach > 0 ? ((record.soKhachDiamond / record.tongKhach) * 100).toFixed(1) : '0.0';
+
+  const isDiamondQualified = (record: CcDiamondEntry, ratio = getReferralRatio(record)) =>
+    record.datDieuKien ?? Number(ratio) >= 3.0;
+
+  const openDiamondDetail = (record: CcDiamondEntry) => {
+    setSelectedCcRecord(record);
+    setDetailModalOpen(true);
+  };
+
+  const mobilePageCount = Math.max(1, Math.ceil(filteredData.length / MOBILE_DIAMOND_PAGE_SIZE));
+  const currentMobilePage = Math.min(mobilePage, mobilePageCount);
+  const mobileDiamondRecords = filteredData.slice(
+    (currentMobilePage - 1) * MOBILE_DIAMOND_PAGE_SIZE,
+    currentMobilePage * MOBILE_DIAMOND_PAGE_SIZE
+  );
 
   const columns = [
     {
@@ -109,13 +166,8 @@ export default function CcDiamondTab({
       render: (text: string, record: CcDiamondEntry) => (
         <Space size={8}>
           <CcAvatar name={text} src={record.avatar} size={32} />
-          <div className="flex items-center gap-2">
+          <div className="min-w-0">
             <Text className="font-semibold text-slate-800 dark:text-slate-200">{text}</Text>
-            {record.rank === 1 && (
-              <Tag color="gold" className="m-0 rounded-full px-2 py-0.5 text-xs">
-                Top 1 💎
-              </Tag>
-            )}
           </div>
         </Space>
       ),
@@ -123,7 +175,7 @@ export default function CcDiamondTab({
     {
       title: (
         <div className="flex items-center gap-1">
-          <span>Tổng Khách Đã Tiếp</span>
+          <span>∑ Khách Đã Tiếp</span>
           <Tooltip title="Tổng số lượt khách tư vấn viên tiếp đón trong tháng = (Check-in + Check-out) / 2">
             <InfoCircleOutlined className="text-slate-400" />
           </Tooltip>
@@ -172,8 +224,8 @@ export default function CcDiamondTab({
       align: 'right' as const,
       sorter: (a: CcDiamondEntry, b: CcDiamondEntry) => (a.tyLeGioiThieu || 0) - (b.tyLeGioiThieu || 0),
       render: (val: number, record: CcDiamondEntry) => {
-        const ratio = record.tongKhach > 0 ? ((record.soKhachDiamond / record.tongKhach) * 100).toFixed(1) : '0.0';
-        const isQualified = record.datDieuKien ?? Number(ratio) >= 3.0;
+        const ratio = getReferralRatio(record);
+        const isQualified = isDiamondQualified(record, ratio);
         const hasReferrals = record.soKhachDiamond > 0;
 
         if (isQualified && hasReferrals) {
@@ -248,8 +300,7 @@ export default function CcDiamondTab({
           icon={<EyeOutlined className="text-cyan-600 dark:text-cyan-400" />}
           onClick={(e) => {
             e.stopPropagation();
-            setSelectedCcRecord(record);
-            setDetailModalOpen(true);
+            openDiamondDetail(record);
           }}
           className="text-cyan-600 dark:text-cyan-400 font-medium hover:bg-cyan-50 dark:hover:bg-cyan-950/40 rounded-lg"
         >
@@ -262,14 +313,14 @@ export default function CcDiamondTab({
   return (
     <div className="flex flex-col gap-4">
       {/* Top Summary Cards */}
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, 16]} className="cc-diamond-summary-row">
         <Col xs={24} sm={8}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-xl"
             style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff' }}
           >
             <Statistic
-              title={<span className="text-slate-500 dark:text-slate-400 font-medium">Tổng Khách Giới Thiệu</span>}
+              title={<span className="text-slate-500 dark:text-slate-400 font-medium">∑ Khách Giới Thiệu</span>}
               value={totalReferrals}
               prefix={<UsergroupAddOutlined className="text-cyan-500 mr-2" />}
               suffix="khách"
@@ -288,7 +339,7 @@ export default function CcDiamondTab({
             style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#ffffff' }}
           >
             <Statistic
-              title={<span className="text-slate-500 dark:text-slate-400 font-medium">Tổng Thưởng Kim Cương</span>}
+              title={<span className="text-slate-500 dark:text-slate-400 font-medium">∑ Thưởng Kim Cương</span>}
               value={totalBonus}
               formatter={(val) => formatCurrency(Number(val))}
               prefix={<DollarOutlined className="text-emerald-500 mr-2" />}
@@ -327,103 +378,223 @@ export default function CcDiamondTab({
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
         styles={{ body: { padding: 0 } }}
       >
-        {/* INTEGRATED HEADER: RULES BANNER & TOOLBAR */}
-        <div className="p-4 bg-slate-900/40 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md">
-          {/* ROW 1: RULES BANNER & STEP PROGRESSION */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-200/80 dark:border-slate-800/80">
-            {/* LEFT: TITLE & CONDITION */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-base">💎</span>
-                <span className="font-semibold text-sm tracking-wide text-cyan-800 dark:text-cyan-300">
-                  Biểu Phí Thưởng Khách Giới Thiệu (Kim Cương)
-                </span>
+        <div className="diamond-program-panel diamond-program-panel-expanded">
+          <div className="diamond-program-heading">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="diamond-program-icon" aria-hidden="true">
+                <TrophyOutlined />
               </div>
-              <span className="hidden sm:inline text-slate-400 opacity-30">•</span>
-              <div className="flex items-center gap-1.5 text-xs text-amber-500 dark:text-amber-400 font-medium px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0">
-                <span>⚠️ Tỷ lệ (💎/Tổng khách) ≥ 3.0%</span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-sm">Thưởng Kim Cương</span>
+                  <Tooltip title="Số khách giới thiệu phải chiếm tối thiểu 3% tổng lượt khách phục vụ trong kỳ để được nhận thưởng.">
+                    <Tag color="gold" className="m-0 diamond-program-threshold">
+                      Tỷ lệ tối thiểu 3%
+                    </Tag>
+                  </Tooltip>
+                </div>
+                <p className="diamond-program-description">Thưởng theo số khách giới thiệu mới trong kỳ.</p>
               </div>
             </div>
 
-            {/* RIGHT: STEP PROGRESSION LINE */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 xl:pb-0 text-xs tabular-nums">
+            <div className="diamond-tier-grid" aria-label="Các mốc thưởng Kim Cương">
               {[
-                { k: '1', v: '5k' },
-                { k: '2', v: '10k' },
-                { k: '3', v: '20k' },
-                { k: '4', v: '30k' },
-                { k: '5', v: '40k' },
-                { k: '6+', v: '50k/khách', max: true },
-              ].map((tier, idx, arr) => (
-                <React.Fragment key={tier.k}>
-                  <div
-                    className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full transition-all duration-200 whitespace-nowrap text-xs ${
-                      tier.max
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold shadow-sm'
-                        : 'bg-slate-800/40 dark:bg-slate-800/60 text-slate-300 border border-slate-700/50 hover:border-cyan-500/40'
-                    }`}
-                  >
-                    <span className="opacity-60 font-mono text-[11px]">K{tier.k}:</span>
-                    <span className={tier.max ? 'text-cyan-300' : 'text-cyan-400 font-semibold'}>{tier.v}</span>
-                  </div>
-                  {idx < arr.length - 1 && (
-                    <span className="text-slate-500 dark:text-slate-600 font-mono text-[10px] shrink-0">→</span>
-                  )}
-                </React.Fragment>
+                { label: '1 khách', value: '5K đ' },
+                { label: '2 khách', value: '10K đ' },
+                { label: '3 khách', value: '20K đ' },
+                { label: '4 khách', value: '30K đ' },
+                { label: '5 khách', value: '40K đ' },
+                { label: 'Từ 6 khách', value: '50K đ / khách', featured: true },
+              ].map((tier) => (
+                <div className={`diamond-tier ${tier.featured ? 'diamond-tier-featured' : ''}`} key={tier.label}>
+                  <span>{tier.label}</span>
+                  <strong className="tabular-nums">{tier.value}</strong>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* ROW 2: SEARCH INPUT & REFRESH BUTTON */}
-          <div className="flex items-center justify-between gap-3">
-            <Input
-              placeholder="Tìm kiếm tư vấn viên..."
-              prefix={<SearchOutlined className="text-slate-400 text-xs" />}
+          <div className="diamond-table-toolbar">
+            <SearchField
+              aria-label="Tìm kiếm tư vấn viên Kim Cương"
+              placeholder="Tìm tư vấn viên..."
+              behavior="filter"
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{
-                maxWidth: '280px',
-                borderRadius: '8px',
-                borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setMobilePage(1);
               }}
-              size="middle"
+              className="diamond-table-search"
               allowClear
             />
-            <Tooltip title="Làm mới dữ liệu">
-              <Button
-                icon={<ReloadOutlined className={loading ? 'animate-spin' : ''} />}
-                onClick={fetchDiamondData}
-                loading={loading}
-                style={{
-                  borderRadius: '8px',
-                  width: '36px',
-                  height: '36px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
-                }}
-                className="shrink-0"
-              />
-            </Tooltip>
+            <IconButton
+              label="Làm mới dữ liệu Kim Cương"
+              icon={RefreshCw}
+              onClick={fetchDiamondData}
+              loading={loading}
+              iconClassName={loading ? 'animate-spin' : undefined}
+            />
           </div>
+
+          {isMobile && diamondData ? (
+            <div
+              className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300"
+              role="status"
+            >
+              <FilterOutlined
+                aria-hidden
+                className={isConsultantFiltered ? 'shrink-0 text-amber-500' : 'shrink-0 text-slate-400'}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold tabular-nums text-slate-700 dark:text-slate-100">
+                  Hiển thị {visibleDiamondRecordCount}/{totalDiamondRecordCount} CC
+                </div>
+                <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                  {isConsultantFiltered
+                    ? `Đang lọc: ${selectedConsultant}`
+                    : rewardRecipientCount > 0
+                      ? `${rewardRecipientCount} CC nhận thưởng trong kỳ`
+                      : `Kỳ ${periodLabel || 'đang chọn'} chưa có CC đạt mốc thưởng`}
+                </div>
+              </div>
+              {isConsultantFiltered ? (
+                onClearConsultant ? (
+                  <Button
+                    type="link"
+                    size="small"
+                    className="!h-auto shrink-0 !px-1 text-xs font-semibold"
+                    onClick={onClearConsultant}
+                  >
+                    Xem tất cả
+                  </Button>
+                ) : null
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          rowKey="ccId"
-          loading={loading}
-          pagination={{ pageSize: 15, showSizeChanger: true }}
-          className="antd-custom-table"
-          onRow={(record) => ({
-            onClick: () => {
-              setSelectedCcRecord(record);
-              setDetailModalOpen(true);
-            },
-            className: 'cursor-pointer hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20 transition-colors',
-          })}
-        />
+        {isMobile ? (
+          <div className="px-3 pb-3">
+            <MobileRecordList
+              records={mobileDiamondRecords}
+              getKey={(record) => record.ccId}
+              loading={loading}
+              emptyDescription="Chưa có dữ liệu Kim Cương"
+              renderRecord={(record) => {
+                const ratio = getReferralRatio(record);
+                const isQualified = isDiamondQualified(record, ratio);
+                const hasReferrals = record.soKhachDiamond > 0;
+                const rankLabel = record.rank === 1 ? 'Top 1' : `#${record.rank}`;
+
+                return (
+                  <div className="flex min-w-0 flex-col gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold tabular-nums ${
+                          record.rank === 1
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                        }`}
+                        aria-label={`Hạng ${rankLabel}`}
+                      >
+                        {record.rank === 1 ? <CrownOutlined /> : rankLabel}
+                      </div>
+                      <CcAvatar name={record.tenCc} src={record.avatar} size={40} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-semibold text-slate-800 dark:text-slate-100">{record.tenCc}</div>
+                        <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Tư vấn viên</div>
+                      </div>
+                      <Tag
+                        color={hasReferrals ? 'cyan' : 'default'}
+                        className="m-0 shrink-0 whitespace-nowrap px-2 py-1 text-xs font-semibold"
+                      >
+                        💎 {record.soKhachDiamond} khách
+                      </Tag>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/70">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">Khách đã tiếp</div>
+                        <div className="mt-1 text-base font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                          {record.tongKhach.toLocaleString('vi-VN')}
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/70">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">Tỷ lệ giới thiệu</div>
+                        <div className="mt-1">
+                          {isQualified && hasReferrals ? (
+                            <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                              ✓ {ratio}%
+                            </span>
+                          ) : hasReferrals ? (
+                            <span className="font-semibold tabular-nums text-rose-600 dark:text-rose-400">
+                              {ratio}%
+                            </span>
+                          ) : (
+                            <span className="font-semibold tabular-nums text-slate-500">{ratio}%</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex min-w-0 items-center justify-between gap-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+                      <div className="min-w-0">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">Thưởng Kim Cương</div>
+                        {record.thuongDiamond > 0 ? (
+                          <div className="mt-0.5 whitespace-nowrap font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                            +{formatCurrency(record.thuongDiamond)}
+                          </div>
+                        ) : record.potentialThuong && record.potentialThuong > 0 ? (
+                          <div className="mt-0.5 whitespace-nowrap font-semibold tabular-nums text-slate-500 dark:text-slate-300">
+                            0 đ <span className="text-xs font-medium text-rose-500 dark:text-rose-400">· cần ≥3%</span>
+                          </div>
+                        ) : (
+                          <div className="mt-0.5 whitespace-nowrap font-semibold tabular-nums text-slate-500 dark:text-slate-300">
+                            0 đ
+                          </div>
+                        )}
+                      </div>
+                      <Tooltip title="Xem chi tiết">
+                        <Button
+                          aria-label={`Xem chi tiết Kim Cương của ${record.tenCc}`}
+                          type="text"
+                          icon={<EyeOutlined />}
+                          onClick={() => openDiamondDetail(record)}
+                          className="h-8 w-8 shrink-0 rounded-lg text-cyan-600 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:bg-cyan-950/40"
+                        />
+                      </Tooltip>
+                    </div>
+                  </div>
+                );
+              }}
+            />
+            {filteredData.length > MOBILE_DIAMOND_PAGE_SIZE ? (
+              <div className="responsive-mobile-pagination">
+                <Pagination
+                  current={currentMobilePage}
+                  pageSize={MOBILE_DIAMOND_PAGE_SIZE}
+                  total={filteredData.length}
+                  showSizeChanger={false}
+                  showLessItems
+                  onChange={setMobilePage}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={filteredData}
+            rowKey="ccId"
+            loading={loading}
+            pagination={{ pageSize: 15, showSizeChanger: true }}
+            className="antd-custom-table"
+            onRow={(record) => ({
+              onClick: () => openDiamondDetail(record),
+              className: 'cursor-pointer hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20 transition-colors',
+            })}
+          />
+        )}
       </Card>
 
       <CcDiamondDetailModal

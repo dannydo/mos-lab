@@ -13,9 +13,8 @@ import {
   CheckCircleOutlined,
   SearchOutlined,
   ReloadOutlined,
-  CalendarOutlined,
+  SyncOutlined,
   InfoCircleOutlined,
-  SettingOutlined,
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
@@ -30,20 +29,15 @@ import {
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
-import CcThuongConfigModal from './CcThuongConfigModal';
+import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
+import { formatCompactVND, formatStoreCode } from '../../../../lib/format-utils';
 import CcThuongTransactionsModal from './CcThuongTransactionsModal';
 import CcAvatar from './CcAvatar';
+import { DataTable, MobileRecordList } from '~/components/ui';
 
 const { Text } = Typography;
 
-export const formatStoreCode = (store?: string | null): string => {
-  if (!store) return 'PXL';
-  const s = String(store).toUpperCase().trim();
-  if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
-  if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
-  if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
-  return s;
-};
+const compactVndStatistic = (value: string | number | undefined) => formatCompactVND(Number(value || 0));
 
 interface CcThuongTabProps {
   loading?: boolean;
@@ -52,6 +46,7 @@ interface CcThuongTabProps {
   selectedConsultant?: string;
   includeVat?: boolean;
   onSelectConsultant?: (consultantName: string) => void;
+  refreshKey?: number;
 }
 
 export default function CcThuongTab({
@@ -61,16 +56,29 @@ export default function CcThuongTab({
   selectedConsultant: parentSelectedConsultant,
   includeVat = true,
   onSelectConsultant: parentOnSelectConsultant,
+  refreshKey = 0,
 }: CcThuongTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+  const responsiveTier = useResponsiveTier();
+  const isMobile = responsiveTier === 'mobile';
+  const dailyBonusKpiColumns = isMobile ? 2 : responsiveTier === 'tablet' ? 3 : 5;
+  const dailyBonusKpiCardStyles = isMobile ? { body: { padding: 12 } } : undefined;
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<DailySalesBonusConsultantRecord[]>([]);
-  const [configModalOpen, setConfigModalOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
+  const [dailyPage, setDailyPage] = useState(() => {
+    if (typeof window === 'undefined') return 1;
+    return Math.max(1, Number(localStorage.getItem('cc_thuong_daily_page')) || 1);
+  });
+  const [dailyPageSize, setDailyPageSize] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const saved = Number(localStorage.getItem('cc_thuong_daily_page_size'));
+    return [10, 20, 50, 100, 200].includes(saved) ? saved : 10;
+  });
 
   // Selected CC for Level 1 -> Level 2 Drill-down
   const [selectedCcName, setSelectedCcName] = useState<string | null>(null);
@@ -93,6 +101,14 @@ export default function CcThuongTab({
     elapsedRatioPercent?: number;
   } | null>(null);
   const [activeStaff, setActiveStaff] = useState<{ userId: number; displayName: string; avatar?: string | null }[]>([]);
+
+  useEffect(() => {
+    localStorage.setItem('cc_thuong_daily_page', String(dailyPage));
+  }, [dailyPage]);
+
+  useEffect(() => {
+    localStorage.setItem('cc_thuong_daily_page_size', String(dailyPageSize));
+  }, [dailyPageSize]);
 
   // Sync external consultant filter if passed
   useEffect(() => {
@@ -135,7 +151,7 @@ export default function CcThuongTab({
 
   useEffect(() => {
     fetchData();
-  }, [dateRange, selectedStore]);
+  }, [dateRange, refreshKey, selectedStore]);
 
   // Mapped Data based on includeVat (ON: Gross with 8% VAT, OFF: Net before 8% VAT)
   const mappedData = useMemo(() => {
@@ -357,6 +373,15 @@ export default function CcThuongTab({
     return result;
   }, [mappedData, selectedCcName, searchText]);
 
+  useEffect(() => {
+    setDailyPage(1);
+  }, [searchText, selectedCcName]);
+
+  useEffect(() => {
+    const lastPage = Math.max(1, Math.ceil(filteredDailyData.length / dailyPageSize));
+    if (dailyPage > lastPage) setDailyPage(lastPage);
+  }, [dailyPage, dailyPageSize, filteredDailyData.length]);
+
   // Level 1 Columns: Leaderboard
   const leaderboardColumns = [
     {
@@ -373,7 +398,7 @@ export default function CcThuongTab({
       },
     },
     {
-      title: 'Tư vấn viên (CC)',
+      title: 'CC',
       dataIndex: 'displayName',
       key: 'displayName',
       render: (name: string, record: DailySalesBonusLeaderboardEntry) => {
@@ -436,13 +461,17 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
-          title={`Đã bán ${val} Combo. Doanh số combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ | Tỷ lệ chốt thành công: ${record.greenComboConversionRate}%`}
+          title={`Đã bán ${val} Combo. Doanh số combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ | Tỷ lệ chốt thành công: ${record.greenComboConversionRate}%`}
         >
           <div className="w-full text-right">
             <div className="tabular-nums font-semibold text-blue-400 text-xs">{val} combo</div>
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              <span className="tabular-nums text-[11px] text-slate-400 font-medium">
-                Tỷ lệ VX: <strong className="text-emerald-400">{record.greenComboConversionRate}%</strong>
+              <span className="tabular-nums inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                Tỷ lệ
+                <Tooltip title="Vòng xanh">
+                  <SyncOutlined aria-label="Vòng xanh" className="text-emerald-400" />
+                </Tooltip>
+                : <strong className="text-emerald-400">{record.greenComboConversionRate}%</strong>
               </span>
               <div className="w-10">
                 <Progress
@@ -466,24 +495,24 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-semibold text-sky-400 text-xs">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
     {
-      title: 'SP & DV Lẻ (Tham Khảo)',
+      title: 'SP & Single (Tham Khảo)',
       dataIndex: 'productSalesCount',
       key: 'productSalesCount',
       width: 170,
       align: 'right' as const,
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
-          title={`Đã bán ${val} Sản phẩm. Doanh số dịch vụ lẻ tham khảo: ${Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ`}
+          title={`Đã bán ${val} Sản phẩm. Doanh số Single tham khảo: ${Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ`}
         >
           <div className="w-full text-right">
             <div className="tabular-nums font-semibold text-purple-400 text-xs">{val} SP</div>
             <div className="tabular-nums text-[11px] text-slate-400 mt-0.5">
-              DV lẻ: {Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ
+              Single: {Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ
             </div>
           </div>
         </Tooltip>
@@ -496,7 +525,7 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-bold text-amber-400 text-xs">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
@@ -517,11 +546,11 @@ export default function CcThuongTab({
               <div>
                 <div className="font-bold text-amber-300">📊 TIẾN ĐỘ & HẠN MỨC THƯỞNG</div>
                 <div className="text-xs mt-1">
-                  • CC Daily Bonus tháng: <strong>{Math.round(val || 0).toLocaleString('vi-VN')} đ</strong>
+                  • CC Daily Bonus tháng: <strong>{Math.round(val || 0).toLocaleString('vi-VN')} đ</strong>
                 </div>
                 <div className="text-xs">
                   • Hạn mức Vòng xoay tối đa (1.5x):{' '}
-                  <strong className="text-emerald-300">{capInfo.maxWheelBonusAllowed.toLocaleString('vi-VN')} đ</strong>
+                  <strong className="text-emerald-300">{capInfo.maxWheelBonusAllowed.toLocaleString('vi-VN')} đ</strong>
                 </div>
                 {isHardcapped && (
                   <div className="text-xs text-rose-300 font-bold mt-1">⛔ ĐÃ ĐẠT TRẦN THƯỞNG VÒNG XOAY 1.5X</div>
@@ -537,7 +566,7 @@ export default function CcThuongTab({
             <div className="w-full text-right cursor-help">
               <div className="flex items-center justify-end gap-1.5">
                 <span className="tabular-nums font-bold text-emerald-400 text-sm">
-                  +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+                  +{Math.round(val || 0).toLocaleString('vi-VN')} đ
                 </span>
                 {isHardcapped && (
                   <Tag color="error" className="m-0 text-[10px] font-bold py-0 px-1">
@@ -570,20 +599,15 @@ export default function CcThuongTab({
       dataIndex: 'date',
       key: 'date',
       width: 110,
-      render: (val: string) => (
-        <div className="flex items-center gap-1">
-          <CalendarOutlined className="text-amber-500 text-xs" />
-          <span className="tabular-nums font-medium text-xs text-slate-400">{val}</span>
-        </div>
-      ),
+      render: (val: string) => <span className="tabular-nums font-medium text-xs text-slate-400">{val}</span>,
     },
     {
-      title: 'Tư Vấn Viên (CC)',
+      title: 'CC',
       dataIndex: 'consultant_name',
       key: 'consultant_name',
       width: 170,
       render: (val: string, record: DailySalesBonusConsultantRecord) => (
-        <Space size={6} className="whitespace-nowrap">
+        <Space size={6} align="center" className="whitespace-nowrap">
           <CcAvatar name={val} src={record.avatar} size={24} />
           <div className="flex items-center gap-1 whitespace-nowrap">
             <span className="font-medium text-xs whitespace-nowrap">{val}</span>
@@ -604,7 +628,7 @@ export default function CcThuongTab({
       render: (val: number, record: DailySalesBonusConsultantRecord) => (
         <div>
           <span className="tabular-nums font-semibold text-xs text-blue-400">
-            {Math.round(val || 0).toLocaleString('vi-VN')} đ
+            {Math.round(val || 0).toLocaleString('vi-VN')} đ
           </span>
           {record.combo_count ? (
             <div className="text-[11px] text-slate-400 tabular-nums">({record.combo_count} combo)</div>
@@ -620,7 +644,7 @@ export default function CcThuongTab({
       render: (val: number, record: DailySalesBonusConsultantRecord) => (
         <div>
           <span className="tabular-nums font-semibold text-xs text-purple-400">
-            {Math.round(val || 0).toLocaleString('vi-VN')} đ
+            {Math.round(val || 0).toLocaleString('vi-VN')} đ
           </span>
           {record.product_count ? (
             <div className="text-[11px] text-slate-400 tabular-nums">({record.product_count} SP)</div>
@@ -629,12 +653,12 @@ export default function CcThuongTab({
       ),
     },
     {
-      title: 'Doanh Số DV Lẻ (Ref)',
+      title: 'Doanh Số Single',
       dataIndex: 'single_sales',
       key: 'single_sales',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-slate-500">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums text-xs text-slate-500">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
       ),
     },
     {
@@ -643,7 +667,7 @@ export default function CcThuongTab({
       key: 'debt_collected',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-slate-400">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums text-xs text-slate-400">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
       ),
     },
     {
@@ -652,7 +676,7 @@ export default function CcThuongTab({
       key: 'vat',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-rose-400/80">-{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums text-xs text-rose-400/80">-{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
       ),
     },
     {
@@ -662,23 +686,23 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums text-xs text-orange-400/80">
-          -{Math.round(val || 0).toLocaleString('vi-VN')} đ
+          -{Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
     {
-      title: 'Tổng Doanh Số Tính Thưởng',
+      title: '∑ Doanh Số Tính Thưởng',
       dataIndex: 'total_sales',
       key: 'total_sales',
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-bold text-xs text-amber-400">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
     {
-      title: 'Tỷ Lệ Thưởng %',
+      title: '% Thưởng',
       dataIndex: 'commission_rate_percent',
       key: 'commission_rate_percent',
       align: 'right' as const,
@@ -693,13 +717,13 @@ export default function CcThuongTab({
       ),
     },
     {
-      title: 'Thưởng Ngày (Daily Bonus)',
+      title: 'Daily Bonus',
       dataIndex: 'daily_bonus',
       key: 'daily_bonus',
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-bold text-xs text-emerald-400">
-          +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+          +{Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
@@ -711,10 +735,13 @@ export default function CcThuongTab({
     if (isPastPeriod) {
       return (
         <Tooltip title="Dữ liệu tháng đã chốt (100% thời gian)">
-          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
+          <div
+            className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70"
+            style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+          >
             <span>Thực tế chốt tháng:</span>
-            <span className="tabular-nums font-medium text-slate-400">
-              {Math.round(projectedVal).toLocaleString('vi-VN')} đ
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {formatCompactVND(projectedVal)}
             </span>
           </div>
         </Tooltip>
@@ -725,10 +752,15 @@ export default function CcThuongTab({
       <Tooltip
         title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}
       >
-        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
-          <span>Dự kiến cuối tháng:</span>
-          <span className="tabular-nums font-semibold text-emerald-400">
-            ~{Math.round(projectedVal).toLocaleString('vi-VN')} đ
+        <div
+          className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help"
+          style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+        >
+          <span role="img" aria-label="Dự kiến cuối tháng" className="shrink-0 text-sm leading-none">
+            🔮
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+            ~{formatCompactVND(projectedVal)}
           </span>
         </div>
       </Tooltip>
@@ -738,21 +770,30 @@ export default function CcThuongTab({
   return (
     <div className="flex flex-col gap-4">
       {/* 5 TOP KPI SUMMARY CARDS */}
-      <div className="grid grid-cols-5 gap-3 mb-4 w-full">
+      <div
+        className="cc-daily-bonus-stat-grid mb-4 w-full"
+        style={{
+          display: 'grid',
+          gap: isMobile ? 8 : 12,
+          gridTemplateColumns: `repeat(${dailyBonusKpiColumns}, minmax(0, 1fr))`,
+        }}
+      >
         <Card
           variant="outlined"
           style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+          styles={dailyBonusKpiCardStyles}
         >
           <Statistic
             title="Doanh Thu Combo"
             value={totalComboSales}
-            suffix="đ"
-            precision={0}
+            formatter={compactVndStatistic}
             valueStyle={{
               color: isDark ? '#60a5fa' : '#1890ff',
               fontVariantNumeric: 'tabular-nums',
               fontWeight: 'bold',
+              fontSize: isMobile ? 20 : undefined,
+              whiteSpace: 'nowrap',
             }}
             prefix={<GiftOutlined />}
           />
@@ -762,16 +803,18 @@ export default function CcThuongTab({
           variant="outlined"
           style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+          styles={dailyBonusKpiCardStyles}
         >
           <Statistic
             title="Doanh Thu Sản Phẩm"
             value={totalProductSales}
-            suffix="đ"
-            precision={0}
+            formatter={compactVndStatistic}
             valueStyle={{
               color: isDark ? '#c084fc' : '#722ed1',
               fontVariantNumeric: 'tabular-nums',
               fontWeight: 'bold',
+              fontSize: isMobile ? 20 : undefined,
+              whiteSpace: 'nowrap',
             }}
             prefix={<ShoppingCartOutlined />}
           />
@@ -781,16 +824,18 @@ export default function CcThuongTab({
           variant="outlined"
           style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+          styles={dailyBonusKpiCardStyles}
         >
           <Statistic
-            title="DV Bán Lẻ"
+            title="Doanh Thu Single"
             value={totalSingleSales}
-            suffix="đ"
-            precision={0}
+            formatter={compactVndStatistic}
             valueStyle={{
               color: isDark ? '#fb923c' : '#d46b08',
               fontVariantNumeric: 'tabular-nums',
               fontWeight: 'bold',
+              fontSize: isMobile ? 20 : undefined,
+              whiteSpace: 'nowrap',
             }}
             prefix={<SkinOutlined />}
           />
@@ -800,16 +845,18 @@ export default function CcThuongTab({
           variant="outlined"
           style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+          styles={dailyBonusKpiCardStyles}
         >
           <Statistic
-            title="Tổng Doanh Thu"
+            title="∑ Doanh Thu"
             value={totalSales}
-            suffix="đ"
-            precision={0}
+            formatter={compactVndStatistic}
             valueStyle={{
               color: isDark ? '#4ade80' : '#52c41a',
               fontVariantNumeric: 'tabular-nums',
               fontWeight: 'bold',
+              fontSize: isMobile ? 20 : undefined,
+              whiteSpace: 'nowrap',
             }}
             prefix={<RiseOutlined />}
           />
@@ -818,29 +865,22 @@ export default function CcThuongTab({
         <Card
           variant="outlined"
           style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}
-          className="shadow-sm rounded-xl relative flex flex-col justify-between min-w-0"
+          className="shadow-sm rounded-xl flex flex-col justify-between min-w-0"
+          styles={dailyBonusKpiCardStyles}
         >
-          <div>
-            <div className="flex justify-between items-start">
-              <Statistic
-                title="Tổng Thưởng CC Bonus"
-                value={totalCcBonus}
-                suffix="đ"
-                precision={0}
-                valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
-                prefix={<DollarOutlined />}
-              />
-              <Tooltip title="Cấu hình CC">
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  size="small"
-                  onClick={() => setConfigModalOpen(true)}
-                  style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: '600' }}
-                />
-              </Tooltip>
-            </div>
-          </div>
+          <Statistic
+            title="∑ Thưởng CC Bonus"
+            value={totalCcBonus}
+            formatter={compactVndStatistic}
+            valueStyle={{
+              color: '#d4a84b',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: 'bold',
+              fontSize: isMobile ? 20 : undefined,
+              whiteSpace: 'nowrap',
+            }}
+            prefix={<DollarOutlined />}
+          />
           {renderForecastSubtext(projectedCcBonus)}
         </Card>
       </div>
@@ -852,7 +892,7 @@ export default function CcThuongTab({
             <div className="flex items-center gap-2">
               <TrophyOutlined className="text-amber-500 text-lg" />
               <span style={{ color: token.colorText }} className="font-bold text-base">
-                🏆 Bảng Xếp Hạng Báo Cáo CC Thưởng - CC Leaderboard
+                CC Leaderboard
               </span>
             </div>
 
@@ -867,35 +907,107 @@ export default function CcThuongTab({
         styles={{ body: { padding: 0 } }}
         className="full-bleed-card shadow-sm rounded-xl"
       >
-        <Table
-          dataSource={leaderboardData}
-          columns={leaderboardColumns}
-          rowKey="consultantId"
-          size="small"
-          pagination={false}
-          loading={loading || parentLoading}
-          scroll={{ x: 'max-content' }}
-          className="antd-custom-table"
-          locale={{ emptyText: 'Chưa có dữ liệu xếp hạng CC Thưởng' }}
-          onRow={(record) => ({
-            onClick: () => {
-              const newCc = selectedCcName === record.displayName ? null : record.displayName;
-              setSelectedCcName(newCc);
-              if (parentOnSelectConsultant) {
-                parentOnSelectConsultant(newCc || 'ALL');
+        {isMobile ? (
+          <div className="p-3">
+            <MobileRecordList
+              records={leaderboardData}
+              loading={loading || parentLoading}
+              getKey={(record) => String(record.consultantId)}
+              emptyDescription="Chưa có dữ liệu xếp hạng CC Thưởng"
+              getRecordClassName={(record) =>
+                selectedCcName === record.displayName ? 'rounded-lg bg-amber-500/10 ring-1 ring-amber-400/60' : ''
               }
-            },
-            className: 'cursor-pointer hover:bg-amber-500/5 transition-colors',
-            style: {
-              background:
-                selectedCcName === record.displayName
-                  ? themeMode === 'dark'
-                    ? 'rgba(212, 168, 75, 0.15)'
-                    : 'rgba(212, 168, 75, 0.08)'
-                  : undefined,
-            },
-          })}
-        />
+              renderRecord={(record) => {
+                const isSelected = selectedCcName === record.displayName;
+                const toggleSelection = () => {
+                  const newCc = isSelected ? null : record.displayName;
+                  setSelectedCcName(newCc);
+                  parentOnSelectConsultant?.(newCc || 'ALL');
+                };
+                return (
+                  <button
+                    type="button"
+                    className="w-full min-w-0 text-left"
+                    aria-pressed={isSelected}
+                    onClick={toggleSelection}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
+                        {record.rank === 1
+                          ? '🥇'
+                          : record.rank === 2
+                            ? '🥈'
+                            : record.rank === 3
+                              ? '🥉'
+                              : `#${record.rank}`}
+                      </span>
+                      <CcAvatar name={record.displayName} src={record.avatar} isSelected={isSelected} size={32} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
+                          {record.displayName}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {formatStoreCode(record.store)} · {record.totalVisits} lượt khách
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-xs text-amber-400">{isSelected ? 'Đang lọc' : 'Xem'}</span>
+                    </div>
+                    <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">Combo</dt>
+                        <dd className="truncate text-sm font-bold tabular-nums text-sky-400">
+                          {record.comboSalesCount}
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">Doanh số</dt>
+                        <dd className="truncate text-sm font-bold tabular-nums text-amber-400">
+                          {formatCompactVND(record.totalSales || 0)}
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">Thưởng</dt>
+                        <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
+                          +{formatCompactVND(record.totalBonus || 0)}
+                        </dd>
+                      </div>
+                    </dl>
+                  </button>
+                );
+              }}
+            />
+          </div>
+        ) : (
+          <Table
+            dataSource={leaderboardData}
+            columns={leaderboardColumns}
+            rowKey="consultantId"
+            size="small"
+            pagination={false}
+            loading={loading || parentLoading}
+            scroll={{ x: 'max-content' }}
+            className="antd-custom-table"
+            locale={{ emptyText: 'Chưa có dữ liệu xếp hạng CC Thưởng' }}
+            onRow={(record) => ({
+              onClick: () => {
+                const newCc = selectedCcName === record.displayName ? null : record.displayName;
+                setSelectedCcName(newCc);
+                if (parentOnSelectConsultant) {
+                  parentOnSelectConsultant(newCc || 'ALL');
+                }
+              },
+              className: 'cursor-pointer hover:bg-amber-500/5 transition-colors',
+              style: {
+                background:
+                  selectedCcName === record.displayName
+                    ? themeMode === 'dark'
+                      ? 'rgba(212, 168, 75, 0.15)'
+                      : 'rgba(212, 168, 75, 0.08)'
+                    : undefined,
+              },
+            })}
+          />
+        )}
       </Card>
 
       {/* LEVEL 2: DAILY BONUS REPORT TABLE */}
@@ -904,7 +1016,7 @@ export default function CcThuongTab({
           <div className="flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="font-bold text-base" style={{ color: token.colorText }}>
-                Bảng Dữ Liệu Báo Cáo CC Thưởng (Chi Tiết Thưởng Theo Ngày)
+                Chi Tiết Thưởng Theo Ngày
               </span>
               {selectedCcName && (
                 <Tag color="gold" closable onClose={() => setSelectedCcName(null)}>
@@ -929,11 +1041,18 @@ export default function CcThuongTab({
                 <Button
                   icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
                   onClick={() => setIsCompact(!isCompact)}
-                  className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+                  aria-label={isCompact ? 'Chuyển chế độ xem chuẩn' : 'Chuyển chế độ xem gọn'}
+                  className={`table-toolbar-icon-action${isCompact ? ' text-amber-500 border-amber-500/50' : ''}`}
                 />
               </Tooltip>
               <Tooltip title="Làm mới dữ liệu">
-                <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} />
+                <Button
+                  icon={<ReloadOutlined />}
+                  aria-label="Làm mới dữ liệu thưởng CC"
+                  onClick={fetchData}
+                  loading={loading}
+                  className="table-toolbar-icon-action"
+                />
               </Tooltip>
             </Space>
           </div>
@@ -943,7 +1062,7 @@ export default function CcThuongTab({
         styles={{ body: { padding: 0 } }}
         className="full-bleed-card shadow-sm rounded-xl"
       >
-        <Table
+        <DataTable
           dataSource={filteredDailyData}
           columns={dailyColumns}
           rowKey={(r) => `${r.date}-${r.user_id}`}
@@ -952,10 +1071,20 @@ export default function CcThuongTab({
           bordered
           scroll={{ x: 1300 }}
           pagination={{
-            defaultPageSize: 20,
-            pageSizeOptions: ['10', '20', '50', '100'],
+            current: dailyPage,
+            pageSize: dailyPageSize,
+            pageSizeOptions: ['10', '20', '50', '100', '200'],
             showSizeChanger: true,
-            showTotal: (totalCount) => `Tổng cộng ${totalCount} bản ghi thưởng ngày`,
+            showTotal: (totalCount, range) =>
+              `Hiển thị ${range[0]}–${range[1]} / ${totalCount.toLocaleString('vi-VN')} bản ghi`,
+            onChange: (nextPage, nextPageSize) => {
+              if (nextPageSize !== dailyPageSize) {
+                setDailyPageSize(nextPageSize);
+                setDailyPage(1);
+                return;
+              }
+              setDailyPage(nextPage);
+            },
           }}
           className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
           locale={{ emptyText: 'Không có dữ liệu thưởng CC trong khoảng thời gian này' }}
@@ -971,15 +1100,6 @@ export default function CcThuongTab({
           })}
         />
       </Card>
-
-      {/* CONFIG MODAL */}
-      <CcThuongConfigModal
-        open={configModalOpen}
-        onClose={() => setConfigModalOpen(false)}
-        onSaveSuccess={() => {
-          fetchData();
-        }}
-      />
 
       {/* LEVEL 3 TRANSACTIONS DRILL-DOWN MODAL */}
       <CcThuongTransactionsModal

@@ -2,22 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, DatePicker, Select, Radio, Tabs, Button, Typography, Space, theme, Tooltip } from 'antd';
-import {
-  CalendarOutlined,
-  LeftOutlined,
-  RightOutlined,
-  SettingOutlined,
-  ThunderboltOutlined,
-  GiftOutlined,
-  WalletOutlined,
-  DashboardOutlined,
-} from '@ant-design/icons';
+import { Card, Select, Tabs, Tooltip, theme } from 'antd';
+import { WalletOutlined, DashboardOutlined, MoneyCollectOutlined, SyncOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 import { apiClient } from '../../../lib/api-client';
 import { CvStaffOption, vietnameseSearchFilter } from '@mos-lab/shared';
+import {
+  PageHeader,
+  PageToolbar,
+  ReportPeriodNavigator,
+  TableSettingsTrigger,
+  ToolbarFilterDisclosure,
+} from '../../../components/ui';
 
 dayjs.extend(isoWeek);
 
@@ -29,8 +27,14 @@ const CvSpeedTab = dynamic(() => import('./components/cv-speed/CvSpeedTab').then
   ssr: false,
 });
 
-const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
+function CvTabLabel({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <span className="cv-dashboard-tab-label">
+      <Tooltip title={title}>{icon}</Tooltip>
+      <span>{children}</span>
+    </span>
+  );
+}
 
 export default function CvReportPage() {
   const { token } = theme.useToken();
@@ -86,8 +90,6 @@ export default function CvReportPage() {
     return [dayjs().startOf('month'), dayjs().endOf('month')];
   });
 
-  const [pickerOpen, setPickerOpen] = useState(false);
-
   const [selectedStore, setSelectedStore] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('cv_selected_store');
@@ -103,6 +105,7 @@ export default function CvReportPage() {
     }
     return 'ALL';
   });
+  const activeCvFilterCount = Number(selectedStore !== 'ALL') + Number(selectedConsultant !== 'ALL');
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -212,124 +215,64 @@ export default function CvReportPage() {
   };
 
   return (
-    <div>
-      {/* Top Header & Filter Navigation */}
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
-            Báo Cáo CV (Chuyên Viên)
-          </Title>
-          <Text style={{ color: token.colorTextDescription }}>
-            Theo dõi dữ liệu CV Xoay, bóc tách điểm thưởng ca, CV Tip và thu nhập live của chuyên viên
-          </Text>
-        </div>
+    <div className="responsive-page responsive-workspace cv-page">
+      <PageHeader
+        title="CV Leaderboard"
+        subtitle="Theo dõi dữ liệu CV Xoay, bóc tách điểm thưởng ca, CV Tip và thu nhập live của chuyên viên"
+      />
 
-        {/* TOP FILTER CONTROLS BAR (Matching Image Design) */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <Space wrap>
-            {/* View Mode Switcher: Tháng / Tuần / Ngày */}
-            <Space.Compact>
-              <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
-                Tháng
-              </Button>
-              <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
-                Tuần
-              </Button>
-              <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
-                Ngày
-              </Button>
-            </Space.Compact>
-
-            {/* Date Navigator: < Tháng 07/2026 > */}
-            <Space.Compact>
-              <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
-              <div style={{ position: 'relative', display: 'inline-block' }}>
-                <Button
-                  onClick={() => setPickerOpen(true)}
-                  style={{
-                    fontWeight: '600',
-                    minWidth: '190px',
-                    textAlign: 'center',
-                    color: token.colorText,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
-                </Button>
-                {pickerOpen && (
-                  <RangePicker
-                    value={dateRange}
-                    onChange={(dates) => {
-                      if (dates && dates[0] && dates[1]) {
-                        setDateRange([dates[0]!, dates[1]!]);
-                        setPickerOpen(false);
-                      }
-                    }}
-                    format="DD/MM/YYYY"
-                    open={true}
-                    onOpenChange={(open) => {
-                      if (!open) setPickerOpen(false);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: 0,
-                      height: 0,
-                      padding: 0,
-                      border: 'none',
-                      visibility: 'hidden',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </div>
-              <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
-            </Space.Compact>
-
-            {/* Store Filter (Chi Nhánh) */}
-            <Select
-              value={selectedStore}
-              onChange={setSelectedStore}
-              style={{ width: 160 }}
-              options={[
-                { value: 'ALL', label: 'Tất cả chi nhánh' },
-                { value: '6', label: 'CN Đề Thám' },
-                { value: '16', label: 'CN Estella Place' },
-              ]}
-
-              placeholder="Chọn Chi Nhánh"
-            />
-
-            {/* Consultant Filter (Chuyên Viên) */}
-            <Select
-              value={selectedConsultant}
-              onChange={setSelectedConsultant}
-              style={{ width: 170 }}
-              showSearch
-              filterOption={vietnameseSearchFilter}
-              options={[
-                { value: 'ALL', label: 'Tất cả CV' },
-                ...staffOptions.map((s) => ({ value: String(s.staffId), label: s.displayName })),
-              ]}
-              placeholder="Chọn CV"
-            />
-
-            {/* Config Button (Gold Themed) */}
-            <Tooltip title="Cấu hình CV">
-              <Button
-                type="primary"
-                icon={<SettingOutlined />}
-                onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
-                style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
+      <PageToolbar
+        className="cv-page-toolbar"
+        primary={
+          <ReportPeriodNavigator
+            mode={viewMode}
+            value={referenceDate}
+            label={getPeriodLabel()}
+            onModeChange={setViewMode}
+            onPrevious={() => handleNavigate(-1)}
+            onNext={() => handleNavigate(1)}
+            onValueChange={setReferenceDate}
+            rangeValue={dateRange}
+            onRangeChange={setDateRange}
+          />
+        }
+        actions={
+          <>
+            <ToolbarFilterDisclosure title="Bộ lọc CV" triggerLabel="Mở bộ lọc CV" activeCount={activeCvFilterCount}>
+              <Select
+                aria-label="Lọc theo chi nhánh"
+                value={selectedStore}
+                onChange={setSelectedStore}
+                style={{ width: 160 }}
+                options={[
+                  { value: 'ALL', label: 'Tất cả chi nhánh' },
+                  { value: '6', label: 'Đề Thám' },
+                  { value: '16', label: 'Estella Place' },
+                ]}
+                placeholder="Chọn chi nhánh"
               />
-            </Tooltip>
-          </Space>
-        </div>
-      </div>
+              <Select
+                aria-label="Lọc theo chuyên viên"
+                value={selectedConsultant}
+                onChange={setSelectedConsultant}
+                style={{ width: 170 }}
+                showSearch
+                filterOption={vietnameseSearchFilter}
+                options={[
+                  { value: 'ALL', label: 'Tất cả CV' },
+                  ...staffOptions.map((s) => ({ value: String(s.staffId), label: s.displayName })),
+                ]}
+                placeholder="Chọn CV"
+              />
+            </ToolbarFilterDisclosure>
+            <TableSettingsTrigger
+              title="Cấu hình CV"
+              onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
+              className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+            />
+          </>
+        }
+      />
 
       {/* 3 MAIN TABS */}
       <Card
@@ -347,8 +290,11 @@ export default function CvReportPage() {
           items={[
             {
               key: 'xoay',
-              icon: <ThunderboltOutlined />,
-              label: 'CV Xoay',
+              label: (
+                <CvTabLabel title="CV Xoay" icon={<SyncOutlined />}>
+                  Xoay
+                </CvTabLabel>
+              ),
               children:
                 activeTab === 'xoay' ? (
                   <CvXoayTab
@@ -360,8 +306,11 @@ export default function CvReportPage() {
             },
             {
               key: 'tip',
-              icon: <GiftOutlined />,
-              label: 'CV Tip',
+              label: (
+                <CvTabLabel title="CV Tip" icon={<MoneyCollectOutlined />}>
+                  Tip
+                </CvTabLabel>
+              ),
               children:
                 activeTab === 'tip' ? (
                   <CvTipTab
@@ -373,8 +322,11 @@ export default function CvReportPage() {
             },
             {
               key: 'thunhap',
-              icon: <WalletOutlined />,
-              label: 'CV Thu Nhập',
+              label: (
+                <CvTabLabel title="Thu nhập CV" icon={<WalletOutlined />}>
+                  Thu Nhập
+                </CvTabLabel>
+              ),
               children:
                 activeTab === 'thunhap' ? (
                   <CvThuNhapTab dateRange={dateRange} selectedStore={selectedStore} currentUser={currentUser} />
@@ -382,8 +334,11 @@ export default function CvReportPage() {
             },
             {
               key: 'speed',
-              icon: <DashboardOutlined />,
-              label: 'Tốc Độ CV',
+              label: (
+                <CvTabLabel title="Tốc độ CV" icon={<DashboardOutlined />}>
+                  Tốc Độ
+                </CvTabLabel>
+              ),
               children: activeTab === 'speed' ? <CvSpeedTab /> : null,
             },
           ]}

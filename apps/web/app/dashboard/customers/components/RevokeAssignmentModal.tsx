@@ -1,21 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  Select,
-  Input,
-  Form,
-  message,
-  Alert,
-  Space,
-  Typography,
-  Tag,
-  Segmented,
-  Tooltip,
-  theme,
-  Spin,
-} from 'antd';
+import { Select, Input, Form, message, Alert, Space, Typography, Tag, Segmented, Tooltip, theme, Spin } from 'antd';
 import {
   WarningOutlined,
   UserSwitchOutlined,
@@ -26,6 +12,7 @@ import {
 import { apiClient } from '../../../../lib/api-client';
 import { SafeAny, Staff, RevokePreviewResponse, vietnameseSearchFilter } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import { AdaptiveModal } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -120,7 +107,9 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
   const presetReasonVal = Form.useWatch('presetReason', form);
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="form"
+      className="customer-revoke-overlay"
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <WarningOutlined style={{ color: '#ff4d4f', fontSize: 18 }} />
@@ -328,6 +317,6 @@ export const RevokeAssignmentModal: React.FC<RevokeAssignmentModalProps> = ({
           </Form.Item>
         )}
       </Form>
-    </Modal>
+    </AdaptiveModal>
   );
 };

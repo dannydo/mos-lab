@@ -1,14 +1,18 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
-import { Tabs, Select, Button, Table, Space, Avatar, Tag, Tooltip, Typography, theme } from 'antd';
+import { Tabs, Select, Button, Space, Avatar, Tag, Tooltip, Typography, theme } from 'antd';
 import { SettingOutlined, PhoneOutlined, EyeOutlined } from '@ant-design/icons';
 import { useOmiCall } from '../../../../context/OmiCallContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { BookingData } from '../hooks/useTodayData';
-import { SectionCard } from '../../../../components/ui';
+import { DataTable, SectionCard } from '../../../../components/ui';
 import { vietnameseSearchFilter } from '@mos-lab/shared';
+import { getContrastingTextColor } from '../../../../lib/color-utils';
 
 const { Text } = Typography;
 
@@ -58,7 +62,9 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
   allBookings,
 }: TodayBookingsTableProps) {
   const { token } = theme.useToken();
+  const { themeMode } = useTheme();
   const { makeCall } = useOmiCall();
+  const goldText = themeMode === 'dark' ? '#D4A84B' : '#855b0e';
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
 
@@ -119,7 +125,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
 
   const bookingColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'index',
       width: 50,
       align: 'center' as const,
@@ -158,9 +164,10 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
         <Space size="middle" style={{ cursor: 'pointer' }} onClick={() => openCustomerDrawer(record)}>
           <Avatar
             src={record.avatar || undefined}
+            alt=""
             style={{
               backgroundColor: record.avatarColor || '#D4A84B',
-              color: '#fff',
+              color: getContrastingTextColor(record.avatarColor || '#D4A84B'),
               fontSize: '11px',
               fontWeight: 'bold',
             }}
@@ -183,7 +190,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
             onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
             style={{ color: token.colorText, fontWeight: '600' }}
           >
-            <PhoneOutlined style={{ color: '#D4A84B' }} />
+            <PhoneOutlined style={{ color: goldText }} />
             <span>{t}</span>
           </span>
         ) : (
@@ -241,7 +248,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
       title: 'Ngày & Giờ đặt lịch',
       dataIndex: 'bookingDateTime',
       key: 'bookingDateTime',
-      render: (t: string) => <strong style={{ color: '#D4A84B' }}>{t}</strong>,
+      render: (t: string) => <strong style={{ color: goldText }}>{t}</strong>,
     },
     {
       title: 'Requested CV',
@@ -289,7 +296,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
         <Button
           size="small"
           type="link"
-          icon={<EyeOutlined style={{ fontSize: '16px', color: '#D4A84B' }} />}
+          icon={<EyeOutlined style={{ fontSize: '16px', color: goldText }} />}
           onClick={() => openCustomerDrawer(record)}
           style={{ padding: 0 }}
         />
@@ -343,6 +350,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
           <Space wrap>
             {setSelectedBooker && (
               <Select
+                aria-label="Lọc đội hoặc Booker"
                 showSearch
                 filterOption={vietnameseSearchFilter}
                 value={selectedBooker || 'all'}
@@ -353,6 +361,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
               />
             )}
             <Select
+              aria-label="Lọc chi nhánh lịch mới"
               value={bookingBranch}
               onChange={(val) => {
                 setBookingBranch(val);
@@ -366,9 +375,14 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
 
               style={{ width: '200px' }}
             />
-            <Button icon={<SettingOutlined />} onClick={openBookingConfig}>
-              Cấu hình cột
-            </Button>
+            <Tooltip title="Cấu hình cột">
+              <Button
+                aria-label="Cấu hình cột"
+                className="today-table-config-button"
+                icon={<SettingOutlined />}
+                onClick={openBookingConfig}
+              />
+            </Tooltip>
           </Space>
         </div>
       }
@@ -409,7 +423,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
             type="link"
             size="small"
             danger
-            className="text-xs p-0 h-auto font-medium"
+            className="text-xs p-0 font-medium"
             onClick={() => {
               setBookingBranch('all');
               if (setSelectedBooker) setSelectedBooker(null);
@@ -420,7 +434,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
         </div>
       )}
 
-      <Table
+      <DataTable
         dataSource={filteredBookings}
         columns={bookingConfigColumns}
         rowKey={(record) => record.key || record.code || `${record.customer}-${record.createdTime}`}
@@ -438,7 +452,47 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
           },
           showTotal: (totalCount) => `Tổng số ${totalCount} khách`,
         }}
-        className="antd-custom-table"
+        className="today-bookings-data-table"
+        columnPriority={{
+          customer: 'primary',
+          phone: 'primary',
+          createdTime: 'secondary',
+          booker: 'secondary',
+          action: 'primary',
+        }}
+        stickyPrimaryColumn
+        mobileRenderer={(record) => (
+          <div className="today-mobile-record">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <strong className="block truncate">{record.customer}</strong>
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {record.phone || 'Chưa có số điện thoại'}
+                </span>
+              </div>
+              <Tag className="!mr-0 shrink-0" color={getChannelColor(record.channel || '')}>
+                {record.category || 'booking'}
+              </Tag>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+              <span>Tạo: {record.createdTime || '-'}</span>
+              <span>Booker: {record.booker || '-'}</span>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                size="small"
+                icon={<PhoneOutlined />}
+                disabled={!record.phone}
+                onClick={() => makeCall(record.phone, record.customer, record.customerId, record.avatar || undefined)}
+              >
+                Gọi
+              </Button>
+              <Button size="small" type="primary" icon={<EyeOutlined />} onClick={() => openCustomerDrawer(record)}>
+                Chi tiết
+              </Button>
+            </div>
+          </div>
+        )}
       />
 
       <TableConfigDrawer

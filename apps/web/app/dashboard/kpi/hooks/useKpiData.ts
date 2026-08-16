@@ -40,8 +40,6 @@ export function useKpiData(options?: UseKpiDataOptions) {
     const end = dayjs().endOf('month');
     return [start, end];
   });
-  const [pickerOpen, setPickerOpen] = useState(false);
-
   // Booker detailed appointments drilldown
   const [selectedBookerId, setSelectedBookerId] = useState<number | null>(null);
   const [selectedBookerName, setSelectedBookerName] = useState<string>('');
@@ -106,7 +104,11 @@ export function useKpiData(options?: UseKpiDataOptions) {
     const startDate = dateRange[0].format('YYYY-MM-DD');
     const endDate = dateRange[1].format('YYYY-MM-DD');
 
-    const params: SafeAny = { startDate, endDate, role: selectedRole };
+    const params: { startDate: string; endDate: string; role: 'telesales' | 'oc'; staffId?: string } = {
+      startDate,
+      endDate,
+      role: selectedRole,
+    };
     if (selectedStaffId !== 'ALL') {
       params.staffId = selectedStaffId;
     }
@@ -211,8 +213,6 @@ export function useKpiData(options?: UseKpiDataOptions) {
     setReferenceDate,
     dateRange,
     setDateRange,
-    pickerOpen,
-    setPickerOpen,
     selectedBookerId,
     setSelectedBookerId,
     selectedBookerName,

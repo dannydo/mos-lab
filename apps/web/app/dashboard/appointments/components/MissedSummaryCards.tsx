@@ -40,7 +40,7 @@ export default function MissedSummaryCards({ summary, loading = false }: MissedS
         </div>
         <div className="min-w-0 flex-1">
           <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">
-            Tổng ca Missed
+            ∑ Ca Missed
           </span>
           <div className="text-sm sm:text-base font-extrabold text-red-500 tabular-nums truncate">
             {totalMissed.toLocaleString('vi-VN')} ca{' '}

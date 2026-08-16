@@ -135,7 +135,7 @@ function DiagramHubContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="responsive-page responsive-workspace diagrams-page space-y-4">
       <PageHeader
         title="Thư Viện Sơ Đồ Quy Trình Systems (Diagram Hub)"
         subtitle="🖥️ Tối ưu hiển thị cho 2 Màn Hình 4K (Dọc & Ngang) — Phóng to/Thu nhỏ, Toàn màn hình & Cửa sổ độc lập"
@@ -144,11 +144,12 @@ function DiagramHubContent() {
       {/* Control Selector Bar */}
       <Card variant="outlined" className="shadow-xs rounded-xl border border-slate-200 dark:border-slate-800">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <DeploymentUnitOutlined className="text-xl text-sky-500" />
             <span className="font-semibold text-sm">Chọn Sơ Đồ Quy Trình:</span>
             <Select
-              style={{ width: 380 }}
+              className="diagram-selector"
+              style={{ width: 'min(100%, 380px)' }}
               value={selectedDiagramId}
               onChange={setSelectedDiagramId}
               options={DIAGRAMS_LIBRARY.map((d) => ({

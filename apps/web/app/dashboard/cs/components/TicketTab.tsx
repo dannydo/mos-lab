@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React, { useState, useEffect } from 'react';
 import { Table, Tag, Button, Input, Select, Space, Tooltip, Avatar, theme, message } from 'antd';
 import dynamic from 'next/dynamic';
@@ -144,7 +146,7 @@ export default function TicketTab({ dateFrom, dateTo }: TicketTabProps) {
 
   const columns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 60,
       align: 'center' as const,

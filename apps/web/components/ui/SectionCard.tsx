@@ -12,7 +12,14 @@ export interface SectionCardProps {
   style?: React.CSSProperties;
 }
 
-export function SectionCard({ title, extra, children, className = '', bodyPadding = '16px', style }: SectionCardProps) {
+export function SectionCard({
+  title,
+  extra,
+  children,
+  className = '',
+  bodyPadding = 'var(--mos-density-padding, var(--mos-surface-padding))',
+  style,
+}: SectionCardProps) {
   const { token } = theme.useToken();
 
   return (
@@ -26,7 +33,7 @@ export function SectionCard({ title, extra, children, className = '', bodyPaddin
         ...style,
       }}
       styles={{ body: { padding: bodyPadding } }}
-      className={`rounded-xl ${className}`}
+      className={`responsive-container responsive-section-card rounded-xl ${className}`}
     >
       {children}
     </Card>

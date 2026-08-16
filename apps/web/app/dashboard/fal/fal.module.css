@@ -1,0 +1,40 @@
+.page {
+  display: grid;
+  gap: var(--mos-section-gap);
+  min-width: 0;
+  padding: 0;
+}
+
+.header {
+  margin-bottom: 0;
+}
+
+.toolbar {
+  align-items: center;
+}
+
+.ruleFilter {
+  min-width: 128px;
+}
+
+.ruleFilter :global(.ant-select-selector) {
+  align-items: center;
+  display: flex;
+  height: var(--mos-control-height) !important;
+  min-height: var(--mos-control-height) !important;
+}
+
+.ruleFilter :global(.ant-select-selection-item),
+.ruleFilter :global(.ant-select-selection-placeholder) {
+  line-height: calc(var(--mos-control-height) - 2px) !important;
+}
+
+@media (max-width: 767px) {
+  .toolbar {
+    align-items: stretch;
+  }
+
+  .ruleFilter {
+    flex: 1 1 min(100%, 180px);
+  }
+}

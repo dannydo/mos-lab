@@ -563,7 +563,7 @@ export default function AppointmentsAuditDrawer({
                     textOverflow: 'ellipsis',
                   }}
                 >
-                  Tổng tips: {drilldownTotals.totalTips.toLocaleString('vi-VN')} đ
+                  Tổng tips: {drilldownTotals.totalTips.toLocaleString('vi-VN')} đ
                 </div>
               </Card>
             </Col>
@@ -639,7 +639,7 @@ export default function AppointmentsAuditDrawer({
                     textOverflow: 'ellipsis',
                   }}
                 >
-                  TỔNG THU NHẬP (LIVE)
+                  ∑ THU NHẬP (LIVE)
                 </div>
                 <div
                   style={{
@@ -699,7 +699,7 @@ export default function AppointmentsAuditDrawer({
                     <div style={{ fontSize: '13px', color: token.colorText }}>{record.serviceName}</div>
                     {record.servicePrice > 0 && (
                       <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                        Giá: {record.servicePrice.toLocaleString('vi-VN')} đ | Giảm: {record.discountPercent}%
+                        Giá: {record.servicePrice.toLocaleString('vi-VN')} đ | Giảm: {record.discountPercent}%
                       </div>
                     )}
                   </div>
@@ -714,7 +714,7 @@ export default function AppointmentsAuditDrawer({
                 render: (val: number) =>
                   val > 0 ? (
                     <span className="tabular-nums" style={{ fontWeight: '600', color: token.colorText }}>
-                      {val.toLocaleString('vi-VN')} đ
+                      {val.toLocaleString('vi-VN')} đ
                     </span>
                   ) : (
                     <span style={{ color: token.colorTextDescription }}>-</span>
@@ -729,7 +729,7 @@ export default function AppointmentsAuditDrawer({
                 render: (val: number) =>
                   val > 0 ? (
                     <span className="tabular-nums" style={{ color: token.colorText }}>
-                      {val.toLocaleString('vi-VN')} đ
+                      {val.toLocaleString('vi-VN')} đ
                     </span>
                   ) : (
                     <span style={{ color: token.colorTextDescription }}>-</span>
@@ -744,7 +744,7 @@ export default function AppointmentsAuditDrawer({
                 render: (val: number) =>
                   val > 0 ? (
                     <span className="tabular-nums" style={{ fontWeight: '600', color: '#52C41A' }}>
-                      +{val.toLocaleString('vi-VN')} đ
+                      +{val.toLocaleString('vi-VN')} đ
                     </span>
                   ) : (
                     <span style={{ color: token.colorTextDescription }}>-</span>
@@ -773,17 +773,17 @@ export default function AppointmentsAuditDrawer({
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={4}>
                     <span style={{ color: token.colorText }}>
-                      {drilldownTotals.totalNetRevenue.toLocaleString('vi-VN')} đ
+                      {drilldownTotals.totalNetRevenue.toLocaleString('vi-VN')} đ
                     </span>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={5}>
                     <span style={{ color: token.colorText }}>
-                      {drilldownTotals.totalTips.toLocaleString('vi-VN')} đ
+                      {drilldownTotals.totalTips.toLocaleString('vi-VN')} đ
                     </span>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={6}>
                     <span style={{ color: '#52C41A' }}>
-                      {drilldownTotals.totalBookingBonus.toLocaleString('vi-VN')} đ
+                      {drilldownTotals.totalBookingBonus.toLocaleString('vi-VN')} đ
                     </span>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={7}>

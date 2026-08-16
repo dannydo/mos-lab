@@ -139,7 +139,7 @@ export default function DoneSummaryStrip({ summary }: DoneSummaryProps) {
       {/* 8. Tổng Thu Nhập (Live) Featured Card */}
       <div className="flex flex-col justify-between p-2 rounded-lg bg-amber-500/10 dark:bg-amber-950/40 border border-amber-500/40 dark:border-amber-600/40 min-w-0">
         <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider truncate">
-          Tổng Thu Nhập
+          ∑ Thu Nhập
         </span>
         <div className="mt-1 text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400 tabular-nums truncate leading-tight">
           {formatVND(summary.totalSalary ?? 0)}

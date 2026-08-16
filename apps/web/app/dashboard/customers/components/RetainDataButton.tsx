@@ -11,7 +11,7 @@ interface RetainDataButtonProps {
   customer?: Customer;
   selectedRowKeys?: React.Key[];
   onSuccess?: () => void;
-  mode?: 'single' | 'bulk' | 'quota-badge';
+  mode?: 'single' | 'bulk' | 'bulk-compact' | 'quota-badge';
   retainedOnly?: boolean;
   onToggleRetainedFilter?: () => void;
 }
@@ -26,7 +26,11 @@ export const RetainDataButton: React.FC<RetainDataButtonProps> = ({
 }) => {
   const { themeMode } = useTheme();
   const [loading, setLoading] = useState(false);
-  const [quotaInfo, setQuotaInfo] = useState<{ retainedCount: number; quotaLimit: number; remainingQuota: number } | null>(null);
+  const [quotaInfo, setQuotaInfo] = useState<{
+    retainedCount: number;
+    quotaLimit: number;
+    remainingQuota: number;
+  } | null>(null);
 
   const fetchQuota = useCallback(async () => {
     try {
@@ -75,7 +79,15 @@ export const RetainDataButton: React.FC<RetainDataButtonProps> = ({
         }
       >
         <Tag
-          color={retainedOnly ? 'gold' : quotaInfo.remainingQuota === 0 ? 'error' : quotaInfo.remainingQuota <= 5 ? 'warning' : 'blue'}
+          color={
+            retainedOnly
+              ? 'gold'
+              : quotaInfo.remainingQuota === 0
+                ? 'error'
+                : quotaInfo.remainingQuota <= 5
+                  ? 'warning'
+                  : 'blue'
+          }
           style={{
             borderRadius: '12px',
             padding: '4px 12px',
@@ -100,16 +112,18 @@ export const RetainDataButton: React.FC<RetainDataButtonProps> = ({
     );
   }
 
-  if (mode === 'bulk') {
+  if (mode === 'bulk' || mode === 'bulk-compact') {
     return (
       <Tooltip title="Giữ lại các data được chọn để không bị tự động thu hồi khi hết hạn">
         <Button
           icon={<PushpinOutlined />}
+          aria-label={`Giữ lại ${selectedRowKeys.length} data`}
+          shape={mode === 'bulk-compact' ? 'circle' : undefined}
           loading={loading}
           disabled={selectedRowKeys.length === 0}
           onClick={() => handleToggleRetain(true)}
         >
-          Giữ lại data ({selectedRowKeys.length})
+          {mode === 'bulk' ? `Giữ lại data (${selectedRowKeys.length})` : null}
         </Button>
       </Tooltip>
     );
@@ -125,15 +139,21 @@ export const RetainDataButton: React.FC<RetainDataButtonProps> = ({
         isRetained
           ? 'Đã chọn giữ data này (Không bị thu hồi tự động khi hết hạn)'
           : hasSmartHint
-          ? 'Gợi ý: Khách hàng có Lịch hẹn/Hẹn gọi lại, bấm để Giữ data!'
-          : 'Bấm để Giữ data này không bị thu hồi khi hết hạn'
+            ? 'Gợi ý: Khách hàng có Lịch hẹn/Hẹn gọi lại, bấm để Giữ data!'
+            : 'Bấm để Giữ data này không bị thu hồi khi hết hạn'
       }
     >
       <Button
         type={isRetained ? 'primary' : 'default'}
         size="small"
         shape="circle"
-        icon={isRetained ? <PushpinFilled style={{ color: '#fff' }} /> : <PushpinOutlined style={{ color: hasSmartHint ? '#faad14' : undefined }} />}
+        icon={
+          isRetained ? (
+            <PushpinFilled style={{ color: '#fff' }} />
+          ) : (
+            <PushpinOutlined style={{ color: hasSmartHint ? '#faad14' : undefined }} />
+          )
+        }
         loading={loading}
         onClick={(e) => {
           e.stopPropagation();

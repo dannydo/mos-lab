@@ -1,10 +1,18 @@
 'use client';
 
+import {
+  AdaptiveModal,
+  AdaptiveOverlayFooter,
+  IconButton,
+  ResponsiveFormGrid,
+  SearchField,
+  TableIndexHeader,
+} from '~/components/ui';
+
 import '../../../../suppress-warnings';
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { ColumnsType } from 'antd/es/table';
 import {
-  Table,
   Button,
   Card,
   Tag,
@@ -18,11 +26,8 @@ import {
   Typography,
   Tooltip,
   message,
-  Row,
-  Col,
   theme,
   Checkbox,
-  Drawer,
   Divider,
   Avatar,
   Tabs,
@@ -30,12 +35,12 @@ import {
 } from 'antd';
 import { GoogleSheetColorPicker } from '../../../../../components/GoogleSheetColorPicker';
 import { TouchpointIconPicker, getIconComponent } from '../../../../../components/campaign/TouchpointIconPicker';
+import { DataTable } from '../../../../../components/ui';
 import {
   ClockCircleOutlined,
   CalendarOutlined,
   PhoneOutlined,
   EyeOutlined,
-  SearchOutlined,
   PlusOutlined,
   DeleteOutlined,
   MessageOutlined,
@@ -74,6 +79,7 @@ import {
   Bell,
   UserPlus,
   MessageCircle,
+  Search,
 } from 'lucide-react';
 import {
   CampaignTouchpointCell,
@@ -177,8 +183,10 @@ export default function CampaignDetailPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedTouchpointKey, setSelectedTouchpointKey] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
   const [selectedBookerId, setSelectedBookerId] = useState<string>('ALL');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   // Random Selector Modal State
   const [randomModalVisible, setRandomModalVisible] = useState<boolean>(false);
@@ -222,6 +230,16 @@ export default function CampaignDetailPage() {
       localStorage.setItem(`mos_campaign_page_${slug}`, '1');
     }
   }, [selectedTouchpointKey, searchQuery, selectedBookerId, slug]);
+
+  useEffect(() => {
+    if (!isMobileSearchExpanded) return;
+
+    const focusTimer = window.setTimeout(() => {
+      mobileSearchRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [isMobileSearchExpanded]);
 
   // User & Staff state
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -927,7 +945,7 @@ export default function CampaignDetailPage() {
   // Customer Table Columns (Matching NYC Main Table)
   const columns: ColumnsType<any> = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 45,
       align: 'center' as const,
@@ -1068,7 +1086,7 @@ export default function CampaignDetailPage() {
       },
     },
     {
-      title: 'Tổng Chi Tiêu',
+      title: '∑ Chi Tiêu',
       dataIndex: 'totalSpent',
       key: 'totalSpent',
       align: 'right',
@@ -1146,6 +1164,8 @@ export default function CampaignDetailPage() {
           title: (
             <Tooltip title={fullTooltipText}>
               <div
+                data-ui="campaign-touchpoint-header"
+                data-touchpoint-icon={iconKey}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -1357,7 +1377,7 @@ export default function CampaignDetailPage() {
     : null;
 
   return (
-    <div>
+    <div className="responsive-page responsive-workspace nyc-campaign-detail-page">
       {modalContextHolder}
       {/* UNIFIED MINIMALIST CAMPAIGN HEADER (1 SINGLE ROW WITH ICON+TOOLTIP KPIs) */}
       <div
@@ -1413,7 +1433,7 @@ export default function CampaignDetailPage() {
           </Tooltip>
 
           {/* KPI 2: Booked Rate */}
-          <Tooltip title={`Tỷ lệ đặt lịch: ${stats?.bookedRate ?? 0}% (${stats?.bookedCount ?? 0} đơn)`}>
+          <Tooltip title={`Tỷ lệ đặt lịch: ${stats?.bookedRate ?? 0}% (${stats?.bookedCount ?? 0} đơn)`}>
             <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
                 themeMode === 'dark'
@@ -1554,17 +1574,36 @@ export default function CampaignDetailPage() {
           themeMode === 'dark' ? 'bg-[#111827] border-white/10' : 'bg-white border-slate-200 shadow-sm'
         }`}
       >
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          {/* Search Input */}
-          <Input
-            placeholder="Tìm theo tên hoặc SĐT..."
-            prefix={<SearchOutlined style={{ color: '#aaa' }} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            allowClear
-            size="middle"
-            style={{ width: 260 }}
+        <div
+          className={`nyc-campaign-customer-toolbar flex items-center gap-2 sm:flex-nowrap${
+            isMobileSearchExpanded ? ' is-mobile-search-expanded' : ''
+          }`}
+        >
+          <IconButton
+            label="Mở tìm kiếm khách hàng"
+            icon={Search}
+            tooltip={false}
+            onClick={() => setIsMobileSearchExpanded(true)}
+            className="campaign-mobile-search-trigger"
+            data-ui="campaign-mobile-search-trigger"
           />
+
+          {/* Search Input */}
+          <div ref={mobileSearchRef} className="campaign-customer-search">
+            <SearchField
+              behavior="filter"
+              placeholder="Tìm theo tên hoặc SĐT..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onBlur={() => {
+                if (!searchQuery.trim()) setIsMobileSearchExpanded(false);
+              }}
+              allowClear
+              size="middle"
+              className="w-full"
+              data-ui="campaign-customer-search"
+            />
+          </div>
 
           {/* Booker Filter */}
           {isAdmin && (
@@ -1572,6 +1611,7 @@ export default function CampaignDetailPage() {
               value={selectedBookerId}
               onChange={(val) => setSelectedBookerId(val)}
               size="middle"
+              className="campaign-customer-booker-filter"
               style={{ width: 160 }}
               options={[
                 { value: 'ALL', label: 'Tất cả Booker' },
@@ -1587,6 +1627,7 @@ export default function CampaignDetailPage() {
                 size="middle"
                 icon={<AimOutlined />}
                 onClick={() => setRandomModalVisible(true)}
+                className="campaign-customer-random-action"
                 style={{
                   borderColor: themeMode === 'dark' ? '#D4A84B' : '#d97706',
                   color: themeMode === 'dark' ? '#D4A84B' : '#d97706',
@@ -1654,7 +1695,7 @@ export default function CampaignDetailPage() {
         </div>
       </div>
 
-      <Table
+      <DataTable
         size="small"
         tableLayout="fixed"
         rowSelection={
@@ -1688,6 +1729,73 @@ export default function CampaignDetailPage() {
         }}
         rowClassName={(record) => getRowClassName(record, themeMode)}
         className="antd-custom-table"
+        columnPriority={{ customer: 'primary', booker: 'secondary', lastCallResult: 'secondary', actions: 'primary' }}
+        mobileRenderer={(record: any) => {
+          const customerName = record.customerName || record.name || 'Khách hàng';
+          const phone = record.customerPhone || record.phone || record.phones?.[0]?.phone_number;
+          const bookerName =
+            record.assignedBookerName ||
+            record.assignedBooker?.name ||
+            record.assignedStaff?.displayName ||
+            'Chưa phân bổ';
+          const callResult = record.lastCallResult || record.lastCall?.callResult;
+          const callResultLabel = callResult
+            ? (CALL_RESULT_LABELS as Record<string, string>)[callResult] || callResult
+            : null;
+
+          return (
+            <div className="space-y-2">
+              <button
+                type="button"
+                className="block w-full text-left font-semibold text-slate-900 dark:text-slate-100"
+                onClick={() => {
+                  setSelectedCustomer(record);
+                  setDetailDrawerVisible(true);
+                }}
+              >
+                {customerName}
+              </button>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                {phone && <span className="tabular-nums">{phone}</span>}
+                <Tag color="cyan" className="m-0 text-[11px]">
+                  {bookerName}
+                </Tag>
+                {callResultLabel && (
+                  <Tag color="default" className="m-0 text-[11px]">
+                    {callResultLabel}
+                  </Tag>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {phone && (
+                  <Button size="small" icon={<PhoneOutlined />} onClick={() => makeCall(phone)}>
+                    Gọi
+                  </Button>
+                )}
+                <Button
+                  size="small"
+                  icon={<CalendarPlusIcon fontSize={14} />}
+                  onClick={() => {
+                    setBookingInitialCustomer(record);
+                    setBookingWizardVisible(true);
+                  }}
+                >
+                  Đặt lịch
+                </Button>
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => {
+                    setSelectedCustomer(record);
+                    setDetailDrawerVisible(true);
+                  }}
+                >
+                  Chi tiết
+                </Button>
+              </div>
+            </div>
+          );
+        }}
       />
 
       {/* Admin Batch Allocation Modal */}
@@ -1736,8 +1844,15 @@ export default function CampaignDetailPage() {
       <SMSModal open={smsModalVisible} onClose={() => setSmsModalVisible(false)} customer={selectedCustomer} />
 
       {/* Edit Campaign Modal */}
-      <Modal
-        title={<div className="font-bold text-lg">Chỉnh sửa chiến dịch NYC: {campaign?.name}</div>}
+      <AdaptiveModal
+        intent="form"
+        className="nyc-campaign-edit-overlay"
+        title={
+          <div className="nyc-campaign-edit-title">
+            <span>Chỉnh sửa chiến dịch NYC:</span>
+            <span className="nyc-campaign-edit-title-name">{campaign?.name}</span>
+          </div>
+        }
         open={editCampaignModalVisible}
         onCancel={() => setEditCampaignModalVisible(false)}
         footer={null}
@@ -1752,12 +1867,12 @@ export default function CampaignDetailPage() {
             console.error('Campaign form validation failed:', errorInfo);
             message.error('Vui lòng kiểm tra lại các thông tin bắt buộc (Tên chiến dịch, Điểm chạm, Ưu đãi)');
           }}
-          className="mt-4"
+          className="mt-4 nyc-campaign-edit-form"
         >
           <Tabs
             activeKey={editModalTab}
             onChange={setEditModalTab}
-            className="campaign-minimal-tabs"
+            className="campaign-minimal-tabs nyc-campaign-edit-tabs"
             items={[
               {
                 key: 'info',
@@ -1767,92 +1882,86 @@ export default function CampaignDetailPage() {
                   </span>
                 ),
                 children: (
-                  <div className="pt-2 space-y-4">
-                    <Row gutter={16}>
-                      <Col span={14}>
-                        <Form.Item
-                          name="name"
-                          label="Tên chiến dịch"
-                          rules={[{ required: true, message: 'Vui lòng nhập tên chiến dịch' }]}
-                        >
-                          <Input placeholder="VD: Chiến dịch NYC Tri ân Tháng 8" />
-                        </Form.Item>
-                      </Col>
-                      <Col span={10}>
-                        <Form.Item
-                          name="slug"
-                          label="Slug (Đường dẫn)"
-                          tooltip="Tùy chọn. Nếu để trống hệ thống sẽ tự sinh từ tên."
-                        >
-                          <Input placeholder="VD: tri-an-thang-8" />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Row gutter={16}>
-                      <Col span={14}>
-                        <Form.Item name="dates" label="Thời gian diễn ra">
-                          <RangePicker
-                            style={{ width: '100%' }}
-                            format="DD/MM/YYYY"
-                            placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
+                  <div className="pt-2 nyc-campaign-edit-info">
+                    <ResponsiveFormGrid columns={2}>
+                      <Form.Item
+                        name="name"
+                        label="Tên chiến dịch"
+                        rules={[{ required: true, message: 'Vui lòng nhập tên chiến dịch' }]}
+                      >
+                        <Input placeholder="VD: Chiến dịch NYC Tri ân Tháng 8" />
+                      </Form.Item>
+                      <Form.Item
+                        name="slug"
+                        label="Slug (Đường dẫn)"
+                        tooltip="Tùy chọn. Nếu để trống hệ thống sẽ tự sinh từ tên."
+                      >
+                        <Input placeholder="VD: tri-an-thang-8" />
+                      </Form.Item>
+                      <Form.Item name="dates" label="Thời gian diễn ra">
+                        <RangePicker
+                          style={{ width: '100%' }}
+                          format="DD/MM/YYYY"
+                          placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
+                        />
+                      </Form.Item>
+                      <Form.Item name="status" label="Trạng thái">
+                        <Select
+                          options={[
+                            { value: 'ACTIVE', label: 'ACTIVE (Hoạt động)' },
+                            { value: 'ENDED', label: 'ENDED (Đã kết thúc)' },
+                            { value: 'ARCHIVED', label: 'ARCHIVED (Lưu trữ)' },
+                          ]}
+                        />
+                      </Form.Item>
+                      <div className="responsive-form-field-full">
+                        <Form.Item name="description" label="Mô tả chiến dịch">
+                          <Input.TextArea
+                            rows={2}
+                            placeholder="Mô tả ngắn gọn về mục tiêu và quy định của chiến dịch..."
                           />
                         </Form.Item>
-                      </Col>
-                      <Col span={10}>
-                        <Form.Item name="status" label="Trạng thái">
+                      </div>
+                      <div className="responsive-form-field-full">
+                        <Form.Item
+                          name="assignedStaffIds"
+                          label={
+                            <span className="inline-flex items-center gap-1.5">
+                              <TeamOutlined className="text-blue-500" />
+                              <span>Thành viên được phép truy cập (Team Booker)</span>
+                            </span>
+                          }
+                          tooltip="Chọn các nhân sự thuộc Team Booker được phép xem và thao tác trên chiến dịch này. Nếu để trống, tất cả nhân sự đều xem được."
+                        >
                           <Select
-                            options={[
-                              { value: 'ACTIVE', label: 'ACTIVE (Hoạt động)' },
-                              { value: 'ENDED', label: 'ENDED (Đã kết thúc)' },
-                              { value: 'ARCHIVED', label: 'ARCHIVED (Lưu trữ)' },
-                            ]}
+                            mode="multiple"
+                            allowClear
+                            placeholder="Chừa trống = Công Khai (Tất cả nhân sự xem được)"
+                            style={{ width: '100%' }}
+                            tagRender={(props) => {
+                              const { label, closable, onClose } = props;
+                              const cleanLabel = typeof label === 'string' ? label.split('(')[0].trim() : label;
+                              return (
+                                <Tag
+                                  color="blue"
+                                  closable={closable}
+                                  onClose={onClose}
+                                  style={{ marginRight: 4 }}
+                                  className="rounded-md font-medium text-xs py-0.5 px-2 inline-flex items-center gap-1"
+                                >
+                                  <UserOutlined className="text-blue-500 text-xs" />
+                                  <span>{cleanLabel}</span>
+                                </Tag>
+                              );
+                            }}
+                            options={staffList.map((s) => ({
+                              value: s.id,
+                              label: `${s.displayName || s.username} (${s.username})`,
+                            }))}
                           />
                         </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Form.Item name="description" label="Mô tả chiến dịch">
-                      <Input.TextArea rows={2} placeholder="Mô tả ngắn gọn về mục tiêu và quy định của chiến dịch..." />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="assignedStaffIds"
-                      label={
-                        <span className="inline-flex items-center gap-1.5">
-                          <TeamOutlined className="text-blue-500" />
-                          <span>Thành viên được phép truy cập (Team Booker)</span>
-                        </span>
-                      }
-                      tooltip="Chọn các nhân sự thuộc Team Booker được phép xem và thao tác trên chiến dịch này. Nếu để trống, tất cả nhân sự đều xem được."
-                    >
-                      <Select
-                        mode="multiple"
-                        allowClear
-                        placeholder="Chừa trống = Công Khai (Tất cả nhân sự xem được)"
-                        style={{ width: '100%' }}
-                        tagRender={(props) => {
-                          const { label, closable, onClose } = props;
-                          const cleanLabel = typeof label === 'string' ? label.split('(')[0].trim() : label;
-                          return (
-                            <Tag
-                              color="blue"
-                              closable={closable}
-                              onClose={onClose}
-                              style={{ marginRight: 4 }}
-                              className="rounded-md font-medium text-xs py-0.5 px-2 inline-flex items-center gap-1"
-                            >
-                              <UserOutlined className="text-blue-500 text-xs" />
-                              <span>{cleanLabel}</span>
-                            </Tag>
-                          );
-                        }}
-                        options={staffList.map((s) => ({
-                          value: s.id,
-                          label: `${s.displayName || s.username} (${s.username})`,
-                        }))}
-                      />
-                    </Form.Item>
+                      </div>
+                    </ResponsiveFormGrid>
                   </div>
                 ),
               },
@@ -1869,7 +1978,7 @@ export default function CampaignDetailPage() {
                       {(fields, { add, remove }) => (
                         <div>
                           {fields.length > 0 && (
-                            <div className="flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                            <div className="campaign-edit-list-header campaign-edit-touchpoint-header flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                               <div className="flex-1 min-w-[120px]">Tên điểm chạm</div>
                               <div className="w-[140px] text-center">Biểu tượng (Icon)</div>
                               <div className="w-16 text-center">Từ ngày</div>
@@ -1880,14 +1989,17 @@ export default function CampaignDetailPage() {
                           )}
                           <div className="space-y-2">
                             {fields.map(({ key, name, ...restField }) => (
-                              <div key={key} className="flex items-center gap-2 py-0.5">
+                              <div
+                                key={key}
+                                className="campaign-edit-list-row campaign-edit-touchpoint-row flex items-center gap-2 py-0.5"
+                              >
                                 <Form.Item {...restField} name={[name, 'id']} hidden>
                                   <Input />
                                 </Form.Item>
                                 <Form.Item {...restField} name={[name, 'key']} hidden>
                                   <Input />
                                 </Form.Item>
-                                <div className="flex-1 min-w-[120px]">
+                                <div className="campaign-edit-field campaign-edit-touchpoint-label flex-1 min-w-[120px]">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'label']}
@@ -1897,12 +2009,12 @@ export default function CampaignDetailPage() {
                                     <Input placeholder="Tên chạm (VD: Chạm D1)" />
                                   </Form.Item>
                                 </div>
-                                <div className="w-[140px]">
+                                <div className="campaign-edit-field campaign-edit-touchpoint-icon w-[140px]">
                                   <Form.Item {...restField} name={[name, 'icon']} style={{ marginBottom: 0 }}>
                                     <TouchpointIconPicker size="small" />
                                   </Form.Item>
                                 </div>
-                                <div className="w-16">
+                                <div className="campaign-edit-field campaign-edit-touchpoint-days-min w-16">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'daysMin']}
@@ -1912,17 +2024,17 @@ export default function CampaignDetailPage() {
                                     <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
                                   </Form.Item>
                                 </div>
-                                <div className="w-16">
+                                <div className="campaign-edit-field campaign-edit-touchpoint-days-max w-16">
                                   <Form.Item {...restField} name={[name, 'daysMax']} style={{ marginBottom: 0 }}>
                                     <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
                                   </Form.Item>
                                 </div>
-                                <div className="w-[95px] flex justify-center">
+                                <div className="campaign-edit-field campaign-edit-touchpoint-color w-[95px] flex justify-center">
                                   <Form.Item {...restField} name={[name, 'color']} style={{ marginBottom: 0 }}>
                                     <GoogleSheetColorPicker size="small" />
                                   </Form.Item>
                                 </div>
-                                <div className="w-8 flex justify-center">
+                                <div className="campaign-edit-field campaign-edit-touchpoint-delete w-8 flex justify-center">
                                   <Button
                                     type="text"
                                     danger
@@ -1995,7 +2107,7 @@ export default function CampaignDetailPage() {
                       {(fields, { add, remove }) => (
                         <div>
                           {fields.length > 0 && (
-                            <div className="flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                            <div className="campaign-edit-list-header campaign-edit-promotion-header flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                               <div className="flex-1">Tên ưu đãi</div>
                               <div className="w-36 text-left">Loại ưu đãi</div>
                               <div className="w-24 text-center">Giá trị</div>
@@ -2005,8 +2117,11 @@ export default function CampaignDetailPage() {
                           )}
                           <div className="space-y-2">
                             {fields.map(({ key, name, ...restField }) => (
-                              <div key={key} className="flex items-center gap-2 py-0.5">
-                                <div className="flex-1">
+                              <div
+                                key={key}
+                                className="campaign-edit-list-row campaign-edit-promotion-row flex items-center gap-2 py-0.5"
+                              >
+                                <div className="campaign-edit-field campaign-edit-promotion-name flex-1">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'name']}
@@ -2016,7 +2131,7 @@ export default function CampaignDetailPage() {
                                     <Input placeholder="Tên ưu đãi (VD: Giảm 50%)" />
                                   </Form.Item>
                                 </div>
-                                <div className="w-36">
+                                <div className="campaign-edit-field campaign-edit-promotion-type w-36">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'type']}
@@ -2033,7 +2148,7 @@ export default function CampaignDetailPage() {
                                     />
                                   </Form.Item>
                                 </div>
-                                <div className="w-24">
+                                <div className="campaign-edit-field campaign-edit-promotion-value w-24">
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'value']}
@@ -2043,12 +2158,12 @@ export default function CampaignDetailPage() {
                                     <InputNumber min={0} placeholder="Giá trị" style={{ width: '100%' }} />
                                   </Form.Item>
                                 </div>
-                                <div className="w-28">
+                                <div className="campaign-edit-field campaign-edit-promotion-code w-28">
                                   <Form.Item {...restField} name={[name, 'code']} style={{ marginBottom: 0 }}>
                                     <Input placeholder="Mã Code" />
                                   </Form.Item>
                                 </div>
-                                <div className="w-8 flex justify-center">
+                                <div className="campaign-edit-field campaign-edit-promotion-delete w-8 flex justify-center">
                                   <Button
                                     type="text"
                                     danger
@@ -2077,14 +2192,14 @@ export default function CampaignDetailPage() {
             ]}
           />
 
-          <div className="flex justify-end gap-2 mt-4 pt-3 border-t">
+          <AdaptiveOverlayFooter className="nyc-campaign-edit-actions">
             <Button onClick={() => setEditCampaignModalVisible(false)}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={editingSubmitting}>
               Lưu thay đổi
             </Button>
-          </div>
+          </AdaptiveOverlayFooter>
         </Form>
-      </Modal>
+      </AdaptiveModal>
 
       {/* RANDOM SELECTOR MODAL */}
       <Modal

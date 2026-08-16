@@ -202,7 +202,7 @@ export const BookingAuditLogReportTab: React.FC = () => {
         <Col xs={24} sm={12} md={6}>
           <Card size="small" style={{ borderRadius: '8px', background: isDark ? '#1e293b' : '#ffffff' }}>
             <Statistic
-              title="Tổng Nhật Ký Ghi Nhận"
+              title="∑ Nhật Ký Ghi Nhận"
               value={summary.totalLogs}
               prefix={<HistoryOutlined style={{ color: '#3b82f6' }} />}
             />
@@ -218,7 +218,7 @@ export const BookingAuditLogReportTab: React.FC = () => {
             }}
           >
             <Statistic
-              title="Tổng Thao Tác Chéo Đơn"
+              title="∑ Thao Tác Chéo Đơn"
               value={summary.totalCrossActions}
               valueStyle={{ color: '#f59e0b', fontWeight: '700' }}
               prefix={<WarningOutlined />}

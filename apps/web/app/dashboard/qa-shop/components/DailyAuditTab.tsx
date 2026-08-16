@@ -508,7 +508,7 @@ export const DailyAuditTab: React.FC<DailyAuditTabProps> = ({ themeMode, onOpenI
               <div className="text-lg font-black tracking-tight mt-1 flex items-baseline gap-2">
                 <span className="tabular-nums text-2xl text-emerald-600 dark:text-emerald-400">{stats.score}</span>
                 <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
-                  / {stats.maxScore} điểm trọng số
+                  / {stats.maxScore} điểm trọng số
                 </span>
               </div>
             </div>
@@ -516,7 +516,7 @@ export const DailyAuditTab: React.FC<DailyAuditTabProps> = ({ themeMode, onOpenI
 
           <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 pt-3 md:pt-0 md:pl-6">
             <div className="text-center px-3">
-              <div className="text-xs text-slate-600 dark:text-slate-400">Tổng mục</div>
+              <div className="text-xs text-slate-600 dark:text-slate-400">∑ Mục</div>
               <div className="tabular-nums font-bold text-base mt-0.5">{stats.total}</div>
             </div>
             <div className="text-center px-3 border-l border-slate-200 dark:border-slate-800">

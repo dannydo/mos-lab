@@ -22,7 +22,7 @@
 .controlsLayout {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
@@ -31,10 +31,11 @@
   display: flex;
   flex: 0 0 100%;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: flex-end;
   width: 100%;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
+  --qa-control-height: var(--mos-control-height);
 }
 
 .controlGroup {
@@ -55,7 +56,89 @@
 .controlActionText {
   font-size: 13px;
   font-weight: 500;
-  line-height: 20px;
+  line-height: 18px;
+}
+
+.primaryControls :global(.ant-select),
+.primaryControls :global(.ant-radio-group),
+.mobileFocusButton,
+.toggleControl,
+.editControls :global(.ant-btn) {
+  min-height: var(--qa-control-height);
+  height: var(--qa-control-height);
+}
+
+.primaryControls :global(.ant-select-selector) {
+  min-height: var(--qa-control-height) !important;
+  height: var(--qa-control-height) !important;
+  display: flex;
+  align-items: center;
+}
+
+.primaryControls :global(.ant-select-selection-item),
+.primaryControls :global(.ant-select-selection-placeholder) {
+  line-height: calc(var(--qa-control-height) - 2px) !important;
+}
+
+.primaryControls :global(.ant-select-arrow) {
+  align-items: center;
+  bottom: auto !important;
+  display: flex;
+  height: var(--qa-control-height) !important;
+  justify-content: center;
+  line-height: 1;
+  margin-top: 0 !important;
+  top: 0 !important;
+  transform: none !important;
+}
+
+.primaryControls :global(.ant-select-arrow > svg) {
+  display: block;
+}
+
+.primaryControls :global(.ant-radio-group) {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.primaryControls :global(.ant-radio-button-wrapper) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--qa-control-height);
+  height: var(--qa-control-height);
+  line-height: 18px;
+  padding-inline: 10px;
+}
+
+.mobileFocusButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.toggleControl {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  padding: 0 10px !important;
+  border-radius: 8px;
+}
+
+.toggleControl:global(.toolbar-toggle) {
+  height: var(--qa-control-height);
+  min-height: var(--qa-control-height);
+}
+
+.editControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--qa-control-height);
 }
 
 .scoreLabel {
@@ -143,6 +226,7 @@
     flex-direction: column;
     width: 100%;
     gap: 0;
+    --qa-control-height: var(--mos-control-height);
   }
 
   .primaryControls > .controlGroup {
@@ -164,11 +248,11 @@
   }
 
   .primaryControls :global(.ant-select) {
-    height: 44px;
+    height: var(--qa-control-height);
   }
 
   .primaryControls :global(.ant-select-selector) {
-    min-height: 44px !important;
+    min-height: var(--qa-control-height) !important;
     padding-inline: 12px !important;
     display: flex;
     align-items: center;
@@ -176,13 +260,7 @@
 
   .primaryControls :global(.ant-select-selection-item),
   .primaryControls :global(.ant-select-selection-placeholder) {
-    line-height: 42px !important;
-  }
-
-  .primaryControls :global(.ant-select-arrow) {
-    top: 50% !important;
-    bottom: auto;
-    transform: translateY(-50%) !important;
+    line-height: calc(var(--qa-control-height) - 2px) !important;
   }
 
   .primaryControls :global(.ant-radio-group) {
@@ -195,9 +273,9 @@
     flex: 1 1 0;
     align-items: center;
     justify-content: center;
-    height: 44px;
+    height: var(--qa-control-height);
     min-width: 0;
-    min-height: 44px;
+    min-height: var(--qa-control-height);
     line-height: 20px;
     padding-inline: 8px;
     text-align: center;
@@ -205,12 +283,12 @@
   }
 
   .primaryControls :global(.ant-btn) {
-    min-height: 44px;
+    min-height: var(--qa-control-height);
   }
 
   .mobileFocusButton {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--qa-control-height);
     padding-inline: 12px;
     justify-content: flex-start;
     font-size: 13px;
@@ -222,14 +300,13 @@
     display: flex;
     align-items: center;
     width: 100%;
-    min-height: 44px;
+    min-height: var(--qa-control-height);
     padding: 8px 12px !important;
   }
 
-  .toggleControl :global(.ant-switch) {
-    transform: scale(1.15);
-    transform-origin: left center;
-    margin-right: 4px;
+  .toggleControl:global(.toolbar-toggle) {
+    height: var(--qa-control-height);
+    min-height: var(--qa-control-height);
   }
 
   .editControls {
@@ -237,6 +314,7 @@
     flex-wrap: wrap;
     width: 100%;
     gap: 8px;
+    min-height: auto;
   }
 
   .editControls .toggleControl {
@@ -389,6 +467,11 @@
     font-weight: 400;
     line-height: 1.4;
     color: rgb(100 116 139);
+  }
+
+  :global(.dark-theme) .areaDescription,
+  :global(.dark-theme) .areaMeta {
+    color: rgb(148 163 184);
   }
 
   .areaMeta {

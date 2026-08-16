@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Typography, Space, theme, Spin, Progress, Table, Avatar, Tag, Badge, message } from 'antd';
 import {
@@ -141,7 +143,7 @@ export default function CsDashboardTab({ dateFrom, dateTo }: CsDashboardTabProps
 
   const performanceColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 55,
       align: 'center' as const,
@@ -247,7 +249,7 @@ export default function CsDashboardTab({ dateFrom, dateTo }: CsDashboardTabProps
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}>
             <StatCard
-              title="Tổng cuộc gọi"
+              title="∑ cuộc gọi"
               value={stats.happyCall.total}
               icon={<PhoneOutlined />}
               iconBgColor="rgba(24, 144, 255, 0.1)"

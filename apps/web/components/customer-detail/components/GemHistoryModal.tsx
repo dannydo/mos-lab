@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Button, Table, Tag } from 'antd';
+import { Button, Table, Tag } from 'antd';
 import { SketchOutlined } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
+import { AdaptiveModal } from '../../ui';
 
 interface GemTransaction {
   id: number;
@@ -230,7 +231,9 @@ export const GemHistoryModal: React.FC<GemHistoryModalProps> = ({
   };
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="data"
+      className="customer-gem-history-overlay"
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
           <SketchOutlined style={{ color: '#0ea5e9' }} />
@@ -328,6 +331,6 @@ export const GemHistoryModal: React.FC<GemHistoryModalProps> = ({
         size="small"
         locale={{ emptyText: 'Không có giao dịch kim cương nào.' }}
       />
-    </Modal>
+    </AdaptiveModal>
   );
 };

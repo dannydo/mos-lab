@@ -3,33 +3,9 @@
 
 import '../../suppress-warnings';
 import React, { useEffect, useState } from 'react';
-import {
-  Card,
-  theme,
-  DatePicker,
-  Radio,
-  Space,
-  Row,
-  Col,
-  Spin,
-  Divider,
-  Button,
-  Switch,
-  Select,
-  Tag,
-  Tooltip,
-  message,
-} from 'antd';
-import {
-  ClockCircleOutlined,
-  SyncOutlined,
-  ShopOutlined,
-  LeftOutlined,
-  RightOutlined,
-  CalendarOutlined,
-  ScheduleOutlined,
-  UnorderedListOutlined,
-} from '@ant-design/icons';
+import { Card, theme, Radio, Space, Row, Col, Spin, Button, Select, Tag, message } from 'antd';
+import { ClockCircleOutlined, ShopOutlined, CalendarOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
@@ -40,7 +16,7 @@ import TodayStats from './components/TodayStats';
 import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
 import TodayStaffAttendance from './components/TodayStaffAttendance';
-import { PageHeader } from '../../../components/ui';
+import { IconButton, PageHeader, ReportPeriodNavigator, ToolbarToggle } from '../../../components/ui';
 
 const TodayCalendarSummary = dynamic(() => import('./components/TodayCalendarSummary'), {
   ssr: false,
@@ -53,6 +29,7 @@ const TodayCalendarSummary = dynamic(() => import('./components/TodayCalendarSum
 const BookerTeamConfigModal = dynamic(() => import('./components/BookerTeamConfigModal'), { ssr: false });
 
 const RealtimeClock = React.memo(() => {
+  const { token } = theme.useToken();
   const [time, setTime] = useState('');
   useEffect(() => {
     const updateTime = () => {
@@ -65,7 +42,7 @@ const RealtimeClock = React.memo(() => {
   return (
     <strong
       style={{
-        color: '#D4A84B',
+        color: token.colorPrimary,
         fontSize: '14px',
         fontVariantNumeric: 'tabular-nums',
         fontFeatureSettings: '"tnum"',
@@ -114,133 +91,69 @@ export default function TodayDashboard() {
 
   const activeShopTotalRevenue =
     (data.activeShopData.revLe || 0) + (data.activeShopData.revCombo || 0) + (data.activeShopData.revProduct || 0);
+  const periodLabel =
+    data.dateRangeMode === 'month'
+      ? `Tháng ${data.selectedDate.format('MM/YYYY')}`
+      : data.dateRangeMode === 'week'
+        ? `Tuần ${data.selectedDate.isoWeek()} (${data.selectedDate.startOf('isoWeek').format('DD/MM')} - ${data.selectedDate
+            .endOf('isoWeek')
+            .format('DD/MM/YYYY')})`
+        : data.selectedDate.format('DD/MM/YYYY');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div
+      className="responsive-page responsive-workspace today-page"
+      style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+    >
       {/* Title & Control Header */}
       <PageHeader
         title="Control Board Hôm Nay (Today operations)"
         subtitle="Giám sát thời gian thực lịch đặt mới, luồng khách đến và trạng thái phục vụ của CC & CV"
         icon={<ClockCircleOutlined />}
         extra={
-          <Space size="middle" style={{ flexWrap: 'wrap' }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '11px', color: token.colorTextDescription }}>Thời gian thực tế</div>
+          <div className="today-header-toolbar">
+            <div className="today-realtime-clock">
+              <span>Thời gian thực tế</span>
               <RealtimeClock />
             </div>
-            <Divider
-              type="vertical"
-              style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }}
+            <ReportPeriodNavigator
+              mode={data.dateRangeMode}
+              value={data.selectedDate}
+              label={periodLabel}
+              onModeChange={data.setDateRangeMode}
+              onPrevious={data.handlePrevDate}
+              onNext={data.handleNextDate}
+              onValueChange={(date) => {
+                data.setSelectedDate(date);
+                localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
+              }}
             />
-            <Radio.Group
-              value={data.dateRangeMode}
-              onChange={(e) => data.setDateRangeMode(e.target.value)}
-              optionType="button"
-              buttonStyle="solid"
-              size="small"
-            >
-              <Tooltip title="Xem theo Ngày (Daily)">
-                <Radio.Button value="day" style={{ padding: '0 10px' }}>
-                  <CalendarOutlined />
-                </Radio.Button>
-              </Tooltip>
-              <Tooltip title="Xem theo Tuần (Weekly - Thứ 2 đến Chủ Nhật)">
-                <Radio.Button value="week" style={{ padding: '0 10px' }}>
-                  <ScheduleOutlined />
-                </Radio.Button>
-              </Tooltip>
-              <Tooltip title="Xem theo Tháng (Monthly)">
-                <Radio.Button value="month" style={{ padding: '0 10px' }}>
-                  <ClockCircleOutlined />
-                </Radio.Button>
-              </Tooltip>
-            </Radio.Group>
 
-            <Space.Compact size="small">
-              <Button icon={<LeftOutlined />} onClick={data.handlePrevDate} />
-              <DatePicker
-                value={data.selectedDate}
-                onChange={(date) => {
-                  if (date) {
-                    data.setSelectedDate(date);
-                    localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
-                  }
-                }}
-                picker={data.dateRangeMode === 'month' ? 'month' : undefined}
-                format={(val) => {
-                  if (data.dateRangeMode === 'month') {
-                    return `Tháng ${val.format('MM/YYYY')}`;
-                  }
-                  if (data.dateRangeMode === 'week') {
-                    const start = val.startOf('isoWeek');
-                    const end = val.endOf('isoWeek');
-                    return `Tuần ${val.isoWeek()} (${start.format('DD/MM')} - ${end.format('DD/MM/YYYY')})`;
-                  }
-                  return val.format('DD/MM/YYYY');
-                }}
-                allowClear={false}
-                suffixIcon={<CalendarOutlined />}
-                style={{
-                  width: data.dateRangeMode === 'week' ? '235px' : data.dateRangeMode === 'month' ? '135px' : '130px',
-                  fontWeight: 600,
-                  textAlign: 'center',
-                }}
-              />
-              <Button icon={<RightOutlined />} onClick={data.handleNextDate} />
-            </Space.Compact>
-
-            <Tooltip title="Làm mới dữ liệu">
-              <Button
-                type="default"
-                size="small"
-                icon={<SyncOutlined spin={data.loading || data.silentLoading} />}
-                onClick={data.handleRefresh}
-                style={{
-                  borderColor: themeMode === 'dark' ? '#424242' : '#d9d9d9',
-                  padding: '0 10px',
-                }}
-              />
-            </Tooltip>
+            <IconButton
+              label="Làm mới dữ liệu"
+              icon={RefreshCw}
+              iconClassName={data.loading || data.silentLoading ? 'animate-spin' : ''}
+              onClick={data.handleRefresh}
+              className="today-refresh-action"
+            />
 
             {data.selectedDate?.isSame(dayjs(), 'day') && (
               <>
-                <Divider
-                  type="vertical"
-                  style={{ height: '32px', borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9' }}
+                <ToolbarToggle
+                  className="today-auto-refresh-control"
+                  label={
+                    <span>F5 {data.autoRefresh && <span className="tabular-nums">({data.countdown}s)</span>}</span>
+                  }
+                  aria-label="Bật hoặc tắt tự động làm mới"
+                  checked={data.autoRefresh}
+                  onChange={(checked) => {
+                    data.setAutoRefresh(checked);
+                    localStorage.setItem('today_auto_refresh', String(checked));
+                  }}
                 />
-                <Space size="small">
-                  <Switch
-                    checked={data.autoRefresh}
-                    onChange={(checked) => {
-                      data.setAutoRefresh(checked);
-                      localStorage.setItem('today_auto_refresh', String(checked));
-                    }}
-                    size="small"
-                  />
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      color: data.autoRefresh ? '#52c41a' : token.colorTextDescription,
-                    }}
-                  >
-                    F5{' '}
-                    {data.autoRefresh && (
-                      <span
-                        style={{
-                          fontVariantNumeric: 'tabular-nums',
-                          fontFeatureSettings: '"tnum"',
-                          display: 'inline-block',
-                        }}
-                      >
-                        ({data.countdown}s)
-                      </span>
-                    )}
-                  </span>
-                </Space>
                 {data.autoRefresh && (
                   <Select
-                    size="small"
+                    aria-label="Chu kỳ tự động làm mới"
                     value={data.refreshInterval}
                     onChange={(val) => {
                       data.setRefreshInterval(val);
@@ -257,7 +170,7 @@ export default function TodayDashboard() {
                 )}
               </>
             )}
-          </Space>
+          </div>
         }
       />
 
@@ -277,13 +190,13 @@ export default function TodayDashboard() {
           <Radio.Button value="operations">
             <Space size="small">
               <UnorderedListOutlined />
-              <span style={{ fontWeight: '600' }}>Bảng Vận Hành Operations</span>
+              <span style={{ fontWeight: '600' }}>Bảng Vận Hành</span>
             </Space>
           </Radio.Button>
           <Radio.Button value="calendar">
             <Space size="small">
               <CalendarOutlined style={{ color: mainViewMode === 'calendar' ? '#D4A84B' : undefined }} />
-              <span style={{ fontWeight: '600' }}>Lịch Tổng Quan Calendar Summary</span>
+              <span style={{ fontWeight: '600' }}>Lịch Tổng Quan</span>
             </Space>
           </Radio.Button>
         </Radio.Group>
@@ -358,7 +271,7 @@ export default function TodayDashboard() {
               </Col>
 
               {/* STAFF ATTENDANCE PANEL */}
-              <Col xs={24} lg={24}>
+              <Col xs={24} lg={24} className="today-secondary-mobile-hidden">
                 <Card
                   title={
                     <div
@@ -379,37 +292,31 @@ export default function TodayDashboard() {
 
                       <Space size="middle">
                         <Select
+                          aria-label="Chi nhánh theo dõi"
                           value={data.shopBranch}
                           onChange={(val) => {
                             data.setShopBranch(val);
                             localStorage.setItem('today_shop_branch', val);
                           }}
                           options={[
-                            { value: 'all', label: 'Tất cả chi nhánh' },
-                            { value: 'detham', label: 'Chi nhánh Đề Thám' },
-                            { value: 'estella', label: 'Chi nhánh Estella Place' },
+                            { value: 'all', label: 'Tất cả' },
+                            { value: 'detham', label: 'Đề Thám' },
+                            { value: 'estella', label: 'Estella Place' },
                           ]}
 
                           style={{ width: '200px' }}
                         />
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Thuế (VAT):</span>
-                          <Radio.Group
-                            value={data.showTax ? 'inc' : 'exc'}
-                            onChange={(e) => {
-                              const val = e.target.value === 'inc';
-                              data.setShowTax(val);
-                              localStorage.setItem('today_show_tax', String(val));
-                            }}
-                            optionType="button"
-                            buttonStyle="solid"
-                            size="small"
-                          >
-                            <Radio.Button value="inc">Sau thuế (VAT)</Radio.Button>
-                            <Radio.Button value="exc">Trước thuế</Radio.Button>
-                          </Radio.Group>
-                        </div>
+                        <ToolbarToggle
+                          className="today-vat-toggle"
+                          label="VAT"
+                          aria-label="Hiển thị doanh thu sau thuế VAT"
+                          checked={data.showTax}
+                          onChange={(checked) => {
+                            data.setShowTax(checked);
+                            localStorage.setItem('today_show_tax', String(checked));
+                          }}
+                        />
                       </Space>
                     </div>
                   }
@@ -440,14 +347,12 @@ export default function TodayDashboard() {
                             border: `1px solid ${token.colorBorderSecondary}`,
                           }}
                         >
-                          <span style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                            Doanh Thu Dịch Vụ Lẻ
-                          </span>
+                          <span style={{ fontSize: '11px', color: token.colorTextDescription }}>Doanh Thu Single</span>
                           <div
                             className="tabular-nums font-mono"
                             style={{ fontSize: '20px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}
                           >
-                            {data.activeShopData.revLe.toLocaleString('vi-VN')} đ
+                            {data.activeShopData.revLe.toLocaleString('vi-VN')} đ
                           </div>
                         </Card>
                       </Col>
@@ -460,12 +365,19 @@ export default function TodayDashboard() {
                             border: `1px solid ${token.colorBorderSecondary}`,
                           }}
                         >
-                          <span style={{ fontSize: '11px', color: '#D4A84B' }}>Doanh Thu Combo (Gói)</span>
+                          <span style={{ fontSize: '11px', color: themeMode === 'dark' ? '#D4A84B' : '#855b0e' }}>
+                            Doanh Thu Combo
+                          </span>
                           <div
                             className="tabular-nums font-mono"
-                            style={{ fontSize: '20px', fontWeight: 'bold', color: '#D4A84B', marginTop: '4px' }}
+                            style={{
+                              fontSize: '20px',
+                              fontWeight: 'bold',
+                              color: themeMode === 'dark' ? '#D4A84B' : '#855b0e',
+                              marginTop: '4px',
+                            }}
                           >
-                            {data.activeShopData.revCombo.toLocaleString('vi-VN')} đ
+                            {data.activeShopData.revCombo.toLocaleString('vi-VN')} đ
                           </div>
                         </Card>
                       </Col>
@@ -478,12 +390,19 @@ export default function TodayDashboard() {
                             border: `1px solid ${token.colorBorderSecondary}`,
                           }}
                         >
-                          <span style={{ fontSize: '11px', color: '#52c41a' }}>Doanh Thu Sản Phẩm</span>
+                          <span style={{ fontSize: '11px', color: themeMode === 'dark' ? '#52c41a' : '#15803d' }}>
+                            Doanh Thu Sản Phẩm
+                          </span>
                           <div
                             className="tabular-nums font-mono"
-                            style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a', marginTop: '4px' }}
+                            style={{
+                              fontSize: '20px',
+                              fontWeight: 'bold',
+                              color: themeMode === 'dark' ? '#52c41a' : '#15803d',
+                              marginTop: '4px',
+                            }}
                           >
-                            {data.activeShopData.revProduct.toLocaleString('vi-VN')} đ
+                            {data.activeShopData.revProduct.toLocaleString('vi-VN')} đ
                           </div>
                         </Card>
                       </Col>
@@ -496,12 +415,25 @@ export default function TodayDashboard() {
                             border: `1px solid ${token.colorBorderSecondary}`,
                           }}
                         >
-                          <span style={{ fontSize: '11px', color: '#1890ff', fontWeight: 'bold' }}>Tổng Doanh Thu</span>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              color: themeMode === 'dark' ? '#60a5fa' : '#1d4ed8',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            ∑ Doanh Thu
+                          </span>
                           <div
                             className="tabular-nums font-mono"
-                            style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff', marginTop: '4px' }}
+                            style={{
+                              fontSize: '20px',
+                              fontWeight: 'bold',
+                              color: themeMode === 'dark' ? '#60a5fa' : '#1d4ed8',
+                              marginTop: '4px',
+                            }}
                           >
-                            {activeShopTotalRevenue.toLocaleString('vi-VN')} đ
+                            {activeShopTotalRevenue.toLocaleString('vi-VN')} đ
                           </div>
                         </Card>
                       </Col>
@@ -559,7 +491,7 @@ export default function TodayDashboard() {
         }
         .light-theme .antd-custom-table .ant-table-thead > tr > th {
           background: #f8fafc !important;
-          color: #9e7118 !important;
+          color: #855b0e !important;
           border-bottom: 1px solid #e2e8f0 !important;
         }
         .dark-theme .antd-custom-table .ant-table-tbody > tr > td {
@@ -575,14 +507,6 @@ export default function TodayDashboard() {
           background: #f1f5f9 !important;
         }
 
-        /* Gold highlights for both light/dark */
-        .antd-custom-table .ant-pagination-item-active {
-          border-color: #d4a84b !important;
-        }
-        .antd-custom-table .ant-pagination-item-active a {
-          color: #d4a84b !important;
-        }
-
         /* Compact line height & padding */
         .antd-custom-table .ant-table-tbody > tr > td {
           padding: 6px 8px !important;
@@ -591,6 +515,26 @@ export default function TodayDashboard() {
         .antd-custom-table .ant-table-thead > tr > th {
           padding: 8px 8px !important;
           line-height: 1.25 !important;
+        }
+
+        .today-page .today-table-config-button {
+          align-items: center;
+          display: inline-flex;
+          height: 32px;
+          justify-content: center;
+          min-width: 32px;
+          padding: 0;
+          width: 32px;
+        }
+
+        .today-page .today-auto-refresh-control,
+        .today-page .today-vat-toggle {
+          align-items: center;
+          min-height: var(--mos-control-height);
+        }
+
+        .today-page .today-auto-refresh-control .toolbar-toggle-label {
+          color: ${data.autoRefresh ? (themeMode === 'dark' ? '#52c41a' : '#15803d') : token.colorTextDescription};
         }
       `}</style>
     </div>

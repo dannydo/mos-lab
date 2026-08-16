@@ -12,9 +12,20 @@ export interface StatePanelProps {
   description?: React.ReactNode;
   extra?: React.ReactNode;
   minHeight?: number;
+  /** Set false when this state is already inside a SectionCard or ContentSurface. */
+  surface?: boolean;
+  className?: string;
 }
 
-export function StatePanel({ kind, title, description, extra, minHeight = 240 }: StatePanelProps) {
+export function StatePanel({
+  kind,
+  title,
+  description,
+  extra,
+  minHeight = 240,
+  surface = true,
+  className = '',
+}: StatePanelProps) {
   const { token } = theme.useToken();
   const content =
     kind === 'loading' ? (
@@ -25,16 +36,16 @@ export function StatePanel({ kind, title, description, extra, minHeight = 240 }:
       <Empty description={description || title || 'Chưa có dữ liệu'} />
     );
 
-  return (
-    <ContentSurface>
-      <div
-        className="flex items-center justify-center text-center"
-        style={{ minHeight, color: token.colorTextSecondary }}
-      >
-        {content}
-      </div>
-    </ContentSurface>
+  const panel = (
+    <div
+      className={`state-panel flex items-center justify-center text-center ${className}`.trim()}
+      style={{ minHeight, color: token.colorTextSecondary }}
+    >
+      {content}
+    </div>
   );
+
+  return surface ? <ContentSurface>{panel}</ContentSurface> : panel;
 }
 
 export default React.memo(StatePanel);

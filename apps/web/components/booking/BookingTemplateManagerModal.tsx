@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, Table, Button, Tag, Input, Select, Form, Popconfirm, message, Space, Card, Tooltip } from 'antd';
+import { Button, Tag, Input, Select, Form, Popconfirm, message, Space, Card, Tooltip } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
@@ -13,6 +13,8 @@ import {
 import { BookingConfirmationTemplate, BOOKING_TEMPLATE_TAGS } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
+import { AdaptiveModal } from '../ui/AdaptiveOverlay';
+import { DataTable } from '../ui/DataTable';
 
 const { TextArea } = Input;
 
@@ -217,7 +219,9 @@ export const BookingTemplateManagerModal: React.FC<BookingTemplateManagerModalPr
   ];
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="data"
+      className="booking-template-manager-modal"
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#D4A84B' }}>
           <SettingOutlined />
@@ -231,7 +235,6 @@ export const BookingTemplateManagerModal: React.FC<BookingTemplateManagerModalPr
           Đóng
         </Button>,
       ]}
-      width={840}
       styles={{
         body: {
           background: themeMode === 'dark' ? '#141414' : '#f9fafb',
@@ -241,7 +244,10 @@ export const BookingTemplateManagerModal: React.FC<BookingTemplateManagerModalPr
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {/* Actions header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          className="booking-template-manager-actions"
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -263,7 +269,7 @@ export const BookingTemplateManagerModal: React.FC<BookingTemplateManagerModalPr
         </div>
 
         {/* Table of templates */}
-        <Table
+        <DataTable
           dataSource={templates}
           columns={columns}
           rowKey="id"
@@ -271,6 +277,33 @@ export const BookingTemplateManagerModal: React.FC<BookingTemplateManagerModalPr
           pagination={false}
           size="small"
           bordered
+          columnPriority={{ title: 'primary', type: 'secondary', content: 'secondary', action: 'primary' }}
+          mobileRenderer={(record) => (
+            <div className="booking-template-mobile-card">
+              <div>
+                <strong>{record.title}</strong>
+                <div>{renderTypeTag(record.type)}</div>
+              </div>
+              <p>{record.content}</p>
+              <Space>
+                <Button size="small" icon={<EditOutlined />} onClick={() => handleOpenEdit(record)}>
+                  Sửa
+                </Button>
+                <Popconfirm
+                  title="Xóa mẫu tin nhắn"
+                  onConfirm={() => handleDelete(record.id)}
+                  okText="Xóa"
+                  cancelText="Hủy"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button size="small" danger icon={<DeleteOutlined />}>
+                    Xóa
+                  </Button>
+                </Popconfirm>
+              </Space>
+            </div>
+          )}
+          mobileRecordKey={(record) => record.id}
         />
 
         {/* Edit / Create Form Card */}
@@ -300,7 +333,10 @@ export const BookingTemplateManagerModal: React.FC<BookingTemplateManagerModalPr
                 label="Quy tắc tự động kích hoạt mẫu"
                 rules={[{ required: true, message: 'Vui lòng chọn điều kiện' }]}
               >
-                <Select options={TYPE_OPTIONS} />
+                <Select
+                  options={TYPE_OPTIONS}
+                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                />
               </Form.Item>
 
               <Form.Item label="Chèn nhanh thẻ biến động">
@@ -344,6 +380,6 @@ export const BookingTemplateManagerModal: React.FC<BookingTemplateManagerModalPr
           </Card>
         )}
       </div>
-    </Modal>
+    </AdaptiveModal>
   );
 };

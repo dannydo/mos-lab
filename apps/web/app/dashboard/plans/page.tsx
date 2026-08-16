@@ -3,7 +3,6 @@
 import '../../suppress-warnings';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  Table,
   Button,
   Card,
   Typography,
@@ -43,6 +42,7 @@ import { useOmiCall } from '../../../context/OmiCallContext';
 import { Customer, CustomerWeeklyProgress, BucketType } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
+import { DataTable } from '../../../components/ui';
 
 const { Title, Text } = Typography;
 
@@ -551,7 +551,7 @@ export default function PlansPage() {
   };
 
   return (
-    <div>
+    <div className="responsive-page responsive-workspace plans-page">
       <div className="flex justify-between items-center mb-6">
         <div>
           <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
@@ -615,7 +615,7 @@ export default function PlansPage() {
         </div>
       </Card>
 
-      <Table
+      <DataTable
         dataSource={weeklyProgress}
         columns={columns}
         rowKey={(record) => record.customer.id.toString()}
@@ -629,6 +629,7 @@ export default function PlansPage() {
           borderRadius: '8px',
         }}
         className="antd-custom-table weekly-grid-table"
+        stickyPrimaryColumn
       />
 
       {/* SUGGESTIONS DRAWER */}

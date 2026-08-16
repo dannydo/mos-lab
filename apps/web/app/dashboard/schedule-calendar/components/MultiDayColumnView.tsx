@@ -43,12 +43,20 @@ interface MultiDayColumnViewProps {
         id: number;
         name: string;
         branchName?: string;
+        branchCode?: string;
         shift?: string;
         bookedCount?: number;
         doneCount?: number;
         avgDurationMinutes?: { normalAvg?: number; retainAvg?: number; removalAvg?: number; overallAvg?: number };
       }>;
-      offStaffList?: Array<{ id: number; name: string; branchName?: string; reason: string; type?: string }>;
+      offStaffList?: Array<{
+        id: number;
+        name: string;
+        branchName?: string;
+        branchCode?: string;
+        reason: string;
+        type?: string;
+      }>;
     }
   >;
   onSelectSlot?: (date: dayjs.Dayjs, hour: string) => void;
@@ -91,8 +99,37 @@ const getAppointmentKey = (appointment: Appointment): string => {
   return String(appointment.id ?? legacyAppointment.orderId ?? fallback);
 };
 
-export function getBranchBadgeInfo(storeId?: number | null, branchName?: string) {
+export function getBranchBadgeInfo(storeId?: number | null, branchName?: string, branchCode?: string | null) {
   const name = branchName || '';
+  const codeFromCatalog = branchCode?.trim().toUpperCase();
+  if (codeFromCatalog) {
+    if (codeFromCatalog === 'PXL' || codeFromCatalog === 'ACADEMY_PXL') {
+      return {
+        code: codeFromCatalog,
+        label: name || codeFromCatalog,
+        bgClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700/60',
+      };
+    }
+    if (codeFromCatalog === 'DT' || codeFromCatalog === 'ACA-DT') {
+      return {
+        code: codeFromCatalog,
+        label: name || codeFromCatalog,
+        bgClass: 'bg-orange-500/15 text-orange-600 dark:text-orange-300 border-orange-300 dark:border-orange-700/60',
+      };
+    }
+    if (codeFromCatalog === 'EP') {
+      return {
+        code: codeFromCatalog,
+        label: name || codeFromCatalog,
+        bgClass: 'bg-purple-500/15 text-purple-600 dark:text-purple-300 border-purple-300 dark:border-purple-700/60',
+      };
+    }
+    return {
+      code: codeFromCatalog,
+      label: name || codeFromCatalog,
+      bgClass: 'bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700/60',
+    };
+  }
   const sId = storeId ? Number(storeId) : 0;
   if (sId === 2 || sId === 9 || name.toLowerCase().includes('phan xích long') || name.toLowerCase().includes('pxl')) {
     return {
@@ -269,10 +306,15 @@ function MultiDayColumnView({
         className="grid gap-3 w-full min-w-[900px]"
         style={{ gridTemplateColumns: `80px repeat(${daysCount}, minmax(0, 1fr))` }}
       >
-        {/* Leftmost Header Column: Time Axis label */}
-        <div className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-end items-center shadow-xs">
-          <ClockCircleOutlined className="text-slate-400 text-lg mb-1" />
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Khung giờ</span>
+        {/* Leftmost Header Column: a compact horizontal time-axis label. */}
+        <div
+          aria-label="Cột khung giờ"
+          className="sticky left-0 z-20 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-2 py-3 text-center shadow-xs dark:border-slate-800 dark:bg-slate-900"
+        >
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+            <ClockCircleOutlined className="text-sm text-emerald-500 dark:text-emerald-400" />
+            <span>Giờ</span>
+          </div>
         </div>
 
         {/* Day Columns Headers */}
@@ -305,7 +347,11 @@ function MultiDayColumnView({
                   >
                     {day.format('dddd')} {isToday && '(Hôm nay)'}
                   </span>
-                  <Tag color={capInfo.color} className="m-0 text-[10px] px-1.5 py-0 border-0 font-medium">
+                  <Tag
+                    color={capInfo.color}
+                    className="m-0 text-[10px] px-1.5 py-0 border-0 font-medium"
+                    style={{ color: '#000000' }}
+                  >
                     {capInfo.label}
                   </Tag>
                 </div>
@@ -336,6 +382,7 @@ function MultiDayColumnView({
                 </div>
                 <Progress
                   percent={Math.min(100, fillPercentage)}
+                  aria-label={`Công suất ${day.format('DD/MM')}: ${fillPercentage}%`}
                   size="small"
                   showInfo={false}
                   strokeColor={capInfo.color}
@@ -360,14 +407,12 @@ function MultiDayColumnView({
 
           return (
             <React.Fragment key={hourStr}>
-              {/* Time Slot Label Column */}
-              <div className="sticky left-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/60 rounded-xl p-2 flex flex-col justify-center items-center font-mono shadow-2xs min-h-[140px] group transition-all">
-                <div className="w-5 h-1 rounded-full bg-emerald-500/70 dark:bg-emerald-400/70 mb-2 group-hover:w-8 transition-all duration-300" />
-                <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold tracking-wider mb-1">
-                  <ClockCircleOutlined className="text-emerald-500 dark:text-emerald-400 text-xs" />
-                  <span>Giờ ca</span>
-                </div>
-                <div className="text-center font-black text-base text-slate-800 dark:text-slate-100 tracking-tight tabular-nums">
+              {/* Only the time repeats for each row; the axis label lives in the header. */}
+              <div
+                aria-label={`Khung giờ ${hourStr}`}
+                className="sticky left-0 z-10 flex min-h-[140px] items-center justify-center rounded-xl border border-slate-200/90 bg-slate-100/90 p-2 font-mono shadow-2xs dark:border-slate-700/60 dark:bg-slate-800/90"
+              >
+                <div className="text-center text-base font-black tracking-tight text-slate-800 tabular-nums dark:text-slate-100">
                   {hourStr}
                 </div>
               </div>
@@ -624,7 +669,7 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
           <div className="flex items-center gap-1 min-w-0 flex-1">
             <span className="font-bold font-mono text-[11px] tabular-nums shrink-0">{timeFormatted}</span>
             {(() => {
-              const branch = getBranchBadgeInfo(appt.storeId, appt.branchName);
+              const branch = getBranchBadgeInfo(appt.storeId, appt.branchName, appt.branchCode);
               return (
                 <span
                   className={`text-[9px] font-extrabold px-1 py-0 rounded border uppercase tracking-tighter shrink-0 ${branch.bgClass}`}
@@ -637,6 +682,7 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
               <Tooltip title={`CV chỉ định: ${appt.technicianName}`}>
                 <Avatar
                   src={appt.technicianAvatar || undefined}
+                  alt=""
                   size={18}
                   className="shrink-0 border border-emerald-500/40 text-[9px] font-bold bg-emerald-600 text-white shadow-2xs"
                 >

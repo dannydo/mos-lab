@@ -511,8 +511,8 @@ export class CcKpiService {
         os.check_out_staff_id,
         checkin_p.full_name AS ccInName,
         checkout_p.full_name AS ccOutName,
-        checkin_p.avatar AS checkinAvatar,
-        checkout_p.avatar AS checkoutAvatar,
+        COALESCE(NULLIF(checkin_p.avatar, ''), NULLIF(checkin_p.avatar_internal, '')) AS checkinAvatar,
+        COALESCE(NULLIF(checkout_p.avatar, ''), NULLIF(checkout_p.avatar_internal, '')) AS checkoutAvatar,
         os.quantity AS lashCount,
         CASE 
             WHEN os.next_fix_order_service_id > 0 THEN 'Fix'
@@ -746,6 +746,8 @@ export class CcKpiService {
             consultantPoints,
             ccInName,
             ccOutName,
+            ccInAvatar: String(row.checkinAvatar || '') || null,
+            ccOutAvatar: String(row.checkoutAvatar || '') || null,
             class: specs.className,
             classPts: Number(sbData.classPts) || specs.classPts,
             fan:

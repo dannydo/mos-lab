@@ -113,7 +113,7 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col span={5}>
           <Card size="small" style={{ background: themeMode === 'dark' ? '#141414' : '#fafafa' }}>
-            <div style={{ fontSize: '12px', color: token.colorTextSecondary }}>Tổng Doanh Thu</div>
+            <div style={{ fontSize: '12px', color: token.colorTextSecondary }}>∑ Doanh Thu</div>
             <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#10b981' }}>
               {formatVnd(summary.totalRevenue)}
             </div>
@@ -153,7 +153,7 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
         summary={() => (
           <Table.Summary.Row>
             <Table.Summary.Cell index={0} colSpan={4}>
-              <strong style={{ float: 'right' }}>Tổng cộng ({transactions.length} đơn):</strong>
+              <strong style={{ float: 'right' }}>Tổng cộng ({transactions.length} đơn):</strong>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={1}>
               <strong style={{ color: '#10b981' }}>{formatVnd(summary.totalRevenue)}</strong>

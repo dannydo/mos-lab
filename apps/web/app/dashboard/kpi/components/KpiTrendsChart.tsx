@@ -35,6 +35,10 @@ function TooltipTitle({ title, children }: { title: string; children: React.Reac
 
 export default function KpiTrendsChart({ trends }: KpiTrendsChartProps) {
   const { token } = theme.useToken();
+  const hasTrendData = trends.some((trend) => trend.planned > 0 || trend.called > 0);
+  const maxValue = Math.max(...trends.map((trend) => Math.max(trend.planned, trend.called, 0)), 1);
+  const labelEvery = trends.length > 21 ? 3 : trends.length > 14 ? 2 : 1;
+  const barWidth = trends.length > 21 ? 5 : trends.length > 14 ? 7 : 10;
 
   return (
     <Card
@@ -46,35 +50,37 @@ export default function KpiTrendsChart({ trends }: KpiTrendsChartProps) {
       variant="outlined"
       style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary, height: '400px' }}
     >
-      {trends.length === 0 ? (
-        <div className="flex justify-center items-center h-64 text-secondary">Không có dữ liệu xu hướng</div>
+      {!hasTrendData ? (
+        <div className="flex flex-col justify-center items-center h-64 gap-1 text-center">
+          <span style={{ color: token.colorTextSecondary }}>Chưa có dữ liệu xu hướng trong kỳ này</span>
+          <span style={{ color: token.colorTextDescription, fontSize: 12 }}>
+            Dữ liệu sẽ hiển thị khi có cuộc gọi hoặc lịch hẹn được ghi nhận.
+          </span>
+        </div>
       ) : (
         <div className="flex flex-col h-64 justify-end pt-4">
           {/* Visual custom bar graphs */}
           <div
-            className="flex justify-around items-end h-48 w-full px-2"
+            className="kpi-trends-bars flex justify-between items-end h-48 w-full px-2 gap-px"
             style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
           >
-            {trends.map((t) => {
-              const maxVal = Math.max(...trends.map((d) => Math.max(d.planned, d.called, 1)));
-              const plannedHeight = (t.planned / maxVal) * 100;
-              const calledHeight = (t.called / maxVal) * 100;
+            {trends.map((t, index) => {
+              const plannedHeight = (t.planned / maxValue) * 100;
+              const calledHeight = (t.called / maxValue) * 100;
               const dateLabel = dayjs(t.date).format('DD/MM');
+              const showDateLabel = index % labelEvery === 0 || index === trends.length - 1;
 
               return (
-                <div
-                  key={t.date}
-                  className="flex flex-col items-center flex-1 group relative"
-                  style={{ maxWidth: '60px' }}
-                >
+                <div key={t.date} className="kpi-trends-day flex min-w-0 flex-1 flex-col items-center group relative">
                   {/* Bars Container */}
-                  <div className="flex items-end justify-center w-full gap-1 h-32 mb-2">
+                  <div className="flex items-end justify-center w-full gap-0.5 h-32 mb-2">
                     {/* Planned Bar (Gold) */}
                     <TooltipTitle title={`Kế hoạch: ${t.planned}`}>
                       <div
-                        className="w-3 rounded-t-sm transition-all duration-300 group-hover:opacity-80"
+                        className="rounded-t-sm transition-all duration-300 group-hover:opacity-80"
                         style={{
-                          height: `${Math.max(plannedHeight, 2)}%`,
+                          width: `${barWidth}px`,
+                          height: `${plannedHeight}%`,
                           background: 'linear-gradient(to top, #D4A84B, #FFEC3D)',
                         }}
                       />
@@ -83,16 +89,28 @@ export default function KpiTrendsChart({ trends }: KpiTrendsChartProps) {
                     {/* Called Bar (Blue) */}
                     <TooltipTitle title={`Thực tế gọi: ${t.called}`}>
                       <div
-                        className="w-3 rounded-t-sm transition-all duration-300 group-hover:opacity-80"
+                        className="rounded-t-sm transition-all duration-300 group-hover:opacity-80"
                         style={{
-                          height: `${Math.max(calledHeight, 2)}%`,
+                          width: `${barWidth}px`,
+                          height: `${calledHeight}%`,
                           background: 'linear-gradient(to top, #1890FF, #40A9FF)',
                         }}
                       />
                     </TooltipTitle>
                   </div>
                   {/* X-axis Label */}
-                  <span style={{ fontSize: '10px', color: token.colorTextDescription }}>{dateLabel}</span>
+                  <span
+                    aria-hidden={!showDateLabel}
+                    style={{
+                      color: token.colorTextDescription,
+                      fontSize: 10,
+                      lineHeight: '14px',
+                      visibility: showDateLabel ? 'visible' : 'hidden',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {dateLabel}
+                  </span>
                 </div>
               );
             })}

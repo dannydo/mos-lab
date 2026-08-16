@@ -275,7 +275,7 @@ export function CvSpeedTab() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="cv-speed-tab flex flex-col gap-6">
       {/* SECTION 1: OVERVIEW SPEED MATRIX */}
       <CvSpeedMatrixSection
         matrixData={matrixData}

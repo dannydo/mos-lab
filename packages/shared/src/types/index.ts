@@ -1,4 +1,5 @@
 export * from './allocation.js';
+export * from './api.js';
 export * from './auth.js';
 export * from './bk.js';
 export * from './call.js';
@@ -12,6 +13,7 @@ export * from './cs.js';
 export * from './customer.js';
 export * from './cv.js';
 export * from './cv-speed.js';
+export * from './dashboard.js';
 export * from './kpi.js';
 export * from './omicall.js';
 export * from './plan.js';

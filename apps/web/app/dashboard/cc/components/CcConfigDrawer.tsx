@@ -139,7 +139,7 @@ export default function CcConfigDrawer({ open, onClose, onSaveSuccess }: CcConfi
           </Checkbox>
 
           <Badge
-            count={`${selectedCcIds.length} / ${allStaff.length} được chọn`}
+            count={`${selectedCcIds.length} / ${allStaff.length} được chọn`}
             style={{ backgroundColor: '#52c41a' }}
           />
         </div>

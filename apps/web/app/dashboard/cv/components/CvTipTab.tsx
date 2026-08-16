@@ -16,6 +16,7 @@ import {
   Segmented,
   Typography,
   Tooltip,
+  Modal,
 } from 'antd';
 import {
   DollarOutlined,
@@ -30,9 +31,12 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CvTipLeaderboardEntry, CvTipRecord, removeVietnameseTones } from '@mos-lab/shared';
+import { CvTipCustomerVisit, CvTipLeaderboardEntry, CvTipRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { formatCompactVND, formatVND } from '../../../../lib/format-utils';
 import CcAvatar from '../../cc/components/CcAvatar';
+import { MobileRecordList } from '~/components/ui';
+import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 const { Text } = Typography;
 
@@ -61,6 +65,8 @@ export default function CvTipTab({
   onSelectConsultant,
 }: CvTipTabProps) {
   const { token } = theme.useToken();
+  const tier = useResponsiveTier();
+  const isMobile = tier === 'mobile';
 
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<CvTipLeaderboardEntry[]>([]);
@@ -70,6 +76,15 @@ export default function CvTipTab({
   const [tipFilter, setTipFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
+  const [tipHistoryOpen, setTipHistoryOpen] = useState(false);
+  const [tipHistoryLoading, setTipHistoryLoading] = useState(false);
+  const [tipHistoryFilter, setTipHistoryFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
+  const [tipHistoryRecords, setTipHistoryRecords] = useState<CvTipRecord[]>([]);
+  const [customerHistoryOpen, setCustomerHistoryOpen] = useState(false);
+  const [customerHistoryLoading, setCustomerHistoryLoading] = useState(false);
+  const [customerHistoryName, setCustomerHistoryName] = useState('');
+  const [customerHistoryRecords, setCustomerHistoryRecords] = useState<CvTipCustomerVisit[]>([]);
+  const [customerHistoryFilter, setCustomerHistoryFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
 
   const [summary, setSummary] = useState({
     totalCvTipBonus: 0,
@@ -144,6 +159,50 @@ export default function CvTipTab({
     fetchData();
   }, [fetchData]);
 
+  const openTipHistory = React.useCallback(async () => {
+    setTipHistoryOpen(true);
+    setTipHistoryFilter('ALL');
+    setTipHistoryLoading(true);
+
+    try {
+      const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD');
+      const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD');
+      const response = await apiClient.kpi.getCvTipRecords({
+        dateFrom,
+        dateTo,
+        storeId: selectedStore,
+        consultantId: selectedCvName || parentSelectedConsultant,
+        tipFilter: 'ALL',
+        limit: 3000,
+      });
+      setTipHistoryRecords(response.data || []);
+    } catch (error) {
+      console.error('Error fetching CV Tip history:', error);
+      setTipHistoryRecords([]);
+    } finally {
+      setTipHistoryLoading(false);
+    }
+  }, [dateRange, parentSelectedConsultant, selectedCvName, selectedStore]);
+
+  const openCustomerHistory = React.useCallback(async (record: CvTipRecord) => {
+    if (!record.clientId) return;
+
+    setCustomerHistoryName(record.clientName || 'Khách hàng');
+    setCustomerHistoryOpen(true);
+    setCustomerHistoryFilter('ALL');
+    setCustomerHistoryLoading(true);
+
+    try {
+      const response = await apiClient.kpi.getCvTipCustomerHistory({ clientId: record.clientId });
+      setCustomerHistoryRecords(response.data || []);
+    } catch (error) {
+      console.error('Error fetching CV tip customer history:', error);
+      setCustomerHistoryRecords([]);
+    } finally {
+      setCustomerHistoryLoading(false);
+    }
+  }, []);
+
   const filteredRecords = React.useMemo(() => {
     if (!searchText) return records;
     const q = removeVietnameseTones(searchText);
@@ -154,6 +213,20 @@ export default function CvTipTab({
         removeVietnameseTones(r.serviceName).includes(q)
     );
   }, [records, searchText]);
+
+  const visibleTipHistoryRecords = React.useMemo(() => {
+    if (tipHistoryFilter === 'TIPPED') return tipHistoryRecords.filter((record) => record.tipStatus === 'Tipped');
+    if (tipHistoryFilter === 'NO_TIP') return tipHistoryRecords.filter((record) => record.tipStatus === 'No Tip');
+    return tipHistoryRecords;
+  }, [tipHistoryFilter, tipHistoryRecords]);
+
+  const visibleCustomerHistoryRecords = React.useMemo(() => {
+    if (customerHistoryFilter === 'TIPPED')
+      return customerHistoryRecords.filter((record) => record.tipStatus === 'Tipped');
+    if (customerHistoryFilter === 'NO_TIP')
+      return customerHistoryRecords.filter((record) => record.tipStatus === 'No Tip');
+    return customerHistoryRecords;
+  }, [customerHistoryFilter, customerHistoryRecords]);
 
   const leaderboardColumns = [
     {
@@ -257,7 +330,7 @@ export default function CvTipTab({
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-semibold text-purple-400 text-xs">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
@@ -268,7 +341,7 @@ export default function CvTipTab({
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-bold text-emerald-400 text-sm">
-          +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+          +{Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
@@ -276,38 +349,58 @@ export default function CvTipTab({
 
   const recordColumns = [
     {
-      title: 'Thời Gian Check-in',
+      title: 'Check-in',
       dataIndex: 'checkinTime',
       key: 'checkinTime',
-      width: 140,
-      render: (val: string) => <span className="tabular-nums text-xs text-slate-400 font-medium">{val}</span>,
+      width: 112,
+      render: (val: string) => {
+        const checkin = dayjs(val);
+        if (!checkin.isValid()) {
+          return <span className="tabular-nums text-xs text-slate-400 font-medium">{val}</span>;
+        }
+
+        return (
+          <div className="tabular-nums leading-4">
+            <div className="text-xs font-medium text-slate-300">{checkin.format('DD/MM/YYYY')}</div>
+            <div className="text-[11px] text-slate-500">{checkin.format('HH:mm')}</div>
+          </div>
+        );
+      },
     },
     {
       title: 'Chuyên Viên (CV)',
       dataIndex: 'techName',
       key: 'techName',
-      width: 160,
+      width: 148,
       render: (text: string, record: CvTipRecord) => (
-        <Space size={6} className="whitespace-nowrap">
+        <div className="flex items-center gap-2 whitespace-nowrap">
           <CcAvatar name={text} src={record.avatar} size={24} />
           <span className="font-semibold text-xs text-amber-400 whitespace-nowrap">{text}</span>
-        </Space>
+        </div>
       ),
     },
     {
       title: 'Khách Hàng',
       dataIndex: 'clientName',
       key: 'clientName',
-      width: 130,
-      render: (val: string) => <span className="font-semibold text-xs text-sky-400">{val || 'Khách Vãng Lai'}</span>,
-    },
-    {
-      title: 'Chi Nhánh',
-      dataIndex: 'store',
-      key: 'store',
-      width: 80,
-      render: (val: string) => (
-        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>
+      width: 158,
+      render: (val: string, record: CvTipRecord) => (
+        <div className="flex min-w-0 flex-col items-start gap-0.5">
+          <div className="flex min-w-0 items-center gap-1 whitespace-nowrap">
+            <span className="truncate font-semibold text-xs text-sky-400">{val || 'Khách Vãng Lai'}</span>
+            <span className="shrink-0 text-xs font-medium text-slate-400">· {formatStoreCode(record.store)}</span>
+          </div>
+          {record.clientId > 0 && (
+            <button
+              type="button"
+              onClick={() => openCustomerHistory(record)}
+              className="tabular-nums text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+              aria-label={`Xem ${record.clientTippedVisits || 0} trên ${record.clientTotalVisits || 0} lượt ghé của ${val || 'khách hàng'}`}
+            >
+              {record.clientTippedVisits || 0}/{record.clientTotalVisits || 0} lần tip
+            </button>
+          )}
+        </div>
       ),
     },
     {
@@ -318,41 +411,26 @@ export default function CvTipTab({
       render: (val: string) => <span className="font-medium text-slate-600 dark:text-slate-300 text-xs">{val}</span>,
     },
     {
-      title: 'Trạng Thái',
-      dataIndex: 'tipStatus',
-      key: 'tipStatus',
-      align: 'center' as const,
-      width: 110,
-      render: (status: 'Tipped' | 'No Tip') => (
-        <Tag
-          color={status === 'Tipped' ? 'success' : 'default'}
-          className="font-semibold text-xs py-0 px-2 rounded-full m-0"
-        >
-          {status === 'Tipped' ? '🟢 Có Tip' : '⚪ Không Tip'}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Tip Khách Cho (100%)',
+      title: '∑ Tip',
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
       align: 'right' as const,
       width: 120,
       render: (val: number) => (
         <span className="tabular-nums font-semibold text-purple-400 text-xs">
-          {val > 0 ? `${val.toLocaleString('vi-VN')} đ` : '0 đ'}
+          {val > 0 ? `${val.toLocaleString('vi-VN')} đ` : '0 đ'}
         </span>
       ),
     },
     {
-      title: 'Thưởng CV Tip',
+      title: 'CV Share',
       dataIndex: 'cvTipAmount',
       key: 'cvTipAmount',
       align: 'right' as const,
       width: 130,
       render: (val: number) => (
         <span className={`tabular-nums font-bold text-xs ${val > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-          {val > 0 ? `+${val.toLocaleString('vi-VN')} đ` : '0 đ'}
+          {val > 0 ? `+${val.toLocaleString('vi-VN')} đ` : '0 đ'}
         </span>
       ),
     },
@@ -361,42 +439,34 @@ export default function CvTipTab({
   return (
     <div className="flex flex-col gap-4">
       {/* Top 4 KPI Metric Cards */}
-      <Row gutter={[16, 16]} className="mb-4">
-        <Col xs={24} sm={12} lg={6}>
+      <Row gutter={[12, 12]} className="mb-4 cv-tip-stat-grid">
+        <Col xs={12} sm={12} lg={6}>
           <Card className="shadow-lg border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent">
             <Statistic
               title={
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
-                  Tổng Thưởng CV Tip
-                </span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">∑ Thưởng CV Tip</span>
               }
               value={summary.totalCvTipBonus}
               prefix={<GiftOutlined className="text-amber-500 mr-2" />}
-              suffix="đ"
               formatter={(val) => (
                 <span className="tabular-nums font-bold text-2xl text-amber-400">
-                  {Number(val).toLocaleString('vi-VN')}
+                  {isMobile ? formatCompactVND(Number(val)) : formatVND(Number(val))}
                 </span>
               )}
             />
-            <div className="text-[11px] text-gray-400 mt-2">Thực nhận 70% tiền tip từ khách cho</div>
+            <div className="text-[11px] text-gray-400 mt-2">Thực nhận 70% tiền tip từ khách</div>
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card className="shadow-lg border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-transparent">
             <Statistic
-              title={
-                <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">
-                  Tổng Tiền Tip Khách Cho (100%)
-                </span>
-              }
+              title={<span className="text-xs font-semibold uppercase tracking-wider text-purple-400">∑ Tip</span>}
               value={summary.totalCustomerTip}
               prefix={<DollarOutlined className="text-purple-500 mr-2" />}
-              suffix="đ"
               formatter={(val) => (
                 <span className="tabular-nums font-bold text-2xl text-purple-400">
-                  {Number(val).toLocaleString('vi-VN')}
+                  {isMobile ? formatCompactVND(Number(val)) : formatVND(Number(val))}
                 </span>
               )}
             />
@@ -404,41 +474,39 @@ export default function CvTipTab({
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card className="shadow-lg border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-transparent">
             <Statistic
-              title={
-                <span className="text-xs font-semibold uppercase tracking-wider text-cyan-400">
-                  Tỷ Lệ Khách Nhận Tip
-                </span>
-              }
+              title={<span className="text-xs font-semibold uppercase tracking-wider text-cyan-400">% Tip</span>}
               value={summary.avgTipRatePercent}
               prefix={<PercentageOutlined className="text-cyan-500 mr-2" />}
-              suffix="%"
               formatter={(val) => <span className="tabular-nums font-bold text-2xl text-cyan-400">{val}%</span>}
             />
             <div className="text-[11px] text-gray-400 mt-2">Tỷ lệ chốt tip trên tổng lượt khách phục vụ</div>
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card className="shadow-lg border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-transparent">
             <Statistic
               title={
-                <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">
-                  Lượt Khách Có Tip vs Không Tip
-                </span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">Lượt Tip / Khách</span>
               }
               value={summary.totalTippedVisits}
               prefix={<UserOutlined className="text-blue-500 mr-2" />}
-              suffix={`/ ${summary.totalVisits} lượt`}
+              suffix={`/ ${summary.totalVisits}`}
               formatter={(val) => (
-                <span className="tabular-nums font-bold text-2xl text-blue-400">
-                  {val} <span className="text-sm font-medium text-gray-400">lượt tip</span>
-                </span>
+                <button
+                  type="button"
+                  className="tabular-nums font-bold text-2xl text-blue-400 transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+                  onClick={openTipHistory}
+                  aria-label={`Xem ${val} lượt khách đã tip và các lượt không tip`}
+                >
+                  {val}
+                </button>
               )}
             />
-            <div className="text-[11px] text-gray-400 mt-2">Số lượt khách nhận tip / Tổng lượt khách phục vụ</div>
+            <div className="text-[11px] text-gray-400 mt-2">Nhấn vào số để xem tất cả lượt tip và không tip</div>
           </Card>
         </Col>
       </Row>
@@ -475,30 +543,98 @@ export default function CvTipTab({
           )
         }
       >
-        <Table
-          dataSource={leaderboard}
-          columns={leaderboardColumns}
-          rowKey="technicianId"
-          loading={loading || parentLoading}
-          pagination={false}
-          size="small"
-          className="antd-custom-table"
-          onRow={(record) => ({
-            onClick: () => {
-              const name = record.displayName;
-              const newName = selectedCvName === name ? null : name;
-              setSelectedCvName(newName);
-              if (onSelectConsultant) {
-                onSelectConsultant(newName || 'ALL');
+        {isMobile ? (
+          <div className="p-3">
+            <MobileRecordList
+              records={leaderboard}
+              loading={loading || parentLoading}
+              getKey={(record) => String(record.technicianId)}
+              getRecordClassName={(record) =>
+                selectedCvName === record.displayName ? 'responsive-mobile-record-card-selected' : ''
               }
-            },
-          })}
-          rowClassName={(record) =>
-            selectedCvName === record.displayName
-              ? 'bg-amber-500/10 dark:bg-amber-500/20 border-l-4 border-amber-500 font-bold cursor-pointer'
-              : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/60'
-          }
-        />
+              emptyDescription="Chưa có dữ liệu xếp hạng CV Tip"
+              renderRecord={(record) => {
+                const isSelected = selectedCvName === record.displayName;
+                const toggleSelection = () => {
+                  const newName = isSelected ? null : record.displayName;
+                  setSelectedCvName(newName);
+                  onSelectConsultant?.(newName || 'ALL');
+                };
+                return (
+                  <button
+                    type="button"
+                    className="w-full min-w-0 text-left"
+                    aria-pressed={isSelected}
+                    onClick={toggleSelection}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
+                        {record.rank === 1
+                          ? '🥇'
+                          : record.rank === 2
+                            ? '🥈'
+                            : record.rank === 3
+                              ? '🥉'
+                              : `#${record.rank}`}
+                      </span>
+                      <CcAvatar name={record.displayName} src={record.avatar} size={32} isSelected={isSelected} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
+                          {record.displayName}
+                        </div>
+                        <div className="text-xs text-slate-400">{formatStoreCode(record.store)}</div>
+                      </div>
+                      <span className="shrink-0 text-xs text-amber-400">{isSelected ? 'Đang lọc' : 'Xem'}</span>
+                    </div>
+                    <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">Phục vụ</dt>
+                        <dd className="truncate text-sm font-bold tabular-nums text-sky-400">{record.totalVisits}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">Tip</dt>
+                        <dd className="truncate text-sm font-bold tabular-nums text-cyan-400">
+                          {record.tippedVisits} · {record.tipRatePercent}%
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-[10px] text-slate-500">Thưởng</dt>
+                        <dd className="text-sm font-bold tabular-nums text-emerald-400">
+                          +{formatCompactVND(record.totalCvTipBonus || 0)}
+                        </dd>
+                      </div>
+                    </dl>
+                  </button>
+                );
+              }}
+            />
+          </div>
+        ) : (
+          <Table
+            dataSource={leaderboard}
+            columns={leaderboardColumns}
+            rowKey="technicianId"
+            loading={loading || parentLoading}
+            pagination={false}
+            size="small"
+            className="antd-custom-table"
+            onRow={(record) => ({
+              onClick: () => {
+                const name = record.displayName;
+                const newName = selectedCvName === name ? null : name;
+                setSelectedCvName(newName);
+                if (onSelectConsultant) {
+                  onSelectConsultant(newName || 'ALL');
+                }
+              },
+            })}
+            rowClassName={(record) =>
+              selectedCvName === record.displayName
+                ? 'bg-amber-500/10 dark:bg-amber-500/20 border-l-4 border-amber-500 font-bold cursor-pointer'
+                : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/60'
+            }
+          />
+        )}
       </Card>
 
       {/* Detail Customer Tipped & Non-Tipped Serviced Table Card (Stacked Full Width) */}
@@ -569,10 +705,174 @@ export default function CvTipTab({
             },
           }}
           size="small"
-          scroll={{ x: 800 }}
+          scroll={{ x: 680 }}
           className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
         />
       </Card>
+
+      <Modal
+        open={tipHistoryOpen}
+        title="Lịch sử khách tip"
+        onCancel={() => setTipHistoryOpen(false)}
+        footer={null}
+        width={isMobile ? 'calc(100vw - 24px)' : 1040}
+        styles={{ body: { paddingTop: 12 } }}
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <Segmented
+            options={[
+              { label: `Tất cả (${tipHistoryRecords.length})`, value: 'ALL' },
+              {
+                label: `Có tip (${tipHistoryRecords.filter((record) => record.tipStatus === 'Tipped').length})`,
+                value: 'TIPPED',
+              },
+              {
+                label: `Không tip (${tipHistoryRecords.filter((record) => record.tipStatus === 'No Tip').length})`,
+                value: 'NO_TIP',
+              },
+            ]}
+            value={tipHistoryFilter}
+            onChange={(value) => setTipHistoryFilter(value as 'ALL' | 'TIPPED' | 'NO_TIP')}
+          />
+          <Text type="secondary" className="tabular-nums text-xs">
+            {visibleTipHistoryRecords.length} lần phục vụ
+          </Text>
+        </div>
+        <Table
+          dataSource={visibleTipHistoryRecords}
+          columns={[
+            ...recordColumns,
+            {
+              title: 'Trạng thái tip',
+              dataIndex: 'tipStatus',
+              key: 'tipStatus',
+              width: 120,
+              render: (status: CvTipRecord['tipStatus']) => (
+                <Tag color={status === 'Tipped' ? 'green' : 'default'}>
+                  {status === 'Tipped' ? 'Có tip' : 'Không tip'}
+                </Tag>
+              ),
+            },
+          ]}
+          rowKey="serviceId"
+          loading={tipHistoryLoading}
+          pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['20', '50', '100'] }}
+          size="small"
+          scroll={{ x: 940, y: isMobile ? 440 : 480 }}
+          className="antd-custom-table"
+        />
+      </Modal>
+
+      <Modal
+        open={customerHistoryOpen}
+        title={`Lịch sử ghé tiệm — ${customerHistoryName}`}
+        onCancel={() => setCustomerHistoryOpen(false)}
+        footer={null}
+        width={isMobile ? 'calc(100vw - 24px)' : 1120}
+        styles={{ body: { paddingTop: 12 } }}
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <Segmented
+            options={[
+              { label: `Tất cả (${customerHistoryRecords.length})`, value: 'ALL' },
+              {
+                label: `Có tip (${customerHistoryRecords.filter((record) => record.tipStatus === 'Tipped').length})`,
+                value: 'TIPPED',
+              },
+              {
+                label: `Không tip (${customerHistoryRecords.filter((record) => record.tipStatus === 'No Tip').length})`,
+                value: 'NO_TIP',
+              },
+            ]}
+            value={customerHistoryFilter}
+            onChange={(value) => setCustomerHistoryFilter(value as 'ALL' | 'TIPPED' | 'NO_TIP')}
+          />
+          <Text type="secondary" className="tabular-nums text-xs">
+            {visibleCustomerHistoryRecords.length} lượt ghé
+          </Text>
+        </div>
+        <Table
+          dataSource={visibleCustomerHistoryRecords}
+          columns={[
+            {
+              title: 'Ngày ghé',
+              dataIndex: 'checkinTime',
+              key: 'checkinTime',
+              width: 128,
+              render: (value: string) => {
+                const checkin = dayjs(value);
+                return checkin.isValid() ? (
+                  <div className="tabular-nums leading-4">
+                    <div className="text-xs font-medium text-slate-200">{checkin.format('DD/MM/YYYY')}</div>
+                    <div className="text-[11px] text-slate-500">{checkin.format('HH:mm')}</div>
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-400">{value || '-'}</span>
+                );
+              },
+            },
+            {
+              title: 'Bộ mi',
+              dataIndex: 'lashSets',
+              key: 'lashSets',
+              width: 200,
+              render: (value: string) => <span className="text-xs text-amber-400">{value || '-'}</span>,
+            },
+            {
+              title: 'CV',
+              dataIndex: 'cvNames',
+              key: 'cvNames',
+              width: 150,
+              render: (value: string) => <span className="text-xs font-medium text-slate-200">{value || '-'}</span>,
+            },
+            {
+              title: 'CC',
+              key: 'consultants',
+              width: 180,
+              render: (_: unknown, record: CvTipCustomerVisit) => {
+                const names = [record.ccInName, record.ccOutName].filter(Boolean);
+                return <span className="text-xs text-slate-300">{names.length ? names.join(' / ') : '-'}</span>;
+              },
+            },
+            {
+              title: 'BK',
+              dataIndex: 'bookerName',
+              key: 'bookerName',
+              width: 150,
+              render: (value: string) => <span className="text-xs text-slate-300">{value || '-'}</span>,
+            },
+            {
+              title: '∑ Tip',
+              dataIndex: 'totalCustomerTip',
+              key: 'totalCustomerTip',
+              align: 'right' as const,
+              width: 116,
+              render: (value: number) => (
+                <span className="tabular-nums text-xs font-semibold text-purple-400">
+                  {value > 0 ? `${value.toLocaleString('vi-VN')} đ` : '0 đ'}
+                </span>
+              ),
+            },
+            {
+              title: 'Tip',
+              dataIndex: 'tipStatus',
+              key: 'tipStatus',
+              width: 100,
+              render: (status: CvTipCustomerVisit['tipStatus']) => (
+                <Tag color={status === 'Tipped' ? 'green' : 'default'}>
+                  {status === 'Tipped' ? 'Có tip' : 'Không tip'}
+                </Tag>
+              ),
+            },
+          ]}
+          rowKey="orderId"
+          loading={customerHistoryLoading}
+          pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['20', '50', '100'] }}
+          size="small"
+          scroll={{ x: 980, y: isMobile ? 440 : 480 }}
+          className="antd-custom-table"
+        />
+      </Modal>
     </div>
   );
 }

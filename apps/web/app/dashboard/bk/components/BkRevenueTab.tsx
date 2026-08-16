@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
 import {
@@ -277,7 +279,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
 
   const detailColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 50,
       align: 'center' as const,
@@ -374,7 +376,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Tổng Doanh Thu Tạo Book</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Doanh Thu Tạo Book</span>}
               value={summary.totalRevenue}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#4f46e5', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -388,7 +390,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Tổng Thưởng Hoa Hồng BK</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Hoa Hồng BK</span>}
               value={summary.totalCommissionBonus}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#9333ea', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -404,7 +406,13 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
         leaderboard={leaderboard}
         loading={loading}
         columns={columns}
+        selectedBooker={selectedBookerId || undefined}
         onSelectBooker={(bId) => handleSelectBooker(bId)}
+        mobileMetrics={(record) => [
+          { label: 'Đơn done', value: record.completedOrdersCount ?? 0, tone: 'accent' },
+          { label: 'Doanh thu', value: formatCurrency(record.totalRevenue ?? 0), tone: 'accent' },
+          { label: 'Hoa hồng', value: formatCurrency(record.totalCommissionBonus ?? 0), tone: 'success' },
+        ]}
         extraSummary={
           <Text type="secondary" className="text-xs flex items-center gap-1">
             <InfoCircleOutlined className="text-amber-500" />
@@ -485,7 +493,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
             defaultPageSize: 50,
             pageSizeOptions: ['20', '50', '100', '200'],
             showSizeChanger: true,
-            showTotal: (total) => `Tổng cộng ${total} đơn hàng phát sinh doanh thu`,
+            showTotal: (total) => `Tổng cộng ${total} đơn hàng phát sinh doanh thu`,
           }}
           size="small"
           scroll={{ x: 'max-content' }}

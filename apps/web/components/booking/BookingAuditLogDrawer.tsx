@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Drawer, Timeline, Tag, Spin, Empty, Card, Badge } from 'antd';
+import { Timeline, Tag, Spin, Empty, Card, Badge } from 'antd';
 import { HistoryOutlined, WarningOutlined, UserOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../lib/api-client';
 import { BookingAuditLog } from '@mos-lab/shared';
+import { AdaptiveDrawer } from '../ui/AdaptiveOverlay';
 
 export interface BookingAuditLogDrawerProps {
   open: boolean;
@@ -48,7 +49,9 @@ export const BookingAuditLogDrawer: React.FC<BookingAuditLogDrawerProps> = ({ op
   const isDark = themeMode === 'dark';
 
   return (
-    <Drawer
+    <AdaptiveDrawer
+      intent="detail"
+      className="booking-audit-log-drawer"
       open={open}
       onClose={onClose}
       title={
@@ -57,7 +60,6 @@ export const BookingAuditLogDrawer: React.FC<BookingAuditLogDrawerProps> = ({ op
           <span>Lịch Sử Thao Tác & Truy Vết {orderKey ? `(${orderKey})` : `#${orderId}`}</span>
         </div>
       }
-      width={480}
     >
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center' }}>
@@ -178,6 +180,6 @@ export const BookingAuditLogDrawer: React.FC<BookingAuditLogDrawerProps> = ({ op
           })}
         />
       )}
-    </Drawer>
+    </AdaptiveDrawer>
   );
 };

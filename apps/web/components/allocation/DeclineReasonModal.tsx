@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, Select, Input, Button, message } from 'antd';
+import { Select, Input, Button, message } from 'antd';
 import { PRESET_DECLINE_REASONS } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
+import { AdaptiveModal } from '../ui/AdaptiveOverlay';
 
 interface DeclineReasonModalProps {
   open: boolean;
@@ -37,7 +38,8 @@ export const DeclineReasonModal: React.FC<DeclineReasonModalProps> = ({
   };
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="confirm"
       title={
         <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-semibold text-lg">
           <span>⚠️</span>
@@ -54,7 +56,7 @@ export const DeclineReasonModal: React.FC<DeclineReasonModalProps> = ({
           Xác nhận Từ chối
         </Button>,
       ]}
-      className={themeMode === 'dark' ? 'dark-theme-modal' : ''}
+      className={`allocation-decline-modal ${themeMode === 'dark' ? 'dark-theme-modal' : ''}`}
     >
       <div className="py-2 space-y-4">
         <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -94,6 +96,6 @@ export const DeclineReasonModal: React.FC<DeclineReasonModalProps> = ({
           </div>
         )}
       </div>
-    </Modal>
+    </AdaptiveModal>
   );
 };

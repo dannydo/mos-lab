@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Tabs,
-  Table,
   Card,
   Badge,
   Tag,
@@ -24,7 +23,6 @@ import {
   InputNumber,
   Popconfirm,
   Tooltip,
-  DatePicker,
 } from 'antd';
 import {
   ShopOutlined,
@@ -36,20 +34,24 @@ import {
   EditOutlined,
   DeleteOutlined,
   TrophyOutlined,
-  LeftOutlined,
-  RightOutlined,
-  CalendarOutlined,
-  ScheduleOutlined,
   ClockCircleOutlined,
-  ReloadOutlined,
-  FilterOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
+import { RotateCcw, ShoppingBag } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
-import { PageHeader } from '../../../components/ui';
+import {
+  AppIcon,
+  DataTable,
+  FeatureToolbar,
+  IconButton,
+  PageHeader,
+  ReportPeriodNavigator,
+  SearchField,
+  ToolbarToggle,
+} from '../../../components/ui';
 import CatalogReportHeader from './components/CatalogReportHeader';
 import CatalogLeaderboardCard from './components/CatalogLeaderboardCard';
 import CatalogItemDetailPanel from './components/CatalogItemDetailPanel';
@@ -57,6 +59,7 @@ import CatalogComboLiveTab from './components/CatalogComboLiveTab';
 import CatalogBenchmarkTab from './components/CatalogBenchmarkTab';
 import CatalogBranchTab from './components/CatalogBranchTab';
 import { ServiceDeactivateConfirmModal } from './components/ServiceDeactivateConfirmModal';
+import catalogStyles from './catalog.module.css';
 
 import {
   CatalogService,
@@ -143,6 +146,8 @@ const getLashStyleTagColor = (style?: string) => {
 
 export type CatalogViewMode = 'month' | 'week' | 'day';
 export type CatalogFilterItemType = 'all' | 'service' | 'combo' | 'product';
+
+const getLastPage = (total: number, pageSize: number) => Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -265,7 +270,6 @@ export default function CatalogPage() {
     return 'month';
   });
   const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [reportItemType, setReportItemType] = useState<CatalogFilterItemType>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('catalog_report_item_type');
@@ -359,24 +363,31 @@ export default function CatalogPage() {
     setViewMode(mode);
     setLeaderboardPage(1);
     localStorage.setItem('catalog_view_mode', mode);
+    localStorage.setItem('catalog_leaderboard_page', '1');
   };
 
   const handleReportItemTypeChange = (type: CatalogFilterItemType) => {
     setReportItemType(type);
     setLeaderboardPage(1);
     localStorage.setItem('catalog_report_item_type', type);
+    localStorage.setItem('catalog_leaderboard_page', '1');
   };
 
   const handleReportSearchChange = (val: string) => {
     setReportSearch(val);
     setLeaderboardPage(1);
     localStorage.setItem('catalog_report_search', val);
+    localStorage.setItem('catalog_leaderboard_page', '1');
   };
 
   const handleLeaderboardPageChange = (page: number, pageSize: number) => {
-    setLeaderboardPage(page);
+    // Changing the visible rows per page changes the page boundary. Always
+    // return to page one so the controlled state, range label, and data rows
+    // cannot briefly describe different slices of the leaderboard.
+    const nextPage = pageSize === leaderboardPageSize ? page : 1;
+    setLeaderboardPage(nextPage);
     setLeaderboardPageSize(pageSize);
-    localStorage.setItem('catalog_leaderboard_page', String(page));
+    localStorage.setItem('catalog_leaderboard_page', String(nextPage));
     localStorage.setItem('catalog_leaderboard_pageSize', String(pageSize));
   };
 
@@ -474,6 +485,8 @@ export default function CatalogPage() {
   };
 
   const handleNavigateDate = (direction: number) => {
+    setLeaderboardPage(1);
+    localStorage.setItem('catalog_leaderboard_page', '1');
     if (viewMode === 'month') {
       setReferenceDate((prev) => prev.add(direction, 'month'));
     } else if (viewMode === 'week') {
@@ -486,6 +499,8 @@ export default function CatalogPage() {
   const handleToday = () => {
     setReferenceDate(dayjs());
     setViewMode('month');
+    setLeaderboardPage(1);
+    localStorage.setItem('catalog_leaderboard_page', '1');
   };
 
   const fetchReportSummary = async () => {
@@ -532,6 +547,17 @@ export default function CatalogPage() {
   useEffect(() => {
     fetchReportSummary();
   }, [viewMode, referenceDate, reportItemType, reportSearch]);
+
+  // A saved page can become invalid when a report filter or date range makes
+  // the leaderboard shorter. Clamp it immediately to keep the table rows and
+  // its footer range in lockstep.
+  useEffect(() => {
+    const lastPage = getLastPage(reportSummary?.leaderboard.length ?? 0, leaderboardPageSize);
+    if (leaderboardPage <= lastPage) return;
+
+    setLeaderboardPage(lastPage);
+    localStorage.setItem('catalog_leaderboard_page', String(lastPage));
+  }, [leaderboardPage, leaderboardPageSize, reportSummary?.leaderboard.length]);
 
   useEffect(() => {
     if (selectedLeaderboardItem) {
@@ -1343,134 +1369,55 @@ export default function CatalogPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Page Header (CC Dashboard Style) */}
+    <div className={`responsive-page responsive-workspace catalog-page ${catalogStyles.page}`}>
       <PageHeader
         title="Quản lý Catalog"
         subtitle="Báo cáo doanh số & Quản lý danh mục Dịch vụ, Gói Combo, và Sản phẩm"
-        icon={<ShopOutlined />}
+        icon={<AppIcon icon={ShoppingBag} size="lg" />}
+        className={catalogStyles.header}
         extra={
-          <Space wrap size={8}>
-            {/* View Mode Switcher: Minimalist Icons + Tooltips */}
-            <Space.Compact>
-              <Tooltip title="Xem theo Tháng">
-                <Button
-                  type={viewMode === 'month' ? 'primary' : 'default'}
-                  icon={<CalendarOutlined />}
-                  onClick={() => handleViewModeChange('month')}
-                />
-              </Tooltip>
-              <Tooltip title="Xem theo Tuần">
-                <Button
-                  type={viewMode === 'week' ? 'primary' : 'default'}
-                  icon={<ScheduleOutlined />}
-                  onClick={() => handleViewModeChange('week')}
-                />
-              </Tooltip>
-              <Tooltip title="Xem theo Ngày">
-                <Button
-                  type={viewMode === 'day' ? 'primary' : 'default'}
-                  icon={<ClockCircleOutlined />}
-                  onClick={() => handleViewModeChange('day')}
-                />
-              </Tooltip>
-            </Space.Compact>
+          <div className={catalogStyles.reportControls}>
+            <ReportPeriodNavigator
+              mode={viewMode}
+              value={referenceDate}
+              label={getPeriodLabel()}
+              onModeChange={handleViewModeChange}
+              onPrevious={() => handleNavigateDate(-1)}
+              onNext={() => handleNavigateDate(1)}
+              onValueChange={(date) => {
+                setReferenceDate(date);
+                setLeaderboardPage(1);
+                localStorage.setItem('catalog_leaderboard_page', '1');
+              }}
+            />
+            <IconButton label="Quay về kỳ hiện tại" icon={RotateCcw} onClick={handleToday} />
 
-            {/* Date Navigation & Selector Pill (CC Style Image 2) */}
-            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/60 flex items-center shadow-sm">
-              <Tooltip title="Kỳ trước">
-                <Button
-                  type="text"
-                  icon={<LeftOutlined className="text-slate-600 dark:text-slate-300" />}
-                  onClick={() => handleNavigateDate(-1)}
-                  className="hover:bg-slate-200/60 dark:hover:bg-slate-800"
-                />
-              </Tooltip>
-              <Tooltip title="Bấm để chọn ngày trực tiếp">
-                <Button
-                  type="text"
-                  icon={<CalendarOutlined className="text-amber-600 dark:text-amber-400" />}
-                  onClick={() => setPickerOpen(true)}
-                  className="font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800"
-                >
-                  {getPeriodLabel()}
-                </Button>
-              </Tooltip>
-              <Tooltip title="Kỳ sau">
-                <Button
-                  type="text"
-                  icon={<RightOutlined className="text-slate-600 dark:text-slate-300" />}
-                  onClick={() => handleNavigateDate(1)}
-                  className="hover:bg-slate-200/60 dark:hover:bg-slate-800"
-                />
-              </Tooltip>
-            </div>
-
-            {/* Today Button: Minimalist Icon + Tooltip */}
-            <Tooltip title="Quay về Hôm nay">
-              <Button
-                size="middle"
-                type="default"
-                icon={<ReloadOutlined />}
-                onClick={handleToday}
-                className="text-amber-600 dark:text-amber-400 border-slate-200 dark:border-amber-500/30 hover:border-amber-500 bg-white dark:bg-transparent shadow-sm"
-              />
-            </Tooltip>
-
-            {/* Hidden DatePicker for direct date picking */}
-            {pickerOpen && (
-              <DatePicker
-                open={true}
-                onOpenChange={(open) => {
-                  if (!open) setPickerOpen(false);
-                }}
-                picker={viewMode === 'month' ? 'month' : viewMode === 'week' ? 'week' : 'date'}
-                onChange={(val) => {
-                  if (val) {
-                    setReferenceDate(val);
-                    setPickerOpen(false);
-                  }
-                }}
-                style={{
-                  position: 'absolute',
-                  width: 0,
-                  height: 0,
-                  padding: 0,
-                  border: 'none',
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
-
-            {/* Filter Item Type for Report Tab */}
             {activeTab === 'report' && (
-              <Select
-                value={reportItemType}
-                onChange={(val) => handleReportItemTypeChange(val as CatalogFilterItemType)}
-                style={{ width: 130 }}
-                options={[
-                  { value: 'all', label: 'Tất cả loại' },
-                  { value: 'service', label: 'Dịch vụ' },
-                  { value: 'combo', label: 'Gói Combo' },
-                  { value: 'product', label: 'Sản phẩm' },
-                ]}
-              />
+              <div className={catalogStyles.reportFilters}>
+                <Select
+                  aria-label="Lọc loại dữ liệu báo cáo"
+                  className={catalogStyles.reportTypeSelect}
+                  value={reportItemType}
+                  onChange={(val) => handleReportItemTypeChange(val as CatalogFilterItemType)}
+                  options={[
+                    { value: 'all', label: 'Tất cả loại' },
+                    { value: 'service', label: 'Dịch vụ' },
+                    { value: 'combo', label: 'Gói Combo' },
+                    { value: 'product', label: 'Sản phẩm' },
+                  ]}
+                />
+                <SearchField
+                  behavior="filter"
+                  aria-label="Tìm dữ liệu báo cáo"
+                  className={catalogStyles.reportSearch}
+                  placeholder="Tìm kiếm..."
+                  value={reportSearch}
+                  onChange={(event) => handleReportSearchChange(event.target.value)}
+                  allowClear
+                />
+              </div>
             )}
 
-            {/* Search Input for Report Tab */}
-            {activeTab === 'report' && (
-              <Input
-                placeholder="Tìm kiếm..."
-                prefix={<SearchOutlined className="text-slate-400" />}
-                value={reportSearch}
-                onChange={(e) => handleReportSearchChange(e.target.value)}
-                allowClear
-                style={{ width: 150 }}
-              />
-            )}
-
-            {/* Action Buttons for Catalog Admin: Minimalist Icon + Tooltip */}
             {isCatalogAdmin && activeTab === 'services' && (
               <Tooltip title="Thêm dịch vụ mới">
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenServiceDrawer()} />
@@ -1491,7 +1438,7 @@ export default function CatalogPage() {
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => openBranchCreateRef.current?.()} />
               </Tooltip>
             )}
-          </Space>
+          </div>
         }
       />
 
@@ -1509,8 +1456,7 @@ export default function CatalogPage() {
       <Card
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-        styles={{ body: { padding: '12px 16px 16px 16px' } }}
-        className="shadow-sm rounded-xl dashboard-main-tabs-card"
+        className={`shadow-sm rounded-xl dashboard-main-tabs-card ${catalogStyles.tabsCard}`}
       >
         <Tabs
           activeKey={activeTab}
@@ -1528,7 +1474,7 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className="p-4 space-y-4">
+                <div className={`${catalogStyles.tabPane} space-y-4`}>
                   <CatalogReportHeader summary={reportSummary} loading={loadingReport} />
                   <CatalogLeaderboardCard
                     leaderboard={reportSummary?.leaderboard || []}
@@ -1572,10 +1518,11 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className="p-4 space-y-4">
+                <div className={`${catalogStyles.tabPane} space-y-4`}>
                   <div className="flex flex-col sm:flex-row justify-between gap-4">
                     <Space wrap align="center">
                       <Input
+                        aria-label="Tìm dịch vụ"
                         placeholder="Tìm dịch vụ..."
                         prefix={<SearchOutlined />}
                         value={serviceSearch}
@@ -1588,6 +1535,7 @@ export default function CatalogPage() {
                         allowClear
                       />
                       <Select
+                        aria-label="Lọc nhóm dịch vụ"
                         value={serviceGroupFilter}
                         onChange={(val) => {
                           setServiceGroupFilter(val);
@@ -1604,6 +1552,7 @@ export default function CatalogPage() {
                         ]}
                       />
                       <Select
+                        aria-label="Lọc loại dịch vụ"
                         value={serviceTypeFilter}
                         onChange={(val) => {
                           setServiceTypeFilter(val);
@@ -1624,6 +1573,7 @@ export default function CatalogPage() {
                           Chỉ hiện mục đã ẩn:
                         </Text>
                         <Switch
+                          aria-label="Chỉ hiện dịch vụ đã ẩn"
                           checked={showDisabled}
                           onChange={(checked) => {
                             handleShowDisabledChange(checked);
@@ -1635,7 +1585,7 @@ export default function CatalogPage() {
                     </Space>
                   </div>
 
-                  <Table
+                  <DataTable
                     rowKey="id"
                     columns={serviceColumns}
                     dataSource={services
@@ -1664,7 +1614,7 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className="p-4 space-y-4">
+                <div className={`${catalogStyles.tabPane} space-y-4`}>
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <Space wrap align="center">
                       <Text type="secondary">Danh sách tất cả các gói dịch vụ combo mua trước nhiều lượt</Text>
@@ -1684,7 +1634,7 @@ export default function CatalogPage() {
                     </Space>
                   </div>
 
-                  <Table
+                  <DataTable
                     rowKey="id"
                     columns={comboColumns}
                     dataSource={combos.filter((c) => (showDisabled ? c.isDisabled : !c.isDisabled))}
@@ -1711,7 +1661,7 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className="p-4 space-y-4">
+                <div className={`${catalogStyles.tabPane} space-y-4`}>
                   <CatalogComboLiveTab />
                 </div>
               ),
@@ -1725,38 +1675,40 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className="p-4 space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between gap-4">
-                    <Space wrap align="center">
-                      <Input
-                        placeholder="Tìm sản phẩm SKU hoặc tên..."
-                        prefix={<SearchOutlined />}
+                <div className={`${catalogStyles.tabPane} ${catalogStyles.tabContent}`}>
+                  <FeatureToolbar
+                    primary={
+                      <SearchField
+                        behavior="filter"
+                        aria-label="Tìm sản phẩm"
+                        className={catalogStyles.listSearch}
+                        placeholder="Tìm SKU hoặc tên sản phẩm..."
                         value={productSearch}
-                        onChange={(e) => {
-                          setProductSearch(e.target.value);
+                        onChange={(event) => {
+                          setProductSearch(event.target.value);
                           setProductPage(1);
                           localStorage.setItem('catalog_product_page', '1');
                         }}
-                        style={{ width: 260 }}
                         allowClear
                       />
-                      <Space className="ml-2">
-                        <Text type="secondary" style={{ fontSize: '13px' }}>
-                          Chỉ hiện mục đã ẩn:
-                        </Text>
-                        <Switch
-                          checked={showDisabled}
-                          onChange={(checked) => {
-                            handleShowDisabledChange(checked);
-                            setProductPage(1);
-                          }}
-                          size="small"
-                        />
-                      </Space>
-                    </Space>
-                  </div>
+                    }
+                    filters={
+                      <ToolbarToggle
+                        label="Chỉ hiện mục đã ẩn"
+                        aria-label="Chỉ hiện sản phẩm đã ẩn"
+                        checked={showDisabled}
+                        onChange={(checked) => {
+                          handleShowDisabledChange(checked);
+                          setProductPage(1);
+                        }}
+                      />
+                    }
+                    filterTitle="Lọc sản phẩm"
+                    filterTriggerLabel="Mở bộ lọc sản phẩm"
+                    activeFilterCount={showDisabled ? 1 : 0}
+                  />
 
-                  <Table
+                  <DataTable
                     rowKey="id"
                     columns={productColumns}
                     dataSource={products.filter((p) => (showDisabled ? p.isDisabled : !p.isDisabled))}
@@ -1783,7 +1735,7 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className="p-4">
+                <div className={catalogStyles.tabPane}>
                   <CatalogBenchmarkTab />
                 </div>
               ),
@@ -1797,7 +1749,7 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className="p-4">
+                <div className={catalogStyles.tabPane}>
                   <CatalogBranchTab
                     onRegisterCreate={(fn) => {
                       openBranchCreateRef.current = fn;

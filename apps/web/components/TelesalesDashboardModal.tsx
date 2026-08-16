@@ -8,6 +8,7 @@ import TelesalesConfigPanel from './telesales/components/TelesalesConfigPanel';
 import { TelesalesFrontFace } from './telesales/components/TelesalesFrontFace';
 import { TelesalesBackFace } from './telesales/components/TelesalesBackFace';
 import { metricConfigs, periods } from './telesales/components/TelesalesConstants';
+import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
 interface TelesalesDashboardModalProps {
   visible: boolean;
@@ -21,6 +22,10 @@ export default function TelesalesDashboardModal({
   initialMemberId = 'TN',
 }: TelesalesDashboardModalProps) {
   const { themeMode } = useTheme();
+  const responsiveTier = useResponsiveTier();
+  const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
+  const minimumDesktopWidth =
+    responsiveTier === 'uhd' ? 1280 : responsiveTier === 'wide' ? 1200 : responsiveTier === 'fhd' ? 1040 : 780;
   const modalContainerRef = useRef<HTMLDivElement | null>(null);
 
   const {
@@ -81,6 +86,11 @@ export default function TelesalesDashboardModal({
     onError: (msg) => message.error(msg),
   });
 
+  const desktopModalWidth =
+    typeof modalSize?.width === 'number' && Number.isFinite(modalSize.width)
+      ? Math.max(modalSize.width, minimumDesktopWidth)
+      : undefined;
+
   useEffect(() => {
     if (!visible) return;
     const container = modalContainerRef.current;
@@ -126,7 +136,7 @@ export default function TelesalesDashboardModal({
 
   return (
     <div
-      className="fixed inset-0 z-[1010] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300"
+      className="telesales-dashboard-modal fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all duration-300"
       style={{
         position: 'fixed',
         top: 0,
@@ -135,35 +145,35 @@ export default function TelesalesDashboardModal({
         left: 0,
         width: '100vw',
         height: '100vh',
-        zIndex: 1010,
+        zIndex: 1000,
         backgroundColor: 'rgba(0, 0, 0, 0.65)',
         WebkitBackdropFilter: 'blur(4px)',
         backdropFilter: 'blur(4px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px',
+        padding: isCompact ? 0 : '16px',
         boxSizing: 'border-box',
       }}
       onClick={onClose}
     >
       <div
         ref={modalContainerRef}
-        className={`relative transition-transform duration-500 ${
+        className={`telesales-dashboard-container ${isCompact ? 'telesales-dashboard-compact' : ''} relative transition-transform duration-500 ${
           modalSize ? '' : 'w-full max-w-[780px] h-[92vh] min-h-[820px] max-h-[920px]'
         }`}
         style={{
           position: 'relative',
           WebkitPerspective: '1500px',
           perspective: '1500px',
-          resize: 'both',
+          resize: isCompact ? 'none' : 'both',
           overflow: 'hidden',
-          minWidth: '600px',
-          minHeight: '780px',
-          maxWidth: '95vw',
-          maxHeight: '95vh',
-          width: modalSize ? modalSize.width : undefined,
-          height: modalSize ? modalSize.height : undefined,
+          minWidth: isCompact ? 0 : '600px',
+          minHeight: isCompact ? 0 : '780px',
+          maxWidth: isCompact ? '100vw' : '95vw',
+          maxHeight: isCompact ? '100dvh' : '95vh',
+          width: isCompact ? '100vw' : desktopModalWidth,
+          height: isCompact ? '100dvh' : modalSize ? modalSize.height : undefined,
         }}
         onClick={(e) => e.stopPropagation()}
       >

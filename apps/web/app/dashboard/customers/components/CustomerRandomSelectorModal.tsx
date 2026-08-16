@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Checkbox, Input, Modal, Tag, theme } from 'antd';
+import { Button, Checkbox, Input, Tag, theme } from 'antd';
+import { AdaptiveModal } from '../../../../components/ui';
 
 export interface CustomerRandomSelectorModalProps {
   open: boolean;
@@ -36,7 +37,9 @@ export function CustomerRandomSelectorModal({
   const { token } = theme.useToken();
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="confirm"
+      className="customer-random-selector-overlay"
       title={<span style={{ color: token.colorText, fontSize: 18, fontWeight: 700 }}>Chọn ngẫu nhiên khách hàng</span>}
       open={open}
       onCancel={onCancel}
@@ -110,7 +113,7 @@ export function CustomerRandomSelectorModal({
           </Checkbox>
         </div>
       </div>
-    </Modal>
+    </AdaptiveModal>
   );
 }
 

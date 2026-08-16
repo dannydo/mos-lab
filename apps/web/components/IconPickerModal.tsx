@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Modal, Input, theme, Tabs } from 'antd';
+import { Input, theme, Tabs } from 'antd';
 import * as Icons from '@ant-design/icons';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { getDynamicLucideIcon, getCustomIconComponent, CUSTOM_ICONS } from './IconSystem';
+import { AdaptiveModal } from './ui/AdaptiveOverlay';
+import { getViewportSize, useResponsiveTier } from '../hooks/useResponsiveTier';
 
 interface IconPickerModalProps {
   open: boolean;
@@ -60,6 +62,8 @@ const IconButton: React.FC<IconButtonProps> = ({ name, isSelected, onSelect, ico
 
 export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose, onSelect, value }) => {
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState<'antd' | 'lucide' | 'emoji' | 'custom'>('antd');
 
@@ -77,18 +81,13 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
       if (savedWidth) setModalWidth(Number(savedWidth));
       if (savedHeight) setModalHeight(Number(savedHeight));
 
-      const updateMaxDimensions = () => {
-        setMaxDimensions({
-          width: Math.max(800, window.innerWidth - 80),
-          height: Math.max(400, window.innerHeight - 260),
-        });
-      };
-
-      updateMaxDimensions();
-      window.addEventListener('resize', updateMaxDimensions);
-      return () => window.removeEventListener('resize', updateMaxDimensions);
+      const viewport = getViewportSize();
+      setMaxDimensions({
+        width: isCompact ? Math.max(320, viewport.width - 24) : Math.max(800, viewport.width - 80),
+        height: isCompact ? Math.max(200, viewport.height - 210) : Math.max(400, viewport.height - 260),
+      });
     }
-  }, []);
+  }, [isCompact, responsiveTier]);
 
   // Determine correct initial tab based on selection value
   useEffect(() => {
@@ -450,12 +449,14 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
         : filteredCustomIcons.length === 0;
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="data"
+      className="icon-picker-modal"
       title="Chọn Icon từ thư viện"
       open={open}
       onCancel={onClose}
       footer={null}
-      width={modalWidth}
+      width={isCompact ? undefined : modalWidth}
       styles={{
         body: {
           padding: '16px 16px 24px 16px',
@@ -488,9 +489,9 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
+          gridTemplateColumns: `repeat(auto-fill, minmax(${isCompact ? 72 : 90}px, 1fr))`,
           gap: '8px',
-          height: `${modalHeight}px`,
+          height: isCompact ? 'calc(100dvh - 198px)' : `${modalHeight}px`,
           overflowY: 'auto',
           padding: '4px',
           border: `1px solid ${token.colorBorder}`,
@@ -634,29 +635,35 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
         )}
       </div>
 
-      {/* Resize Handle */}
-      <div
-        onMouseDown={handleMouseDown}
-        style={{
-          position: 'absolute',
-          right: '4px',
-          bottom: '4px',
-          width: '16px',
-          height: '16px',
-          cursor: 'se-resize',
-          zIndex: 10,
-          color: token.colorTextDescription,
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'flex-end',
-          padding: '2px',
-        }}
-        title="Kéo để thay đổi kích thước bảng"
-      >
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.6, cursor: 'se-resize' }}>
-          <path d="M10 0 L0 10 M10 4 L4 10 M10 8 L8 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      </div>
-    </Modal>
+      {!isCompact && (
+        <div
+          onMouseDown={handleMouseDown}
+          style={{
+            position: 'absolute',
+            right: '4px',
+            bottom: '4px',
+            width: '16px',
+            height: '16px',
+            cursor: 'se-resize',
+            zIndex: 1,
+            color: token.colorTextDescription,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'flex-end',
+            padding: '2px',
+          }}
+          title="Kéo để thay đổi kích thước bảng"
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.6, cursor: 'se-resize' }}>
+            <path
+              d="M10 0 L0 10 M10 4 L4 10 M10 8 L8 10"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      )}
+    </AdaptiveModal>
   );
 };

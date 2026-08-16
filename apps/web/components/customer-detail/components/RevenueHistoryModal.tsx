@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Button, Table, Tag } from 'antd';
+import { Button, Table, Tag } from 'antd';
 import { LineChartOutlined } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatVND } from '../../../lib/format-utils';
+import { AdaptiveModal } from '../../ui';
 
 interface RevenueTransaction {
   id: number;
@@ -288,7 +289,9 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
   };
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="data"
+      className="customer-revenue-history-overlay"
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
           <LineChartOutlined style={{ color: '#D4A84B' }} />
@@ -386,6 +389,6 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
         size="small"
         locale={{ emptyText: 'Không có giao dịch doanh thu nào.' }}
       />
-    </Modal>
+    </AdaptiveModal>
   );
 };

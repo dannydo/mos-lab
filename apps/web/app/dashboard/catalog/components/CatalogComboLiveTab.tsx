@@ -1,177 +1,142 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Card,
-  Table,
-  Input,
-  Tag,
-  Button,
-  Space,
-  Badge,
-  Tooltip,
-  Switch,
-  Statistic,
-  Row,
-  Col,
-  Typography,
-  theme,
-  Spin,
-  Empty,
-} from 'antd';
-import {
-  SearchOutlined,
-  ReloadOutlined,
-  UserOutlined,
-  ClockCircleOutlined,
-  SafetyCertificateOutlined,
-  ThunderboltOutlined,
-  ExclamationCircleOutlined,
-  EyeOutlined,
-  PhoneOutlined,
-} from '@ant-design/icons';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { CalendarClock, CircleAlert, Eye, Phone, RefreshCw, ShieldCheck, UserRound, Users, Zap } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
-import { ComboLiveSummaryItem, ComboLiveOwnerItem, ComboLiveResponse } from '@mos-lab/shared';
-import { useTheme } from '../../../../context/ThemeContext';
+import { ComboLiveOwnerItem, ComboLiveResponse, ComboLiveSummaryItem } from '@mos-lab/shared';
+import {
+  AppIcon,
+  DataSection,
+  DataTable,
+  FeatureToolbar,
+  IconButton,
+  MetricGrid,
+  SearchField,
+  StatePanel,
+  StatusTag,
+  TableIndexHeader,
+  ToolbarToggle,
+} from '~/components/ui';
+import styles from './CatalogComboLiveTab.module.css';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../../components/CustomerDetailDrawer'), { ssr: false });
 
-const { Text, Title } = Typography;
+const EMPTY_META: ComboLiveResponse['meta'] = {
+  totalCombos: 0,
+  totalActiveOwners: 0,
+  totalNormalBalance: 0,
+  totalRetainBalance: 0,
+  totalExpiringSoonOwners: 0,
+};
+
+function formatVnd(value: number) {
+  return `${Math.round(value).toLocaleString('vi-VN')} đ`;
+}
 
 export default function CatalogComboLiveTab() {
-  const { themeMode } = useTheme();
-  const { token } = theme.useToken();
-
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string>();
   const [data, setData] = useState<ComboLiveSummaryItem[]>([]);
-  const [meta, setMeta] = useState<ComboLiveResponse['meta']>({
-    totalCombos: 0,
-    totalActiveOwners: 0,
-    totalNormalBalance: 0,
-    totalRetainBalance: 0,
-    totalExpiringSoonOwners: 0,
+  const [meta, setMeta] = useState<ComboLiveResponse['meta']>(EMPTY_META);
+  const [search, setSearch] = useState('');
+  const [expiringSoon, setExpiringSoon] = useState(false);
+  const [page, setPage] = useState(() => {
+    if (typeof window === 'undefined') return 1;
+    const saved = localStorage.getItem('catalog_combo_live_page');
+    return saved ? parseInt(saved, 10) || 1 : 1;
   });
-
-  const [search, setSearch] = useState<string>('');
-  const [expiringSoon, setExpiringSoon] = useState<boolean>(false);
-
-  // Controlled Pagination State (Rule #24)
-  const [page, setPage] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_combo_live_page');
-      return saved ? parseInt(saved, 10) || 1 : 1;
-    }
-    return 1;
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const saved = localStorage.getItem('catalog_combo_live_pagesize');
+    return saved ? parseInt(saved, 10) || 10 : 10;
   });
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
 
-  const [pageSize, setPageSize] = useState<number>(() => {
+  const persistPage = (nextPage: number, nextPageSize = pageSize) => {
+    setPage(nextPage);
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_combo_live_pagesize');
-      return saved ? parseInt(saved, 10) || 10 : 10;
-    }
-    return 10;
-  });
-
-  const handlePaginationChange = (newPage: number, newPageSize: number) => {
-    setPage(newPage);
-    setPageSize(newPageSize);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('catalog_combo_live_page', String(newPage));
-      localStorage.setItem('catalog_combo_live_pagesize', String(newPageSize));
+      localStorage.setItem('catalog_combo_live_page', String(nextPage));
+      localStorage.setItem('catalog_combo_live_pagesize', String(nextPageSize));
     }
   };
 
-  const handleSearchChange = (val: string) => {
-    setSearch(val);
-    setPage(1);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('catalog_combo_live_page', '1');
-    }
+  const handlePaginationChange = (nextPage: number, nextPageSize: number) => {
+    setPageSize(nextPageSize);
+    persistPage(nextPage, nextPageSize);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    persistPage(1);
   };
 
   const handleExpiringSoonChange = (checked: boolean) => {
     setExpiringSoon(checked);
-    setPage(1);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('catalog_combo_live_page', '1');
-    }
+    persistPage(1);
   };
-
-  // Customer Drawer detail state
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [customerDrawerOpen, setCustomerDrawerOpen] = useState<boolean>(false);
 
   const fetchComboLive = useCallback(async () => {
     setLoading(true);
+    setLoadError(undefined);
     try {
-      const res = await apiClient.catalog.getComboLive({
+      const response = await apiClient.catalog.getComboLive({
         search: search.trim() || undefined,
         expiringSoon: expiringSoon || undefined,
       });
 
-      if (res && res.success) {
-        setData(res.data || []);
-        setMeta(
-          res.meta || {
-            totalCombos: 0,
-            totalActiveOwners: 0,
-            totalNormalBalance: 0,
-            totalRetainBalance: 0,
-            totalExpiringSoonOwners: 0,
-          }
-        );
+      if (response?.success) {
+        setData(response.data || []);
+        setMeta(response.meta || EMPTY_META);
+        return;
       }
-    } catch (err) {
-      console.error('Failed to fetch combo live data:', err);
+
+      setLoadError('Không thể tải dữ liệu Combo Live.');
+    } catch (error) {
+      console.error('Failed to fetch combo live data:', error);
+      setLoadError('Không thể tải dữ liệu Combo Live.');
     } finally {
       setLoading(false);
     }
-  }, [search, expiringSoon]);
+  }, [expiringSoon, search]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchComboLive();
-    }, 300);
-    return () => clearTimeout(timer);
+    const timer = window.setTimeout(() => void fetchComboLive(), 300);
+    return () => window.clearTimeout(timer);
   }, [fetchComboLive]);
 
-  const handleOpenCustomer = (userId: number) => {
+  const handleOpenCustomer = useCallback((userId: number) => {
     setSelectedCustomerId(userId);
     setCustomerDrawerOpen(true);
-  };
+  }, []);
 
-  // ─── Child Table (Expanded Row: List of Owners) ───────────────────────────
-  const renderExpandedRow = (record: ComboLiveSummaryItem) => {
-    const ownerColumns = [
+  const ownerColumns = useMemo<ColumnsType<ComboLiveOwnerItem>>(
+    () => [
       {
-        title: 'STT',
+        title: <TableIndexHeader />,
         key: 'stt',
-        width: 50,
-        align: 'center' as const,
-        render: (_: any, __: any, index: number) => (
-          <span className="tabular-nums text-xs font-semibold text-slate-400 dark:text-slate-400">{index + 1}</span>
-        ),
+        width: 48,
+        align: 'center',
+        render: (_value, _record, index) => <span className={styles.indexCell}>{index + 1}</span>,
       },
       {
         title: 'Khách hàng',
         dataIndex: 'customerName',
         key: 'customerName',
-        render: (text: string, owner: ComboLiveOwnerItem) => (
-          <div
+        render: (name: string, owner) => (
+          <Button
+            type="link"
+            className={styles.customerLink}
+            icon={<AppIcon icon={UserRound} size="disclosure" />}
             onClick={() => handleOpenCustomer(owner.userId)}
-            className="cursor-pointer group inline-flex items-center gap-1.5 transition-all"
-            title={`Bấm để xem hồ sơ chi tiết ${text}`}
           >
-            <UserOutlined className="text-amber-500 group-hover:scale-110 transition-transform" />
-            <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-amber-400 group-hover:underline">
-              {text}
-            </span>
-            <Tag color="blue" className="text-xs font-mono group-hover:border-amber-400">
-              #{owner.userId}
-            </Tag>
-          </div>
+            <span>{name}</span>
+            <StatusTag status="processing" label={`#${owner.userId}`} bordered={false} />
+          </Button>
         ),
       },
       {
@@ -180,64 +145,44 @@ export default function CatalogComboLiveTab() {
         key: 'customerPhone',
         render: (phone?: string) =>
           phone ? (
-            <Space size={4}>
-              <PhoneOutlined className="text-emerald-400 text-xs" />
-              <span className="font-mono tabular-nums text-slate-600 dark:text-slate-300">{phone}</span>
-            </Space>
+            <span className={styles.phoneCell}>
+              <AppIcon icon={Phone} size="disclosure" />
+              <span className="tabular-nums">{phone}</span>
+            </span>
           ) : (
-            <span className="text-slate-500">-</span>
+            '-'
           ),
       },
       {
         title: 'Lượt nối còn',
         dataIndex: 'normalCount',
         key: 'normalCount',
-        align: 'center' as const,
-        render: (count: number) => (
-          <Tag color="emerald" className="font-bold tabular-nums text-sm">
-            {count} lượt
-          </Tag>
-        ),
+        align: 'center',
+        render: (count: number) => <StatusTag status="success" label={`${count} lượt`} />,
       },
       {
         title: 'Lượt dặm còn',
         dataIndex: 'retainCount',
         key: 'retainCount',
-        align: 'center' as const,
-        render: (count: number) => (
-          <Tag color={count > 0 ? 'cyan' : 'default'} className="font-semibold tabular-nums text-xs">
-            {count} lượt
-          </Tag>
-        ),
+        align: 'center',
+        render: (count: number) => <StatusTag status={count > 0 ? 'cyan' : 'default'} label={`${count} lượt`} />,
       },
       {
         title: 'Hạn sử dụng',
         dataIndex: 'dateExpired',
         key: 'dateExpired',
-        render: (_: any, owner: ComboLiveOwnerItem) => {
-          if (!owner.dateExpired) {
-            return <Tag color="green">Vô thời hạn</Tag>;
-          }
-          const formatted = dayjs(owner.dateExpired).format('DD/MM/YYYY');
-          if (owner.isExpiringSoon) {
-            return (
-              <Space size="small">
-                <span className="tabular-nums text-xs text-amber-400 font-semibold">{formatted}</span>
-                <Tag color="error" className="tabular-nums font-bold text-xs">
-                  Còn {owner.daysRemaining ?? 0} ngày
-                </Tag>
-              </Space>
-            );
-          }
+        render: (_value, owner) => {
+          if (!owner.dateExpired) return <StatusTag status="success" label="Vô thời hạn" />;
+
+          const daysRemaining = owner.daysRemaining;
+          const isUrgent = owner.isExpiringSoon;
           return (
-            <Space size="small">
-              <span className="tabular-nums text-xs text-slate-600 dark:text-slate-300">{formatted}</span>
-              {owner.daysRemaining !== null && (
-                <Tag color="success" className="tabular-nums text-xs">
-                  Còn {owner.daysRemaining} ngày
-                </Tag>
+            <span className={styles.expiryCell}>
+              <span className="tabular-nums">{dayjs(owner.dateExpired).format('DD/MM/YYYY')}</span>
+              {daysRemaining !== null && (
+                <StatusTag status={isUrgent ? 'error' : 'success'} label={`Còn ${daysRemaining} ngày`} />
               )}
-            </Space>
+            </span>
           );
         },
       },
@@ -245,291 +190,224 @@ export default function CatalogComboLiveTab() {
         title: 'Ngày mua',
         dataIndex: 'dateCreated',
         key: 'dateCreated',
-        render: (dateStr: string) => (
-          <span className="tabular-nums text-xs text-slate-400 dark:text-slate-400">
-            {dayjs(dateStr).format('DD/MM/YYYY')}
-          </span>
-        ),
+        render: (value: string) => <span className={styles.mutedDate}>{dayjs(value).format('DD/MM/YYYY')}</span>,
       },
       {
         title: 'Thao tác',
         key: 'action',
-        align: 'right' as const,
-        render: (_: any, owner: ComboLiveOwnerItem) => (
+        align: 'right',
+        render: (_value, owner) => (
           <Button
-            type="primary"
-            ghost
-            size="small"
-            icon={<EyeOutlined />}
+            type="text"
+            icon={<AppIcon icon={Eye} size="disclosure" />}
             onClick={() => handleOpenCustomer(owner.userId)}
-            className="hover:scale-105 transition-all text-xs"
           >
             Xem hồ sơ
           </Button>
         ),
       },
-    ];
+    ],
+    [handleOpenCustomer]
+  );
 
-    return (
-      <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/60 shadow-inner my-1">
-        <div className="flex justify-between items-center mb-2 px-1">
-          <Text className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
-            <UserOutlined /> Danh sách {record.owners.length} khách hàng đang giữ gói &quot;{record.comboName}&quot;
-          </Text>
-          {record.expiringSoonOwnerCount > 0 && (
-            <Tag color="warning" icon={<ExclamationCircleOutlined />}>
-              {record.expiringSoonOwnerCount} khách sắp hết hạn (&lt; 30 ngày)
-            </Tag>
-          )}
-        </div>
-        <Table
-          columns={ownerColumns}
-          dataSource={record.owners}
-          rowKey="balanceId"
-          pagination={false}
-          size="small"
-          className="ant-table-dark-custom"
-          style={{ background: 'transparent' }}
-        />
-      </div>
-    );
-  };
+  const mainColumns = useMemo<ColumnsType<ComboLiveSummaryItem>>(
+    () => [
+      {
+        title: 'Tên Gói Combo',
+        dataIndex: 'comboName',
+        key: 'comboName',
+        render: (name: string, record) => (
+          <div className={styles.comboNameCell}>
+            <span>
+              <AppIcon icon={Zap} size="disclosure" />
+              <strong>{name}</strong>
+            </span>
+            {record.packageKey && record.packageKey !== name && (
+              <StatusTag status="purple" label={record.packageKey} bordered={false} />
+            )}
+          </div>
+        ),
+      },
+      {
+        title: 'Giá gói (VNĐ)',
+        dataIndex: 'packagePrice',
+        key: 'packagePrice',
+        align: 'right',
+        render: (value: number) => <strong className={styles.currencyValue}>{formatVnd(value)}</strong>,
+      },
+      {
+        title: 'Khách đang giữ',
+        dataIndex: 'ownerCount',
+        key: 'ownerCount',
+        align: 'center',
+        render: (count: number, record) => (
+          <span className={styles.ownerStatus}>
+            <StatusTag status="gold" label={`${count} khách`} />
+            {record.expiringSoonOwnerCount > 0 && (
+              <StatusTag status="warning" label={`${record.expiringSoonOwnerCount} sắp hết hạn`} />
+            )}
+          </span>
+        ),
+      },
+      {
+        title: 'Lượt nối còn',
+        dataIndex: 'totalNormalBalance',
+        key: 'totalNormalBalance',
+        align: 'center',
+        render: (value: number) => <StatusTag status="success" label={`${value} lượt`} />,
+      },
+      {
+        title: 'Lượt dặm còn',
+        dataIndex: 'totalRetainBalance',
+        key: 'totalRetainBalance',
+        align: 'center',
+        render: (value: number) => <StatusTag status={value > 0 ? 'cyan' : 'default'} label={`${value} lượt`} />,
+      },
+      {
+        title: 'Hạn gói gốc',
+        dataIndex: 'expiryAfterDay',
+        key: 'expiryAfterDay',
+        align: 'center',
+        render: (days: number) => <span className={styles.mutedDate}>{days > 0 ? `${days} ngày` : 'Vô thời hạn'}</span>,
+      },
+    ],
+    []
+  );
 
-  // ─── Main Columns (Grouped Combos) ─────────────────────────────────────────
-  const mainColumns = [
+  const metrics = [
     {
-      title: 'Tên Gói Combo',
-      dataIndex: 'comboName',
-      key: 'comboName',
-      render: (name: string, record: ComboLiveSummaryItem) => (
-        <Space direction="vertical" size={2}>
-          <Space>
-            <ThunderboltOutlined className="text-amber-400 text-base" />
-            <span className="font-bold text-base text-slate-700 dark:text-slate-100">{name}</span>
-          </Space>
-          {record.packageKey && record.packageKey !== name && (
-            <Tag color="purple" className="text-xs font-mono">
-              Key: {record.packageKey}
-            </Tag>
-          )}
-        </Space>
-      ),
+      key: 'combos',
+      title: 'Gói Combo đang dùng',
+      value: meta.totalCombos,
+      format: 'number' as const,
+      icon: <AppIcon icon={Zap} size="md" />,
+      subValue: 'loại gói',
+      loading,
     },
     {
-      title: 'Giá gói (VNĐ)',
-      dataIndex: 'packagePrice',
-      key: 'packagePrice',
-      align: 'right' as const,
-      render: (price: number) => (
-        <span className="font-extrabold text-amber-400 tabular-nums text-sm">
-          {Math.round(price).toLocaleString('vi-VN')} đ
-        </span>
-      ),
+      key: 'owners',
+      title: 'Khách hàng sở hữu',
+      value: meta.totalActiveOwners,
+      format: 'number' as const,
+      icon: <AppIcon icon={Users} size="md" />,
+      subValue: 'khách',
+      loading,
     },
     {
-      title: 'Số khách đang giữ',
-      dataIndex: 'ownerCount',
-      key: 'ownerCount',
-      align: 'center' as const,
-      render: (count: number, record: ComboLiveSummaryItem) => (
-        <Badge
-          count={record.expiringSoonOwnerCount ? `${record.expiringSoonOwnerCount} sắp hết hạn` : 0}
-          offset={[10, 0]}
-          color="#f59e0b"
-        >
-          <Tag color="gold" className="font-bold tabular-nums px-2.5 py-0.5 text-sm">
-            {count} người
-          </Tag>
-        </Badge>
-      ),
+      key: 'normal-balance',
+      title: 'Lượt nối còn',
+      value: meta.totalNormalBalance,
+      format: 'number' as const,
+      icon: <AppIcon icon={ShieldCheck} size="md" />,
+      subValue: 'lượt',
+      loading,
     },
     {
-      title: 'Tổng lượt nối tồn (Normal)',
-      dataIndex: 'totalNormalBalance',
-      key: 'totalNormalBalance',
-      align: 'center' as const,
-      render: (total: number) => (
-        <Tag color="emerald" className="font-extrabold tabular-nums px-2.5 py-0.5 text-sm">
-          {total} lượt
-        </Tag>
-      ),
-    },
-    {
-      title: 'Tổng lượt dặm tồn (Retain)',
-      dataIndex: 'totalRetainBalance',
-      key: 'totalRetainBalance',
-      align: 'center' as const,
-      render: (total: number) => (
-        <Tag color={total > 0 ? 'cyan' : 'default'} className="font-bold tabular-nums px-2 py-0.5 text-xs">
-          {total} lượt
-        </Tag>
-      ),
-    },
-    {
-      title: 'Hạn gói gốc',
-      dataIndex: 'expiryAfterDay',
-      key: 'expiryAfterDay',
-      align: 'center' as const,
-      render: (days: number) => (
-        <span className="tabular-nums text-xs text-slate-600 dark:text-slate-300">
-          {days > 0 ? `${days} ngày` : 'Vô thời hạn'}
-        </span>
-      ),
+      key: 'expiring',
+      title: 'Sắp hết hạn',
+      value: meta.totalExpiringSoonOwners,
+      format: 'number' as const,
+      icon: <AppIcon icon={CalendarClock} size="md" />,
+      subValue: 'khách trong 30 ngày',
+      loading,
     },
   ];
 
-  return (
-    <div className="space-y-4">
-      {/* ─── Metric Overview Cards ────────────────────────────────────────── */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            variant="outlined"
-            className="shadow-sm rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm"
-            styles={{ body: { padding: '16px' } }}
-          >
-            <Statistic
-              title={<span className="text-xs font-medium text-slate-400">Gói Combo đang có khách dùng</span>}
-              value={meta.totalCombos}
-              valueStyle={{ color: '#f59e0b', fontWeight: 800, fontFamily: 'monospace' }}
-              prefix={<ThunderboltOutlined className="text-amber-500 mr-1" />}
-              suffix={<span className="text-xs text-slate-400 ml-1">loại gói</span>}
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            variant="outlined"
-            className="shadow-sm rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm"
-            styles={{ body: { padding: '16px' } }}
-          >
-            <Statistic
-              title={<span className="text-xs font-medium text-slate-400">Tổng số Khách hàng sở hữu</span>}
-              value={meta.totalActiveOwners}
-              valueStyle={{ color: '#38bdf8', fontWeight: 800, fontFamily: 'monospace' }}
-              prefix={<UserOutlined className="text-sky-400 mr-1" />}
-              suffix={<span className="text-xs text-slate-400 ml-1">khách</span>}
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            variant="outlined"
-            className="shadow-sm rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm"
-            styles={{ body: { padding: '16px' } }}
-          >
-            <Statistic
-              title={<span className="text-xs font-medium text-slate-400">Tổng lượt Nối tồn (Normal)</span>}
-              value={meta.totalNormalBalance}
-              valueStyle={{ color: '#34d399', fontWeight: 800, fontFamily: 'monospace' }}
-              prefix={<SafetyCertificateOutlined className="text-emerald-400 mr-1" />}
-              suffix={<span className="text-xs text-slate-400 ml-1">lượt</span>}
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            variant="outlined"
-            className="shadow-sm rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm"
-            styles={{ body: { padding: '16px' } }}
-          >
-            <Statistic
-              title={<span className="text-xs font-medium text-slate-400">Sắp hết hạn (&lt; 30 ngày)</span>}
-              value={meta.totalExpiringSoonOwners}
-              valueStyle={{
-                color: meta.totalExpiringSoonOwners > 0 ? '#ef4444' : '#10b981',
-                fontWeight: 800,
-                fontFamily: 'monospace',
-              }}
-              prefix={
-                <ClockCircleOutlined
-                  className={meta.totalExpiringSoonOwners > 0 ? 'text-red-400 mr-1' : 'text-emerald-400 mr-1'}
-                />
-              }
-              suffix={<span className="text-xs text-slate-400 ml-1">khách</span>}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ─── Toolbar Controls ────────────────────────────────────────────── */}
-      <Card
-        variant="outlined"
-        className="shadow-sm rounded-xl border border-slate-800 bg-slate-900/40"
-        styles={{ body: { padding: '12px 16px' } }}
-      >
-        <div className="flex flex-row items-center gap-3 flex-nowrap overflow-x-auto">
-          <Input
-            placeholder="Tìm theo tên Combo / Khách / SĐT..."
-            prefix={<SearchOutlined className="text-slate-400" />}
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            allowClear
-            style={{ width: 280 }}
-            className="rounded-lg shrink-0"
-          />
-
-          <div className="inline-flex items-center gap-2 bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800 shrink-0 whitespace-nowrap">
-            <Switch checked={expiringSoon} onChange={(checked) => handleExpiringSoonChange(checked)} size="small" />
-            <Text
-              className="text-xs text-slate-600 dark:text-slate-300 font-medium cursor-pointer select-none"
-              onClick={() => handleExpiringSoonChange(!expiringSoon)}
-            >
-              Chỉ hiện Combo sắp hết hạn (&lt; 30 ngày)
-            </Text>
-          </div>
-
-          <Button
-            icon={<ReloadOutlined spin={loading} />}
-            onClick={() => fetchComboLive()}
-            className="rounded-lg shrink-0"
-          >
-            Làm mới
-          </Button>
-        </div>
-      </Card>
-
-      {/* ─── Grouped Combo Table ──────────────────────────────────────────── */}
-      <Card
-        variant="outlined"
-        className="shadow-sm rounded-xl border border-slate-800"
-        styles={{ body: { padding: 0 } }}
-      >
-        {loading ? (
-          <div className="py-16 text-center flex flex-col items-center justify-center gap-3">
-            <Spin size="large" />
-            <span className="text-xs text-slate-400 font-medium">Đang tải dữ liệu Combo Live...</span>
-          </div>
-        ) : data.length === 0 ? (
-          <div className="py-12 text-center">
-            <Empty description="Không tìm thấy dữ liệu Combo Live phù hợp" />
-          </div>
-        ) : (
-          <Table
-            columns={mainColumns}
-            dataSource={data}
-            rowKey={(item) => item.id}
-            expandable={{
-              expandedRowRender: (record) => renderExpandedRow(record),
-              expandRowByClick: true,
-            }}
-            pagination={{
-              current: page,
-              pageSize: pageSize,
-              onChange: handlePaginationChange,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50', '100'],
-              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} loại Combo`,
-            }}
-            className="rounded-xl overflow-hidden"
+  const renderExpandedRow = (record: ComboLiveSummaryItem) => (
+    <div className={styles.expandedRow}>
+      <div className={styles.expandedRowHeader}>
+        <span>
+          <AppIcon icon={Users} size="sm" />
+          Danh sách {record.owners.length} khách đang giữ “{record.comboName}”
+        </span>
+        {record.expiringSoonOwnerCount > 0 && (
+          <StatusTag
+            status="warning"
+            icon={<AppIcon icon={CircleAlert} size="sm" />}
+            label={`${record.expiringSoonOwnerCount} khách sắp hết hạn`}
           />
         )}
-      </Card>
+      </div>
+      <DataTable<ComboLiveOwnerItem>
+        columns={ownerColumns}
+        dataSource={record.owners}
+        rowKey="balanceId"
+        pagination={false}
+        size="small"
+        scroll={{ x: 'max-content' }}
+        className={styles.ownerTable}
+      />
+    </div>
+  );
 
-      {/* ─── Customer Detail Drawer ─────────────────────────────────────── */}
+  return (
+    <div className={styles.page}>
+      <MetricGrid items={metrics} columns={4} className={styles.metricGrid} />
+
+      <FeatureToolbar
+        primary={
+          <SearchField
+            behavior="filter"
+            className={styles.searchField}
+            placeholder="Tìm theo tên Combo, khách hoặc SĐT…"
+            value={search}
+            onChange={(event) => handleSearchChange(event.target.value)}
+            allowClear
+          />
+        }
+        filters={
+          <ToolbarToggle
+            label="Sắp hết hạn trong 30 ngày"
+            aria-label="Chỉ hiện Combo sắp hết hạn trong 30 ngày"
+            checked={expiringSoon}
+            onChange={handleExpiringSoonChange}
+          />
+        }
+        actions={
+          <IconButton
+            label="Làm mới Combo Live"
+            icon={RefreshCw}
+            onClick={() => void fetchComboLive()}
+            loading={loading}
+          />
+        }
+        filterTitle="Lọc Combo Live"
+        filterTriggerLabel="Mở bộ lọc Combo Live"
+        activeFilterCount={expiringSoon ? 1 : 0}
+      />
+
+      <DataSection
+        title={
+          <span className={styles.dataSectionTitle}>
+            <AppIcon icon={Zap} size="sm" />
+            Gói Combo đang được sử dụng
+          </span>
+        }
+        extra={!loading && <StatusTag status="default" label={`${data.length.toLocaleString('vi-VN')} loại gói`} />}
+        state={loading ? 'loading' : loadError ? 'error' : data.length === 0 ? 'empty' : undefined}
+        stateTitle={loadError || (data.length === 0 ? 'Không tìm thấy Combo Live phù hợp' : 'Đang tải Combo Live')}
+        stateDescription={loadError ? 'Hãy thử làm mới dữ liệu hoặc đổi điều kiện tìm kiếm.' : undefined}
+        stateExtra={loadError ? <Button onClick={() => void fetchComboLive()}>Thử lại</Button> : undefined}
+        stateMinHeight={320}
+        bodyPadding={data.length > 0 ? 0 : undefined}
+      >
+        <DataTable<ComboLiveSummaryItem>
+          columns={mainColumns}
+          dataSource={data}
+          rowKey="id"
+          expandable={{ expandedRowRender: renderExpandedRow, expandRowByClick: true }}
+          pagination={{
+            current: page,
+            pageSize,
+            onChange: handlePaginationChange,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} loại Combo`,
+          }}
+          scroll={{ x: 'max-content' }}
+        />
+      </DataSection>
+
       {selectedCustomerId && (
         <CustomerDetailDrawer
           customerId={selectedCustomerId}

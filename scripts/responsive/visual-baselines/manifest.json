@@ -1,0 +1,872 @@
+{
+  "version": 1,
+  "createdAt": "2026-08-13T23:59:45.998Z",
+  "browser": "chromium",
+  "mode": "update",
+  "sanitized": true,
+  "changedPixelRatioThreshold": 0.005,
+  "pixelDeltaThreshold": 24,
+  "viewports": [
+    {
+      "id": "iphone-12-portrait",
+      "label": "iPhone 12 portrait",
+      "width": 390,
+      "height": 844,
+      "isMobile": true,
+      "hasTouch": true
+    },
+    {
+      "id": "fhd",
+      "label": "FHD",
+      "width": 1920,
+      "height": 1080,
+      "isMobile": false,
+      "hasTouch": false
+    }
+  ],
+  "themes": ["dark", "light"],
+  "scenarios": [
+    {
+      "id": "dashboard-default",
+      "route": "/dashboard"
+    },
+    {
+      "id": "customers-default",
+      "route": "/dashboard/customers"
+    },
+    {
+      "id": "today-default",
+      "route": "/dashboard/today"
+    },
+    {
+      "id": "schedule-default",
+      "route": "/dashboard/schedule-calendar"
+    },
+    {
+      "id": "catalog-default",
+      "route": "/dashboard/catalog"
+    },
+    {
+      "id": "qa-shop-default",
+      "route": "/dashboard/qa-shop"
+    },
+    {
+      "id": "customers-filter-drawer",
+      "route": "/dashboard/customers"
+    },
+    {
+      "id": "customers-booking-wizard",
+      "route": "/dashboard/customers"
+    },
+    {
+      "id": "customers-detail-drawer",
+      "route": "/dashboard/customers"
+    },
+    {
+      "id": "customers-empty-state",
+      "route": "/dashboard/customers"
+    }
+  ],
+  "captures": [
+    {
+      "scenario": "dashboard-default",
+      "route": "/dashboard",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 3054,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/dashboard-default/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/dashboard-default/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-default",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2192,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-default/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-default/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "today-default",
+      "route": "/dashboard/today",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2912,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/today-default/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/today-default/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "schedule-default",
+      "route": "/dashboard/schedule-calendar",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2142,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/schedule-default/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/schedule-default/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "catalog-default",
+      "route": "/dashboard/catalog",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 4376,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/catalog-default/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/catalog-default/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "qa-shop-default",
+      "route": "/dashboard/qa-shop",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2541,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/qa-shop-default/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/qa-shop-default/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-filter-drawer",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2942,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-filter-drawer/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-filter-drawer/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-booking-wizard",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2869,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-booking-wizard/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-booking-wizard/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-detail-drawer",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2943,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-detail-drawer/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-detail-drawer/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-empty-state",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 3568,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-empty-state/iphone-12-portrait/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-empty-state/iphone-12-portrait/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "dashboard-default",
+      "route": "/dashboard",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 3010,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/dashboard-default/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/dashboard-default/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-default",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2224,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-default/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-default/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "today-default",
+      "route": "/dashboard/today",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2978,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/today-default/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/today-default/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "schedule-default",
+      "route": "/dashboard/schedule-calendar",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2097,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/schedule-default/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/schedule-default/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "catalog-default",
+      "route": "/dashboard/catalog",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 4242,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/catalog-default/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/catalog-default/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "qa-shop-default",
+      "route": "/dashboard/qa-shop",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2534,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/qa-shop-default/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/qa-shop-default/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-filter-drawer",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2916,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-filter-drawer/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-filter-drawer/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-booking-wizard",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2901,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-booking-wizard/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-booking-wizard/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-detail-drawer",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2913,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-detail-drawer/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-detail-drawer/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-empty-state",
+      "route": "/dashboard/customers",
+      "viewport": "iphone-12-portrait",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 3538,
+      "metrics": {
+        "document": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-empty-state/iphone-12-portrait/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-empty-state/iphone-12-portrait/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "dashboard-default",
+      "route": "/dashboard",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 3248,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/dashboard-default/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/dashboard-default/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-default",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2444,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-default/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-default/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "today-default",
+      "route": "/dashboard/today",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 3278,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/today-default/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/today-default/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "schedule-default",
+      "route": "/dashboard/schedule-calendar",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2183,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/schedule-default/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/schedule-default/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "catalog-default",
+      "route": "/dashboard/catalog",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 4563,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/catalog-default/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/catalog-default/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "qa-shop-default",
+      "route": "/dashboard/qa-shop",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 2676,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/qa-shop-default/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/qa-shop-default/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-filter-drawer",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 3231,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-filter-drawer/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-filter-drawer/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-booking-wizard",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 3192,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-booking-wizard/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-booking-wizard/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-detail-drawer",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 3294,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-detail-drawer/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-detail-drawer/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-empty-state",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "dark",
+      "status": "ok",
+      "durationMs": 4375,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-empty-state/fhd/dark.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-empty-state/fhd/dark.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "dashboard-default",
+      "route": "/dashboard",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 3803,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/dashboard-default/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/dashboard-default/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-default",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 3006,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-default/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-default/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "today-default",
+      "route": "/dashboard/today",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 4557,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/today-default/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/today-default/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "schedule-default",
+      "route": "/dashboard/schedule-calendar",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2275,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/schedule-default/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/schedule-default/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "catalog-default",
+      "route": "/dashboard/catalog",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 4526,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/catalog-default/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/catalog-default/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "qa-shop-default",
+      "route": "/dashboard/qa-shop",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 2659,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/qa-shop-default/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/qa-shop-default/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-filter-drawer",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 3259,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-filter-drawer/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-filter-drawer/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-booking-wizard",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 3192,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-booking-wizard/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-booking-wizard/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-detail-drawer",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 3306,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-detail-drawer/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-detail-drawer/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    },
+    {
+      "scenario": "customers-empty-state",
+      "route": "/dashboard/customers",
+      "viewport": "fhd",
+      "theme": "light",
+      "status": "ok",
+      "durationMs": 3855,
+      "metrics": {
+        "document": {
+          "clientWidth": 1920,
+          "scrollWidth": 1920,
+          "canScrollX": false
+        }
+      },
+      "comparison": null,
+      "candidate": "output/responsive-visual/2026-08-14-rsp802-baseline-final/chromium/candidate/customers-empty-state/fhd/light.png",
+      "baseline": "scripts/responsive/visual-baselines/customers-empty-state/fhd/light.png",
+      "errors": [],
+      "failedRequests": []
+    }
+  ]
+}

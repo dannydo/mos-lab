@@ -3,7 +3,6 @@
 import '../../suppress-warnings';
 import React, { useEffect, useState, useMemo } from 'react';
 import {
-  Table,
   Avatar,
   Tabs,
   Input,
@@ -42,9 +41,10 @@ import {
   CheckCircleOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
+import { CalendarPlus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
-import CalendarPlusIcon from '../../../components/icons/CalendarPlusIcon';
+import { DataTable, IconButton } from '../../../components/ui';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 const BookingWizardDrawer = dynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
@@ -293,7 +293,7 @@ export default function NycCampaignPage() {
   const activeTouchpointsList = configs[activeTab] || [];
 
   return (
-    <div>
+    <div className="responsive-page responsive-workspace nyc-page">
       {/* MINIMALIST COMPACT EXECUTIVE HEADER BANNER */}
       <div
         className={`p-4 rounded-xl mb-5 border transition-all duration-300 ${
@@ -347,7 +347,7 @@ export default function NycCampaignPage() {
               >
                 <UserOutlined style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b', fontSize: '14px' }} />
                 <div>
-                  <div style={{ fontSize: '10px', color: token.colorTextDescription, lineHeight: 1 }}>Tổng KH</div>
+                  <div style={{ fontSize: '10px', color: token.colorTextDescription, lineHeight: 1 }}>∑ KH</div>
                   <div
                     style={{ fontSize: '15px', fontWeight: '800', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}
                   >
@@ -462,29 +462,15 @@ export default function NycCampaignPage() {
                   ]}
                 />
               )}
-              <Tooltip title="Đặt lịch mới">
-                <Button
-                  type="primary"
-                  icon={<CalendarPlusIcon fontSize={18} />}
-                  style={{
-                    backgroundColor: '#D4A84B',
-                    borderColor: '#D4A84B',
-                    color: '#ffffff',
-                    height: '36px',
-                    width: '36px',
-                    padding: 0,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
-                  }}
-                  onClick={() => {
-                    setBookingInitialCustomer(null);
-                    setBookingWizardVisible(true);
-                  }}
-                />
-              </Tooltip>
+              <IconButton
+                label="Đặt lịch mới"
+                icon={CalendarPlus}
+                tone="primary"
+                onClick={() => {
+                  setBookingInitialCustomer(null);
+                  setBookingWizardVisible(true);
+                }}
+              />
             </Space>
           </div>
         </div>
@@ -633,7 +619,7 @@ export default function NycCampaignPage() {
       </div>
 
       {/* CUSTOMERS DATA TABLE */}
-      <Table
+      <DataTable
         columns={nycConfigColumns}
         dataSource={customers}
         rowKey="id"
@@ -677,6 +663,7 @@ export default function NycCampaignPage() {
             cell: ResizableHeaderCell,
           },
         }}
+        stickyPrimaryColumn
       />
 
       {/* RESIZABLE TOUCHPOINT CONFIGURATION MODAL (Admin only) */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Drawer, Spin, Tag, Tooltip, Button, Space, Table, Pagination, Input, Radio, Typography } from 'antd';
+import { Spin, Tag, Tooltip, Button, Space, Table, Pagination, Input, Radio, Typography } from 'antd';
 import {
   HistoryOutlined,
   FilterOutlined,
@@ -17,6 +17,7 @@ import {
   UserDeleteOutlined,
 } from '@ant-design/icons';
 import { SafeAny, removeVietnameseTones } from '@mos-lab/shared';
+import { AdaptiveDrawer } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -141,7 +142,9 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
   };
 
   return (
-    <Drawer
+    <AdaptiveDrawer
+      intent="data"
+      className="customer-assignment-history-overlay"
       title={
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -164,7 +167,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                 Lịch Sử Phân Bổ Data
               </div>
               <Text style={{ fontSize: '12px', color: token.colorTextDescription }}>
-                Tổng cộng {historyTotal} đợt phân bổ & thu hồi
+                Tổng cộng {historyTotal} đợt phân bổ & thu hồi
               </Text>
             </div>
           </div>
@@ -185,7 +188,6 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
         setBatchDetails([]);
       }}
       open={open}
-      width={680}
       styles={{
         header: {
           borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
@@ -660,10 +662,10 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
             total={historyTotal}
             onChange={(page) => fetchAssignmentHistory(page, searchQuery, filterAction)}
             showSizeChanger={false}
-            showTotal={(total) => `Tổng ${total} đợt`}
+            showTotal={(total) => `Tổng ${total} đợt`}
           />
         </div>
       )}
-    </Drawer>
+    </AdaptiveDrawer>
   );
 };

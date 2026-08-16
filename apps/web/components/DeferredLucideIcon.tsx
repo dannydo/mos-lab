@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import dynamic from 'next/dynamic';
+import React, { useEffect, useState } from 'react';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 
 interface DeferredLucideIconProps extends Record<string, unknown> {
@@ -10,16 +9,18 @@ interface DeferredLucideIconProps extends Record<string, unknown> {
 
 const lucideComponentsCache: Record<string, React.ComponentType<SafeAny>> = {};
 
-const resolveLucideImport = (name: string) => {
+type LucideImport = () => Promise<{ default: React.ComponentType<SafeAny> }>;
+
+const resolveLucideImport = (name: string): { cleanName: string; importFn?: LucideImport } => {
   const cleanName = name.replace(/^lucide:/i, '').trim();
-  let importFn = (dynamicIconImports as SafeAny)[cleanName];
+  let importFn = (dynamicIconImports as SafeAny)[cleanName] as LucideImport | undefined;
 
   if (!importFn) {
     const kebab = cleanName
       .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
       .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
       .toLowerCase();
-    importFn = (dynamicIconImports as SafeAny)[kebab];
+    importFn = (dynamicIconImports as SafeAny)[kebab] as LucideImport | undefined;
   }
 
   if (!importFn) {
@@ -27,7 +28,7 @@ const resolveLucideImport = (name: string) => {
     const matchedName = Object.keys(dynamicIconImports).find(
       (candidate) => candidate.replace(/[^a-z0-9]/g, '') === normalizedName
     );
-    if (matchedName) importFn = (dynamicIconImports as SafeAny)[matchedName];
+    if (matchedName) importFn = (dynamicIconImports as SafeAny)[matchedName] as LucideImport | undefined;
   }
 
   return { cleanName, importFn };
@@ -35,15 +36,41 @@ const resolveLucideImport = (name: string) => {
 
 export const DeferredLucideIcon: React.FC<DeferredLucideIconProps> = ({ name, ...iconProps }) => {
   const { cleanName, importFn } = resolveLucideImport(name);
-  if (!importFn) return null;
+  const [Icon, setIcon] = useState<React.ComponentType<SafeAny> | null>(null);
 
-  const cacheKey = cleanName.toLowerCase();
-  if (!lucideComponentsCache[cacheKey]) {
-    lucideComponentsCache[cacheKey] = dynamic(importFn, {
-      ssr: false,
-      loading: () => null,
-    });
-  }
+  useEffect(() => {
+    let cancelled = false;
+    const cacheKey = cleanName.toLowerCase();
+    const cachedIcon = lucideComponentsCache[cacheKey];
 
-  return React.createElement(lucideComponentsCache[cacheKey], iconProps);
+    if (cachedIcon) {
+      setIcon(() => cachedIcon);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!importFn) {
+      setIcon(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void importFn()
+      .then(({ default: ResolvedIcon }) => {
+        if (cancelled) return;
+        lucideComponentsCache[cacheKey] = ResolvedIcon;
+        setIcon(() => ResolvedIcon);
+      })
+      .catch(() => {
+        if (!cancelled) setIcon(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cleanName, importFn]);
+
+  return Icon ? React.createElement(Icon, iconProps) : null;
 };

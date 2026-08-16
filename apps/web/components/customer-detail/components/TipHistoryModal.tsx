@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Button, Table, Tag } from 'antd';
+import { Button, Table, Tag } from 'antd';
 import { DollarOutlined } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatVND } from '../../../lib/format-utils';
+import { AdaptiveModal } from '../../ui';
 
 interface TipTransaction {
   id: number;
@@ -221,7 +222,9 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
   };
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="data"
+      className="customer-tip-history-overlay"
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
           <DollarOutlined style={{ color: '#52c41a' }} />
@@ -319,6 +322,6 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
         size="small"
         locale={{ emptyText: 'Không có giao dịch tips nào.' }}
       />
-    </Modal>
+    </AdaptiveModal>
   );
 };

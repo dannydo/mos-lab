@@ -121,6 +121,9 @@ export const BookingsTab: React.FC<
     const [selectedBookingForUpdate, setSelectedBookingForUpdate] = useState<SafeAny | null>(null);
     const [auditDrawerOpen, setAuditDrawerOpen] = useState(false);
     const [selectedOrderIdForAudit, setSelectedOrderIdForAudit] = useState<{ id: number; key?: string } | null>(null);
+    const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
+    const infoTextColor = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
+    const goldTextColor = themeMode === 'dark' ? '#D4A84B' : '#855b0e';
 
     const notesByBookingMap = useMemo(() => {
       const map = new Map<string, SafeAny[]>();
@@ -303,7 +306,7 @@ export const BookingsTab: React.FC<
                           </span>
                         </Tooltip>
                       )}
-                      <span style={{ fontSize: '12px', color: '#888' }}>{formattedDate}</span>
+                      <span style={{ fontSize: '12px', color: mutedTextColor }}>{formattedDate}</span>
                       {b.bookingDate && (
                         <span
                           className="tabular-nums"
@@ -313,7 +316,7 @@ export const BookingsTab: React.FC<
                             padding: '2px 6px',
                             borderRadius: '4px',
                             background: themeMode === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f7ff',
-                            color: themeMode === 'dark' ? '#40a9ff' : '#1890ff',
+                            color: infoTextColor,
                           }}
                         >
                           {getDaysDiffText(b.bookingDate)}
@@ -334,7 +337,7 @@ export const BookingsTab: React.FC<
                                   padding: '2px 6px',
                                   borderRadius: '4px',
                                   background: themeMode === 'dark' ? 'rgba(148, 163, 184, 0.15)' : '#f1f5f9',
-                                  color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                                  color: mutedTextColor,
                                   border: `1px solid ${themeMode === 'dark' ? 'rgba(148, 163, 184, 0.3)' : '#cbd5e1'}`,
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -409,7 +412,7 @@ export const BookingsTab: React.FC<
                   <div
                     style={{
                       fontSize: '12px',
-                      color: '#888',
+                      color: mutedTextColor,
                       marginTop: '4px',
                       display: 'flex',
                       flexDirection: 'column',
@@ -640,8 +643,8 @@ export const BookingsTab: React.FC<
                           icon={<EditOutlined />}
                           style={{
                             borderRadius: '4px',
-                            borderColor: '#1890ff',
-                            color: '#1890ff',
+                            borderColor: infoTextColor,
+                            color: infoTextColor,
                             fontWeight: '600',
                           }}
                           onClick={() => {
@@ -659,7 +662,7 @@ export const BookingsTab: React.FC<
                           style={{
                             backgroundColor: '#D4A84B',
                             borderColor: '#D4A84B',
-                            color: '#ffffff',
+                            color: '#0f172a',
                             fontWeight: 'bold',
                             borderRadius: '6px',
                             display: 'inline-flex',

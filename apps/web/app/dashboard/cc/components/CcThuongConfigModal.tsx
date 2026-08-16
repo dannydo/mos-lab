@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, InputNumber, Table, Button, message, Typography, Divider, Space, theme, Spin, Alert } from 'antd';
-import { SettingOutlined, SaveOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Form, InputNumber, Table, Button, message, Typography, Divider, Space, Spin, Alert } from 'antd';
+import { RefreshCw, Save, Settings } from 'lucide-react';
 import { DailySalesBonusConfig, DailySalesBonusConfigTier } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
-import { useTheme } from '../../../../context/ThemeContext';
+import { AppIcon, EntityForm, EntityFormDrawer, EntityFormField } from '../../../../components/ui';
 
 import { ColumnsType } from 'antd/es/table';
 
-const { Text, Title } = Typography;
+const { Title } = Typography;
 
 interface CcThuongConfigModalProps {
   open: boolean;
@@ -18,8 +18,6 @@ interface CcThuongConfigModalProps {
 }
 
 export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: CcThuongConfigModalProps) {
-  const { token } = theme.useToken();
-  const { themeMode } = useTheme();
   const [form] = Form.useForm();
 
   const [loading, setLoading] = useState(false);
@@ -106,6 +104,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
       render: (val: number, record: DailySalesBonusConfigTier, index: number) => (
         <InputNumber
           value={val}
+          aria-label={`Tier ${index + 1}: Doanh số tối thiểu (VNĐ)`}
           min={0}
           step={1000000}
           formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
@@ -124,6 +123,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
       render: (val: number, record: DailySalesBonusConfigTier, index: number) => (
         <InputNumber
           value={val}
+          aria-label={`Tier ${index + 1}: Doanh số tối đa (VNĐ)`}
           min={0}
           step={1000000}
           formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
@@ -144,6 +144,7 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
       render: (val: number, record: DailySalesBonusConfigTier, index: number) => (
         <InputNumber
           value={val}
+          aria-label={`Tier ${index + 1}: Tỷ lệ thưởng (%)`}
           min={0}
           max={100}
           step={0.1}
@@ -157,37 +158,28 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
   ];
 
   return (
-    <Modal
+    <EntityFormDrawer
       title={
         <Space>
-          <SettingOutlined className="text-amber-500" />
-          <span className="font-bold text-lg" style={{ color: token.colorText }}>
-            Cấu Hình Thưởng CC (Combo & SP)
-          </span>
+          <AppIcon icon={Settings} size="action" className="text-amber-500" />
+          <span className="font-bold text-lg">Cấu Hình Thưởng CC (Combo & SP)</span>
         </Space>
       }
       open={open}
-      onCancel={onClose}
+      onClose={onClose}
       width={780}
-      footer={[
-        <Button key="cancel" onClick={onClose}>
-          Hủy
-        </Button>,
-        <Button key="refresh" icon={<ReloadOutlined />} onClick={fetchConfig} loading={loading}>
-          Làm mới
-        </Button>,
-        <Button
-          key="save"
-          type="primary"
-          icon={<SaveOutlined />}
-          loading={saving}
-          onClick={handleSave}
-          style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: '600' }}
-        >
-          Lưu & Đồng bộ DB
-        </Button>,
-      ]}
-      style={{ top: 30 }}
+      className="cc-bonus-config-drawer"
+      footer={
+        <Space wrap>
+          <Button onClick={onClose}>Hủy</Button>
+          <Button icon={<AppIcon icon={RefreshCw} size="disclosure" />} onClick={fetchConfig} loading={loading}>
+            Làm mới
+          </Button>
+          <Button type="primary" icon={<AppIcon icon={Save} size="disclosure" />} loading={saving} onClick={handleSave}>
+            Lưu & Đồng bộ DB
+          </Button>
+        </Space>
+      }
     >
       <Spin spinning={loading}>
         <Alert
@@ -198,58 +190,56 @@ export default function CcThuongConfigModal({ open, onClose, onSaveSuccess }: Cc
           className="mb-4"
         />
 
-        <Form form={form} layout="vertical">
-          <Title level={5} style={{ color: token.colorText, marginTop: 0 }}>
-            1. Thưởng Cố Định Theo Đơn Vị Sản Phẩm / Combo
-          </Title>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <Form.Item
-              name="combo_unit_bonus"
-              label="Thưởng Đơn Vị Combo (VNĐ / Combo)"
-              rules={[{ required: true, message: 'Nhập thưởng đơn vị Combo' }]}
-            >
-              <InputNumber
-                min={0}
-                step={10000}
-                formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
-                parser={(v) => (v ? (Number(v.replace(/,/g, '')) as unknown as 0) : 0)}
-                className="w-full tabular-nums font-semibold text-blue-500"
-                addonAfter="đ"
-              />
-            </Form.Item>
+        <Title level={5} style={{ marginTop: 0 }}>
+          1. Thưởng Cố Định Theo Đơn Vị Sản Phẩm / Combo
+        </Title>
+        <EntityForm form={form} columns={2} className="mb-4">
+          <EntityFormField
+            name="combo_unit_bonus"
+            label="Thưởng Đơn Vị Combo (VNĐ / Combo)"
+            rules={[{ required: true, message: 'Nhập thưởng đơn vị Combo' }]}
+          >
+            <InputNumber
+              aria-label="Thưởng đơn vị Combo (VNĐ mỗi Combo)"
+              min={0}
+              step={10000}
+              formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
+              parser={(v) => (v ? (Number(v.replace(/,/g, '')) as unknown as 0) : 0)}
+              className="w-full tabular-nums font-semibold text-blue-500"
+              addonAfter="đ"
+            />
+          </EntityFormField>
 
-            <Form.Item
-              name="product_unit_bonus"
-              label="Thưởng Đơn Vị Sản Phẩm (VNĐ / SP)"
-              rules={[{ required: true, message: 'Nhập thưởng đơn vị Sản Phẩm' }]}
-            >
-              <InputNumber
-                min={0}
-                step={5000}
-                formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
-                parser={(v) => (v ? (Number(v.replace(/,/g, '')) as unknown as 0) : 0)}
-                className="w-full tabular-nums font-semibold text-purple-500"
-                addonAfter="đ"
-              />
-            </Form.Item>
-          </div>
+          <EntityFormField
+            name="product_unit_bonus"
+            label="Thưởng Đơn Vị Sản Phẩm (VNĐ / SP)"
+            rules={[{ required: true, message: 'Nhập thưởng đơn vị Sản Phẩm' }]}
+          >
+            <InputNumber
+              aria-label="Thưởng đơn vị Sản phẩm (VNĐ mỗi sản phẩm)"
+              min={0}
+              step={5000}
+              formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0')}
+              parser={(v) => (v ? (Number(v.replace(/,/g, '')) as unknown as 0) : 0)}
+              className="w-full tabular-nums font-semibold text-purple-500"
+              addonAfter="đ"
+            />
+          </EntityFormField>
+        </EntityForm>
 
-          <Divider style={{ margin: '16px 0' }} />
+        <Divider style={{ margin: '16px 0' }} />
 
-          <Title level={5} style={{ color: token.colorText }}>
-            2. Cấu Hình 6 Tiers % Doanh Số Ngày (Bảng Rules)
-          </Title>
-          <Table
-            dataSource={tiers}
-            columns={columns}
-            rowKey="position"
-            pagination={false}
-            size="small"
-            bordered
-            className="antd-custom-table"
-          />
-        </Form>
+        <Title level={5}>2. Cấu Hình 6 Tiers % Doanh Số Ngày (Bảng Rules)</Title>
+        <Table
+          dataSource={tiers}
+          columns={columns}
+          rowKey="position"
+          pagination={false}
+          size="small"
+          bordered
+          className="antd-custom-table"
+        />
       </Spin>
-    </Modal>
+    </EntityFormDrawer>
   );
 }

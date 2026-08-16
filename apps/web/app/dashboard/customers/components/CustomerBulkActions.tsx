@@ -1,13 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Space, Button, Typography, Popconfirm, Modal, Select, InputNumber, Radio } from 'antd';
-import { TeamOutlined, DeleteOutlined, WarningOutlined, ClockCircleOutlined, RocketOutlined } from '@ant-design/icons';
+import { Space, Button, Typography, Popconfirm, Select, InputNumber, Radio, Dropdown } from 'antd';
+import {
+  TeamOutlined,
+  DeleteOutlined,
+  WarningOutlined,
+  ClockCircleOutlined,
+  RocketOutlined,
+  MoreOutlined,
+} from '@ant-design/icons';
 import { RevokeAssignmentModal } from './RevokeAssignmentModal';
 import { RetainDataButton } from './RetainDataButton';
 import { AddToCampaignModal } from '../../../../components/campaign/AddToCampaignModal';
-import { SafeAny, Staff } from '@mos-lab/shared';
+import { SafeAny, Staff, vietnameseSearchFilter } from '@mos-lab/shared';
 import CampaignPlusIcon from '../../../../components/icons/CampaignPlusIcon';
+import { AdaptiveModal, ResponsiveFormField, ResponsiveFormGrid } from '../../../../components/ui';
+import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
 
 const { Text } = Typography;
 
@@ -70,6 +79,9 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
   const [addToCampaignModalVisible, setAddToCampaignModalVisible] = useState(false);
   const [customDays, setCustomDays] = useState<number | undefined>(undefined);
   const [isCustomMode, setIsCustomMode] = useState(false);
+  const [mobileDeleteConfirmVisible, setMobileDeleteConfirmVisible] = useState(false);
+  const responsiveTier = useResponsiveTier();
+  const isMobile = responsiveTier === 'mobile';
 
   const selectedNumericIds = selectedRowKeys.map((k) => Number(k));
 
@@ -83,6 +95,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
   return (
     <>
       <div
+        className="customer-bulk-actions"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -100,75 +113,129 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
             Đã chọn <span style={{ color: '#D4A84B', fontSize: '16px' }}>{selectedRowKeys.length}</span> khách hàng
           </Text>
         </Space>
-        <Space flex-wrap="wrap">
-          <Button onClick={() => setSelectedRowKeys([])} style={{ borderRadius: '6px' }}>
-            Hủy chọn
-          </Button>
-          <RetainDataButton
-            mode="bulk"
-            selectedRowKeys={selectedRowKeys}
-            onSuccess={() => {
-              setSelectedRowKeys([]);
-              if (onRefresh) onRefresh();
-            }}
-          />
-          <Button
-            type="primary"
-            icon={<TeamOutlined />}
-            onClick={() => setAssignModalVisible(true)}
-            style={{ background: '#D4A84B', borderColor: '#D4A84B', borderRadius: '6px', fontWeight: 600 }}
-          >
-            Phân bổ Booker
-          </Button>
-
-          <Button
-            type="primary"
-            icon={<CampaignPlusIcon fontSize={16} badgeBg="#047857" />}
-            onClick={() => setAddToCampaignModalVisible(true)}
-            style={{
-              background: '#10b981',
-              borderColor: '#10b981',
-              borderRadius: '6px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            Thêm vào chiến dịch
-          </Button>
-
-          {isManagerOrAdmin && (
-            <Button
-              danger
-              icon={<WarningOutlined />}
-              onClick={() => setRevokeModalVisible(true)}
-              style={{ borderRadius: '6px', fontWeight: 600 }}
-            >
-              Thu hồi data
+        {isMobile ? (
+          <Space className="customer-bulk-actions-mobile" size={6}>
+            <Button onClick={() => setSelectedRowKeys([])} style={{ borderRadius: '6px' }}>
+              Hủy
             </Button>
-          )}
-
-          {isManagerOrAdmin && (
-            <Popconfirm
-              title={`Anh/chị có chắc chắn muốn xóa ${selectedRowKeys.length} khách hàng đã chọn không?`}
-              onConfirm={handleBulkDeleteCustomers}
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true, loading: bulkDeleteLoading }}
+            <RetainDataButton
+              mode="bulk-compact"
+              selectedRowKeys={selectedRowKeys}
+              onSuccess={() => {
+                setSelectedRowKeys([]);
+                if (onRefresh) onRefresh();
+              }}
+            />
+            <Button
+              type="primary"
+              icon={<TeamOutlined />}
+              onClick={() => setAssignModalVisible(true)}
+              style={{ background: '#D4A84B', borderColor: '#D4A84B', borderRadius: '6px', fontWeight: 600 }}
             >
+              Phân bổ
+            </Button>
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  {
+                    key: 'campaign',
+                    icon: <CampaignPlusIcon fontSize={16} badgeBg="#047857" />,
+                    label: 'Thêm vào chiến dịch',
+                    onClick: () => setAddToCampaignModalVisible(true),
+                  },
+                  {
+                    key: 'revoke',
+                    danger: true,
+                    icon: <WarningOutlined />,
+                    label: 'Thu hồi data',
+                    onClick: () => setRevokeModalVisible(true),
+                  },
+                  { type: 'divider' },
+                  {
+                    key: 'delete',
+                    danger: true,
+                    icon: <DeleteOutlined />,
+                    label: 'Xóa hàng loạt',
+                    onClick: () => setMobileDeleteConfirmVisible(true),
+                  },
+                ],
+              }}
+            >
+              <Button aria-label="Thao tác khác" icon={<MoreOutlined />} />
+            </Dropdown>
+          </Space>
+        ) : (
+          <Space flex-wrap="wrap">
+            <Button onClick={() => setSelectedRowKeys([])} style={{ borderRadius: '6px' }}>
+              Hủy chọn
+            </Button>
+            <RetainDataButton
+              mode="bulk"
+              selectedRowKeys={selectedRowKeys}
+              onSuccess={() => {
+                setSelectedRowKeys([]);
+                if (onRefresh) onRefresh();
+              }}
+            />
+            <Button
+              type="primary"
+              icon={<TeamOutlined />}
+              onClick={() => setAssignModalVisible(true)}
+              style={{ background: '#D4A84B', borderColor: '#D4A84B', borderRadius: '6px', fontWeight: 600 }}
+            >
+              Phân bổ Booker
+            </Button>
+
+            <Button
+              type="primary"
+              icon={<CampaignPlusIcon fontSize={16} badgeBg="#047857" />}
+              onClick={() => setAddToCampaignModalVisible(true)}
+              style={{
+                background: '#10b981',
+                borderColor: '#10b981',
+                borderRadius: '6px',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              Thêm vào chiến dịch
+            </Button>
+
+            {isManagerOrAdmin && (
               <Button
                 danger
-                type="primary"
-                icon={<DeleteOutlined />}
-                loading={bulkDeleteLoading}
+                icon={<WarningOutlined />}
+                onClick={() => setRevokeModalVisible(true)}
                 style={{ borderRadius: '6px', fontWeight: 600 }}
               >
-                Xóa hàng loạt
+                Thu hồi data
               </Button>
-            </Popconfirm>
-          )}
-        </Space>
+            )}
+
+            {isManagerOrAdmin && (
+              <Popconfirm
+                title={`Anh/chị có chắc chắn muốn xóa ${selectedRowKeys.length} khách hàng đã chọn không?`}
+                onConfirm={handleBulkDeleteCustomers}
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true, loading: bulkDeleteLoading }}
+              >
+                <Button
+                  danger
+                  type="primary"
+                  icon={<DeleteOutlined />}
+                  loading={bulkDeleteLoading}
+                  style={{ borderRadius: '6px', fontWeight: 600 }}
+                >
+                  Xóa hàng loạt
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        )}
       </div>
 
       <RevokeAssignmentModal
@@ -193,8 +260,27 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         }}
       />
 
+      <AdaptiveModal
+        intent="confirm"
+        open={mobileDeleteConfirmVisible}
+        title="Xóa khách hàng đã chọn?"
+        onCancel={() => setMobileDeleteConfirmVisible(false)}
+        onOk={async () => {
+          await handleBulkDeleteCustomers();
+          setMobileDeleteConfirmVisible(false);
+        }}
+        okText="Xóa"
+        cancelText="Hủy"
+        confirmLoading={bulkDeleteLoading}
+        okButtonProps={{ danger: true }}
+      >
+        Bạn sắp xóa {selectedRowKeys.length} khách hàng đã chọn. Khách hàng sẽ được chuyển vào thùng rác.
+      </AdaptiveModal>
+
       {/* MODAL PHÂN BỔ BOOKER */}
-      <Modal
+      <AdaptiveModal
+        intent="form"
+        className="customer-allocation-overlay"
         title={`Phân bổ ${selectedRowKeys.length} khách hàng cho Booker`}
         open={assignModalVisible}
         onOk={() => handleAssignCustomers(undefined, randomBatchId)}
@@ -205,24 +291,29 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         okButtonProps={{ disabled: !targetStaffId, style: { background: '#D4A84B', borderColor: '#D4A84B' } }}
       >
         <div style={{ margin: '16px 0' }}>
-          <p style={{ marginBottom: '8px' }}>Chọn Booker nhận phân bổ:</p>
-          <Select
-            showSearch
-            style={{ width: '100%', marginBottom: '16px' }}
-            placeholder="Tìm và chọn Booker..."
-            optionFilterProp="children"
-            value={targetStaffId}
-            onChange={(value) => setTargetStaffId(value)}
-            filterOption={(input, option) =>
-              (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
-            }
-            options={staffList.map((staff) => ({
-              value: staff.id,
-              label: `${staff.displayName || staff.username} (ID: ${staff.id})`,
-            }))}
-          />
+          <ResponsiveFormGrid columns={2}>
+            <ResponsiveFormField fullWidth>
+              <p style={{ marginBottom: '8px' }}>Chọn Booker nhận phân bổ:</p>
+              <Select
+                showSearch
+                style={{ width: '100%' }}
+                placeholder="Tìm và chọn Booker..."
+                value={targetStaffId}
+                onChange={(value) => setTargetStaffId(value)}
+                filterOption={vietnameseSearchFilter}
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                options={staffList.map((staff) => ({
+                  value: staff.id,
+                  label: `${staff.displayName || staff.username} (ID: ${staff.id})`,
+                }))}
+              />
+            </ResponsiveFormField>
+          </ResponsiveFormGrid>
 
-          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #303030' }}>
+          <div
+            className="customer-allocation-duration"
+            style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #303030' }}
+          >
             <p style={{ marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
               <ClockCircleOutlined style={{ color: '#D4A84B' }} /> Thời hạn tự động thu hồi (Retention Days):
             </p>
@@ -269,7 +360,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
             )}
           </div>
         </div>
-      </Modal>
+      </AdaptiveModal>
     </>
   );
 });

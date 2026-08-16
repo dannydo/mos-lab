@@ -1,29 +1,5 @@
-'use client';
-
-import { useEffect } from 'react';
+import { redirect } from 'next/navigation';
 
 export default function HomePage() {
-  useEffect(() => {
-    window.location.href = '/dashboard/customers';
-  }, []);
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        height: '100vh',
-        width: '100vw',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#000000',
-        color: '#ffffff',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}
-    >
-      <div style={{ textAlign: 'center' }}>
-        <h2 style={{ color: '#D4A84B', margin: '0 0 8px 0', fontSize: '20px' }}>WINGS LASHES CRM</h2>
-        <p style={{ color: '#888888', margin: 0, fontSize: '14px' }}>Đang chuyển hướng đến Dashboard Khách Hàng...</p>
-      </div>
-    </div>
-  );
+  redirect('/dashboard');
 }

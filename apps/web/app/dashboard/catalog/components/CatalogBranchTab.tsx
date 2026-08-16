@@ -473,7 +473,7 @@ export default function CatalogBranchTab({ onRegisterCreate }: CatalogBranchTabP
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={8} lg={4.8} style={{ flex: '1 1 20%', maxWidth: '20%' }}>
           <StatCard
-            title="TỔNG SỐ CHI NHÁNH"
+            title="∑ CHI NHÁNH"
             value={stats?.totalBranches || 0}
             icon={<ShopOutlined className="text-blue-500" />}
             loading={statsLoading}

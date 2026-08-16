@@ -50,6 +50,14 @@ export async function getActiveBkIds(fastify: FastifyInstance): Promise<number[]
   return ids.length > 0 ? ids : DEFAULT_BK_CONFIG.activeBkIds;
 }
 
+/**
+ * BK Done is an operational Telesales leaderboard. Keep this scope tied to the
+ * explicit BK_TELESALES team rather than the wider BK/CS/Control configuration.
+ */
+export async function getActiveBkTelesalesIds(fastify: FastifyInstance): Promise<number[]> {
+  return TeamService.getActiveStaffIdsWithFallback(fastify, 'BK_TELESALES', 'ACTIVE_BK_TELESALES_STAFF_CONFIG');
+}
+
 export async function getBkSalaryConfig(fastify: FastifyInstance): Promise<BkSalaryConfig> {
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({

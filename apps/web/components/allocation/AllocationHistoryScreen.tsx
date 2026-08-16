@@ -1,7 +1,9 @@
 'use client';
 
+import { StandardPagination, TableIndexHeader } from '~/components/ui';
+
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Tag, Input, Select, Button, Modal, Tooltip, Pagination, Spin, Badge } from 'antd';
+import { Table, Card, Tag, Input, Select, Button, Tooltip, Spin, Badge } from 'antd';
 import {
   SearchOutlined,
   ReloadOutlined,
@@ -14,9 +16,13 @@ import {
 import { CustomerAllocationBatch, CustomerAllocationItem, AllocationBatchStatus } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
+import { AdaptiveModal } from '../ui/AdaptiveOverlay';
+import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
 export const AllocationHistoryScreen: React.FC = () => {
   const { themeMode } = useTheme();
+  const responsiveTier = useResponsiveTier();
+  const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
   const [loading, setLoading] = useState<boolean>(false);
   const [batches, setBatches] = useState<CustomerAllocationBatch[]>([]);
   const [total, setTotal] = useState<number>(0);
@@ -158,11 +164,9 @@ export const AllocationHistoryScreen: React.FC = () => {
               Đã chấp nhận
             </Tag>
             {countdownText && (
-              <span
-                className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums"
-                style={{ fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' }}
-              >
-                ⏱️ {countdownText}
+              <span className="allocation-history-countdown tabular-nums">
+                <ClockCircleOutlined aria-hidden />
+                <span>{countdownText}</span>
               </span>
             )}
           </div>
@@ -201,9 +205,9 @@ export const AllocationHistoryScreen: React.FC = () => {
       dataIndex: 'batchCode',
       key: 'batchCode',
       render: (code: string, record: CustomerAllocationBatch) => (
-        <div>
-          <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{code}</div>
-          <div className="text-xs text-slate-400">Tạo lúc: {new Date(record.createdAt).toLocaleString('vi-VN')}</div>
+        <div className="allocation-history-batch-code">
+          <div className="allocation-history-code font-mono">{code}</div>
+          <div className="allocation-history-meta">Tạo lúc: {new Date(record.createdAt).toLocaleString('vi-VN')}</div>
         </div>
       ),
     },
@@ -211,22 +215,20 @@ export const AllocationHistoryScreen: React.FC = () => {
       title: 'Người phân bổ',
       dataIndex: 'assignerName',
       key: 'assignerName',
-      render: (name: string) => <span className="font-medium text-slate-700 dark:text-slate-300">{name}</span>,
+      render: (name: string) => <span className="allocation-history-primary">{name}</span>,
     },
     {
       title: 'Booker nhận',
       dataIndex: 'bookerName',
       key: 'bookerName',
-      render: (name: string) => <span className="font-medium text-slate-800 dark:text-slate-100">{name}</span>,
+      render: (name: string) => <span className="allocation-history-primary">{name}</span>,
     },
     {
       title: 'Số KH',
       dataIndex: 'totalCount',
       key: 'totalCount',
       align: 'center' as const,
-      render: (count: number) => (
-        <span className="font-bold text-slate-800 dark:text-slate-100 text-sm tabular-nums">{count} KH</span>
-      ),
+      render: (count: number) => <span className="allocation-history-total tabular-nums">{count} KH</span>,
     },
     {
       title: 'Trạng thái & Countdown 30 ngày',
@@ -237,7 +239,7 @@ export const AllocationHistoryScreen: React.FC = () => {
       title: 'Lý do / Phản hồi',
       dataIndex: 'declineReason',
       key: 'declineReason',
-      render: (reason: string | null) => <span className="text-xs text-slate-500 line-clamp-2">{reason || '-'}</span>,
+      render: (reason: string | null) => <span className="allocation-history-muted line-clamp-2">{reason || '-'}</span>,
     },
     {
       title: 'Thao tác',
@@ -247,6 +249,7 @@ export const AllocationHistoryScreen: React.FC = () => {
         <Button
           type="link"
           icon={<EyeOutlined />}
+          className="allocation-history-action"
           onClick={() => {
             setSelectedBatch(record);
             setDetailModalOpen(true);
@@ -260,7 +263,7 @@ export const AllocationHistoryScreen: React.FC = () => {
 
   const detailColumns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'idx',
       width: 60,
       render: (_: any, __: any, index: number) => (detailCurrentPage - 1) * detailPageSize + index + 1,
@@ -340,14 +343,25 @@ export const AllocationHistoryScreen: React.FC = () => {
       </Card>
 
       {/* History Table */}
-      <Card size="small" className="border border-slate-200 dark:border-slate-800 shadow-sm">
-        <Table dataSource={batches} columns={columns} rowKey="id" loading={loading} pagination={false} size="middle" />
+      <Card
+        size="small"
+        className="allocation-history-table-card border border-slate-200 dark:border-slate-800 shadow-sm"
+      >
+        <Table
+          dataSource={batches}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={false}
+          size="middle"
+          className="allocation-history-table tabular-nums"
+        />
 
         <div className="mt-4 flex items-center justify-between">
-          <span className="text-xs text-slate-500">
-            Hiển thị {batches.length} / tổng số {total} đợt phân bổ
+          <span className="allocation-history-muted">
+            Hiển thị {batches.length} / tổng số {total} đợt phân bổ
           </span>
-          <Pagination
+          <StandardPagination
             current={page}
             pageSize={limit}
             total={total}
@@ -362,7 +376,8 @@ export const AllocationHistoryScreen: React.FC = () => {
       </Card>
 
       {/* Batch Customer Detail Preview Modal */}
-      <Modal
+      <AdaptiveModal
+        intent="data"
         title={
           <div className="flex flex-wrap items-center justify-between pr-8 gap-2">
             <div className="flex items-center gap-2">
@@ -394,23 +409,25 @@ export const AllocationHistoryScreen: React.FC = () => {
         }
         open={detailModalOpen}
         onCancel={() => setDetailModalOpen(false)}
-        width={detailModalWidth}
+        width={isCompact ? undefined : detailModalWidth}
         footer={[
           <Button key="close" onClick={() => setDetailModalOpen(false)}>
             Đóng
           </Button>,
         ]}
-        className={themeMode === 'dark' ? 'dark-theme-modal' : ''}
+        className={`allocation-history-detail-modal ${themeMode === 'dark' ? 'dark-theme-modal' : ''}`}
       >
         <div className="relative">
           {/* Right-edge drag handle for modal width resizing */}
-          <div
-            onMouseDown={startDetailResizing}
-            title="Kéo để chỉnh rộng / hẹp modal"
-            className="absolute -top-4 -right-4 -bottom-4 w-4 cursor-ew-resize hover:bg-indigo-400/20 flex items-center justify-center transition-colors rounded-r group z-50"
-          >
-            <div className="w-1 h-10 bg-slate-300 dark:bg-slate-600 group-hover:bg-indigo-500 rounded-full transition-colors" />
-          </div>
+          {!isCompact && (
+            <div
+              onMouseDown={startDetailResizing}
+              title="Kéo để chỉnh rộng / hẹp modal"
+              className="absolute -top-4 -right-4 -bottom-4 w-4 cursor-ew-resize hover:bg-indigo-400/20 flex items-center justify-center transition-colors rounded-r group z-50"
+            >
+              <div className="w-1 h-10 bg-slate-300 dark:bg-slate-600 group-hover:bg-indigo-500 rounded-full transition-colors" />
+            </div>
+          )}
 
           {selectedBatch && (
             <div className="space-y-4 py-2">
@@ -461,7 +478,7 @@ export const AllocationHistoryScreen: React.FC = () => {
             </div>
           )}
         </div>
-      </Modal>
+      </AdaptiveModal>
     </div>
   );
 };

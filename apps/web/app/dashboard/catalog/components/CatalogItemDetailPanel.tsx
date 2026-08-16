@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React from 'react';
 import { Card, Table, Tag, Typography, Button, Space, Row, Col, Statistic, theme, Popconfirm } from 'antd';
 import {
@@ -44,7 +46,7 @@ export default function CatalogItemDetailPanel({
 
   const columns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 50,
       align: 'center' as const,
@@ -105,7 +107,7 @@ export default function CatalogItemDetailPanel({
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-bold text-xs text-emerald-500">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
@@ -182,14 +184,14 @@ export default function CatalogItemDetailPanel({
           <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
             <div className="text-[11px] text-slate-400 font-medium uppercase">Đơn giá niêm yết</div>
             <div className="tabular-nums text-base font-bold text-slate-700 dark:text-slate-200">
-              {Math.round(itemInfo?.unitPrice || 0).toLocaleString('vi-VN')} đ
+              {Math.round(itemInfo?.unitPrice || 0).toLocaleString('vi-VN')} đ
             </div>
           </div>
         </Col>
 
         <Col xs={12} sm={8}>
           <div className="p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
-            <div className="text-[11px] text-blue-500 font-medium uppercase">Tổng lượt bán trong kỳ</div>
+            <div className="text-[11px] text-blue-500 font-medium uppercase">∑ Lượt bán trong kỳ</div>
             <div className="tabular-nums text-base font-bold text-blue-500">
               {(itemInfo?.totalUnitsSold || 0).toLocaleString('vi-VN')} lượt
             </div>
@@ -198,9 +200,9 @@ export default function CatalogItemDetailPanel({
 
         <Col xs={24} sm={8}>
           <div className="p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40">
-            <div className="text-[11px] text-amber-500 font-medium uppercase">Tổng doanh thu thu về</div>
+            <div className="text-[11px] text-amber-500 font-medium uppercase">∑ Doanh thu thu về</div>
             <div className="tabular-nums text-base font-bold text-amber-500">
-              {Math.round(itemInfo?.totalRevenue || 0).toLocaleString('vi-VN')} đ
+              {Math.round(itemInfo?.totalRevenue || 0).toLocaleString('vi-VN')} đ
             </div>
           </div>
         </Col>
@@ -210,7 +212,7 @@ export default function CatalogItemDetailPanel({
       <div>
         <div className="flex items-center justify-between mb-2">
           <Text className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Danh sách đơn hàng hoàn thành trong kỳ ({orders.length} đơn)
+            Danh sách đơn hàng hoàn thành trong kỳ ({orders.length} đơn)
           </Text>
         </div>
 
@@ -223,7 +225,7 @@ export default function CatalogItemDetailPanel({
             pageSize: 20,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50', '100'],
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đơn hàng`,
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đơn hàng`,
           }}
           loading={loading}
           scroll={{ x: 'max-content' }}

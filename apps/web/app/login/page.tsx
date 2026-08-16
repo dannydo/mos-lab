@@ -25,7 +25,7 @@ export default function LoginPage() {
     const token = localStorage.getItem('mos_token');
     const user = localStorage.getItem('mos_user');
     if (token && user) {
-      router.push('/dashboard/customers');
+      router.push('/dashboard');
     }
   }, [router]);
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập Google thành công! Chào mừng ${user.displayName}`);
-      router.push('/dashboard/customers');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Google login error:', error);
       const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Google thất bại.';
@@ -105,7 +105,7 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập Google (Mock) thành công! Chào mừng ${user.displayName}`);
-      router.push('/dashboard/customers');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Mock login error:', error);
       const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Mock Google thất bại.';
@@ -130,7 +130,7 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập thành công! Chào mừng ${user.displayName}`);
-      router.push('/dashboard/customers');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       const errMsg =

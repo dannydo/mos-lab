@@ -3,9 +3,11 @@
 import React, { useMemo } from 'react';
 import { Card, Table, Tag, theme, Space, Tooltip } from 'antd';
 import { TrophyOutlined, FilterOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { CcLeaderboardEntry, calculateWheelBonusCap } from '@mos-lab/shared';
+import { CcLeaderboardEntry, calculateWheelBonusCap, themeTokens } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import CcAvatar from './CcAvatar';
+import { MobileRecordList } from '~/components/ui';
+import { useResponsiveTier, useViewportSize } from '~/hooks/useResponsiveTier';
 
 interface CcLeaderboardCardProps {
   leaderboard: CcLeaderboardEntry[];
@@ -25,6 +27,16 @@ export default function CcLeaderboardCard({
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+  const tier = useResponsiveTier();
+  const { width: viewportWidth, height: viewportHeight } = useViewportSize();
+  const { mobileLandscapeMaxWidth, mobileLandscapeMaxHeight } = themeTokens.responsive.breakpoints;
+  const isPhoneLandscape =
+    viewportWidth > viewportHeight &&
+    viewportWidth <= mobileLandscapeMaxWidth &&
+    viewportHeight <= mobileLandscapeMaxHeight;
+  // Portrait phones use scan-friendly cards. A rotated phone has enough width
+  // for the denser, chart-bearing table and should retain that operational view.
+  const showMobileCards = tier === 'mobile' && !isPhoneLandscape;
 
   // Max bar reference for proportional widths
   const maxBarValue = useMemo(() => {
@@ -145,16 +157,16 @@ export default function CcLeaderboardCard({
               title={
                 <div className="text-xs">
                   <div className="text-rose-300 font-bold">⛔ Vượt trần 1.5×</div>
-                  <div>Thưởng gốc: {fmtVnd(cap.rawWheelBonus)} đ</div>
-                  <div className="text-emerald-300 font-bold">Chỉ nhận: {fmtVnd(effective)} đ</div>
+                  <div>Thưởng gốc: {fmtVnd(cap.rawWheelBonus)} đ</div>
+                  <div className="text-emerald-300 font-bold">Chỉ nhận: {fmtVnd(effective)} đ</div>
                 </div>
               }
             >
               <div className="flex flex-col items-end cursor-help">
                 <span className="tabular-nums text-[10px] text-rose-400 line-through opacity-60">
-                  {fmtVnd(cap.rawWheelBonus)} đ
+                  {fmtVnd(cap.rawWheelBonus)} đ
                 </span>
-                <span className="tabular-nums font-bold text-xs text-rose-500">{fmtVnd(effective)} đ</span>
+                <span className="tabular-nums font-bold text-xs text-rose-500">{fmtVnd(effective)} đ</span>
               </div>
             </Tooltip>
           );
@@ -162,7 +174,7 @@ export default function CcLeaderboardCard({
 
         return (
           <span className="tabular-nums font-bold text-xs text-amber-700 dark:text-amber-400">
-            {fmtVnd(cap.rawWheelBonus || 0)} đ
+            {fmtVnd(cap.rawWheelBonus || 0)} đ
           </span>
         );
       },
@@ -209,17 +221,17 @@ export default function CcLeaderboardCard({
                   {isHardcapped ? '⛔ Đạt trần 1.5×' : isWarning ? '⚠️ Sắp chạm trần' : '✅ An toàn'}
                 </div>
                 <div>
-                  Daily Bonus: <strong>{fmtVnd(daily)} đ</strong>
+                  Daily Bonus: <strong>{fmtVnd(daily)} đ</strong>
                 </div>
                 <div>
-                  Xoay Bonus: <strong>{fmtVnd(wheel)} đ</strong>
+                  Xoay Bonus: <strong>{fmtVnd(wheel)} đ</strong>
                 </div>
                 <div>
-                  Trần 1.5×: <strong>{fmtVnd(cap.maxWheelBonusAllowed)} đ</strong>
+                  Trần 1.5×: <strong>{fmtVnd(cap.maxWheelBonusAllowed)} đ</strong>
                 </div>
                 {!isHardcapped && remaining > 0 && (
                   <div className="text-emerald-300">
-                    Còn <strong>{fmtVnd(remaining)} đ</strong> trước trần
+                    Còn <strong>{fmtVnd(remaining)} đ</strong> trước trần
                   </div>
                 )}
               </div>
@@ -350,12 +362,16 @@ export default function CcLeaderboardCard({
       }
       variant="outlined"
       style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-      styles={{ body: { padding: 0 } }}
-      className="full-bleed-card shadow-sm rounded-xl"
+      styles={{
+        body: { padding: 0 },
+        header: showMobileCards ? { minHeight: 44, paddingInline: 10 } : undefined,
+        title: showMobileCards ? { paddingBlock: 10 } : undefined,
+      }}
+      className="full-bleed-card shadow-sm rounded-xl cc-xoay-leaderboard-card"
     >
       {/* Minimal legend bar */}
       <div
-        className="flex items-center justify-end gap-3 px-4 py-1.5 border-b text-[10px]"
+        className={showMobileCards ? 'hidden' : 'flex items-center justify-end gap-3 px-4 py-1.5 border-b text-[10px]'}
         style={{ borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }}
       >
         <span className="flex items-center gap-1 text-slate-400">
@@ -370,29 +386,136 @@ export default function CcLeaderboardCard({
         </span>
       </div>
 
-      <Table
-        dataSource={leaderboard}
-        columns={columns}
-        rowKey="consultantId"
-        size="small"
-        pagination={false}
-        loading={loading}
-        scroll={{ x: 'max-content' }}
-        className="antd-custom-table"
-        locale={{ emptyText: 'Chưa có dữ liệu' }}
-        onRow={(record) => ({
-          onClick: () => onSelectConsultant?.(record.displayName),
-          className: 'cursor-pointer hover:bg-amber-500/5 transition-colors',
-          style: {
-            background:
-              selectedConsultant === record.displayName
-                ? isDark
-                  ? 'rgba(212,168,75,0.12)'
-                  : 'rgba(212,168,75,0.06)'
-                : undefined,
-          },
-        })}
-      />
+      {showMobileCards ? (
+        <div className="!p-1.5 cc-xoay-mobile-list-shell">
+          <MobileRecordList
+            className="cc-xoay-mobile-record-list !gap-1.5"
+            recordClassName="!rounded-lg !p-2"
+            records={leaderboard}
+            loading={loading}
+            getKey={(record) => String(record.consultantId)}
+            getRecordClassName={(record) =>
+              selectedConsultant === record.displayName ? 'bg-amber-500/10 ring-1 ring-amber-400/60' : ''
+            }
+            renderRecord={(record) => {
+              const isSelected = selectedConsultant === record.displayName;
+              const cap = calculateWheelBonusCap(record.monthlyDailyBonus || 0, record.monthlyWheelBonus || 0);
+              const level = record.level || Math.floor((record.totalPointsAccu || 0) / 100) + 1;
+              const dailyBonus = Math.max(0, record.monthlyDailyBonus || 0);
+              const rawWheelBonus = Math.max(0, cap.rawWheelBonus);
+              const chartMax = Math.max(cap.maxWheelBonusAllowed, dailyBonus, rawWheelBonus, 1);
+              const dailyBarPercent = Math.min(100, Math.round((dailyBonus / chartMax) * 100));
+              const wheelBarPercent = Math.min(100, Math.round((rawWheelBonus / chartMax) * 100));
+              return (
+                <button
+                  type="button"
+                  className="w-full min-w-0 text-left"
+                  aria-pressed={isSelected}
+                  onClick={() => onSelectConsultant?.(record.displayName)}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="w-5 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
+                      {record.rank === 1
+                        ? '🥇'
+                        : record.rank === 2
+                          ? '🥈'
+                          : record.rank === 3
+                            ? '🥉'
+                            : `#${record.rank}`}
+                    </span>
+                    <CcAvatar name={record.displayName} src={record.avatar} isSelected={isSelected} size={28} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
+                        {record.displayName}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        Lv.{level} · {(record.totalPointsAccu || 0).toLocaleString('vi-VN')} pts
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-xs text-amber-400">{isSelected ? 'Đang lọc' : 'Xem'}</span>
+                  </div>
+                  <dl className="mt-2 grid grid-cols-3 gap-1.5 border-t border-slate-200 pt-2 dark:border-slate-800">
+                    <div className="min-w-0">
+                      <dt className="text-[10px] text-slate-500">Khách / DV</dt>
+                      <dd className="truncate text-sm font-bold tabular-nums text-sky-400">
+                        {record.totalCheckins}/{record.totalServices || 0}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="text-[10px] text-slate-500">Daily</dt>
+                      <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
+                        {fmtVnd(dailyBonus)} đ
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="text-[10px] text-slate-500">Xoay</dt>
+                      <dd
+                        className={`truncate text-sm font-bold tabular-nums ${cap.capStatus === 'HARDCAPPED' ? 'text-rose-400' : 'text-amber-400'}`}
+                      >
+                        {fmtVnd(cap.effectiveWheelBonus)} đ
+                      </dd>
+                    </div>
+                  </dl>
+                  <div
+                    className="cc-xoay-mobile-performance mt-1.5 space-y-1"
+                    role="img"
+                    aria-label={`Biểu đồ thưởng: Daily ${fmtVnd(dailyBonus)} đồng, Xoay ${fmtVnd(cap.effectiveWheelBonus)} đồng trên trần ${fmtVnd(cap.maxWheelBonusAllowed)} đồng`}
+                  >
+                    <div className="flex items-center gap-2 text-[10px] tabular-nums">
+                      <span className="w-9 shrink-0 text-slate-500">Daily</span>
+                      <span className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                        <span
+                          className="absolute inset-y-0 left-0 rounded-full bg-emerald-400"
+                          style={{ width: `${dailyBarPercent}%` }}
+                        />
+                      </span>
+                      <span className="w-8 shrink-0 text-right text-emerald-400">{dailyBarPercent}%</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] tabular-nums">
+                      <span className="w-9 shrink-0 text-slate-500">Xoay</span>
+                      <span className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                        <span
+                          className={`absolute inset-y-0 left-0 rounded-full ${cap.capStatus === 'HARDCAPPED' ? 'bg-rose-400' : 'bg-amber-400'}`}
+                          style={{ width: `${wheelBarPercent}%` }}
+                        />
+                      </span>
+                      <span
+                        className={`w-8 shrink-0 text-right ${cap.capStatus === 'HARDCAPPED' ? 'text-rose-400' : 'text-amber-400'}`}
+                      >
+                        {wheelBarPercent}%
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            }}
+          />
+        </div>
+      ) : (
+        <Table
+          dataSource={leaderboard}
+          columns={columns}
+          rowKey="consultantId"
+          size="small"
+          pagination={false}
+          loading={loading}
+          scroll={{ x: 'max-content' }}
+          className="antd-custom-table"
+          locale={{ emptyText: 'Chưa có dữ liệu' }}
+          onRow={(record) => ({
+            onClick: () => onSelectConsultant?.(record.displayName),
+            className: 'cursor-pointer hover:bg-amber-500/5 transition-colors',
+            style: {
+              background:
+                selectedConsultant === record.displayName
+                  ? isDark
+                    ? 'rgba(212,168,75,0.12)'
+                    : 'rgba(212,168,75,0.06)'
+                  : undefined,
+            },
+          })}
+        />
+      )}
     </Card>
   );
 }

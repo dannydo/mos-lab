@@ -65,6 +65,7 @@ export interface CvTipRecord {
   orderId: number;
   serviceId: number;
   checkinTime: string;
+  clientId: number;
   clientName: string;
   store: string;
   serviceName: string;
@@ -74,6 +75,8 @@ export interface CvTipRecord {
   cvTipAmount: number; // 70% share
   cvTipPercentage: number; // 70%
   tipStatus: 'Tipped' | 'No Tip';
+  clientTippedVisits?: number;
+  clientTotalVisits?: number;
 }
 
 export interface CvTipResponse {
@@ -86,6 +89,31 @@ export interface CvTipResponse {
     tipRatePercent: number;
     totalCustomerTip: number;
     totalCvTipBonus: number;
+  };
+}
+
+export interface CvTipCustomerVisit {
+  orderId: number;
+  checkinTime: string;
+  clientId: number;
+  clientName: string;
+  store: string;
+  lashSets: string;
+  cvNames: string;
+  ccInName: string;
+  ccOutName: string;
+  bookerName: string;
+  totalCustomerTip: number;
+  tipStatus: 'Tipped' | 'No Tip';
+}
+
+export interface CvTipCustomerHistoryResponse {
+  data: CvTipCustomerVisit[];
+  total: number;
+  summary: {
+    totalVisits: number;
+    tippedVisits: number;
+    nonTippedVisits: number;
   };
 }
 

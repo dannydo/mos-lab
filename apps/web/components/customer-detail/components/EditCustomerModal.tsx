@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Modal, Form, Input, Select, DatePicker, Card, Space, Switch, Button } from 'antd';
+import { Form, Input, Select, DatePicker, Card, Space, Switch, Button } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
+import { AdaptiveModal, ResponsiveFormGrid } from '../../ui';
 
 interface EditCustomerModalProps {
   open: boolean;
@@ -17,7 +18,9 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({ open, onCa
   const { themeMode } = useTheme();
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="form"
+      className="customer-edit-overlay"
       title={
         <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937', fontWeight: 'bold', fontSize: '16px' }}>
           ✏️ Sửa Thông Tin Khách Hàng
@@ -29,7 +32,6 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({ open, onCa
       confirmLoading={confirmLoading}
       okText="Lưu thay đổi"
       cancelText="Hủy"
-      width={600}
       styles={{
         body: {
           paddingTop: '16px',
@@ -69,7 +71,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({ open, onCa
           <Switch checkedChildren="🌐 Khách nước ngoài" unCheckedChildren="🇻🇳 Khách Việt Nam" />
         </Form.Item>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <ResponsiveFormGrid columns={2}>
           <Form.Item
             name="gender"
             label={<span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563' }}>Giới tính</span>}
@@ -100,7 +102,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({ open, onCa
               placeholder="Chọn ngày sinh"
             />
           </Form.Item>
-        </div>
+        </ResponsiveFormGrid>
 
         <Form.Item
           name="email"
@@ -190,6 +192,6 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({ open, onCa
           </Form.List>
         </Card>
       </Form>
-    </Modal>
+    </AdaptiveModal>
   );
 };

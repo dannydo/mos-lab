@@ -210,6 +210,8 @@ export interface Appointment {
   technicianId?: number | null;
   storeId?: number | null;
   branchName?: string;
+  /** Canonical short code from the CRM branch catalog (crm_stores.code). */
+  branchCode?: string | null;
   technicianName?: string;
   technicianAvatar?: string | null;
   ccInName?: string;
@@ -351,6 +353,7 @@ export interface ListAppointmentsResponse {
         id: number;
         name: string;
         branchName?: string;
+        branchCode?: string;
         shift?: string;
         bookedCount?: number;
         doneCount?: number;
@@ -365,6 +368,7 @@ export interface ListAppointmentsResponse {
         id: number;
         name: string;
         branchName?: string;
+        branchCode?: string;
         reason: string;
         type?: string;
       }>;

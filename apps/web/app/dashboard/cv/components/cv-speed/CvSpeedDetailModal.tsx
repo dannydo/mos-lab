@@ -199,7 +199,7 @@ export function CvSpeedDetailModal({ open, loading, staffId, cvDetail, onCancel 
                       borderColor: token.colorBorderSecondary,
                     }}
                   >
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tổng ca</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">∑ Ca</span>
                     <span className="text-lg font-extrabold tabular-nums" style={{ color: token.colorText }}>
                       {cvDetail.totalCases} <span className="text-xs font-normal text-slate-400">ca</span>
                     </span>

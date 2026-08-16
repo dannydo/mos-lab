@@ -43,6 +43,9 @@ import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import dayjs from 'dayjs';
 import CcAvatar from '../../cc/components/CcAvatar';
+import { MobileRecordList } from '~/components/ui';
+import { formatCompactVND, formatVND } from '../../../../lib/format-utils';
+import { useResponsiveTier, useViewportSize } from '~/hooks/useResponsiveTier';
 
 const { Text } = Typography;
 
@@ -74,6 +77,15 @@ interface CvThuNhapTabProps {
 export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: CvThuNhapTabProps) {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const tier = useResponsiveTier();
+  const { width: viewportWidth, height: viewportHeight } = useViewportSize();
+  // A rotated iPhone 12 is wide enough for the compact tablet/table layout.
+  // Keep the portrait phone record cards, but do not force a 844px landscape
+  // viewport into a vertically stacked phone composition.
+  const isTabletDensityLandscape = viewportWidth >= 768 && viewportWidth > viewportHeight;
+  const isMobile = tier === 'mobile' && !isTabletDensityLandscape;
+  const useCompactMetricFormat = tier === 'mobile' || tier === 'tablet';
+  const formatMetricValue = (value: number) => (useCompactMetricFormat ? formatCompactVND(value) : formatVND(value));
   const [loading, setLoading] = useState(false);
   const [paystubData, setPaystubData] = useState<CvPaystubRecord[]>([]);
   const [summary, setSummary] = useState({
@@ -627,83 +639,83 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="cv-income-tab flex flex-col gap-4">
       {/* Metrics Row */}
-      <Row gutter={[12, 12]}>
-        <Col xs={24} sm={4} md={4} lg={4} xl={4}>
+      <Row gutter={[12, 12]} className="cv-income-stat-grid">
+        <Col xs={12} sm={4} md={4} lg={4} xl={4}>
           <Card
             variant="outlined"
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Lương Giờ"
+              title="∑ Lương Giờ"
               value={summary.totalHourlyWage}
-              suffix="đ"
+              formatter={(value) => formatMetricValue(Number(value || 0))}
               valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
         </Col>
 
-        <Col xs={24} sm={5} md={5} lg={5} xl={5}>
+        <Col xs={12} sm={5} md={5} lg={5} xl={5}>
           <Card
             variant="outlined"
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Thưởng Ca CV"
+              title="∑ Thưởng Ca CV"
               value={summary.totalCvXoayBonus}
-              suffix="đ"
+              formatter={(value) => formatMetricValue(Number(value || 0))}
               valueStyle={{ color: '#3f8600', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<ThunderboltOutlined />}
             />
           </Card>
         </Col>
 
-        <Col xs={24} sm={5} md={5} lg={5} xl={5}>
+        <Col xs={12} sm={5} md={5} lg={5} xl={5}>
           <Card
             variant="outlined"
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Thưởng Thâm Niên"
+              title="∑ Thưởng Thâm Niên"
               value={summary.totalSeniorityBonus}
-              suffix="đ"
+              formatter={(value) => formatMetricValue(Number(value || 0))}
               valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<GiftOutlined />}
             />
           </Card>
         </Col>
 
-        <Col xs={24} sm={5} md={5} lg={5} xl={5}>
+        <Col xs={12} sm={5} md={5} lg={5} xl={5}>
           <Card
             variant="outlined"
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Thưởng CV Tip"
+              title="∑ Thưởng CV Tip"
               value={summary.totalCvTipBonus}
-              suffix="đ"
+              formatter={(value) => formatMetricValue(Number(value || 0))}
               valueStyle={{ color: '#722ed1', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<GiftOutlined />}
             />
           </Card>
         </Col>
 
-        <Col xs={24} sm={5} md={5} lg={5} xl={5}>
+        <Col xs={12} sm={5} md={5} lg={5} xl={5}>
           <Card
             variant="outlined"
             style={{ background: token.colorBgContainer, borderColor: '#52c41a' }}
             className="shadow-sm rounded-xl"
           >
             <Statistic
-              title="Tổng Thu Nhập"
+              title="∑ Thu Nhập"
               value={summary.grandTotalIncome}
-              suffix="đ"
+              formatter={(value) => formatMetricValue(Number(value || 0))}
               valueStyle={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<WalletOutlined />}
             />
@@ -760,24 +772,88 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
           </div>
         }
       >
-        <Table
-          dataSource={filteredData}
-          columns={columns}
-          rowKey="staffId"
-          loading={loading}
-          pagination={{
-            pageSize: pageSize,
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            onChange: (page, size) => {
-              setPageSize(size);
-              localStorage.setItem('cv_paystub_page_size', size.toString());
-            },
-          }}
-          scroll={{ x: 'max-content' }}
-          size="small"
-          className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
-        />
+        {isMobile ? (
+          <div className="p-3">
+            <MobileRecordList
+              records={filteredData}
+              loading={loading}
+              getKey={(record) => String(record.staffId)}
+              emptyDescription="Không tìm thấy dữ liệu thu nhập CV"
+              renderRecord={(record, index) => (
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                    </span>
+                    <CcAvatar name={record.staffName} src={record.avatar} size={32} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
+                        {record.staffName}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        {formatStoreCode(record.store)} · L{record.techLevel || 1}
+                      </div>
+                    </div>
+                  </div>
+                  <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+                    <div className="min-w-0">
+                      <dt className="text-[10px] text-slate-500">Lương giờ</dt>
+                      <dd className="truncate text-sm font-bold tabular-nums text-sky-400">
+                        +{formatCompactVND(record.hourlyWage || 0)}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="text-[10px] text-slate-500">CV Xoay</dt>
+                      <dd className="truncate text-sm font-bold tabular-nums text-purple-400">
+                        +{formatCompactVND(record.cvXoayBonus || 0)}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="text-[10px] text-slate-500">Thu nhập</dt>
+                      <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
+                        {formatCompactVND(record.totalIncome || 0)}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button size="small" onClick={() => handleOpenWorkLogs(record)}>
+                      Giờ làm
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<EyeOutlined className="text-amber-400" />}
+                      onClick={() => {
+                        setSelectedRecord(record);
+                        setModalOpen(true);
+                      }}
+                    >
+                      Phiếu lương
+                    </Button>
+                  </div>
+                </div>
+              )}
+            />
+          </div>
+        ) : (
+          <Table
+            dataSource={filteredData}
+            columns={columns}
+            rowKey="staffId"
+            loading={loading}
+            pagination={{
+              pageSize: pageSize,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              onChange: (page, size) => {
+                setPageSize(size);
+                localStorage.setItem('cv_paystub_page_size', size.toString());
+              },
+            }}
+            scroll={{ x: 'max-content' }}
+            size="small"
+            className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
+          />
+        )}
       </Card>
 
       {/* Paystub Detail Modal */}
@@ -899,7 +975,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
               )}
 
               <div className="flex justify-between items-center pt-2 font-bold text-base">
-                <span>TỔNG THU NHẬP TẠM TÍNH:</span>
+                <span>∑ THU NHẬP TẠM TÍNH:</span>
                 <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
                   {selectedRecord.totalIncome.toLocaleString('vi-VN')}đ
                 </span>
@@ -996,7 +1072,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
                 <Col span={6}>
                   <Card size="small" variant="outlined">
                     <Statistic
-                      title="Tổng Ngày Đi Làm"
+                      title="∑ Ngày Đi Làm"
                       value={workLogSummary.totalWorkDays}
                       suffix="ngày"
                       valueStyle={{ fontSize: '15px', color: '#1890ff', fontVariantNumeric: 'tabular-nums' }}
@@ -1007,7 +1083,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
                 <Col span={6}>
                   <Card size="small" variant="outlined">
                     <Statistic
-                      title="Tổng Số Giờ Làm"
+                      title="∑ Số Giờ Làm"
                       value={formatHoursToHoursMinutes(workLogSummary.totalWorkHours)}
                       valueStyle={{ fontSize: '15px', color: '#722ed1', fontVariantNumeric: 'tabular-nums' }}
                       prefix={<ClockCircleOutlined />}
@@ -1028,7 +1104,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
                 <Col span={6}>
                   <Card size="small" variant="outlined" style={{ borderColor: '#1890ff' }}>
                     <Statistic
-                      title="Tổng Lương Giờ Nhận"
+                      title="∑ Lương Giờ Nhận"
                       value={workLogSummary.totalWage}
                       suffix="đ"
                       precision={0}

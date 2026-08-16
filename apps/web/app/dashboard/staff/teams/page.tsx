@@ -1,115 +1,176 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
-import { Card, Typography, Tag, Button, Input, Spin, message, Badge, Tooltip, Alert } from 'antd';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, message, Tooltip } from 'antd';
 import {
-  TeamOutlined,
-  SearchOutlined,
-  SaveOutlined,
-  ReloadOutlined,
-  SettingOutlined,
-  UsergroupAddOutlined,
-  CheckCircleOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-  CloseOutlined,
-  CheckCircleFilled,
-  FilterOutlined,
-  InfoCircleOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+  Boxes,
+  CheckCircle2,
+  Gem,
+  Headphones,
+  Info,
+  PhoneCall,
+  Plus,
+  RefreshCw,
+  Save,
+  Scissors,
+  Settings2,
+  ShieldCheck,
+  Trash2,
+  UserRoundPlus,
+  Users,
+  UsersRound,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useTheme } from '../../../../context/ThemeContext';
+import { removeVietnameseTones, type Team, type TeamStaffOption } from '@mos-lab/shared';
+import {
+  AppIcon,
+  DataSection,
+  FeaturePage,
+  IconButton,
+  SearchField,
+  SectionCard,
+  StatePanel,
+  StatusTag,
+  type StatusType,
+} from '~/components/ui';
 import { apiClient } from '../../../../lib/api-client';
-import { Team, TeamStaffOption, removeVietnameseTones } from '@mos-lab/shared';
+import styles from './teams.module.css';
 
-const { Title, Text } = Typography;
+type RoleFilter = 'ALL' | 'CC' | 'CV' | 'BK' | 'OTHER';
+
+const ROLE_FILTERS: ReadonlyArray<{ label: string; value: RoleFilter }> = [
+  { label: 'Tất cả', value: 'ALL' },
+  { label: 'CC', value: 'CC' },
+  { label: 'KTV/CV', value: 'CV' },
+  { label: 'Booker', value: 'BK' },
+  { label: 'Khác', value: 'OTHER' },
+];
+
+function teamStatus(code: string): StatusType {
+  if (code === 'CC') return 'processing';
+  if (code === 'CV') return 'success';
+  if (code === 'BK') return 'warning';
+  if (code.includes('TELESALES')) return 'orange';
+  if (code.includes('CS')) return 'cyan';
+  if (code.includes('CONTROL')) return 'purple';
+  return 'default';
+}
+
+function teamIcon(code: string): LucideIcon {
+  if (code === 'CC') return Gem;
+  if (code === 'CV') return Scissors;
+  if (code === 'BK') return PhoneCall;
+  if (code.includes('TELESALES')) return Headphones;
+  if (code.includes('CS')) return UserRoundPlus;
+  if (code.includes('CONTROL')) return ShieldCheck;
+  if (code.includes('OTHER')) return Boxes;
+  return Users;
+}
+
+function staffInitial(staff: TeamStaffOption) {
+  return staff.displayName.trim().charAt(0).toUpperCase() || '?';
+}
+
+function StaffIdentity({ staff, active = false }: { staff: TeamStaffOption; active?: boolean }) {
+  return (
+    <div className={styles.staffIdentity}>
+      <span className={`${styles.staffAvatar} ${active ? styles.staffAvatarActive : ''}`} aria-hidden>
+        {staffInitial(staff)}
+      </span>
+      <span className={styles.staffText}>
+        <strong>{staff.displayName}</strong>
+        <span className={styles.staffMeta}>
+          <span className="tabular-nums">#{staff.staffId}</span>
+          {staff.username && <span>@{staff.username}</span>}
+          {staff.role && <span>{staff.role}</span>}
+        </span>
+      </span>
+    </div>
+  );
+}
 
 function TeamsContent() {
-  const { themeMode } = useTheme();
   const searchParams = useSearchParams();
   const initialSelectedCode = searchParams.get('selected') || 'CC';
 
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [teamsError, setTeamsError] = useState<string>();
+  const [detailError, setDetailError] = useState<string>();
 
   const [teams, setTeams] = useState<Team[]>([]);
-  const rootTeams = useMemo(() => {
-    return teams.filter((t) => !t.parentTeamId);
-  }, [teams]);
-  const [selectedCode, setSelectedCode] = useState<string>(initialSelectedCode);
+  const rootTeams = useMemo(() => teams.filter((team) => !team.parentTeamId), [teams]);
+  const [selectedCode, setSelectedCode] = useState(initialSelectedCode);
 
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [staffOptions, setStaffOptions] = useState<TeamStaffOption[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<Set<number>>(new Set());
 
-  // Search & Filter state for 2 columns
   const [poolSearchText, setPoolSearchText] = useState('');
   const [activeSearchText, setActiveSearchText] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('ALL');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL');
 
-  // Is current team an auto-fallback group (e.g. BK_OTHER)?
   const isAutoGroup = Boolean(currentTeam && (currentTeam.code === 'BK_OTHER' || currentTeam.code.endsWith('_OTHER')));
 
-  // Set of all staff IDs assigned to specifically defined teams (non-OTHER subteams or root teams)
   const definedTeamStaffIds = useMemo(() => {
-    const set = new Set<number>();
+    const staffIds = new Set<number>();
     teams.forEach((root) => {
       if (root.activeStaffIds && !root.code.endsWith('_OTHER') && root.code !== currentTeam?.code) {
-        root.activeStaffIds.forEach((id) => set.add(id));
+        root.activeStaffIds.forEach((staffId) => staffIds.add(staffId));
       }
-      if (root.children) {
-        root.children.forEach((child) => {
-          if (!child.code.endsWith('_OTHER') && child.code !== currentTeam?.code && child.activeStaffIds) {
-            child.activeStaffIds.forEach((id) => set.add(id));
-          }
-        });
-      }
+      root.children?.forEach((child) => {
+        if (child.activeStaffIds && !child.code.endsWith('_OTHER') && child.code !== currentTeam?.code) {
+          child.activeStaffIds.forEach((staffId) => staffIds.add(staffId));
+        }
+      });
     });
-    return set;
-  }, [teams, currentTeam]);
+    return staffIds;
+  }, [currentTeam?.code, teams]);
 
-  // Fetch all teams
   const fetchTeams = useCallback(async () => {
     setLoadingTeams(true);
+    setTeamsError(undefined);
     try {
-      const res = await apiClient.teams.list();
-      setTeams(res.teams || []);
-    } catch (err) {
-      console.error('Fetch teams error:', err);
+      const response = await apiClient.teams.list();
+      setTeams(response.teams || []);
+    } catch (error) {
+      console.error('Fetch teams error:', error);
+      setTeamsError('Không thể tải danh sách đội nhóm.');
       message.error('Không thể tải danh sách đội nhóm.');
     } finally {
       setLoadingTeams(false);
     }
   }, []);
 
-  // Fetch detail for selected team
   const fetchTeamDetail = useCallback(async (code: string) => {
     setLoadingDetail(true);
+    setDetailError(undefined);
     try {
-      const res = await apiClient.teams.getByCode(code);
-      setCurrentTeam(res.team);
-      setStaffOptions(res.allStaffOptions || []);
+      const response = await apiClient.teams.getByCode(code);
+      const options = response.allStaffOptions || [];
+      const activeStaffIds = new Set(options.filter((staff) => staff.isActive).map((staff) => staff.staffId));
 
-      const activeIds = new Set((res.allStaffOptions || []).filter((opt) => opt.isActive).map((opt) => opt.staffId));
-      setSelectedStaffIds(activeIds);
-
-      // Keep sidebar menu memberCount synchronized with actual active staff IDs in DB
-      setTeams((prev) =>
-        prev.map((t) => {
-          if (t.code === code) return { ...t, memberCount: activeIds.size };
-          if (t.children) {
-            return {
-              ...t,
-              children: t.children.map((c) => (c.code === code ? { ...c, memberCount: activeIds.size } : c)),
-            };
-          }
-          return t;
+      setCurrentTeam(response.team);
+      setStaffOptions(options);
+      setSelectedStaffIds(activeStaffIds);
+      setTeams((previous) =>
+        previous.map((team) => {
+          if (team.code === code) return { ...team, memberCount: activeStaffIds.size };
+          if (!team.children) return team;
+          return {
+            ...team,
+            children: team.children.map((child) =>
+              child.code === code ? { ...child, memberCount: activeStaffIds.size } : child
+            ),
+          };
         })
       );
-    } catch (err) {
-      console.error(`Fetch team ${code} detail error:`, err);
+    } catch (error) {
+      console.error(`Fetch team ${code} detail error:`, error);
+      setDetailError(`Không thể tải thông tin đội ${code}.`);
       message.error(`Không thể tải thông tin đội ${code}.`);
     } finally {
       setLoadingDetail(false);
@@ -117,99 +178,72 @@ function TeamsContent() {
   }, []);
 
   useEffect(() => {
-    fetchTeams();
+    void fetchTeams();
   }, [fetchTeams]);
 
   useEffect(() => {
-    if (selectedCode) {
-      fetchTeamDetail(selectedCode);
-    }
-  }, [selectedCode, fetchTeamDetail]);
+    if (selectedCode) void fetchTeamDetail(selectedCode);
+  }, [fetchTeamDetail, selectedCode]);
 
-  const handleToggleStaff = (staffId: number) => {
-    if (isAutoGroup) return;
-    setSelectedStaffIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(staffId)) {
-        next.delete(staffId);
-      } else {
-        next.add(staffId);
-      }
-      return next;
-    });
-  };
+  const autoGroupStaffOptions = useMemo(
+    () => staffOptions.filter((staff) => !definedTeamStaffIds.has(staff.staffId)),
+    [definedTeamStaffIds, staffOptions]
+  );
+
+  const availablePoolOptions = useMemo(() => {
+    let options = isAutoGroup ? autoGroupStaffOptions : staffOptions;
+
+    if (!isAutoGroup && roleFilter !== 'ALL') {
+      options = options.filter((staff) => {
+        const role = (staff.role || '').toUpperCase();
+        if (roleFilter === 'CC') return role.includes('CC');
+        if (roleFilter === 'CV') return role.includes('CV') || role.includes('KTV');
+        if (roleFilter === 'BK') return role.includes('BK') || role.includes('BOOKER');
+        return !role.includes('CC') && !role.includes('CV') && !role.includes('KTV') && !role.includes('BK');
+      });
+    }
+
+    if (!poolSearchText.trim()) return options;
+    const query = removeVietnameseTones(poolSearchText);
+    return options.filter(
+      (staff) =>
+        removeVietnameseTones(staff.displayName).includes(query) ||
+        (staff.username && removeVietnameseTones(staff.username).includes(query)) ||
+        String(staff.staffId).includes(query)
+    );
+  }, [autoGroupStaffOptions, isAutoGroup, poolSearchText, roleFilter, staffOptions]);
+
+  const activeMembers = useMemo(() => {
+    const members = staffOptions.filter((staff) => selectedStaffIds.has(staff.staffId));
+    if (!activeSearchText.trim()) return members;
+    const query = removeVietnameseTones(activeSearchText);
+    return members.filter(
+      (staff) =>
+        removeVietnameseTones(staff.displayName).includes(query) ||
+        (staff.username && removeVietnameseTones(staff.username).includes(query)) ||
+        String(staff.staffId).includes(query)
+    );
+  }, [activeSearchText, selectedStaffIds, staffOptions]);
 
   const handleAddStaff = (staffId: number) => {
     if (isAutoGroup) return;
-    setSelectedStaffIds((prev) => new Set(prev).add(staffId));
+    setSelectedStaffIds((previous) => new Set(previous).add(staffId));
   };
 
   const handleRemoveStaff = (staffId: number) => {
     if (isAutoGroup) return;
-    setSelectedStaffIds((prev) => {
-      const next = new Set(prev);
+    setSelectedStaffIds((previous) => {
+      const next = new Set(previous);
       next.delete(staffId);
       return next;
     });
   };
 
-  // Left Column: Filtered Pool Options
-  const availablePoolOptions = useMemo(() => {
-    let list = staffOptions;
-
-    // For auto group (BK_OTHER), subtract all members assigned to specifically defined teams!
-    if (isAutoGroup) {
-      list = list.filter((opt) => !definedTeamStaffIds.has(opt.staffId));
-    } else if (roleFilter !== 'ALL') {
-      list = list.filter((opt) => {
-        const staffRole = (opt.role || '').toUpperCase();
-        if (roleFilter === 'CC') return staffRole.includes('CC');
-        if (roleFilter === 'CV') return staffRole.includes('CV') || staffRole.includes('KTV');
-        if (roleFilter === 'BK') return staffRole.includes('BK') || staffRole.includes('BOOKER');
-        if (roleFilter === 'OTHER') {
-          return (
-            !staffRole.includes('CC') &&
-            !staffRole.includes('CV') &&
-            !staffRole.includes('KTV') &&
-            !staffRole.includes('BK')
-          );
-        }
-        return true;
-      });
-    }
-
-    // Accentless search
-    if (poolSearchText.trim()) {
-      const query = removeVietnameseTones(poolSearchText);
-      list = list.filter(
-        (opt) =>
-          removeVietnameseTones(opt.displayName).includes(query) ||
-          (opt.username && removeVietnameseTones(opt.username).includes(query)) ||
-          String(opt.staffId).includes(query)
-      );
-    }
-
-    return list;
-  }, [staffOptions, roleFilter, poolSearchText, isAutoGroup, definedTeamStaffIds]);
-
-  // Right Column: Active Members List Filtered
-  const activeMembersList = useMemo(() => {
-    const activeStaff = staffOptions.filter((opt) => selectedStaffIds.has(opt.staffId));
-    if (!activeSearchText.trim()) return activeStaff;
-    const query = removeVietnameseTones(activeSearchText);
-    return activeStaff.filter(
-      (opt) =>
-        removeVietnameseTones(opt.displayName).includes(query) ||
-        (opt.username && removeVietnameseTones(opt.username).includes(query)) ||
-        String(opt.staffId).includes(query)
-    );
-  }, [staffOptions, selectedStaffIds, activeSearchText]);
-
-  const handleAddAllFilteredToTeam = () => {
+  const handleAddAllFiltered = () => {
     if (isAutoGroup) return;
-    setSelectedStaffIds((prev) => {
-      const next = new Set(prev);
-      availablePoolOptions.forEach((opt) => next.add(opt.staffId));
+    setSelectedStaffIds((previous) => {
+      const next = new Set(previous);
+      availablePoolOptions.forEach((staff) => next.add(staff.staffId));
       return next;
     });
     message.success(`Đã thêm ${availablePoolOptions.length} nhân sự vào đội.`);
@@ -225,418 +259,266 @@ function TeamsContent() {
     if (!currentTeam || isAutoGroup) return;
     setSaving(true);
     try {
-      const activeIdsArray = Array.from(selectedStaffIds);
-      await apiClient.teams.updateMembers(currentTeam.id, {
-        activeStaffIds: activeIdsArray,
-      });
-      message.success(`Đã lưu danh sách thành viên đội ${currentTeam.name} thành công!`);
-      fetchTeams();
-      fetchTeamDetail(currentTeam.code);
-    } catch (err) {
-      console.error('Save team members error:', err);
+      await apiClient.teams.updateMembers(currentTeam.id, { activeStaffIds: Array.from(selectedStaffIds) });
+      message.success(`Đã lưu danh sách thành viên đội ${currentTeam.name} thành công.`);
+      await Promise.all([fetchTeams(), fetchTeamDetail(currentTeam.code)]);
+    } catch (error) {
+      console.error('Save team members error:', error);
       message.error('Không thể lưu danh sách thành viên.');
     } finally {
       setSaving(false);
     }
   };
 
-  // Flatten root teams and their children for the left menu
-  const renderTeamMenuItem = (t: Team, isChild = false) => {
-    const isSelected = selectedCode === t.code;
+  const handleRefresh = () => {
+    void fetchTeams();
+    if (selectedCode) void fetchTeamDetail(selectedCode);
+  };
+
+  const renderTeam = (team: Team, child = false) => {
+    const active = selectedCode === team.code;
+    const memberCount = team.memberCount ?? 0;
     return (
-      <div
-        key={t.code}
-        onClick={() => setSelectedCode(t.code)}
-        className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-          isChild ? 'ml-4 my-1' : 'my-1.5'
-        } ${
-          isSelected
-            ? themeMode === 'dark'
-              ? 'bg-blue-950/70 border border-blue-600/50 shadow-md'
-              : 'bg-blue-50 border border-blue-200 shadow-sm'
-            : themeMode === 'dark'
-              ? 'hover:bg-slate-800/60 border border-transparent'
-              : 'hover:bg-slate-100/80 border border-transparent'
-        }`}
+      <button
+        key={team.code}
+        type="button"
+        className={styles.teamItem}
+        data-active={active || undefined}
+        data-child={child || undefined}
+        aria-current={active ? 'page' : undefined}
+        onClick={() => setSelectedCode(team.code)}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-xl flex-shrink-0">{t.icon || '👥'}</span>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span
-                className={`font-semibold text-sm truncate ${
-                  isSelected
-                    ? themeMode === 'dark'
-                      ? 'text-blue-400'
-                      : 'text-blue-600'
-                    : themeMode === 'dark'
-                      ? 'text-slate-200'
-                      : 'text-slate-700'
-                }`}
-              >
-                {t.name}
-              </span>
-              <Tag color={t.color || 'default'} className="text-[10px] px-1 py-0 border-0 flex-shrink-0 font-mono">
-                {t.code}
-              </Tag>
-            </div>
-            {t.description && <p className="text-xs text-slate-400 truncate max-w-[180px] m-0">{t.description}</p>}
-          </div>
-        </div>
-        <Badge
-          count={t.memberCount ?? 0}
-          overflowCount={999}
-          style={{
-            backgroundColor: isSelected ? t.color || '#1890ff' : themeMode === 'dark' ? '#334155' : '#cbd5e1',
-            color: isSelected ? '#fff' : themeMode === 'dark' ? '#94a3b8' : '#475569',
-          }}
-          className="flex-shrink-0 ml-2"
-        />
-      </div>
+        <span className={styles.teamItemIcon} aria-hidden>
+          <AppIcon icon={teamIcon(team.code)} size="sm" />
+        </span>
+        <span className={styles.teamItemCopy}>
+          <span className={styles.teamItemTitle}>
+            <strong>{team.name}</strong>
+            <StatusTag status={teamStatus(team.code)} label={team.code} bordered={false} className={styles.teamCode} />
+          </span>
+          <span className={styles.teamItemDescription}>{team.description || 'Chưa có mô tả đội nhóm.'}</span>
+        </span>
+        <span className={styles.memberCount} aria-label={`${memberCount} nhân sự`}>
+          {memberCount}
+        </span>
+      </button>
     );
   };
 
+  const activeCount = isAutoGroup ? autoGroupStaffOptions.length : selectedStaffIds.size;
+
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <Title level={2} style={{ margin: 0 }}>
-            <TeamOutlined className="mr-3 text-blue-500" />
-            Cấu hình Đội Nhóm
-          </Title>
-          <Text type="secondary" className="text-sm">
-            Quản lý tập trung danh sách nhân sự thuộc các đội CC, CV, BK & các nhóm trực thuộc.
-          </Text>
-        </div>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => {
-            fetchTeams();
-            if (selectedCode) fetchTeamDetail(selectedCode);
-          }}
+    <FeaturePage
+      title="Cấu hình Đội Nhóm"
+      subtitle="Quản lý nhân sự thuộc đội CC, CV, BK và các nhóm trực thuộc; các thay đổi chỉ áp dụng sau khi lưu."
+      icon={<AppIcon icon={UsersRound} size="lg" />}
+      tag={<StatusTag status="default" label="Quản trị" />}
+      headerActions={
+        <IconButton
+          label="Làm mới dữ liệu đội nhóm"
+          icon={RefreshCw}
+          onClick={handleRefresh}
           loading={loadingTeams || loadingDetail}
+        />
+      }
+      className={styles.page}
+      contentClassName={styles.pageContent}
+    >
+      <div className={styles.layout}>
+        <DataSection
+          title={
+            <span className={styles.sectionTitle}>
+              <AppIcon icon={Settings2} size="sm" />
+              Danh sách đội nhóm
+            </span>
+          }
+          className={styles.directory}
+          state={loadingTeams ? 'loading' : teamsError ? 'error' : rootTeams.length === 0 ? 'empty' : undefined}
+          stateTitle={teamsError || (rootTeams.length === 0 ? 'Chưa có đội nhóm' : 'Đang tải đội nhóm')}
+          stateDescription={teamsError ? 'Hãy thử làm mới lại danh sách.' : undefined}
+          stateExtra={teamsError ? <Button onClick={() => void fetchTeams()}>Thử lại</Button> : undefined}
+          stateMinHeight={360}
         >
-          Làm mới
-        </Button>
-      </div>
-
-      {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Sidebar: Team Tree Navigation */}
-        <div className="lg:col-span-4 space-y-3">
-          <Card
-            title={
-              <span className="font-bold flex items-center gap-2 text-base">
-                <SettingOutlined /> Danh sách Đội Nhóm
-              </span>
-            }
-            className={`shadow-sm border ${
-              themeMode === 'dark' ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200'
-            }`}
-            bodyStyle={{ padding: '12px' }}
-          >
-            {loadingTeams ? (
-              <div className="flex justify-center p-8">
-                <Spin tip="Đang tải đội nhóm..." />
+          <nav className={styles.teamTree} aria-label="Danh sách đội nhóm">
+            {rootTeams.map((root) => (
+              <div key={root.code} className={styles.teamBranch}>
+                {renderTeam(root)}
+                {root.children && root.children.length > 0 && (
+                  <div className={styles.teamChildren}>{root.children.map((child) => renderTeam(child, true))}</div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-1">
-                {rootTeams.map((rootTeam) => (
-                  <React.Fragment key={rootTeam.code}>
-                    {renderTeamMenuItem(rootTeam)}
-                    {rootTeam.children && rootTeam.children.length > 0 && (
-                      <div className="border-l-2 border-slate-700/30 pl-1 my-1 space-y-1">
-                        {rootTeam.children.map((childTeam) => renderTeamMenuItem(childTeam, true))}
-                      </div>
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
+            ))}
+          </nav>
+        </DataSection>
 
-        {/* Right Panel: Selected Team Members Detail */}
-        <div className="lg:col-span-8">
-          <Card
-            className={`shadow-sm border ${
-              themeMode === 'dark' ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200'
-            }`}
-          >
-            {loadingDetail ? (
-              <div className="flex justify-center items-center p-16">
-                <Spin size="large" tip="Đang tải thông tin đội..." />
-              </div>
-            ) : currentTeam ? (
-              <div className="space-y-5">
-                {/* Team Info Banner */}
-                <div
-                  className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
-                    themeMode === 'dark' ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{currentTeam.icon || '👥'}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Title level={4} style={{ margin: 0 }}>
-                          {currentTeam.name}
-                        </Title>
-                        <Tag color={currentTeam.color || 'blue'} className="px-2 py-0.5 font-bold">
-                          {currentTeam.code}
-                        </Tag>
-                        {isAutoGroup ? (
-                          <Tag color="orange" className="text-xs font-semibold">
-                            Tự động (Auto Group)
-                          </Tag>
-                        ) : currentTeam.parentTeamId ? (
-                          <Tag color="purple" className="text-xs">
-                            Sub-team
-                          </Tag>
-                        ) : null}
-                      </div>
-                      <Text type="secondary" className="text-xs">
-                        {currentTeam.description || 'Chưa có mô tả cho đội nhóm này.'}
-                      </Text>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 self-end sm:self-auto bg-slate-900/20 px-3 py-1.5 rounded-lg border border-slate-700/30">
-                    <span className="text-xs text-slate-400 font-medium">
-                      {isAutoGroup ? 'Tự động gom (Đã trừ các đội cụ thể):' : 'Đang hoạt động:'}
+        <DataSection
+          className={styles.detail}
+          state={loadingDetail ? 'loading' : detailError ? 'error' : currentTeam ? undefined : 'empty'}
+          stateTitle={detailError || (currentTeam ? undefined : 'Chọn một đội để cấu hình')}
+          stateDescription={
+            detailError
+              ? 'Không thể tải dữ liệu đội hiện tại.'
+              : 'Chọn đội từ danh sách bên trái để quản lý thành viên.'
+          }
+          stateExtra={
+            detailError && selectedCode ? (
+              <Button onClick={() => void fetchTeamDetail(selectedCode)}>Thử lại</Button>
+            ) : undefined
+          }
+          stateMinHeight={440}
+        >
+          {currentTeam && (
+            <div className={styles.detailStack}>
+              <header className={styles.teamSummary}>
+                <div className={styles.teamSummaryMain}>
+                  <span className={styles.teamSummaryIcon} aria-hidden>
+                    <AppIcon icon={teamIcon(currentTeam.code)} size="lg" />
+                  </span>
+                  <span>
+                    <span className={styles.teamSummaryTitle}>
+                      <strong>{currentTeam.name}</strong>
+                      <StatusTag status={teamStatus(currentTeam.code)} label={currentTeam.code} />
+                      {isAutoGroup ? <StatusTag status="warning" label="Nhóm tự động" /> : null}
+                      {!isAutoGroup && currentTeam.parentTeamId ? (
+                        <StatusTag status="purple" label="Nhóm trực thuộc" />
+                      ) : null}
                     </span>
-                    <Badge
-                      count={isAutoGroup ? availablePoolOptions.length : selectedStaffIds.size}
-                      overflowCount={999}
-                      style={{
-                        backgroundColor: isAutoGroup ? '#fa8c16' : '#52c41a',
-                        fontWeight: 'bold',
-                      }}
-                    />
-                    <span className="text-xs text-slate-400 font-medium">/ {staffOptions.length} nhân sự</span>
-                  </div>
+                    <span className={styles.teamSummaryDescription}>
+                      {currentTeam.description || 'Chưa có mô tả cho đội nhóm này.'}
+                    </span>
+                  </span>
                 </div>
+                <StatusTag
+                  status={isAutoGroup ? 'warning' : 'success'}
+                  icon={<AppIcon icon={Users} size="sm" />}
+                  label={`${activeCount} / ${staffOptions.length} nhân sự`}
+                  className={styles.teamSummaryCount}
+                />
+              </header>
 
-                {/* Conditional View: Auto Group Notice vs Dual List Editor */}
-                {isAutoGroup ? (
-                  /* Auto Group Mode Notice & Read-only View */
-                  <div className="space-y-4">
-                    <Alert
-                      message={
-                        <span className="font-bold flex items-center gap-2">
-                          <InfoCircleOutlined className="text-amber-500" />
-                          Nhóm Tự Động / Khác ({currentTeam.code})
-                        </span>
-                      }
-                      description={
-                        <div className="space-y-1.5 text-xs">
-                          <p>
-                            💡{' '}
-                            <strong>
-                              Nhóm {currentTeam.name} ({currentTeam.code})
-                            </strong>{' '}
-                            là nhóm tự động gom tất cả nhân sự/kênh chưa thuộc bất kỳ nhóm cụ thể nào.
-                          </p>
-                          <p className="text-amber-200/90 font-medium">
-                            ✨ <strong>Quy tắc loại trừ:</strong> Hệ thống tự động{' '}
-                            <strong>TRỪ RA {definedTeamStaffIds.size} nhân sự</strong> đã thuộc về các đội cụ thể
-                            (Telesales, CS, Control...). Chỉ những thành viên chưa phân nhóm mới xuất hiện tại đây.
-                          </p>
-                        </div>
-                      }
-                      type="warning"
-                      showIcon={false}
-                      className="border-amber-500/40 bg-amber-950/30 text-amber-200 p-4 rounded-xl"
+              {isAutoGroup ? (
+                <div className={styles.autoStack}>
+                  <Alert
+                    type="warning"
+                    showIcon={false}
+                    message={
+                      <span className={styles.autoNoticeTitle}>
+                        <AppIcon icon={Info} size="sm" />
+                        Nhóm tự động / Khác ({currentTeam.code})
+                      </span>
+                    }
+                    description={
+                      <span>
+                        Hệ thống tự động gom nhân sự chưa thuộc đội cụ thể; hiện đang loại trừ{' '}
+                        <strong>{definedTeamStaffIds.size}</strong> nhân sự đã thuộc Telesales, CS, Control hoặc các đội
+                        khác.
+                      </span>
+                    }
+                  />
+
+                  <SectionCard
+                    title={
+                      <span className={styles.sectionTitle}>
+                        <AppIcon icon={Users} size="sm" />
+                        Nhân sự chưa phân nhóm
+                      </span>
+                    }
+                    extra={<StatusTag status="warning" label={`${availablePoolOptions.length} nhân sự`} />}
+                    className={styles.innerSection}
+                    bodyPadding="var(--mos-density-padding)"
+                  >
+                    <SearchField
+                      behavior="filter"
+                      value={poolSearchText}
+                      onChange={(event) => setPoolSearchText(event.target.value)}
+                      placeholder="Tìm nhân sự không dấu…"
                     />
-
-                    {/* Readonly preview of staff defaulting to Khác */}
-                    <div
-                      className={`p-4 rounded-xl border space-y-3 ${
-                        themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50/60 border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm flex items-center gap-2">
-                          <UserOutlined className="text-amber-500" />
-                          Danh sách nhân sự chưa phân nhóm (Mặc định thuộc nhóm Khác)
-                        </span>
-                        <Tag color="orange" className="font-mono m-0">
-                          {availablePoolOptions.length} nhân sự
-                        </Tag>
-                      </div>
-
-                      <Input
-                        placeholder="Tìm kiếm nhân sự thuộc nhóm Khác (không dấu)..."
-                        prefix={<SearchOutlined className="text-slate-400 text-xs" />}
-                        value={poolSearchText}
-                        onChange={(e) => setPoolSearchText(e.target.value)}
-                        allowClear
-                        size="middle"
-                      />
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[380px] overflow-y-auto pr-1">
-                        {availablePoolOptions.length === 0 ? (
-                          <div className="col-span-2 text-center py-8 text-slate-400 text-xs">
-                            Không tìm thấy nhân sự phù hợp
-                          </div>
-                        ) : (
-                          availablePoolOptions.map((staff) => (
-                            <div
-                              key={staff.staffId}
-                              className={`p-2.5 rounded-lg border flex items-center justify-between ${
-                                themeMode === 'dark'
-                                  ? 'bg-slate-800/40 border-slate-700/50'
-                                  : 'bg-white border-slate-200'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 text-xs font-semibold">
-                                  {staff.displayName.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="font-semibold text-xs truncate">{staff.displayName}</div>
-                                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                                    <span className="tabular-nums font-mono">#{staff.staffId}</span>
-                                    {staff.username && <span className="truncate">@{staff.username}</span>}
-                                  </div>
-                                </div>
-                              </div>
-                              <Tag
-                                color="default"
-                                className="m-0 text-[10px] text-amber-400 border-amber-500/30 font-mono"
-                              >
-                                TỰ ĐỘNG
-                              </Tag>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* 2-Column Side-by-Side Dual List Redesign */
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Column 1: Available Staff Pool (Kho Nhân Sự) */}
-                    <div
-                      className={`p-3.5 rounded-xl border flex flex-col justify-between space-y-3 ${
-                        themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50/60 border-slate-200'
-                      }`}
-                    >
-                      <div className="space-y-2.5">
-                        {/* Section Header */}
-                        <div className="flex items-center justify-between pb-1 border-b border-slate-700/30">
-                          <div className="flex items-center gap-2">
-                            <UsergroupAddOutlined className="text-blue-500 text-base" />
-                            <span className="font-bold text-sm">Kho Nhân Sự</span>
-                            <Tag color="blue" className="m-0 text-[10px] px-1 font-mono">
-                              {availablePoolOptions.length}
-                            </Tag>
-                          </div>
-                          {availablePoolOptions.length > 0 && (
-                            <Button
-                              size="small"
-                              type="link"
-                              icon={<PlusOutlined />}
-                              onClick={handleAddAllFilteredToTeam}
-                              className="p-0 text-xs text-blue-400 hover:text-blue-300 font-medium"
-                            >
-                              Thêm tất cả kết quả
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Search Bar */}
-                        <Input
-                          placeholder="Tìm nhân sự (không dấu)..."
-                          prefix={<SearchOutlined className="text-slate-400 text-xs" />}
-                          value={poolSearchText}
-                          onChange={(e) => setPoolSearchText(e.target.value)}
-                          allowClear
-                          size="middle"
+                    <div className={styles.staffList}>
+                      {availablePoolOptions.length === 0 ? (
+                        <StatePanel
+                          kind="empty"
+                          title="Không tìm thấy nhân sự phù hợp"
+                          surface={false}
+                          minHeight={180}
                         />
-
-                        {/* Role Filter Tabs */}
-                        <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
-                          <FilterOutlined className="text-slate-400 text-xs mr-1 flex-shrink-0" />
-                          {[
-                            { label: 'Tất cả', value: 'ALL' },
-                            { label: 'CC', value: 'CC' },
-                            { label: 'KTV/CV', value: 'CV' },
-                            { label: 'Booker', value: 'BK' },
-                            { label: 'Khác', value: 'OTHER' },
-                          ].map((item) => (
+                      ) : (
+                        availablePoolOptions.map((staff) => (
+                          <div key={staff.staffId} className={styles.staffRow}>
+                            <StaffIdentity staff={staff} />
+                            <StatusTag status="default" label="Tự động" />
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </SectionCard>
+                </div>
+              ) : (
+                <>
+                  <div className={styles.editorGrid}>
+                    <SectionCard
+                      title={
+                        <span className={styles.sectionTitle}>
+                          <AppIcon icon={UserRoundPlus} size="sm" />
+                          Kho nhân sự
+                          <StatusTag status="processing" label={String(availablePoolOptions.length)} />
+                        </span>
+                      }
+                      extra={
+                        availablePoolOptions.length > 0 ? (
+                          <Button type="link" icon={<AppIcon icon={Plus} size="sm" />} onClick={handleAddAllFiltered}>
+                            Thêm kết quả
+                          </Button>
+                        ) : null
+                      }
+                      className={styles.innerSection}
+                      bodyPadding="var(--mos-density-padding)"
+                    >
+                      <div className={styles.panelControls}>
+                        <SearchField
+                          behavior="filter"
+                          value={poolSearchText}
+                          onChange={(event) => setPoolSearchText(event.target.value)}
+                          placeholder="Tìm nhân sự không dấu…"
+                        />
+                        <div className={styles.roleFilters} role="group" aria-label="Lọc nhân sự theo vai trò">
+                          {ROLE_FILTERS.map((filter) => (
                             <button
-                              key={item.value}
-                              onClick={() => setRoleFilter(item.value)}
-                              className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all whitespace-nowrap ${
-                                roleFilter === item.value
-                                  ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                                  : themeMode === 'dark'
-                                    ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                              }`}
+                              key={filter.value}
+                              type="button"
+                              data-active={roleFilter === filter.value || undefined}
+                              onClick={() => setRoleFilter(filter.value)}
                             >
-                              {item.label}
+                              {filter.label}
                             </button>
                           ))}
                         </div>
                       </div>
 
-                      {/* Staff List Scroll Box */}
-                      <div className="space-y-1.5 max-h-[460px] overflow-y-auto pr-1">
+                      <div className={styles.staffList}>
                         {availablePoolOptions.length === 0 ? (
-                          <div className="text-center py-10 text-slate-400 text-xs">Không tìm thấy nhân sự phù hợp</div>
+                          <StatePanel
+                            kind="empty"
+                            title="Không tìm thấy nhân sự phù hợp"
+                            surface={false}
+                            minHeight={220}
+                          />
                         ) : (
                           availablePoolOptions.map((staff) => {
-                            const isAdded = selectedStaffIds.has(staff.staffId);
+                            const active = selectedStaffIds.has(staff.staffId);
                             return (
-                              <div
-                                key={staff.staffId}
-                                onClick={() => handleToggleStaff(staff.staffId)}
-                                className={`p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all duration-150 ${
-                                  isAdded
-                                    ? themeMode === 'dark'
-                                      ? 'bg-blue-950/30 border-blue-600/40 opacity-80'
-                                      : 'bg-blue-50/50 border-blue-200 opacity-80'
-                                    : themeMode === 'dark'
-                                      ? 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-blue-500/50'
-                                      : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-blue-300'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
-                                      isAdded ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700/30 text-slate-300'
-                                    }`}
-                                  >
-                                    {staff.displayName.charAt(0).toUpperCase()}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="font-semibold text-xs truncate text-slate-200 dark:text-slate-200">
-                                      {staff.displayName}
-                                    </div>
-                                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                                      <span className="tabular-nums font-mono">#{staff.staffId}</span>
-                                      {staff.username && <span className="truncate">@{staff.username}</span>}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {isAdded ? (
-                                  <Tag color="success" className="m-0 text-[10px] px-1.5 flex items-center gap-1">
-                                    <CheckCircleFilled className="text-[10px]" /> ACTIVE
-                                  </Tag>
+                              <div key={staff.staffId} className={styles.staffRow} data-selected={active || undefined}>
+                                <StaffIdentity staff={staff} active={active} />
+                                {active ? (
+                                  <StatusTag
+                                    status="success"
+                                    icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                                    label="Đã chọn"
+                                  />
                                 ) : (
                                   <Button
-                                    size="small"
                                     type="text"
-                                    icon={<PlusOutlined />}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAddStaff(staff.staffId);
-                                    }}
-                                    className="text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-950/50 px-1.5 h-6"
+                                    icon={<AppIcon icon={Plus} size="sm" />}
+                                    onClick={() => handleAddStaff(staff.staffId)}
                                   >
                                     Thêm
                                   </Button>
@@ -646,159 +528,100 @@ function TeamsContent() {
                           })
                         )}
                       </div>
-                    </div>
+                    </SectionCard>
 
-                    {/* Column 2: Active Team Members (Thành Viên Đội) */}
-                    <div
-                      className={`p-3.5 rounded-xl border flex flex-col justify-between space-y-3 ${
-                        themeMode === 'dark' ? 'bg-blue-950/20 border-blue-900/40' : 'bg-blue-50/30 border-blue-200/60'
-                      }`}
+                    <SectionCard
+                      title={
+                        <span className={styles.sectionTitle}>
+                          <AppIcon icon={CheckCircle2} size="sm" />
+                          Thành viên đội
+                          <StatusTag status="success" label={String(selectedStaffIds.size)} />
+                        </span>
+                      }
+                      extra={
+                        selectedStaffIds.size > 0 ? (
+                          <Button
+                            type="link"
+                            danger
+                            icon={<AppIcon icon={Trash2} size="sm" />}
+                            onClick={handleClearAllActive}
+                          >
+                            Bỏ tất cả
+                          </Button>
+                        ) : null
+                      }
+                      className={styles.innerSection}
+                      bodyPadding="var(--mos-density-padding)"
                     >
-                      <div className="space-y-2.5">
-                        {/* Section Header */}
-                        <div className="flex items-center justify-between pb-1 border-b border-slate-700/30">
-                          <div className="flex items-center gap-2">
-                            <CheckCircleOutlined className="text-emerald-500 text-base" />
-                            <span className="font-bold text-sm">Thành Viên Đội</span>
-                            <Badge
-                              count={selectedStaffIds.size}
-                              overflowCount={999}
-                              style={{ backgroundColor: '#52c41a', fontWeight: 'bold' }}
-                            />
-                          </div>
-                          {selectedStaffIds.size > 0 && (
-                            <Button
-                              size="small"
-                              type="link"
-                              danger
-                              icon={<DeleteOutlined />}
-                              onClick={handleClearAllActive}
-                              className="p-0 text-xs font-medium"
-                            >
-                              Bỏ tất cả
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Search Bar for Active Members */}
-                        <Input
-                          placeholder="Tìm trong danh sách đã chọn..."
-                          prefix={<SearchOutlined className="text-slate-400 text-xs" />}
+                      <div className={styles.panelControls}>
+                        <SearchField
+                          behavior="filter"
                           value={activeSearchText}
-                          onChange={(e) => setActiveSearchText(e.target.value)}
-                          allowClear
-                          size="middle"
+                          onChange={(event) => setActiveSearchText(event.target.value)}
+                          placeholder="Tìm trong danh sách đã chọn…"
                         />
                       </div>
 
-                      {/* Active Staff List Scroll Box */}
-                      <div className="space-y-1.5 max-h-[495px] overflow-y-auto pr-1">
-                        {activeMembersList.length === 0 ? (
-                          <div className="text-center py-12 text-slate-400 text-xs">
-                            {selectedStaffIds.size === 0
-                              ? 'Chưa có nhân sự nào được thêm vào đội'
-                              : 'Không tìm thấy nhân sự phù hợp'}
-                          </div>
+                      <div className={styles.staffList}>
+                        {activeMembers.length === 0 ? (
+                          <StatePanel
+                            kind="empty"
+                            title={
+                              selectedStaffIds.size === 0
+                                ? 'Chưa có nhân sự trong đội'
+                                : 'Không tìm thấy nhân sự phù hợp'
+                            }
+                            surface={false}
+                            minHeight={220}
+                          />
                         ) : (
-                          activeMembersList.map((staff) => (
-                            <div
-                              key={staff.staffId}
-                              className={`p-2.5 rounded-lg border flex items-center justify-between transition-all duration-150 ${
-                                themeMode === 'dark'
-                                  ? 'bg-slate-800/60 border-blue-600/40 shadow-xs hover:border-blue-500'
-                                  : 'bg-white border-blue-200 shadow-xs hover:border-blue-400'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-7 h-7 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center flex-shrink-0 text-xs font-semibold">
-                                  {staff.displayName.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="font-semibold text-xs truncate flex items-center gap-1">
-                                    <span>{staff.displayName}</span>
-                                  </div>
-                                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                                    <span className="tabular-nums font-mono">ID: #{staff.staffId}</span>
-                                    {staff.username && <span className="truncate">@{staff.username}</span>}
-                                  </div>
-                                </div>
-                              </div>
-
+                          activeMembers.map((staff) => (
+                            <div key={staff.staffId} className={styles.staffRow} data-selected>
+                              <StaffIdentity staff={staff} active />
                               <Tooltip title="Bỏ khỏi đội">
-                                <Button
-                                  size="small"
-                                  type="text"
+                                <IconButton
+                                  label={`Bỏ ${staff.displayName} khỏi đội`}
+                                  icon={X}
                                   danger
-                                  icon={<CloseOutlined className="text-xs" />}
+                                  tooltip={false}
                                   onClick={() => handleRemoveStaff(staff.staffId)}
-                                  className="h-6 w-6 p-0 flex items-center justify-center rounded-full hover:bg-red-500/20"
                                 />
                               </Tooltip>
                             </div>
                           ))
                         )}
                       </div>
-                    </div>
+                    </SectionCard>
                   </div>
-                )}
 
-                {/* Footer Save Action */}
-                <div className="pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-t border-slate-700/30">
-                  <Text type="secondary" className="text-xs">
-                    {isAutoGroup ? (
-                      <span>
-                        * Nhóm <strong className="text-amber-400">{currentTeam.name}</strong> gom tự động tất cả các
-                        thành viên chưa phân nhóm, không cần lưu thủ công.
-                      </span>
-                    ) : (
-                      <span>
-                        * Các nhân sự được chọn (ACTIVE) sẽ được áp dụng cho tất cả báo cáo và leaderboard của đội{' '}
-                        <strong className="text-blue-500">{currentTeam.name}</strong>.
-                      </span>
-                    )}
-                  </Text>
-                  {isAutoGroup ? (
-                    <Button disabled size="large" className="font-semibold px-6 w-full sm:w-auto opacity-70">
-                      Nhóm Tự Động (Không cần lưu)
-                    </Button>
-                  ) : (
+                  <footer className={styles.saveBar}>
+                    <p>
+                      Các thành viên đã chọn sẽ được áp dụng cho báo cáo và leaderboard của đội{' '}
+                      <strong>{currentTeam.name}</strong> sau khi lưu.
+                    </p>
                     <Button
                       type="primary"
                       size="large"
-                      icon={<SaveOutlined />}
-                      onClick={handleSaveMembers}
+                      icon={<AppIcon icon={Save} size="action" />}
+                      onClick={() => void handleSaveMembers()}
                       loading={saving}
-                      className="bg-blue-600 hover:bg-blue-500 font-semibold px-6 w-full sm:w-auto"
                     >
-                      Lưu cấu hình đội ({selectedStaffIds.size})
+                      Lưu cấu hình ({selectedStaffIds.size})
                     </Button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <Alert
-                message="Vui lòng chọn đội nhóm"
-                description="Chọn một đội nhóm ở danh sách bên trái để cấu hình thành viên."
-                type="info"
-                showIcon
-              />
-            )}
-          </Card>
-        </div>
+                  </footer>
+                </>
+              )}
+            </div>
+          )}
+        </DataSection>
       </div>
-    </div>
+    </FeaturePage>
   );
 }
 
 export default function TeamsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="p-8 text-center">
-          <Spin size="large" />
-        </div>
-      }
-    >
+    <Suspense fallback={<StatePanel kind="loading" title="Đang tải cấu hình đội nhóm" minHeight={360} />}>
       <TeamsContent />
     </Suspense>
   );

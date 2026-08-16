@@ -6,7 +6,6 @@ import {
   Typography,
   Card,
   theme,
-  DatePicker,
   Select,
   Radio,
   Space,
@@ -24,14 +23,11 @@ import {
 } from 'antd';
 import {
   PhoneOutlined,
-  CalendarOutlined,
   PieChartOutlined,
   TrophyOutlined,
   UserOutlined,
   DollarOutlined,
   SettingOutlined,
-  LeftOutlined,
-  RightOutlined,
   SafetyOutlined,
   HistoryOutlined,
   ThunderboltOutlined,
@@ -61,12 +57,11 @@ const BookingAuditLogReportTab = dynamic(
   { ssr: false }
 );
 
-import { PageHeader } from '../../../components/ui';
+import { PageHeader, PageToolbar, ReportPeriodNavigator } from '../../../components/ui';
 
 dayjs.extend(isoWeek);
 
-const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
+const { Text } = Typography;
 
 import { BookerSalary, LeaderboardEntry } from '@mos-lab/shared';
 import { getPercent } from '../../../lib/format-utils';
@@ -83,8 +78,6 @@ export default function KPIPage() {
     setReferenceDate,
     dateRange,
     setDateRange,
-    pickerOpen,
-    setPickerOpen,
     selectedBookerId,
     selectedBookerName,
     selectedStaffRecord,
@@ -124,112 +117,64 @@ export default function KPIPage() {
   );
 
   return (
-    <div>
+    <div className="responsive-page responsive-workspace kpi-page">
       {/* HEADER SECTION */}
       <PageHeader
         title="KPI & Báo Cáo Hiệu Suất"
         subtitle="Giám sát tỷ lệ chuyển đổi cuộc gọi thành lịch hẹn và doanh thu thưởng commission"
-        extra={
-          <Space wrap size={8}>
-            <Space.Compact>
-              <Button type={viewMode === 'month' ? 'primary' : 'default'} onClick={() => setViewMode('month')}>
-                Tháng
-              </Button>
-              <Button type={viewMode === 'week' ? 'primary' : 'default'} onClick={() => setViewMode('week')}>
-                Tuần
-              </Button>
-              <Button type={viewMode === 'day' ? 'primary' : 'default'} onClick={() => setViewMode('day')}>
-                Ngày
-              </Button>
-            </Space.Compact>
+      />
 
-            <Space.Compact>
-              <Button icon={<LeftOutlined />} onClick={() => handleNavigate(-1)} />
-              <div style={{ position: 'relative', display: 'inline-block' }}>
-                <Button
-                  onClick={() => setPickerOpen(true)}
-                  style={{
-                    fontWeight: '600',
-                    minWidth: '210px',
-                    textAlign: 'center',
-                    color: token.colorText,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  {getPeriodLabel()} <CalendarOutlined style={{ color: token.colorPrimary }} />
-                </Button>
-                {pickerOpen && (
-                  <RangePicker
-                    value={dateRange}
-                    onChange={(dates) => {
-                      if (dates && dates[0] && dates[1]) {
-                        setDateRange([dates[0]!, dates[1]!]);
-                        setPickerOpen(false);
-                      }
-                    }}
-                    format="DD/MM/YYYY"
-                    open={true}
-                    onOpenChange={(open) => {
-                      if (!open) setPickerOpen(false);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: 0,
-                      height: 0,
-                      padding: 0,
-                      border: 'none',
-                      visibility: 'hidden',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </div>
-              <Button icon={<RightOutlined />} onClick={() => handleNavigate(1)} />
-            </Space.Compact>
-
-            {isAdmin && (
-              <>
-                <Radio.Group
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  optionType="button"
-                  buttonStyle="solid"
-                  style={{ marginRight: '8px' }}
-                >
-                  <Radio.Button value="telesales">Online Consultant</Radio.Button>
-                  <Radio.Button value="oc">Client Consultant</Radio.Button>
-                </Radio.Group>
-                <Select
-                  value={selectedStaffId}
-                  onChange={setSelectedStaffId}
-                  style={{ width: 170 }}
-                  options={[
-                    {
-                      value: 'ALL',
-                      label: selectedRole === 'oc' ? 'Tất cả Client Consultant' : 'Tất cả Online Consultant',
-                    },
-                    ...leaderboard.map((s) => ({ value: s.staffId.toString(), label: s.displayName })),
-                  ]}
-                  placeholder="Chọn nhân viên"
-                />
-                {selectedRole === 'telesales' && (
+      <PageToolbar
+        className="kpi-page-toolbar"
+        primary={
+          <ReportPeriodNavigator
+            mode={viewMode}
+            value={referenceDate}
+            label={getPeriodLabel()}
+            onModeChange={setViewMode}
+            onPrevious={() => handleNavigate(-1)}
+            onNext={() => handleNavigate(1)}
+            rangeValue={dateRange}
+            onRangeChange={setDateRange}
+          />
+        }
+        actions={
+          isAdmin ? (
+            <>
+              <Radio.Group
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+              >
+                <Radio.Button value="telesales">Online Consultant</Radio.Button>
+                <Radio.Button value="oc">Client Consultant</Radio.Button>
+              </Radio.Group>
+              <Select
+                value={selectedStaffId}
+                onChange={setSelectedStaffId}
+                style={{ width: 170 }}
+                options={[
+                  {
+                    value: 'ALL',
+                    label: selectedRole === 'oc' ? 'Tất cả Client Consultant' : 'Tất cả Online Consultant',
+                  },
+                  ...leaderboard.map((s) => ({ value: s.staffId.toString(), label: s.displayName })),
+                ]}
+                placeholder="Chọn nhân viên"
+              />
+              {selectedRole === 'telesales' && (
+                <Tooltip title="Cấu hình lương Booker">
                   <Button
-                    type="primary"
+                    aria-label="Cấu hình lương Booker"
                     icon={<SettingOutlined />}
                     onClick={() => setConfigDrawerOpen(true)}
-                    style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: '500' }}
-                  >
-                    Cấu hình lương
-                  </Button>
-                )}
-              </>
-            )}
-          </Space>
+                    className="table-toolbar-settings-trigger !border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+                  />
+                </Tooltip>
+              )}
+            </>
+          ) : undefined
         }
       />
 
@@ -261,7 +206,7 @@ export default function KPIPage() {
                         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
                       >
                         <Text type="secondary" style={{ fontSize: '12px' }}>
-                          TỔNG KẾ HOẠCH
+                          ∑ KẾ HOẠCH
                         </Text>
                         <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: token.colorText }}>
                           {summary?.totalPlanned}
@@ -381,13 +326,11 @@ export default function KPIPage() {
                           </Text>
                         </Space>
                         <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#D4A84B' }}>
-                          {(summary?.totalEarnings || 0).toLocaleString('vi-VN')} đ
+                          {(summary?.totalEarnings || 0).toLocaleString('vi-VN')} đ
                         </div>
                         <Progress percent={100} showInfo={false} strokeColor="#D4A84B" size="small" />
                         <Text type="secondary" style={{ fontSize: '11px' }}>
-                          {selectedRole === 'oc'
-                            ? 'Tổng lương & thưởng Client Consultant (CC)'
-                            : 'Tổng lương & thưởng Online Consultant (OC)'}
+                          ∑ Thu nhập
                         </Text>
                       </Card>
                     </Col>
@@ -421,7 +364,7 @@ export default function KPIPage() {
                               <div className="flex justify-between items-center mt-3">
                                 <Text style={{ color: token.colorText }}>Lương cứng (Wage):</Text>
                                 <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {(summary.salary.baseSalary || 0).toLocaleString('vi-VN')} đ
+                                  {(summary.salary.baseSalary || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                               <div className="flex justify-between items-center mt-2">
@@ -444,13 +387,13 @@ export default function KPIPage() {
                               <div className="flex justify-between items-center mt-3">
                                 <Text style={{ color: token.colorText }}>Thưởng doanh số (Sales KPI):</Text>
                                 <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.salesReward || 0).toLocaleString('vi-VN')} đ
+                                  +{(summary.salary.salesReward || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                               <div className="flex justify-between items-center mt-2">
                                 <Text style={{ color: token.colorText }}>Thưởng phục vụ (Servicing KPI):</Text>
                                 <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.servicingReward || 0).toLocaleString('vi-VN')} đ
+                                  +{(summary.salary.servicingReward || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                             </div>
@@ -464,13 +407,13 @@ export default function KPIPage() {
                               <div className="flex justify-between items-center mt-3">
                                 <Text style={{ color: token.colorText }}>Thưởng tăng trưởng (Growth):</Text>
                                 <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.growthReward || 0).toLocaleString('vi-VN')} đ
+                                  +{(summary.salary.growthReward || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                               <div className="flex justify-between items-center mt-2">
                                 <Text style={{ color: token.colorText }}>Thưởng phục vụ tiệm (Store):</Text>
                                 <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.storeServicingReward || 0).toLocaleString('vi-VN')} đ
+                                  +{(summary.salary.storeServicingReward || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                             </div>
@@ -492,13 +435,13 @@ export default function KPIPage() {
                               <div className="flex justify-between items-center mt-3">
                                 <Text style={{ color: token.colorText }}>Lương cứng cơ bản (Based):</Text>
                                 <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {summary.salary.baseSalary.toLocaleString('vi-VN')} đ
+                                  {summary.salary.baseSalary.toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                               <div className="flex justify-between items-center mt-2">
                                 <Text style={{ color: token.colorText }}>Thưởng check-in (Client):</Text>
                                 <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {(summary.salary.clientBonus || 0).toLocaleString('vi-VN')} đ
+                                  {(summary.salary.clientBonus || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                             </div>
@@ -520,7 +463,7 @@ export default function KPIPage() {
                                   Thưởng mốc check-in ({summary.salary.doneCount || 0} khách):
                                 </Text>
                                 <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.doneBonus || 0).toLocaleString('vi-VN')} đ
+                                  +{(summary.salary.doneBonus || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                               <div className="flex justify-between items-center mt-2">
@@ -534,7 +477,7 @@ export default function KPIPage() {
                                   }}
                                 >
                                   {(summary.salary.missedBonus || 0) >= 0 ? '+' : ''}
-                                  {(summary.salary.missedBonus || 0).toLocaleString('vi-VN')} đ
+                                  {(summary.salary.missedBonus || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                             </div>
@@ -547,10 +490,10 @@ export default function KPIPage() {
                               </Text>
                               <div className="flex justify-between items-center mt-3">
                                 <Text style={{ color: token.colorText }}>
-                                  Thưởng Tips (7% trên {(summary.salary.totalTips || 0).toLocaleString('vi-VN')} đ):
+                                  Thưởng Tips (7% trên {(summary.salary.totalTips || 0).toLocaleString('vi-VN')} đ):
                                 </Text>
                                 <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {(summary.salary.tipBonus || 0).toLocaleString('vi-VN')} đ
+                                  {(summary.salary.tipBonus || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                               <div className="flex justify-between items-center mt-2">
@@ -559,7 +502,7 @@ export default function KPIPage() {
                                   đ):
                                 </Text>
                                 <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {(summary.salary.revBonus || 0).toLocaleString('vi-VN')} đ
+                                  {(summary.salary.revBonus || 0).toLocaleString('vi-VN')} đ
                                 </Text>
                               </div>
                             </div>
@@ -571,10 +514,10 @@ export default function KPIPage() {
 
                       <div className="flex justify-between items-center px-3 flex-wrap gap-2">
                         <Text style={{ fontSize: '15px', fontWeight: 'bold', color: token.colorText }}>
-                          TỔNG THU NHẬP TẠM TÍNH (LIVE SALARY):
+                          ∑ THU NHẬP TẠM TÍNH (LIVE SALARY):
                         </Text>
                         <Text style={{ fontSize: '22px', fontWeight: 'bold', color: '#D4A84B' }}>
-                          {summary.salary.totalSalary.toLocaleString('vi-VN')} đ
+                          {summary.salary.totalSalary.toLocaleString('vi-VN')} đ
                         </Text>
                       </div>
                     </Card>
@@ -704,19 +647,34 @@ export default function KPIPage() {
                       variant="outlined"
                       style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
                     >
-                      <Table
-                        dataSource={leaderboard}
-                        columns={leaderboardColumns}
-                        rowKey="staffId"
-                        pagination={false}
-                        bordered
-                        scroll={{ x: 'max-content' }}
-                        className="antd-custom-table"
-                        locale={{ emptyText: 'Chưa có dữ liệu thống kê nhân viên' }}
-                        summary={(pageData) => (
-                          <LeaderboardSummary pageData={pageData} selectedRole={selectedRole} token={token} />
-                        )}
-                      />
+                      <div
+                        className="responsive-data-region"
+                        tabIndex={0}
+                        aria-label="Bảng xếp hạng doanh thu thưởng, có thể cuộn ngang bằng phím mũi tên trái hoặc phải"
+                        onKeyDown={(event) => {
+                          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                          const scrollSurface = event.currentTarget.querySelector<HTMLElement>(
+                            '.ant-table-content, .ant-table-body'
+                          );
+                          if (!scrollSurface || scrollSurface.scrollWidth <= scrollSurface.clientWidth + 1) return;
+                          event.preventDefault();
+                          scrollSurface.scrollBy({ left: event.key === 'ArrowRight' ? 160 : -160, behavior: 'smooth' });
+                        }}
+                      >
+                        <Table
+                          dataSource={leaderboard}
+                          columns={leaderboardColumns}
+                          rowKey="staffId"
+                          pagination={false}
+                          bordered
+                          scroll={{ x: 'max-content' }}
+                          className="antd-custom-table"
+                          locale={{ emptyText: 'Chưa có dữ liệu thống kê nhân viên' }}
+                          summary={(pageData) => (
+                            <LeaderboardSummary pageData={pageData} selectedRole={selectedRole} token={token} />
+                          )}
+                        />
+                      </div>
                     </Card>
                   )}
                 </div>

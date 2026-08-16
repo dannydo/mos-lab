@@ -14,6 +14,7 @@ import {
 } from '@mos-lab/shared';
 import {
   getActiveBkIds,
+  getActiveBkTelesalesIds,
   getBkSalaryConfig,
   getMilestoneBonus,
   getMissedRateBonus,
@@ -247,8 +248,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
     try {
       const config = await getBkSalaryConfig(fastify);
-      const activeBkIds = config.activeBkIds;
-      if (activeBkIds.length === 0) {
+      const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
+      if (activeTelesalesIds.length === 0) {
         return reply.send({ leaderboard: [], summary: { totalDone: 0, avgDoneRate: 0, totalDoneBonus: 0 } });
       }
 
@@ -258,7 +259,13 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       }
 
       // Compute Check-in bonuses per Booker (matching salary-calculator.ts and /dashboard/kpi)
-      const { clientBonusMap } = await computeBkOrderCheckins(fastify, startPart, endPart, activeBkIds, storeFilter);
+      const { clientBonusMap } = await computeBkOrderCheckins(
+        fastify,
+        startPart,
+        endPart,
+        activeTelesalesIds,
+        storeFilter
+      );
 
       const sql = `
         SELECT 
@@ -273,7 +280,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
         LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
         LEFT JOIN report_order ro ON ro.order_id = o.id
-        WHERE up.user_id IN (${activeBkIds.join(',')})
+        WHERE up.user_id IN (${activeTelesalesIds.join(',')})
           AND (o.id IS NULL OR (
             ((ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59'))
@@ -370,13 +377,28 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     try {
-      const config = await getBkSalaryConfig(fastify);
+      const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
+      if (activeTelesalesIds.length === 0) {
+        return reply.send({
+          data: [],
+          total: 0,
+          summary: { totalDone: 0, avgDoneRate: 0, totalDoneBonus: 0 },
+        });
+      }
 
-      let targetBkIds = config.activeBkIds;
+      let targetBkIds = activeTelesalesIds;
       let bookerFilter = '';
       if (bookerId && bookerId !== 'ALL') {
-        targetBkIds = [Number(bookerId)];
-        bookerFilter = `AND o.created_staff_id = ${Number(bookerId)}`;
+        const requestedBookerId = Number(bookerId);
+        if (!activeTelesalesIds.includes(requestedBookerId)) {
+          return reply.send({
+            data: [],
+            total: 0,
+            summary: { totalDone: 0, avgDoneRate: 0, totalDoneBonus: 0 },
+          });
+        }
+        targetBkIds = [requestedBookerId];
+        bookerFilter = `AND o.created_staff_id = ${requestedBookerId}`;
       } else {
         bookerFilter = `AND o.created_staff_id IN (${targetBkIds.join(',')})`;
       }

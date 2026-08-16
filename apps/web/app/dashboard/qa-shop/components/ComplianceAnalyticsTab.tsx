@@ -141,7 +141,7 @@ export const ComplianceAnalyticsTab: React.FC<ComplianceAnalyticsTabProps> = ({ 
             </div>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 mb-0">
-            {stats.resolvedTicketsCount} đã nghiệm thu
+            {stats.resolvedTicketsCount} đã nghiệm thu
           </p>
         </div>
       </div>

@@ -194,7 +194,7 @@ export default function CampaignTab({ dateFrom, dateTo }: CampaignTabProps) {
                 <div className="grid grid-cols-3 gap-2 mb-6">
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg text-center">
                     <TeamOutlined className="text-slate-400 mb-1" />
-                    <div className="text-xs text-slate-500">Tổng KH</div>
+                    <div className="text-xs text-slate-500">∑ KH</div>
                     <div className="font-semibold tabular-nums">{totalCust}</div>
                   </div>
                   <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg text-center">

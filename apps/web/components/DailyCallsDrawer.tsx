@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { Drawer, Space, theme } from 'antd';
+import { Space, theme } from 'antd';
 import { PhoneOutlined } from '@ant-design/icons';
 import { usePathname, useSearchParams } from 'next/navigation';
 import DailyCallsTable from './DailyCallsTable';
 import { useTheme } from '../context/ThemeContext';
+import { AdaptiveDrawer } from './ui/AdaptiveOverlay';
+import { getViewportSize, useResponsiveTier } from '../hooks/useResponsiveTier';
 
 interface DailyCallsDrawerProps {
   open: boolean;
@@ -17,6 +19,8 @@ export default function DailyCallsDrawer({ open, onClose }: DailyCallsDrawerProp
   const searchParams = useSearchParams();
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isResizableDesktop = ['desktop', 'fhd', 'wide', 'uhd'].includes(responsiveTier);
 
   // Resize state
   const [drawerWidth, setDrawerWidth] = useState<number>(1100);
@@ -42,9 +46,10 @@ export default function DailyCallsDrawer({ open, onClose }: DailyCallsDrawerProp
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       // Since Drawer is anchored to the right, width increases as mouse moves left
-      const newWidth = window.innerWidth - moveEvent.clientX;
+      const viewportWidth = getViewportSize().width;
+      const newWidth = viewportWidth - moveEvent.clientX;
       // Constrain width between 500px and window width minus offset
-      const clampedWidth = Math.max(500, Math.min(window.innerWidth - 50, newWidth));
+      const clampedWidth = Math.max(500, Math.min(viewportWidth - 50, newWidth));
       setDrawerWidth(clampedWidth);
     };
 
@@ -81,7 +86,9 @@ export default function DailyCallsDrawer({ open, onClose }: DailyCallsDrawerProp
   }, [pathname, searchParams, open]);
 
   return (
-    <Drawer
+    <AdaptiveDrawer
+      intent="data"
+      className="daily-calls-drawer"
       title={
         <Space size="small">
           <PhoneOutlined style={{ color: '#D4A84B', fontSize: '18px' }} />
@@ -89,7 +96,7 @@ export default function DailyCallsDrawer({ open, onClose }: DailyCallsDrawerProp
         </Space>
       }
       placement="right"
-      width={drawerWidth}
+      width={isResizableDesktop ? drawerWidth : undefined}
       onClose={onClose}
       open={open}
       styles={{
@@ -106,25 +113,25 @@ export default function DailyCallsDrawer({ open, onClose }: DailyCallsDrawerProp
       destroyOnClose
     >
       {/* Absolute resize handle on the left edge of the Drawer body content */}
-      <div
-        onMouseDown={handleMouseDown}
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: '8px',
-          cursor: 'ew-resize',
-          zIndex: 1000,
-          background: isResizing
-            ? 'rgba(212, 168, 75, 0.4)' // highlight with gold alpha during drag
-            : 'transparent',
-          transition: 'background 0.2s',
-        }}
-        title="Kéo để thay đổi độ rộng"
-      />
+      {isResizableDesktop && (
+        <div
+          onMouseDown={handleMouseDown}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: '8px',
+            cursor: 'ew-resize',
+            zIndex: 1,
+            background: isResizing ? 'rgba(212, 168, 75, 0.4)' : 'transparent',
+            transition: 'background 0.2s',
+          }}
+          title="Kéo để thay đổi độ rộng"
+        />
+      )}
 
       <DailyCallsTable initialScope={resolvedScope} isDrawerMode={true} />
-    </Drawer>
+    </AdaptiveDrawer>
   );
 }

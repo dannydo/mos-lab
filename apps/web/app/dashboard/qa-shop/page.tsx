@@ -29,7 +29,6 @@ import {
   Collapse,
   Spin,
   Popconfirm,
-  Switch,
 } from 'antd';
 import {
   SafetyCertificateOutlined,
@@ -70,7 +69,9 @@ import dayjs from 'dayjs';
 import { SafeAny } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
+import { useMediaQuery } from '../../../hooks/useResponsiveTier';
 import { FullBranchAuditReportTab } from './components/FullBranchAuditReportTab';
+import { ToolbarToggle } from '../../../components/ui';
 import styles from './qa-shop.module.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -499,20 +500,11 @@ export default function QaShopPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isMobileFocusMode, setIsMobileFocusMode] = useState(false);
 
-  const [isMobileScreen, setIsMobileScreen] = useState(false);
+  const isMobileScreen = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobileScreen(mobile);
-      if (!mobile) {
-        setIsMobileFocusMode(false);
-      }
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    if (!isMobileScreen) setIsMobileFocusMode(false);
+  }, [isMobileScreen]);
   const [requireAllPhotos, setRequireAllPhotos] = useState(false);
   const [auditReviewModalOpen, setAuditReviewModalOpen] = useState(false);
   const [reviewFilterTab, setReviewFilterTab] = useState<'ALL' | 'PASS' | 'FAIL' | 'NA' | 'PHOTO'>('ALL');
@@ -1112,7 +1104,7 @@ export default function QaShopPage() {
 
   return (
     <div
-      className={`${styles.qaPage} p-3 sm:p-6 space-y-3 sm:space-y-5`}
+      className={`responsive-page responsive-workspace qa-shop-page ${styles.qaPage} p-3 sm:p-6 space-y-3 sm:space-y-5`}
       style={{ background: isDark ? '#0a0a0a' : '#f8fafc', minHeight: '100vh' }}
     >
       {/* Minimalist Top Navigation Header */}
@@ -1144,6 +1136,7 @@ export default function QaShopPage() {
               background: '#10b981',
               borderColor: 'transparent',
               borderRadius: '8px',
+              color: '#052e16',
               fontWeight: 500,
             }}
             className="focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 focus-visible:outline-none"
@@ -1264,6 +1257,7 @@ export default function QaShopPage() {
               <div className={styles.controlGroup}>
                 <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Chi Nhánh Kiểm Tra:</Text>
                 <Select
+                  aria-label="Chi nhánh kiểm tra"
                   value={selectedBranch}
                   onChange={setSelectedBranch}
                   className={styles.branchSelect}
@@ -1280,7 +1274,6 @@ export default function QaShopPage() {
                 <Radio.Group
                   value={selectedShift}
                   onChange={(e) => setSelectedShift(e.target.value)}
-                  size="small"
                   buttonStyle="solid"
                 >
                   <Radio.Button value="Sáng">Sáng</Radio.Button>
@@ -1293,9 +1286,9 @@ export default function QaShopPage() {
               <div className={styles.controlGroup}>
                 <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Auditor (QA & QC):</Text>
                 <Select
+                  aria-label="Auditor kiểm tra"
                   value={auditorName}
                   onChange={setAuditorName}
-                  size="small"
                   className={styles.auditorSelect}
                   style={{ width: 220 }}
                   getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
@@ -1310,7 +1303,6 @@ export default function QaShopPage() {
                 <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Kiểm Tra Nhanh:</Text>
                 <Tooltip title="Bật Chế độ Mobile tập trung (Full-screen Mobile Inspection Mode) ẩn Sidebar & Clutter">
                   <Button
-                    size="small"
                     icon={<MobileOutlined className="text-purple-500" />}
                     onClick={() => setIsMobileFocusMode((prev) => !prev)}
                     className={`${styles.mobileFocusButton} ${
@@ -1330,54 +1322,33 @@ export default function QaShopPage() {
 
               <div className={styles.controlGroup}>
                 <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Audit Đột Xuất:</Text>
-                <Tooltip title="Bật ON khi kiểm tra đột xuất: Yêu cầu chụp hình 100% tất cả tiêu chí (kể cả Đạt) mới cho Nộp Biên Bản">
-                  <div
-                    onClick={() => setRequireAllPhotos((prev) => !prev)}
-                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border cursor-pointer transition-all ${
-                      requireAllPhotos
-                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-300 font-bold'
-                        : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-500'
-                    } ${styles.toggleControl}`}
-                  >
-                    <Switch
-                      size="small"
-                      checked={requireAllPhotos}
-                      onClick={(_, e) => e.stopPropagation()}
-                      onChange={setRequireAllPhotos}
-                    />
-                    <span className={`${styles.controlActionText} select-none`}>
-                      {requireAllPhotos ? 'Ép chụp ảnh 100%' : 'Chụp thường'}
-                    </span>
-                  </div>
-                </Tooltip>
+                <ToolbarToggle
+                  className={`${styles.toggleControl} ${
+                    requireAllPhotos
+                      ? 'border-amber-500 bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
+                      : 'border-slate-200 bg-transparent text-slate-500 dark:border-slate-700'
+                  }`}
+                  label={requireAllPhotos ? 'Ép chụp ảnh 100%' : 'Chụp thường'}
+                  aria-label="Bật hoặc tắt yêu cầu chụp ảnh 100%"
+                  checked={requireAllPhotos}
+                  onChange={setRequireAllPhotos}
+                />
               </div>
 
               <div className={styles.controlGroup}>
                 <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Chế Độ Chỉnh Sửa:</Text>
                 <div className={styles.editControls}>
-                  <Tooltip title="Bật/Tắt chế độ hiển thị nút Chỉnh sửa & Xóa tiêu chí">
-                    <div
-                      onClick={() => setIsEditMode((prev) => !prev)}
-                      className={`${styles.toggleControl} flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 bg-transparent cursor-pointer`}
-                    >
-                      <Switch
-                        size="small"
-                        checked={isEditMode}
-                        onClick={(_, e) => e.stopPropagation()}
-                        onChange={setIsEditMode}
-                      />
-                      <span
-                        className={`${styles.controlActionText} font-semibold select-none ${isEditMode ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}
-                      >
-                        {isEditMode ? 'Cho phép chỉnh sửa' : 'Chỉ xem'}
-                      </span>
-                    </div>
-                  </Tooltip>
+                  <ToolbarToggle
+                    className={`${styles.toggleControl} ${isEditMode ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}
+                    label={isEditMode ? 'Cho phép chỉnh sửa' : 'Chỉ xem'}
+                    aria-label="Bật hoặc tắt chế độ chỉnh sửa"
+                    checked={isEditMode}
+                    onChange={setIsEditMode}
+                  />
 
                   {isEditMode && (
                     <>
                       <Button
-                        size="small"
                         icon={<SettingOutlined />}
                         onClick={() => setIsManageModalOpen(true)}
                         className="text-xs font-medium"
@@ -1385,7 +1356,6 @@ export default function QaShopPage() {
                         Bảng Quản Lý
                       </Button>
                       <Button
-                        size="small"
                         type="primary"
                         icon={<PlusOutlined />}
                         onClick={() => handleOpenItemModal()}
@@ -1732,7 +1702,7 @@ export default function QaShopPage() {
                                                     }
                                                     aria-label={`Đánh giá Đạt cho tiêu chí ${itm.title}`}
                                                     aria-pressed={isPass}
-                                                    className={`w-7 h-7 rounded-md border transition-all duration-150 flex items-center justify-center text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 ${
+                                                    className={`w-8 h-8 rounded-md border transition-all duration-150 flex items-center justify-center text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 ${
                                                       isPass
                                                         ? 'bg-emerald-50 text-emerald-600 border-emerald-400 dark:bg-emerald-950/60 dark:border-emerald-700 dark:text-emerald-400 shadow-xs'
                                                         : 'bg-transparent text-slate-400 border-slate-200 dark:border-slate-800 hover:text-emerald-500 hover:border-emerald-300'
@@ -1763,7 +1733,7 @@ export default function QaShopPage() {
                                                     }}
                                                     aria-label={`Đánh giá Không đạt cho tiêu chí ${itm.title}`}
                                                     aria-pressed={isFail}
-                                                    className={`w-7 h-7 rounded-md border transition-all duration-150 flex items-center justify-center text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 ${
+                                                    className={`w-8 h-8 rounded-md border transition-all duration-150 flex items-center justify-center text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 ${
                                                       isFail
                                                         ? 'bg-rose-50 text-rose-600 border-rose-400 dark:bg-rose-950/60 dark:border-rose-700 dark:text-rose-400 shadow-xs'
                                                         : 'bg-transparent text-slate-400 border-slate-200 dark:border-slate-800 hover:text-rose-500 hover:border-rose-300'
@@ -1785,7 +1755,7 @@ export default function QaShopPage() {
                                                     }
                                                     aria-label={`Bỏ qua tiêu chí ${itm.title}`}
                                                     aria-pressed={isNa}
-                                                    className={`w-7 h-7 rounded-md border transition-all duration-150 flex items-center justify-center text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 ${
+                                                    className={`w-8 h-8 rounded-md border transition-all duration-150 flex items-center justify-center text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 ${
                                                       isNa
                                                         ? 'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 shadow-xs'
                                                         : 'bg-transparent text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-600 hover:border-slate-300'
@@ -1804,7 +1774,7 @@ export default function QaShopPage() {
                                                         type="button"
                                                         onClick={() => handleOpenItemModal(itm, sec.id)}
                                                         aria-label={`Chỉnh sửa tiêu chí ${itm.title}`}
-                                                        className="w-7 h-7 rounded-md border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-blue-500 hover:border-blue-300 dark:hover:border-blue-800 transition-all flex items-center justify-center text-xs"
+                                                        className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-blue-500 hover:border-blue-300 dark:hover:border-blue-800 transition-all flex items-center justify-center text-xs"
                                                       >
                                                         <EditOutlined className="text-xs" />
                                                       </button>
@@ -1823,7 +1793,7 @@ export default function QaShopPage() {
                                                         <button
                                                           type="button"
                                                           aria-label={`Xóa tiêu chí ${itm.title}`}
-                                                          className="w-7 h-7 rounded-md border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-800 transition-all flex items-center justify-center text-xs"
+                                                          className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-800 transition-all flex items-center justify-center text-xs"
                                                         >
                                                           <DeleteOutlined className="text-xs" />
                                                         </button>

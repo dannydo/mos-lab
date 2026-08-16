@@ -83,7 +83,7 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
 
   return (
     <div
-      className={`absolute inset-0 w-full h-full rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden transition-colors duration-300 ${
+      className={`telesales-dashboard-face absolute inset-0 w-full h-full rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden transition-colors duration-300 ${
         themeMode === 'dark'
           ? 'bg-[#121212] border-neutral-800/80 text-white'
           : 'bg-white border-slate-100 text-slate-800'
@@ -112,7 +112,7 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
     >
       {/* Header */}
       <div
-        className={`flex items-center justify-between p-4 border-b transition-colors ${
+        className={`telesales-dashboard-header flex items-center justify-between p-4 border-b transition-colors ${
           themeMode === 'dark' ? 'border-white/5 bg-white/[0.01]' : 'border-slate-100 bg-slate-50/40'
         }`}
       >
@@ -180,12 +180,12 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
 
       {/* Main Area */}
       <div
-        className={`flex-1 p-5 flex flex-col justify-between relative ${
+        className={`telesales-dashboard-main flex-1 p-5 flex flex-col justify-between relative ${
           isRadialOpen ? 'overflow-visible' : 'overflow-hidden'
         }`}
       >
         {/* Timeline */}
-        <div className="mt-5 w-full py-4 relative">
+        <div className="telesales-dashboard-timeline mt-5 w-full py-4 relative">
           <div className="relative flex items-center justify-center py-6 h-20">
             {/* Timeline Track Line */}
             <div
@@ -535,7 +535,7 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
 
         {/* Legend Row */}
         <div
-          className="grid grid-cols-5 gap-2 mt-1 flex-shrink-0"
+          className="telesales-metric-grid grid grid-cols-5 gap-2 mt-1 flex-shrink-0"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
@@ -644,7 +644,7 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
 
         {/* Leaderboard panel */}
         <div
-          className={`pt-2 border-t mt-2 flex-shrink-0 ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}
+          className={`telesales-leaderboard pt-2 border-t mt-2 flex-shrink-0 ${themeMode === 'dark' ? 'border-white/5' : 'border-gray-200'}`}
         >
           <div className="flex items-center gap-1.5 mb-2">
             <TrophyOutlined className="text-gold text-xs animate-bounce" />
@@ -658,7 +658,10 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
           </div>
 
           {/* Podium Grid */}
-          <div className="w-full flex items-end justify-center gap-4 pt-9" style={{ minHeight: '190px' }}>
+          <div
+            className="telesales-podium w-full flex items-end justify-center gap-4 pt-9"
+            style={{ minHeight: '190px' }}
+          >
             {podiumOrderBack.map((member, idx) => {
               if (!member) return null;
               const val = member.value;
@@ -755,7 +758,7 @@ export const TelesalesBackFace: React.FC<TelesalesBackFaceProps> = ({
 
           {/* Ranks 4-7 list */}
           <div
-            className="grid grid-cols-3 gap-2 mt-2"
+            className="telesales-staff-selector grid grid-cols-3 gap-2 mt-2"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',

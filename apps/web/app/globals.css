@@ -656,6 +656,193 @@ body {
   --color-gold: #d4a84b;
 }
 
+/* WCAG AA tag contrast. Ant Design's default semantic tag foregrounds are
+   designed for larger text and miss AA at our compact 12px operational density. */
+.light-theme .ant-tag-success {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #166534 !important;
+}
+
+.light-theme .ant-tag-warning {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+.light-theme .ant-tag-processing {
+  background: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+  color: #075985 !important;
+}
+
+.light-theme .ant-tag-error,
+.light-theme .ant-tag-volcano,
+.light-theme .ant-tag-magenta {
+  background: #ffe4e6 !important;
+  border-color: #fda4af !important;
+  color: #9f1239 !important;
+}
+
+.dark-theme .ant-tag-success {
+  background: #14532d !important;
+  border-color: #22c55e !important;
+  color: #bbf7d0 !important;
+}
+
+.dark-theme .ant-tag-warning {
+  background: #78350f !important;
+  border-color: #f59e0b !important;
+  color: #fef3c7 !important;
+}
+
+.light-theme .ant-tag-gold {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+.dark-theme .ant-tag-geekblue {
+  background: #172554 !important;
+  border-color: #1d4ed8 !important;
+  color: #bfdbfe !important;
+}
+
+.light-theme .ant-tag-default {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+.dark-theme .ant-tag-default {
+  background: #1e293b !important;
+  border-color: #475569 !important;
+  color: #cbd5e1 !important;
+}
+
+.light-theme .ant-typography.ant-typography-secondary {
+  color: #475569 !important;
+}
+
+.dark-theme .ant-typography.ant-typography-secondary {
+  color: #cbd5e1 !important;
+}
+
+.today-staff-inactive > td {
+  opacity: 1 !important;
+}
+
+.light-theme .today-staff-inactive > td {
+  background: #f8fafc !important;
+  color: #475569 !important;
+}
+
+.dark-theme .today-staff-inactive > td {
+  background: #0f172a !important;
+  color: #cbd5e1 !important;
+}
+
+.dark-theme .ant-btn-dangerous.ant-btn-variant-outlined {
+  border-color: #f87171 !important;
+  color: #fca5a5 !important;
+}
+
+.dark-theme .ant-tag-processing {
+  background: #0c4a6e !important;
+  border-color: #38bdf8 !important;
+  color: #e0f2fe !important;
+}
+
+.dark-theme .ant-tag-error,
+.dark-theme .ant-tag-volcano,
+.dark-theme .ant-tag-magenta {
+  background: #881337 !important;
+  border-color: #fb7185 !important;
+  color: #ffe4e6 !important;
+}
+
+.dark-theme .ant-tag-purple {
+  background: #3b1d6b !important;
+  border-color: #a78bfa !important;
+  color: #ede9fe !important;
+}
+
+/* Semantic utility text stays AA when it appears at the compact 11–14px
+   operational density. The normal Tailwind palette is intentionally tuned for
+   larger display copy, so its 500/600 shades are too light on these surfaces. */
+.light-theme .text-slate-400,
+.light-theme .text-slate-500 {
+  color: #475569 !important;
+}
+
+.light-theme .text-amber-500,
+.light-theme .text-amber-600,
+.light-theme .text-orange-500,
+.light-theme .text-orange-600 {
+  color: #92400e !important;
+}
+
+.light-theme .text-emerald-500,
+.light-theme .text-emerald-600 {
+  color: #047857 !important;
+}
+
+.light-theme .text-rose-500,
+.light-theme .text-rose-600,
+.light-theme .text-red-500,
+.light-theme .text-red-600 {
+  color: #be123c !important;
+}
+
+.light-theme .text-blue-500,
+.light-theme .text-blue-600 {
+  color: #1d4ed8 !important;
+}
+
+.light-theme .text-cyan-600 {
+  color: #0e7490 !important;
+}
+
+.light-theme .text-purple-500,
+.light-theme .text-purple-600 {
+  color: #6b21a8 !important;
+}
+
+.dark-theme .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* The dark theme's primary gold is bright by design. Use dark label text on
+   solid primary actions; white fails contrast against Ant's generated gold. */
+.dark-theme .ant-btn-primary:not(.ant-btn-dangerous) {
+  color: #0f172a !important;
+}
+
+.dark-theme .ant-btn-dangerous.ant-btn-variant-outlined {
+  border-color: #f87171 !important;
+  color: #fca5a5 !important;
+}
+
+.light-theme .ant-btn-link:not(.ant-btn-dangerous) {
+  color: #855b0e !important;
+}
+
+.light-theme .ant-btn-link.ant-btn-dangerous,
+.light-theme .ant-btn-link.ant-btn-color-dangerous {
+  color: #b91c1c !important;
+}
+
+.dark-theme .ant-btn-link.ant-btn-dangerous,
+.dark-theme .ant-btn-link.ant-btn-color-dangerous {
+  color: #f87171 !important;
+}
+
+.light-theme .ant-tag-cyan {
+  background: #e6fffb !important;
+  border-color: #87e8de !important;
+  color: #0f6f73 !important;
+}
+
 /* WCAG AA Keyboard Focus Visible Outline */
 :focus-visible {
   outline: 2px solid var(--color-gold);
@@ -814,20 +1001,22 @@ body {
   border-color: #e2e8f0 !important;
 }
 
-/* Pagination High-Contrast Rules */
+/* Pagination uses the same semantic-token pipeline as all other controls.
+   Avoid a dark-only hard-coded active state: it previously made the current
+   page numeral disappear whenever a table did not use DataTable. */
 .dark-theme .ant-pagination-item {
-  background: #1e293b !important;
-  border-color: #334155 !important;
+  background: var(--mos-surface-raised) !important;
+  border-color: var(--mos-surface-border-strong) !important;
 }
 .dark-theme .ant-pagination-item a {
-  color: #cbd5e1 !important;
+  color: var(--mos-text) !important;
 }
 .dark-theme .ant-pagination-item-active {
-  background: #d4a84b !important;
-  border-color: #d4a84b !important;
+  background: var(--mos-accent) !important;
+  border-color: var(--mos-accent) !important;
 }
 .dark-theme .ant-pagination-item-active a {
-  color: #000000 !important;
+  color: var(--mos-accent-contrast) !important;
   font-weight: 700 !important;
 }
 .dark-theme .ant-pagination-total-text,
@@ -879,7 +1068,8 @@ body {
   margin: 12px 16px !important;
 }
 
-/* Dashboard Main Tabs Card Padding & Tab Styling Optimization */
+/* Dashboard Main Tabs Card Padding & Tab Styling Optimization. CC tab labels
+   own their icon/text spacing rather than inheriting Ant Design's wide margin. */
 .dashboard-main-tabs-card > .ant-card-body {
   padding: 12px 16px 16px 16px !important;
 }
@@ -895,9 +1085,446 @@ body {
   transition: all 0.2s ease-in-out !important;
 }
 
-.dashboard-main-tabs-card .ant-tabs-tab .anticon {
-  margin-inline-end: 8px !important;
+.dashboard-main-tabs-card .cc-dashboard-tab-label,
+.dashboard-main-tabs-card .cv-dashboard-tab-label {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.dashboard-main-tabs-card .cc-dashboard-tab-label .anticon,
+.dashboard-main-tabs-card .cv-dashboard-tab-label .anticon {
+  margin-inline-end: 0 !important;
   font-size: 15px !important;
+}
+
+@media (max-width: 767px) {
+  .cv-tip-stat-grid .ant-card-body {
+    padding: 12px !important;
+  }
+
+  .cv-tip-stat-grid .ant-statistic-title {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .cv-tip-stat-grid .ant-statistic-content {
+    font-size: 20px !important;
+    line-height: 1.2;
+  }
+
+  .cv-tip-stat-grid .ant-statistic-content-prefix {
+    margin-inline-end: 4px;
+  }
+
+  /* CV income is a quick paystub scan on a phone. Two compact figures per
+     row preserve the information hierarchy without making the user scroll
+     past five full-width cards. */
+  .cv-income-stat-grid .ant-card-body {
+    padding: 12px !important;
+  }
+
+  .cv-income-stat-grid .ant-statistic-title {
+    font-size: 10px;
+    line-height: 1.3;
+    min-height: 26px;
+  }
+
+  .cv-income-stat-grid .ant-statistic-content {
+    font-size: 19px !important;
+    line-height: 1.2;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cv-income-stat-grid .ant-statistic-content-prefix {
+    font-size: 15px;
+    margin-inline-end: 4px;
+  }
+}
+
+/* A rotated iPhone 12 has enough inline space for the compact tablet surface.
+   Keep the summary in one row and reserve phone-style stacking for portrait. */
+@media (min-width: 768px) and (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  .cv-income-tab {
+    gap: 12px !important;
+  }
+
+  .cv-income-stat-grid .ant-card-body {
+    padding: 10px !important;
+  }
+
+  .cv-income-stat-grid .ant-statistic-title {
+    font-size: 11px;
+    line-height: 1.25;
+    min-height: 28px;
+  }
+
+  .cv-income-stat-grid .ant-statistic-content {
+    font-size: 19px !important;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cv-income-stat-grid .ant-statistic-content-prefix {
+    font-size: 15px;
+    margin-inline-end: 3px;
+  }
+}
+
+/* The speed matrix is a data-entry surface. On a phone, remove the two
+   inherited card gutters so the style/time controls and profile grid use the
+   available width without reducing tap targets. */
+@media (max-width: 767px) {
+  /* The tab shell already supplies the page gutter. Reclaim its inner padding
+     for this dense configuration surface instead of stacking three gutters. */
+  .dashboard-main-tabs-card .cv-speed-tab {
+    margin-inline: -8px;
+  }
+
+  .cv-speed-matrix-card > .ant-card-head {
+    min-height: 0;
+    padding-inline: 12px !important;
+  }
+
+  .cv-speed-matrix-card > .ant-card-head .ant-card-head-title {
+    padding-block: 12px !important;
+  }
+
+  .cv-speed-matrix-card > .ant-card-body {
+    padding: 8px !important;
+  }
+
+  .cv-speed-matrix-heading > span {
+    flex: 1 1 100%;
+    font-size: 14px;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .cv-speed-matrix-controls {
+    display: grid !important;
+    gap: 8px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .cv-speed-matrix-controls > .ant-space-item {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .cv-speed-matrix-controls .ant-input-affix-wrapper,
+  .cv-speed-matrix-controls .ant-select,
+  .cv-speed-matrix-controls .ant-btn {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .cv-speed-matrix-mobile-hint {
+    color: var(--ant-color-text-secondary);
+    font-size: 11px;
+    line-height: 1.4;
+    padding: 0 0 8px;
+  }
+
+  .cv-speed-matrix-mobile-list {
+    gap: 8px;
+  }
+
+  .cv-speed-matrix-mobile-list .responsive-mobile-record-card {
+    border-radius: 10px;
+    padding: 10px;
+  }
+}
+
+.cc-in-out-cell {
+  /* Keep hand-off staff readable while preserving table density. */
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cc-in-out-row {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  line-height: 20px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.cc-in-out-row-out {
+  margin-top: -5px;
+}
+
+.cc-in-out-avatar-out {
+  box-shadow: 0 0 0 2px var(--ant-color-bg-container);
+  z-index: 1;
+}
+
+/* Monetary values are atomic: the VND unit must never drop to a new line. */
+.vnd-amount,
+.ant-statistic .ant-statistic-content,
+.ant-table .tabular-nums {
+  /* Ensure the numeric value and the VND unit remain an indivisible visual token. */
+  white-space: nowrap !important;
+}
+
+.tip-detail-toolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--ant-color-border-secondary);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.tip-detail-toolbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tip-detail-filter {
+  height: var(--mos-control-height);
+  min-height: var(--mos-control-height);
+}
+
+.tip-detail-search {
+  width: 220px;
+}
+
+.tip-detail-toolbar .ant-input-affix-wrapper,
+.tip-detail-toolbar .ant-btn {
+  height: var(--mos-control-height);
+  min-height: var(--mos-control-height);
+}
+
+.tip-detail-toolbar-icon {
+  align-items: center;
+  display: inline-flex;
+  height: var(--mos-control-height);
+  justify-content: center;
+  min-width: var(--mos-control-height);
+  padding: 0 !important;
+  width: var(--mos-control-height);
+}
+
+.tip-detail-toolbar .ant-btn.tip-detail-toolbar-icon {
+  min-width: var(--mos-control-height);
+  width: var(--mos-control-height);
+}
+
+.tip-detail-count {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Daily Calls is rendered in both the Calls page and its global drawer. Keep
+   the filter controls on the same density contract as every other toolbar:
+   desktop follows the user's profile, while phone targets remain 44 px. */
+.daily-calls-toolbar .ant-btn,
+.daily-calls-toolbar .ant-picker,
+.daily-calls-toolbar .ant-radio-button-wrapper,
+.daily-calls-toolbar .ant-select-selector {
+  height: var(--mos-control-height) !important;
+  min-height: var(--mos-control-height);
+}
+
+.daily-calls-toolbar .ant-space-compact > .ant-btn,
+.daily-calls-toolbar-actions .ant-btn {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-width: var(--mos-control-height);
+  padding-inline: 0;
+  width: var(--mos-control-height);
+}
+
+.daily-calls-toolbar .ant-btn-icon,
+.daily-calls-toolbar .ant-picker-suffix {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1;
+}
+
+.daily-calls-toolbar .ant-radio-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+
+.daily-calls-toolbar .ant-radio-button-wrapper,
+.daily-calls-toolbar .ant-select-selector {
+  align-items: center;
+  display: inline-flex;
+}
+
+.daily-calls-toolbar .ant-select-single .ant-select-selector .ant-select-selection-item,
+.daily-calls-toolbar .ant-select-single .ant-select-selector .ant-select-selection-placeholder {
+  line-height: calc(var(--mos-control-height) - 2px) !important;
+}
+
+@media (max-width: 767px) {
+  .tip-detail-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tip-detail-toolbar-actions {
+    width: 100%;
+  }
+
+  .daily-calls-toolbar-controls {
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+  }
+
+  .tip-detail-search {
+    flex: 1 1 auto;
+    width: auto;
+  }
+}
+
+.diamond-program-panel {
+  /* Compact programme context, separated from the data-table controls. */
+  border-bottom: 1px solid var(--mos-surface-border);
+  padding: 8px 12px;
+}
+
+.diamond-program-heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.diamond-program-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--ant-color-warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ant-color-warning) 32%, transparent);
+  border-radius: 8px;
+  color: var(--ant-color-warning);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 15px;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.diamond-program-threshold {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.diamond-program-description {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  margin: 2px 0 0;
+}
+
+.diamond-tier-grid {
+  display: grid;
+  flex: 0 1 564px;
+  gap: 6px;
+  grid-template-columns: repeat(6, minmax(68px, 1fr));
+  min-width: 0;
+}
+
+.diamond-tier {
+  background: var(--ant-color-fill-quaternary);
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: 8px;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 5px 7px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.diamond-tier > span {
+  color: var(--ant-color-text-secondary);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.diamond-tier > strong {
+  color: var(--ant-color-info);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.diamond-tier-featured {
+  background: color-mix(in srgb, var(--ant-color-info) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ant-color-info) 45%, transparent);
+}
+
+.diamond-tier-featured > strong {
+  color: var(--ant-color-info);
+}
+
+.diamond-table-toolbar {
+  align-items: center;
+  border-top: 1px solid var(--mos-surface-border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.diamond-table-toolbar .diamond-table-search {
+  flex: 0 1 240px;
+  max-width: calc(100% - var(--mos-control-height) - 8px);
+  width: 240px !important;
+}
+
+.diamond-table-toolbar .ant-input-affix-wrapper,
+.diamond-table-toolbar .ant-btn {
+  height: var(--mos-control-height);
+  min-height: var(--mos-control-height);
+}
+
+@media (max-width: 1023px) {
+  .diamond-program-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .diamond-tier-grid {
+    flex-basis: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .diamond-tier-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .diamond-table-toolbar {
+    justify-content: stretch;
+  }
+
+  .diamond-table-toolbar .diamond-table-search {
+    flex: 1 1 auto;
+    max-width: none;
+    width: auto !important;
+  }
 }
 
 /* Sticky Table Headers for Long Records */
@@ -1022,12 +1649,17 @@ body {
 }
 
 .dark-theme .ant-picker-header button:hover,
-.dark-theme .ant-picker-header button:focus,
-.dark .ant-picker-header button:hover,
-.dark .ant-picker-header button:focus {
+.dark .ant-picker-header button:hover {
+  background-color: rgba(250, 140, 22, 0.12) !important;
+  color: #fa8c16 !important;
+  outline: none !important;
+}
+
+.dark-theme .ant-picker-header button:focus-visible,
+.dark .ant-picker-header button:focus-visible {
   color: #fa8c16 !important;
   outline: 2px solid #fa8c16 !important;
-  outline-offset: 1px !important;
+  outline-offset: 2px !important;
 }
 
 .dark-theme .ant-picker-content th,
@@ -1134,12 +1766,26 @@ body {
 }
 
 .light-theme .ant-picker-header button:hover,
-.light-theme .ant-picker-header button:focus,
-.light .ant-picker-header button:hover,
-.light .ant-picker-header button:focus {
+.light .ant-picker-header button:hover {
+  background-color: #fffbe6 !important;
+  color: #fa8c16 !important;
+  outline: none !important;
+}
+
+.light-theme .ant-picker-header button:focus-visible,
+.light .ant-picker-header button:focus-visible {
   color: #fa8c16 !important;
   outline: 2px solid #fa8c16 !important;
-  outline-offset: 1px !important;
+  outline-offset: 2px !important;
+}
+
+/* Month/year headers are interactive controls, not truncated text labels. */
+.ant-picker-header .ant-picker-year-btn,
+.ant-picker-header .ant-picker-month-btn {
+  border-radius: 6px;
+  min-width: 48px;
+  overflow: visible;
+  padding-inline: 6px;
 }
 
 .light-theme .ant-picker-content th,
@@ -1279,7 +1925,7 @@ body {
 }
 .light-theme .customer-data-table .ant-table-thead > tr > th {
   background: #f8fafc !important;
-  color: #9e7118 !important;
+  color: #855b0e !important;
   border-bottom: 1px solid #e2e8f0 !important;
 }
 .dark-theme .customer-data-table .ant-table-tbody > tr > td {
@@ -1343,4 +1989,3884 @@ body {
 .customer-data-table .ant-table-thead > tr > th {
   padding: 8px 8px !important;
   line-height: 1.25 !important;
+}
+
+/* WCAG 2.2 target-size minimum for Ant Design's compact pagination selector. */
+.ant-pagination .ant-select-single.ant-select-sm,
+.ant-pagination .ant-select-single.ant-select-sm .ant-select-selector,
+.ant-pagination .ant-select-single.ant-select-sm .ant-select-selection-search-input {
+  min-height: 24px;
+}
+
+/* Icon-only controls and the actual editable surfaces inside compound controls
+   retain a WCAG 2.2 minimum hit target at compact density. */
+.ant-btn-icon-only {
+  min-width: 24px;
+}
+
+.ant-select .ant-select-selection-search-input,
+.ant-picker input:not([type='hidden']) {
+  min-height: 24px;
+}
+
+/* ===========================================================================
+   Responsive foundation — Phase 1
+
+   Tokens here mirror `themeTokens.responsive` in @mos-lab/shared. Keep this
+   layer structural: page-specific composition belongs to its owning module.
+   =========================================================================== */
+:root {
+  --mos-page-gutter: 12px;
+  --mos-section-gap: 12px;
+  --mos-surface-padding: 12px;
+  --mos-toolbar-padding: 12px;
+  --mos-header-height: 56px;
+  --mos-nav-width: 320px;
+  --mos-nav-collapsed-width: 0px;
+  --mos-content-max-width: none;
+  /* Phone baseline: compact content rhythm, never compact touch targets. */
+  --mos-control-height: 44px;
+  --mos-control-height-compact: 44px;
+  --mos-action-icon-size: 20px;
+  --mos-disclosure-icon-size: 16px;
+  --mos-density-padding: 12px;
+  --mos-density-gap: 8px;
+  --mos-density-font-size: 14px;
+  --mos-density-cell-padding: 10px 12px;
+  --mos-safe-area: 12px;
+  --mos-floating-offset: 16px;
+  --mos-radius: 12px;
+  --mos-control-radius: 8px;
+  --mos-toggle-track-width: 36px;
+  --mos-toggle-track-height: 20px;
+  --mos-toggle-thumb-size: 16px;
+  --mos-toggle-thumb-offset: 16px;
+  --mos-motion-duration: 180ms;
+}
+
+.light-theme {
+  --mos-surface-muted: #f8fafc;
+  --mos-surface-raised: #ffffff;
+  --mos-surface-border: #e2e8f0;
+  --mos-accent-contrast: #ffffff;
+  --mos-focus-ring: rgba(133, 91, 14, 0.28);
+}
+
+.dark-theme {
+  --mos-surface-muted: #0f172a;
+  --mos-surface-raised: #111827;
+  --mos-surface-border: #1f2937;
+  --mos-accent-contrast: #111827;
+  --mos-focus-ring: rgba(212, 168, 75, 0.34);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --mos-page-gutter: 16px;
+    --mos-section-gap: 16px;
+    --mos-surface-padding: 16px;
+    --mos-toolbar-padding: 16px;
+    --mos-header-height: 60px;
+    --mos-nav-width: 232px;
+    --mos-nav-collapsed-width: 64px;
+  }
+}
+
+/* Desktop/tablet preference is independent from display resolution and input
+   method: a power user can choose the same profile on 4K or iPad. */
+@media (min-width: 768px) {
+  :root {
+    --mos-control-height: 36px;
+    --mos-control-height-compact: 36px;
+    --mos-action-icon-size: 18px;
+    --mos-disclosure-icon-size: 16px;
+    --mos-density-padding: 12px 16px;
+    --mos-density-gap: 12px;
+    --mos-density-font-size: 14px;
+    --mos-density-cell-padding: 10px 12px;
+    --mos-toggle-track-width: 32px;
+    --mos-toggle-track-height: 18px;
+    --mos-toggle-thumb-size: 14px;
+    --mos-toggle-thumb-offset: 14px;
+  }
+
+  :root[data-ui-density='compact'] {
+    --mos-control-height: 32px;
+    --mos-control-height-compact: 32px;
+    --mos-action-icon-size: 16px;
+    --mos-disclosure-icon-size: 14px;
+    --mos-density-padding: 8px 12px;
+    --mos-density-gap: 8px;
+    --mos-density-font-size: 12px;
+    --mos-density-cell-padding: 6px 8px;
+    --mos-toggle-track-width: 28px;
+    --mos-toggle-track-height: 16px;
+    --mos-toggle-thumb-size: 12px;
+    --mos-toggle-thumb-offset: 12px;
+  }
+
+  :root[data-ui-density='standard'] {
+    --mos-control-height: 36px;
+    --mos-control-height-compact: 36px;
+    --mos-action-icon-size: 18px;
+    --mos-disclosure-icon-size: 16px;
+    --mos-density-padding: 12px 16px;
+    --mos-density-gap: 12px;
+    --mos-density-font-size: 14px;
+    --mos-density-cell-padding: 10px 12px;
+    --mos-toggle-track-width: 32px;
+    --mos-toggle-track-height: 18px;
+    --mos-toggle-thumb-size: 14px;
+    --mos-toggle-thumb-offset: 14px;
+  }
+
+  :root[data-ui-density='comfortable'] {
+    --mos-control-height: 44px;
+    --mos-control-height-compact: 44px;
+    --mos-action-icon-size: 20px;
+    --mos-disclosure-icon-size: 16px;
+    --mos-density-padding: 16px 24px;
+    --mos-density-gap: 16px;
+    --mos-density-font-size: 15px;
+    --mos-density-cell-padding: 14px 16px;
+    --mos-toggle-track-width: 36px;
+    --mos-toggle-track-height: 20px;
+    --mos-toggle-thumb-size: 16px;
+    --mos-toggle-thumb-offset: 16px;
+  }
+}
+
+/* `getResponsiveTier()` keeps a short, rotated phone in the mobile tier.
+   Match it in CSS so a persisted desktop preference can never shrink a
+   phone's touch target. */
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  :root,
+  :root[data-ui-density] {
+    --mos-control-height: 44px;
+    --mos-control-height-compact: 44px;
+    --mos-action-icon-size: 20px;
+    --mos-disclosure-icon-size: 16px;
+    --mos-density-padding: 12px;
+    --mos-density-gap: 8px;
+    --mos-density-font-size: 14px;
+    --mos-density-cell-padding: 10px 12px;
+    --mos-toggle-track-width: 36px;
+    --mos-toggle-track-height: 20px;
+    --mos-toggle-thumb-size: 16px;
+    --mos-toggle-thumb-offset: 16px;
+  }
+}
+
+/* iPad keeps dense staff/admin data, but its navigation and tables own any
+   necessary horizontal movement instead of widening the application canvas. */
+@media (max-width: 1199px) {
+  .responsive-workspace .ant-tabs-nav {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .responsive-workspace .ant-tabs-nav-list {
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+
+  .responsive-workspace .ant-tabs-tab {
+    flex: 0 0 auto;
+  }
+
+  .responsive-workspace .ant-table-container,
+  .responsive-workspace .ant-table-content,
+  .responsive-workspace .ant-table-body {
+    max-width: 100%;
+    overflow-x: auto !important;
+    overscroll-behavior-inline: contain;
+  }
+
+  /* Keep a complete trend history usable on touch devices without allowing
+     many narrow day bars to force the whole dashboard wider than its card. */
+  .kpi-trends-bars {
+    gap: 8px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .kpi-trends-day {
+    flex: 0 0 40px;
+    min-width: 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  .schedule-calendar-page .schedule-calendar-quick-presets {
+    width: 100%;
+  }
+
+  .schedule-calendar-page .schedule-calendar-presets {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .schedule-calendar-page .schedule-calendar-range-picker {
+    width: 100% !important;
+  }
+}
+
+/* Calendar filters are one control group: all fields share density, radius,
+   padding and responsive width rather than mixing the Ant small Select size
+   with a regular search input. */
+.schedule-calendar-page .schedule-calendar-filters {
+  align-items: stretch;
+  gap: var(--mos-density-gap);
+}
+
+.schedule-calendar-page .schedule-calendar-filter-search {
+  flex: 2 1 300px;
+  max-width: 360px;
+  min-width: 260px;
+}
+
+.schedule-calendar-page .schedule-calendar-filter-control {
+  flex: 1 1 150px;
+  max-width: 180px;
+  min-width: 140px;
+}
+
+.schedule-calendar-page .schedule-calendar-filter-search.ant-input-affix-wrapper,
+.schedule-calendar-page .schedule-calendar-filter-control.ant-select,
+.schedule-calendar-page .schedule-calendar-filter-control .ant-select-selector {
+  border-radius: var(--mos-control-radius) !important;
+  box-sizing: border-box;
+  height: var(--mos-control-height) !important;
+  min-height: var(--mos-control-height);
+}
+
+.schedule-calendar-page .schedule-calendar-filter-search.ant-input-affix-wrapper,
+.schedule-calendar-page .schedule-calendar-filter-control .ant-select-selector {
+  align-items: center;
+  padding-block: 0 !important;
+}
+
+.schedule-calendar-page .schedule-calendar-filter-control .ant-select-selection-item,
+.schedule-calendar-page .schedule-calendar-filter-control .ant-select-selection-placeholder {
+  line-height: calc(var(--mos-control-height) - 2px) !important;
+}
+
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  .schedule-calendar-page .schedule-calendar-filter-search,
+  .schedule-calendar-page .schedule-calendar-filter-control {
+    max-width: none;
+    min-width: 0;
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  /* The legacy fallback `.grid-cols-2` is intentionally !important for old
+     browsers, so this local override keeps the operations calendar dense on
+     FHD and wider workstations without changing iPad's two-card scan pattern. */
+  .schedule-calendar-page .schedule-calendar-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  :root {
+    --mos-page-gutter: 20px;
+    --mos-section-gap: 20px;
+    --mos-surface-padding: 20px;
+    --mos-toolbar-padding: 16px;
+    --mos-header-height: 64px;
+    --mos-nav-width: 240px;
+    --mos-nav-collapsed-width: 64px;
+  }
+}
+
+@media (min-width: 1600px) {
+  :root {
+    --mos-page-gutter: 24px;
+    --mos-section-gap: 20px;
+    --mos-surface-padding: 24px;
+    --mos-toolbar-padding: 20px;
+    --mos-nav-width: 248px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --mos-page-gutter: 28px;
+    --mos-section-gap: 24px;
+    --mos-surface-padding: 28px;
+    --mos-toolbar-padding: 20px;
+    --mos-header-height: 68px;
+    --mos-nav-width: 256px;
+    --mos-content-max-width: 2400px;
+  }
+}
+
+@media (min-width: 3200px) {
+  :root {
+    --mos-page-gutter: 32px;
+    --mos-surface-padding: 32px;
+    --mos-toolbar-padding: 24px;
+    --mos-header-height: 72px;
+    --mos-nav-width: 264px;
+    --mos-nav-collapsed-width: 72px;
+    --mos-content-max-width: 3200px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mos-motion-duration: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--mos-focus-ring);
+  outline-offset: 2px;
+}
+
+.responsive-page,
+.dashboard-content {
+  min-width: 0;
+}
+
+/* Feature assemblies compose the primitives below without re-inventing page
+   spacing or page-local shells. A feature can opt out of the stack via its
+   contentClassName only when its information architecture truly differs. */
+.feature-page {
+  display: grid;
+  gap: var(--mos-section-gap);
+}
+
+.feature-page > .responsive-page-header {
+  margin-bottom: 0;
+}
+
+.feature-page-content {
+  display: grid;
+  gap: var(--mos-section-gap);
+  min-width: 0;
+}
+
+.responsive-container {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.responsive-page-header {
+  display: grid;
+  gap: var(--mos-section-gap);
+  margin-bottom: var(--mos-section-gap);
+  min-width: 0;
+}
+
+.responsive-page-header-main,
+.responsive-page-header-title-row,
+.responsive-page-header-actions,
+.responsive-toolbar-primary,
+.responsive-toolbar-actions {
+  min-width: 0;
+}
+
+.responsive-page-header-title-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.responsive-page-header .ant-typography {
+  overflow-wrap: anywhere;
+}
+
+.responsive-page-header-actions > .ant-space {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.responsive-page-header-actions .ant-space-item {
+  min-width: 0;
+}
+
+.responsive-page-header-actions .ant-btn {
+  min-height: var(--mos-control-height);
+}
+
+/* The Today header composes the shared period navigator with live-refresh
+   controls. One flex baseline and the density tokens prevent AntD's old
+   small radio buttons, picker and icon actions from drifting vertically. */
+.today-header-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mos-density-gap);
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.today-realtime-clock {
+  display: grid;
+  gap: 1px;
+  line-height: 1;
+  min-height: var(--mos-control-height);
+  place-content: center end;
+  text-align: end;
+}
+
+.today-realtime-clock > span {
+  color: var(--ant-color-text-secondary);
+  font-size: 11px;
+}
+
+.mos-icon-button.ant-btn {
+  align-items: center;
+  border-radius: var(--mos-control-radius);
+  box-sizing: border-box;
+  display: inline-flex;
+  height: var(--mos-control-height) !important;
+  justify-content: center;
+  line-height: 1;
+  min-height: var(--mos-control-height) !important;
+  min-width: var(--mos-control-height);
+  padding-inline: 0;
+  width: var(--mos-control-height);
+}
+
+.mos-icon-button.ant-btn .ant-btn-icon,
+.mos-icon-button__icon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 var(--mos-action-icon-size);
+  height: var(--mos-action-icon-size);
+  justify-content: center;
+  line-height: 1;
+  margin-inline-end: 0;
+  width: var(--mos-action-icon-size);
+}
+
+.mos-icon-button__icon > svg {
+  display: block;
+  height: var(--mos-action-icon-size);
+  stroke-width: 2;
+  vertical-align: middle;
+  width: var(--mos-action-icon-size);
+}
+
+.today-page .today-refresh-action.mos-icon-button {
+  background: var(--ant-color-fill-tertiary);
+  border-color: var(--ant-color-border-secondary);
+}
+
+.today-page .today-auto-refresh-control,
+.today-page .today-auto-refresh-control + .ant-select {
+  min-height: var(--mos-control-height);
+}
+
+.today-page .today-auto-refresh-control + .ant-select .ant-select-selector {
+  align-items: center;
+  display: flex;
+  height: var(--mos-control-height) !important;
+}
+
+.report-period-navigator {
+  --report-period-disclosure-icon-size: var(--mos-disclosure-icon-size);
+  --report-period-icon-size: var(--mos-action-icon-size);
+  align-items: center;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.report-period-navigator-control {
+  align-items: center;
+  background: var(--ant-color-fill-quaternary);
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: var(--mos-control-radius);
+  box-shadow: inset 0 1px 0 var(--ant-color-bg-container);
+  display: inline-flex;
+  gap: 0;
+  min-width: 0;
+  padding: 3px;
+}
+
+.report-period-navigator .ant-btn,
+.report-period-navigator .ant-space-compact,
+.responsive-toolbar .ant-btn,
+.responsive-toolbar .ant-radio-button-wrapper,
+.responsive-toolbar .ant-select,
+.responsive-toolbar .ant-select-selector,
+.toolbar-toggle {
+  height: var(--mos-control-height);
+  min-height: var(--mos-control-height);
+}
+
+.report-period-navigator .ant-space-compact {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.report-period-navigator-control .ant-btn {
+  align-items: center;
+  border-color: transparent;
+  box-shadow: none;
+  display: inline-flex;
+  justify-content: center;
+}
+
+/* One Lucide icon family is used inside the navigator. The wrapper owns the
+   actual optical box, independent of Ant Button's generated icon markup. */
+.report-period-navigator-icon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 var(--report-period-icon-size);
+  justify-content: center;
+  line-height: 1;
+}
+
+.report-period-navigator-icon > svg {
+  display: block;
+  height: var(--report-period-icon-size);
+  stroke-width: 2;
+  width: var(--report-period-icon-size);
+}
+
+/* Ant's icon prop adds a line-box wrapper. Without normalizing it, the SVG
+   sits on the text baseline (3px high in a 44px mobile action), even though
+   the button itself is flex-centered. Own that wrapper in the primitive so
+   every icon-only period action has a true optical center. */
+.report-period-navigator .ant-btn-icon {
+  align-items: center;
+  display: inline-flex;
+  height: var(--report-period-icon-size);
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.report-period-navigator-control .ant-btn:not(.ant-btn-primary) {
+  background: transparent;
+}
+
+.report-period-navigator-mode .ant-btn {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  justify-content: center;
+  min-width: 76px;
+  padding-inline: 10px;
+}
+
+.report-period-navigator-mode-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.report-period-navigator-mobile-mode {
+  /* Ant Design's Space.Compact injects its own display rule. Keep the
+     icon-only mode hidden outside the mobile breakpoint so the period
+     selector is never rendered twice. */
+  display: none !important;
+}
+
+.report-period-navigator-divider {
+  align-self: center;
+  background: var(--ant-color-border-secondary);
+  height: calc(var(--mos-control-height) - 12px);
+  margin-inline: 3px;
+  width: 1px;
+}
+
+.report-period-navigator-date {
+  min-width: 0;
+}
+
+.report-period-navigator-date .ant-btn {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+}
+
+/* Previous/next are icon-only controls. Keep their physical hit box square at
+   every desktop profile instead of letting Ant's inline padding leave a 32px
+   width when Comfortable is selected. */
+.report-period-navigator-date .ant-btn:not(.report-period-navigator-label) {
+  min-width: var(--mos-control-height);
+  padding-inline: 0;
+  width: var(--mos-control-height);
+}
+
+.report-period-navigator-picker {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+}
+
+.report-period-navigator-label {
+  gap: 7px;
+  justify-content: flex-start;
+  min-width: 148px;
+  text-align: left;
+}
+
+.report-period-navigator-picker-icon {
+  color: var(--ant-color-primary);
+}
+
+.report-period-navigator-picker-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-period-navigator-picker-disclosure {
+  --report-period-icon-size: var(--report-period-disclosure-icon-size);
+  color: var(--ant-color-text-secondary);
+  margin-left: auto;
+}
+
+.report-period-navigator-hidden-picker {
+  border: 0 !important;
+  height: 0 !important;
+  left: 0;
+  padding: 0 !important;
+  pointer-events: none;
+  position: absolute !important;
+  top: 0;
+  visibility: hidden;
+  width: 0 !important;
+}
+
+.responsive-toolbar .ant-select-selector {
+  align-items: center;
+  display: flex;
+}
+
+.responsive-toolbar .ant-select-selection-item,
+.responsive-toolbar .ant-select-selection-placeholder {
+  line-height: calc(var(--mos-control-height) - 2px) !important;
+}
+
+.responsive-toolbar .ant-radio-group {
+  align-items: stretch;
+  display: inline-flex;
+}
+
+.responsive-toolbar .ant-radio-button-wrapper {
+  align-items: center;
+  display: inline-flex;
+}
+
+.toolbar-toggle {
+  align-items: center;
+  background: color-mix(in srgb, var(--mos-surface-muted) 92%, transparent);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: var(--mos-control-radius);
+  display: inline-flex;
+  gap: 8px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.toolbar-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.toolbar-toggle-control {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--mos-control-radius);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 var(--mos-control-height);
+  height: var(--mos-control-height);
+  justify-content: center;
+  line-height: 1;
+  min-height: var(--mos-control-height);
+  min-width: var(--mos-control-height);
+  padding: 0;
+  width: var(--mos-control-height);
+}
+
+.toolbar-toggle-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.toolbar-toggle-control-track {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-gold) 16%, var(--mos-surface-muted));
+  border: 1px solid color-mix(in srgb, var(--color-gold) 34%, var(--mos-surface-border));
+  border-radius: 999px;
+  box-sizing: border-box;
+  display: inline-flex;
+  height: var(--mos-toggle-track-height);
+  justify-content: flex-start;
+  padding: 2px;
+  transition:
+    background var(--mos-motion-duration),
+    border-color var(--mos-motion-duration);
+  width: var(--mos-toggle-track-width);
+}
+
+.toolbar-toggle-control-thumb {
+  background: var(--mos-surface-raised);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.28);
+  display: block;
+  flex: 0 0 auto;
+  height: var(--mos-toggle-thumb-size);
+  transform: translateX(0);
+  transition: transform var(--mos-motion-duration);
+  width: var(--mos-toggle-thumb-size);
+}
+
+.toolbar-toggle-control-checked .toolbar-toggle-control-track {
+  background: var(--color-gold);
+  border-color: var(--color-gold);
+}
+
+.toolbar-toggle-control-checked .toolbar-toggle-control-thumb {
+  transform: translateX(var(--mos-toggle-thumb-offset));
+}
+
+.toolbar-filter-disclosure-trigger {
+  --toolbar-filter-icon-size: var(--mos-action-icon-size);
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-width: var(--mos-control-height);
+  padding-inline: 0;
+  width: var(--mos-control-height);
+}
+
+/* A filter is an action control beside the report period, so it follows the
+   same Lucide optical box rather than Ant Design's smaller glyph default. */
+.toolbar-filter-disclosure-icon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 var(--toolbar-filter-icon-size);
+  justify-content: center;
+  line-height: 1;
+}
+
+.toolbar-filter-disclosure-icon > svg {
+  display: block;
+  height: var(--toolbar-filter-icon-size);
+  stroke-width: 2;
+  width: var(--toolbar-filter-icon-size);
+}
+
+.toolbar-filter-disclosure-content {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.toolbar-filter-disclosure-content .ant-select,
+.toolbar-filter-disclosure-content .toolbar-toggle {
+  width: 100%;
+}
+
+.toolbar-filter-disclosure-content .toolbar-toggle {
+  justify-content: space-between;
+}
+
+@media (max-width: 767px) {
+  .toolbar-filter-disclosure-trigger {
+    --toolbar-filter-icon-size: var(--mos-action-icon-size);
+  }
+
+  .toolbar-filter-disclosure-content .ant-select,
+  .toolbar-filter-disclosure-content .ant-select .ant-select-selector {
+    min-height: 44px !important;
+  }
+
+  .toolbar-filter-disclosure-content .ant-select {
+    width: 100% !important;
+  }
+
+  .toolbar-filter-disclosure-content .ant-select .ant-select-selector {
+    align-items: center;
+    display: flex;
+  }
+
+  .toolbar-filter-disclosure-content .ant-select-single .ant-select-selection-item,
+  .toolbar-filter-disclosure-content .ant-select-single .ant-select-selection-placeholder {
+    line-height: 42px !important;
+  }
+
+  .report-period-navigator {
+    display: flex;
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .report-period-navigator-control {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .report-period-navigator-mode .ant-btn {
+    height: 44px;
+    min-width: 44px;
+    padding-inline: 0;
+    width: 44px;
+  }
+
+  .report-period-navigator .report-period-navigator-mode {
+    display: none !important;
+  }
+
+  .report-period-navigator .report-period-navigator-mobile-mode {
+    align-self: center;
+    display: inline-flex !important;
+    flex: 0 0 132px;
+    height: 44px;
+    min-width: 132px;
+    order: 2;
+    width: 132px;
+  }
+
+  /* A 44px touch target plus a 20px icon is the mobile control standard.
+     Give date navigation its own row instead of shrinking the chosen period
+     into an unreadable ellipsis beside the three view-mode buttons. */
+  .report-period-navigator-control .report-period-navigator-mobile-mode {
+    margin-inline: auto !important;
+    order: 1;
+  }
+
+  .report-period-navigator-control .report-period-navigator-date {
+    flex: 1 1 100%;
+    order: 2;
+  }
+
+  .report-period-navigator-mobile-mode .ant-btn {
+    align-items: center;
+    display: inline-flex;
+    height: 44px;
+    justify-content: center;
+    min-width: 44px;
+    padding-inline: 0;
+    width: 44px;
+  }
+
+  .report-period-navigator-divider {
+    display: none;
+  }
+
+  .report-period-navigator-date {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    order: 1;
+  }
+
+  .report-period-navigator-date .ant-btn:not(.report-period-navigator-label) {
+    min-width: 44px;
+    padding-inline: 0;
+    width: 44px;
+  }
+
+  .report-period-navigator-picker {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .report-period-navigator-label {
+    font-size: 12px;
+    gap: 6px;
+    min-width: 0;
+    padding-inline: 6px;
+    width: 100%;
+  }
+
+  .table-toolbar-icon-action {
+    height: 44px !important;
+    min-width: 44px !important;
+    width: 44px !important;
+  }
+}
+
+.responsive-toolbar {
+  min-width: 0;
+}
+
+.responsive-toolbar-layout {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.responsive-toolbar-primary {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.responsive-toolbar-primary > * {
+  min-width: 0;
+}
+
+.responsive-toolbar-actions > .ant-space {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* Shared action placement: creation lives in PageHeader.extra; table settings
+   live at the far right of PageToolbar.actions. Both stay square at the
+   surrounding toolbar control height. */
+.page-primary-icon-action,
+.table-toolbar-settings-trigger,
+.table-toolbar-icon-action {
+  align-items: center;
+  border-radius: 8px !important;
+  display: inline-flex;
+  height: var(--mos-control-height);
+  justify-content: center;
+  min-width: var(--mos-control-height);
+  padding: 0 !important;
+  width: var(--mos-control-height);
+}
+
+.page-primary-icon-action {
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ant-color-primary) 32%, transparent);
+}
+
+.table-toolbar-icon-action {
+  border-color: var(--ant-color-border-secondary) !important;
+  color: var(--ant-color-text-secondary) !important;
+}
+
+/* Ant Design wraps icon-only button content in a baseline-aligned span. Table
+   settings actions use AppIcon, so the wrapper must own the same optical box
+   as IconButton instead of lifting the glyph a few pixels above center. */
+.table-toolbar-settings-trigger .ant-btn-icon {
+  align-items: center;
+  display: inline-flex;
+  height: var(--mos-action-icon-size);
+  justify-content: center;
+  line-height: 1;
+  margin-inline-end: 0;
+  vertical-align: middle;
+  width: var(--mos-action-icon-size);
+}
+
+.table-toolbar-settings-trigger .ant-btn-icon > .mos-app-icon {
+  display: block;
+  height: var(--mos-action-icon-size);
+  vertical-align: middle;
+  width: var(--mos-action-icon-size);
+}
+
+/* Pagination is one shared control across tables and standalone data views.
+   Keep the result range adjacent to its navigation and page-size controls.
+   Splitting it with an auto margin creates an accidental empty rail on wide
+   tables and makes the footer look misaligned. */
+.ant-pagination {
+  align-items: center;
+  column-gap: 6px;
+  min-height: var(--mos-control-height);
+  row-gap: 6px;
+}
+
+.ant-table-wrapper .ant-pagination,
+.standard-pagination.ant-pagination {
+  display: flex;
+  width: 100%;
+}
+
+.ant-pagination .ant-pagination-total-text {
+  align-items: center !important;
+  align-self: center !important;
+  box-sizing: border-box;
+  color: var(--mos-text-muted);
+  display: inline-flex !important;
+  font-variant-numeric: tabular-nums;
+  height: var(--mos-control-height) !important;
+  line-height: 1 !important;
+  margin-inline-end: 6px !important;
+  padding-inline-start: 2px;
+  white-space: nowrap;
+}
+
+.ant-pagination .ant-pagination-item,
+.ant-pagination .ant-pagination-prev,
+.ant-pagination .ant-pagination-next,
+.ant-pagination .ant-pagination-jump-next,
+.ant-pagination .ant-pagination-jump-prev {
+  align-items: center;
+  box-sizing: border-box;
+  display: inline-flex;
+  height: var(--mos-control-height);
+  justify-content: center;
+  margin-inline-end: 0 !important;
+  min-width: var(--mos-control-height);
+  width: var(--mos-control-height);
+}
+
+.ant-pagination .ant-pagination-item {
+  background: var(--mos-surface-raised) !important;
+  border: 1px solid var(--mos-surface-border) !important;
+  border-radius: var(--mos-control-radius);
+}
+
+.ant-pagination .ant-pagination-prev .ant-pagination-item-link,
+.ant-pagination .ant-pagination-next .ant-pagination-item-link,
+.ant-pagination .ant-pagination-jump-next .ant-pagination-item-link,
+.ant-pagination .ant-pagination-jump-prev .ant-pagination-item-link {
+  background: var(--mos-surface-raised) !important;
+  border: 1px solid var(--mos-surface-border) !important;
+  border-radius: var(--mos-control-radius);
+  box-sizing: border-box;
+}
+
+.ant-pagination .ant-pagination-item > a,
+.ant-pagination .ant-pagination-item-link {
+  align-items: center !important;
+  box-sizing: border-box;
+  display: flex !important;
+  height: 100% !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+/* Numerals need a small optical-baseline correction; SVG arrow buttons do
+   not, so this deliberately targets numbered page links only. */
+.ant-pagination .ant-pagination-item > a {
+  padding: 1px 0 0 !important;
+}
+
+.ant-pagination .ant-pagination-item > a,
+.ant-pagination .ant-pagination-item-link {
+  color: var(--mos-text);
+}
+
+.ant-pagination .ant-pagination-item-active,
+.ant-pagination .ant-pagination-item-active:hover {
+  background: var(--mos-accent) !important;
+  border-color: var(--mos-accent) !important;
+}
+
+.ant-pagination .ant-pagination-item-active > a,
+.ant-pagination .ant-pagination-item-active:hover > a {
+  color: var(--mos-accent-contrast) !important;
+  font-weight: 700;
+}
+
+.ant-pagination .ant-pagination-disabled .ant-pagination-item-link {
+  background: var(--mos-surface-muted) !important;
+  border-color: var(--mos-surface-border) !important;
+  color: var(--mos-text-muted) !important;
+}
+
+.ant-pagination .ant-pagination-options {
+  align-items: center;
+  display: inline-flex;
+  height: var(--mos-control-height);
+  margin-inline: 2px 0 !important;
+}
+
+.ant-pagination .ant-pagination-options-size-changer,
+.ant-pagination .ant-pagination-options-size-changer .ant-select-selector {
+  height: var(--mos-control-height) !important;
+}
+
+.ant-pagination .ant-pagination-options-size-changer .ant-select-selector {
+  align-items: center;
+  background: var(--mos-surface-raised) !important;
+  border-color: var(--mos-surface-border) !important;
+  border-radius: var(--mos-control-radius) !important;
+  display: flex;
+  min-width: 88px;
+}
+
+.ant-pagination .ant-pagination-options-size-changer .ant-select-selection-item,
+.ant-pagination .ant-pagination-options-size-changer .ant-select-selection-placeholder {
+  line-height: calc(var(--mos-control-height) - 2px) !important;
+}
+
+.ant-pagination .ant-pagination-item-link .anticon,
+.ant-pagination .ant-pagination-item-link .mos-app-icon {
+  display: block;
+  font-size: var(--mos-action-icon-size);
+  height: var(--mos-action-icon-size);
+  line-height: 1;
+  width: var(--mos-action-icon-size);
+}
+
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  /* Ant switches pagination to its 32 px mini rule at narrow widths. The
+     visible page actions remain touch controls, so the mobile density contract
+     must win. Page size is deliberately hidden here: presenting it partially
+     off-screen beside 44 px actions is neither discoverable nor touch-safe. */
+  .ant-pagination .ant-pagination-item,
+  .ant-pagination .ant-pagination-prev,
+  .ant-pagination .ant-pagination-next,
+  .ant-pagination .ant-pagination-jump-next,
+  .ant-pagination .ant-pagination-jump-prev,
+  .ant-pagination .ant-pagination-prev .ant-pagination-item-link,
+  .ant-pagination .ant-pagination-next .ant-pagination-item-link,
+  .ant-pagination .ant-pagination-jump-next .ant-pagination-item-link,
+  .ant-pagination .ant-pagination-jump-prev .ant-pagination-item-link {
+    height: var(--mos-control-height) !important;
+    min-height: var(--mos-control-height);
+    line-height: 1 !important;
+  }
+
+  .ant-pagination .ant-pagination-options {
+    display: none;
+  }
+
+  /* A phone should never wrap five 44 px page targets into a jagged third
+     line. The mobile pattern is the accessible previous / current / next
+     triad; the result range supplies context without competing controls. */
+  .ant-pagination .ant-pagination-item:not(.ant-pagination-item-active),
+  .ant-pagination .ant-pagination-jump-prev,
+  .ant-pagination .ant-pagination-jump-next {
+    display: none;
+  }
+
+  .ant-table-wrapper .ant-pagination,
+  .standard-pagination.ant-pagination {
+    justify-content: flex-end;
+  }
+
+  .ant-table-wrapper .ant-pagination .ant-pagination-total-text,
+  .standard-pagination .ant-pagination-total-text {
+    flex-basis: 100%;
+    margin-inline-end: 0 !important;
+    padding-inline-start: 0;
+  }
+}
+
+/* Dense but readable shared pagination for every Ant Design table. */
+.ant-table-wrapper .ant-pagination.standard-pagination,
+.ant-table-wrapper .ant-pagination {
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 6px;
+}
+
+.ant-table-wrapper .ant-pagination .ant-pagination-item,
+.ant-table-wrapper .ant-pagination .ant-pagination-prev,
+.ant-table-wrapper .ant-pagination .ant-pagination-next,
+.ant-table-wrapper .ant-pagination .ant-pagination-jump-next,
+.ant-table-wrapper .ant-pagination .ant-pagination-jump-prev,
+.ant-table-wrapper .ant-pagination .ant-pagination-options {
+  margin-inline-end: 0 !important;
+}
+
+.ant-table-wrapper .ant-pagination .ant-pagination-total-text {
+  margin-inline-end: 6px;
+  white-space: nowrap;
+}
+
+.table-index-header-icon {
+  align-items: center;
+  display: inline-flex;
+  font-size: 14px;
+  justify-content: center;
+  line-height: 1;
+}
+
+.customer-identity-cell {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.customer-identity-cell-details {
+  min-width: 0;
+}
+
+.customer-identity-cell-name-row {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.customer-identity-cell-name {
+  background: none;
+  border: 0;
+  color: var(--ant-color-text);
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-identity-cell-name:hover {
+  text-decoration: underline;
+}
+
+.customer-identity-cell-name-row .ant-tag {
+  font-size: 10px;
+  line-height: 16px;
+  margin: 0;
+  padding-inline: 4px;
+}
+
+.customer-identity-cell-phone {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--ant-color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  gap: 4px;
+  padding: 0;
+}
+
+.customer-identity-cell-phone:hover {
+  color: var(--ant-color-primary);
+  text-decoration: underline;
+}
+
+.customer-identity-cell-phone-empty {
+  cursor: default;
+  font-style: italic;
+}
+
+.responsive-toolbar .ant-btn,
+.responsive-toolbar .ant-input,
+.responsive-toolbar .ant-input-affix-wrapper,
+.responsive-toolbar .ant-select-selector {
+  min-height: var(--mos-control-height);
+}
+
+/* An affix wrapper contains a full-height Ant input. Its native vertical
+   padding otherwise adds to that input and turns a 44px mobile search field
+   into a 66px control. The shared toolbar owns one density-sized control box. */
+.responsive-toolbar .ant-input-affix-wrapper {
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--mos-control-height);
+  padding-block: 0 !important;
+}
+
+/* Assembly search fields own the submit affordance, not each consuming page.
+   The active density defines its square action; phones resolve this to 44 px. */
+.mos-search-field .ant-input-search-button {
+  align-items: center;
+  display: inline-flex;
+  height: var(--mos-control-height);
+  justify-content: center;
+  min-width: var(--mos-control-height);
+  padding-inline: 0;
+  width: var(--mos-control-height);
+}
+
+.responsive-surface-full-bleed {
+  border-inline-width: 0 !important;
+  border-radius: 0 !important;
+  margin-inline: calc(var(--mos-page-gutter) * -1);
+}
+
+.responsive-surface-full-bleed > .ant-card-body {
+  padding-inline: var(--mos-page-gutter) !important;
+}
+
+.responsive-section-card .ant-card-head {
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.responsive-section-card .ant-card-head-title,
+.responsive-section-card .ant-card-extra {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.responsive-stat-grid {
+  display: grid;
+  gap: var(--mos-section-gap);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.metric-grid[data-columns='1'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.responsive-stat-card .responsive-stat-value {
+  overflow-wrap: anywhere;
+}
+
+/* Daily Bonus revenue KPIs are an admin/management signal. On phones, CCs
+   need their ranking and daily bonus details first, so this secondary strip
+   is deliberately withheld rather than compressed into a noisy grid. */
+.cc-daily-bonus-stat-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cc-daily-bonus-stat-grid > .ant-card {
+  min-width: 0;
+}
+
+/* CC Tip's top figures are financial context for management. Keep the two
+   money metrics in one desktop/tablet row and let mobile focus on people. */
+.cc-tip-summary-row {
+  width: 100%;
+}
+
+/* Kim Cương's programme context is useful before the staff list on larger
+   screens, but redundant for a CC on a phone. */
+.cc-diamond-summary-row {
+  width: 100%;
+}
+
+.cc-income-summary-row {
+  width: 100%;
+}
+
+/* CC reporting toolbar: time navigation and scope filters are separate
+   control groups, making the current reporting context scannable at a glance. */
+.cc-page-toolbar .responsive-toolbar-actions > .ant-space {
+  align-items: center;
+  gap: 10px !important;
+}
+
+.cc-toolbar-filter-cluster {
+  align-items: center;
+  background: var(--mos-surface-muted);
+  border: 0;
+  border-radius: var(--mos-control-radius);
+  box-shadow:
+    inset 0 0 0 1px var(--mos-surface-border),
+    inset 0 1px 0 var(--mos-surface-raised);
+  box-sizing: border-box;
+  display: inline-flex;
+  gap: 6px;
+  height: var(--mos-control-height);
+  min-height: var(--mos-control-height);
+  padding: 0 5px 0 9px;
+}
+
+.cc-toolbar-filter-title {
+  color: var(--ant-color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cc-toolbar-filter-select {
+  width: 136px;
+}
+
+.cc-toolbar-consultant-select {
+  width: 154px;
+}
+
+.cc-toolbar-filter-cluster .ant-select-selector {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.cc-toolbar-filter-cluster .ant-select:hover .ant-select-selector,
+.cc-toolbar-filter-cluster .ant-select-focused .ant-select-selector {
+  border-color: color-mix(in srgb, var(--color-gold) 48%, var(--mos-surface-border)) !important;
+}
+
+.cc-toolbar-filter-divider {
+  background: var(--mos-surface-border);
+  height: calc(var(--mos-control-height) - 12px);
+  width: 1px;
+}
+
+.cc-toolbar-vat-toggle {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  gap: 6px;
+  height: var(--mos-control-height);
+  min-height: var(--mos-control-height);
+  padding: 0 1px 0 3px;
+}
+
+@media (max-width: 1040px) and (min-width: 768px) {
+  .cc-page-toolbar .responsive-toolbar-layout {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cc-page-toolbar .responsive-toolbar-actions > .ant-space {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Icon buttons use a 44px target with a 20px Lucide glyph. Picker labels
+     deliberately retain their 16px embedded icon so text remains primary. */
+  .report-period-navigator {
+    --report-period-disclosure-icon-size: var(--mos-disclosure-icon-size);
+    --report-period-icon-size: var(--mos-action-icon-size);
+  }
+
+  /* The mode selector already communicates date context. On a phone, remove
+     the redundant calendar glyph so the compact date remains fully readable. */
+  .report-period-navigator-picker-icon {
+    display: none;
+  }
+
+  .report-period-navigator-label {
+    gap: 4px;
+  }
+
+  .report-period-navigator-control .report-period-navigator-mobile-mode {
+    order: 1;
+  }
+
+  .report-period-navigator-control .report-period-navigator-date {
+    flex: 1 1 100%;
+    order: 2;
+  }
+
+  .cc-toolbar-filter-cluster {
+    align-items: stretch;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    display: grid;
+    gap: 10px;
+    height: auto;
+    padding: 0;
+  }
+
+  .cc-toolbar-filter-title {
+    font-size: 12px;
+  }
+
+  .cc-toolbar-filter-select,
+  .cc-toolbar-consultant-select {
+    width: 100%;
+  }
+
+  .cc-toolbar-filter-divider {
+    display: none;
+  }
+
+  .cc-toolbar-vat-toggle {
+    border: 1px solid var(--mos-surface-border);
+    border-radius: var(--mos-control-radius);
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+
+  .cc-page .dashboard-main-tabs-card .ant-tabs-tab,
+  .cc-page .dashboard-main-tabs-card .ant-tabs-tab .ant-tabs-tab-btn {
+    align-items: center;
+    box-sizing: border-box;
+    display: inline-flex;
+    height: var(--mos-control-height) !important;
+    min-height: var(--mos-control-height);
+  }
+
+  .cc-tip-summary-row {
+    display: none !important;
+  }
+
+  .cc-diamond-summary-row {
+    display: none !important;
+  }
+
+  .cc-income-summary-row {
+    display: none !important;
+  }
+
+  /* This programme card is intentionally always open on phones: the rates
+     must be visible before a CC inspects their position in the list. */
+  .diamond-program-panel-expanded {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .cc-daily-bonus-stat-grid {
+    display: none !important;
+  }
+
+  .cc-daily-bonus-stat-grid > .ant-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .cc-daily-bonus-stat-grid .ant-statistic-title {
+    font-size: 11px;
+    line-height: 1.3;
+    min-height: 29px;
+  }
+
+  .cc-daily-bonus-stat-grid .ant-statistic-content {
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .cc-daily-bonus-stat-grid .ant-statistic-content-prefix {
+    font-size: 16px;
+    margin-inline-end: 4px;
+  }
+
+  .cc-daily-bonus-stat-grid .text-xs {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+}
+
+@media (min-width: 640px) {
+  .cc-daily-bonus-stat-grid {
+    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .cc-daily-bonus-stat-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.responsive-data-region {
+  min-width: 0;
+  position: relative;
+}
+
+/* DataTable is part of the assembly contract, so its cell rhythm follows the
+   user's selected desktop profile without requiring every feature to pass a
+   custom Ant Design `size` prop. */
+.responsive-data-region .ant-table-thead > tr > th,
+.responsive-data-region .ant-table-tbody > tr > td {
+  padding: var(--mos-density-cell-padding) !important;
+}
+
+.responsive-data-region .ant-table-wrapper,
+.responsive-data-region .ant-spin-nested-loading,
+.responsive-data-region .ant-spin-container {
+  min-width: 0;
+}
+
+/* DataTable owns one clipped surface. AntD otherwise applies its component
+   radius to the inner table while the wrapper receives the app surface radius,
+   producing visibly mismatched corners around empty and bordered tables. */
+.responsive-data-region .ant-table-wrapper {
+  border-radius: var(--mos-radius);
+  overflow: hidden;
+}
+
+.responsive-data-region .ant-table-wrapper .ant-table,
+.responsive-data-region .ant-table-wrapper .ant-table-container,
+.responsive-data-region .ant-table-wrapper .ant-table-content,
+.responsive-data-region .ant-table-wrapper .ant-table-header,
+.responsive-data-region .ant-table-wrapper .ant-table-content > table {
+  border-radius: var(--mos-radius) var(--mos-radius) 0 0;
+}
+
+.responsive-data-region .ant-table-container {
+  border-inline-start: 0;
+  border-inline-end: 0;
+}
+
+.responsive-data-region .ant-table-content,
+.responsive-data-region .ant-table-body {
+  overscroll-behavior-inline: contain;
+}
+
+.responsive-data-scroll-hint {
+  align-items: center;
+  background: color-mix(in srgb, var(--ant-color-bg-elevated) 92%, transparent);
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: 999px;
+  box-shadow: var(--ant-box-shadow-tertiary);
+  color: var(--ant-color-text-secondary);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 3;
+}
+
+/* Phase 4–7 workspace contract.  These views pre-date the responsive
+   primitives, so this is deliberately structural: it makes the existing
+   controls, tabs, cards and dense tables respect the available inline size
+   before a feature opts into a more focused mobile card composition. */
+.responsive-workspace {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.responsive-workspace > *,
+.responsive-workspace .ant-card,
+.responsive-workspace .ant-card-body,
+.responsive-workspace .ant-card-head,
+.responsive-workspace .ant-card-head-wrapper,
+.responsive-workspace .ant-row,
+.responsive-workspace .ant-col,
+.responsive-workspace .ant-space,
+.responsive-workspace .ant-space-item,
+.responsive-workspace .ant-tabs,
+.responsive-workspace .ant-tabs-content-holder,
+.responsive-workspace .ant-table-wrapper,
+.responsive-workspace .ant-spin-nested-loading,
+.responsive-workspace .ant-spin-container {
+  min-width: 0;
+}
+
+.responsive-workspace .ant-table-wrapper {
+  max-width: 100%;
+}
+
+.responsive-workspace .ant-table-content,
+.responsive-workspace .ant-table-body {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+}
+
+.responsive-workspace .ant-card-head-wrapper,
+.responsive-workspace .ant-pagination {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.responsive-workspace .ant-card-extra,
+.responsive-workspace .ant-picker,
+.responsive-workspace .ant-select,
+.responsive-workspace .ant-input-affix-wrapper,
+.responsive-workspace .ant-input-group-wrapper,
+.responsive-workspace .ant-space-compact {
+  max-width: 100%;
+}
+
+.responsive-workspace .ant-picker,
+.responsive-workspace .ant-select,
+.responsive-workspace .ant-input-affix-wrapper {
+  min-width: 0;
+}
+
+.responsive-mobile-record-list {
+  display: grid;
+  gap: 12px;
+}
+
+.responsive-mobile-record-card {
+  border: 1px solid var(--mos-surface-border);
+  border-radius: var(--mos-radius);
+  min-width: 0;
+  padding: var(--mos-surface-padding);
+}
+
+/* The selection belongs to the whole record, never an inner row. This keeps
+   the focus/selected boundary aligned with the card's padding and all values. */
+.responsive-mobile-record-card-selected {
+  background: color-mix(in srgb, var(--color-gold) 10%, transparent);
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-gold) 55%, transparent);
+}
+
+.responsive-mobile-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 12px;
+}
+
+@media (max-width: 767px) {
+  /* Pagination belongs to the DataTable mobile contract. Ant's default 32 px
+     arrows are visually compact but miss the app's 44 px touch minimum. */
+  .responsive-data-region .responsive-mobile-pagination .ant-pagination.ant-pagination .ant-pagination-prev,
+  .responsive-data-region .responsive-mobile-pagination .ant-pagination.ant-pagination .ant-pagination-next,
+  .responsive-data-region .responsive-mobile-pagination .ant-pagination.ant-pagination .ant-pagination-item,
+  .responsive-data-region .responsive-mobile-pagination .ant-pagination.ant-pagination .ant-pagination-jump-prev,
+  .responsive-data-region .responsive-mobile-pagination .ant-pagination.ant-pagination .ant-pagination-jump-next,
+  .responsive-data-region
+    .responsive-mobile-pagination
+    .ant-pagination.ant-pagination
+    .ant-pagination-prev
+    .ant-pagination-item-link,
+  .responsive-data-region
+    .responsive-mobile-pagination
+    .ant-pagination.ant-pagination
+    .ant-pagination-next
+    .ant-pagination-item-link,
+  .responsive-data-region
+    .responsive-mobile-pagination
+    .ant-pagination.ant-pagination
+    .ant-pagination-item
+    .ant-pagination-item-link,
+  .responsive-data-region
+    .responsive-mobile-pagination
+    .ant-pagination.ant-pagination
+    .ant-pagination-jump-prev
+    .ant-pagination-item-link,
+  .responsive-data-region
+    .responsive-mobile-pagination
+    .ant-pagination.ant-pagination
+    .ant-pagination-jump-next
+    .ant-pagination-item-link {
+    align-items: center;
+    display: inline-flex;
+    height: var(--mos-control-height);
+    justify-content: center;
+    min-width: var(--mos-control-height);
+    width: var(--mos-control-height);
+  }
+
+  /* Paystub cards carry six income sources on mobile. Keep the data dense
+     without shrinking values below a readable touch-oriented scale. */
+  .cc-income-mobile-record-list {
+    gap: 8px;
+  }
+
+  .cc-income-mobile-record-list .responsive-mobile-record-card {
+    padding: 10px;
+    border-radius: 10px;
+  }
+}
+
+/* CC Xoay is a monitoring surface: on phones and short landscape tablets,
+   remove compounded container gutters while preserving its readable rows. */
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  .cc-page {
+    margin: -4px;
+    --mos-section-gap: 8px;
+    --mos-surface-padding: 10px;
+    --mos-toolbar-padding: 10px;
+  }
+
+  .cc-xoay-tab-stack {
+    gap: 8px !important;
+  }
+
+  .cc-xoay-leaderboard-card .ant-card-head {
+    min-height: 44px !important;
+    padding-inline: 10px !important;
+  }
+
+  .cc-xoay-leaderboard-card .ant-card-head-title {
+    padding-block: 10px !important;
+  }
+
+  .cc-xoay-mobile-list-shell {
+    padding: 6px !important;
+  }
+
+  .cc-xoay-mobile-record-list {
+    gap: 6px;
+  }
+
+  .cc-xoay-mobile-record-list .responsive-mobile-record-card {
+    padding: 8px;
+    border-radius: 8px;
+  }
+}
+
+/* Customers pilot — Phase 2. Structure is tiered; presentation data remains in
+   the feature component so the same API-backed record powers both the table
+   and the mobile card. */
+.customer-page {
+  min-width: 0;
+}
+
+.customer-search {
+  width: min(100%, 360px);
+}
+
+.customer-filter-controls .ant-btn {
+  min-height: var(--mos-control-height-compact);
+  min-width: var(--mos-control-height-compact);
+}
+
+.customer-bucket-tabs .ant-tabs-nav {
+  margin-bottom: var(--mos-section-gap);
+}
+
+/* Mobile uses direct horizontal tab scrolling. The hidden Ant Design overflow
+   button remains a child of its tablist and violates ARIA required-children. */
+.customer-bucket-tabs .ant-tabs-nav-operations {
+  display: none !important;
+}
+
+.customer-detail-tabs .ant-tabs-nav-operations {
+  display: none !important;
+}
+
+/* At compact widths every workspace tab bar uses direct horizontal scrolling;
+   hide Ant's duplicate overflow button so it is not a forbidden child of tablist. */
+@media (max-width: 1199px) {
+  .responsive-workspace .ant-tabs-nav-operations {
+    display: none !important;
+  }
+}
+
+/* Keep Ant Design's switch track at its native height. Applying a larger
+   `min-height` to `.ant-switch` changes the track without updating the
+   absolutely positioned handle, leaving the thumb visibly off-centre. Labelled
+   controls provide their larger hit area through their toolbar/form wrapper;
+   dense table switches intentionally retain their compact native footprint. */
+
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-picker {
+  min-height: 24px;
+}
+
+.ant-drawer-close {
+  min-height: 24px;
+  min-width: 24px;
+}
+
+.today-page input:not([type='hidden']) {
+  min-height: 24px;
+}
+
+.customer-mobile-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.customer-mobile-card-open {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  outline: none;
+  padding: 0;
+  text-align: left;
+}
+
+.customer-mobile-card-open:focus-visible {
+  border-radius: 8px;
+  outline: 3px solid var(--mos-focus-ring);
+  outline-offset: 3px;
+}
+
+.customer-mobile-card-header,
+.customer-mobile-card-identity,
+.customer-mobile-card-name,
+.customer-mobile-card-meta,
+.customer-mobile-card-actions {
+  align-items: center;
+  display: flex;
+  min-width: 0;
+}
+
+.customer-mobile-card-header {
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.customer-mobile-card-identity {
+  flex: 1 1 auto;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.customer-mobile-card-name {
+  font-weight: 650;
+  gap: 6px;
+  min-width: 0;
+}
+
+.customer-mobile-card-name > span,
+.customer-mobile-card-bucket,
+.customer-mobile-card-meta > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-mobile-card-bucket {
+  color: var(--ant-color-text-description);
+  flex: 0 1 auto;
+  font-size: 12px;
+  text-align: right;
+}
+
+.customer-mobile-card-phone {
+  color: var(--ant-color-primary);
+  display: block;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.customer-mobile-card-insights {
+  display: grid;
+  gap: 8px;
+}
+
+.customer-mobile-card-meta {
+  color: var(--ant-color-text-description);
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 6px 10px;
+}
+
+.customer-mobile-card-actions {
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.customer-mobile-card-actions .ant-btn {
+  min-height: var(--mos-control-height);
+}
+
+.customer-bulk-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.customer-bulk-actions > .ant-space:last-child {
+  justify-content: flex-end;
+}
+
+.customer-detail-layout {
+  min-width: 0;
+}
+
+.customer-detail-history,
+.customer-detail-tabs {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .customer-bucket-tabs .ant-tabs-nav-wrap {
+    overflow: visible;
+  }
+}
+
+@media (min-width: 1600px) {
+  .customer-data-table .ant-table-body {
+    max-height: calc(100dvh - 410px) !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .customer-detail-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  @media (orientation: landscape) {
+    .customer-detail-layout {
+      grid-template-columns: minmax(230px, 0.38fr) minmax(0, 1fr) !important;
+    }
+  }
+}
+
+.responsive-form-grid {
+  display: grid;
+  gap: var(--mos-section-gap);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.responsive-form-grid > * {
+  min-width: 0;
+}
+
+.responsive-form-field-full {
+  grid-column: 1 / -1;
+}
+
+.responsive-overlay-footer {
+  background: inherit;
+  border-top: 1px solid var(--mos-surface-border);
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin: 0 calc(var(--mos-surface-padding) * -1) calc(var(--mos-surface-padding) * -1);
+  padding: 12px var(--mos-surface-padding) calc(12px + env(safe-area-inset-bottom));
+  position: sticky;
+  z-index: 1;
+}
+
+/* Drawer close affordances and number fields are part of the form assembly:
+   use one tokenized target rather than Ant's small default close/stepper UI. */
+.adaptive-overlay .ant-drawer-close {
+  align-items: center;
+  display: inline-flex;
+  height: var(--mos-control-height) !important;
+  justify-content: center;
+  margin-inline-end: 0;
+  min-height: var(--mos-control-height) !important;
+  min-width: var(--mos-control-height) !important;
+  width: var(--mos-control-height) !important;
+}
+
+.entity-form-drawer-content .ant-input-number-handler-wrap {
+  display: none !important;
+}
+
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  .entity-form-drawer-content .ant-input-number,
+  .entity-form-drawer-content .ant-input-number-input-wrap,
+  .entity-form-drawer-content .ant-input-number-input {
+    height: var(--mos-control-height) !important;
+    min-height: var(--mos-control-height) !important;
+  }
+
+  .entity-form-drawer-content .ant-input-number {
+    min-width: var(--mos-control-height) !important;
+  }
+
+  .entity-form-drawer-content .ant-input-number-input {
+    min-width: var(--mos-control-height) !important;
+  }
+}
+
+.entity-form .ant-form-item {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.entity-form-drawer-content {
+  min-width: 0;
+}
+
+.off-day-reschedule-warning-title {
+  align-items: center;
+  color: var(--ant-color-warning);
+  display: flex;
+  font-size: 15px;
+  gap: 8px;
+}
+
+.off-day-reschedule-warning-content {
+  font-size: 14px;
+  line-height: 1.6;
+  padding-block: 8px;
+}
+
+.off-day-reschedule-warning-content > p {
+  margin-bottom: 12px;
+}
+
+.off-day-reschedule-warning-emphasis {
+  color: var(--ant-color-warning);
+}
+
+.off-day-reschedule-warning-hint {
+  background: color-mix(in srgb, var(--ant-color-warning) 12%, var(--ant-color-bg-container));
+  border: 1px solid color-mix(in srgb, var(--ant-color-warning) 55%, var(--ant-color-border));
+  border-radius: var(--mos-control-radius);
+  color: var(--ant-color-text);
+  font-size: 13px;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+}
+
+.ready-kits-card {
+  display: grid;
+  gap: var(--mos-section-gap);
+  min-width: 0;
+}
+
+.ready-kits-intro {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+}
+
+.ready-kits-intro > .anticon {
+  color: var(--ant-color-primary);
+  font-size: 18px;
+  margin-top: 3px;
+}
+
+.ready-kits-preview {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ready-kits-code {
+  background: var(--ant-color-fill-quaternary);
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: var(--mos-radius);
+  color: var(--ant-color-text);
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0;
+  max-height: 320px;
+  min-width: 0;
+  overflow: auto;
+  padding: 12px;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.ready-kits-rules {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.adaptive-overlay .ant-drawer-body,
+.adaptive-overlay .ant-modal-content {
+  min-width: 0;
+}
+
+.telesales-dashboard-compact .telesales-leaderboard {
+  display: none !important;
+}
+
+.dashboard-shell {
+  min-width: 0;
+}
+
+.dashboard-shell > .ant-layout,
+.dashboard-shell .ant-layout {
+  min-width: 0;
+}
+
+.dashboard-sider {
+  height: 100dvh;
+  position: sticky !important;
+  top: 0;
+}
+
+.dashboard-header {
+  gap: 8px;
+  height: var(--mos-header-height) !important;
+  line-height: 1 !important;
+  min-width: 0;
+  padding-inline: var(--mos-page-gutter) !important;
+}
+
+.dashboard-header-left,
+.dashboard-header-right {
+  align-items: center;
+  display: flex;
+  min-width: 0;
+}
+
+.dashboard-header-left {
+  flex: 1 1 auto;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.dashboard-header-right {
+  flex: 0 1 auto;
+  gap: 4px;
+}
+
+.mos-header-action-indicator {
+  display: inline-flex;
+  line-height: 1;
+}
+
+.dashboard-header-schedule-cluster,
+.mos-header-action-indicator {
+  flex: 0 0 auto;
+}
+
+.mos-header-action-indicator {
+  position: relative;
+}
+
+.mos-header-action-indicator--status {
+  --mos-header-status-dot-inset: 6px;
+  --mos-header-status-dot-size: 8px;
+}
+
+.mos-header-action-indicator__status,
+.mos-header-action-indicator__count {
+  box-sizing: border-box;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.mos-header-action-indicator__status {
+  height: var(--mos-header-status-dot-size) !important;
+  inset-inline-end: var(--mos-header-status-dot-inset) !important;
+  min-width: var(--mos-header-status-dot-size) !important;
+  top: var(--mos-header-status-dot-inset) !important;
+  width: var(--mos-header-status-dot-size) !important;
+}
+
+/* Numeric counts overlap the action corner so the badge visibly anchors to
+   the control edge without changing the centered icon or button label. */
+.mos-header-action-indicator--count {
+  --mos-header-count-font-size: 10px;
+  --mos-header-count-inset-block-start: 0px;
+  --mos-header-count-inset-inline-end: 0px;
+  --mos-header-count-padding-inline: 3px;
+  --mos-header-count-size: 18px;
+}
+
+.mos-header-action-indicator__count {
+  border-radius: 999px;
+  box-sizing: border-box;
+  display: grid;
+  font-size: var(--mos-header-count-font-size);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  height: var(--mos-header-count-size);
+  inset-inline-end: var(--mos-header-count-inset-inline-end);
+  line-height: 1;
+  min-width: var(--mos-header-count-size);
+  padding-inline: var(--mos-header-count-padding-inline);
+  place-items: center;
+  top: var(--mos-header-count-inset-block-start);
+}
+
+/* Separate a count from a tinted action without shifting the centered icon. */
+.mos-header-action-indicator--surface-accent .mos-header-action-indicator__count {
+  box-shadow: 0 0 0 1px var(--mos-surface-muted);
+}
+
+@media (min-width: 768px) and (pointer: fine) {
+  .mos-header-action-indicator--status {
+    --mos-header-status-dot-inset: 5px;
+    --mos-header-status-dot-size: 8px;
+  }
+
+  :root[data-ui-density='compact'] .mos-header-action-indicator--status {
+    --mos-header-status-dot-inset: 4px;
+    --mos-header-status-dot-size: 6px;
+  }
+
+  :root[data-ui-density='comfortable'] .mos-header-action-indicator--status {
+    --mos-header-status-dot-inset: 6px;
+    --mos-header-status-dot-size: 8px;
+  }
+
+  .mos-header-action-indicator--count {
+    --mos-header-count-font-size: 10px;
+    --mos-header-count-inset-block-start: 0px;
+    --mos-header-count-inset-inline-end: 0px;
+    --mos-header-count-padding-inline: 3px;
+    --mos-header-count-size: 16px;
+  }
+
+  :root[data-ui-density='compact'] .mos-header-action-indicator--count {
+    --mos-header-count-font-size: 9px;
+    --mos-header-count-inset-block-start: 0px;
+    --mos-header-count-inset-inline-end: 0px;
+    --mos-header-count-padding-inline: 2px;
+    --mos-header-count-size: 14px;
+  }
+
+  :root[data-ui-density='comfortable'] .mos-header-action-indicator--count {
+    --mos-header-count-font-size: 11px;
+    --mos-header-count-inset-block-start: 0px;
+    --mos-header-count-inset-inline-end: 0px;
+    --mos-header-count-padding-inline: 4px;
+    --mos-header-count-size: 20px;
+  }
+}
+
+.mos-header-action.ant-btn,
+.mos-header-avatar-action,
+.dashboard-online-member-action {
+  align-items: center;
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 var(--mos-control-height);
+  height: var(--mos-control-height);
+  justify-content: center;
+  line-height: 1 !important;
+  min-height: var(--mos-control-height);
+  min-width: var(--mos-control-height);
+  padding: 0 !important;
+  width: var(--mos-control-height);
+}
+
+.mos-header-action.ant-btn .ant-btn-icon,
+.mos-header-action__icon {
+  align-items: center;
+  display: inline-flex;
+  height: var(--mos-action-icon-size);
+  justify-content: center;
+  line-height: 1;
+  width: var(--mos-action-icon-size);
+}
+
+.mos-header-action__icon > svg {
+  display: block;
+  height: var(--mos-action-icon-size);
+  stroke-width: 2;
+  width: var(--mos-action-icon-size);
+}
+
+.mos-header-action--labeled.ant-btn {
+  flex: 0 0 auto;
+  gap: 6px;
+  padding-inline: 10px !important;
+  width: auto;
+}
+
+.mos-header-action--labeled.ant-btn .ant-btn-icon {
+  margin-inline-end: 0;
+}
+
+.mos-header-action__label {
+  font-size: var(--mos-density-font-size);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.light-theme .mos-header-action--accent.ant-btn {
+  background: #fffbe6;
+  border-color: #ffe58f;
+  color: #b45309;
+}
+
+.dark-theme .mos-header-action--accent.ant-btn {
+  background: rgba(212, 168, 75, 0.12);
+  border-color: rgba(212, 168, 75, 0.35);
+  color: #f59e0b;
+}
+
+.mos-header-action.ant-btn:focus-visible,
+.mos-header-avatar-action:focus-visible,
+.dashboard-online-member-action:focus-visible {
+  outline: 2px solid var(--mos-focus-ring);
+  outline-offset: 2px;
+}
+
+.mos-header-avatar-action,
+.dashboard-online-member-action {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mos-header-avatar {
+  height: min(32px, calc(var(--mos-control-height) - 8px)) !important;
+  line-height: 1;
+  width: min(32px, calc(var(--mos-control-height) - 8px)) !important;
+}
+
+.mos-header-avatar__icon {
+  display: block;
+  height: var(--mos-action-icon-size);
+  stroke-width: 2;
+  width: var(--mos-action-icon-size);
+}
+
+.dashboard-online-member-stack {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.dashboard-online-member-action {
+  border-radius: 999px;
+}
+
+.dashboard-online-member-avatar {
+  transition: transform var(--mos-motion-duration) ease;
+}
+
+.dashboard-online-member-action:hover .dashboard-online-member-avatar {
+  transform: scale(1.08);
+}
+
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  /* Floating-count safe rail: the icon remains centered in its 44px target. */
+  .dashboard-header-left {
+    overflow: visible;
+  }
+
+  .mos-header-action-indicator--count.mos-header-action-indicator--visible {
+    align-items: center;
+    flex-basis: calc(var(--mos-control-height) + 8px);
+    height: var(--mos-control-height);
+    justify-content: flex-start;
+    width: calc(var(--mos-control-height) + 8px);
+  }
+
+  .mos-header-action-indicator--count .mos-header-action-indicator__count {
+    inset-inline-end: 0;
+    top: 0;
+    transform: none;
+  }
+
+  .mos-header-action-indicator--count-overflow {
+    --mos-header-count-font-size: 9px;
+    --mos-header-count-padding-inline: 2px;
+    --mos-header-count-size: 16px;
+  }
+
+  .mos-header-action--labeled.ant-btn {
+    gap: 0;
+    padding: 0 !important;
+    width: var(--mos-control-height);
+  }
+
+  .mos-header-action--labeled .mos-header-action__label {
+    display: none;
+  }
+}
+
+/* At 320px the six required 44px header targets need a tighter shell, not
+   smaller touch targets. Keep the normal 12px page gutter everywhere else. */
+@media (max-width: 359px) {
+  .dashboard-header {
+    gap: 2px;
+    padding-inline: 8px !important;
+  }
+
+  .dashboard-header-left {
+    gap: 4px;
+  }
+
+  .dashboard-header-right {
+    gap: 2px;
+  }
+}
+
+.dashboard-mobile-nav-trigger {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: var(--mos-control-height);
+  min-width: var(--mos-control-height);
+}
+
+.dashboard-content {
+  border: 1px solid var(--mos-surface-border);
+  border-radius: var(--mos-radius);
+  margin: var(--mos-page-gutter);
+  max-width: var(--mos-content-max-width);
+  min-height: 280px;
+  padding: var(--mos-surface-padding);
+  width: auto;
+}
+
+.dashboard-mobile-nav .ant-drawer-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.dashboard-mobile-nav .sidebar-nav-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.omicall-widget {
+  max-height: calc(100dvh - (var(--mos-floating-offset) * 2) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  max-width: calc(100vw - (var(--mos-floating-offset) * 2) - env(safe-area-inset-left) - env(safe-area-inset-right));
+}
+
+.omicall-launcher {
+  bottom: calc(var(--mos-floating-offset) + env(safe-area-inset-bottom)) !important;
+  right: calc(var(--mos-floating-offset) + env(safe-area-inset-right)) !important;
+}
+
+@container (min-width: 640px) {
+  .responsive-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-page-header {
+    align-items: end;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .responsive-page-header-actions > .ant-space {
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  .responsive-toolbar-layout {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .responsive-toolbar-actions > .ant-space {
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  .responsive-form-grid[data-columns='2'],
+  .responsive-form-grid[data-columns='3'],
+  .responsive-form-grid[data-columns='4'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric-grid[data-columns='2'],
+  .metric-grid[data-columns='3'],
+  .metric-grid[data-columns='4'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .responsive-surface-full-bleed {
+    border-inline-width: 1px !important;
+    border-radius: var(--mos-radius) !important;
+    margin-inline: 0;
+  }
+
+  .responsive-surface-full-bleed > .ant-card-body {
+    padding-inline: var(--mos-surface-padding) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .responsive-form-grid[data-columns='3'],
+  .responsive-form-grid[data-columns='4'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metric-grid[data-columns='3'],
+  .metric-grid[data-columns='4'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-mobile-nav-trigger,
+  .dashboard-mobile-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1600px) {
+  .responsive-form-grid[data-columns='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .metric-grid[data-columns='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Allocation history uses the mOS semantic token pipeline so table hierarchy
+   remains legible in both light and dark themes. */
+.allocation-history-table-card .ant-card-body {
+  background: var(--mos-surface-raised);
+}
+
+.allocation-history-table .ant-table-container {
+  border: 1px solid var(--mos-surface-border);
+  border-radius: var(--mos-radius);
+  overflow: hidden;
+}
+
+.allocation-history-table .ant-table-thead > tr > th {
+  background: var(--mos-surface-muted);
+  border-block-end-color: var(--mos-surface-border-strong);
+  color: var(--mos-text);
+  font-weight: 700;
+}
+
+.allocation-history-table .ant-table-tbody > tr > td {
+  border-block-end-color: var(--mos-surface-border);
+  color: var(--mos-text);
+}
+
+.allocation-history-table .ant-table-tbody > tr:hover > td {
+  background: color-mix(in srgb, var(--mos-accent) 8%, var(--mos-surface-raised)) !important;
+}
+
+.allocation-history-code,
+.allocation-history-primary,
+.allocation-history-total,
+.allocation-history-action {
+  color: var(--mos-text);
+  font-weight: 600;
+}
+
+.allocation-history-code,
+.allocation-history-action {
+  color: var(--mos-accent);
+}
+
+.allocation-history-meta,
+.allocation-history-muted {
+  color: var(--mos-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.allocation-history-countdown {
+  align-items: center;
+  background: color-mix(in srgb, var(--mos-success) 12%, var(--mos-surface-raised));
+  border: 1px solid var(--mos-success);
+  border-radius: var(--mos-radius);
+  color: var(--mos-text);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 5px;
+  line-height: 1;
+  padding: 4px 6px;
+}
+
+.allocation-history-countdown .anticon {
+  color: var(--mos-text-muted);
+  font-size: 14px;
+}
+
+/* The CC work-log report is a data inspection overlay. Its header, summary,
+   scroll region and close action remain stable while the date rows change. */
+.cc-worklog-modal .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  height: min(760px, calc(100dvh - 60px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+}
+
+.cc-worklog-modal .ant-modal-header {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.cc-worklog-modal .ant-modal-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px var(--mos-surface-padding) 0;
+}
+
+.cc-worklog-modal-title {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+.cc-worklog-modal-title-main,
+.cc-worklog-modal-size-controls {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cc-worklog-modal-title-main > .anticon {
+  flex: 0 0 auto;
+}
+
+.cc-worklog-modal-title-text {
+  color: var(--ant-color-text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.cc-worklog-modal-title-main > .ant-tag {
+  flex: 0 0 auto;
+  margin-inline-end: 0;
+}
+
+.cc-worklog-modal-size-controls {
+  flex-wrap: nowrap;
+}
+
+.cc-worklog-modal-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+
+.cc-worklog-modal-summary {
+  flex: 0 0 auto;
+  margin: 0 !important;
+}
+
+.cc-worklog-modal-summary .ant-card {
+  height: 100%;
+}
+
+.cc-worklog-modal-summary .ant-card-body {
+  padding: 12px;
+}
+
+.cc-worklog-modal-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.cc-worklog-modal-table > .responsive-data-region {
+  min-height: 100%;
+}
+
+.cc-worklog-modal-footer {
+  align-items: center;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  margin-bottom: 0;
+  position: static;
+}
+
+.cc-worklog-modal-resize-handle {
+  align-items: center;
+  bottom: 0;
+  cursor: col-resize;
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  right: calc(var(--mos-surface-padding) * -1);
+  top: 0;
+  transition: background var(--mos-motion-duration) ease;
+  width: 10px;
+  z-index: 2;
+}
+
+.cc-worklog-modal-resize-handle:hover,
+.cc-worklog-modal-resize-handle.is-resizing {
+  background: color-mix(in srgb, var(--ant-color-primary) 16%, transparent);
+}
+
+.cc-worklog-modal-resize-handle > div {
+  background: var(--ant-color-border-secondary);
+  border-radius: 999px;
+  height: 32px;
+  width: 3px;
+}
+
+/* Campaign search uses the shared field on desktop and becomes a disclosure on
+   mobile, so the Booker control never drops to a separate row. */
+.nyc-campaign-customer-toolbar {
+  min-width: 0;
+}
+
+.campaign-mobile-search-trigger {
+  display: none;
+}
+
+.campaign-customer-search {
+  flex: 0 1 260px;
+  min-width: 0;
+}
+
+.campaign-customer-search .mos-search-field {
+  width: 100%;
+}
+
+/* Mirrors themeTokens.responsive.breakpoints.mobileLandscape*: a phone stays in
+   the mobile composition after rotation instead of inheriting tablet density. */
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  .responsive-workspace {
+    overflow-x: clip;
+  }
+
+  .responsive-workspace .ant-tabs-nav {
+    margin-inline: calc(var(--mos-page-gutter) * -1);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-inline: var(--mos-page-gutter);
+    scrollbar-width: none;
+  }
+
+  .responsive-workspace .ant-tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .responsive-workspace .ant-tabs-nav-list {
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+
+  .responsive-workspace .ant-tabs-tab {
+    flex: 0 0 auto;
+    padding-inline: 10px;
+  }
+
+  .responsive-workspace .ant-table-content,
+  .responsive-workspace .ant-table-body {
+    overflow-x: auto !important;
+    scrollbar-width: thin;
+  }
+
+  .responsive-workspace .ant-pagination {
+    justify-content: center;
+  }
+
+  .responsive-workspace
+    .ant-space-compact:not(.report-period-navigator-mode):not(.report-period-navigator-mobile-mode):not(
+      .report-period-navigator-date
+    ) {
+    flex-wrap: wrap;
+  }
+
+  .responsive-workspace .report-period-navigator .ant-space-compact {
+    flex-wrap: nowrap;
+  }
+
+  .responsive-workspace .ant-space-compact > .ant-picker,
+  .responsive-workspace .ant-space-compact > .ant-select {
+    max-width: min(100%, 230px);
+  }
+
+  /* Legacy overlays are still used by several specialist workspaces.  The
+     surface is viewport-bounded until each one is migrated to AdaptiveOverlay. */
+  .ant-modal:not(.adaptive-overlay) {
+    margin: 8px;
+    max-width: calc(100vw - 16px) !important;
+    top: 8px;
+  }
+
+  .ant-modal:not(.adaptive-overlay) .ant-modal-content {
+    max-height: calc(100dvh - 16px);
+    overflow: auto;
+  }
+
+  .ant-drawer-content-wrapper {
+    max-width: 100vw !important;
+  }
+
+  .today-page .today-secondary-mobile-hidden {
+    display: none;
+  }
+
+  .schedule-calendar-page .cv-schedule-resize-handle {
+    display: none;
+  }
+
+  .schedule-calendar-page .schedule-calendar-branch-control,
+  .schedule-calendar-page .schedule-calendar-view-control,
+  .schedule-calendar-page .schedule-calendar-presets {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .schedule-calendar-page .schedule-calendar-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .schedule-calendar-page .schedule-calendar-filters .ant-input-affix-wrapper,
+  .schedule-calendar-page .schedule-calendar-filters .ant-select {
+    width: 100% !important;
+  }
+
+  .diagrams-page .diagram-selector {
+    flex: 1 1 220px;
+  }
+
+  .diagrams-page .mermaid-viewer-toolbar-actions,
+  .diagrams-page .ant-space {
+    max-width: 100%;
+  }
+
+  .dashboard-desktop-only,
+  .sidebar-toggle-container {
+    display: none !important;
+  }
+
+  .dashboard-content {
+    border-inline-width: 0;
+    border-radius: 0;
+    margin: 0;
+    min-height: calc(100dvh - var(--mos-header-height));
+    padding: var(--mos-page-gutter);
+  }
+
+  .adaptive-overlay-mobile-fullscreen.ant-modal,
+  .adaptive-overlay-mobile-fullscreen .ant-modal,
+  .adaptive-overlay-mobile-fullscreen .ant-modal-content {
+    height: 100dvh;
+    margin: 0;
+    /* Ant Design keeps an 8px modal-wrap inset on narrow screens. Size the
+       adaptive surface inside that inset so a 100vw modal cannot extend 8px
+       past the right edge. */
+    max-width: calc(100vw - 16px);
+    top: 0;
+    width: calc(100vw - 16px) !important;
+  }
+
+  .adaptive-overlay-mobile-fullscreen .ant-modal-content {
+    border-radius: 0;
+  }
+
+  /* The campaign editor is a multi-step form, not a clipped desktop modal.
+     Keep the header and submit controls stable while each tab owns its own
+     vertical scroll area. */
+  .nyc-campaign-edit-overlay .ant-modal-content {
+    border-radius: var(--mos-radius) !important;
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 16px) !important;
+    max-height: none !important;
+    overflow: hidden;
+    padding: 0 !important;
+  }
+
+  .nyc-campaign-edit-overlay.ant-modal {
+    padding-bottom: 0 !important;
+  }
+
+  .nyc-campaign-edit-overlay .ant-modal-header {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    padding: 16px 52px 12px var(--mos-page-gutter) !important;
+  }
+
+  .nyc-campaign-edit-overlay .ant-modal-title {
+    min-width: 0;
+  }
+
+  .nyc-campaign-edit-overlay .ant-modal-close {
+    height: var(--mos-control-height);
+    inset-inline-end: 12px;
+    inset-block-start: 12px;
+    width: var(--mos-control-height);
+  }
+
+  .nyc-campaign-edit-title {
+    align-items: center;
+    display: flex;
+    font-size: 16px;
+    font-weight: 700;
+    gap: 4px;
+    line-height: 1.35;
+    min-width: 0;
+  }
+
+  .nyc-campaign-edit-title > span:first-child {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .nyc-campaign-edit-title-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nyc-campaign-edit-overlay .ant-modal-body {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 var(--mos-page-gutter) !important;
+  }
+
+  .nyc-campaign-edit-form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    margin-top: 0 !important;
+    min-height: 0;
+    min-width: 0;
+    padding-top: 8px;
+    width: 100%;
+  }
+
+  .nyc-campaign-edit-tabs {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .nyc-campaign-edit-tabs .ant-tabs-nav {
+    flex: 0 0 auto;
+    margin-bottom: 8px;
+    min-width: 0;
+  }
+
+  .nyc-campaign-edit-tabs .ant-tabs-nav-wrap {
+    overflow-x: auto !important;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .nyc-campaign-edit-tabs .ant-tabs-nav-wrap::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nyc-campaign-edit-tabs .ant-tabs-nav-list {
+    min-width: max-content;
+  }
+
+  .nyc-campaign-edit-tabs .ant-tabs-nav-operations {
+    display: none !important;
+  }
+
+  .nyc-campaign-edit-tabs .ant-tabs-tab {
+    min-height: var(--mos-control-height);
+    padding-inline: 10px;
+  }
+
+  .nyc-campaign-edit-tabs .ant-tabs-content-holder {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .nyc-campaign-edit-tabs .ant-tabs-content,
+  .nyc-campaign-edit-tabs .ant-tabs-tabpane {
+    min-height: 100%;
+  }
+
+  .nyc-campaign-edit-info .ant-form-item {
+    margin-bottom: 0;
+  }
+
+  .nyc-campaign-edit-overlay .campaign-edit-list-header {
+    display: none !important;
+  }
+
+  .nyc-campaign-edit-overlay .campaign-edit-list-row {
+    background: var(--mos-surface-raised);
+    border: 1px solid var(--mos-surface-border);
+    border-radius: var(--mos-radius);
+    display: grid !important;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .nyc-campaign-edit-overlay .campaign-edit-field {
+    min-width: 0;
+    width: auto !important;
+  }
+
+  .nyc-campaign-edit-overlay .campaign-edit-touchpoint-label,
+  .nyc-campaign-edit-overlay .campaign-edit-touchpoint-icon,
+  .nyc-campaign-edit-overlay .campaign-edit-promotion-name,
+  .nyc-campaign-edit-overlay .campaign-edit-promotion-code {
+    grid-column: 1 / -1;
+  }
+
+  .nyc-campaign-edit-overlay .campaign-edit-touchpoint-color {
+    align-items: flex-start;
+    justify-content: flex-start !important;
+  }
+
+  .nyc-campaign-edit-overlay .campaign-edit-touchpoint-delete,
+  .nyc-campaign-edit-overlay .campaign-edit-promotion-delete {
+    align-items: flex-end;
+    justify-content: flex-end !important;
+  }
+
+  .nyc-campaign-edit-actions {
+    background: var(--ant-color-bg-elevated);
+    flex: 0 0 auto;
+    margin: 0 calc(var(--mos-page-gutter) * -1) !important;
+    padding: 12px var(--mos-page-gutter) calc(12px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .nyc-campaign-edit-actions .ant-btn {
+    flex: 1 1 0;
+    min-height: var(--mos-control-height);
+  }
+
+  /* Campaign customer filters stay one row on phones. The search field starts
+     as a compact disclosure, then takes the remaining space when activated. */
+  .nyc-campaign-customer-toolbar {
+    flex-wrap: nowrap !important;
+    min-width: 0;
+  }
+
+  .nyc-campaign-customer-toolbar .campaign-mobile-search-trigger {
+    display: inline-flex;
+    flex: 0 0 var(--mos-control-height);
+  }
+
+  .nyc-campaign-customer-toolbar .campaign-customer-search {
+    display: none;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .nyc-campaign-customer-toolbar.is-mobile-search-expanded .campaign-mobile-search-trigger {
+    display: none;
+  }
+
+  .nyc-campaign-customer-toolbar.is-mobile-search-expanded .campaign-customer-search {
+    display: block;
+  }
+
+  .nyc-campaign-customer-toolbar .campaign-customer-search .ant-input-affix-wrapper {
+    width: 100%;
+  }
+
+  .nyc-campaign-customer-toolbar .campaign-customer-booker-filter {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto !important;
+  }
+
+  .nyc-campaign-customer-toolbar .campaign-customer-booker-filter .ant-select-selector {
+    overflow: hidden;
+  }
+
+  .nyc-campaign-customer-toolbar .campaign-customer-random-action {
+    flex: 0 0 var(--mos-control-height);
+    width: var(--mos-control-height);
+  }
+
+  .cc-worklog-modal .ant-modal-header {
+    padding: 14px 48px 10px var(--mos-page-gutter) !important;
+  }
+
+  .cc-worklog-modal .ant-modal-title {
+    min-width: 0;
+  }
+
+  .cc-worklog-modal .ant-modal-body {
+    padding: 10px var(--mos-page-gutter) 0 !important;
+  }
+
+  .cc-worklog-modal-title {
+    display: block;
+  }
+
+  .cc-worklog-modal-title-main {
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .cc-worklog-modal-title-text {
+    font-size: 15px;
+  }
+
+  .cc-worklog-modal-size-controls,
+  .cc-worklog-modal-resize-handle,
+  .cc-worklog-modal-resize-hint {
+    display: none;
+  }
+
+  .cc-worklog-modal-content {
+    gap: 10px;
+  }
+
+  .cc-worklog-modal-summary .ant-card-body {
+    padding: 10px;
+  }
+
+  .cc-worklog-modal-summary .ant-statistic-title {
+    font-size: 11px;
+    line-height: 1.3;
+    min-height: 29px;
+  }
+
+  .cc-worklog-modal-summary .ant-statistic-content {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .cc-worklog-modal-summary .ant-statistic-content-prefix,
+  .cc-worklog-modal-summary .ant-statistic-content-suffix {
+    font-size: 12px;
+  }
+
+  .cc-worklog-mobile-card {
+    display: grid;
+    gap: 8px;
+  }
+
+  .cc-worklog-mobile-card-head,
+  .cc-worklog-mobile-card-meta {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .cc-worklog-mobile-card-times {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cc-worklog-mobile-card-times .ant-tag {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    min-height: 28px;
+    white-space: nowrap;
+  }
+
+  .cc-worklog-mobile-card-meta {
+    color: var(--ant-color-text-secondary);
+    font-size: 12px;
+  }
+
+  .cc-worklog-modal-footer {
+    margin-inline: calc(var(--mos-page-gutter) * -1);
+    padding: 10px var(--mos-page-gutter) calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .cc-worklog-modal-footer .ant-btn {
+    min-height: var(--mos-control-height);
+    width: 100%;
+  }
+
+  .customer-toolbar .responsive-toolbar-primary {
+    align-items: stretch;
+  }
+
+  .customer-search {
+    max-width: none !important;
+    width: 100%;
+  }
+
+  .customer-search .ant-input-group,
+  .customer-search .ant-input-affix-wrapper,
+  .customer-search .ant-input-wrapper {
+    width: 100%;
+  }
+
+  .customer-toolbar .responsive-toolbar-actions {
+    overflow: visible;
+  }
+
+  .customer-toolbar .responsive-toolbar-actions > .ant-space {
+    flex-wrap: wrap;
+    gap: 8px !important;
+    width: 100%;
+  }
+
+  .customer-sort-control {
+    min-width: 152px;
+  }
+
+  .customer-bucket-tabs .ant-tabs-nav {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .customer-bucket-tabs .ant-tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .customer-bucket-tabs .ant-tabs-nav-list {
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+
+  .customer-bucket-tabs .ant-tabs-tab,
+  .customer-bucket-tabs .ant-tabs-tab .ant-tabs-tab-btn {
+    align-items: center;
+    display: flex;
+    height: var(--mos-control-height);
+    min-height: var(--mos-control-height);
+    padding-inline: 10px;
+  }
+
+  .customer-mobile-card-open {
+    align-items: center;
+    box-sizing: border-box;
+    display: flex;
+    height: var(--mos-control-height);
+    min-height: var(--mos-control-height);
+  }
+
+  .customer-filter-overlay .ant-drawer-header,
+  .customer-filter-overlay .ant-drawer-body {
+    padding-inline: var(--mos-page-gutter) !important;
+  }
+
+  .customer-filter-overlay .ant-drawer-footer {
+    padding: 12px var(--mos-page-gutter) calc(12px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .customer-filter-overlay .ant-drawer-footer > div {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .customer-filter-overlay .ant-drawer-footer > div > div {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .customer-filter-overlay .ant-drawer-footer .ant-btn {
+    min-height: var(--mos-control-height);
+  }
+
+  .customer-bulk-actions {
+    align-items: stretch !important;
+    background: var(--ant-color-bg-elevated) !important;
+    border-color: var(--mos-surface-border) !important;
+    border-radius: var(--mos-radius) var(--mos-radius) 0 0 !important;
+    bottom: 0;
+    box-shadow: 0 -8px 24px color-mix(in srgb, var(--ant-color-text) 16%, transparent) !important;
+    flex-direction: column;
+    gap: 8px;
+    left: 0;
+    margin: 0 !important;
+    padding: 10px var(--mos-page-gutter) calc(10px + env(safe-area-inset-bottom)) !important;
+    position: fixed;
+    right: 0;
+    z-index: 1000;
+  }
+
+  .customer-bulk-actions > .ant-space {
+    justify-content: space-between !important;
+    width: 100%;
+  }
+
+  .customer-bulk-actions > .ant-space:last-child {
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .customer-bulk-actions .ant-btn {
+    min-height: var(--mos-control-height);
+    white-space: nowrap;
+  }
+
+  .customer-data-table {
+    padding-bottom: 148px;
+  }
+
+  .customer-allocation-overlay .ant-modal-body,
+  .customer-revoke-overlay .ant-modal-body,
+  .customer-undo-overlay .ant-modal-body,
+  .customer-add-to-campaign-overlay .ant-modal-body {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .customer-detail-overlay .ant-drawer-body {
+    padding: var(--mos-page-gutter) !important;
+  }
+
+  /* Customer detail is a task flow on phones: identity gets the first row,
+     while the four actions occupy their own stable rail. The previous single
+     flex row left only ~108px for the identity and forced the header to grow
+     unpredictably as text wrapped. */
+  .customer-detail-overlay .ant-drawer-header {
+    align-items: flex-start;
+    padding: 12px var(--mos-page-gutter) !important;
+  }
+
+  .customer-detail-overlay .ant-drawer-header-title,
+  .customer-detail-overlay .ant-drawer-title {
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .customer-detail-overlay .ant-drawer-close {
+    align-self: flex-start;
+    flex: 0 0 36px;
+    height: 36px !important;
+    margin-top: 0;
+    min-width: 36px;
+    padding: 0 !important;
+    width: 36px !important;
+  }
+
+  .customer-detail-header {
+    align-items: stretch !important;
+    display: grid !important;
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    padding-right: 0 !important;
+  }
+
+  .customer-detail-identity {
+    align-items: flex-start !important;
+    gap: 10px !important;
+    min-width: 0;
+  }
+
+  .customer-detail-avatar {
+    flex: 0 0 36px;
+    height: 36px !important;
+    min-width: 36px;
+    width: 36px !important;
+  }
+
+  .customer-detail-identity-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .customer-detail-name {
+    font-size: 16px !important;
+    line-height: 20px !important;
+    min-width: 0;
+  }
+
+  .customer-detail-contact-row {
+    align-items: flex-start !important;
+    column-gap: 8px !important;
+    line-height: 18px;
+    margin-top: 4px !important;
+    row-gap: 4px !important;
+  }
+
+  .customer-detail-phone-list {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 4px 8px !important;
+    min-width: 0;
+  }
+
+  .customer-detail-birthday {
+    flex-basis: 100%;
+  }
+
+  .customer-detail-actions {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 8px !important;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .customer-detail-actions .ant-space-item {
+    flex: 0 0 36px;
+    min-width: 0;
+  }
+
+  .customer-detail-actions .customer-detail-action {
+    align-items: center;
+    display: inline-flex;
+    height: 36px !important;
+    justify-content: center;
+    padding: 0 !important;
+    touch-action: manipulation;
+    width: 36px !important;
+  }
+
+  .customer-detail-actions .customer-detail-primary-action {
+    box-shadow: none !important;
+  }
+
+  .customer-detail-layout {
+    gap: 12px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .customer-detail-sidebar {
+    gap: 12px !important;
+    min-width: 0;
+  }
+
+  .customer-kpi-card .ant-card-head {
+    min-height: 40px;
+    padding-inline: 12px;
+  }
+
+  .customer-kpi-card .ant-card-head-title {
+    padding-block: 10px;
+  }
+
+  .customer-kpi-card .ant-card-body {
+    padding: 12px !important;
+  }
+
+  .customer-kpi-grid {
+    gap: 8px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .customer-kpi-metric {
+    height: 84px !important;
+    min-width: 0;
+    padding: 10px !important;
+  }
+
+  .customer-detail-history {
+    min-height: 0 !important;
+    padding: var(--mos-surface-padding) !important;
+  }
+
+  .customer-detail-tabs .ant-tabs-nav {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .customer-detail-tabs .ant-tabs-nav-list {
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+
+  .customer-detail-tabs .ant-tabs-tab {
+    padding-inline: 10px;
+  }
+
+  .booking-wizard-overlay .ant-drawer-header,
+  .booking-wizard-overlay .ant-drawer-body,
+  .booking-reschedule-overlay .ant-drawer-header,
+  .booking-reschedule-overlay .ant-drawer-body,
+  .daily-calls-drawer .ant-drawer-header,
+  .daily-calls-drawer .ant-drawer-body,
+  .table-config-drawer .ant-drawer-header,
+  .table-config-drawer .ant-drawer-body {
+    padding-inline: var(--mos-page-gutter) !important;
+  }
+
+  .booking-wizard-overlay .ant-drawer-body,
+  .booking-reschedule-overlay .ant-drawer-body {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .booking-wizard-steps .ant-steps-item-title,
+  .booking-reschedule-overlay .ant-steps-item-title {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+    white-space: nowrap;
+  }
+
+  .booking-wizard-overlay .ant-steps,
+  .booking-reschedule-overlay .ant-steps {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 2px;
+  }
+
+  .booking-wizard-overlay .ant-card-head,
+  .booking-reschedule-overlay .ant-card-head {
+    min-height: 0;
+    padding-inline: 12px;
+  }
+
+  .booking-wizard-overlay .ant-card-head-title,
+  .booking-reschedule-overlay .ant-card-head-title {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .booking-update-locked-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .booking-update-modal .ant-modal-body,
+  .booking-cancel-modal .ant-modal-body,
+  .booking-late-slot-confirmation .ant-modal-body,
+  .call-log-modal .ant-modal-body,
+  .icon-picker-modal .ant-modal-body,
+  .booking-template-manager-modal .ant-modal-body,
+  .allocation-pending-modal .ant-modal-body,
+  .allocation-history-detail-modal .ant-modal-body,
+  .allocation-decline-modal .ant-modal-body,
+  .allocation-recall-modal .ant-modal-body {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .call-log-modal .ant-form-item:last-child .ant-space {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .call-log-modal .ant-form-item:last-child .ant-btn {
+    min-height: var(--mos-control-height);
+  }
+
+  .daily-calls-drawer .ant-drawer-body {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .daily-call-mobile-card {
+    display: grid;
+    gap: 8px;
+  }
+
+  .daily-call-mobile-card-header,
+  .daily-call-mobile-meta {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .daily-call-mobile-card-header {
+    justify-content: space-between;
+  }
+
+  .daily-call-mobile-customer {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 !important;
+  }
+
+  .daily-call-mobile-customer > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .daily-call-mobile-time,
+  .daily-call-mobile-note {
+    color: var(--ant-color-text-secondary);
+    font-size: 12px;
+  }
+
+  .daily-call-mobile-meta {
+    flex-wrap: wrap;
+  }
+
+  .daily-call-mobile-meta .ant-btn {
+    min-height: var(--mos-control-height);
+    padding-inline: 0;
+  }
+
+  .daily-call-mobile-note {
+    line-height: 1.4;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .table-config-column-heading,
+  .table-config-column-width,
+  .table-config-column-icon {
+    display: none !important;
+  }
+
+  .table-config-column-row {
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+
+  .table-config-column-row .ant-input-affix-wrapper {
+    min-height: var(--mos-control-height);
+  }
+
+  .table-config-columns .ant-tabs-nav {
+    overflow-x: auto;
+  }
+
+  .icon-picker-modal .ant-tabs-nav {
+    overflow-x: auto;
+  }
+
+  .icon-picker-modal .ant-tabs-nav-list {
+    min-width: max-content;
+  }
+
+  .booking-template-manager-actions,
+  .allocation-pending-actions {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .booking-template-manager-actions .ant-btn,
+  .allocation-pending-actions .ant-btn {
+    min-height: var(--mos-control-height);
+  }
+
+  .booking-template-mobile-card {
+    display: grid;
+    gap: 8px;
+  }
+
+  .booking-template-mobile-card p {
+    color: var(--ant-color-text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0;
+    max-height: 5.6em;
+    overflow: hidden;
+  }
+
+  .allocation-size-presets,
+  .allocation-pending-modal .cursor-ew-resize,
+  .allocation-history-detail-modal .cursor-ew-resize {
+    display: none !important;
+  }
+
+  .allocation-pending-modal .ant-table-wrapper,
+  .allocation-history-detail-modal .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .allocation-history-detail-modal .grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .telesales-dashboard-container {
+    border-radius: 0 !important;
+  }
+
+  .telesales-dashboard-face {
+    border-radius: 0 !important;
+    overflow-y: auto !important;
+  }
+
+  .telesales-dashboard-header {
+    padding: 12px !important;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+
+  .telesales-dashboard-main {
+    gap: 12px;
+    justify-content: flex-start !important;
+    overflow: visible !important;
+    padding: 12px !important;
+  }
+
+  .telesales-dashboard-timeline {
+    margin-top: 0 !important;
+    padding-block: 4px !important;
+  }
+
+  .telesales-dashboard-chart {
+    height: 132px !important;
+    width: 132px !important;
+  }
+
+  .telesales-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .telesales-metric-grid > div {
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+
+  .telesales-metric-grid > div > div:first-child {
+    height: 36px !important;
+    width: 36px !important;
+  }
+
+  .telesales-metric-grid > div > div:first-child svg {
+    height: 36px !important;
+    width: 36px !important;
+  }
+
+  .telesales-metric-grid .text-2xl {
+    font-size: 20px !important;
+  }
+
+  .telesales-leaderboard {
+    display: none !important;
+  }
+
+  .telesales-dashboard-container > .absolute.bottom-1\.5 {
+    display: none;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .responsive-toolbar .ant-btn,
+  .responsive-page-header-actions .ant-btn {
+    min-height: var(--mos-control-height);
+  }
+}
+
+/* Keep compact operational tags and inactive staff rows legible at AA contrast.
+   This late layer intentionally wins over Ant Design's runtime tag palette. */
+.light-theme .ant-tag-gold {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+.dark-theme .ant-tag-geekblue {
+  background: #172554 !important;
+  border-color: #1d4ed8 !important;
+  color: #bfdbfe !important;
+}
+
+.light-theme .ant-tag-default {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+.dark-theme .ant-tag-default {
+  background: #1e293b !important;
+  border-color: #475569 !important;
+  color: #cbd5e1 !important;
+}
+
+.light-theme .ant-typography.ant-typography-secondary {
+  color: #475569 !important;
+}
+
+.dark-theme .ant-typography.ant-typography-secondary {
+  color: #cbd5e1 !important;
+}
+
+.today-staff-inactive > td {
+  opacity: 1 !important;
+}
+
+.light-theme .today-staff-inactive > td {
+  background: #f8fafc !important;
+  color: #475569 !important;
+}
+
+.dark-theme .today-staff-inactive > td {
+  background: #0f172a !important;
+  color: #cbd5e1 !important;
 }

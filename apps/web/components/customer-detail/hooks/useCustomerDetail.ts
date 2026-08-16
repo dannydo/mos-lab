@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../lib/api-client';
+import { getViewportSize } from '../../../hooks/useResponsiveTier';
 
 interface UseCustomerDetailProps {
   open: boolean;
@@ -300,9 +301,10 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const newWidth = window.innerWidth - e.clientX;
+      const viewportWidth = getViewportSize().width;
+      const newWidth = viewportWidth - e.clientX;
       const minWidth = 500;
-      const maxWidth = window.innerWidth * 0.95;
+      const maxWidth = viewportWidth * 0.95;
       const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
       setDrawerWidth(clampedWidth);
     };
@@ -345,7 +347,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
 
       const newWidth = dragStartInfo.width + deltaX * 2;
       const minWidth = 500;
-      const maxWidth = window.innerWidth * 0.95;
+      const maxWidth = getViewportSize().width * 0.95;
       const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
       setModalWidth(clampedWidth);
     };
@@ -389,7 +391,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
 
       const newWidth = gemDragStartInfo.width + deltaX * 2;
       const minWidth = 500;
-      const maxWidth = window.innerWidth * 0.95;
+      const maxWidth = getViewportSize().width * 0.95;
       const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
       setGemModalWidth(clampedWidth);
     };
@@ -433,7 +435,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
 
       const newWidth = tipDragStartInfo.width + deltaX * 2;
       const minWidth = 500;
-      const maxWidth = window.innerWidth * 0.95;
+      const maxWidth = getViewportSize().width * 0.95;
       const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
       setTipModalWidth(clampedWidth);
     };
@@ -477,7 +479,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
 
       const newWidth = revenueDragStartInfo.width + deltaX * 2;
       const minWidth = 600;
-      const maxWidth = window.innerWidth * 0.95;
+      const maxWidth = getViewportSize().width * 0.95;
       const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
       setRevenueModalWidth(clampedWidth);
     };

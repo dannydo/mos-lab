@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getViewportSize } from './useResponsiveTier';
 
 export interface ModalDimensions {
   width: number;
@@ -47,8 +48,9 @@ export function useResizableModal(options: UseResizableModalOptions = {}) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
-      const windowMaxW = typeof window !== 'undefined' ? window.innerWidth - 40 : maxWidth;
-      const windowMaxH = typeof window !== 'undefined' ? window.innerHeight - 60 : maxHeight;
+      const viewport = getViewportSize();
+      const windowMaxW = viewport.width - 40;
+      const windowMaxH = viewport.height - 60;
 
       const effectiveMaxW = Math.min(maxWidth, windowMaxW);
       const effectiveMaxH = Math.min(maxHeight, windowMaxH);

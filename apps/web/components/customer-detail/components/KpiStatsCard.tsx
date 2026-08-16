@@ -52,6 +52,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
 
     return (
       <Card
+        className="customer-kpi-card"
         title={
           <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
             <RiseOutlined /> CHỈ SỐ TÍCH LUỸ
@@ -64,9 +65,10 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
           borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
         }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div className="customer-kpi-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           {/* Box 1: LTV */}
           <div
+            className="customer-kpi-metric"
             onClick={onOpenRevenueModal}
             style={cardStyle('#D4A84B') as React.CSSProperties}
             onMouseEnter={(e) => {
@@ -102,12 +104,13 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
               <div style={{ ...valueStyle, fontVariantNumeric: 'tabular-nums' }}>
                 {formatCompactVND(stats?.totalSpent || 0)}
               </div>
-              <div style={subtextStyle}>Tổng chi tiêu</div>
+              <div style={subtextStyle}>∑ Chi tiêu</div>
             </div>
           </div>
 
           {/* Box 2: Lịch hẹn */}
           <div
+            className="customer-kpi-metric"
             style={cardStyle('#14b8a6') as React.CSSProperties}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
@@ -155,6 +158,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
 
           {/* Box 3: Kim Cương */}
           <div
+            className="customer-kpi-metric"
             onClick={onOpenGemModal}
             style={cardStyle('#0ea5e9') as React.CSSProperties}
             onMouseEnter={(e) => {
@@ -197,6 +201,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
 
           {/* Box 4: Tips */}
           <div
+            className="customer-kpi-metric"
             onClick={onOpenTipModal}
             style={cardStyle('#22c55e') as React.CSSProperties}
             onMouseEnter={(e) => {
@@ -233,7 +238,7 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
                 {formatCompactVND(stats?.totalTips || 0)}
               </div>
               <div style={{ ...subtextStyle, fontVariantNumeric: 'tabular-nums' }}>
-                {stats?.tipRate || 0}% (Avg {formatCompactVND(stats?.avgTip || 0).replace(' đ', '')})
+                {stats?.tipRate || 0}% (Avg {formatCompactVND(stats?.avgTip || 0).replace(/\sđ$/, '')})
               </div>
             </div>
           </div>

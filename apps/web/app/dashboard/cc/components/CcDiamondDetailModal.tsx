@@ -229,7 +229,7 @@ export default function CcDiamondDetailModal({ open, onClose, ccRecord, dateRang
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-6">
                 <div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Tổng Khách Đã Tiếp</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">∑ Khách Đã Tiếp</div>
                   <div className="tabular-nums text-base font-bold text-slate-800 dark:text-slate-200">
                     {ccRecord.tongKhach} khách
                   </div>
@@ -263,7 +263,7 @@ export default function CcDiamondDetailModal({ open, onClose, ccRecord, dateRang
                     ccRecord.thuongDiamond > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
                   }`}
                 >
-                  {ccRecord.thuongDiamond > 0 ? `+${ccRecord.thuongDiamond.toLocaleString('vi-VN')} đ` : '0 đ'}
+                  {ccRecord.thuongDiamond > 0 ? `+${ccRecord.thuongDiamond.toLocaleString('vi-VN')} đ` : '0 đ'}
                 </div>
               </div>
             </div>

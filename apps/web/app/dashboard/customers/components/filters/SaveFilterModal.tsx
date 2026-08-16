@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, Input, Typography } from 'antd';
+import { Input, Typography } from 'antd';
+import { AdaptiveModal } from '../../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -19,7 +20,9 @@ export const SaveFilterModal: React.FC<SaveFilterModalProps> = ({
   setNewFilterName,
 }) => {
   return (
-    <Modal
+    <AdaptiveModal
+      intent="confirm"
+      className="customer-save-filter-overlay"
       title={<span style={{ color: '#D4A84B', fontWeight: 'bold' }}>Lưu bộ lọc khách hàng</span>}
       open={visible}
       onOk={onOk}
@@ -37,7 +40,7 @@ export const SaveFilterModal: React.FC<SaveFilterModalProps> = ({
           onChange={(e) => setNewFilterName(e.target.value)}
         />
       </div>
-    </Modal>
+    </AdaptiveModal>
   );
 };
 export default SaveFilterModal;

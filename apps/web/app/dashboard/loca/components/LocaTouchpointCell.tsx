@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Customer, LocaTouchpointState, TouchpointStatus, LASH_TOUCHUP_SYSTEM_CONFIG } from '@mos-lab/shared';
+import styles from './LocaTouchpointCell.module.css';
 
 const { TextArea } = Input;
 
@@ -121,6 +122,14 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
   }
 
   const handleCellClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (loading) return;
+    setPopoverOpen((prev) => !prev);
+  };
+
+  const handleCellKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
     e.stopPropagation();
     if (loading) return;
     setPopoverOpen((prev) => !prev);
@@ -641,16 +650,18 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
   }
 
   const renderPillIcon = () => {
-    if (displayStatus === 'DONE') return <CheckCircle2 size={13} className="text-emerald-400" />;
-    if (displayStatus === 'BOOKED') return <CalendarCheck size={13} className="text-indigo-400" />;
-    if (displayStatus === 'SUCCESS') return <PhoneCall size={12} className="text-emerald-400" />;
-    if (displayStatus === 'CALLBACK') return <Clock size={12} className="text-purple-400" />;
-    if (displayStatus === 'MESSAGED') return <MessageSquare size={12} className="text-cyan-400" />;
-    if (displayStatus === 'FAILED') return <PhoneOff size={12} className="text-rose-400" />;
-    if (displayStatus === 'LOST') return <HeartOff size={12} className="text-pink-400" />;
-    if (displayStatus === 'DUE_TODAY') return <BellRing size={13} className="text-amber-400 animate-pulse" />;
-    if (displayStatus === 'OVERDUE') return <Hourglass size={12} className="text-rose-400 opacity-80" />;
-    return <Hourglass size={12} className="text-slate-400 opacity-60" />;
+    const iconProps = { size: 18, strokeWidth: 2.25 };
+
+    if (displayStatus === 'DONE') return <CheckCircle2 {...iconProps} className="text-emerald-400" />;
+    if (displayStatus === 'BOOKED') return <CalendarCheck {...iconProps} className="text-indigo-400" />;
+    if (displayStatus === 'SUCCESS') return <PhoneCall {...iconProps} className="text-emerald-400" />;
+    if (displayStatus === 'CALLBACK') return <Clock {...iconProps} className="text-purple-400" />;
+    if (displayStatus === 'MESSAGED') return <MessageSquare {...iconProps} className="text-cyan-400" />;
+    if (displayStatus === 'FAILED') return <PhoneOff {...iconProps} className="text-rose-400" />;
+    if (displayStatus === 'LOST') return <HeartOff {...iconProps} className="text-pink-400" />;
+    if (displayStatus === 'DUE_TODAY') return <BellRing {...iconProps} className="text-amber-400 animate-pulse" />;
+    if (displayStatus === 'OVERDUE') return <Hourglass {...iconProps} className="text-rose-400 opacity-80" />;
+    return <Hourglass {...iconProps} className="text-slate-400 opacity-60" />;
   };
 
   return (
@@ -664,23 +675,18 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     >
       <Tooltip title={popoverOpen ? '' : renderTooltip()} placement="top">
         <div
+          className={styles.touchpointTile}
+          role="button"
+          tabIndex={0}
+          aria-label={`Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}`}
           onClick={handleCellClick}
+          onKeyDown={handleCellKeyDown}
           style={{
-            position: 'relative',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '28px',
-            height: '24px',
-            borderRadius: '6px',
             cursor: loading ? 'wait' : 'pointer',
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             background: bg,
             border: border,
             color: textColor,
             boxShadow: boxShadow,
-            userSelect: 'none',
-            overflow: 'visible',
           }}
         >
           {/* Main Status Icon */}
@@ -688,18 +694,7 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
 
           {/* Top-Right Corner Diamond Badge */}
           {hasReferredDiamond && (
-            <span
-              style={{
-                position: 'absolute',
-                top: '-6px',
-                right: '-6px',
-                fontSize: '11px',
-                lineHeight: 1,
-                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
-                zIndex: 2,
-              }}
-              title="Đã tư vấn Chương Trình Kim Cương"
-            >
+            <span className={styles.diamondBadge} title="Đã tư vấn Chương Trình Kim Cương">
               💎
             </span>
           )}
@@ -707,27 +702,15 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
           {/* Bottom-Left Corner Note Indicator */}
           {currentNote && (
             <span
+              className={styles.noteBadge}
               style={{
-                position: 'absolute',
-                bottom: '-4px',
-                left: '-4px',
-                fontSize: '9px',
-                lineHeight: 1,
                 color: isDark ? '#fbbf24' : '#d97706',
                 backgroundColor: isDark ? '#1e293b' : '#ffffff',
                 border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
-                borderRadius: '50%',
-                width: '12px',
-                height: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                zIndex: 2,
               }}
               title={`Ghi chú: ${currentNote}`}
             >
-              <FileTextOutlined style={{ fontSize: '8px', color: isDark ? '#fbbf24' : '#d97706' }} />
+              <FileTextOutlined style={{ fontSize: '7px', color: isDark ? '#fbbf24' : '#d97706' }} />
             </span>
           )}
         </div>

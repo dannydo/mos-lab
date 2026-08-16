@@ -365,6 +365,7 @@ export default function TodayCalendarSummary({
             <Space size="small">
               <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Chi nhánh:</span>
               <Select
+                aria-label="Lọc chi nhánh lịch hôm nay"
                 size="small"
                 value={bookingBranch}
                 onChange={setBookingBranch}
@@ -380,6 +381,7 @@ export default function TodayCalendarSummary({
             <Space size="small">
               <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Đội / Booker:</span>
               <Select
+                aria-label="Lọc đội hoặc Booker lịch hôm nay"
                 size="small"
                 showSearch
                 allowClear
@@ -697,7 +699,7 @@ export default function TodayCalendarSummary({
                         }}
                       >
                         {/* Created Bar */}
-                        <Tooltip title={`Tạo lúc ${d.hour}: ${d.created} đơn`}>
+                        <Tooltip title={`Tạo lúc ${d.hour}: ${d.created} đơn`}>
                           <div
                             style={{
                               width: '22%',
@@ -1218,7 +1220,7 @@ export default function TodayCalendarSummary({
           {/* Created List */}
           <div>
             <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#0284c7', marginBottom: '8px' }}>
-              📝 Đơn Hàng Được Tạo Trong Khung Giờ Này ({modalSlotItems.created.length} đơn)
+              📝 Đơn Hàng Được Tạo Trong Khung Giờ Này ({modalSlotItems.created.length} đơn)
             </div>
             {modalSlotItems.created.length === 0 ? (
               <Text type="secondary">Không có đơn tạo mới trong giờ này.</Text>

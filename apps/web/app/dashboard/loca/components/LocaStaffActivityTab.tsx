@@ -1,5 +1,7 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React, { useState } from 'react';
 import {
   Card,
@@ -165,7 +167,7 @@ export const LocaStaffActivityTab: React.FC<LocaStaffActivityTabProps> = ({
 
   const columns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'stt',
       width: 60,
       render: (_: any, __: any, index: number) => (
@@ -484,7 +486,7 @@ export const LocaStaffActivityTab: React.FC<LocaStaffActivityTabProps> = ({
                     actionTypeFilter === 'CALL' ? 'text-emerald-400 font-bold' : ''
                   }`}
                 >
-                  Tổng Cuộc Gọi
+                  ∑ Cuộc Gọi
                 </Text>
                 <div className="text-base font-bold mt-0.5 tabular-nums flex items-baseline gap-1">
                   <span>{stats?.totalCalls || 0}</span>

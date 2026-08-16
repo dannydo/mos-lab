@@ -18,9 +18,9 @@ export function PageHeader({ title, subtitle, icon, tag, extra, className = '' }
   const { token } = theme.useToken();
 
   return (
-    <div className={`flex flex-wrap justify-between items-center mb-6 gap-4 ${className}`}>
-      <div>
-        <div className="flex items-center gap-2">
+    <header className={`responsive-page-header ${className}`}>
+      <div className="responsive-page-header-main">
+        <div className="responsive-page-header-title-row">
           {icon && (
             <span className="flex items-center text-xl" style={{ color: token.colorPrimary }}>
               {icon}
@@ -39,11 +39,13 @@ export function PageHeader({ title, subtitle, icon, tag, extra, className = '' }
       </div>
 
       {extra && (
-        <Space wrap size={10}>
-          {extra}
-        </Space>
+        <div className="responsive-page-header-actions">
+          <Space wrap size={10}>
+            {extra}
+          </Space>
+        </div>
       )}
-    </div>
+    </header>
   );
 }
 

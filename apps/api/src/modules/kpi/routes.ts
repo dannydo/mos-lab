@@ -207,6 +207,59 @@ function formatDateTime(d: Date): string {
   return `${y}-${m}-${day} ${h}:${min}:${s}`;
 }
 
+/** Resolve the CRM and legacy identities once so KPI summary and trends use the same staff scope. */
+async function resolveTelesalesKpiScope(fastify: FastifyInstance, targetStaffId?: number) {
+  const staffList = await fastify.prisma.crm.crmStaff.findMany({
+    where: {
+      role: 'telesales',
+      isActive: true,
+      ...(targetStaffId !== undefined ? { id: targetStaffId } : {}),
+    },
+    select: { id: true, displayName: true, legacyStaffId: true },
+  });
+
+  const staffNames = staffList.map((staff) => staff.displayName);
+  const profiles =
+    staffNames.length > 0
+      ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `
+            SELECT user_id as userId, full_name as fullName
+            FROM \`user_profile\`
+            WHERE full_name IN (${staffNames.map(() => '?').join(',')})
+          `,
+          ...staffNames
+        )
+      : [];
+
+  const profileIdByName = new Map<string, number>();
+  profiles.forEach((profile: SafeAny) => {
+    profileIdByName.set(
+      String(profile.fullName || '')
+        .toLowerCase()
+        .trim(),
+      Number(profile.userId)
+    );
+  });
+
+  const legacyUserIds = Array.from(
+    new Set(
+      staffList
+        .map((staff) =>
+          staff.legacyStaffId
+            ? Number(staff.legacyStaffId)
+            : profileIdByName.get(staff.displayName.toLowerCase().trim())
+        )
+        .filter((id): id is number => typeof id === 'number' && Number.isFinite(id))
+    )
+  );
+
+  return { staffIds: staffList.map((staff) => staff.id), legacyUserIds };
+}
+
+function toKpiDayKey(value: Date | string) {
+  return new Date(value).toISOString().slice(0, 10);
+}
+
 export async function kpiRoutes(fastify: FastifyInstance) {
   await registerCcRoutes(fastify);
   await registerCcPaystubRoutes(fastify);
@@ -757,40 +810,9 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         };
       }
 
-      // Fetch CRM Staff list
-      const staffList = await fastify.prisma.crm.crmStaff.findMany({
-        where: {
-          role: 'telesales',
-          isActive: true,
-          ...(targetStaffId !== undefined ? { id: targetStaffId } : {}),
-        },
-      });
-
       const salaries = await calculateBookerSalaryStats(fastify, start, end, targetStaffId);
       const salary = targetStaffId !== undefined ? salaries[targetStaffId] : null;
-
-      // Match staff names to legacy user IDs
-      const staffNames = staffList.map((s) => s.displayName);
-      const profiles =
-        staffNames.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-              `
-        SELECT user_id as userId, full_name as fullName
-        FROM \`user_profile\`
-        WHERE full_name IN (${staffNames.map(() => '?').join(',')})
-      `,
-              ...staffNames
-            )
-          : [];
-
-      const staffNameToLegacyIdMap = new Map<string, number>();
-      profiles.forEach((p: SafeAny) => {
-        staffNameToLegacyIdMap.set(p.fullName.toLowerCase().trim(), Number(p.userId));
-      });
-
-      const legacyUserIds = Array.from(staffNameToLegacyIdMap.values());
-
-      const staffIds = staffList.map((s) => s.id);
+      const { staffIds, legacyUserIds } = await resolveTelesalesKpiScope(fastify, targetStaffId);
       let totalCalled = 0;
       let totalAnswered = 0;
       let totalHappy = 0;
@@ -1522,15 +1544,17 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             startDate: { type: 'string' },
             endDate: { type: 'string' },
             staffId: { type: 'string' },
+            role: { type: 'string' },
           },
         },
       },
     },
     async (request, reply) => {
-      const { startDate, endDate, staffId } = request.query as {
+      const { startDate, endDate, staffId, role } = request.query as {
         startDate?: string;
         endDate?: string;
         staffId?: string;
+        role?: string;
       };
 
       const user = request.user as { id: number; role: string };
@@ -1544,17 +1568,6 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const { start, end } = parseDateRange(startDate, endDate, 7);
 
       try {
-        const logs = await fastify.prisma.crm.crmCallLog.findMany({
-          where: {
-            createdAt: { gte: start, lte: new Date(end.getTime() + 24 * 60 * 60 * 1000) },
-            ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {}),
-          },
-          select: {
-            callResult: true,
-            outcome: true,
-          },
-        });
-
         const breakdown = {
           BOOKED: 0,
           CALL_BACK: 0,
@@ -1564,46 +1577,67 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           OTHERS: 0,
         };
 
-        logs.forEach((l) => {
-          if (l.callResult === 'NO_ANSWER') {
-            breakdown.NO_ANSWER++;
-          } else if (l.callResult === 'BUSY') {
-            breakdown.BUSY++;
-          } else if (l.callResult === 'WRONG_NUMBER') {
-            breakdown.WRONG_NUMBER++;
-          } else if (l.outcome === 'BOOKED') {
-            breakdown.BOOKED++;
-          } else if (l.outcome === 'CALL_BACK') {
-            breakdown.CALL_BACK++;
-          } else {
-            breakdown.OTHERS++;
-          }
-        });
-
-        const dailyKpis = await fastify.prisma.crm.crmStaffKpi.findMany({
-          where: {
-            kpiDate: { gte: start, lte: end },
-            ...(targetStaffId !== undefined ? { staffId: targetStaffId } : {}),
-          },
-          orderBy: { kpiDate: 'asc' },
-        });
-
         const dailyTrendsMap = new Map<string, { date: string; planned: number; called: number }>();
-
         const current = new Date(start);
         while (current <= end) {
-          const dStr = current.toLocaleDateString('en-CA');
+          const dStr = toKpiDayKey(current);
           dailyTrendsMap.set(dStr, { date: dStr, planned: 0, called: 0 });
           current.setDate(current.getDate() + 1);
         }
 
-        dailyKpis.forEach((k) => {
-          const dStr = k.kpiDate.toLocaleDateString('en-CA');
-          const existing = dailyTrendsMap.get(dStr) || { date: dStr, planned: 0, called: 0 };
-          existing.planned += k.totalPlanned;
-          existing.called += k.totalCalled;
-          dailyTrendsMap.set(dStr, existing);
-        });
+        // Client Consultants do not use the outbound-call / Booker pipeline.
+        if (role !== 'oc' && role !== 'consultant') {
+          const { staffIds, legacyUserIds } = await resolveTelesalesKpiScope(fastify, targetStaffId);
+          if (staffIds.length > 0) {
+            const [crmLogs, omicallLogs] = await Promise.all([
+              fastify.prisma.crm.crmCallLog.findMany({
+                where: { staffId: { in: staffIds }, createdAt: { gte: start, lte: end } },
+                select: { createdAt: true, callResult: true, outcome: true },
+              }),
+              fastify.prisma.crm.crmOmicallLog.findMany({
+                where: { staffId: { in: staffIds }, createdAt: { gte: start, lte: end }, direction: 'outbound' },
+                select: { createdAt: true },
+              }),
+            ]);
+
+            const crmCalledByDay = new Map<string, number>();
+            const omicallCalledByDay = new Map<string, number>();
+            crmLogs.forEach((log) => {
+              const date = toKpiDayKey(log.createdAt);
+              crmCalledByDay.set(date, (crmCalledByDay.get(date) || 0) + 1);
+              if (log.callResult === 'NO_ANSWER') breakdown.NO_ANSWER++;
+              else if (log.callResult === 'BUSY') breakdown.BUSY++;
+              else if (log.callResult === 'WRONG_NUMBER') breakdown.WRONG_NUMBER++;
+              else if (log.outcome === 'BOOKED') breakdown.BOOKED++;
+              else if (log.outcome === 'CALL_BACK') breakdown.CALL_BACK++;
+              else breakdown.OTHERS++;
+            });
+            omicallLogs.forEach((log) => {
+              const date = toKpiDayKey(log.createdAt);
+              omicallCalledByDay.set(date, (omicallCalledByDay.get(date) || 0) + 1);
+            });
+
+            dailyTrendsMap.forEach((trend, date) => {
+              trend.called = Math.max(crmCalledByDay.get(date) || 0, omicallCalledByDay.get(date) || 0);
+            });
+          }
+
+          if (legacyUserIds.length > 0) {
+            const bookedOrders = await fastify.prisma.legacy.order.findMany({
+              where: {
+                created_staff_id: { in: legacyUserIds },
+                date_created: { gte: start, lte: end },
+                order_state: { not: 'Cancelled' },
+              },
+              select: { date_created: true },
+            });
+            bookedOrders.forEach((order) => {
+              const date = toKpiDayKey(order.date_created);
+              const trend = dailyTrendsMap.get(date);
+              if (trend) trend.planned += 1;
+            });
+          }
+        }
 
         const dailyTrends = Array.from(dailyTrendsMap.values());
 

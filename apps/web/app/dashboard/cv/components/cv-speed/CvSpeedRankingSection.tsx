@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Card, Table, Tag, Select, Space, Typography, Avatar, Tooltip, theme as antTheme } from 'antd';
+import { Card, Table, Tag, Select, Space, Typography, Avatar, Tooltip, Pagination, theme as antTheme } from 'antd';
 import { TrophyOutlined, ArrowUpOutlined, ArrowDownOutlined, MinusOutlined, UserOutlined } from '@ant-design/icons';
 import { useTheme } from '../../../../../context/ThemeContext';
 import CcAvatar from '../../../cc/components/CcAvatar';
 import { CvSpeedRanking, SpeedRating, ConfidenceLevel, LashServiceMode } from '@mos-lab/shared';
+import { MobileRecordList } from '~/components/ui';
+import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 const { Text } = Typography;
 
@@ -46,6 +48,9 @@ export function CvSpeedRankingSection({
 }: CvSpeedRankingSectionProps) {
   const { themeMode } = useTheme();
   const { token } = antTheme.useToken();
+  const tier = useResponsiveTier();
+  const isMobile = tier === 'mobile';
+  const mobileRankingData = rankingData.slice((rankingPage - 1) * rankingPageSize, rankingPage * rankingPageSize);
 
   const getRatingBadgeLabel = (rating: SpeedRating) => {
     if (rating === 'fast') return 'Nhanh (-10%)';
@@ -249,37 +254,92 @@ export function CvSpeedRankingSection({
       variant="outlined"
       style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
     >
-      <Table
-        dataSource={rankingData}
-        columns={rankingColumns}
-        rowKey={(record, idx) => `ranking_row_${record.staffId}_${idx}`}
-        loading={loading}
-        bordered
-        size="small"
-        className="antd-custom-table"
-        pagination={{
-          current: rankingPage,
-          pageSize: rankingPageSize,
-          total: rankingData.length,
-          onChange: (page, pSize) => {
-            onPageChange(page);
-            if (pSize && pSize !== rankingPageSize) {
-              onPageSizeChange(pSize);
-            }
-          },
-          onShowSizeChange: (current, size) => {
-            onPageSizeChange(size);
-            onPageChange(1);
-          },
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          showTotal: (total, range) => (
-            <span className="tabular-nums text-xs text-gray-500">
-              {range[0]}-{range[1]} / {total}
-            </span>
-          ),
-        }}
-      />
+      {isMobile ? (
+        <>
+          <MobileRecordList
+            records={mobileRankingData}
+            loading={loading}
+            getKey={(record) => String(record.staffId)}
+            emptyDescription="Chưa có dữ liệu tốc độ CV"
+            renderRecord={(record) => (
+              <button type="button" className="w-full min-w-0 text-left" onClick={() => onOpenDetail(record.staffId)}>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="w-7 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
+                    #{record.rank}
+                  </span>
+                  <CcAvatar name={record.staffName} src={record.avatarUrl} size={32} />
+                  <div className="min-w-0 flex-1 truncate text-sm font-semibold" style={{ color: token.colorText }}>
+                    {record.staffName}
+                  </div>
+                  <span className="shrink-0 text-xs text-amber-400">Chi tiết</span>
+                </div>
+                <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+                  <div>
+                    <dt className="text-[10px] text-slate-500">Dự đoán</dt>
+                    <dd className="text-sm font-bold tabular-nums text-sky-400">{record.predictedTime}p</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[10px] text-slate-500">Tốc độ</dt>
+                    <dd
+                      className={`truncate text-sm font-bold ${record.speedRating === 'fast' ? 'text-emerald-400' : record.speedRating === 'slow' ? 'text-rose-400' : 'text-amber-400'}`}
+                    >
+                      {getRatingBadgeLabel(record.speedRating)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[10px] text-slate-500">Mẫu</dt>
+                    <dd className="text-sm font-bold tabular-nums text-slate-200">{record.sampleSize}</dd>
+                  </div>
+                </dl>
+              </button>
+            )}
+          />
+          {rankingData.length > rankingPageSize && (
+            <div className="responsive-mobile-pagination">
+              <Pagination
+                simple
+                current={rankingPage}
+                pageSize={rankingPageSize}
+                total={rankingData.length}
+                onChange={onPageChange}
+                showSizeChanger={false}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <Table
+          dataSource={rankingData}
+          columns={rankingColumns}
+          rowKey={(record, idx) => `ranking_row_${record.staffId}_${idx}`}
+          loading={loading}
+          bordered
+          size="small"
+          className="antd-custom-table"
+          pagination={{
+            current: rankingPage,
+            pageSize: rankingPageSize,
+            total: rankingData.length,
+            onChange: (page, pSize) => {
+              onPageChange(page);
+              if (pSize && pSize !== rankingPageSize) {
+                onPageSizeChange(pSize);
+              }
+            },
+            onShowSizeChange: (current, size) => {
+              onPageSizeChange(size);
+              onPageChange(1);
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showTotal: (total, range) => (
+              <span className="tabular-nums text-xs text-gray-500">
+                {range[0]}-{range[1]} / {total}
+              </span>
+            ),
+          }}
+        />
+      )}
     </Card>
   );
 }

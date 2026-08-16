@@ -1,11 +1,15 @@
 'use client';
 
+import { TableIndexHeader } from '~/components/ui';
+
 import React, { useState, useEffect } from 'react';
-import { Modal, Table, Button, Tag, message, Spin, Card } from 'antd';
+import { Table, Button, Tag, message, Spin, Card } from 'antd';
 import { CustomerAllocationBatch, CustomerAllocationItem } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { DeclineReasonModal } from './DeclineReasonModal';
 import { useTheme } from '../../context/ThemeContext';
+import { AdaptiveModal } from '../ui/AdaptiveOverlay';
+import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
 interface PendingAllocationModalProps {
   open: boolean;
@@ -15,6 +19,8 @@ interface PendingAllocationModalProps {
 
 export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ open, onClose, onSuccessRefresh }) => {
   const { themeMode } = useTheme();
+  const responsiveTier = useResponsiveTier();
+  const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
   const [loading, setLoading] = useState<boolean>(false);
   const [batches, setBatches] = useState<CustomerAllocationBatch[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -199,7 +205,7 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
 
   const columns = [
     {
-      title: 'STT',
+      title: <TableIndexHeader />,
       key: 'idx',
       width: 60,
       render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1,
@@ -235,7 +241,8 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
 
   return (
     <>
-      <Modal
+      <AdaptiveModal
+        intent="data"
         title={
           <div className="flex flex-wrap items-center justify-between pr-8 gap-2">
             <div className="flex items-center gap-2">
@@ -251,7 +258,7 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
             </div>
 
             {/* Quick Modal Width Presets */}
-            <div className="flex items-center gap-1.5 text-xs font-normal">
+            <div className="allocation-size-presets flex items-center gap-1.5 text-xs font-normal">
               <span className="text-slate-400 font-medium">Khung xem:</span>
               {[750, 950, 1200].map((w) => (
                 <button
@@ -272,19 +279,21 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
         }
         open={open}
         onCancel={onClose}
-        width={modalWidth}
+        width={isCompact ? undefined : modalWidth}
         footer={null}
-        className={themeMode === 'dark' ? 'dark-theme-modal' : ''}
+        className={`allocation-pending-modal ${themeMode === 'dark' ? 'dark-theme-modal' : ''}`}
       >
         <div className="relative">
           {/* Right-edge drag handle for modal width resizing */}
-          <div
-            onMouseDown={startResizing}
-            title="Kéo để chỉnh rộng / hẹp modal"
-            className="absolute -top-4 -right-4 -bottom-4 w-4 cursor-ew-resize hover:bg-amber-400/20 flex items-center justify-center transition-colors rounded-r group z-50"
-          >
-            <div className="w-1 h-10 bg-slate-300 dark:bg-slate-600 group-hover:bg-amber-500 rounded-full transition-colors" />
-          </div>
+          {!isCompact && (
+            <div
+              onMouseDown={startResizing}
+              title="Kéo để chỉnh rộng / hẹp modal"
+              className="absolute -top-4 -right-4 -bottom-4 w-4 cursor-ew-resize hover:bg-amber-400/20 flex items-center justify-center transition-colors rounded-r group z-50"
+            >
+              <div className="w-1 h-10 bg-slate-300 dark:bg-slate-600 group-hover:bg-amber-500 rounded-full transition-colors" />
+            </div>
+          )}
 
           {loading ? (
             <div className="py-12 text-center">
@@ -366,7 +375,7 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
                     ← Đợt trước
                   </Button>
                   <span>
-                    Đang xem đợt {currentIndex + 1} trên {batches.length} đợt chờ
+                    Đang xem đợt {currentIndex + 1} trên {batches.length} đợt chờ
                   </span>
                   <Button
                     size="small"
@@ -379,7 +388,7 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
               )}
 
               {/* Action Bar */}
-              <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="allocation-pending-actions pt-2 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
                 <Button danger size="large" loading={actionLoading} onClick={() => setShowDeclineModal(true)}>
                   Từ chối toàn bộ
                 </Button>
@@ -396,7 +405,7 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
             </div>
           )}
         </div>
-      </Modal>
+      </AdaptiveModal>
 
       <DeclineReasonModal
         open={showDeclineModal}

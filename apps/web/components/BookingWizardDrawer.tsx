@@ -1,21 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Drawer,
-  Steps,
-  Button,
-  Select,
-  DatePicker,
-  Radio,
-  Input,
-  theme,
-  message,
-  Card,
-  Tag,
-  Modal,
-  Switch,
-} from 'antd';
+import { Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag, Switch } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -53,6 +39,8 @@ import { TechnicianSelector } from './booking/TechnicianSelector';
 import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
 import { CvDatePicker } from './booking/CvDatePicker';
+import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
+import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
 const { TextArea } = Input;
 
@@ -81,6 +69,8 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
 
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -844,15 +834,23 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   const priceInfo = getCalculatedPrice(selectedService, selectedPromotion, selectedCampaignPromotion);
 
   return (
-    <Drawer
+    <AdaptiveDrawer
+      intent="form"
+      className="booking-wizard-overlay"
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#D4A84B' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            color: themeMode === 'dark' ? '#D4A84B' : '#855b0e',
+          }}
+        >
           <CalendarOutlined style={{ fontSize: '18px' }} />
           <span style={{ fontWeight: 'bold' }}>QUY TRÌNH ĐẶT LỊCH HẸN KHÁCH HÀNG</span>
         </div>
       }
       placement="right"
-      width={720}
       open={open}
       onClose={onClose}
       styles={{
@@ -863,6 +861,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       }}
     >
       <Steps
+        className="booking-wizard-steps"
         current={currentStep}
         onChange={(step) => {
           if (step < currentStep) {
@@ -874,10 +873,10 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         size="small"
         style={{ marginBottom: '24px' }}
         items={[
-          { title: 'Chuyên viên' },
-          { title: 'Dịch Vụ & Thời Gian' },
-          { title: 'Xác Nhận' },
-          { title: 'Gửi Tin Nhắn' },
+          { title: isCompact ? 'CV' : 'Chuyên viên' },
+          { title: isCompact ? 'Lịch' : 'Dịch Vụ & Thời Gian' },
+          { title: isCompact ? 'Xác nhận' : 'Xác Nhận' },
+          { title: isCompact ? 'Nhắn' : 'Gửi Tin Nhắn' },
         ]}
       />
 
@@ -984,6 +983,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                   onSearch={handleSearchCustomers}
                   loading={searchingCustomers}
                   style={{ width: '100%' }}
+                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                   onChange={(val) => {
                     const cust = customerList.find((c) => c.id === val);
                     setSelectedCustomer(cust);
@@ -1053,6 +1053,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
               showSearch
               filterOption={vietnameseSearchFilter}
               style={{ width: '100%' }}
+              getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
               placeholder="Chọn hoặc tìm dịch vụ..."
               value={selectedService?.id}
               onChange={(val) => {
@@ -1331,6 +1332,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                 allowClear
                 filterOption={vietnameseSearchFilter}
                 style={{ width: '100%' }}
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                 placeholder="Chọn chương trình khuyến mãi (nếu có)..."
                 value={selectedCampaignPromotion ? `CAMP_${selectedCampaignPromotion.id}` : selectedPromotion?.id}
                 onChange={(val) => {
@@ -1709,6 +1711,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                 </div>
                 <Select
                   style={{ width: '100%' }}
+                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
                   value={selectedTemplateId}
                   loading={loadingTemplates}
                   onChange={(val) => {
@@ -1861,7 +1864,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       />
 
       {/* 20:00 Late Slot Policy Confirmation Modal */}
-      <Modal
+      <AdaptiveModal
+        intent="confirm"
+        className="booking-late-slot-confirmation"
         open={isLateSlotModalOpen}
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fa8c16', fontSize: '15px' }}>
@@ -1929,8 +1934,8 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             Bạn đã thông báo quy định 20:15 này cho khách hàng chưa?
           </div>
         </div>
-      </Modal>
-    </Drawer>
+      </AdaptiveModal>
+    </AdaptiveDrawer>
   );
 };
 

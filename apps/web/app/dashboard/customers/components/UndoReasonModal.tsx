@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, Input, Form, message, Alert, Space, Select } from 'antd';
+import { Input, Form, message, Alert, Space, Select } from 'antd';
 import { UndoOutlined } from '@ant-design/icons';
 import { apiClient } from '../../../../lib/api-client';
 import { SafeAny } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import { AdaptiveModal } from '../../../../components/ui';
 
 interface UndoReasonModalProps {
   visible: boolean;
@@ -49,9 +50,7 @@ export const UndoReasonModal: React.FC<UndoReasonModalProps> = ({
       const res = await apiClient.customers.undoAssignment(batchId, reason.trim());
 
       if (res.success) {
-        message.success(
-          `Đã hoàn tác thành công ${res.revertedCount}/${res.totalCount} khách hàng về Booker cũ!`
-        );
+        message.success(`Đã hoàn tác thành công ${res.revertedCount}/${res.totalCount} khách hàng về Booker cũ!`);
         form.resetFields();
         onSuccess();
         onClose();
@@ -68,7 +67,9 @@ export const UndoReasonModal: React.FC<UndoReasonModalProps> = ({
   const presetReasonVal = Form.useWatch('presetReason', form);
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="confirm"
+      className="customer-undo-overlay"
       title={
         <Space>
           <UndoOutlined style={{ color: '#ff4d4f' }} />
@@ -125,6 +126,6 @@ export const UndoReasonModal: React.FC<UndoReasonModalProps> = ({
           </Form.Item>
         )}
       </Form>
-    </Modal>
+    </AdaptiveModal>
   );
 };

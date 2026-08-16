@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, Form, Input, Radio, Switch, Space, message } from 'antd';
+import { Form, Input, Radio, Switch, Space, message } from 'antd';
 import { FormOutlined } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
+import { AdaptiveModal } from '../../ui';
 
 interface CreateNoteModalProps {
   open: boolean;
@@ -47,7 +48,9 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
   };
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="form"
+      className="customer-create-note-overlay"
       title={
         <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937', fontWeight: 'bold', fontSize: '16px' }}>
           <FormOutlined style={{ marginRight: '8px', color: '#D4A84B' }} />
@@ -60,7 +63,6 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
       confirmLoading={loading}
       okText="Thêm ghi chú"
       cancelText="Hủy"
-      width={500}
       styles={{
         body: {
           paddingTop: '16px',
@@ -135,6 +137,6 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
           </div>
         </Form.Item>
       </Form>
-    </Modal>
+    </AdaptiveModal>
   );
 };

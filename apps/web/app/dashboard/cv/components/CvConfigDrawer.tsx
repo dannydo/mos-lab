@@ -145,7 +145,7 @@ export default function CvConfigDrawer({ open, onClose, onSaveSuccess }: CvConfi
           </Checkbox>
 
           <Badge
-            count={`${selectedCvIds.length} / ${validStaffList.length} được chọn`}
+            count={`${selectedCvIds.length} / ${validStaffList.length} được chọn`}
             style={{ backgroundColor: '#1890ff' }}
           />
         </div>

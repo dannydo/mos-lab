@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Card, Table, Tag, Typography, Progress, theme, Space } from 'antd';
+import { Card, Tag, Typography, Progress, theme, Space } from 'antd';
 import { TrophyOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { CatalogLeaderboardEntry, CatalogItemType } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import { DataTable } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -126,7 +127,7 @@ export default function CatalogLeaderboardCard({
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums text-xs font-medium text-slate-600 dark:text-slate-300">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
@@ -146,7 +147,7 @@ export default function CatalogLeaderboardCard({
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-bold text-xs text-amber-500">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
     },
@@ -158,6 +159,7 @@ export default function CatalogLeaderboardCard({
       render: (rate: number) => (
         <div className="w-full">
           <Progress
+            aria-label={`Tỷ lệ đóng góp ${Math.round(rate || 0)}%`}
             percent={rate}
             size="small"
             strokeColor={rate >= 20 ? '#f59e0b' : rate >= 10 ? '#3b82f6' : '#94a3b8'}
@@ -190,7 +192,7 @@ export default function CatalogLeaderboardCard({
       styles={{ body: { padding: 0 } }}
       className="shadow-sm rounded-xl mb-6"
     >
-      <Table
+      <DataTable
         dataSource={leaderboard}
         columns={columns}
         rowKey="id"
@@ -198,6 +200,7 @@ export default function CatalogLeaderboardCard({
         pagination={{
           current: page,
           pageSize: pageSize,
+          total: leaderboard.length,
           onChange: onPageChange,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50', '100'],
@@ -212,7 +215,7 @@ export default function CatalogLeaderboardCard({
               ? 'bg-amber-500/10 dark:bg-amber-500/20 font-medium cursor-pointer'
               : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50',
         })}
-        className="antd-custom-table"
+        className="catalog-leaderboard-table"
       />
     </Card>
   );
