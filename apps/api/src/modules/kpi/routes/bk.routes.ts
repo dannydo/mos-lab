@@ -13,7 +13,6 @@ import {
   SafeAny,
 } from '@mos-lab/shared';
 import {
-  getActiveBkIds,
   getActiveBkTelesalesIds,
   getBkSalaryConfig,
   getMilestoneBonus,
@@ -21,6 +20,7 @@ import {
   getRevCommissionRate,
   computeBkOrderCheckins,
   getBkPaystubData,
+  resolveBkTelesalesStaffScope,
 } from '../services/bk-salary.service.js';
 import { TeamService } from '../../teams/team.service.js';
 
@@ -39,15 +39,15 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     try {
-      const activeBkIds = await getActiveBkIds(fastify);
-      if (activeBkIds.length === 0) {
+      const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
+      if (activeTelesalesIds.length === 0) {
         return reply.send({
           leaderboard: [],
           summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 },
         });
       }
 
-      const bkIdsStr = activeBkIds.join(',');
+      const bkIdsStr = activeTelesalesIds.join(',');
 
       let storeFilter = '';
       if (storeId && storeId !== 'ALL') {
@@ -138,15 +138,26 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     try {
-      const config = await getBkSalaryConfig(fastify);
-
-      let bookerFilter = '';
-      if (bookerId && bookerId !== 'ALL') {
-        bookerFilter = `AND o.created_staff_id = ${Number(bookerId)}`;
-      } else {
-        const activeBkIds = config.activeBkIds;
-        bookerFilter = `AND o.created_staff_id IN (${activeBkIds.join(',')})`;
+      const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
+      if (activeTelesalesIds.length === 0) {
+        return reply.send({
+          data: [],
+          total: 0,
+          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 },
+        });
       }
+
+      const scopedBookerIds = resolveBkTelesalesStaffScope(activeTelesalesIds, bookerId);
+
+      if (scopedBookerIds.length === 0) {
+        return reply.send({
+          data: [],
+          total: 0,
+          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 },
+        });
+      }
+
+      const bookerFilter = `AND o.created_staff_id IN (${scopedBookerIds.join(',')})`;
 
       let storeFilter = '';
       if (storeId && storeId !== 'ALL') {

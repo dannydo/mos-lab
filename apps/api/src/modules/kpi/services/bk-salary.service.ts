@@ -58,6 +58,19 @@ export async function getActiveBkTelesalesIds(fastify: FastifyInstance): Promise
   return TeamService.getActiveStaffIdsWithFallback(fastify, 'BK_TELESALES', 'ACTIVE_BK_TELESALES_STAFF_CONFIG');
 }
 
+/**
+ * Keeps Booking detail requests within the active BK_TELESALES roster, including
+ * when a caller supplies an explicit Booker ID.
+ */
+export function resolveBkTelesalesStaffScope(activeTelesalesIds: number[], requestedBookerId?: string): number[] {
+  if (!requestedBookerId || requestedBookerId === 'ALL') {
+    return activeTelesalesIds;
+  }
+
+  const bookerId = Number(requestedBookerId);
+  return Number.isInteger(bookerId) && activeTelesalesIds.includes(bookerId) ? [bookerId] : [];
+}
+
 export async function getBkSalaryConfig(fastify: FastifyInstance): Promise<BkSalaryConfig> {
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
