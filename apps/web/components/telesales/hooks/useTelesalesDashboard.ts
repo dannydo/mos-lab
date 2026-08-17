@@ -229,6 +229,36 @@ export interface UseTelesalesDashboardProps {
   onError?: (msg: string) => void;
 }
 
+interface TelesalesModalSize {
+  width: number;
+  height: number;
+}
+
+const TELESALES_MODAL_MIN_WIDTH = 600;
+const TELESALES_MODAL_MIN_HEIGHT = 700;
+
+function getSavedTelesalesModalSize(): TelesalesModalSize | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const width = Number.parseInt(localStorage.getItem('telesales_modal_width') || '', 10);
+    const height = Number.parseInt(localStorage.getItem('telesales_modal_height') || '', 10);
+
+    if (
+      Number.isFinite(width) &&
+      Number.isFinite(height) &&
+      width >= TELESALES_MODAL_MIN_WIDTH &&
+      height >= TELESALES_MODAL_MIN_HEIGHT
+    ) {
+      return { width, height };
+    }
+  } catch (error) {
+    console.warn('Failed to load Telesales dashboard dimensions from localStorage', error);
+  }
+
+  return null;
+}
+
 export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
   const { visible, initialMemberId = '' } = options;
   const optionsRef = useRef(options);
@@ -236,7 +266,10 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     optionsRef.current = options;
   }, [options]);
 
-  const [modalSize, setModalSize] = useState<{ width: string; height: string } | null>(null);
+  // Read the numeric dimensions synchronously so the first visible desktop render
+  // already uses the user's saved size instead of overwriting it with the default.
+  const [modalSize, setModalSize] = useState<TelesalesModalSize | null>(getSavedTelesalesModalSize);
+  const lastPersistedModalSizeRef = useRef<TelesalesModalSize | null>(modalSize);
   const [currentMemberId, setCurrentMemberId] = useState(initialMemberId);
   const [currentPeriodId, setCurrentPeriodId] = useState('today');
   const [currentMetricKey, setCurrentMetricKey] = useState('booked');
@@ -282,18 +315,6 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
           console.error(e);
         }
       }
-      const savedWidth = localStorage.getItem('telesales_modal_width');
-      const savedHeight = localStorage.getItem('telesales_modal_height');
-      if (savedWidth && savedHeight) {
-        const parsedW = parseInt(savedWidth, 10);
-        const parsedH = parseInt(savedHeight, 10);
-        if (!isNaN(parsedW) && !isNaN(parsedH) && parsedW >= 600 && parsedH >= 700) {
-          setModalSize({ width: `${parsedW}px`, height: `${parsedH}px` });
-        } else {
-          localStorage.removeItem('telesales_modal_width');
-          localStorage.removeItem('telesales_modal_height');
-        }
-      }
       const savedPeriod = localStorage.getItem('telesales_dashboard_period_id');
       if (savedPeriod) {
         setCurrentPeriodId(savedPeriod);
@@ -323,12 +344,24 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
 
   // ResizeObserver logic
   const handleResize = useCallback((width: number, height: number) => {
-    if (width >= 600 && height >= 700) {
-      const wStr = `${width}px`;
-      const hStr = `${height}px`;
-      localStorage.setItem('telesales_modal_width', wStr);
-      localStorage.setItem('telesales_modal_height', hStr);
-      setModalSize({ width: wStr, height: hStr });
+    const nextSize = { width: Math.round(width), height: Math.round(height) };
+    if (nextSize.width >= TELESALES_MODAL_MIN_WIDTH && nextSize.height >= TELESALES_MODAL_MIN_HEIGHT) {
+      const previous = lastPersistedModalSizeRef.current;
+      if (previous?.width === nextSize.width && previous.height === nextSize.height) {
+        return;
+      }
+
+      lastPersistedModalSizeRef.current = nextSize;
+      try {
+        localStorage.setItem('telesales_modal_width', String(nextSize.width));
+        localStorage.setItem('telesales_modal_height', String(nextSize.height));
+      } catch (error) {
+        console.warn('Failed to save Telesales dashboard dimensions to localStorage', error);
+      }
+
+      setModalSize((current) =>
+        current?.width === nextSize.width && current.height === nextSize.height ? current : nextSize
+      );
     }
   }, []);
 
