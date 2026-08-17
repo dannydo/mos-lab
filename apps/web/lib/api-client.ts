@@ -177,6 +177,17 @@ import {
   QaShopBranchCode,
   DashboardTodayResponse,
   RevenueHourlyResponse,
+  SocialPostLeaderboardQuery,
+  SocialPostLeaderboardResponse,
+  SocialPostListResponse,
+  SocialPostPageQuery,
+  SocialPostApprovalRewardPreview,
+  SocialPostPosterDailyRewardQuery,
+  SocialPostPosterDailyRewardResponse,
+  SocialPostRewardConfig,
+  ReviewSocialPostDto,
+  CreateSocialPostSubmissionDto,
+  CreateSocialPostSubmissionResponse,
 } from '@mos-lab/shared';
 
 // In-flight request deduplication & short-term cache map for GET endpoints
@@ -1422,6 +1433,53 @@ export const apiClient = {
     },
     getAuditStats: async (params?: AllocationAuditQueryParams): Promise<AllocationAuditStatsResponse> => {
       const response = await api.get('/allocation/audit-stats', { params });
+      return response.data;
+    },
+  },
+
+  postHub: {
+    list: async (params: SocialPostPageQuery): Promise<SocialPostListResponse> => {
+      return dedupeApiGet<SocialPostListResponse>('/post-hub/submissions', params as Record<string, unknown>, 1500);
+    },
+    create: async (dto: CreateSocialPostSubmissionDto): Promise<CreateSocialPostSubmissionResponse> => {
+      const response = await api.post('/post-hub/submissions', dto);
+      return response.data;
+    },
+    getLeaderboard: async (params?: SocialPostLeaderboardQuery): Promise<SocialPostLeaderboardResponse> => {
+      return dedupeApiGet<SocialPostLeaderboardResponse>(
+        '/post-hub/leaderboard',
+        params as Record<string, unknown> | undefined,
+        1500
+      );
+    },
+    getPosterDailyRewards: async (
+      staffId: number,
+      params?: SocialPostPosterDailyRewardQuery
+    ): Promise<SocialPostPosterDailyRewardResponse> => {
+      return dedupeApiGet<SocialPostPosterDailyRewardResponse>(
+        `/post-hub/leaderboard/${staffId}/daily`,
+        params as Record<string, unknown> | undefined,
+        500
+      );
+    },
+    getRewardPreview: async (id: number): Promise<SocialPostApprovalRewardPreview> => {
+      return dedupeApiGet<SocialPostApprovalRewardPreview>(
+        `/post-hub/submissions/${id}/reward-preview`,
+        undefined,
+        500
+      );
+    },
+    review: async (id: number, dto: ReviewSocialPostDto): Promise<{ success: true }> => {
+      const response = await api.put(`/post-hub/submissions/${id}/review`, dto);
+      return response.data;
+    },
+    getRewardConfig: async (): Promise<SocialPostRewardConfig> => {
+      return dedupeApiGet<SocialPostRewardConfig>('/post-hub/reward-config', undefined, 1500);
+    },
+    updateRewardConfig: async (
+      config: SocialPostRewardConfig
+    ): Promise<{ success: true; data: SocialPostRewardConfig; message: string }> => {
+      const response = await api.put('/post-hub/reward-config', config);
       return response.data;
     },
   },

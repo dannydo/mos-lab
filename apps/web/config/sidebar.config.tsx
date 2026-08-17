@@ -15,7 +15,7 @@ import {
   CustomerServiceOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import { Rocket, Settings2, Target, UserRound, UserRoundPlus, UsersRound } from 'lucide-react';
+import { Egg, Rocket, Settings2, Target, UserRound, UserRoundPlus, UsersRound } from 'lucide-react';
 
 import { SafeAny } from '@mos-lab/shared';
 import { AppIcon } from '../components/ui/AppIcon';
@@ -153,6 +153,13 @@ export function getSidebarGroups(
     label: 'Chiến dịch NYC',
     icon: <ClockCircleOutlined />,
     children: nycChildren,
+  });
+
+  crmGroupItems.push({
+    key: 'post-hub',
+    label: 'Chiến Thần',
+    icon: <AppIcon icon={Egg} size="sm" />,
+    path: '/dashboard/post-hub',
   });
 
   crmGroupItems.push({
@@ -308,6 +315,7 @@ export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | 
     return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
   }
   if (pathname === '/dashboard/nyc') return 'nyc-main';
+  if (pathname.includes('/dashboard/post-hub')) return 'post-hub';
   if (pathname === '/dashboard/nyc/campaigns') return 'nyc-campaigns-mgmt';
   if (pathname.startsWith('/dashboard/nyc/campaigns/')) {
     const slug = pathname.replace('/dashboard/nyc/campaigns/', '');

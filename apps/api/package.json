@@ -14,6 +14,7 @@
     "data-migrations:validate": "tsx src/scripts/run-data-migrations.ts --validate",
     "data-migrations:plan": "tsx src/scripts/run-data-migrations.ts --plan",
     "data-migrations:run": "tsx src/scripts/run-data-migrations.ts",
+    "post-hub:import-history": "tsx src/scripts/import-post-hub-sheet-history.ts",
     "legacy:indexes:phase1": "tsx src/scripts/apply-dashboard-phase1-indexes.ts",
     "lint": "eslint src/ --max-warnings=-1",
     "prisma:db:pull:legacy": "prisma db pull --schema=prisma/legacy.prisma"

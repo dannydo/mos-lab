@@ -43,8 +43,42 @@ model CrmStaff {
   assignedBatches     CrmAllocationBatch[]    @relation("BatchAssigner")
   receivedBatches     CrmAllocationBatch[]    @relation("BatchBooker")
   createdCampaigns    CrmCustomCampaign[]     @relation("CampaignCreator")
+  socialPosts         CrmSocialPostSubmission[] @relation("SocialPostAuthor")
+  reviewedSocialPosts CrmSocialPostSubmission[] @relation("SocialPostReviewer")
 
   @@map("crm_staff")
+}
+
+/// mOS-native social-post ledger. Historical Google Sheet imports are retained
+/// for audit, while all new campaign intake is created directly in mOS.
+model CrmSocialPostSubmission {
+  id                 Int      @id @default(autoincrement())
+  sourceSpreadsheetId String  @map("source_spreadsheet_id") @db.VarChar(100)
+  sourceRecordId     Int?     @map("source_record_id")
+  sourceUrlFingerprint String? @map("source_url_fingerprint") @db.VarChar(64)
+  staffId            Int      @map("staff_id")
+  sourceAuthorName   String   @map("source_author_name") @db.VarChar(100)
+  contentType        String   @map("content_type") @db.VarChar(30)
+  channel            String   @db.VarChar(150)
+  sourceUrl          String   @map("source_url") @db.Text
+  postedAt           DateTime @map("posted_at") @db.DateTime(0)
+  reviewStatus       String   @default("PENDING") @map("review_status") @db.VarChar(20)
+  reviewerComment    String?  @map("reviewer_comment") @db.Text
+  reviewedAt         DateTime? @map("reviewed_at") @db.DateTime(0)
+  reviewedByStaffId  Int?     @map("reviewed_by_staff_id")
+  sourceReviewerName String?  @map("source_reviewer_name") @db.VarChar(100)
+  importedAt         DateTime @default(now()) @map("imported_at") @db.DateTime(0)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  staff      CrmStaff  @relation("SocialPostAuthor", fields: [staffId], references: [id], onDelete: Restrict)
+  reviewer   CrmStaff? @relation("SocialPostReviewer", fields: [reviewedByStaffId], references: [id], onDelete: SetNull)
+
+  @@unique([sourceSpreadsheetId, sourceRecordId], name: "sourceSpreadsheetId_sourceRecordId")
+  @@unique([sourceSpreadsheetId, sourceUrlFingerprint], name: "sourceSpreadsheetId_sourceUrlFingerprint", map: "crm_post_source_fingerprint_key")
+  @@index([postedAt])
+  @@index([staffId, postedAt])
+  @@index([reviewStatus, postedAt])
+  @@map("crm_social_post_submissions")
 }
 
 model CrmDailyPlan {

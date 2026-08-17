@@ -18,6 +18,7 @@ export * from './types/omicall.js';
 export * from './types/team.js';
 export * from './types/revenue-hourly.js';
 export * from './types/sms.js';
+export * from './types/social-posts.js';
 export * from './utils/search.js';
 export * from './utils/date.js';
 export * from './types/allocation.js';

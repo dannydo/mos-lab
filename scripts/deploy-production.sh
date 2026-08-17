@@ -41,6 +41,24 @@ echo '[VPS] Building backend packages...'
 pnpm --filter @mos-lab/shared build
 pnpm --filter @mos-lab/api build
 
+if [[ "${POST_HUB_HISTORY_IMPORT_REQUIRED:-false}" == 'true' || -n "${POST_HUB_HISTORY_IMPORT_INPUT:-}" || -n "${POST_HUB_HISTORY_IMPORT_SHA256:-}" ]]; then
+  if [[ -z "${POST_HUB_HISTORY_IMPORT_INPUT:-}" || -z "${POST_HUB_HISTORY_IMPORT_SHA256:-}" ]]; then
+    echo '[VPS] Post Hub Sheet import requires both POST_HUB_HISTORY_IMPORT_INPUT and POST_HUB_HISTORY_IMPORT_SHA256.' >&2
+    exit 1
+  fi
+  POST_HUB_HISTORY_IMPORT_INPUT="$(realpath "${POST_HUB_HISTORY_IMPORT_INPUT}")"
+  if [[ ! -f "${POST_HUB_HISTORY_IMPORT_INPUT}" ]]; then
+    echo "[VPS] Post Hub Sheet snapshot does not exist: ${POST_HUB_HISTORY_IMPORT_INPUT}" >&2
+    exit 1
+  fi
+
+  echo '[VPS] Importing the pre-validated Post Hub Sheet history before API restart...'
+  pnpm --filter @mos-lab/api post-hub:import-history -- \
+    --input "${POST_HUB_HISTORY_IMPORT_INPUT}" \
+    --expected-sha256 "${POST_HUB_HISTORY_IMPORT_SHA256}" \
+    --apply
+fi
+
 echo '[VPS] Restarting Backend API via PM2...'
 DEPLOYED_AT="$(TZ=Asia/Ho_Chi_Minh date -Iseconds)"
 DEPLOYED_AT="${DEPLOYED_AT}" pm2 restart mos-lab-api --update-env

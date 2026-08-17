@@ -19,6 +19,7 @@ export * from './omicall.js';
 export * from './plan.js';
 export * from './revenue-hourly.js';
 export * from './sms.js';
+export * from './social-posts.js';
 export * from './table-config.js';
 export * from './team.js';
 export * from './staff.js';
