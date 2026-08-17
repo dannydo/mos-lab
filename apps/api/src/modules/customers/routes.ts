@@ -16,6 +16,7 @@ import { CampaignPromotionSyncService } from '../campaigns/campaign-promotion-sy
 import { LashBenchmarkService, parseLashSpecs } from '../catalog/services/lash-benchmark.service.js';
 import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-customer.service.js';
 import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
+import { CustomerAccessService } from './services/customer-access.service.js';
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -30,6 +31,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
   const getNewLocaUserIds = async (dFrom?: string, dTo?: string): Promise<number[]> => {
     return ComboRecognitionService.getNewLoCaCustomerIds(fastify, dFrom, dTo);
   };
+
+  const ensureTelesalesCustomerAccess = async (
+    request: SafeAny,
+    reply: SafeAny,
+    customerId: number
+  ): Promise<boolean> => {
+    const user = request.user as { id: number; role?: string };
+    const isAllowed = await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, customerId);
+    if (isAllowed) return true;
+
+    reply.status(403).send({
+      error: 'Forbidden',
+      message: 'Telesales chỉ được xem và thao tác trên khách hàng đã được phân bổ cho mình.',
+    });
+    return false;
+  };
+
   // GET /api/customers
   // Query legs DB, compute buckets, handle pagination, search, sorting
   fastify.get('/customers', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -129,9 +147,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const offsetNum = (pageNum - 1) * limitNum;
     const adminUser = request.user as { id: number; role: string };
 
-    // Force telesales to only query their own customers (except for LoCa campaign or when explicitly querying ALL)
+    // Preserve the existing non-admin scope; telesales never get the former
+    // campaign, ALL, or unassigned bypasses.
     let effectiveAssignedStaffId = assignedStaffId;
-    if (
+    if (CustomerAccessService.isTelesales(adminUser)) {
+      effectiveAssignedStaffId = 'me';
+    } else if (
       adminUser.role !== 'admin' &&
       bucket !== 'NEW_LOCA' &&
       bucket !== 'COMBO_LIVE' &&
@@ -216,6 +237,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
           } else {
             assignedWhere.staffId = { not: null };
+          }
+          if (CustomerAccessService.isTelesales(adminUser)) {
+            assignedWhere.OR = [{ expiresAt: null }, { expiresAt: { gt: new Date() } }];
           }
           if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
             const minDays = parseInt(assignedDaysMin, 10);
@@ -1544,9 +1568,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return cachedStats;
     }
 
-    // Force telesales to only query stats for their own customers (except for LoCa campaign or when explicitly querying ALL)
+    // Keep stats aligned with the list while removing telesales bypasses.
     let effectiveAssignedStaffId = assignedStaffId;
-    if (
+    if (CustomerAccessService.isTelesales(adminUser)) {
+      effectiveAssignedStaffId = 'me';
+    } else if (
       adminUser.role !== 'admin' &&
       bucket !== 'NEW_LOCA' &&
       bucket !== 'COMBO_LIVE' &&
@@ -1658,6 +1684,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
           } else {
             assignedWhere.staffId = { not: null };
+          }
+          if (CustomerAccessService.isTelesales(adminUser)) {
+            assignedWhere.OR = [{ expiresAt: null }, { expiresAt: { gt: new Date() } }];
           }
           if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
             const minDays = parseInt(assignedDaysMin, 10);
@@ -2069,10 +2098,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       let effectiveAssignedStaffId = assignedStaffId;
 
-      if (adminUser.role === 'telesales') {
-        if (!effectiveAssignedStaffId) {
-          effectiveAssignedStaffId = 'me';
-        }
+      if (CustomerAccessService.isTelesales(adminUser)) {
+        effectiveAssignedStaffId = 'me';
       }
 
       let allowedUserIds: number[] | null = null;
@@ -2091,7 +2118,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
           if (!isNaN(targetStaffId)) {
             const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: { staffId: targetStaffId },
+              where: {
+                staffId: targetStaffId,
+                ...(CustomerAccessService.isTelesales(adminUser)
+                  ? { OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }
+                  : {}),
+              },
               select: { legacyUserId: true },
             });
             allowedUserIds = assignments.map((a) => a.legacyUserId);
@@ -2366,10 +2398,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const adminUser = request.user;
       let effectiveAssignedStaffId = assignedStaffId;
 
-      if (adminUser.role === 'telesales') {
-        if (!effectiveAssignedStaffId) {
-          effectiveAssignedStaffId = 'me';
-        }
+      if (CustomerAccessService.isTelesales(adminUser)) {
+        effectiveAssignedStaffId = 'me';
       }
 
       let allowedUserIds: number[] | null = null;
@@ -2388,7 +2418,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
           if (!isNaN(targetStaffId)) {
             const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: { staffId: targetStaffId },
+              where: {
+                staffId: targetStaffId,
+                ...(CustomerAccessService.isTelesales(adminUser)
+                  ? { OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }
+                  : {}),
+              },
               select: { legacyUserId: true },
             });
             allowedUserIds = assignments.map((a) => a.legacyUserId);
@@ -2653,7 +2688,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         },
       });
 
-      const effectiveAssignedStaffId = currentUser?.role === 'telesales' && adminUser ? 'me' : assignedStaffId;
+      const effectiveAssignedStaffId = CustomerAccessService.isTelesales(currentUser) ? 'me' : assignedStaffId;
 
       if (
         (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') ||
@@ -2671,7 +2706,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else {
           const assignedWhere: SafeAny = {};
           if (effectiveAssignedStaffId && effectiveAssignedStaffId !== 'all') {
-            let targetStaffId = adminUser ? adminUser.id : 0;
+            let targetStaffId =
+              effectiveAssignedStaffId === 'me' ? Number(currentUser?.id) : adminUser ? adminUser.id : 0;
             if (effectiveAssignedStaffId !== 'me') {
               targetStaffId = parseInt(effectiveAssignedStaffId, 10);
             }
@@ -2680,6 +2716,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
           } else {
             assignedWhere.staffId = { not: null };
+          }
+          if (CustomerAccessService.isTelesales(currentUser)) {
+            assignedWhere.OR = [{ expiresAt: null }, { expiresAt: { gt: new Date() } }];
           }
           if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
             const minDays = parseInt(assignedDaysMin, 10);
@@ -3210,6 +3249,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Get list of all customers who referred someone and their details (Optimized)
   fastify.get('/customers/referrals', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
+      if (CustomerAccessService.isTelesales(request.user)) {
+        return [];
+      }
+
       const { page, pageSize, search, timeFilter } = request.query as {
         page?: string;
         pageSize?: string;
@@ -3464,6 +3507,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           finalCustomerId = Number(existingUser[0].user_id);
         }
       }
+
+      if (finalCustomerId && !(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
 
       // 1. If it's a new customer, create parent user, user_profile, and user_contact records
       if (!finalCustomerId) {
@@ -3973,6 +4018,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const finalCustomerId = Number(order.user_id);
       const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
 
+      if (!(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
+
       const oldData = {
         bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,
         storeId: Number(order.client_store_id),
@@ -4200,7 +4247,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 1. Fetch the order details first to verify existence & original creator
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT id, created_staff_id, booking_date_start, client_store_id, assigned_staff_id, booking_note FROM \`order\` WHERE id = ?`,
+        `SELECT id, user_id, created_staff_id, booking_date_start, client_store_id, assigned_staff_id, booking_note FROM \`order\` WHERE id = ?`,
         orderId
       );
 
@@ -4209,7 +4256,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
 
       const order = existingOrders[0];
+      const finalCustomerId = Number(order.user_id);
       const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
+
+      if (!(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
 
       const oldData = {
         bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,
@@ -4485,6 +4535,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID khách hàng không hợp lệ' });
     }
+
+    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
 
     if (!note || !note.trim()) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Nội dung ghi chú là bắt buộc' });
@@ -5498,6 +5550,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
+    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+
     try {
       const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
         where: { legacyUserId: customerId },
@@ -5550,6 +5604,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
+
+    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
 
     try {
       const sql = `
@@ -5628,6 +5684,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
+    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+
     try {
       // Query completed orders for the customer
       const sql = `
@@ -5675,6 +5733,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
     if (isNaN(customerId)) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
+
+    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
 
     const { name, email, gender, dob, phones, isForeign, is_foreign } = request.body as {
       name: string;
@@ -5828,6 +5888,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
         }
       }
+
+      if (!(await ensureTelesalesCustomerAccess(request, reply, resolvedCustomerId))) return;
 
       // 1. Fetch CRM Assignment for Online Consultant
       const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
@@ -6823,10 +6885,27 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const onlineConsultantName = assigned?.staff?.displayName || 'Chưa phân bổ';
 
       if (user.role !== 'admin') {
-        if (!assigned || assigned.staffId !== user.id) {
-          return reply
-            .status(403)
-            .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
+        if (
+          CustomerAccessService.isTelesales(user) &&
+          !(await ensureTelesalesCustomerAccess(request, reply, customerId))
+        ) {
+          return;
+        }
+
+        const isAssignedConsultant = assigned?.staffId === user.id;
+        if (!isAssignedConsultant) {
+          const isBkCsMember = await TeamService.isActiveCrmStaffMember(
+            fastify,
+            'BK_CS',
+            user.id,
+            'ACTIVE_BK_CS_STAFF_CONFIG'
+          );
+
+          if (!isBkCsMember) {
+            return reply
+              .status(403)
+              .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
+          }
         }
       }
 
@@ -7094,6 +7173,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
+    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+
     try {
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT COUNT(*) as cnt FROM \`order\` WHERE user_id = ?`,
@@ -7288,6 +7369,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
+    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+
     try {
       const notesSql = `
         SELECT 
@@ -7480,6 +7563,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
+    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+
     try {
       const [totalCount, logs] = await Promise.all([
         fastify.prisma.crm.crmCallLog.count({ where: { legacyUserId: customerId } }),
@@ -7610,6 +7695,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
         return { data: [], total: 0 };
       }
 
+      const telesalesAssignmentIds = CustomerAccessService.isTelesales(user)
+        ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
+            where: {
+              staffId: user.id,
+              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+            },
+            select: { legacyUserId: true },
+          })
+        : [];
+      if (CustomerAccessService.isTelesales(user) && telesalesAssignmentIds.length === 0) {
+        return { data: [], total: 0 };
+      }
+      const telesalesCustomerIdSql = telesalesAssignmentIds.map((assignment) => assignment.legacyUserId).join(',');
+
       // Query crm_missed_logs IDs via Prisma CRM Client to avoid raw SQL cross-database issues
       let missedFilterCond = '';
       if (type === 'missed' && missedStatusFilter && missedStatusFilter !== 'ALL') {
@@ -7700,6 +7799,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
+      if (telesalesCustomerIdSql) {
+        countSql += ` AND o.user_id IN (${telesalesCustomerIdSql})`;
+      }
+
       if (storeId && storeId !== 'all') {
         const storeIds = String(storeId)
           .split(',')
@@ -7779,6 +7882,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         } else {
           sql += ` AND 1=0`;
         }
+      }
+
+      if (telesalesCustomerIdSql) {
+        sql += ` AND o.user_id IN (${telesalesCustomerIdSql})`;
       }
 
       if (storeId && storeId !== 'all') {
@@ -9066,6 +9173,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const cbDate = callbackDate ? new Date(callbackDate) : null;
 
     try {
+      const orderRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id as userId FROM \`order\` WHERE id = ? LIMIT 1`,
+        numOrderId
+      );
+      const legacyUserId = Number(orderRows[0]?.userId);
+      if (!legacyUserId) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
+      }
+      if (!(await ensureTelesalesCustomerAccess(request, reply, legacyUserId))) return;
+
       const log = await fastify.prisma.crm.crmMissedLog.upsert({
         where: { orderId: numOrderId },
         create: {

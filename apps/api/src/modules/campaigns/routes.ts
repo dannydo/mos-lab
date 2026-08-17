@@ -3,6 +3,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { requireAuth, requireCampaignAdmin } from '../../middlewares/auth.js';
 import { CampaignService } from './campaign.service.js';
+import { CustomerAccessService } from '../customers/services/customer-access.service.js';
 import {
   CreateCampaignDto,
   UpdateCampaignDto,
@@ -311,7 +312,9 @@ export async function campaignRoutes(fastify: FastifyInstance) {
           return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
         }
         const query = request.query as any;
-        const rawBooker = query.bookerId || query.assignedStaffId;
+        const user = request.user;
+        const isTelesales = CustomerAccessService.isTelesales(user);
+        const rawBooker = isTelesales ? undefined : query.bookerId || query.assignedStaffId;
         let bookerId: number | undefined = undefined;
         if (rawBooker && rawBooker !== 'ALL') {
           const parsed = parseInt(rawBooker, 10);
@@ -322,6 +325,7 @@ export async function campaignRoutes(fastify: FastifyInstance) {
 
         const result = await CampaignService.getCampaignCustomers(fastify, id, {
           bookerId,
+          restrictToAssignedStaffId: isTelesales ? user.id : undefined,
           search: query.search,
           touchpointKey: query.touchpointKey,
           page: query.page ? parseInt(query.page, 10) : 1,
@@ -464,12 +468,13 @@ export async function campaignRoutes(fastify: FastifyInstance) {
           touchpointId,
           dto,
           user.id,
-          user.displayName || user.username || `Staff #${user.id}`
+          user.displayName || user.username || `Staff #${user.id}`,
+          CustomerAccessService.isTelesales(user) ? user.id : undefined
         );
         return reply.send(log);
       } catch (err: any) {
         request.log.error('Failed to toggle touchpoint log:', err);
-        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
       }
     }
   );
@@ -547,7 +552,12 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         if (isNaN(id)) {
           return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
         }
-        const stats = await CampaignService.getCampaignStats(fastify, id);
+        const user = request.user;
+        const stats = await CampaignService.getCampaignStats(
+          fastify,
+          id,
+          CustomerAccessService.isTelesales(user) ? user.id : undefined
+        );
         return reply.send(stats);
       } catch (err: any) {
         request.log.error('Failed to fetch campaign stats:', err);
@@ -566,6 +576,13 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         const customerId = parseInt(params.customerId, 10);
         if (isNaN(customerId)) {
           return reply.status(400).send({ error: 'Bad Request', message: 'ID khách hàng không hợp lệ' });
+        }
+        const isAllowed = await CustomerAccessService.canTelesalesAccessCustomer(fastify, request.user, customerId);
+        if (!isAllowed) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Telesales chỉ được xem khách hàng đã được phân bổ cho mình.',
+          });
         }
         const promotions = await CampaignService.getCustomerActivePromotions(fastify, customerId);
         return reply.send(promotions);

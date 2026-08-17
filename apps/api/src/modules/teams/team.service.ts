@@ -121,6 +121,60 @@ export class TeamService {
   }
 
   /**
+   * Check whether a signed-in CRM staff member belongs to an active team.
+   *
+   * Team membership is normally linked by crmStaffId. The legacyStaffId check
+   * keeps existing production memberships valid while the team roster is being
+   * synchronized from legacy staff records. If the team has not been seeded
+   * yet, use its existing crmConfig roster as a transitional fallback.
+   */
+  static async isActiveCrmStaffMember(
+    fastify: FastifyInstance,
+    teamCode: string,
+    crmStaffId: number,
+    fallbackConfigKey: string
+  ): Promise<boolean> {
+    try {
+      const [directMembership, staff] = await Promise.all([
+        fastify.prisma.crm.crmTeamMember.findFirst({
+          where: {
+            crmStaffId,
+            isActive: true,
+            team: { code: teamCode, isActive: true },
+          },
+          select: { id: true },
+        }),
+        fastify.prisma.crm.crmStaff.findUnique({
+          where: { id: crmStaffId },
+          select: { legacyStaffId: true },
+        }),
+      ]);
+
+      if (directMembership) return true;
+
+      const legacyStaffId = Number(staff?.legacyStaffId);
+      if (!legacyStaffId) return false;
+
+      const legacyMembership = await fastify.prisma.crm.crmTeamMember.findFirst({
+        where: {
+          legacyStaffId,
+          isActive: true,
+          team: { code: teamCode, isActive: true },
+        },
+        select: { id: true },
+      });
+
+      if (legacyMembership) return true;
+
+      const activeLegacyStaffIds = await this.getActiveStaffIdsWithFallback(fastify, teamCode, fallbackConfigKey);
+      return activeLegacyStaffIds.includes(legacyStaffId);
+    } catch (err) {
+      fastify.log.error(err as SafeAny, `Error checking CRM staff membership for team ${teamCode}`);
+      return false;
+    }
+  }
+
+  /**
    * List all teams with child teams (hierarchy) and member counts
    */
   static async listTeams(fastify: FastifyInstance): Promise<Team[]> {

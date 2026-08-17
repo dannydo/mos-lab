@@ -940,6 +940,7 @@ export class CampaignService {
     params: {
       bookerId?: number;
       assignedStaffId?: number;
+      restrictToAssignedStaffId?: number;
       search?: string;
       touchpointKey?: string;
       page?: number;
@@ -952,7 +953,15 @@ export class CampaignService {
     pageSize: number;
     pages: number;
   }> {
-    const { bookerId, assignedStaffId, search, touchpointKey, page = 1, pageSize = 20 } = params;
+    const {
+      bookerId,
+      assignedStaffId,
+      restrictToAssignedStaffId,
+      search,
+      touchpointKey,
+      page = 1,
+      pageSize = 20,
+    } = params;
     const pageNum = Math.max(1, Math.floor(Number(page) || 1));
     const limitNum = Math.min(1000, Math.max(1, Math.floor(Number(pageSize) || 20)));
     const skip = (pageNum - 1) * limitNum;
@@ -975,7 +984,9 @@ export class CampaignService {
     // they still require enrichment before filtering. The common unfiltered
     // table path can page at the database boundary, avoiding every legacy query
     // and response field for records outside the visible page.
-    const hasPostEnrichmentFilters = Boolean(bookerId || assignedStaffId || search?.trim() || touchpointKey?.trim());
+    const hasPostEnrichmentFilters = Boolean(
+      bookerId || assignedStaffId || restrictToAssignedStaffId || search?.trim() || touchpointKey?.trim()
+    );
     const customerQuery = {
       where,
       include: {
@@ -1244,6 +1255,21 @@ export class CampaignService {
         })),
       };
     });
+
+    // Security scope: a telesales user only sees customers actively assigned to
+    // their own CRM staff account. Pending allocation batches are not enough.
+    if (restrictToAssignedStaffId) {
+      const activeAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+        where: {
+          staffId: restrictToAssignedStaffId,
+          legacyUserId: { in: enriched.map((customer) => customer.legacyUserId) },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        select: { legacyUserId: true },
+      });
+      const allowedCustomerIds = new Set(activeAssignments.map((assignment) => assignment.legacyUserId));
+      enriched = enriched.filter((customer) => allowedCustomerIds.has(customer.legacyUserId));
+    }
 
     // Apply Booker filtering (supports both bookerId and assignedStaffId)
     const filterBookerId = bookerId || assignedStaffId;
@@ -1578,7 +1604,8 @@ export class CampaignService {
     touchpointId: number,
     dto: ToggleCampaignTouchpointLogDto,
     staffId: number,
-    staffName: string
+    staffName: string,
+    restrictToAssignedStaffId?: number
   ): Promise<CampaignTouchpointLog> {
     const campaignCustomer = await fastify.prisma.crm.crmCampaignCustomer.findFirst({
       where: {
@@ -1590,6 +1617,22 @@ export class CampaignService {
 
     if (!campaignCustomer) {
       throw new Error('Khách hàng không ở trong chiến dịch này');
+    }
+
+    if (restrictToAssignedStaffId) {
+      const assignment = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
+        where: {
+          legacyUserId: campaignCustomer.legacyUserId,
+          staffId: restrictToAssignedStaffId,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        select: { id: true },
+      });
+      if (!assignment) {
+        const error = new Error('Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.');
+        (error as any).statusCode = 403;
+        throw error;
+      }
     }
 
     const now = new Date();
@@ -1770,7 +1813,11 @@ export class CampaignService {
   /**
    * Header metrics for campaign (total customers, booked count, booked rate, touchpoint logs count, revenue).
    */
-  static async getCampaignStats(fastify: FastifyInstance, campaignId: number): Promise<CampaignStatsResponse> {
+  static async getCampaignStats(
+    fastify: FastifyInstance,
+    campaignId: number,
+    restrictToAssignedStaffId?: number
+  ): Promise<CampaignStatsResponse> {
     const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
       where: { id: campaignId },
     });
@@ -1779,10 +1826,23 @@ export class CampaignService {
     }
 
     // Active customers in campaign
-    const customers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+    let customers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
       where: { campaignId, removedAt: null },
       select: { id: true, legacyUserId: true, addedAt: true },
     });
+
+    if (restrictToAssignedStaffId && customers.length > 0) {
+      const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+        where: {
+          staffId: restrictToAssignedStaffId,
+          legacyUserId: { in: customers.map((customer) => customer.legacyUserId) },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        select: { legacyUserId: true },
+      });
+      const assignedCustomerIds = new Set(assignments.map((assignment) => assignment.legacyUserId));
+      customers = customers.filter((customer) => assignedCustomerIds.has(customer.legacyUserId));
+    }
 
     const totalCustomers = customers.length;
     if (totalCustomers === 0) {

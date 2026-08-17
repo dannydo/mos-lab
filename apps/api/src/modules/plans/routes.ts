@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
+import { CustomerAccessService } from '../customers/services/customer-access.service.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -8,12 +9,19 @@ export async function planRoutes(fastify: FastifyInstance) {
   // Add a customer to a staff's daily plan
   fastify.post('/plans', { preHandler: [requireAuth] }, async (request, reply) => {
     const { legacyUserId, date } = request.body as { legacyUserId: number; date?: string };
-    const user = request.user as { id: number };
+    const user = request.user as { id: number; role?: string };
 
     if (!legacyUserId) {
       return reply.status(400).send({
         error: 'Bad Request',
         message: 'legacyUserId is required',
+      });
+    }
+
+    if (!(await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, legacyUserId))) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.',
       });
     }
 
@@ -111,17 +119,29 @@ export async function planRoutes(fastify: FastifyInstance) {
   // GET /api/plans/today
   // Fetch all daily plans of this staff for today
   fastify.get('/plans/today', { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = request.user as { id: number };
+    const user = request.user as { id: number; role?: string };
     const dateStr = new Date().toLocaleDateString('en-CA');
     const today = new Date(dateStr + 'T00:00:00.000Z');
 
     try {
-      const plans = await fastify.prisma.crm.crmDailyPlan.findMany({
+      let plans = await fastify.prisma.crm.crmDailyPlan.findMany({
         where: {
           staffId: user.id,
           plannedDate: today,
         },
       });
+      if (CustomerAccessService.isTelesales(user)) {
+        const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: {
+            staffId: user.id,
+            legacyUserId: { in: plans.map((plan) => plan.legacyUserId) },
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          select: { legacyUserId: true },
+        });
+        const allowedCustomerIds = new Set(assignments.map((assignment) => assignment.legacyUserId));
+        plans = plans.filter((plan) => allowedCustomerIds.has(plan.legacyUserId));
+      }
       return plans;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Fetch today plans error:');
@@ -136,7 +156,7 @@ export async function planRoutes(fastify: FastifyInstance) {
   // Fetch weekly timeline grid (Mon-Sun) of plans for currently logged in staff
   fastify.get('/plans/weekly', { preHandler: [requireAuth] }, async (request, reply) => {
     const { weekStart } = request.query as { weekStart?: string };
-    const user = request.user as { id: number };
+    const user = request.user as { id: number; role?: string };
 
     // Parse weekStart date, default to current week's Monday
     let monday = new Date();
@@ -155,7 +175,7 @@ export async function planRoutes(fastify: FastifyInstance) {
 
     try {
       // 1. Get all daily plans of this staff in this week
-      const plans = await fastify.prisma.crm.crmDailyPlan.findMany({
+      let plans = await fastify.prisma.crm.crmDailyPlan.findMany({
         where: {
           staffId: user.id,
           plannedDate: {
@@ -167,6 +187,19 @@ export async function planRoutes(fastify: FastifyInstance) {
           plannedDate: 'asc',
         },
       });
+
+      if (CustomerAccessService.isTelesales(user)) {
+        const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: {
+            staffId: user.id,
+            legacyUserId: { in: plans.map((plan) => plan.legacyUserId) },
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          select: { legacyUserId: true },
+        });
+        const allowedCustomerIds = new Set(assignments.map((assignment) => assignment.legacyUserId));
+        plans = plans.filter((plan) => allowedCustomerIds.has(plan.legacyUserId));
+      }
 
       if (plans.length === 0) {
         return [];
@@ -360,8 +393,23 @@ export async function planRoutes(fastify: FastifyInstance) {
   // GET /api/plans/suggest
   // Auto-suggest customers matching touchpoint buckets and campaigns
   fastify.get('/plans/suggest', { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = request.user as { id: number };
+    const user = request.user as { id: number; role?: string };
     try {
+      const telesalesAssignments = CustomerAccessService.isTelesales(user)
+        ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
+            where: {
+              staffId: user.id,
+              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+            },
+            select: { legacyUserId: true },
+          })
+        : [];
+      const telesalesCustomerIds = new Set(telesalesAssignments.map((assignment) => assignment.legacyUserId));
+      const restrictToTelesalesAssignments = (customers: SafeAny[]) =>
+        CustomerAccessService.isTelesales(user)
+          ? customers.filter((customer) => telesalesCustomerIds.has(Number(customer.id)))
+          : customers;
+
       // 1. Read cached campaign IDs from JSON
       let comboT7Ids: number[] = [];
       let promoIds: number[] = [];
@@ -578,6 +626,7 @@ export async function planRoutes(fastify: FastifyInstance) {
       const myAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: {
           staffId: user.id,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           NOT: {
             legacyUserId: { in: plannedUserIds },
           },
@@ -615,13 +664,13 @@ export async function planRoutes(fastify: FastifyInstance) {
       }
 
       return {
-        happyCall,
-        single21d,
-        combo25d,
-        singleLost,
-        campaignComboT7,
-        campaignPromo2,
-        myCustomers,
+        happyCall: restrictToTelesalesAssignments(happyCall),
+        single21d: restrictToTelesalesAssignments(single21d),
+        combo25d: restrictToTelesalesAssignments(combo25d),
+        singleLost: restrictToTelesalesAssignments(singleLost),
+        campaignComboT7: restrictToTelesalesAssignments(campaignComboT7),
+        campaignPromo2: restrictToTelesalesAssignments(campaignPromo2),
+        myCustomers: restrictToTelesalesAssignments(myCustomers),
       };
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get suggests error:');
@@ -637,7 +686,7 @@ export async function planRoutes(fastify: FastifyInstance) {
   fastify.put('/plans/:id/confirm', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const { isConfirmed } = request.body as { isConfirmed: boolean };
-    const user = request.user as { id: number };
+    const user = request.user as { id: number; role?: string };
 
     const planId = parseInt(id, 10);
     if (isNaN(planId)) {
@@ -657,6 +706,13 @@ export async function planRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Plan not found or unauthorized',
+        });
+      }
+
+      if (!(await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, plan.legacyUserId))) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.',
         });
       }
 

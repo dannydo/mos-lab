@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
+import { CustomerAccessService } from '../customers/services/customer-access.service.js';
 
 export async function callRoutes(fastify: FastifyInstance) {
   // POST /api/calls
@@ -55,12 +56,19 @@ export async function callRoutes(fastify: FastifyInstance) {
         callUuid?: string;
       };
 
-      const user = request.user as { id: number };
+      const user = request.user as { id: number; role?: string };
 
       if (!legacyUserId) {
         return reply.status(400).send({
           error: 'Bad Request',
           message: 'legacyUserId is required',
+        });
+      }
+
+      if (!(await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, legacyUserId))) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.',
         });
       }
 
@@ -234,7 +242,7 @@ export async function callRoutes(fastify: FastifyInstance) {
 
     try {
       // 1. Fetch Call Logs from CRM
-      const logs = await fastify.prisma.crm.crmCallLog.findMany({
+      let logs = await fastify.prisma.crm.crmCallLog.findMany({
         where: {
           createdAt: {
             gte: start,
@@ -246,6 +254,19 @@ export async function callRoutes(fastify: FastifyInstance) {
           createdAt: 'desc',
         },
       });
+
+      if (CustomerAccessService.isTelesales(user)) {
+        const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: {
+            staffId: user.id,
+            legacyUserId: { in: logs.map((log) => log.legacyUserId) },
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          select: { legacyUserId: true },
+        });
+        const allowedCustomerIds = new Set(assignments.map((assignment) => assignment.legacyUserId));
+        logs = logs.filter((log) => allowedCustomerIds.has(log.legacyUserId));
+      }
 
       if (logs.length === 0) {
         return [];
@@ -413,6 +434,14 @@ export async function callRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({
         error: 'Bad Request',
         message: 'Invalid customer id',
+      });
+    }
+
+    const user = request.user as { id: number; role?: string };
+    if (!(await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, legacyUserId))) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Telesales chỉ được xem khách hàng đã được phân bổ cho mình.',
       });
     }
 
