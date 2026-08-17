@@ -1,34 +1,40 @@
 ---
 request_feedback: true
-target: production
+target: production-hotfix
 ---
 
-# Production Commit Review
+# Production Hotfix Commit Review
 
 ## Scope
 
 - Branch: `main`
-- Candidate changes: 1 source file, 52 additions / 19 deletions.
+- Candidate changes: 4 source files, 48 additions / 13 deletions.
 
 ## Danh sách file thay đổi
 
 ```
-apps/web/components/telesales/hooks/useTelesalesDashboard.ts
+apps/api/src/modules/kpi/routes/bk.routes.ts
+apps/api/src/modules/kpi/services/bk-salary.service.ts
+apps/api/src/modules/kpi/services/bk-salary.service.test.ts
+apps/web/app/dashboard/bk/components/BkBookingTab.tsx
 ```
 
 ## Tóm tắt nội dung thay đổi
 
-- Chuẩn hoá kích thước modal Telesales đã lưu thành số nguyên thay vì chuỗi CSS, khớp với kiểu dữ liệu mà component modal sử dụng khi render.
-- Đọc kích thước đã lưu đồng bộ trước lần render đầu tiên, nên F5 không ghi đè kích thước người dùng bằng kích thước mặc định.
-- Lưu kích thước resize đã làm tròn, kiểm tra ngưỡng tối thiểu và tránh ghi `localStorage` lặp lại khi kích thước không đổi.
-- Tương thích với giá trị cũ dạng `900px` nhờ `parseInt`.
+- Sửa phạm vi Bảng Xếp Hạng Booking: chỉ lấy nhân sự đang hoạt động trong đội `BK_TELESALES`, thay vì nhóm BK mở rộng có thể bao gồm CS và Control.
+- Đồng bộ Bảng Dữ Liệu Chi Tiết Booking với cùng roster Telesales; yêu cầu detail chỉ định Booker ngoài roster trả về dữ liệu rỗng.
+- Thêm unit test cho guard phạm vi Booker và cập nhật nội dung UI để thể hiện rõ nhóm Telesales.
 
 ## Verification
 
-- `pnpm --filter @mos-lab/web exec eslint 'components/telesales/hooks/useTelesalesDashboard.ts' 'components/TelesalesDashboardModal.tsx'` — passed.
-- `pnpm --filter @mos-lab/web exec tsc --noEmit` — passed.
+- Fast-track production builds passed:
+  - `pnpm --filter @mos-lab/shared build`
+  - `pnpm --filter @mos-lab/api build`
+  - `pnpm --filter @mos-lab/web build`
+- Focused API/Web typecheck and ESLint — passed.
+- `pnpm --filter @mos-lab/api exec tsx --test src/modules/kpi/services/bk-salary.service.test.ts` — passed (3 tests).
+- Live dashboard QA — passed: Leaderboard and unfiltered booking table both show only Bích Phượng, Ngọc Điệp, and Tâm Nguyễn from the active Telesales roster.
 - `git diff --check` — passed.
-- Live browser: resized the modal to `1192 × 857`; both values were saved to `localStorage`. After a full reload, reopening the modal restored exactly `1192 × 857`.
 
 ## Production migration plan
 
@@ -38,24 +44,27 @@ apps/web/components/telesales/hooks/useTelesalesDashboard.ts
 - `pnpm --filter @mos-lab/api data-migrations:validate`: passed; validated 0 production data migrations.
 - Expected production data effect: no schema or data migration will run.
 
-## Proposed commit
+## Proposed hotfix commit
 
 ```
-fix(telesales): persist resized dashboard modal dimensions
+fix(bk): restrict booking reports to telesales team
 
-- Restore validated numeric dimensions before the modal first renders.
-- Avoid redundant browser-storage writes during resize observation.
+- Scope booking leaderboards and detail records to active BK_TELESALES members.
+- Guard direct Booker detail requests against out-of-team IDs.
 
-AI-assisted. Reviewed and verified.
+AI-assisted. Reviewed and fast-track verified.
 ```
 
 ## Approval requested
 
-Approve this exact commit scope and message to stage and push it to `main`. Once CI passes, the guarded workflow requires a separate confirmation before VPS deployment.
+Approve this exact hotfix scope and message to create the short-lived hotfix branch, merge/tag `main`, and run the production release.
 
 ## Diff inventory
 
 ```
- .../telesales/hooks/useTelesalesDashboard.ts | 71 ++++++++++++++++------
- 1 file changed, 52 insertions(+), 19 deletions(-)
+ apps/api/src/modules/kpi/routes/bk.routes.ts       | 33 ++++++++++++++--------
+ .../modules/kpi/services/bk-salary.service.test.ts | 12 +++++++-
+ .../src/modules/kpi/services/bk-salary.service.ts  | 13 +++++++++
+ .../app/dashboard/bk/components/BkBookingTab.tsx   |  3 +-
+ 4 files changed, 48 insertions(+), 13 deletions(-)
 ```

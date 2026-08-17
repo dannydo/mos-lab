@@ -471,6 +471,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       {/* Booking Leaderboard Card */}
       <BkLeaderboardCard
         title="Bảng Xếp Hạng Booking (Booker Leaderboard)"
+        description="Xếp hạng hiệu suất của nhân viên thuộc nhóm Telesales trong khoảng thời gian lọc"
         leaderboard={leaderboard}
         loading={loading}
         columns={columns}
@@ -517,7 +518,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             <Text type="secondary" className="text-xs">
               {selectedBookerName
                 ? `Hiển thị danh sách booking được tạo bởi Booker ${selectedBookerName}`
-                : 'Hiển thị tất cả danh sách booking của đội ngũ Telesales / BK'}
+                : 'Hiển thị tất cả danh sách booking của nhóm Telesales'}
             </Text>
           </div>
 

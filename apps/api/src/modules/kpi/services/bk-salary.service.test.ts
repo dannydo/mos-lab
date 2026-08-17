@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import { getActiveBkTelesalesIds } from './bk-salary.service.js';
+import { getActiveBkTelesalesIds, resolveBkTelesalesStaffScope } from './bk-salary.service.js';
 
 test('BK Done scope uses only active BK_TELESALES members', async () => {
   const inspectedTeamCodes: string[] = [];
@@ -63,4 +63,14 @@ test('BK Done scope falls back only to the BK_TELESALES configuration key', asyn
 
   assert.deepEqual(configKeys, ['ACTIVE_BK_TELESALES_STAFF_CONFIG']);
   assert.deepEqual(ids, [303]);
+});
+
+test('BK Booking details never expand beyond the active BK_TELESALES roster', () => {
+  const activeTelesalesIds = [101, 202];
+
+  assert.deepEqual(resolveBkTelesalesStaffScope(activeTelesalesIds), activeTelesalesIds);
+  assert.deepEqual(resolveBkTelesalesStaffScope(activeTelesalesIds, 'ALL'), activeTelesalesIds);
+  assert.deepEqual(resolveBkTelesalesStaffScope(activeTelesalesIds, '202'), [202]);
+  assert.deepEqual(resolveBkTelesalesStaffScope(activeTelesalesIds, '999'), []);
+  assert.deepEqual(resolveBkTelesalesStaffScope(activeTelesalesIds, 'not-a-staff-id'), []);
 });
