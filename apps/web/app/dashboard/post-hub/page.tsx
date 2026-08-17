@@ -3,23 +3,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
-import {
-  Alert,
-  Button,
-  DatePicker,
-  Descriptions,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Space,
-  Steps,
-  Typography,
-  message,
-  theme,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { ChartNoAxesCombined, CircleCheck, Link, Plus, RefreshCw, Send, Settings } from 'lucide-react';
+import { Alert, Button, DatePicker, Form, Input, InputNumber, Select, Space, Steps, message, theme } from 'antd';
+import { ChartNoAxesCombined, CircleCheck, Plus, RefreshCw, Send, Settings } from 'lucide-react';
 import {
   type CreateSocialPostSubmissionDto,
   type ReviewSocialPostDto,
@@ -28,7 +13,6 @@ import {
   type SocialPostLeaderboardPeriod,
   type SocialPostLeaderboardResponse,
   type SocialPostListResponse,
-  type SocialPostPosterDailyReward,
   type SocialPostPosterDailyRewardResponse,
   type SocialPostReviewStatus,
   type SocialPostRewardConfig,
@@ -37,7 +21,6 @@ import {
 import {
   AppIcon,
   DataSection,
-  DataTable,
   EntityForm,
   EntityFormDrawer,
   EntityFormField,
@@ -51,19 +34,11 @@ import { apiClient } from '~/lib/api-client';
 import { PostHubApprovalStage } from './components/PostHubApprovalStage';
 import { PostHubDataStage } from './components/PostHubDataStage';
 import { PostHubLeaderboardStage } from './components/PostHubLeaderboardStage';
-import {
-  displaySheetDate,
-  formatReportPeriodLabel,
-  PostHubOriginTag,
-  REVIEW_STATUS_META,
-  rewardRuleDescription,
-} from './components/PostHubPresentation';
+import { PostHubPosterDailyDrawer } from './components/PostHubPosterDailyDrawer';
+import { PostHubReviewDrawer } from './components/PostHubReviewDrawer';
+import { formatReportPeriodLabel, REVIEW_STATUS_META, rewardRuleDescription } from './components/PostHubPresentation';
 
 dayjs.extend(isoWeek);
-
-const { Text } = Typography;
-
-const QUICK_REVIEW_STATUSES: SocialPostReviewStatus[] = ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'PENDING'];
 
 type WorkflowStage = 0 | 1 | 2;
 const API_PERIOD_BY_REPORT_MODE: Record<ReportPeriodMode, SocialPostLeaderboardPeriod> = {
@@ -123,10 +98,6 @@ export default function PostHubPage() {
   const [reviewForm] = Form.useForm<ReviewFormValues>();
   const [createForm] = Form.useForm<CreateSubmissionFormValues>();
   const [rewardConfigForm] = Form.useForm<RewardConfigFormValues>();
-  const watchedReviewStatus = Form.useWatch('reviewStatus', reviewForm);
-  const selectedReviewStatus = (watchedReviewStatus ||
-    selectedSubmission?.reviewStatus ||
-    'PENDING') as SocialPostReviewStatus;
   const requestIdRef = useRef(0);
   const rewardPreviewRequestIdRef = useRef(0);
   const posterDailyRequestIdRef = useRef(0);
@@ -482,63 +453,6 @@ export default function PostHubPage() {
     }
   };
 
-  const posterDailyColumns: ColumnsType<SocialPostPosterDailyReward> = [
-    {
-      title: 'Ngày đăng (ICT)',
-      dataIndex: 'date',
-      key: 'date',
-      width: 150,
-      render: (date: string) => <span className="font-medium tabular-nums">{dayjs(date).format('DD/MM/YYYY')}</span>,
-    },
-    {
-      title: 'Đã đăng',
-      dataIndex: 'submittedCount',
-      key: 'submittedCount',
-      width: 90,
-      align: 'center',
-      render: (value: number) => <span className="tabular-nums">{value}</span>,
-    },
-    {
-      title: 'Video ✅',
-      dataIndex: 'approvedVideoCount',
-      key: 'approvedVideoCount',
-      width: 100,
-      align: 'center',
-      render: (value: number) => <span className="tabular-nums">{value}</span>,
-    },
-    {
-      title: 'Bài khác ✅',
-      dataIndex: 'approvedRecruitmentCount',
-      key: 'approvedRecruitmentCount',
-      width: 115,
-      align: 'center',
-      render: (value: number) => <span className="tabular-nums">{value}</span>,
-    },
-    {
-      title: 'Cần xem lại',
-      dataIndex: 'needsReviewCount',
-      key: 'needsReviewCount',
-      width: 120,
-      align: 'center',
-      render: (value: number) => <span className="tabular-nums">{value}</span>,
-    },
-    {
-      title: '🍌 ngày',
-      dataIndex: 'bananaPoints',
-      key: 'bananaPoints',
-      width: 110,
-      align: 'right',
-      render: (value: number | null) =>
-        value === null ? (
-          <StatusTag status="orange" label="Cần cấu hình" />
-        ) : (
-          <span className="font-bold tabular-nums" style={{ color: token.colorWarning }}>
-            {value}
-          </span>
-        ),
-    },
-  ];
-
   return (
     <FeaturePage
       title="Post Hub chiến dịch"
@@ -694,100 +608,15 @@ export default function PostHubPage() {
         )}
       </div>
 
-      <EntityFormDrawer
+      <PostHubPosterDailyDrawer
         open={isPosterDailyOpen}
+        poster={selectedPoster}
+        response={posterDailyResponse}
+        loading={posterDailyLoading}
+        error={posterDailyError}
+        reportPeriodLabel={reportPeriodLabel}
         onClose={closePosterDaily}
-        title={`Điểm Daily — ${selectedPoster?.member || 'Poster'}`}
-        footer={<Button onClick={closePosterDaily}>Đóng</Button>}
-      >
-        <div className="flex flex-col gap-5">
-          {posterDailyLoading && <Alert type="info" showIcon message="Đang tải ledger điểm Daily của poster…" />}
-          {posterDailyError && (
-            <Alert type="error" showIcon message="Không thể tải điểm Daily" description={posterDailyError} />
-          )}
-          {posterDailyResponse && (
-            <>
-              <Descriptions
-                bordered
-                size="small"
-                column={1}
-                items={[
-                  {
-                    key: 'total',
-                    label: `Tổng 🍌 ${
-                      posterDailyResponse.dateFrom && posterDailyResponse.dateTo
-                        ? `${dayjs(posterDailyResponse.dateFrom).format('DD/MM/YYYY')} – ${dayjs(posterDailyResponse.dateTo).format('DD/MM/YYYY')}`
-                        : reportPeriodLabel
-                    }`,
-                    children:
-                      posterDailyResponse.totalBananaPoints === null ? (
-                        <StatusTag status="orange" label="Có ngày cần cấu hình" />
-                      ) : (
-                        <span className="font-bold tabular-nums" style={{ color: token.colorWarning }}>
-                          {posterDailyResponse.totalBananaPoints} 🍌
-                        </span>
-                      ),
-                  },
-                  {
-                    key: 'days',
-                    label: 'Ngày có bài đăng trong kỳ',
-                    children: <span className="tabular-nums">{posterDailyResponse.daily.length}</span>,
-                  },
-                  {
-                    key: 'unresolved',
-                    label: 'Ngày chờ cấu hình',
-                    children: <span className="tabular-nums">{posterDailyResponse.unresolvedDayCount}</span>,
-                  },
-                  {
-                    key: 'rule',
-                    label: 'Quy tắc',
-                    children: <Text type="secondary">{rewardRuleDescription(posterDailyResponse.rewardConfig)}</Text>,
-                  },
-                ]}
-              />
-              <DataSection
-                title="Ledger điểm theo ngày đăng (ICT)"
-                extra={<StatusTag status="gold" label="Daily Bonus" />}
-              >
-                <DataTable
-                  rowKey="date"
-                  columns={posterDailyColumns}
-                  dataSource={posterDailyResponse.daily}
-                  pagination={false}
-                  stickyPrimaryColumn
-                  columnPriority={{
-                    date: 'primary',
-                    submittedCount: 'secondary',
-                    approvedVideoCount: 'secondary',
-                    approvedRecruitmentCount: 'secondary',
-                    needsReviewCount: 'tertiary',
-                    bananaPoints: 'primary',
-                  }}
-                  mobileRecordKey={(record) => record.date}
-                  mobileRenderer={(record) => (
-                    <div className="rounded-xl border p-3" style={{ borderColor: token.colorBorderSecondary }}>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-semibold tabular-nums">{dayjs(record.date).format('DD/MM/YYYY')}</span>
-                        {record.bananaPoints === null ? (
-                          <StatusTag status="orange" label="Cần cấu hình" />
-                        ) : (
-                          <span className="font-bold tabular-nums" style={{ color: token.colorWarning }}>
-                            {record.bananaPoints} 🍌
-                          </span>
-                        )}
-                      </div>
-                      <Text type="secondary" className="mt-1 block text-xs">
-                        {record.submittedCount} bài đăng · {record.approvedVideoCount} video ✅ ·{' '}
-                        {record.approvedRecruitmentCount} bài khác ✅ · {record.needsReviewCount} cần xem lại
-                      </Text>
-                    </div>
-                  )}
-                />
-              </DataSection>
-            </>
-          )}
-        </div>
-      </EntityFormDrawer>
+      />
 
       <EntityFormDrawer
         open={isCreateOpen}
@@ -860,179 +689,17 @@ export default function PostHubPage() {
         </div>
       </EntityFormDrawer>
 
-      <EntityFormDrawer
+      <PostHubReviewDrawer
         open={isReviewOpen}
+        submission={selectedSubmission}
+        form={reviewForm}
+        rewardPreview={rewardPreview}
+        rewardPreviewLoading={rewardPreviewLoading}
+        rewardPreviewError={rewardPreviewError}
+        saving={savingReview}
         onClose={() => setIsReviewOpen(false)}
-        title="Duyệt bài đăng"
-        footer={
-          <Space>
-            <Button onClick={() => setIsReviewOpen(false)}>Hủy</Button>
-            <Button
-              type="primary"
-              loading={savingReview}
-              icon={<AppIcon icon={CircleCheck} />}
-              onClick={() => reviewForm.submit()}
-            >
-              Lưu quyết định
-            </Button>
-          </Space>
-        }
-      >
-        {selectedSubmission && (
-          <div className="flex flex-col gap-5">
-            <Descriptions
-              bordered
-              size="small"
-              column={1}
-              items={[
-                {
-                  key: 'id',
-                  label: 'Mã bài đăng',
-                  children: <span className="tabular-nums">#{selectedSubmission.sourceRecordId}</span>,
-                },
-                {
-                  key: 'origin',
-                  label: 'Nguồn dữ liệu',
-                  children: <PostHubOriginTag origin={selectedSubmission.origin} />,
-                },
-                {
-                  key: 'author',
-                  label: 'Người đăng / mOS',
-                  children: `${selectedSubmission.author} · mOS #${selectedSubmission.staffId}`,
-                },
-                {
-                  key: 'platform',
-                  label: 'Kênh đăng',
-                  children: `${selectedSubmission.source.platformLabel} · ${selectedSubmission.source.placementLabel}`,
-                },
-                {
-                  key: 'destination',
-                  label: 'Nơi đăng',
-                  children: (
-                    <>
-                      {selectedSubmission.source.destinationLabel}
-                      {selectedSubmission.source.placement === 'GROUP' &&
-                        !selectedSubmission.source.destinationIdentified && (
-                          <Text type="secondary" className="ml-1 text-xs">
-                            (nguồn chưa có tên nhóm)
-                          </Text>
-                        )}
-                    </>
-                  ),
-                },
-                { key: 'channel', label: 'Khai báo lúc nộp', children: selectedSubmission.channel },
-                {
-                  key: 'posted',
-                  label: 'Ngày đăng gốc (ICT)',
-                  children: <span className="tabular-nums">{displaySheetDate(selectedSubmission.postedAt)}</span>,
-                },
-                {
-                  key: 'reviewed',
-                  label: 'Duyệt lúc (ICT)',
-                  children: <span className="tabular-nums">{displaySheetDate(selectedSubmission.reviewedAt)}</span>,
-                },
-                { key: 'reviewer', label: 'Người duyệt', children: selectedSubmission.reviewerName || '—' },
-                {
-                  key: 'source',
-                  label: 'Nguồn',
-                  children: selectedSubmission.sourceUrl ? (
-                    <Button
-                      type="link"
-                      size="small"
-                      icon={<AppIcon icon={Link} />}
-                      href={selectedSubmission.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Mở link bài đăng
-                    </Button>
-                  ) : (
-                    <Text type="secondary">Nguồn chưa có link</Text>
-                  ),
-                },
-              ]}
-            />
-            {rewardPreviewLoading && (
-              <Alert type="info" showIcon message="Đang tính thưởng Daily theo cấu hình hiện hành…" />
-            )}
-            {rewardPreviewError && (
-              <Alert type="error" showIcon message="Không thể tải thưởng dự kiến" description={rewardPreviewError} />
-            )}
-            {rewardPreview && selectedReviewStatus === 'APPROVED' && (
-              <Alert
-                type={rewardPreview.projectedDailyPoints === null ? 'warning' : 'success'}
-                showIcon
-                message={
-                  rewardPreview.projectedDailyPoints === null
-                    ? 'Duyệt bài này cần cấu hình mức thưởng hỗn hợp'
-                    : `Duyệt Hợp lệ: ${rewardPreview.contentLabel} · tổng Daily dự kiến ${rewardPreview.projectedDailyPoints} 🍌`
-                }
-                description={
-                  <div className="flex flex-col gap-1">
-                    <span>
-                      Ngày ghi nhận:{' '}
-                      <strong className="tabular-nums">{dayjs(rewardPreview.date).format('DD/MM/YYYY')} (ICT)</strong>.
-                      Bài này được đếm là <strong>{rewardPreview.contentLabel}</strong>; hệ số cơ bản{' '}
-                      <strong>{rewardPreview.basePoints} 🍌/bài</strong>.
-                    </span>
-                    <span>
-                      Sau khi duyệt:{' '}
-                      <strong className="tabular-nums">{rewardPreview.projectedApprovedVideoCount}</strong> Video ✅ ·{' '}
-                      <strong className="tabular-nums">{rewardPreview.projectedApprovedRecruitmentCount}</strong> Bài
-                      khác ✅.{' '}
-                      {rewardPreview.isAlreadyApproved
-                        ? 'Bài này đã ở trạng thái Hợp lệ.'
-                        : 'Tổng 🍌 cuối ngày áp dụng cap theo cấu hình thưởng hiện hành.'}
-                    </span>
-                  </div>
-                }
-              />
-            )}
-            {rewardPreview && selectedReviewStatus !== 'APPROVED' && (
-              <Alert
-                type={selectedReviewStatus === 'REJECTED' ? 'error' : 'info'}
-                showIcon
-                message={`${REVIEW_STATUS_META[selectedReviewStatus].label}: chưa ghi nhận thưởng Daily`}
-                description={
-                  selectedReviewStatus === 'NEEDS_REVIEW'
-                    ? 'Bài cần được kiểm tra lại; chỉ lựa chọn Hợp lệ mới đưa bài vào tổng 🍌 của ngày đăng gốc.'
-                    : selectedReviewStatus === 'REJECTED'
-                      ? 'Bài không hợp lệ nên không tính 🍌. Có thể đổi sang Hợp lệ khi đã xác minh xong.'
-                      : 'Bài vẫn ở hàng chờ; chọn Hợp lệ để xem tổng 🍌 Daily dự kiến trước khi lưu.'
-                }
-              />
-            )}
-            <EntityForm form={reviewForm} onFinish={submitReview} columns={1}>
-              <Form.Item name="reviewStatus" hidden rules={[{ required: true }]}>
-                <Input />
-              </Form.Item>
-              <EntityFormField fullWidth label="Kết quả duyệt nhanh">
-                <Space wrap size={[8, 8]}>
-                  {QUICK_REVIEW_STATUSES.map((status) => {
-                    const meta = REVIEW_STATUS_META[status];
-                    const isSelected = selectedReviewStatus === status;
-                    return (
-                      <Button
-                        key={status}
-                        type={isSelected ? 'primary' : 'default'}
-                        danger={status === 'REJECTED'}
-                        icon={<AppIcon icon={meta.icon} />}
-                        aria-pressed={isSelected}
-                        onClick={() => reviewForm.setFieldValue('reviewStatus', status)}
-                      >
-                        {status === 'APPROVED' ? 'Hợp lệ +🍌' : meta.label}
-                      </Button>
-                    );
-                  })}
-                </Space>
-              </EntityFormField>
-              <EntityFormField fullWidth label="Ghi chú" name="reviewerComment">
-                <Input.TextArea rows={4} placeholder="Ghi chú cho người đăng…" />
-              </EntityFormField>
-            </EntityForm>
-          </div>
-        )}
-      </EntityFormDrawer>
+        onSubmit={submitReview}
+      />
 
       <EntityFormDrawer
         open={isRewardConfigOpen}
