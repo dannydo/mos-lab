@@ -14,6 +14,7 @@ import {
   type SocialPostLeaderboardResponse,
   type SocialPostListResponse,
   type SocialPostPosterDailyRewardResponse,
+  type SocialPostPlatformFilter,
   type SocialPostReviewStatus,
   type SocialPostRewardConfig,
   type SocialPostSubmission,
@@ -69,6 +70,7 @@ export default function PostHubPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [dataAuthorStaffId, setDataAuthorStaffId] = useState<number | undefined>();
+  const [dataSourcePlatform, setDataSourcePlatform] = useState<'ALL' | SocialPostPlatformFilter>('ALL');
   const [approvalPage, setApprovalPage] = useState(1);
   const [approvalPageSize, setApprovalPageSize] = useState(20);
   const [approvalAuthorStaffId, setApprovalAuthorStaffId] = useState<number | undefined>();
@@ -102,7 +104,7 @@ export default function PostHubPage() {
   const rewardPreviewRequestIdRef = useRef(0);
   const posterDailyRequestIdRef = useRef(0);
   const didApplyInitialFiltersRef = useRef(false);
-  const didApplyInitialDataAuthorFilterRef = useRef(false);
+  const didApplyInitialDataFiltersRef = useRef(false);
   const didApplyInitialApprovalAuthorFilterRef = useRef(false);
 
   const navigateReportPeriod = useCallback(
@@ -123,6 +125,7 @@ export default function PostHubPage() {
     const savedQuery = window.localStorage.getItem('post_hub_search_query');
     const savedStatusFilter = window.localStorage.getItem('post_hub_status_filter');
     const savedDataAuthorStaffId = Number(window.localStorage.getItem('post_hub_data_author_staff_id'));
+    const savedDataSourcePlatform = window.localStorage.getItem('post_hub_data_source_platform');
     const savedApprovalAuthorStaffId = Number(window.localStorage.getItem('post_hub_approve_author_staff_id'));
     const legacyLeaderboardRangeMode = window.localStorage.getItem('post_hub_leaderboard_range_mode');
     if (savedPage > 0) setPage(savedPage);
@@ -134,6 +137,9 @@ export default function PostHubPage() {
     if (savedQuery !== null) setQuery(savedQuery);
     if (Number.isInteger(savedDataAuthorStaffId) && savedDataAuthorStaffId > 0) {
       setDataAuthorStaffId(savedDataAuthorStaffId);
+    }
+    if (savedDataSourcePlatform === 'FACEBOOK' || savedDataSourcePlatform === 'TIKTOK') {
+      setDataSourcePlatform(savedDataSourcePlatform);
     }
     if (Number.isInteger(savedApprovalAuthorStaffId) && savedApprovalAuthorStaffId > 0) {
       setApprovalAuthorStaffId(savedApprovalAuthorStaffId);
@@ -172,6 +178,7 @@ export default function PostHubPage() {
     } else {
       window.localStorage.removeItem('post_hub_data_author_staff_id');
     }
+    window.localStorage.setItem('post_hub_data_source_platform', dataSourcePlatform);
     if (approvalAuthorStaffId) {
       window.localStorage.setItem('post_hub_approve_author_staff_id', String(approvalAuthorStaffId));
     } else {
@@ -183,6 +190,7 @@ export default function PostHubPage() {
     approvalPage,
     approvalPageSize,
     dataAuthorStaffId,
+    dataSourcePlatform,
     page,
     pageSize,
     preferencesHydrated,
@@ -207,6 +215,7 @@ export default function PostHubPage() {
           ...periodParams,
           reviewStatus: statusFilter === 'ALL' ? undefined : statusFilter,
           authorStaffId: dataAuthorStaffId,
+          sourcePlatform: dataSourcePlatform === 'ALL' ? undefined : dataSourcePlatform,
           search: query.trim() || undefined,
           page,
           limit: pageSize,
@@ -237,6 +246,7 @@ export default function PostHubPage() {
     approvalPage,
     approvalPageSize,
     dataAuthorStaffId,
+    dataSourcePlatform,
     page,
     pageSize,
     query,
@@ -262,12 +272,12 @@ export default function PostHubPage() {
 
   useEffect(() => {
     if (!preferencesHydrated) return;
-    if (!didApplyInitialDataAuthorFilterRef.current) {
-      didApplyInitialDataAuthorFilterRef.current = true;
+    if (!didApplyInitialDataFiltersRef.current) {
+      didApplyInitialDataFiltersRef.current = true;
       return;
     }
     setPage(1);
-  }, [dataAuthorStaffId, preferencesHydrated]);
+  }, [dataAuthorStaffId, dataSourcePlatform, preferencesHydrated]);
 
   useEffect(() => {
     if (!preferencesHydrated) return;
@@ -562,11 +572,13 @@ export default function PostHubPage() {
             data={data}
             authorOptions={dataAuthorOptions}
             selectedAuthorStaffId={dataAuthorStaffId}
+            selectedSourcePlatform={dataSourcePlatform}
             page={page}
             pageSize={pageSize}
             loading={loading}
             token={token}
             onAuthorChange={setDataAuthorStaffId}
+            onSourcePlatformChange={setDataSourcePlatform}
             onPaginationChange={(nextPage, nextPageSize) => {
               setPage(nextPage);
               setPageSize(nextPageSize);

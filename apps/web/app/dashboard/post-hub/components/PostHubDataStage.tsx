@@ -1,18 +1,24 @@
 'use client';
 
 import React from 'react';
-import { Avatar, Button, Select, Space, Tooltip, Typography } from 'antd';
+import { Button, Select, Space, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { CircleCheck, CircleX, Clock3, Link, Pencil, Send } from 'lucide-react';
 import {
   removeVietnameseTones,
   type SocialPostAuthorOption,
   type SocialPostListResponse,
+  type SocialPostPlatformFilter,
   type SocialPostSubmission,
   type SocialPostSummary,
 } from '@mos-lab/shared';
 import { AppIcon, DataSection, DataTable, MetricGrid } from '~/components/ui';
-import { displaySheetDate, initials, PostHubReviewStatusTag, PostHubSourceContext } from './PostHubPresentation';
+import {
+  displaySheetDate,
+  PostHubReviewStatusTag,
+  PostHubSourceContext,
+  PostHubStaffAvatar,
+} from './PostHubPresentation';
 
 const { Text } = Typography;
 
@@ -23,16 +29,16 @@ interface PostHubDataStageProps {
   data: SocialPostSubmission[];
   authorOptions: SocialPostAuthorOption[];
   selectedAuthorStaffId?: number;
+  selectedSourcePlatform: 'ALL' | SocialPostPlatformFilter;
   page: number;
   pageSize: number;
   loading: boolean;
   token: {
-    colorPrimary: string;
-    colorTextLightSolid: string;
     colorBorderSecondary: string;
     colorBgContainer: string;
   };
   onAuthorChange: (staffId: number | undefined) => void;
+  onSourcePlatformChange: (platform: 'ALL' | SocialPostPlatformFilter) => void;
   onPaginationChange: (page: number, pageSize: number) => void;
   onOpenReview: (submission: SocialPostSubmission) => void;
 }
@@ -44,11 +50,13 @@ export function PostHubDataStage({
   data,
   authorOptions,
   selectedAuthorStaffId,
+  selectedSourcePlatform,
   page,
   pageSize,
   loading,
   token,
   onAuthorChange,
+  onSourcePlatformChange,
   onPaginationChange,
   onOpenReview,
 }: PostHubDataStageProps) {
@@ -67,9 +75,7 @@ export function PostHubDataStage({
       width: 205,
       render: (author: string, record) => (
         <Space size={8}>
-          <Avatar size={28} style={{ background: token.colorPrimary, color: token.colorTextLightSolid }}>
-            {initials(author)}
-          </Avatar>
+          <PostHubStaffAvatar name={author} avatarUrl={record.avatarUrl} />
           <div>
             <div className="font-medium">{author}</div>
             <Text type="secondary" className="text-xs">
@@ -182,6 +188,17 @@ export function PostHubDataStage({
         extra={
           <Space size={8} wrap>
             <Select
+              aria-label="Lọc nền tảng bài đăng trong 1.DATA"
+              value={selectedSourcePlatform}
+              onChange={onSourcePlatformChange}
+              options={[
+                { value: 'ALL', label: 'Tất cả nền tảng' },
+                { value: 'FACEBOOK', label: 'Facebook' },
+                { value: 'TIKTOK', label: 'TikTok' },
+              ]}
+              style={{ minWidth: 166 }}
+            />
+            <Select
               aria-label="Lọc theo người đăng trong 1.DATA"
               value={selectedAuthorStaffId}
               onChange={onAuthorChange}
@@ -218,7 +235,10 @@ export function PostHubDataStage({
               style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
             >
               <div className="flex items-start justify-between gap-3">
-                <span className="font-semibold">{record.author}</span>
+                <span className="inline-flex min-w-0 items-center gap-2 font-semibold">
+                  <PostHubStaffAvatar name={record.author} avatarUrl={record.avatarUrl} />
+                  <span className="truncate">{record.author}</span>
+                </span>
                 <PostHubReviewStatusTag status={record.reviewStatus} />
               </div>
               <div className="mt-1">

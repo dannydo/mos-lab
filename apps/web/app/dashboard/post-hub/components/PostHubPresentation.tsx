@@ -2,7 +2,7 @@
 
 import React from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
-import { Space, Tooltip, Typography } from 'antd';
+import { Avatar, Space, Tooltip, Typography, theme } from 'antd';
 import { CircleCheck, CircleX, Clock3, TriangleAlert, type LucideIcon } from 'lucide-react';
 import {
   type SocialPostOrigin,
@@ -47,6 +47,46 @@ export function initials(name: string) {
     .join('')
     .slice(0, 2)
     .toUpperCase();
+}
+
+/** Converts historical Wings paths while preserving external or data-image staff avatars. */
+export function formatPostHubStaffAvatarUrl(avatarUrl?: string | null): string | undefined {
+  if (!avatarUrl || typeof avatarUrl !== 'string' || !avatarUrl.trim()) return undefined;
+
+  let normalized = avatarUrl.trim();
+  normalized = normalized.replace(/^(?:https?:)?\/\/(?:s|api|cdn)\.wingslashes\.com\/?/, '');
+  if (/^(?:https?:|data:)/i.test(normalized)) return normalized;
+
+  return `https://cdn.wingslashes.com/${normalized.replace(/^\/+/, '')}`;
+}
+
+/** Consistent staff identity for every Post Hub stage, with initials if a profile has no usable image. */
+export function PostHubStaffAvatar({
+  name,
+  avatarUrl,
+  size = 28,
+}: {
+  name: string;
+  avatarUrl?: string | null;
+  size?: number;
+}) {
+  const { token } = theme.useToken();
+  const src = formatPostHubStaffAvatarUrl(avatarUrl);
+
+  return (
+    <Avatar
+      src={src}
+      alt={`Ảnh đại diện ${name}`}
+      size={size}
+      style={{
+        background: token.colorPrimary,
+        color: token.colorTextLightSolid,
+        flexShrink: 0,
+      }}
+    >
+      {initials(name)}
+    </Avatar>
+  );
 }
 
 export function displaySheetDate(value?: string | null) {

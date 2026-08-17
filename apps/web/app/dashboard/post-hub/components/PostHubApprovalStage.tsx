@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Avatar, Button, Select, Space, Typography } from 'antd';
+import { Button, Select, Space, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { CircleCheck, CircleX, Send, TriangleAlert, View } from 'lucide-react';
 import {
@@ -12,7 +12,12 @@ import {
   type SocialPostSummary,
 } from '@mos-lab/shared';
 import { AppIcon, DataSection, DataTable, MetricGrid, StatusTag } from '~/components/ui';
-import { displaySheetDate, initials, PostHubReviewStatusTag, PostHubSourceContext } from './PostHubPresentation';
+import {
+  displaySheetDate,
+  PostHubReviewStatusTag,
+  PostHubSourceContext,
+  PostHubStaffAvatar,
+} from './PostHubPresentation';
 
 const { Text } = Typography;
 
@@ -27,8 +32,6 @@ interface PostHubApprovalStageProps {
   pageSize: number;
   loading: boolean;
   token: {
-    colorPrimary: string;
-    colorTextLightSolid: string;
     colorBorderSecondary: string;
     colorBgContainer: string;
   };
@@ -67,9 +70,7 @@ export function PostHubApprovalStage({
       width: 190,
       render: (author: string, record) => (
         <Space size={8}>
-          <Avatar size={28} style={{ background: token.colorPrimary, color: token.colorTextLightSolid }}>
-            {initials(author)}
-          </Avatar>
+          <PostHubStaffAvatar name={author} avatarUrl={record.avatarUrl} />
           <div>
             <div className="font-medium">{author}</div>
             <Text type="secondary" className="text-xs">
@@ -209,7 +210,10 @@ export function PostHubApprovalStage({
                 style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span className="font-semibold">{record.author}</span>
+                  <span className="inline-flex min-w-0 items-center gap-2 font-semibold">
+                    <PostHubStaffAvatar name={record.author} avatarUrl={record.avatarUrl} />
+                    <span className="truncate">{record.author}</span>
+                  </span>
                   <PostHubReviewStatusTag status={record.reviewStatus} />
                 </div>
                 <div className="mt-1">

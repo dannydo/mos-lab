@@ -4226,7 +4226,7 @@ body {
 .dashboard-header-left {
   flex: 1 1 auto;
   gap: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .dashboard-header-right {
@@ -4258,7 +4258,7 @@ body {
   box-sizing: border-box;
   pointer-events: none;
   position: absolute;
-  z-index: 1;
+  z-index: 2;
 }
 
 .mos-header-action-indicator__status {
@@ -4269,8 +4269,8 @@ body {
   width: var(--mos-header-status-dot-size) !important;
 }
 
-/* Numeric counts overlap the action corner so the badge visibly anchors to
-   the control edge without changing the centered icon or button label. */
+/* Numeric counts float from the action's top inline-end corner. The header
+   rail permits this top-layer marker to remain fully visible. */
 .mos-header-action-indicator--count {
   --mos-header-count-font-size: 10px;
   --mos-header-count-inset-block-start: 0px;
@@ -4293,6 +4293,7 @@ body {
   padding-inline: var(--mos-header-count-padding-inline);
   place-items: center;
   top: var(--mos-header-count-inset-block-start);
+  transform: translate(50%, -50%);
 }
 
 /* Separate a count from a tinted action without shifting the centered icon. */
@@ -4826,7 +4827,7 @@ body {
 }
 
 .campaign-mobile-search-trigger {
-  display: none;
+  display: none !important;
 }
 
 .campaign-customer-search {
@@ -5159,7 +5160,7 @@ body {
   }
 
   .nyc-campaign-customer-toolbar .campaign-mobile-search-trigger {
-    display: inline-flex;
+    display: inline-flex !important;
     flex: 0 0 var(--mos-control-height);
   }
 
@@ -5170,7 +5171,7 @@ body {
   }
 
   .nyc-campaign-customer-toolbar.is-mobile-search-expanded .campaign-mobile-search-trigger {
-    display: none;
+    display: none !important;
   }
 
   .nyc-campaign-customer-toolbar.is-mobile-search-expanded .campaign-customer-search {

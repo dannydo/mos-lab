@@ -13,6 +13,7 @@ import { PostHubService } from './post-hub.service.js';
 
 const REVIEW_STATUSES = new Set<SocialPostReviewStatus>(['PENDING', 'APPROVED', 'NEEDS_REVIEW', 'REJECTED']);
 const REPORTING_PERIODS = new Set<SocialPostLeaderboardPeriod>(['DAY', 'WEEK', 'MONTH']);
+const FILTERABLE_SOURCE_PLATFORMS = new Set(['FACEBOOK', 'TIKTOK']);
 
 export async function postHubRoutes(fastify: FastifyInstance) {
   fastify.get('/post-hub/reward-config', { preHandler: [requireAuth] }, async () => {
@@ -46,6 +47,9 @@ export async function postHubRoutes(fastify: FastifyInstance) {
       }
       if (query.period && !REPORTING_PERIODS.has(query.period)) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Kỳ báo cáo không hợp lệ' });
+      }
+      if (query.sourcePlatform && !FILTERABLE_SOURCE_PLATFORMS.has(query.sourcePlatform)) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'Nền tảng bài đăng không hợp lệ' });
       }
       if (query.authorStaffId !== undefined) {
         const authorStaffId = Number(query.authorStaffId);

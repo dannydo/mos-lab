@@ -59,6 +59,26 @@ test('sums Daily Bonus by source posting day instead of applying a cap across mu
   assert.equal(leaderboard[0].bananaPoints, 66);
 });
 
+test('preserves the canonical staff avatar from the daily ledger into the leaderboard', () => {
+  const avatarUrl = 'https://cdn.wingslashes.com/uploads/staff/cam-tien.jpg';
+  const daily = buildSocialPostDailyRewards(
+    [
+      {
+        staffId: 23,
+        postedAt: new Date('2026-08-10T17:00:00.000Z'),
+        reviewStatus: 'APPROVED',
+        contentType: 'RECRUITMENT_POST',
+        staff: { displayName: 'Cẩm Tiên', avatarUrl },
+      },
+    ],
+    DEFAULT_SOCIAL_POST_REWARD_CONFIG
+  );
+  const leaderboard = buildSocialPostLeaderboard(daily);
+
+  assert.equal(daily[0].avatarUrl, avatarUrl);
+  assert.equal(leaderboard[0].avatarUrl, avatarUrl);
+});
+
 test('describes Facebook group posts without inventing a missing group name', () => {
   const sharedGroupPost = getSocialPostSourceContext(
     'Đăng trên hội nhóm',
@@ -101,6 +121,61 @@ test('derives the actual platform from the source URL', () => {
   assert.equal(source.platformLabel, 'TikTok');
   assert.equal(source.placementLabel, 'Video');
   assert.equal(source.destinationLabel, 'Video TikTok');
+});
+
+test('filters 1.DATA by source platform before its author options, total, and pagination', async () => {
+  const prisma = {
+    crmSocialPostSubmission: {
+      findMany: async () => [
+        {
+          id: 1,
+          sourceRecordId: 1,
+          sourceSpreadsheetId: 'MOS',
+          staffId: 23,
+          sourceAuthorName: 'Cẩm Tiên',
+          contentType: 'RECRUITMENT_POST',
+          channel: 'Đăng trên hội nhóm',
+          sourceUrl: 'https://www.facebook.com/groups/1/posts/1',
+          postedAt: new Date('2026-08-15T09:00:00.000Z'),
+          reviewStatus: 'PENDING',
+          reviewerComment: null,
+          reviewedAt: null,
+          sourceReviewerName: null,
+          staff: { displayName: 'Cẩm Tiên', avatarUrl: null },
+          reviewer: null,
+        },
+        {
+          id: 2,
+          sourceRecordId: 2,
+          sourceSpreadsheetId: 'MOS',
+          staffId: 33,
+          sourceAuthorName: 'Giang',
+          contentType: 'VIDEO',
+          channel: 'Video TikTok',
+          sourceUrl: 'https://www.tiktok.com/@mos/video/2',
+          postedAt: new Date('2026-08-15T10:00:00.000Z'),
+          reviewStatus: 'PENDING',
+          reviewerComment: null,
+          reviewedAt: null,
+          sourceReviewerName: null,
+          staff: { displayName: 'Giang', avatarUrl: null },
+          reviewer: null,
+        },
+      ],
+    },
+    crmConfig: { findUnique: async () => null },
+  };
+
+  const result = await PostHubService.list(prisma as never, {
+    sourcePlatform: 'TIKTOK',
+    page: 1,
+    limit: 20,
+  });
+
+  assert.equal(result.total, 1);
+  assert.equal(result.data[0].source.platform, 'TIKTOK');
+  assert.deepEqual(result.authorOptions, [{ staffId: 33, displayName: 'Giang' }]);
+  assert.equal(result.summary.submitted, 1);
 });
 
 test('resolves shared Post Hub reporting periods from the ICT anchor date with Monday-first weeks', () => {
@@ -351,4 +426,5 @@ test('keeps a poster Daily drawer on the same Monday-first period as its leaderb
   assert.equal(result.dateFrom, '2026-08-17');
   assert.equal(result.dateTo, '2026-08-23');
   assert.equal(result.daily.length, 1);
+  assert.equal('avatarUrl' in result.daily[0], false);
 });

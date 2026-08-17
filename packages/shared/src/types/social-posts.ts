@@ -7,6 +7,9 @@ export type SocialPostOrigin = 'MOS' | 'SHEET_HISTORY';
 /** The social network inferred from the imported source URL. */
 export type SocialPostPlatform = 'FACEBOOK' | 'TIKTOK' | 'UNKNOWN';
 
+/** Platforms available in Post Hub filters; unknown links stay visible only in the unfiltered view. */
+export type SocialPostPlatformFilter = Exclude<SocialPostPlatform, 'UNKNOWN'>;
+
 /** The posting surface declared in the source Sheet or encoded in its URL. */
 export type SocialPostPlacement = 'GROUP' | 'PROFILE' | 'COMMENT' | 'STORY' | 'REEL' | 'VIDEO' | 'UNKNOWN';
 
@@ -33,6 +36,8 @@ export interface SocialPostSubmission {
   origin: SocialPostOrigin;
   staffId: number;
   author: string;
+  /** Canonical mOS staff avatar from crm_staff.avatar_url; null falls back to initials. */
+  avatarUrl: string | null;
   contentType: SocialPostContentType;
   assetName: string;
   channel: string;
@@ -84,6 +89,8 @@ export interface SocialPostLeaderboardEntry {
   staffId: number;
   rank: number;
   member: string;
+  /** Canonical mOS staff avatar from crm_staff.avatar_url; null falls back to initials. */
+  avatarUrl: string | null;
   submittedCount: number;
   approvedVideoCount: number;
   approvedRecruitmentCount: number;
@@ -167,6 +174,8 @@ export interface SocialPostPageQuery extends SocialPostPeriodQuery {
   dateFrom?: string;
   dateTo?: string;
   reviewStatus?: SocialPostReviewStatus;
+  /** Restricts 1.DATA to the platform inferred from each source URL. */
+  sourcePlatform?: SocialPostPlatformFilter;
   /** Lists the imported 2.APPROVE ledger; report-period bounds apply when provided. */
   approveLedger?: boolean;
   /** Restricts the ledger to one canonical mOS poster account. */

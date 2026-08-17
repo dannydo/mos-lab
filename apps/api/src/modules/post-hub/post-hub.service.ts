@@ -54,12 +54,13 @@ type SocialPostRewardLedgerRow = {
   postedAt: Date;
   reviewStatus: string;
   contentType: string;
-  staff: { displayName: string };
+  staff: { displayName: string; avatarUrl?: string | null };
 };
 
 type DailyRewardWithMember = SocialPostPosterDailyReward & {
   staffId: number;
   member: string;
+  avatarUrl: string | null;
 };
 
 type PreparedSocialPostImportRow = {
@@ -433,6 +434,7 @@ export function buildSocialPostDailyRewards(
       dailyByPoster.set(key, {
         staffId: row.staffId,
         member: row.staff.displayName,
+        avatarUrl: row.staff.avatarUrl || null,
         date,
         submittedCount: 0,
         approvedVideoCount: 0,
@@ -478,6 +480,7 @@ export function buildSocialPostLeaderboard(dailyRewards: DailyRewardWithMember[]
       leaderboardByStaff.set(daily.staffId, {
         staffId: daily.staffId,
         member: daily.member,
+        avatarUrl: daily.avatarUrl,
         submittedCount: 0,
         approvedVideoCount: 0,
         approvedRecruitmentCount: 0,
@@ -489,6 +492,7 @@ export function buildSocialPostLeaderboard(dailyRewards: DailyRewardWithMember[]
     }
 
     const leader = leaderboardByStaff.get(daily.staffId)!;
+    if (!leader.avatarUrl && daily.avatarUrl) leader.avatarUrl = daily.avatarUrl;
     leader.submittedCount += daily.submittedCount;
     leader.approvedVideoCount += daily.approvedVideoCount;
     leader.approvedRecruitmentCount += daily.approvedRecruitmentCount;
@@ -713,7 +717,7 @@ export class PostHubService {
     const submission = await prisma.$transaction(async (tx) => {
       const staff = await tx.crmStaff.findUnique({
         where: { id: staffId },
-        select: { id: true, displayName: true, isActive: true },
+        select: { id: true, displayName: true, avatarUrl: true, isActive: true },
       });
       if (!staff?.isActive) throw new Error('Tài khoản mOS của người đăng không còn hoạt động');
 
@@ -736,7 +740,7 @@ export class PostHubService {
         where: { id: created.id },
         data: { sourceRecordId: created.id },
         include: {
-          staff: { select: { displayName: true } },
+          staff: { select: { displayName: true, avatarUrl: true } },
           reviewer: { select: { displayName: true } },
         },
       });
@@ -748,6 +752,7 @@ export class PostHubService {
       origin: 'MOS',
       staffId: submission.staffId,
       author: submission.staff.displayName,
+      avatarUrl: submission.staff.avatarUrl || null,
       contentType: submission.contentType as SocialPostContentType,
       assetName: submission.channel,
       channel: submission.channel,
@@ -874,7 +879,7 @@ export class PostHubService {
     const [rows, rewardConfig] = await Promise.all([
       prisma.crmSocialPostSubmission.findMany({
         where: Object.keys(postedAt).length ? { postedAt } : undefined,
-        include: { staff: { select: { displayName: true } } },
+        include: { staff: { select: { displayName: true, avatarUrl: true } } },
         orderBy: [{ postedAt: 'desc' }, { sourceRecordId: 'desc' }],
       }),
       getRewardConfig(prisma),
@@ -902,7 +907,7 @@ export class PostHubService {
     const [rows, rewardConfig] = await Promise.all([
       prisma.crmSocialPostSubmission.findMany({
         where: { staffId, ...(Object.keys(postedAt).length ? { postedAt } : {}) },
-        include: { staff: { select: { displayName: true } } },
+        include: { staff: { select: { displayName: true, avatarUrl: true } } },
         orderBy: [{ postedAt: 'desc' }, { sourceRecordId: 'desc' }],
       }),
       getRewardConfig(prisma),
@@ -923,7 +928,7 @@ export class PostHubService {
       period: query.period,
       totalBananaPoints: unresolvedDayCount ? null : daily.reduce((total, row) => total + (row.bananaPoints || 0), 0),
       unresolvedDayCount,
-      daily: daily.map(({ staffId: _staffId, member: _member, ...row }) => row),
+      daily: daily.map(({ staffId: _staffId, member: _member, avatarUrl: _avatarUrl, ...row }) => row),
       rewardConfig,
     };
   }
@@ -934,6 +939,7 @@ export class PostHubService {
     const periodBounds = resolveSocialPostPeriodBounds(query);
     const dateBounds = getDateBounds(periodBounds.dateFrom || query.dateFrom, periodBounds.dateTo || query.dateTo);
     const reviewStatus = query.reviewStatus;
+    const sourcePlatform = query.sourcePlatform;
     const approveLedger = query.approveLedger === true || String(query.approveLedger) === 'true';
     const authorStaffId = query.authorStaffId ? Number(query.authorStaffId) : undefined;
 
@@ -944,7 +950,7 @@ export class PostHubService {
           ...(reviewStatus ? { reviewStatus } : approveLedger ? { reviewStatus: { not: 'PENDING' } } : {}),
         },
         include: {
-          staff: { select: { displayName: true } },
+          staff: { select: { displayName: true, avatarUrl: true } },
           reviewer: { select: { displayName: true } },
         },
         orderBy: [{ postedAt: 'desc' }, { sourceRecordId: 'desc' }],
@@ -952,12 +958,17 @@ export class PostHubService {
       getRewardConfig(prisma),
     ]);
 
+    const rowsForPlatform = sourcePlatform
+      ? rows.filter((row) => getSocialPostSourceContext(row.channel, row.sourceUrl).platform === sourcePlatform)
+      : rows;
     const authorOptions: SocialPostAuthorOption[] = Array.from(
-      new Map(rows.map((row) => [row.staffId, row.staff.displayName])).entries()
+      new Map(rowsForPlatform.map((row) => [row.staffId, row.staff.displayName])).entries()
     )
       .map(([staffId, displayName]) => ({ staffId, displayName }))
       .sort((left, right) => left.displayName.localeCompare(right.displayName, 'vi'));
-    const rowsForAuthor = authorStaffId ? rows.filter((row) => row.staffId === authorStaffId) : rows;
+    const rowsForAuthor = authorStaffId
+      ? rowsForPlatform.filter((row) => row.staffId === authorStaffId)
+      : rowsForPlatform;
 
     const normalizedSearch = removeVietnameseTones(query.search || '');
     const visibleRows = normalizedSearch
@@ -1014,6 +1025,7 @@ export class PostHubService {
         origin: getSubmissionOrigin(row.sourceSpreadsheetId),
         staffId: row.staffId,
         author: row.staff.displayName,
+        avatarUrl: row.staff.avatarUrl || null,
         contentType: row.contentType as SocialPostContentType,
         assetName: row.channel,
         channel: row.channel,

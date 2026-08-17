@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Avatar, Button, Typography } from 'antd';
+import { Button, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ChartNoAxesCombined, Send, Users, Video } from 'lucide-react';
 import { type SocialPostLeaderboardEntry } from '@mos-lab/shared';
 import { AppIcon, DataSection, DataTable, MetricGrid, StatusTag } from '~/components/ui';
-import { initials } from './PostHubPresentation';
+import { PostHubStaffAvatar } from './PostHubPresentation';
 
 const { Paragraph, Text } = Typography;
 
@@ -16,8 +16,6 @@ interface PostHubLeaderboardStageProps {
   rewardRule: string;
   loading: boolean;
   token: {
-    colorPrimary: string;
-    colorFillSecondary: string;
     colorWarning: string;
     colorWarningBorder: string;
     colorWarningBg: string;
@@ -59,9 +57,7 @@ export function PostHubLeaderboardStage({
           aria-label={`Xem điểm Daily của ${member}`}
         >
           <span className="inline-flex items-center gap-2">
-            <Avatar size={30} style={{ background: token.colorFillSecondary, color: token.colorPrimary }}>
-              {initials(member)}
-            </Avatar>
+            <PostHubStaffAvatar name={member} avatarUrl={record.avatarUrl} size={30} />
             <span className="font-medium">{member}</span>
           </span>
         </Button>
@@ -203,8 +199,10 @@ export function PostHubLeaderboardStage({
                 style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold">
-                    {record.rank <= 3 ? ['🥇', '🥈', '🥉'][record.rank - 1] : `#${record.rank}`} {record.member}
+                  <span className="inline-flex min-w-0 items-center gap-2 font-semibold">
+                    <span>{record.rank <= 3 ? ['🥇', '🥈', '🥉'][record.rank - 1] : `#${record.rank}`}</span>
+                    <PostHubStaffAvatar name={record.member} avatarUrl={record.avatarUrl} size={30} />
+                    <span className="truncate">{record.member}</span>
                   </span>
                   {record.bananaPoints === null ? (
                     <StatusTag status="orange" label="Cần cấu hình" />
