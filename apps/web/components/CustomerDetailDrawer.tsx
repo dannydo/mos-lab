@@ -99,6 +99,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     counts,
     loading,
     data,
+    detailData,
     rescheduleModalVisible,
     selectedBookingForReschedule,
     isGemModalOpen,
@@ -135,6 +136,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     setIsTipModalOpen,
     setIsRevenueModalOpen,
     fetchDetails,
+    loadDetailedData,
     refetchTabData,
     refreshAllDetails,
     handleMouseDown,
@@ -668,9 +670,18 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 <KpiStatsCard
                   stats={stats}
                   themeMode={themeMode}
-                  onOpenGemModal={() => setIsGemModalOpen(true)}
-                  onOpenTipModal={() => setIsTipModalOpen(true)}
-                  onOpenRevenueModal={() => setIsRevenueModalOpen(true)}
+                  onOpenGemModal={() => {
+                    setIsGemModalOpen(true);
+                    void loadDetailedData();
+                  }}
+                  onOpenTipModal={() => {
+                    setIsTipModalOpen(true);
+                    void loadDetailedData();
+                  }}
+                  onOpenRevenueModal={() => {
+                    setIsRevenueModalOpen(true);
+                    void loadDetailedData();
+                  }}
                 />
 
                 <ProfileDetailsCard customer={customer} themeMode={themeMode} onToggleForeign={handleToggleForeign} />
@@ -691,7 +702,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   customerName={customer?.name || ''}
                   themeMode={themeMode}
                   getComboDisplayInfo={getComboDisplayInfo}
-                  onOpenComboModal={() => setIsComboModalOpen(true)}
+                  onOpenComboModal={() => {
+                    setIsComboModalOpen(true);
+                    void loadDetailedData();
+                  }}
                 />
 
                 <ReferralCard data={data} themeMode={themeMode} />
@@ -886,71 +900,85 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         )}
       </Spin>
 
-      <RescheduleBookingModal
-        open={rescheduleModalVisible}
-        booking={selectedBookingForReschedule}
-        onClose={() => {
-          setRescheduleModalVisible(false);
-          setSelectedBookingForReschedule(null);
-        }}
-        onSuccess={() => {
-          refreshAllDetails();
-        }}
-      />
+      {rescheduleModalVisible && (
+        <RescheduleBookingModal
+          open={rescheduleModalVisible}
+          booking={selectedBookingForReschedule}
+          onClose={() => {
+            setRescheduleModalVisible(false);
+            setSelectedBookingForReschedule(null);
+          }}
+          onSuccess={() => {
+            refreshAllDetails();
+          }}
+        />
+      )}
 
-      <GemHistoryModal
-        open={isGemModalOpen}
-        onCancel={() => setIsGemModalOpen(false)}
-        customer={customer}
-        gemTransactions={data?.gemTransactions || []}
-        gemModalWidth={gemModalWidth}
-        handleGemModalDragStart={handleGemModalDragStart}
-      />
+      {isGemModalOpen && (
+        <GemHistoryModal
+          open={isGemModalOpen}
+          onCancel={() => setIsGemModalOpen(false)}
+          customer={customer}
+          gemTransactions={detailData?.gemTransactions || []}
+          gemModalWidth={gemModalWidth}
+          handleGemModalDragStart={handleGemModalDragStart}
+        />
+      )}
 
-      <TipHistoryModal
-        open={isTipModalOpen}
-        onCancel={() => setIsTipModalOpen(false)}
-        customer={customer}
-        tipTransactions={data?.tipTransactions || []}
-        modalWidth={tipModalWidth}
-        handleModalDragStart={handleTipModalDragStart}
-      />
+      {isTipModalOpen && (
+        <TipHistoryModal
+          open={isTipModalOpen}
+          onCancel={() => setIsTipModalOpen(false)}
+          customer={customer}
+          tipTransactions={detailData?.tipTransactions || []}
+          modalWidth={tipModalWidth}
+          handleModalDragStart={handleTipModalDragStart}
+        />
+      )}
 
-      <RevenueHistoryModal
-        open={isRevenueModalOpen}
-        onCancel={() => setIsRevenueModalOpen(false)}
-        customer={customer}
-        revenueTransactions={data?.revenueTransactions || []}
-        modalWidth={revenueModalWidth}
-        handleModalDragStart={handleRevenueModalDragStart}
-      />
+      {isRevenueModalOpen && (
+        <RevenueHistoryModal
+          open={isRevenueModalOpen}
+          onCancel={() => setIsRevenueModalOpen(false)}
+          customer={customer}
+          revenueTransactions={detailData?.revenueTransactions || []}
+          modalWidth={revenueModalWidth}
+          handleModalDragStart={handleRevenueModalDragStart}
+        />
+      )}
 
-      <ComboHistoryModal
-        open={isComboModalOpen}
-        onCancel={() => setIsComboModalOpen(false)}
-        customer={customer}
-        comboBalances={comboBalances}
-        modalWidth={modalWidth}
-        handleModalDragStart={handleModalDragStart}
-      />
+      {isComboModalOpen && (
+        <ComboHistoryModal
+          open={isComboModalOpen}
+          onCancel={() => setIsComboModalOpen(false)}
+          customer={customer}
+          comboBalances={detailData?.comboBalances || comboBalances}
+          modalWidth={modalWidth}
+          handleModalDragStart={handleModalDragStart}
+        />
+      )}
 
-      <EditCustomerModal
-        open={isEditModalOpen}
-        onCancel={() => setIsEditModalOpen(false)}
-        onOk={handleSaveEdit}
-        confirmLoading={saveLoading}
-        form={editForm}
-      />
+      {isEditModalOpen && (
+        <EditCustomerModal
+          open={isEditModalOpen}
+          onCancel={() => setIsEditModalOpen(false)}
+          onOk={handleSaveEdit}
+          confirmLoading={saveLoading}
+          form={editForm}
+        />
+      )}
 
-      <CreateNoteModal
-        open={isNoteModalOpen}
-        customerId={customer ? customer.id : null}
-        onCancel={() => setIsNoteModalOpen(false)}
-        onSuccess={() => {
-          setIsNoteModalOpen(false);
-          refreshAllDetails();
-        }}
-      />
+      {isNoteModalOpen && (
+        <CreateNoteModal
+          open={isNoteModalOpen}
+          customerId={customer ? customer.id : null}
+          onCancel={() => setIsNoteModalOpen(false)}
+          onSuccess={() => {
+            setIsNoteModalOpen(false);
+            refreshAllDetails();
+          }}
+        />
+      )}
 
       {bookingWizardOpen && (
         <BookingWizardDrawer
