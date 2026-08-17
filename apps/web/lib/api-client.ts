@@ -181,6 +181,7 @@ import {
 
 // In-flight request deduplication & short-term cache map for GET endpoints
 const inFlightRequests = new Map<string, { promise: Promise<any>; timestamp: number }>();
+const inFlightOnlyRequests = new Map<string, Promise<unknown>>();
 
 export async function dedupeApiGet<T>(url: string, params?: Record<string, unknown>, ttlMs: number = 3000): Promise<T> {
   const cacheKey = `${url}_${JSON.stringify(params || {})}`;
@@ -203,6 +204,34 @@ export async function dedupeApiGet<T>(url: string, params?: Record<string, unkno
 
   inFlightRequests.set(cacheKey, { promise, timestamp: now });
   return promise as Promise<T>;
+}
+
+// Coalesce concurrent reads without retaining completed data. This is safe for
+// mutation follow-ups that must always fetch fresh results, while avoiding
+// duplicate requests caused by React Strict Mode during page initialization.
+export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<T> {
+  const cacheKey = `${url}_${JSON.stringify(params || {})}`;
+  const existing = inFlightOnlyRequests.get(cacheKey);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+
+  const promise = api.get(url, { params }).then((response) => response.data as T);
+  inFlightOnlyRequests.set(cacheKey, promise);
+  promise.then(
+    () => {
+      if (inFlightOnlyRequests.get(cacheKey) === promise) {
+        inFlightOnlyRequests.delete(cacheKey);
+      }
+    },
+    () => {
+      if (inFlightOnlyRequests.get(cacheKey) === promise) {
+        inFlightOnlyRequests.delete(cacheKey);
+      }
+    }
+  );
+
+  return promise;
 }
 
 export interface LocaStaffActivityResponse {
@@ -441,12 +470,10 @@ export const apiClient = {
 
   customers: {
     list: async (params: ListCustomersParams): Promise<ListCustomersResponse> => {
-      const response = await api.get('/customers', { params });
-      return response.data;
+      return dedupeInFlightApiGet<ListCustomersResponse>('/customers', params);
     },
     getStats: async (params: ListCustomersParams): Promise<CustomerStatsResponse> => {
-      const response = await api.get('/customers/stats', { params });
-      return response.data;
+      return dedupeInFlightApiGet<CustomerStatsResponse>('/customers/stats', params);
     },
     getLocaStats: async (
       params?: Record<string, unknown>
@@ -538,8 +565,7 @@ export const apiClient = {
       return response.data;
     },
     getRetainQuota: async (): Promise<{ retainedCount: number; quotaLimit: number; remainingQuota: number }> => {
-      const response = await api.get('/customers/booker-retain-quota');
-      return response.data;
+      return dedupeInFlightApiGet('/customers/booker-retain-quota');
     },
     getStaff: async (params?: Record<string, unknown>): Promise<Staff[]> => {
       const response = await api.get('/customers/staff', { params });
@@ -705,8 +731,7 @@ export const apiClient = {
       return response.data;
     },
     listToday: async (): Promise<DailyPlan[]> => {
-      const response = await api.get('/plans/today');
-      return response.data;
+      return dedupeInFlightApiGet<DailyPlan[]>('/plans/today');
     },
     confirm: async (planId: number, data?: Record<string, unknown>): Promise<DailyPlan> => {
       const response = await api.put(`/plans/${planId}/confirm`, data);
@@ -1080,13 +1105,13 @@ export const apiClient = {
         if (!forceRefresh && tableCache.has(tableId)) {
           return tableCache.get(tableId)!;
         }
-        const promise = api
-          .get(`/table-config/${tableId}`)
-          .then((res) => res.data)
-          .catch((err) => {
-            tableCache.delete(tableId);
-            throw err;
-          });
+        const promise = dedupeInFlightApiGet<{
+          userConfig: ColumnConfig[] | null;
+          defaultConfig: ColumnConfig[] | null;
+        }>(`/table-config/${tableId}`).catch((err) => {
+          tableCache.delete(tableId);
+          throw err;
+        });
         tableCache.set(tableId, promise);
         return promise;
       },

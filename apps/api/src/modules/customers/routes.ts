@@ -2059,6 +2059,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const { search, assignedStaffId, dateFrom, dateTo, customTouchpoints } = request.query as SafeAny;
 
       const adminUser = request.user;
+      const cacheKey = `loca_stats:${adminUser?.id || 0}:${adminUser?.role || ''}:${JSON.stringify(request.query)}`;
+      const cachedStats = fastify.cache.get<{ tabs: Record<string, number>; touchpoints: Record<string, number> }>(
+        cacheKey
+      );
+      if (cachedStats) {
+        return cachedStats;
+      }
+
       let effectiveAssignedStaffId = assignedStaffId;
 
       if (adminUser.role === 'telesales') {
@@ -2337,7 +2345,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         touchpoints[tp.key] = Number(row[`tp_${tp.key}`] || 0);
       });
 
-      return { tabs, touchpoints };
+      const stats = { tabs, touchpoints };
+      fastify.cache.set(cacheKey, stats, 15000);
+      return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get LoCa stats error:');
       return reply.status(500).send({

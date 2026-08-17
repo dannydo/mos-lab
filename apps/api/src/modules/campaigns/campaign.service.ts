@@ -14,6 +14,7 @@ import {
   CustomerCampaignPromotionInfo,
   ListCampaignsParams,
   ReopenCampaignDto,
+  removeVietnameseTones,
   ToggleCampaignTouchpointLogDto,
   UpdateCampaignDto,
 } from '@mos-lab/shared';
@@ -952,8 +953,8 @@ export class CampaignService {
     pages: number;
   }> {
     const { bookerId, assignedStaffId, search, touchpointKey, page = 1, pageSize = 20 } = params;
-    const pageNum = Number(page) || 1;
-    const limitNum = Number(pageSize) || 20;
+    const pageNum = Math.max(1, Math.floor(Number(page) || 1));
+    const limitNum = Math.min(1000, Math.max(1, Math.floor(Number(pageSize) || 20)));
     const skip = (pageNum - 1) * limitNum;
 
     // Verify campaign exists
@@ -970,18 +971,31 @@ export class CampaignService {
       removedAt: null,
     };
 
-    const campaignCustomers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+    // Booker, text and touchpoint filters depend on data from other sources, so
+    // they still require enrichment before filtering. The common unfiltered
+    // table path can page at the database boundary, avoiding every legacy query
+    // and response field for records outside the visible page.
+    const hasPostEnrichmentFilters = Boolean(bookerId || assignedStaffId || search?.trim() || touchpointKey?.trim());
+    const customerQuery = {
       where,
       include: {
         touchpointLogs: {
-          include: { touchpoint: true },
+          include: { touchpoint: true as const },
         },
       },
-      orderBy: { addedAt: 'desc' },
-    });
+      orderBy: { addedAt: 'desc' as const },
+    };
+    const campaignCustomersPromise = hasPostEnrichmentFilters
+      ? fastify.prisma.crm.crmCampaignCustomer.findMany(customerQuery)
+      : fastify.prisma.crm.crmCampaignCustomer.findMany({ ...customerQuery, skip, take: limitNum });
+    const totalPromise: Promise<number | undefined> = hasPostEnrichmentFilters
+      ? Promise.resolve(undefined)
+      : fastify.prisma.crm.crmCampaignCustomer.count({ where });
+    const [campaignCustomers, unfilteredTotal] = await Promise.all([campaignCustomersPromise, totalPromise]);
 
     if (campaignCustomers.length === 0) {
-      return { items: [], total: 0, page: pageNum, pageSize: limitNum, pages: 0 };
+      const total = unfilteredTotal ?? 0;
+      return { items: [], total, page: pageNum, pageSize: limitNum, pages: Math.ceil(total / limitNum) || 0 };
     }
 
     const legacyUserIds = Array.from(
@@ -989,7 +1003,8 @@ export class CampaignService {
     );
 
     if (legacyUserIds.length === 0) {
-      return { items: [], total: 0, page: pageNum, pageSize: limitNum, pages: 0 };
+      const total = unfilteredTotal ?? 0;
+      return { items: [], total, page: pageNum, pageSize: limitNum, pages: Math.ceil(total / limitNum) || 0 };
     }
 
     const idListStr = legacyUserIds.join(',');
@@ -1242,10 +1257,10 @@ export class CampaignService {
 
     // Apply search filter (name or phone)
     if (search && search.trim() !== '') {
-      const searchLower = search.trim().toLowerCase();
+      const searchLower = removeVietnameseTones(search);
       enriched = enriched.filter(
         (c) =>
-          (c.customerName && c.customerName.toLowerCase().includes(searchLower)) ||
+          (c.customerName && removeVietnameseTones(c.customerName).includes(searchLower)) ||
           (c.customerPhone && c.customerPhone.includes(searchLower)) ||
           String(c.legacyUserId).includes(searchLower)
       );
@@ -1253,13 +1268,19 @@ export class CampaignService {
 
     // Apply touchpointKey filter
     if (touchpointKey && touchpointKey.toLowerCase() !== 'all') {
-      enriched = enriched.filter(
-        (c) => c.currentTouchpointKey && c.currentTouchpointKey.toLowerCase() === touchpointKey.toLowerCase()
-      );
+      const touchpoint = campaign.touchpoints.find((item) => item.key.toLowerCase() === touchpointKey.toLowerCase());
+      enriched = touchpoint
+        ? enriched.filter((customer) => {
+            const days = customer.daysInCampaign ?? 0;
+            return touchpoint.daysMax === null || touchpoint.daysMax === undefined
+              ? days >= touchpoint.daysMin
+              : days >= touchpoint.daysMin && days <= touchpoint.daysMax;
+          })
+        : [];
     }
 
-    const total = enriched.length;
-    const paginated = enriched.slice(skip, skip + limitNum);
+    const total = unfilteredTotal ?? enriched.length;
+    const paginated = hasPostEnrichmentFilters ? enriched.slice(skip, skip + limitNum) : enriched;
 
     return {
       items: paginated,

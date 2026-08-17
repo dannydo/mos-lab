@@ -100,6 +100,8 @@ export function useLocaData(options?: UseLocaDataOptions) {
   // ===== Performance: Initialization Gate + Debounce (Phase 1 Optimization) =====
   // Prevents 6x duplicate API calls on mount caused by useEffect dependency cascade
   const isInitializedRef = useRef(false);
+  const isInitialTouchpointFetchRef = useRef(true);
+  const isInitialCustomerFetchRef = useRef(true);
   const touchpointDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const customerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -545,31 +547,29 @@ export function useLocaData(options?: UseLocaDataOptions) {
   }, []);
 
   // ===== Consolidated Initialization Effect =====
-  // Loads config first, then fires all dependent fetches exactly once on mount.
-  // This replaces 4 separate useEffects that each triggered independently on mount,
-  // causing 4-6x duplicate API calls due to React Strict Mode + state cascade.
+  // Load configuration before enabling the data effects. The list and tab-count
+  // effects below own their initial fetch, so they are not also requested here.
+  // Calling them from both places made the first render fetch each endpoint twice.
   useEffect(() => {
     let cancelled = false;
     const initialize = async () => {
-      // Step 1: Load touchpoint configs (required before data fetches)
+      // Step 1: Load touchpoint configs (required before list/stats fetches)
       try {
         const data = await apiClient.loca.getConfig();
         if (!cancelled) setConfigs(data as SafeAny);
       } catch (err) {
         console.error('Failed to load touchpoint config:', err);
         optionsRef.current?.onError?.('Không thể tải cấu hình touchpoints LoCa.');
+        // Trigger the data effects with the built-in configuration when the
+        // remote config is temporarily unavailable.
+        if (!cancelled) setConfigs({ ...DEFAULT_LOCA_CONFIGS });
       }
 
-      // Step 2: Fire all independent fetches in parallel (exactly once)
+      // Step 2: Enable the debounced list/stats effects, then fetch the remaining
+      // independent page data in parallel.
       if (!cancelled) {
         isInitializedRef.current = true;
-        await Promise.allSettled([
-          fetchStaffList(),
-          fetchTodayPlans(),
-          fetchOverallStats(),
-          fetchTouchpointCounts(),
-          fetchCustomerList(),
-        ]);
+        await Promise.allSettled([fetchStaffList(), fetchTodayPlans(), fetchOverallStats()]);
       }
     };
     initialize();
@@ -643,14 +643,16 @@ export function useLocaData(options?: UseLocaDataOptions) {
     }
   }, [searchQuery, assignedStaffId, currentUser, dateRange, customTouchpointsKey]);
 
-  // Debounced touchpoint counts fetcher (300ms)
+  // Fetch immediately after configuration is ready; debounce subsequent filters.
   useEffect(() => {
     if (!isInitializedRef.current) return;
     if (Object.keys(configs).length === 0) return;
     if (touchpointDebounceRef.current) clearTimeout(touchpointDebounceRef.current);
+    const delay = isInitialTouchpointFetchRef.current ? 0 : 300;
+    isInitialTouchpointFetchRef.current = false;
     touchpointDebounceRef.current = setTimeout(() => {
       fetchTouchpointCounts();
-    }, 300);
+    }, delay);
     return () => {
       if (touchpointDebounceRef.current) clearTimeout(touchpointDebounceRef.current);
     };
@@ -746,14 +748,16 @@ export function useLocaData(options?: UseLocaDataOptions) {
     dateRange,
   ]);
 
-  // Debounced customer list fetcher (300ms)
+  // Fetch immediately after configuration is ready; debounce subsequent filters.
   useEffect(() => {
     if (!isInitializedRef.current) return;
     if (Object.keys(configs).length === 0) return;
     if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
+    const delay = isInitialCustomerFetchRef.current ? 0 : 300;
+    isInitialCustomerFetchRef.current = false;
     customerDebounceRef.current = setTimeout(() => {
       fetchCustomerList();
-    }, 300);
+    }, delay);
     return () => {
       if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
     };

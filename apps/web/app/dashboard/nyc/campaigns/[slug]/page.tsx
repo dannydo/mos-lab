@@ -10,7 +10,7 @@ import {
 } from '~/components/ui';
 
 import '../../../../suppress-warnings';
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useDeferredValue, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { ColumnsType } from 'antd/es/table';
 import {
   Button,
@@ -181,11 +181,13 @@ export default function CampaignDetailPage() {
   // Customer table state
   const [customersLoading, setCustomersLoading] = useState<boolean>(true);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [customersTotal, setCustomersTotal] = useState(0);
   const [selectedTouchpointKey, setSelectedTouchpointKey] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
   const [selectedBookerId, setSelectedBookerId] = useState<string>('ALL');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [selectedCustomersByKey, setSelectedCustomersByKey] = useState<Map<React.Key, any>>(() => new Map());
   const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   // Random Selector Modal State
@@ -209,6 +211,7 @@ export default function CampaignDetailPage() {
     }
     return 10;
   });
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   // Restore saved page on slug change
   useEffect(() => {
@@ -429,20 +432,27 @@ export default function CampaignDetailPage() {
     if (!campId) return;
     setCustomersLoading(true);
     try {
-      const params: any = { pageSize: 10000 };
+      const params: any = {
+        page: currentPage,
+        pageSize,
+      };
       if (selectedBookerId !== 'ALL') {
         params.assignedStaffId = selectedBookerId;
+      }
+      if (deferredSearchQuery.trim()) {
+        params.search = deferredSearchQuery.trim();
       }
       const res: any = await apiClient.campaigns.getCustomers(campId, params);
       const list = Array.isArray(res) ? res : res?.items || res?.data || [];
       setCustomers(list);
+      setCustomersTotal(Array.isArray(res) ? list.length : Number(res?.total ?? list.length));
     } catch (err) {
       console.error('Fetch campaign customers error:', err);
       message.error('Không thể tải danh sách khách hàng');
     } finally {
       setCustomersLoading(false);
     }
-  }, [campaign?.id, selectedBookerId]);
+  }, [campaign?.id, currentPage, deferredSearchQuery, pageSize, selectedBookerId]);
 
   useEffect(() => {
     if (!slug) return;
@@ -461,7 +471,9 @@ export default function CampaignDetailPage() {
           const [statsRes, customersRes] = await Promise.allSettled([
             apiClient.campaigns.getStats(campRes.id),
             apiClient.campaigns.getCustomers(campRes.id, {
-              pageSize: 10000,
+              page: currentPage,
+              pageSize,
+              ...(deferredSearchQuery.trim() ? { search: deferredSearchQuery.trim() } : {}),
               ...(selectedBookerId !== 'ALL' ? { assignedStaffId: selectedBookerId } : {}),
             }),
           ]);
@@ -472,6 +484,11 @@ export default function CampaignDetailPage() {
               ? customersRes.value
               : (customersRes.value as any)?.items || (customersRes.value as any)?.data || [];
             setCustomers(list);
+            setCustomersTotal(
+              Array.isArray(customersRes.value)
+                ? list.length
+                : Number((customersRes.value as any)?.total ?? list.length)
+            );
           }
         }
         isInitializedRef.current = true;
@@ -491,8 +508,11 @@ export default function CampaignDetailPage() {
 
   useEffect(() => {
     if (!isInitializedRef.current || !campaign?.id) return;
+    // Wait for the deferred query before fetching. This prevents a stale,
+    // unfiltered request when the search input resets the current page.
+    if (searchQuery !== deferredSearchQuery) return;
     fetchCampaignCustomers();
-  }, [selectedBookerId]);
+  }, [campaign?.id, deferredSearchQuery, fetchCampaignCustomers, searchQuery]);
 
   // Auto-refresh table & stats when call log, customer, booking, or call state updates
   useEffect(() => {
@@ -528,61 +548,13 @@ export default function CampaignDetailPage() {
     }
   }, [callState, campaign?.id]);
 
-  // Touchpoint Counts Breakdown
-  const touchpointCounts = useMemo(() => {
-    const counts: Record<string, number> = { ALL: customers.length };
-    touchpoints.forEach((tp) => {
-      counts[tp.key] = 0;
-    });
-    customers.forEach((c) => {
-      const days = c.daysInCampaign ?? c.daysSinceAdded ?? 0;
-      touchpoints.forEach((tp) => {
-        const min = tp.daysMin;
-        const isMatch =
-          tp.daysMax !== null && tp.daysMax !== undefined ? days >= min && days <= tp.daysMax : days >= min;
-        if (isMatch) {
-          counts[tp.key] = (counts[tp.key] || 0) + 1;
-        }
-      });
-    });
-    return counts;
-  }, [customers, touchpoints]);
-
-  // Filter Customers
-  const filteredCustomers = useMemo(() => {
-    return customers.filter((c) => {
-      // Show selected only filter
-      if (showSelectedOnly && selectedRowKeys.length > 0) {
-        const cId = c.legacyUserId || c.customerId || c.id;
-        if (!selectedRowKeys.includes(cId)) return false;
-      }
-      // Booker filter
-      if (selectedBookerId !== 'ALL') {
-        const bId = Number(selectedBookerId);
-        const staffId = c.assignedStaff?.id || c.assignedBooker?.id;
-        if (staffId !== bId) return false;
-      }
-      // Touchpoint filter
-      if (selectedTouchpointKey !== 'ALL') {
-        const tp = touchpoints.find((t) => t.key === selectedTouchpointKey);
-        if (tp) {
-          const days = c.daysInCampaign ?? c.daysSinceAdded ?? 0;
-          const min = tp.daysMin;
-          const isMatch =
-            tp.daysMax !== null && tp.daysMax !== undefined ? days >= min && days <= tp.daysMax : days >= min;
-          if (!isMatch) return false;
-        }
-      }
-      // Search query
-      if (searchQuery.trim()) {
-        const query = removeVietnameseTones(searchQuery.trim().toLowerCase());
-        const nameMatch = removeVietnameseTones((c.customerName || c.name || '').toLowerCase()).includes(query);
-        const phoneMatch = (c.customerPhone || c.phone || '').includes(query);
-        return nameMatch || phoneMatch;
-      }
-      return true;
-    });
-  }, [customers, selectedBookerId, selectedTouchpointKey, touchpoints, searchQuery, showSelectedOnly, selectedRowKeys]);
+  // Search and Booker filtering are performed by the API before pagination so the
+  // table only receives the records it can render. Keep selected rows locally so
+  // the "selected only" view remains available across server-paginated pages.
+  const tableCustomers = useMemo(
+    () => (showSelectedOnly ? Array.from(selectedCustomersByKey.values()) : customers),
+    [customers, selectedCustomersByKey, showSelectedOnly]
+  );
 
   // Toggle Touchpoint Log
   const handleToggleTouchpoint = async (
@@ -703,6 +675,7 @@ export default function CampaignDetailPage() {
             })
           );
           setSelectedRowKeys([]);
+          setSelectedCustomersByKey(new Map());
           fetchCampaignCustomers();
           apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);
         } catch (err: any) {
@@ -714,36 +687,23 @@ export default function CampaignDetailPage() {
   };
 
   // Handle Random Customer Selection
-  const handleRandomSelect = () => {
+  const handleRandomSelect = async () => {
     setRandomLoading(true);
     const countNum = typeof randomCount === 'number' && randomCount > 0 ? randomCount : 20;
 
     try {
-      // Base pool matching current toolbar filters (booker, touchpoint, search)
-      const basePool = customers.filter((c: any) => {
-        if (selectedBookerId !== 'ALL') {
-          const bId = Number(selectedBookerId);
-          const staffId = c.assignedStaff?.id || c.assignedBooker?.id;
-          if (staffId !== bId) return false;
-        }
-        if (selectedTouchpointKey !== 'ALL') {
-          const tp = touchpoints.find((t) => t.key === selectedTouchpointKey);
-          if (tp) {
-            const days = c.daysInCampaign ?? c.daysSinceAdded ?? 0;
-            const min = tp.daysMin;
-            const isMatch =
-              tp.daysMax !== null && tp.daysMax !== undefined ? days >= min && days <= tp.daysMax : days >= min;
-            if (!isMatch) return false;
-          }
-        }
-        if (searchQuery.trim()) {
-          const query = removeVietnameseTones(searchQuery.trim().toLowerCase());
-          const nameMatch = removeVietnameseTones((c.customerName || c.name || '').toLowerCase()).includes(query);
-          const phoneMatch = (c.customerPhone || c.phone || '').includes(query);
-          return nameMatch || phoneMatch;
-        }
-        return true;
+      if (!campaign?.id) return;
+
+      // Load the filtered campaign pool only when the user explicitly requests
+      // a random allocation. The normal table stays server-paginated.
+      const poolRes: any = await apiClient.campaigns.getCustomers(campaign.id, {
+        page: 1,
+        pageSize: 1000,
+        ...(selectedBookerId !== 'ALL' ? { assignedStaffId: selectedBookerId } : {}),
+        ...(selectedTouchpointKey !== 'ALL' ? { touchpointKey: selectedTouchpointKey } : {}),
+        ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
       });
+      const basePool = Array.isArray(poolRes) ? poolRes : poolRes?.items || poolRes?.data || [];
 
       // Filter candidates pool based on modal options
       const candidates = basePool.filter((record: any) => {
@@ -791,6 +751,9 @@ export default function CampaignDetailPage() {
       const selectedKeys = selectedItems.map((c: any) => c.legacyUserId || c.customerId || c.id);
 
       setSelectedRowKeys(selectedKeys);
+      setSelectedCustomersByKey(
+        new Map(selectedItems.map((item: any) => [item.legacyUserId || item.customerId || item.id, item]))
+      );
       setShowSelectedOnly(true);
       setCurrentPage(1);
       setRandomModalVisible(false);
@@ -807,10 +770,16 @@ export default function CampaignDetailPage() {
   const fetchNycCandidates = async () => {
     setNycCandidatesLoading(true);
     try {
-      const res = await apiClient.customers.list({ bucket: 'NOT_COMBO_LIVE', limit: 100 });
+      const [res, campaignCustomersRes] = await Promise.all([
+        apiClient.customers.list({ bucket: 'NOT_COMBO_LIVE', limit: 100 }),
+        campaign?.id ? apiClient.campaigns.getCustomers(campaign.id, { page: 1, pageSize: 1000 }) : Promise.resolve([]),
+      ]);
       const items = res?.data || [];
       // Filter out existing campaign customer legacyUserIds
-      const existingIds = new Set(customers.map((c) => c.legacyUserId || c.customerId || c.id));
+      const campaignCustomers = Array.isArray(campaignCustomersRes)
+        ? campaignCustomersRes
+        : (campaignCustomersRes as any)?.items || (campaignCustomersRes as any)?.data || [];
+      const existingIds = new Set(campaignCustomers.map((c: any) => c.legacyUserId || c.customerId || c.id));
       const candidates = items.filter((item: any) => !existingIds.has(item.id));
       setNycCandidateCustomers(candidates);
     } catch (err) {
@@ -855,16 +824,9 @@ export default function CampaignDetailPage() {
     }
     setAllocating(true);
     try {
-      const selectedLegacyUserIds = selectedRowKeys.map((key) => {
-        const item = customers.find(
-          (c) =>
-            c.legacyUserId === key ||
-            c.customerId === key ||
-            c.id === key ||
-            String(c.legacyUserId || c.customerId || c.id) === String(key)
-        );
-        return item ? Number(item.legacyUserId || item.customerId || item.id) : Number(key);
-      });
+      const selectedLegacyUserIds = Array.from(
+        new Set(selectedRowKeys.map((key) => Number(key)).filter((id) => Number.isFinite(id) && id > 0))
+      );
 
       await apiClient.allocation.createBatch({
         bookerId: targetBookerId,
@@ -876,6 +838,7 @@ export default function CampaignDetailPage() {
       message.success(`Tạo đợt phân bổ ${selectedLegacyUserIds.length} KH thành công! Chờ Booker xác nhận 24h.`);
       setBatchAllocationModalVisible(false);
       setSelectedRowKeys([]);
+      setSelectedCustomersByKey(new Map());
       setTargetBookerId(undefined);
       fetchCampaignCustomers();
     } catch (err) {
@@ -1651,7 +1614,10 @@ export default function CampaignDetailPage() {
                 gap: '4px',
                 margin: 0,
               }}
-              onClick={() => setShowSelectedOnly((prev) => !prev)}
+              onClick={() => {
+                setShowSelectedOnly((prev) => !prev);
+                setCurrentPage(1);
+              }}
             >
               {showSelectedOnly ? (
                 <>
@@ -1701,18 +1667,31 @@ export default function CampaignDetailPage() {
         rowSelection={
           isAdmin
             ? {
+                preserveSelectedRowKeys: true,
                 selectedRowKeys,
-                onChange: (keys) => setSelectedRowKeys(keys),
+                onChange: (keys, rows) => {
+                  const nextKeys = new Set(keys);
+                  setSelectedRowKeys(keys);
+                  setSelectedCustomersByKey((previous) => {
+                    const next = new Map(Array.from(previous).filter(([key]) => nextKeys.has(key)));
+                    rows.forEach((record: any) => {
+                      const key = record.legacyUserId || record.customerId || record.id;
+                      next.set(key, record);
+                    });
+                    return next;
+                  });
+                },
               }
             : undefined
         }
         columns={columns}
-        dataSource={filteredCustomers}
+        dataSource={tableCustomers}
         rowKey={(record) => record.legacyUserId || record.customerId || record.id}
         loading={customersLoading}
         pagination={{
           current: currentPage,
           pageSize: pageSize,
+          total: showSelectedOnly ? selectedCustomersByKey.size : customersTotal,
           onChange: (page, pSize) => {
             setCurrentPage(page);
             if (slug) {

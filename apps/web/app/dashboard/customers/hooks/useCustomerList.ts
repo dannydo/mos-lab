@@ -218,7 +218,7 @@ export const useCustomerList = (
 
   const prevFilterRef = useRef(filterParams);
 
-  // Trigger loading list & badges on filters change
+  // Fetch the page of rows when pagination or filters change.
   useEffect(() => {
     const filtersChanged = prevFilterRef.current !== filterParams;
     prevFilterRef.current = filterParams;
@@ -231,8 +231,14 @@ export const useCustomerList = (
     }
 
     fetchCustomers(currentPage, pageSize);
+  }, [currentPage, pageSize, filterParams, fetchCustomers]);
+
+  // Badge totals depend on the active filters, never on the current page.
+  // Keeping this separate prevents every pagination click from re-running the
+  // full customer-stats aggregation.
+  useEffect(() => {
     fetchStats();
-  }, [currentPage, pageSize, filterParams, fetchCustomers, fetchStats]);
+  }, [filterParams, randomSelectedIds, fetchStats]);
 
   const sentinelRef = useCallback(() => {}, []);
 
