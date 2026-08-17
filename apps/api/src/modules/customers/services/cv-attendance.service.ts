@@ -19,6 +19,13 @@ export interface UnifiedCvAttendanceItem {
   offType?: 'weekly_off' | 'urgent_off' | 'planned_off' | string;
 }
 
+export interface CvAttendancePreload {
+  comingOrders: SafeAny[];
+  comingServices: SafeAny[];
+  serviceLangMap: Map<number, string | null>;
+  customerProfileMap: Map<number, string>;
+}
+
 export class CvAttendanceService {
   /**
    * Single Source of Truth for CV Attendance, Shift, OFF status, and Real-time Activity ("Đang làm gì?")
@@ -26,7 +33,8 @@ export class CvAttendanceService {
    */
   public static async getDailyCvAttendance(
     fastify: FastifyInstance,
-    targetDateStr: string
+    targetDateStr: string,
+    preload?: CvAttendancePreload
   ): Promise<UnifiedCvAttendanceItem[]> {
     const refTime = new Date();
 
@@ -49,19 +57,35 @@ export class CvAttendanceService {
 
     const cvIds = activeCvs.map((c) => Number(c.userId)).filter((id) => !isNaN(id) && id > 0);
 
-    // CRM Staff fallbacks for avatar & display name
-    const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
-      where: { id: { in: cvIds } },
-      select: { id: true, displayName: true, avatarUrl: true },
-    });
+    // All reads below are independent once active CV IDs are known.
+    const [crmStaffList, dayOffScheduleRows, allSchedules, dayOffRows, workingShifts] = await Promise.all([
+      fastify.prisma.crm.crmStaff.findMany({
+        where: { id: { in: cvIds } },
+        select: { id: true, displayName: true, avatarUrl: true },
+      }),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT user_id, weekday, client_store_id
+        FROM staff_day_off_schedule
+        WHERE is_disabled = 0 AND user_id IN (${cvIds.join(',')})
+      `),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT user_id, type, type_value, start_time, end_time
+        FROM staff_working_shift_schedule
+        WHERE is_disabled = 0 AND user_id IN (${cvIds.join(',')})
+      `),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT sdo.from_user_id as userId, sdo.note, sdo.attribute_option_id as attributeOptionId
+        FROM staff_day_off sdo
+        WHERE sdo.from_date <= '${targetDateStr}' AND COALESCE(sdo.to_date, sdo.from_date) >= '${targetDateStr}'
+          AND sdo.request_state IN ('Approved', 'Submitted', 'Pending')
+          AND sdo.from_user_id IN (${cvIds.join(',')})
+      `),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ? AND user_id IN (${cvIds.join(',')})`,
+        targetDateStr
+      ),
+    ]);
     const crmStaffMap = new Map(crmStaffList.map((s: SafeAny) => [s.id, s]));
-
-    // 2. Query fixed store & weekly off schedule from staff_day_off_schedule master
-    const dayOffScheduleRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-      SELECT user_id, weekday, client_store_id
-      FROM staff_day_off_schedule
-      WHERE is_disabled = 0 AND user_id IN (${cvIds.join(',')})
-    `);
 
     const weeklyOffMap = new Map<number, Set<number>>();
     const schedStoreMap = new Map<number, number>();
@@ -76,13 +100,6 @@ export class CvAttendanceService {
       }
     });
 
-    // 3. Query working shift hours from staff_working_shift_schedule
-    const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-      `SELECT user_id, type, type_value, start_time, end_time 
-       FROM staff_working_shift_schedule 
-       WHERE is_disabled = 0 AND user_id IN (${cvIds.join(',')})`
-    );
-
     const schedulesByUserId: Record<number, SafeAny[]> = {};
     for (const s of allSchedules) {
       const uid = Number(s.user_id);
@@ -90,15 +107,6 @@ export class CvAttendanceService {
       list.push(s);
       schedulesByUserId[uid] = list;
     }
-
-    // 4. Fetch approved & pending leave requests from staff_day_off
-    const dayOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-      SELECT sdo.from_user_id as userId, sdo.note, sdo.attribute_option_id as attributeOptionId
-      FROM staff_day_off sdo
-      WHERE sdo.from_date <= '${targetDateStr}' AND COALESCE(sdo.to_date, sdo.from_date) >= '${targetDateStr}'
-        AND sdo.request_state IN ('Approved', 'Submitted', 'Pending')
-        AND sdo.from_user_id IN (${cvIds.join(',')})
-    `);
 
     const dateOffMap = new Map<number, { reason: string; type: 'urgent_off' | 'planned_off' }>();
     dayOffRows.forEach((r) => {
@@ -121,60 +129,59 @@ export class CvAttendanceService {
       dateOffMap.set(uid, { reason: reasonLabel, type: offType });
     });
 
-    // 5. Fetch working shift check-ins for targetDateStr
-    const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-      `SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ? AND user_id IN (${cvIds.join(',')})`,
-      targetDateStr
-    );
     const shiftMap = new Map<number, SafeAny>();
     workingShifts.forEach((ws) => {
       shiftMap.set(Number(ws.user_id), ws);
     });
 
-    // 6. Fetch appointments for targetDateStr
-    const comingOrders = await fastify.prisma.legacy.order.findMany({
-      where: {
-        booking_date_start: {
-          gte: new Date(`${targetDateStr}T00:00:00.000Z`),
-          lte: new Date(`${targetDateStr}T23:59:59.999Z`),
+    let comingOrders: SafeAny[];
+    let comingServices: SafeAny[];
+    let serviceLangMap: Map<number, string | null>;
+    let customerProfileMap: Map<number, string>;
+
+    if (preload) {
+      ({ comingOrders, comingServices, serviceLangMap, customerProfileMap } = preload);
+    } else {
+      comingOrders = await fastify.prisma.legacy.order.findMany({
+        where: {
+          booking_date_start: {
+            gte: new Date(`${targetDateStr}T00:00:00.000Z`),
+            lte: new Date(`${targetDateStr}T23:59:59.999Z`),
+          },
+          order_state: { not: 'Cancelled' },
         },
-        order_state: { not: 'Cancelled' },
-      },
-      orderBy: { booking_date_start: 'asc' },
-    });
+        orderBy: { booking_date_start: 'asc' },
+      });
 
-    const comingOrderIds = comingOrders.map((o) => o.id);
-    const comingServices =
-      comingOrderIds.length > 0
-        ? await fastify.prisma.legacy.order_service.findMany({
-            where: { order_id: { in: comingOrderIds } },
-          })
-        : [];
-
-    const comingServiceIds = Array.from(new Set(comingServices.map((cs) => cs.service_id)));
-    const serviceLangs =
-      comingServiceIds.length > 0
-        ? await fastify.prisma.legacy.service_language.findMany({
-            where: { service_id: { in: comingServiceIds } },
-          })
-        : [];
-    const serviceLangMap = new Map(serviceLangs.map((sl) => [sl.service_id, sl.service_name]));
-
-    const userIds = Array.from(new Set(comingOrders.map((o) => o.user_id))).filter(
-      (id): id is number => id !== null && id !== undefined && Number(id) > 0
-    );
-    const userProfiles =
-      userIds.length > 0
-        ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-      SELECT up.user_id as userId, up.full_name as fullName
-      FROM \`user_profile\` up
-      WHERE up.user_id IN (${userIds.join(',')})
-    `)
-        : [];
-    const customerProfileMap = new Map<number, string>();
-    userProfiles.forEach((up) => {
-      customerProfileMap.set(Number(up.userId), up.fullName ? String(up.fullName).trim() : 'Khách hàng');
-    });
+      const comingOrderIds = comingOrders.map((o) => o.id);
+      comingServices =
+        comingOrderIds.length > 0
+          ? await fastify.prisma.legacy.order_service.findMany({ where: { order_id: { in: comingOrderIds } } })
+          : [];
+      const comingServiceIds = Array.from(new Set(comingServices.map((cs) => cs.service_id)));
+      const userIds = Array.from(new Set(comingOrders.map((o) => o.user_id))).filter(
+        (id): id is number => id !== null && id !== undefined && Number(id) > 0
+      );
+      const [serviceLangs, userProfiles] = await Promise.all([
+        comingServiceIds.length > 0
+          ? fastify.prisma.legacy.service_language.findMany({ where: { service_id: { in: comingServiceIds } } })
+          : Promise.resolve([]),
+        userIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT up.user_id as userId, up.full_name as fullName
+              FROM \`user_profile\` up
+              WHERE up.user_id IN (${userIds.join(',')})
+            `)
+          : Promise.resolve([]),
+      ]);
+      serviceLangMap = new Map(serviceLangs.map((service) => [service.service_id, service.service_name]));
+      customerProfileMap = new Map(
+        userProfiles.map((profile) => [
+          Number(profile.userId),
+          profile.fullName ? String(profile.fullName).trim() : 'Khách hàng',
+        ])
+      );
+    }
 
     const staffMap = new Map<number, string>();
     activeCvs.forEach((c) => {

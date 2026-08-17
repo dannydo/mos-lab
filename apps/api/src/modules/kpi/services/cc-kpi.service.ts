@@ -1,7 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { SafeAny, CC_GAMIFICATION_SYSTEM_CONFIG, calculateWheelBonusCap } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
-import { buildComboBalanceExistsSql } from '../../customers/services/combo-recognition.service.js';
+import {
+  buildComboBalanceExistsSql,
+  buildComboLiveAtBookingSql,
+} from '../../customers/services/combo-recognition.service.js';
 import { getFalReadModelMap } from '../../fal/fal.service.js';
 
 export interface CcKpiFilters {
@@ -928,6 +931,7 @@ export class CcKpiService {
         ) as cc_out_id,
         GREATEST(0, (COALESCE(NULLIF(osc.total_price - osc.tax_amount, 0), osc.service_price - osc.discount_amount - osc.tax_amount, 0) - COALESCE(ud.debt_amount, 0))) as combo_sales,
         COALESCE(osc.quantity, 1) as combo_count,
+        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 0 ELSE 1 END as is_green_visit,
         UPPER(cs.client_store_key) as store_code
       FROM \`order\` o
       JOIN \`order_service_combo\` osc ON osc.order_id = o.id
@@ -1006,11 +1010,39 @@ export class CcKpiService {
         ${storeFilterClause}
     `;
 
-    const [comboRows, upgradeRows, productRows, singleRows] = await Promise.all([
+    // A "Vòng Xanh" appointment is one whose customer was NOT COMBO_LIVE
+    // when the appointment was created. Completion and reporting date still
+    // follow the actual check-in window (Rule #15); only eligibility is a
+    // booking-time snapshot.
+    const visitMetricsQuery = `
+      SELECT
+        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as visit_date,
+        MAX(os.check_in_staff_id) as cc_in_id,
+        MAX(os.check_out_staff_id) as cc_out_id,
+        UPPER(cs.client_store_key) as store_code,
+        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 0 ELSE 1 END as is_green_visit
+      FROM \`order\` o
+      JOIN \`order_service\` os ON os.order_id = o.id
+      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+      WHERE o.order_state = 'Completed'
+        ${actualCheckinRangeClause}
+        ${storeFilterClause}
+      GROUP BY
+        o.id,
+        o.user_id,
+        o.date_created,
+        ro.actual_booking_date_start,
+        o.booking_date_start,
+        cs.client_store_key
+    `;
+
+    const [comboRows, upgradeRows, productRows, singleRows, visitRows] = await Promise.all([
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(upgradeSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSalesQuery),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(singleSalesQuery),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(visitMetricsQuery),
     ]);
 
     // === 50/50 SPLIT LOGIC: Split doanh số TRƯỚC → Gom theo NGÀY → Tra Tier Rate ===
@@ -1021,10 +1053,13 @@ export class CcKpiService {
     interface DailySalesAccum {
       combo_sales: number;
       combo_count: number;
+      green_combo_count: number;
       product_sales: number;
       product_count: number;
       single_sales: number;
       debt_collected: number;
+      total_visits: number;
+      green_visits: number;
       store_code: string;
     }
 
@@ -1038,10 +1073,13 @@ export class CcKpiService {
         entry = {
           combo_sales: 0,
           combo_count: 0,
+          green_combo_count: 0,
           product_sales: 0,
           product_count: 0,
           single_sales: 0,
           debt_collected: 0,
+          total_visits: 0,
+          green_visits: 0,
           store_code: storeCode,
         };
         salesMap.set(key, entry);
@@ -1061,6 +1099,9 @@ export class CcKpiService {
         const entry = getOrCreate(dateStr, staffId, storeCode);
         entry.combo_sales += Math.round(sales * share);
         entry.combo_count += count * share;
+        if (Number(r.is_green_visit) === 1) {
+          entry.green_combo_count += count * share;
+        }
       });
     });
 
@@ -1105,6 +1146,22 @@ export class CcKpiService {
       });
     });
 
+    // One completed order is one customer visit. Use the same CC IN/OUT
+    // allocation as sales so a split handoff cannot inflate the denominator
+    // or distort the Vòng Xanh conversion rate.
+    visitRows.forEach((r) => {
+      const splits = splitCcShares(r.cc_in_id, r.cc_out_id, targetStaffIds);
+      const dateStr = String(r.visit_date);
+      const storeCode = String(r.store_code || 'MOS');
+      const isGreenVisit = Number(r.is_green_visit) === 1;
+
+      splits.forEach(({ staffId, share }) => {
+        const entry = getOrCreate(dateStr, staffId, storeCode);
+        entry.total_visits += share;
+        if (isGreenVisit) entry.green_visits += share;
+      });
+    });
+
     // === BUILD RESULT: Aggregate per-day, apply Tier Rate ===
     const result = Array.from(salesMap.entries()).map(([key, rec]) => {
       const [dateStr, staffIdStr] = key.split('_');
@@ -1139,6 +1196,7 @@ export class CcKpiService {
         store_code: rec.store_code,
         combo_sales: rec.combo_sales,
         combo_count: rec.combo_count,
+        green_combo_count: rec.green_combo_count,
         product_sales: rec.product_sales,
         product_count: rec.product_count,
         single_sales: rec.single_sales,
@@ -1148,6 +1206,8 @@ export class CcKpiService {
         total_sales,
         commission_rate_percent: matchedTierRate,
         daily_bonus,
+        total_visits: rec.total_visits,
+        green_visits: rec.green_visits,
       };
     });
 

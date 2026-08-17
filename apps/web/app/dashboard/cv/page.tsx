@@ -2,27 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Select, Tabs, Tooltip, theme } from 'antd';
+import { Card, Tabs, Tooltip, theme } from 'antd';
 import { WalletOutlined, DashboardOutlined, MoneyCollectOutlined, SyncOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
-import { apiClient } from '../../../lib/api-client';
-import { CvStaffOption, vietnameseSearchFilter } from '@mos-lab/shared';
-import {
-  PageHeader,
-  PageToolbar,
-  ReportPeriodNavigator,
-  TableSettingsTrigger,
-  ToolbarFilterDisclosure,
-} from '../../../components/ui';
+import { PageHeader, PageToolbar, ReportPeriodNavigator, TableSettingsTrigger } from '../../../components/ui';
 
 dayjs.extend(isoWeek);
 
 const CvXoayTab = dynamic(() => import('./components/CvXoayTab'), { ssr: false });
 const CvTipTab = dynamic(() => import('./components/CvTipTab'), { ssr: false });
 const CvThuNhapTab = dynamic(() => import('./components/CvThuNhapTab'), { ssr: false });
-const CvConfigDrawer = dynamic(() => import('./components/CvConfigDrawer'), { ssr: false });
 const CvSpeedTab = dynamic(() => import('./components/cv-speed/CvSpeedTab').then((m) => ({ default: m.CvSpeedTab })), {
   ssr: false,
 });
@@ -90,22 +81,10 @@ export default function CvReportPage() {
     return [dayjs().startOf('month'), dayjs().endOf('month')];
   });
 
-  const [selectedStore, setSelectedStore] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cv_selected_store');
-      if (saved) return saved;
-    }
-    return 'ALL';
-  });
-
-  const [selectedConsultant, setSelectedConsultant] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cv_selected_consultant');
-      if (saved) return saved;
-    }
-    return 'ALL';
-  });
-  const activeCvFilterCount = Number(selectedStore !== 'ALL') + Number(selectedConsultant !== 'ALL');
+  // CV reports are intentionally cross-store and cross-technician. These
+  // constants prevent a stale local preference from becoming an invisible filter.
+  const selectedStore = 'ALL';
+  const selectedConsultant = 'ALL';
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -120,9 +99,6 @@ export default function CvReportPage() {
     }
     return 'xoay';
   });
-
-  // Staff Config & Staff Options
-  const [staffOptions, setStaffOptions] = useState<CvStaffOption[]>([]);
 
   // Sync state changes to localStorage
   useEffect(() => {
@@ -143,18 +119,6 @@ export default function CvReportPage() {
     }
   }, [referenceDate]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cv_selected_store', selectedStore);
-    }
-  }, [selectedStore]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cv_selected_consultant', selectedConsultant);
-    }
-  }, [selectedConsultant]);
-
   // Update date range when viewMode or referenceDate changes
   useEffect(() => {
     if (viewMode === 'month') {
@@ -165,21 +129,6 @@ export default function CvReportPage() {
       setDateRange([referenceDate.startOf('day'), referenceDate.endOf('day')]);
     }
   }, [viewMode, referenceDate]);
-
-  const fetchStaffConfig = async () => {
-    try {
-      const res = await apiClient.kpi.getCvConfig();
-      if (res && res.allStaffOptions) {
-        setStaffOptions(res.allStaffOptions);
-      }
-    } catch (err) {
-      console.error('Error fetching CV staff options:', err);
-    }
-  };
-
-  useEffect(() => {
-    fetchStaffConfig();
-  }, []);
 
   // Navigate date backward / forward
   const handleNavigate = (direction: number) => {
@@ -237,40 +186,11 @@ export default function CvReportPage() {
           />
         }
         actions={
-          <>
-            <ToolbarFilterDisclosure title="Bộ lọc CV" triggerLabel="Mở bộ lọc CV" activeCount={activeCvFilterCount}>
-              <Select
-                aria-label="Lọc theo chi nhánh"
-                value={selectedStore}
-                onChange={setSelectedStore}
-                style={{ width: 160 }}
-                options={[
-                  { value: 'ALL', label: 'Tất cả chi nhánh' },
-                  { value: '6', label: 'Đề Thám' },
-                  { value: '16', label: 'Estella Place' },
-                ]}
-                placeholder="Chọn chi nhánh"
-              />
-              <Select
-                aria-label="Lọc theo chuyên viên"
-                value={selectedConsultant}
-                onChange={setSelectedConsultant}
-                style={{ width: 170 }}
-                showSearch
-                filterOption={vietnameseSearchFilter}
-                options={[
-                  { value: 'ALL', label: 'Tất cả CV' },
-                  ...staffOptions.map((s) => ({ value: String(s.staffId), label: s.displayName })),
-                ]}
-                placeholder="Chọn CV"
-              />
-            </ToolbarFilterDisclosure>
-            <TableSettingsTrigger
-              title="Cấu hình CV"
-              onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
-              className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
-            />
-          </>
+          <TableSettingsTrigger
+            title="Cấu hình CV"
+            onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
+            className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+          />
         }
       />
 

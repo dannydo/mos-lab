@@ -3,7 +3,7 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Card, theme, Select, Space, Tabs } from 'antd';
+import { Typography, Card, theme, Space, Tabs } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
@@ -98,8 +98,9 @@ export default function BkDashboardPage() {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
-  const [selectedStore, setSelectedStore] = useState<string>('ALL');
-  const [selectedBooker] = useState<string>('ALL');
+  // BK reports are always cross-store; no toolbar filter can silently narrow the data.
+  const selectedStore = 'ALL';
+  const selectedBooker = 'ALL';
 
   const [activeTab, setActiveTab] = useState<string>('booking');
 
@@ -252,18 +253,6 @@ export default function BkDashboardPage() {
               rangeValue={dateRange}
               onRangeChange={setDateRange}
               className="bk-report-period"
-            />
-
-            {/* Store Filter */}
-            <Select
-              value={selectedStore}
-              onChange={setSelectedStore}
-              style={{ width: 140 }}
-              options={[
-                { value: 'ALL', label: 'Tất cả CS' },
-                { value: '6', label: 'Đề Thám' },
-                { value: '16', label: 'Estella Place' },
-              ]}
             />
 
             <IconButton

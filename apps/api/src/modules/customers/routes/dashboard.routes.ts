@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { RevenueHourlyResponse, RevenueDetailResponse, calculateFractionToday } from '@mos-lab/shared';
 import { CvAttendanceService } from '../services/cv-attendance.service.js';
+import { TeamService } from '../../teams/team.service.js';
 
 export async function registerDashboardRoutes(fastify: FastifyInstance) {
   // GET /api/nyc/config
@@ -302,68 +303,68 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
     };
 
     try {
-      // Get active Telesales/OC names from CRM database (including Tâm Nguyễn who also does telesales)
-      const crmTelesales = await fastify.prisma.crm.crmStaff.findMany({
-        where: {
-          OR: [{ role: 'telesales' }, { displayName: { in: ['Tâm Nguyễn'] } }],
-          isActive: true,
-        },
-        select: { displayName: true },
-      });
-      const telesalesNames = new Set(crmTelesales.map((s) => s.displayName.trim().toLowerCase()));
-      // 1. Query bookings created today
-      const bookingsOrders = await fastify.prisma.legacy.order.findMany({
-        where: {
-          date_created: {
-            gte: startOfDay,
-            lte: endOfDay,
+      // These independent reads form the first critical-path fan-out for the dashboard.
+      const [crmTelesales, bookingsOrders, comingOrders, activeCcIds] = await Promise.all([
+        fastify.prisma.crm.crmStaff.findMany({
+          where: {
+            OR: [{ role: 'telesales' }, { displayName: { in: ['Tâm Nguyễn'] } }],
+            isActive: true,
           },
-          order_state: { not: 'Cancelled' },
-        },
-        orderBy: { date_created: 'desc' },
-      });
-
-      // 2. Query coming today/range
-      const comingOrders = await fastify.prisma.legacy.order.findMany({
-        where: {
-          OR: [
-            { booking_date_only: { gte: bookingDateOnlyStart, lte: bookingDateOnlyEnd } },
-            { booking_date_start: { gte: startOfDay, lte: endOfDay } },
-          ],
-          order_state: { not: 'Cancelled' },
-        },
-        orderBy: { booking_date_start: 'asc' },
-      });
+          select: { displayName: true },
+        }),
+        fastify.prisma.legacy.order.findMany({
+          where: {
+            date_created: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+            order_state: { not: 'Cancelled' },
+          },
+          orderBy: { date_created: 'desc' },
+        }),
+        fastify.prisma.legacy.order.findMany({
+          where: {
+            OR: [
+              { booking_date_only: { gte: bookingDateOnlyStart, lte: bookingDateOnlyEnd } },
+              { booking_date_start: { gte: startOfDay, lte: endOfDay } },
+            ],
+            order_state: { not: 'Cancelled' },
+          },
+          orderBy: { booking_date_start: 'asc' },
+        }),
+        // Active CC configuration is the system source of truth. Avoid scanning the complete order_service ledger on every page load.
+        TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG'),
+      ]);
+      const telesalesNames = new Set(crmTelesales.map((s) => s.displayName.trim().toLowerCase()));
 
       const userIds = Array.from(
         new Set([...bookingsOrders.map((o) => o.user_id), ...comingOrders.map((o) => o.user_id)])
       ).filter((id): id is number => id !== null && id !== undefined && !isNaN(Number(id)) && Number(id) > 0);
+      const allOrderIds = Array.from(new Set([...bookingsOrders.map((o) => o.id), ...comingOrders.map((o) => o.id)]));
 
-      const userProfiles =
+      const [userProfiles, userContacts, userBalances, allOrderServices] = await Promise.all([
         userIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
-        FROM \`user_profile\` up
-        LEFT JOIN \`user\` u ON up.user_id = u.id
-        WHERE up.user_id IN (${userIds.join(',')})
-      `)
-          : [];
-
-      const userContacts =
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
+              FROM \`user_profile\` up
+              LEFT JOIN \`user\` u ON up.user_id = u.id
+              WHERE up.user_id IN (${userIds.join(',')})
+            `)
+          : Promise.resolve([]),
         userIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT user_id as userId, phone_number as phoneNumber
-        FROM \`user_contact\`
-        WHERE user_id IN (${userIds.join(',')}) AND is_disabled = 0
-      `)
-          : [];
-
-      const userBalances =
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT user_id as userId, phone_number as phoneNumber
+              FROM \`user_contact\`
+              WHERE user_id IN (${userIds.join(',')}) AND is_disabled = 0
+            `)
+          : Promise.resolve([]),
         userIds.length > 0
-          ? await fastify.prisma.legacy.user_service_balance.findMany({
-              where: { user_id: { in: userIds } },
-            })
-          : [];
+          ? fastify.prisma.legacy.user_service_balance.findMany({ where: { user_id: { in: userIds } } })
+          : Promise.resolve([]),
+        allOrderIds.length > 0
+          ? fastify.prisma.legacy.order_service.findMany({ where: { order_id: { in: allOrderIds } } })
+          : Promise.resolve([]),
+      ]);
 
       const balancesByUserId = new Map<number, SafeAny[]>();
       for (const balance of userBalances) {
@@ -372,39 +373,6 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         balances.push(balance);
         balancesByUserId.set(userId, balances);
       }
-
-      const balanceIds = userBalances.map((b) => b.id);
-      const userBalanceTransactions =
-        balanceIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
-               usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
-               usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-               COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
-        FROM user_service_balance_transaction usbt
-        LEFT JOIN \`order\` o ON o.id = usbt.order_id
-        LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
-        WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-      `)
-          : [];
-
-      // Index transactions by balance ID for O(1) lookups
-      const txnsByBalanceId = new Map<number, SafeAny[]>();
-      for (const t of userBalanceTransactions) {
-        const bid = Number(t.user_service_balance_id);
-        const list = txnsByBalanceId.get(bid) || [];
-        list.push(t);
-        txnsByBalanceId.set(bid, list);
-      }
-
-      const allOrderIds = Array.from(new Set([...bookingsOrders.map((o) => o.id), ...comingOrders.map((o) => o.id)]));
-
-      const allOrderServices =
-        allOrderIds.length > 0
-          ? await fastify.prisma.legacy.order_service.findMany({
-              where: { order_id: { in: allOrderIds } },
-            })
-          : [];
 
       const servicesByOrderId = new Map<number, SafeAny[]>();
       for (const service of allOrderServices) {
@@ -430,23 +398,64 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         )
       ).filter((id) => !isNaN(id) && id > 0);
 
-      const promotions =
+      const balanceIds = userBalances.map((b) => b.id);
+      const staffIds = Array.from(
+        new Set(
+          [
+            ...activeCcIds,
+            ...[...bookingsOrders, ...comingOrders].flatMap((order) => [
+              order.created_staff_id,
+              order.assigned_staff_id,
+            ]),
+            ...allOrderServices.flatMap((service) => [
+              service.assigned_staff_id,
+              service.check_in_staff_id,
+              service.check_out_staff_id,
+            ]),
+          ].map(Number)
+        )
+      ).filter((id) => !isNaN(id) && id > 0);
+
+      const [userBalanceTransactions, promotions, staffProfiles] = await Promise.all([
+        balanceIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired,
+                     usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count,
+                     usbt.retain_count, usbt.used_staff_id, usbt.order_id,
+                     COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
+              FROM user_service_balance_transaction usbt
+              LEFT JOIN \`order\` o ON o.id = usbt.order_id
+              LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
+              WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
+            `)
+          : Promise.resolve([]),
         promoIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT p.id, p.promotion_key as promotionKey, pl.promotion_name as name
-        FROM promotion p
-        LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
-        WHERE p.id IN (${promoIds.join(',')})
-      `)
-          : [];
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT p.id, p.promotion_key as promotionKey, pl.promotion_name as name
+              FROM promotion p
+              LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
+              WHERE p.id IN (${promoIds.join(',')})
+            `)
+          : Promise.resolve([]),
+        staffIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT up.user_id as userId,
+                     TRIM(COALESCE(NULLIF(up.full_name, ''), CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')))) as fullName
+              FROM \`user_profile\` up
+              WHERE up.user_id IN (${staffIds.join(',')})
+            `)
+          : Promise.resolve([]),
+      ]);
+
+      const txnsByBalanceId = new Map<number, SafeAny[]>();
+      for (const t of userBalanceTransactions) {
+        const bid = Number(t.user_service_balance_id);
+        const list = txnsByBalanceId.get(bid) || [];
+        list.push(t);
+        txnsByBalanceId.set(bid, list);
+      }
 
       const promoMap = new Map(promotions.map((p) => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
-
-      const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT up.user_id as userId, 
-               TRIM(COALESCE(NULLIF(up.full_name, ''), CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')))) as fullName
-        FROM \`user_profile\` up
-      `);
       const staffMap = new Map(staffProfiles.map((s) => [Number(s.userId), s.fullName || `Staff #${s.userId}`]));
 
       // Exact legacy PHP combo active helper function
@@ -623,117 +632,70 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       });
 
       const comingOrderIds = comingOrders.map((o) => o.id);
-
-      const comingServices =
-        comingOrderIds.length > 0
-          ? await fastify.prisma.legacy.order_service.findMany({
-              where: { order_id: { in: comingOrderIds } },
-            })
-          : [];
-
+      const comingOrderIdSet = new Set(comingOrderIds.map(Number));
+      const comingServices = allOrderServices.filter((service) => comingOrderIdSet.has(Number(service.order_id)));
       const comingServiceIds = Array.from(new Set(comingServices.map((cs) => cs.service_id)));
-      const serviceLangs =
+      const [
+        serviceLangs,
+        comingProducts,
+        comingCombos,
+        ccProfiles,
+        allSchedules,
+        weekOffRows,
+        dayOffs,
+        workingShifts,
+      ] = await Promise.all([
         comingServiceIds.length > 0
-          ? await fastify.prisma.legacy.service_language.findMany({
-              where: { service_id: { in: comingServiceIds } },
-            })
-          : [];
+          ? fastify.prisma.legacy.service_language.findMany({ where: { service_id: { in: comingServiceIds } } })
+          : Promise.resolve([]),
+        comingOrderIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT * FROM \`order_product\` WHERE order_id IN (${comingOrderIds.join(',')})
+            `)
+          : Promise.resolve([]),
+        comingOrderIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT * FROM \`order_service_combo\` WHERE order_id IN (${comingOrderIds.join(',')})
+            `)
+          : Promise.resolve([]),
+        activeCcIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT user_id as userId, full_name as fullName, client_store_id as storeId
+              FROM \`user_profile\`
+              WHERE user_id IN (${activeCcIds.join(',')}) AND provider = 'Staff' AND is_disabled = 0
+            `)
+          : Promise.resolve([]),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT user_id, type, type_value, start_time, end_time
+          FROM staff_working_shift_schedule
+          WHERE is_disabled = 0 AND user_id IS NOT NULL
+        `),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT from_user_id as userId, weekday, COUNT(*) as cnt
+          FROM staff_day_off
+          WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL
+          GROUP BY from_user_id, weekday
+        `),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT from_user_id FROM staff_day_off
+           WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved' AND from_user_id IS NOT NULL`,
+          targetDateStr
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ?`,
+          targetDateStr
+        ),
+      ]);
       const serviceLangMap = new Map(serviceLangs.map((sl) => [sl.service_id, sl.service_name]));
 
-      const comingProducts =
-        comingOrderIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT * FROM \`order_product\` WHERE order_id IN (${comingOrderIds.join(',')})
-      `)
-          : [];
-
-      const comingCombos =
-        comingOrderIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT * FROM \`order_service_combo\` WHERE order_id IN (${comingOrderIds.join(',')})
-      `)
-          : [];
-
-      // Get active CCs (check-in/out in the last 30 days and user_profile.is_disabled = 0)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const activeCcRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `
-        SELECT DISTINCT s.staffId
-        FROM (
-          SELECT DISTINCT check_in_staff_id as staffId FROM \`order_service\` WHERE check_in_staff_id IS NOT NULL AND check_in_staff_id > 0 AND date_created >= ?
-          UNION
-          SELECT DISTINCT check_out_staff_id as staffId FROM \`order_service\` WHERE check_out_staff_id IS NOT NULL AND check_out_staff_id > 0 AND date_created >= ?
-        ) s
-      `,
-        thirtyDaysAgo,
-        thirtyDaysAgo
-      );
-
-      const activeCcIds = activeCcRows.map((r) => Number(r.staffId)).filter((id) => !isNaN(id) && id > 0);
-      const activeCcs: { id: number; name: string; branch: 'detham' | 'pxl' | 'estella' }[] = [];
-
-      if (activeCcIds.length > 0) {
-        const ccProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT user_id as userId, full_name as fullName
-          FROM \`user_profile\`
-          WHERE user_id IN (${activeCcIds.join(',')}) AND provider = 'Staff' AND is_disabled = 0
-        `);
-
-        // Map each CC to their preferred store in a single grouped query (Batch CC preference fetch)
-        const prefStores = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT s.staffId, o.client_store_id as storeId, COUNT(*) as count
-          FROM (
-            SELECT check_in_staff_id as staffId, order_id 
-            FROM \`order_service\` 
-            WHERE check_in_staff_id IN (${activeCcIds.join(',')})
-            UNION ALL
-            SELECT check_out_staff_id as staffId, order_id 
-            FROM \`order_service\` 
-            WHERE check_out_staff_id IN (${activeCcIds.join(',')})
-          ) s
-          JOIN \`order\` o ON s.order_id = o.id
-          GROUP BY s.staffId, o.client_store_id
-        `);
-
-        const ccCountsMap = new Map<number, { storeId: number; count: number }>();
-        for (const row of prefStores) {
-          const ccId = Number(row.staffId);
-          const storeId = Number(row.storeId);
-          const count = Number(row.count);
-          const existing = ccCountsMap.get(ccId);
-          if (!existing || count > existing.count) {
-            ccCountsMap.set(ccId, { storeId, count });
-          }
-        }
-
-        for (const p of ccProfiles) {
-          const ccId = Number(p.userId);
-          const pref = ccCountsMap.get(ccId);
-          const prefStoreId = pref ? pref.storeId : null;
-
-          let branch: 'detham' | 'pxl' | 'estella' | null = null;
-          if (prefStoreId === 6) branch = 'detham';
-          else if (prefStoreId === 2) branch = 'pxl';
-          else if (prefStoreId === 16) branch = 'estella';
-
-          if (branch) {
-            activeCcs.push({
-              id: ccId,
-              name: p.fullName.trim(),
-              branch,
-            });
-          }
-        }
-      }
-
-      // 1. Query schedules for weekly off calculations
-      const allSchedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT user_id, type, type_value, start_time, end_time 
-         FROM staff_working_shift_schedule 
-         WHERE is_disabled = 0 AND user_id IS NOT NULL`
-      );
+      const activeCcs = ccProfiles.flatMap((profile) => {
+        const storeId = Number(profile.storeId);
+        const branch =
+          storeId === 2 ? 'pxl' : storeId === 16 ? 'estella' : storeId === 6 || storeId === 1 ? 'detham' : null;
+        if (!branch) return [];
+        const id = Number(profile.userId);
+        return [{ id, name: String(profile.fullName || staffMap.get(id) || `Staff #${id}`).trim(), branch }];
+      });
 
       const schedulesByUserId: { [uid: number]: SafeAny[] } = {};
       for (const s of allSchedules) {
@@ -742,14 +704,6 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         list.push(s);
         schedulesByUserId[uid] = list;
       }
-
-      // 2. Query approved week-off requests
-      const weekOffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT from_user_id as userId, weekday, COUNT(*) as cnt
-         FROM staff_day_off
-         WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL
-         GROUP BY from_user_id, weekday`
-      );
 
       const weekOffsByUserId: { [uid: number]: { weekday: number; cnt: number }[] } = {};
       for (const r of weekOffRows) {
@@ -761,12 +715,6 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         weekOffsByUserId[uid] = list;
       }
 
-      // 3. Query specific day-offs for target date
-      const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT from_user_id FROM staff_day_off 
-         WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved' AND from_user_id IS NOT NULL`,
-        targetDateStr
-      );
       const offUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));
 
       const dayOfWeek = new Date(targetDateStr).getDay();
@@ -995,14 +943,6 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Fetch working shifts for today
-      const workingShifts = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `
-        SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ?
-      `,
-        targetDateStr
-      );
-
       const shiftMap = new Map<number, SafeAny>();
       workingShifts.forEach((ws) => {
         shiftMap.set(Number(ws.user_id), ws);
@@ -1098,8 +1038,27 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         });
       });
 
-      // Single Source of Truth: Calculate and populate Chuyên viên (CV) list for each branch
-      const cvAttendanceList = await CvAttendanceService.getDailyCvAttendance(fastify, targetDateStr);
+      // Reuse the dashboard's appointment dataset so the shared CV service does not query the same orders, services,
+      // translations, and customer names for a second time in the same request.
+      const cvStart = new Date(`${targetDateStr}T00:00:00.000Z`).getTime();
+      const cvEnd = new Date(`${targetDateStr}T23:59:59.999Z`).getTime();
+      const cvComingOrders = comingOrders.filter((order) => {
+        const bookingTime = order.booking_date_start ? new Date(order.booking_date_start).getTime() : NaN;
+        return bookingTime >= cvStart && bookingTime <= cvEnd;
+      });
+      const cvComingOrderIds = new Set(cvComingOrders.map((order) => Number(order.id)));
+      const cvCustomerProfileMap = new Map(
+        userProfiles.map((profile) => [
+          Number(profile.userId),
+          profile.fullName ? String(profile.fullName).trim() : 'Khách hàng',
+        ])
+      );
+      const cvAttendanceList = await CvAttendanceService.getDailyCvAttendance(fastify, targetDateStr, {
+        comingOrders: cvComingOrders,
+        comingServices: comingServices.filter((service) => cvComingOrderIds.has(Number(service.order_id))),
+        serviceLangMap,
+        customerProfileMap: cvCustomerProfileMap,
+      });
       cvAttendanceList.forEach((cv) => {
         let bKey = 'estella';
         if (cv.storeId === 6 || cv.storeId === 1) bKey = 'detham';

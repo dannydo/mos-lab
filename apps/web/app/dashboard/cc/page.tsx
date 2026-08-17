@@ -3,7 +3,7 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Card, theme, Select, Tabs, Spin, message, Dropdown } from 'antd';
+import { Typography, Card, theme, Tabs, Spin, message, Dropdown } from 'antd';
 import {
   AccountBookOutlined,
   DollarCircleOutlined,
@@ -17,7 +17,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
-import { CcLeaderboardEntry, CcXoayRecord, vietnameseSearchFilter } from '@mos-lab/shared';
+import { CcLeaderboardEntry, CcXoayRecord } from '@mos-lab/shared';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 import CcLeaderboardCard from './components/CcLeaderboardCard';
@@ -127,21 +127,13 @@ export default function CcDashboardPage() {
   const [ccBonusConfigOpen, setCcBonusConfigOpen] = useState(false);
   const [ccBonusConfigVersion, setCcBonusConfigVersion] = useState(0);
 
-  const [selectedStore, setSelectedStore] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cc_selected_store');
-      if (saved) return saved;
-    }
-    return 'ALL';
-  });
+  // CC reports are intentionally cross-store. Keep the scope explicit so a
+  // stale local preference can never apply an invisible store filter.
+  const selectedStore = 'ALL';
 
-  const [selectedConsultant, setSelectedConsultant] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cc_selected_consultant');
-      if (saved) return saved;
-    }
-    return 'ALL';
-  });
+  // A CC can still be selected from an in-context leaderboard drill-down,
+  // but the report no longer restores or exposes a global CC filter.
+  const [selectedConsultant, setSelectedConsultant] = useState('ALL');
 
   const [includeVat, setIncludeVat] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -150,7 +142,7 @@ export default function CcDashboardPage() {
     }
     return true;
   });
-  const activeCcFilterCount = Number(selectedStore !== 'ALL') + Number(selectedConsultant !== 'ALL');
+  const activeCcFilterCount = Number(selectedConsultant !== 'ALL');
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -188,18 +180,6 @@ export default function CcDashboardPage() {
       localStorage.setItem('cc_reference_date', referenceDate.format('YYYY-MM-DD'));
     }
   }, [referenceDate]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cc_selected_store', selectedStore);
-    }
-  }, [selectedStore]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cc_selected_consultant', selectedConsultant);
-    }
-  }, [selectedConsultant]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -269,7 +249,7 @@ export default function CcDashboardPage() {
 
   useEffect(() => {
     fetchCcData();
-  }, [dateRange, selectedStore, selectedConsultant]);
+  }, [dateRange, selectedConsultant]);
 
   // Navigate date backward / forward
   const handleNavigate = (direction: number) => {
@@ -392,34 +372,6 @@ export default function CcDashboardPage() {
       activeFilterCount={activeCcFilterCount}
       filters={
         <div className="cc-toolbar-filter-cluster" aria-label="Bộ lọc báo cáo CC">
-          <span className="cc-toolbar-filter-title">Bộ lọc</span>
-          <Select
-            aria-label="Lọc theo chi nhánh tiệm"
-            value={selectedStore}
-            onChange={(val) => setSelectedStore(val)}
-            className="cc-toolbar-filter-select cc-toolbar-store-select"
-            options={[
-              { value: 'ALL', label: 'Tất cả tiệm' },
-              { value: '6', label: 'Đề Thám' },
-              { value: '16', label: 'Estella Place' },
-            ]}
-          />
-
-          <Select
-            aria-label="Lọc theo tư vấn viên CC"
-            showSearch
-            filterOption={vietnameseSearchFilter}
-            value={selectedConsultant}
-            onChange={(val) => setSelectedConsultant(val)}
-            className="cc-toolbar-filter-select cc-toolbar-consultant-select"
-            options={[
-              { value: 'ALL', label: 'Tất cả CC' },
-              ...leaderboardData.map((s) => ({ value: s.displayName, label: s.displayName })),
-            ]}
-            placeholder="Chọn CC"
-          />
-
-          <span className="cc-toolbar-filter-divider" aria-hidden="true" />
           <ToolbarToggle
             label="VAT 8%"
             aria-label="Công tắc VAT 8%"

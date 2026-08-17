@@ -24,7 +24,6 @@ export const HeaderLeftToolbar: React.FC<HeaderLeftToolbarProps> = ({ onOpenCvDr
         <HeaderIconButton
           action="cv-schedule"
           label={scheduleLabel}
-          desktopLabel="Lịch CV & Tua"
           icon={CalendarDays}
           tone="accent"
           onClick={onOpenCvDrawer}

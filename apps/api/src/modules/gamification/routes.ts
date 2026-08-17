@@ -78,6 +78,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
                     single_sales: { type: 'number' },
                     combo_sales: { type: 'number' },
                     combo_count: { type: 'number' },
+                    green_combo_count: { type: 'number' },
                     product_sales: { type: 'number' },
                     product_count: { type: 'number' },
                     debt_collected: { type: 'number' },

@@ -68,6 +68,7 @@ import {
   IconText,
   DensityContainer,
   PageToolbar,
+  CollapsibleSearchField,
   ContentSurface,
   DataTable,
   ResponsiveFormGrid,
@@ -683,7 +684,13 @@ export default function DesignSystemPage() {
 
                   <SectionCard title="Page toolbar và information priority">
                     <PageToolbar
-                      primary={<Input.Search aria-label="Demo tìm khách hàng" placeholder="Tìm khách hàng" />}
+                      primary={
+                        <CollapsibleSearchField
+                          aria-label="Demo tìm khách hàng"
+                          behavior="filter"
+                          placeholder="Tìm khách hàng"
+                        />
+                      }
                       actions={
                         <>
                           <Button>Filter</Button>

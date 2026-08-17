@@ -1,6 +1,6 @@
 import React from 'react';
 import dayjs from 'dayjs';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Button, Input } from 'antd';
 import { Menu, RefreshCw, Search } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,6 +12,7 @@ import { getSidebarGroups } from '../../../config/sidebar.config';
 import { BK_DONE_LEADERBOARD_LABELS } from '../../../app/dashboard/bk/components/BkDoneTab';
 import {
   ContentSurface,
+  CollapsibleSearchField,
   AppIcon,
   DataSection,
   DataTable,
@@ -38,8 +39,9 @@ import {
   ToolbarToggle,
 } from '../index';
 
-function setViewportWidth(width: number) {
+function setViewport(width: number, height = 900) {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+  Object.defineProperty(window, 'innerHeight', { configurable: true, value: height });
   window.dispatchEvent(new Event('resize'));
 }
 
@@ -52,6 +54,7 @@ describe('UI primitives', () => {
     expect(UI_CATALOG_ITEMS.every((item) => item.filePath.endsWith('.tsx') && item.statusText.length > 0)).toBe(true);
     expect(exports).toContain('AppIcon');
     expect(exports).toContain('SearchField');
+    expect(exports).toContain('CollapsibleSearchField');
   });
 
   it('lets a product-owned canonical header replace stale saved column copy', () => {
@@ -133,6 +136,35 @@ describe('UI primitives', () => {
     expect(document.querySelector('.mos-search-field .ant-input-search-button')).not.toBeInTheDocument();
   });
 
+  it('keeps a compact search in one icon action until it is needed', async () => {
+    const onExpandedChange = vi.fn();
+    render(
+      <CollapsibleSearchField behavior="filter" placeholder="Tìm khách hàng" onExpandedChange={onExpandedChange} />
+    );
+
+    expect(screen.queryByPlaceholderText('Tìm khách hàng')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mở tìm kiếm' }));
+
+    const input = screen.getByPlaceholderText('Tìm khách hàng');
+    expect(input).toBeInTheDocument();
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(onExpandedChange).toHaveBeenCalledWith(true);
+  });
+
+  it('returns an empty collapsible search to its compact state after blur', () => {
+    const onExpandedChange = vi.fn();
+    render(
+      <CollapsibleSearchField behavior="filter" placeholder="Tìm khách hàng" onExpandedChange={onExpandedChange} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mở tìm kiếm' }));
+    fireEvent.blur(screen.getByPlaceholderText('Tìm khách hàng'), { relatedTarget: document.body });
+
+    expect(screen.queryByPlaceholderText('Tìm khách hàng')).not.toBeInTheDocument();
+    expect(onExpandedChange).toHaveBeenLastCalledWith(false);
+  });
+
   it('renders the public pagination control with the shared density class and size selector', () => {
     render(<StandardPagination current={1} pageSize={10} total={70} onChange={vi.fn()} />);
 
@@ -196,6 +228,31 @@ describe('UI primitives', () => {
 
     fireEvent.click(screen.getAllByRole('radio', { name: 'Theo Ngày' })[0]);
     expect(onModeChange).toHaveBeenCalledWith('day');
+  });
+
+  it('uses a touch-safe bottom sheet to choose a reporting month on a short mobile landscape viewport', () => {
+    setViewport(932, 430);
+    const onValueChange = vi.fn();
+
+    render(
+      <ReportPeriodNavigator
+        mode="month"
+        value={dayjs('2026-05-16')}
+        label="Tháng 05/2026"
+        onModeChange={vi.fn()}
+        onNext={vi.fn()}
+        onPrevious={vi.fn()}
+        onValueChange={onValueChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chọn khoảng thời gian Tháng 05/2026' }));
+    expect(screen.getByText('Chọn tháng')).toBeInTheDocument();
+    expect(document.querySelectorAll('.report-period-mobile-month-option')).toHaveLength(12);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tháng 11 năm 2026' }));
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange.mock.calls[0][0].format('YYYY-MM-DD')).toBe('2026-11-16');
   });
 
   it('renders one named semantic header action with a Lucide icon', () => {
@@ -273,7 +330,7 @@ describe('UI primitives', () => {
   });
 
   it('uses a record card renderer on phone-sized viewports without duplicating table state', () => {
-    setViewportWidth(390);
+    setViewport(390);
     render(
       <DataTable
         dataSource={[{ key: 'customer-1', name: 'Nguyễn An' }]}
@@ -288,7 +345,7 @@ describe('UI primitives', () => {
   });
 
   it('renders only the controlled current page when mobile cards receive a full client-side dataset', () => {
-    setViewportWidth(390);
+    setViewport(390);
     const records = Array.from({ length: 25 }, (_, index) => ({
       key: `customer-${index + 1}`,
       name: `Customer ${index + 1}`,
@@ -435,7 +492,7 @@ describe('UI primitives', () => {
   });
 
   it('moves feature filters into one accessible drawer on phone-sized viewports', () => {
-    setViewportWidth(390);
+    setViewport(390);
     render(
       <FeatureToolbar
         primary={<input aria-label="Tìm khách qua mobile" />}

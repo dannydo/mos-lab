@@ -21,6 +21,8 @@ export interface DailySalesBonusConsultantRecord {
   store_code?: string;
   combo_sales: number;
   combo_count?: number;
+  /** Combo quantities sold on visits that were Vòng Xanh at booking time. */
+  green_combo_count: number;
   product_sales: number;
   product_count?: number;
   single_sales: number;
@@ -30,8 +32,9 @@ export interface DailySalesBonusConsultantRecord {
   total_sales: number;
   commission_rate_percent: number;
   daily_bonus: number;
-  green_visits?: number;
-  total_visits?: number;
+  /** Completed customer visits, allocated 50/50 when CC IN differs from CC OUT. */
+  green_visits: number;
+  total_visits: number;
 
   // 1.5x Wheel Bonus Cap fields
   monthlyDailyBonus?: number;
@@ -65,6 +68,7 @@ export interface DailySalesBonusLeaderboardEntry {
   avatar?: string | null;
   store: string;
   comboSalesCount: number;
+  greenComboSalesCount: number;
   comboSales: number;
   productSalesCount: number;
   singleSales: number;

@@ -34,6 +34,9 @@ export type { FeatureToolbarProps } from './FeatureToolbar';
 export { SearchField } from './SearchField';
 export type { SearchFieldProps } from './SearchField';
 
+export { CollapsibleSearchField } from './CollapsibleSearchField';
+export type { CollapsibleSearchFieldProps } from './CollapsibleSearchField';
+
 export { FeaturePage } from './FeaturePage';
 export type { FeaturePageProps } from './FeaturePage';
 

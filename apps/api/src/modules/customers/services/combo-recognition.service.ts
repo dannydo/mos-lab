@@ -5,15 +5,83 @@ export interface DateBounds {
   endStr: string;
 }
 
-export function buildComboBalanceExistsSql(candidateAlias: string): string {
+function assertSqlAlias(candidateAlias: string): void {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(candidateAlias)) {
-    throw new Error('Invalid SQL alias for combo balance recognition');
+    throw new Error('Invalid SQL alias for combo recognition');
   }
+}
+
+export function buildComboBalanceExistsSql(candidateAlias: string): string {
+  assertSqlAlias(candidateAlias);
 
   return `EXISTS (
     SELECT 1
     FROM user_service_balance usb
     WHERE usb.user_id = ${candidateAlias}.user_id
+  )`;
+}
+
+/**
+ * Evaluates COMBO_LIVE at the instant an appointment was created.
+ *
+ * A balance is live only when it existed before that booking, still had at
+ * least one use remaining, and had not expired at that same instant. The
+ * transaction ledger is deliberately reconstructed by `usbt.date_created`:
+ * a combo bought after the appointment was booked must never rewrite that
+ * appointment's historical status.
+ */
+export function buildComboLiveAtBookingSql(orderAlias: string): string {
+  assertSqlAlias(orderAlias);
+
+  return `EXISTS (
+    SELECT 1
+    FROM user_service_balance usb
+    WHERE usb.user_id = ${orderAlias}.user_id
+      AND usb.date_created < ${orderAlias}.date_created
+      AND (
+        COALESCE(
+          (
+            SELECT usbt.date_expired
+            FROM user_service_balance_transaction usbt
+            WHERE usbt.user_service_balance_id = usb.id
+              AND usbt.date_created < ${orderAlias}.date_created
+            ORDER BY usbt.date_created DESC, usbt.id DESC
+            LIMIT 1
+          ),
+          usb.date_expired
+        ) IS NULL
+        OR COALESCE(
+          (
+            SELECT usbt.date_expired
+            FROM user_service_balance_transaction usbt
+            WHERE usbt.user_service_balance_id = usb.id
+              AND usbt.date_created < ${orderAlias}.date_created
+            ORDER BY usbt.date_created DESC, usbt.id DESC
+            LIMIT 1
+          ),
+          usb.date_expired
+        ) >= DATE(${orderAlias}.date_created)
+      )
+      AND LEAST(
+        COALESCE(
+          (
+            SELECT usbt.total_normal_count_left + usbt.total_retain_count_left
+            FROM user_service_balance_transaction usbt
+            WHERE usbt.user_service_balance_id = usb.id
+              AND usbt.date_created < ${orderAlias}.date_created
+            ORDER BY usbt.date_created DESC, usbt.id DESC
+            LIMIT 1
+          ),
+          999999
+        ),
+        usb.normal_count + usb.retain_count + (
+          SELECT COALESCE(SUM(usbt_after.normal_count + usbt_after.retain_count), 0)
+          FROM user_service_balance_transaction usbt_after
+          WHERE usbt_after.user_service_balance_id = usb.id
+            AND usbt_after.date_created >= ${orderAlias}.date_created
+            AND usbt_after.used_staff_id IS NOT NULL
+        )
+      ) > 0
   )`;
 }
 

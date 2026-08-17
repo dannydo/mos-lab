@@ -2651,6 +2651,82 @@ body {
   width: 0 !important;
 }
 
+/* A native month popover is too tall for a phone and can be clipped in short
+   landscape viewports. The shared navigator uses this focused bottom sheet
+   instead: year navigation stays visible while every month has a proper touch
+   target. */
+.report-period-mobile-month-sheet .ant-drawer-content {
+  background: var(--mos-surface-raised);
+  border: 1px solid var(--mos-surface-border);
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+}
+
+.report-period-mobile-month-sheet .ant-drawer-header {
+  align-items: center;
+  border-bottom-color: var(--mos-surface-border);
+  min-height: 56px;
+  padding: 6px 12px 6px 16px;
+}
+
+.report-period-mobile-month-sheet .ant-drawer-title {
+  color: var(--ant-color-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.report-period-mobile-month-sheet .ant-drawer-body {
+  padding: 12px 16px 16px;
+}
+
+.report-period-mobile-month-sheet .ant-drawer-close {
+  align-items: center;
+  border-radius: var(--mos-control-radius);
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  margin-inline-end: 0;
+  width: 44px;
+}
+
+.report-period-mobile-month-year-control {
+  align-items: center;
+  display: inline-flex;
+  gap: 2px;
+}
+
+.report-period-mobile-month-year-control > span {
+  color: var(--ant-color-text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  min-width: 52px;
+  text-align: center;
+}
+
+.report-period-mobile-month-year-control .ant-btn {
+  align-items: center;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  min-width: 44px;
+  padding-inline: 0;
+  width: 44px;
+}
+
+.report-period-mobile-month-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.report-period-mobile-month-option.ant-btn {
+  height: 44px;
+  min-width: 0;
+  padding-inline: 8px;
+  width: 100%;
+}
+
 .responsive-toolbar .ant-select-selector {
   align-items: center;
   display: flex;
@@ -2788,7 +2864,7 @@ body {
   justify-content: space-between;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
   .toolbar-filter-disclosure-trigger {
     --toolbar-filter-icon-size: var(--mos-action-icon-size);
   }
@@ -3360,8 +3436,7 @@ body {
   width: 100%;
 }
 
-/* CC reporting toolbar: time navigation and scope filters are separate
-   control groups, making the current reporting context scannable at a glance. */
+/* CC reporting toolbar keeps VAT context distinct from time navigation. */
 .cc-page-toolbar .responsive-toolbar-actions > .ant-space {
   align-items: center;
   gap: 10px !important;
@@ -3380,42 +3455,7 @@ body {
   gap: 6px;
   height: var(--mos-control-height);
   min-height: var(--mos-control-height);
-  padding: 0 5px 0 9px;
-}
-
-.cc-toolbar-filter-title {
-  color: var(--ant-color-text-secondary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.cc-toolbar-filter-select {
-  width: 136px;
-}
-
-.cc-toolbar-consultant-select {
-  width: 154px;
-}
-
-.cc-toolbar-filter-cluster .ant-select-selector {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-.cc-toolbar-filter-cluster .ant-select:hover .ant-select-selector,
-.cc-toolbar-filter-cluster .ant-select-focused .ant-select-selector {
-  border-color: color-mix(in srgb, var(--color-gold) 48%, var(--mos-surface-border)) !important;
-}
-
-.cc-toolbar-filter-divider {
-  background: var(--mos-surface-border);
-  height: calc(var(--mos-control-height) - 12px);
-  width: 1px;
+  padding: 0 5px;
 }
 
 .cc-toolbar-vat-toggle {
@@ -3440,7 +3480,7 @@ body {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
   /* Icon buttons use a 44px target with a 20px Lucide glyph. Picker labels
      deliberately retain their 16px embedded icon so text remains primary. */
   .report-period-navigator {
@@ -3476,19 +3516,6 @@ body {
     gap: 10px;
     height: auto;
     padding: 0;
-  }
-
-  .cc-toolbar-filter-title {
-    font-size: 12px;
-  }
-
-  .cc-toolbar-filter-select,
-  .cc-toolbar-consultant-select {
-    width: 100%;
-  }
-
-  .cc-toolbar-filter-divider {
-    display: none;
   }
 
   .cc-toolbar-vat-toggle {

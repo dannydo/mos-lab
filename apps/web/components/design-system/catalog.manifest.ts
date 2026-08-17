@@ -68,6 +68,16 @@ export const UI_CATALOG_ITEMS: readonly UiCatalogItem[] = [
     auditNotes: 'Search shell dùng AppIcon và density token; nút submit luôn đạt vùng chạm trên phone.',
   },
   {
+    id: 'CollapsibleSearchField',
+    name: 'CollapsibleSearchField',
+    category: 'Filters & period',
+    exportName: 'CollapsibleSearchField',
+    filePath: 'apps/web/components/ui/CollapsibleSearchField.tsx',
+    status: 'FOUNDATION',
+    statusText: 'Nền tảng sẵn sàng',
+    auditNotes: 'Search thu gọn theo mặc định, mở và focus bằng một icon action; ô trống tự thu lại khi rời focus.',
+  },
+  {
     id: 'StatusTag',
     name: 'StatusTag',
     category: 'Feedback & state',

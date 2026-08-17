@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Card, Table, Tag, Typography, theme, Statistic, Button, Space, Progress, Tooltip, Input, message } from 'antd';
+import { Card, Table, Tag, Typography, theme, Statistic, Button, Space, Progress, Tooltip, message } from 'antd';
 import {
   GiftOutlined,
   ShoppingCartOutlined,
@@ -11,13 +11,13 @@ import {
   TrophyOutlined,
   FilterOutlined,
   CheckCircleOutlined,
-  SearchOutlined,
   ReloadOutlined,
   SyncOutlined,
   InfoCircleOutlined,
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
+import { CircleDot, UsersRound } from 'lucide-react';
 import dayjs from 'dayjs';
 import {
   DailySalesBonusConsultantRecord,
@@ -33,11 +33,16 @@ import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
 import { formatCompactVND, formatStoreCode } from '../../../../lib/format-utils';
 import CcThuongTransactionsModal from './CcThuongTransactionsModal';
 import CcAvatar from './CcAvatar';
-import { DataTable, MobileRecordList } from '~/components/ui';
+import { AppIcon, CollapsibleSearchField, DataTable, MobileRecordList } from '~/components/ui';
 
 const { Text } = Typography;
 
 const compactVndStatistic = (value: string | number | undefined) => formatCompactVND(Number(value || 0));
+
+const formatVisitCount = (value: number) =>
+  Number(value || 0).toLocaleString('vi-VN', {
+    maximumFractionDigits: 1,
+  });
 
 interface CcThuongTabProps {
   loading?: boolean;
@@ -269,6 +274,7 @@ export default function CcThuongTab({
         avatar?: string | null;
         store: string;
         comboCount: number;
+        greenComboCount: number;
         comboSales: number;
         productCount: number;
         singleSales: number;
@@ -286,6 +292,7 @@ export default function CcThuongTab({
         avatar: s.avatar,
         store: formatStoreCode(s.displayName),
         comboCount: 0,
+        greenComboCount: 0,
         comboSales: 0,
         productCount: 0,
         singleSales: 0,
@@ -304,6 +311,7 @@ export default function CcThuongTab({
           avatar: r.avatar,
           store: formatStoreCode(r.store_code),
           comboCount: 0,
+          greenComboCount: 0,
           comboSales: 0,
           productCount: 0,
           singleSales: 0,
@@ -315,6 +323,7 @@ export default function CcThuongTab({
       }
       const item = map.get(r.user_id)!;
       item.comboCount += r.combo_count || 0;
+      item.greenComboCount += r.green_combo_count || 0;
       item.comboSales += r.combo_sales || 0;
       item.productCount += r.product_count || 0;
       item.singleSales += r.single_sales || 0;
@@ -331,7 +340,7 @@ export default function CcThuongTab({
 
     return sorted.map((item, idx) => {
       const greenConversionRate =
-        item.greenVisits > 0 ? Math.min(100, Math.round((item.comboCount / item.greenVisits) * 100)) : 0;
+        item.greenVisits > 0 ? Math.min(100, Math.round((item.greenComboCount / item.greenVisits) * 100)) : 0;
       return {
         rank: idx + 1,
         consultantId: item.consultantId,
@@ -339,6 +348,7 @@ export default function CcThuongTab({
         avatar: item.avatar,
         store: item.store,
         comboSalesCount: item.comboCount,
+        greenComboSalesCount: item.greenComboCount,
         comboSales: item.comboSales,
         productSalesCount: item.productCount,
         singleSales: item.singleSales,
@@ -442,12 +452,16 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
-          title={`Tổng số lượt khách đã tiếp: ${val} lượt | Lượt khách Vòng Xanh (đi lẻ / còn 1 combo): ${record.greenVisits} lượt`}
+          title={`Tổng lượt khách đã hoàn tất: ${formatVisitCount(val)} lượt | Vòng Xanh: khách chưa COMBO_LIVE tại lúc đặt lịch: ${formatVisitCount(record.greenVisits)} lượt`}
         >
           <div className="w-full text-right">
-            <div className="tabular-nums font-semibold text-blue-400 text-xs">👥 {val} lượt</div>
-            <div className="tabular-nums text-[11px] text-cyan-400 font-medium mt-0.5">
-              🟢 {record.greenVisits} Vòng Xanh
+            <div className="tabular-nums inline-flex items-center justify-end gap-1 font-semibold text-blue-400 text-xs">
+              <AppIcon icon={UsersRound} size="sm" aria-hidden />
+              {formatVisitCount(val)} lượt
+            </div>
+            <div className="tabular-nums inline-flex items-center justify-end gap-1 text-[11px] text-emerald-400 font-medium mt-0.5">
+              <AppIcon icon={CircleDot} size="sm" aria-hidden />
+              {formatVisitCount(record.greenVisits)} Vòng Xanh
             </div>
           </div>
         </Tooltip>
@@ -461,7 +475,7 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
-          title={`Đã bán ${val} Combo. Doanh số combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ | Tỷ lệ chốt thành công: ${record.greenComboConversionRate}%`}
+          title={`Đã bán ${formatVisitCount(val)} combo; ${formatVisitCount(record.greenComboSalesCount)} combo đến từ khách Vòng Xanh. Doanh số combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ | Tỷ lệ chốt Vòng Xanh: ${record.greenComboConversionRate}%`}
         >
           <div className="w-full text-right">
             <div className="tabular-nums font-semibold text-blue-400 text-xs">{val} combo</div>
@@ -946,8 +960,16 @@ export default function CcThuongTab({
                         <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
                           {record.displayName}
                         </div>
-                        <div className="text-xs text-slate-400">
-                          {formatStoreCode(record.store)} · {record.totalVisits} lượt khách
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-400">
+                          <span>{formatStoreCode(record.store)} ·</span>
+                          <span className="inline-flex items-center gap-0.5 tabular-nums text-sky-400">
+                            <AppIcon icon={UsersRound} size="sm" aria-hidden />
+                            {formatVisitCount(record.totalVisits)} lượt
+                          </span>
+                          <span className="inline-flex items-center gap-0.5 tabular-nums text-emerald-400">
+                            <AppIcon icon={CircleDot} size="sm" aria-hidden />
+                            {formatVisitCount(record.greenVisits)} Vòng Xanh
+                          </span>
                         </div>
                       </div>
                       <span className="shrink-0 text-xs text-amber-400">{isSelected ? 'Đang lọc' : 'Xem'}</span>
@@ -1029,13 +1051,14 @@ export default function CcThuongTab({
             </div>
 
             <Space wrap>
-              <Input
-                prefix={<SearchOutlined />}
+              <CollapsibleSearchField
                 placeholder="Tìm ngày, CC..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: 220 }}
                 allowClear
+                behavior="filter"
+                expandedWidth={220}
+                expandButtonLabel="Mở tìm kiếm chi tiết thưởng"
               />
               <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
                 <Button

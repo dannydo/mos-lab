@@ -3,10 +3,11 @@
 import React, { useMemo } from 'react';
 import { Card, Table, Tag, theme, Space, Tooltip } from 'antd';
 import { TrophyOutlined, FilterOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { CircleCheck, CircleX, TriangleAlert } from 'lucide-react';
 import { CcLeaderboardEntry, calculateWheelBonusCap, themeTokens } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import CcAvatar from './CcAvatar';
-import { MobileRecordList } from '~/components/ui';
+import { AppIcon, MobileRecordList } from '~/components/ui';
 import { useResponsiveTier, useViewportSize } from '~/hooks/useResponsiveTier';
 
 interface CcLeaderboardCardProps {
@@ -339,18 +340,30 @@ export default function CcLeaderboardCard({
 
           <div className="flex items-center gap-1.5 text-[10px]">
             {capSummary.hardcapped > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-rose-500 font-semibold">
-                ⛔ {capSummary.hardcapped}
+              <span
+                className="inline-flex items-center gap-1 font-semibold text-rose-500"
+                aria-label={`${capSummary.hardcapped} CC đã đạt trần thưởng`}
+              >
+                <AppIcon icon={CircleX} size={12} />
+                <span className="tabular-nums">{capSummary.hardcapped}</span>
               </span>
             )}
             {capSummary.warning > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-amber-500 font-semibold">
-                ⚠️ {capSummary.warning}
+              <span
+                className="inline-flex items-center gap-1 font-semibold text-amber-500"
+                aria-label={`${capSummary.warning} CC sắp chạm trần thưởng`}
+              >
+                <AppIcon icon={TriangleAlert} size={12} />
+                <span className="tabular-nums">{capSummary.warning}</span>
               </span>
             )}
             {capSummary.normal > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-emerald-500 font-semibold">
-                ✅ {capSummary.normal}
+              <span
+                className="inline-flex items-center gap-1 font-semibold text-emerald-500"
+                aria-label={`${capSummary.normal} CC đang trong ngưỡng an toàn`}
+              >
+                <AppIcon icon={CircleCheck} size={12} />
+                <span className="tabular-nums">{capSummary.normal}</span>
               </span>
             )}
             <span className="text-slate-400 hidden lg:inline ml-2">

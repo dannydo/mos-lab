@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Button, Input } from 'antd';
 import { Search } from 'lucide-react';
 import type { ComponentProps } from 'react';
+import type { InputRef } from 'antd';
 import { AppIcon } from './AppIcon';
 
 export interface SearchFieldProps extends Omit<ComponentProps<typeof Input.Search>, 'variant'> {
@@ -20,38 +21,39 @@ export interface SearchFieldProps extends Omit<ComponentProps<typeof Input.Searc
  * sizing so an icon-only submit action is never smaller than the active density
  * profile (44 px on phones).
  */
-export function SearchField({
-  className,
-  searchButtonLabel = 'Tìm kiếm',
-  behavior = 'submit',
-  enterButton,
-  onSearch,
-  loading,
-  ...inputProps
-}: SearchFieldProps) {
-  if (behavior === 'filter') {
+export const SearchField = React.memo(
+  forwardRef<InputRef, SearchFieldProps>(function SearchField(
+    { className, searchButtonLabel = 'Tìm kiếm', behavior = 'submit', enterButton, onSearch, loading, ...inputProps },
+    ref
+  ) {
+    if (behavior === 'filter') {
+      return (
+        <Input
+          {...inputProps}
+          ref={ref}
+          prefix={inputProps.prefix ?? <AppIcon icon={Search} size="sm" />}
+          className={['mos-search-field', className].filter(Boolean).join(' ')}
+        />
+      );
+    }
+
+    const resolvedEnterButton = enterButton ?? (
+      <Button type="primary" aria-label={searchButtonLabel} icon={<AppIcon icon={Search} size="action" />} />
+    );
+
     return (
-      <Input
+      <Input.Search
         {...inputProps}
-        prefix={inputProps.prefix ?? <AppIcon icon={Search} size="sm" />}
+        ref={ref}
+        loading={loading}
+        onSearch={onSearch}
+        enterButton={resolvedEnterButton}
         className={['mos-search-field', className].filter(Boolean).join(' ')}
       />
     );
-  }
+  })
+);
 
-  const resolvedEnterButton = enterButton ?? (
-    <Button type="primary" aria-label={searchButtonLabel} icon={<AppIcon icon={Search} size="action" />} />
-  );
+SearchField.displayName = 'SearchField';
 
-  return (
-    <Input.Search
-      {...inputProps}
-      loading={loading}
-      onSearch={onSearch}
-      enterButton={resolvedEnterButton}
-      className={['mos-search-field', className].filter(Boolean).join(' ')}
-    />
-  );
-}
-
-export default React.memo(SearchField);
+export default SearchField;

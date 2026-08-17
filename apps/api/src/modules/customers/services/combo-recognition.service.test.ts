@@ -1,12 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ComboRecognitionService, parseComboDateBounds } from './combo-recognition.service.js';
+import {
+  buildComboLiveAtBookingSql,
+  ComboRecognitionService,
+  parseComboDateBounds,
+} from './combo-recognition.service.js';
 
 test('pads date-only combo bounds to the full inclusive day', () => {
   assert.deepEqual(parseComboDateBounds('2026-08-01', '2026-08-12'), {
     startStr: '2026-08-01 00:00:00',
     endStr: '2026-08-12 23:59:59',
   });
+});
+
+test('evaluates COMBO_LIVE from the booking-time ledger snapshot', () => {
+  const sql = buildComboLiveAtBookingSql('o');
+
+  assert.match(sql, /usb\.date_created < o\.date_created/);
+  assert.match(sql, /usbt\.date_created < o\.date_created/);
+  assert.match(sql, /usbt_after\.date_created >= o\.date_created/);
+  assert.match(sql, /total_normal_count_left \+ usbt\.total_retain_count_left/);
+  assert.match(sql, /DATE\(o\.date_created\)/);
+  assert.doesNotMatch(sql, /actual_booking_date_start|booking_date_start/);
 });
 
 test('recognizes completed combo sales only by actual check-in and an existing customer balance', async () => {

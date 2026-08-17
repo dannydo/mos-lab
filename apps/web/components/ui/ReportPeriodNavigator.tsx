@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, DatePicker, Space, Tooltip } from 'antd';
+import { Button, DatePicker, Drawer, Space, Tooltip } from 'antd';
 import {
   Calendar,
   CalendarDays,
@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import type { Dayjs } from 'dayjs';
@@ -41,6 +42,11 @@ const REPORT_PERIOD_MODES: ReadonlyArray<{ mode: ReportPeriodMode; label: string
   { mode: 'day', label: 'Theo Ngày', icon: Calendar },
 ];
 
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
+  index,
+  label: `Thg ${String(index + 1).padStart(2, '0')}`,
+}));
+
 /** Keeps every glyph in this atomic control in one Lucide optical box. */
 function ReportPeriodNavigatorIcon({ icon: Icon, className = '' }: ReportPeriodNavigatorIconProps) {
   return (
@@ -66,6 +72,8 @@ export function ReportPeriodNavigator({
   const [pickerOpen, setPickerOpen] = useState(false);
   const responsiveTier = useResponsiveTier();
   const usesRangePicker = Boolean(rangeValue && onRangeChange);
+  const usesMobileMonthSheet = responsiveTier === 'mobile' && mode === 'month' && !usesRangePicker;
+  const [mobilePickerYear, setMobilePickerYear] = useState(() => value.year());
   const displayLabel = mode === 'month' ? label.replace(/^Tháng\s+/i, '') : label;
   const pickerLabel =
     responsiveTier === 'mobile'
@@ -95,6 +103,16 @@ export function ReportPeriodNavigator({
     requestAnimationFrame(() => {
       modeGroup?.querySelector<HTMLButtonElement>(`[data-period-mode="${nextMode.mode}"]`)?.focus();
     });
+  };
+
+  const openPicker = () => {
+    if (usesMobileMonthSheet) setMobilePickerYear(value.year());
+    setPickerOpen(true);
+  };
+
+  const handleMobileMonthSelect = (month: number) => {
+    onValueChange?.(value.year(mobilePickerYear).month(month));
+    setPickerOpen(false);
   };
 
   return (
@@ -154,13 +172,62 @@ export function ReportPeriodNavigator({
             <Button
               aria-label={`Chọn khoảng thời gian ${label}`}
               className="report-period-navigator-label"
-              onClick={() => setPickerOpen(true)}
+              onClick={openPicker}
             >
               <ReportPeriodNavigatorIcon icon={Calendar} className="report-period-navigator-picker-icon" />
               <span className="report-period-navigator-picker-label">{pickerLabel}</span>
               <ReportPeriodNavigatorIcon icon={ChevronDown} className="report-period-navigator-picker-disclosure" />
             </Button>
-            {usesRangePicker ? (
+            {usesMobileMonthSheet ? (
+              <Drawer
+                className="report-period-mobile-month-sheet"
+                closeIcon={<ReportPeriodNavigatorIcon icon={X} />}
+                extra={
+                  <div className="report-period-mobile-month-year-control" aria-label="Điều hướng năm">
+                    <Button
+                      aria-label="Năm trước"
+                      icon={<ReportPeriodNavigatorIcon icon={ChevronLeft} />}
+                      onClick={() => setMobilePickerYear((year) => year - 1)}
+                    />
+                    <span aria-live="polite">{mobilePickerYear}</span>
+                    <Button
+                      aria-label="Năm sau"
+                      icon={<ReportPeriodNavigatorIcon icon={ChevronRight} />}
+                      onClick={() => setMobilePickerYear((year) => year + 1)}
+                    />
+                  </div>
+                }
+                height={352}
+                onClose={() => setPickerOpen(false)}
+                open={pickerOpen}
+                placement="bottom"
+                title="Chọn tháng"
+              >
+                <div
+                  className="report-period-mobile-month-grid"
+                  role="group"
+                  aria-label={`Các tháng năm ${mobilePickerYear}`}
+                >
+                  {MONTH_OPTIONS.map((month) => {
+                    const isSelected = value.year() === mobilePickerYear && value.month() === month.index;
+
+                    return (
+                      <Button
+                        aria-label={`Tháng ${String(month.index + 1).padStart(2, '0')} năm ${mobilePickerYear}`}
+                        aria-pressed={isSelected}
+                        className="report-period-mobile-month-option"
+                        disabled={!onValueChange}
+                        key={month.index}
+                        onClick={() => handleMobileMonthSelect(month.index)}
+                        type={isSelected ? 'primary' : 'default'}
+                      >
+                        {month.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </Drawer>
+            ) : usesRangePicker ? (
               <DatePicker.RangePicker
                 value={rangeValue}
                 format="DD/MM/YYYY"
