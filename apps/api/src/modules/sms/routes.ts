@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
+import { CustomerAccessService } from '../customers/services/customer-access.service.js';
 import {
   SmsTemplate,
   SaveSmsTemplateInput,
@@ -358,6 +359,13 @@ export async function smsRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
+    if (!(await CustomerAccessService.canTelesalesAccessCustomer(fastify, request.user, legacyUserId))) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Telesales chỉ được xem khách hàng đã được phân bổ cho mình.',
+      });
+    }
+
     try {
       // 1. Get phone numbers associated with this customer
       const contacts = await fastify.prisma.legacy.user_contact.findMany({
@@ -426,6 +434,13 @@ export async function smsRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customerId' });
     }
 
+    if (!(await CustomerAccessService.canTelesalesAccessCustomer(fastify, request.user, legacyUserId))) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Telesales chỉ được xem khách hàng đã được phân bổ cho mình.',
+      });
+    }
+
     try {
       const profile = await fastify.prisma.legacy.user_profile.findFirst({
         where: { user_id: legacyUserId },
@@ -463,13 +478,20 @@ export async function smsRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as { id: number };
+      const user = request.user as { id: number; role?: string };
       const { legacyUserId, toPhoneNumber, body, templateId, planId } = request.body as SendSmsRequest;
 
       if (legacyUserId === undefined || legacyUserId === null || !toPhoneNumber || !body || !body.trim()) {
         return reply.status(400).send({
           error: 'Bad Request',
           message: 'legacyUserId, toPhoneNumber, and non-empty body are required',
+        });
+      }
+
+      if (!(await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, Number(legacyUserId)))) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.',
         });
       }
 
