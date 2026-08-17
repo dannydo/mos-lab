@@ -22,6 +22,10 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   optionsRef.current = options;
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<SafeAny>(null);
+  const [detailData, setDetailData] = useState<SafeAny>(null);
+  const detailRequestRef = useRef<{ customerId: number; promise: Promise<SafeAny> } | null>(null);
+  const activeCustomerIdRef = useRef<number | null>(customerId);
+  activeCustomerIdRef.current = customerId;
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
   const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<SafeAny>(null);
   const [isGemModalOpen, setIsGemModalOpen] = useState(false);
@@ -146,8 +150,8 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     setLoading(true);
     setForbiddenError(null);
     try {
-      const detailedData = await apiClient.customers.getDetailed(customerId);
-      setData(detailedData);
+      const summaryData = await apiClient.customers.getSummary(customerId);
+      setData(summaryData);
     } catch (err) {
       console.error('Failed to fetch detailed customer:', err);
       if ((err as SafeAny).response?.status === 403) {
@@ -163,6 +167,44 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
       setLoading(false);
     }
   }, [customerId]);
+
+  const loadDetailedData = useCallback(async () => {
+    if (!customerId) return null;
+
+    if (detailData?.customer?.id === customerId) {
+      return detailData;
+    }
+
+    if (detailRequestRef.current?.customerId === customerId) {
+      return detailRequestRef.current.promise;
+    }
+
+    const requestedCustomerId = customerId;
+    let request: Promise<SafeAny>;
+    request = apiClient.customers
+      .getDetailed(customerId)
+      .then((nextDetailData) => {
+        if (activeCustomerIdRef.current === requestedCustomerId) {
+          setDetailData(nextDetailData);
+        }
+        return nextDetailData;
+      })
+      .catch((err) => {
+        console.error('Failed to fetch customer report details:', err);
+        optionsRef.current?.onError?.(
+          (err as SafeAny).response?.data?.message || 'Không thể tải lịch sử giao dịch khách hàng.'
+        );
+        return null;
+      })
+      .finally(() => {
+        if (detailRequestRef.current?.promise === request) {
+          detailRequestRef.current = null;
+        }
+      });
+
+    detailRequestRef.current = { customerId: requestedCustomerId, promise: request };
+    return request;
+  }, [customerId, detailData]);
 
   const fetchTabData = useCallback(
     async (tabKey: string, pageNum = 1, append = false, force = false) => {
@@ -232,12 +274,8 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   );
 
   const refreshAllDetails = useCallback(async () => {
-    await fetchDetails();
-    await Promise.all([
-      fetchTabData('bookings', 1, false, true),
-      fetchTabData('notes', 1, false, true),
-      fetchTabData('calls', 1, false, true),
-    ]);
+    const loadedTabs = Object.keys(tabDataMapRef.current).filter((key) => ['bookings', 'notes', 'calls'].includes(key));
+    await Promise.all([fetchDetails(), ...loadedTabs.map((key) => fetchTabData(key, 1, false, true))]);
     optionsRef.current?.onUpdate?.();
   }, [fetchDetails, fetchTabData]);
 
@@ -263,7 +301,11 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
   const handleTabChange = useCallback(
     (key: string) => {
       setActiveTab(key);
-      fetchTabData(key, 1, false);
+      if (key === 'timeline') {
+        void Promise.all([fetchTabData('notes', 1, false), fetchTabData('calls', 1, false)]);
+        return;
+      }
+      void fetchTabData(key, 1, false);
     },
     [fetchTabData]
   );
@@ -279,10 +321,17 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     if (open && customerId && (isJustOpened || isCustomerChanged)) {
       setTabDataMap({});
       setActiveTab('bookings');
-      fetchDetails();
-      fetchTabData('bookings', 1, false);
+      setDetailData(null);
+      detailRequestRef.current = null;
+      void fetchDetails();
+      void fetchTabData('bookings', 1, false);
+      // Booking cards render their attached CC/CS notes immediately, so warm
+      // only this first note page instead of the entire customer dossier.
+      void fetchTabData('notes', 1, false);
     } else if (isJustClosed) {
       setData(null);
+      setDetailData(null);
+      detailRequestRef.current = null;
       setForbiddenError(null);
       setTabDataMap({});
     }
@@ -905,6 +954,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     // states
     loading,
     data,
+    detailData,
     rescheduleModalVisible,
     selectedBookingForReschedule,
     isGemModalOpen,
@@ -941,6 +991,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     setIsTipModalOpen,
     setIsRevenueModalOpen,
     fetchDetails,
+    loadDetailedData,
     refetchTabData,
     refreshAllDetails,
     handleMouseDown,

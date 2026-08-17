@@ -6827,6 +6827,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           COALESCE(up.full_name, 'No Name') as name, 
           up.avatar as avatar,
           COALESCE(up.is_deleted, 0) as isDeleted,
+          up.is_foreign as is_foreign,
+          up.is_foreign_overridden as is_foreign_overridden,
           COALESCE(uc.phone_number, '') as phone, 
           u.email,
           u.gender,
@@ -6860,6 +6862,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         timelineCount,
         referrerRow,
         referredUsers,
+        activeComboBalances,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, customerId),
         fastify.prisma.legacy.user_contact.findMany({ where: { user_id: customerId } }),
@@ -6902,6 +6905,33 @@ export async function customerRoutes(fastify: FastifyInstance) {
            ORDER BY u.id DESC`,
           customerId
         ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT
+             CONCAT('usb_', usb.id) as id,
+             usb.service_id as serviceId,
+             usb.service_group as serviceGroup,
+             usb.normal_count as normalCount,
+             usb.retain_count as retainCount,
+             usb.date_expired as dateExpired,
+             usb.date_created as dateCreated,
+             s.service_key as serviceKey,
+             COALESCE(sl.service_name, s.service_key) as serviceName,
+             sp.normal_count as packageNormalCount,
+             sp.service_price_package_key as packageKey,
+             usb.total_normal_balance_amount as totalNormalBalanceAmount,
+             usb.total_retain_balance_amount as totalRetainBalanceAmount,
+             sp.service_price as packagePrice,
+             up.full_name as creatorStaffName
+           FROM user_service_balance usb
+           LEFT JOIN service s ON usb.service_id = s.id
+           LEFT JOIN service_language sl ON usb.service_id = sl.service_id AND sl.language_id = 1
+           LEFT JOIN service_price sp ON usb.service_price_id = sp.id
+           LEFT JOIN user_profile up ON COALESCE(usb.updated_staff_id, usb.created_staff_id) = up.user_id
+           WHERE usb.user_id = ?
+             AND (COALESCE(usb.normal_count, 0) + COALESCE(usb.retain_count, 0)) > 0
+           ORDER BY usb.date_created DESC`,
+          customerId
+        ),
       ]);
 
       if (customerResult.length === 0) {
@@ -6909,7 +6939,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       }
       const row = customerResult[0];
 
-      const totalSpent = completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+      const totalSpent = Math.round(completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0));
       const totalVisits = completedOrders.length;
 
       let avgFrequency = 0;
@@ -6943,6 +6973,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const tipRate = totalVisits > 0 ? Number(((tipCount / totalVisits) * 100).toFixed(1)) : 0;
       const avgTip = tipCount > 0 ? Math.round(totalTips / tipCount) : 0;
       const gemBalance = gemBalanceRow.length > 0 ? Number(gemBalanceRow[0].amount) : 0;
+      const comboWalletBalance = activeComboBalances.reduce(
+        (sum, combo) => sum + Number(combo.totalNormalBalanceAmount || 0) + Number(combo.totalRetainBalanceAmount || 0),
+        0
+      );
 
       const bookingCount = Number(bookingCountResult[0]?.cnt || 0);
       const noteCount = Number(noteCountResult[0]?.cnt || 0);
@@ -6985,18 +7019,23 @@ export async function customerRoutes(fastify: FastifyInstance) {
           gender: row.gender,
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
           lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
+          lastCompletedVisit: completedOrders[0]?.bookingDate
+            ? new Date(completedOrders[0].bookingDate).toISOString()
+            : null,
           daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
           bucket: row.bucket,
           avatar: row.avatar,
           onlineConsultant: onlineConsultantName,
           onlineConsultantId: assigned?.staffId || null,
           isDeleted: row.isDeleted === 1,
+          isForeign: resolveIsForeign(row.is_foreign, row.is_foreign_overridden, row.phone),
+          isForeignOverridden: Boolean(row.is_foreign_overridden),
         },
         stats: {
           totalSpent,
           totalVisits,
           comboCount: Number(row.normalCount || 0) + Number(row.retainCount || 0),
-          comboWalletBalance: 0,
+          comboWalletBalance,
           gemBalance,
           avgFrequency,
           totalTips,
@@ -7009,7 +7048,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
           callCount,
           timelineCount,
         },
-        comboBalances: [],
+        comboBalances: activeComboBalances.map((combo) => ({
+          ...combo,
+          normalCount: Number(combo.normalCount || 0),
+          retainCount: Number(combo.retainCount || 0),
+          packageNormalCount: combo.packageNormalCount ? Number(combo.packageNormalCount) : null,
+          packagePrice: combo.packagePrice ? Math.round(Number(combo.packagePrice)) : null,
+          dateExpired: combo.dateExpired ? new Date(combo.dateExpired).toISOString() : null,
+          dateCreated: combo.dateCreated ? new Date(combo.dateCreated).toISOString() : null,
+        })),
         referrer,
         referredUsers: Array.from(friendsGrouped.values()),
       };
