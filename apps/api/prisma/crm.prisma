@@ -45,6 +45,10 @@ model CrmStaff {
   createdCampaigns    CrmCustomCampaign[]     @relation("CampaignCreator")
   socialPosts         CrmSocialPostSubmission[] @relation("SocialPostAuthor")
   reviewedSocialPosts CrmSocialPostSubmission[] @relation("SocialPostReviewer")
+  academyOwnedLeads   CrmAcademyLead[]          @relation("AcademyLeadOwner")
+  academyCreatedLeads CrmAcademyLead[]          @relation("AcademyLeadCreator")
+  academyActivities   CrmAcademyLeadActivity[]  @relation("AcademyActivityActor")
+  academyFollowUps    CrmAcademyFollowUpTask[]  @relation("AcademyFollowUpAssignee")
 
   @@map("crm_staff")
 }
@@ -877,4 +881,133 @@ model CrmDataMigration {
   appliedAt   DateTime @default(now()) @map("applied_at") @db.DateTime(0)
 
   @@map("crm_data_migrations")
+}
+
+// ═══════════════════════════════════════════
+// Sales Academy — native lead pipeline replacing the legacy Ads Portal
+// ═══════════════════════════════════════════
+model CrmAcademyLead {
+  id               Int       @id @default(autoincrement())
+  legacyPortalId   String?   @unique @map("legacy_portal_id") @db.VarChar(64)
+  externalKey      String?   @unique @map("external_key") @db.VarChar(191)
+  sourceSystem     String    @default("MANUAL") @map("source_system") @db.VarChar(30)
+  source           String    @default("Manual") @db.VarChar(100)
+  pancakeId        String?   @map("pancake_id") @db.VarChar(100)
+  facebookPsid     String?   @map("facebook_psid") @db.VarChar(150)
+  pageId           String?   @map("page_id") @db.VarChar(100)
+  facebookChatLink String?   @map("facebook_chat_link") @db.Text
+  avatarUrl        String?   @map("avatar_url") @db.Text
+  name             String    @db.VarChar(150)
+  phone            String?   @db.VarChar(50)
+  phoneNormalized  String?   @map("phone_normalized") @db.VarChar(30)
+  searchText       String    @default("") @map("search_text") @db.VarChar(1000)
+  email            String?   @db.VarChar(150)
+  status           String    @default("NEW") @db.VarChar(20)
+  course           String?   @db.VarChar(150)
+  goal             String?   @db.Text
+  flightDate       DateTime? @map("flight_date") @db.Date
+  scheduledAt      DateTime? @map("scheduled_at") @db.DateTime(0)
+  revenueVnd       Int       @default(0) @map("revenue_vnd")
+  isHot            Boolean   @default(false) @map("is_hot") @db.TinyInt
+  hotMarkedAt      DateTime? @map("hot_marked_at") @db.DateTime(0)
+  lastContactAt    DateTime? @map("last_contact_at") @db.DateTime(0)
+  note             String?   @db.Text
+  ownerStaffId     Int?      @map("owner_staff_id")
+  legacyOwnerEmail String?   @map("legacy_owner_email") @db.VarChar(150)
+  createdByStaffId Int?      @map("created_by_staff_id")
+  sourceCreatedAt  DateTime? @map("source_created_at") @db.DateTime(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  owner      CrmStaff?                  @relation("AcademyLeadOwner", fields: [ownerStaffId], references: [id], onDelete: SetNull)
+  createdBy  CrmStaff?                  @relation("AcademyLeadCreator", fields: [createdByStaffId], references: [id], onDelete: SetNull)
+  activities CrmAcademyLeadActivity[]
+  followUps  CrmAcademyFollowUpTask[]
+
+  @@index([status, updatedAt])
+  @@index([ownerStaffId, status])
+  @@index([phoneNormalized])
+  @@index([searchText(length: 191)])
+  @@index([pancakeId])
+  @@index([facebookPsid])
+  @@index([isHot, hotMarkedAt])
+  @@index([scheduledAt])
+  @@map("crm_academy_leads")
+}
+
+model CrmAcademyLeadActivity {
+  id           Int       @id @default(autoincrement())
+  leadId       Int       @map("lead_id")
+  activityType String    @map("activity_type") @db.VarChar(30)
+  content      String?   @db.Text
+  metadata     String?   @db.LongText
+  actorStaffId Int?      @map("actor_staff_id")
+  occurredAt   DateTime  @map("occurred_at") @db.DateTime(0)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  lead  CrmAcademyLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  actor CrmStaff?      @relation("AcademyActivityActor", fields: [actorStaffId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, occurredAt])
+  @@index([activityType, occurredAt])
+  @@map("crm_academy_lead_activities")
+}
+
+model CrmAcademyFollowUpTask {
+  id               Int       @id @default(autoincrement())
+  legacyPortalId   String?   @unique @map("legacy_portal_id") @db.VarChar(64)
+  leadId           Int       @map("lead_id")
+  content          String    @db.Text
+  dueAt            DateTime? @map("due_at") @db.DateTime(0)
+  status           String    @default("PENDING") @db.VarChar(20)
+  pancakeLink      String?   @map("pancake_link") @db.Text
+  assigneeStaffId  Int?      @map("assignee_staff_id")
+  completedAt      DateTime? @map("completed_at") @db.DateTime(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  lead     CrmAcademyLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignee CrmStaff?      @relation("AcademyFollowUpAssignee", fields: [assigneeStaffId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, status])
+  @@index([status, dueAt])
+  @@index([assigneeStaffId, status])
+  @@map("crm_academy_follow_up_tasks")
+}
+
+model CrmAcademyPlaybook {
+  id             Int      @id @default(autoincrement())
+  legacyPortalId String?  @unique @map("legacy_portal_id") @db.VarChar(64)
+  title          String   @db.VarChar(255)
+  category       String   @db.VarChar(100)
+  description    String?  @db.Text
+  content        String   @db.LongText
+  sortOrder      Int      @default(0) @map("sort_order")
+  isActive       Boolean  @default(true) @map("is_active") @db.TinyInt
+  createdAt      DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([category, isActive])
+  @@index([sortOrder])
+  @@map("crm_academy_playbooks")
+}
+
+model CrmAcademyCourse {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique @db.VarChar(50)
+  name         String   @db.VarChar(255)
+  tag          String?  @db.VarChar(100)
+  description  String?  @db.Text
+  listPriceVnd Int      @default(0) @map("list_price_vnd")
+  promoPriceVnd Int     @default(0) @map("promo_price_vnd")
+  kitName      String?  @map("kit_name") @db.VarChar(255)
+  kitUrl       String?  @map("kit_url") @db.Text
+  syllabus     String?  @db.LongText
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active") @db.TinyInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([isActive, sortOrder])
+  @@map("crm_academy_courses")
 }

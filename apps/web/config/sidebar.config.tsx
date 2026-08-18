@@ -15,7 +15,7 @@ import {
   CustomerServiceOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import { Egg, Rocket, Settings2, Target, UserRound, UserRoundPlus, UsersRound } from 'lucide-react';
+import { Egg, GraduationCap, Rocket, Settings2, Target, UserRound, UserRoundPlus, UsersRound } from 'lucide-react';
 
 import { SafeAny } from '@mos-lab/shared';
 import { AppIcon } from '../components/ui/AppIcon';
@@ -169,6 +169,15 @@ export function getSidebarGroups(
     path: '/dashboard/cs',
   });
 
+  if (['admin', 'manager', 'ls', 'telesales'].includes(normalizedRole)) {
+    crmGroupItems.push({
+      key: 'academy-sales',
+      label: 'Sales Academy',
+      icon: <AppIcon icon={GraduationCap} size="sm" />,
+      path: '/dashboard/academy-leads',
+    });
+  }
+
   const crmGroup: SidebarGroupConfig = {
     groupKey: 'grp-crm',
     groupTitle: 'KHÁCH HÀNG & CHIẾN DỊCH',
@@ -321,6 +330,7 @@ export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | 
   if (pathname.includes('/dashboard/customers')) {
     return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
   }
+  if (pathname.includes('/dashboard/academy-leads')) return 'academy-sales';
   if (pathname === '/dashboard/nyc') return 'nyc-main';
   if (pathname.includes('/dashboard/post-hub')) return 'post-hub';
   if (pathname === '/dashboard/nyc/campaigns') return 'nyc-campaigns-mgmt';

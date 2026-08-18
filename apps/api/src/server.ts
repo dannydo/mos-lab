@@ -29,6 +29,8 @@ import { csRoutes } from './modules/cs/routes.js';
 import { qaShopRoutes } from './modules/qa-shop/routes.js';
 import { falRoutes } from './modules/fal/routes.js';
 import { postHubRoutes } from './modules/post-hub/routes.js';
+import { academySalesRoutes } from './modules/academy-sales/routes.js';
+import { startPancakeAcademySync } from './modules/academy-sales/pancake-sync.service.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
 import { CampaignPromotionSyncService } from './modules/campaigns/campaign-promotion-sync.service.js';
@@ -224,6 +226,9 @@ const start = async () => {
     await server.register(qaShopRoutes, { prefix: '/api' });
     await server.register(falRoutes, { prefix: '/api' });
     await server.register(postHubRoutes, { prefix: '/api' });
+    await server.register(academySalesRoutes, { prefix: '/api' });
+
+    startPancakeAcademySync(server);
 
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);

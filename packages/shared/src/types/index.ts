@@ -1,4 +1,5 @@
 export * from './allocation.js';
+export * from './academy-sales.js';
 export * from './api.js';
 export * from './auth.js';
 export * from './bk.js';

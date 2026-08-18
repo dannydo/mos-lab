@@ -192,6 +192,24 @@ import {
   ReviewSocialPostDto,
   CreateSocialPostSubmissionDto,
   CreateSocialPostSubmissionResponse,
+  AcademyCourse,
+  AcademyFollowUpTask,
+  AcademyImportReport,
+  AcademyLeadActionResponse,
+  AcademyLeadDetail,
+  AcademyPlaybook,
+  AcademyStaffOption,
+  CreateAcademyActivityRequest,
+  CreateAcademyFollowUpRequest,
+  CreateAcademyLeadRequest,
+  ListAcademyFollowUpsParams,
+  ListAcademyFollowUpsResponse,
+  ListAcademyLeadsParams,
+  ListAcademyLeadsResponse,
+  UpdateAcademyFollowUpRequest,
+  UpdateAcademyLeadRequest,
+  UpsertAcademyCourseRequest,
+  UpsertAcademyPlaybookRequest,
 } from '@mos-lab/shared';
 
 // In-flight request deduplication & short-term cache map for GET endpoints
@@ -1491,6 +1509,79 @@ export const apiClient = {
       config: SocialPostRewardConfig
     ): Promise<{ success: true; data: SocialPostRewardConfig; message: string }> => {
       const response = await api.put('/post-hub/reward-config', config);
+      return response.data;
+    },
+  },
+
+  academySales: {
+    listLeads: async (params: ListAcademyLeadsParams): Promise<ListAcademyLeadsResponse> => {
+      return dedupeApiGet<ListAcademyLeadsResponse>('/academy-sales/leads', params as Record<string, unknown>, 800);
+    },
+    getLead: async (id: number): Promise<AcademyLeadDetail> => {
+      const response = await api.get<{ data: AcademyLeadDetail }>(`/academy-sales/leads/${id}`);
+      return response.data.data;
+    },
+    createLead: async (dto: CreateAcademyLeadRequest): Promise<AcademyLeadActionResponse> => {
+      const response = await api.post<AcademyLeadActionResponse>('/academy-sales/leads', dto);
+      return response.data;
+    },
+    updateLead: async (id: number, dto: UpdateAcademyLeadRequest): Promise<AcademyLeadActionResponse> => {
+      const response = await api.put<AcademyLeadActionResponse>(`/academy-sales/leads/${id}`, dto);
+      return response.data;
+    },
+    addActivity: async (id: number, dto: CreateAcademyActivityRequest) => {
+      const response = await api.post(`/academy-sales/leads/${id}/activities`, dto);
+      return response.data;
+    },
+    listFollowUps: async (params: ListAcademyFollowUpsParams): Promise<ListAcademyFollowUpsResponse> => {
+      return dedupeApiGet<ListAcademyFollowUpsResponse>(
+        '/academy-sales/follow-ups',
+        params as Record<string, unknown>,
+        800
+      );
+    },
+    createFollowUp: async (dto: CreateAcademyFollowUpRequest) => {
+      const response = await api.post(`/academy-sales/follow-ups`, dto);
+      return response.data;
+    },
+    updateFollowUp: async (id: number, dto: UpdateAcademyFollowUpRequest) => {
+      const response = await api.put(`/academy-sales/follow-ups/${id}`, dto);
+      return response.data;
+    },
+    listStaff: async (): Promise<AcademyStaffOption[]> => {
+      const response = await api.get<{ data: AcademyStaffOption[] }>('/academy-sales/staff');
+      return response.data.data;
+    },
+    listPlaybooks: async (): Promise<AcademyPlaybook[]> => {
+      const response = await api.get<{ data: AcademyPlaybook[] }>('/academy-sales/playbooks');
+      return response.data.data;
+    },
+    createPlaybook: async (dto: UpsertAcademyPlaybookRequest) => {
+      const response = await api.post('/academy-sales/playbooks', dto);
+      return response.data;
+    },
+    updatePlaybook: async (id: number, dto: UpsertAcademyPlaybookRequest) => {
+      const response = await api.put(`/academy-sales/playbooks/${id}`, dto);
+      return response.data;
+    },
+    listCourses: async (): Promise<AcademyCourse[]> => {
+      const response = await api.get<{ data: AcademyCourse[] }>('/academy-sales/courses');
+      return response.data.data;
+    },
+    createCourse: async (dto: UpsertAcademyCourseRequest) => {
+      const response = await api.post('/academy-sales/courses', dto);
+      return response.data;
+    },
+    updateCourse: async (id: number, dto: UpsertAcademyCourseRequest) => {
+      const response = await api.put(`/academy-sales/courses/${id}`, dto);
+      return response.data;
+    },
+    importSupabase: async (dryRun = true): Promise<{ success: true; data: AcademyImportReport; message: string }> => {
+      const response = await api.post('/academy-sales/import/supabase', { dryRun });
+      return response.data;
+    },
+    syncPancake: async () => {
+      const response = await api.post('/academy-sales/sync/pancake');
       return response.data;
     },
   },
