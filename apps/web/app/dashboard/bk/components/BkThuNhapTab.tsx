@@ -204,7 +204,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
     <div className="space-y-6">
       {/* Summary Header */}
       <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={8} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
@@ -218,7 +218,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={8} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
@@ -232,21 +232,35 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={8} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Tip & Doanh Thu</span>}
-              value={summary.totalTipBonus + summary.totalRevenueBonus}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Doanh Thu</span>}
+              value={summary.totalRevenueBonus}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#9333ea', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<TrophyOutlined className="mr-2" />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={8} xl={4}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
+            <Statistic
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Tip</span>}
+              value={summary.totalTipBonus}
+              formatter={(val) => formatCurrency(Number(val))}
+              valueStyle={{ color: '#ec4899', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+              prefix={<GiftOutlined className="mr-2" />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}

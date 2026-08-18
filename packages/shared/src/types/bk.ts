@@ -9,7 +9,10 @@ export interface BkBookingRecord {
   status: 'Pending' | 'Completed' | 'Cancelled' | 'Missed' | string;
   bookerId: number;
   bookerName: string;
-  avatar?: string | null;
+  /** Profile image of the customer who placed the booking. */
+  clientAvatar?: string | null;
+  /** Profile image of the Booker who created the booking. */
+  bookerAvatar?: string | null;
   customerId?: number;
 }
 
@@ -53,7 +56,11 @@ export interface BkDoneRecord {
   orderDate: string;
   clientName: string;
   clientPhone?: string;
+  /** Profile image of the customer associated with this booking. */
+  clientAvatar?: string | null;
   bookerName?: string;
+  /** Profile image of the Booker who created this booking. */
+  bookerAvatar?: string | null;
   store: string;
   serviceName?: string;
   servicePrice?: number;
@@ -129,9 +136,12 @@ export interface BkTipRecord {
   orderId: number;
   checkinTime: string;
   clientName: string;
+  /** Profile image of the customer who left the tip. */
+  clientAvatar?: string | null;
   store: string;
   bookerName: string;
-  avatar?: string | null;
+  /** Profile image of the Booker who created the tipped booking. */
+  bookerAvatar?: string | null;
   totalCustomerTip: number;
   bkTipAmount: number;
   bkTipPercentage: number;
@@ -176,8 +186,11 @@ export interface BkRevenueRecord {
   orderKey: string;
   orderDate: string;
   clientName: string;
+  /** Profile image of the customer attached to this completed order. */
+  clientAvatar?: string | null;
   bookerName?: string;
   store: string;
+  /** Net VND collected after discount for this completed order. */
   totalOrderPrice: number;
   commissionRate: number;
   commissionBonus: number;
@@ -191,6 +204,7 @@ export interface BkRevenueLeaderboardEntry {
   avatar?: string | null;
   store: string;
   completedOrdersCount: number;
+  /** Recognized net VND from completed orders in the selected period. */
   totalRevenue: number;
   commissionRate: number;
   totalCommissionBonus: number;

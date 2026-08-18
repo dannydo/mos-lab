@@ -218,14 +218,14 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
       },
     },
     {
-      title: 'Số Đơn Completed',
+      title: 'Done',
       dataIndex: 'completedOrdersCount',
       key: 'completedOrdersCount',
       align: 'center' as const,
       render: (val: number) => <span className="tabular-nums font-bold text-xs text-sky-400">{val}</span>,
     },
     {
-      title: 'Tổng Doanh Thu (Gồm Lẻ + Combo + SP)',
+      title: '∑ Doanh Thu Net',
       dataIndex: 'totalRevenue',
       key: 'totalRevenue',
       align: 'right' as const,
@@ -234,7 +234,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
       ),
     },
     {
-      title: 'Tỷ Lệ Hoa Hồng',
+      title: '% Bonus',
       dataIndex: 'commissionRate',
       key: 'commissionRate',
       align: 'center' as const,
@@ -245,7 +245,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
       ),
     },
     {
-      title: 'Thưởng Hoa Hồng Doanh Thu',
+      title: 'Bonus Doanh Thu',
       dataIndex: 'totalCommissionBonus',
       key: 'totalCommissionBonus',
       align: 'right' as const,
@@ -288,21 +288,14 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
       ),
     },
     {
-      title: 'Mã Đơn',
-      dataIndex: 'orderKey',
-      key: 'orderKey',
-      render: (val: string) => (
-        <span className="font-mono font-semibold text-xs text-sky-400 whitespace-nowrap">{val}</span>
-      ),
-    },
-    {
-      title: 'Tên Khách Hàng',
+      title: 'Khách Hàng',
       dataIndex: 'clientName',
       key: 'clientName',
-      render: (name: string) => (
-        <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 whitespace-nowrap">
-          {name || 'Khách hàng'}
-        </span>
+      render: (name: string, record: BkRevenueRecord) => (
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <BkAvatar name={name || 'Khách hàng'} src={record.clientAvatar} size={28} />
+          <span className="font-semibold text-xs text-slate-700 dark:text-slate-200">{name || 'Khách hàng'}</span>
+        </div>
       ),
     },
     {
@@ -325,7 +318,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
       ),
     },
     {
-      title: 'Giá Trị Đơn',
+      title: 'Doanh Thu Net',
       dataIndex: 'totalOrderPrice',
       key: 'totalOrderPrice',
       align: 'right' as const,
@@ -334,22 +327,6 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
           {formatCurrency(val)}
         </span>
       ),
-    },
-    {
-      title: 'Hoa Hồng (% Share)',
-      dataIndex: 'commissionBonus',
-      key: 'commissionBonus',
-      align: 'right' as const,
-      render: (val: number, r: BkRevenueRecord) =>
-        val > 0 ? (
-          <span className="tabular-nums font-bold text-xs text-purple-400 whitespace-nowrap">
-            +{formatCurrency(val)} <span className="text-[10px] text-slate-400 font-normal">· {r.commissionRate}%</span>
-          </span>
-        ) : (
-          <span className="tabular-nums font-medium text-xs text-slate-500 whitespace-nowrap">
-            0 đ <span className="text-[10px] text-slate-600 font-normal">· 0%</span>
-          </span>
-        ),
     },
   ];
 
@@ -363,7 +340,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Số Đơn Completed</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Done</span>}
               value={summary.completedOrdersCount}
               valueStyle={{ color: '#2563eb', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<ShoppingCartOutlined className="mr-2" />}
@@ -376,7 +353,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Doanh Thu Tạo Book</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Doanh Thu Net</span>}
               value={summary.totalRevenue}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#4f46e5', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -390,7 +367,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Hoa Hồng BK</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Doanh Thu</span>}
               value={summary.totalCommissionBonus}
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#9333ea', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -402,7 +379,8 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
 
       {/* Revenue Leaderboard */}
       <BkLeaderboardCard
-        title="Bảng Xếp Hạng Doanh Thu Net (Revenue Leaderboard)"
+        title="BK Leaderboard - Net Revenue"
+        description="Chỉ xếp hạng thành tích nhóm Telesales trong khoảng thời gian lọc"
         leaderboard={leaderboard}
         loading={loading}
         columns={columns}
@@ -410,7 +388,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
         onSelectBooker={(bId) => handleSelectBooker(bId)}
         mobileMetrics={(record) => [
           { label: 'Đơn done', value: record.completedOrdersCount ?? 0, tone: 'accent' },
-          { label: 'Doanh thu', value: formatCurrency(record.totalRevenue ?? 0), tone: 'accent' },
+          { label: 'Doanh thu net', value: formatCurrency(record.totalRevenue ?? 0), tone: 'accent' },
           { label: 'Hoa hồng', value: formatCurrency(record.totalCommissionBonus ?? 0), tone: 'success' },
         ]}
         extraSummary={
@@ -430,7 +408,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold m-0" style={{ color: token.colorText }}>
-                Bảng Dữ Liệu Báo Cáo Doanh Thu (Chi Tiết Doanh Thu Tính Hoa Hồng)
+                Chi Tiết Doanh Thu Net & Bonus
               </h3>
               {selectedBookerName && (
                 <Tag
@@ -448,8 +426,8 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
             </div>
             <Text type="secondary" className="text-xs">
               {selectedBookerName
-                ? `Hiển thị chi tiết doanh thu đơn hàng của Booker ${selectedBookerName}`
-                : 'Hiển thị chi tiết doanh thu đơn hàng của tất cả Booker'}
+                ? `Hiển thị chi tiết doanh thu đơn hàng của Telesales ${selectedBookerName}`
+                : 'Hiển thị chi tiết doanh thu đơn hàng của nhóm Telesales'}
             </Text>
           </div>
 

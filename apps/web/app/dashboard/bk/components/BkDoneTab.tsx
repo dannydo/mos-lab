@@ -382,12 +382,17 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
             }
           }}
         >
-          <div className="font-semibold text-xs text-sky-400 group-hover:text-amber-400 transition-colors flex items-center gap-1 whitespace-nowrap">
-            <span>{record.clientName || 'Khách hàng'}</span>
-            <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
-          </div>
-          <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap">
-            {record.clientPhone || 'Chưa có SĐT'}
+          <div className="flex items-center gap-2">
+            <BkAvatar name={record.clientName || 'Khách hàng'} src={record.clientAvatar} size={28} />
+            <div className="min-w-0">
+              <div className="font-semibold text-xs text-sky-400 group-hover:text-amber-400 transition-colors flex items-center gap-1 whitespace-nowrap">
+                <span>{record.clientName || 'Khách hàng'}</span>
+                <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
+              </div>
+              <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap">
+                {record.clientPhone || 'Chưa có SĐT'}
+              </div>
+            </div>
           </div>
         </div>
       ),
@@ -397,8 +402,11 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       title: 'Booker',
       dataIndex: 'bookerName',
       key: 'bookerName',
-      render: (bName: string) => (
-        <span className="font-medium text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">{bName || '-'}</span>
+      render: (bName: string, record: BkDoneRecord) => (
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <BkAvatar name={bName || 'Booker'} src={record.bookerAvatar} size={28} />
+          <span className="font-medium text-xs text-slate-600 dark:text-slate-300">{bName || '-'}</span>
+        </div>
       ),
     },
     {
@@ -582,7 +590,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
       {/* Done Leaderboard */}
       <BkLeaderboardCard
-        title="Bảng Xếp Hạng Thưởng Done Telesales"
+        title="BK Leaderboard - Done"
         description="Chỉ xếp hạng thành tích nhóm Telesales trong khoảng thời gian lọc"
         leaderboard={leaderboard}
         loading={loading}
@@ -611,9 +619,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base font-bold m-0" style={{ color: token.colorText }}>
-                {selectedBookerName
-                  ? `Danh sách Khách hàng đặt lịch của Online Consultant: ${selectedBookerName}`
-                  : 'Danh sách Khách hàng đặt lịch của Online Consultant'}
+                Chi Tiết Khách Hàng Đặt Lịch & Bonus Done
               </h3>
               {selectedBookerName && (
                 <Tag

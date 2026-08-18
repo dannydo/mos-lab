@@ -3,7 +3,7 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Card, theme, Space, Tabs } from 'antd';
+import { Typography, Button, Card, Dropdown, theme, Space, Tabs } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
@@ -12,6 +12,7 @@ import {
   WalletOutlined,
   ClockCircleOutlined,
   BarChartOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { Settings2 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
@@ -166,11 +167,11 @@ export default function BkDashboardPage() {
     }
   };
 
-  const tabItems = [
+  const leaderboardTabItems = [
     {
       key: 'booking',
       icon: <CalendarOutlined />,
-      label: 'BK Booking',
+      label: 'Booking',
       children:
         activeTab === 'booking' ? (
           <BkBookingTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
@@ -179,7 +180,7 @@ export default function BkDashboardPage() {
     {
       key: 'done',
       icon: <CheckCircleOutlined />,
-      label: 'BK Done',
+      label: 'Done',
       children:
         activeTab === 'done' ? (
           <BkDoneTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
@@ -188,7 +189,7 @@ export default function BkDashboardPage() {
     {
       key: 'tip',
       icon: <GiftOutlined />,
-      label: 'BK Tip',
+      label: 'Tip',
       children:
         activeTab === 'tip' ? (
           <BkTipTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
@@ -197,7 +198,7 @@ export default function BkDashboardPage() {
     {
       key: 'revenue',
       icon: <DollarOutlined />,
-      label: 'BK Doanh Thu',
+      label: 'Doanh thu',
       children:
         activeTab === 'revenue' ? (
           <BkRevenueTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
@@ -206,25 +207,23 @@ export default function BkDashboardPage() {
     {
       key: 'thunhap',
       icon: <WalletOutlined />,
-      label: 'BK Thu Nhập',
+      label: 'Thu nhập',
       children:
         activeTab === 'thunhap' ? (
           <BkThuNhapTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
         ) : null,
     },
-    {
-      key: 'history-30d',
-      icon: <ClockCircleOutlined />,
-      label: 'Lịch Sử 30 Ngày',
-      children: activeTab === 'history-30d' ? <AllocationHistoryScreen /> : null,
-    },
-    {
-      key: 'alloc-audit',
-      icon: <BarChartOutlined />,
-      label: 'Audit Phân Bổ Data',
-      children: activeTab === 'alloc-audit' ? <AllocationAuditDashboard /> : null,
-    },
   ];
+
+  const isOperationsTab = activeTab === 'history-30d' || activeTab === 'alloc-audit';
+  const operationsMenu = {
+    selectedKeys: isOperationsTab ? [activeTab] : [],
+    onClick: ({ key }: { key: string }) => handleTabChange(key),
+    items: [
+      { key: 'history-30d', icon: <ClockCircleOutlined />, label: 'Lịch Sử 30 Ngày' },
+      { key: 'alloc-audit', icon: <BarChartOutlined />, label: 'Audit Phân Bổ' },
+    ],
+  };
 
   return (
     <div className="responsive-page responsive-workspace bk-page w-full space-y-6">
@@ -232,10 +231,10 @@ export default function BkDashboardPage() {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>
           <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
-            Báo Cáo Hiệu Quả & Lương Booker (BK)
+            BK Leaderboard
           </Title>
           <Text style={{ color: token.colorTextDescription }}>
-            Theo dõi chỉ số tạo booking, lượt done, tip, doanh thu và lương thưởng tạm tính của đội ngũ Booker
+            Theo dõi chỉ số tạo booking, done, tip, doanh thu và lương thưởng
           </Text>
         </div>
 
@@ -273,13 +272,28 @@ export default function BkDashboardPage() {
         className="shadow-sm rounded-xl dashboard-main-tabs-card"
       >
         <Tabs
-          activeKey={activeTab}
+          activeKey={isOperationsTab ? '' : activeTab}
           onChange={handleTabChange}
-          items={tabItems}
+          items={leaderboardTabItems}
+          tabBarExtraContent={{
+            right: (
+              <Dropdown menu={operationsMenu} trigger={['click']} placement="bottomRight">
+                <Button
+                  type={isOperationsTab ? 'primary' : 'text'}
+                  icon={<MoreOutlined />}
+                  aria-label="Mở menu vận hành Báo cáo BK"
+                >
+                  Khác
+                </Button>
+              </Dropdown>
+            ),
+          }}
           size="large"
           className="custom-tabs"
           destroyOnHidden
         />
+        {activeTab === 'history-30d' && <AllocationHistoryScreen />}
+        {activeTab === 'alloc-audit' && <AllocationAuditDashboard />}
       </Card>
     </div>
   );

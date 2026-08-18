@@ -295,15 +295,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       ),
     },
     {
-      title: 'Mã Đơn',
-      dataIndex: 'orderKey',
-      key: 'orderKey',
-      render: (val: string) => (
-        <span className="font-mono font-semibold text-xs text-sky-400 whitespace-nowrap">{val}</span>
-      ),
-    },
-    {
-      title: 'Tên Khách Hàng',
+      title: 'Khách Hàng',
       dataIndex: 'clientName',
       key: 'clientName',
       render: (name: string, r: BkBookingRecord) => (
@@ -330,13 +322,18 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             }
           }}
         >
-          <div className="font-semibold text-xs text-sky-400 group-hover:text-amber-400 transition-colors flex items-center gap-1 whitespace-nowrap">
-            <span>{name || 'Khách hàng'}</span>
-            <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
+          <div className="flex items-center gap-2">
+            <BkAvatar name={name || 'Khách hàng'} src={r.clientAvatar} size={28} />
+            <div className="min-w-0">
+              <div className="font-semibold text-xs text-sky-400 group-hover:text-amber-400 transition-colors flex items-center gap-1 whitespace-nowrap">
+                <span>{name || 'Khách hàng'}</span>
+                <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
+              </div>
+              {r.clientPhone && (
+                <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap">{r.clientPhone}</div>
+              )}
+            </div>
           </div>
-          {r.clientPhone && (
-            <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap">{r.clientPhone}</div>
-          )}
         </div>
       ),
     },
@@ -345,8 +342,11 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       title: 'Booker Tạo',
       dataIndex: 'bookerName',
       key: 'bookerName',
-      render: (bName: string) => (
-        <span className="font-medium text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">{bName || '-'}</span>
+      render: (bName: string, r: BkBookingRecord) => (
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <BkAvatar name={bName || 'Booker'} src={r.bookerAvatar} size={28} />
+          <span className="font-medium text-xs text-slate-600 dark:text-slate-300">{bName || '-'}</span>
+        </div>
       ),
     },
     {
@@ -470,7 +470,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
 
       {/* Booking Leaderboard Card */}
       <BkLeaderboardCard
-        title="Bảng Xếp Hạng Booking (Booker Leaderboard)"
+        title="BK Leaderboard - Booking"
         description="Xếp hạng hiệu suất của nhân viên thuộc nhóm Telesales trong khoảng thời gian lọc"
         leaderboard={leaderboard}
         loading={loading}
@@ -499,7 +499,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold m-0" style={{ color: token.colorText }}>
-                Bảng Dữ Liệu Chi Tiết Booking (Chi Tiết Booking Tạo Trong Kỳ)
+                Chi Tiết Khách Hàng Đặt Lịch & Trạng Thái
               </h3>
               {selectedBookerName && (
                 <Tag

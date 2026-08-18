@@ -454,7 +454,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {navCollapsed ? 'WL' : 'WINGS LASHES'}
       </div>
       <Suspense fallback={null}>
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div className="sidebar-nav-scroll-region">
           <SidebarNav
             collapsed={navCollapsed}
             themeMode={themeMode}

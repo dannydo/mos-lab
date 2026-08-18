@@ -2,64 +2,45 @@
 request_feedback: true
 ---
 
-# Commit review
+# Commit review — BK/CC/CV leaderboard refinement
 
 ## Danh sách file thay đổi
 
-- `.agents/AGENTS.md`
-- `AGENTS.md`
-- `apps/api/src/modules/customers/services/combo-recognition.service.ts`
 - `apps/api/src/modules/kpi/routes/bk.routes.ts`
-- `apps/api/src/modules/kpi/services/bk-salary.service.ts`
+- `apps/web/app/dashboard/bk/components/BkBookingTab.tsx`
 - `apps/web/app/dashboard/bk/components/BkDoneTab.tsx`
-- `apps/web/app/dashboard/post-hub/components/PostHubApprovalStage.tsx`
-- `apps/web/app/dashboard/post-hub/components/PostHubDataStage.tsx`
-- `apps/web/app/dashboard/post-hub/components/PostHubPresentation.tsx`
-- `apps/web/app/dashboard/post-hub/components/PostHubReviewDrawer.tsx`
-- `apps/web/app/dashboard/post-hub/page.tsx`
-- `apps/web/app/dashboard/staff/components/StaffColumns.tsx`
-- `apps/web/app/dashboard/staff/components/StaffDirectoryToolbar.tsx` (new)
-- `apps/web/app/dashboard/staff/page.tsx`
+- `apps/web/app/dashboard/bk/components/BkRevenueTab.tsx`
+- `apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx`
+- `apps/web/app/dashboard/bk/components/BkTipTab.tsx`
+- `apps/web/app/dashboard/bk/page.tsx`
+- `apps/web/app/dashboard/cc/page.tsx`
+- `apps/web/app/dashboard/cv/page.tsx`
+- `apps/web/app/dashboard/layout.tsx`
 - `apps/web/app/globals.css`
-- `apps/web/components/layout/SidebarNav.tsx`
-- `apps/web/components/ui/__tests__/ui-primitives.test.tsx`
-- `apps/web/config/sidebar.config.tsx`
-- `apps/web/lib/api-client.ts`
 - `packages/shared/src/types/bk.ts`
 
 ## Tóm tắt thay đổi
 
-- **BK Done:** sửa nguồn tip từ ledger `staff_tip`; hiển thị combo đã bán và doanh thu combo; chuẩn hoá icon trạng thái vector; đổi nhãn Done/Missed; đổi tiêu đề cột `Hoa hồng OC` thành `Bonus Done`; thêm filter Tip và Combo qua typed API contract; nhận diện Combo Live đúng theo balance tại thời điểm làm dịch vụ, hiện nhãn `Combo Live` và trả fixed bonus 1.000đ/BK Done.
-- **Combo recognition:** bổ sung nguồn dữ liệu tập trung để nhận diện combo Completed hợp lệ, loại trừ package `single/refill/balance`, đồng thời trả tên gói gọn theo dạng `Dịch vụ 10+6` và doanh thu net VND.
-- **Post Hub:** rút gọn tên người đăng, bỏ hiển thị mã mOS nội bộ; tinh chỉnh Pending tag và toolbar action.
-- **Nhân sự/Sidebar:** thay toolbar tìm kiếm/lọc nhân sự bằng primitive dùng lại, reset phân trang khi đổi lọc, căn giữa dữ liệu bảng, tổ chức menu HR thành nhóm Danh sách nhân sự/Cấu hình Đội nhóm và thêm test sidebar.
+- Chuẩn hoá trải nghiệm BK Leaderboard: nhãn tab, tiêu đề leaderboard/bảng chi tiết, bộ lọc Done/Tip/Combo, avatar khách hàng và Booker, cùng trạng thái dùng vector icon.
+- Đồng bộ báo cáo doanh thu Booker cho riêng nhóm Telesales; dùng doanh thu net của đơn `Completed` theo thời điểm check-in thực tế, làm tròn VND và dùng cùng cơ sở cho thưởng doanh thu.
+- Bổ sung hiển thị combo, combo live, tip và bonus Done; tách tổng thưởng Tip và Doanh Thu trên paystub.
+- Điều chỉnh header/filter của CC và CV theo bố cục BK; rút gọn điều hướng BK và đưa màn hình vận hành vào menu `Khác`.
+- Sửa vùng cuộn sidebar để mọi mục menu vẫn truy cập được trên viewport thấp.
 
-## Kiểm tra đã chạy
+## Kế hoạch migration production
 
-- `pnpm --filter @mos-lab/shared build`
-- `pnpm --filter @mos-lab/api build`
-- `pnpm --filter @mos-lab/web lint -- app/dashboard/bk/components/BkDoneTab.tsx lib/api-client.ts`
-- Browser QA BK Done: vector status icons, Tip, Combo, Done và Missed filters.
-- Browser QA Combo Live: đúng dòng `New Hyperlight 660` hiển thị `Combo Live` (không còn `Giảm: 0%`) và `+1.000 ₫` tại cột Bonus Done.
-
-## Production migration plan
-
-- **CRM schema changes:** None.
-- **Production data migrations:** None.
-- `bash scripts/deploy/migration-plan.sh origin/main`: no schema changes and no data migrations.
-- `pnpm --filter @mos-lab/api data-migrations:validate`: validated 0 production data migrations.
+- CRM schema changes: **None**.
+- Production data migrations: **None**.
+- Kiểm tra `migration-plan.sh origin/main`: không có schema change hoặc data migration pending.
+- Kiểm tra `data-migrations:validate`: hợp lệ, 0 migration production.
 
 ## Commit message đề xuất
 
 ```text
-feat(operations): enhance Booker reporting and staff workflows
+feat(kpi): refine BK leaderboard reporting
 
-- Add typed BK filters and the fixed 1K Combo Live Done bonus
-- Polish BK status visuals, Post Hub metadata, and HR navigation
+- Align BK leaderboard data, bonus views, and Telesales scope
+- Improve report navigation, responsive headers, and table presentation
 
 AI-assisted. Reviewed and verified.
 ```
-
-## Approval needed
-
-Worktree includes the BK reporting changes plus the existing Post Hub and HR/staff UI changes listed above. Approve this full scope and the proposed message before staging, committing, and pushing.

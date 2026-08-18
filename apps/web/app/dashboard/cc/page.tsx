@@ -3,7 +3,7 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Card, theme, Tabs, Spin, message, Dropdown } from 'antd';
+import { Typography, Card, theme, Tabs, Spin, message, Dropdown, Space } from 'antd';
 import {
   AccountBookOutlined,
   DollarCircleOutlined,
@@ -21,7 +21,7 @@ import { CcLeaderboardEntry, CcXoayRecord } from '@mos-lab/shared';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 import CcLeaderboardCard from './components/CcLeaderboardCard';
-import { ReportPage, ReportPeriodNavigator, TableSettingsTrigger, ToolbarToggle } from '../../../components/ui';
+import { ReportPeriodNavigator, TableSettingsTrigger, ToolbarToggle } from '../../../components/ui';
 
 const CcXoayTab = dynamic(() => import('./components/CcXoayTab'), {
   ssr: false,
@@ -75,7 +75,7 @@ const CcThuongConfigModal = dynamic(() => import('./components/CcThuongConfigMod
 
 dayjs.extend(isoWeek);
 
-const { Text } = Typography;
+const { Title, Text } = Typography;
 
 function CcTabLabel({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -142,8 +142,6 @@ export default function CcDashboardPage() {
     }
     return true;
   });
-  const activeCcFilterCount = Number(selectedConsultant !== 'ALL');
-
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -353,58 +351,61 @@ export default function CcDashboardPage() {
   ];
 
   return (
-    <ReportPage
-      className="cc-page"
-      title="CC Leaderboard"
-      subtitle="Theo dõi hiệu suất, thưởng và thu nhập của CC"
-      toolbarClassName="cc-page-toolbar"
-      period={{
-        mode: viewMode,
-        value: referenceDate,
-        label: getPeriodLabel(),
-        onModeChange: setViewMode,
-        onPrevious: () => handleNavigate(-1),
-        onNext: () => handleNavigate(1),
-        onValueChange: setReferenceDate,
-      }}
-      filterTitle="Bộ lọc CC"
-      filterTriggerLabel="Mở bộ lọc CC"
-      activeFilterCount={activeCcFilterCount}
-      filters={
-        <div className="cc-toolbar-filter-cluster" aria-label="Bộ lọc báo cáo CC">
-          <ToolbarToggle
-            label="VAT 8%"
-            aria-label="Công tắc VAT 8%"
-            checked={includeVat}
-            onChange={setIncludeVat}
-            className="cc-toolbar-vat-toggle text-amber-500 dark:text-amber-300"
-          />
+    <div className="responsive-page responsive-workspace cc-page w-full space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+            CC Leaderboard
+          </Title>
+          <Text style={{ color: token.colorTextDescription }}>Theo dõi hiệu suất, thưởng và thu nhập của CC</Text>
         </div>
-      }
-      toolbarActions={
-        <Dropdown
-          trigger={['click']}
-          menu={{
-            items: [
-              { key: 'bonus', label: 'Cấu hình thưởng CC' },
-              { key: 'team', label: 'Quản lý nhân sự CC' },
-            ],
-            onClick: ({ key }) => {
-              if (key === 'bonus') setCcBonusConfigOpen(true);
-              if (key === 'team') router.push('/dashboard/staff/teams?selected=CC');
-            },
-          }}
-        >
-          <span>
-            <TableSettingsTrigger
-              title="Cấu hình CC"
-              data-ui="cc-settings-trigger"
-              className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+
+        <Space wrap className="responsive-toolbar cc-report-toolbar" size={10}>
+          <ReportPeriodNavigator
+            mode={viewMode}
+            value={referenceDate}
+            label={getPeriodLabel()}
+            onModeChange={setViewMode}
+            onPrevious={() => handleNavigate(-1)}
+            onNext={() => handleNavigate(1)}
+            onValueChange={setReferenceDate}
+            rangeValue={dateRange}
+            onRangeChange={setDateRange}
+            className="cc-report-period"
+          />
+          <div className="cc-toolbar-filter-cluster" aria-label="Bộ lọc báo cáo CC">
+            <ToolbarToggle
+              label="VAT 8%"
+              aria-label="Công tắc VAT 8%"
+              checked={includeVat}
+              onChange={setIncludeVat}
+              className="cc-toolbar-vat-toggle text-amber-500 dark:text-amber-300"
             />
-          </span>
-        </Dropdown>
-      }
-    >
+          </div>
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                { key: 'bonus', label: 'Cấu hình thưởng CC' },
+                { key: 'team', label: 'Quản lý nhân sự CC' },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'bonus') setCcBonusConfigOpen(true);
+                if (key === 'team') router.push('/dashboard/staff/teams?selected=CC');
+              },
+            }}
+          >
+            <span>
+              <TableSettingsTrigger
+                title="Cấu hình CC"
+                data-ui="cc-settings-trigger"
+                className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+              />
+            </span>
+          </Dropdown>
+        </Space>
+      </div>
+
       {/* 4 MAIN TABS */}
       <Card
         variant="outlined"
@@ -420,6 +421,6 @@ export default function CcDashboardPage() {
         onClose={() => setCcBonusConfigOpen(false)}
         onSaveSuccess={() => setCcBonusConfigVersion((version) => version + 1)}
       />
-    </ReportPage>
+    </div>
   );
 }

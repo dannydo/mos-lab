@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Tabs, Tooltip, theme } from 'antd';
+import { Card, Tabs, Tooltip, theme, Typography, Space } from 'antd';
 import { WalletOutlined, DashboardOutlined, MoneyCollectOutlined, SyncOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
-import { PageHeader, PageToolbar, ReportPeriodNavigator, TableSettingsTrigger } from '../../../components/ui';
+import { ReportPeriodNavigator, TableSettingsTrigger } from '../../../components/ui';
 
 dayjs.extend(isoWeek);
+
+const { Title, Text } = Typography;
 
 const CvXoayTab = dynamic(() => import('./components/CvXoayTab'), { ssr: false });
 const CvTipTab = dynamic(() => import('./components/CvTipTab'), { ssr: false });
@@ -164,15 +166,18 @@ export default function CvReportPage() {
   };
 
   return (
-    <div className="responsive-page responsive-workspace cv-page">
-      <PageHeader
-        title="CV Leaderboard"
-        subtitle="Theo dõi dữ liệu CV Xoay, bóc tách điểm thưởng ca, CV Tip và thu nhập live của chuyên viên"
-      />
+    <div className="responsive-page responsive-workspace cv-page w-full space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+            CV Leaderboard
+          </Title>
+          <Text style={{ color: token.colorTextDescription }}>
+            Theo dõi dữ liệu Xoay, Lương giờ, Tip và thu nhập live
+          </Text>
+        </div>
 
-      <PageToolbar
-        className="cv-page-toolbar"
-        primary={
+        <Space wrap className="responsive-toolbar cv-report-toolbar" size={10}>
           <ReportPeriodNavigator
             mode={viewMode}
             value={referenceDate}
@@ -184,15 +189,13 @@ export default function CvReportPage() {
             rangeValue={dateRange}
             onRangeChange={setDateRange}
           />
-        }
-        actions={
           <TableSettingsTrigger
             title="Cấu hình CV"
             onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
             className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
           />
-        }
-      />
+        </Space>
+      </div>
 
       {/* 3 MAIN TABS */}
       <Card

@@ -172,6 +172,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           o.order_key as orderKey,
           o.user_id as customerId,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
+          up_c.avatar as clientAvatar,
           COALESCE(uc_c.phone_number, '') as clientPhone,
           o.booking_channels as bookingChannel,
           o.booking_date_start as bookingDate,
@@ -181,7 +182,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           COALESCE(o.total_price, 0) as totalPrice,
           o.created_staff_id as bookerId,
           up_b.full_name as bookerName,
-          up_b.avatar as avatar
+          up_b.avatar as bookerAvatar
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
         LEFT JOIN (
@@ -223,7 +224,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           status: orderState,
           bookerId: Number(r.bookerId),
           bookerName: String(r.bookerName || `BK #${r.bookerId}`),
-          avatar: r.avatar ? String(r.avatar) : null,
+          clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
+          bookerAvatar: r.bookerAvatar ? String(r.bookerAvatar) : null,
           customerId: r.customerId ? Number(r.customerId) : undefined,
         };
       });
@@ -445,10 +447,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           o.user_id as customerId,
           COALESCE(ro.actual_booking_date_start, o.booking_date_start) as orderDate,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
+          up_c.avatar as clientAvatar,
           COALESCE(uc_c.phone_number, '') as clientPhone,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COALESCE(o.total_price, 0) as totalPrice,
           up_b.full_name as bookerName,
+          up_b.avatar as bookerAvatar,
           o.order_state as orderState
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
@@ -523,7 +527,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           orderDate: r.orderDate ? new Date(r.orderDate).toISOString() : '',
           clientName: String(r.clientName),
           clientPhone: String(r.clientPhone || ''),
+          clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
           bookerName: r.bookerName ? String(r.bookerName) : undefined,
+          bookerAvatar: r.bookerAvatar ? String(r.bookerAvatar) : null,
           store: String(r.store),
           serviceName: checkinInfo.serviceName || String(r.serviceName || 'Đặt lịch dịch vụ'),
           servicePrice: checkinInfo.servicePrice || 0,
@@ -708,9 +714,10 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           o.id as orderId,
           COALESCE(ro.actual_booking_date_start, o.booking_date_start) as checkinTime,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
+          up_c.avatar as clientAvatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COALESCE(up_b.full_name, 'Booker') as bookerName,
-          up_b.avatar as avatar,
+          up_b.avatar as bookerAvatar,
           COALESCE(st.customer_tip_100, 0) as totalCustomerTip
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
@@ -750,9 +757,10 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           orderId: Number(r.orderId),
           checkinTime: r.checkinTime ? new Date(r.checkinTime).toISOString() : '',
           clientName: String(r.clientName),
+          clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
           store: String(r.store),
           bookerName: String(r.bookerName),
-          avatar: r.avatar ? String(r.avatar) : null,
+          bookerAvatar: r.bookerAvatar ? String(r.bookerAvatar) : null,
           totalCustomerTip,
           bkTipAmount,
           bkTipPercentage: config.tipsPercent || 7,
@@ -790,15 +798,15 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
     try {
       const config = await getBkSalaryConfig(fastify);
-      const activeBkIds = config.activeBkIds;
-      if (activeBkIds.length === 0) {
+      const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
+      if (activeTelesalesIds.length === 0) {
         return reply.send({
           leaderboard: [],
           summary: { completedOrdersCount: 0, totalRevenue: 0, totalCommissionBonus: 0 },
         });
       }
 
-      const bkIdsStr = activeBkIds.join(',');
+      const bkIdsStr = activeTelesalesIds.join(',');
 
       let storeFilter = '';
       if (storeId && storeId !== 'ALL') {
@@ -838,7 +846,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
       const leaderboard: BkRevenueLeaderboardEntry[] = rows.map((r) => {
         const completedOrdersCount = Number(r.completedOrdersCount || 0);
-        const totalRevenue = Number(r.totalRevenue || 0);
+        // `order.total_price` is the post-discount amount collected for a completed order:
+        // the canonical net revenue basis used throughout BK reporting and bonus tiers.
+        const totalRevenue = Math.round(Number(r.totalRevenue || 0));
         const commissionRate = getRevCommissionRate(totalRevenue, config.revBonusTiers);
         const commissionBonus = Math.round((totalRevenue * commissionRate) / 100);
 
@@ -889,14 +899,16 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
     try {
       const config = await getBkSalaryConfig(fastify);
-
-      let bookerFilter = '';
-      if (bookerId && bookerId !== 'ALL') {
-        bookerFilter = `AND o.created_staff_id = ${Number(bookerId)}`;
-      } else {
-        const activeBkIds = config.activeBkIds;
-        bookerFilter = `AND o.created_staff_id IN (${activeBkIds.join(',')})`;
+      const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
+      const scopedBookerIds = resolveBkTelesalesStaffScope(activeTelesalesIds, bookerId);
+      if (scopedBookerIds.length === 0) {
+        return reply.send({
+          data: [],
+          total: 0,
+          summary: { completedOrdersCount: 0, totalRevenue: 0, totalCommissionBonus: 0 },
+        });
       }
+      const bookerFilter = `AND o.created_staff_id IN (${scopedBookerIds.join(',')})`;
 
       let storeFilter = '';
       if (storeId && storeId !== 'ALL') {
@@ -909,6 +921,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           o.order_key as orderKey,
           COALESCE(ro.actual_booking_date_start, o.booking_date_start) as orderDate,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
+          up_c.avatar as clientAvatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COALESCE(o.total_price, 0) as totalOrderPrice
         FROM \`order\` o
@@ -930,7 +943,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       let totalCommissionSum = 0;
 
       const data: BkRevenueRecord[] = rows.map((r) => {
-        const totalOrderPrice = Number(r.totalOrderPrice || 0);
+        // Keep the per-order detail aligned with the leaderboard's net-revenue basis.
+        const totalOrderPrice = Math.round(Number(r.totalOrderPrice || 0));
         const commissionRate = getRevCommissionRate(totalOrderPrice, config.revBonusTiers);
         const commissionBonus = Math.round((totalOrderPrice * commissionRate) / 100);
 
@@ -942,6 +956,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           orderKey: String(r.orderKey || `#${r.orderId}`),
           orderDate: r.orderDate ? new Date(r.orderDate).toISOString() : '',
           clientName: String(r.clientName),
+          clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
           store: String(r.store),
           totalOrderPrice,
           commissionRate,
@@ -983,7 +998,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
       }
 
-      const res = await getBkPaystubData(fastify, startPart, endPart, undefined, storeFilter);
+      const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
+      const res = await getBkPaystubData(fastify, startPart, endPart, activeTelesalesIds, storeFilter);
 
       return {
         data: res.data,

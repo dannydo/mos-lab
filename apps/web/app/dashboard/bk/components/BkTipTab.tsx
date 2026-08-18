@@ -290,16 +290,22 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
       title: 'Khách Hàng',
       dataIndex: 'clientName',
       key: 'clientName',
-      render: (name: string) => (
-        <span className="font-semibold text-xs text-sky-400 whitespace-nowrap">{name || 'Khách hàng'}</span>
+      render: (name: string, record: BkTipRecord) => (
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <BkAvatar name={name || 'Khách hàng'} src={record.clientAvatar} size={28} />
+          <span className="font-semibold text-xs text-sky-400">{name || 'Khách hàng'}</span>
+        </div>
       ),
     },
     {
       title: 'Booker',
       dataIndex: 'bookerName',
       key: 'bookerName',
-      render: (bName: string) => (
-        <span className="font-medium text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">{bName || '-'}</span>
+      render: (bName: string, record: BkTipRecord) => (
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <BkAvatar name={bName || 'Booker'} src={record.bookerAvatar} size={28} />
+          <span className="font-medium text-xs text-slate-600 dark:text-slate-300">{bName || '-'}</span>
+        </div>
       ),
     },
     {
@@ -312,7 +318,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
       ),
     },
     {
-      title: 'Tip Khách Cho',
+      title: 'Tip',
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
       align: 'right' as const,
@@ -323,7 +329,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
       ),
     },
     {
-      title: 'Thưởng BK Tip (% Share)',
+      title: 'Thưởng Tip',
       dataIndex: 'bkTipAmount',
       key: 'bkTipAmount',
       align: 'right' as const,
@@ -384,7 +390,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
 
       {/* Tip Leaderboard */}
       <BkLeaderboardCard
-        title="Bảng Xếp Hạng BK Tip (Leaderboard BK Tip)"
+        title="BK Leaderboard - Tip"
         leaderboard={leaderboard}
         loading={loading}
         columns={columns}
@@ -416,7 +422,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold m-0" style={{ color: token.colorText }}>
-                Bảng Dữ Liệu Báo Cáo BK Tip (Chi Tiết Tip Nhận Từ Đơn Đặt)
+                Chi Tiết Tip & Được Chia
               </h3>
               {selectedBookerName && (
                 <Tag

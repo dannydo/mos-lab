@@ -4259,6 +4259,26 @@ body {
   top: 0;
 }
 
+/* Keep the brand and release marker in place while the full navigation remains
+   reachable on short desktop viewports. Ant Design adds this wrapper inside
+   Sider, so it must be the flex container for the menu's scroll region. */
+.dashboard-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-nav-scroll-region {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
 .dashboard-header {
   gap: 8px;
   height: var(--mos-header-height) !important;
