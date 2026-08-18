@@ -2466,6 +2466,57 @@ body {
   width: var(--mos-action-icon-size);
 }
 
+/* Staff rows frequently contain multi-line identity and contact details.
+   A middle baseline keeps selection, actions and each data cell visually aligned. */
+.staff-directory-table .ant-table-thead > tr > th,
+.staff-directory-table .ant-table-tbody > tr > td {
+  vertical-align: middle;
+}
+
+.staff-page-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.staff-page-header-copy,
+.staff-page-header-actions {
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .staff-page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .staff-page-header-actions,
+  .staff-page-header-actions > .ant-space {
+    width: 100%;
+  }
+
+  .staff-page-header-actions > .ant-space {
+    display: flex;
+  }
+}
+
+/* The labelled Post Hub CTA uses Ant's icon slot; keep the Lucide plus in the
+   same optical box as the text rather than inheriting inline SVG baseline. */
+.post-hub-create-action.ant-btn,
+.post-hub-create-action.ant-btn .ant-btn-icon,
+.post-hub-create-action__icon {
+  align-items: center;
+  display: inline-flex;
+  line-height: 1;
+}
+
+.post-hub-create-action__icon > svg {
+  display: block;
+}
+
 .today-page .today-refresh-action.mos-icon-button {
   background: var(--ant-color-fill-tertiary);
   border-color: var(--ant-color-border-secondary);

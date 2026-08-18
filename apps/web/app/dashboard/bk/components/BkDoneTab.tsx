@@ -7,6 +7,8 @@ import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button
 import dynamic from 'next/dynamic';
 import {
   CheckCircleOutlined,
+  CloseCircleOutlined,
+  CalendarOutlined,
   EyeOutlined,
   DollarOutlined,
   TrophyOutlined,
@@ -17,8 +19,8 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { CircleCheck, CircleX, ListFilter } from 'lucide-react';
-import { BkDoneLeaderboardEntry, BkDoneRecord, removeVietnameseTones } from '@mos-lab/shared';
+import { CircleCheck, CircleX, DollarSign, ListFilter, Package } from 'lucide-react';
+import { BkDoneDetailsFilter, BkDoneLeaderboardEntry, BkDoneRecord, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
@@ -73,7 +75,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
   const [selectedBookerName, setSelectedBookerName] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'COMPLETED' | 'MISSED'>('ALL');
+  const [filterStatus, setFilterStatus] = useState<BkDoneDetailsFilter>('ALL');
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
   const [detailRecords, setDetailRecords] = useState<BkDoneRecord[]>([]);
@@ -417,9 +419,16 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
           <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
             {record.serviceName || 'Không có thông tin'}
           </div>
-          {(record.servicePrice || 0) > 0 && (
+          {record.isComboLive ? (
+            <div className="text-[10px] font-medium text-violet-400 whitespace-nowrap">Combo Live</div>
+          ) : (record.servicePrice || 0) > 0 ? (
             <div className="text-[10px] text-slate-400 tabular-nums">
               Giá: {formatCurrency(record.servicePrice || 0)} | Giảm: {record.discountPercent || 0}%
+            </div>
+          ) : null}
+          {record.comboName && (
+            <div className="text-[10px] font-medium text-violet-400 whitespace-nowrap">
+              Gói combo: {record.comboName}
             </div>
           )}
         </div>
@@ -430,11 +439,18 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
       dataIndex: 'netRevenue',
       key: 'netRevenue',
       align: 'right' as const,
-      render: (val: number) =>
+      render: (val: number, record: BkDoneRecord) =>
         val > 0 ? (
-          <span className="tabular-nums font-semibold text-xs text-slate-600 dark:text-slate-300">
-            {formatCurrency(val)}
-          </span>
+          <div className="text-right">
+            <div className="tabular-nums font-semibold text-xs text-slate-600 dark:text-slate-300">
+              {formatCurrency(val)}
+            </div>
+            {(record.comboRevenue || 0) > 0 && (
+              <div className="tabular-nums text-[10px] font-medium text-violet-400 whitespace-nowrap">
+                Combo: {formatCurrency(record.comboRevenue || 0)}
+              </div>
+            )}
+          </div>
         ) : (
           <span className="text-slate-500 text-xs">-</span>
         ),
@@ -452,7 +468,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
         ),
     },
     {
-      title: 'Hoa hồng OC',
+      title: 'Bonus Done',
       dataIndex: 'totalDoneBonus',
       key: 'totalDoneBonus',
       align: 'right' as const,
@@ -482,23 +498,32 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
         let color = 'default';
         let label = record.status || 'Đặt lịch';
+        let statusIcon: React.ReactNode | undefined;
 
         if (isComp) {
           color = 'success';
-          label = '✓ Done';
+          label = 'Done';
+          statusIcon = <CheckCircleOutlined />;
         } else if (isCancelled) {
           color = 'error';
-          label = '❌ Đã hủy';
+          label = 'Đã hủy';
+          statusIcon = <CloseCircleOutlined />;
         } else if (isFuture) {
           color = 'processing';
-          label = '📅 Sắp tới';
+          label = 'Sắp tới';
+          statusIcon = <CalendarOutlined />;
         } else {
           color = 'volcano';
-          label = '❌ Missed';
+          label = 'Missed';
+          statusIcon = <CloseCircleOutlined />;
         }
 
         return (
-          <Tag color={color} className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">
+          <Tag
+            color={color}
+            icon={statusIcon}
+            className="inline-flex items-center font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap"
+          >
             {label}
           </Tag>
         );
@@ -609,7 +634,11 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
                 ? 'Đang hiển thị danh sách tất cả Khách hàng MISSED (đã đặt hẹn nhưng không đến)'
                 : filterStatus === 'COMPLETED'
                   ? 'Đang hiển thị danh sách Khách hàng DONE (đã đến làm dịch vụ thành công)'
-                  : 'Hiển thị tất cả đơn hàng đặt lịch của Booker'}
+                  : filterStatus === 'TIP'
+                    ? 'Đang hiển thị các đơn Completed có tiền tip'
+                    : filterStatus === 'COMBO'
+                      ? 'Đang hiển thị các đơn Completed có bán combo'
+                      : 'Hiển thị tất cả đơn hàng đặt lịch của Booker'}
             </Text>
           </div>
 
@@ -639,7 +668,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
                 onClick={() => setFilterStatus('COMPLETED')}
               >
                 <AppIcon icon={CircleCheck} size={14} />
-                <span>Đơn Done</span>
+                <span>Done</span>
               </button>
               <button
                 type="button"
@@ -652,7 +681,33 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
                 onClick={() => setFilterStatus('MISSED')}
               >
                 <AppIcon icon={CircleX} size={14} />
-                <span>Đơn Missed</span>
+                <span>Missed</span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={filterStatus === 'TIP'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  filterStatus === 'TIP'
+                    ? 'bg-amber-600 text-white shadow-xs font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                onClick={() => setFilterStatus('TIP')}
+              >
+                <AppIcon icon={DollarSign} size={14} />
+                <span>Tip</span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={filterStatus === 'COMBO'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  filterStatus === 'COMBO'
+                    ? 'bg-violet-600 text-white shadow-xs font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                onClick={() => setFilterStatus('COMBO')}
+              >
+                <AppIcon icon={Package} size={14} />
+                <span>Combo</span>
               </button>
             </div>
 

@@ -20,9 +20,11 @@ import {
   getRevCommissionRate,
   computeBkOrderCheckins,
   getBkPaystubData,
+  getCustomerTipAmountByOrderIds,
   resolveBkTelesalesStaffScope,
 } from '../services/bk-salary.service.js';
 import { TeamService } from '../../teams/team.service.js';
+import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
 
 export async function registerBkRoutes(fastify: FastifyInstance) {
   // 1. Booking Leaderboard
@@ -419,7 +421,10 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
       }
 
-      const statusParam = (status || 'ALL').toUpperCase();
+      const requestedStatus = (status || 'ALL').toUpperCase();
+      const statusParam = ['ALL', 'COMPLETED', 'MISSED', 'TIP', 'COMBO'].includes(requestedStatus)
+        ? requestedStatus
+        : 'ALL';
       let stateCondition = '';
       let dateField = 'COALESCE(ro.actual_booking_date_start, o.booking_date_start)';
 
@@ -468,20 +473,25 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
 
       const returnedOrderIds = rows.map((r) => Number(r.orderId)).filter((id) => !!id);
-      const tipMap = new Map<number, number>();
-      if (returnedOrderIds.length > 0) {
-        const tips = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT order_id, SUM(tip_amount) as tip_amount
-          FROM staff_tip
-          WHERE order_id IN (${returnedOrderIds.join(',')}) AND tip_percentage = 20
-          GROUP BY order_id
-        `);
-        tips.forEach((t) => tipMap.set(Number(t.order_id), Number(t.tip_amount || 0)));
-      }
+      const [tipMap, comboSalesByOrder] = await Promise.all([
+        getCustomerTipAmountByOrderIds(fastify, returnedOrderIds),
+        ComboRecognitionService.getRecognizedComboSalesByOrderIds(fastify, returnedOrderIds),
+      ]);
+
+      const filteredRows = rows.filter((row) => {
+        const orderId = Number(row.orderId);
+        if (statusParam === 'TIP') {
+          return String(row.orderState) === 'Completed' && (tipMap.get(orderId) || 0) > 0;
+        }
+        if (statusParam === 'COMBO') {
+          return String(row.orderState) === 'Completed' && (comboSalesByOrder.get(orderId)?.netRevenue || 0) > 0;
+        }
+        return true;
+      });
 
       let totalDoneBonusSum = 0;
 
-      const data: BkDoneRecord[] = rows.map((r) => {
+      const data: BkDoneRecord[] = filteredRows.map((r) => {
         const orderId = Number(r.orderId);
         const totalPrice = Number(r.totalPrice || 0);
 
@@ -505,7 +515,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         totalDoneBonusSum += totalDoneBonus;
 
         const isCompletedOrder = String(r.orderState) === 'Completed';
-        const netRev = isCompletedOrder ? totalPrice : 0;
+        const netRev = isCompletedOrder ? Math.round(totalPrice) : 0;
+        const comboSale = comboSalesByOrder.get(orderId);
         return {
           orderId,
           orderKey: String(r.orderKey || `#${r.orderId}`),
@@ -517,8 +528,11 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           serviceName: checkinInfo.serviceName || String(r.serviceName || 'Đặt lịch dịch vụ'),
           servicePrice: checkinInfo.servicePrice || 0,
           discountPercent: Math.round(checkinInfo.discountPercent || 0),
+          isComboLive: checkinInfo.isCombo,
           netRevenue: netRev,
-          tipAmount: Number(r.tipAmount || 0),
+          comboName: comboSale?.comboName,
+          comboRevenue: comboSale?.netRevenue || 0,
+          tipAmount: tipMap.get(orderId) || 0,
           totalPrice: netRev,
           basicDoneBonus,
           promoBonus,

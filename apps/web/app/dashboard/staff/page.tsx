@@ -33,7 +33,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  SearchOutlined,
   EyeOutlined,
   MailOutlined,
   PhoneOutlined,
@@ -56,6 +55,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
 import { useStaffData } from './hooks/useStaffData';
 import { getStaffColumns, getRoleColumns } from './components/StaffColumns';
+import { StaffDirectoryToolbar } from './components/StaffDirectoryToolbar';
 import StaffTabsContent from './components/StaffTabsContent';
 
 const { Title, Text, Paragraph } = Typography;
@@ -162,7 +162,10 @@ export default function StaffPage() {
     openStaffModal,
     handleDeleteStaff,
     currentUser,
-    onRoleClick: (roleKey) => setFilterRole(roleKey),
+    onRoleClick: (roleKey) => {
+      setCurrentPage(1);
+      setFilterRole(roleKey);
+    },
   });
 
   // Table columns for Roles Management
@@ -172,11 +175,28 @@ export default function StaffPage() {
     handleDeleteRole,
   });
 
+  const handleSearchQueryChange = (value: string) => {
+    setCurrentPage(1);
+    setSearchQuery(value);
+  };
+
+  const handleFilterRoleChange = (value: string) => {
+    setCurrentPage(1);
+    setFilterRole(value);
+  };
+
+  const handleClearDirectoryFilters = () => {
+    setCurrentPage(1);
+    setSearchQuery('');
+    setFilterRole('all');
+    setFilterStatus('all');
+  };
+
   return (
     <div className="responsive-page responsive-workspace staff-page" style={{ padding: '4px' }}>
       {/* Page Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div>
+      <div className="staff-page-header">
+        <div className="staff-page-header-copy">
           <Title level={3} style={{ color: '#D4A84B', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <SolutionOutlined /> Quản Lý Nhân Sự & Vai Trò (HR)
           </Title>
@@ -184,9 +204,9 @@ export default function StaffPage() {
             Cấu hình nhân sự, quản lý nhóm quyền, liên kết Google Auth và cập nhật thông tin nội bộ.
           </Text>
         </div>
-        <div>
+        <div className="staff-page-header-actions">
           {activeTab !== 'roles' ? (
-            <Space>
+            <Space wrap>
               {currentUser?.role === 'admin' && (
                 <Button
                   icon={<SyncOutlined />}
@@ -250,71 +270,14 @@ export default function StaffPage() {
             ),
             children: (
               <>
-                {/* Search & Filters */}
-                <Card
-                  style={{
-                    marginBottom: '20px',
-                    background: themeMode === 'dark' ? '#141414' : token.colorBgContainer,
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
-                    borderRadius: '8px',
-                  }}
-                >
-                  <Row gutter={16}>
-                    <Col xs={24} sm={12} md={14}>
-                      <Input
-                        placeholder="Tìm theo tên hoặc email/username đăng nhập..."
-                        prefix={<SearchOutlined style={{ color: '#888' }} />}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        allowClear
-                        style={{ width: '100%' }}
-                      />
-                    </Col>
-                    <Col xs={16} sm={8} md={8}>
-                      <Select
-                        style={{ width: '100%' }}
-                        placeholder="Lọc theo vai trò"
-                        value={filterRole === 'all' ? undefined : filterRole}
-                        onChange={(val) => setFilterRole(val || 'all')}
-                        allowClear
-                      >
-                        <Option value="all">Tất cả vai trò</Option>
-                        {roles.map((r) => (
-                          <Option key={r.key} value={r.key}>
-                            {r.name}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Col>
-                    <Col xs={8} sm={4} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <Button
-                        onClick={() => {
-                          setSearchQuery('');
-                          setFilterRole('all');
-                          setFilterStatus('all');
-                        }}
-                        style={{ width: '100%' }}
-                      >
-                        Clear
-                      </Button>
-                    </Col>
-                  </Row>
-                </Card>
-
-                {/* Active Filter Indicator */}
-                {filterRole !== 'all' && (
-                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Text type="secondary">Đang lọc theo vai trò:</Text>
-                    <Tag
-                      closable
-                      onClose={() => setFilterRole('all')}
-                      color={roles.find((r) => r.key === filterRole)?.color || 'gold'}
-                      style={{ fontWeight: '500', borderRadius: '4px' }}
-                    >
-                      {roles.find((r) => r.key === filterRole)?.name || filterRole}
-                    </Tag>
-                  </div>
-                )}
+                <StaffDirectoryToolbar
+                  roles={roles}
+                  searchQuery={searchQuery}
+                  filterRole={filterRole}
+                  onSearchQueryChange={handleSearchQueryChange}
+                  onFilterRoleChange={handleFilterRoleChange}
+                  onClear={handleClearDirectoryFilters}
+                />
 
                 {/* Staff Table */}
                 <Table
@@ -344,7 +307,7 @@ export default function StaffPage() {
                   style={{
                     background: themeMode === 'dark' ? '#141414' : '#fff',
                   }}
-                  className="antd-custom-table"
+                  className="antd-custom-table staff-directory-table"
                 />
               </>
             ),
@@ -360,71 +323,14 @@ export default function StaffPage() {
             ),
             children: (
               <>
-                {/* Search & Filters */}
-                <Card
-                  style={{
-                    marginBottom: '20px',
-                    background: themeMode === 'dark' ? '#141414' : token.colorBgContainer,
-                    border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
-                    borderRadius: '8px',
-                  }}
-                >
-                  <Row gutter={16}>
-                    <Col xs={24} sm={12} md={14}>
-                      <Input
-                        placeholder="Tìm theo tên hoặc email/username đăng nhập..."
-                        prefix={<SearchOutlined style={{ color: '#888' }} />}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        allowClear
-                        style={{ width: '100%' }}
-                      />
-                    </Col>
-                    <Col xs={16} sm={8} md={8}>
-                      <Select
-                        style={{ width: '100%' }}
-                        placeholder="Lọc theo vai trò"
-                        value={filterRole === 'all' ? undefined : filterRole}
-                        onChange={(val) => setFilterRole(val || 'all')}
-                        allowClear
-                      >
-                        <Option value="all">Tất cả vai trò</Option>
-                        {roles.map((r) => (
-                          <Option key={r.key} value={r.key}>
-                            {r.name}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Col>
-                    <Col xs={8} sm={4} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <Button
-                        onClick={() => {
-                          setSearchQuery('');
-                          setFilterRole('all');
-                          setFilterStatus('all');
-                        }}
-                        style={{ width: '100%' }}
-                      >
-                        Clear
-                      </Button>
-                    </Col>
-                  </Row>
-                </Card>
-
-                {/* Active Filter Indicator */}
-                {filterRole !== 'all' && (
-                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Text type="secondary">Đang lọc theo vai trò:</Text>
-                    <Tag
-                      closable
-                      onClose={() => setFilterRole('all')}
-                      color={roles.find((r) => r.key === filterRole)?.color || 'gold'}
-                      style={{ fontWeight: '500', borderRadius: '4px' }}
-                    >
-                      {roles.find((r) => r.key === filterRole)?.name || filterRole}
-                    </Tag>
-                  </div>
-                )}
+                <StaffDirectoryToolbar
+                  roles={roles}
+                  searchQuery={searchQuery}
+                  filterRole={filterRole}
+                  onSearchQueryChange={handleSearchQueryChange}
+                  onFilterRoleChange={handleFilterRoleChange}
+                  onClear={handleClearDirectoryFilters}
+                />
 
                 {/* Staff Table */}
                 <Table
@@ -454,7 +360,7 @@ export default function StaffPage() {
                   style={{
                     background: themeMode === 'dark' ? '#141414' : '#fff',
                   }}
-                  className="antd-custom-table"
+                  className="antd-custom-table staff-directory-table"
                 />
               </>
             ),

@@ -121,6 +121,15 @@ describe('UI primitives', () => {
     expect(container.querySelectorAll('.mos-app-icon')).toHaveLength(5);
   });
 
+  it('nests team configuration under the HR staff menu', () => {
+    const systemGroup = getSidebarGroups('admin').find((group) => group.groupKey === 'grp-system');
+    const staffMenu = systemGroup?.items.find((item) => item.key === 'staff');
+
+    expect(staffMenu?.path).toBeUndefined();
+    expect(staffMenu?.children?.map((item) => item.key)).toEqual(['staff-directory', 'teams']);
+    expect(staffMenu?.children?.find((item) => item.key === 'teams')?.path).toBe('/dashboard/staff/teams');
+  });
+
   it('uses the Lucide adapter for the standard list search submit action', () => {
     render(<SearchField placeholder="Tìm khách hàng" searchButtonLabel="Tìm khách hàng" />);
 

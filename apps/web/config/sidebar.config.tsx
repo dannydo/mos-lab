@@ -264,13 +264,20 @@ export function getSidebarGroups(
         key: 'staff',
         label: 'Nhân sự (HR)',
         icon: <SolutionOutlined />,
-        path: '/dashboard/staff',
-      },
-      {
-        key: 'teams',
-        label: 'Cấu hình Đội nhóm',
-        icon: <TeamOutlined />,
-        path: '/dashboard/staff/teams',
+        children: [
+          {
+            key: 'staff-directory',
+            label: 'Danh sách nhân sự',
+            icon: <SolutionOutlined />,
+            path: '/dashboard/staff',
+          },
+          {
+            key: 'teams',
+            label: 'Cấu hình Đội nhóm',
+            icon: <TeamOutlined />,
+            path: '/dashboard/staff/teams',
+          },
+        ],
       },
       {
         key: 'catalog',
@@ -335,7 +342,7 @@ export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | 
   if (pathname.includes('/dashboard/cv')) return 'cv';
   if (pathname.includes('/dashboard/bk')) return 'bk';
   if (pathname.includes('/dashboard/staff/teams')) return 'teams';
-  if (pathname.includes('/dashboard/staff')) return 'staff';
+  if (pathname.includes('/dashboard/staff')) return 'staff-directory';
   if (pathname.includes('/dashboard/referrals')) return 'referrals';
   if (pathname.includes('/dashboard/catalog')) return 'catalog';
   if (pathname.includes('/dashboard/architecture')) return 'architecture';

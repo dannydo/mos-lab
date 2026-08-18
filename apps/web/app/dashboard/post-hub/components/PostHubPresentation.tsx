@@ -117,10 +117,11 @@ export function formatReportPeriodLabel(mode: ReportPeriodMode, referenceDate: D
 
 export function PostHubReviewStatusTag({ status }: { status: SocialPostReviewStatus }) {
   const meta = REVIEW_STATUS_META[status];
+  const isPending = status === 'PENDING';
   return (
     <StatusTag
-      status={meta.tone}
-      icon={<AppIcon icon={meta.icon} size="sm" />}
+      status={isPending ? 'cyan' : meta.tone}
+      icon={isPending ? undefined : <AppIcon icon={meta.icon} size="sm" />}
       label={meta.label}
       className="py-1 px-2.5"
     />

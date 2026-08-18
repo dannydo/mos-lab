@@ -82,12 +82,26 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole, onNa
   useEffect(() => {
     const savedOpenKeys = localStorage.getItem('mos_menu_openKeys');
     let keys: string[] = savedOpenKeys ? JSON.parse(savedOpenKeys) : [];
+    let didOpenActiveParent = false;
     if (pathname.includes('/dashboard/customers') || pathname.includes('/dashboard/referrals')) {
-      if (!keys.includes('customers-parent')) keys.push('customers-parent');
+      if (!keys.includes('customers-parent')) {
+        keys.push('customers-parent');
+        didOpenActiveParent = true;
+      }
     }
     if (pathname.includes('/dashboard/nyc')) {
-      if (!keys.includes('nyc-parent')) keys.push('nyc-parent');
+      if (!keys.includes('nyc-parent')) {
+        keys.push('nyc-parent');
+        didOpenActiveParent = true;
+      }
     }
+    if (pathname.includes('/dashboard/staff')) {
+      if (!keys.includes('staff')) {
+        keys.push('staff');
+        didOpenActiveParent = true;
+      }
+    }
+    if (didOpenActiveParent) localStorage.setItem('mos_menu_openKeys', JSON.stringify(keys));
     setOpenKeys(keys);
   }, [pathname]);
 

@@ -59,6 +59,7 @@ import {
   BkBookingLeaderboardResponse,
   BkBookingResponse,
   BkDoneLeaderboardResponse,
+  BkDoneDetailsParams,
   BkDoneResponse,
   BkTipLeaderboardResponse,
   BkTipResponse,
@@ -1248,7 +1249,7 @@ export const apiClient = {
       const response = await api.get('/kpi/bk/done/leaderboard', { params });
       return response.data;
     },
-    getDoneDetails: async (params?: Record<string, unknown>): Promise<BkDoneResponse> => {
+    getDoneDetails: async (params?: BkDoneDetailsParams): Promise<BkDoneResponse> => {
       const response = await api.get('/kpi/bk/done/details', { params });
       return response.data;
     },

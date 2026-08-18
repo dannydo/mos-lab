@@ -45,6 +45,9 @@ export const DEFAULT_BK_CONFIG: BkSalaryConfig = {
   ],
 };
 
+/** Fixed operational rule: a completed Combo Live service earns the Booker 1,000 VND. */
+export const BK_COMBO_LIVE_DONE_BONUS = 1000;
+
 export async function getActiveBkIds(fastify: FastifyInstance): Promise<number[]> {
   const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'BK', 'ACTIVE_BK_STAFF_CONFIG');
   return ids.length > 0 ? ids : DEFAULT_BK_CONFIG.activeBkIds;
@@ -178,6 +181,36 @@ export function calculateCheckinBonus(
       };
     }
   }
+}
+
+/**
+ * Reconstructs the customer's full tip from the staff-tip ledger. A single
+ * customer tip can be split across staff (for example 20% and 10% rows), so
+ * the maximum normalized share represents the paid customer-tip amount once.
+ */
+export async function getCustomerTipAmountByOrderIds(
+  fastify: FastifyInstance,
+  orderIds: number[]
+): Promise<Map<number, number>> {
+  const validOrderIds = [...new Set(orderIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+  const tipsByOrder = new Map<number, number>();
+
+  if (validOrderIds.length === 0) return tipsByOrder;
+
+  const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+    SELECT
+      st.order_id AS orderId,
+      MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) AS customerTip
+    FROM staff_tip st
+    JOIN \`order\` o ON o.id = st.order_id
+    WHERE st.order_id IN (${validOrderIds.join(',')})
+      AND st.tip_amount > 0
+      AND o.order_state = 'Completed'
+    GROUP BY st.order_id
+  `);
+
+  rows.forEach((row) => tipsByOrder.set(Number(row.orderId), Math.round(Number(row.customerTip || 0))));
+  return tipsByOrder;
 }
 
 export async function computeBkOrderCheckins(
@@ -376,8 +409,8 @@ export async function computeBkOrderCheckins(
     let discountRate = 0;
 
     if (isCombo) {
-      bonus = 0;
-      checkinCategory = 'Combo (0đ)';
+      bonus = BK_COMBO_LIVE_DONE_BONUS;
+      checkinCategory = 'Combo Live (1.000đ)';
     } else {
       const calculated = calculateCheckinBonus(serviceType, serviceName, servicePrice, discountAmount, config);
       bonus = calculated.bonus;

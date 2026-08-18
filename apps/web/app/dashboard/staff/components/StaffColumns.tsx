@@ -74,7 +74,7 @@ export const getStaffColumns = ({
           : '??';
         const isOnline = !!(record.lastActiveAt && dayjs().diff(dayjs(record.lastActiveAt), 'minute') < 5);
         return (
-          <Space>
+          <Space size={10} align="center">
             <Badge dot={isOnline} status="success" offset={[-2, 28]}>
               <Avatar
                 src={
@@ -146,13 +146,22 @@ export const getStaffColumns = ({
       ),
     },
     {
-      title: 'Ngày vào làm',
+      title: <span style={{ whiteSpace: 'nowrap' }}>Ngày vào làm</span>,
       dataIndex: 'joinedAt',
       key: 'joinedAt',
+      width: 118,
       render: (date: string, record: Staff) =>
         date ? (
           <div>
-            <Text style={{ display: 'block', color: token.colorText, fontSize: '13px', fontWeight: '500' }}>
+            <Text
+              style={{
+                display: 'block',
+                color: token.colorText,
+                fontSize: '13px',
+                fontWeight: '500',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {dayjs(date).format('DD/MM/YYYY')}
             </Text>
             <Text type="secondary" style={{ fontSize: '11px', display: 'block', fontVariantNumeric: 'tabular-nums' }}>

@@ -337,6 +337,7 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 1. **Định nghĩa Đơn Bán Combo Chuẩn (Unified Combo Recognition)**: Một giao dịch được ghi nhận là Bán Combo thành công khi thỏa 3 điều kiện: (1) `order.order_state = 'Completed'`, (2) Tồn tại chi tiết gói combo trong `order_service_combo` (`total_price > 0`, package key không chứa từ khóa loại trừ `%single%`, `%refill%`, `%balance%`) HOẶC trong `order_service` có `user_service_type = 'combo'` hoặc `service_group = 'combo'`, (3) Khách hàng được cập nhật số dư trong `user_service_balance`.
 2. **Quy tắc Chuẩn hóa Ngày Giờ Truy vấn (Date Range Parsing & Padding Rule)**: Khi nhận chuỗi ngày `dateFrom` và `dateTo` (dạng `YYYY-MM-DD` 10 ký tự), Fastify Backend bắt buộc dùng `parseComboDateBounds` chuẩn hóa `dateFrom` thành `YYYY-MM-DD 00:00:00` và `dateTo` thành `YYYY-MM-DD 23:59:59`. Tuyệt đối **CẤM** dùng `.slice(0, 19)` cắt thô làm rụng đuôi `23:59:59` gây lỗi SQL `<='YYYY-MM-DD 00:00:00'` làm bỏ sót 100% các đơn bán combo trong ngày.
 3. **Nguồn Dữ Liệu Tập Trung (Single Source of Truth Service)**: Báo cáo CC, New LoCa, Báo cáo Booker và Filter Khách hàng bắt buộc dùng chung `ComboRecognitionService` (`apps/api/src/modules/customers/services/combo-recognition.service.ts`) để đồng bộ 100% số lượng đơn combo và doanh số combo trên toàn hệ thống.
+4. **Combo Live Done Booker Bonus (1.000đ)**: Combo Live là lượt dùng gói còn hiệu lực, không phải đơn bán combo mới. Chỉ nhận diện khi balance được tạo trước thời điểm làm dịch vụ, chưa hết hạn và còn lượt `normal + retain` theo transaction gần nhất (`checkHasLiveCombo` / `buildComboLiveAtBookingSql`). Khi đơn `Completed`, BK nhận cố định **1.000đ** thay cho tier thưởng theo giảm giá; UI phải hiển thị `Combo Live`, không hiển thị `Giảm: 0%`.
 
 ---
 
@@ -591,7 +592,6 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
    - Khai báo chuẩn tại `@mos-lab/shared` (`packages/shared/src/types/catalog.ts`): đối tượng `LASH_STYLES` và kiểu dữ liệu `LashStyle`.
    - Service backend (`LashBenchmarkService.parseLashSpecs()`) phân tích `service_key` / `service_name` thành `{ lashStyle, lashCount }`.
    - Không nhầm lẫn **Dòng Mi / Dáng Mi** (`lashStyle`: Classic, Mink, Volume, Ivylight...) với **Loại Dịch Vụ** (`serviceType`: Normal, Retain, Fix, Adjust, Removal) hay **Nhóm Dịch Vụ** (`serviceGroup`: LashesTop, LashesUnder, Sauna...).
-
 
 
 

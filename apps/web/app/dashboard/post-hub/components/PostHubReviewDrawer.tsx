@@ -76,8 +76,8 @@ export function PostHubReviewDrawer({
               },
               {
                 key: 'author',
-                label: 'Người đăng / mOS',
-                children: `${submission.author} · mOS #${submission.staffId}`,
+                label: 'Người đăng',
+                children: submission.author,
               },
               {
                 key: 'platform',

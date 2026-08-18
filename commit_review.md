@@ -1,92 +1,65 @@
 ---
 request_feedback: true
-target: production
 ---
 
-# Commit & Deploy Review — Post Hub platform, avatar, and UI polish
+# Commit review
 
-## Scope and worktree
+## Danh sách file thay đổi
 
-- Branch: `main`
-- Base commit: `dad709ac` (`merge(hotfix): restore BK_CS customer detail access`)
-- No file has been staged, committed, pushed, or deployed in this review.
-- The changes below are the current user-requested Post Hub and campaign-header UI batch.
+- `.agents/AGENTS.md`
+- `AGENTS.md`
+- `apps/api/src/modules/customers/services/combo-recognition.service.ts`
+- `apps/api/src/modules/kpi/routes/bk.routes.ts`
+- `apps/api/src/modules/kpi/services/bk-salary.service.ts`
+- `apps/web/app/dashboard/bk/components/BkDoneTab.tsx`
+- `apps/web/app/dashboard/post-hub/components/PostHubApprovalStage.tsx`
+- `apps/web/app/dashboard/post-hub/components/PostHubDataStage.tsx`
+- `apps/web/app/dashboard/post-hub/components/PostHubPresentation.tsx`
+- `apps/web/app/dashboard/post-hub/components/PostHubReviewDrawer.tsx`
+- `apps/web/app/dashboard/post-hub/page.tsx`
+- `apps/web/app/dashboard/staff/components/StaffColumns.tsx`
+- `apps/web/app/dashboard/staff/components/StaffDirectoryToolbar.tsx` (new)
+- `apps/web/app/dashboard/staff/page.tsx`
+- `apps/web/app/globals.css`
+- `apps/web/components/layout/SidebarNav.tsx`
+- `apps/web/components/ui/__tests__/ui-primitives.test.tsx`
+- `apps/web/config/sidebar.config.tsx`
+- `apps/web/lib/api-client.ts`
+- `packages/shared/src/types/bk.ts`
 
-## Files changed
+## Tóm tắt thay đổi
 
-```text
-apps/api/src/modules/post-hub/post-hub.service.test.ts
-apps/api/src/modules/post-hub/post-hub.service.ts
-apps/api/src/modules/post-hub/routes.ts
-apps/web/app/dashboard/post-hub/components/PostHubApprovalStage.tsx
-apps/web/app/dashboard/post-hub/components/PostHubDataStage.tsx
-apps/web/app/dashboard/post-hub/components/PostHubLeaderboardStage.tsx
-apps/web/app/dashboard/post-hub/components/PostHubPresentation.tsx
-apps/web/app/dashboard/post-hub/page.tsx
-apps/web/app/globals.css
-packages/shared/src/types/social-posts.ts
-commit_review.md
-```
+- **BK Done:** sửa nguồn tip từ ledger `staff_tip`; hiển thị combo đã bán và doanh thu combo; chuẩn hoá icon trạng thái vector; đổi nhãn Done/Missed; đổi tiêu đề cột `Hoa hồng OC` thành `Bonus Done`; thêm filter Tip và Combo qua typed API contract; nhận diện Combo Live đúng theo balance tại thời điểm làm dịch vụ, hiện nhãn `Combo Live` và trả fixed bonus 1.000đ/BK Done.
+- **Combo recognition:** bổ sung nguồn dữ liệu tập trung để nhận diện combo Completed hợp lệ, loại trừ package `single/refill/balance`, đồng thời trả tên gói gọn theo dạng `Dịch vụ 10+6` và doanh thu net VND.
+- **Post Hub:** rút gọn tên người đăng, bỏ hiển thị mã mOS nội bộ; tinh chỉnh Pending tag và toolbar action.
+- **Nhân sự/Sidebar:** thay toolbar tìm kiếm/lọc nhân sự bằng primitive dùng lại, reset phân trang khi đổi lọc, căn giữa dữ liệu bảng, tổ chức menu HR thành nhóm Danh sách nhân sự/Cấu hình Đội nhóm và thêm test sidebar.
 
-## What changes
+## Kiểm tra đã chạy
 
-### Post Hub: real employee avatars
-
-- Reads the existing canonical `crm_staff.avatar_url` and returns it through the typed Post Hub API for native submissions, DATA/APPROVE rows, and the leaderboard.
-- Uses one shared avatar renderer for all Post Hub stages. It safely normalizes legacy Wings paths, shows a real profile image when available, and falls back to initials if absent or unavailable.
-- No staff profile data, social-post data, or database schema is modified.
-
-### Post Hub: Facebook / TikTok filter
-
-- Adds **Tất cả nền tảng / Facebook / TikTok** beside the 1.DATA poster filter.
-- The API infers the platform from the source URL, validates the requested filter, then filters before author options, summary, total, and pagination. This avoids mismatched counts and does not trust a free-text channel declaration.
-- The 1.DATA platform selection persists through F5 and resets only the DATA table to page 1 when changed. 2.APPROVE and Leaderboard remain unchanged.
-
-### Header and campaign search polish
-
-- Moves numeric header badges to the top-inline edge with a visible top layer so counts are no longer clipped.
-- Makes the NYC mobile search trigger rules explicit so the compact view exposes only one search control.
-
-## Verification completed
-
-- `pnpm --filter @mos-lab/shared build` — passed.
-- `pnpm --filter @mos-lab/api build` — passed.
-- `pnpm --filter @mos-lab/web build` — passed.
-- `pnpm lint` — passed, including the UI-contract check (331 source files).
-- `pnpm --filter @mos-lab/api exec tsx --test src/modules/post-hub/post-hub.service.test.ts` — passed (16 tests).
-- `git diff --check` — passed.
-- Browser QA on Post Hub — real CDN staff photos loaded; Facebook filter returned Facebook-only rows; TikTok filter returned TikTok-only rows; the selected platform persisted after reload. The page was restored to **Tất cả nền tảng** afterward.
+- `pnpm --filter @mos-lab/shared build`
+- `pnpm --filter @mos-lab/api build`
+- `pnpm --filter @mos-lab/web lint -- app/dashboard/bk/components/BkDoneTab.tsx lib/api-client.ts`
+- Browser QA BK Done: vector status icons, Tip, Combo, Done và Missed filters.
+- Browser QA Combo Live: đúng dòng `New Hyperlight 660` hiển thị `Combo Live` (không còn `Giảm: 0%`) và `+1.000 ₫` tại cột Bonus Done.
 
 ## Production migration plan
 
-### CRM schema changes
+- **CRM schema changes:** None.
+- **Production data migrations:** None.
+- `bash scripts/deploy/migration-plan.sh origin/main`: no schema changes and no data migrations.
+- `pnpm --filter @mos-lab/api data-migrations:validate`: validated 0 production data migrations.
 
-- None. `bash scripts/deploy/migration-plan.sh origin/main` reports `Schema changes: none`.
-- The guarded production deploy will retain its normal non-destructive `schema:apply:crm` check, but this commit changes no Prisma model or SQL schema.
-
-### Production data migrations
-
-- None. `pnpm --filter @mos-lab/api data-migrations:validate` validated 0 production data migrations.
-- No Google Sheet import or historical ledger re-import is part of this release.
-
-## Release notes and non-blocking follow-ups
-
-- Platform inference currently runs in the Post Hub service after its existing filtered ledger query. This is appropriate for the present dataset; if the ledger grows substantially, consider persisting an indexed normalized platform column.
-- A poster selection is intentionally retained when changing platform. If that person has no records on the selected platform, the table correctly becomes empty; automatic clearing can be evaluated later as a UX refinement.
-- The global header safe rail was visually checked at the current desktop layout. Very narrow desktop widths remain a future responsive smoke-test area.
-
-## Proposed commit message
+## Commit message đề xuất
 
 ```text
-feat(post-hub): add platform filters and staff avatars
+feat(operations): enhance Booker reporting and staff workflows
 
-- Return canonical mOS profile images across DATA, APPROVE, and Leaderboard.
-- Filter 1.DATA by Facebook or TikTok with persisted server-side pagination.
-- Keep header badges visible and prevent duplicate mobile campaign search controls.
+- Add typed BK filters and the fixed 1K Combo Live Done bonus
+- Polish BK status visuals, Post Hub metadata, and HR navigation
 
 AI-assisted. Reviewed and verified.
 ```
 
-## Approval requested
+## Approval needed
 
-Please approve this commit message and scope. After approval, I will stage the reviewed worktree, commit, and push `main`; then I will monitor CI and ask once more before the VPS deployment.
+Worktree includes the BK reporting changes plus the existing Post Hub and HR/staff UI changes listed above. Approve this full scope and the proposed message before staging, committing, and pushing.

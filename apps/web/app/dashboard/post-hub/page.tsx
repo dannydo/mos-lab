@@ -26,6 +26,7 @@ import {
   EntityFormDrawer,
   EntityFormField,
   FeaturePage,
+  IconButton,
   ReportPeriodNavigator,
   SearchField,
   StatusTag,
@@ -470,17 +471,22 @@ export default function PostHubPage() {
       icon={<AppIcon icon={Send} />}
       tag={<StatusTag status="success" label="mOS native" />}
       headerActions={
-        <>
-          <Button type="primary" icon={<AppIcon icon={Plus} />} onClick={openCreate}>
+        <Space size={6} align="center">
+          <Button
+            type="primary"
+            className="post-hub-create-action"
+            icon={
+              <span aria-hidden className="post-hub-create-action__icon">
+                <AppIcon icon={Plus} />
+              </span>
+            }
+            onClick={openCreate}
+          >
             Thêm bài đăng
           </Button>
-          <Button icon={<AppIcon icon={Settings} />} disabled={!rewardConfig} onClick={openRewardConfig}>
-            Cấu hình thưởng
-          </Button>
-          <Button icon={<AppIcon icon={RefreshCw} />} loading={loading} onClick={fetchPostHub}>
-            Làm mới
-          </Button>
-        </>
+          <IconButton label="Cấu hình thưởng" icon={Settings} disabled={!rewardConfig} onClick={openRewardConfig} />
+          <IconButton label="Làm mới dữ liệu Post Hub" icon={RefreshCw} loading={loading} onClick={fetchPostHub} />
+        </Space>
       }
       toolbar={{
         primary: (

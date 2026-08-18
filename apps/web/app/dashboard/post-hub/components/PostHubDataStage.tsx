@@ -76,12 +76,7 @@ export function PostHubDataStage({
       render: (author: string, record) => (
         <Space size={8}>
           <PostHubStaffAvatar name={author} avatarUrl={record.avatarUrl} />
-          <div>
-            <div className="font-medium">{author}</div>
-            <Text type="secondary" className="text-xs">
-              mOS #{record.staffId}
-            </Text>
-          </div>
+          <div className="font-medium">{author}</div>
         </Space>
       ),
     },
@@ -204,7 +199,7 @@ export function PostHubDataStage({
               onChange={onAuthorChange}
               options={authorOptions.map((author) => ({
                 value: author.staffId,
-                label: `${author.displayName} · mOS #${author.staffId}`,
+                label: author.displayName,
               }))}
               allowClear
               showSearch

@@ -58,7 +58,13 @@ export interface BkDoneRecord {
   serviceName?: string;
   servicePrice?: number;
   discountPercent?: number;
+  /** Customer had a valid remaining combo balance at the completed service time. */
+  isComboLive?: boolean;
   netRevenue?: number;
+  /** Recognized combo sold with this completed order. */
+  comboName?: string;
+  /** Net VND collected from recognized combo items in this order. */
+  comboRevenue?: number;
   tipAmount?: number;
   totalPrice: number;
   basicDoneBonus: number;
@@ -97,6 +103,16 @@ export interface BkDoneLeaderboardResponse {
     avgMissedRate?: number;
     totalDoneBonus: number;
   };
+}
+
+export type BkDoneDetailsFilter = 'ALL' | 'COMPLETED' | 'MISSED' | 'TIP' | 'COMBO';
+
+export interface BkDoneDetailsParams {
+  bookerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  storeId?: string;
+  status?: BkDoneDetailsFilter;
 }
 
 export interface BkDoneResponse {

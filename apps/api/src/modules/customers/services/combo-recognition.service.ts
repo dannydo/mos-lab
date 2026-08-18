@@ -5,6 +5,11 @@ export interface DateBounds {
   endStr: string;
 }
 
+export interface RecognizedComboSale {
+  comboName: string;
+  netRevenue: number;
+}
+
 function assertSqlAlias(candidateAlias: string): void {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(candidateAlias)) {
     throw new Error('Invalid SQL alias for combo recognition');
@@ -116,6 +121,107 @@ export function parseComboDateBounds(dFrom?: string, dTo?: string): DateBounds {
  * Single Source of Truth helper for New LoCa & Combo Sale Customer Recognition
  */
 export class ComboRecognitionService {
+  /**
+   * Rule #21 source of truth for a completed order's real combo sale.
+   * It intentionally excludes legacy `single`, `refill`, and `balance`
+   * package keys, and requires that the customer's combo balance exists.
+   */
+  public static async getRecognizedComboSalesByOrderIds(
+    fastify: FastifyInstance,
+    orderIds: number[]
+  ): Promise<Map<number, RecognizedComboSale>> {
+    const validOrderIds = [...new Set(orderIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+    const comboSalesByOrder = new Map<number, RecognizedComboSale>();
+
+    if (validOrderIds.length === 0) return comboSalesByOrder;
+
+    const orderIdsSql = validOrderIds.join(',');
+    const balanceExistsSql = buildComboBalanceExistsSql('o');
+
+    const rows = await fastify.prisma.legacy.$queryRawUnsafe<
+      Array<{ orderId: number; serviceName: string | null; packageKey: string | null; netRevenue: number | null }>
+    >(`
+      SELECT
+        recognized_combo.orderId,
+        recognized_combo.serviceName,
+        recognized_combo.packageKey,
+        recognized_combo.netRevenue
+      FROM (
+        SELECT
+          osc.order_id AS orderId,
+          COALESCE(sl.service_name, s.service_key, 'Gói combo') AS serviceName,
+          sp.service_price_package_key AS packageKey,
+          GREATEST(0, COALESCE(
+            NULLIF(osc.total_price - osc.tax_amount, 0),
+            osc.service_price - osc.discount_amount - osc.tax_amount,
+            0
+          )) AS netRevenue
+        FROM \`order_service_combo\` osc
+        JOIN \`order\` o ON o.id = osc.order_id
+        LEFT JOIN service s ON s.id = osc.service_id
+        LEFT JOIN service_language sl ON sl.service_id = osc.service_id AND sl.language_id = 1
+        LEFT JOIN service_price sp ON sp.id = osc.service_price_id
+        WHERE o.id IN (${orderIdsSql})
+          AND o.order_state = 'Completed'
+          AND osc.total_price > 0
+          AND ${balanceExistsSql}
+          AND (sp.service_price_package_key IS NULL OR (
+            LOWER(sp.service_price_package_key) NOT LIKE '%single%'
+            AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
+            AND LOWER(sp.service_price_package_key) NOT LIKE '%balance%'
+          ))
+
+        UNION ALL
+
+        SELECT
+          os.order_id AS orderId,
+          COALESCE(sl.service_name, s.service_key, 'Gói combo') AS serviceName,
+          sp.service_price_package_key AS packageKey,
+          GREATEST(0, COALESCE(
+            NULLIF(os.total_price - os.tax_amount, 0),
+            os.service_price - os.discount_amount - os.tax_amount,
+            0
+          )) AS netRevenue
+        FROM \`order_service\` os
+        JOIN \`order\` o ON o.id = os.order_id
+        LEFT JOIN service s ON s.id = os.service_id
+        LEFT JOIN service_language sl ON sl.service_id = os.service_id AND sl.language_id = 1
+        LEFT JOIN service_price sp ON sp.id = os.service_price_id
+        WHERE o.id IN (${orderIdsSql})
+          AND o.order_state = 'Completed'
+          AND os.total_price > 0
+          AND (os.user_service_type = 'combo' OR os.service_group = 'combo' OR s.service_group = 'combo')
+          AND ${balanceExistsSql}
+          AND (sp.service_price_package_key IS NULL OR (
+            LOWER(sp.service_price_package_key) NOT LIKE '%single%'
+            AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
+            AND LOWER(sp.service_price_package_key) NOT LIKE '%balance%'
+          ))
+      ) recognized_combo
+    `);
+
+    const comboSales = new Map<number, { names: Set<string>; netRevenue: number }>();
+    rows.forEach((row) => {
+      const orderId = Number(row.orderId);
+      const packageKey = String(row.packageKey || '').trim();
+      const counts = packageKey.match(/\d+\s*\+\s*\d+/)?.[0]?.replace(/\s/g, '');
+      const comboName = [String(row.serviceName || 'Gói combo'), counts || packageKey].filter(Boolean).join(' ');
+      const existing = comboSales.get(orderId) || { names: new Set<string>(), netRevenue: 0 };
+      existing.names.add(comboName);
+      existing.netRevenue += Number(row.netRevenue || 0);
+      comboSales.set(orderId, existing);
+    });
+
+    comboSales.forEach((sale, orderId) => {
+      comboSalesByOrder.set(orderId, {
+        comboName: [...sale.names].join(', '),
+        netRevenue: Math.round(sale.netRevenue),
+      });
+    });
+
+    return comboSalesByOrder;
+  }
+
   public static async getNewLoCaCustomerIds(fastify: FastifyInstance, dFrom?: string, dTo?: string): Promise<number[]> {
     const { startStr, endStr } = parseComboDateBounds(dFrom, dTo);
     const balanceExistsSql = buildComboBalanceExistsSql('recognized_combo');
