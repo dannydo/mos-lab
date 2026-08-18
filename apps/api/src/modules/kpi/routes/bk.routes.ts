@@ -21,6 +21,7 @@ import {
   computeBkOrderCheckins,
   getBkPaystubData,
   getCustomerTipAmountByOrderIds,
+  getBkCallMetricsByLegacyStaffIds,
   resolveBkTelesalesStaffScope,
 } from '../services/bk-salary.service.js';
 import { TeamService } from '../../teams/team.service.js';
@@ -45,7 +46,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       if (activeTelesalesIds.length === 0) {
         return reply.send({
           leaderboard: [],
-          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 },
+          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 },
         });
       }
 
@@ -77,25 +78,37 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       `;
 
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+      const callMetricsByBooker = await getBkCallMetricsByLegacyStaffIds(
+        fastify,
+        startPart,
+        endPart,
+        activeTelesalesIds
+      );
 
       let rank = 1;
       let grandTotalBookings = 0;
       let grandDoneBookings = 0;
+      let grandTotalCalls = 0;
+      let grandTotalPickups = 0;
 
       const leaderboard: BkBookingLeaderboardEntry[] = rows.map((r) => {
+        const bookerId = Number(r.bookerId);
         const totalCreatedBookings = Number(r.totalCreatedBookings || 0);
         const doneBookings = Number(r.doneBookings || 0);
         const missedBookings = Number(r.missedBookings || 0);
+        const callMetrics = callMetricsByBooker.get(bookerId) || { callCount: 0, pickupCount: 0, pickupRate: 0 };
 
         grandTotalBookings += totalCreatedBookings;
         grandDoneBookings += doneBookings;
+        grandTotalCalls += callMetrics.callCount;
+        grandTotalPickups += callMetrics.pickupCount;
 
         const conversionRate =
           totalCreatedBookings > 0 ? Number(((doneBookings / totalCreatedBookings) * 100).toFixed(1)) : 0;
 
         return {
           rank: rank++,
-          bookerId: Number(r.bookerId),
+          bookerId,
           displayName: String(r.displayName || `BK #${r.bookerId}`),
           avatar: r.avatar ? String(r.avatar) : null,
           store: String(r.store || 'PXL'),
@@ -103,7 +116,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           doneBookings,
           missedBookings,
           conversionRate,
-          callCount: 0,
+          callCount: callMetrics.callCount,
+          pickupCount: callMetrics.pickupCount,
+          pickupRate: callMetrics.pickupRate,
         };
       });
 
@@ -116,7 +131,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           totalBookings: grandTotalBookings,
           doneBookings: grandDoneBookings,
           conversionRate: avgConversionRate,
-          totalCalls: 0,
+          totalCalls: grandTotalCalls,
+          totalPickups: grandTotalPickups,
         },
       };
     } catch (err: SafeAny) {
@@ -145,7 +161,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         return reply.send({
           data: [],
           total: 0,
-          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 },
+          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 },
         });
       }
 
@@ -155,7 +171,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         return reply.send({
           data: [],
           total: 0,
-          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 },
+          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 },
         });
       }
 
@@ -202,6 +218,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       `;
 
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+      const callMetricsByBooker = await getBkCallMetricsByLegacyStaffIds(fastify, startPart, endPart, scopedBookerIds);
 
       let totalBookings = 0;
       let doneBookings = 0;
@@ -231,6 +248,13 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       });
 
       const conversionRate = totalBookings > 0 ? Number(((doneBookings / totalBookings) * 100).toFixed(1)) : 0;
+      const callMetrics = Array.from(callMetricsByBooker.values()).reduce(
+        (total, metrics) => ({
+          totalCalls: total.totalCalls + metrics.callCount,
+          totalPickups: total.totalPickups + metrics.pickupCount,
+        }),
+        { totalCalls: 0, totalPickups: 0 }
+      );
 
       return {
         data,
@@ -239,7 +263,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           totalBookings,
           doneBookings,
           conversionRate,
-          totalCalls: 0,
+          totalCalls: callMetrics.totalCalls,
+          totalPickups: callMetrics.totalPickups,
         },
       };
     } catch (err: SafeAny) {

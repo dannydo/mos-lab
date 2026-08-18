@@ -10,9 +10,10 @@ import {
   LockOutlined,
   EnvironmentOutlined,
   CalendarOutlined,
+  GiftOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { SafeAny } from '@mos-lab/shared';
+import { BookingPromotionOptionsResponse, SafeAny, vietnameseSearchFilter } from '@mos-lab/shared';
 import { apiClient } from '../lib/api-client';
 import { useTheme } from '../context/ThemeContext';
 import { getStoreFullAddress, STORES } from './booking/constants';
@@ -38,15 +39,21 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
 
   const [staffList, setStaffList] = useState<SafeAny[]>([]);
   const [serviceList, setServiceList] = useState<SafeAny[]>([]);
+  const [promotionOptions, setPromotionOptions] = useState<BookingPromotionOptionsResponse | null>(null);
 
   useEffect(() => {
     if (visible && booking) {
       setLoadingOptions(true);
-      Promise.all([apiClient.customers.getStaff().catch(() => []), apiClient.customers.getServices().catch(() => [])])
-        .then(([staffData, serviceData]) => {
+      Promise.all([
+        apiClient.customers.getStaff().catch(() => []),
+        apiClient.customers.getServices().catch(() => []),
+        apiClient.customers.getBookingPromotionOptions(Number(booking.id)).catch(() => null),
+      ])
+        .then(([staffData, serviceData, promotionData]) => {
           const rawServices = serviceData || [];
           let currentServicesList = [...rawServices];
           setStaffList(staffData || []);
+          setPromotionOptions(promotionData);
 
           // Pre-fill initial values
           const bookingServiceName =
@@ -104,6 +111,12 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
             technicianId: matchedStaff ? matchedStaff.id : booking.technicianId || null,
             serviceId: matchedService ? matchedService.id : null,
             bookingNote: booking.bookingNote || '',
+            promotionSelection:
+              promotionData?.mode === 'CUSTOM_CAMPAIGN' && promotionData.selectedCampaignPromotionId
+                ? `CUSTOM_CAMPAIGN:${promotionData.selectedCampaignPromotionId}`
+                : promotionData?.selectedPromotionId
+                  ? `STANDARD:${promotionData.selectedPromotionId}`
+                  : undefined,
           });
         })
         .finally(() => setLoadingOptions(false));
@@ -137,6 +150,24 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
         }
       }
 
+      const promotionSelection = typeof values.promotionSelection === 'string' ? values.promotionSelection : null;
+      const selectedPromotionId = promotionSelection?.startsWith('STANDARD:')
+        ? Number(promotionSelection.replace('STANDARD:', ''))
+        : null;
+      const selectedCampaignPromotionId = promotionSelection?.startsWith('CUSTOM_CAMPAIGN:')
+        ? Number(promotionSelection.replace('CUSTOM_CAMPAIGN:', ''))
+        : null;
+      const validPromotionId =
+        selectedPromotionId !== null && Number.isInteger(selectedPromotionId) && selectedPromotionId > 0
+          ? selectedPromotionId
+          : null;
+      const validCampaignPromotionId =
+        selectedCampaignPromotionId !== null &&
+        Number.isInteger(selectedCampaignPromotionId) &&
+        selectedCampaignPromotionId > 0
+          ? selectedCampaignPromotionId
+          : null;
+
       const payload = {
         storeId,
         technicianId: values.technicianId ? Number(values.technicianId) : null,
@@ -144,8 +175,14 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
         bookingTime: formattedTimeStr,
         bookingNote: values.bookingNote || '',
         serviceId: finalServiceId,
+        ...(promotionOptions
+          ? {
+              promotionId: validPromotionId,
+              campaignPromotionId: validCampaignPromotionId,
+            }
+          : {}),
         reasonCategory: 'Cập nhật thông tin đơn hàng',
-        reasonNote: 'Cập nhật KTV/Dịch vụ/Ghi chú từ CRM',
+        reasonNote: 'Cập nhật KTV/Dịch vụ/Ưu đãi/Ghi chú từ CRM',
       };
 
       await apiClient.customers.updateBooking(booking.id, payload);
@@ -372,7 +409,48 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
               </Select>
             </Form.Item>
 
-            {/* 3. Booking Note */}
+            {/* 3. Promotion selection. Custom-campaign bookings are intentionally scoped by the API. */}
+            <Form.Item
+              name="promotionSelection"
+              label={
+                <span style={{ fontWeight: 600, color: isDark ? '#e2e8f0' : '#1e293b' }}>
+                  <GiftOutlined style={{ marginRight: '6px', color: '#a855f7' }} />
+                  Khuyến mãi (Promotion)
+                </span>
+              }
+              extra={
+                promotionOptions?.mode === 'CUSTOM_CAMPAIGN' && promotionOptions.campaign
+                  ? `Lịch này thuộc custom campaign “${promotionOptions.campaign.name}”; chỉ được chọn ưu đãi của campaign này.`
+                  : 'Chọn ưu đãi đang áp dụng cho lịch hẹn, hoặc bỏ chọn để không áp dụng khuyến mãi.'
+              }
+            >
+              <Select
+                placeholder={
+                  promotionOptions?.mode === 'CUSTOM_CAMPAIGN'
+                    ? '-- Chọn ưu đãi của campaign --'
+                    : '-- Chọn chương trình khuyến mãi --'
+                }
+                allowClear
+                size="large"
+                style={{ width: '100%' }}
+                showSearch
+                disabled={!promotionOptions}
+                aria-label="Chọn chương trình khuyến mãi"
+                filterOption={vietnameseSearchFilter}
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                options={(promotionOptions?.promotions || []).map((promotion) => ({
+                  value: `${promotion.source}:${promotion.id}`,
+                  label:
+                    promotion.source === 'CUSTOM_CAMPAIGN'
+                      ? `🎯 ${promotion.label} — ${promotion.name}`
+                      : promotion.label === promotion.name
+                        ? promotion.name
+                        : `${promotion.name} (${promotion.label})`,
+                }))}
+              />
+            </Form.Item>
+
+            {/* 4. Booking Note */}
             <Form.Item
               name="bookingNote"
               label={

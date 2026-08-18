@@ -26,7 +26,12 @@ export interface BkBookingLeaderboardEntry {
   doneBookings: number;
   missedBookings: number;
   conversionRate: number;
+  /** Outbound calls reconciled from CRM and OmiCall logs for the selected period. */
   callCount: number;
+  /** Reconciled outbound calls that reached a customer (ANSWER/CONNECTED). */
+  pickupCount: number;
+  /** Pickup rate = pickupCount / callCount, rounded to one decimal place. */
+  pickupRate: number;
 }
 
 export interface BkBookingLeaderboardResponse {
@@ -36,6 +41,7 @@ export interface BkBookingLeaderboardResponse {
     doneBookings: number;
     conversionRate: number;
     totalCalls: number;
+    totalPickups: number;
   };
 }
 
@@ -47,6 +53,7 @@ export interface BkBookingResponse {
     doneBookings: number;
     conversionRate: number;
     totalCalls: number;
+    totalPickups: number;
   };
 }
 

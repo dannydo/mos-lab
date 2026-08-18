@@ -483,7 +483,9 @@ export default function ScheduleCalendarPage() {
               icon={
                 <span aria-hidden className="relative inline-flex size-4 items-center justify-center">
                   <CalendarOutlined className="text-base" />
-                  <PlusOutlined className="absolute -right-1.5 -bottom-1.5 rounded-full bg-emerald-500 p-px text-[8px] text-white ring-1 ring-white dark:ring-slate-900" />
+                  <span className="absolute -right-1 -bottom-1 inline-flex size-2 items-center justify-center rounded-full bg-emerald-500 text-white ring-1 ring-white dark:ring-slate-900">
+                    <PlusOutlined className="text-[6px] leading-none" />
+                  </span>
                 </span>
               }
               className="!size-8 !min-w-8 !rounded-lg !border-none !bg-emerald-500 !p-0 text-white shadow-sm shadow-emerald-500/20 hover:!bg-emerald-600"

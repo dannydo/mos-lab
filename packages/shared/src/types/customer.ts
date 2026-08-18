@@ -423,6 +423,21 @@ export interface Promotion {
   description?: string | null;
 }
 
+export interface UpdateBookingRequest {
+  storeId: number;
+  technicianId: number | null;
+  bookingDate: string;
+  bookingTime: string;
+  bookingNote?: string | null;
+  serviceId?: number | null;
+  /** Standard legacy promotion. Mutually exclusive with campaignPromotionId. */
+  promotionId?: number | null;
+  /** CRM custom-campaign promotion. Mutually exclusive with promotionId. */
+  campaignPromotionId?: number | null;
+  reasonCategory?: string | null;
+  reasonNote?: string | null;
+}
+
 export interface Service {
   id: number;
   name: string;

@@ -138,6 +138,8 @@ import {
   UpdateCampaignPromotionDto,
   ToggleCampaignTouchpointLogDto,
   CustomerCampaignPromotionInfo,
+  BookingPromotionOptionsResponse,
+  UpdateBookingRequest,
   CampaignStatsResponse,
   ListCampaignsParams,
   HappyCallTask,
@@ -711,7 +713,14 @@ export const apiClient = {
       const response = await api.post('/customers/booking', data);
       return response.data;
     },
-    updateBooking: async (orderId: number, data: Record<string, unknown>): Promise<unknown> => {
+    getBookingPromotionOptions: async (orderId: number): Promise<BookingPromotionOptionsResponse> => {
+      const response = await api.get(`/customers/booking/${orderId}/promotions`);
+      return response.data;
+    },
+    updateBooking: async (
+      orderId: number,
+      data: UpdateBookingRequest
+    ): Promise<{ success: boolean; orderId: number }> => {
       const response = await api.put(`/customers/booking/${orderId}`, data);
       return response.data;
     },

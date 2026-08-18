@@ -62,6 +62,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
     doneBookings: 0,
     conversionRate: 0,
     totalCalls: 0,
+    totalPickups: 0,
   });
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
@@ -79,7 +80,9 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
         storeId: selectedStore,
       });
       setLeaderboard(res.leaderboard || []);
-      setSummary(res.summary || { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0 });
+      setSummary(
+        res.summary || { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 }
+      );
     } catch (err) {
       console.error('Error loading BK booking leaderboard', err);
     } finally {
@@ -231,6 +234,26 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
       key: 'totalCreatedBookings',
       align: 'center' as const,
       render: (val: number) => <span className="tabular-nums font-bold text-xs text-sky-400">{val}</span>,
+    },
+    {
+      title: '# Cuộc gọi',
+      dataIndex: 'callCount',
+      key: 'callCount',
+      align: 'center' as const,
+      render: (val: number) => <span className="tabular-nums font-bold text-xs text-violet-400">{val}</span>,
+    },
+    {
+      title: '# Pickup',
+      dataIndex: 'pickupCount',
+      key: 'pickupCount',
+      align: 'center' as const,
+      render: (val: number, record: BkBookingLeaderboardEntry) => (
+        <Tooltip title="Tỷ lệ pickup = số pickup / số cuộc gọi">
+          <span className="tabular-nums font-bold text-xs text-emerald-400 whitespace-nowrap">
+            {val} <span className="font-medium text-emerald-300/80">({record.pickupRate ?? 0}%)</span>
+          </span>
+        </Tooltip>
+      ),
     },
     {
       title: 'Booking Thành Công (Done)',
@@ -413,7 +436,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
     <div className="space-y-6">
       {/* Summary Cards */}
       <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} lg={6} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
@@ -426,20 +449,20 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} lg={6} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Booking Done Thành Công</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">Booking Done</span>}
               value={summary.doneBookings}
               valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CheckCircleOutlined className="mr-2" />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} lg={6} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
@@ -453,16 +476,29 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} lg={6} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Cuộc Gọi OmiCall</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Cuộc gọi</span>}
               value={summary.totalCalls}
               valueStyle={{ color: '#8b5cf6', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<PhoneOutlined className="mr-2" />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6} xl={4}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
+            <Statistic
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Pickup</span>}
+              value={summary.totalPickups}
+              valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+              prefix={<CheckCircleOutlined className="mr-2" />}
             />
           </Card>
         </Col>
@@ -479,6 +515,8 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
         onSelectBooker={(bId) => handleSelectBooker(bId)}
         mobileMetrics={(record) => [
           { label: 'Đã tạo', value: record.totalCreatedBookings ?? 0, tone: 'accent' },
+          { label: 'Cuộc gọi', value: record.callCount ?? 0, tone: 'accent' },
+          { label: 'Pickup', value: `${record.pickupCount ?? 0} (${record.pickupRate ?? 0}%)`, tone: 'success' },
           { label: 'Done', value: record.doneBookings ?? 0, tone: 'success' },
           { label: 'Tỷ lệ', value: `${record.conversionRate ?? 0}%`, tone: 'warning' },
         ]}

@@ -12,7 +12,7 @@ import { registerLocaTouchpointRoutes } from './routes/loca-touchpoint.routes.js
 import { registerLocaStaffActivityRoutes } from './routes/loca-staff-activity.routes.js';
 import { AllocationService } from '../allocation/allocation.service.js';
 import { TeamService } from '../teams/team.service.js';
-import { CampaignPromotionSyncService } from '../campaigns/campaign-promotion-sync.service.js';
+import { BookingPromotionError, BookingPromotionService } from './services/booking-promotion.service.js';
 import { LashBenchmarkService, parseLashSpecs } from '../catalog/services/lash-benchmark.service.js';
 import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-customer.service.js';
 import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
@@ -3603,89 +3603,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
         srvDuration = 90;
       }
 
-      // Calculate promotional discount if promotionId is provided
-      let selectedPromoId: number | null = null;
-      let campaignId: number | null = null;
-      let discountAmount = 0;
-      let finalPrice = srvPrice;
-
-      if (promotionId) {
-        const promoRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT id, campaign_id, discount_percentage, discount_amount FROM promotion WHERE id = ? LIMIT 1`,
-          promotionId
-        );
-        if (promoRows.length > 0) {
-          selectedPromoId = Number(promoRows[0].id);
-          campaignId = promoRows[0].campaign_id ? Number(promoRows[0].campaign_id) : null;
-          const pct = Number(promoRows[0].discount_percentage || 0);
-          const amt = Number(promoRows[0].discount_amount || 0);
-
-          if (pct > 0) {
-            discountAmount = Math.round((srvPrice * pct) / 100);
-          } else if (amt > 0) {
-            discountAmount = amt;
-          }
-          finalPrice = Math.max(0, srvPrice - discountAmount);
-        }
-      }
-
-      // Calculate custom campaign promotion discount / note if campaignPromotionId is provided
-      let campaignPromotionTag = '';
-      if (campaignPromotionId) {
-        const campaignPromo = await fastify.prisma.crm.crmCampaignPromotion.findUnique({
-          where: { id: Number(campaignPromotionId) },
-          include: { campaign: true },
-        });
-
-        if (campaignPromo && campaignPromo.isActive) {
-          // Sync campaign promo to legacy DB and retrieve legacy promotion ID
-          const syncedLegacyId = await CampaignPromotionSyncService.syncPromotionToLegacy(fastify, campaignPromo.id);
-          if (syncedLegacyId) {
-            selectedPromoId = syncedLegacyId;
-          }
-          if (campaignPromo.campaignId) {
-            // NOTE: CRM campaignId is NOT the same as legacy campaign.id
-            // The legacy order.campaign_id has a FK constraint to legacy campaign table.
-            // CRM campaigns don't have legacy counterparts, so we leave campaignId = null.
-            // campaignId remains null to avoid FK violation (order_ibfk_24).
-          }
-
-          let campaignPromoDiscount = 0;
-
-          if (campaignPromo.type === 'PERCENT_DISCOUNT') {
-            campaignPromoDiscount = Math.round((srvPrice * campaignPromo.value) / 100);
-          } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
-            campaignPromoDiscount = Math.round(campaignPromo.value);
-          }
-
-          if (campaignPromoDiscount > 0) {
-            discountAmount = campaignPromoDiscount;
-            finalPrice = Math.max(0, srvPrice - campaignPromoDiscount);
-          }
-
-          let discountTag = '';
-          if (campaignPromo.type === 'PERCENT_DISCOUNT') {
-            discountTag = `[${campaignPromo.value}%]`;
-          } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
-            discountTag = `[Giảm ${campaignPromo.value.toLocaleString('vi-VN')}đ]`;
-          } else if (campaignPromo.type === 'FREE_SERVICE') {
-            discountTag = `[Tặng Dịch Vụ]`;
-          } else if (campaignPromo.type === 'FREE_PRODUCT') {
-            discountTag = `[Tặng Sản Phẩm]`;
-          } else {
-            discountTag = `[Ưu Đãi]`;
-          }
-
-          const campaignName = campaignPromo.campaign ? campaignPromo.campaign.name : '';
-          const promoName = campaignPromo.name || '';
-          let fullPromoName = campaignName;
-          if (promoName && !campaignName.toLowerCase().includes(promoName.toLowerCase())) {
-            fullPromoName = campaignName ? `${campaignName}: ${promoName}` : promoName;
-          }
-
-          campaignPromotionTag = `${discountTag} ${fullPromoName}`.trim();
-        }
-      }
+      const promotionResolution = await BookingPromotionService.resolve(fastify, {
+        customerId: finalCustomerId,
+        basePrice: srvPrice,
+        promotionId: promotionId ? Number(promotionId) : null,
+        campaignPromotionId: campaignPromotionId ? Number(campaignPromotionId) : null,
+      });
+      const selectedPromoId = promotionResolution.legacyPromotionId;
+      const campaignId = promotionResolution.legacyCampaignId;
+      const discountAmount = promotionResolution.discountAmount;
+      const finalPrice = promotionResolution.finalPrice;
+      const campaignPromotionTag = promotionResolution.campaignPromotionTag || '';
 
       // 4. Calculate booking date start & end
       const dateClean = (bookingDate || new Date().toISOString().slice(0, 10)).trim();
@@ -3927,11 +3855,55 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       return { success: true, orderId, customerId: finalCustomerId };
     } catch (error: SafeAny) {
+      if (error instanceof BookingPromotionError) {
+        return reply.status(400).send({ error: 'Bad Request', message: error.message });
+      }
       fastify.log.error(error as Error, '[Booking] Failed to create booking:');
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: error?.message || 'Có lỗi xảy ra trong quá trình đặt lịch. Vui lòng thử lại.',
         details: error?.stack || String(error),
+      });
+    }
+  });
+
+  // GET /api/customers/booking/:id/promotions
+  // A custom-campaign booking is deliberately scoped to the promotion list of its originating campaign.
+  fastify.get('/customers/booking/:id/promotions', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string };
+    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền xem ưu đãi của lịch hẹn này.' });
+    }
+
+    const orderId = Number((request.params as { id: string }).id);
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ.' });
+    }
+
+    try {
+      const orders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id, promotion_id, selected_promotion_id FROM \`order\` WHERE id = ? LIMIT 1`,
+        orderId
+      );
+      const order = orders[0];
+      if (!order)
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
+
+      const customerId = Number(order.user_id);
+      if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+
+      const currentPromotionId = Number(order.selected_promotion_id || order.promotion_id || 0) || null;
+      return reply.send(
+        await BookingPromotionService.getAvailableOptions(fastify, {
+          customerId,
+          currentPromotionId,
+        })
+      );
+    } catch (err: SafeAny) {
+      fastify.log.error(err, 'Get booking promotion options error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Không thể tải danh sách khuyến mãi cho lịch hẹn.',
       });
     }
   });
@@ -3959,6 +3931,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       bookingTime,
       bookingNote,
       serviceId,
+      promotionId,
+      campaignPromotionId,
     } = request.body as {
       storeId: number;
       storeName: string;
@@ -3968,6 +3942,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       bookingTime: string; // HH:mm
       bookingNote?: string | null;
       serviceId?: number | null;
+      promotionId?: number | null;
+      campaignPromotionId?: number | null;
     };
 
     if (!storeId || !bookingDate || !bookingTime) {
@@ -4005,7 +3981,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 1. Fetch current order details before updating
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT id, user_id, created_staff_id, client_store_id, assigned_staff_id, booking_date_start, booking_note, booking_duration_minute, total_price 
+        `SELECT id, user_id, created_staff_id, client_store_id, assigned_staff_id, booking_date_start, booking_note, booking_duration_minute, total_price,
+                promotion_id, selected_promotion_id, campaign_id
          FROM \`order\` WHERE id = ?`,
         orderId
       );
@@ -4025,6 +4002,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         storeId: Number(order.client_store_id),
         technicianId: order.assigned_staff_id ? Number(order.assigned_staff_id) : null,
         bookingNote: order.booking_note || null,
+        promotionId: order.selected_promotion_id ? Number(order.selected_promotion_id) : null,
+        campaignId: order.campaign_id ? Number(order.campaign_id) : null,
       };
 
       const { reasonCategory, reasonNote } = (request.body || {}) as {
@@ -4032,30 +4011,75 @@ export async function customerRoutes(fastify: FastifyInstance) {
         reasonNote?: string | null;
       };
 
-      // 2. Fetch service price & duration if serviceId is provided
-      let srvPrice = 0;
-      let srvDuration = 90;
-      let finalServiceId = serviceId;
-      if (finalServiceId !== undefined && finalServiceId !== null) {
-        if (finalServiceId === 0) {
-          finalServiceId = 1; // Map to "Any - Lashes 2"
-        }
+      // 2. Resolve the base service and promotion from one authoritative service.
+      // This is required when a promotion changes: order.total_price may already be discounted.
+      const existingServices = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT id, service_id, service_price, discount_amount, promotion_id
+         FROM order_service WHERE order_id = ? ORDER BY service_price DESC LIMIT 1`,
+        orderId
+      );
+      const existingService = existingServices[0] || null;
+      const hasServiceChange = serviceId !== undefined && serviceId !== null;
+      let finalServiceId = hasServiceChange ? Number(serviceId) : Number(existingService?.service_id || 0) || null;
+      if (finalServiceId === 0) finalServiceId = 1; // Map virtual "Any - Lashes 2" to the legacy service.
+
+      let srvPrice = Number(existingService?.service_price || order.total_price || 0);
+      let srvDuration = Number(order.booking_duration_minute) || 90;
+      if (finalServiceId) {
         const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT s.duration_minute_standard as duration, sp.service_price as price
            FROM service s
-           LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
+           LEFT JOIN service_price sp
+             ON s.id = sp.service_id
+             AND sp.service_price_package_key = 'single'
+             AND sp.currency_id = 2
+             AND sp.is_disabled = 0
            WHERE s.id = ? LIMIT 1`,
           finalServiceId
         );
         if (srvInfo.length > 0) {
-          srvPrice = Number(srvInfo[0].price || 0);
+          srvPrice = Math.round(Number(srvInfo[0].price || 0));
           srvDuration = Number(srvInfo[0].duration || 90);
         }
       }
 
-      const duration =
-        serviceId !== undefined && serviceId !== null ? srvDuration : Number(order.booking_duration_minute) || 90;
-      const totalPrice = serviceId !== undefined && serviceId !== null ? srvPrice : Number(order.total_price || 0);
+      const currentPromotionId = Number(order.selected_promotion_id || order.promotion_id || 0) || null;
+      const currentCustomCampaign = await BookingPromotionService.getCustomCampaignContext(fastify, currentPromotionId);
+      const hasPromotionSelection =
+        Object.prototype.hasOwnProperty.call(request.body || {}, 'promotionId') ||
+        Object.prototype.hasOwnProperty.call(request.body || {}, 'campaignPromotionId');
+      const selectedPromotionId = hasPromotionSelection
+        ? (promotionId ?? null)
+        : currentCustomCampaign
+          ? null
+          : currentPromotionId;
+      const selectedCampaignPromotionId = hasPromotionSelection
+        ? (campaignPromotionId ?? null)
+        : (currentCustomCampaign?.campaignPromotionId ?? null);
+
+      const promotionResolution = await BookingPromotionService.resolve(fastify, {
+        customerId: finalCustomerId,
+        basePrice: srvPrice,
+        promotionId: selectedPromotionId,
+        campaignPromotionId: selectedCampaignPromotionId,
+        allowedCampaignId: currentCustomCampaign?.campaignId ?? null,
+      });
+      const duration = srvDuration;
+      const totalPrice = promotionResolution.finalPrice;
+
+      let finalBookingNote = String(bookingNote || '').trim();
+      if (currentCustomCampaign?.tag) {
+        finalBookingNote = finalBookingNote
+          .split(/\r?\n/)
+          .filter((line) => line.trim() !== currentCustomCampaign.tag)
+          .join('\n')
+          .trim();
+      }
+      if (promotionResolution.campaignPromotionTag) {
+        finalBookingNote = finalBookingNote
+          ? `${finalBookingNote}\n${promotionResolution.campaignPromotionTag}`
+          : promotionResolution.campaignPromotionTag;
+      }
 
       // 3. Calculate new dates
       const startStr = `${bookingDate} ${bookingTime}:00`;
@@ -4073,7 +4097,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         bookingDateStart: mysqlStart,
         storeId,
         technicianId: technicianId || null,
-        bookingNote: bookingNote || null,
+        bookingNote: finalBookingNote || null,
+        promotionId: promotionResolution.legacyPromotionId,
+        campaignPromotionId: promotionResolution.campaignPromotionId,
+        totalPrice,
       };
 
       let actionType: 'RESCHEDULE' | 'CHANGE_CV' | 'CHANGE_STORE' | 'EDIT' = 'EDIT';
@@ -4096,6 +4123,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
              booking_note = ?, 
              booking_duration_minute = ?,
              total_price = ?,
+             promotion_id = ?,
+             selected_promotion_id = ?,
+             campaign_id = ?,
              order_state = 'New',
              date_updated = NOW()
          WHERE id = ?`,
@@ -4103,9 +4133,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         mysqlEnd,
         technicianId || null,
         storeId,
-        bookingNote || null,
+        finalBookingNote || null,
         duration,
         totalPrice,
+        promotionResolution.legacyPromotionId,
+        promotionResolution.legacyPromotionId,
+        promotionResolution.legacyCampaignId,
         orderId
       );
 
@@ -4119,7 +4152,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         orderId,
         storeId,
         technicianId || null,
-        bookingNote || null,
+        finalBookingNote || null,
         duration,
         mysqlStart,
         mysqlEnd
@@ -4132,45 +4165,47 @@ export async function customerRoutes(fastify: FastifyInstance) {
         mysqlStart
       );
 
-      if (serviceId !== undefined && serviceId !== null) {
-        const existingServices = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT id FROM order_service WHERE order_id = ? LIMIT 1`,
-          orderId
+      if (existingService && finalServiceId) {
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `UPDATE order_service
+           SET service_id = ?,
+               duration_minute = ?,
+               service_price = ?,
+               discount_amount = ?,
+               total_price = ?,
+               promotion_id = ?,
+               assigned_staff_id = ?,
+               booked_staff_id = ?,
+               user_service_type = ?
+           WHERE id = ?`,
+          finalServiceId,
+          duration,
+          srvPrice,
+          promotionResolution.discountAmount,
+          totalPrice,
+          promotionResolution.legacyPromotionId,
+          technicianId || null,
+          technicianId || null,
+          userServiceType,
+          existingService.id
         );
-
-        if (existingServices.length > 0) {
-          await fastify.prisma.legacy.$executeRawUnsafe(
-            `UPDATE order_service 
-             SET service_id = ?,
-                 duration_minute = ?,
-                 service_price = ?,
-                 assigned_staff_id = ?, 
-                 booked_staff_id = ?,
-                 user_service_type = ?
-             WHERE order_id = ?`,
-            finalServiceId,
-            duration,
-            totalPrice,
-            technicianId || null,
-            technicianId || null,
-            userServiceType,
-            orderId
-          );
-        } else {
-          await fastify.prisma.legacy.$executeRawUnsafe(
-            `INSERT INTO order_service (
-               order_id, service_id, duration_minute, service_price, 
-               assigned_staff_id, booked_staff_id, user_service_type, date_created
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-            orderId,
-            finalServiceId,
-            duration,
-            totalPrice,
-            technicianId || null,
-            technicianId || null,
-            userServiceType
-          );
-        }
+      } else if (finalServiceId) {
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `INSERT INTO order_service (
+             order_id, service_id, duration_minute, service_price, discount_amount, total_price,
+             promotion_id, assigned_staff_id, booked_staff_id, user_service_type, date_created
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+          orderId,
+          finalServiceId,
+          duration,
+          srvPrice,
+          promotionResolution.discountAmount,
+          totalPrice,
+          promotionResolution.legacyPromotionId,
+          technicianId || null,
+          technicianId || null,
+          userServiceType
+        );
       } else {
         await fastify.prisma.legacy.$executeRawUnsafe(
           `UPDATE order_service 
@@ -4205,6 +4240,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       return reply.send({ success: true, orderId });
     } catch (err: SafeAny) {
+      if (err instanceof BookingPromotionError) {
+        return reply.status(400).send({ error: 'Bad Request', message: err.message });
+      }
       fastify.log.error(err, 'Reschedule booking error:');
       return reply
         .status(500)

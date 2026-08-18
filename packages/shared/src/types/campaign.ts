@@ -207,6 +207,35 @@ export interface CustomerCampaignPromotionInfo {
   promotions: CustomerCampaignPromotionItem[];
 }
 
+/** A promotion that is safe to apply while editing an existing booking. */
+export interface BookingPromotionOption {
+  id: number;
+  source: 'STANDARD' | 'CUSTOM_CAMPAIGN';
+  name: string;
+  label: string;
+  code?: string | null;
+  campaignId?: number | null;
+  campaignName?: string | null;
+  promotionType: CampaignPromotionType | null;
+  value: number;
+}
+
+/**
+ * A booking that originated from a custom campaign is locked to that campaign's
+ * promotion list. Standard bookings receive the standard promotion list instead.
+ */
+export interface BookingPromotionOptionsResponse {
+  mode: 'STANDARD' | 'CUSTOM_CAMPAIGN';
+  campaign: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+  selectedPromotionId: number | null;
+  selectedCampaignPromotionId: number | null;
+  promotions: BookingPromotionOption[];
+}
+
 export interface ListCampaignsParams {
   status?: CampaignStatus;
   search?: string;
