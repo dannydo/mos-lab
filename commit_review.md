@@ -2,56 +2,52 @@
 request_feedback: true
 ---
 
-# Commit review
+# Commit review — Custom Campaign booking filters hotfix
 
 ## Danh sách file thay đổi
 
-- `apps/api/src/modules/customers/routes.ts`
-- `apps/api/src/modules/customers/services/booking-promotion.service.ts` (mới)
-- `apps/api/src/modules/kpi/routes/bk.routes.ts`
-- `apps/api/src/modules/kpi/services/bk-salary.service.ts`
-- `apps/web/app/dashboard/bk/components/BkBookingTab.tsx`
-- `apps/web/app/dashboard/schedule-calendar/page.tsx`
-- `apps/web/components/UpdateBookingModal.tsx`
+- `apps/api/src/modules/campaigns/campaign.service.ts`
+- `apps/api/src/modules/campaigns/routes.ts`
+- `apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx`
+- `apps/web/app/globals.css`
 - `apps/web/lib/api-client.ts`
-- `packages/shared/src/types/bk.ts`
 - `packages/shared/src/types/campaign.ts`
-- `packages/shared/src/types/customer.ts`
 
 ## Tóm tắt thay đổi
 
-- Cho phép đổi khuyến mãi trong modal cập nhật lịch hẹn. Lịch thuộc custom campaign chỉ xem/chọn được ưu đãi của đúng campaign đó; backend kiểm tra phạm vi, đồng bộ promotion legacy, tính lại giá/giảm giá và ghi audit.
-- Tập trung logic promotion của booking vào `BookingPromotionService`, dùng chung cho tạo mới và cập nhật lịch hẹn.
-- Bổ sung số cuộc gọi, pickup và tỷ lệ pickup cho BK Leaderboard. Tỷ lệ pickup được tính tại backend: `pickup / cuộc gọi`, làm tròn một chữ số; UI hiển thị dạng `673 (39.3%)`.
-- Cập nhật nhãn KPI `BOOKING DONE`, bổ sung card Pickup, avatar/chi tiết booking đã có từ thay đổi liên quan, và thu nhỏ biểu tượng dấu cộng trên nút tạo lịch.
-- Bổ sung DTO dùng chung và API client có kiểu cho promotion của booking.
+- Thêm các filter trạng thái trực tiếp trên Custom Campaign: `Tất cả`, `Booked`, `Done`, `Missed`; ô tìm kiếm vẫn thu gọn và mở rộng khi cần.
+- Chuẩn hóa rule `Done` ở backend: chỉ các đơn `Completed` trong đúng thời gian chạy campaign mới được tính; lấy thời điểm check-in thực tế (`actual_booking_date_start`), fallback sang lịch hẹn khi thiếu dữ liệu.
+- Đồng bộ chiều cao badge trạng thái, bộ chọn Booker và nút hành động theo UI density hiện tại để toolbar thẳng hàng trên desktop và mobile.
+- Mở rộng shared query contract và API client có kiểu cho filter trạng thái, tránh suy luận status ở frontend.
 
 ## Kiểm tra đã thực hiện
 
 - `pnpm --filter @mos-lab/shared build` — pass
 - `pnpm --filter @mos-lab/api build` — pass
-- `pnpm --filter @mos-lab/web exec tsc --noEmit` — pass
-- Browser QA — modal lịch custom campaign hiển thị đúng promotion giới hạn theo Come Back; BK Leaderboard hiển thị `673 (39.3%)`; nhãn `BOOKING DONE` hiển thị đúng.
+- `pnpm --filter @mos-lab/web build` — pass
+- `git diff --check` — pass
+- Browser QA — Done trên campaign Come Back trả về 17 khách trong khoảng campaign, filter active đúng.
 
 ## Production migration plan
 
 - CRM schema changes: None.
 - Production data migrations: None.
 - `bash scripts/deploy/migration-plan.sh origin/main`: không có schema change hoặc migration pending.
-- `pnpm --filter @mos-lab/api data-migrations:validate`: đã validate 0 production data migration.
+- `pnpm --filter @mos-lab/api data-migrations:validate`: validated 0 production data migration(s).
+- Expected data effect: Không ghi hoặc biến đổi dữ liệu production; chỉ thay đổi điều kiện truy vấn dữ liệu đọc cho filter Custom Campaign.
 
 ## Commit message đề xuất
 
 ```text
-feat(kpi): improve booking promotion and call metrics
+fix(campaigns): refine custom campaign booking filters
 
-- Scope custom campaign promotions when editing bookings
-- Surface call, pickup, and pickup-rate metrics in BK leaderboard
-- Polish booking and schedule dashboard labels
+- Add direct booked, done, and missed campaign filters
+- Restrict Done to completed services within the campaign window
+- Align campaign toolbar controls across UI densities
 
 AI-assisted. Reviewed and verified.
 ```
 
 ## Chờ duyệt
 
-Phê duyệt commit message trên bằng `Proceed` hoặc `OK` để tôi stage, commit và push lên `main`.
+Phê duyệt commit message trên bằng `Proceed` hoặc `OK` để tôi stage, commit và push lên `main`. Sau khi CI pass, tôi sẽ xin xác nhận lần cuối trước khi deploy production.

@@ -4891,23 +4891,62 @@ body {
   width: 3px;
 }
 
-/* Campaign search uses the shared field on desktop and becomes a disclosure on
-   mobile, so the Booker control never drops to a separate row. */
+/* Campaign filters use compact, keyboard-accessible controls without forcing
+   the Booker picker onto a separate row. */
 .nyc-campaign-customer-toolbar {
   min-width: 0;
 }
 
-.campaign-mobile-search-trigger {
-  display: none !important;
-}
-
 .campaign-customer-search {
-  flex: 0 1 260px;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
-.campaign-customer-search .mos-search-field {
-  width: 100%;
+/* One campaign-toolbar rhythm: status filters, Booker selector, and the
+   adjacent icon action always share the active density height. */
+.nyc-campaign-customer-toolbar .campaign-booking-status-filter {
+  box-sizing: border-box;
+  height: var(--mos-control-height);
+  min-height: var(--mos-control-height);
+  padding: 2px;
+}
+
+.nyc-campaign-customer-toolbar .campaign-booking-status-filter > button {
+  align-items: center;
+  height: calc(var(--mos-control-height) - 6px);
+  min-height: calc(var(--mos-control-height) - 6px);
+  padding-block: 0;
+}
+
+.nyc-campaign-customer-toolbar .campaign-customer-booker-filter,
+.nyc-campaign-customer-toolbar .campaign-customer-booker-filter .ant-select-selector,
+.nyc-campaign-customer-toolbar .campaign-customer-random-action {
+  height: var(--mos-control-height) !important;
+  min-height: var(--mos-control-height);
+}
+
+.nyc-campaign-customer-toolbar .campaign-customer-booker-filter .ant-select-selector {
+  align-items: center;
+}
+
+.nyc-campaign-customer-toolbar
+  .campaign-customer-booker-filter.ant-select-single
+  .ant-select-selector
+  .ant-select-selection-item,
+.nyc-campaign-customer-toolbar
+  .campaign-customer-booker-filter.ant-select-single
+  .ant-select-selector
+  .ant-select-selection-placeholder {
+  line-height: calc(var(--mos-control-height) - 2px) !important;
+}
+
+.nyc-campaign-customer-toolbar .campaign-customer-random-action {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-width: var(--mos-control-height);
+  padding-inline: 0;
+  width: var(--mos-control-height);
 }
 
 /* Mirrors themeTokens.responsive.breakpoints.mobileLandscape*: a phone stays in
@@ -5223,34 +5262,15 @@ body {
     min-height: var(--mos-control-height);
   }
 
-  /* Campaign customer filters stay one row on phones. The search field starts
-     as a compact disclosure, then takes the remaining space when activated. */
+  /* Campaign customer filters stay one row on phones. */
   .nyc-campaign-customer-toolbar {
     flex-wrap: nowrap !important;
     min-width: 0;
   }
 
-  .nyc-campaign-customer-toolbar .campaign-mobile-search-trigger {
-    display: inline-flex !important;
-    flex: 0 0 var(--mos-control-height);
-  }
-
   .nyc-campaign-customer-toolbar .campaign-customer-search {
-    display: none;
-    flex: 1 1 0;
+    flex: 0 0 auto;
     min-width: 0;
-  }
-
-  .nyc-campaign-customer-toolbar.is-mobile-search-expanded .campaign-mobile-search-trigger {
-    display: none !important;
-  }
-
-  .nyc-campaign-customer-toolbar.is-mobile-search-expanded .campaign-customer-search {
-    display: block;
-  }
-
-  .nyc-campaign-customer-toolbar .campaign-customer-search .ant-input-affix-wrapper {
-    width: 100%;
   }
 
   .nyc-campaign-customer-toolbar .campaign-customer-booker-filter {

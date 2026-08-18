@@ -36,6 +36,21 @@ export interface CampaignCustomer {
   customerPhone?: string | null;
 }
 
+/**
+ * Quick operational filter for campaign customers. `DONE` means the customer
+ * completed a service within the campaign's configured operating window.
+ */
+export type CampaignBookingStatusFilter = 'ALL' | 'BOOKED' | 'DONE' | 'MISSED';
+
+export interface CampaignCustomersQueryParams {
+  page?: number;
+  pageSize?: number;
+  assignedStaffId?: string | number;
+  search?: string;
+  touchpointKey?: string;
+  bookingStatus?: CampaignBookingStatusFilter;
+}
+
 export interface CampaignTouchpoint {
   id: number;
   campaignId: number;

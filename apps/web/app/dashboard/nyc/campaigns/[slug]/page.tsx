@@ -3,9 +3,8 @@
 import {
   AdaptiveModal,
   AdaptiveOverlayFooter,
-  IconButton,
+  CollapsibleSearchField,
   ResponsiveFormGrid,
-  SearchField,
   TableIndexHeader,
 } from '~/components/ui';
 
@@ -57,6 +56,7 @@ import {
   MinusCircleOutlined,
   AimOutlined,
   WarningOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -79,7 +79,6 @@ import {
   Bell,
   UserPlus,
   MessageCircle,
-  Search,
 } from 'lucide-react';
 import {
   CampaignTouchpointCell,
@@ -109,6 +108,7 @@ const KissIcon: React.FC<{ size?: number; style?: React.CSSProperties; className
 );
 import {
   Campaign,
+  CampaignBookingStatusFilter,
   CampaignTouchpoint,
   CampaignPromotion,
   CampaignStatsResponse,
@@ -161,6 +161,38 @@ const SMSModal = dynamic(() => import('../../../../../components/sms/SMSModal').
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
+const CAMPAIGN_BOOKING_STATUS_OPTIONS: Array<{
+  value: CampaignBookingStatusFilter;
+  label: string;
+  icon: React.ReactNode;
+  activeClassName: string;
+}> = [
+  {
+    value: 'ALL',
+    label: 'Tất cả',
+    icon: <FilterOutlined />,
+    activeClassName: 'bg-amber-500 text-white shadow-xs font-semibold',
+  },
+  {
+    value: 'BOOKED',
+    label: 'Booked',
+    icon: <CalendarOutlined />,
+    activeClassName: 'bg-sky-600 text-white shadow-xs font-semibold',
+  },
+  {
+    value: 'DONE',
+    label: 'Done',
+    icon: <CheckCircleOutlined />,
+    activeClassName: 'bg-emerald-600 text-white shadow-xs font-semibold',
+  },
+  {
+    value: 'MISSED',
+    label: 'Missed',
+    icon: <WarningOutlined />,
+    activeClassName: 'bg-rose-600 text-white shadow-xs font-semibold',
+  },
+];
+
 export default function CampaignDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -184,11 +216,10 @@ export default function CampaignDetailPage() {
   const [customersTotal, setCustomersTotal] = useState(0);
   const [selectedTouchpointKey, setSelectedTouchpointKey] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
   const [selectedBookerId, setSelectedBookerId] = useState<string>('ALL');
+  const [bookingStatusFilter, setBookingStatusFilter] = useState<CampaignBookingStatusFilter>('ALL');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [selectedCustomersByKey, setSelectedCustomersByKey] = useState<Map<React.Key, any>>(() => new Map());
-  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   // Random Selector Modal State
   const [randomModalVisible, setRandomModalVisible] = useState<boolean>(false);
@@ -232,17 +263,7 @@ export default function CampaignDetailPage() {
     if (typeof window !== 'undefined' && slug) {
       localStorage.setItem(`mos_campaign_page_${slug}`, '1');
     }
-  }, [selectedTouchpointKey, searchQuery, selectedBookerId, slug]);
-
-  useEffect(() => {
-    if (!isMobileSearchExpanded) return;
-
-    const focusTimer = window.setTimeout(() => {
-      mobileSearchRef.current?.querySelector<HTMLInputElement>('input')?.focus();
-    }, 0);
-
-    return () => window.clearTimeout(focusTimer);
-  }, [isMobileSearchExpanded]);
+  }, [bookingStatusFilter, selectedTouchpointKey, searchQuery, selectedBookerId, slug]);
 
   // User & Staff state
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -442,6 +463,9 @@ export default function CampaignDetailPage() {
       if (deferredSearchQuery.trim()) {
         params.search = deferredSearchQuery.trim();
       }
+      if (bookingStatusFilter !== 'ALL') {
+        params.bookingStatus = bookingStatusFilter;
+      }
       const res: any = await apiClient.campaigns.getCustomers(campId, params);
       const list = Array.isArray(res) ? res : res?.items || res?.data || [];
       setCustomers(list);
@@ -452,7 +476,7 @@ export default function CampaignDetailPage() {
     } finally {
       setCustomersLoading(false);
     }
-  }, [campaign?.id, currentPage, deferredSearchQuery, pageSize, selectedBookerId]);
+  }, [bookingStatusFilter, campaign?.id, currentPage, deferredSearchQuery, pageSize, selectedBookerId]);
 
   useEffect(() => {
     if (!slug) return;
@@ -475,6 +499,7 @@ export default function CampaignDetailPage() {
               pageSize,
               ...(deferredSearchQuery.trim() ? { search: deferredSearchQuery.trim() } : {}),
               ...(selectedBookerId !== 'ALL' ? { assignedStaffId: selectedBookerId } : {}),
+              ...(bookingStatusFilter !== 'ALL' ? { bookingStatus: bookingStatusFilter } : {}),
             }),
           ]);
           if (cancelled) return;
@@ -702,6 +727,7 @@ export default function CampaignDetailPage() {
         ...(selectedBookerId !== 'ALL' ? { assignedStaffId: selectedBookerId } : {}),
         ...(selectedTouchpointKey !== 'ALL' ? { touchpointKey: selectedTouchpointKey } : {}),
         ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+        ...(bookingStatusFilter !== 'ALL' ? { bookingStatus: bookingStatusFilter } : {}),
       });
       const basePool = Array.isArray(poolRes) ? poolRes : poolRes?.items || poolRes?.data || [];
 
@@ -1537,36 +1563,41 @@ export default function CampaignDetailPage() {
           themeMode === 'dark' ? 'bg-[#111827] border-white/10' : 'bg-white border-slate-200 shadow-sm'
         }`}
       >
-        <div
-          className={`nyc-campaign-customer-toolbar flex items-center gap-2 sm:flex-nowrap${
-            isMobileSearchExpanded ? ' is-mobile-search-expanded' : ''
-          }`}
-        >
-          <IconButton
-            label="Mở tìm kiếm khách hàng"
-            icon={Search}
-            tooltip={false}
-            onClick={() => setIsMobileSearchExpanded(true)}
-            className="campaign-mobile-search-trigger"
-            data-ui="campaign-mobile-search-trigger"
-          />
-
-          {/* Search Input */}
-          <div ref={mobileSearchRef} className="campaign-customer-search">
-            <SearchField
-              behavior="filter"
-              placeholder="Tìm theo tên hoặc SĐT..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onBlur={() => {
-                if (!searchQuery.trim()) setIsMobileSearchExpanded(false);
-              }}
-              allowClear
-              size="middle"
-              className="w-full"
-              data-ui="campaign-customer-search"
-            />
+        <div className="nyc-campaign-customer-toolbar flex items-center gap-2 sm:flex-nowrap">
+          <div
+            className="campaign-booking-status-filter flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs"
+            aria-label="Lọc trạng thái lịch hẹn"
+          >
+            {CAMPAIGN_BOOKING_STATUS_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={bookingStatusFilter === option.value}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  bookingStatusFilter === option.value
+                    ? option.activeClassName
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                onClick={() => setBookingStatusFilter(option.value)}
+              >
+                <span aria-hidden="true">{option.icon}</span>
+                <span>{option.label}</span>
+              </button>
+            ))}
           </div>
+
+          <CollapsibleSearchField
+            behavior="filter"
+            placeholder="Tìm theo tên hoặc SĐT..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            size="middle"
+            expandedWidth={260}
+            expandButtonLabel="Mở tìm kiếm khách hàng"
+            className="campaign-customer-search"
+            data-ui="campaign-customer-search"
+          />
 
           {/* Booker Filter */}
           {isAdmin && (

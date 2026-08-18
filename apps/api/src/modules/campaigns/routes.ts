@@ -12,6 +12,7 @@ import {
   BatchRemoveCampaignCustomersDto,
   ToggleCampaignTouchpointLogDto,
   CreateCampaignPromotionDto,
+  CampaignBookingStatusFilter,
   ListCampaignsParams,
 } from '@mos-lab/shared';
 
@@ -323,11 +324,17 @@ export async function campaignRoutes(fastify: FastifyInstance) {
           }
         }
 
+        const bookingStatus: CampaignBookingStatusFilter =
+          query.bookingStatus === 'BOOKED' || query.bookingStatus === 'DONE' || query.bookingStatus === 'MISSED'
+            ? query.bookingStatus
+            : 'ALL';
+
         const result = await CampaignService.getCampaignCustomers(fastify, id, {
           bookerId,
           restrictToAssignedStaffId: isTelesales ? user.id : undefined,
           search: query.search,
           touchpointKey: query.touchpointKey,
+          bookingStatus,
           page: query.page ? parseInt(query.page, 10) : 1,
           pageSize: query.pageSize ? parseInt(query.pageSize, 10) : 20,
         });

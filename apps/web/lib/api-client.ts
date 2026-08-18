@@ -119,6 +119,7 @@ import {
   AllocationAuditStatsResponse,
   BookerAllocationBatchSummary,
   Campaign,
+  CampaignCustomersQueryParams,
   CampaignCustomer,
   CampaignTouchpoint,
   CampaignPromotion,
@@ -1563,7 +1564,7 @@ export const apiClient = {
       const response = await api.post(`/campaigns/${id}/clone`, dto);
       return response.data;
     },
-    getCustomers: async (campaignId: number, params?: Record<string, unknown>) => {
+    getCustomers: async (campaignId: number, params?: CampaignCustomersQueryParams) => {
       const response = await api.get(`/campaigns/${campaignId}/customers`, { params });
       return response.data;
     },

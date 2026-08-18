@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import {
   AddCampaignCustomersResponse,
   Campaign,
+  CampaignBookingStatusFilter,
   CampaignPromotion,
   CampaignPromotionType,
   CampaignStatsResponse,
@@ -943,6 +944,7 @@ export class CampaignService {
       restrictToAssignedStaffId?: number;
       search?: string;
       touchpointKey?: string;
+      bookingStatus?: CampaignBookingStatusFilter;
       page?: number;
       pageSize?: number;
     } = {}
@@ -959,6 +961,7 @@ export class CampaignService {
       restrictToAssignedStaffId,
       search,
       touchpointKey,
+      bookingStatus = 'ALL',
       page = 1,
       pageSize = 20,
     } = params;
@@ -985,7 +988,12 @@ export class CampaignService {
     // table path can page at the database boundary, avoiding every legacy query
     // and response field for records outside the visible page.
     const hasPostEnrichmentFilters = Boolean(
-      bookerId || assignedStaffId || restrictToAssignedStaffId || search?.trim() || touchpointKey?.trim()
+      bookerId ||
+      assignedStaffId ||
+      restrictToAssignedStaffId ||
+      search?.trim() ||
+      touchpointKey?.trim() ||
+      bookingStatus !== 'ALL'
     );
     const customerQuery = {
       where,
@@ -1020,6 +1028,29 @@ export class CampaignService {
 
     const idListStr = legacyUserIds.join(',');
 
+    // A customer is "Done" for a campaign only after completing a service inside
+    // that campaign's operating window. `actual_booking_date_start` is the source
+    // of truth for the real service date; the scheduled booking date is a legacy
+    // fallback when the actual check-in record is unavailable.
+    const campaignStartDate = (campaign.startDate || campaign.createdAt).toISOString().slice(0, 10);
+    const campaignEndDate = campaign.endDate ? campaign.endDate.toISOString().slice(0, 10) : null;
+    const campaignDoneRowsPromise: Promise<Array<{ userId: number }>> =
+      bookingStatus === 'DONE'
+        ? fastify.prisma.legacy.$queryRawUnsafe<Array<{ userId: number }>>(
+            `
+              SELECT DISTINCT o.user_id AS userId
+              FROM \`order\` o
+              LEFT JOIN report_order ro ON ro.order_id = o.id
+              WHERE o.user_id IN (${idListStr})
+                AND o.order_state = 'Completed'
+                AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) IS NOT NULL
+                AND DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start)) >= ?
+                ${campaignEndDate ? 'AND DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start)) <= ?' : ''}
+            `,
+            ...(campaignEndDate ? [campaignStartDate, campaignEndDate] : [campaignStartDate])
+          )
+        : Promise.resolve([]);
+
     // Fetch customer profiles, contacts, assignments, pending allocation batch items, recent call logs, order stats, and visit dates
     const [
       profiles,
@@ -1030,6 +1061,7 @@ export class CampaignService {
       orderStatsRows,
       lastVisitRows,
       latestBookingRows,
+      campaignDoneRows,
     ] = await Promise.all([
       fastify.prisma.legacy.user_profile.findMany({
         where: { user_id: { in: legacyUserIds } },
@@ -1098,6 +1130,7 @@ export class CampaignService {
           GROUP BY user_id
         ) latest ON o.id = latest.max_id
       `),
+      campaignDoneRowsPromise,
     ]);
 
     const profileMap = new Map(profiles.map((p) => [p.user_id, p]));
@@ -1125,6 +1158,7 @@ export class CampaignService {
         },
       ])
     );
+    const campaignDoneUserIds = new Set(campaignDoneRows.map((row) => Number(row.userId)));
 
     const callLogMap = new Map<number, any>();
     for (const log of callLogs) {
@@ -1303,6 +1337,27 @@ export class CampaignService {
               : days >= touchpoint.daysMin && days <= touchpoint.daysMax;
           })
         : [];
+    }
+
+    // Quick booking filters use the customer's latest booking. "Booked" is a
+    // future, actionable appointment; "Done" is a completed service during the
+    // campaign window; and "Missed" is a past appointment that never reached a
+    // service state.
+    if (bookingStatus === 'BOOKED') {
+      enriched = enriched.filter((customer) => {
+        if (!customer.lastBookingDate) return false;
+        const isFutureAppointment = new Date(customer.lastBookingDate).getTime() > now.getTime();
+        return isFutureAppointment && ['New', 'Confirmed'].includes(customer.lastBookingState);
+      });
+    } else if (bookingStatus === 'DONE') {
+      enriched = enriched.filter((customer) => campaignDoneUserIds.has(customer.legacyUserId));
+    } else if (bookingStatus === 'MISSED') {
+      const completedStates = new Set(['Completed', 'ServiceCompleted', 'CheckIn', 'CheckOut', 'ServiceStart']);
+      enriched = enriched.filter((customer) => {
+        if (!customer.lastBookingDate || !customer.lastBookingState) return false;
+        const isPastAppointment = new Date(customer.lastBookingDate).getTime() < now.getTime();
+        return isPastAppointment && !completedStates.has(customer.lastBookingState);
+      });
     }
 
     const total = unfilteredTotal ?? enriched.length;
