@@ -248,8 +248,11 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
 
       let srvPrice = 0;
       let srvDuration = 90;
+      let serviceGroup = 'LashesTop';
       const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT s.duration_minute_standard as duration, sp.service_price as price
+        `SELECT s.duration_minute_standard as duration,
+                sp.service_price as price,
+                COALESCE(NULLIF(s.service_group, ''), 'LashesTop') as serviceGroup
          FROM service s
          LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
          WHERE s.id = ? LIMIT 1`,
@@ -258,6 +261,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       if (srvInfo.length > 0) {
         srvPrice = Number(srvInfo[0].price || 0);
         srvDuration = Number(srvInfo[0].duration || 90);
+        serviceGroup = String(srvInfo[0].serviceGroup || serviceGroup);
       }
 
       // If virtual service 0 was selected, keep the price 0 and duration 90
@@ -448,7 +452,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       const userServiceType = await UserServiceTypeService.determineUserServiceType(
         fastify,
         finalCustomerId,
-        mysqlStart
+        mysqlStart,
+        serviceGroup
       );
 
       await fastify.prisma.legacy.$executeRawUnsafe(
@@ -464,7 +469,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         orderId,
         Number(finalServiceId) || 1,
         'Normal',
-        'LashesTop',
+        serviceGroup,
         userServiceType || 'new',
         technicianId ? Number(technicianId) : null,
         technicianId ? Number(technicianId) : null,
@@ -638,10 +643,13 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       let srvPrice = 0;
       let srvDuration = 90;
       let finalServiceId = serviceId;
+      let serviceGroup = 'LashesTop';
       if (finalServiceId !== undefined && finalServiceId !== null) {
         if (finalServiceId === 0) finalServiceId = 1;
         const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT s.duration_minute_standard as duration, sp.service_price as price
+          `SELECT s.duration_minute_standard as duration,
+                  sp.service_price as price,
+                  COALESCE(NULLIF(s.service_group, ''), 'LashesTop') as serviceGroup
            FROM service s
            LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
            WHERE s.id = ? LIMIT 1`,
@@ -650,7 +658,15 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         if (srvInfo.length > 0) {
           srvPrice = Number(srvInfo[0].price || 0);
           srvDuration = Number(srvInfo[0].duration || 90);
+          serviceGroup = String(srvInfo[0].serviceGroup || serviceGroup);
         }
+      } else {
+        const existingServices = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT COALESCE(NULLIF(service_group, ''), 'LashesTop') as serviceGroup
+           FROM order_service WHERE order_id = ? ORDER BY id ASC LIMIT 1`,
+          orderId
+        );
+        serviceGroup = String(existingServices[0]?.serviceGroup || serviceGroup);
       }
 
       const duration =
@@ -730,13 +746,15 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       const userServiceType = await UserServiceTypeService.determineUserServiceType(
         fastify,
         finalCustomerId,
-        mysqlStart
+        mysqlStart,
+        serviceGroup
       );
 
       if (serviceId !== undefined && serviceId !== null) {
         await fastify.prisma.legacy.$executeRawUnsafe(
           `UPDATE order_service 
            SET service_id = ?,
+               service_group = ?,
                duration_minute = ?,
                service_price = ?,
                assigned_staff_id = ?, 
@@ -744,6 +762,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
                user_service_type = ?
            WHERE order_id = ?`,
           finalServiceId,
+          serviceGroup,
           duration,
           totalPrice,
           technicianId || null,
