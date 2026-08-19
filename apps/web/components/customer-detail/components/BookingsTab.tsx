@@ -3,11 +3,19 @@
 import React, { useState, useMemo } from 'react';
 import { Tag, Button, Skeleton, Tooltip } from 'antd';
 import {
+  CoffeeOutlined,
   CloseCircleOutlined,
   CalendarOutlined,
   CheckOutlined,
+  ControlOutlined,
+  DollarOutlined,
   HistoryOutlined,
   EditOutlined,
+  FrownOutlined,
+  FunnelPlotOutlined,
+  HeartOutlined,
+  SearchOutlined,
+  SunOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
 import { CancelBookingModal } from '../../booking/CancelBookingModal';
@@ -90,6 +98,55 @@ const safeParseDate = (val: SafeAny): Date | null => {
   }
   const d = new Date(val);
   return isNaN(d.getTime()) ? null : d;
+};
+
+const legacyBookingStatusMeta: Record<string, { label: string; color?: string; icon: React.ReactNode }> = {
+  lead: { label: 'Lead', color: 'gold', icon: <FunnelPlotOutlined /> },
+  lead_book: { label: 'Lead Book', color: 'gold', icon: <FunnelPlotOutlined /> },
+  new: { label: 'New', color: 'blue', icon: <SunOutlined /> },
+  combo: { label: 'Combo', color: 'orange', icon: <SyncOutlined /> },
+  combo_last: { label: 'Combo Last', color: 'gold', icon: <DollarOutlined /> },
+  combo_expired: { label: 'Combo Expired', color: 'red', icon: <SyncOutlined /> },
+  combo_over: { label: 'Combo Over', color: 'purple', icon: <SearchOutlined /> },
+  long_time: { label: 'Long Time', color: 'cyan', icon: <CalendarOutlined /> },
+  lapser: { label: 'Lapser', color: 'magenta', icon: <HeartOutlined /> },
+  occasion: { label: 'Occasion', color: 'geekblue', icon: <CoffeeOutlined /> },
+  lost: { label: 'Lost', color: 'default', icon: <FrownOutlined /> },
+  game: { label: 'Game', color: 'green', icon: <ControlOutlined /> },
+};
+
+const LegacyBookingStatusTags = ({ statuses }: { statuses?: SafeAny[] }) => {
+  const uniqueStatuses = Array.from(
+    new Map(
+      (statuses || [])
+        .filter((status) => status?.userServiceType)
+        .map((status) => [`${status.serviceName}:${status.userServiceType}`, status])
+    ).values()
+  );
+
+  if (uniqueStatuses.length === 0) return null;
+
+  return (
+    <>
+      {uniqueStatuses.map((status) => {
+        const metadata = legacyBookingStatusMeta[status.userServiceType] || {
+          label: String(status.userServiceType).replaceAll('_', ' '),
+          color: 'default',
+          icon: <HistoryOutlined />,
+        };
+        return (
+          <Tooltip
+            key={`${status.serviceName}:${status.userServiceType}`}
+            title={`Tệp khách tại thời điểm đặt lịch (legacy): ${metadata.label} — ${status.serviceName}`}
+          >
+            <Tag color={metadata.color} icon={metadata.icon} style={{ margin: 0 }}>
+              {metadata.label}
+            </Tag>
+          </Tooltip>
+        );
+      })}
+    </>
+  );
 };
 
 export const BookingsTab: React.FC<
@@ -279,9 +336,12 @@ export const BookingsTab: React.FC<
                       flexWrap: 'wrap',
                     }}
                   >
-                    <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
-                      {b.services && b.services.length > 0 ? b.services.join(', ') : 'Dịch vụ'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                        {b.services && b.services.length > 0 ? b.services.join(', ') : 'Dịch vụ'}
+                      </span>
+                      <LegacyBookingStatusTags statuses={b.serviceStatuses} />
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {promoInfo.promoTitle && (
                         <Tooltip title={promoInfo.fullPromoText || promoInfo.promoTitle}>

@@ -3585,8 +3585,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       let srvPrice = 0;
       let srvDuration = 90;
+      let serviceGroup = 'LashesTop';
       const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT s.duration_minute_standard as duration, sp.service_price as price
+        `SELECT s.duration_minute_standard as duration,
+                sp.service_price as price,
+                COALESCE(NULLIF(s.service_group, ''), 'LashesTop') as serviceGroup
          FROM service s
          LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
          WHERE s.id = ? LIMIT 1`,
@@ -3595,6 +3598,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (srvInfo.length > 0) {
         srvPrice = Number(srvInfo[0].price || 0);
         srvDuration = Number(srvInfo[0].duration || 90);
+        serviceGroup = String(srvInfo[0].serviceGroup || serviceGroup);
       }
 
       // If virtual service 0 was selected, keep the price 0 and duration 90
@@ -3715,7 +3719,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const userServiceType = await UserServiceTypeService.determineUserServiceType(
         fastify,
         finalCustomerId,
-        mysqlStart
+        mysqlStart,
+        serviceGroup
       );
 
       await fastify.prisma.legacy.$executeRawUnsafe(
@@ -3731,7 +3736,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         orderId,
         Number(finalServiceId) || 1,
         'Normal',
-        'LashesTop',
+        serviceGroup,
         userServiceType || 'new',
         technicianId ? Number(technicianId) : null,
         technicianId ? Number(technicianId) : null,
@@ -4014,7 +4019,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // 2. Resolve the base service and promotion from one authoritative service.
       // This is required when a promotion changes: order.total_price may already be discounted.
       const existingServices = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT id, service_id, service_price, discount_amount, promotion_id
+        `SELECT id, service_id, service_group, service_price, discount_amount, promotion_id
          FROM order_service WHERE order_id = ? ORDER BY service_price DESC LIMIT 1`,
         orderId
       );
@@ -4025,9 +4030,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       let srvPrice = Number(existingService?.service_price || order.total_price || 0);
       let srvDuration = Number(order.booking_duration_minute) || 90;
+      let serviceGroup = String(existingService?.service_group || 'LashesTop');
       if (finalServiceId) {
         const srvInfo = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT s.duration_minute_standard as duration, sp.service_price as price
+          `SELECT s.duration_minute_standard as duration,
+                  sp.service_price as price,
+                  COALESCE(NULLIF(s.service_group, ''), 'LashesTop') as serviceGroup
            FROM service s
            LEFT JOIN service_price sp
              ON s.id = sp.service_id
@@ -4040,6 +4048,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         if (srvInfo.length > 0) {
           srvPrice = Math.round(Number(srvInfo[0].price || 0));
           srvDuration = Number(srvInfo[0].duration || 90);
+          serviceGroup = String(srvInfo[0].serviceGroup || serviceGroup);
         }
       }
 
@@ -4162,13 +4171,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const userServiceType = await UserServiceTypeService.determineUserServiceType(
         fastify,
         finalCustomerId,
-        mysqlStart
+        mysqlStart,
+        serviceGroup
       );
 
       if (existingService && finalServiceId) {
         await fastify.prisma.legacy.$executeRawUnsafe(
           `UPDATE order_service
            SET service_id = ?,
+               service_group = ?,
                duration_minute = ?,
                service_price = ?,
                discount_amount = ?,
@@ -4179,6 +4190,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                user_service_type = ?
            WHERE id = ?`,
           finalServiceId,
+          serviceGroup,
           duration,
           srvPrice,
           promotionResolution.discountAmount,
@@ -4193,8 +4205,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         await fastify.prisma.legacy.$executeRawUnsafe(
           `INSERT INTO order_service (
              order_id, service_id, duration_minute, service_price, discount_amount, total_price,
-             promotion_id, assigned_staff_id, booked_staff_id, user_service_type, date_created
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+             promotion_id, service_group, assigned_staff_id, booked_staff_id, user_service_type, date_created
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
           orderId,
           finalServiceId,
           duration,
@@ -4202,6 +4214,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           promotionResolution.discountAmount,
           totalPrice,
           promotionResolution.legacyPromotionId,
+          serviceGroup,
           technicianId || null,
           technicianId || null,
           userServiceType
@@ -6413,7 +6426,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const servicesSql = `
         SELECT 
           os.order_id as orderId,
-          COALESCE(sl.service_name, s.service_key) as serviceName
+          COALESCE(sl.service_name, s.service_key) as serviceName,
+          os.user_service_type as userServiceType
         FROM order_service os
         LEFT JOIN service s ON os.service_id = s.id
         LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
@@ -6558,10 +6572,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Map services to bookings
       const servicesByOrderId = new Map<number, string[]>();
+      const serviceStatusesByOrderId = new Map<number, { serviceName: string; userServiceType: string | null }[]>();
       for (const s of servicesRaw) {
-        const list = servicesByOrderId.get(Number(s.orderId)) || [];
+        const orderId = Number(s.orderId);
+        const list = servicesByOrderId.get(orderId) || [];
         list.push(s.serviceName);
-        servicesByOrderId.set(Number(s.orderId), list);
+        servicesByOrderId.set(orderId, list);
+
+        const statuses = serviceStatusesByOrderId.get(orderId) || [];
+        statuses.push({
+          serviceName: String(s.serviceName || 'Dịch vụ'),
+          userServiceType: s.userServiceType ? String(s.userServiceType) : null,
+        });
+        serviceStatusesByOrderId.set(orderId, statuses);
       }
 
       const formattedBookings = bookingsRaw.map((b) => {
@@ -6632,6 +6655,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
           storeId: b.storeId ? Number(b.storeId) : null,
           services: servicesByOrderId.get(Number(b.id)) || [],
+          serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],
           auditLogCount: auditCountMap.get(Number(b.id)) || 0,
         };
       });
@@ -7250,13 +7274,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const bookingIds = bookingsRaw.map((b) => Number(b.id));
       const servicesByOrderId = new Map<number, string[]>();
+      const serviceStatusesByOrderId = new Map<number, { serviceName: string; userServiceType: string | null }[]>();
       let orderServicesDetails: SafeAny[] = [];
       let auditLogCounts: SafeAny[] = [];
 
       if (bookingIds.length > 0) {
         const [servicesRaw, osDetails, logsRes] = await Promise.all([
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-            SELECT os.order_id as orderId, COALESCE(sl.service_name, s.service_key) as serviceName
+            SELECT
+              os.order_id as orderId,
+              COALESCE(sl.service_name, s.service_key) as serviceName,
+              os.user_service_type as userServiceType
             FROM order_service os
             LEFT JOIN service s ON os.service_id = s.id
             LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
@@ -7281,9 +7309,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
         orderServicesDetails = osDetails;
         auditLogCounts = logsRes;
         for (const s of servicesRaw) {
-          const list = servicesByOrderId.get(Number(s.orderId)) || [];
+          const orderId = Number(s.orderId);
+          const list = servicesByOrderId.get(orderId) || [];
           list.push(s.serviceName);
-          servicesByOrderId.set(Number(s.orderId), list);
+          servicesByOrderId.set(orderId, list);
+
+          const statuses = serviceStatusesByOrderId.get(orderId) || [];
+          statuses.push({
+            serviceName: String(s.serviceName || 'Dịch vụ'),
+            userServiceType: s.userServiceType ? String(s.userServiceType) : null,
+          });
+          serviceStatusesByOrderId.set(orderId, statuses);
         }
       }
 
@@ -7374,6 +7410,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           bookerName,
           branchName: b.branchName,
           services: servicesByOrderId.get(Number(b.id)) || [],
+          serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],
           auditLogCount: auditCountMap.get(Number(b.id)) || 0,
         };
       });

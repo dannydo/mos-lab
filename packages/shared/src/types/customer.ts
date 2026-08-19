@@ -2,6 +2,27 @@ import { CallLog } from './call';
 
 export type BucketType = 'COMBO_LIVE' | 'COMBO_DEAD' | 'SINGLE';
 
+/** Status assigned by WingsLashes at the time a service was booked. */
+export type BookingUserServiceType =
+  | 'lead'
+  | 'lead_book'
+  | 'new'
+  | 'combo'
+  | 'combo_last'
+  | 'combo_expired'
+  | 'combo_over'
+  | 'long_time'
+  | 'lapser'
+  | 'occasion'
+  | 'lost'
+  | 'game';
+
+export interface BookingServiceStatus {
+  serviceName: string;
+  /** Unknown legacy values remain representable instead of being discarded. */
+  userServiceType: BookingUserServiceType | (string & {}) | null;
+}
+
 export type TouchpointStatus =
   'SUCCESS' | 'MESSAGED' | 'FAILED' | 'LOST' | 'PENDING' | 'DUE_TODAY' | 'BOOKED' | 'DONE' | 'CALLBACK';
 
@@ -199,6 +220,8 @@ export interface Appointment {
   customerAvatar: string | null;
   customerPhone: string;
   serviceName?: string;
+  /** One legacy segment status per booked service, in display order. */
+  serviceStatuses?: BookingServiceStatus[];
   servicePrice?: number;
   discountPercent?: number;
   promotionName?: string | null;
