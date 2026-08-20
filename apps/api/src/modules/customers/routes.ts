@@ -6476,6 +6476,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderCombosSql, customerId),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderProductsSql, customerId),
       ]);
+      const bookingComboLiveByOrderId = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
+        fastify,
+        bookingsRaw.map((booking) => Number(booking.id))
+      );
 
       const servicesByOrderIdDetail = new Map<number, { name: string; price: number }[]>();
       for (const os of orderServicesRaw) {
@@ -6656,6 +6660,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           storeId: b.storeId ? Number(b.storeId) : null,
           services: servicesByOrderId.get(Number(b.id)) || [],
           serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],
+          hasLiveComboAtBooking: bookingComboLiveByOrderId.get(Number(b.id)) || false,
           auditLogCount: auditCountMap.get(Number(b.id)) || 0,
         };
       });
@@ -7273,6 +7278,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
 
       const bookingIds = bookingsRaw.map((b) => Number(b.id));
+      const bookingComboLiveByOrderId = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
+        fastify,
+        bookingIds
+      );
       const servicesByOrderId = new Map<number, string[]>();
       const serviceStatusesByOrderId = new Map<number, { serviceName: string; userServiceType: string | null }[]>();
       let orderServicesDetails: SafeAny[] = [];
@@ -7411,6 +7420,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           branchName: b.branchName,
           services: servicesByOrderId.get(Number(b.id)) || [],
           serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],
+          hasLiveComboAtBooking: bookingComboLiveByOrderId.get(Number(b.id)) || false,
           auditLogCount: auditCountMap.get(Number(b.id)) || 0,
         };
       });

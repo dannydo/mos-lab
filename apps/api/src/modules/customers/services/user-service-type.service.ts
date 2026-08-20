@@ -91,39 +91,38 @@ export class UserServiceTypeService {
         bookingDate
       );
 
-      const balanceLefts = new Map<string, number>();
-      const balanceExpiries = new Map<string, Map<number, Date | string | null>>();
+      const activeBalanceLefts = new Map<string, number>();
+      let hasExpiredBalance = false;
 
       for (const transaction of transactions) {
         const group = String(transaction.service_group || '');
         if (!group) continue;
 
-        balanceLefts.set(group, (balanceLefts.get(group) || 0) + 1);
-        const expiries = balanceExpiries.get(group) || new Map<number, Date | string | null>();
-        expiries.set(Number(transaction.user_service_balance_id || 0), transaction.date_expired);
-        balanceExpiries.set(group, expiries);
+        const expiryDate = toLegacyComparableDate(transaction.date_expired);
+        if (expiryDate && expiryDate < bookingDate) {
+          hasExpiredBalance = true;
+          continue;
+        }
+
+        activeBalanceLefts.set(group, (activeBalanceLefts.get(group) || 0) + 1);
       }
 
-      // Preserve legacy PHP precedence exactly: combo_last -> combo_expired -> combo.
+      // A still-live balance must win over an unrelated expired historical
+      // balance. The previous PHP ordering made a customer look "Combo Expired"
+      // whenever any old balance had expired, even when another balance was
+      // usable at the instant of booking.
       let type = '';
-      for (const balanceLeft of balanceLefts.values()) {
+      for (const balanceLeft of activeBalanceLefts.values()) {
         if (balanceLeft === 1) type = 'combo_last';
       }
 
       if (!type) {
-        for (const expiries of balanceExpiries.values()) {
-          for (const expiry of expiries.values()) {
-            const expiryDate = toLegacyComparableDate(expiry);
-            if (expiryDate && expiryDate < bookingDate) type = 'combo_expired';
-          }
-        }
-      }
-
-      if (!type) {
-        for (const balanceLeft of balanceLefts.values()) {
+        for (const balanceLeft of activeBalanceLefts.values()) {
           if (balanceLeft > 1) type = 'combo';
         }
       }
+
+      if (!type && hasExpiredBalance) type = 'combo_expired';
 
       let previousOrderService: LegacyReportOrderService | null = null;
       if (!type) {

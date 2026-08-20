@@ -222,6 +222,8 @@ export interface Appointment {
   serviceName?: string;
   /** One legacy segment status per booked service, in display order. */
   serviceStatuses?: BookingServiceStatus[];
+  /** Rule #21 source-of-truth combo state reconstructed at order creation time. */
+  hasLiveComboAtBooking?: boolean;
   servicePrice?: number;
   discountPercent?: number;
   promotionName?: string | null;

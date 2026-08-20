@@ -24,6 +24,36 @@ test('evaluates COMBO_LIVE from the booking-time ledger snapshot', () => {
   assert.doesNotMatch(sql, /actual_booking_date_start|booking_date_start/);
 });
 
+test('maps canonical combo-live states by booking ID', async () => {
+  let capturedSql = '';
+  const fastify = {
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          capturedSql = sql;
+          return [
+            { orderId: 11, hasLiveComboAtBooking: 1 },
+            { orderId: 12, hasLiveComboAtBooking: 0 },
+          ];
+        },
+      },
+    },
+  };
+
+  const states = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(fastify as never, [11, 12, 12, 0]);
+
+  assert.deepEqual(
+    [...states],
+    [
+      [11, true],
+      [12, false],
+    ]
+  );
+  assert.match(capturedSql, /FROM `order` o/);
+  assert.match(capturedSql, /usb\.date_created < o\.date_created/);
+  assert.match(capturedSql, /WHERE o\.id IN \(11,12\)/);
+});
+
 test('recognizes completed combo sales only by actual check-in and an existing customer balance', async () => {
   let capturedSql = '';
   let capturedParams: unknown[] = [];

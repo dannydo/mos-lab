@@ -115,19 +115,35 @@ const legacyBookingStatusMeta: Record<string, { label: string; color?: string; i
   game: { label: 'Game', color: 'green', icon: <ControlOutlined /> },
 };
 
-const LegacyBookingStatusTags = ({ statuses }: { statuses?: SafeAny[] }) => {
+const comboLegacyStatuses = new Set(['combo', 'combo_last', 'combo_expired', 'combo_over']);
+
+const LegacyBookingStatusTags = ({
+  statuses,
+  hasLiveComboAtBooking = false,
+}: {
+  statuses?: SafeAny[];
+  hasLiveComboAtBooking?: boolean;
+}) => {
   const uniqueStatuses = Array.from(
     new Map(
       (statuses || [])
         .filter((status) => status?.userServiceType)
+        .filter((status) => !hasLiveComboAtBooking || !comboLegacyStatuses.has(String(status.userServiceType)))
         .map((status) => [`${status.serviceName}:${status.userServiceType}`, status])
     ).values()
   );
 
-  if (uniqueStatuses.length === 0) return null;
+  if (!hasLiveComboAtBooking && uniqueStatuses.length === 0) return null;
 
   return (
     <>
+      {hasLiveComboAtBooking && (
+        <Tooltip title="Combo đang chạy tại thời điểm tạo booking (đối soát số dư và lượt dùng)">
+          <Tag color="green" icon={<SyncOutlined />} style={{ margin: 0 }}>
+            Combo Live
+          </Tag>
+        </Tooltip>
+      )}
       {uniqueStatuses.map((status) => {
         const metadata = legacyBookingStatusMeta[status.userServiceType] || {
           label: String(status.userServiceType).replaceAll('_', ' '),
@@ -340,7 +356,10 @@ export const BookingsTab: React.FC<
                       <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
                         {b.services && b.services.length > 0 ? b.services.join(', ') : 'Dịch vụ'}
                       </span>
-                      <LegacyBookingStatusTags statuses={b.serviceStatuses} />
+                      <LegacyBookingStatusTags
+                        statuses={b.serviceStatuses}
+                        hasLiveComboAtBooking={Boolean(b.hasLiveComboAtBooking)}
+                      />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {promoInfo.promoTitle && (

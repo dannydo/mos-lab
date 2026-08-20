@@ -10,6 +10,11 @@ export interface RecognizedComboSale {
   netRevenue: number;
 }
 
+type BookingComboLiveRow = {
+  orderId: number | bigint | string;
+  hasLiveComboAtBooking: number | bigint | boolean | null;
+};
+
 function assertSqlAlias(candidateAlias: string): void {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(candidateAlias)) {
     throw new Error('Invalid SQL alias for combo recognition');
@@ -121,6 +126,38 @@ export function parseComboDateBounds(dFrom?: string, dTo?: string): DateBounds {
  * Single Source of Truth helper for New LoCa & Combo Sale Customer Recognition
  */
 export class ComboRecognitionService {
+  /**
+   * Returns the canonical combo-live state for a set of bookings.
+   *
+   * This is intentionally order-level: a booking's customer segment is
+   * determined from the balance ledger at the instant the booking was created,
+   * rather than from an individual legacy `order_service.user_service_type`
+   * value that may have been affected by an old, expired balance.
+   */
+  public static async getBookingComboLiveStatesByOrderIds(
+    fastify: FastifyInstance,
+    orderIds: number[]
+  ): Promise<Map<number, boolean>> {
+    const validOrderIds = [...new Set(orderIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+    if (validOrderIds.length === 0) return new Map();
+
+    const comboLiveAtBookingSql = buildComboLiveAtBookingSql('o');
+    const rows = await fastify.prisma.legacy.$queryRawUnsafe<BookingComboLiveRow[]>(`
+      SELECT
+        o.id AS orderId,
+        CASE WHEN ${comboLiveAtBookingSql} THEN 1 ELSE 0 END AS hasLiveComboAtBooking
+      FROM \`order\` o
+      WHERE o.id IN (${validOrderIds.join(',')})
+    `);
+
+    return new Map(
+      rows.map((row) => [
+        Number(row.orderId),
+        row.hasLiveComboAtBooking === true || Number(row.hasLiveComboAtBooking || 0) === 1,
+      ])
+    );
+  }
+
   /**
    * Rule #21 source of truth for a completed order's real combo sale.
    * It intentionally excludes legacy `single`, `refill`, and `balance`

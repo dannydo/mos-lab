@@ -36,7 +36,7 @@ test('classifies combo_last from the balance transaction ledger on the booking d
   assert.deepEqual(capturedParams, [1, 42, 'LashesTop', '2026-08-18', '2026-08-18', '2026-08-18', '2026-08-18']);
 });
 
-test('gives expired transactions precedence over a multi-row combo balance', async () => {
+test('classifies only expired balances as combo_expired', async () => {
   const fastify = createFastify((sql) => {
     if (sql.includes('user_service_balance_transaction')) {
       return [
@@ -50,6 +50,23 @@ test('gives expired transactions precedence over a multi-row combo balance', asy
   const type = await UserServiceTypeService.determineUserServiceType(fastify as never, 42, '2026-08-18', 'LashesTop');
 
   assert.equal(type, 'combo_expired');
+});
+
+test('keeps a live combo ahead of an older expired balance', async () => {
+  const fastify = createFastify((sql) => {
+    if (sql.includes('user_service_balance_transaction')) {
+      return [
+        { service_group: 'LashesTop', user_service_balance_id: 11, date_expired: '2026-08-01' },
+        { service_group: 'LashesTop', user_service_balance_id: 12, date_expired: '2026-09-01' },
+        { service_group: 'LashesTop', user_service_balance_id: 12, date_expired: '2026-09-01' },
+      ];
+    }
+    return [];
+  });
+
+  const type = await UserServiceTypeService.determineUserServiceType(fastify as never, 42, '2026-08-18', 'LashesTop');
+
+  assert.equal(type, 'combo');
 });
 
 test('recognizes combo_over from a prior combo_last without a remaining balance', async () => {
