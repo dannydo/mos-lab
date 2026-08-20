@@ -339,8 +339,12 @@ export default function CcThuongTab({
     const maxBonus = sorted.length > 0 ? sorted[0].totalBonus : 1;
 
     return sorted.map((item, idx) => {
+      // Vòng Xanh is the eligible customer pool: every Combo sold is measured
+      // against it, including a sale that was completed after the booking snapshot.
+      // This keeps the displayed conversion aligned with the operational formula:
+      // total Combo sold / Vòng Xanh visits (for example, 13.5 / 96 = 14%).
       const greenConversionRate =
-        item.greenVisits > 0 ? Math.min(100, Math.round((item.greenComboCount / item.greenVisits) * 100)) : 0;
+        item.greenVisits > 0 ? Math.min(100, Math.round((item.comboCount / item.greenVisits) * 100)) : 0;
       return {
         rank: idx + 1,
         consultantId: item.consultantId,
@@ -475,7 +479,7 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
-          title={`Đã bán ${formatVisitCount(val)} combo; ${formatVisitCount(record.greenComboSalesCount)} combo đến từ khách Vòng Xanh. Doanh số combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ | Tỷ lệ chốt Vòng Xanh: ${record.greenComboConversionRate}%`}
+          title={`Tỷ lệ Combo trên Vòng Xanh: ${formatVisitCount(val)} combo / ${formatVisitCount(record.greenVisits)} lượt Vòng Xanh = ${record.greenComboConversionRate}%. Doanh số combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ`}
         >
           <div className="w-full text-right">
             <div className="tabular-nums font-semibold text-blue-400 text-xs">{val} combo</div>
