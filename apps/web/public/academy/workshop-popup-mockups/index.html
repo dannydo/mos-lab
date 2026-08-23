@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workshop Popup — 20 hướng refactor</title>
+    <style>
+      :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #eff7ff; background: #07111f; }
+      * { box-sizing: border-box; } body { min-height: 100vh; margin: 0; background: radial-gradient(circle at 13% 5%, #143961 0, transparent 25%), #07111f; }
+      main { width: min(1240px, calc(100% - 44px)); margin: auto; padding: 54px 0 70px; }
+      .eyebrow { color: #48ceff; font-size: 11px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+      h1 { max-width: 760px; margin: 11px 0; font-size: clamp(30px, 4vw, 51px); line-height: 1.03; letter-spacing: -.045em; }
+      .intro { max-width: 720px; color: #9fb6cd; line-height: 1.6; }
+      .criteria { display: flex; flex-wrap: wrap; gap: 9px; margin: 28px 0 30px; }
+      .criteria span { padding: 8px 10px; border: 1px solid #294c6c; border-radius: 999px; color: #c7d8e9; background: #10243c; font-size: 12px; }
+      .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+      a { color: inherit; text-decoration: none; }
+      .concept { min-height: 316px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; border: 1px solid #2b506f; border-radius: 18px; background: linear-gradient(155deg, #183958 0%, #0d1d32 65%); transition: transform .18s, border-color .18s; }
+      .concept:hover { transform: translateY(-5px); border-color: #43ccff; }
+      .visual { position: relative; flex: 1; min-height: 165px; overflow: hidden; border-bottom: 1px solid rgba(159, 198, 229, .17); }
+      .visual::before, .visual::after { content: ""; position: absolute; border: 1px solid rgba(100, 213, 255, .48); border-radius: 8px; }
+      .v1::before { inset: 40px 17px 26px; } .v1::after { width: 68%; height: 2px; right: 15%; bottom: 42px; border: 0; background: linear-gradient(90deg,#32c7ff,#f4b52d); }
+      .v2::before { width: 77px; height: 77px; top: 32px; left: calc(50% - 39px); border-radius: 50%; box-shadow: 0 0 0 14px rgba(244,181,45,.08); border-color: #f4b52d; } .v2::after { width: 160px; height: 44px; bottom: 18px; left: calc(50% - 80px); }
+      .v3::before { width: 54px; height: 100px; top: 26px; left: 28px; } .v3::after { width: 104px; height: 100px; top: 26px; right: 28px; border-color: #f4b52d; }
+      .v4::before { width: 39%; height: 122px; top: 24px; left: 18px; border-color: #f4b52d; } .v4::after { width: 44%; height: 122px; top: 24px; right: 18px; }
+      .v5::before { width: 2px; height: 122px; top: 22px; left: 39px; border: 0; background: #32c7ff; } .v5::after { width: 118px; height: 28px; top: 31px; left: 55px; box-shadow: 0 44px 0 rgba(96,213,139,.75), 0 88px 0 rgba(244,181,45,.75); }
+      .copy { padding: 18px; } .number { color: #54d2ff; font-size: 11px; font-weight: 900; letter-spacing: .1em; }
+      h2 { margin: 6px 0 7px; font-size: 17px; line-height: 1.15; } p { margin: 0; color: #9fb6cd; font-size: 12px; line-height: 1.55; }
+      footer { margin-top: 28px; color: #718faa; font-size: 12px; }
+      @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, 1fr); } .concept { min-height: 260px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">Workshop talent assessment · Large laptop 1440 × 900</div>
+      <h1>20 hướng refactor cho popup chấm điểm năng khiếu</h1>
+      <p class="intro">Bốn bản mới (17–20) tiếp tục phát triển timeline yêu thích: mọi node được nâng khỏi baseline ít nhất 20px, score hiện tại có vị trí logic trên scale và phần thưởng phát triển cùng từng milestone.</p>
+      <div class="criteria"><span>Fit khung 1440 × 900</span><span>Node cách line ≥ 20px</span><span>Timeline là hero</span><span>Coaching mở khi cần</span></div>
+      <section class="grid">
+        <a class="concept" href="01-journey-rail.html"><div class="visual v1"></div><div class="copy"><div class="number">01 · JOURNEY RAIL</div><h2>Đọc theo hành trình điểm</h2><p>Score và mốc tiến độ là nhân vật chính.</p></div></a>
+        <a class="concept" href="02-scoreboard.html"><div class="visual v2"></div><div class="copy"><div class="number">02 · SCOREBOARD</div><h2>Dashboard điểm số</h2><p>Tập trung vào thành tựu cuối cùng.</p></div></a>
+        <a class="concept" href="03-focus-cards.html"><div class="visual v3"></div><div class="copy"><div class="number">03 · FOCUS CARDS</div><h2>Thẻ đánh giá rõ ràng</h2><p>Gọn, quét nhanh, nhiều khoảng thở.</p></div></a>
+        <a class="concept" href="04-split-outcome.html"><div class="visual v4"></div><div class="copy"><div class="number">04 · SPLIT OUTCOME</div><h2>Điểm và kết quả song hành</h2><p>Giúp tư vấn viên đối chiếu ngay.</p></div></a>
+        <a class="concept" href="05-guided-review.html"><div class="visual v5"></div><div class="copy"><div class="number">05 · GUIDED REVIEW</div><h2>Checklist có hướng dẫn</h2><p>Khuyến nghị cho workflow chấm trực tiếp.</p></div></a>
+        <a class="concept" href="06-performance-console.html"><div class="visual v2"></div><div class="copy"><div class="number">06 · PERFORMANCE CONSOLE</div><h2>Console điểm thực hành</h2><p>Con số 14 là trung tâm tuyệt đối.</p></div></a>
+        <a class="concept" href="07-score-to-reward.html"><div class="visual v4"></div><div class="copy"><div class="number">07 · SCORE TO REWARD</div><h2>Điểm dẫn đến quyền lợi</h2><p>Nhìn rõ nguyên nhân và kết quả.</p></div></a>
+        <a class="concept" href="08-live-evaluation.html"><div class="visual v1"></div><div class="copy"><div class="number">08 · LIVE EVALUATION</div><h2>Chấm live theo mốc</h2><p>Phù hợp khi nhập điểm tại chỗ.</p></div></a>
+        <a class="concept" href="09-benchmark-race.html"><div class="visual v5"></div><div class="copy"><div class="number">09 · BENCHMARK RACE</div><h2>Đường đua benchmark</h2><p>Mốc năng khiếu có tính kể chuyện.</p></div></a>
+        <a class="concept" href="10-achievement-sheet.html"><div class="visual v3"></div><div class="copy"><div class="number">10 · ACHIEVEMENT SHEET</div><h2>Phiếu thành tựu</h2><p>Rõ ràng, dễ tư vấn và chốt.</p></div></a>
+        <a class="concept" href="11-threshold-map.html"><div class="visual v1"></div><div class="copy"><div class="number">11 · THRESHOLD MAP</div><h2>Bản đồ mốc năng khiếu</h2><p>Mốc hiện tại giữ trọn spotlight.</p></div></a>
+        <a class="concept" href="12-progress-path.html"><div class="visual v5"></div><div class="copy"><div class="number">12 · PROGRESS PATH</div><h2>Đường phát triển</h2><p>Quyền lợi nằm ngay trên hành trình.</p></div></a>
+        <a class="concept" href="13-milestone-board.html"><div class="visual v4"></div><div class="copy"><div class="number">13 · MILESTONE BOARD</div><h2>Bảng mốc &amp; quyền lợi</h2><p>Rõ ràng nhất để tư vấn chốt.</p></div></a>
+        <a class="concept" href="14-spotlight-tier.html"><div class="visual v2"></div><div class="copy"><div class="number">14 · SPOTLIGHT TIER</div><h2>Spotlight mốc hiện tại</h2><p>Một cấp độ, một câu chuyện.</p></div></a>
+        <a class="concept" href="15-reward-ladder.html"><div class="visual v5"></div><div class="copy"><div class="number">15 · REWARD LADDER</div><h2>Thang thưởng milestone</h2><p>Sát nhất với bố cục tham chiếu.</p></div></a>
+        <a class="concept" href="16-milestone-runway.html"><div class="visual v1"></div><div class="copy"><div class="number">16 · MILESTONE RUNWAY</div><h2>Đường băng thành tựu</h2><p>Score hiện tại neo ngay trên timeline.</p></div></a>
+        <a class="concept" href="17-ladder-summit.html"><div class="visual v5"></div><div class="copy"><div class="number">17 · LADDER SUMMIT</div><h2>Đỉnh thang phần thưởng</h2><p>Timeline nhịp cao thấp rõ nhất.</p></div></a>
+        <a class="concept" href="18-reward-arc.html"><div class="visual v2"></div><div class="copy"><div class="number">18 · REWARD ARC</div><h2>Vòm phần thưởng</h2><p>Milestone tạo thành một đường cong.</p></div></a>
+        <a class="concept" href="19-gradient-progress.html"><div class="visual v1"></div><div class="copy"><div class="number">19 · GRADIENT PROGRESS</div><h2>Progress gradient</h2><p>Score hiện tại là beacon trên line.</p></div></a>
+        <a class="concept" href="20-tier-pedestal.html"><div class="visual v3"></div><div class="copy"><div class="number">20 · TIER PEDESTAL</div><h2>Bục milestone</h2><p>Đọc cấp độ như một sân khấu.</p></div></a>
+      </section>
+      <footer>Chọn một phương án để xem popup full-screen. Các bản 17–20 đều giữ khoảng cách 20px giữa vòng số và baseline.</footer>
+    </main>
+  </body>
+</html>

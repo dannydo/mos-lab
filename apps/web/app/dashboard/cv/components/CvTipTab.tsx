@@ -31,7 +31,7 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CvTipCustomerVisit, CvTipLeaderboardEntry, CvTipRecord, removeVietnameseTones } from '@mos-lab/shared';
+import { CvTipCustomerVisit, CvTipLeaderboardEntry, CvTipRecord } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { formatCompactVND, formatVND } from '../../../../lib/format-utils';
 import CcAvatar from '../../cc/components/CcAvatar';
@@ -71,6 +71,7 @@ export default function CvTipTab({
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<CvTipLeaderboardEntry[]>([]);
   const [records, setRecords] = useState<CvTipRecord[]>([]);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   const [selectedCvName, setSelectedCvName] = useState<string | null>(null);
   const [tipFilter, setTipFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
@@ -94,22 +95,32 @@ export default function CvTipTab({
     totalVisits: 0,
   });
 
-  const [pageSize, setPageSize] = useState<number>(20);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cv_tip_page_size');
-      if (saved) {
-        setPageSize(parseInt(saved, 10));
-      }
-    }
-  }, []);
+  const [pageSize, setPageSize] = useState<number>(() => {
+    if (typeof window === 'undefined') return 20;
+    const saved = Number(localStorage.getItem('cv_tip_page_size'));
+    return [10, 20, 50, 100].includes(saved) ? saved : 20;
+  });
+  const [currentPage, setCurrentPage] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1;
+    return Math.max(1, Number(localStorage.getItem('cv_tip_page')) || 1);
+  });
+  const deferredSearchText = React.useDeferredValue(searchText.trim());
 
   useEffect(() => {
     if (parentSelectedConsultant && parentSelectedConsultant !== 'ALL') {
       setSelectedCvName(parentSelectedConsultant);
+      setCurrentPage(1);
     }
   }, [parentSelectedConsultant]);
+
+  const handleSelectCv = React.useCallback(
+    (nextCvName: string | null) => {
+      setSelectedCvName(nextCvName);
+      setCurrentPage(1);
+      onSelectConsultant?.(nextCvName || 'ALL');
+    },
+    [onSelectConsultant]
+  );
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
@@ -129,6 +140,10 @@ export default function CvTipTab({
           storeId: selectedStore,
           consultantId: selectedCvName || parentSelectedConsultant,
           tipFilter,
+          page: currentPage,
+          limit: pageSize,
+          search: deferredSearchText || undefined,
+          includeSummary: false,
         }),
       ]);
 
@@ -147,13 +162,23 @@ export default function CvTipTab({
 
       if (recRes) {
         setRecords(recRes.data || []);
+        setTotalRecords(recRes.total || 0);
       }
     } catch (err) {
       console.error('Error fetching CV Tip data:', err);
     } finally {
       setLoading(false);
     }
-  }, [dateRange, selectedStore, selectedCvName, parentSelectedConsultant, tipFilter]);
+  }, [
+    dateRange,
+    selectedStore,
+    selectedCvName,
+    parentSelectedConsultant,
+    tipFilter,
+    currentPage,
+    pageSize,
+    deferredSearchText,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -173,7 +198,9 @@ export default function CvTipTab({
         storeId: selectedStore,
         consultantId: selectedCvName || parentSelectedConsultant,
         tipFilter: 'ALL',
+        page: 1,
         limit: 3000,
+        includeSummary: false,
       });
       setTipHistoryRecords(response.data || []);
     } catch (error) {
@@ -202,17 +229,6 @@ export default function CvTipTab({
       setCustomerHistoryLoading(false);
     }
   }, []);
-
-  const filteredRecords = React.useMemo(() => {
-    if (!searchText) return records;
-    const q = removeVietnameseTones(searchText);
-    return records.filter(
-      (r) =>
-        removeVietnameseTones(r.techName).includes(q) ||
-        removeVietnameseTones(r.clientName).includes(q) ||
-        removeVietnameseTones(r.serviceName).includes(q)
-    );
-  }, [records, searchText]);
 
   const visibleTipHistoryRecords = React.useMemo(() => {
     if (tipHistoryFilter === 'TIPPED') return tipHistoryRecords.filter((record) => record.tipStatus === 'Tipped');
@@ -254,10 +270,7 @@ export default function CvTipTab({
             size={8}
             onClick={() => {
               const newName = isSelected ? null : name;
-              setSelectedCvName(newName);
-              if (onSelectConsultant) {
-                onSelectConsultant(newName || 'ALL');
-              }
+              handleSelectCv(newName);
             }}
           >
             <CcAvatar name={name} src={record.avatar} size={32} isSelected={isSelected} />
@@ -531,10 +544,7 @@ export default function CvTipTab({
               type="dashed"
               size="small"
               onClick={() => {
-                setSelectedCvName(null);
-                if (onSelectConsultant) {
-                  onSelectConsultant('ALL');
-                }
+                handleSelectCv(null);
               }}
               className="text-xs font-medium"
             >
@@ -557,8 +567,7 @@ export default function CvTipTab({
                 const isSelected = selectedCvName === record.displayName;
                 const toggleSelection = () => {
                   const newName = isSelected ? null : record.displayName;
-                  setSelectedCvName(newName);
-                  onSelectConsultant?.(newName || 'ALL');
+                  handleSelectCv(newName);
                 };
                 return (
                   <button
@@ -622,10 +631,7 @@ export default function CvTipTab({
               onClick: () => {
                 const name = record.displayName;
                 const newName = selectedCvName === name ? null : name;
-                setSelectedCvName(newName);
-                if (onSelectConsultant) {
-                  onSelectConsultant(newName || 'ALL');
-                }
+                handleSelectCv(newName);
               },
             })}
             rowClassName={(record) =>
@@ -664,15 +670,21 @@ export default function CvTipTab({
                   { label: 'Không Tip', value: 'NO_TIP' },
                 ]}
                 value={tipFilter}
-                onChange={(val) => setTipFilter(val as 'ALL' | 'TIPPED' | 'NO_TIP')}
+                onChange={(val) => {
+                  setCurrentPage(1);
+                  setTipFilter(val as 'ALL' | 'TIPPED' | 'NO_TIP');
+                }}
               />
               <Input
                 id="cv-tip-search-input"
                 name="cvTipSearch"
-                placeholder="Tìm tên KTV..."
+                placeholder="Tìm CV, khách, dịch vụ..."
                 prefix={<SearchOutlined />}
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
+                onChange={(e) => {
+                  setCurrentPage(1);
+                  setSearchText(e.target.value);
+                }}
                 allowClear
                 style={{ width: 180 }}
               />
@@ -691,17 +703,24 @@ export default function CvTipTab({
         }
       >
         <Table
-          dataSource={filteredRecords}
+          dataSource={records}
           columns={recordColumns}
           rowKey="serviceId"
           loading={loading || parentLoading}
           pagination={{
+            current: currentPage,
             pageSize: pageSize,
+            total: totalRecords,
             showSizeChanger: true,
-            pageSizeOptions: ['20', '50', '100'],
-            onChange: (page, size) => {
-              setPageSize(size);
-              localStorage.setItem('cv_tip_page_size', size.toString());
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} lượt`,
+            onChange: (nextPage, nextPageSize) => {
+              const pageSizeChanged = nextPageSize !== pageSize;
+              const resolvedPage = pageSizeChanged ? 1 : nextPage;
+              setCurrentPage(resolvedPage);
+              setPageSize(nextPageSize);
+              localStorage.setItem('cv_tip_page', resolvedPage.toString());
+              localStorage.setItem('cv_tip_page_size', nextPageSize.toString());
             },
           }}
           size="small"

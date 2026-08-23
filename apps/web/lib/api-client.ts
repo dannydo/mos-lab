@@ -70,8 +70,13 @@ import {
   BkSalaryConfig,
   TeamListResponse,
   TeamDetailResponse,
+  Team,
   UpsertTeamRequest,
   UpdateTeamMembersRequest,
+  MenuAccessConfigurationResponse,
+  MenuAccessPolicy,
+  MenuAccessSidebarResponse,
+  UpdateMenuAccessPolicyRequest,
   PackageAuditListParams,
   PackageAuditListResponse,
   ReviewPackageAuditParams,
@@ -193,22 +198,57 @@ import {
   CreateSocialPostSubmissionDto,
   CreateSocialPostSubmissionResponse,
   AcademyCourse,
+  AcademyWorkspaceAccessResponse,
+  AcademyCampaign,
+  AcademyCampaignActionResponse,
+  AcademyCampaignLeadActionResponse,
+  AcademyCampaignStats,
+  AcademyCampaignStatus,
+  AcademyCampaignTouchpointLogActionResponse,
   AcademyFollowUpTask,
   AcademyImportReport,
   AcademyLeadActionResponse,
   AcademyLeadDetail,
   AcademyPlaybook,
   AcademyStaffOption,
+  AcademyTalentAssessmentActionResponse,
+  AcademyTalentLadderConfiguration,
+  AcademyTalentLadderConfigurationActionResponse,
+  AcademyTalentInstructorActionResponse,
+  ListAcademyTalentInstructorsResponse,
+  ListAcademyTalentPaymentManagementParams,
+  ListAcademyTalentPaymentManagementResponse,
+  AcademyTalentPaymentTraceResponse,
+  CreateAcademyTalentAssessmentRequest,
+  ListAcademyTalentAssessmentsResponse,
+  PreviewAcademyTalentAssessmentQuoteRequest,
+  PreviewAcademyTalentAssessmentQuoteResponse,
+  RecordAcademyTalentPaymentRequest,
   CreateAcademyActivityRequest,
+  CreateAcademyCampaignRequest,
   CreateAcademyFollowUpRequest,
   CreateAcademyLeadRequest,
+  AddAcademyCampaignLeadsRequest,
+  ListAcademyCampaignLeadsParams,
+  ListAcademyCampaignLeadsResponse,
+  ListAcademyCampaignsParams,
+  ListAcademyCampaignsResponse,
   ListAcademyFollowUpsParams,
   ListAcademyFollowUpsResponse,
+  ListAcademyLeadCalendarParams,
+  ListAcademyLeadCalendarResponse,
   ListAcademyLeadsParams,
   ListAcademyLeadsResponse,
   UpdateAcademyFollowUpRequest,
   UpdateAcademyLeadRequest,
+  UpdateAcademyTalentAssessmentRequest,
+  UpdateAcademyTalentLadderConfigurationRequest,
+  RecordAcademyNoShowRequest,
+  RemoveAcademyCampaignLeadRequest,
+  ToggleAcademyCampaignTouchpointLogRequest,
+  UpdateAcademyCampaignRequest,
   UpsertAcademyCourseRequest,
+  UpsertAcademyTalentInstructorRequest,
   UpsertAcademyPlaybookRequest,
 } from '@mos-lab/shared';
 
@@ -237,6 +277,23 @@ export async function dedupeApiGet<T>(url: string, params?: Record<string, unkno
 
   inFlightRequests.set(cacheKey, { promise, timestamp: now });
   return promise as Promise<T>;
+}
+
+/**
+ * Drops completed short-lived GET entries after a write. It intentionally does
+ * not cancel an existing request; a post-mutation refetch receives a new
+ * request rather than a cache entry produced before the write completed.
+ */
+export function invalidateApiGetCache(urlPrefixes: readonly string[]): void {
+  for (const cacheKey of inFlightRequests.keys()) {
+    if (urlPrefixes.some((prefix) => cacheKey.startsWith(prefix))) {
+      inFlightRequests.delete(cacheKey);
+    }
+  }
+}
+
+function invalidateAcademySalesReadCache(): void {
+  invalidateApiGetCache(['/academy-sales/']);
 }
 
 // Coalesce concurrent reads without retaining completed data. This is safe for
@@ -1323,12 +1380,16 @@ export const apiClient = {
       const response = await api.get(`/teams/${code}`);
       return response.data;
     },
-    create: async (data: UpsertTeamRequest): Promise<{ success: boolean; team: unknown }> => {
+    create: async (data: UpsertTeamRequest): Promise<{ success: boolean; team: Team }> => {
       const response = await api.post('/teams', data);
       return response.data;
     },
-    update: async (id: number, data: UpsertTeamRequest): Promise<{ success: boolean; team: unknown }> => {
+    update: async (id: number, data: UpsertTeamRequest): Promise<{ success: boolean; team: Team }> => {
       const response = await api.put(`/teams/${id}`, data);
+      return response.data;
+    },
+    delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+      const response = await api.delete(`/teams/${id}`);
       return response.data;
     },
     updateMembers: async (
@@ -1336,6 +1397,24 @@ export const apiClient = {
       data: UpdateTeamMembersRequest
     ): Promise<{ success: boolean; message: string }> => {
       const response = await api.put(`/teams/${id}/members`, data);
+      return response.data;
+    },
+  },
+
+  menuAccess: {
+    getSidebarVisibility: async (): Promise<MenuAccessSidebarResponse> => {
+      const response = await api.get('/menu-access/sidebar');
+      return response.data;
+    },
+    getConfiguration: async (): Promise<MenuAccessConfigurationResponse> => {
+      const response = await api.get('/menu-access/configuration');
+      return response.data;
+    },
+    updatePolicy: async (
+      menuKey: string,
+      data: UpdateMenuAccessPolicyRequest
+    ): Promise<{ success: boolean; policy: MenuAccessPolicy }> => {
+      const response = await api.put(`/menu-access/policies/${encodeURIComponent(menuKey)}`, data);
       return response.data;
     },
   },
@@ -1514,8 +1593,18 @@ export const apiClient = {
   },
 
   academySales: {
+    getAccess: async (): Promise<AcademyWorkspaceAccessResponse> => {
+      return dedupeApiGet<AcademyWorkspaceAccessResponse>('/academy-sales/access', undefined, 1_500);
+    },
     listLeads: async (params: ListAcademyLeadsParams): Promise<ListAcademyLeadsResponse> => {
       return dedupeApiGet<ListAcademyLeadsResponse>('/academy-sales/leads', params as Record<string, unknown>, 800);
+    },
+    listCalendar: async (params: ListAcademyLeadCalendarParams): Promise<ListAcademyLeadCalendarResponse> => {
+      return dedupeApiGet<ListAcademyLeadCalendarResponse>(
+        '/academy-sales/calendar',
+        params as Record<string, unknown>,
+        800
+      );
     },
     getLead: async (id: number): Promise<AcademyLeadDetail> => {
       const response = await api.get<{ data: AcademyLeadDetail }>(`/academy-sales/leads/${id}`);
@@ -1523,14 +1612,137 @@ export const apiClient = {
     },
     createLead: async (dto: CreateAcademyLeadRequest): Promise<AcademyLeadActionResponse> => {
       const response = await api.post<AcademyLeadActionResponse>('/academy-sales/leads', dto);
+      invalidateAcademySalesReadCache();
       return response.data;
     },
     updateLead: async (id: number, dto: UpdateAcademyLeadRequest): Promise<AcademyLeadActionResponse> => {
       const response = await api.put<AcademyLeadActionResponse>(`/academy-sales/leads/${id}`, dto);
+      invalidateAcademySalesReadCache();
       return response.data;
     },
     addActivity: async (id: number, dto: CreateAcademyActivityRequest) => {
       const response = await api.post(`/academy-sales/leads/${id}/activities`, dto);
+      invalidateAcademySalesReadCache();
+      return response.data;
+    },
+    recordNoShow: async (id: number, dto: RecordAcademyNoShowRequest = {}) => {
+      const response = await api.post<AcademyLeadActionResponse>(`/academy-sales/leads/${id}/no-show`, dto);
+      invalidateAcademySalesReadCache();
+      return response.data;
+    },
+    listTalentInstructors: async (): Promise<ListAcademyTalentInstructorsResponse> => {
+      return dedupeApiGet<ListAcademyTalentInstructorsResponse>('/academy-sales/talent-instructors', undefined, 5_000);
+    },
+    listTalentInstructorConfigurations: async (): Promise<ListAcademyTalentInstructorsResponse> => {
+      return dedupeApiGet<ListAcademyTalentInstructorsResponse>(
+        '/academy-sales/talent-instructors/manage',
+        undefined,
+        500
+      );
+    },
+    createTalentInstructor: async (
+      dto: UpsertAcademyTalentInstructorRequest
+    ): Promise<AcademyTalentInstructorActionResponse> => {
+      const response = await api.post<AcademyTalentInstructorActionResponse>('/academy-sales/talent-instructors', dto);
+      invalidateAcademySalesReadCache();
+      return response.data;
+    },
+    updateTalentInstructor: async (
+      id: number,
+      dto: UpsertAcademyTalentInstructorRequest
+    ): Promise<AcademyTalentInstructorActionResponse> => {
+      const response = await api.put<AcademyTalentInstructorActionResponse>(
+        `/academy-sales/talent-instructors/${id}`,
+        dto
+      );
+      invalidateAcademySalesReadCache();
+      return response.data;
+    },
+    getTalentLadderConfiguration: async (): Promise<AcademyTalentLadderConfiguration> => {
+      const response = await api.get<{ data: AcademyTalentLadderConfiguration }>('/academy-sales/talent-ladder');
+      return response.data.data;
+    },
+    updateTalentLadderConfiguration: async (
+      dto: UpdateAcademyTalentLadderConfigurationRequest
+    ): Promise<AcademyTalentLadderConfigurationActionResponse> => {
+      const response = await api.put<AcademyTalentLadderConfigurationActionResponse>(
+        '/academy-sales/talent-ladder',
+        dto
+      );
+      invalidateAcademySalesReadCache();
+      return response.data;
+    },
+    listTalentAssessments: async (leadId: number): Promise<ListAcademyTalentAssessmentsResponse> => {
+      return dedupeApiGet<ListAcademyTalentAssessmentsResponse>(
+        `/academy-sales/leads/${leadId}/talent-assessments`,
+        undefined,
+        300
+      );
+    },
+    listTalentPaymentManagement: async (
+      params: ListAcademyTalentPaymentManagementParams
+    ): Promise<ListAcademyTalentPaymentManagementResponse> => {
+      return dedupeApiGet<ListAcademyTalentPaymentManagementResponse>(
+        '/academy-sales/talent-payments',
+        params as Record<string, unknown>,
+        800
+      );
+    },
+    getTalentPaymentTrace: async (assessmentId: number): Promise<AcademyTalentPaymentTraceResponse> => {
+      return dedupeApiGet<AcademyTalentPaymentTraceResponse>(
+        `/academy-sales/talent-payments/${assessmentId}/trace`,
+        undefined,
+        300
+      );
+    },
+    previewTalentAssessmentQuote: async (
+      leadId: number,
+      dto: PreviewAcademyTalentAssessmentQuoteRequest
+    ): Promise<PreviewAcademyTalentAssessmentQuoteResponse> => {
+      const response = await api.post<PreviewAcademyTalentAssessmentQuoteResponse>(
+        `/academy-sales/leads/${leadId}/talent-assessments/preview`,
+        dto
+      );
+      return response.data;
+    },
+    createTalentAssessment: async (
+      leadId: number,
+      dto: CreateAcademyTalentAssessmentRequest = {}
+    ): Promise<AcademyTalentAssessmentActionResponse> => {
+      const response = await api.post<AcademyTalentAssessmentActionResponse>(
+        `/academy-sales/leads/${leadId}/talent-assessments`,
+        dto
+      );
+      invalidateAcademySalesReadCache();
+      return response.data;
+    },
+    updateTalentAssessment: async (
+      assessmentId: number,
+      dto: UpdateAcademyTalentAssessmentRequest
+    ): Promise<AcademyTalentAssessmentActionResponse> => {
+      const response = await api.put<AcademyTalentAssessmentActionResponse>(
+        `/academy-sales/talent-assessments/${assessmentId}`,
+        dto
+      );
+      invalidateAcademySalesReadCache();
+      return response.data;
+    },
+    printTalentAssessmentInvoice: async (assessmentId: number): Promise<AcademyTalentAssessmentActionResponse> => {
+      const response = await api.post<AcademyTalentAssessmentActionResponse>(
+        `/academy-sales/talent-assessments/${assessmentId}/print`
+      );
+      invalidateAcademySalesReadCache();
+      return response.data;
+    },
+    recordTalentAssessmentPayment: async (
+      assessmentId: number,
+      dto: RecordAcademyTalentPaymentRequest
+    ): Promise<AcademyTalentAssessmentActionResponse> => {
+      const response = await api.post<AcademyTalentAssessmentActionResponse>(
+        `/academy-sales/talent-assessments/${assessmentId}/payments`,
+        dto
+      );
+      invalidateAcademySalesReadCache();
       return response.data;
     },
     listFollowUps: async (params: ListAcademyFollowUpsParams): Promise<ListAcademyFollowUpsResponse> => {
@@ -1542,10 +1754,12 @@ export const apiClient = {
     },
     createFollowUp: async (dto: CreateAcademyFollowUpRequest) => {
       const response = await api.post(`/academy-sales/follow-ups`, dto);
+      invalidateAcademySalesReadCache();
       return response.data;
     },
     updateFollowUp: async (id: number, dto: UpdateAcademyFollowUpRequest) => {
       const response = await api.put(`/academy-sales/follow-ups/${id}`, dto);
+      invalidateAcademySalesReadCache();
       return response.data;
     },
     listStaff: async (): Promise<AcademyStaffOption[]> => {
@@ -1578,11 +1792,123 @@ export const apiClient = {
     },
     importSupabase: async (dryRun = true): Promise<{ success: true; data: AcademyImportReport; message: string }> => {
       const response = await api.post('/academy-sales/import/supabase', { dryRun });
+      if (!dryRun) invalidateAcademySalesReadCache();
       return response.data;
     },
     syncPancake: async () => {
       const response = await api.post('/academy-sales/sync/pancake');
+      invalidateAcademySalesReadCache();
       return response.data;
+    },
+    campaigns: {
+      sidebar: async (): Promise<AcademyCampaign[]> => {
+        const response = await api.get<{ data: AcademyCampaign[] }>('/academy-sales/campaigns/sidebar');
+        return response.data.data;
+      },
+      list: async (params?: ListAcademyCampaignsParams): Promise<ListAcademyCampaignsResponse> => {
+        return dedupeApiGet<ListAcademyCampaignsResponse>(
+          '/academy-sales/campaigns',
+          params as Record<string, unknown> | undefined,
+          800
+        );
+      },
+      getById: async (id: number): Promise<AcademyCampaign> => {
+        const response = await api.get<{ data: AcademyCampaign }>(`/academy-sales/campaigns/${id}`);
+        return response.data.data;
+      },
+      getBySlug: async (slug: string): Promise<AcademyCampaign> => {
+        const response = await api.get<{ data: AcademyCampaign }>(
+          `/academy-sales/campaigns/slug/${encodeURIComponent(slug)}`
+        );
+        return response.data.data;
+      },
+      create: async (dto: CreateAcademyCampaignRequest): Promise<AcademyCampaignActionResponse> => {
+        const response = await api.post<AcademyCampaignActionResponse>('/academy-sales/campaigns', dto);
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      update: async (id: number, dto: UpdateAcademyCampaignRequest): Promise<AcademyCampaignActionResponse> => {
+        const response = await api.put<AcademyCampaignActionResponse>(`/academy-sales/campaigns/${id}`, dto);
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      setStatus: async (id: number, status: AcademyCampaignStatus): Promise<AcademyCampaignActionResponse> => {
+        const response = await api.post<AcademyCampaignActionResponse>(`/academy-sales/campaigns/${id}/status`, {
+          status,
+        });
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      archive: async (id: number): Promise<AcademyCampaignActionResponse> => {
+        const response = await api.post<AcademyCampaignActionResponse>(`/academy-sales/campaigns/${id}/archive`);
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      clone: async (id: number): Promise<AcademyCampaignActionResponse> => {
+        const response = await api.post<AcademyCampaignActionResponse>(`/academy-sales/campaigns/${id}/clone`);
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      restore: async (id: number): Promise<AcademyCampaignActionResponse> => {
+        const response = await api.post<AcademyCampaignActionResponse>(`/academy-sales/campaigns/${id}/restore`);
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      delete: async (id: number): Promise<{ success: true; message: string }> => {
+        const response = await api.delete<{ success: true; message: string }>(`/academy-sales/campaigns/${id}`);
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      listLeads: async (
+        id: number,
+        params?: ListAcademyCampaignLeadsParams
+      ): Promise<ListAcademyCampaignLeadsResponse> => {
+        return dedupeApiGet<ListAcademyCampaignLeadsResponse>(
+          `/academy-sales/campaigns/${id}/leads`,
+          params as Record<string, unknown> | undefined,
+          800
+        );
+      },
+      addLeads: async (
+        id: number,
+        dto: AddAcademyCampaignLeadsRequest
+      ): Promise<AcademyCampaignLeadActionResponse[]> => {
+        const response = await api.post<AcademyCampaignLeadActionResponse[]>(
+          `/academy-sales/campaigns/${id}/leads`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      removeLead: async (
+        id: number,
+        leadId: number,
+        dto: RemoveAcademyCampaignLeadRequest = {}
+      ): Promise<AcademyCampaignLeadActionResponse> => {
+        const response = await api.delete<AcademyCampaignLeadActionResponse>(
+          `/academy-sales/campaigns/${id}/leads/${leadId}`,
+          { data: dto }
+        );
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      toggleTouchpoint: async (
+        id: number,
+        leadId: number,
+        touchpointId: number,
+        dto: ToggleAcademyCampaignTouchpointLogRequest
+      ): Promise<AcademyCampaignTouchpointLogActionResponse> => {
+        const response = await api.post<AcademyCampaignTouchpointLogActionResponse>(
+          `/academy-sales/campaigns/${id}/leads/${leadId}/touchpoints/${touchpointId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data;
+      },
+      getStats: async (id: number): Promise<AcademyCampaignStats> => {
+        const response = await api.get<{ data: AcademyCampaignStats }>(`/academy-sales/campaigns/${id}/stats`);
+        return response.data.data;
+      },
     },
   },
 

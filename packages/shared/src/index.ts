@@ -1,5 +1,7 @@
 export * from './types/customer.js';
 export * from './types/academy-sales.js';
+export * from './types/academy-talent-assessment.js';
+export * from './types/academy-campaign.js';
 export * from './types/dashboard.js';
 export * from './types/auth.js';
 export * from './types/plan.js';
@@ -31,3 +33,4 @@ export * from './types/cs.js';
 export * from './types/cv-speed.js';
 export * from './types/staff.js';
 export * from './types/qa-shop.js';
+export * from './types/menu-access.js';

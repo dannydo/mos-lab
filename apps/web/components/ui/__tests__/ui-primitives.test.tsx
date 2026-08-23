@@ -8,7 +8,7 @@ import { HeaderLeftToolbar } from '../../layout/HeaderLeftToolbar';
 import { UI_CATALOG_ITEMS } from '../../design-system/catalog.manifest';
 import { resolveCanonicalColumnTitle } from '../../../hooks/useTableConfig';
 import { getIconComponent } from '../../campaign/TouchpointIconPicker';
-import { getSidebarGroups } from '../../../config/sidebar.config';
+import { getSelectedMenuKey, getSidebarGroups } from '../../../config/sidebar.config';
 import { BK_DONE_LEADERBOARD_LABELS } from '../../../app/dashboard/bk/components/BkDoneTab';
 import {
   ContentSurface,
@@ -121,13 +121,102 @@ describe('UI primitives', () => {
     expect(container.querySelectorAll('.mos-app-icon')).toHaveLength(5);
   });
 
-  it('nests team configuration under the HR staff menu', () => {
+  it('keeps sensitive menu access configuration exclusive to Super Admin', () => {
     const systemGroup = getSidebarGroups('admin').find((group) => group.groupKey === 'grp-system');
     const staffMenu = systemGroup?.items.find((item) => item.key === 'staff');
+    const superAdminGroup = getSidebarGroups('super_admin').find((group) => group.groupKey === 'grp-system');
+    const superAdminStaffMenu = superAdminGroup?.items.find((item) => item.key === 'staff');
 
     expect(staffMenu?.path).toBeUndefined();
     expect(staffMenu?.children?.map((item) => item.key)).toEqual(['staff-directory', 'teams']);
     expect(staffMenu?.children?.find((item) => item.key === 'teams')?.path).toBe('/dashboard/staff/teams');
+    expect(staffMenu?.children?.find((item) => item.key === 'menu-access')).toBeUndefined();
+    expect(superAdminStaffMenu?.children?.map((item) => item.key)).toEqual(['staff-directory', 'teams', 'menu-access']);
+    expect(superAdminStaffMenu?.children?.find((item) => item.key === 'menu-access')?.path).toBe(
+      '/dashboard/staff/menu-access'
+    );
+  });
+
+  it('filters restricted leaves while preserving the visible menu hierarchy and role guards', () => {
+    const groups = getSidebarGroups('telesales', [], true, {}, [], true, {
+      'academy-lead-manager': false,
+      'customers-all': true,
+    });
+    const academyGroup = groups.find((group) => group.groupKey === 'grp-academy');
+    const crmGroup = groups.find((group) => group.groupKey === 'grp-crm');
+    const academyChildren = academyGroup?.items.find((item) => item.key === 'academy')?.children ?? [];
+    const customerChildren = crmGroup?.items.find((item) => item.key === 'customers-parent')?.children ?? [];
+
+    expect(academyChildren.some((item) => item.key === 'academy-lead-manager')).toBe(false);
+    expect(academyChildren.some((item) => item.key === 'academy-customers')).toBe(true);
+    // A visibility policy never grants the baseline Admin-only menu.
+    expect(customerChildren.some((item) => item.key === 'customers-all')).toBe(false);
+  });
+
+  it('hides dynamic children together when their menu category is restricted', () => {
+    const groups = getSidebarGroups(
+      'telesales',
+      [{ slug: 'summer', name: 'Summer Campaign', status: 'ACTIVE' }],
+      true,
+      {},
+      [{ slug: 'academy-summer', name: 'Academy Summer' }],
+      true,
+      {},
+      { crm: false, academy: false }
+    );
+    const crmGroup = groups.find((group) => group.groupKey === 'grp-crm');
+    const academyGroup = groups.find((group) => group.groupKey === 'grp-academy');
+
+    expect(crmGroup?.items.some((item) => item.key === 'nyc-parent')).toBe(false);
+    expect(academyGroup).toBeUndefined();
+  });
+
+  it('keeps Academy as a role-gated dedicated sidebar section', () => {
+    const groups = getSidebarGroups('telesales', [], true, {}, [], true);
+    const academyGroup = groups.find((group) => group.groupKey === 'grp-academy');
+    const crmGroup = groups.find((group) => group.groupKey === 'grp-crm');
+    const academy = academyGroup?.items.find((item) => item.key === 'academy');
+
+    expect(academyGroup?.groupTitle).toBe('ACADEMY');
+    expect(crmGroup?.items.some((item) => item.key === 'post-hub')).toBe(false);
+    expect(academyGroup?.items.map((item) => item.key)).toEqual(['academy', 'post-hub']);
+    expect(academyGroup?.items.find((item) => item.key === 'post-hub')).toMatchObject({
+      label: 'Chiến Thần',
+      path: '/dashboard/post-hub',
+    });
+    expect(academy?.label).toBe('Academy');
+    expect(academy?.path).toBeUndefined();
+    expect(academy?.children).toHaveLength(4);
+    expect(academy?.children?.[0]).toMatchObject({
+      key: 'academy-customers',
+      label: 'Khách hàng',
+      path: '/dashboard/academy-leads',
+    });
+    expect(academy?.children?.[1]).toMatchObject({
+      key: 'academy-lead-manager',
+      label: 'Lead Manager',
+      path: '/dashboard/academy-leads/lead-manager',
+    });
+    expect(academy?.children?.[2]).toMatchObject({
+      key: 'academy-campaigns',
+      label: 'Chiến dịch',
+      path: '/dashboard/academy-leads/campaigns',
+    });
+    expect(academy?.children?.[3]).toMatchObject({
+      key: 'academy-courses',
+      label: 'Khóa học',
+      path: '/dashboard/academy-leads/courses',
+    });
+    expect(getSelectedMenuKey('/dashboard/academy-leads')).toBe('academy-customers');
+    expect(getSelectedMenuKey('/dashboard/academy-leads/lead-manager')).toBe('academy-lead-manager');
+    expect(getSelectedMenuKey('/dashboard/academy-leads/campaigns')).toBe('academy-campaigns');
+    expect(getSelectedMenuKey('/dashboard/post-hub')).toBe('post-hub');
+    expect(getSelectedMenuKey('/dashboard/academy-leads/courses')).toBe('academy-courses');
+    expect(
+      getSidebarGroups('cc')
+        .flatMap((group) => group.items)
+        .some((item) => item.key === 'academy')
+    ).toBe(false);
   });
 
   it('uses the Lucide adapter for the standard list search submit action', () => {

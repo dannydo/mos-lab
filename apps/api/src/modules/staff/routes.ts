@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
+import { isAdminOrSuperAdminRole, isSuperAdminRole } from '@mos-lab/shared';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 import { StaffOffDayService } from './services/staff-off-day.service.js';
 
@@ -24,6 +25,10 @@ interface CreateStaffInput {
   baseSalary?: number | null;
   hourlyWage?: number | null;
   seniorityOffset?: number | null;
+}
+
+function mayManageSuperAdmin(actorRole: string, targetRole?: string | null): boolean {
+  return !isSuperAdminRole(targetRole) || isSuperAdminRole(actorRole);
 }
 
 export async function staffRoutes(fastify: FastifyInstance) {
@@ -63,7 +68,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         omicallAutoInit: true,
       };
 
-      if (currentUser.role === 'admin') {
+      if (isAdminOrSuperAdminRole(currentUser.role)) {
         selectFields.createdAt = true;
         selectFields.email = true;
         selectFields.phone = true;
@@ -108,7 +113,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
     }
 
     // Only Admin or the staff member themselves can view details
-    if (currentUser.role !== 'admin' && currentUser.id !== targetId) {
+    if (!isAdminOrSuperAdminRole(currentUser.role) && currentUser.id !== targetId) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'Bạn không có quyền xem thông tin nhân viên này',
@@ -139,7 +144,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
           lastLoginAt: true,
           lastActiveAt: true,
           omicallAutoInit: true,
-          ...(currentUser.role === 'admin'
+          ...(isAdminOrSuperAdminRole(currentUser.role)
             ? {
                 baseSalary: true,
                 hourlyWage: true,
@@ -195,6 +200,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
       });
     }
 
+    const assignedRole = role || 'telesales';
+    if (!mayManageSuperAdmin(request.user.role, assignedRole)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ Super Admin mới có thể gán vai trò Super Admin.',
+      });
+    }
+
     try {
       // Validate unique username
       const existingStaff = await fastify.prisma.crm.crmStaff.findUnique({
@@ -208,6 +221,11 @@ export async function staffRoutes(fastify: FastifyInstance) {
         });
       }
 
+      const roleRecord = await fastify.prisma.crm.crmRole.findUnique({ where: { key: assignedRole } });
+      if (!roleRecord) {
+        return reply.status(400).send({ error: 'Bad Request', message: `Vai trò "${assignedRole}" không tồn tại.` });
+      }
+
       // Hash password
       // If no password is provided (e.g. they will use Google Auth exclusively), generate a strong random hash
       const passwordToHash = password || Math.random().toString(36) + Math.random().toString(36);
@@ -218,7 +236,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
           username,
           passwordHash,
           displayName,
-          role: role || 'telesales',
+          role: assignedRole,
           isActive: isActive !== false,
           email,
           phone,
@@ -272,7 +290,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
     }
 
     // Authorization checks
-    if (currentUser.role !== 'admin' && currentUser.id !== targetId) {
+    if (!isAdminOrSuperAdminRole(currentUser.role) && currentUser.id !== targetId) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'Bạn không có quyền sửa thông tin nhân viên này',
@@ -312,6 +330,13 @@ export async function staffRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy nhân viên' });
       }
 
+      if (!mayManageSuperAdmin(currentUser.role, existingStaff.role)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ Super Admin mới có thể sửa tài khoản Super Admin.',
+        });
+      }
+
       // Construct update payload
       const updateData: Record<string, unknown> = {};
 
@@ -341,8 +366,20 @@ export async function staffRoutes(fastify: FastifyInstance) {
       }
 
       // Admin-only fields
-      if (currentUser.role === 'admin') {
-        if (role !== undefined) updateData.role = role;
+      if (isAdminOrSuperAdminRole(currentUser.role)) {
+        if (role !== undefined) {
+          if (!mayManageSuperAdmin(currentUser.role, role)) {
+            return reply.status(403).send({
+              error: 'Forbidden',
+              message: 'Chỉ Super Admin mới có thể gán vai trò Super Admin.',
+            });
+          }
+          const roleRecord = await fastify.prisma.crm.crmRole.findUnique({ where: { key: role } });
+          if (!roleRecord) {
+            return reply.status(400).send({ error: 'Bad Request', message: `Vai trò "${role}" không tồn tại.` });
+          }
+          updateData.role = role;
+        }
         if (isActive !== undefined) updateData.isActive = isActive;
         if (joinedAt !== undefined) updateData.joinedAt = joinedAt ? new Date(joinedAt) : null;
         if (baseSalary !== undefined) updateData.baseSalary = baseSalary !== null ? Number(baseSalary) : null;
@@ -406,7 +443,24 @@ export async function staffRoutes(fastify: FastifyInstance) {
 
     const updateData: Record<string, unknown> = {};
 
+    const targetedStaff = await fastify.prisma.crm.crmStaff.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, role: true },
+    });
+    if (targetedStaff.some((staff) => !mayManageSuperAdmin(request.user.role, staff.role))) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ Super Admin mới có thể thay đổi tài khoản Super Admin.',
+      });
+    }
+
     if (role !== undefined && role !== null && role !== '') {
+      if (!mayManageSuperAdmin(request.user.role, role)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ Super Admin mới có thể gán vai trò Super Admin.',
+        });
+      }
       const existingRole = await fastify.prisma.crm.crmRole.findUnique({
         where: { key: role },
       });
@@ -468,6 +522,13 @@ export async function staffRoutes(fastify: FastifyInstance) {
 
       if (!staff) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy nhân viên' });
+      }
+
+      if (!mayManageSuperAdmin(request.user.role, staff.role)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ Super Admin mới có thể xóa tài khoản Super Admin.',
+        });
       }
 
       // Prevent self-deletion
@@ -769,6 +830,16 @@ export async function staffRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({
           error: 'Not Found',
           message: 'Không tìm thấy tài khoản phụ nào hợp lệ',
+        });
+      }
+
+      if (
+        !mayManageSuperAdmin(request.user.role, targetStaff.role) ||
+        sourceStaffs.some((staff) => !mayManageSuperAdmin(request.user.role, staff.role))
+      ) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ Super Admin mới có thể gộp tài khoản Super Admin.',
         });
       }
 

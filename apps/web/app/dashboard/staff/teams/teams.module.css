@@ -10,6 +10,20 @@
   gap: var(--mos-section-gap);
 }
 
+.headerActions,
+.detailActions,
+.departmentHeading,
+.departmentHeading > span {
+  align-items: center;
+  display: flex;
+}
+
+.headerActions,
+.detailActions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .layout {
   align-items: start;
   display: grid;
@@ -49,6 +63,54 @@
 
 .teamTree {
   gap: 6px;
+}
+
+.departmentGroup {
+  background: color-mix(in srgb, var(--mos-surface-muted) 45%, transparent);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: var(--mos-radius);
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+}
+
+.departmentHeading {
+  color: var(--mos-text-muted);
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 30px;
+  padding: 0 6px;
+}
+
+.departmentHeading > span:first-child {
+  gap: 6px;
+  min-width: 0;
+}
+
+.departmentHeading strong {
+  color: var(--mos-text);
+  font-size: 12px;
+}
+
+.departmentCount {
+  align-items: center;
+  background: var(--mos-surface-raised);
+  border-radius: 999px;
+  color: var(--mos-text-muted);
+  display: inline-flex;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  justify-content: center;
+  min-width: 22px;
+  padding: 2px 6px;
+}
+
+.departmentEmpty {
+  color: var(--mos-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 4px 6px 6px;
 }
 
 .teamBranch {
@@ -196,6 +258,10 @@
 
 .teamSummaryCount {
   flex: 0 0 auto;
+}
+
+.editorNotice {
+  margin-bottom: var(--mos-section-gap);
 }
 
 .autoNoticeTitle {
@@ -350,6 +416,11 @@
 
   .teamSummaryCount {
     align-self: flex-start;
+  }
+
+  .detailActions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .teamItem {

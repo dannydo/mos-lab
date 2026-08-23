@@ -80,6 +80,14 @@ const TEAMS_TO_SEED: TeamSeed[] = [
     sortOrder: 7,
     parentCode: 'BK',
   },
+  {
+    code: 'ACADEMY',
+    name: 'Academy',
+    description: 'Đội ngũ vận hành, tư vấn và quản lý khách hàng Academy',
+    color: '#722ed1',
+    icon: '🎓',
+    sortOrder: 8,
+  },
 ];
 
 async function seed() {

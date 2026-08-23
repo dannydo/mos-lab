@@ -3,6 +3,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type AcademyCourse,
+  type AcademyLeadCalendarEvent,
   type AcademyFollowUpTask,
   type AcademyLead,
   type AcademyLeadStatus,
@@ -12,9 +13,8 @@ import {
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 
-export type AcademyWorkspaceTab = 'PIPELINE' | 'HOT' | 'FOLLOW_UPS' | 'KNOWLEDGE';
-
-const STORAGE_PREFIX = 'academy-sales-workspace';
+export type AcademyWorkspaceTab = 'PIPELINE' | 'CALENDAR' | 'HOT' | 'FOLLOW_UPS' | 'KNOWLEDGE';
+export type AcademyWorkspaceScope = 'customers' | 'lead-manager';
 const DEFAULT_SUMMARY: AcademyLeadSummary = {
   total: 0,
   newCount: 0,
@@ -22,6 +22,7 @@ const DEFAULT_SUMMARY: AcademyLeadSummary = {
   scheduledCount: 0,
   testedCount: 0,
   wonCount: 0,
+  wonRevenueVnd: 0,
   lostCount: 0,
   hotCount: 0,
   warmHotCount: 0,
@@ -30,21 +31,33 @@ const DEFAULT_SUMMARY: AcademyLeadSummary = {
   wonToday: 0,
 };
 
-function readStorage<T>(key: string, fallback: T): T {
+function readStorage<T>(storagePrefix: string, key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
   try {
-    const raw = window.localStorage.getItem(`${STORAGE_PREFIX}:${key}`);
+    const raw = window.localStorage.getItem(`${storagePrefix}:${key}`);
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
   }
 }
 
-function writeStorage(key: string, value: unknown) {
-  if (typeof window !== 'undefined') window.localStorage.setItem(`${STORAGE_PREFIX}:${key}`, JSON.stringify(value));
+function writeStorage(storagePrefix: string, key: string, value: unknown) {
+  if (typeof window !== 'undefined') window.localStorage.setItem(`${storagePrefix}:${key}`, JSON.stringify(value));
 }
 
-export function useAcademySalesWorkspace() {
+function currentIctMonth() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  return `${year}-${month}`;
+}
+
+export function useAcademySalesWorkspace(scope: AcademyWorkspaceScope = 'customers') {
+  const storagePrefix = `academy-sales-${scope}-workspace`;
   const [hydrated, setHydrated] = useState(false);
   const [activeTab, setActiveTabState] = useState<AcademyWorkspaceTab>('PIPELINE');
   const [page, setPageState] = useState(1);
@@ -56,7 +69,9 @@ export function useAcademySalesWorkspace() {
   const [followUpBucket, setFollowUpBucketState] = useState<'ALL' | 'OVERDUE' | 'TODAY' | 'UPCOMING' | 'UNDATED'>(
     'ALL'
   );
+  const [calendarMonth, setCalendarMonthState] = useState(currentIctMonth);
   const [leads, setLeads] = useState<AcademyLead[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<AcademyLeadCalendarEvent[]>([]);
   const [followUps, setFollowUps] = useState<AcademyFollowUpTask[]>([]);
   const [summary, setSummary] = useState<AcademyLeadSummary>(DEFAULT_SUMMARY);
   const [total, setTotal] = useState(0);
@@ -69,18 +84,20 @@ export function useAcademySalesWorkspace() {
   const requestVersionRef = useRef(0);
 
   useEffect(() => {
-    setActiveTabState(readStorage<AcademyWorkspaceTab>('active-tab', 'PIPELINE'));
-    setPageState(readStorage<number>('page', 1));
-    setPageSizeState(readStorage<number>('page-size', 20));
+    setActiveTabState(readStorage<AcademyWorkspaceTab>(storagePrefix, 'active-tab', 'PIPELINE'));
+    setPageState(readStorage<number>(storagePrefix, 'page', 1));
+    setPageSizeState(readStorage<number>(storagePrefix, 'page-size', 20));
+    setCalendarMonthState(readStorage<string>(storagePrefix, 'calendar-month', currentIctMonth()));
     setHydrated(true);
-  }, []);
+  }, [storagePrefix]);
 
   useEffect(() => {
     if (!hydrated) return;
-    writeStorage('active-tab', activeTab);
-    writeStorage('page', page);
-    writeStorage('page-size', pageSize);
-  }, [activeTab, hydrated, page, pageSize]);
+    writeStorage(storagePrefix, 'active-tab', activeTab);
+    writeStorage(storagePrefix, 'page', page);
+    writeStorage(storagePrefix, 'page-size', pageSize);
+    writeStorage(storagePrefix, 'calendar-month', calendarMonth);
+  }, [activeTab, calendarMonth, hydrated, page, pageSize, storagePrefix]);
 
   const setActiveTab = useCallback((next: AcademyWorkspaceTab) => {
     setActiveTabState(next);
@@ -111,10 +128,21 @@ export function useAcademySalesWorkspace() {
     setFollowUpBucketState(next);
     setPageState(1);
   }, []);
+  const setCalendarMonth = useCallback((next: string) => {
+    if (/^\d{4}-(0[1-9]|1[0-2])$/.test(next)) setCalendarMonthState(next);
+  }, []);
 
   const loadStaff = useCallback(async () => {
     const result = await apiClient.academySales.listStaff();
     setStaff(result);
+  }, []);
+
+  // Courses are a shared reference list for the lead drawer, not only the
+  // Knowledge tab. Loading them once keeps the lead form constrained to the
+  // Academy catalogue from its first open.
+  const loadCourses = useCallback(async () => {
+    const result = await apiClient.academySales.listCourses();
+    setCourses(result);
   }, []);
 
   const loadLeads = useCallback(async () => {
@@ -136,7 +164,7 @@ export function useAcademySalesWorkspace() {
       setError(null);
     } catch (loadError) {
       if (version !== requestVersionRef.current) return;
-      setError('Không thể tải danh sách Sales Academy. Vui lòng thử lại.');
+      setError('Không thể tải danh sách khách hàng Academy. Vui lòng thử lại.');
     } finally {
       if (version === requestVersionRef.current) setLoading(false);
     }
@@ -193,6 +221,22 @@ export function useAcademySalesWorkspace() {
     }
   }, []);
 
+  const loadCalendar = useCallback(async () => {
+    const version = ++requestVersionRef.current;
+    setLoading(true);
+    try {
+      const result = await apiClient.academySales.listCalendar({ month: calendarMonth, ownerStaffId });
+      if (version !== requestVersionRef.current) return;
+      setCalendarEvents(result.data);
+      setError(null);
+    } catch {
+      if (version !== requestVersionRef.current) return;
+      setError('Không thể tải lịch test Academy. Vui lòng thử lại.');
+    } finally {
+      if (version === requestVersionRef.current) setLoading(false);
+    }
+  }, [calendarMonth, ownerStaffId]);
+
   const refresh = useCallback(async () => {
     if (activeTab === 'FOLLOW_UPS') {
       await Promise.all([loadFollowUps(), loadSummary()]);
@@ -202,13 +246,18 @@ export function useAcademySalesWorkspace() {
       await Promise.all([loadKnowledge(), loadSummary()]);
       return;
     }
+    if (activeTab === 'CALENDAR') {
+      await Promise.all([loadCalendar(), loadSummary()]);
+      return;
+    }
     return loadLeads();
-  }, [activeTab, loadFollowUps, loadKnowledge, loadLeads, loadSummary]);
+  }, [activeTab, loadCalendar, loadFollowUps, loadKnowledge, loadLeads, loadSummary]);
 
   useEffect(() => {
     if (!hydrated) return;
     void loadStaff().catch(() => setStaff([]));
-  }, [hydrated, loadStaff]);
+    void loadCourses().catch(() => setCourses([]));
+  }, [hydrated, loadCourses, loadStaff]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -218,8 +267,8 @@ export function useAcademySalesWorkspace() {
   const activeFilterCount = useMemo(
     () =>
       [
-        search.trim(),
-        status !== 'ALL',
+        activeTab !== 'CALENDAR' && search.trim(),
+        activeTab !== 'CALENDAR' && status !== 'ALL',
         ownerStaffId !== 'ALL',
         activeTab === 'HOT' && hotView !== 'PRIORITY',
         followUpBucket !== 'ALL',
@@ -244,7 +293,10 @@ export function useAcademySalesWorkspace() {
     setHotView,
     followUpBucket,
     setFollowUpBucket,
+    calendarMonth,
+    setCalendarMonth,
     leads,
+    calendarEvents,
     followUps,
     summary,
     total,

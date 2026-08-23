@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>01 · Phiếu học phí Executive Gold</title>
+    <link rel="stylesheet" href="mockup-base.css" />
+    <style>
+      .invoice-paper { display: flex; flex-direction: column; padding: 16.5mm 18mm 12.5mm; color: #2c302d; background: linear-gradient(118deg, #fff 0%, #fffcf5 58%, #f7efdd 100%); }
+      .brand-mark { background: #c99b45; color: white; } .brand-name, .eyebrow, .section-title { color: #966921; }
+      .top { display: flex; justify-content: space-between; padding-bottom: 13mm; border-bottom: 2px solid #c49a50; }
+      h1 { margin: 14px 0 6px; font: 500 39px/1.05 Georgia, serif; letter-spacing: -.04em; } .subtitle { margin: 0; color: #70746d; font-size: 12px; }
+      .student-band { display: grid; grid-template-columns: 1.05fr .95fr; gap: 12px; margin: 11mm 0; }.data-card { color: #625835; border-color: #e3d1a7; background: rgb(255 255 255 / 62%); }
+      .line-items { border: 1px solid #e3d3ad; border-radius: 10px; overflow: hidden; }.line-items th { background: #f5eddc; color: #866127; }.line-items td { border-top: 1px solid #ece1c9; }.line-items tr:first-child td { border-top: 0; }
+      .below { display: grid; grid-template-columns: .92fr 1.08fr; gap: 18px; margin-top: 12mm; }.offers { padding: 15px; border: 1px solid #e8d7b3; border-radius: 10px; background: #fffdf8; }.offer-list li::before { color: #b58229; }
+      .payment-wrap { padding: 15px; border-radius: 12px; background: #193934; color: #f8efd9; }.payment-choice button { color: #f8efd9; border-color: #58746b; }.payment-choice button.is-selected { border-color: #dfb15c; background: #d7aa55; color: #26322d; }.qr-card { margin-top: 13px; }.qr-card img { padding: 7px; }.qr-card .account { border-color: #8da49b; }.deadline { margin-top: 12px; background: #f3e4bf; color: #67501d; }.deadline b { color: #9a651d; }
+      .legal { margin: 8mm 0 0; padding: 10px 12px; border-left: 3px solid #bc8a30; background: #fbf4e5; color: #6c5a34; font-size: 10px; line-height: 1.55; }
+      .invoice-footer { border-top: 1px solid #d9c79e; color: #746b55; }
+    </style>
+  </head>
+  <body>
+    <nav class="mockup-toolbar"><a href="index.html">← 4 mẫu</a><button type="button" onclick="window.print()">In thử A4</button></nav>
+    <article class="invoice-paper" data-invoice-mockup data-payment-mode="deposit">
+      <header class="top">
+        <div><div class="brand-lockup"><span class="brand-mark">W</span><span class="brand-name">WINGS ACADEMY</span></div><h1>Phiếu học phí<br />/ đăng ký</h1><p class="subtitle">Đánh giá tố chất · Lộ trình nối mi chuyên nghiệp</p></div>
+        <div class="invoice-meta"><div><strong>Mã phiếu</strong> WA-20260823-000010</div><div><strong>Lập lúc</strong> 23/08/2026 · 09:37</div><div><strong>Hiệu lực đến</strong> 23/08/2026 · 23:59</div><div><strong>Tư vấn viên</strong> Erifia Đỗ</div></div>
+      </header>
+      <section class="student-band"><div class="data-card"><span class="label">Học viên</span><strong>Giang Ở Trên Núi</strong><small>0988 888 888 · Chương trình Tìm kiếm Tài năng tháng 6</small></div><div class="data-card"><span class="label">Kết quả tố chất</span><strong>Thiên Thần Bóng Tối · Học bổng 90%</strong><small>41 sợi / 5 phút · Đủ điều kiện học bổng</small></div></section>
+      <section><h2 class="section-title">Lộ trình học đã chọn</h2><table class="line-items"><thead><tr><th>Khoá học</th><th>Giá gốc</th><th>Học bổng</th><th>Thanh toán</th></tr></thead><tbody><tr><td><b>Combo 4 Khoá Nối Mi Bóng Tối Chuyên Nghiệp</b><small>Phân bổ giảng viên tự động · Phòng thực hành A02</small></td><td>19.900.000 đ</td><td>-17.910.000 đ</td><td><b>1.990.000 đ</b></td></tr></tbody></table></section>
+      <section class="below"><div class="offers"><h2 class="section-title">Quyền lợi đi kèm</h2><ul class="offer-list"><li><span><b>Mẫu thực hành</b><br />31 mẫu tiêu chuẩn chuyên nghiệp</span></li><li><span><b>Đồ nghề</b><br />MS92 Cốp VIP · bộ dụng cụ hành nghề</span></li><li><span><b>Ưu đãi</b><br />Học bổng tố chất 90% + lớp mentoring 1:1</span></li><li><span><b>Khai giảng</b><br />Linh hoạt chọn ca trong 30 ngày</span></li></ul></div>
+        <div><div class="payment-wrap"><h2 class="section-title" style="color:#f8efd9">Chọn phương án thanh toán</h2><div class="payment-choice"><button type="button" data-payment-choice="deposit"><span>Cọc giữ suất</span><strong>1.000.000 đ</strong></button><button type="button" data-payment-choice="full"><span>Thanh toán đủ</span><strong>1.990.000 đ</strong></button></div><div class="qr-card"><img data-payment-qr alt="VietQR thanh toán" /><div><p>Quét VietQR để thanh toán</p><p class="amount" data-payment-amount></p><p data-payment-label></p><p class="account">Vietcombank · 1024731897<br /><b>CÔNG TY TNHH WINGS' LIFE</b></p></div></div></div><div class="deadline">⏳ <span>Vui lòng hoàn tất trước <b>23:59 · 23/08/2026</b> để giữ học bổng và suất học.</span></div></div></section>
+      <p class="legal">Phiếu được lập theo kết quả đánh giá tố chất. Học bổng và quà tặng chỉ được giữ trong thời hạn ghi trên phiếu. Sau khi thanh toán, học viên vui lòng gửi xác nhận cho tư vấn viên để hoàn tất đăng ký.</p>
+      <footer class="invoice-footer"><p>Wings Academy · Phiếu điện tử<br />QR đổi chính xác theo lựa chọn Cọc / Thanh toán đủ.</p><div class="signature">Xác nhận của học viên<div class="rule"></div></div></footer>
+    </article>
+    <script src="payment-qr.js"></script>
+  </body>
+</html>

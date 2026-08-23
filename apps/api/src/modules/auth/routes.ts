@@ -2,7 +2,13 @@ import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import axios from 'axios';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
-import { LoginRequest, LoginResponse } from '@mos-lab/shared';
+import {
+  isAdminOrSuperAdminRole,
+  isCanonicalSuperAdminIdentity,
+  isSuperAdminRole,
+  LoginRequest,
+  LoginResponse,
+} from '@mos-lab/shared';
 
 export async function authRoutes(fastify: FastifyInstance) {
   // Helper to resolve auto init based on staff & role
@@ -192,7 +198,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
         if (!staff) {
           const isWingsLashes = email.endsWith('@wingslashes.com');
-          const isDanny = email === 'danny.do@wingslashes.com';
+          const isDanny = isCanonicalSuperAdminIdentity({ username: email, email });
 
           // Auto-create for admin or @wingslashes.com domain
           if (email === 'danhdo@gmail.com' || isWingsLashes) {
@@ -201,7 +207,7 @@ export async function authRoutes(fastify: FastifyInstance) {
               data: {
                 username: email,
                 displayName: name,
-                role: email === 'danhdo@gmail.com' || isDanny ? 'admin' : 'telesales',
+                role: isDanny ? 'super_admin' : 'telesales',
                 passwordHash,
                 isActive: true,
                 email: email,
@@ -215,11 +221,21 @@ export async function authRoutes(fastify: FastifyInstance) {
             });
           }
         } else {
-          // If user already exists, update their avatarUrl with the latest from Google
-          if (picture && staff.avatarUrl !== picture) {
+          // Keep Danny Do's canonical account at the explicit Super Admin role.
+          const shouldPromoteToSuperAdmin = isCanonicalSuperAdminIdentity({
+            username: staff.username,
+            email: staff.email || email,
+          });
+          if (
+            (picture && staff.avatarUrl !== picture) ||
+            (shouldPromoteToSuperAdmin && !isSuperAdminRole(staff.role))
+          ) {
             staff = await fastify.prisma.crm.crmStaff.update({
               where: { id: staff.id },
-              data: { avatarUrl: picture },
+              data: {
+                ...(picture && staff.avatarUrl !== picture ? { avatarUrl: picture } : {}),
+                ...(shouldPromoteToSuperAdmin && !isSuperAdminRole(staff.role) ? { role: 'super_admin' } : {}),
+              },
             });
           }
         }
@@ -236,6 +252,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           username: staff.username,
           displayName: staff.displayName,
           role: staff.role as SafeAny,
+          email: staff.email || staff.username,
         };
 
         // Sign JWT
@@ -348,7 +365,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const currentUser = request.user as JwtUserPayload;
 
-      if (currentUser.role !== 'admin') {
+      if (!isAdminOrSuperAdminRole(currentUser.role)) {
         return reply.status(403).send({
           error: 'Forbidden',
           message: 'Quyền truy cập bị từ chối. Chỉ Admin mới có thể thực hiện chức năng này.',
@@ -383,10 +400,14 @@ export async function authRoutes(fastify: FastifyInstance) {
           });
         }
 
-        if (targetStaff.role === 'admin') {
+        const targetIsSuperAdmin = isSuperAdminRole(targetStaff.role);
+        const targetIsAdmin = isAdminOrSuperAdminRole(targetStaff.role);
+        if (targetIsSuperAdmin || (targetIsAdmin && !isSuperAdminRole(currentUser.role))) {
           return reply.status(403).send({
             error: 'Forbidden',
-            message: 'Không được phép đăng nhập dưới quyền của Admin khác',
+            message: targetIsSuperAdmin
+              ? 'Không được phép đăng nhập dưới quyền của Super Admin.'
+              : 'Chỉ Super Admin mới được đăng nhập dưới quyền của Admin khác.',
           });
         }
 

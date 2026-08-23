@@ -22,6 +22,7 @@ import {
   type SafeAny,
   type UpsertAcademyCourseRequest,
   type UpsertAcademyPlaybookRequest,
+  isAdminOrSuperAdminRole,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
@@ -41,6 +42,7 @@ import {
   StatusTag,
 } from '../../../components/ui';
 import AcademyLeadDrawer from './components/AcademyLeadDrawer';
+import { useAcademyAccess } from './components/AcademyAccessGate';
 import { type AcademyWorkspaceTab, useAcademySalesWorkspace } from './hooks/useAcademySalesWorkspace';
 
 const { Text, Paragraph } = Typography;
@@ -112,7 +114,8 @@ function leadMobileCard(record: AcademyLead, onOpen: (lead: AcademyLead) => void
 }
 
 export default function AcademyLeadsPage() {
-  const workspace = useAcademySalesWorkspace();
+  const workspace = useAcademySalesWorkspace('customers');
+  const { canAccess: academyAllowed } = useAcademyAccess();
   const [role, setRole] = React.useState('');
   const [selectedLeadId, setSelectedLeadId] = React.useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -123,8 +126,7 @@ export default function AcademyLeadsPage() {
 
   React.useEffect(() => setRole(userRole()), []);
 
-  const isContentAdmin = role === 'admin' || role === 'manager';
-  const academyAllowed = ['admin', 'manager', 'ls', 'telesales'].includes(role);
+  const isContentAdmin = isAdminOrSuperAdminRole(role) || role === 'manager';
   const openLead = React.useCallback((lead?: AcademyLead) => {
     setSelectedLeadId(lead?.id || null);
     setDrawerOpen(true);
@@ -138,7 +140,7 @@ export default function AcademyLeadsPage() {
     () => [
       {
         key: 'lead',
-        title: 'Lead',
+        title: 'Khách hàng',
         width: 240,
         render: (_, lead) => (
           <CustomerIdentityCell
@@ -201,7 +203,12 @@ export default function AcademyLeadsPage() {
 
   const followUpColumns = React.useMemo<ColumnsType<(typeof workspace.followUps)[number]>>(
     () => [
-      { key: 'lead', title: 'Lead', width: 180, render: (_, task) => task.leadName || `Lead #${task.leadId}` },
+      {
+        key: 'lead',
+        title: 'Khách hàng',
+        width: 180,
+        render: (_, task) => task.leadName || `Khách hàng #${task.leadId}`,
+      },
       {
         key: 'content',
         title: 'Việc cần làm',
@@ -333,13 +340,13 @@ export default function AcademyLeadsPage() {
     }
   };
 
-  if (!role) return <StatePanel kind="loading" title="Đang xác thực quyền Sales Academy…" />;
+  if (!role) return <StatePanel kind="loading" title="Đang xác thực quyền Academy…" />;
   if (!academyAllowed) {
     return (
       <StatePanel
         kind="error"
-        title="Bạn không có quyền truy cập Sales Academy"
-        description="Chỉ Admin, Manager, Leader Sales và Telesales được cấp quyền."
+        title="Bạn không có quyền truy cập Academy"
+        description="Khu vực này chỉ dành cho Admin hoặc thành viên đang hoạt động của đội Academy."
       />
     );
   }
@@ -357,10 +364,10 @@ export default function AcademyLeadsPage() {
 
   return (
     <FeaturePage
-      title="Sales Academy"
-      subtitle="Pipeline học viên, follow-up và tài liệu telesales · dữ liệu vận hành chuẩn nằm trong mOS."
+      title="Academy"
+      subtitle="Quản lý tệp khách hàng, follow-up và tài liệu tư vấn của Academy."
       icon={<BookOutlined />}
-      tag={<StatusTag status="purple" label="Academy" />}
+      tag={<StatusTag status="purple" label="Khách hàng đặc biệt" />}
       headerActions={
         <Space>
           {isContentAdmin && (
@@ -389,7 +396,7 @@ export default function AcademyLeadsPage() {
             />
           </Tooltip>
           {!isKnowledge && (
-            <PagePrimaryIconAction title="Tạo lead Academy" icon={<PlusOutlined />} onClick={() => openLead()} />
+            <PagePrimaryIconAction title="Tạo khách hàng Academy" icon={<PlusOutlined />} onClick={() => openLead()} />
           )}
         </Space>
       }
@@ -399,7 +406,7 @@ export default function AcademyLeadsPage() {
             behavior="filter"
             value={workspace.search}
             onChange={(event) => workspace.setSearch(event.target.value)}
-            placeholder="Tìm lead, khóa học, playbook không dấu…"
+            placeholder="Tìm khách hàng Academy, khóa học, playbook không dấu…"
             allowClear
           />
         ),
@@ -457,24 +464,30 @@ export default function AcademyLeadsPage() {
             )}
           </Space>
         ) : undefined,
-        filterTitle: 'Bộ lọc Sales Academy',
+        filterTitle: 'Bộ lọc Academy',
         activeFilterCount: workspace.activeFilterCount,
       }}
     >
       <MetricGrid
         columns={4}
         items={[
-          { key: 'all', title: 'Tổng lead', value: workspace.summary.total, format: 'number', icon: <BookOutlined /> },
+          {
+            key: 'all',
+            title: 'Khách hàng Academy',
+            value: workspace.summary.total,
+            format: 'number',
+            icon: <BookOutlined />,
+          },
           {
             key: 'warm',
             title: 'Đang tư vấn',
             value: workspace.summary.warmCount,
             format: 'number',
-            icon: <FireOutlined />,
+            icon: <BookOutlined />,
           },
           {
             key: 'hot',
-            title: 'Hot dưới 72h',
+            title: 'Hot dưới 72 giờ',
             value: workspace.summary.hotCount,
             format: 'number',
             icon: <FireOutlined />,
@@ -493,8 +506,8 @@ export default function AcademyLeadsPage() {
         activeKey={workspace.activeTab}
         onChange={(key) => workspace.setActiveTab(key as AcademyWorkspaceTab)}
         items={[
-          { key: 'PIPELINE', label: `Pipeline (${workspace.summary.total})` },
-          { key: 'HOT', label: `Hot Leads (${workspace.summary.hotCount})` },
+          { key: 'PIPELINE', label: `Khách hàng (${workspace.summary.total})` },
+          { key: 'HOT', label: `Ưu tiên (${workspace.summary.hotCount})` },
           { key: 'FOLLOW_UPS', label: `Follow-up (${workspace.summary.pendingFollowUps})` },
           { key: 'KNOWLEDGE', label: 'Playbook & Khóa học' },
         ]}
@@ -507,11 +520,13 @@ export default function AcademyLeadsPage() {
               ? 'Hàng đợi follow-up'
               : workspace.activeTab === 'HOT'
                 ? 'Danh sách ưu tiên'
-                : 'Pipeline lead Academy'
+                : 'Danh sách khách hàng Academy'
           }
           extra={<Text type="secondary">{workspace.total.toLocaleString('vi-VN')} bản ghi</Text>}
           state={sectionState}
-          stateTitle={workspace.error || (isFollowUps ? 'Chưa có follow-up theo bộ lọc' : 'Chưa có lead theo bộ lọc')}
+          stateTitle={
+            workspace.error || (isFollowUps ? 'Chưa có follow-up theo bộ lọc' : 'Chưa có khách hàng theo bộ lọc')
+          }
           stateDescription={workspace.error ? 'Hãy thử làm mới dữ liệu.' : undefined}
           stateExtra={workspace.error ? <Button onClick={() => void workspace.refresh()}>Thử lại</Button> : undefined}
         >
@@ -537,7 +552,7 @@ export default function AcademyLeadsPage() {
                   onClick={() => openLead({ id: task.leadId } as AcademyLead)}
                 >
                   <div className="flex justify-between gap-2">
-                    <strong>{task.leadName || `Lead #${task.leadId}`}</strong>
+                    <strong>{task.leadName || `Khách hàng #${task.leadId}`}</strong>
                     <StatusTag
                       status={task.status === 'DONE' ? 'success' : 'processing'}
                       label={task.status === 'DONE' ? 'Xong' : 'Chờ'}
@@ -699,6 +714,8 @@ export default function AcademyLeadsPage() {
         open={drawerOpen}
         leadId={selectedLeadId}
         staff={workspace.staff}
+        courses={workspace.courses}
+        showSalesScripts={false}
         onClose={closeLead}
         onSaved={workspace.refresh}
       />

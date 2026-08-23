@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
+import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { CustomerAccessService } from '../customers/services/customer-access.service.js';
 
 export async function callRoutes(fastify: FastifyInstance) {
@@ -229,7 +230,7 @@ export async function callRoutes(fastify: FastifyInstance) {
     const end = new Date(targetDateStr + 'T23:59:59.999Z');
 
     let targetStaffId: number | undefined = undefined;
-    if (user.role !== 'admin') {
+    if (!isAdminOrSuperAdminRole(user.role)) {
       targetStaffId = user.id;
     } else if (scope === 'me') {
       targetStaffId = user.id;

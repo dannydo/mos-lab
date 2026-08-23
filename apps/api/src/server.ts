@@ -22,6 +22,7 @@ import { omicallRoutes } from './modules/omicall/routes.js';
 import { gamificationRoutes } from './modules/gamification/routes.js';
 import { catalogRoutes } from './modules/catalog/routes.js';
 import { teamRoutes } from './modules/teams/routes.js';
+import { menuAccessRoutes } from './modules/menu-access/routes.js';
 import { smsRoutes } from './modules/sms/routes.js';
 import { allocationRoutes } from './modules/allocation/routes.js';
 import { campaignRoutes } from './modules/campaigns/routes.js';
@@ -102,6 +103,16 @@ const start = async () => {
     if (roleCount === 0) {
       await server.prisma.crm.crmRole.createMany({
         data: [
+          {
+            key: 'super_admin',
+            name: 'Super Admin',
+            color: 'magenta',
+            viewKPI: true,
+            viewTeamKPI: true,
+            manageStaff: true,
+            isSystem: true,
+            description: 'Quản trị tối cao: cấu hình quyền hệ thống và audit bảo mật',
+          },
           {
             key: 'admin',
             name: 'Administrator',
@@ -186,22 +197,35 @@ const start = async () => {
       });
       server.log.info('Seeded default roles successfully');
     } else {
-      // Ensure qa_qc role exists for existing databases
-      const existingQaQc = await server.prisma.crm.crmRole.findUnique({ where: { key: 'qa_qc' } });
-      if (!existingQaQc) {
-        await server.prisma.crm.crmRole.create({
-          data: {
-            key: 'qa_qc',
-            name: 'QA & QC',
-            color: 'purple',
-            viewKPI: true,
-            viewTeamKPI: true,
-            manageStaff: false,
-            isSystem: true,
-            description: 'Kiểm soát & Đảm bảo chất lượng',
-          },
-        });
-        server.log.info('Auto-seeded missing qa_qc role successfully');
+      // Ensure system roles introduced after the initial seed also exist.
+      const missingSystemRoles = [
+        {
+          key: 'super_admin',
+          name: 'Super Admin',
+          color: 'magenta',
+          viewKPI: true,
+          viewTeamKPI: true,
+          manageStaff: true,
+          isSystem: true,
+          description: 'Quản trị tối cao: cấu hình quyền hệ thống và audit bảo mật',
+        },
+        {
+          key: 'qa_qc',
+          name: 'QA & QC',
+          color: 'purple',
+          viewKPI: true,
+          viewTeamKPI: true,
+          manageStaff: false,
+          isSystem: true,
+          description: 'Kiểm soát & Đảm bảo chất lượng',
+        },
+      ];
+      for (const systemRole of missingSystemRoles) {
+        const existingRole = await server.prisma.crm.crmRole.findUnique({ where: { key: systemRole.key } });
+        if (!existingRole) {
+          await server.prisma.crm.crmRole.create({ data: systemRole });
+          server.log.info(`Auto-seeded missing ${systemRole.key} role successfully`);
+        }
       }
     }
 
@@ -219,6 +243,7 @@ const start = async () => {
     await server.register(gamificationRoutes, { prefix: '/api' });
     await server.register(catalogRoutes, { prefix: '/api' });
     await server.register(teamRoutes, { prefix: '/api' });
+    await server.register(menuAccessRoutes, { prefix: '/api' });
     await server.register(smsRoutes, { prefix: '/api' });
     await server.register(allocationRoutes, { prefix: '/api' });
     await server.register(campaignRoutes, { prefix: '/api' });

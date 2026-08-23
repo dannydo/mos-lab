@@ -36,6 +36,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, { viewKPI: boolean; viewTeamKPI:
     viewTeamKPI: true,
     manageStaff: true,
   },
+  super_admin: {
+    viewKPI: true,
+    viewTeamKPI: true,
+    manageStaff: true,
+  },
   oc: {
     viewKPI: true,
     viewTeamKPI: true,

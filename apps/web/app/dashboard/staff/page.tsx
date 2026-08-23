@@ -52,7 +52,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
-import { Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isSuperAdminRole, Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
 import { useStaffData } from './hooks/useStaffData';
 import { getStaffColumns, getRoleColumns } from './components/StaffColumns';
 import { StaffDirectoryToolbar } from './components/StaffDirectoryToolbar';
@@ -149,6 +149,9 @@ export default function StaffPage() {
     onSuccess: (msg) => message.success(msg),
     onError: (msg) => message.error(msg),
   });
+  const canManageStaff = isAdminOrSuperAdminRole(currentUser?.role);
+  const isSuperAdmin = isSuperAdminRole(currentUser?.role);
+  const assignableRoles = roles.filter((role) => role.key !== 'super_admin' || isSuperAdmin);
 
   // Table columns for Staff Directory
   const staffColumns = getStaffColumns({
@@ -173,6 +176,7 @@ export default function StaffPage() {
     themeMode,
     openRoleModal,
     handleDeleteRole,
+    canManageSuperAdmin: isSuperAdmin,
   });
 
   const handleSearchQueryChange = (value: string) => {
@@ -207,7 +211,7 @@ export default function StaffPage() {
         <div className="staff-page-header-actions">
           {activeTab !== 'roles' ? (
             <Space wrap>
-              {currentUser?.role === 'admin' && (
+              {canManageStaff && (
                 <Button
                   icon={<SyncOutlined />}
                   onClick={handleSyncLegacyStaff}
@@ -286,7 +290,7 @@ export default function StaffPage() {
                   rowKey="id"
                   loading={loading}
                   rowSelection={
-                    currentUser?.role === 'admin'
+                    canManageStaff
                       ? {
                           selectedRowKeys,
                           onChange: (keys) => setSelectedRowKeys(keys),
@@ -339,7 +343,7 @@ export default function StaffPage() {
                   rowKey="id"
                   loading={loading}
                   rowSelection={
-                    currentUser?.role === 'admin'
+                    canManageStaff
                       ? {
                           selectedRowKeys,
                           onChange: (keys) => setSelectedRowKeys(keys),
@@ -391,7 +395,7 @@ export default function StaffPage() {
       />
 
       {/* Floating Action Bar for Bulk Selection */}
-      {currentUser?.role === 'admin' && selectedRowKeys.length > 0 && (
+      {canManageStaff && selectedRowKeys.length > 0 && (
         <div
           style={{
             position: 'fixed',
@@ -456,7 +460,7 @@ export default function StaffPage() {
               style={{ width: '190px' }}
               allowClear
             >
-              {roles.map((r) => (
+              {assignableRoles.map((r) => (
                 <Option key={r.key} value={r.key}>
                   {r.name}
                 </Option>
@@ -910,7 +914,7 @@ export default function StaffPage() {
                         return years > 0 ? `${years} năm ${months} tháng` : `${months} tháng`;
                       })()}
                     </Text>
-                    {currentUser?.role === 'admin' &&
+                    {canManageStaff &&
                       selectedStaff.seniorityOffset !== undefined &&
                       selectedStaff.seniorityOffset !== null &&
                       selectedStaff.seniorityOffset > 0 && (
@@ -925,7 +929,7 @@ export default function StaffPage() {
                   </Text>
                 )}
               </Descriptions.Item>
-              {currentUser?.role === 'admin' && (
+              {canManageStaff && (
                 <>
                   <Descriptions.Item label="Lương cứng (Base Salary)">
                     {selectedStaff.baseSalary !== undefined && selectedStaff.baseSalary !== null ? (

@@ -8,10 +8,15 @@ export const ACADEMY_ACTIVITY_TYPES = [
   'NOTE',
   'CALL',
   'ZALO',
+  /** A structured audit record created when an operator changes lead data in-place. */
+  'FIELD_UPDATE',
   'STATUS_CHANGE',
   'SCHEDULED',
   'NO_SHOW',
   'ENROLLMENT',
+  'TALENT_ASSESSMENT',
+  'INVOICE_PRINTED',
+  'PAYMENT_RECEIVED',
 ] as const;
 export type AcademyActivityType = (typeof ACADEMY_ACTIVITY_TYPES)[number];
 
@@ -24,10 +29,31 @@ export interface AcademyStaffOption {
   role: string;
 }
 
+/** Access is granted only to an Admin or an active member of the Academy team. */
+export interface AcademyWorkspaceAccess {
+  canAccess: boolean;
+  scope: 'ADMIN' | 'ACADEMY_TEAM' | null;
+}
+
+export interface AcademyWorkspaceAccessResponse {
+  data: AcademyWorkspaceAccess;
+}
+
 export interface AcademyLeadOwner {
   id: number;
   displayName: string;
   email?: string | null;
+}
+
+/**
+ * The next pending operational task shown directly in Lead Manager.  The
+ * complete task list remains available from the lead drawer.
+ */
+export interface AcademyLeadNextFollowUp {
+  id: number;
+  content: string;
+  dueAt: string | null;
+  assignee: AcademyLeadOwner | null;
 }
 
 export interface AcademyLead {
@@ -55,6 +81,10 @@ export interface AcademyLead {
   owner: AcademyLeadOwner | null;
   legacyOwnerEmail: string | null;
   note: string | null;
+  /** Earliest pending task that the current actor is allowed to see. */
+  nextFollowUp: AcademyLeadNextFollowUp | null;
+  /** Total pending tasks on this lead, used for compact operational cues. */
+  pendingFollowUpCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -96,6 +126,7 @@ export interface AcademyLeadSummary {
   scheduledCount: number;
   testedCount: number;
   wonCount: number;
+  wonRevenueVnd: number;
   lostCount: number;
   hotCount: number;
   warmHotCount: number;
@@ -114,6 +145,29 @@ export interface ListAcademyLeadsParams extends PageQuery {
 }
 
 export type ListAcademyLeadsResponse = PageResponse<AcademyLead, AcademyLeadSummary>;
+
+export interface AcademyLeadCalendarEvent {
+  id: number;
+  name: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  status: AcademyLeadStatus;
+  course: string | null;
+  scheduledAt: string | null;
+  flightDate: string | null;
+  owner: AcademyLeadOwner | null;
+}
+
+export interface ListAcademyLeadCalendarParams {
+  /** Calendar month in Asia/Ho_Chi_Minh, formatted YYYY-MM. Defaults to the current ICT month. */
+  month?: string;
+  ownerStaffId?: number | 'ALL' | 'UNASSIGNED';
+}
+
+export interface ListAcademyLeadCalendarResponse {
+  month: string;
+  data: AcademyLeadCalendarEvent[];
+}
 
 export interface CreateAcademyLeadRequest {
   name: string;
@@ -135,8 +189,22 @@ export interface UpdateAcademyLeadRequest extends Partial<CreateAcademyLeadReque
 }
 
 export interface CreateAcademyActivityRequest {
-  type: Exclude<AcademyActivityType, 'IMPORT' | 'STATUS_CHANGE' | 'SCHEDULED' | 'ENROLLMENT'>;
+  type: Exclude<
+    AcademyActivityType,
+    | 'IMPORT'
+    | 'STATUS_CHANGE'
+    | 'SCHEDULED'
+    | 'ENROLLMENT'
+    | 'TALENT_ASSESSMENT'
+    | 'INVOICE_PRINTED'
+    | 'PAYMENT_RECEIVED'
+  >;
   content: string;
+  occurredAt?: string;
+}
+
+export interface RecordAcademyNoShowRequest {
+  content?: string;
   occurredAt?: string;
 }
 
@@ -188,12 +256,28 @@ export interface AcademyCourse {
   id: number;
   code: string;
   name: string;
+  /** Optional English display name used in bilingual Academy materials. */
+  nameEn: string | null;
   tag: string | null;
   description: string | null;
+  /** Market segment used by the Tố Chất course picker. */
+  market: 'DOMESTIC' | 'OVERSEAS';
+  /** Optional visual cover; the native picker renders a themed fallback when omitted. */
+  coverImageUrl: string | null;
   listPriceVnd: number;
   promoPriceVnd: number;
   kitName: string | null;
   kitUrl: string | null;
+  /** Catalogue price for the optional lash-kit package, before workshop reward. */
+  kitPriceVnd: number;
+  /** Catalogue price for the optional model/sample package, before workshop reward. */
+  samplePriceVnd: number;
+  /** Number of scheduled teaching sessions in the course. */
+  lessonCount: number;
+  /** Number of live lash models required; zero means no model is required. */
+  lashModelCount: number;
+  /** Sanitized rich-text HTML. Legacy structured syllabus remains intact for compatibility. */
+  syllabusHtml: string | null;
   syllabus: Array<{ num: number; title: string; description: string }>;
   sortOrder: number;
   isActive: boolean;
@@ -203,12 +287,20 @@ export interface AcademyCourse {
 export interface UpsertAcademyCourseRequest {
   code: string;
   name: string;
+  nameEn?: string | null;
   tag?: string | null;
   description?: string | null;
+  market?: 'DOMESTIC' | 'OVERSEAS';
+  coverImageUrl?: string | null;
   listPriceVnd: number;
   promoPriceVnd: number;
   kitName?: string | null;
   kitUrl?: string | null;
+  kitPriceVnd?: number;
+  samplePriceVnd?: number;
+  lessonCount?: number;
+  lashModelCount?: number;
+  syllabusHtml?: string | null;
   syllabus?: Array<{ num: number; title: string; description: string }>;
   sortOrder?: number;
   isActive?: boolean;

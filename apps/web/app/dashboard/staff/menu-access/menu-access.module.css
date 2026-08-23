@@ -1,0 +1,168 @@
+.page {
+  display: grid;
+  gap: var(--mos-section-gap);
+}
+
+.notice,
+.drawerNotice {
+  margin-bottom: var(--mos-section-gap);
+}
+
+.sectionTitle,
+.groupHeading,
+.groupHeading > span,
+.menuActions,
+.subjects {
+  align-items: center;
+  display: flex;
+}
+
+.sectionTitle,
+.groupHeading > span,
+.menuActions,
+.subjects {
+  gap: 8px;
+}
+
+.menuGroups,
+.menuGroup,
+.menuRows,
+.menuCopy,
+.auditList {
+  display: grid;
+  min-width: 0;
+}
+
+.menuGroups {
+  gap: var(--mos-section-gap);
+}
+
+.menuGroup {
+  background: color-mix(in srgb, var(--mos-surface-muted) 42%, transparent);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: var(--mos-radius);
+  gap: 6px;
+  padding: 8px;
+}
+
+.groupHeading {
+  color: var(--mos-text-muted);
+  justify-content: space-between;
+  min-height: 30px;
+  padding: 0 6px;
+}
+
+.groupHeading strong {
+  color: var(--mos-text);
+  font-size: 13px;
+}
+
+.groupCount {
+  align-items: center;
+  background: var(--mos-surface-raised);
+  border-radius: 999px;
+  color: var(--mos-text-muted);
+  display: inline-flex;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  justify-content: center;
+  min-width: 24px;
+  padding: 2px 7px;
+}
+
+.menuRows {
+  gap: 6px;
+}
+
+.menuRow {
+  align-items: center;
+  background: var(--mos-surface-raised);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 66px;
+  padding: 10px;
+}
+
+.menuCopy {
+  gap: 3px;
+}
+
+.menuCopy strong {
+  color: var(--mos-text);
+  font-size: 13px;
+}
+
+.menuCopy > span,
+.defaultScope {
+  color: var(--mos-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.subjects {
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+
+.menuActions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.auditList {
+  gap: 6px;
+}
+
+.auditRow {
+  align-items: center;
+  background: var(--mos-surface-raised);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: var(--mos-control-height);
+  padding: 8px 10px;
+}
+
+.auditRow > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.auditRow strong {
+  color: var(--mos-text);
+  font-size: 13px;
+}
+
+.auditRow span {
+  color: var(--mos-text-muted);
+  font-size: 12px;
+}
+
+.auditChange {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+@media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
+  .menuRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .menuActions {
+    justify-content: space-between;
+  }
+
+  .auditRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { isSuperAdminRole } from '@mos-lab/shared';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 
 interface RoleInput {
@@ -169,6 +170,13 @@ export async function rolesRoutes(fastify: FastifyInstance) {
           return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy vai trò này' });
         }
 
+        if (key === 'super_admin' && !isSuperAdminRole(request.user.role)) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Chỉ Super Admin mới có thể điều chỉnh vai trò Super Admin.',
+          });
+        }
+
         // Update data
         const updateData: {
           name?: string;
@@ -187,7 +195,7 @@ export async function rolesRoutes(fastify: FastifyInstance) {
         // Allow modifying permissions
         // Lock permissions for system roles to prevent lockout, EXCEPT:
         // - Let's allow updating permissions, but if it is 'admin', keep manageStaff: true
-        if (existingRole.isSystem && key === 'admin') {
+        if (existingRole.isSystem && (key === 'admin' || key === 'super_admin')) {
           updateData.viewKPI = true;
           updateData.viewTeamKPI = true;
           updateData.manageStaff = true;

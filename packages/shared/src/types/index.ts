@@ -16,6 +16,7 @@ export * from './cv.js';
 export * from './cv-speed.js';
 export * from './dashboard.js';
 export * from './kpi.js';
+export * from './menu-access.js';
 export * from './omicall.js';
 export * from './plan.js';
 export * from './revenue-hourly.js';

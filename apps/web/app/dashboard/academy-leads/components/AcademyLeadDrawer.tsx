@@ -16,11 +16,13 @@ import {
   Typography,
   message,
 } from 'antd';
-import { CheckCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { removeVietnameseTones } from '@mos-lab/shared';
 import type {
   AcademyLeadDetail,
   AcademyLeadStatus,
+  AcademyCourse,
   AcademyStaffOption,
   CreateAcademyActivityRequest,
   CreateAcademyFollowUpRequest,
@@ -28,6 +30,7 @@ import type {
 import { apiClient } from '../../../../lib/api-client';
 import { formatVND } from '../../../../lib/format-utils';
 import { EntityForm, EntityFormDrawer, EntityFormField, StatePanel, StatusTag } from '../../../../components/ui';
+import AcademyLeadScripts from './AcademyLeadScripts';
 
 const { Text, Paragraph } = Typography;
 
@@ -77,6 +80,8 @@ export interface AcademyLeadDrawerProps {
   open: boolean;
   leadId: number | null;
   staff: AcademyStaffOption[];
+  courses?: AcademyCourse[];
+  showSalesScripts?: boolean;
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }
@@ -90,7 +95,15 @@ function taskDueLabel(value: string | null) {
   return dayjs(value).format('DD/MM/YYYY HH:mm');
 }
 
-export function AcademyLeadDrawer({ open, leadId, staff, onClose, onSaved }: AcademyLeadDrawerProps) {
+export function AcademyLeadDrawer({
+  open,
+  leadId,
+  staff,
+  courses = [],
+  showSalesScripts = false,
+  onClose,
+  onSaved,
+}: AcademyLeadDrawerProps) {
   const [lead, setLead] = React.useState<AcademyLeadDetail | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
@@ -127,7 +140,7 @@ export function AcademyLeadDrawer({ open, leadId, staff, onClose, onSaved }: Aca
         flightDate: detail.flightDate ? dayjs(detail.flightDate) : undefined,
       });
     } catch {
-      message.error('Không thể tải hồ sơ lead.');
+      message.error('Không thể tải hồ sơ khách hàng Academy.');
     } finally {
       setLoading(false);
     }
@@ -148,12 +161,12 @@ export function AcademyLeadDrawer({ open, leadId, staff, onClose, onSaved }: Aca
       };
       if (leadId) await apiClient.academySales.updateLead(leadId, payload);
       else await apiClient.academySales.createLead(payload);
-      message.success(leadId ? 'Đã cập nhật lead.' : 'Đã tạo lead Academy.');
+      message.success(leadId ? 'Đã cập nhật khách hàng Academy.' : 'Đã tạo khách hàng Academy.');
       await onSaved();
       if (leadId) await loadLead();
       else onClose();
     } catch (error: any) {
-      message.error(error?.response?.data?.message || 'Không thể lưu lead.');
+      message.error(error?.response?.data?.message || 'Không thể lưu khách hàng Academy.');
     } finally {
       setSaving(false);
     }
@@ -209,7 +222,19 @@ export function AcademyLeadDrawer({ open, leadId, staff, onClose, onSaved }: Aca
     }
   };
 
-  const title = leadId ? `Hồ sơ lead${lead ? ` · ${lead.name}` : ''}` : 'Tạo lead Academy';
+  const recordNoShow = async () => {
+    if (!leadId || !lead?.scheduledAt) return;
+    try {
+      await apiClient.academySales.recordNoShow(leadId);
+      message.warning('Đã ghi nhận khách hàng không đến lịch test.');
+      await loadLead();
+      await onSaved();
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || 'Không thể ghi nhận không đến.');
+    }
+  };
+
+  const title = leadId ? `Hồ sơ khách hàng Academy${lead ? ` · ${lead.name}` : ''}` : 'Tạo khách hàng Academy';
 
   return (
     <EntityFormDrawer
@@ -221,7 +246,7 @@ export function AcademyLeadDrawer({ open, leadId, staff, onClose, onSaved }: Aca
         <Space>
           <Button onClick={onClose}>Đóng</Button>
           <Button type="primary" loading={saving} onClick={() => form.submit()}>
-            {leadId ? 'Lưu thay đổi' : 'Tạo lead'}
+            {leadId ? 'Lưu thay đổi' : 'Tạo khách hàng'}
           </Button>
         </Space>
       }
@@ -235,54 +260,76 @@ export function AcademyLeadDrawer({ open, leadId, staff, onClose, onSaved }: Aca
               key: 'profile',
               label: 'Hồ sơ & pipeline',
               children: (
-                <EntityForm form={form} onFinish={submitLead} columns={2}>
-                  <EntityFormField label="Tên lead" name="name" rules={[{ required: true, message: 'Nhập tên lead' }]}>
-                    <Input autoFocus placeholder="Họ tên học viên tiềm năng" />
-                  </EntityFormField>
-                  <EntityFormField label="Số điện thoại" name="phone">
-                    <Input inputMode="tel" placeholder="0xxx…" />
-                  </EntityFormField>
-                  <EntityFormField label="Nguồn" name="source">
-                    <Input placeholder="Facebook, TikTok, POS…" />
-                  </EntityFormField>
-                  <EntityFormField label="Khóa học quan tâm" name="course">
-                    <Input placeholder="Tên/mã khóa học" />
-                  </EntityFormField>
-                  <EntityFormField label="Trạng thái pipeline" name="status" rules={[{ required: true }]}>
-                    <Select options={STATUS_OPTIONS} />
-                  </EntityFormField>
-                  <EntityFormField label="Người phụ trách" name="ownerStaffId">
-                    <Select allowClear options={staff.map((item) => ({ value: item.id, label: item.displayName }))} />
-                  </EntityFormField>
-                  <EntityFormField label="Lịch test (ICT)" name="scheduledAt">
-                    <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
-                  </EntityFormField>
-                  <EntityFormField label="Ngày bay dự kiến" name="flightDate">
-                    <DatePicker format="DD/MM/YYYY" className="w-full" />
-                  </EntityFormField>
-                  <EntityFormField label="Doanh thu đã chốt (VNĐ)" name="revenueVnd">
-                    <InputNumber
-                      min={0}
-                      step={100000}
-                      className="w-full"
-                      formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
-                    />
-                  </EntityFormField>
-                  <EntityFormField label="Hot lead" name="isHot">
-                    <Select
-                      options={[
-                        { value: false, label: 'Không' },
-                        { value: true, label: 'Đánh dấu Hot' },
-                      ]}
-                    />
-                  </EntityFormField>
-                  <EntityFormField fullWidth label="Mục tiêu / ghi chú" name="goal">
-                    <Input.TextArea rows={2} placeholder="Mục tiêu học, thời điểm phù hợp…" />
-                  </EntityFormField>
-                  <EntityFormField fullWidth label="Ghi chú nội bộ" name="note">
-                    <Input.TextArea rows={3} placeholder="Thông tin tư vấn quan trọng" />
-                  </EntityFormField>
-                </EntityForm>
+                <div className="flex flex-col gap-4">
+                  <EntityForm form={form} onFinish={submitLead} columns={2}>
+                    <EntityFormField
+                      label="Tên khách hàng"
+                      name="name"
+                      rules={[{ required: true, message: 'Nhập tên khách hàng' }]}
+                    >
+                      <Input autoFocus placeholder="Họ tên khách hàng / học viên tiềm năng" />
+                    </EntityFormField>
+                    <EntityFormField label="Số điện thoại" name="phone">
+                      <Input inputMode="tel" placeholder="0xxx…" />
+                    </EntityFormField>
+                    <EntityFormField label="Nguồn" name="source">
+                      <Input placeholder="Facebook, TikTok, POS…" />
+                    </EntityFormField>
+                    <EntityFormField label="Khóa học quan tâm" name="course">
+                      <Select
+                        allowClear
+                        showSearch
+                        placeholder="Chọn khóa học"
+                        options={courses.map((course) => ({
+                          value: course.name,
+                          label: [course.name, course.nameEn, course.code].filter(Boolean).join(' · '),
+                        }))}
+                        filterOption={(input, option) =>
+                          removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))
+                        }
+                      />
+                    </EntityFormField>
+                    <EntityFormField label="Trạng thái pipeline" name="status" rules={[{ required: true }]}>
+                      <Select options={STATUS_OPTIONS} />
+                    </EntityFormField>
+                    <EntityFormField label="Người phụ trách" name="ownerStaffId">
+                      <Select allowClear options={staff.map((item) => ({ value: item.id, label: item.displayName }))} />
+                    </EntityFormField>
+                    <EntityFormField label="Lịch test (ICT)" name="scheduledAt">
+                      <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
+                    </EntityFormField>
+                    <EntityFormField label="Ngày bay dự kiến" name="flightDate">
+                      <DatePicker format="DD/MM/YYYY" className="w-full" />
+                    </EntityFormField>
+                    <EntityFormField label="Doanh thu đã chốt (VNĐ)" name="revenueVnd">
+                      <InputNumber
+                        min={0}
+                        step={100000}
+                        className="w-full"
+                        formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+                      />
+                    </EntityFormField>
+                    <EntityFormField label="Ưu tiên Hot" name="isHot">
+                      <Select
+                        options={[
+                          { value: false, label: 'Không' },
+                          { value: true, label: 'Đánh dấu Hot' },
+                        ]}
+                      />
+                    </EntityFormField>
+                    <EntityFormField fullWidth label="Mục tiêu / ghi chú" name="goal">
+                      <Input.TextArea rows={2} placeholder="Mục tiêu học, thời điểm phù hợp…" />
+                    </EntityFormField>
+                    <EntityFormField fullWidth label="Ghi chú nội bộ" name="note">
+                      <Input.TextArea rows={3} placeholder="Thông tin tư vấn quan trọng" />
+                    </EntityFormField>
+                  </EntityForm>
+                  {showSalesScripts && leadId && lead?.scheduledAt && (
+                    <Button danger icon={<CloseCircleOutlined />} onClick={() => void recordNoShow()}>
+                      Ghi nhận không đến lịch test
+                    </Button>
+                  )}
+                </div>
               ),
             },
             ...(leadId
@@ -307,7 +354,7 @@ export function AcademyLeadDrawer({ open, leadId, staff, onClose, onSaved }: Aca
                             </Form.Item>
                             <Form.Item name="content" noStyle rules={[{ required: true, message: 'Nhập nội dung' }]}>
                               <Input
-                                placeholder="Ghi nhận trao đổi với lead"
+                                placeholder="Ghi nhận trao đổi với khách hàng"
                                 onPressEnter={() => activityForm.submit()}
                               />
                             </Form.Item>
@@ -417,6 +464,19 @@ export function AcademyLeadDrawer({ open, leadId, staff, onClose, onSaved }: Aca
                       </div>
                     ),
                   },
+                  ...(showSalesScripts
+                    ? [
+                        {
+                          key: 'scripts',
+                          label: 'Kịch bản gợi ý',
+                          children: lead ? (
+                            <AcademyLeadScripts lead={lead} />
+                          ) : (
+                            <StatePanel kind="loading" surface={false} />
+                          ),
+                        },
+                      ]
+                    : []),
                 ]
               : []),
           ]}

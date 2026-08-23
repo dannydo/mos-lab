@@ -103,6 +103,7 @@ interface TouchpointIconPickerProps {
   onChange?: (val: string) => void;
   size?: 'small' | 'middle' | 'large';
   className?: string;
+  'aria-label'?: string;
 }
 
 export const TouchpointIconPicker: React.FC<TouchpointIconPickerProps> = ({
@@ -110,6 +111,7 @@ export const TouchpointIconPicker: React.FC<TouchpointIconPickerProps> = ({
   onChange,
   size = 'small',
   className = '',
+  'aria-label': ariaLabel,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const { token } = theme.useToken();
@@ -123,7 +125,16 @@ export const TouchpointIconPicker: React.FC<TouchpointIconPickerProps> = ({
   return (
     <>
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={ariaLabel || `Chọn biểu tượng: ${displayLabel}`}
         onClick={() => setModalOpen(true)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setModalOpen(true);
+          }
+        }}
         className={`flex items-center justify-between px-2.5 py-1 rounded-lg border cursor-pointer select-none transition-all hover:border-amber-400 ${
           isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'
         } ${className}`}

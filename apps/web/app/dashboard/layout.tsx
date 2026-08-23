@@ -531,10 +531,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="sidebar-toggle-btn"
             style={{
               position: 'absolute',
-              top: 'var(--mos-header-height)',
-              left: collapsed ? '44px' : `${persistentNavWidth - 12}px`,
-              width: '24px',
-              height: '24px',
+              top: '10px',
+              left: collapsed ? '40px' : `${persistentNavWidth - 16}px`,
+              width: '32px',
+              height: '32px',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -545,9 +545,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               color: themeMode === 'dark' ? '#D4A84B' : '#855b0e',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
               cursor: 'pointer',
-              transition: 'left 0.2s ease, opacity 0.3s ease, background 0.3s',
+              transition: 'left 0.2s ease, opacity 0.2s ease, background 0.2s, transform 0.2s ease',
               zIndex: 1010,
-              opacity: 0,
+              opacity: collapsed ? 1 : 0.72,
               pointerEvents: 'auto',
             }}
           />
@@ -819,18 +819,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .ant-layout-sider-collapsed .ant-menu-submenu-title .ant-menu-submenu-arrow {
             display: none !important;
           }
-          /* Keep the semantic menu label available to assistive technology,
-             while preventing it from escaping the compact 64px nav rail. */
-          .dashboard-sider.ant-layout-sider-collapsed .sidebar-menu-label {
-            clip: rect(0 0 0 0);
-            clip-path: inset(50%);
-            height: 1px !important;
-            overflow: hidden;
-            position: absolute;
-            white-space: nowrap;
-            width: 1px !important;
-          }
-          .dashboard-sider.ant-layout-sider-collapsed .ant-menu-title-content {
+          /* Keep root labels available to assistive technology while preventing
+             them from escaping the compact rail. The direct-child selectors are
+             intentional: flyout labels remain visible inside the Sider portal. */
+          .dashboard-sider.ant-layout-sider-collapsed .antd-custom-menu > .ant-menu-item > .ant-menu-title-content,
+          .dashboard-sider.ant-layout-sider-collapsed
+            .antd-custom-menu
+            > .ant-menu-submenu
+            > .ant-menu-submenu-title
+            > .ant-menu-title-content {
             margin-inline-start: 0 !important;
             clip: rect(0 0 0 0);
             clip-path: inset(50%);
@@ -848,8 +845,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             line-height: 1.25 !important;
             margin-block: 2px !important;
             margin-inline: 4px !important;
-            padding-inline: 10px !important;
             border-radius: 8px !important;
+          }
+          .antd-custom-menu .ant-menu-item-group-list > .ant-menu-item,
+          .antd-custom-menu .ant-menu-item-group-list > .ant-menu-submenu > .ant-menu-submenu-title {
+            padding-inline: 10px !important;
           }
           .antd-custom-menu .ant-menu-title-content {
             display: flex !important;
@@ -866,6 +866,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             margin-top: 0 !important;
             inset-inline-end: 10px !important;
           }
+          .antd-custom-menu .sidebar-menu-chevron {
+            display: block;
+            flex: 0 0 auto;
+          }
           .antd-custom-menu .ant-menu-submenu > .ant-menu-submenu-title {
             color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.76)' : 'rgba(0, 0, 0, 0.72)'} !important;
             background-color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.025)' : 'rgba(0, 0, 0, 0.025)'} !important;
@@ -880,15 +884,297 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             background-color: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.13)' : 'rgba(212, 168, 75, 0.09)'} !important;
           }
           .antd-custom-menu .ant-menu-item-group-title {
-            padding-block: 2px 1px !important;
-            margin-top: 3px !important;
-            margin-bottom: 2px !important;
-            font-size: 9px !important;
-            line-height: 1.2 !important;
+            margin: 8px 0 3px !important;
+            padding: 0 4px !important;
           }
           .antd-custom-menu .ant-menu-item-group-list {
             margin: 0 !important;
             padding: 0 !important;
+          }
+          .antd-custom-menu .sidebar-group-title {
+            align-items: center;
+            border-radius: 8px;
+            display: flex;
+            font-size: 9px;
+            gap: 8px;
+            justify-content: space-between;
+            letter-spacing: 0.075em;
+            min-height: 28px;
+            padding: 0 8px;
+            width: 100%;
+          }
+          .antd-custom-menu .sidebar-group-title:hover,
+          .antd-custom-menu .sidebar-group-title[aria-expanded='false'] {
+            background: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.045)' : 'rgba(0, 0, 0, 0.04)'} !important;
+            color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.78)' : 'rgba(0, 0, 0, 0.78)'} !important;
+          }
+          .antd-custom-menu .sidebar-group-title:focus-visible {
+            box-shadow: 0 0 0 2px var(--mos-focus-ring);
+            outline: none;
+          }
+          .antd-custom-menu .sidebar-group-title__label {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .antd-custom-menu .sidebar-group-title__meta {
+            align-items: center;
+            display: inline-flex;
+            flex: 0 0 auto;
+            gap: 5px;
+          }
+          .antd-custom-menu .sidebar-group-title__count {
+            align-items: center;
+            background: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.075)' : 'rgba(0, 0, 0, 0.06)'};
+            border-radius: 999px;
+            display: inline-flex;
+            font-size: 9px;
+            font-variant-numeric: tabular-nums;
+            height: 17px;
+            justify-content: center;
+            letter-spacing: 0;
+            min-width: 17px;
+            padding-inline: 4px;
+          }
+          .antd-custom-menu .sidebar-menu-parent-label,
+          .antd-custom-menu .sidebar-menu-label {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .antd-custom-menu .ant-menu-sub.ant-menu-inline {
+            background: transparent !important;
+            border-inline-start: 1px solid ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'};
+            margin: 2px 7px 5px 20px !important;
+            padding: 1px 0 1px 7px !important;
+          }
+          .antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-item,
+          .antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title {
+            font-size: 12px !important;
+            height: 32px !important;
+            margin-inline: 0 !important;
+            padding-inline: 9px !important;
+          }
+          .antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-item .anticon,
+          .antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title .anticon {
+            font-size: 13px !important;
+          }
+          .antd-custom-menu .sidebar-menu-entry--nested {
+            position: relative;
+          }
+          .antd-custom-menu .sidebar-menu-entry--nested::before {
+            background: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)'};
+            border-radius: 999px;
+            content: '';
+            height: 3px;
+            inset-inline-start: -9px;
+            position: absolute;
+            width: 3px;
+          }
+          .antd-custom-menu .sidebar-menu-entry--nested.ant-menu-item-selected::before {
+            background: #d4a84b;
+            height: 18px;
+            width: 3px;
+          }
+          .antd-custom-menu .sidebar-menu-live-label {
+            align-items: center;
+            display: flex;
+            gap: 6px;
+            justify-content: space-between;
+            min-width: 0;
+            width: 100%;
+          }
+          .antd-custom-menu .sidebar-menu-live-dot {
+            background: #10b981;
+            border-radius: 999px;
+            flex: 0 0 auto;
+            height: 6px;
+            width: 6px;
+          }
+
+          .dashboard-mobile-nav .antd-custom-menu .sidebar-group-title {
+            min-height: 40px;
+          }
+          .dashboard-mobile-nav .antd-custom-menu .ant-menu-item,
+          .dashboard-mobile-nav .antd-custom-menu .ant-menu-submenu-title,
+          .dashboard-mobile-nav .antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-item {
+            height: 44px !important;
+          }
+
+          /* The compact navigation is a purpose-built rail rather than a
+             squeezed inline menu. Only top-level destinations are rendered. */
+          .sidebar-compact-nav {
+            padding: 6px 0 12px;
+            width: 100%;
+          }
+          .sidebar-compact-list {
+            align-items: center;
+            display: flex;
+            flex-direction: column;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+          }
+          .sidebar-compact-item {
+            height: 40px;
+            margin: 3px 0;
+            width: 40px;
+          }
+          .sidebar-rail-action {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 10px;
+            color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.68)' : 'rgba(15, 23, 42, 0.68)'};
+            cursor: pointer;
+            display: flex;
+            height: 40px;
+            justify-content: center;
+            padding: 0;
+            position: relative;
+            transition:
+              background 0.16s ease,
+              color 0.16s ease,
+              transform 0.16s ease;
+            width: 40px;
+          }
+          .sidebar-rail-action:hover {
+            background: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.14)' : 'rgba(212, 168, 75, 0.1)'};
+            color: #d4a84b;
+            transform: translateY(-1px);
+          }
+          .sidebar-rail-action:focus-visible {
+            box-shadow: 0 0 0 2px var(--mos-focus-ring);
+            outline: none;
+          }
+          .sidebar-rail-action--active {
+            background: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.18)' : 'rgba(212, 168, 75, 0.13)'};
+            box-shadow: inset 3px 0 0 #d4a84b;
+            color: #d4a84b;
+          }
+          .sidebar-rail-action__icon {
+            align-items: center;
+            display: inline-flex;
+            font-size: 17px;
+            justify-content: center;
+            line-height: 1;
+          }
+          .sidebar-rail-action__icon .anticon,
+          .sidebar-rail-action__icon .mos-app-icon {
+            color: inherit;
+            font-size: 17px;
+            height: 17px;
+            margin: 0;
+            width: 17px;
+          }
+          .sidebar-rail-action__submenu-indicator {
+            color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.42)' : 'rgba(15, 23, 42, 0.42)'};
+            inset-inline-end: 2px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            transition:
+              color 0.16s ease,
+              transform 0.16s ease;
+          }
+          .sidebar-rail-action:hover .sidebar-rail-action__submenu-indicator,
+          .sidebar-rail-action--active .sidebar-rail-action__submenu-indicator {
+            color: #d4a84b;
+            transform: translate(1px, -50%);
+          }
+          .sidebar-rail-divider {
+            background: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.13)' : 'rgba(15, 23, 42, 0.13)'};
+            flex: 0 0 1px;
+            height: 1px;
+            margin: 7px 0;
+            width: 24px;
+          }
+
+          /* Compact submenus open as labelled flyouts. This restores hierarchy
+             without forcing chevrons or text into the rail itself. */
+          .sidebar-rail-flyout.ant-menu-submenu-popup {
+            padding-inline-start: 6px;
+          }
+          .sidebar-rail-flyout .ant-popover-inner {
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          .sidebar-rail-flyout .ant-popover-inner-content {
+            padding: 0 !important;
+          }
+          .sidebar-rail-flyout .sidebar-rail-flyout-menu,
+          .sidebar-rail-flyout.ant-menu-submenu-popup > .ant-menu {
+            background: ${themeMode === 'dark' ? '#111827' : '#ffffff'} !important;
+            border: 1px solid ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.13)'};
+            border-radius: 12px !important;
+            box-shadow: ${
+              themeMode === 'dark' ? '0 14px 36px rgba(0, 0, 0, 0.5)' : '0 14px 36px rgba(15, 23, 42, 0.18)'
+            };
+            min-width: 224px;
+            padding: 6px !important;
+          }
+          .sidebar-rail-flyout .sidebar-rail-flyout-group > .ant-menu-item-group-title {
+            color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(15, 23, 42, 0.56)'} !important;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            line-height: 1.25;
+            padding: 8px 10px 6px !important;
+            text-transform: uppercase;
+          }
+          .sidebar-rail-flyout .ant-menu-item,
+          .sidebar-rail-flyout .ant-menu-submenu-title {
+            align-items: center;
+            border-radius: 8px !important;
+            color: ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.86)' : 'rgba(15, 23, 42, 0.88)'} !important;
+            display: flex;
+            height: 38px !important;
+            justify-content: flex-start !important;
+            margin: 2px !important;
+            padding-inline: 10px !important;
+            text-align: start !important;
+            width: calc(100% - 4px) !important;
+          }
+          .sidebar-rail-flyout .ant-menu-title-content {
+            clip: auto !important;
+            clip-path: none !important;
+            color: inherit !important;
+            display: flex !important;
+            flex: 1 1 150px !important;
+            height: auto !important;
+            margin-inline-start: 10px !important;
+            min-width: 150px !important;
+            opacity: 1 !important;
+            overflow: visible !important;
+            position: static !important;
+            transform: none !important;
+            visibility: visible !important;
+            white-space: nowrap;
+            width: auto !important;
+          }
+          .sidebar-rail-flyout .sidebar-menu-label {
+            clip: auto !important;
+            clip-path: none !important;
+            color: inherit !important;
+            display: block !important;
+            height: auto !important;
+            opacity: 1 !important;
+            overflow: visible !important;
+            position: static !important;
+            transform: none !important;
+            visibility: visible !important;
+            width: 100% !important;
+          }
+          .sidebar-rail-flyout .ant-menu-item-selected {
+            background: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.18)' : 'rgba(212, 168, 75, 0.13)'} !important;
+            color: ${themeMode === 'dark' ? '#e6c77a' : '#855b0e'} !important;
+          }
+          .sidebar-rail-flyout .sidebar-menu-entry--nested::before {
+            display: none;
           }
 
           /* Override Ant Design dark sidebar menu hover/select colors */
@@ -921,6 +1207,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .ant-layout-sider:hover + .sidebar-toggle-container .sidebar-toggle-btn,
           .sidebar-toggle-container:hover .sidebar-toggle-btn {
             opacity: 1 !important;
+            transform: scale(1.04);
           }
 
           /* Hide OmiCall LiveTalk chat widget and its warning alerts */

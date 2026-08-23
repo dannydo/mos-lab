@@ -15,7 +15,7 @@ import {
   UnlockOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Staff, Role } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isSuperAdminRole, Staff, Role } from '@mos-lab/shared';
 
 import { ColumnsType } from 'antd/es/table';
 
@@ -270,9 +270,11 @@ export const getStaffColumns = ({
       key: 'action',
       width: 180,
       render: (_: SafeAny, record: Staff) => {
-        const isAdmin = currentUser?.role === 'admin';
-        const isTargetAdmin = record.role === 'admin';
-        const canImpersonate = isAdmin && !isTargetAdmin && record.isActive;
+        const isAdmin = isAdminOrSuperAdminRole(currentUser?.role);
+        const isSuperAdmin = isSuperAdminRole(currentUser?.role);
+        const isTargetAdmin = isAdminOrSuperAdminRole(record.role);
+        const isTargetSuperAdmin = isSuperAdminRole(record.role);
+        const canImpersonate = isAdmin && !isTargetSuperAdmin && (!isTargetAdmin || isSuperAdmin) && record.isActive;
 
         return (
           <Space size="middle">
@@ -326,7 +328,7 @@ export const getStaffColumns = ({
     },
   ];
 
-  if (currentUser?.role === 'admin') {
+  if (isAdminOrSuperAdminRole(currentUser?.role)) {
     columns.splice(4, 0, {
       title: 'Lương & Đãi ngộ',
       key: 'salary',
@@ -365,9 +367,15 @@ interface RoleColumnsOptions {
   themeMode: 'light' | 'dark';
   openRoleModal: (record: Role) => void;
   handleDeleteRole: (key: string) => void;
+  canManageSuperAdmin: boolean;
 }
 
-export const getRoleColumns = ({ themeMode, openRoleModal, handleDeleteRole }: RoleColumnsOptions) => {
+export const getRoleColumns = ({
+  themeMode,
+  openRoleModal,
+  handleDeleteRole,
+  canManageSuperAdmin,
+}: RoleColumnsOptions) => {
   return [
     {
       title: 'Vai trò',
@@ -445,30 +453,34 @@ export const getRoleColumns = ({ themeMode, openRoleModal, handleDeleteRole }: R
       title: 'Thao tác',
       key: 'action',
       width: 120,
-      render: (_: SafeAny, record: Role) => (
-        <Space size="middle">
-          <Tooltip title="Chỉnh sửa vai trò & quyền">
-            <Button
-              type="text"
-              icon={<EditOutlined style={{ color: '#1890ff' }} />}
-              onClick={() => openRoleModal(record)}
-            />
-          </Tooltip>
-          <Tooltip title={record.isSystem ? 'Không thể xóa vai trò mặc định của hệ thống' : 'Xóa vai trò'}>
-            <Popconfirm
-              title="Xóa vai trò"
-              description={`Bạn có chắc chắn muốn xóa vai trò "${record.name}"?`}
-              onConfirm={() => handleDeleteRole(record.key)}
-              disabled={record.isSystem}
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-            >
-              <Button type="text" danger disabled={record.isSystem} icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Tooltip>
-        </Space>
-      ),
+      render: (_: SafeAny, record: Role) => {
+        const mayEdit = record.key !== 'super_admin' || canManageSuperAdmin;
+        return (
+          <Space size="middle">
+            <Tooltip title={mayEdit ? 'Chỉnh sửa vai trò & quyền' : 'Chỉ Super Admin được chỉnh sửa vai trò này'}>
+              <Button
+                type="text"
+                icon={<EditOutlined style={{ color: '#1890ff' }} />}
+                onClick={() => openRoleModal(record)}
+                disabled={!mayEdit}
+              />
+            </Tooltip>
+            <Tooltip title={record.isSystem ? 'Không thể xóa vai trò mặc định của hệ thống' : 'Xóa vai trò'}>
+              <Popconfirm
+                title="Xóa vai trò"
+                description={`Bạn có chắc chắn muốn xóa vai trò "${record.name}"?`}
+                onConfirm={() => handleDeleteRole(record.key)}
+                disabled={record.isSystem}
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+              >
+                <Button type="text" danger disabled={record.isSystem} icon={<DeleteOutlined />} />
+              </Popconfirm>
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 };

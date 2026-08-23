@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="vi">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>17 · Ladder Summit</title><link rel="stylesheet" href="workshop-mockups.css" />
+    <style>
+      .summit-page { height:100%; display:grid; grid-template-rows:auto auto auto minmax(0,1fr) auto; gap:10px; padding-top:16px; }
+      .summit-intro { display:flex; align-items:end; justify-content:space-between; } .summit-intro h1 { margin:4px 0 0; font-size:22px; } .summit-intro p { max-width:395px; margin:0; color:var(--muted); font-size:10px; line-height:1.45; text-align:right; }
+      .summit-foundation { display:grid; grid-template-columns:148px 1fr 1fr auto; gap:9px; align-items:center; padding:9px 11px; border:1px solid var(--line); border-radius:12px; background:rgba(5,16,29,.22); } .summit-foundation .skill-card { padding:7px 9px; } .summit-foundation .skill-icon { width:29px; height:29px; } .summit-foundation .stars { font-size:17px; }
+      .summit-stage { min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr); gap:9px; padding:13px; border:1px solid var(--line); border-radius:15px; background:linear-gradient(145deg,rgba(17,37,61,.96),rgba(5,16,29,.46)); }
+      .summit-head { display:flex; align-items:center; justify-content:space-between; } .summit-head h2 { margin:0; font-size:14px; } .summit-head p { margin:3px 0 0; color:var(--muted); font-size:10px; }
+      .summit-scene { position:relative; min-height:0; overflow:hidden; border:1px solid rgba(68,96,126,.4); border-radius:13px; background:radial-gradient(circle at 50% 0%,rgba(50,199,255,.1),transparent 27%),rgba(6,17,31,.35); }
+      .summit-summary { position:absolute; z-index:4; top:18px; left:50%; width:min(540px,54%); transform:translateX(-50%); } .summit-outcome { padding:0; border:0; background:transparent; box-shadow:none; } .summit-kicker { display:none; } .summit-award { margin:0 0 9px; text-align:center; } .summit-award-icon, .summit-award small, .summit-award p { display:none; } .summit-award h3 { display:flex; align-items:center; justify-content:center; gap:9px; margin:0; color:#ffdc7e; font-family:Georgia,serif; font-size:25px; line-height:1; text-shadow:0 0 14px rgba(244,181,45,.22); } .summit-award h3::before, .summit-award h3::after { content:""; width:48px; height:1px; background:linear-gradient(90deg,transparent,rgba(244,181,45,.72)); } .summit-award h3::after { transform:scaleX(-1); } .summit-rewards { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; padding:0; border:0; } .summit-rewards div { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-width:0; padding:8px 11px; border:1px solid rgba(244,181,45,.34); border-radius:9px; color:#b7c6d6; background:rgba(8,19,34,.7); font-size:9px; font-weight:800; } .summit-rewards div:nth-child(2) { border-color:rgba(50,199,255,.46); } .summit-rewards div::before { content:""; } .summit-rewards div:nth-child(2) b { color:var(--cyan); } .summit-rewards b { color:var(--gold); font-size:18px; line-height:1; } .summit-rewards small { display:none; }
+      .summit-rail { --progress:65%; position:absolute; right:18px; bottom:27px; left:18px; height:8px; border:1px solid #324962; border-radius:99px; background:#15283d; } .summit-rail::before { content:""; display:block; width:var(--progress); height:100%; border-radius:inherit; background:linear-gradient(90deg,#31c6f2,#776bf1,#f4b52d); box-shadow:0 0 15px rgba(244,181,45,.32); transition:width .14s ease-out; } .summit-scene.is-dragging .summit-rail::before { transition:none; }
+      .summit-stops { position:absolute; right:18px; bottom:0; left:18px; height:100%; display:grid; grid-template-columns:repeat(6,1fr); } .summit-stop { position:relative; min-width:0; } .summit-stop::before { content:""; position:absolute; bottom:35px; left:50%; width:2px; height:calc(7px + var(--stem)); transform:translateX(-50%); background:#394a64; transition:background .18s ease; } .summit-stop b { position:absolute; z-index:2; bottom:65px; left:50%; box-sizing:border-box; width:22px; height:22px; display:flex; align-items:center; justify-content:center; padding:0; transform:translateX(-50%); border:2px solid #46526e; border-radius:50%; background:#0d1426; color:#8291a8; font-size:0; font-variant-numeric:tabular-nums; line-height:0; text-align:center; transition:border-color .18s ease,background .18s ease,box-shadow .18s ease; } .summit-stop b > span { display:block; transform:translateY(-.5px); font-size:10px; font-weight:700; line-height:1; } .summit-stop .tier { position:absolute; bottom:calc(42px + var(--stem)); left:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:106px; padding:8px 10px; transform:translateX(-50%); border:1px solid rgba(107,126,158,.38); border-radius:10px; background:rgba(10,16,30,.9); text-align:center; white-space:nowrap; opacity:.72; transition:transform .18s ease,opacity .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease; } .summit-stop .tier span { display:block; color:#9baac0; font-size:8px; font-weight:900; letter-spacing:.08em; line-height:1; } .summit-stop .tier strong { display:block; color:#b3c0d2; font-size:18px; font-weight:950; line-height:1; letter-spacing:-.03em; }
+      .tier-kha .tier { min-width:112px; border-color:rgba(69,165,243,.42); background:linear-gradient(135deg,rgba(13,41,69,.88),rgba(10,16,30,.92)); } .tier-kha .tier strong { font-size:20px; } .tier-trien-vong .tier { min-width:120px; padding:9px 11px; border-color:rgba(139,105,255,.46); background:linear-gradient(135deg,rgba(40,27,75,.76),rgba(10,16,30,.94)); } .tier-trien-vong .tier strong { font-size:22px; } .tier-vuot-troi .tier { min-width:130px; padding:10px 12px; border-color:rgba(244,181,45,.66); border-radius:11px; background:linear-gradient(135deg,rgba(82,56,10,.68),rgba(16,20,28,.94)); } .tier-vuot-troi .tier strong { font-size:24px; } .tier-thien-bam .tier { min-width:144px; padding:11px 13px; border-color:rgba(206,119,255,.67); border-radius:12px; background:radial-gradient(circle at 50% 0%,rgba(222,109,255,.27),transparent 70%),linear-gradient(135deg,rgba(67,26,86,.76),rgba(10,16,30,.96)); } .tier-thien-bam .tier span, .tier-thien-than .tier span { font-size:9px; } .tier-thien-bam .tier strong { font-size:28px; } .tier-thien-than .tier { min-width:160px; padding:12px 14px; border-color:rgba(255,224,143,.76); border-radius:13px; background:radial-gradient(circle at 50% -18%,rgba(255,229,140,.38),transparent 63%),linear-gradient(135deg,rgba(87,65,25,.67),rgba(28,25,49,.96)); } .tier-thien-than .tier strong { font-size:32px; }
+      .summit-stop.is-reached::before { background:linear-gradient(#f1c556,#424f70); } .summit-stop.is-reached b { border-color:#ffe28d; background:#f4b52d; color:#192940; box-shadow:0 0 0 5px rgba(244,181,45,.1),0 0 13px rgba(244,181,45,.48); } .summit-stop.is-reached .tier { opacity:1; transform:translateX(-50%) translateY(-2px); } .tier-kha.is-reached .tier { box-shadow:0 0 17px rgba(69,165,243,.18); } .tier-trien-vong.is-reached .tier { box-shadow:0 0 18px rgba(139,105,255,.22); } .tier-vuot-troi.is-reached .tier { box-shadow:0 0 20px rgba(244,181,45,.28); } .tier-thien-bam.is-reached .tier { box-shadow:0 0 24px rgba(222,109,255,.34); } .tier-thien-than.is-reached .tier { box-shadow:0 0 28px rgba(255,224,143,.42),inset 0 1px rgba(255,255,255,.19); } .summit-stop.is-reached .tier span { color:#f1c85e; } .summit-stop.is-reached .tier strong { color:#ffe298; } .tier-kha.is-reached .tier strong { color:#76ddff; } .tier-trien-vong.is-reached .tier strong { color:#c2a8ff; } .tier-vuot-troi.is-reached .tier strong { color:#ffe298; } .tier-thien-bam.is-reached .tier strong { color:#f1b7ff; } .tier-thien-than.is-reached .tier strong { color:#fff0ac; }
+      .summit-current { position:absolute; z-index:3; bottom:10px; left:65%; box-sizing:border-box; width:42px; height:42px; display:flex; align-items:center; justify-content:center; padding:0; transform:translateX(-50%); border:3px solid #fff3be; border-radius:50%; background:#f4b52d; color:#152940; font-size:15px; font-weight:950; font-variant-numeric:tabular-nums; line-height:1; text-align:center; box-shadow:0 0 0 5px rgba(244,181,45,.12),0 0 19px rgba(244,181,45,.72); pointer-events:none; transition:left .1s ease-out,background .14s ease-out; } .summit-current::after { display:none; } .summit-range { position:absolute; z-index:6; right:10px; bottom:0; left:10px; width:calc(100% - 20px); height:72px; margin:0; appearance:none; -webkit-appearance:none; opacity:0; cursor:grab; touch-action:none; } .summit-range:active, .summit-scene.is-dragging .summit-range { cursor:grabbing; } .summit-range:focus-visible { outline:0; } .summit-scene:has(.summit-range:focus-visible) .summit-current { outline:2px solid #57d9ff; outline-offset:4px; } .summit-scene.is-dragging .summit-current { transition:left .08s ease-out,background .14s ease-out; }
+      .coach-bar { padding:9px 12px; }
+    </style>
+  </head>
+  <body><div class="backdrop-brand"></div><div class="viewport"><main class="modal"><header class="modal-header"><div class="brand-lockup"><span class="brand-icon">♕</span><strong>WORKSHOP: TÌM KIẾM TÀI NĂNG NỐI MI</strong></div><nav class="steps"><span class="step active"><b>1</b> CHẤM ĐIỂM</span><span class="step"><b>2</b> CHỌN KHÓA HỌC PHÙ HỢP</span></nav><div class="header-side"><button class="icon-button">×</button><div class="identity"><span class="avatar">HH</span><span class="identity-copy">Học viên<strong>Hương Hướng</strong></span></div></div></header>
+      <section class="content summit-page"><div class="flow-context"><span class="flow-context-title"><i></i><strong>Chấm điểm năng khiếu nối mi</strong><span>Bạn có phù hợp với ngành mi không?</span></span><span class="pill cyan">Phiên #2 · 14 sợi</span></div><div class="summit-intro"><div><div class="eyebrow">Ladder summit · phần II</div><h1>Thang phần thưởng — mốc càng cao, giá trị càng mở rộng</h1></div><p>Bubble được nâng cách progress bar 30px; connector liền mạch giữ hành trình dễ đọc.</p></div>
+      <section class="summit-foundation"><span class="section-title"><span class="roman">I.</span> Nền tảng</span><article class="skill-card"><span class="skill-icon eye-glyph"></span><span class="skill-copy"><strong>Kiểm tra mắt</strong><span>4đ · Xuất sắc</span></span><span class="stars">★★★★★</span></article><article class="skill-card"><span class="skill-icon hand-glyph">✋</span><span class="skill-copy"><strong>Kiểm tra tay</strong><span>3đ · Giỏi</span></span><span class="stars">★★★★<i class="off">★</i></span></article><span class="pill cyan">7 / 8 điểm</span></section>
+      <section class="summit-stage"><div class="summit-head"><div><h2><span class="roman">II.</span> Thử thách nối mi 5 phút</h2><p>Kéo marker trên progress bar để cập nhật kết quả và quyền lợi theo số sợi đạt được.</p></div><span class="pill gold">Cập nhật live</span></div><div class="summit-scene"><div class="summit-summary"><div class="summit-outcome"><div class="summit-award"><h3 data-result-title aria-live="polite">HỌC BỔNG 10%</h3></div><div class="summit-rewards"><div><span>Học bổng</span><b data-reward-value>10%</b></div><div><span>Ưu đãi màu</span><b data-reward-value>10%</b></div><div><span>Độ nghề</span><b data-reward-value>10%</b></div></div></div></div><div class="summit-rail"></div><span class="summit-current" aria-hidden="true">14</span><input class="summit-range" type="range" min="0" max="35" value="14" aria-label="Số sợi đạt được trong 5 phút" /><div class="summit-stops"><article class="summit-stop tier-entry tier-nhap-mon" data-threshold="1" style="--stem:62px"><div class="tier"><span>NHẬP MÔN</span><strong>0%</strong></div><b><span>1</span></b></article><article class="summit-stop tier-entry tier-kha" data-threshold="3" style="--stem:83px"><div class="tier"><span>KHÁ</span><strong>2%</strong></div><b><span>3</span></b></article><article class="summit-stop tier-entry tier-trien-vong" data-threshold="5" style="--stem:106px"><div class="tier"><span>TRIỂN VỌNG</span><strong>5%</strong></div><b><span>5</span></b></article><article class="summit-stop tier-entry tier-vuot-troi" data-threshold="10" style="--stem:135px"><div class="tier"><span>VƯỢT TRỘI</span><strong>10%</strong></div><b><span>10</span></b></article><article class="summit-stop tier-entry tier-thien-bam" data-threshold="20" style="--stem:168px"><div class="tier"><span>THIÊN BẨM</span><strong>50%</strong></div><b><span>20</span></b></article><article class="summit-stop tier-entry tier-thien-than" data-threshold="35" style="--stem:201px"><div class="tier"><span>THIÊN THẦN</span><strong>90%</strong></div><b><span>35</span></b></article></div></div></section>
+      <div class="coach-bar"><span class="coach-copy"><strong><span class="roman">III.</span> Coaching 1-1</strong><span>2 ghi chú kỹ thuật · mở khi cần xem sâu</span></span><button class="coach-trigger" data-coach-trigger><b>2</b>Mở coaching</button><button class="btn">→ &nbsp;Lưu &amp; chọn khóa học</button></div><aside class="coach-drawer" aria-hidden="true"><header><div><h2>Coaching 1-1</h2><p>Không che mất thang milestone.</p></div><button class="coach-close" data-coach-close>×</button></header><div class="coach-scroll"><section class="coach-section"><h3>Điểm cần tập</h3><p>Giữ nhịp thao tác ở phút thứ tư để tiến lên ngưỡng 20 sợi.</p></section></div><footer><button class="btn secondary" data-coach-close>Đóng</button><button class="btn">Lưu nhận xét</button></footer></aside>
+    </section></main></div><a class="home-link" href="index.html">← 20 phương án</a><script src="workshop-mockups.js"></script><script>
+      (() => {
+        const scene = document.querySelector('.summit-scene');
+        const rail = scene?.querySelector('.summit-rail');
+        const range = scene?.querySelector('.summit-range');
+        const marker = scene?.querySelector('.summit-current');
+        const resultTitle = scene?.querySelector('[data-result-title]');
+        const rewardValues = [...(scene?.querySelectorAll('[data-reward-value]') || [])];
+        const milestoneStops = [...(scene?.querySelectorAll('.summit-stop[data-threshold]') || [])];
+        if (!scene || !rail || !range || !marker || !resultTitle) return;
+
+        const checkpoints = [[0, 0], [1, 8.333], [3, 25], [5, 41.667], [10, 58.333], [20, 75], [35, 91.667]];
+        const rewards = [
+          { min: 35, title: 'THIÊN THẦN · 90%', values: ['90%', '90%', '90%'] },
+          { min: 20, title: 'THIÊN BẨM · 50%', values: ['50%', '50%', '50%'] },
+          { min: 10, title: 'HỌC BỔNG 10%', values: ['10%', '10%', '10%'] },
+          { min: 5, title: 'TRIỂN VỌNG · 5%', values: ['5%', '5%', '5%'] },
+          { min: 3, title: 'KHÁ · 2%', values: ['2%', '2%', '2%'] },
+          { min: 1, title: 'NHẬP MÔN', values: ['0%', '0%', '0%'] },
+          { min: 0, title: 'CHƯA ĐẠT HỌC BỔNG', values: ['0%', '0%', '0%'] }
+        ];
+
+        const positionFor = (score) => {
+          const nextIndex = checkpoints.findIndex(([value]) => value >= score);
+          if (nextIndex === -1) return checkpoints[checkpoints.length - 1][1];
+          if (nextIndex <= 0) return checkpoints[0][1];
+          const [beforeValue, beforePosition] = checkpoints[nextIndex - 1];
+          const [afterValue, afterPosition] = checkpoints[nextIndex];
+          return beforePosition + ((score - beforeValue) / (afterValue - beforeValue)) * (afterPosition - beforePosition);
+        };
+
+        const scoreFor = (position) => {
+          const safePosition = Math.min(100, Math.max(0, position));
+          const nextIndex = checkpoints.findIndex(([, value]) => value >= safePosition);
+          if (nextIndex === -1) return checkpoints[checkpoints.length - 1][0];
+          if (nextIndex <= 0) return checkpoints[0][0];
+          const [beforeScore, beforePosition] = checkpoints[nextIndex - 1];
+          const [afterScore, afterPosition] = checkpoints[nextIndex];
+          return Math.round(beforeScore + ((safePosition - beforePosition) / (afterPosition - beforePosition)) * (afterScore - beforeScore));
+        };
+
+        let activePointerId = null;
+
+        const update = (score = Number(range.value), progress = positionFor(score)) => {
+          const result = rewards.find((item) => score >= item.min) || rewards[rewards.length - 1];
+          marker.textContent = score;
+          marker.style.left = `${rail.offsetLeft + (rail.clientWidth * progress) / 100}px`;
+          rail.style.setProperty('--progress', `${progress}%`);
+          resultTitle.textContent = result.title;
+          rewardValues.forEach((element, index) => { element.textContent = result.values[index]; });
+          milestoneStops.forEach((stop) => { stop.classList.toggle('is-reached', score >= Number(stop.dataset.threshold)); });
+          range.setAttribute('aria-valuetext', `${score} sợi — ${result.title}`);
+        };
+
+        const updateFromPointer = (clientX) => {
+          const railBounds = rail.getBoundingClientRect();
+          const maxPosition = checkpoints[checkpoints.length - 1][1];
+          const position = Math.min(maxPosition, Math.max(0, ((clientX - railBounds.left) / railBounds.width) * 100));
+          range.value = scoreFor(position);
+          update(Number(range.value));
+        };
+
+        const endDrag = (event) => {
+          if (activePointerId !== event.pointerId) return;
+          updateFromPointer(event.clientX);
+          if (range.hasPointerCapture?.(event.pointerId)) range.releasePointerCapture(event.pointerId);
+          activePointerId = null;
+          scene.classList.remove('is-dragging');
+        };
+
+        const moveDrag = (event) => {
+          if (activePointerId !== event.pointerId) return;
+          event.preventDefault();
+          updateFromPointer(event.clientX);
+        };
+
+        const cancelDrag = (event) => {
+          if (activePointerId !== event.pointerId) return;
+          activePointerId = null;
+          scene.classList.remove('is-dragging');
+        };
+
+        range.addEventListener('input', () => { if (activePointerId === null) update(); });
+        range.addEventListener('pointerdown', (event) => {
+          activePointerId = event.pointerId;
+          range.setPointerCapture?.(event.pointerId);
+          scene.classList.add('is-dragging');
+          event.preventDefault();
+          updateFromPointer(event.clientX);
+        });
+        window.addEventListener('pointermove', moveDrag, { passive: false });
+        window.addEventListener('pointerup', endDrag);
+        window.addEventListener('pointercancel', cancelDrag);
+        window.addEventListener('blur', () => { activePointerId = null; scene.classList.remove('is-dragging'); });
+        range.addEventListener('click', (event) => updateFromPointer(event.clientX));
+        range.addEventListener('keydown', (event) => {
+          const delta = event.key === 'ArrowRight' || event.key === 'ArrowUp' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowDown' ? -1 : 0;
+          if (!delta) return;
+          event.preventDefault();
+          range.value = Math.min(35, Math.max(0, Number(range.value) + delta));
+          update();
+        });
+        window.addEventListener('resize', () => update());
+        update();
+        requestAnimationFrame(() => update());
+      })();
+    </script></body>
+</html>

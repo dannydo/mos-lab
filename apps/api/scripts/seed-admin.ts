@@ -21,14 +21,14 @@ async function run() {
     where: { username: 'admin' },
     update: {
       displayName: 'Danny Do',
-      role: 'admin',
+      role: 'super_admin',
       isActive: true,
       passwordHash: passwordHash,
     },
     create: {
       username: 'admin',
       displayName: 'Danny Do',
-      role: 'admin',
+      role: 'super_admin',
       isActive: true,
       passwordHash: passwordHash,
     },

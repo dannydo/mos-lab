@@ -1,5 +1,81 @@
 import { FastifyInstance } from 'fastify';
-import { Team, TeamMember, TeamStaffOption, UpsertTeamRequest, SafeAny } from '@mos-lab/shared';
+import {
+  Department,
+  Team,
+  TeamListResponse,
+  TeamMember,
+  TeamStaffOption,
+  UpsertTeamRequest,
+  SafeAny,
+} from '@mos-lab/shared';
+
+const TEAM_CODE_PATTERN = /^[A-Z][A-Z0-9_]{1,29}$/;
+
+export class TeamConfigurationError extends Error {
+  constructor(
+    message: string,
+    readonly statusCode = 400
+  ) {
+    super(message);
+    this.name = 'TeamConfigurationError';
+  }
+}
+
+/** Team codes are stable integration keys; never silently rewrite an invalid code. */
+export function normalizeTeamCode(value: string): string {
+  const code = value.trim().toUpperCase();
+  if (!TEAM_CODE_PATTERN.test(code)) {
+    throw new TeamConfigurationError('Mã team dùng chữ in hoa, số và dấu gạch dưới; bắt đầu bằng chữ cái.');
+  }
+  return code;
+}
+
+function parseMetadata(metadata: string | null): Record<string, unknown> | null {
+  if (!metadata) return null;
+  try {
+    return JSON.parse(metadata) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function formatDepartment(department: SafeAny): Department {
+  return {
+    id: department.id,
+    code: department.code,
+    name: department.name,
+    description: department.description,
+    color: department.color,
+    icon: department.icon,
+    sortOrder: department.sortOrder,
+    isActive: Boolean(department.isActive),
+    createdAt: department.createdAt.toISOString(),
+    updatedAt: department.updatedAt.toISOString(),
+  };
+}
+
+function formatTeam(team: SafeAny): Team {
+  const members = Array.isArray(team.members) ? team.members : [];
+  return {
+    id: team.id,
+    code: team.code,
+    name: team.name,
+    description: team.description,
+    color: team.color,
+    icon: team.icon,
+    sortOrder: team.sortOrder,
+    isActive: Boolean(team.isActive),
+    departmentId: team.departmentId,
+    department: team.department ? formatDepartment(team.department) : null,
+    parentTeamId: team.parentTeamId,
+    metadata: parseMetadata(team.metadata),
+    createdAt: team.createdAt.toISOString(),
+    updatedAt: team.updatedAt.toISOString(),
+    memberCount: members.length,
+    activeStaffIds: members.map((member: SafeAny) => member.legacyStaffId),
+    children: [],
+  };
+}
 
 export class TeamService {
   /**
@@ -177,58 +253,38 @@ export class TeamService {
   /**
    * List all teams with child teams (hierarchy) and member counts
    */
-  static async listTeams(fastify: FastifyInstance): Promise<Team[]> {
-    const teams = await fastify.prisma.crm.crmTeam.findMany({
-      where: { parentTeamId: null },
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        children: {
-          orderBy: { sortOrder: 'asc' },
-          include: {
-            members: {
-              where: { isActive: true },
-            },
-          },
+  static async listTeams(fastify: FastifyInstance): Promise<TeamListResponse> {
+    const [departments, teamRows] = await Promise.all([
+      fastify.prisma.crm.crmDepartment.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+      fastify.prisma.crm.crmTeam.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        include: {
+          department: true,
+          members: { where: { isActive: true } },
         },
-        members: {
-          where: { isActive: true },
-        },
-      },
+      }),
+    ]);
+
+    const teamById = new Map<number, Team>();
+    teamRows.forEach((row) => teamById.set(row.id, formatTeam(row)));
+
+    const roots: Team[] = [];
+    teamRows.forEach((row) => {
+      const formatted = teamById.get(row.id)!;
+      const parent = row.parentTeamId ? teamById.get(row.parentTeamId) : undefined;
+      if (parent) {
+        parent.children = [...(parent.children || []), formatted];
+      } else {
+        roots.push(formatted);
+      }
     });
 
-    // Format output
-    return teams.map((t) => ({
-      id: t.id,
-      code: t.code,
-      name: t.name,
-      description: t.description,
-      color: t.color,
-      icon: t.icon,
-      sortOrder: t.sortOrder,
-      isActive: Boolean(t.isActive),
-      parentTeamId: t.parentTeamId,
-      metadata: t.metadata ? (JSON.parse(t.metadata) as Record<string, unknown>) : null,
-      createdAt: t.createdAt.toISOString(),
-      updatedAt: t.updatedAt.toISOString(),
-      memberCount: t.members.length,
-      activeStaffIds: t.members.map((m) => m.legacyStaffId),
-      children: t.children.map((c) => ({
-        id: c.id,
-        code: c.code,
-        name: c.name,
-        description: c.description,
-        color: c.color,
-        icon: c.icon,
-        sortOrder: c.sortOrder,
-        isActive: Boolean(c.isActive),
-        parentTeamId: c.parentTeamId,
-        metadata: c.metadata ? (JSON.parse(c.metadata) as Record<string, unknown>) : null,
-        createdAt: c.createdAt.toISOString(),
-        updatedAt: c.updatedAt.toISOString(),
-        memberCount: c.members.length,
-        activeStaffIds: c.members.map((m) => m.legacyStaffId),
-      })),
-    }));
+    return {
+      departments: departments.map(formatDepartment),
+      teams: roots,
+    };
   }
 
   /**
@@ -239,6 +295,7 @@ export class TeamService {
       where: { code },
       include: {
         members: true,
+        department: true,
       },
     });
 
@@ -321,8 +378,10 @@ export class TeamService {
       icon: team.icon,
       sortOrder: team.sortOrder,
       isActive: Boolean(team.isActive),
+      departmentId: team.departmentId,
+      department: team.department ? formatDepartment(team.department) : null,
       parentTeamId: team.parentTeamId,
-      metadata: team.metadata ? (JSON.parse(team.metadata) as Record<string, unknown>) : null,
+      metadata: parseMetadata(team.metadata),
       createdAt: team.createdAt.toISOString(),
       updatedAt: team.updatedAt.toISOString(),
       memberCount: members.length,
@@ -447,37 +506,141 @@ export class TeamService {
    * Upsert Team definition
    */
   static async upsertTeam(fastify: FastifyInstance, data: UpsertTeamRequest, id?: number) {
-    const metadataStr = data.metadata ? JSON.stringify(data.metadata) : undefined;
+    const name = data.name?.trim();
+    if (!name) {
+      throw new TeamConfigurationError('Tên team là bắt buộc.');
+    }
 
-    if (id) {
-      return await fastify.prisma.crm.crmTeam.update({
-        where: { id },
-        data: {
-          code: data.code,
-          name: data.name,
-          description: data.description,
-          color: data.color,
-          icon: data.icon,
-          sortOrder: data.sortOrder,
-          isActive: data.isActive,
-          parentTeamId: data.parentTeamId,
-          metadata: metadataStr,
-        },
+    const existing = id
+      ? await fastify.prisma.crm.crmTeam.findUnique({
+          where: { id },
+          include: { _count: { select: { children: true } } },
+        })
+      : null;
+
+    if (id && !existing) {
+      throw new TeamConfigurationError('Không tìm thấy team cần cập nhật.', 404);
+    }
+
+    const code = existing ? existing.code : normalizeTeamCode(data.code || '');
+    if (existing && data.code && data.code !== existing.code) {
+      throw new TeamConfigurationError('Mã team là khóa ổn định và không thể đổi sau khi tạo.');
+    }
+
+    const parentTeamId = data.parentTeamId ? Number(data.parentTeamId) : null;
+    const departmentId = await this.resolveDepartmentId(fastify, {
+      parentTeamId,
+      departmentId: data.departmentId,
+      teamId: id,
+      currentDepartmentId: existing?.departmentId ?? null,
+    });
+
+    if (existing && existing._count.children > 0 && departmentId !== existing.departmentId) {
+      throw new TeamConfigurationError(
+        'Không thể đổi Department của team đang có team con. Hãy chuyển các team con trước.'
+      );
+    }
+
+    const metadataStr = data.metadata ? JSON.stringify(data.metadata) : undefined;
+    const payload = {
+      name,
+      description: data.description?.trim() || null,
+      color: data.color?.trim() || null,
+      icon: data.icon?.trim() || null,
+      sortOrder: Number.isFinite(data.sortOrder) ? Math.max(0, Math.round(data.sortOrder!)) : 0,
+      isActive: data.isActive ?? true,
+      departmentId,
+      parentTeamId,
+      ...(metadataStr !== undefined ? { metadata: metadataStr } : {}),
+    };
+
+    if (existing) {
+      return fastify.prisma.crm.crmTeam.update({
+        where: { id: existing.id },
+        data: payload,
+        include: { department: true, members: { where: { isActive: true } } },
       });
     }
 
-    return await fastify.prisma.crm.crmTeam.create({
-      data: {
-        code: data.code,
-        name: data.name,
-        description: data.description,
-        color: data.color,
-        icon: data.icon,
-        sortOrder: data.sortOrder ?? 0,
-        isActive: data.isActive ?? true,
-        parentTeamId: data.parentTeamId,
-        metadata: metadataStr,
-      },
+    return fastify.prisma.crm.crmTeam.create({
+      data: { code, ...payload },
+      include: { department: true, members: { where: { isActive: true } } },
     });
+  }
+
+  /** Delete only a true leaf to preserve team membership and historical audit. */
+  static async deleteTeam(fastify: FastifyInstance, id: number): Promise<{ code: string }> {
+    const team = await fastify.prisma.crm.crmTeam.findUnique({
+      where: { id },
+      include: { _count: { select: { children: true, members: true } } },
+    });
+    if (!team) throw new TeamConfigurationError('Không tìm thấy team cần xóa.', 404);
+    if (team._count.children > 0 || team._count.members > 0) {
+      throw new TeamConfigurationError('Chỉ có thể xóa team trống, không có thành viên và không có team trực thuộc.');
+    }
+
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmTeam.delete({ where: { id } });
+      await tx.crmConfig.deleteMany({ where: { key: `ACTIVE_${team.code}_STAFF_CONFIG` } });
+    });
+    return { code: team.code };
+  }
+
+  private static async resolveDepartmentId(
+    fastify: FastifyInstance,
+    input: {
+      parentTeamId: number | null;
+      departmentId?: number | null;
+      teamId?: number;
+      currentDepartmentId: number | null;
+    }
+  ): Promise<number> {
+    if (input.parentTeamId) {
+      if (input.teamId && input.parentTeamId === input.teamId) {
+        throw new TeamConfigurationError('Một team không thể là team cha của chính nó.');
+      }
+
+      const parent = await fastify.prisma.crm.crmTeam.findUnique({
+        where: { id: input.parentTeamId },
+        select: { id: true, parentTeamId: true, departmentId: true, isActive: true },
+      });
+      if (!parent || !parent.isActive) {
+        throw new TeamConfigurationError('Team cha không tồn tại hoặc đã ngừng hoạt động.');
+      }
+      if (!parent.departmentId) {
+        throw new TeamConfigurationError('Team cha chưa được gán Department. Hãy gán Department cho team cha trước.');
+      }
+
+      let ancestorId: number | null = parent.id;
+      while (ancestorId) {
+        if (ancestorId === input.teamId) {
+          throw new TeamConfigurationError('Không thể đặt team vào một team con của chính nó.');
+        }
+        const ancestor: { parentTeamId: number | null } | null = await fastify.prisma.crm.crmTeam.findUnique({
+          where: { id: ancestorId },
+          select: { parentTeamId: true },
+        });
+        ancestorId = ancestor?.parentTeamId ?? null;
+      }
+
+      if (input.departmentId && Number(input.departmentId) !== parent.departmentId) {
+        throw new TeamConfigurationError('Team trực thuộc phải dùng cùng Department với team cha.');
+      }
+      return parent.departmentId;
+    }
+
+    const resolvedDepartmentId = input.departmentId ?? input.currentDepartmentId;
+    if (!resolvedDepartmentId) {
+      throw new TeamConfigurationError('Hãy chọn Department cho team.');
+    }
+
+    const department = await fastify.prisma.crm.crmDepartment.findUnique({
+      where: { id: Number(resolvedDepartmentId) },
+      select: { id: true, isActive: true },
+    });
+    if (!department || !department.isActive) {
+      throw new TeamConfigurationError('Department không tồn tại hoặc đã ngừng hoạt động.');
+    }
+    return department.id;
   }
 }

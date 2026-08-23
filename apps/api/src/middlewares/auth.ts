@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { UserRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole, UserRole } from '@mos-lab/shared';
 
 // Interface for JWT payload
 export interface JwtUserPayload {
@@ -26,6 +26,22 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
     // Asynchronously update lastActiveAt once per minute
     const user = request.user;
     if (user && user.id) {
+      // A newly promoted Danny Do session may still carry an older Admin JWT.
+      // Resolve the canonical account's current persisted role before guards run
+      // so a browser refresh is sufficient; no forced logout is required.
+      if (!isSuperAdminRole(user.role) && isCanonicalSuperAdminIdentity(user)) {
+        const currentStaff = await request.server.prisma.crm.crmStaff.findUnique({
+          where: { id: user.id },
+          select: { role: true, isActive: true },
+        });
+        if (!currentStaff?.isActive) {
+          return reply.status(401).send({ error: 'Unauthorized', message: 'User not found or inactive' });
+        }
+        if (isSuperAdminRole(currentStaff.role)) {
+          user.role = 'super_admin';
+        }
+      }
+
       const now = Date.now();
       const lastUpdated = throttleCache.get(user.id) || 0;
       if (now - lastUpdated > 60000) {
@@ -62,13 +78,32 @@ export function requireRole(allowedRoles: UserRole | UserRole[]) {
       return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
     }
 
-    if (!rolesArray.includes(user.role)) {
+    const isAllowed =
+      rolesArray.includes(user.role) || (rolesArray.includes('admin') && isAdminOrSuperAdminRole(user.role));
+
+    if (!isAllowed) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: `Role "${user.role}" does not have permission to access this resource`,
       });
     }
   };
+}
+
+/** Use for controls which ordinary Admins must not access. */
+export async function requireSuperAdmin(request: FastifyRequest, reply: FastifyReply) {
+  const user = request.user as JwtUserPayload | undefined;
+
+  if (!user) {
+    return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
+  }
+
+  if (!isSuperAdminRole(user.role)) {
+    return reply.status(403).send({
+      error: 'Forbidden',
+      message: 'Chỉ Super Admin mới có quyền truy cập khu vực này.',
+    });
+  }
 }
 
 export async function requireCatalogAdmin(request: FastifyRequest, reply: FastifyReply) {
@@ -79,7 +114,7 @@ export async function requireCatalogAdmin(request: FastifyRequest, reply: Fastif
   }
 
   const isAuthorized =
-    user.role === 'admin' ||
+    isAdminOrSuperAdminRole(user.role) ||
     user.username?.toLowerCase() === 'admin' ||
     user.username?.toLowerCase() === 'danhdo@gmail.com' ||
     user.email?.toLowerCase() === 'danhdo@gmail.com';
@@ -100,7 +135,7 @@ export async function requireCampaignAdmin(request: FastifyRequest, reply: Fasti
   }
 
   const isAuthorized =
-    user.role === 'admin' ||
+    isAdminOrSuperAdminRole(user.role) ||
     user.role === 'manager' ||
     user.role === 'oc' ||
     user.role === 'ls' ||

@@ -123,7 +123,7 @@ export function PostHubReviewStatusTag({ status }: { status: SocialPostReviewSta
       status={isPending ? 'cyan' : meta.tone}
       icon={isPending ? undefined : <AppIcon icon={meta.icon} size="sm" />}
       label={meta.label}
-      className="py-1 px-2.5"
+      className="gap-1 py-1 px-2.5"
     />
   );
 }

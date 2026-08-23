@@ -17,7 +17,7 @@ import {
   InputNumber,
 } from 'antd';
 import { UserOutlined, InfoCircleOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
-import { Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isSuperAdminRole, Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -43,6 +43,9 @@ export default function StaffTabsContent({
   currentUser: SafeAny;
 }) {
   const [activeTab, setActiveTab] = useState('account');
+  const isAdmin = isAdminOrSuperAdminRole(currentUser?.role);
+  const isSuperAdmin = isSuperAdminRole(currentUser?.role);
+  const assignableRoles = roles.filter((role) => role.key !== 'super_admin' || isSuperAdmin);
 
   return (
     <div>
@@ -131,7 +134,7 @@ export default function StaffTabsContent({
                 rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
               >
                 <Select placeholder="Chọn vai trò">
-                  {roles.map((r) => (
+                  {assignableRoles.map((r) => (
                     <Option key={r.key} value={r.key}>
                       {r.name}
                     </Option>
@@ -263,7 +266,7 @@ export default function StaffTabsContent({
             </Col>
           </Row>
 
-          {currentUser?.role === 'admin' && (
+          {isAdmin && (
             <>
               <Row gutter={16}>
                 <Col span={12}>

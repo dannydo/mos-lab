@@ -1,6 +1,20 @@
 /** Team code identifiers */
 export type TeamCode = 'CC' | 'CV' | 'BK' | 'BK_TELESALES' | 'BK_CS' | 'BK_CONTROL' | 'BK_OTHER' | string;
 
+/** Stable operational domain. Teams can be nested inside one Department. */
+export interface Department {
+  id: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  color?: string | null;
+  icon?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Team record from DB */
 export interface Team {
   id: number;
@@ -11,12 +25,14 @@ export interface Team {
   icon?: string | null;
   sortOrder: number;
   isActive: boolean;
+  departmentId?: number | null;
   parentTeamId?: number | null;
   metadata?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
   // Populated relations
   children?: Team[];
+  department?: Department | null;
   memberCount?: number;
   activeStaffIds?: number[];
 }
@@ -53,6 +69,7 @@ export interface TeamStaffOption {
 /** API response for team list */
 export interface TeamListResponse {
   teams: Team[];
+  departments: Department[];
 }
 
 /** API response for single team with members */
@@ -76,6 +93,8 @@ export interface UpsertTeamRequest {
   icon?: string;
   sortOrder?: number;
   isActive?: boolean;
+  /** Required for new teams; child teams always inherit their parent's Department. */
+  departmentId?: number | null;
   parentTeamId?: number | null;
   metadata?: Record<string, unknown>;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Typography, Card, theme, Tabs, Spin, message, Dropdown, Space } from 'antd';
 import {
@@ -159,6 +159,10 @@ export default function CcDashboardPage() {
   const [xoayData, setXoayData] = useState<CcXoayRecord[]>([]);
   const [xoayTotal, setXoayTotal] = useState(0);
   const [leaderboardData, setLeaderboardData] = useState<CcLeaderboardEntry[]>([]);
+  const inFlightCcReportKeysRef = useRef(new Set<string>());
+  const latestCcReportKeyRef = useRef<string | null>(null);
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
 
   // Sync state changes to localStorage
   useEffect(() => {
@@ -197,25 +201,42 @@ export default function CcDashboardPage() {
 
   // Update date range when viewMode or referenceDate changes
   useEffect(() => {
+    let nextRange: [Dayjs, Dayjs];
     if (viewMode === 'month') {
-      setDateRange([referenceDate.startOf('month'), referenceDate.endOf('month')]);
+      nextRange = [referenceDate.startOf('month'), referenceDate.endOf('month')];
     } else if (viewMode === 'week') {
-      setDateRange([referenceDate.startOf('isoWeek'), referenceDate.endOf('isoWeek')]);
+      nextRange = [referenceDate.startOf('isoWeek'), referenceDate.endOf('isoWeek')];
     } else {
-      setDateRange([referenceDate.startOf('day'), referenceDate.endOf('day')]);
+      nextRange = [referenceDate.startOf('day'), referenceDate.endOf('day')];
     }
+
+    // Do not create a new range when the persisted initial value already
+    // represents this period. A new array would otherwise replay report fetches.
+    setDateRange((currentRange) =>
+      currentRange[0].isSame(nextRange[0], 'day') && currentRange[1].isSame(nextRange[1], 'day')
+        ? currentRange
+        : nextRange
+    );
   }, [viewMode, referenceDate]);
 
-  // Fetch real-time data from Backend API
-  const fetchCcData = async () => {
+  // Xoay and its leaderboard are expensive report queries. They are only
+  // needed by the Xoay tab, so defer them until that tab is visible and
+  // coalesce duplicate effect executions for the same report parameters.
+  const fetchCcData = useCallback(async () => {
+    const dateFrom = dateRange[0].format('YYYY-MM-DD');
+    const dateTo = dateRange[1].format('YYYY-MM-DD');
+    const reportViewMode = viewModeRef.current;
+    const requestKey = `${reportViewMode}:${dateFrom}:${dateTo}:${selectedStore}:${selectedConsultant}`;
+
+    latestCcReportKeyRef.current = requestKey;
+    if (inFlightCcReportKeysRef.current.has(requestKey)) return;
+
+    inFlightCcReportKeysRef.current.add(requestKey);
     setLoading(true);
     try {
-      const dateFrom = dateRange[0].format('YYYY-MM-DD');
-      const dateTo = dateRange[1].format('YYYY-MM-DD');
-
       const [xoayRes, lbRes] = await Promise.all([
         apiClient.kpi.getCcXoayReport({
-          viewMode,
+          viewMode: reportViewMode,
           dateFrom,
           dateTo,
           storeId: selectedStore,
@@ -223,12 +244,14 @@ export default function CcDashboardPage() {
           limit: 3000,
         }),
         apiClient.kpi.getCcLeaderboard({
-          viewMode,
+          viewMode: reportViewMode,
           dateFrom,
           dateTo,
           storeId: selectedStore,
         }),
       ]);
+
+      if (latestCcReportKeyRef.current !== requestKey) return;
 
       if (xoayRes && xoayRes.data) {
         setXoayData(xoayRes.data);
@@ -239,15 +262,21 @@ export default function CcDashboardPage() {
         setLeaderboardData(lbRes.leaderboard);
       }
     } catch (err) {
-      message.error('Không thể tải dữ liệu báo cáo CC.');
+      if (latestCcReportKeyRef.current === requestKey) {
+        message.error('Không thể tải dữ liệu báo cáo CC.');
+      }
     } finally {
-      setLoading(false);
+      inFlightCcReportKeysRef.current.delete(requestKey);
+      if (latestCcReportKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
-  };
+  }, [dateRange, selectedConsultant]);
 
   useEffect(() => {
-    fetchCcData();
-  }, [dateRange, selectedConsultant]);
+    if (activeTab !== 'xoay') return;
+    void fetchCcData();
+  }, [activeTab, fetchCcData]);
 
   // Navigate date backward / forward
   const handleNavigate = (direction: number) => {

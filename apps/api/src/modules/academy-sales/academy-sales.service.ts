@@ -1,8 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { Prisma } from '../../generated/crm-client/index.js';
+import { TeamService } from '../teams/team.service.js';
 import {
   type AcademyActivityType,
   type AcademyCourse,
+  type AcademyLeadCalendarEvent,
   type AcademyFollowUpTask,
   type AcademyLead,
   type AcademyLeadActivity,
@@ -15,20 +17,25 @@ import {
   type CreateAcademyFollowUpRequest,
   type CreateAcademyLeadRequest,
   type ListAcademyFollowUpsParams,
+  type ListAcademyLeadCalendarParams,
   type ListAcademyLeadsParams,
   type UpdateAcademyFollowUpRequest,
   type UpdateAcademyLeadRequest,
+  type RecordAcademyNoShowRequest,
   type UpsertAcademyCourseRequest,
   type UpsertAcademyPlaybookRequest,
+  isAdminOrSuperAdminRole,
   removeVietnameseTones,
   type SafeAny,
 } from '@mos-lab/shared';
 
-export type AcademyActor = { id: number; role: string; displayName?: string; email?: string };
+export type AcademyActor = { id: number; role: string; displayName?: string; email?: string; academyAccess?: boolean };
 
-const MANAGER_ROLES = new Set(['admin', 'manager']);
+const MANAGER_ROLES = new Set(['admin', 'super_admin', 'manager']);
 const TEAM_LEADER_ROLE = 'ls';
-const ACADEMY_ROLES = new Set(['admin', 'manager', 'ls', 'telesales']);
+const ACADEMY_ROLES = new Set(['admin', 'super_admin', 'manager', 'ls', 'telesales']);
+export const ACADEMY_TEAM_CODE = 'ACADEMY';
+export const ACADEMY_TEAM_FALLBACK_CONFIG_KEY = 'ACTIVE_ACADEMY_STAFF_CONFIG';
 const ICT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 const HOT_WINDOW_HOURS = 72;
 const WARM_WINDOW_HOURS = 168;
@@ -53,7 +60,7 @@ export class AcademySalesError extends Error {
 }
 
 function isManager(actor: AcademyActor) {
-  return MANAGER_ROLES.has(actor.role);
+  return isAdminOrSuperAdminRole(actor.role) || MANAGER_ROLES.has(actor.role);
 }
 
 function isTeamLeader(actor: AcademyActor) {
@@ -61,7 +68,26 @@ function isTeamLeader(actor: AcademyActor) {
 }
 
 export function canAccessAcademySales(actor: AcademyActor) {
-  return ACADEMY_ROLES.has(actor.role);
+  return actor.academyAccess === true || ACADEMY_ROLES.has(actor.role);
+}
+
+/**
+ * Authoritative workspace gate. Role names only determine what an approved
+ * Academy user can do inside the workspace; membership determines whether the
+ * workspace is visible or reachable at all.
+ */
+export async function getAcademyWorkspaceAccess(fastify: FastifyInstance, actor: AcademyActor) {
+  if (isAdminOrSuperAdminRole(actor.role)) {
+    return { canAccess: true, scope: 'ADMIN' as const };
+  }
+
+  const isAcademyTeamMember = await TeamService.isActiveCrmStaffMember(
+    fastify,
+    ACADEMY_TEAM_CODE,
+    actor.id,
+    ACADEMY_TEAM_FALLBACK_CONFIG_KEY
+  );
+  return { canAccess: isAcademyTeamMember, scope: isAcademyTeamMember ? ('ACADEMY_TEAM' as const) : null };
 }
 
 export function normalizeAcademyPhone(value: string | null | undefined): string | null {
@@ -105,6 +131,18 @@ function asDate(value: string | Date | null | undefined): Date | null {
   return Number.isFinite(parsed.getTime()) ? parsed : null;
 }
 
+export function resolveAcademyStatusForSchedule(
+  currentStatus: AcademyLeadStatus,
+  requestedStatus: AcademyLeadStatus | undefined,
+  scheduledAt: string | null | undefined
+): AcademyLeadStatus | undefined {
+  if (requestedStatus) return requestedStatus;
+  if (scheduledAt !== undefined && asDate(scheduledAt) && ['NEW', 'WARM'].includes(currentStatus)) {
+    return 'SCHEDULED';
+  }
+  return undefined;
+}
+
 export function parseAcademyIctDate(value: string | null | undefined): Date | null {
   if (!value) return null;
   const trimmed = value.trim();
@@ -129,6 +167,30 @@ export function getAcademyIctDayBounds(now = new Date()) {
   };
 }
 
+export function getAcademyIctMonthBounds(value?: string, now = new Date()) {
+  const currentMonth = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ICT_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+  })
+    .formatToParts(now)
+    .reduce<Record<string, string>>((result, part) => ({ ...result, [part.type]: part.value }), {});
+  const month = value || `${currentMonth.year}-${currentMonth.month}`;
+  const match = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!match) throw new AcademySalesError('Tháng lịch test phải có định dạng YYYY-MM.');
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]);
+  if (monthIndex < 1 || monthIndex > 12) throw new AcademySalesError('Tháng lịch test không hợp lệ.');
+  const nextYear = monthIndex === 12 ? year + 1 : year;
+  const nextMonth = monthIndex === 12 ? 1 : monthIndex + 1;
+  const next = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+  return {
+    month,
+    start: new Date(`${month}-01T00:00:00.000+07:00`),
+    end: new Date(new Date(`${next}-01T00:00:00.000+07:00`).getTime() - 1),
+  };
+}
+
 function parseJson<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
   try {
@@ -138,12 +200,46 @@ function parseJson<T>(value: string | null | undefined, fallback: T): T {
   }
 }
 
+const ACADEMY_RICH_TEXT_TAGS = new Set([
+  'p',
+  'br',
+  'strong',
+  'b',
+  'em',
+  'i',
+  'u',
+  'ul',
+  'ol',
+  'li',
+  'h3',
+  'h4',
+  'blockquote',
+]);
+
+/**
+ * The course editor intentionally supports a compact formatting subset. It
+ * strips attributes and unapproved elements before content reaches storage,
+ * so rich text remains safe to render in future course views.
+ */
+export function sanitizeAcademyCourseRichText(value: string | null | undefined): string | null {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  const withoutUnsafeBlocks = raw.replace(/<(script|style|iframe|object|embed)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '');
+  const sanitized = withoutUnsafeBlocks.replace(/<[^>]*>/g, (tag) => {
+    const match = /^<\s*(\/?)\s*([a-z0-9]+)(?:\s+[^>]*)?\s*\/?\s*>$/i.exec(tag);
+    if (!match || !ACADEMY_RICH_TEXT_TAGS.has(match[2].toLowerCase())) return '';
+    return `<${match[1]}${match[2].toLowerCase()}>`;
+  });
+  return sanitized.trim() || null;
+}
+
 function toOwner(staff: SafeAny): AcademyLead['owner'] {
   if (!staff) return null;
   return { id: staff.id, displayName: staff.displayName, email: staff.email ?? null };
 }
 
 function toLead(row: SafeAny): AcademyLead {
+  const nextFollowUp = Array.isArray(row.followUps) ? row.followUps[0] : null;
   return {
     id: row.id,
     name: row.name,
@@ -169,9 +265,59 @@ function toLead(row: SafeAny): AcademyLead {
     owner: toOwner(row.owner),
     legacyOwnerEmail: row.legacyOwnerEmail ?? null,
     note: row.note ?? null,
+    nextFollowUp: nextFollowUp
+      ? {
+          id: nextFollowUp.id,
+          content: nextFollowUp.content,
+          dueAt: nextFollowUp.dueAt?.toISOString() ?? null,
+          assignee: toOwner(nextFollowUp.assignee),
+        }
+      : null,
+    pendingFollowUpCount: Math.max(0, Number(row._count?.followUps) || 0),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+type AcademyLeadFieldAudit = {
+  field: string;
+  label: string;
+  previous: string | number | boolean | null;
+  next: string | number | boolean | null;
+};
+
+function auditComparable(value: unknown): string | number | boolean | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'number' || typeof value === 'boolean') return value;
+  return String(value);
+}
+
+function buildLeadFieldAudit(
+  existing: SafeAny,
+  updated: SafeAny,
+  input: UpdateAcademyLeadRequest
+): AcademyLeadFieldAudit[] {
+  const audit: AcademyLeadFieldAudit[] = [];
+  const add = (field: keyof UpdateAcademyLeadRequest, label: string, previous: unknown, next: unknown) => {
+    if (input[field] === undefined) return;
+    const before = auditComparable(previous);
+    const after = auditComparable(next);
+    if (before !== after) audit.push({ field, label, previous: before, next: after });
+  };
+
+  add('name', 'Tên khách hàng', existing.name, updated.name);
+  add('phone', 'Số điện thoại', existing.phone, updated.phone);
+  add('email', 'Email', existing.email, updated.email);
+  add('source', 'Nguồn lead', existing.source, updated.source);
+  add('course', 'Khóa học', existing.course, updated.course);
+  add('goal', 'Mục tiêu học', existing.goal, updated.goal);
+  add('flightDate', 'Ngày bay', existing.flightDate, updated.flightDate);
+  add('ownerStaffId', 'Người phụ trách', existing.ownerStaffId, updated.owner?.id ?? null);
+  add('revenueVnd', 'Doanh thu đã chốt', existing.revenueVnd, updated.revenueVnd);
+  add('isHot', 'Ưu tiên Hot', existing.isHot, updated.isHot);
+  add('note', 'Ghi chú nội bộ', existing.note, updated.note);
+  return audit;
 }
 
 function toActivity(row: SafeAny): AcademyLeadActivity {
@@ -203,6 +349,20 @@ function toFollowUp(row: SafeAny): AcademyFollowUpTask {
   };
 }
 
+function toCalendarEvent(row: SafeAny): AcademyLeadCalendarEvent {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone ?? null,
+    avatarUrl: row.avatarUrl ?? null,
+    status: row.status as AcademyLeadStatus,
+    course: row.course ?? null,
+    scheduledAt: row.scheduledAt?.toISOString() ?? null,
+    flightDate: row.flightDate?.toISOString() ?? null,
+    owner: toOwner(row.owner),
+  };
+}
+
 function toPlaybook(row: SafeAny): AcademyPlaybook {
   return {
     id: row.id,
@@ -221,12 +381,20 @@ function toCourse(row: SafeAny): AcademyCourse {
     id: row.id,
     code: row.code,
     name: row.name,
+    nameEn: row.nameEn ?? null,
     tag: row.tag ?? null,
     description: row.description ?? null,
+    market: row.market === 'OVERSEAS' ? 'OVERSEAS' : 'DOMESTIC',
+    coverImageUrl: row.coverImageUrl ?? null,
     listPriceVnd: Math.round(Number(row.listPriceVnd) || 0),
     promoPriceVnd: Math.round(Number(row.promoPriceVnd) || 0),
     kitName: row.kitName ?? null,
     kitUrl: row.kitUrl ?? null,
+    kitPriceVnd: Math.max(0, Math.round(Number(row.kitPriceVnd) || 0)),
+    samplePriceVnd: Math.max(0, Math.round(Number(row.samplePriceVnd) || 0)),
+    lessonCount: Math.max(0, Math.round(Number(row.lessonCount) || 0)),
+    lashModelCount: Math.max(0, Math.round(Number(row.lashModelCount) || 0)),
+    syllabusHtml: row.syllabusHtml ?? null,
     syllabus: parseJson<Array<{ num: number; title: string; description: string }>>(row.syllabus, []),
     sortOrder: row.sortOrder,
     isActive: Boolean(row.isActive),
@@ -296,7 +464,13 @@ export class AcademySalesService {
     };
   }
 
-  private static async getAccessibleLead(fastify: FastifyInstance, actor: AcademyActor, leadId: number) {
+  /**
+   * Shared Academy lead scope guard for sibling native modules. Keeping it in
+   * the Sales service prevents Tố Chất, campaigns and future Academy tools
+   * from quietly diverging on owner/team visibility rules.
+   */
+  static async getAccessibleLead(fastify: FastifyInstance, actor: AcademyActor, leadId: number) {
+    this.assertAcademyAccess(actor);
     const lead = await fastify.prisma.crm.crmAcademyLead.findFirst({
       where: { AND: [{ id: leadId }, await this.leadAccessWhere(fastify, actor)] },
       include: { owner: { select: { id: true, displayName: true, email: true } } },
@@ -311,7 +485,7 @@ export class AcademySalesService {
     const staff = await fastify.prisma.crm.crmStaff.findMany({
       where: {
         isActive: true,
-        role: { in: ['admin', 'manager', 'ls', 'telesales'] },
+        role: { in: ['admin', 'super_admin', 'manager', 'ls', 'telesales'] },
         ...(visibleIds ? { id: { in: visibleIds } } : {}),
       },
       orderBy: { displayName: 'asc' },
@@ -388,45 +562,74 @@ export class AcademySalesService {
       [orderByKey]: params.sortOrder === 'asc' ? 'asc' : 'desc',
     } as Prisma.CrmAcademyLeadOrderByWithRelationInput;
 
-    const [rows, total, statusGroups, hotCount, warmHotCount, wonToday, pendingFollowUps, overdueFollowUps] =
-      await Promise.all([
-        fastify.prisma.crm.crmAcademyLead.findMany({
-          where,
-          orderBy,
-          skip: (page - 1) * limit,
-          take: limit,
-          include: { owner: { select: { id: true, displayName: true, email: true } } },
-        }),
-        fastify.prisma.crm.crmAcademyLead.count({ where }),
-        fastify.prisma.crm.crmAcademyLead.groupBy({
-          by: ['status'],
-          where: summaryWhere,
-          _count: { _all: true },
-        }),
-        fastify.prisma.crm.crmAcademyLead.count({
-          where: { AND: [summaryWhere, { isHot: true, hotMarkedAt: { gte: hotStart } }] },
-        }),
-        fastify.prisma.crm.crmAcademyLead.count({
-          where: { AND: [summaryWhere, { isHot: true, hotMarkedAt: { gte: warmStart, lt: hotStart } }] },
-        }),
-        fastify.prisma.crm.crmAcademyLead.count({
-          where: {
-            AND: [
-              summaryWhere,
-              {
-                status: 'WON',
-                activities: { some: { activityType: 'ENROLLMENT', occurredAt: { gte: today.start, lte: today.end } } },
-              },
-            ],
+    const [
+      rows,
+      total,
+      statusGroups,
+      wonRevenue,
+      hotCount,
+      warmHotCount,
+      wonToday,
+      pendingFollowUps,
+      overdueFollowUps,
+    ] = await Promise.all([
+      fastify.prisma.crm.crmAcademyLead.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          owner: { select: { id: true, displayName: true, email: true } },
+          // Select only the compact task projection needed by the grid. This
+          // intentionally decouples Lead Manager from future task metadata.
+          followUps: {
+            where: { status: 'PENDING' },
+            orderBy: [{ dueAt: 'asc' }, { createdAt: 'asc' }],
+            take: 1,
+            select: {
+              id: true,
+              content: true,
+              dueAt: true,
+              assignee: { select: { id: true, displayName: true, email: true } },
+            },
           },
-        }),
-        fastify.prisma.crm.crmAcademyFollowUpTask.count({
-          where: { AND: [taskAccess, { status: 'PENDING' }] },
-        }),
-        fastify.prisma.crm.crmAcademyFollowUpTask.count({
-          where: { AND: [taskAccess, { status: 'PENDING', dueAt: { lt: today.start } }] },
-        }),
-      ]);
+          _count: { select: { followUps: { where: { status: 'PENDING' } } } },
+        },
+      }),
+      fastify.prisma.crm.crmAcademyLead.count({ where }),
+      fastify.prisma.crm.crmAcademyLead.groupBy({
+        by: ['status'],
+        where: summaryWhere,
+        _count: { _all: true },
+      }),
+      fastify.prisma.crm.crmAcademyLead.aggregate({
+        where: { AND: [summaryWhere, { status: 'WON' }] },
+        _sum: { revenueVnd: true },
+      }),
+      fastify.prisma.crm.crmAcademyLead.count({
+        where: { AND: [summaryWhere, { isHot: true, hotMarkedAt: { gte: hotStart } }] },
+      }),
+      fastify.prisma.crm.crmAcademyLead.count({
+        where: { AND: [summaryWhere, { isHot: true, hotMarkedAt: { gte: warmStart, lt: hotStart } }] },
+      }),
+      fastify.prisma.crm.crmAcademyLead.count({
+        where: {
+          AND: [
+            summaryWhere,
+            {
+              status: 'WON',
+              activities: { some: { activityType: 'ENROLLMENT', occurredAt: { gte: today.start, lte: today.end } } },
+            },
+          ],
+        },
+      }),
+      fastify.prisma.crm.crmAcademyFollowUpTask.count({
+        where: { AND: [taskAccess, { status: 'PENDING' }] },
+      }),
+      fastify.prisma.crm.crmAcademyFollowUpTask.count({
+        where: { AND: [taskAccess, { status: 'PENDING', dueAt: { lt: today.start } }] },
+      }),
+    ]);
     const countByStatus = new Map(statusGroups.map((group) => [group.status, group._count._all]));
     const summary: AcademyLeadSummary = {
       total: Array.from(countByStatus.values()).reduce((sum, count) => sum + count, 0),
@@ -435,6 +638,7 @@ export class AcademySalesService {
       scheduledCount: countByStatus.get('SCHEDULED') || 0,
       testedCount: countByStatus.get('TESTED') || 0,
       wonCount: countByStatus.get('WON') || 0,
+      wonRevenueVnd: Math.round(Number(wonRevenue._sum.revenueVnd) || 0),
       lostCount: countByStatus.get('LOST') || 0,
       hotCount,
       warmHotCount,
@@ -443,6 +647,39 @@ export class AcademySalesService {
       wonToday,
     };
     return { data: rows.map(toLead), total, page, limit, summary };
+  }
+
+  static async listCalendarEvents(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    params: ListAcademyLeadCalendarParams
+  ) {
+    this.assertAcademyAccess(actor);
+    const { month, start, end } = getAcademyIctMonthBounds(params.month);
+    const clauses: Prisma.CrmAcademyLeadWhereInput[] = [await this.leadAccessWhere(fastify, actor)];
+    if (params.ownerStaffId && params.ownerStaffId !== 'ALL') {
+      if (params.ownerStaffId === 'UNASSIGNED') clauses.push({ ownerStaffId: null });
+      else {
+        const ownerStaffId = Number(params.ownerStaffId);
+        const visibleIds = await this.visibleStaffIds(fastify, actor);
+        if (isManager(actor) || (visibleIds && visibleIds.includes(ownerStaffId))) {
+          clauses.push({ ownerStaffId });
+        }
+      }
+    }
+    const rows = await fastify.prisma.crm.crmAcademyLead.findMany({
+      where: {
+        AND: [
+          ...clauses,
+          {
+            OR: [{ scheduledAt: { gte: start, lte: end } }, { flightDate: { gte: start, lte: end } }],
+          },
+        ],
+      },
+      orderBy: [{ scheduledAt: 'asc' }, { flightDate: 'asc' }],
+      include: { owner: { select: { id: true, displayName: true, email: true } } },
+    });
+    return { month, data: rows.map(toCalendarEvent) };
   }
 
   static async getLead(fastify: FastifyInstance, actor: AcademyActor, leadId: number): Promise<AcademyLeadDetail> {
@@ -496,6 +733,7 @@ export class AcademySalesService {
         scheduledAt: asDate(input.scheduledAt),
         note: input.note?.trim() || null,
         ownerStaffId: ownerStaffId || null,
+        status: asDate(input.scheduledAt) ? 'SCHEDULED' : 'NEW',
         createdByStaffId: actor.id,
         activities: {
           create: {
@@ -524,10 +762,15 @@ export class AcademySalesService {
         throw new AcademySalesError('Bạn chỉ có thể giao lead cho thành viên trong phạm vi phụ trách.', 403);
       }
     }
-    if (input.status && input.status !== existing.status) {
+    const nextStatus = resolveAcademyStatusForSchedule(
+      existing.status as AcademyLeadStatus,
+      input.status,
+      input.scheduledAt
+    );
+    if (nextStatus && nextStatus !== existing.status) {
       const allowed = STATUS_TRANSITIONS[existing.status as AcademyLeadStatus] || [];
-      if (!allowed.includes(input.status)) {
-        throw new AcademySalesError(`Không thể chuyển từ ${existing.status} sang ${input.status}.`);
+      if (!allowed.includes(nextStatus)) {
+        throw new AcademySalesError(`Không thể chuyển từ ${existing.status} sang ${nextStatus}.`);
       }
     }
     const data: Prisma.CrmAcademyLeadUpdateInput = {};
@@ -549,9 +792,9 @@ export class AcademySalesService {
     if (input.scheduledAt !== undefined) data.scheduledAt = asDate(input.scheduledAt);
     if (input.ownerStaffId !== undefined)
       data.owner = input.ownerStaffId ? { connect: { id: input.ownerStaffId } } : { disconnect: true };
-    if (input.status !== undefined) {
-      data.status = input.status;
-      if (input.status === 'WON') {
+    if (nextStatus !== undefined) {
+      data.status = nextStatus;
+      if (nextStatus === 'WON') {
         data.isHot = false;
         data.hotMarkedAt = null;
       }
@@ -579,15 +822,28 @@ export class AcademySalesService {
         data,
         include: { owner: { select: { id: true, displayName: true, email: true } } },
       });
-      if (input.status && input.status !== existing.status) {
+      const fieldAudit = buildLeadFieldAudit(existing, lead, input);
+      if (fieldAudit.length) {
         await tx.crmAcademyLeadActivity.create({
           data: {
             leadId,
-            activityType: input.status === 'WON' ? 'ENROLLMENT' : 'STATUS_CHANGE',
-            content: `Chuyển trạng thái ${existing.status} → ${input.status}`,
+            activityType: 'FIELD_UPDATE',
+            content: `Cập nhật thông tin: ${fieldAudit.map((item) => item.label).join(', ')}.`,
+            metadata: JSON.stringify({ fields: fieldAudit }),
+            actorStaffId: actor.id,
+            occurredAt: new Date(),
+          },
+        });
+      }
+      if (nextStatus && nextStatus !== existing.status) {
+        await tx.crmAcademyLeadActivity.create({
+          data: {
+            leadId,
+            activityType: nextStatus === 'WON' ? 'ENROLLMENT' : 'STATUS_CHANGE',
+            content: `Chuyển trạng thái ${existing.status} → ${nextStatus}`,
             metadata: JSON.stringify({
               previousStatus: existing.status,
-              status: input.status,
+              status: nextStatus,
               revenueVnd: lead.revenueVnd,
             }),
             actorStaffId: actor.id,
@@ -643,6 +899,30 @@ export class AcademySalesService {
       return created;
     });
     return toActivity(activity);
+  }
+
+  static async recordNoShow(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    leadId: number,
+    input: RecordAcademyNoShowRequest
+  ): Promise<AcademyLead> {
+    const existing = await this.getAccessibleLead(fastify, actor, leadId);
+    if (!existing.scheduledAt) throw new AcademySalesError('Khách hàng này chưa có lịch test để ghi nhận không đến.');
+    const occurredAt = asDate(input.occurredAt) || new Date();
+    const scheduledAt = existing.scheduledAt.toISOString();
+    const content = String(input.content || '').trim() || `Không đến lịch test ${scheduledAt}.`;
+    const lead = await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmAcademyLeadActivity.create({
+        data: { leadId, activityType: 'NO_SHOW', content, actorStaffId: actor.id, occurredAt },
+      });
+      return tx.crmAcademyLead.update({
+        where: { id: leadId },
+        data: { scheduledAt: null },
+        include: { owner: { select: { id: true, displayName: true, email: true } } },
+      });
+    });
+    return toLead(lead);
   }
 
   static async listFollowUps(fastify: FastifyInstance, actor: AcademyActor, params: ListAcademyFollowUpsParams) {
@@ -802,15 +1082,37 @@ export class AcademySalesService {
       .toLowerCase();
     const name = String(input.name || '').trim();
     if (!code || !name) throw new AcademySalesError('Mã và tên khóa học là bắt buộc.');
+    const nameEn = input.nameEn === undefined ? undefined : input.nameEn?.trim() || null;
+    if (nameEn && nameEn.length > 255) throw new AcademySalesError('Tên tiếng Anh không được vượt quá 255 ký tự.');
+    const lessonCount = input.lessonCount === undefined ? undefined : Math.round(Number(input.lessonCount));
+    if (lessonCount !== undefined && (!Number.isFinite(lessonCount) || lessonCount < 1)) {
+      throw new AcademySalesError('Số buổi học phải là số nguyên lớn hơn 0.');
+    }
+    const lashModelCount = input.lashModelCount === undefined ? undefined : Math.round(Number(input.lashModelCount));
+    if (lashModelCount !== undefined && (!Number.isFinite(lashModelCount) || lashModelCount < 0)) {
+      throw new AcademySalesError('Số mẫu nối mi cần phải là số nguyên từ 0 trở lên.');
+    }
+    const market = input.market === undefined ? undefined : String(input.market).trim().toUpperCase();
+    if (market !== undefined && market !== 'DOMESTIC' && market !== 'OVERSEAS') {
+      throw new AcademySalesError('Nhóm học viên của khóa học không hợp lệ.');
+    }
     const data = {
       code,
       name,
+      ...(nameEn !== undefined ? { nameEn } : {}),
       tag: input.tag?.trim() || null,
       description: input.description?.trim() || null,
+      ...(market !== undefined ? { market } : {}),
+      ...(input.coverImageUrl !== undefined ? { coverImageUrl: input.coverImageUrl?.trim() || null } : {}),
       listPriceVnd: Math.max(0, Math.round(Number(input.listPriceVnd) || 0)),
       promoPriceVnd: Math.max(0, Math.round(Number(input.promoPriceVnd) || 0)),
       kitName: input.kitName?.trim() || null,
       kitUrl: input.kitUrl?.trim() || null,
+      kitPriceVnd: Math.max(0, Math.round(Number(input.kitPriceVnd) || 0)),
+      samplePriceVnd: Math.max(0, Math.round(Number(input.samplePriceVnd) || 0)),
+      ...(lessonCount !== undefined ? { lessonCount } : {}),
+      ...(lashModelCount !== undefined ? { lashModelCount } : {}),
+      ...(input.syllabusHtml !== undefined ? { syllabusHtml: sanitizeAcademyCourseRichText(input.syllabusHtml) } : {}),
       syllabus: JSON.stringify(input.syllabus || []),
       sortOrder: Math.max(0, Math.round(Number(input.sortOrder) || 0)),
       isActive: input.isActive ?? true,

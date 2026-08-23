@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { requireAuth } from '../../middlewares/auth.js';
 import { registerCcRoutes } from './routes/cc.routes.js';
 import { registerCcPaystubRoutes } from './routes/cc-paystub.routes.js';
@@ -663,7 +664,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   // POST /api/kpi/salary-config (Admin only)
   fastify.post('/kpi/salary-config', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string };
-    if (user.role !== 'admin') {
+    if (!isAdminOrSuperAdminRole(user.role)) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'Chỉ quản trị viên mới có quyền cấu hình công thức lương.',
@@ -723,7 +724,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   // POST /api/kpi/staff-levels (Admin only)
   fastify.post('/kpi/staff-levels', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string };
-    if (user.role !== 'admin') {
+    if (!isAdminOrSuperAdminRole(user.role)) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'Chỉ quản trị viên mới có quyền cấu hình cấp độ mục tiêu nhân sự.',
@@ -769,7 +770,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
     const user = request.user as { id: number; role: string };
     let targetStaffId: number | undefined = undefined;
-    if (user.role === 'admin') {
+    if (isAdminOrSuperAdminRole(user.role)) {
       if (staffId) {
         targetStaffId = parseInt(staffId, 10);
       }
@@ -976,12 +977,12 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             answerRate: 0,
             bookingRate: 0,
             checkinRate: 0,
-            totalEarnings: user.role === 'admin' ? sal.totalSalary : 0,
-            salary: user.role === 'admin' ? sal : null,
+            totalEarnings: isAdminOrSuperAdminRole(user.role) ? sal.totalSalary : 0,
+            salary: isAdminOrSuperAdminRole(user.role) ? sal : null,
           };
         });
 
-        if (user.role === 'admin') {
+        if (isAdminOrSuperAdminRole(user.role)) {
           leaderboard.sort((a, b) => b.totalEarnings - a.totalEarnings);
         } else {
           leaderboard.sort((a, b) => b.totalCheckin - a.totalCheckin);
@@ -1195,8 +1196,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           answerRate,
           bookingRate,
           checkinRate,
-          totalEarnings: user.role === 'admin' ? salary.totalSalary : 0,
-          salary: user.role === 'admin' ? salary : null,
+          totalEarnings: isAdminOrSuperAdminRole(user.role) ? salary.totalSalary : 0,
+          salary: isAdminOrSuperAdminRole(user.role) ? salary : null,
         });
       }
 
@@ -1559,7 +1560,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
       const user = request.user as { id: number; role: string };
       let targetStaffId: number | undefined = undefined;
-      if (user.role === 'admin') {
+      if (isAdminOrSuperAdminRole(user.role)) {
         if (staffId) targetStaffId = parseInt(staffId, 10);
       } else {
         targetStaffId = user.id;

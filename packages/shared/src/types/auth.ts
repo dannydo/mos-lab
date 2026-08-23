@@ -1,7 +1,40 @@
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type SafeAny = any;
 
-export type UserRole = 'telesales' | 'manager' | 'admin' | 'oc' | 'cc' | 'ls' | 'technician' | 'qa' | 'qc' | 'qa_qc';
+export type UserRole =
+  'telesales' | 'manager' | 'admin' | 'super_admin' | 'oc' | 'cc' | 'ls' | 'technician' | 'qa' | 'qc' | 'qa_qc';
+
+/**
+ * Super Admin is an explicit role, not an email-based bypass. The identities
+ * below are used only when provisioning Danny Do's canonical account.
+ */
+export const SUPER_ADMIN_IDENTITIES = ['admin', 'danhdo@gmail.com', 'danny.do@wingslashes.com'] as const;
+
+export function isSuperAdminRole(role?: string | null): boolean {
+  return (
+    String(role || '')
+      .trim()
+      .toLowerCase() === 'super_admin'
+  );
+}
+
+/** Super Admin inherits every ordinary Admin capability. */
+export function isAdminOrSuperAdminRole(role?: string | null): boolean {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  return normalizedRole === 'admin' || normalizedRole === 'super_admin';
+}
+
+export function isCanonicalSuperAdminIdentity(identity: { username?: string | null; email?: string | null }): boolean {
+  const username = String(identity.username || '')
+    .trim()
+    .toLowerCase();
+  const email = String(identity.email || '')
+    .trim()
+    .toLowerCase();
+  return SUPER_ADMIN_IDENTITIES.some((value) => value === username || value === email);
+}
 
 export interface Staff {
   id: number;

@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
-import { DailySalesBonusConfig, DailySalesBonusTransaction, SafeAny } from '@mos-lab/shared';
+import { DailySalesBonusConfig, DailySalesBonusTransaction, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
 
 const DEFAULT_CONFIG: DailySalesBonusConfig = {
@@ -164,7 +164,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
   fastify.post('/gamification/daily-sales-bonus/config', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role?: string; username?: string; email?: string };
     const isAuthorized =
-      user.role === 'admin' ||
+      isAdminOrSuperAdminRole(user.role) ||
       user.role === 'manager' ||
       user.username?.toLowerCase() === 'admin' ||
       user.username?.toLowerCase() === 'danhdo@gmail.com' ||

@@ -2,11 +2,55 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildAcademyLeadSearchText,
+  canAccessAcademySales,
+  getAcademyWorkspaceAccess,
   getAcademyIctDayBounds,
   normalizeAcademyPhone,
   normalizeLegacyAcademyStatus,
   parseAcademyIctDate,
+  getAcademyIctMonthBounds,
+  resolveAcademyStatusForSchedule,
+  sanitizeAcademyCourseRichText,
 } from './academy-sales.service.js';
+
+test('grants the Academy workspace only to an admin or an active Academy-team member', async () => {
+  const adminAccess = await getAcademyWorkspaceAccess({} as never, { id: 1, role: 'admin' });
+  assert.deepEqual(adminAccess, { canAccess: true, scope: 'ADMIN' });
+  const superAdminAccess = await getAcademyWorkspaceAccess({} as never, { id: 2, role: 'super_admin' });
+  assert.deepEqual(superAdminAccess, { canAccess: true, scope: 'ADMIN' });
+
+  const teamMemberFastify = {
+    prisma: {
+      crm: {
+        crmTeamMember: {
+          findFirst: async () => ({ id: 1 }),
+        },
+        crmStaff: {
+          findUnique: async () => ({ legacyStaffId: 1001 }),
+        },
+      },
+    },
+  };
+  const teamMemberAccess = await getAcademyWorkspaceAccess(teamMemberFastify as never, { id: 12, role: 'telesales' });
+  assert.deepEqual(teamMemberAccess, { canAccess: true, scope: 'ACADEMY_TEAM' });
+
+  const nonMemberFastify = {
+    prisma: {
+      crm: {
+        crmTeamMember: {
+          findFirst: async () => null,
+        },
+        crmStaff: {
+          findUnique: async () => ({ legacyStaffId: null }),
+        },
+      },
+    },
+  };
+  const nonMemberAccess = await getAcademyWorkspaceAccess(nonMemberFastify as never, { id: 13, role: 'manager' });
+  assert.deepEqual(nonMemberAccess, { canAccess: false, scope: null });
+  assert.equal(canAccessAcademySales({ id: 12, role: 'telesales', academyAccess: true }), true);
+  assert.equal(canAccessAcademySales({ id: 12, role: 'cc' }), false);
+});
 
 test('normalizes legacy Academy statuses into the one supported pipeline', () => {
   assert.equal(normalizeLegacyAcademyStatus('contacted'), 'WARM');
@@ -31,4 +75,27 @@ test('treats date-only Academy values and task boundaries as Asia/Ho_Chi_Minh', 
   const bounds = getAcademyIctDayBounds(new Date('2026-08-19T10:30:00.000Z'));
   assert.equal(bounds.start.toISOString(), '2026-08-18T17:00:00.000Z');
   assert.equal(bounds.end.toISOString(), '2026-08-19T16:59:59.999Z');
+});
+
+test('uses ICT month boundaries for the test calendar', () => {
+  const bounds = getAcademyIctMonthBounds('2026-08');
+  assert.equal(bounds.start.toISOString(), '2026-07-31T17:00:00.000Z');
+  assert.equal(bounds.end.toISOString(), '2026-08-31T16:59:59.999Z');
+});
+
+test('moves a new or warm customer to scheduled when a test appointment is set', () => {
+  assert.equal(resolveAcademyStatusForSchedule('NEW', undefined, '2026-08-20T09:00:00+07:00'), 'SCHEDULED');
+  assert.equal(resolveAcademyStatusForSchedule('WARM', undefined, '2026-08-20T09:00:00+07:00'), 'SCHEDULED');
+  assert.equal(resolveAcademyStatusForSchedule('TESTED', undefined, '2026-08-20T09:00:00+07:00'), undefined);
+  assert.equal(resolveAcademyStatusForSchedule('WARM', 'LOST', '2026-08-20T09:00:00+07:00'), 'LOST');
+});
+
+test('keeps only the safe rich-text subset for Academy course material', () => {
+  assert.equal(
+    sanitizeAcademyCourseRichText(
+      '<h3 class="title">Buổi 1</h3><p onclick="bad()">Nội dung <strong>quan trọng</strong></p><script>alert(1)</script>'
+    ),
+    '<h3>Buổi 1</h3><p>Nội dung <strong>quan trọng</strong></p>'
+  );
+  assert.equal(sanitizeAcademyCourseRichText('   '), null);
 });

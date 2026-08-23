@@ -33,6 +33,7 @@ import {
   type ReportPeriodMode,
 } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
+import AcademyAccessGate from '../academy-leads/components/AcademyAccessGate';
 import { PostHubApprovalStage } from './components/PostHubApprovalStage';
 import { PostHubDataStage } from './components/PostHubDataStage';
 import { PostHubLeaderboardStage } from './components/PostHubLeaderboardStage';
@@ -62,7 +63,7 @@ const NATIVE_CHANNEL_OPTIONS = [
   { value: 'Video TikTok', label: 'TikTok · Video' },
 ];
 
-export default function PostHubPage() {
+function PostHubPageContent() {
   const { token } = theme.useToken();
   const [activeStage, setActiveStage] = useState<WorkflowStage>(0);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs('2026-08-17'));
@@ -783,5 +784,13 @@ export default function PostHubPage() {
         </div>
       </EntityFormDrawer>
     </FeaturePage>
+  );
+}
+
+export default function PostHubPage() {
+  return (
+    <AcademyAccessGate>
+      <PostHubPageContent />
+    </AcademyAccessGate>
   );
 }

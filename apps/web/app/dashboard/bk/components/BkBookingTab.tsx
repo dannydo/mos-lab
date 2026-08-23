@@ -442,6 +442,32 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Cuộc gọi</span>}
+              value={summary.totalCalls}
+              valueStyle={{ color: '#8b5cf6', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+              prefix={<PhoneOutlined className="mr-2" />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6} xl={4}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
+            <Statistic
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Pickup</span>}
+              value={summary.totalPickups}
+              valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+              prefix={<CheckCircleOutlined className="mr-2" />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6} xl={4}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
+            <Statistic
               title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Booking Đã Tạo</span>}
               value={summary.totalBookings}
               valueStyle={{ color: '#2563eb', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -468,37 +494,11 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Tỷ Lệ Chuyển Đổi Done</span>}
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">% Book → Done</span>}
               value={summary.conversionRate}
               suffix="%"
               valueStyle={{ color: '#f59e0b', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<TrophyOutlined className="mr-2" />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6} xl={4}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Cuộc gọi</span>}
-              value={summary.totalCalls}
-              valueStyle={{ color: '#8b5cf6', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<PhoneOutlined className="mr-2" />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6} xl={4}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Pickup</span>}
-              value={summary.totalPickups}
-              valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<CheckCircleOutlined className="mr-2" />}
             />
           </Card>
         </Col>

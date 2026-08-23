@@ -15,9 +15,21 @@ import {
   CustomerServiceOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import { Egg, GraduationCap, Rocket, Settings2, Target, UserRound, UserRoundPlus, UsersRound } from 'lucide-react';
+import {
+  BookOpen,
+  Egg,
+  GraduationCap,
+  Rocket,
+  Settings2,
+  Target,
+  UserRound,
+  UserRoundCog,
+  UserRoundPlus,
+  UsersRound,
+  WalletCards,
+} from 'lucide-react';
 
-import { SafeAny } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { AppIcon } from '../components/ui/AppIcon';
 
 export interface SidebarItemConfig {
@@ -39,11 +51,18 @@ export function getSidebarGroups(
   userRole: string = '',
   activeCampaigns: SafeAny[] = [],
   showCustomCampaigns: boolean = true,
-  campaignVisibility: Record<string, boolean> = {}
+  campaignVisibility: Record<string, boolean> = {},
+  academySidebarCampaigns: SafeAny[] = [],
+  academyAccess: boolean = false,
+  menuVisibility: Record<string, boolean> = {},
+  categoryVisibility: Record<string, boolean> = {}
 ): SidebarGroupConfig[] {
   const normalizedRole = userRole?.toLowerCase() || '';
-  const isAdmin = normalizedRole === 'admin';
-  const isLocaAllowed = ['admin', 'manager', 'oc', 'cc', 'cs', 'control'].includes(normalizedRole);
+  const isAdmin = isAdminOrSuperAdminRole(normalizedRole);
+  const isSuperAdmin = isSuperAdminRole(normalizedRole);
+  const isLocaAllowed = isAdmin || ['manager', 'oc', 'cc', 'cs', 'control'].includes(normalizedRole);
+  const isCrmCategoryVisible = categoryVisibility.crm !== false;
+  const isAcademyCategoryVisible = categoryVisibility.academy !== false;
 
   // Group 1: TRANG CHỦ
   const homeGroup: SidebarGroupConfig = {
@@ -156,25 +175,80 @@ export function getSidebarGroups(
   });
 
   crmGroupItems.push({
-    key: 'post-hub',
-    label: 'Chiến Thần',
-    icon: <AppIcon icon={Egg} size="sm" />,
-    path: '/dashboard/post-hub',
-  });
-
-  crmGroupItems.push({
     key: 'cs-hub',
     label: 'Trung Tâm CSKH',
     icon: <CustomerServiceOutlined />,
     path: '/dashboard/cs',
   });
 
-  if (['admin', 'manager', 'ls', 'telesales'].includes(normalizedRole)) {
-    crmGroupItems.push({
-      key: 'academy-sales',
-      label: 'Sales Academy',
+  const academyItems: SidebarItemConfig[] = [];
+  if (academyAccess) {
+    const academyChildren: SidebarItemConfig[] = [
+      {
+        key: 'academy-customers',
+        label: 'Khách hàng',
+        icon: <AppIcon icon={UsersRound} size="sm" />,
+        path: '/dashboard/academy-leads',
+      },
+      {
+        key: 'academy-lead-manager',
+        label: 'Lead Manager',
+        icon: <AppIcon icon={GraduationCap} size="sm" />,
+        path: '/dashboard/academy-leads/lead-manager',
+      },
+      {
+        key: 'academy-campaigns',
+        label: 'Chiến dịch',
+        icon: <AppIcon icon={Rocket} size="sm" />,
+        path: '/dashboard/academy-leads/campaigns',
+      },
+    ];
+
+    academySidebarCampaigns.forEach((campaign: SafeAny) => {
+      const slug = String(campaign?.slug || '').trim();
+      const name = String(campaign?.name || '').trim();
+      if (!slug || !name) return;
+      academyChildren.push({
+        key: `academy-campaign-${slug}`,
+        label: name,
+        icon: <AppIcon icon={Rocket} size="sm" className="text-emerald-500" />,
+        path: `/dashboard/academy-leads/campaigns/${slug}`,
+      });
+    });
+
+    academyChildren.push({
+      key: 'academy-courses',
+      label: 'Khóa học',
+      icon: <AppIcon icon={BookOpen} size="sm" />,
+      path: '/dashboard/academy-leads/courses',
+    });
+
+    if (isAdmin || normalizedRole === 'manager') {
+      academyChildren.push({
+        key: 'academy-payment-management',
+        label: 'Thu học phí',
+        icon: <AppIcon icon={WalletCards} size="sm" />,
+        path: '/dashboard/academy-leads/payments',
+      });
+      academyChildren.push({
+        key: 'academy-instructors',
+        label: 'Giảng viên',
+        icon: <AppIcon icon={UserRoundCog} size="sm" />,
+        path: '/dashboard/academy-leads/instructors',
+      });
+    }
+
+    academyItems.push({
+      key: 'academy',
+      label: 'Academy',
       icon: <AppIcon icon={GraduationCap} size="sm" />,
-      path: '/dashboard/academy-leads',
+      children: academyChildren,
+    });
+    academyItems.push({
+      key: 'post-hub',
+      label: 'Chiến Thần',
+      icon: <AppIcon icon={Egg} size="sm" />,
+      path: '/dashboard/post-hub',
     });
   }
 
@@ -184,7 +258,14 @@ export function getSidebarGroups(
     items: crmGroupItems,
   };
 
-  // Group 3: VẬN HÀNH CUỘC GỌI
+  // Academy is a dedicated operating domain, separate from customer campaigns.
+  const academyGroup: SidebarGroupConfig = {
+    groupKey: 'grp-academy',
+    groupTitle: 'ACADEMY',
+    items: academyItems,
+  };
+
+  // Group 4: VẬN HÀNH CUỘC GỌI
   const operationsItems: SidebarItemConfig[] = [
     {
       key: 'my-appointments',
@@ -233,7 +314,7 @@ export function getSidebarGroups(
     items: operationsItems,
   };
 
-  // Group 4: BÁO CÁO & KPI
+  // Group 5: BÁO CÁO & KPI
   const reportsGroup: SidebarGroupConfig = {
     groupKey: 'grp-reports',
     groupTitle: 'BÁO CÁO & KPI',
@@ -265,28 +346,37 @@ export function getSidebarGroups(
     ],
   };
 
-  // Group 5: QUẢN TRỊ HỆ THỐNG (Only for Admin)
+  // Group 6: QUẢN TRỊ HỆ THỐNG (Only for Admin)
   const systemGroupItems: SidebarItemConfig[] = [];
   if (isAdmin) {
+    const staffChildren: SidebarItemConfig[] = [
+      {
+        key: 'staff-directory',
+        label: 'Danh sách nhân sự',
+        icon: <SolutionOutlined />,
+        path: '/dashboard/staff',
+      },
+      {
+        key: 'teams',
+        label: 'Cấu hình Đội nhóm',
+        icon: <TeamOutlined />,
+        path: '/dashboard/staff/teams',
+      },
+    ];
+    if (isSuperAdmin) {
+      staffChildren.push({
+        key: 'menu-access',
+        label: 'Quyền hiển thị menu',
+        icon: <AppIcon icon={Settings2} size="sm" />,
+        path: '/dashboard/staff/menu-access',
+      });
+    }
     systemGroupItems.push(
       {
         key: 'staff',
         label: 'Nhân sự (HR)',
         icon: <SolutionOutlined />,
-        children: [
-          {
-            key: 'staff-directory',
-            label: 'Danh sách nhân sự',
-            icon: <SolutionOutlined />,
-            path: '/dashboard/staff',
-          },
-          {
-            key: 'teams',
-            label: 'Cấu hình Đội nhóm',
-            icon: <TeamOutlined />,
-            path: '/dashboard/staff/teams',
-          },
-        ],
+        children: staffChildren,
       },
       {
         key: 'catalog',
@@ -315,22 +405,59 @@ export function getSidebarGroups(
     items: systemGroupItems,
   };
 
-  const groups: SidebarGroupConfig[] = [homeGroup, crmGroup, operationsGroup, reportsGroup];
+  const groups: SidebarGroupConfig[] = [homeGroup, crmGroup];
+  if (academyItems.length > 0) {
+    groups.push(academyGroup);
+  }
+  groups.push(operationsGroup, reportsGroup);
   if (systemGroupItems.length > 0) {
     groups.push(systemGroup);
   }
 
-  return groups;
+  const filterItems = (items: SidebarItemConfig[]): SidebarItemConfig[] =>
+    items.flatMap((item) => {
+      // Dynamic campaign links do not have individual static menu keys. Their
+      // parent category therefore enforces the category policy for every child.
+      if (!isCrmCategoryVisible && item.key === 'nyc-parent') return [];
+      if (!isAcademyCategoryVisible && (item.key === 'academy' || item.key === 'post-hub')) return [];
+      if (item.children?.length) {
+        const visibleChildren = filterItems(item.children);
+        // A parent is navigational structure, not a separate permission gate.
+        // It stays when at least one visible child remains.
+        return visibleChildren.length > 0 ? [{ ...item, children: visibleChildren }] : [];
+      }
+      return menuVisibility[item.key] === false ? [] : [item];
+    });
+
+  return groups
+    .map((group) => ({ ...group, items: filterItems(group.items) }))
+    .filter((group) => group.items.length > 0);
 }
 
-export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | null): string {
+export function getSelectedMenuKey(
+  pathname: string,
+  assignedStaffId?: string | null,
+  academySidebarCampaigns: SafeAny[] = []
+): string {
   if (pathname === '/dashboard') return 'dashboard';
   if (pathname.includes('/dashboard/today')) return 'today';
   if (pathname.includes('/dashboard/fal')) return 'fal-control-tower';
   if (pathname.includes('/dashboard/customers')) {
     return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
   }
-  if (pathname.includes('/dashboard/academy-leads')) return 'academy-sales';
+  if (pathname.includes('/dashboard/academy-leads/lead-manager')) return 'academy-lead-manager';
+  if (pathname.includes('/dashboard/academy-leads/payments')) return 'academy-payment-management';
+  if (pathname.startsWith('/dashboard/academy-leads/campaigns/')) {
+    const slug = pathname.replace('/dashboard/academy-leads/campaigns/', '').split('/')[0];
+    if (academySidebarCampaigns.some((campaign) => String(campaign?.slug || '') === slug)) {
+      return `academy-campaign-${slug}`;
+    }
+    return 'academy-campaigns';
+  }
+  if (pathname.includes('/dashboard/academy-leads/campaigns')) return 'academy-campaigns';
+  if (pathname.includes('/dashboard/academy-leads/instructors')) return 'academy-instructors';
+  if (pathname.includes('/dashboard/academy-leads/courses')) return 'academy-courses';
+  if (pathname.includes('/dashboard/academy-leads')) return 'academy-customers';
   if (pathname === '/dashboard/nyc') return 'nyc-main';
   if (pathname.includes('/dashboard/post-hub')) return 'post-hub';
   if (pathname === '/dashboard/nyc/campaigns') return 'nyc-campaigns-mgmt';
@@ -352,6 +479,7 @@ export function getSelectedMenuKey(pathname: string, assignedStaffId?: string | 
   if (pathname.includes('/dashboard/cv')) return 'cv';
   if (pathname.includes('/dashboard/bk')) return 'bk';
   if (pathname.includes('/dashboard/staff/teams')) return 'teams';
+  if (pathname.includes('/dashboard/staff/menu-access')) return 'menu-access';
   if (pathname.includes('/dashboard/staff')) return 'staff-directory';
   if (pathname.includes('/dashboard/referrals')) return 'referrals';
   if (pathname.includes('/dashboard/catalog')) return 'catalog';

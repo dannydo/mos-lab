@@ -16,6 +16,11 @@ print_section() {
   shift
   local files
   files="$(git diff --name-only "${DIFF_ARGS[@]}" -- "$@")"
+  if [[ -z "${TARGET_REF}" ]]; then
+    local untracked_files
+    untracked_files="$(git ls-files --others --exclude-standard -- "$@")"
+    files="$(printf '%s\n%s\n' "${files}" "${untracked_files}" | sed '/^$/d' | sort -u)"
+  fi
   echo "${title}:"
   if [[ -z "${files}" ]]; then
     echo '  none'

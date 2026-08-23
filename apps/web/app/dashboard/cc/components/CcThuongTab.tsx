@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Table, Tag, Typography, theme, Statistic, Button, Space, Progress, Tooltip, message } from 'antd';
 import {
   GiftOutlined,
@@ -106,6 +106,8 @@ export default function CcThuongTab({
     elapsedRatioPercent?: number;
   } | null>(null);
   const [activeStaff, setActiveStaff] = useState<{ userId: number; displayName: string; avatar?: string | null }[]>([]);
+  const inFlightDataKeysRef = useRef(new Set<string>());
+  const latestDataKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('cc_thuong_daily_page', String(dailyPage));
@@ -122,18 +124,25 @@ export default function CcThuongTab({
     }
   }, [parentSelectedConsultant]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD');
+    const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD');
+    const requestKey = `${dateFrom}:${dateTo}:${selectedStore}:${refreshKey}`;
+
+    latestDataKeyRef.current = requestKey;
+    if (inFlightDataKeysRef.current.has(requestKey)) return;
+
+    inFlightDataKeysRef.current.add(requestKey);
     setLoading(true);
     try {
-      const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD');
-      const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD');
-
       const res = await apiClient.gamification.getDailySalesBonusConsultants({
         dateFrom,
         dateTo,
         storeId: selectedStore,
         consultantId: 'ALL',
       });
+
+      if (latestDataKeyRef.current !== requestKey) return;
 
       if (res && res.data) {
         setData(res.data);
@@ -148,15 +157,20 @@ export default function CcThuongTab({
         setSummary(null);
       }
     } catch (err) {
-      console.error('Lỗi tải dữ liệu thưởng CC:', err);
+      if (latestDataKeyRef.current === requestKey) {
+        console.error('Lỗi tải dữ liệu thưởng CC:', err);
+      }
     } finally {
-      setLoading(false);
+      inFlightDataKeysRef.current.delete(requestKey);
+      if (latestDataKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
-  };
+  }, [dateRange, refreshKey, selectedStore]);
 
   useEffect(() => {
-    fetchData();
-  }, [dateRange, refreshKey, selectedStore]);
+    void fetchData();
+  }, [fetchData]);
 
   // Mapped Data based on includeVat (ON: Gross with 8% VAT, OFF: Net before 8% VAT)
   const mappedData = useMemo(() => {

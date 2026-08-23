@@ -49,6 +49,15 @@ model CrmStaff {
   academyCreatedLeads CrmAcademyLead[]          @relation("AcademyLeadCreator")
   academyActivities   CrmAcademyLeadActivity[]  @relation("AcademyActivityActor")
   academyFollowUps    CrmAcademyFollowUpTask[]  @relation("AcademyFollowUpAssignee")
+  academyCreatedCampaigns CrmAcademyCampaign[] @relation("AcademyCampaignCreator")
+  academyCampaignLeadAdds CrmAcademyCampaignLead[] @relation("AcademyCampaignLeadAddedBy")
+  academyCampaignLeadRemovals CrmAcademyCampaignLead[] @relation("AcademyCampaignLeadRemovedBy")
+  academyCampaignTouchpointLogs CrmAcademyCampaignTouchpointLog[] @relation("AcademyCampaignTouchpointActor")
+  academyTalentAssessments CrmAcademyTalentAssessment[] @relation("AcademyTalentAssessmentEvaluator")
+  academyTalentInvoicesPrinted CrmAcademyTalentAssessment[] @relation("AcademyTalentAssessmentInvoicePrinter")
+  academyTalentPaymentsConfirmed CrmAcademyTalentPayment[] @relation("AcademyTalentPaymentConfirmer")
+  academyTalentPolicyAudits CrmAcademyTalentPolicyAudit[] @relation("AcademyTalentPolicyAuditChanger")
+  academyInstructorProfile CrmAcademyInstructor? @relation("AcademyInstructorStaff")
 
   @@map("crm_staff")
 }
@@ -341,6 +350,24 @@ model CrmMissedLog {
 // ═══════════════════════════════════════════
 // Team Configuration — Unified team/group management
 // ═══════════════════════════════════════════
+model CrmDepartment {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique @db.VarChar(30) // SHOP, ACADEMY, GROWTH, BACK_OFFICE
+  name        String    @db.VarChar(100)
+  description String?   @db.Text
+  color       String?   @db.VarChar(30)
+  icon        String?   @db.VarChar(50)
+  sortOrder   Int       @default(0) @map("sort_order")
+  isActive    Boolean   @default(true) @map("is_active") @db.TinyInt
+  createdAt   DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  teams CrmTeam[]
+
+  @@index([isActive])
+  @@map("crm_departments")
+}
+
 model CrmTeam {
   id           Int      @id @default(autoincrement())
   code         String   @unique @db.VarChar(30) // CC, CV, BK, BK_TELESALES...
@@ -350,16 +377,19 @@ model CrmTeam {
   icon         String?  @db.VarChar(50) // Emoji or icon name
   sortOrder    Int      @default(0) @map("sort_order")
   isActive     Boolean  @default(true) @map("is_active") @db.TinyInt
+  departmentId Int?     @map("department_id")
   parentTeamId Int?     @map("parent_team_id")
   metadata     String?  @db.Text // JSON: salary config, bonus formula
   createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   // Self-referencing hierarchy
-  parent   CrmTeam?        @relation("TeamHierarchy", fields: [parentTeamId], references: [id], onDelete: SetNull)
-  children CrmTeam[]       @relation("TeamHierarchy")
-  members  CrmTeamMember[]
+  department CrmDepartment? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  parent     CrmTeam?        @relation("TeamHierarchy", fields: [parentTeamId], references: [id], onDelete: SetNull)
+  children   CrmTeam[]       @relation("TeamHierarchy")
+  members    CrmTeamMember[]
 
+  @@index([departmentId])
   @@index([parentTeamId])
   @@index([isActive])
   @@map("crm_teams")
@@ -386,6 +416,53 @@ model CrmTeamMember {
   @@index([crmStaffId])
   @@index([isActive])
   @@map("crm_team_members")
+}
+
+/// Visibility policy for one static sidebar menu key. It deliberately controls
+/// discovery only; individual API modules remain the authorization boundary.
+model CrmMenuAccessPolicy {
+  id           Int      @id @default(autoincrement())
+  menuKey      String   @unique @map("menu_key") @db.VarChar(80)
+  isRestricted Boolean  @default(false) @map("is_restricted") @db.TinyInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  rules CrmMenuAccessRule[]
+
+  @@index([isRestricted])
+  @@map("crm_menu_access_policies")
+}
+
+/// Subject IDs are validated by MenuAccessService before every write. Keeping
+/// them generic permits Department, Team and individual-staff grants in one
+/// immutable policy ledger without weakening any underlying route guard.
+model CrmMenuAccessRule {
+  id          Int      @id @default(autoincrement())
+  policyId    Int      @map("policy_id")
+  subjectType String   @map("subject_type") @db.VarChar(16)
+  subjectId   Int      @map("subject_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  policy CrmMenuAccessPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, subjectType, subjectId], name: "policyId_subjectType_subjectId")
+  @@index([subjectType, subjectId])
+  @@map("crm_menu_access_rules")
+}
+
+/// Append-only evidence for policy changes. It supports later review of who
+/// narrowed or expanded a menu audience and the exact before/after scopes.
+model CrmMenuAccessAudit {
+  id           Int      @id @default(autoincrement())
+  menuKey      String   @map("menu_key") @db.VarChar(80)
+  actorStaffId Int?     @map("actor_staff_id")
+  beforeJson   String?  @map("before_json") @db.Text
+  afterJson    String?  @map("after_json") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  @@index([menuKey, createdAt])
+  @@index([actorStaffId, createdAt])
+  @@map("crm_menu_access_audits")
 }
 
 // ═══════════════════════════════════════════
@@ -923,6 +1000,8 @@ model CrmAcademyLead {
   createdBy  CrmStaff?                  @relation("AcademyLeadCreator", fields: [createdByStaffId], references: [id], onDelete: SetNull)
   activities CrmAcademyLeadActivity[]
   followUps  CrmAcademyFollowUpTask[]
+  campaignMemberships CrmAcademyCampaignLead[]
+  talentAssessments CrmAcademyTalentAssessment[]
 
   @@index([status, updatedAt])
   @@index([ownerStaffId, status])
@@ -962,12 +1041,14 @@ model CrmAcademyFollowUpTask {
   status           String    @default("PENDING") @db.VarChar(20)
   pancakeLink      String?   @map("pancake_link") @db.Text
   assigneeStaffId  Int?      @map("assignee_staff_id")
+  campaignTouchpointLogId Int? @unique @map("campaign_touchpoint_log_id")
   completedAt      DateTime? @map("completed_at") @db.DateTime(0)
   createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
   lead     CrmAcademyLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
   assignee CrmStaff?      @relation("AcademyFollowUpAssignee", fields: [assigneeStaffId], references: [id], onDelete: SetNull)
+  campaignTouchpointLog CrmAcademyCampaignTouchpointLog? @relation("AcademyCampaignTouchpointLogFollowUp", fields: [campaignTouchpointLogId], references: [id], onDelete: SetNull)
 
   @@index([leadId, status])
   @@index([status, dueAt])
@@ -996,13 +1077,21 @@ model CrmAcademyCourse {
   id           Int      @id @default(autoincrement())
   code         String   @unique @db.VarChar(50)
   name         String   @db.VarChar(255)
+  nameEn       String?  @map("name_en") @db.VarChar(255)
   tag          String?  @db.VarChar(100)
   description  String?  @db.Text
+  market       String   @default("DOMESTIC") @db.VarChar(20)
+  coverImageUrl String? @map("cover_image_url") @db.Text
   listPriceVnd Int      @default(0) @map("list_price_vnd")
   promoPriceVnd Int     @default(0) @map("promo_price_vnd")
   kitName      String?  @map("kit_name") @db.VarChar(255)
   kitUrl       String?  @map("kit_url") @db.Text
+  kitPriceVnd  Int      @default(0) @map("kit_price_vnd")
+  samplePriceVnd Int    @default(0) @map("sample_price_vnd")
+  lessonCount  Int      @default(0) @map("lesson_count")
+  lashModelCount Int    @default(0) @map("lash_model_count")
   syllabus     String?  @db.LongText
+  syllabusHtml String?  @map("syllabus_html") @db.LongText
   sortOrder    Int      @default(0) @map("sort_order")
   isActive     Boolean  @default(true) @map("is_active") @db.TinyInt
   createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
@@ -1010,4 +1099,216 @@ model CrmAcademyCourse {
 
   @@index([isActive, sortOrder])
   @@map("crm_academy_courses")
+}
+
+/// Instructor price configuration for Academy Tố Chất. A row can be linked to
+/// a staff profile when that mapping is confirmed, but keeps its own display
+/// data so historical quotes and invoices remain understandable after HR edits.
+model CrmAcademyInstructor {
+  id               Int      @id @default(autoincrement())
+  code             String   @unique @db.VarChar(50)
+  staffId          Int?     @unique @map("staff_id")
+  displayName      String   @map("display_name") @db.VarChar(150)
+  description      String?  @db.VarChar(255)
+  avatarUrl        String?  @map("avatar_url") @db.Text
+  surchargePercent Int      @default(0) @map("surcharge_percent")
+  isActive         Boolean  @default(true) @map("is_active") @db.TinyInt
+  sortOrder        Int      @default(0) @map("sort_order")
+  createdAt        DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  staff CrmStaff? @relation("AcademyInstructorStaff", fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([isActive, sortOrder])
+  @@map("crm_academy_instructors")
+}
+
+/// Native talent-workshop session. Course and amount information is stored as
+/// serialized snapshots so an issued tuition document never changes when a
+/// course catalogue record is later edited.
+model CrmAcademyTalentAssessment {
+  id                    Int       @id @default(autoincrement())
+  leadId                Int       @map("lead_id")
+  evaluatorStaffId      Int?      @map("evaluator_staff_id")
+  status                String    @default("DRAFT") @db.VarChar(20)
+  eyeScore              Int       @default(0) @map("eye_score")
+  handScore             Int       @default(0) @map("hand_score")
+  strands5Min           Int       @default(0) @map("strands_5_min")
+  errorRoot             Int       @default(0) @map("error_root")
+  errorSkin             Int       @default(0) @map("error_skin")
+  errorStickies         Int       @default(0) @map("error_stickies")
+  errorDirection        Int       @default(0) @map("error_direction")
+  offerExpiresAt        DateTime  @map("offer_expires_at") @db.DateTime(0)
+  selectedCourseIds     String?   @map("selected_course_ids") @db.LongText
+  selectedSampleCourseIds String? @map("selected_sample_course_ids") @db.LongText
+  selectedKitCourseIds  String?   @map("selected_kit_course_ids") @db.LongText
+  selectedInstructorIdsByCourse String? @map("selected_instructor_ids_by_course") @db.LongText
+  courseSnapshotJson    String?   @map("course_snapshot_json") @db.LongText
+  quoteSnapshotJson     String?   @map("quote_snapshot_json") @db.LongText
+  paymentMode           String    @default("THINKING") @map("payment_mode") @db.VarChar(20)
+  depositVnd            Int       @default(0) @map("deposit_vnd")
+  notes                 String?   @db.Text
+  invoiceNumber         String?   @unique @map("invoice_number") @db.VarChar(80)
+  invoiceSnapshotJson   String?   @map("invoice_snapshot_json") @db.LongText
+  invoicePrintedAt      DateTime? @map("invoice_printed_at") @db.DateTime(0)
+  invoicePrintedByStaffId Int?    @map("invoice_printed_by_staff_id")
+  invoicePrintCount     Int       @default(0) @map("invoice_print_count")
+  invoiceRevision       Int       @default(0) @map("invoice_revision")
+  promotionPolicyAuditId Int?    @map("promotion_policy_audit_id")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  lead      CrmAcademyLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  evaluator CrmStaff?      @relation("AcademyTalentAssessmentEvaluator", fields: [evaluatorStaffId], references: [id], onDelete: SetNull)
+  invoicePrintedBy CrmStaff? @relation("AcademyTalentAssessmentInvoicePrinter", fields: [invoicePrintedByStaffId], references: [id], onDelete: SetNull)
+  promotionPolicyAudit CrmAcademyTalentPolicyAudit? @relation("AcademyTalentAssessmentPolicyAudit", fields: [promotionPolicyAuditId], references: [id], onDelete: SetNull)
+  payments  CrmAcademyTalentPayment[]
+
+  @@index([leadId, createdAt])
+  @@index([leadId, status])
+  @@index([offerExpiresAt])
+  @@index([promotionPolicyAuditId])
+  @@map("crm_academy_talent_assessments")
+}
+
+/// Append-only evidence of a global Tố Chất scholarship-policy change. An
+/// assessment stores the version used to produce its invoice snapshot so
+/// later reporting can attribute the policy actor without rewriting history.
+model CrmAcademyTalentPolicyAudit {
+  id               Int       @id @default(autoincrement())
+  configKey        String    @map("config_key") @db.VarChar(80)
+  policySnapshotJson String  @map("policy_snapshot_json") @db.LongText
+  changedByStaffId Int?      @map("changed_by_staff_id")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  changedBy   CrmStaff?                  @relation("AcademyTalentPolicyAuditChanger", fields: [changedByStaffId], references: [id], onDelete: SetNull)
+  assessments CrmAcademyTalentAssessment[] @relation("AcademyTalentAssessmentPolicyAudit")
+
+  @@index([configKey, createdAt])
+  @@index([changedByStaffId, createdAt])
+  @@map("crm_academy_talent_policy_audits")
+}
+
+/// Append-only ledger for a confirmed Academy bank transfer. The QR itself is
+/// only payment intent; a staff confirmation is required before this row is made.
+model CrmAcademyTalentPayment {
+  id                 Int       @id @default(autoincrement())
+  assessmentId       Int       @map("assessment_id")
+  amountVnd          Int       @map("amount_vnd")
+  paymentMethod      String    @default("BANK_TRANSFER") @map("payment_method") @db.VarChar(24)
+  reference          String?   @db.VarChar(160)
+  note               String?   @db.Text
+  receivedAt         DateTime  @map("received_at") @db.DateTime(0)
+  confirmedByStaffId Int?      @map("confirmed_by_staff_id")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  assessment  CrmAcademyTalentAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  confirmedBy CrmStaff? @relation("AcademyTalentPaymentConfirmer", fields: [confirmedByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([assessmentId, receivedAt])
+  @@index([confirmedByStaffId, createdAt])
+  @@map("crm_academy_talent_payments")
+}
+
+// ═══════════════════════════════════════════
+// Sales Academy — native operational campaigns
+// ═══════════════════════════════════════════
+//
+// These tables deliberately do not reuse crm_custom_campaigns. That legacy
+// model is coupled to Wings Lashes legacy_user_id, bookings, allocations, and
+// promotion synchronization. Academy campaign membership is a fixed snapshot
+// of CRM-native Academy leads instead.
+model CrmAcademyCampaign {
+  id                 Int       @id @default(autoincrement())
+  name               String    @db.VarChar(150)
+  slug               String    @unique @db.VarChar(150)
+  description        String?   @db.Text
+  startDate          DateTime? @map("start_date") @db.Date
+  endDate            DateTime? @map("end_date") @db.Date
+  status             String    @default("DRAFT") @db.VarChar(20)
+  showInSidebar      Boolean   @default(false) @map("show_in_sidebar")
+  assignedStaffIds   String?   @map("assigned_staff_ids") @db.Text
+  audienceFilterJson String?   @map("audience_filter_json") @db.LongText
+  audienceSummary    String?   @map("audience_summary") @db.Text
+  createdByStaffId   Int?      @map("created_by_staff_id")
+  deletedAt          DateTime? @map("deleted_at") @db.DateTime(0)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  createdBy   CrmStaff?                       @relation("AcademyCampaignCreator", fields: [createdByStaffId], references: [id], onDelete: SetNull)
+  leads       CrmAcademyCampaignLead[]
+  touchpoints CrmAcademyCampaignTouchpoint[]
+
+  @@index([status, deletedAt])
+  @@index([showInSidebar, deletedAt])
+  @@index([createdByStaffId])
+  @@map("crm_academy_campaigns")
+}
+
+model CrmAcademyCampaignLead {
+  id              Int       @id @default(autoincrement())
+  campaignId      Int       @map("campaign_id")
+  leadId          Int       @map("lead_id")
+  addedAt         DateTime  @default(now()) @map("added_at") @db.DateTime(0)
+  addedByStaffId  Int?      @map("added_by_staff_id")
+  removedAt       DateTime? @map("removed_at") @db.DateTime(0)
+  removedReason   String?   @map("removed_reason") @db.Text
+  removedByStaffId Int?     @map("removed_by_staff_id")
+
+  campaign       CrmAcademyCampaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead           CrmAcademyLead                    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  addedBy        CrmStaff?                         @relation("AcademyCampaignLeadAddedBy", fields: [addedByStaffId], references: [id], onDelete: SetNull)
+  removedBy      CrmStaff?                         @relation("AcademyCampaignLeadRemovedBy", fields: [removedByStaffId], references: [id], onDelete: SetNull)
+  touchpointLogs CrmAcademyCampaignTouchpointLog[]
+
+  @@unique([campaignId, leadId], name: "campaignId_leadId")
+  @@index([campaignId, removedAt])
+  @@index([leadId, removedAt])
+  @@map("crm_academy_campaign_leads")
+}
+
+model CrmAcademyCampaignTouchpoint {
+  id         Int      @id @default(autoincrement())
+  campaignId Int      @map("campaign_id")
+  key        String   @db.VarChar(50)
+  label      String   @db.VarChar(100)
+  icon       String?  @db.VarChar(80)
+  daysMin    Int      @map("days_min")
+  daysMax    Int?     @map("days_max")
+  color      String?  @db.VarChar(30)
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  campaign CrmAcademyCampaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  logs     CrmAcademyCampaignTouchpointLog[]
+
+  @@unique([campaignId, key], name: "campaignId_key")
+  @@index([campaignId, sortOrder])
+  @@map("crm_academy_campaign_touchpoints")
+}
+
+model CrmAcademyCampaignTouchpointLog {
+  id                   Int       @id @default(autoincrement())
+  campaignLeadId       Int       @map("campaign_lead_id")
+  touchpointId         Int       @map("touchpoint_id")
+  isChecked            Boolean   @default(false) @map("is_checked") @db.TinyInt
+  status               String?   @db.VarChar(20)
+  completedAt          DateTime? @map("completed_at") @db.DateTime(0)
+  completedByStaffId   Int?      @map("completed_by_staff_id")
+  completedByStaffName String?   @map("completed_by_staff_name") @db.VarChar(100)
+  note                 String?   @db.Text
+  callbackDueAt        DateTime? @map("callback_due_at") @db.DateTime(0)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  campaignLead  CrmAcademyCampaignLead       @relation(fields: [campaignLeadId], references: [id], onDelete: Cascade)
+  touchpoint    CrmAcademyCampaignTouchpoint @relation(fields: [touchpointId], references: [id], onDelete: Cascade)
+  completedBy   CrmStaff?                     @relation("AcademyCampaignTouchpointActor", fields: [completedByStaffId], references: [id], onDelete: SetNull)
+  followUpTask  CrmAcademyFollowUpTask?       @relation("AcademyCampaignTouchpointLogFollowUp")
+
+  @@unique([campaignLeadId, touchpointId], name: "campaignLeadId_touchpointId")
+  @@index([touchpointId])
+  @@index([completedByStaffId, completedAt])
+  @@map("crm_academy_campaign_touchpoint_logs")
 }

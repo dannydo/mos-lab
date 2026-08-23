@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
-import { TeamService } from './team.service.js';
-import { UpsertTeamRequest, UpdateTeamMembersRequest } from '@mos-lab/shared';
+import { TeamConfigurationError, TeamService } from './team.service.js';
+import { isAdminOrSuperAdminRole, UpsertTeamRequest, UpdateTeamMembersRequest } from '@mos-lab/shared';
 
 function requireAdminRole(
   request: { user?: unknown },
@@ -14,7 +14,7 @@ function requireAdminRole(
   }
 
   const isAdmin =
-    user.role === 'admin' ||
+    isAdminOrSuperAdminRole(user.role) ||
     user.username === 'admin' ||
     user.username === 'danhdo@gmail.com' ||
     user.email === 'danhdo@gmail.com';
@@ -26,12 +26,23 @@ function requireAdminRole(
   return true;
 }
 
+function sendTeamConfigurationError(
+  reply: { status: (code: number) => { send: (data: unknown) => void } },
+  err: unknown
+) {
+  if (err instanceof TeamConfigurationError) {
+    reply.status(err.statusCode).send({ error: 'Team Configuration Error', message: err.message });
+    return true;
+  }
+  return false;
+}
+
 export async function teamRoutes(fastify: FastifyInstance) {
   // GET /api/teams (List all teams with hierarchy and member count)
   fastify.get('/teams', { preHandler: [requireAuth] }, async (_request, reply) => {
     try {
-      const teams = await TeamService.listTeams(fastify);
-      return reply.send({ teams });
+      const result = await TeamService.listTeams(fastify);
+      return reply.send(result);
     } catch (err) {
       fastify.log.error(err as Error, 'List teams error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể lấy danh sách đội nhóm.' });
@@ -79,8 +90,9 @@ export async function teamRoutes(fastify: FastifyInstance) {
 
     try {
       const team = await TeamService.upsertTeam(fastify, body);
-      return reply.send({ success: true, team });
+      return reply.status(201).send({ success: true, team });
     } catch (err) {
+      if (sendTeamConfigurationError(reply, err)) return;
       fastify.log.error(err as Error, 'Create team error');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tạo đội nhóm.' });
     }
@@ -101,8 +113,29 @@ export async function teamRoutes(fastify: FastifyInstance) {
       const team = await TeamService.upsertTeam(fastify, body, teamId);
       return reply.send({ success: true, team });
     } catch (err) {
+      if (sendTeamConfigurationError(reply, err)) return;
       fastify.log.error(err as Error, `Update team ${teamId} error`);
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể cập nhật đội nhóm.' });
+    }
+  });
+
+  // DELETE /api/teams/:id (Delete an empty leaf team - Admin only)
+  fastify.delete('/teams/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    if (!requireAdminRole(request, reply)) return;
+
+    const { id } = request.params as { id: string };
+    const teamId = Number(id);
+    if (!Number.isInteger(teamId) || teamId <= 0) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID không hợp lệ.' });
+    }
+
+    try {
+      const team = await TeamService.deleteTeam(fastify, teamId);
+      return reply.send({ success: true, message: `Đã xóa team ${team.code}.` });
+    } catch (err) {
+      if (sendTeamConfigurationError(reply, err)) return;
+      fastify.log.error(err as Error, `Delete team ${teamId} error`);
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể xóa đội nhóm.' });
     }
   });
 
