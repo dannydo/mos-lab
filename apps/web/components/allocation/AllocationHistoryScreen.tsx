@@ -2,7 +2,7 @@
 
 import { StandardPagination, TableIndexHeader } from '~/components/ui';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Table, Card, Tag, Input, Select, Button, Tooltip, Spin, Badge } from 'antd';
 import {
   SearchOutlined,
@@ -30,6 +30,7 @@ export const AllocationHistoryScreen: React.FC = () => {
   const [limit, setLimit] = useState<number>(10);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
+  const [appliedSearch, setAppliedSearch] = useState<string>('');
 
   // Batch Detail Modal State
   const [selectedBatch, setSelectedBatch] = useState<CustomerAllocationBatch | null>(null);
@@ -47,6 +48,7 @@ export const AllocationHistoryScreen: React.FC = () => {
     return 5;
   });
   const [detailCurrentPage, setDetailCurrentPage] = useState<number>(1);
+  const latestHistoryRequestRef = useRef(0);
 
   // Resizable Detail Modal Width state with localStorage persistence
   const [detailModalWidth, setDetailModalWidth] = useState<number>(() => {
@@ -109,31 +111,45 @@ export const AllocationHistoryScreen: React.FC = () => {
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
+    const requestId = ++latestHistoryRequestRef.current;
     setLoading(true);
     try {
       const res = await apiClient.allocation.get30DayHistory({
         page,
         limit,
         status: statusFilter as AllocationBatchStatus | 'ALL',
-        search: search.trim() || undefined,
+        search: appliedSearch || undefined,
       });
-      setBatches(res.items || []);
-      setTotal(res.total || 0);
+      if (requestId === latestHistoryRequestRef.current) {
+        setBatches(res.items || []);
+        setTotal(res.total || 0);
+      }
     } catch (err: any) {
-      console.error('Failed to fetch allocation history:', err);
+      if (requestId === latestHistoryRequestRef.current) {
+        console.error('Failed to fetch allocation history:', err);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestHistoryRequestRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [page, limit, statusFilter, appliedSearch]);
 
   useEffect(() => {
     fetchHistory();
-  }, [page, limit, statusFilter]);
+  }, [fetchHistory]);
 
   const handleSearchSubmit = () => {
+    const nextSearch = search.trim();
+    if (page === 1 && nextSearch === appliedSearch) {
+      fetchHistory();
+      return;
+    }
+
+    // Filter updates and the page reset are batched into a single request.
+    setAppliedSearch(nextSearch);
     setPage(1);
-    fetchHistory();
   };
 
   const calculateRetentionCountdown = (retentionExpiresAt?: string | null) => {

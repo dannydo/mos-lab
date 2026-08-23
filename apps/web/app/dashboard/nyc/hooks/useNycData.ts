@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useDeferredValue, useRef } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer, Staff } from '@mos-lab/shared';
+import { Customer, SafeAny, Staff } from '@mos-lab/shared';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 
 export interface Touchpoint {
@@ -46,15 +46,36 @@ export function useNycData(options?: UseNycDataOptions) {
 
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
+  // The field stays controlled by `searchQuery`; server filtering is deferred
+  // so rapid typing does not start a list and stats request for each character.
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [sortField, setSortField] = useState('daysSinceLastVisit');
   const [assignedStaffId, setAssignedStaffId] = useState<string | number>('ALL');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window === 'undefined') return 20;
+
+    const stored = localStorage.getItem('mos_nyc_pageSize');
+    const value = stored ? Number(stored) : NaN;
+    return Number.isFinite(value) && value > 0 ? value : 20;
+  });
 
   // Current User
-  const [currentUser, setCurrentUser] = useState<Staff | null>(null);
+  const [currentUser] = useState<Staff | null>(() => {
+    if (typeof window === 'undefined') return null;
+
+    const stored = localStorage.getItem('mos_user');
+    if (!stored) return null;
+
+    try {
+      return JSON.parse(stored) as Staff;
+    } catch (error) {
+      console.error('Failed to parse user from localStorage', error);
+      return null;
+    }
+  });
 
   // Data States
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -88,6 +109,8 @@ export function useNycData(options?: UseNycDataOptions) {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [dailyPlanList, setDailyPlanList] = useState<number[]>([]); // Track planned user IDs for today
   const [addingIds, setAddingIds] = useState<number[]>([]);
+  const lastCustomerRequestIdRef = useRef(0);
+  const lastStatsRequestIdRef = useRef(0);
 
   // Load configuration & Staff lists on mount
   const fetchConfigs = useCallback(async () => {
@@ -111,25 +134,10 @@ export function useNycData(options?: UseNycDataOptions) {
   }, [currentUser]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_user');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setCurrentUser(parsed);
-          if (parsed.role === 'telesales') {
-            setAssignedStaffId('me');
-          }
-        } catch (e) {
-          console.error('Failed to parse user from localStorage', e);
-        }
-      }
-      const savedPageSize = localStorage.getItem('mos_nyc_pageSize');
-      if (savedPageSize) {
-        setPageSize(Number(savedPageSize));
-      }
+    if (currentUser?.role === 'telesales') {
+      setAssignedStaffId('me');
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchConfigs();
@@ -180,16 +188,17 @@ export function useNycData(options?: UseNycDataOptions) {
 
   // Fetch Touchpoint & Tab Counts via 1 single Batch Stats API call
   const fetchTouchpointCounts = useCallback(async () => {
+    const requestId = ++lastStatsRequestIdRef.current;
     try {
       const params = {
-        search: searchQuery || undefined,
+        search: deferredSearchQuery || undefined,
         assignedStaffId:
           assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
       };
 
       const nycStats = await apiClient.customers.getNycStats(params as SafeAny);
 
-      if (nycStats) {
+      if (nycStats && requestId === lastStatsRequestIdRef.current) {
         const activeTabConfig = configs[activeTab] || [];
         const tpCounts: { [key: string]: number } = {
           ALL: nycStats.tabs[activeTab] || 0,
@@ -202,17 +211,20 @@ export function useNycData(options?: UseNycDataOptions) {
         setTabCounts(nycStats.tabs || {});
       }
     } catch (err) {
-      console.error('Failed to load touchpoint counts:', err);
+      if (requestId === lastStatsRequestIdRef.current) {
+        console.error('Failed to load touchpoint counts:', err);
+      }
     }
-  }, [configs, activeTab, searchQuery, assignedStaffId, currentUser]);
+  }, [configs, activeTab, deferredSearchQuery, assignedStaffId, currentUser]);
 
   useEffect(() => {
     if (Object.keys(configs).length > 0) {
       fetchTouchpointCounts();
     }
-  }, [configs, activeTab, searchQuery, assignedStaffId, fetchTouchpointCounts]);
+  }, [configs, fetchTouchpointCounts]);
 
   const fetchCustomerList = useCallback(async () => {
+    const requestId = ++lastCustomerRequestIdRef.current;
     setLoading(true);
     try {
       const activeTabConfig = configs[activeTab] || [];
@@ -231,7 +243,7 @@ export function useNycData(options?: UseNycDataOptions) {
         bucket: 'NOT_COMBO_LIVE',
         daysSinceLastVisitMin: daysFrom !== undefined ? daysFrom.toString() : undefined,
         daysSinceLastVisitMax: daysTo !== undefined ? daysTo.toString() : undefined,
-        search: searchQuery || undefined,
+        search: deferredSearchQuery || undefined,
         sort: sortField || undefined,
         sortField: sortField || undefined,
         page: currentPage,
@@ -241,20 +253,26 @@ export function useNycData(options?: UseNycDataOptions) {
       };
 
       const data = await apiClient.customers.list(params as SafeAny);
-      setCustomers(data.data);
-      setTotal(data.pagination.total);
+      if (requestId === lastCustomerRequestIdRef.current) {
+        setCustomers(data.data);
+        setTotal(data.pagination.total);
+      }
     } catch (err) {
-      console.error('Failed to load customer list:', err);
-      optionsRef.current?.onError?.('Không thể tải danh sách khách hàng.');
+      if (requestId === lastCustomerRequestIdRef.current) {
+        console.error('Failed to load customer list:', err);
+        optionsRef.current?.onError?.('Không thể tải danh sách khách hàng.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === lastCustomerRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [
     currentPage,
     pageSize,
     activeTab,
     activeTouchpointKey,
-    searchQuery,
+    deferredSearchQuery,
     sortField,
     assignedStaffId,
     configs,
@@ -265,17 +283,7 @@ export function useNycData(options?: UseNycDataOptions) {
     if (Object.keys(configs).length > 0) {
       fetchCustomerList();
     }
-  }, [
-    configs,
-    currentPage,
-    pageSize,
-    activeTab,
-    activeTouchpointKey,
-    searchQuery,
-    sortField,
-    assignedStaffId,
-    fetchCustomerList,
-  ]);
+  }, [configs, fetchCustomerList]);
 
   // Actions
   const handleAddToPlan = async (customerId: number) => {

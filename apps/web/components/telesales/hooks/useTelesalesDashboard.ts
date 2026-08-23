@@ -454,14 +454,6 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
             const list = (await apiClient.kpi.getLeaderboard(params)) || [];
 
             const mappedMembers = list.map((item: SafeAny, idx: number) => {
-              console.log(
-                'useTelesalesDashboard raw item:',
-                item.displayName || item.username,
-                'item.avatarUrl:',
-                item.avatarUrl,
-                'item.avatar:',
-                item.avatar
-              );
               const initials = item.displayName
                 ? item.displayName
                     .split(' ')

@@ -40,6 +40,7 @@ const RescheduleBookingModal = nextDynamic(
 dayjs.extend(isoWeek);
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+const APPOINTMENTS_CACHE_MAX_ENTRIES = 24;
 
 export default function ScheduleCalendarPage() {
   const { themeMode } = useTheme();
@@ -194,9 +195,21 @@ export default function ScheduleCalendarPage() {
     setRescheduleModalOpen(true);
   }, []);
 
-  if (typeof window !== 'undefined') {
-    (window as any).__testHandleReschedule = handleRescheduleRequest;
-  }
+  // Keep the test hook out of render so React can safely replay renders.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const testWindow = window as typeof window & {
+      __testHandleReschedule?: typeof handleRescheduleRequest;
+    };
+    testWindow.__testHandleReschedule = handleRescheduleRequest;
+
+    return () => {
+      if (testWindow.__testHandleReschedule === handleRescheduleRequest) {
+        delete testWindow.__testHandleReschedule;
+      }
+    };
+  }, [handleRescheduleRequest]);
 
   // Fetch staff list for filter
   useEffect(() => {
@@ -281,7 +294,15 @@ export default function ScheduleCalendarPage() {
       const caps = res.dailyCapacities || {};
       const tot = res.total || rawData.length;
 
-      appointmentsCacheRef.current.set(cacheKey, { data: rawData, dailyCapacities: caps, total: tot });
+      // Bounded cache keeps date-navigation fast without retaining every
+      // historical range visited in a long-running dashboard session.
+      const cache = appointmentsCacheRef.current;
+      cache.delete(cacheKey);
+      cache.set(cacheKey, { data: rawData, dailyCapacities: caps, total: tot });
+      if (cache.size > APPOINTMENTS_CACHE_MAX_ENTRIES) {
+        const oldestKey = cache.keys().next().value;
+        if (oldestKey) cache.delete(oldestKey);
+      }
       setAppointments(rawData);
       setDailyCapacities(caps);
       setTotalAppointments(tot);
@@ -313,13 +334,6 @@ export default function ScheduleCalendarPage() {
 
   // Filtered appointments client-side for fast search, branch, status, and channel filter
   const filteredAppointments = useMemo(() => {
-    console.log('DBG FILTER RUNNING:', {
-      appointmentsLen: appointments.length,
-      searchQuery,
-      selectedBranch,
-      selectedStatus,
-      selectedChannel,
-    });
     return appointments.filter((appt) => {
       // Branch filter
       if (selectedBranch !== 'all') {

@@ -2,7 +2,7 @@
 
 import { TableIndexHeader } from '~/components/ui';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Tag, message, Spin, Card } from 'antd';
 import { CustomerAllocationBatch, CustomerAllocationItem } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
@@ -203,41 +203,46 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
     }
   };
 
-  const columns = [
-    {
-      title: <TableIndexHeader />,
-      key: 'idx',
-      width: 60,
-      render: (_: any, __: any, index: number) => (currentPage - 1) * pageSize + index + 1,
-    },
-    {
-      title: 'Họ và tên khách hàng',
-      dataIndex: 'customerName',
-      key: 'customerName',
-      render: (text: string, record: CustomerAllocationItem) => (
-        <div>
-          <div className="font-medium text-slate-800 dark:text-slate-100">
-            {text || `Khách hàng #${record.customerId}`}
+  // The countdown updates once per second. Stable columns keep the preview
+  // table from rebuilding its cells for a state change that does not affect rows.
+  const columns = useMemo(
+    () => [
+      {
+        title: <TableIndexHeader />,
+        key: 'idx',
+        width: 60,
+        render: (_: unknown, __: unknown, index: number) => (currentPage - 1) * pageSize + index + 1,
+      },
+      {
+        title: 'Họ và tên khách hàng',
+        dataIndex: 'customerName',
+        key: 'customerName',
+        render: (text: string, record: CustomerAllocationItem) => (
+          <div>
+            <div className="font-medium text-slate-800 dark:text-slate-100">
+              {text || `Khách hàng #${record.customerId}`}
+            </div>
+            <div className="text-xs text-slate-400">ID: {record.customerId}</div>
           </div>
-          <div className="text-xs text-slate-400">ID: {record.customerId}</div>
-        </div>
-      ),
-    },
-    {
-      title: 'Số điện thoại',
-      dataIndex: 'customerPhone',
-      key: 'customerPhone',
-      render: (phone: string) => (
-        <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{phone || 'Chưa cập nhật'}</span>
-      ),
-    },
-    {
-      title: 'Trạng thái đợt',
-      dataIndex: 'status',
-      key: 'status',
-      render: () => <Tag color="gold">Chờ xác nhận</Tag>,
-    },
-  ];
+        ),
+      },
+      {
+        title: 'Số điện thoại',
+        dataIndex: 'customerPhone',
+        key: 'customerPhone',
+        render: (phone: string) => (
+          <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{phone || 'Chưa cập nhật'}</span>
+        ),
+      },
+      {
+        title: 'Trạng thái đợt',
+        dataIndex: 'status',
+        key: 'status',
+        render: () => <Tag color="gold">Chờ xác nhận</Tag>,
+      },
+    ],
+    [currentPage, pageSize]
+  );
 
   return (
     <>
