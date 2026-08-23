@@ -40,7 +40,8 @@ const migration: DataMigration = {
         lesson_count = VALUES(lesson_count),
         lash_model_count = VALUES(lash_model_count),
         sort_order = VALUES(sort_order),
-        is_active = VALUES(is_active)
+        is_active = VALUES(is_active),
+        updated_at = CURRENT_TIMESTAMP(0)
     `);
 
     await connection.execute(`
@@ -56,7 +57,8 @@ const migration: DataMigration = {
         description = VALUES(description),
         surcharge_percent = VALUES(surcharge_percent),
         is_active = VALUES(is_active),
-        sort_order = VALUES(sort_order)
+        sort_order = VALUES(sort_order),
+        updated_at = CURRENT_TIMESTAMP(0)
     `);
 
     await connection.execute(`
@@ -69,19 +71,20 @@ const migration: DataMigration = {
 
     await connection.execute(`
       INSERT INTO crm_departments
-        (code, name, description, color, icon, sort_order, is_active)
+        (code, name, description, color, icon, sort_order, is_active, updated_at)
       VALUES
-        ('SHOP', 'Shop Operations', 'Vận hành dịch vụ trực tiếp tại cửa hàng', '#d4a72c', '🏬', 1, 1),
-        ('ACADEMY', 'Academy', 'Vận hành đào tạo, tuyển sinh và giảng viên Academy', '#722ed1', '🎓', 2, 1),
-        ('GROWTH', 'Growth & Booking', 'Telesales, booking và các hoạt động tăng trưởng khách hàng', '#fa8c16', '📈', 3, 1),
-        ('BACK_OFFICE', 'Back Office', 'Các chức năng hỗ trợ: HR, tài chính, vận hành và hệ thống', '#1677ff', '🏢', 4, 1)
+        ('SHOP', 'Shop Operations', 'Vận hành dịch vụ trực tiếp tại cửa hàng', '#d4a72c', '🏬', 1, 1, CURRENT_TIMESTAMP(0)),
+        ('ACADEMY', 'Academy', 'Vận hành đào tạo, tuyển sinh và giảng viên Academy', '#722ed1', '🎓', 2, 1, CURRENT_TIMESTAMP(0)),
+        ('GROWTH', 'Growth & Booking', 'Telesales, booking và các hoạt động tăng trưởng khách hàng', '#fa8c16', '📈', 3, 1, CURRENT_TIMESTAMP(0)),
+        ('BACK_OFFICE', 'Back Office', 'Các chức năng hỗ trợ: HR, tài chính, vận hành và hệ thống', '#1677ff', '🏢', 4, 1, CURRENT_TIMESTAMP(0))
       ON DUPLICATE KEY UPDATE
         name = VALUES(name),
         description = VALUES(description),
         color = VALUES(color),
         icon = VALUES(icon),
         sort_order = VALUES(sort_order),
-        is_active = VALUES(is_active)
+        is_active = VALUES(is_active),
+        updated_at = CURRENT_TIMESTAMP(0)
     `);
 
     await connection.execute(`
@@ -95,7 +98,8 @@ const migration: DataMigration = {
         color = VALUES(color),
         icon = VALUES(icon),
         sort_order = VALUES(sort_order),
-        is_active = VALUES(is_active)
+        is_active = VALUES(is_active),
+        updated_at = CURRENT_TIMESTAMP(0)
     `);
 
     await connection.execute(`
