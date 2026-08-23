@@ -4,14 +4,13 @@ import React from 'react';
 import { Alert, Button, Collapse, DatePicker, Input, InputNumber, Progress, Radio, Select, Space, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
-import { BanknoteArrowDown, CircleCheck, CircleDollarSign, Clock3, RefreshCw, WalletCards } from 'lucide-react';
+import { RefreshCw, WalletCards } from 'lucide-react';
 import type {
   AcademyTalentPaymentManagementRow,
   AcademyTalentPaymentManagementStatus,
   AcademyTalentPaymentManagementSummary,
   AcademyTalentPaymentMethod,
   AcademyTalentPaymentTrace,
-  SafeAny,
 } from '@mos-lab/shared';
 import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
@@ -22,7 +21,6 @@ import {
   DataSection,
   DataTable,
   FeaturePage,
-  MetricGrid,
   SearchField,
   StatePanel,
   StatusTag,
@@ -32,106 +30,26 @@ import AcademyTalentFollowUpPaymentSlip, {
   type AcademyTalentFollowUpPaymentSlipSnapshot,
 } from '../components/AcademyTalentFollowUpPaymentSlip';
 import styles from '../components/AcademyTalentWorkshop.module.css';
-
-const PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
-const PAGE_STORAGE_KEY = 'academy-payment-management:page';
-const PAGE_SIZE_STORAGE_KEY = 'academy-payment-management:page-size';
-const STATUS_STORAGE_KEY = 'academy-payment-management:status';
-const MONTH_STORAGE_KEY = 'academy-payment-management:month';
-const DEPOSIT_PRESET_VND = 1_000_000;
-
-const STATUS_OPTIONS: Array<{ value: AcademyTalentPaymentManagementStatus; label: string }> = [
-  { value: 'ALL', label: 'Tất cả phiếu đã in' },
-  { value: 'FOLLOW_UP', label: 'Cần follow-up sau cọc' },
-  { value: 'DEPOSIT_RECEIVED', label: 'Đã cọc' },
-  { value: 'PARTIALLY_PAID', label: 'Đã thu một phần' },
-  { value: 'UNPAID', label: 'Chưa thu' },
-  { value: 'PAID', label: 'Đã thu đủ' },
-];
-
-function currentRole() {
-  if (typeof window === 'undefined') return '';
-  try {
-    return String((JSON.parse(window.localStorage.getItem('mos_user') || '{}') as SafeAny).role || '').toLowerCase();
-  } catch {
-    return '';
-  }
-}
-
-function persistedNumber(key: string, fallback: number, accepted?: number[]) {
-  if (typeof window === 'undefined') return fallback;
-  const value = Number(window.localStorage.getItem(key));
-  return Number.isFinite(value) && value > 0 && (!accepted || accepted.includes(value)) ? value : fallback;
-}
-
-function persistedStatus(): AcademyTalentPaymentManagementStatus {
-  if (typeof window === 'undefined') return 'FOLLOW_UP';
-  const value = String(
-    window.localStorage.getItem(STATUS_STORAGE_KEY) || 'FOLLOW_UP'
-  ) as AcademyTalentPaymentManagementStatus;
-  return STATUS_OPTIONS.some((option) => option.value === value) ? value : 'FOLLOW_UP';
-}
-
-function persistedMonth() {
-  if (typeof window === 'undefined') return dayjs().startOf('month');
-  const value = window.localStorage.getItem(MONTH_STORAGE_KEY);
-  const parsed = value ? dayjs(value, 'YYYY-MM', true) : null;
-  return parsed?.isValid() ? parsed.startOf('month') : dayjs().startOf('month');
-}
-
-function paymentStatusMeta(status: AcademyTalentPaymentManagementRow['paymentStatus']) {
-  switch (status) {
-    case 'PAID':
-      return { label: 'Đã thu đủ', tone: 'success' as const };
-    case 'DEPOSIT_RECEIVED':
-      return { label: 'Đã cọc · follow-up', tone: 'warning' as const };
-    case 'PARTIALLY_PAID':
-      return { label: 'Đã thu một phần', tone: 'processing' as const };
-    default:
-      return { label: 'Chưa thu', tone: 'default' as const };
-  }
-}
-
-function paymentMethodLabel(method: AcademyTalentPaymentMethod) {
-  return method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản';
-}
-
-function dateLabel(value: string | null) {
-  return value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '—';
-}
-
-function traceActorName(actor: AcademyTalentPaymentTrace['actors'][number]) {
-  return actor.staff?.displayName || actor.recordedName || 'Chưa xác định';
-}
-
-function paymentProgressPercent(totalPaidVnd: number, tuitionVnd: number) {
-  if (tuitionVnd <= 0) return 0;
-  return Math.min(100, Math.max(0, Math.round((totalPaidVnd / tuitionVnd) * 100)));
-}
-
-function mobilePaymentCard(
-  row: AcademyTalentPaymentManagementRow,
-  onOpen: (row: AcademyTalentPaymentManagementRow) => void
-) {
-  const status = paymentStatusMeta(row.paymentStatus);
-  return (
-    <button type="button" className="w-full rounded-xl border border-inherit p-3 text-left" onClick={() => onOpen(row)}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <strong>{row.lead.name}</strong>
-          <div className="mt-1 truncate text-xs opacity-70">{row.invoiceNumber}</div>
-        </div>
-        <StatusTag status={status.tone} label={status.label} />
-      </div>
-      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-        <span className="opacity-70">Đã nhận</span>
-        <strong className="text-right tabular-nums">{formatVND(row.totalPaidVnd)}</strong>
-        <span className="opacity-70">Còn lại</span>
-        <strong className="text-right tabular-nums">{formatVND(row.remainingVnd)}</strong>
-      </div>
-    </button>
-  );
-}
+import {
+  currentRole,
+  dateLabel,
+  DEPOSIT_PRESET_VND,
+  mobilePaymentCard,
+  MONTH_STORAGE_KEY,
+  PAGE_SIZE_OPTIONS,
+  PAGE_SIZE_STORAGE_KEY,
+  PAGE_STORAGE_KEY,
+  PaymentSummaryMetrics,
+  paymentMethodLabel,
+  paymentProgressPercent,
+  paymentStatusMeta,
+  persistedMonth,
+  persistedNumber,
+  persistedStatus,
+  STATUS_OPTIONS,
+  STATUS_STORAGE_KEY,
+  traceActorName,
+} from './payment-management.helpers';
 
 export default function AcademyPaymentManagementPage() {
   const [role, setRole] = React.useState('');
@@ -490,47 +408,7 @@ export default function AcademyPaymentManagementPage() {
         activeFilterCount: status === 'FOLLOW_UP' ? 1 : status === 'ALL' ? 0 : 1,
       }}
     >
-      <MetricGrid
-        columns={4}
-        items={[
-          {
-            key: 'revenue',
-            title: `Đã thu · ${month.format('MM/YYYY')}`,
-            value: summary?.confirmedRevenueVnd || 0,
-            format: 'vnd',
-            icon: <AppIcon icon={BanknoteArrowDown} size="md" />,
-            subValue: `CK: ${formatVND(summary?.confirmedBankTransferVnd || 0)} · TM: ${formatVND(summary?.confirmedCashVnd || 0)}`,
-            loading,
-          },
-          {
-            key: 'deposit',
-            title: 'Cọc cần follow-up',
-            value: summary?.depositFollowUpVnd || 0,
-            format: 'vnd',
-            icon: <AppIcon icon={Clock3} size="md" />,
-            subValue: `${(summary?.depositFollowUpCount || 0).toLocaleString('vi-VN')} học viên`,
-            loading,
-          },
-          {
-            key: 'outstanding',
-            title: 'Còn cần follow-up',
-            value: summary?.outstandingFollowUpVnd || 0,
-            format: 'vnd',
-            icon: <AppIcon icon={CircleDollarSign} size="md" />,
-            subValue: `${(summary?.outstandingFollowUpCount || 0).toLocaleString('vi-VN')} phiếu đã thu một phần`,
-            loading,
-          },
-          {
-            key: 'paid',
-            title: 'Đã hoàn tất học phí',
-            value: summary?.paidInFullCount || 0,
-            format: 'number',
-            icon: <AppIcon icon={CircleCheck} size="md" />,
-            subValue: 'Phiếu đã được khóa',
-            loading,
-          },
-        ]}
-      />
+      <PaymentSummaryMetrics loading={loading} monthLabel={month.format('MM/YYYY')} summary={summary} />
 
       <DataSection
         title="Hàng đợi thu học phí"
