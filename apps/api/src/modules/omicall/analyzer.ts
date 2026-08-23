@@ -236,6 +236,7 @@ export function triggerImmediateAnalysis(fastify: FastifyInstance, logId: number
 
       const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
         where: { id: logId },
+        select: { id: true, recordingUrl: true, duration: true },
       });
       if (!log) {
         throw new Error(`Log record not found for ID: ${logId}`);
@@ -251,6 +252,7 @@ export function triggerImmediateAnalysis(fastify: FastifyInstance, logId: number
       // Update retry states
       const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
         where: { id: logId },
+        select: { analysisRetryCount: true },
       });
       const nextRetryCount = (log?.analysisRetryCount || 0) + 1;
       const finalStatus = nextRetryCount >= MAX_RETRIES ? 'FAILED' : 'PENDING';
@@ -282,6 +284,7 @@ async function processNextBatch(fastify: FastifyInstance) {
         analysisRetryCount: { lt: MAX_RETRIES },
       },
       take: 3,
+      select: { id: true, callUuid: true, analysisRetryCount: true },
     });
 
     for (const w of waiting) {
@@ -341,6 +344,7 @@ async function processNextBatch(fastify: FastifyInstance) {
       },
       take: 2,
       orderBy: { createdAt: 'asc' },
+      select: { id: true },
     });
 
     for (const log of pending) {

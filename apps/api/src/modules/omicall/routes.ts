@@ -42,41 +42,36 @@ export async function omicallRoutes(fastify: FastifyInstance) {
 
     try {
       // 3. Match extension to staffId via CrmOmicallConfig
-      let staffId: number | null = null;
       const extensionToMatch = direction === 'outbound' ? sourceNumber : destinationNumber;
-
-      if (extensionToMatch) {
-        const config = await fastify.prisma.crm.crmOmicallConfig.findFirst({
-          where: { extension: String(extensionToMatch) },
-        });
-        if (config) {
-          staffId = config.staffId;
-        }
-      }
-
-      // 4. Match customer phone to legacyUserId (user_contact.phone_number)
-      let legacyUserId: number | null = null;
       const customerPhone = direction === 'outbound' ? destinationNumber : sourceNumber;
+      const cleanPhone = customerPhone ? String(customerPhone).replace(/\D/g, '') : '';
+      const phoneSuffix = cleanPhone.length > 9 ? cleanPhone.substring(cleanPhone.length - 9) : cleanPhone;
 
-      if (customerPhone) {
-        const cleanPhone = String(customerPhone).replace(/\D/g, '');
-        const suffix = cleanPhone.length > 9 ? cleanPhone.substring(cleanPhone.length - 9) : cleanPhone;
-
-        const contact = await fastify.prisma.legacy.user_contact.findFirst({
-          where: {
-            phone_number: {
-              endsWith: suffix,
-            },
-            is_disabled: false,
-          },
-          select: {
-            user_id: true,
-          },
-        });
-        if (contact) {
-          legacyUserId = contact.user_id;
-        }
-      }
+      // These lookups are independent. Keeping them concurrent shortens the
+      // webhook critical path while retaining the same matching precedence.
+      const [config, contact, existingCallLog] = await Promise.all([
+        extensionToMatch
+          ? fastify.prisma.crm.crmOmicallConfig.findFirst({
+              where: { extension: String(extensionToMatch) },
+              select: { staffId: true },
+            })
+          : Promise.resolve(null),
+        customerPhone
+          ? fastify.prisma.legacy.user_contact.findFirst({
+              where: {
+                phone_number: { endsWith: phoneSuffix },
+                is_disabled: false,
+              },
+              select: { user_id: true },
+            })
+          : Promise.resolve(null),
+        fastify.prisma.crm.crmCallLog.findFirst({
+          where: { callUuid },
+          select: { id: true },
+        }),
+      ]);
+      const staffId = config?.staffId ?? null;
+      const legacyUserId = contact?.user_id ?? null;
 
       // 5. Determine initial analysis status
       // If call was not answered, skip AI analysis
@@ -91,9 +86,6 @@ export async function omicallRoutes(fastify: FastifyInstance) {
 
       // Check if call log was already created in parallel
       let callLogId: number | null = null;
-      const existingCallLog = await fastify.prisma.crm.crmCallLog.findFirst({
-        where: { callUuid },
-      });
       if (existingCallLog) {
         callLogId = existingCallLog.id;
       } else if (legacyUserId && staffId) {
@@ -115,6 +107,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
             },
           },
           orderBy: { createdAt: 'desc' },
+          select: { id: true },
         });
 
         if (matchedCallLog) {
@@ -162,6 +155,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
           callLogId,
           analysisStatus,
         },
+        select: { id: true, callLogId: true, analysisStatus: true },
       });
 
       // Sync durationSec to crmCallLog if linked
@@ -195,14 +189,16 @@ export async function omicallRoutes(fastify: FastifyInstance) {
   // Get all OmiCall configs merged with active staff list (Admin only)
   fastify.get('/omicall/config', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
     try {
-      // 1. Get all active staff
-      const staff = await fastify.prisma.crm.crmStaff.findMany({
-        where: { isActive: true },
-        select: { id: true, displayName: true, username: true, role: true },
-      });
-
-      // 2. Get all configs
-      const configs = await fastify.prisma.crm.crmOmicallConfig.findMany();
+      // These independent reference reads are intentionally concurrent.
+      const [staff, configs] = await Promise.all([
+        fastify.prisma.crm.crmStaff.findMany({
+          where: { isActive: true },
+          select: { id: true, displayName: true, username: true, role: true },
+        }),
+        fastify.prisma.crm.crmOmicallConfig.findMany({
+          select: { id: true, staffId: true, extension: true, phoneNumber: true, sipPassword: true },
+        }),
+      ]);
       const configMap = new Map(configs.map((c) => [c.staffId, c]));
 
       // 3. Merge them
@@ -282,6 +278,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
     try {
       const config = await fastify.prisma.crm.crmOmicallConfig.findUnique({
         where: { staffId: user.id },
+        select: { extension: true, phoneNumber: true, sipPassword: true },
       });
 
       if (!config) {
@@ -340,6 +337,22 @@ export async function omicallRoutes(fastify: FastifyInstance) {
           OR: [{ destinationNumber: { contains: suffix } }, { sourceNumber: { contains: suffix } }],
         },
         orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          callUuid: true,
+          duration: true,
+          happyCallStatus: true,
+          analysisStatus: true,
+          laughCount: true,
+          laughCountAgent: true,
+          laughCountCustomer: true,
+          laughTimestamps: true,
+          customerSatisfactionScore: true,
+          customerSentiment: true,
+          satisfactionAnalysis: true,
+          transcript: true,
+          legacyUserId: true,
+        },
       });
 
       if (!log) {
@@ -512,31 +525,26 @@ export async function omicallRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'Log not found' });
       }
 
-      // Fetch staff and customer names
-      let staffName = null;
-      let staffAvatarUrl = null;
-      let customerName = null;
-
-      if (log.staffId) {
-        const staff = await fastify.prisma.crm.crmStaff.findUnique({
-          where: { id: log.staffId },
-          select: { displayName: true, avatarUrl: true },
-        });
-        if (staff) {
-          staffName = staff.displayName;
-          staffAvatarUrl = staff.avatarUrl;
-        }
-      }
-
-      if (log.legacyUserId) {
-        const customer = await fastify.prisma.legacy.user_profile.findFirst({
-          where: { user_id: log.legacyUserId },
-          select: { full_name: true, first_name: true, last_name: true },
-        });
-        if (customer) {
-          customerName = customer.full_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
-        }
-      }
+      // Fetch the two independent display records concurrently.
+      const [staff, customer] = await Promise.all([
+        log.staffId
+          ? fastify.prisma.crm.crmStaff.findUnique({
+              where: { id: log.staffId },
+              select: { displayName: true, avatarUrl: true },
+            })
+          : Promise.resolve(null),
+        log.legacyUserId
+          ? fastify.prisma.legacy.user_profile.findFirst({
+              where: { user_id: log.legacyUserId },
+              select: { full_name: true, first_name: true, last_name: true },
+            })
+          : Promise.resolve(null),
+      ]);
+      const staffName = staff?.displayName ?? null;
+      const staffAvatarUrl = staff?.avatarUrl ?? null;
+      const customerName = customer
+        ? customer.full_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+        : null;
 
       return {
         ...log,

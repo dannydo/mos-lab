@@ -116,6 +116,7 @@ export async function getBkCallMetricsByLegacyStaffIds(
   });
 
   if (validLegacyStaffIds.length === 0) return metricsByLegacyStaffId;
+  const validLegacyStaffIdSet = new Set(validLegacyStaffIds);
 
   const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
     SELECT user_id AS legacyStaffId, full_name AS displayName
@@ -125,7 +126,7 @@ export async function getBkCallMetricsByLegacyStaffIds(
   const legacyStaffIdByName = new Map<string, number>();
   profiles.forEach((profile) => {
     const legacyStaffId = Number(profile.legacyStaffId);
-    if (validLegacyStaffIds.includes(legacyStaffId)) {
+    if (validLegacyStaffIdSet.has(legacyStaffId)) {
       legacyStaffIdByName.set(normalizeStaffName(String(profile.displayName)), legacyStaffId);
     }
   });
@@ -145,7 +146,7 @@ export async function getBkCallMetricsByLegacyStaffIds(
   const legacyStaffIdByCrmStaffId = new Map<number, number>();
   crmStaff.forEach((staff) => {
     const legacyStaffId =
-      staff.legacyStaffId && validLegacyStaffIds.includes(Number(staff.legacyStaffId))
+      staff.legacyStaffId && validLegacyStaffIdSet.has(Number(staff.legacyStaffId))
         ? Number(staff.legacyStaffId)
         : legacyStaffIdByName.get(normalizeStaffName(staff.displayName));
     if (legacyStaffId) {
@@ -213,6 +214,7 @@ export async function getBkSalaryConfig(fastify: FastifyInstance): Promise<BkSal
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: 'BK_SALARY_CONFIG' },
+      select: { value: true },
     });
     if (configRecord && configRecord.value) {
       const parsed = JSON.parse(configRecord.value);
@@ -418,9 +420,31 @@ export async function computeBkOrderCheckins(
   }
 
   const orderServicesMap = new Map<number, SafeAny[]>();
-  const orderServices = await fastify.prisma.legacy.order_service.findMany({
-    where: { order_id: { in: orderIds } },
-  });
+  const [orderServices, userBalances] = await Promise.all([
+    fastify.prisma.legacy.order_service.findMany({
+      where: { order_id: { in: orderIds } },
+      select: {
+        order_id: true,
+        service_id: true,
+        service_price: true,
+        service_type: true,
+        discount_amount: true,
+      },
+    }),
+    userIds.length > 0
+      ? fastify.prisma.legacy.user_service_balance.findMany({
+          where: { user_id: { in: userIds } },
+          select: {
+            id: true,
+            user_id: true,
+            date_created: true,
+            date_expired: true,
+            normal_count: true,
+            retain_count: true,
+          },
+        })
+      : Promise.resolve([]),
+  ]);
   orderServices.forEach((os) => {
     const list = orderServicesMap.get(os.order_id) || [];
     list.push(os);
@@ -428,38 +452,32 @@ export async function computeBkOrderCheckins(
   });
 
   const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
-  const serviceNameMap = new Map<number, string>();
-  if (serviceIds.length > 0) {
-    const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
-      where: { service_id: { in: serviceIds } },
-    });
-    serviceLanguages.forEach((sl) => {
-      serviceNameMap.set(sl.service_id, sl.service_name);
-    });
-  }
-
-  const userBalances =
-    userIds.length > 0
-      ? await fastify.prisma.legacy.user_service_balance.findMany({
-          where: { user_id: { in: userIds } },
-        })
-      : [];
-
   const balanceIds = userBalances.map((b) => b.id);
-  const userBalanceTransactions =
+  const [serviceLanguages, userBalanceTransactions] = await Promise.all([
+    serviceIds.length > 0
+      ? fastify.prisma.legacy.service_language.findMany({
+          where: { service_id: { in: serviceIds } },
+          select: { service_id: true, service_name: true },
+        })
+      : Promise.resolve([]),
     balanceIds.length > 0
-      ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-    SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired, 
-           usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count, 
-           usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-           COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
-    FROM user_service_balance_transaction usbt
-    LEFT JOIN \`order\` o ON o.id = usbt.order_id
-    LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-    WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-      AND usbt.date_created <= '${endPart} 23:59:59'
-  `)
-      : [];
+      ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired,
+                 usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count,
+                 usbt.retain_count, usbt.used_staff_id, usbt.order_id,
+                 COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
+          FROM user_service_balance_transaction usbt
+          LEFT JOIN \`order\` o ON o.id = usbt.order_id
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+          WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
+            AND usbt.date_created <= '${endPart} 23:59:59'
+        `)
+      : Promise.resolve([]),
+  ]);
+  const serviceNameMap = new Map<number, string>();
+  serviceLanguages.forEach((sl) => {
+    serviceNameMap.set(sl.service_id, sl.service_name);
+  });
 
   const txnsByBalanceId = new Map<number, SafeAny[]>();
   for (const t of userBalanceTransactions) {
@@ -471,29 +489,45 @@ export async function computeBkOrderCheckins(
     }
     list.push(t);
   }
+  txnsByBalanceId.forEach((transactions) => {
+    transactions.sort((a, b) => {
+      const timeA = new Date(a.o_booking_date_start || a.date_created).getTime();
+      const timeB = new Date(b.o_booking_date_start || b.date_created).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+      return Number(b.id) - Number(a.id);
+    });
+  });
+
+  const balancesByUserId = new Map<number, typeof userBalances>();
+  userBalances.forEach((balance) => {
+    const balances = balancesByUserId.get(balance.user_id) || [];
+    balances.push(balance);
+    balancesByUserId.set(balance.user_id, balances);
+  });
 
   const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
     const bTime = bookingDateStart || orderCreatedDate;
-    const userBals = userBalances.filter((b) => b.user_id === userId);
+    const bookingTime = new Date(bTime).getTime();
+    const bookingDay = new Date(new Date(bTime).toLocaleDateString('en-CA'));
+    const userBals = balancesByUserId.get(userId) || [];
 
     for (const usb of userBals) {
-      if (new Date(usb.date_created) >= new Date(bTime)) continue;
+      if (new Date(usb.date_created).getTime() >= bookingTime) continue;
 
-      const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
-        (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
-      );
-
-      txnsBefore.sort((a, b) => {
-        const timeA = new Date(a.o_booking_date_start || a.date_created).getTime();
-        const timeB = new Date(b.o_booking_date_start || b.date_created).getTime();
-        if (timeA !== timeB) return timeB - timeA;
-        return b.id - a.id;
-      });
-
-      const lastTxnBefore = txnsBefore[0];
+      let lastTxnBefore: SafeAny | undefined;
+      let usedAfter = 0;
+      for (const transaction of txnsByBalanceId.get(usb.id) || []) {
+        const transactionTime = new Date(transaction.o_booking_date_start || transaction.date_created).getTime();
+        if (transactionTime < bookingTime) {
+          lastTxnBefore = transaction;
+          break;
+        }
+        if (transaction.used_staff_id !== null) {
+          usedAfter += (transaction.normal_count || 0) + (transaction.retain_count || 0);
+        }
+      }
       const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
-      const isNotExpired =
-        !dateExpired || new Date(dateExpired) >= new Date(new Date(bTime).toLocaleDateString('en-CA'));
+      const isNotExpired = !dateExpired || new Date(dateExpired) >= bookingDay;
 
       let countLeft: number;
       if (
@@ -503,15 +537,6 @@ export async function computeBkOrderCheckins(
       ) {
         countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
       } else {
-        const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
-          (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
-        );
-        let usedAfter = 0;
-        txnsAfterOrAt.forEach((t) => {
-          if (t.used_staff_id !== null) {
-            usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
-          }
-        });
         countLeft = (usb.normal_count || 0) + (usb.retain_count || 0) + usedAfter;
       }
 

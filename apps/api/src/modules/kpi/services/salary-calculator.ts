@@ -91,6 +91,7 @@ export async function calculateBookerSalaryStats(
       isActive: true,
       ...(targetStaffId !== undefined ? { id: targetStaffId } : {}),
     },
+    select: { id: true, displayName: true, legacyStaffId: true },
   });
 
   const staffStats: Record<
@@ -128,6 +129,7 @@ export async function calculateBookerSalaryStats(
 
     const staffNameToLegacyIdMap = new Map<string, number>();
     const legacyIdToStaffMap = new Map<number, SafeAny>();
+    const staffByNormalizedName = new Map(staffList.map((staff) => [staff.displayName.toLowerCase().trim(), staff]));
 
     // Prioritize explicit legacyStaffId from crmStaff (Rule #11 Single Source of Truth)
     staffList.forEach((s) => {
@@ -139,7 +141,7 @@ export async function calculateBookerSalaryStats(
 
     profiles.forEach((p: SafeAny) => {
       const key = p.fullName.toLowerCase().trim();
-      const staff = staffList.find((s) => s.displayName.toLowerCase().trim() === key);
+      const staff = staffByNormalizedName.get(key);
       if (staff && !staff.legacyStaffId && !staffNameToLegacyIdMap.has(key)) {
         staffNameToLegacyIdMap.set(key, Number(p.userId));
         legacyIdToStaffMap.set(Number(p.userId), staff);
@@ -163,27 +165,30 @@ export async function calculateBookerSalaryStats(
       const endStr = formatDateStr(end);
 
       // Fetch completed orders by actual check-in date (Rule #15 & User Directive: COALESCE(ro.actual_booking_date_start, o.booking_date_start))
-      const completedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT o.id, o.created_staff_id, o.order_state, o.total_price, o.user_id,
-               o.booking_date_start, o.date_created,
-               COALESCE(ro.actual_booking_date_start, o.booking_date_start) as actual_checkin_date
-        FROM \`order\` o
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.created_staff_id IN (${activeLegacyUserIds.join(',')})
-          AND o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr}'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
-      `);
-
-      // Fetch missed orders by date_created in period using raw string format to prevent timezone offset (Rule #10)
-      const missedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT o.created_staff_id as created_staff_id
-        FROM \`order\` o
-        WHERE o.created_staff_id IN (${activeLegacyUserIds.join(',')})
-          AND o.date_created >= '${startStr} 00:00:00'
-          AND o.date_created <= '${endStr} 23:59:59'
-          AND o.order_state NOT IN ('Completed', 'Cancelled')
-      `);
+      // The completed and missed ledgers are independent, so fetch them in
+      // parallel while retaining their distinct date-recognition rules.
+      const [completedOrders, missedOrders] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT o.id, o.created_staff_id, o.total_price, o.user_id,
+                 o.booking_date_start, o.date_created,
+                 COALESCE(ro.actual_booking_date_start, o.booking_date_start) as actual_checkin_date
+          FROM \`order\` o
+          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+          WHERE o.created_staff_id IN (${activeLegacyUserIds.join(',')})
+            AND o.order_state = 'Completed'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr}'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
+        `),
+        // Booker productivity remains date_created-based by business rule.
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT o.created_staff_id as created_staff_id
+          FROM \`order\` o
+          WHERE o.created_staff_id IN (${activeLegacyUserIds.join(',')})
+            AND o.date_created >= '${startStr} 00:00:00'
+            AND o.date_created <= '${endStr} 23:59:59'
+            AND o.order_state NOT IN ('Completed', 'Cancelled')
+        `),
+      ]);
 
       missedOrders.forEach((o) => {
         const staff = legacyIdToStaffMap.get(Number(o.created_staff_id));
@@ -215,6 +220,7 @@ export async function calculateBookerSalaryStats(
         if (completedOrderIds.length > 0) {
           const orderServices = await fastify.prisma.legacy.order_service.findMany({
             where: { order_id: { in: completedOrderIds } },
+            select: { order_id: true, service_id: true, service_price: true, discount_amount: true },
           });
           orderServices.forEach((os) => {
             const list = orderServicesMap.get(os.order_id) || [];
@@ -226,6 +232,7 @@ export async function calculateBookerSalaryStats(
           if (serviceIds.length > 0) {
             const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
               where: { service_id: { in: serviceIds } },
+              select: { service_id: true, service_name: true },
             });
             serviceLanguages.forEach((sl) => {
               serviceNameMap.set(sl.service_id, sl.service_name);
@@ -242,6 +249,14 @@ export async function calculateBookerSalaryStats(
           userIds.length > 0
             ? await fastify.prisma.legacy.user_service_balance.findMany({
                 where: { user_id: { in: userIds } },
+                select: {
+                  id: true,
+                  user_id: true,
+                  date_created: true,
+                  date_expired: true,
+                  normal_count: true,
+                  retain_count: true,
+                },
               })
             : [];
 
@@ -270,10 +285,16 @@ export async function calculateBookerSalaryStats(
           }
           list.push(t);
         }
+        const balancesByUserId = new Map<number, typeof userBalances>();
+        userBalances.forEach((balance) => {
+          const balances = balancesByUserId.get(balance.user_id) || [];
+          balances.push(balance);
+          balancesByUserId.set(balance.user_id, balances);
+        });
 
         const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
           const bTime = bookingDateStart || orderCreatedDate;
-          const userBals = userBalances.filter((b) => b.user_id === userId);
+          const userBals = balancesByUserId.get(userId) || [];
 
           for (const usb of userBals) {
             if (new Date(usb.date_created) >= new Date(bTime)) {
