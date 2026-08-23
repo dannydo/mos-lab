@@ -28,8 +28,7 @@ export class BookingAuditService {
     let originalStaffName = 'System';
 
     try {
-      const idsToFetch = [actorStaffId];
-      if (originalStaffId) idsToFetch.push(originalStaffId);
+      const idsToFetch = Array.from(new Set([actorStaffId, ...(originalStaffId ? [originalStaffId] : [])]));
 
       const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number; full_name: string }>>(
         `SELECT user_id, full_name FROM user_profile WHERE user_id IN (${idsToFetch.join(',')})`
@@ -110,6 +109,22 @@ export class BookingAuditService {
     const logs = await fastify.prisma.crm.crmBookingLog.findMany({
       where: { orderId },
       orderBy: { dateCreated: 'desc' },
+      select: {
+        id: true,
+        orderId: true,
+        actionType: true,
+        actorStaffId: true,
+        actorStaffName: true,
+        originalStaffId: true,
+        originalStaffName: true,
+        isCrossAction: true,
+        reasonCategory: true,
+        reasonNote: true,
+        oldDataJson: true,
+        newDataJson: true,
+        ipAddress: true,
+        dateCreated: true,
+      },
     });
 
     return logs.map((l) => ({
@@ -166,22 +181,48 @@ export class BookingAuditService {
       where.actionType = filter.actionType;
     }
 
-    const [totalLogs, logs, crossActionsCount, crossCancelsCount, crossReschedulesCount] = await Promise.all([
+    const [totalLogs, logs, crossActionStats] = await Promise.all([
       fastify.prisma.crm.crmBookingLog.count({ where }),
       fastify.prisma.crm.crmBookingLog.findMany({
         where,
         orderBy: { dateCreated: 'desc' },
         skip,
         take: limitNum,
+        select: {
+          id: true,
+          orderId: true,
+          actionType: true,
+          actorStaffId: true,
+          actorStaffName: true,
+          originalStaffId: true,
+          originalStaffName: true,
+          isCrossAction: true,
+          reasonCategory: true,
+          reasonNote: true,
+          oldDataJson: true,
+          newDataJson: true,
+          ipAddress: true,
+          dateCreated: true,
+        },
       }),
-      fastify.prisma.crm.crmBookingLog.count({ where: { ...where, isCrossAction: true } }),
-      fastify.prisma.crm.crmBookingLog.count({
-        where: { ...where, isCrossAction: true, actionType: 'CANCEL' },
-      }),
-      fastify.prisma.crm.crmBookingLog.count({
-        where: { ...where, isCrossAction: true, actionType: 'RESCHEDULE' },
+      fastify.prisma.crm.crmBookingLog.groupBy({
+        by: ['isCrossAction', 'actionType'],
+        where,
+        _count: { id: true },
       }),
     ]);
+
+    let crossActionsCount = 0;
+    let crossCancelsCount = 0;
+    let crossReschedulesCount = 0;
+    for (const stat of crossActionStats) {
+      if (!stat.isCrossAction) continue;
+
+      const count = Number(stat._count.id);
+      crossActionsCount += count;
+      if (stat.actionType === 'CANCEL') crossCancelsCount += count;
+      if (stat.actionType === 'RESCHEDULE') crossReschedulesCount += count;
+    }
 
     // Enrich logs with order key & customer details from legacy DB
     const orderIds = Array.from(new Set(logs.map((l) => l.orderId)));

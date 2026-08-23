@@ -946,6 +946,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       if (filterByStaff) {
         const staff = await fastify.prisma.crm.crmStaff.findUnique({
           where: { id: targetStaffId },
+          select: { role: true, displayName: true },
         });
 
         if (staff) {
@@ -1010,9 +1011,6 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         countSql += ` AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
       }
 
-      const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams);
-      const total = Number(countResult[0]?.total || 0);
-
       // 3. Query orders/bookings in range with pagination
       let sql = `
         SELECT 
@@ -1071,7 +1069,11 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       sql += ` ORDER BY o.booking_date_start ASC LIMIT ? OFFSET ?`;
       params.push(limitNum, offsetNum);
 
-      const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, ...params);
+      const [countResult, result] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(countSql, ...countParams),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, ...params),
+      ]);
+      const total = Number(countResult[0]?.total || 0);
 
       // 4. Fetch payment details and service details for completed/active orders to calculate financial metrics
       const orderIds = result.map((o) => Number(o.id));
@@ -1101,6 +1103,12 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       if (orderIds.length > 0) {
         const orderServices = await fastify.prisma.legacy.order_service.findMany({
           where: { order_id: { in: orderIds } },
+          select: {
+            order_id: true,
+            service_id: true,
+            service_price: true,
+            discount_amount: true,
+          },
         });
         orderServices.forEach((os) => {
           const l = orderServicesMap.get(os.order_id) || [];
@@ -1112,6 +1120,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         if (serviceIds.length > 0) {
           const serviceLanguages = await fastify.prisma.legacy.service_language.findMany({
             where: { service_id: { in: serviceIds } },
+            select: { service_id: true, service_name: true },
           });
           serviceLanguages.forEach((sl) => {
             serviceNameMap.set(sl.service_id, sl.service_name);
@@ -1387,10 +1396,10 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved'`,
           date
         );
-        const offUserIds = dayOffs.map((d) => Number(d.from_user_id));
+        const offUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));
 
         roster = matchedSchedules
-          .filter((s) => !offUserIds.includes(Number(s.user_id)))
+          .filter((s) => !offUserIds.has(Number(s.user_id)))
           .map((s) => ({
             staff_name: s.full_name,
             shift_start: s.start_time_str,
@@ -1398,23 +1407,30 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           }));
       }
 
-      // If technicianId is provided, filter the roster to only contain that KTV
+      // Resolve the technician once for both roster and appointment filtering.
+      let technicianName: SafeAny = null;
+      let hasTechnicianName = false;
       if (technicianId) {
         const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
           parseInt(technicianId, 10)
         );
         if (ktvProfile.length > 0) {
-          const ktvFullName = ktvProfile[0].full_name;
-          roster = roster.filter((r) => r.staff_name === ktvFullName);
+          technicianName = ktvProfile[0].full_name;
+          hasTechnicianName = true;
         } else {
           const staff = await fastify.prisma.crm.crmStaff.findUnique({
             where: { id: parseInt(technicianId, 10) },
+            select: { displayName: true },
           });
           if (staff) {
-            roster = roster.filter((r) => r.staff_name === staff.displayName);
+            technicianName = staff.displayName;
+            hasTechnicianName = true;
           }
         }
+      }
+      if (hasTechnicianName) {
+        roster = roster.filter((r) => r.staff_name === technicianName);
       }
 
       // 2. Fetch Appointments
@@ -1423,27 +1439,30 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
                         WHERE store = ? AND DATE(time_start) = ? AND status != 'cancelled'`;
       const apptsParams: SafeAny[] = [storeName, date];
 
-      if (technicianId) {
-        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
-          parseInt(technicianId, 10)
-        );
-        if (ktvProfile.length > 0) {
-          const ktvFullName = ktvProfile[0].full_name;
-          apptsQuery += ` AND specialist_name = ?`;
-          apptsParams.push(ktvFullName);
-        } else {
-          const staff = await fastify.prisma.crm.crmStaff.findUnique({
-            where: { id: parseInt(technicianId, 10) },
-          });
-          if (staff) {
-            apptsQuery += ` AND specialist_name = ?`;
-            apptsParams.push(staff.displayName);
-          }
-        }
+      if (hasTechnicianName) {
+        apptsQuery += ` AND specialist_name = ?`;
+        apptsParams.push(technicianName);
       }
 
       const appointments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(apptsQuery, ...apptsParams);
+
+      const toTimeString = (value: SafeAny): string => {
+        if (value instanceof Date) return value.toISOString().split('T')[1].slice(0, 5);
+        if (typeof value === 'string') return value.slice(0, 5);
+        if (value && typeof value.toISOString === 'function') return value.toISOString().split('T')[1].slice(0, 5);
+        return '';
+      };
+      const rosterIntervals = roster.map((entry) => ({
+        start: toTimeString(entry.shift_start),
+        end: toTimeString(entry.shift_end),
+      }));
+      const appointmentIntervals = appointments.map((appointment) => {
+        const start = new Date(appointment.time_start);
+        return {
+          start: start.toISOString().split('T')[1].slice(0, 5),
+          end: new Date(start.getTime() + appointment.duration * 60000).toISOString().split('T')[1].slice(0, 5),
+        };
+      });
 
       // 3. Generate slots (09:00 to 20:00, every 15m)
       const matrix: { [time: string]: { available: number; roster: number } } = {};
@@ -1454,36 +1473,12 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         const timeStr = current.toISOString().split('T')[1].slice(0, 5);
 
         // Calculate active roster count at this slot time
-        const activeRoster = roster.filter((r) => {
-          let rStart = '';
-          if (r.shift_start instanceof Date) {
-            rStart = r.shift_start.toISOString().split('T')[1].slice(0, 5);
-          } else if (typeof r.shift_start === 'string') {
-            rStart = r.shift_start.slice(0, 5);
-          } else if (r.shift_start && typeof r.shift_start.toISOString === 'function') {
-            rStart = r.shift_start.toISOString().split('T')[1].slice(0, 5);
-          }
-
-          let rEnd = '';
-          if (r.shift_end instanceof Date) {
-            rEnd = r.shift_end.toISOString().split('T')[1].slice(0, 5);
-          } else if (typeof r.shift_end === 'string') {
-            rEnd = r.shift_end.slice(0, 5);
-          } else if (r.shift_end && typeof r.shift_end.toISOString === 'function') {
-            rEnd = r.shift_end.toISOString().split('T')[1].slice(0, 5);
-          }
-
-          return rStart <= timeStr && timeStr < rEnd;
-        });
+        const activeRoster = rosterIntervals.filter((interval) => interval.start <= timeStr && timeStr < interval.end);
 
         // Calculate active appointments at this slot time
-        const activeAppointments = appointments.filter((a) => {
-          const aStartStr = new Date(a.time_start).toISOString().split('T')[1].slice(0, 5);
-          const aStart = new Date(a.time_start);
-          const aEnd = new Date(aStart.getTime() + a.duration * 60000);
-          const aEndStr = aEnd.toISOString().split('T')[1].slice(0, 5);
-          return aStartStr <= timeStr && timeStr < aEndStr;
-        });
+        const activeAppointments = appointmentIntervals.filter(
+          (interval) => interval.start <= timeStr && timeStr < interval.end
+        );
 
         const rosterCount = activeRoster.length;
         const bookedCount = activeAppointments.length;

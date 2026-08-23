@@ -18,10 +18,29 @@ type CampaignPromotionWithCampaign = {
     id: number;
     name: string;
     slug: string;
-    status: string;
     deletedAt: Date | null;
   };
 };
+
+const campaignPromotionSelect = {
+  id: true,
+  campaignId: true,
+  name: true,
+  code: true,
+  type: true,
+  value: true,
+  description: true,
+  isActive: true,
+  legacyPromotionId: true,
+  campaign: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      deletedAt: true,
+    },
+  },
+} as const;
 
 export interface BookingPromotionResolution {
   source: 'NONE' | 'STANDARD' | 'CUSTOM_CAMPAIGN';
@@ -102,7 +121,7 @@ export class BookingPromotionService {
         legacyPromotionId: Number(legacyPromotionId),
         campaign: { deletedAt: null },
       },
-      include: { campaign: true },
+      select: campaignPromotionSelect,
     }) as Promise<CampaignPromotionWithCampaign | null>;
   }
 
@@ -132,7 +151,7 @@ export class BookingPromotionService {
           campaignId: currentCustomPromotion.campaignId,
           isActive: true,
         },
-        include: { campaign: true },
+        select: campaignPromotionSelect,
         orderBy: { id: 'desc' },
       })) as CampaignPromotionWithCampaign[];
 
@@ -149,32 +168,31 @@ export class BookingPromotionService {
       };
     }
 
-    const standardPromotions = await fastify.prisma.legacy.$queryRawUnsafe<
-      Array<{
-        id: number;
-        name: string | null;
-        promotionKey: string | null;
-        discountPercentage: number | null;
-        discountAmount: number | null;
-      }>
-    >(
-      `SELECT p.id, pl.promotion_name as name, p.promotion_key as promotionKey,
-              p.discount_percentage as discountPercentage, p.discount_amount as discountAmount
-       FROM promotion p
-       LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
-       WHERE p.is_disabled = 0
-       ORDER BY p.id DESC`
-    );
+    const [standardPromotions, customPromotionRows] = await Promise.all([
+      fastify.prisma.legacy.$queryRawUnsafe<
+        Array<{
+          id: number;
+          name: string | null;
+          promotionKey: string | null;
+          discountPercentage: number | null;
+          discountAmount: number | null;
+        }>
+      >(
+        `SELECT p.id, pl.promotion_name as name, p.promotion_key as promotionKey,
+                p.discount_percentage as discountPercentage, p.discount_amount as discountAmount
+         FROM promotion p
+         LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
+         WHERE p.is_disabled = 0
+         ORDER BY p.id DESC`
+      ),
+      fastify.prisma.crm.crmCampaignPromotion.findMany({
+        where: { legacyPromotionId: { not: null } },
+        select: { legacyPromotionId: true },
+      }),
+    ]);
 
     const customLegacyPromotionIds = new Set(
-      (
-        await fastify.prisma.crm.crmCampaignPromotion.findMany({
-          where: { legacyPromotionId: { not: null } },
-          select: { legacyPromotionId: true },
-        })
-      )
-        .map((promotion) => promotion.legacyPromotionId)
-        .filter((id): id is number => id !== null)
+      customPromotionRows.map((promotion) => promotion.legacyPromotionId).filter((id): id is number => id !== null)
     );
 
     return {
@@ -273,7 +291,7 @@ export class BookingPromotionService {
 
     const campaignPromotion = (await fastify.prisma.crm.crmCampaignPromotion.findUnique({
       where: { id: customCampaignPromotionId! },
-      include: { campaign: true },
+      select: campaignPromotionSelect,
     })) as CampaignPromotionWithCampaign | null;
 
     if (!campaignPromotion || !campaignPromotion.isActive || campaignPromotion.campaign.deletedAt) {

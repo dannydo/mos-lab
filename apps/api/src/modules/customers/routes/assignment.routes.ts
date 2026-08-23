@@ -38,6 +38,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
         // 1. Get current assignments for all selected customerIds to know prevStaffId
         const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
           where: { legacyUserId: { in: customerIds } },
+          select: { legacyUserId: true, staffId: true },
         });
         const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
@@ -94,6 +95,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
       // 1. Get current assignments for all selected customerIds
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: { legacyUserId: { in: customerIds } },
+        select: { legacyUserId: true, staffId: true },
       });
       const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
@@ -140,21 +142,25 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
 
     try {
       // 1. Get unique batchIds with pagination (ordered by assignedAt desc)
-      const distinctHistory = await fastify.prisma.crm.crmAssignmentHistory.findMany({
-        distinct: ['batchId'],
-        orderBy: { assignedAt: 'desc' },
-        skip,
-        take: limitNum,
-        include: {
-          newStaff: { select: { displayName: true } },
-          assigner: { select: { displayName: true } },
-        },
-      });
-
-      // 2. Fetch total count of distinct batches
-      const allBatches = await fastify.prisma.crm.crmAssignmentHistory.groupBy({
-        by: ['batchId'],
-      });
+      const [distinctHistory, allBatches] = await Promise.all([
+        fastify.prisma.crm.crmAssignmentHistory.findMany({
+          distinct: ['batchId'],
+          orderBy: { assignedAt: 'desc' },
+          skip,
+          take: limitNum,
+          select: {
+            batchId: true,
+            assignedAt: true,
+            isUndone: true,
+            undoneAt: true,
+            newStaff: { select: { displayName: true } },
+            assigner: { select: { displayName: true } },
+          },
+        }),
+        // Prisma does not support COUNT(DISTINCT ...) for this model, so grouping is
+        // retained while it runs concurrently with the paged batch lookup.
+        fastify.prisma.crm.crmAssignmentHistory.groupBy({ by: ['batchId'] }),
+      ]);
       const total = allBatches.length;
 
       if (distinctHistory.length === 0) {
@@ -243,7 +249,11 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
       try {
         const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
           where: { batchId },
-          include: {
+          select: {
+            id: true,
+            legacyUserId: true,
+            isUndone: true,
+            undoneAt: true,
             prevStaff: { select: { displayName: true } },
             newStaff: { select: { displayName: true } },
           },
@@ -318,6 +328,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
       // 1. Find all history records for this batch that are not undone
       const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
         where: { batchId, isUndone: false },
+        select: { legacyUserId: true, prevStaffId: true, newStaffId: true },
       });
 
       if (historyRecords.length === 0) {
@@ -332,6 +343,7 @@ export async function registerAssignmentRoutes(fastify: FastifyInstance) {
       // 2. Fetch current assignments of these customers to check if they've changed
       const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: { legacyUserId: { in: customerIds } },
+        select: { legacyUserId: true, staffId: true },
       });
       const currentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
