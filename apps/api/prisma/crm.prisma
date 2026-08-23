@@ -127,6 +127,7 @@ model CrmCallLog {
   @@index([staffId])
   @@index([createdAt])
   @@index([staffId, createdAt])
+  @@index([legacyUserId, createdAt])
   @@map("crm_call_logs")
 }
 
@@ -204,6 +205,8 @@ model CrmCustomerAssignment {
   retainedAt           DateTime? @map("retained_at") @db.DateTime(0)
   staff                CrmStaff? @relation(fields: [staffId], references: [id], onDelete: SetNull)
 
+  @@index([staffId, expiresAt])
+  @@index([staffId, assignedAt])
   @@map("crm_customer_assignments")
 }
 
@@ -245,6 +248,7 @@ model CrmAssignmentHistory {
 
   @@index([batchId])
   @@index([legacyUserId])
+  @@index([legacyUserId, isUndone, assignedAt])
   @@map("crm_assignment_history")
 }
 
@@ -571,6 +575,8 @@ model CrmLocaTouchpoint {
   @@index([legacyUserId])
   @@index([touchpointKey])
   @@index([cycleDate])
+  @@index([isChecked, checkedAt, checkedByStaffId])
+  @@index([isChecked, createdAt, checkedByStaffId])
   @@map("crm_loca_touchpoints")
 }
 

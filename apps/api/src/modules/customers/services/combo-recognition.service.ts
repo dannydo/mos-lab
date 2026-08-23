@@ -273,8 +273,14 @@ export class ComboRecognitionService {
           LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
           WHERE o_nl.order_state = 'Completed'
             AND osc_nl.total_price > 0
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ?
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
+            AND (
+              (ro_nl.actual_booking_date_start >= ? AND ro_nl.actual_booking_date_start <= ?)
+              OR (
+                ro_nl.actual_booking_date_start IS NULL
+                AND o_nl.booking_date_start >= ?
+                AND o_nl.booking_date_start <= ?
+              )
+            )
             AND (sp_nl.service_price_package_key IS NULL OR (
               LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
               AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
@@ -294,8 +300,14 @@ export class ComboRecognitionService {
           WHERE o_nl.order_state = 'Completed'
             AND os_nl.total_price > 0
             AND (os_nl.user_service_type = 'combo' OR os_nl.service_group = 'combo')
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) >= ?
-            AND COALESCE(ro_nl.actual_booking_date_start, o_nl.booking_date_start) <= ?
+            AND (
+              (ro_nl.actual_booking_date_start >= ? AND ro_nl.actual_booking_date_start <= ?)
+              OR (
+                ro_nl.actual_booking_date_start IS NULL
+                AND o_nl.booking_date_start >= ?
+                AND o_nl.booking_date_start <= ?
+              )
+            )
             AND (sp_nl.service_price_package_key IS NULL OR (
               LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
               AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
@@ -308,6 +320,10 @@ export class ComboRecognitionService {
             ))
         ) recognized_combo
         WHERE ${balanceExistsSql}`,
+        startStr,
+        endStr,
+        startStr,
+        endStr,
         startStr,
         endStr,
         startStr,

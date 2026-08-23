@@ -917,7 +917,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ${innerOrderBy}
       `;
 
-      // 4. Main Query (Optimized raw query using dynamic Deferred Join pagination & usb_agg)
+      // The total-spent sort must preserve its aggregate in the outer query: SQL may
+      // otherwise discard the derived page ordering. All other display-only metrics
+      // are hydrated below from the page IDs, rather than grouping their full tables
+      // on every paginated request.
+      const requiresOuterOrderCounts = sortParam === 'totalSpent_desc' || sortParam === 'totalSpent_asc';
+      const outerOrderCountsSelect = requiresOuterOrderCounts
+        ? `COALESCE(order_counts.totalSpent, 0) as totalSpent,
+          COALESCE(order_counts.totalVisits, 0) as totalVisits,`
+        : `0 as totalSpent,
+          0 as totalVisits,`;
+      const outerOrderCountsJoin = requiresOuterOrderCounts
+        ? `LEFT JOIN (
+          SELECT
+            user_id,
+            COALESCE(SUM(total_price), 0) as totalSpent,
+            COUNT(*) as totalVisits
+          FROM \`order\`
+          WHERE order_state = 'Completed'
+          GROUP BY user_id
+        ) as order_counts ON u.id = order_counts.user_id`
+        : '';
+
+      // 4. Main Query (deferred pagination; page-scoped metrics are hydrated below)
       const querySql = `
         SELECT 
           u.id, 
@@ -936,61 +958,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
           TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) as age,
           up.last_order_booking as lastVisit,
           DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
-          COALESCE(order_counts.totalSpent, 0) as totalSpent,
-          COALESCE(order_counts.totalVisits, 0) as totalVisits,
-          COALESCE(promo_counts.totalPromotionsUsed, 0) as totalPromotionsUsed,
-          COALESCE(ref_counts.totalReferrals, 0) as totalReferrals,
-          CASE
-            WHEN usb_agg.user_id IS NULL THEN 'SINGLE'
-            WHEN usb_agg.live_count > 0 THEN 'COMBO_LIVE'
-            ELSE 'COMBO_DEAD'
-          END as bucket,
-          COALESCE(usb_agg.normalCount, 0) as normalCount,
-          COALESCE(usb_agg.retainCount, 0) as retainCount,
-          usb_agg.expiryDate as expiryDate
+          ${outerOrderCountsSelect}
+          0 as totalPromotionsUsed,
+          0 as totalReferrals,
+          'SINGLE' as bucket,
+          0 as normalCount,
+          0 as retainCount,
+          NULL as expiryDate
         FROM (
           ${innerQuerySql}
           LIMIT ? OFFSET ?
         ) as p
         JOIN user u ON u.id = p.id
         LEFT JOIN user_profile up ON u.id = up.user_id
-        LEFT JOIN (
-          SELECT 
-            user_id, 
-            COALESCE(SUM(total_price), 0) as totalSpent, 
-            COUNT(*) as totalVisits
-          FROM \`order\`
-          WHERE order_state = 'Completed'
-          GROUP BY user_id
-        ) as order_counts ON u.id = order_counts.user_id
-        LEFT JOIN (
-          SELECT user_id, COUNT(*) as totalPromotionsUsed
-          FROM \`order\`
-          WHERE order_state = 'Completed' AND (promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL)
-          GROUP BY user_id
-        ) as promo_counts ON u.id = promo_counts.user_id
-        LEFT JOIN (
-          SELECT referrer_user_id, COUNT(*) as totalReferrals
-          FROM user_profile
-          WHERE referrer_user_id IS NOT NULL
-          GROUP BY referrer_user_id
-        ) as ref_counts ON u.id = ref_counts.referrer_user_id
-        LEFT JOIN (
-          SELECT 
-            user_id,
-            SUM(
-              CASE 
-                WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
-                ELSE 0 
-              END
-            ) as live_count,
-            SUM(normal_count) as normalCount,
-            SUM(retain_count) as retainCount,
-            MAX(date_expired) as expiryDate,
-            MAX(date_created) as max_date_created
-          FROM user_service_balance
-          GROUP BY user_id
-        ) as usb_agg ON u.id = usb_agg.user_id
+        ${outerOrderCountsJoin}
         ${outerOrderBy}
       `;
 
@@ -1025,6 +1006,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
         latestCallbacks,
         latestDailyPlans,
         latestCalls,
+        pageOrderMetrics,
+        pageReferralMetrics,
+        pageBalanceMetrics,
       ] = await Promise.all([
         customerIds.length > 0
           ? fastify.prisma.crm.crmCustomerAssignment.findMany({
@@ -1115,7 +1099,69 @@ export async function customerRoutes(fastify: FastifyInstance) {
               orderBy: { createdAt: 'desc' },
             })
           : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT
+                 user_id as userId,
+                 COALESCE(SUM(total_price), 0) as totalSpent,
+                 COUNT(*) as totalVisits,
+                 SUM(CASE WHEN promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL THEN 1 ELSE 0 END) as totalPromotionsUsed
+               FROM \`order\`
+               WHERE order_state = 'Completed' AND user_id IN (${customerIds.join(',')})
+               GROUP BY user_id`
+            )
+          : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT referrer_user_id as userId, COUNT(*) as totalReferrals
+               FROM user_profile
+               WHERE referrer_user_id IN (${customerIds.join(',')})
+               GROUP BY referrer_user_id`
+            )
+          : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT
+                 user_id as userId,
+                 SUM(CASE
+                   WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1
+                   ELSE 0
+                 END) as live_count,
+                 SUM(normal_count) as normalCount,
+                 SUM(retain_count) as retainCount,
+                 MAX(date_expired) as expiryDate
+               FROM user_service_balance
+               WHERE user_id IN (${customerIds.join(',')})
+               GROUP BY user_id`
+            )
+          : Promise.resolve([]),
       ]);
+
+      const orderMetricMap = new Map(pageOrderMetrics.map((metric) => [Number(metric.userId), metric]));
+      const referralMetricMap = new Map(pageReferralMetrics.map((metric) => [Number(metric.userId), metric]));
+      const balanceMetricMap = new Map(pageBalanceMetrics.map((metric) => [Number(metric.userId), metric]));
+
+      // Keep the response's numeric and bucket semantics identical to the former
+      // outer joins while limiting metric aggregation to this response page.
+      dataResult.forEach((row: SafeAny) => {
+        const customerId = Number(row.id);
+        const orderMetric = orderMetricMap.get(customerId);
+        const referralMetric = referralMetricMap.get(customerId);
+        const balanceMetric = balanceMetricMap.get(customerId);
+
+        row.totalSpent = orderMetric?.totalSpent || 0;
+        row.totalVisits = orderMetric?.totalVisits || 0;
+        row.totalPromotionsUsed = orderMetric?.totalPromotionsUsed || 0;
+        row.totalReferrals = referralMetric?.totalReferrals || 0;
+        row.bucket = !balanceMetric
+          ? 'SINGLE'
+          : Number(balanceMetric.live_count || 0) > 0
+            ? 'COMBO_LIVE'
+            : 'COMBO_DEAD';
+        row.normalCount = balanceMetric?.normalCount || 0;
+        row.retainCount = balanceMetric?.retainCount || 0;
+        row.expiryDate = balanceMetric?.expiryDate || null;
+      });
 
       const historyMap = new Map<number, { assignedAt: Date; staffName: string | null }>();
       assignmentHistories.forEach((h) => {

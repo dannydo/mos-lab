@@ -136,6 +136,9 @@ export async function registerLocaStaffActivityRoutes(fastify: FastifyInstance) 
         if (s && s.legacyStaffId) legacyStaffId = s.legacyStaffId;
       }
 
+      // The three feeds are independent once the legacy staff ID is resolved. Fetch
+      // them together so the slowest datasource determines latency instead of the
+      // sum of three round trips.
       // 1. Fetch Call Logs from crm.crmCallLog
       const callWhereClause: SafeAny = {
         createdAt: {
@@ -146,11 +149,6 @@ export async function registerLocaStaffActivityRoutes(fastify: FastifyInstance) 
       if (targetStaffId) {
         callWhereClause.OR = [{ staffId: targetStaffId }, ...(legacyStaffId ? [{ staffId: legacyStaffId }] : [])];
       }
-
-      const callLogs = await fastify.prisma.crm.crmCallLog.findMany({
-        where: callWhereClause,
-        orderBy: { createdAt: 'desc' },
-      });
 
       // 2. Fetch Touchpoint Logs from crm.crmLocaTouchpoint
       const touchpointWhereClause: SafeAny = {
@@ -168,16 +166,6 @@ export async function registerLocaStaffActivityRoutes(fastify: FastifyInstance) 
           OR: [{ checkedByStaffId: targetStaffId }, ...(legacyStaffId ? [{ checkedByStaffId: legacyStaffId }] : [])],
         });
       }
-
-      const touchpointLogs = await fastify.prisma.crm.crmLocaTouchpoint.findMany({
-        where: touchpointWhereClause,
-        orderBy: { checkedAt: 'desc' },
-      });
-
-      // Gather legacyUserIds for name/phone/avatar lookup
-      const userIdsSet = new Set<number>();
-      callLogs.forEach((c) => userIdsSet.add(c.legacyUserId));
-      touchpointLogs.forEach((t) => userIdsSet.add(t.legacyUserId));
 
       // Fetch Booked Orders created STRICTLY BY the selected staff member
       let orderSql = `
@@ -208,7 +196,45 @@ export async function registerLocaStaffActivityRoutes(fastify: FastifyInstance) 
       }
       orderSql += ` ORDER BY o.date_created DESC LIMIT 500`;
 
-      const bookedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderSql, ...sqlParams);
+      const [callLogs, touchpointLogs, bookedOrders] = await Promise.all([
+        fastify.prisma.crm.crmCallLog.findMany({
+          where: callWhereClause,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            legacyUserId: true,
+            staffId: true,
+            callType: true,
+            callResult: true,
+            durationSec: true,
+            note: true,
+            callUuid: true,
+            createdAt: true,
+          },
+        }),
+        fastify.prisma.crm.crmLocaTouchpoint.findMany({
+          where: touchpointWhereClause,
+          orderBy: { checkedAt: 'desc' },
+          select: {
+            id: true,
+            legacyUserId: true,
+            touchpointKey: true,
+            status: true,
+            checkedAt: true,
+            checkedByStaffId: true,
+            checkedByStaffName: true,
+            note: true,
+            createdAt: true,
+          },
+        }),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderSql, ...sqlParams),
+      ]);
+
+      // Gather legacyUserIds for name/phone/avatar lookup only after all three
+      // source feeds arrive, avoiding a second pass over a partially built feed.
+      const userIdsSet = new Set<number>();
+      callLogs.forEach((c) => userIdsSet.add(c.legacyUserId));
+      touchpointLogs.forEach((t) => userIdsSet.add(t.legacyUserId));
       bookedOrders.forEach((b) => userIdsSet.add(Number(b.legacyUserId)));
 
       // Fetch customer names, phones, and avatars for call & touchpoint logs
