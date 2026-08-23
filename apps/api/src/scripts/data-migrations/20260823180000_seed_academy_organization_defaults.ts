@@ -7,7 +7,7 @@ const migration: DataMigration = {
   async preflight(connection) {
     await connection.query('SELECT id FROM crm_academy_courses LIMIT 1');
     await connection.query('SELECT id FROM crm_departments LIMIT 1');
-    await connection.query('SELECT id FROM crm_roles LIMIT 1');
+    await connection.query('SELECT `key` FROM crm_roles LIMIT 1');
   },
   async up(connection) {
     await connection.execute(`
