@@ -7,17 +7,19 @@ export async function registerCallManagementRoutes(fastify: FastifyInstance) {
   // Get all OmiCall configs merged with active staff list (Admin only)
   fastify.get('/omicall/config', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
     try {
-      // 1. Get all active staff
-      const staff = await fastify.prisma.crm.crmStaff.findMany({
-        where: { isActive: true },
-        select: { id: true, displayName: true, username: true, role: true },
-      });
-
-      // 2. Get all configs
-      const configs = await fastify.prisma.crm.crmOmicallConfig.findMany();
+      // These reads are independent, and the config response only exposes these fields.
+      const [staff, configs] = await Promise.all([
+        fastify.prisma.crm.crmStaff.findMany({
+          where: { isActive: true },
+          select: { id: true, displayName: true, username: true, role: true },
+        }),
+        fastify.prisma.crm.crmOmicallConfig.findMany({
+          select: { id: true, staffId: true, extension: true, phoneNumber: true, sipPassword: true },
+        }),
+      ]);
       const configMap = new Map(configs.map((c) => [c.staffId, c]));
 
-      // 3. Merge them
+      // Merge configurations with the active staff list.
       const merged = staff.map((s) => {
         const config = configMap.get(s.id);
         return {
@@ -97,6 +99,7 @@ export async function registerCallManagementRoutes(fastify: FastifyInstance) {
     try {
       const config = await fastify.prisma.crm.crmOmicallConfig.findUnique({
         where: { staffId: user.id },
+        select: { extension: true, phoneNumber: true, sipPassword: true },
       });
 
       if (!config) {

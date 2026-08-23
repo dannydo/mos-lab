@@ -79,22 +79,23 @@ export function fitLogarithmicModel(dataPoints: Array<{ lashCount: number; timeM
  */
 export async function getCvRollingWindowMonths(legacyPrisma: SafeAny, staffId: number): Promise<number> {
   try {
-    const firstBonusRow = (await legacyPrisma.$queryRawUnsafe(`
-      SELECT MIN(date_created) as first_date
-      FROM staff_bonus
-      WHERE user_id = ${Number(staffId)}
-    `)) as Array<{ first_date: Date }>;
+    const [firstBonusRow, caseCountRow] = (await Promise.all([
+      legacyPrisma.$queryRawUnsafe(`
+        SELECT MIN(date_created) as first_date
+        FROM staff_bonus
+        WHERE user_id = ${Number(staffId)}
+      `),
+      legacyPrisma.$queryRawUnsafe(`
+        SELECT COUNT(DISTINCT os.id) as cnt
+        FROM order_service os
+        JOIN \`order\` o ON os.order_id = o.id
+        JOIN staff_bonus sb ON sb.order_service_id = os.id
+        WHERE (os.assigned_staff_id = ${Number(staffId)} OR sb.user_id = ${Number(staffId)})
+          AND o.order_state = 'Completed'
+      `),
+    ])) as [Array<{ first_date: Date }>, Array<{ cnt: number }>];
 
     const firstDate = firstBonusRow[0]?.first_date ? new Date(firstBonusRow[0].first_date) : null;
-
-    const caseCountRow = (await legacyPrisma.$queryRawUnsafe(`
-      SELECT COUNT(DISTINCT os.id) as cnt
-      FROM order_service os
-      JOIN \`order\` o ON os.order_id = o.id
-      JOIN staff_bonus sb ON sb.order_service_id = os.id
-      WHERE (os.assigned_staff_id = ${Number(staffId)} OR sb.user_id = ${Number(staffId)})
-        AND o.order_state = 'Completed'
-    `)) as Array<{ cnt: number }>;
 
     const totalCases = Number(caseCountRow[0]?.cnt || 0);
 

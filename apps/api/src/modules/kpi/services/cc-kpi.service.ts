@@ -551,25 +551,25 @@ export class CcKpiService {
       };
     }
 
-    const falMap = await getFalReadModelMap(
-      fastify,
-      rows.map((row) => ({
-        orderServiceId: Number(row.order_service_id),
-        effectiveServiceType: String(row.effectiveServiceType || ''),
-        nextFixOrderServiceId: Number(row.nextFixOrderServiceId || 0),
-        nextAdjustOrderServiceId: Number(row.nextAdjustOrderServiceId || 0),
-        nextLogOrderServiceId: Number(row.nextLogOrderServiceId || 0),
-        servicingMinutes: row.servicingMinutes == null ? null : Number(row.servicingMinutes),
-        cleaningMinutes: row.cleaningMinutes == null ? null : Number(row.cleaningMinutes),
-      }))
-    );
-
     // Batch-fetch real DB attributes & CV benchmarks for accurate Lash Count resolution
     const serviceIds = Array.from(new Set(rows.map((r) => Number(r.service_id)).filter((id) => id > 0)));
-    const [realAttrMap, cvBenchmarks] = await Promise.all([
-      fastify.prisma.legacy
-        .$queryRawUnsafe<SafeAny[]>(
-          `
+    const [falMap, [realAttrMap, cvBenchmarks]] = await Promise.all([
+      getFalReadModelMap(
+        fastify,
+        rows.map((row) => ({
+          orderServiceId: Number(row.order_service_id),
+          effectiveServiceType: String(row.effectiveServiceType || ''),
+          nextFixOrderServiceId: Number(row.nextFixOrderServiceId || 0),
+          nextAdjustOrderServiceId: Number(row.nextAdjustOrderServiceId || 0),
+          nextLogOrderServiceId: Number(row.nextLogOrderServiceId || 0),
+          servicingMinutes: row.servicingMinutes == null ? null : Number(row.servicingMinutes),
+          cleaningMinutes: row.cleaningMinutes == null ? null : Number(row.cleaningMinutes),
+        }))
+      ),
+      Promise.all([
+        fastify.prisma.legacy
+          .$queryRawUnsafe<SafeAny[]>(
+            `
           SELECT s.id as service_id, aol.attribute_option_value as count
           FROM service s
           JOIN item_attribute_value iav ON s.id = iav.item_id AND iav.type = 'service-attribute'
@@ -578,17 +578,18 @@ export class CcKpiService {
           JOIN attribute_option_language aol ON ao.id = aol.attribute_option_id
           WHERE s.id IN (${serviceIds.length > 0 ? serviceIds.join(',') : '0'})
         `
-        )
-        .then((attrRows) => {
-          const map = new Map<number, number>();
-          (attrRows || []).forEach((r) => {
-            const num = parseInt(r.count, 10);
-            if (!isNaN(num) && num > 0) map.set(Number(r.service_id), num);
-          });
-          return map;
-        })
-        .catch(() => new Map<number, number>()),
-      fastify.prisma.crm.crmLashTypeBenchmark.findMany().catch(() => []),
+          )
+          .then((attrRows) => {
+            const map = new Map<number, number>();
+            (attrRows || []).forEach((r) => {
+              const num = parseInt(r.count, 10);
+              if (!isNaN(num) && num > 0) map.set(Number(r.service_id), num);
+            });
+            return map;
+          })
+          .catch(() => new Map<number, number>()),
+        fastify.prisma.crm.crmLashTypeBenchmark.findMany().catch(() => []),
+      ]),
     ]);
 
     // Query staff_bonus grouped by order_service_id and user_id for fast lookup via direct JOIN

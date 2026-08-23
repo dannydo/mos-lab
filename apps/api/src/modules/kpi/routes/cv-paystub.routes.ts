@@ -155,16 +155,27 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       const validStaffIds = filteredStaffProfiles.map((s) => Number(s.userId));
       const validStaffListStr = validStaffIds.join(',');
 
+      // Staff metadata and the seniority configuration are independent CRM reads.
+      // Preserve the config fallback if its optional record cannot be loaded.
+      const [crmStaffs, seniorityConfigRecord] = await Promise.all([
+        fastify.prisma.crm.crmStaff.findMany({
+          where: { legacyStaffId: { in: validStaffIds } },
+          select: {
+            legacyStaffId: true,
+            joinedAt: true,
+            seniorityOffset: true,
+          },
+        }),
+        fastify.prisma.crm.crmConfig
+          .findUnique({ where: { key: 'CV_SENIORITY_BONUS_CONFIG' } })
+          .catch((error: unknown) => {
+            fastify.log.warn(error, 'Could not load CV_SENIORITY_BONUS_CONFIG, using default list.');
+            return null;
+          }),
+      ]);
+
       // Fetch crm_staff to get joinedAt and seniorityOffset
       const crmStaffMap = new Map<number, { joinedAt: Date; seniorityOffset: number }>();
-      const crmStaffs = await fastify.prisma.crm.crmStaff.findMany({
-        where: { legacyStaffId: { in: validStaffIds } },
-        select: {
-          legacyStaffId: true,
-          joinedAt: true,
-          seniorityOffset: true,
-        },
-      });
       crmStaffs.forEach((s) => {
         if (s.legacyStaffId) {
           crmStaffMap.set(s.legacyStaffId, {
@@ -181,17 +192,14 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         { minMonths: 24, bonusPercent: 20 },
       ];
       try {
-        const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-          where: { key: 'CV_SENIORITY_BONUS_CONFIG' },
-        });
-        if (configRecord && configRecord.value) {
-          const parsed = JSON.parse(configRecord.value);
+        if (seniorityConfigRecord?.value) {
+          const parsed = JSON.parse(seniorityConfigRecord.value);
           if (Array.isArray(parsed)) {
             seniorityBonusConfig = parsed;
           }
         }
       } catch {
-        fastify.log.warn('Could not load CV_SENIORITY_BONUS_CONFIG, using default list.');
+        fastify.log.warn('Could not parse CV_SENIORITY_BONUS_CONFIG, using default list.');
       }
 
       // 2. Query Hourly Rates from staff_payroll
@@ -335,30 +343,6 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // 3. Query Shift Hours from report_staff
-      const shiftsQuery = `
-        SELECT 
-          rs.user_id as staff_id,
-          COUNT(DISTINCT rs.date) as active_days,
-          SUM(rs.working_minute) / 60 as total_work_hours
-        FROM \`report_staff\` rs
-        WHERE rs.user_id IN (${validStaffListStr})
-          AND rs.date >= '${startPart}'
-          AND rs.date <= '${endPart}'
-          AND rs.working_minute > 0
-        GROUP BY rs.user_id
-      `;
-
-      const shiftsRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(shiftsQuery);
-
-      const shiftDataMap = new Map<number, { hours: number; activeDays: number }>();
-      shiftsRows.forEach((r: SafeAny) => {
-        shiftDataMap.set(Number(r.staff_id), {
-          hours: Number(r.total_work_hours || 0),
-          activeDays: Number(r.active_days || 0),
-        });
-      });
-
       const cvXoayMap = new Map<number, { bonus: number; serviceCount: number }>();
       cvXoayBonusRows.forEach((r: SafeAny) => {
         cvXoayMap.set(Number(r.staff_id), {
@@ -378,12 +362,23 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       let grandTotalSeniorityBonus = 0;
       let grandTotalIncome = 0;
 
+      // reportStaffRows already contains the requested range plus the week boundaries used
+      // for off-day detection. Group the requested rows once instead of scanning it per CV.
+      const reportDaysByStaff = new Map<number, SafeAny[]>();
+      reportStaffRows.forEach((row: SafeAny) => {
+        if (row.dateStr >= startPart && row.dateStr <= endPart) {
+          const staffId = Number(row.staff_id);
+          const days = reportDaysByStaff.get(staffId) || [];
+          days.push(row);
+          reportDaysByStaff.set(staffId, days);
+        }
+      });
+      const sortedSeniorityBonusRules = [...seniorityBonusConfig].sort((a, b) => b.minMonths - a.minMonths);
+
       const records: CvPaystubRecord[] = filteredStaffProfiles.map((staff) => {
         const staffId = Number(staff.userId);
         const hourlyRate = hourlyRateMap.get(staffId) || 21500;
-        const userFilteredDays = reportStaffRows.filter(
-          (r) => Number(r.staff_id) === staffId && r.dateStr >= startPart && r.dateStr <= endPart
-        );
+        const userFilteredDays = reportDaysByStaff.get(staffId) || [];
 
         let totalWorkHours = 0;
         let regularHours = 0;
@@ -434,8 +429,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
 
         // Apply Seniority Bonus percentage on CV Xoay Bonus
         let appliedBonusPercent = 0;
-        const sortedRules = [...seniorityBonusConfig].sort((a, b) => b.minMonths - a.minMonths);
-        for (const rule of sortedRules) {
+        for (const rule of sortedSeniorityBonusRules) {
           if (seniorityMonths >= rule.minMonths) {
             appliedBonusPercent = rule.bonusPercent;
             break;
@@ -523,15 +517,14 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     try {
-      // 1. Get Hourly Rate for staff
-      const rateRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+      // The rate lookup is independent from attendance and off-day reads below.
+      const rateRowsPromise = fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT working_hour_rate 
         FROM \`staff_payroll\`
         WHERE user_id = ${numStaffId} AND working_hour_rate > 0
         ORDER BY id DESC
         LIMIT 1
       `);
-      const hourlyRate = rateRows.length > 0 ? Number(rateRows[0].working_hour_rate) : 21500;
 
       // Calculate extended boundaries to query entire weeks
       const startDate = getLocalDate(startPart);
@@ -544,7 +537,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       const extendedEndStr = extendedEndSunday.toISOString().split('T')[0];
 
       // 2. Query Shifts from report_staff for the requested range, and also pull extended attendance for week sizing
-      const [shiftsRaw, reportStaffRows, staffOffDayInfo] = await Promise.all([
+      const [rateRows, shiftsRaw, reportStaffRows, staffOffDayInfo] = await Promise.all([
+        rateRowsPromise,
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT 
             DATE_FORMAT(rs.date, '%Y-%m-%d') as date,
@@ -572,6 +566,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         `),
         StaffOffDayService.getStaffOffDays(fastify, numStaffId),
       ]);
+      const hourlyRate = rateRows.length > 0 ? Number(rateRows[0].working_hour_rate) : 21500;
 
       const offDaysConfig = new Set<number>(staffOffDayInfo.weeklyOffDays);
 
