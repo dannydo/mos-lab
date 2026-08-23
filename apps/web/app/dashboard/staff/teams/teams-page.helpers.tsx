@@ -9,6 +9,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import { Avatar } from 'antd';
 import type { Team, TeamStaffOption } from '@mos-lab/shared';
 import { type StatusType } from '~/components/ui';
 import styles from './teams.module.css';
@@ -76,9 +77,15 @@ export function updateTeamInTree(teamList: Team[], code: string, update: (team: 
 export function StaffIdentity({ staff, active = false }: { staff: TeamStaffOption; active?: boolean }) {
   return (
     <div className={styles.staffIdentity}>
-      <span className={`${styles.staffAvatar} ${active ? styles.staffAvatarActive : ''}`} aria-hidden>
+      <Avatar
+        className={`${styles.staffAvatar} ${active ? styles.staffAvatarActive : ''}`}
+        size={28}
+        src={staff.avatarUrl || undefined}
+        alt=""
+        aria-hidden
+      >
         {staffInitial(staff)}
-      </span>
+      </Avatar>
       <span className={styles.staffText}>
         <strong>{staff.displayName}</strong>
         <span className={styles.staffMeta}>

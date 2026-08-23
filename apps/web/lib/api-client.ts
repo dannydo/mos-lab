@@ -252,16 +252,49 @@ import {
   UpsertAcademyPlaybookRequest,
 } from '@mos-lab/shared';
 
-// In-flight request deduplication & short-term cache map for GET endpoints
-const inFlightRequests = new Map<string, { promise: Promise<any>; timestamp: number }>();
+// In-flight request deduplication & short-term cache map for GET endpoints.
+// Keep this bounded: list filters can generate a large number of distinct keys
+// during a long dashboard session.
+const MAX_SHORT_LIVED_GET_CACHE_ENTRIES = 250;
+const inFlightRequests = new Map<string, { promise: Promise<unknown>; expiresAt: number }>();
 const inFlightOnlyRequests = new Map<string, Promise<unknown>>();
 
+function stableCacheKey(url: string, params?: unknown): string {
+  return `${url}_${stableSerialize(params ?? {})}`;
+}
+
+function stableSerialize(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (value instanceof Date) return JSON.stringify(value.toJSON());
+  if (Array.isArray(value)) return `[${value.map(stableSerialize).join(',')}]`;
+
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .filter((key) => record[key] !== undefined)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
+    .join(',')}}`;
+}
+
+function pruneShortLivedGetCache(now: number): void {
+  for (const [key, entry] of inFlightRequests) {
+    if (entry.expiresAt <= now) inFlightRequests.delete(key);
+  }
+
+  while (inFlightRequests.size > MAX_SHORT_LIVED_GET_CACHE_ENTRIES) {
+    const oldestKey = inFlightRequests.keys().next().value;
+    if (oldestKey === undefined) break;
+    inFlightRequests.delete(oldestKey);
+  }
+}
+
 export async function dedupeApiGet<T>(url: string, params?: Record<string, unknown>, ttlMs: number = 3000): Promise<T> {
-  const cacheKey = `${url}_${JSON.stringify(params || {})}`;
+  const cacheKey = stableCacheKey(url, params);
   const now = Date.now();
+  pruneShortLivedGetCache(now);
   const existing = inFlightRequests.get(cacheKey);
 
-  if (existing && now - existing.timestamp < ttlMs) {
+  if (existing && existing.expiresAt > now) {
     return existing.promise as Promise<T>;
   }
 
@@ -275,7 +308,8 @@ export async function dedupeApiGet<T>(url: string, params?: Record<string, unkno
     }
   })();
 
-  inFlightRequests.set(cacheKey, { promise, timestamp: now });
+  inFlightRequests.set(cacheKey, { promise, expiresAt: now + Math.max(0, ttlMs) });
+  pruneShortLivedGetCache(now);
   return promise as Promise<T>;
 }
 
@@ -300,7 +334,7 @@ function invalidateAcademySalesReadCache(): void {
 // mutation follow-ups that must always fetch fresh results, while avoiding
 // duplicate requests caused by React Strict Mode during page initialization.
 export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<T> {
-  const cacheKey = `${url}_${JSON.stringify(params || {})}`;
+  const cacheKey = stableCacheKey(url, params);
   const existing = inFlightOnlyRequests.get(cacheKey);
   if (existing) {
     return existing as Promise<T>;
@@ -1270,8 +1304,7 @@ export const apiClient = {
   },
   dashboard: {
     getToday: async (params?: Record<string, unknown>): Promise<DashboardTodayResponse> => {
-      const response = await api.get('/dashboard/today', { params });
-      return response.data;
+      return dedupeInFlightApiGet<DashboardTodayResponse>('/dashboard/today', params);
     },
     getRevenueHourly: async (params: {
       dateFrom: string;
@@ -1279,8 +1312,7 @@ export const apiClient = {
       branchKey?: string;
       bookerFilter?: string;
     }): Promise<RevenueHourlyResponse> => {
-      const response = await api.get('/dashboard/today/revenue-hourly', { params });
-      return response.data;
+      return dedupeInFlightApiGet<RevenueHourlyResponse>('/dashboard/today/revenue-hourly', params);
     },
     getRevenueDetail: async (params: {
       dateFrom: string;
@@ -1289,8 +1321,7 @@ export const apiClient = {
       branchKey?: string;
       bookerFilter?: string;
     }): Promise<unknown> => {
-      const response = await api.get('/dashboard/today/revenue-detail', { params });
-      return response.data;
+      return dedupeInFlightApiGet('/dashboard/today/revenue-detail', params);
     },
   },
 

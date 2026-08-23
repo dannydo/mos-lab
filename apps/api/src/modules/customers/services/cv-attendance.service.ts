@@ -164,7 +164,10 @@ export class CvAttendanceService {
       );
       const [serviceLangs, userProfiles] = await Promise.all([
         comingServiceIds.length > 0
-          ? fastify.prisma.legacy.service_language.findMany({ where: { service_id: { in: comingServiceIds } } })
+          ? fastify.prisma.legacy.service_language.findMany({
+              where: { service_id: { in: comingServiceIds } },
+              select: { service_id: true, service_name: true },
+            })
           : Promise.resolve([]),
         userIds.length > 0
           ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
@@ -187,6 +190,52 @@ export class CvAttendanceService {
     activeCvs.forEach((c) => {
       staffMap.set(Number(c.userId), c.fullName ? String(c.fullName).trim() : `CV #${c.userId}`);
     });
+
+    // Index the appointment data once. The former per-CV filtering rescanned
+    // every order and its services for each technician on every dashboard poll.
+    const servicesByOrderId = new Map<number, SafeAny[]>();
+    for (const service of comingServices) {
+      const orderId = Number(service.order_id);
+      const services = servicesByOrderId.get(orderId) || [];
+      services.push(service);
+      servicesByOrderId.set(orderId, services);
+    }
+
+    const activeCvIds = new Set(cvIds);
+    const cvIdsByNormalizedName = new Map<string, number[]>();
+    for (const cv of activeCvs) {
+      const id = Number(cv.userId);
+      const name = normalizeName(String(cv.fullName || ''));
+      if (!name) continue;
+      const ids = cvIdsByNormalizedName.get(name) || [];
+      ids.push(id);
+      cvIdsByNormalizedName.set(name, ids);
+    }
+
+    const ordersByCvId = new Map<number, SafeAny[]>();
+    const assignOrderToCv = (cvId: number, order: SafeAny) => {
+      const orders = ordersByCvId.get(cvId) || [];
+      orders.push(order);
+      ordersByCvId.set(cvId, orders);
+    };
+    for (const order of comingOrders) {
+      const matchingCvIds = new Set<number>();
+      const collectMatchedCvIds = (staffId: SafeAny) => {
+        const id = Number(staffId);
+        if (!id) return;
+        if (activeCvIds.has(id)) matchingCvIds.add(id);
+        const matchingName = normalizeName(staffMap.get(id) || '');
+        for (const matchedId of cvIdsByNormalizedName.get(matchingName) || []) {
+          matchingCvIds.add(matchedId);
+        }
+      };
+
+      collectMatchedCvIds(order.assigned_staff_id);
+      for (const service of servicesByOrderId.get(Number(order.id)) || []) {
+        collectMatchedCvIds(service.assigned_staff_id);
+      }
+      for (const cvId of matchingCvIds) assignOrderToCv(cvId, order);
+    }
 
     const getShiftType = (startTime: SafeAny, endTime: SafeAny): 'sáng' | 'chiều' | 'full' => {
       if (!startTime) return 'full';
@@ -245,7 +294,6 @@ export class CvAttendanceService {
       if (storeId === 6 || storeId === 1) branchName = 'Đề Thám';
       else if (storeId === 2) branchName = 'PXL';
 
-      const normName = normalizeName(cv.fullName);
       const crmS = crmStaffMap.get(cvId);
       const fullName = (cv.fullName ? String(cv.fullName).trim() : '') || crmS?.displayName || `CV #${cvId}`;
       const avatarUrl = cv.avatar ? String(cv.avatar) : crmS?.avatarUrl || null;
@@ -298,22 +346,10 @@ export class CvAttendanceService {
         }
       }
 
-      // Filter assigned orders
-      const staffOrders = comingOrders.filter((o) => {
-        if (o.assigned_staff_id === cvId) return true;
-        const assignedName = staffMap.get(Number(o.assigned_staff_id));
-        if (assignedName && normalizeName(assignedName) === normName) return true;
-        const orderSvs = comingServices.filter((cs) => cs.order_id === o.id);
-        for (const cs of orderSvs) {
-          if (cs.assigned_staff_id === cvId) return true;
-          const csAssignedName = staffMap.get(Number(cs.assigned_staff_id));
-          if (csAssignedName && normalizeName(csAssignedName) === normName) return true;
-        }
-        return false;
-      });
+      const staffOrders = ordersByCvId.get(cvId) || [];
 
       const bookedCount = staffOrders.length;
-      const doneCount = staffOrders.filter((o) => o.order_state === 'Completed').length;
+      const doneCount = staffOrders.reduce((count, order) => count + (order.order_state === 'Completed' ? 1 : 0), 0);
 
       let status: 'busy' | 'available' = 'available';
       let doing = 'Chưa check-in';
@@ -337,7 +373,7 @@ export class CvAttendanceService {
           const parts = custName.split(' ');
           const shortCustName = parts.length > 2 ? parts.slice(-2).join(' ') : custName;
 
-          const orderSvs = comingServices.filter((cs) => cs.order_id === activeOrder.id);
+          const orderSvs = servicesByOrderId.get(Number(activeOrder.id)) || [];
           const svName = orderSvs.length > 0 ? serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ' : 'Dịch vụ';
 
           const start = toActualDate(activeOrder.booking_date_start);
@@ -349,20 +385,22 @@ export class CvAttendanceService {
           status = 'busy';
         } else {
           // Upcoming order
-          const upcoming = staffOrders
-            .filter((o) => {
-              if (o.order_state === 'Cancelled' || o.order_state === 'Completed') return false;
-              if (!o.booking_date_start) return false;
-              return toActualDate(o.booking_date_start) > refTime;
-            })
-            .sort(
-              (a, b) => toActualDate(a.booking_date_start).getTime() - toActualDate(b.booking_date_start).getTime()
-            );
+          let nextOrder: SafeAny | null = null;
+          let nextOrderTime = Number.POSITIVE_INFINITY;
+          for (const order of staffOrders) {
+            if (order.order_state === 'Cancelled' || order.order_state === 'Completed' || !order.booking_date_start) {
+              continue;
+            }
+            const orderTime = toActualDate(order.booking_date_start).getTime();
+            if (orderTime > refTime.getTime() && orderTime < nextOrderTime) {
+              nextOrder = order;
+              nextOrderTime = orderTime;
+            }
+          }
 
-          if (upcoming.length > 0) {
-            const nextOrder = upcoming[0];
+          if (nextOrder) {
             const timeStr = formatDbTime(nextOrder.booking_date_start);
-            const orderSvs = comingServices.filter((cs) => cs.order_id === nextOrder.id);
+            const orderSvs = servicesByOrderId.get(Number(nextOrder.id)) || [];
             const svName = orderSvs.length > 0 ? serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ' : 'Dịch vụ';
             doing = `Chờ khách: ${svName} (${timeStr})`;
           } else {

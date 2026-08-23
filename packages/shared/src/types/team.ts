@@ -61,6 +61,8 @@ export interface TeamStaffOption {
   crmStaffId?: number;
   displayName: string;
   username?: string;
+  /** Canonical legacy staff avatar URL; null/absent falls back to initials. */
+  avatarUrl?: string | null;
   isActive: boolean; // is member active in this team
   store?: string;
   role?: string; // role within team

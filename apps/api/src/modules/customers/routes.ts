@@ -1012,29 +1012,110 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const total = Number(countResult[0]?.total || 0);
 
-      // Fetch assignments for the returned customers
       const customerIds = dataResult.map((row: SafeAny) => Number(row.id));
-      const assignments =
-        customerIds.length > 0
-          ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: { legacyUserId: { in: customerIds } },
-              include: { staff: true },
-            })
-          : [];
+      const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
 
-      // Fetch latest allocation history for these customers
-      const assignmentHistories =
+      // All enrichments depend only on the page IDs, so run them together
+      // instead of adding a full database round trip for each section.
+      const [
+        assignments,
+        assignmentHistories,
+        activeBatchItems,
+        latestBookings,
+        latestCallbacks,
+        latestDailyPlans,
+        latestCalls,
+      ] = await Promise.all([
         customerIds.length > 0
-          ? await fastify.prisma.crm.crmAssignmentHistory.findMany({
+          ? fastify.prisma.crm.crmCustomerAssignment.findMany({
+              where: { legacyUserId: { in: customerIds } },
+              select: {
+                legacyUserId: true,
+                assignedAt: true,
+                staff: { select: { id: true, displayName: true, username: true } },
+              },
+            })
+          : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.crm.crmAssignmentHistory.findMany({
               where: {
                 legacyUserId: { in: customerIds },
                 isUndone: false,
                 newStaffId: { not: null },
               },
-              include: { newStaff: true },
+              select: {
+                legacyUserId: true,
+                assignedAt: true,
+                newStaff: { select: { displayName: true } },
+              },
               orderBy: { assignedAt: 'desc' },
             })
-          : [];
+          : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.crm.crmAllocationBatchItem.findMany({
+              where: {
+                customerId: { in: customerIds },
+                status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
+              },
+              select: {
+                customerId: true,
+                status: true,
+                createdAt: true,
+                batch: {
+                  select: {
+                    booker: { select: { id: true, displayName: true, username: true } },
+                  },
+                },
+              },
+              orderBy: { id: 'desc' },
+            })
+          : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT o.user_id as userId, o.booking_date_start as bookingDate, o.order_state as orderState
+               FROM \`order\` o
+               WHERE o.id IN (
+                 SELECT MAX(id)
+                 FROM \`order\`
+                 WHERE user_id IN (${customerIds.join(',')})
+                 GROUP BY user_id
+               )`
+            )
+          : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.crm.crmCallLog.findMany({
+              where: {
+                legacyUserId: { in: customerIds },
+                callbackDate: { not: null },
+              },
+              select: { legacyUserId: true, callbackDate: true, createdAt: true },
+              orderBy: { createdAt: 'desc' },
+            })
+          : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.crm.crmDailyPlan.findMany({
+              where: {
+                legacyUserId: { in: customerIds },
+                plannedDate: { gte: startOfToday },
+              },
+              select: { legacyUserId: true, plannedDate: true },
+              orderBy: { plannedDate: 'asc' },
+            })
+          : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.crm.crmCallLog.findMany({
+              where: { legacyUserId: { in: customerIds } },
+              select: {
+                legacyUserId: true,
+                createdAt: true,
+                durationSec: true,
+                callResult: true,
+                note: true,
+              },
+              orderBy: { createdAt: 'desc' },
+            })
+          : Promise.resolve([]),
+      ]);
 
       const historyMap = new Map<number, { assignedAt: Date; staffName: string | null }>();
       assignmentHistories.forEach((h) => {
@@ -1060,23 +1141,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // ALSO query active allocation batch items (status IN ('PENDING_ACCEPT', 'ACCEPTED'))
-      const activeBatchItems =
-        customerIds.length > 0
-          ? await fastify.prisma.crm.crmAllocationBatchItem.findMany({
-              where: {
-                customerId: { in: customerIds },
-                status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
-              },
-              include: {
-                batch: {
-                  include: { booker: true },
-                },
-              },
-              orderBy: { id: 'desc' },
-            })
-          : [];
-
       activeBatchItems.forEach((bi) => {
         if (bi.batch && bi.batch.booker) {
           const statusSuffix = bi.status === 'PENDING_ACCEPT' ? ' (Chờ xác nhận)' : '';
@@ -1090,21 +1154,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Fetch latest bookings for the returned customers
-      const latestBookings =
-        customerIds.length > 0
-          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-              `SELECT o.user_id as userId, o.booking_date_start as bookingDate, o.order_state as orderState
-         FROM \`order\` o
-         WHERE o.id IN (
-           SELECT MAX(id)
-           FROM \`order\`
-           WHERE user_id IN (${customerIds.join(',')})
-           GROUP BY user_id
-         )`
-            )
-          : [];
-
       const bookingMap = new Map();
       latestBookings.forEach((b) => {
         bookingMap.set(Number(b.userId), {
@@ -1112,29 +1161,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
           orderState: b.orderState,
         });
       });
-
-      // Fetch latest call logs with callbacks for the returned customers
-      const latestCallbacks =
-        customerIds.length > 0
-          ? await fastify.prisma.crm.crmCallLog.findMany({
-              where: {
-                legacyUserId: { in: customerIds },
-                callbackDate: { not: null },
-              },
-              orderBy: { createdAt: 'desc' },
-            })
-          : [];
-
-      const latestDailyPlans =
-        customerIds.length > 0
-          ? await fastify.prisma.crm.crmDailyPlan.findMany({
-              where: {
-                legacyUserId: { in: customerIds },
-                plannedDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-              },
-              orderBy: { plannedDate: 'asc' },
-            })
-          : [];
 
       const callbackMap = new Map();
       latestCallbacks.forEach((c) => {
@@ -1147,17 +1173,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
           callbackMap.set(p.legacyUserId, p.plannedDate);
         }
       });
-
-      // Fetch latest call logs for the returned customers
-      const latestCalls =
-        customerIds.length > 0
-          ? await fastify.prisma.crm.crmCallLog.findMany({
-              where: {
-                legacyUserId: { in: customerIds },
-              },
-              orderBy: { createdAt: 'desc' },
-            })
-          : [];
 
       const latestCallMap = new Map();
       latestCalls.forEach((c) => {

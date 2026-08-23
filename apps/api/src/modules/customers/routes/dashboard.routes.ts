@@ -303,6 +303,27 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
     };
 
     try {
+      // The legacy order and service tables are wide. The operations response
+      // only needs this projection, so avoid hydrating unused columns for every
+      // poll of the live dashboard.
+      const dashboardOrderSelect = {
+        id: true,
+        user_id: true,
+        created_staff_id: true,
+        assigned_staff_id: true,
+        promotion_id: true,
+        selected_promotion_id: true,
+        booking_note: true,
+        booking_channels: true,
+        booking_date_start: true,
+        booking_date_end: true,
+        booking_date_only: true,
+        total_price: true,
+        order_state: true,
+        date_created: true,
+        client_store_id: true,
+      } as const;
+
       // These independent reads form the first critical-path fan-out for the dashboard.
       const [crmTelesales, bookingsOrders, comingOrders, activeCcIds] = await Promise.all([
         fastify.prisma.crm.crmStaff.findMany({
@@ -321,6 +342,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
             order_state: { not: 'Cancelled' },
           },
           orderBy: { date_created: 'desc' },
+          select: dashboardOrderSelect,
         }),
         fastify.prisma.legacy.order.findMany({
           where: {
@@ -331,6 +353,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
             order_state: { not: 'Cancelled' },
           },
           orderBy: { booking_date_start: 'asc' },
+          select: dashboardOrderSelect,
         }),
         // Active CC configuration is the system source of truth. Avoid scanning the complete order_service ledger on every page load.
         TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG'),
@@ -359,10 +382,31 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
             `)
           : Promise.resolve([]),
         userIds.length > 0
-          ? fastify.prisma.legacy.user_service_balance.findMany({ where: { user_id: { in: userIds } } })
+          ? fastify.prisma.legacy.user_service_balance.findMany({
+              where: { user_id: { in: userIds } },
+              select: {
+                id: true,
+                user_id: true,
+                date_created: true,
+                date_expired: true,
+                normal_count: true,
+                retain_count: true,
+              },
+            })
           : Promise.resolve([]),
         allOrderIds.length > 0
-          ? fastify.prisma.legacy.order_service.findMany({ where: { order_id: { in: allOrderIds } } })
+          ? fastify.prisma.legacy.order_service.findMany({
+              where: { order_id: { in: allOrderIds } },
+              select: {
+                order_id: true,
+                service_id: true,
+                promotion_id: true,
+                assigned_staff_id: true,
+                check_in_staff_id: true,
+                check_out_staff_id: true,
+                tax_amount: true,
+              },
+            })
           : Promise.resolve([]),
       ]);
 
@@ -454,35 +498,38 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         list.push(t);
         txnsByBalanceId.set(bid, list);
       }
+      for (const transactions of txnsByBalanceId.values()) {
+        transactions.sort((a, b) => {
+          const timeA = new Date(a.o_booking_date_start || a.date_created).getTime();
+          const timeB = new Date(b.o_booking_date_start || b.date_created).getTime();
+          if (timeA !== timeB) return timeB - timeA;
+          return Number(b.id) - Number(a.id);
+        });
+      }
 
       const promoMap = new Map(promotions.map((p) => [Number(p.id), p.name || p.promotionKey || `PROMO-${p.id}`]));
       const staffMap = new Map(staffProfiles.map((s) => [Number(s.userId), s.fullName || `Staff #${s.userId}`]));
+      const liveComboByBooking = new Map<string, boolean>();
 
       // Exact legacy PHP combo active helper function
       const checkHasLiveCombo = (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => {
         const bTime = bookingDateStart || orderCreatedDate;
+        const bTimeMs = new Date(bTime).getTime();
+        const cacheKey = `${userId}:${bTimeMs}`;
+        const cached = liveComboByBooking.get(cacheKey);
+        if (cached !== undefined) return cached;
         const userBals = balancesByUserId.get(userId) || [];
 
         for (const usb of userBals) {
           // Condition 1: usb.date_created < booking_date_start
-          if (new Date(usb.date_created) >= new Date(bTime)) {
+          if (new Date(usb.date_created).getTime() >= bTimeMs) {
             continue;
           }
 
-          // Get all transactions for this balance before this booking
-          const txnsBefore = (txnsByBalanceId.get(usb.id) || []).filter(
-            (t) => new Date(t.o_booking_date_start || t.date_created) < new Date(bTime)
+          const transactions = txnsByBalanceId.get(Number(usb.id)) || [];
+          const lastTxnBefore = transactions.find(
+            (transaction) => new Date(transaction.o_booking_date_start || transaction.date_created).getTime() < bTimeMs
           );
-
-          // Order them desc by time, then id desc
-          txnsBefore.sort((a, b) => {
-            const timeA = new Date(a.o_booking_date_start || a.date_created).getTime();
-            const timeB = new Date(b.o_booking_date_start || b.date_created).getTime();
-            if (timeA !== timeB) return timeB - timeA;
-            return b.id - a.id;
-          });
-
-          const lastTxnBefore = txnsBefore[0];
 
           // Condition 2: date_expired at that time is null or >= booking_date_start
           const dateExpired = lastTxnBefore ? lastTxnBefore.date_expired : usb.date_expired;
@@ -499,24 +546,24 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
             countLeft = (lastTxnBefore.total_normal_count_left || 0) + (lastTxnBefore.total_retain_count_left || 0);
           } else {
             // If no transaction before or counts are null, calculate based on current count + all transactions that used sessions after or at the booking
-            const txnsAfterOrAt = (txnsByBalanceId.get(usb.id) || []).filter(
-              (t) => new Date(t.o_booking_date_start || t.date_created) >= new Date(bTime)
-            );
-
             let usedAfter = 0;
-            txnsAfterOrAt.forEach((t) => {
-              if (t.used_staff_id !== null) {
-                usedAfter += (t.normal_count || 0) + (t.retain_count || 0);
+            for (const transaction of transactions) {
+              if (new Date(transaction.o_booking_date_start || transaction.date_created).getTime() >= bTimeMs) {
+                if (transaction.used_staff_id !== null) {
+                  usedAfter += (transaction.normal_count || 0) + (transaction.retain_count || 0);
+                }
               }
-            });
+            }
 
             countLeft = (usb.normal_count || 0) + (usb.retain_count || 0) + usedAfter;
           }
 
           if (isNotExpired && countLeft > 0) {
+            liveComboByBooking.set(cacheKey, true);
             return true;
           }
         }
+        liveComboByBooking.set(cacheKey, false);
         return false;
       };
 
@@ -635,6 +682,16 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const comingOrderIdSet = new Set(comingOrderIds.map(Number));
       const comingServices = allOrderServices.filter((service) => comingOrderIdSet.has(Number(service.order_id)));
       const comingServiceIds = Array.from(new Set(comingServices.map((cs) => cs.service_id)));
+      const ccScheduleIds = Array.from(
+        new Set(
+          [
+            ...activeCcIds,
+            ...comingServices.flatMap((service) => [service.check_in_staff_id, service.check_out_staff_id]),
+          ]
+            .map(Number)
+            .filter((id) => !isNaN(id) && id > 0)
+        )
+      );
       const [
         serviceLangs,
         comingProducts,
@@ -646,7 +703,10 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         workingShifts,
       ] = await Promise.all([
         comingServiceIds.length > 0
-          ? fastify.prisma.legacy.service_language.findMany({ where: { service_id: { in: comingServiceIds } } })
+          ? fastify.prisma.legacy.service_language.findMany({
+              where: { service_id: { in: comingServiceIds } },
+              select: { service_id: true, service_name: true },
+            })
           : Promise.resolve([]),
         comingOrderIds.length > 0
           ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
@@ -665,28 +725,66 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
               WHERE user_id IN (${activeCcIds.join(',')}) AND provider = 'Staff' AND is_disabled = 0
             `)
           : Promise.resolve([]),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT user_id, type, type_value, start_time, end_time
-          FROM staff_working_shift_schedule
-          WHERE is_disabled = 0 AND user_id IS NOT NULL
-        `),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT from_user_id as userId, weekday, COUNT(*) as cnt
-          FROM staff_day_off
-          WHERE attribute_option_id = 110 AND request_state = 'Approved' AND from_user_id IS NOT NULL
-          GROUP BY from_user_id, weekday
-        `),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT from_user_id FROM staff_day_off
-           WHERE ? BETWEEN from_date AND to_date AND request_state = 'Approved' AND from_user_id IS NOT NULL`,
-          targetDateStr
-        ),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT * FROM \`staff_working_shift\` WHERE \`date\` = ?`,
-          targetDateStr
-        ),
+        ccScheduleIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT user_id, type, type_value, start_time, end_time
+              FROM staff_working_shift_schedule
+              WHERE is_disabled = 0 AND user_id IN (${ccScheduleIds.join(',')})
+            `)
+          : Promise.resolve([]),
+        ccScheduleIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT from_user_id as userId, weekday, COUNT(*) as cnt
+              FROM staff_day_off
+              WHERE attribute_option_id = 110
+                AND request_state = 'Approved'
+                AND from_user_id IN (${ccScheduleIds.join(',')})
+              GROUP BY from_user_id, weekday
+            `)
+          : Promise.resolve([]),
+        ccScheduleIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT from_user_id FROM staff_day_off
+               WHERE ? BETWEEN from_date AND to_date
+                 AND request_state = 'Approved'
+                 AND from_user_id IN (${ccScheduleIds.join(',')})`,
+              targetDateStr
+            )
+          : Promise.resolve([]),
+        ccScheduleIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT user_id, start_time, end_time, check_in_staff_task_id, check_out_staff_task_id
+               FROM \`staff_working_shift\`
+               WHERE \`date\` = ? AND user_id IN (${ccScheduleIds.join(',')})`,
+              targetDateStr
+            )
+          : Promise.resolve([]),
       ]);
       const serviceLangMap = new Map(serviceLangs.map((sl) => [sl.service_id, sl.service_name]));
+      const comingServicesByOrderId = new Map<number, SafeAny[]>();
+      const comingCombosByOrderId = new Map<number, SafeAny[]>();
+      const comingProductsByOrderId = new Map<number, SafeAny[]>();
+      const ccClientOrderIds = new Map<number, Set<number>>();
+      const addRowToOrderMap = (map: Map<number, SafeAny[]>, row: SafeAny) => {
+        const orderId = Number(row.order_id);
+        const rows = map.get(orderId) || [];
+        rows.push(row);
+        map.set(orderId, rows);
+      };
+      const recordCcClient = (staffId: SafeAny, orderId: number) => {
+        const id = Number(staffId);
+        if (!id) return;
+        const orderIds = ccClientOrderIds.get(id) || new Set<number>();
+        orderIds.add(orderId);
+        ccClientOrderIds.set(id, orderIds);
+      };
+      for (const service of comingServices) {
+        addRowToOrderMap(comingServicesByOrderId, service);
+        recordCcClient(service.check_in_staff_id, Number(service.order_id));
+        recordCcClient(service.check_out_staff_id, Number(service.order_id));
+      }
+      for (const combo of comingCombos) addRowToOrderMap(comingCombosByOrderId, combo);
+      for (const product of comingProducts) addRowToOrderMap(comingProductsByOrderId, product);
 
       const activeCcs = ccProfiles.flatMap((profile) => {
         const storeId = Number(profile.storeId);
@@ -776,7 +874,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         const phone = contactMap.get(o.user_id) || '';
         const name = uProfile?.fullName || 'Khách hàng';
 
-        const orderSvs = comingServices.filter((cs) => cs.order_id === o.id);
+        const orderSvs = comingServicesByOrderId.get(Number(o.id)) || [];
         const serviceName = orderSvs.length > 0 ? serviceLangMap.get(orderSvs[0].service_id) || 'Dịch vụ' : 'Dịch vụ';
 
         let cvName = 'Chưa phân công';
@@ -799,7 +897,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         }
 
         const hasLiveCombo = checkHasLiveCombo(o.user_id, o.booking_date_start, o.date_created);
-        const userBal = userBalances.filter((b) => b.user_id === o.user_id);
+        const userBal = balancesByUserId.get(Number(o.user_id)) || [];
         const group = hasLiveCombo ? 'combo_live' : userBal.length > 0 ? 'combo_dead' : 'single';
 
         let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' | 'checkout' = 'pending';
@@ -823,9 +921,9 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           }
         }
 
-        const orderServices = comingServices.filter((cs) => cs.order_id === o.id);
-        const orderCombos = comingCombos.filter((c) => Number(c.order_id) === o.id);
-        const orderProducts = comingProducts.filter((p) => Number(p.order_id) === o.id);
+        const orderServices = orderSvs;
+        const orderCombos = comingCombosByOrderId.get(Number(o.id)) || [];
+        const orderProducts = comingProductsByOrderId.get(Number(o.id)) || [];
 
         const totalTax =
           orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
@@ -1132,7 +1230,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         if (o.client_store_id === 2) bKey = 'pxl';
         else if (o.client_store_id === 16) bKey = 'estella';
 
-        const orderSvs = comingServices.filter((cs) => cs.order_id === o.id);
+        const orderSvs = comingServicesByOrderId.get(Number(o.id)) || [];
         if (orderSvs.length === 0) return;
 
         // Check-in CC
@@ -1163,9 +1261,9 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           }
 
           if (o.order_state === 'Completed') {
-            const orderServices = comingServices.filter((cs) => cs.order_id === o.id);
-            const orderCombos = comingCombos.filter((c) => Number(c.order_id) === o.id);
-            const orderProducts = comingProducts.filter((p) => Number(p.order_id) === o.id);
+            const orderServices = orderSvs;
+            const orderCombos = comingCombosByOrderId.get(Number(o.id)) || [];
+            const orderProducts = comingProductsByOrderId.get(Number(o.id)) || [];
 
             const totalTax =
               orderServices.reduce((sum, s) => sum + Number(s.tax_amount || 0), 0) +
@@ -1249,11 +1347,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       Object.keys(branchDetailMap).forEach((bKey) => {
         branchDetailMap[bKey].cc.forEach((cc: SafeAny) => {
           const ccId = cc.id;
-          const ccServices = comingServices.filter(
-            (s) => s.check_in_staff_id === ccId || s.check_out_staff_id === ccId
-          );
-          const uniqueOrders = new Set(ccServices.map((s) => s.order_id));
-          cc.clients = uniqueOrders.size;
+          cc.clients = ccClientOrderIds.get(ccId)?.size || 0;
 
           if (cc.clients > 0 && cc.doing === 'Nghỉ phép tuần') {
             cc.doing = 'Trống (Sẵn sàng đón khách)';

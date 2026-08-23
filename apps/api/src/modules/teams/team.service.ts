@@ -30,6 +30,20 @@ export function normalizeTeamCode(value: string): string {
   return code;
 }
 
+/** Accept only browser-safe absolute avatar URLs from the legacy staff profile. */
+export function normalizeStaffAvatarUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const avatarUrl = value.trim();
+  if (!avatarUrl) return null;
+
+  try {
+    const parsed = new URL(avatarUrl);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? avatarUrl : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseMetadata(metadata: string | null): Record<string, unknown> | null {
   if (!metadata) return null;
   try {
@@ -307,6 +321,11 @@ export class TeamService {
 
     // Query staff profiles from legacy DB based on team code heuristics
     const staffProfiles = await this.queryStaffProfilesForTeam(fastify, code);
+    const candidateStaffIds = new Set(staffProfiles.map((profile) => Number(profile.staffId)));
+    const missingMemberIds = Array.from(activeMemberLegacyIds).filter((staffId) => !candidateStaffIds.has(staffId));
+    if (missingMemberIds.length > 0) {
+      staffProfiles.push(...(await this.queryStaffProfilesByLegacyIds(fastify, missingMemberIds)));
+    }
 
     const activeMemberMap = new Map<number, TeamMember>();
     team.members.forEach((m) => {
@@ -334,6 +353,7 @@ export class TeamService {
         crmStaffId: dbMember?.crmStaffId ?? undefined,
         displayName: profile?.displayName || dbMember?.displayName || `Legacy Staff #${legacyId}`,
         username: profile?.username || undefined,
+        avatarUrl: normalizeStaffAvatarUrl(profile?.avatarUrl),
         isActive: true,
         role: dbMember?.role || undefined,
       };
@@ -349,6 +369,7 @@ export class TeamService {
         crmStaffId: dbMember?.crmStaffId ?? undefined,
         displayName: s.displayName,
         username: s.username,
+        avatarUrl: normalizeStaffAvatarUrl(s.avatarUrl),
         isActive: activeMemberLegacyIds.has(legacyId),
         role: dbMember?.role || undefined,
       };
@@ -363,6 +384,7 @@ export class TeamService {
           crmStaffId: dbMember?.crmStaffId ?? undefined,
           displayName: dbMember?.displayName || `Legacy Staff #${legacyId}`,
           username: undefined,
+          avatarUrl: null,
           isActive: true,
           role: dbMember?.role || undefined,
         });
@@ -401,7 +423,8 @@ export class TeamService {
     try {
       if (teamCode === 'CC') {
         return await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username
+          SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
+            COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
           FROM \`user_profile\` up
           JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
           LEFT JOIN \`user_group_language\` ugl ON up.user_group_id = ugl.user_group_id
@@ -417,7 +440,8 @@ export class TeamService {
 
       if (teamCode === 'CV') {
         return await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username
+          SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
+            COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
           FROM \`user_profile\` up
           JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
           LEFT JOIN \`user_group_language\` ugl ON up.user_group_id = ugl.user_group_id
@@ -436,7 +460,8 @@ export class TeamService {
 
       // Default/BK/Subteams query: all active staff profiles
       return await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username
+        SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
+          COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
         FROM \`user_profile\` up
         JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
         WHERE up.provider = 'Staff' AND up.is_disabled = 0
@@ -444,6 +469,29 @@ export class TeamService {
       `);
     } catch (err) {
       fastify.log.error(err as SafeAny, `Error querying staff profiles for team ${teamCode}`);
+      return [];
+    }
+  }
+
+  /** Preserve identity data for selected members who no longer match a team's candidate-role heuristics. */
+  private static async queryStaffProfilesByLegacyIds(
+    fastify: FastifyInstance,
+    legacyStaffIds: number[]
+  ): Promise<SafeAny[]> {
+    if (legacyStaffIds.length === 0) return [];
+
+    const placeholders = legacyStaffIds.map(() => '?').join(', ');
+    try {
+      return await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
+          COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
+         FROM \`user_profile\` up
+         WHERE up.provider = 'Staff' AND up.user_id IN (${placeholders})
+         ORDER BY up.full_name ASC`,
+        ...legacyStaffIds
+      );
+    } catch (err) {
+      fastify.log.error(err as SafeAny, 'Error querying selected staff profiles by legacy ID');
       return [];
     }
   }

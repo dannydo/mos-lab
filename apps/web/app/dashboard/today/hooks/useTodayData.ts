@@ -139,8 +139,27 @@ export interface UseTodayDataOptions {
   onError?: (msg: string) => void;
 }
 
+function getDashboardDateRange(date: dayjs.Dayjs, mode: 'day' | 'week' | 'month') {
+  if (mode === 'week') {
+    return {
+      dateFrom: date.startOf('isoWeek').format('YYYY-MM-DD'),
+      dateTo: date.endOf('isoWeek').format('YYYY-MM-DD'),
+    };
+  }
+  if (mode === 'month') {
+    return {
+      dateFrom: date.startOf('month').format('YYYY-MM-DD'),
+      dateTo: date.endOf('month').format('YYYY-MM-DD'),
+    };
+  }
+  const dateValue = date.format('YYYY-MM-DD');
+  return { dateFrom: dateValue, dateTo: dateValue };
+}
+
 export function useTodayData(options?: UseTodayDataOptions) {
   const optionsRef = useRef(options);
+  const dashboardRequestVersion = useRef(0);
+  const revenueRequestVersion = useRef(0);
   useEffect(() => {
     optionsRef.current = options;
   }, [options]);
@@ -272,45 +291,27 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
   const fetchDashboardData = useCallback(
     async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day', isSilent = false) => {
+      const requestVersion = ++dashboardRequestVersion.current;
       if (!isSilent) {
         setLoading(true);
       } else {
         setSilentLoading(true);
       }
       try {
-        let dateFrom = date.format('YYYY-MM-DD');
-        let dateTo = date.format('YYYY-MM-DD');
-
-        if (mode === 'week') {
-          dateFrom = date.startOf('isoWeek').format('YYYY-MM-DD');
-          dateTo = date.endOf('isoWeek').format('YYYY-MM-DD');
-        } else if (mode === 'month') {
-          dateFrom = date.startOf('month').format('YYYY-MM-DD');
-          dateTo = date.endOf('month').format('YYYY-MM-DD');
-        }
-
-        const data = (await apiClient.dashboard.getToday({ dateFrom, dateTo })) as SafeAny;
+        const data = (await apiClient.dashboard.getToday(getDashboardDateRange(date, mode))) as SafeAny;
+        if (requestVersion !== dashboardRequestVersion.current) return;
         setBranchesData(data.branchesData);
         setBookingsCombo(data.bookingsCombo);
         setBookingsOc(data.bookingsOc || []);
         setBookingsOther(data.bookingsOther);
-
-        // Fetch revenue data in parallel (non-blocking)
-        try {
-          const revParams: SafeAny = { dateFrom, dateTo };
-          if (bookingBranch && bookingBranch !== 'all') revParams.branchKey = bookingBranch;
-          if (selectedBooker && selectedBooker !== 'all') revParams.bookerFilter = selectedBooker;
-          const revData = (await apiClient.dashboard.getRevenueHourly(revParams)) as RevenueHourlyResponse;
-          setRevenueData(revData);
-        } catch (revErr) {
-          console.error('Fetch revenue hourly error (non-blocking):', revErr);
-        }
       } catch (err) {
+        if (requestVersion !== dashboardRequestVersion.current) return;
         console.error('Fetch dashboard today error:', err);
         if (!isSilent) {
           optionsRef.current?.onError?.('Lỗi khi tải dữ liệu vận hành thực tế!');
         }
       } finally {
+        if (requestVersion !== dashboardRequestVersion.current) return;
         if (!isSilent) {
           setLoading(false);
         } else {
@@ -318,20 +319,55 @@ export function useTodayData(options?: UseTodayDataOptions) {
         }
       }
     },
+    []
+  );
+
+  const fetchRevenueData = useCallback(
+    async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day') => {
+      const requestVersion = ++revenueRequestVersion.current;
+      setRevenueLoading(true);
+      try {
+        const revParams: SafeAny = { ...getDashboardDateRange(date, mode) };
+        if (bookingBranch !== 'all') revParams.branchKey = bookingBranch;
+        if (selectedBooker && selectedBooker !== 'all') revParams.bookerFilter = selectedBooker;
+        const revData = (await apiClient.dashboard.getRevenueHourly(revParams)) as RevenueHourlyResponse;
+        if (requestVersion === revenueRequestVersion.current) setRevenueData(revData);
+      } catch (err) {
+        if (requestVersion === revenueRequestVersion.current) {
+          console.error('Fetch revenue hourly error:', err);
+        }
+      } finally {
+        if (requestVersion === revenueRequestVersion.current) setRevenueLoading(false);
+      }
+    },
     [bookingBranch, selectedBooker]
+  );
+
+  const refreshTodayData = useCallback(
+    async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day', isSilent = false) => {
+      await Promise.all([fetchDashboardData(date, mode, isSilent), fetchRevenueData(date, mode)]);
+    },
+    [fetchDashboardData, fetchRevenueData]
   );
 
   useEffect(() => {
     if (selectedDate) {
-      fetchDashboardData(selectedDate, dateRangeMode);
+      void fetchDashboardData(selectedDate, dateRangeMode);
     }
-  }, [selectedDate, dateRangeMode, bookingBranch, selectedBooker, fetchDashboardData]);
+  }, [selectedDate, dateRangeMode, fetchDashboardData]);
+
+  // Revenue-only filters must not reload the significantly heavier operations payload.
+  useEffect(() => {
+    if (selectedDate) {
+      void fetchRevenueData(selectedDate, dateRangeMode);
+    }
+  }, [selectedDate, dateRangeMode, fetchRevenueData]);
 
   // Instantly refresh today dashboard tables when popup/modal updates data
   useEffect(() => {
     const handleDataChanged = () => {
       if (selectedDate) {
-        fetchDashboardData(selectedDate, dateRangeMode, true);
+        void refreshTodayData(selectedDate, dateRangeMode, true);
       }
     };
     window.addEventListener('mos-data-updated', handleDataChanged);
@@ -344,7 +380,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       window.removeEventListener('mos-customer-updated', handleDataChanged);
       window.removeEventListener('mos-booking-updated', handleDataChanged);
     };
-  }, [selectedDate, dateRangeMode, fetchDashboardData]);
+  }, [selectedDate, dateRangeMode, refreshTodayData]);
 
   const dateBounds = useMemo(() => {
     if (!selectedDate) {
@@ -420,7 +456,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       }
       setCountdown((prev) => {
         if (prev <= 1) {
-          fetchDashboardData(selectedDate, dateRangeMode, true);
+          void refreshTodayData(selectedDate, dateRangeMode, true);
           return refreshInterval;
         }
         return prev - 1;
@@ -431,7 +467,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchDashboardData(selectedDate, dateRangeMode, true);
+        void refreshTodayData(selectedDate, dateRangeMode, true);
         setCountdown(refreshInterval);
       }
     };
@@ -442,7 +478,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [autoRefresh, selectedDate, dateRangeMode, refreshInterval, fetchDashboardData]);
+  }, [autoRefresh, selectedDate, dateRangeMode, refreshInterval, refreshTodayData]);
 
   // Reset countdown if selectedDate changes or refreshInterval changes
   useEffect(() => {
@@ -451,7 +487,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
   const handleRefresh = async () => {
     if (selectedDate) {
-      await fetchDashboardData(selectedDate, dateRangeMode);
+      await refreshTodayData(selectedDate, dateRangeMode);
       optionsRef.current?.onSuccess?.('Đã làm mới dữ liệu vận hành từ cơ sở dữ liệu!');
       setCountdown(refreshInterval);
     }
