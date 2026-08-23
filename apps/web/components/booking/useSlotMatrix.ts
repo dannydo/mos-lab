@@ -1,8 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 
 export const useSlotMatrix = (selectedCN: SafeAny, selectedCV: SafeAny, initialDate: dayjs.Dayjs = dayjs()) => {
+  const slotRequestIdRef = useRef(0);
+  const hasSelectedCN = Boolean(selectedCN);
+  const selectedStoreName = selectedCN?.name;
+  const selectedTechnicianId = selectedCV?.id;
   const getNextAvailableDate = useCallback((baseDate: dayjs.Dayjs, cv: SafeAny) => {
     let target = baseDate;
     if (!cv) {
@@ -46,25 +50,39 @@ export const useSlotMatrix = (selectedCN: SafeAny, selectedCV: SafeAny, initialD
   const [slotMatrix, setSlotMatrix] = useState<{ [time: string]: { available: number; roster: number } }>({});
   const [loadingSlots, setLoadingSlots] = useState(false);
 
+  useEffect(
+    () => () => {
+      slotRequestIdRef.current += 1;
+    },
+    []
+  );
+
   const fetchSlots = useCallback(
     async (customDate?: dayjs.Dayjs) => {
-      if (!selectedCN) return;
+      if (!hasSelectedCN) return;
       const targetDate = customDate || bookingDate;
+      const requestId = ++slotRequestIdRef.current;
       setLoadingSlots(true);
       try {
         const data = await apiClient.customers.getBookingSlots({
           date: targetDate.format('YYYY-MM-DD'),
-          storeName: selectedCN.name,
-          technicianId: selectedCV?.id || undefined,
+          storeName: selectedStoreName,
+          technicianId: selectedTechnicianId || undefined,
         });
-        setSlotMatrix((data as SafeAny) || {});
+        if (requestId === slotRequestIdRef.current) {
+          setSlotMatrix((data as SafeAny) || {});
+        }
       } catch (err) {
-        console.error('[SlotMatrix] Fetch slots failed:', err);
+        if (requestId === slotRequestIdRef.current) {
+          console.error('[SlotMatrix] Fetch slots failed:', err);
+        }
       } finally {
-        setLoadingSlots(false);
+        if (requestId === slotRequestIdRef.current) {
+          setLoadingSlots(false);
+        }
       }
     },
-    [selectedCN, selectedCV, bookingDate]
+    [bookingDate, hasSelectedCN, selectedStoreName, selectedTechnicianId]
   );
 
   const getCategorizedSlots = useCallback(() => {

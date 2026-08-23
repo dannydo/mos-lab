@@ -2,7 +2,7 @@
 
 import { formatOrGenerateCustomerPhone } from './booking/constants';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   DatePicker,
   Radio,
@@ -65,6 +65,14 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
   const [pageSize, setPageSize] = useState<number>(isDrawerMode ? 10 : 15);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isReady, setIsReady] = useState(false);
+  const dailyCallsRequestIdRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      dailyCallsRequestIdRef.current += 1;
+    },
+    []
+  );
 
   // Drawer states
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
@@ -148,6 +156,7 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
   // Fetch daily calls
   const fetchDailyCalls = useCallback(
     async (date: dayjs.Dayjs, currentScope: 'all' | 'me' | 'nyc', staffFilterId: string) => {
+      const requestId = ++dailyCallsRequestIdRef.current;
       setLoading(true);
       try {
         const dateStr = date.format('YYYY-MM-DD');
@@ -156,12 +165,18 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           scope: currentScope,
           staffId: currentScope === 'me' ? undefined : staffFilterId,
         });
-        setData(res);
+        if (requestId === dailyCallsRequestIdRef.current) {
+          setData(res);
+        }
       } catch (err) {
-        console.error('Fetch daily calls error:', err);
-        message.error('Không thể tải danh sách cuộc gọi.');
+        if (requestId === dailyCallsRequestIdRef.current) {
+          console.error('Fetch daily calls error:', err);
+          message.error('Không thể tải danh sách cuộc gọi.');
+        }
       } finally {
-        setLoading(false);
+        if (requestId === dailyCallsRequestIdRef.current) {
+          setLoading(false);
+        }
       }
     },
     []

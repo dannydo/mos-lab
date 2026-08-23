@@ -172,18 +172,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const list = await apiClient.staff.list();
       if (!Array.isArray(list)) return;
       const now = dayjs();
+      const storedUserStr = typeof window !== 'undefined' ? localStorage.getItem('mos_user') : null;
+      let currentUserId = '';
+      if (storedUserStr) {
+        try {
+          currentUserId = JSON.parse(storedUserStr).id;
+        } catch (_) {}
+      }
 
       const filtered = list.filter((m: SafeAny) => {
         const isUserActive = m.isActive === true || m.isActive === 1 || m.isActive === '1';
         const isOnline = !!(m.lastActiveAt && now.diff(dayjs(m.lastActiveAt), 'minute') < 5);
-
-        const storedUserStr = typeof window !== 'undefined' ? localStorage.getItem('mos_user') : null;
-        let currentUserId = '';
-        if (storedUserStr) {
-          try {
-            currentUserId = JSON.parse(storedUserStr).id;
-          } catch (_) {}
-        }
         return isUserActive && isOnline && m.id !== currentUserId;
       });
 

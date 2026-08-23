@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Drawer, Spin, theme, message, Row, Col } from 'antd';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
@@ -29,6 +29,14 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
 
   const [loading, setLoading] = useState(false);
   const [logDetails, setLogDetails] = useState<SafeAny>(null);
+  const detailsRequestIdRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      detailsRequestIdRef.current += 1;
+    },
+    []
+  );
 
   // Form states
   const [happyCallStatus, setHappyCallStatus] = useState<string>('NONE');
@@ -102,10 +110,41 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
     window.addEventListener('mouseup', handleMouseUp);
   };
 
+  const fetchLogDetails = useCallback(async () => {
+    if (!omicallLogId) return;
+
+    const requestId = ++detailsRequestIdRef.current;
+    setLoading(true);
+    try {
+      const data = (await apiClient.omicall.getPlayDetails(omicallLogId)) as SafeAny;
+      if (requestId !== detailsRequestIdRef.current) return;
+
+      setLogDetails(data);
+      setHappyCallStatus(data.happyCallStatus || 'NONE');
+      setHappyCallReason(data.happyCallReason || '');
+      setQaNotes(data.qaNotes || '');
+      setQaScore(data.qaScore || 0);
+      setQaTags(data.qaTags || []);
+      setQaChecklist(data.qaChecklist || {});
+    } catch (err) {
+      if (requestId !== detailsRequestIdRef.current) return;
+
+      console.error('[QAPlayerDrawer] Failed to fetch log details:', err);
+      message.error((err as SafeAny).response?.data?.message || 'Không thể tải chi tiết cuộc gọi');
+    } finally {
+      if (requestId === detailsRequestIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [omicallLogId]);
+
   useEffect(() => {
     if (open && omicallLogId) {
-      fetchLogDetails();
+      void fetchLogDetails();
     } else {
+      // Invalidate a pending request before clearing the drawer so a response
+      // for the previously selected log cannot repopulate it after close.
+      detailsRequestIdRef.current += 1;
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -115,27 +154,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
       handleSpeedChange(1);
       setLogDetails(null);
     }
-  }, [open, omicallLogId]);
-
-  const fetchLogDetails = async () => {
-    if (!omicallLogId) return;
-    setLoading(true);
-    try {
-      const data = (await apiClient.omicall.getPlayDetails(omicallLogId)) as SafeAny;
-      setLogDetails(data);
-      setHappyCallStatus(data.happyCallStatus || 'NONE');
-      setHappyCallReason(data.happyCallReason || '');
-      setQaNotes(data.qaNotes || '');
-      setQaScore(data.qaScore || 0);
-      setQaTags(data.qaTags || []);
-      setQaChecklist(data.qaChecklist || {});
-    } catch (err) {
-      console.error('[QAPlayerDrawer] Failed to fetch log details:', err);
-      message.error((err as SafeAny).response?.data?.message || 'Không thể tải chi tiết cuộc gọi');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [audioRef, fetchLogDetails, handleSpeedChange, omicallLogId, open, setCurrentTime, setDuration, setIsPlaying]);
 
   const handleVerifySubmit = async () => {
     if (!omicallLogId) return;
@@ -168,19 +187,19 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
     }
   };
 
-  const getLaughTimestamps = () => {
-    if (!logDetails?.laughTimestamps) return [];
+  // Playback updates the drawer frequently. Parse the persisted timestamps
+  // only when the selected log changes rather than on every playback render.
+  const laughList = useMemo<SafeAny[]>(() => {
+    const rawLaughTimestamps = logDetails?.laughTimestamps;
+    if (!rawLaughTimestamps) return [];
+
     try {
-      if (typeof logDetails.laughTimestamps === 'string') {
-        return JSON.parse(logDetails.laughTimestamps);
-      }
-      return logDetails.laughTimestamps;
-    } catch (e) {
+      const parsed = typeof rawLaughTimestamps === 'string' ? JSON.parse(rawLaughTimestamps) : rawLaughTimestamps;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
       return [];
     }
-  };
-
-  const laughList = getLaughTimestamps();
+  }, [logDetails?.laughTimestamps]);
 
   const isEvaluationDisabled = !logDetails?.recordingUrl || !logDetails?.transcript;
 

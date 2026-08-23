@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../../lib/api-client';
 import { STORES } from './constants';
 
@@ -13,12 +13,25 @@ export const useCustomerInsights = (
   const [lastUsedServices, setLastUsedServices] = useState<string[]>([]);
   const [suggestedBranch, setSuggestedBranch] = useState<SafeAny>(null);
   const [customerLastVisit, setCustomerLastVisit] = useState<string | null>(null);
+  const detailsRequestIdRef = useRef(0);
+  const suggestedBranchCustomerIdRef = useRef<SafeAny>(null);
+  const selectedCustomerId = selectedCustomer?.id;
+
+  useEffect(
+    () => () => {
+      detailsRequestIdRef.current += 1;
+    },
+    []
+  );
 
   useEffect(() => {
-    if (selectedCustomer?.id) {
+    const requestId = ++detailsRequestIdRef.current;
+    if (selectedCustomerId) {
       apiClient.customers
-        .getDetailed(selectedCustomer.id)
+        .getDetailed(selectedCustomerId)
         .then((data) => {
+          if (requestId !== detailsRequestIdRef.current) return;
+
           const bookings = data.bookings || [];
           const balances = data.comboBalances || [];
           setComboBalances(balances);
@@ -100,23 +113,34 @@ export const useCustomerInsights = (
             const topStoreId = sortedBranches[0].id;
             const matchedStore = STORES.find((s) => s.id === topStoreId);
             if (matchedStore) {
+              suggestedBranchCustomerIdRef.current = selectedCustomerId;
               setSuggestedBranch(matchedStore);
-              if (!selectedCN) {
-                setSelectedCN(matchedStore);
-              }
             }
           }
         })
-        .catch((err) => console.error('Failed to fetch favorite technicians:', err));
+        .catch((err) => {
+          if (requestId === detailsRequestIdRef.current) {
+            console.error('Failed to fetch favorite technicians:', err);
+          }
+        });
     } else {
       setFavoriteTechs([]);
       setComboBalances([]);
       setSuggestedServices([]);
       setLastUsedServices([]);
+      suggestedBranchCustomerIdRef.current = null;
       setSuggestedBranch(null);
       setCustomerLastVisit(null);
     }
-  }, [selectedCustomer, selectedCN, setSelectedCN]);
+  }, [selectedCustomerId]);
+
+  // Changing the selected branch must not re-fetch the customer's full
+  // history. Apply an already-derived branch suggestion independently.
+  useEffect(() => {
+    if (!selectedCN && suggestedBranch && suggestedBranchCustomerIdRef.current === selectedCustomerId) {
+      setSelectedCN(suggestedBranch);
+    }
+  }, [selectedCN, selectedCustomerId, setSelectedCN, suggestedBranch]);
 
   return {
     favoriteTechs,

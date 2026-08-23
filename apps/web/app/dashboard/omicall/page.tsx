@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Table,
   Input,
@@ -82,6 +82,18 @@ export default function OmicallLogsPage() {
   // QA Drawer States
   const [qaDrawerOpen, setQaDrawerOpen] = useState(false);
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
+  const logsRequestIdRef = useRef(0);
+  const staffRequestIdRef = useRef(0);
+  const configsRequestIdRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      logsRequestIdRef.current += 1;
+      staffRequestIdRef.current += 1;
+      configsRequestIdRef.current += 1;
+    },
+    []
+  );
 
   // Load user details
   useEffect(() => {
@@ -95,17 +107,23 @@ export default function OmicallLogsPage() {
 
   // Fetch staff list for filters
   const fetchStaffList = useCallback(async () => {
+    const requestId = ++staffRequestIdRef.current;
     try {
       const data = await apiClient.staff.list();
       // Filter out only active telesales or all active staff
-      setStaffList(data || []);
+      if (requestId === staffRequestIdRef.current) {
+        setStaffList(data || []);
+      }
     } catch (err) {
-      console.error('[OmicallLogsPage] Failed to fetch staff list:', err);
+      if (requestId === staffRequestIdRef.current) {
+        console.error('[OmicallLogsPage] Failed to fetch staff list:', err);
+      }
     }
   }, []);
 
   // Fetch Omicall call logs
   const fetchLogs = useCallback(async () => {
+    const requestId = ++logsRequestIdRef.current;
     setLoadingLogs(true);
     try {
       const params: SafeAny = {
@@ -137,28 +155,41 @@ export default function OmicallLogsPage() {
       }
 
       const data = await apiClient.omicall.listLogs(params);
+      if (requestId !== logsRequestIdRef.current) return;
+
       setLogs((data as SafeAny).logs || []);
       setTotalLogs((data as SafeAny).pagination?.total || (data as SafeAny).total || 0);
     } catch (err) {
+      if (requestId !== logsRequestIdRef.current) return;
+
       console.error('[OmicallLogsPage] Failed to fetch call logs:', err);
       message.error('Không thể tải lịch sử cuộc gọi OmiCall');
     } finally {
-      setLoadingLogs(false);
+      if (requestId === logsRequestIdRef.current) {
+        setLoadingLogs(false);
+      }
     }
   }, [currentPage, pageSize, dateRange, statusFilter, happyFilter, aiFilter, staffFilter, isAdmin]);
 
   // Fetch extension mapping configurations
   const fetchConfigs = useCallback(async () => {
     if (!isAdmin) return;
+    const requestId = ++configsRequestIdRef.current;
     setLoadingConfigs(true);
     try {
       const data = await apiClient.omicall.getConfigs();
-      setConfigs(data || []);
+      if (requestId === configsRequestIdRef.current) {
+        setConfigs(data || []);
+      }
     } catch (err) {
+      if (requestId !== configsRequestIdRef.current) return;
+
       console.error('[OmicallLogsPage] Failed to fetch extensions configurations:', err);
       message.error('Không thể tải cấu hình máy lẻ extension');
     } finally {
-      setLoadingConfigs(false);
+      if (requestId === configsRequestIdRef.current) {
+        setLoadingConfigs(false);
+      }
     }
   }, [isAdmin]);
 

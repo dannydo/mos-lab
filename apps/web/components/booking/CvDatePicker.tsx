@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { DatePicker, Tooltip, Alert, theme } from 'antd';
 import dayjs from 'dayjs';
 import { HARDCODED_OFF_DATES } from './constants';
 import { apiClient } from '../../lib/api-client';
 
 type SafeAny = any;
+const EMPTY_STAFF_LIST: SafeAny[] = [];
 
 export interface CvDatePickerProps {
   value: dayjs.Dayjs | null;
@@ -31,7 +32,7 @@ export const CvDatePicker: React.FC<CvDatePickerProps> = ({
   value,
   onChange,
   selectedCV,
-  staffList = [],
+  staffList,
   themeMode = 'dark',
   format = 'DD/MM/YYYY',
   placeholder = 'Chọn ngày đặt lịch...',
@@ -44,25 +45,36 @@ export const CvDatePicker: React.FC<CvDatePickerProps> = ({
 }) => {
   const { token } = theme.useToken();
   const [internalStaffList, setInternalStaffList] = useState<SafeAny[]>([]);
+  const hasLoadedInternalStaffRef = useRef(false);
+  const staffRequestIdRef = useRef(0);
+  const hasProvidedStaff = Boolean(staffList?.length);
 
   // Tự động tải danh sách staff nếu props.staffList chưa có dữ liệu
   useEffect(() => {
-    if (staffList && staffList.length > 0) return;
+    if (hasProvidedStaff || hasLoadedInternalStaffRef.current) return;
+
+    hasLoadedInternalStaffRef.current = true;
+    const requestId = ++staffRequestIdRef.current;
     apiClient.customers
       .getStaff()
       .then((res: any[]) => {
-        if (Array.isArray(res) && res.length > 0) {
+        if (requestId === staffRequestIdRef.current && Array.isArray(res) && res.length > 0) {
           setInternalStaffList(res);
         }
       })
       .catch((err) => {
-        console.error('CvDatePicker: Failed to fetch staff list:', err);
+        if (requestId === staffRequestIdRef.current) {
+          console.error('CvDatePicker: Failed to fetch staff list:', err);
+        }
       });
-  }, [staffList]);
+    return () => {
+      staffRequestIdRef.current += 1;
+    };
+  }, [hasProvidedStaff]);
 
   const activeStaffList = useMemo(() => {
-    return staffList && staffList.length > 0 ? staffList : internalStaffList;
-  }, [staffList, internalStaffList]);
+    return hasProvidedStaff ? staffList || EMPTY_STAFF_LIST : internalStaffList;
+  }, [hasProvidedStaff, internalStaffList, staffList]);
 
   // Extract metadata from selectedCV and activeStaffList
   const { approvedOffDates, pendingOffDates, rejectedOffDates, offDays } = useMemo(() => {
