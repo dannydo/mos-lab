@@ -1,3 +1,5 @@
+import type { ReportPeriodComparison } from './report-period.js';
+
 export interface CcDiamondEntry {
   rank?: number;
   ccId: number;
@@ -17,6 +19,10 @@ export interface CcDiamondResponse {
   month: string;
   totalReferralGuests: number;
   totalDiamondBonus: number;
+  comparison?: ReportPeriodComparison & {
+    totalReferralGuests: number;
+    totalDiamondBonus: number;
+  };
   data: CcDiamondEntry[];
 }
 

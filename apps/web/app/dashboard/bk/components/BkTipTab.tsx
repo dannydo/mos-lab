@@ -16,11 +16,13 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { BkTipLeaderboardEntry, BkTipRecord, removeVietnameseTones } from '@mos-lab/shared';
+import { BkTipLeaderboardEntry, BkTipRecord, removeVietnameseTones, type ReportComparisonMode } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
 import BkLeaderboardCard from './BkLeaderboardCard';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 const { Text } = Typography;
 
@@ -38,11 +40,13 @@ interface BkTipTabProps {
   dateRange: [any, any];
   selectedStore: string;
   selectedBooker: string;
+  comparisonMode: ReportComparisonMode;
 }
 
-export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: BkTipTabProps) {
+export default function BkTipTab({ dateRange, selectedStore, selectedBooker, comparisonMode }: BkTipTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
+  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -54,6 +58,12 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
     totalCustomerTip: 0,
     totalBkTipBonus: 0,
   });
+  const [previousSummary, setPreviousSummary] = useState<{
+    totalBookingsCount: number;
+    tippedBookingsCount: number;
+    totalCustomerTip: number;
+    totalBkTipBonus: number;
+  } | null>(null);
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
   const [selectedBookerName, setSelectedBookerName] = useState<string | null>(null);
@@ -68,15 +78,21 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.bk.getTipLeaderboard({
-        dateFrom: dateRange[0].format('YYYY-MM-DD'),
-        dateTo: dateRange[1].format('YYYY-MM-DD'),
-        storeId: selectedStore,
-      });
+      const [res, previousRes] = await Promise.all([
+        apiClient.bk.getTipLeaderboard({
+          dateFrom: dateRange[0].format('YYYY-MM-DD'),
+          dateTo: dateRange[1].format('YYYY-MM-DD'),
+          storeId: selectedStore,
+        }),
+        previousPeriod
+          ? apiClient.bk.getTipLeaderboard({ ...previousPeriod.params, storeId: selectedStore })
+          : Promise.resolve(null),
+      ]);
       setLeaderboard(res.leaderboard || []);
       setSummary(
         res.summary || { totalBookingsCount: 0, tippedBookingsCount: 0, totalCustomerTip: 0, totalBkTipBonus: 0 }
       );
+      setPreviousSummary(previousRes?.summary || null);
     } catch (err) {
       console.error('Error loading BK tip leaderboard', err);
     } finally {
@@ -107,7 +123,7 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [dateRange, selectedStore]);
+  }, [dateRange, previousPeriod, selectedStore]);
 
   useEffect(() => {
     fetchDetails();
@@ -356,6 +372,12 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
               valueStyle={{ color: '#ec4899', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<HeartOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.tippedBookingsCount}
+              previousValue={previousSummary?.tippedBookingsCount || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} đơn`}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
@@ -370,6 +392,12 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
               valueStyle={{ color: '#8b5cf6', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<GiftOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalCustomerTip}
+              previousValue={previousSummary?.totalCustomerTip || 0}
+              formatter={formatCurrency}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
@@ -383,6 +411,12 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker }: B
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#db2777', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<DollarOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalBkTipBonus}
+              previousValue={previousSummary?.totalBkTipBonus || 0}
+              formatter={formatCurrency}
             />
           </Card>
         </Col>

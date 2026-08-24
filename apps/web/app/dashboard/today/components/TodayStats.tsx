@@ -5,6 +5,8 @@ import { Card, Row, Col, Typography, theme } from 'antd';
 import { CalendarOutlined, PieChartOutlined, BarChartOutlined } from '@ant-design/icons';
 import { BookingData, ComingClientData, BranchDetail } from '../hooks/useTodayData';
 import { formatVND } from '../../../../lib/format-utils';
+import type { ReportPeriodComparison } from '@mos-lab/shared';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 const { Text } = Typography;
 
@@ -131,6 +133,9 @@ interface TodayStatsProps {
   bookingBranchCounts: { dt: number; pxl: number; ep: number; total: number };
   branchesData: Record<string, BranchDetail>;
   showTax: boolean;
+  previousAllBookings?: BookingData[];
+  previousBranchesData?: Record<string, BranchDetail> | null;
+  comparison?: ReportPeriodComparison | null;
 }
 
 export default function TodayStats({
@@ -143,6 +148,9 @@ export default function TodayStats({
   bookingBranchCounts,
   branchesData,
   showTax,
+  previousAllBookings = [],
+  previousBranchesData,
+  comparison,
 }: TodayStatsProps) {
   const getItemPrice = React.useCallback(
     (item: SafeAny) => {
@@ -281,6 +289,22 @@ export default function TodayStats({
     return { revLe, revCombo, revProduct, total };
   }, [branchesData, showTax]);
 
+  const previousComingCount = React.useMemo(
+    () => Object.values(previousBranchesData || {}).reduce((total, branch) => total + (branch.coming || []).length, 0),
+    [previousBranchesData]
+  );
+
+  const previousTotalRevenue = React.useMemo(() => {
+    return Object.values(previousBranchesData || {}).reduce(
+      (total, branch) =>
+        total +
+        (showTax
+          ? (branch.revLe || 0) + (branch.revCombo || 0) + (branch.revProduct || 0)
+          : (branch.netLe || 0) + (branch.netCombo || 0) + (branch.netProduct || 0)),
+      0
+    );
+  }, [previousBranchesData, showTax]);
+
   const categoryRevenueData = React.useMemo(() => {
     let revCombo = 0;
     let revTele = 0;
@@ -316,7 +340,7 @@ export default function TodayStats({
           style={{
             background: token.colorBgContainer,
             borderColor: token.colorBorderSecondary,
-            height: '200px',
+            height: '220px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -330,10 +354,20 @@ export default function TodayStats({
               marginBottom: '12px',
             }}
           >
-            <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
-              <CalendarOutlined style={{ color: '#52c41a', marginRight: '6px' }} />
-              Booking Tạo Hôm Nay
-            </span>
+            <div>
+              <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
+                <CalendarOutlined style={{ color: '#52c41a', marginRight: '6px' }} />
+                Booking Tạo Hôm Nay
+              </span>
+              <PeriodComparison
+                comparison={comparison}
+                currentValue={allBookings.length}
+                previousValue={previousAllBookings.length}
+                formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
+                compact
+                className="mt-1 border-0 pt-0 text-[10px]"
+              />
+            </div>
             <strong
               className="tabular-nums"
               style={{ fontSize: '15px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
@@ -511,7 +545,7 @@ export default function TodayStats({
           style={{
             background: token.colorBgContainer,
             borderColor: token.colorBorderSecondary,
-            height: '200px',
+            height: '220px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -525,10 +559,20 @@ export default function TodayStats({
               marginBottom: '12px',
             }}
           >
-            <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
-              <PieChartOutlined style={{ color: '#1890ff', marginRight: '6px' }} />
-              Khách Đến Hôm Nay
-            </span>
+            <div>
+              <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
+                <PieChartOutlined style={{ color: '#1890ff', marginRight: '6px' }} />
+                Khách Đến Hôm Nay
+              </span>
+              <PeriodComparison
+                comparison={comparison}
+                currentValue={comingStats.totalCount}
+                previousValue={previousComingCount}
+                formatter={(value) => `${value.toLocaleString('vi-VN')} khách`}
+                compact
+                className="mt-1 border-0 pt-0 text-[10px]"
+              />
+            </div>
             <strong
               className="tabular-nums"
               style={{ fontSize: '13px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
@@ -739,7 +783,7 @@ export default function TodayStats({
           style={{
             background: token.colorBgContainer,
             borderColor: token.colorBorderSecondary,
-            height: '200px',
+            height: '220px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -753,10 +797,20 @@ export default function TodayStats({
               marginBottom: '12px',
             }}
           >
-            <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
-              <BarChartOutlined style={{ color: '#D4A84B', marginRight: '6px' }} />
-              Doanh Thu Thực Tế
-            </span>
+            <div>
+              <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
+                <BarChartOutlined style={{ color: '#D4A84B', marginRight: '6px' }} />
+                Doanh Thu Thực Tế
+              </span>
+              <PeriodComparison
+                comparison={comparison}
+                currentValue={totalRevenueData.total}
+                previousValue={previousTotalRevenue}
+                formatter={formatVND}
+                compact
+                className="mt-1 border-0 pt-0 text-[10px]"
+              />
+            </div>
             <strong
               className="tabular-nums"
               style={{ fontSize: '14px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}

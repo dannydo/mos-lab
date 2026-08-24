@@ -7,6 +7,7 @@ import { Card, theme, Radio, Space, Row, Col, Spin, Button, Select, Tag, message
 import { ClockCircleOutlined, ShopOutlined, CalendarOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 
@@ -17,6 +18,8 @@ import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
 import TodayStaffAttendance from './components/TodayStaffAttendance';
 import { IconButton, PageHeader, ReportPeriodNavigator, ToolbarToggle } from '../../../components/ui';
+
+dayjs.extend(isoWeek);
 
 const TodayCalendarSummary = dynamic(() => import('./components/TodayCalendarSummary'), {
   ssr: false,
@@ -219,6 +222,8 @@ export default function TodayDashboard() {
             openCustomerDrawer={data.openCustomerDrawer}
             selectedDate={data.selectedDate}
             revenueData={data.revenueData}
+            previousRevenueData={data.previousRevenueData}
+            comparison={data.comparison}
             revenueLoading={data.revenueLoading}
             showRevenueView={data.showRevenueView}
             setShowRevenueView={data.setShowRevenueView}
@@ -236,6 +241,9 @@ export default function TodayDashboard() {
               bookingBranchCounts={data.bookingBranchCounts}
               branchesData={data.branchesData}
               showTax={data.showTax}
+              previousAllBookings={data.previousAllBookings}
+              previousBranchesData={data.previousBranchesData}
+              comparison={data.comparison}
             />
 
             <Row gutter={[24, 24]}>

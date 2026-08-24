@@ -259,7 +259,12 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
   // GET /api/dashboard/today - Real operational data for the "today" dashboard
   fastify.get('/dashboard/today', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { date, dateFrom, dateTo } = request.query as { date?: string; dateFrom?: string; dateTo?: string };
+    const { date, dateFrom, dateTo, endAt } = request.query as {
+      date?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      endAt?: string;
+    };
     const getVnDateStr = () => {
       const formatter = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Ho_Chi_Minh',
@@ -279,7 +284,10 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
     // Since database datetimes are local and Prisma reads them as UTC,
     // we query using timezone-naive start/end bounds directly
     const startOfDay = new Date(targetDateFrom + 'T00:00:00.000Z');
-    const endOfDay = new Date(targetDateTo + 'T23:59:59.999Z');
+    const targetEndAt = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$/.test(endAt || '')
+      ? String(endAt).replace(' ', 'T')
+      : `${targetDateTo}T23:59:59`;
+    const endOfDay = new Date(`${targetEndAt}.999Z`);
 
     const toActualDate = (dbDate: Date | null | undefined) => {
       if (!dbDate) return new Date(0);
@@ -605,7 +613,12 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         const cvRequested = firstCvStaffId ? staffMap.get(Number(firstCvStaffId)) || 'Chuyên viên' : 'Chưa phân công';
 
         let status: 'completed' | 'serving' | 'confirmed' | 'pending' | 'late' | 'checkout' = 'pending';
-        if (o.order_state === 'Completed') {
+        // When comparing an in-progress period, include only revenue that had
+        // been recognized by the matching clock time in the previous period.
+        // The full-day operations snapshot remains unchanged when `endAt` is absent.
+        const completedRevenueTime = o.booking_date_end || o.booking_date_start;
+        const isWithinComparisonCutoff = !endAt || !completedRevenueTime || completedRevenueTime <= endOfDay;
+        if (o.order_state === 'Completed' && isWithinComparisonCutoff) {
           status = 'completed';
         } else if (
           ['CheckIn', 'Consultation', 'Preparation', 'ServiceStart', 'ServiceCleaned', 'ServiceEnd'].includes(
@@ -1375,9 +1388,10 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
   // GET /api/dashboard/today/revenue-hourly
   fastify.get('/dashboard/today/revenue-hourly', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const { dateFrom, dateTo, branchKey, bookerFilter } = request.query as {
+      const { dateFrom, dateTo, endAt, branchKey, bookerFilter } = request.query as {
         dateFrom: string;
         dateTo: string;
+        endAt?: string;
         branchKey?: string;
         bookerFilter?: string;
       };
@@ -1386,7 +1400,9 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       }
 
       const start = dateFrom + ' 00:00:00';
-      const end = dateTo + ' 23:59:59';
+      const end = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$/.test(endAt || '')
+        ? String(endAt).replace('T', ' ')
+        : dateTo + ' 23:59:59';
 
       // Load only profiles referenced by the selected orders; the old full staff scan dominated short date ranges.
       const staffMap = new Map<number, string>();

@@ -50,6 +50,7 @@ export interface DailySalesBonusConsultantResponse {
   summary?: {
     totalComboSales: number;
     totalProductSales: number;
+    totalSingleSales?: number;
     totalSales: number;
     totalCcBonus: number;
     projectedComboSales?: number;
@@ -57,8 +58,22 @@ export interface DailySalesBonusConsultantResponse {
     projectedTotalSales?: number;
     projectedCcBonus?: number;
     elapsedRatioPercent?: number;
+    comparison?: DailySalesBonusPeriodComparison;
   };
   activeStaff?: { userId: number; displayName: string }[];
+}
+
+export interface DailySalesBonusPeriodComparison {
+  /** The dashboard selector that determines the matching previous period. */
+  mode: 'month' | 'week' | 'day';
+  /** Inclusive date bounds of the matched previous period, for explanatory UI. */
+  dateFrom: string;
+  dateTo: string;
+  totalComboSales: number;
+  totalProductSales: number;
+  totalSingleSales: number;
+  totalSales: number;
+  totalCcBonus: number;
 }
 
 export interface DailySalesBonusLeaderboardEntry {
@@ -114,6 +129,7 @@ export interface DailySalesBonusQueryParams {
   dateTo?: string;
   consultantId?: string | number;
   storeId?: string;
+  comparisonMode?: 'month' | 'week' | 'day';
 }
 
 export interface DailySalesBonusTransactionsQueryParams {

@@ -174,7 +174,12 @@ export default function BkDashboardPage() {
       label: 'Booking',
       children:
         activeTab === 'booking' ? (
-          <BkBookingTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+          <BkBookingTab
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedBooker={selectedBooker}
+            comparisonMode={viewMode}
+          />
         ) : null,
     },
     {
@@ -183,7 +188,12 @@ export default function BkDashboardPage() {
       label: 'Done',
       children:
         activeTab === 'done' ? (
-          <BkDoneTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+          <BkDoneTab
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedBooker={selectedBooker}
+            comparisonMode={viewMode}
+          />
         ) : null,
     },
     {
@@ -192,7 +202,12 @@ export default function BkDashboardPage() {
       label: 'Tip',
       children:
         activeTab === 'tip' ? (
-          <BkTipTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+          <BkTipTab
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedBooker={selectedBooker}
+            comparisonMode={viewMode}
+          />
         ) : null,
     },
     {
@@ -201,7 +216,12 @@ export default function BkDashboardPage() {
       label: 'Doanh thu',
       children:
         activeTab === 'revenue' ? (
-          <BkRevenueTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+          <BkRevenueTab
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedBooker={selectedBooker}
+            comparisonMode={viewMode}
+          />
         ) : null,
     },
     {
@@ -210,7 +230,12 @@ export default function BkDashboardPage() {
       label: 'Thu nhập',
       children:
         activeTab === 'thunhap' ? (
-          <BkThuNhapTab dateRange={dateRange} selectedStore={selectedStore} selectedBooker={selectedBooker} />
+          <BkThuNhapTab
+            dateRange={dateRange}
+            selectedStore={selectedStore}
+            selectedBooker={selectedBooker}
+            comparisonMode={viewMode}
+          />
         ) : null,
     },
   ];

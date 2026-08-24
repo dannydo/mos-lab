@@ -14,11 +14,13 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { BkPaystubRecord } from '@mos-lab/shared';
+import { BkPaystubRecord, type ReportComparisonMode } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 const { Text, Title } = Typography;
 
@@ -36,13 +38,15 @@ interface BkThuNhapTabProps {
   dateRange: [any, any];
   selectedStore: string;
   selectedBooker: string;
+  comparisonMode: ReportComparisonMode;
 }
 
-export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker }: BkThuNhapTabProps) {
+export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker, comparisonMode }: BkThuNhapTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
+  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
   const [paystubs, setPaystubs] = useState<BkPaystubRecord[]>([]);
@@ -53,6 +57,13 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
     totalRevenueBonus: 0,
     grandTotalIncome: 0,
   });
+  const [previousSummary, setPreviousSummary] = useState<{
+    totalBaseSalary: number;
+    totalDoneBonus: number;
+    totalTipBonus: number;
+    totalRevenueBonus: number;
+    grandTotalIncome: number;
+  } | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
@@ -65,11 +76,16 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
   const fetchPaystub = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.bk.getPaystub({
-        dateFrom: dateRange[0].format('YYYY-MM-DD'),
-        dateTo: dateRange[1].format('YYYY-MM-DD'),
-        storeId: selectedStore,
-      });
+      const [res, previousRes] = await Promise.all([
+        apiClient.bk.getPaystub({
+          dateFrom: dateRange[0].format('YYYY-MM-DD'),
+          dateTo: dateRange[1].format('YYYY-MM-DD'),
+          storeId: selectedStore,
+        }),
+        previousPeriod
+          ? apiClient.bk.getPaystub({ ...previousPeriod.params, storeId: selectedStore })
+          : Promise.resolve(null),
+      ]);
       setPaystubs(res.data || []);
       setSummary(
         res.summary || {
@@ -80,6 +96,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
           grandTotalIncome: 0,
         }
       );
+      setPreviousSummary(previousRes?.summary || null);
     } catch (err) {
       console.error('Error loading BK paystub', err);
     } finally {
@@ -89,7 +106,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
 
   useEffect(() => {
     fetchPaystub();
-  }, [dateRange, selectedStore]);
+  }, [dateRange, previousPeriod, selectedStore]);
 
   const openBreakdownModal = (record: BkPaystubRecord) => {
     setActivePaystub(record);
@@ -216,6 +233,13 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
               valueStyle={{ color: '#2563eb', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<WalletOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalBaseSalary}
+              previousValue={previousSummary?.totalBaseSalary || 0}
+              formatter={formatCurrency}
+              compact={isMobile}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} xl={4}>
@@ -229,6 +253,13 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CheckCircleOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalDoneBonus}
+              previousValue={previousSummary?.totalDoneBonus || 0}
+              formatter={formatCurrency}
+              compact={isMobile}
             />
           </Card>
         </Col>
@@ -244,6 +275,13 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
               valueStyle={{ color: '#9333ea', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<TrophyOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalRevenueBonus}
+              previousValue={previousSummary?.totalRevenueBonus || 0}
+              formatter={formatCurrency}
+              compact={isMobile}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} xl={4}>
@@ -258,6 +296,13 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
               valueStyle={{ color: '#ec4899', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<GiftOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalTipBonus}
+              previousValue={previousSummary?.totalTipBonus || 0}
+              formatter={formatCurrency}
+              compact={isMobile}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} xl={4}>
@@ -271,6 +316,13 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker 
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#059669', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<DollarOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.grandTotalIncome}
+              previousValue={previousSummary?.grandTotalIncome || 0}
+              formatter={formatCurrency}
+              compact={isMobile}
             />
           </Card>
         </Col>

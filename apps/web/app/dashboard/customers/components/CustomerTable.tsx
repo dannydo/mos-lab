@@ -421,8 +421,8 @@ const CustomerTable = React.memo(
                 <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi'}>
                   <Button
                     type={isPlanned ? 'dashed' : 'primary'}
-                    ghost={!isPlanned}
                     size="small"
+                    aria-label={isPlanned ? 'Đã lên lịch gọi' : `Lên lịch gọi cho ${record.name}`}
                     loading={isAdding}
                     icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
                     onClick={() => !isPlanned && !isAdding && handleAddToPlan?.(record.id)}
@@ -430,7 +430,9 @@ const CustomerTable = React.memo(
                       !isPlanned
                         ? {
                             borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                            color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                            background: themeMode === 'dark' ? token.colorPrimary : '#87640a',
+                            color: themeMode === 'dark' ? '#0b1220' : '#ffffff',
+                            fontWeight: 700,
                           }
                         : {}
                     }

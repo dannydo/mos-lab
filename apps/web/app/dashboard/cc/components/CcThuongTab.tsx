@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Table, Tag, Typography, theme, Statistic, Button, Space, Progress, Tooltip, message } from 'antd';
 import {
+  FallOutlined,
   GiftOutlined,
   ShoppingCartOutlined,
   SkinOutlined,
@@ -22,6 +23,7 @@ import dayjs from 'dayjs';
 import {
   DailySalesBonusConsultantRecord,
   DailySalesBonusLeaderboardEntry,
+  DailySalesBonusPeriodComparison,
   removeVietnameseTones,
   calculateFractionToday,
   OPERATIONAL_SHIFT_SYSTEM_CONFIG,
@@ -50,6 +52,7 @@ interface CcThuongTabProps {
   selectedStore?: string;
   selectedConsultant?: string;
   includeVat?: boolean;
+  comparisonMode?: 'month' | 'week' | 'day';
   onSelectConsultant?: (consultantName: string) => void;
   refreshKey?: number;
 }
@@ -60,6 +63,7 @@ export default function CcThuongTab({
   selectedStore = 'ALL',
   selectedConsultant: parentSelectedConsultant,
   includeVat = true,
+  comparisonMode = 'month',
   onSelectConsultant: parentOnSelectConsultant,
   refreshKey = 0,
 }: CcThuongTabProps) {
@@ -97,6 +101,7 @@ export default function CcThuongTab({
   const [summary, setSummary] = useState<{
     totalComboSales: number;
     totalProductSales: number;
+    totalSingleSales?: number;
     totalSales?: number;
     totalCcBonus: number;
     projectedComboSales?: number;
@@ -104,6 +109,7 @@ export default function CcThuongTab({
     projectedTotalSales?: number;
     projectedCcBonus?: number;
     elapsedRatioPercent?: number;
+    comparison?: DailySalesBonusPeriodComparison;
   } | null>(null);
   const [activeStaff, setActiveStaff] = useState<{ userId: number; displayName: string; avatar?: string | null }[]>([]);
   const inFlightDataKeysRef = useRef(new Set<string>());
@@ -127,7 +133,7 @@ export default function CcThuongTab({
   const fetchData = useCallback(async () => {
     const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD');
     const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD');
-    const requestKey = `${dateFrom}:${dateTo}:${selectedStore}:${refreshKey}`;
+    const requestKey = `${dateFrom}:${dateTo}:${selectedStore}:${comparisonMode}:${refreshKey}`;
 
     latestDataKeyRef.current = requestKey;
     if (inFlightDataKeysRef.current.has(requestKey)) return;
@@ -140,6 +146,7 @@ export default function CcThuongTab({
         dateTo,
         storeId: selectedStore,
         consultantId: 'ALL',
+        comparisonMode,
       });
 
       if (latestDataKeyRef.current !== requestKey) return;
@@ -166,7 +173,7 @@ export default function CcThuongTab({
         setLoading(false);
       }
     }
-  }, [dateRange, refreshKey, selectedStore]);
+  }, [comparisonMode, dateRange, refreshKey, selectedStore]);
 
   useEffect(() => {
     void fetchData();
@@ -762,16 +769,65 @@ export default function CcThuongTab({
   ];
 
   const isPastPeriod = elapsedRatioPercent >= 100;
+  const periodNoun = comparisonMode === 'month' ? 'tháng' : comparisonMode === 'week' ? 'tuần' : 'ngày';
 
-  const renderForecastSubtext = (projectedVal: number) => {
+  type ComparisonMetric = 'totalComboSales' | 'totalProductSales' | 'totalSingleSales' | 'totalSales' | 'totalCcBonus';
+
+  const renderComparisonSubtext = (currentValue: number, metric: ComparisonMetric) => {
+    const comparison = summary?.comparison;
+    if (!comparison) return null;
+
+    // The visible revenue figures respect the VAT switch, while Daily Bonus
+    // remains a net bonus amount. Keep the comparison on exactly the same basis.
+    const rawPreviousValue =
+      metric === 'totalSales'
+        ? comparison.totalComboSales + comparison.totalProductSales + comparison.totalSingleSales
+        : comparison[metric];
+    const previousValue = Math.round(rawPreviousValue * (includeVat && metric !== 'totalCcBonus' ? 1.08 : 1));
+    const difference = Math.round(currentValue - previousValue);
+    const trend = difference > 0 ? 'positive' : difference < 0 ? 'negative' : 'neutral';
+    const percentage =
+      previousValue === 0
+        ? currentValue === 0
+          ? '0%'
+          : 'Mới'
+        : `${difference > 0 ? '+' : ''}${((difference / previousValue) * 100).toFixed(1)}%`;
+    const modeLabel =
+      comparison.mode === 'month' ? 'tháng trước' : comparison.mode === 'week' ? 'tuần trước' : 'ngày trước';
+    const trendClass =
+      trend === 'positive' ? 'text-emerald-400' : trend === 'negative' ? 'text-rose-400' : 'text-slate-400';
+
+    return (
+      <Tooltip
+        title={`So với cùng kỳ ${modeLabel} (${dayjs(comparison.dateFrom).format('DD/MM')} – ${dayjs(comparison.dateTo).format('DD/MM/YYYY')}): ${Math.round(previousValue).toLocaleString('vi-VN')} đ`}
+      >
+        <div
+          className="text-xs mt-2 flex items-center justify-between gap-2 border-t border-slate-700/30 pt-1.5 cursor-help"
+          style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+        >
+          <span className={`tabular-nums inline-flex items-center gap-1 font-semibold whitespace-nowrap ${trendClass}`}>
+            {trend === 'positive' ? <RiseOutlined /> : trend === 'negative' ? <FallOutlined /> : null}
+            {percentage}
+          </span>
+          <span className="tabular-nums text-slate-400 whitespace-nowrap">
+            Kỳ trước: {formatCompactVND(previousValue)}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
+
+  const renderForecastSubtext = (projectedVal: number, hasComparison = false) => {
     if (isPastPeriod) {
       return (
-        <Tooltip title="Dữ liệu tháng đã chốt (100% thời gian)">
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
           <div
-            className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70"
+            className={`text-xs font-medium text-slate-500 flex items-center justify-between cursor-help opacity-70 ${
+              hasComparison ? 'mt-1' : 'mt-2 border-t border-slate-700/20 pt-1.5'
+            }`}
             style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
           >
-            <span>Thực tế chốt tháng:</span>
+            <span>Thực tế chốt {periodNoun}:</span>
             <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
               {formatCompactVND(projectedVal)}
             </span>
@@ -782,10 +838,12 @@ export default function CcThuongTab({
 
     return (
       <Tooltip
-        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
       >
         <div
-          className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help"
+          className={`text-xs font-medium text-slate-400 flex items-center justify-between cursor-help ${
+            hasComparison ? 'mt-1' : 'mt-2 border-t border-slate-700/30 pt-1.5'
+          }`}
           style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
         >
           <span role="img" aria-label="Dự kiến cuối tháng" className="shrink-0 text-sm leading-none">
@@ -829,7 +887,8 @@ export default function CcThuongTab({
             }}
             prefix={<GiftOutlined />}
           />
-          {renderForecastSubtext(projectedComboSales)}
+          {renderComparisonSubtext(totalComboSales, 'totalComboSales')}
+          {renderForecastSubtext(projectedComboSales, Boolean(summary?.comparison))}
         </Card>
         <Card
           variant="outlined"
@@ -850,7 +909,8 @@ export default function CcThuongTab({
             }}
             prefix={<ShoppingCartOutlined />}
           />
-          {renderForecastSubtext(projectedProductSales)}
+          {renderComparisonSubtext(totalProductSales, 'totalProductSales')}
+          {renderForecastSubtext(projectedProductSales, Boolean(summary?.comparison))}
         </Card>
         <Card
           variant="outlined"
@@ -871,7 +931,8 @@ export default function CcThuongTab({
             }}
             prefix={<SkinOutlined />}
           />
-          {renderForecastSubtext(projectedSingleSales)}
+          {renderComparisonSubtext(totalSingleSales, 'totalSingleSales')}
+          {renderForecastSubtext(projectedSingleSales, Boolean(summary?.comparison))}
         </Card>
         <Card
           variant="outlined"
@@ -892,7 +953,8 @@ export default function CcThuongTab({
             }}
             prefix={<RiseOutlined />}
           />
-          {renderForecastSubtext(projectedTotalSales)}
+          {renderComparisonSubtext(totalSales, 'totalSales')}
+          {renderForecastSubtext(projectedTotalSales, Boolean(summary?.comparison))}
         </Card>
         <Card
           variant="outlined"
@@ -913,7 +975,8 @@ export default function CcThuongTab({
             }}
             prefix={<DollarOutlined />}
           />
-          {renderForecastSubtext(projectedCcBonus)}
+          {renderComparisonSubtext(totalCcBonus, 'totalCcBonus')}
+          {renderForecastSubtext(projectedCcBonus, Boolean(summary?.comparison))}
         </Card>
       </div>
 

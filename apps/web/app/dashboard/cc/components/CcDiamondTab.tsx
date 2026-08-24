@@ -35,6 +35,7 @@ import { MobileRecordList } from '../../../../components/ui/MobileRecordList';
 import { IconButton, SearchField } from '../../../../components/ui';
 import CcAvatar from './CcAvatar';
 import CcDiamondDetailModal from './CcDiamondDetailModal';
+import CcPeriodComparison from './CcPeriodComparison';
 
 const { Text } = Typography;
 const MOBILE_DIAMOND_PAGE_SIZE = 15;
@@ -44,6 +45,7 @@ interface CcDiamondTabProps {
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
   selectedStore?: string;
   selectedConsultant?: string;
+  comparisonMode?: 'month' | 'week' | 'day';
   onClearConsultant?: () => void;
 }
 
@@ -51,6 +53,7 @@ export default function CcDiamondTab({
   dateRange,
   selectedStore = 'ALL',
   selectedConsultant = 'ALL',
+  comparisonMode = 'month',
   onClearConsultant,
 }: CcDiamondTabProps) {
   const { token } = theme.useToken();
@@ -78,6 +81,7 @@ export default function CcDiamondTab({
         month,
         date_from: dateFrom,
         date_to: dateTo,
+        comparisonMode,
       });
 
       setDiamondData(res);
@@ -91,7 +95,7 @@ export default function CcDiamondTab({
 
   useEffect(() => {
     fetchDiamondData();
-  }, [dateRange]);
+  }, [comparisonMode, dateRange]);
 
   const selectedPeriodKey = `${dateRange?.[0]?.valueOf() ?? ''}:${dateRange?.[1]?.valueOf() ?? ''}`;
 
@@ -330,6 +334,12 @@ export default function CcDiamondTab({
                 color: themeMode === 'dark' ? '#38bdf8' : '#0284c7',
               }}
             />
+            <CcPeriodComparison
+              comparison={diamondData?.comparison}
+              currentValue={totalReferrals}
+              previousValue={diamondData?.comparison?.totalReferralGuests || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} khách`}
+            />
           </Card>
         </Col>
 
@@ -348,6 +358,12 @@ export default function CcDiamondTab({
                 fontWeight: 'bold',
                 color: themeMode === 'dark' ? '#34d399' : '#059669',
               }}
+            />
+            <CcPeriodComparison
+              comparison={diamondData?.comparison}
+              currentValue={totalBonus}
+              previousValue={diamondData?.comparison?.totalDiamondBonus || 0}
+              formatter={formatCurrency}
             />
           </Card>
         </Col>

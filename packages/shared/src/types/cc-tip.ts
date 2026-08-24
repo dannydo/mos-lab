@@ -1,3 +1,5 @@
+import type { ReportPeriodComparison } from './report-period.js';
+
 export interface CcTipLeaderboardEntry {
   rank: number;
   consultantId: number;
@@ -52,6 +54,12 @@ export interface CcTipLeaderboardResponse {
     avgTipRatePercent: number;
     totalTippedVisits: number;
     totalVisits: number;
+    comparison?: ReportPeriodComparison & {
+      totalCcTipBonus: number;
+      totalCustomerTip: number;
+      totalTippedVisits: number;
+      totalVisits: number;
+    };
   };
 }
 

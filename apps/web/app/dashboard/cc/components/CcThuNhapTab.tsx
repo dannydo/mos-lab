@@ -38,11 +38,13 @@ import {
   CcPaystubResponse,
   CcWorkLogDetailRecord,
   CcWorkLogDetailResponse,
+  ReportPeriodComparison,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import dayjs from 'dayjs';
 import CcAvatar from './CcAvatar';
+import CcPeriodComparison from './CcPeriodComparison';
 import { useTheme } from '../../../../context/ThemeContext';
 import { formatCompactVND, formatStoreCode, formatVND } from '../../../../lib/format-utils';
 import { AdaptiveModal, AdaptiveOverlayFooter, DataTable, MobileRecordList } from '~/components/ui';
@@ -61,9 +63,42 @@ const formatHoursToHoursMinutes = (totalHours: number, compact = false) => {
 interface CcThuNhapTabProps {
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
   selectedStore?: string;
+  comparisonMode?: 'month' | 'week' | 'day';
 }
 
-export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabProps) {
+type CcIncomeSummary = CcPaystubResponse['summary'] & {
+  totalDiamondBonus: number;
+  comparison?: ReportPeriodComparison & {
+    totalDiamondBonus: number;
+    totalHourlyWage: number;
+    totalCcXoayBonus: number;
+    totalComboProductBonus: number;
+    totalMinigameBonus: number;
+    totalCcTipBonus: number;
+    grandTotalIncome: number;
+  };
+};
+
+function getComparisonPeriod(dateRange: [dayjs.Dayjs, dayjs.Dayjs] | undefined, mode: 'month' | 'week' | 'day') {
+  const start = dateRange?.[0] || dayjs().startOf('month');
+  const selectedEnd = dateRange?.[1] || dayjs().endOf('month');
+  const now = dayjs();
+  if (start.isAfter(now)) return null;
+
+  const effectiveEnd = selectedEnd.isAfter(now) ? now : selectedEnd.endOf('day');
+  const shift = (value: dayjs.Dayjs) =>
+    mode === 'month' ? value.subtract(1, 'month') : value.subtract(mode === 'week' ? 7 : 1, 'day');
+  const comparisonStart = shift(start);
+  const comparisonEnd = shift(effectiveEnd);
+
+  return {
+    mode,
+    dateFrom: comparisonStart.format('YYYY-MM-DD'),
+    dateTo: comparisonEnd.format('YYYY-MM-DD'),
+  } satisfies ReportPeriodComparison;
+}
+
+export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode = 'month' }: CcThuNhapTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
@@ -71,7 +106,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
   const isMobile = tier === 'mobile';
   const [loading, setLoading] = useState(false);
   const [paystubData, setPaystubData] = useState<CcPaystubRecord[]>([]);
-  const [summary, setSummary] = useState({
+  const [summary, setSummary] = useState<CcIncomeSummary>({
     totalHourlyWage: 0,
     totalCcXoayBonus: 0,
     totalComboProductBonus: 0,
@@ -178,8 +213,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
       const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : undefined;
       const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : undefined;
       const month = dateRange ? dateRange[0].format('YYYY-MM') : undefined;
+      const comparisonPeriod = getComparisonPeriod(dateRange, comparisonMode);
 
-      const [res, diamondRes] = await Promise.all([
+      const [res, diamondRes, comparisonResults] = await Promise.all([
         apiClient.kpi.getCcPaystub({
           dateFrom,
           dateTo,
@@ -192,6 +228,23 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             date_to: dateTo,
           })
           .catch(() => null),
+        comparisonPeriod
+          ? Promise.all([
+              apiClient.kpi.getCcPaystub({
+                dateFrom: comparisonPeriod.dateFrom,
+                dateTo: comparisonPeriod.dateTo,
+                storeId: selectedStore,
+              }),
+              apiClient.kpi
+                .getCcDiamondData({
+                  month: comparisonPeriod.dateFrom.substring(0, 7),
+                  date_from: comparisonPeriod.dateFrom,
+                  date_to: comparisonPeriod.dateTo,
+                  comparisonMode: undefined,
+                })
+                .catch(() => null),
+            ]).catch(() => null)
+          : null,
       ]);
 
       const diamondMap = new Map<number, { thuong: number; cnt: number }>();
@@ -225,6 +278,8 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
         setPaystubData(enrichedData);
 
         if (res.summary) {
+          const comparisonPaystub = comparisonResults?.[0]?.summary;
+          const comparisonDiamondBonus = comparisonResults?.[1]?.totalDiamondBonus || 0;
           setSummary({
             totalHourlyWage: res.summary.totalHourlyWage || 0,
             totalCcXoayBonus: res.summary.totalCcXoayBonus || 0,
@@ -233,6 +288,19 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
             totalCcTipBonus: res.summary.totalCcTipBonus || 0,
             totalDiamondBonus: sumDiamond,
             grandTotalIncome: (res.summary.grandTotalIncome || 0) + sumDiamond,
+            comparison:
+              comparisonPeriod && comparisonPaystub
+                ? {
+                    ...comparisonPeriod,
+                    totalHourlyWage: comparisonPaystub.totalHourlyWage || 0,
+                    totalCcXoayBonus: comparisonPaystub.totalCcXoayBonus || 0,
+                    totalComboProductBonus: comparisonPaystub.totalComboProductBonus || 0,
+                    totalMinigameBonus: comparisonPaystub.totalMinigameBonus || 0,
+                    totalCcTipBonus: comparisonPaystub.totalCcTipBonus || 0,
+                    totalDiamondBonus: comparisonDiamondBonus,
+                    grandTotalIncome: (comparisonPaystub.grandTotalIncome || 0) + comparisonDiamondBonus,
+                  }
+                : undefined,
           });
         }
       }
@@ -245,7 +313,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
 
   useEffect(() => {
     fetchPaystubData();
-  }, [dateRange, selectedStore]);
+  }, [comparisonMode, dateRange, selectedStore]);
 
   const filteredData = useMemo(() => {
     if (!searchText) return paystubData;
@@ -613,6 +681,13 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               }}
               prefix={<ClockCircleOutlined />}
             />
+            <CcPeriodComparison
+              compact
+              comparison={summary.comparison}
+              currentValue={summary.totalHourlyWage}
+              previousValue={summary.comparison?.totalHourlyWage || 0}
+              formatter={formatCompactVND}
+            />
           </Card>
         </Col>
         <Col xs={12} sm={8} lg={4}>
@@ -632,6 +707,13 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 fontVariantNumeric: 'tabular-nums',
               }}
               prefix={<ThunderboltOutlined />}
+            />
+            <CcPeriodComparison
+              compact
+              comparison={summary.comparison}
+              currentValue={summary.totalCcXoayBonus}
+              previousValue={summary.comparison?.totalCcXoayBonus || 0}
+              formatter={formatCompactVND}
             />
           </Card>
         </Col>
@@ -653,6 +735,13 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               }}
               prefix={<GiftOutlined />}
             />
+            <CcPeriodComparison
+              compact
+              comparison={summary.comparison}
+              currentValue={summary.totalComboProductBonus}
+              previousValue={summary.comparison?.totalComboProductBonus || 0}
+              formatter={formatCompactVND}
+            />
           </Card>
         </Col>
         <Col xs={12} sm={8} lg={4}>
@@ -672,6 +761,13 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 fontVariantNumeric: 'tabular-nums',
               }}
               prefix={<DollarOutlined />}
+            />
+            <CcPeriodComparison
+              compact
+              comparison={summary.comparison}
+              currentValue={summary.totalCcTipBonus}
+              previousValue={summary.comparison?.totalCcTipBonus || 0}
+              formatter={formatCompactVND}
             />
           </Card>
         </Col>
@@ -693,6 +789,13 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
               }}
               prefix={<TrophyOutlined />}
             />
+            <CcPeriodComparison
+              compact
+              comparison={summary.comparison}
+              currentValue={summary.totalMinigameBonus}
+              previousValue={summary.comparison?.totalMinigameBonus || 0}
+              formatter={formatCompactVND}
+            />
           </Card>
         </Col>
         <Col xs={12} sm={8} lg={4}>
@@ -713,6 +816,13 @@ export default function CcThuNhapTab({ dateRange, selectedStore }: CcThuNhapTabP
                 fontVariantNumeric: 'tabular-nums',
               }}
               prefix={<WalletOutlined />}
+            />
+            <CcPeriodComparison
+              compact
+              comparison={summary.comparison}
+              currentValue={summary.grandTotalIncome}
+              previousValue={summary.comparison?.grandTotalIncome || 0}
+              formatter={formatCompactVND}
             />
           </Card>
         </Col>

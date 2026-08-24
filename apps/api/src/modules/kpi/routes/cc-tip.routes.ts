@@ -1,20 +1,82 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { CcTipLeaderboardEntry, CcTipLeaderboardResponse, CcTipRecord, CcTipResponse, SafeAny } from '@mos-lab/shared';
+import {
+  CcTipLeaderboardEntry,
+  CcTipLeaderboardResponse,
+  CcTipRecord,
+  CcTipResponse,
+  ReportComparisonMode,
+  SafeAny,
+} from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
+import { getPreviousReportPeriod } from '../services/report-period-comparison.js';
 
 async function getActiveCcIds(fastify: FastifyInstance): Promise<number[]> {
   const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG');
   return ids.length > 0 ? ids : [37790, 34295, 46092, 51659, 48026, 48997];
 }
 
+async function getCcTipSummaryForPeriod(
+  fastify: FastifyInstance,
+  options: { activeCcIds: number[]; dateFrom: string; endAt: string; storeId?: string }
+) {
+  const activeCcStr = options.activeCcIds.join(',') || '0';
+  const storeFilterClause =
+    options.storeId && options.storeId !== 'ALL' ? `AND csl.client_store_name LIKE '%${options.storeId}%'` : '';
+
+  const [summaryRows, ccBonusRows] = await Promise.all([
+    fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+      SELECT
+        COUNT(DISTINCT o.id) as totalVisits,
+        COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN o.id END) as totalTippedVisits,
+        COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
+      FROM \`order\` o
+      LEFT JOIN report_order ro ON o.id = ro.order_id
+      JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
+      LEFT JOIN (
+        SELECT
+          order_id,
+          MAX(tip_amount) as tip_amount,
+          MAX(CASE WHEN tip_percentage > 0 THEN tip_amount / (tip_percentage / 100) ELSE 0 END) as customer_tip_100
+        FROM staff_tip
+        GROUP BY order_id
+      ) st ON st.order_id = o.id
+      WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${options.dateFrom} 00:00:00'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${options.endAt}'
+        AND o.order_state = 'Completed'
+        ${storeFilterClause}
+    `),
+    fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+      SELECT COALESCE(SUM(st.tip_amount), 0) as totalCcTipBonus
+      FROM staff_tip st
+      JOIN \`order\` o ON o.id = st.order_id
+      LEFT JOIN report_order ro ON o.id = ro.order_id
+      JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
+      WHERE st.user_id IN (${activeCcStr})
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${options.dateFrom} 00:00:00'
+        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${options.endAt}'
+        AND o.order_state = 'Completed'
+        ${storeFilterClause}
+    `),
+  ]);
+
+  const summary = summaryRows[0] || {};
+  return {
+    totalVisits: Number(summary.totalVisits || 0),
+    totalTippedVisits: Number(summary.totalTippedVisits || 0),
+    totalCustomerTip: Math.round(Number(summary.totalCustomerTip || 0)),
+    totalCcTipBonus: Math.round(Number(ccBonusRows[0]?.totalCcTipBonus || 0)),
+  };
+}
+
 export async function registerCcTipRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/cc-tip/leaderboard
   fastify.get('/kpi/cc-tip/leaderboard', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { dateFrom, dateTo, storeId } = request.query as {
+    const { dateFrom, dateTo, storeId, comparisonMode } = request.query as {
       dateFrom?: string;
       dateTo?: string;
       storeId?: string;
+      comparisonMode?: ReportComparisonMode;
     };
 
     const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
@@ -26,6 +88,15 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
     try {
       const activeCcIds = (await getActiveCcIds(fastify)) || [37790, 34295, 46092, 51659, 48026, 48997];
       const activeCcStr = activeCcIds.join(',');
+      const comparisonWindow = comparisonMode ? getPreviousReportPeriod(startPart, endPart, comparisonMode) : null;
+      const comparisonPromise = comparisonWindow
+        ? getCcTipSummaryForPeriod(fastify, {
+            activeCcIds,
+            dateFrom: comparisonWindow.dateFrom,
+            endAt: comparisonWindow.endAt,
+            storeId,
+          })
+        : null;
 
       let storeFilterClause = '';
       if (storeId && storeId !== 'ALL') {
@@ -128,6 +199,20 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
             grandTotalVisits > 0 ? Math.min(100, Math.round((grandTippedVisits / grandTotalVisits) * 100)) : 0,
           totalTippedVisits: grandTippedVisits,
           totalVisits: grandTotalVisits,
+          comparison:
+            comparisonWindow && comparisonMode && comparisonPromise
+              ? await comparisonPromise
+                  .then((comparison) => ({
+                    mode: comparisonMode,
+                    dateFrom: comparisonWindow.dateFrom,
+                    dateTo: comparisonWindow.dateTo,
+                    ...comparison,
+                  }))
+                  .catch((error: unknown) => {
+                    fastify.log.warn(error, 'Unable to load CC Tip comparison period');
+                    return undefined;
+                  })
+              : undefined,
         },
       };
 

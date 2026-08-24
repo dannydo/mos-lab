@@ -145,6 +145,11 @@ export interface ListCustomersParams {
   totalSpentMax?: number | string;
   totalVisitsMin?: number | string;
   totalVisitsMax?: number | string;
+  /** Comma-separated legacy service IDs. A customer matches when they completed any selected service. */
+  serviceIds?: string;
+  /** Number of completed orders containing a selected service. */
+  serviceVisitCountMin?: number | string;
+  serviceVisitCountMax?: number | string;
   promoUsed?: 'yes' | 'no' | 'all';
   promoCountMin?: number | string;
   promoCountMax?: number | string;
@@ -175,6 +180,28 @@ export interface ListCustomersParams {
   retainedOnly?: string | boolean;
   allocationBatchId?: string;
   isForeign?: 'all' | 'foreign' | 'local' | boolean | string;
+}
+
+/** An active catalog service available for customer segmentation. */
+export interface CustomerServiceFilterOption {
+  id: number;
+  name: string;
+  serviceType: string | null;
+  serviceGroup: string | null;
+}
+
+export interface CustomerServiceFilterCategory {
+  /** Stable key persisted by saved customer filters. */
+  key: string;
+  label: string;
+  /** Active legacy catalog IDs resolved from the database for this family. */
+  serviceIds: number[];
+}
+
+export interface CustomerServiceFilterOptionsResponse {
+  services: CustomerServiceFilterOption[];
+  /** Only families that actually exist in the active catalog are returned. */
+  categories: CustomerServiceFilterCategory[];
 }
 
 export interface ListCustomersResponse {

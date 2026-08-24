@@ -1,5 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Table, Tag, Input, Space, Button, Typography, theme, Tooltip, Progress, Alert } from 'antd';
+import {
+  Card,
+  Table,
+  Tag,
+  Input,
+  Space,
+  Button,
+  Typography,
+  theme,
+  Tooltip,
+  Progress,
+  Alert,
+  Row,
+  Col,
+  Statistic,
+} from 'antd';
 import dayjs from 'dayjs';
 import {
   SearchOutlined,
@@ -11,20 +26,22 @@ import {
   FireOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import { CcXoayRecord, removeVietnameseTones, calculateWheelBonusCap } from '@mos-lab/shared';
+import { CcXoayRecord, CcXoayReportResponse, removeVietnameseTones, calculateWheelBonusCap } from '@mos-lab/shared';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
-import { formatStoreCode } from '../../../../lib/format-utils';
+import { formatCompactVND, formatStoreCode } from '../../../../lib/format-utils';
 import CcAvatar from './CcAvatar';
+import CcPeriodComparison from './CcPeriodComparison';
 
 interface CcXoayTabProps {
   data: CcXoayRecord[];
   loading?: boolean;
   total?: number;
+  summary?: CcXoayReportResponse['summary'];
   onRefresh?: () => void;
 }
 
-function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
+function CcXoayTabComponent({ data, loading, onRefresh, summary }: CcXoayTabProps) {
   const { token } = theme.useToken();
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
@@ -434,100 +451,153 @@ function CcXoayTabComponent({ data, loading, onRefresh }: CcXoayTabProps) {
   } = useTableConfig('cc_xoay_table', staticColumns);
 
   return (
-    <Card
-      title={
-        <div className="flex flex-wrap justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-base m-0" style={{ color: token.colorText }}>
-              Bảng Dữ Liệu Báo Cáo CC Xoay
-            </h3>
-          </div>
-
-          <Space wrap>
-            <Input
-              aria-label="Tìm kiếm khách hàng, dịch vụ, CC"
-              prefix={<SearchOutlined />}
-              placeholder="Tìm khách hàng, dịch vụ, CC..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 220 }}
-              allowClear
+    <div className="flex flex-col gap-4">
+      <Row gutter={[12, 12]} className="cc-xoay-summary-row">
+        <Col xs={24} sm={8}>
+          <Card
+            size="small"
+            variant="outlined"
+            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          >
+            <Statistic title="∑ Lượt CC Xoay" value={summary?.totalCheckins || 0} suffix="lượt" />
+            <CcPeriodComparison
+              comparison={summary?.comparison}
+              currentValue={summary?.totalCheckins || 0}
+              previousValue={summary?.comparison?.totalCheckins || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
             />
-            <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
-              <Button
-                aria-label={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn'}
-                icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
-                onClick={() => setIsCompact(!isCompact)}
-                className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            size="small"
+            variant="outlined"
+            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          >
+            <Statistic title="∑ Điểm CC" value={summary?.totalPoints || 0} />
+            <CcPeriodComparison
+              comparison={summary?.comparison}
+              currentValue={summary?.totalPoints || 0}
+              previousValue={summary?.comparison?.totalPoints || 0}
+              formatter={(value) => value.toLocaleString('vi-VN')}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            size="small"
+            variant="outlined"
+            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          >
+            <Statistic
+              title="∑ Thưởng CC Xoay"
+              value={summary?.totalBonus || 0}
+              formatter={(value) => formatCompactVND(Number(value || 0))}
+            />
+            <CcPeriodComparison
+              comparison={summary?.comparison}
+              currentValue={summary?.totalBonus || 0}
+              previousValue={summary?.comparison?.totalBonus || 0}
+              formatter={formatCompactVND}
+            />
+          </Card>
+        </Col>
+      </Row>
+      <Card
+        title={
+          <div className="flex flex-wrap justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-base m-0" style={{ color: token.colorText }}>
+                Bảng Dữ Liệu Báo Cáo CC Xoay
+              </h3>
+            </div>
+
+            <Space wrap>
+              <Input
+                aria-label="Tìm kiếm khách hàng, dịch vụ, CC"
+                prefix={<SearchOutlined />}
+                placeholder="Tìm khách hàng, dịch vụ, CC..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 220 }}
+                allowClear
               />
-            </Tooltip>
-            {onRefresh && (
-              <Tooltip title="Làm mới dữ liệu">
-                <Button aria-label="Làm mới dữ liệu" icon={<ReloadOutlined />} onClick={onRefresh} />
+              <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
+                <Button
+                  aria-label={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn'}
+                  icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
+                  onClick={() => setIsCompact(!isCompact)}
+                  className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+                />
               </Tooltip>
-            )}
-            <Tooltip title="Cấu hình cột">
-              <Button aria-label="Cấu hình cột" icon={<SettingOutlined />} onClick={openConfig} />
-            </Tooltip>
-          </Space>
-        </div>
-      }
-      variant="outlined"
-      style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-      styles={{ body: { padding: 0 } }}
-      className="full-bleed-card shadow-sm rounded-xl"
-    >
-      {capSummary.cappedCount > 0 || capSummary.warningCount > 0 ? (
-        <div className="p-3 border-b border-amber-500/20 bg-amber-500/10 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2">
-            <FireOutlined className="text-amber-500 text-sm" />
-            <span className="font-semibold text-amber-800 dark:text-amber-300">
-              ⚠️ Quản Lý Hạn Mức Vòng Xoay (Trần 1.5x CC Daily Bonus Tháng):
-            </span>
-            {capSummary.cappedCount > 0 && (
-              <Tag color="error" className="m-0 font-bold">
-                ⛔ {capSummary.cappedCount} CC ĐẠT TRẦN ({capSummary.cappedNames.join(', ')})
-              </Tag>
-            )}
-            {capSummary.warningCount > 0 && (
-              <Tag color="warning" className="m-0 font-bold">
-                ⚠️ {capSummary.warningCount} CC SẮP CHẠM TRẦN ({capSummary.warningNames.join(', ')})
-              </Tag>
-            )}
+              {onRefresh && (
+                <Tooltip title="Làm mới dữ liệu">
+                  <Button aria-label="Làm mới dữ liệu" icon={<ReloadOutlined />} onClick={onRefresh} />
+                </Tooltip>
+              )}
+              <Tooltip title="Cấu hình cột">
+                <Button aria-label="Cấu hình cột" icon={<SettingOutlined />} onClick={openConfig} />
+              </Tooltip>
+            </Space>
           </div>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 italic">
-            *Thưởng Vòng xoay tối đa = 1.5 × CC Daily Bonus tháng
-          </span>
-        </div>
-      ) : null}
+        }
+        variant="outlined"
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+        styles={{ body: { padding: 0 } }}
+        className="full-bleed-card shadow-sm rounded-xl"
+      >
+        {capSummary.cappedCount > 0 || capSummary.warningCount > 0 ? (
+          <div className="p-3 border-b border-amber-500/20 bg-amber-500/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <FireOutlined className="text-amber-500 text-sm" />
+              <span className="font-semibold text-amber-800 dark:text-amber-300">
+                ⚠️ Quản Lý Hạn Mức Vòng Xoay (Trần 1.5x CC Daily Bonus Tháng):
+              </span>
+              {capSummary.cappedCount > 0 && (
+                <Tag color="error" className="m-0 font-bold">
+                  ⛔ {capSummary.cappedCount} CC ĐẠT TRẦN ({capSummary.cappedNames.join(', ')})
+                </Tag>
+              )}
+              {capSummary.warningCount > 0 && (
+                <Tag color="warning" className="m-0 font-bold">
+                  ⚠️ {capSummary.warningCount} CC SẮP CHẠM TRẦN ({capSummary.warningNames.join(', ')})
+                </Tag>
+              )}
+            </div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+              *Thưởng Vòng xoay tối đa = 1.5 × CC Daily Bonus tháng
+            </span>
+          </div>
+        ) : null}
 
-      <Table
-        dataSource={filteredData}
-        columns={configuredColumns}
-        rowKey={(record) => `${record.serviceId}-${record.consultantId || ''}-${record.checkin}`}
-        loading={loading || configLoading}
-        size="small"
-        bordered
-        scroll={{ x: 2300 }}
-        pagination={{
-          defaultPageSize: 50,
-          pageSizeOptions: ['20', '50', '100', '200'],
-          showSizeChanger: true,
-          showTotal: (totalCount) => `Tổng cộng ${totalCount} bản ghi lượt dịch vụ`,
-        }}
-        className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
-        locale={{ emptyText: 'Không có dữ liệu CC Xoay trong khoảng thời gian này' }}
-      />
+        <Table
+          dataSource={filteredData}
+          columns={configuredColumns}
+          rowKey={(record) => `${record.serviceId}-${record.consultantId || ''}-${record.checkin}`}
+          loading={loading || configLoading}
+          size="small"
+          bordered
+          scroll={{ x: 2300 }}
+          pagination={{
+            defaultPageSize: 50,
+            pageSizeOptions: ['20', '50', '100', '200'],
+            showSizeChanger: true,
+            showTotal: (totalCount) => `Tổng cộng ${totalCount} bản ghi lượt dịch vụ`,
+          }}
+          className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
+          locale={{ emptyText: 'Không có dữ liệu CC Xoay trong khoảng thời gian này' }}
+        />
 
-      <TableConfigDrawer
-        visible={configVisible}
-        onClose={closeConfig}
-        title="Cấu hình cột Báo Cáo CC Xoay"
-        columns={rawConfig}
-        onSave={saveConfig}
-        onReset={resetConfig}
-      />
-    </Card>
+        <TableConfigDrawer
+          visible={configVisible}
+          onClose={closeConfig}
+          title="Cấu hình cột Báo Cáo CC Xoay"
+          columns={rawConfig}
+          onSave={saveConfig}
+          onReset={resetConfig}
+        />
+      </Card>
+    </div>
   );
 }
 

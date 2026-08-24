@@ -1,4 +1,5 @@
 import type { FalReadModel } from './fal.js';
+import type { ReportPeriodComparison } from './report-period.js';
 
 export interface CcXoayRecord {
   consultantId?: number;
@@ -73,6 +74,11 @@ export interface CcXoayReportResponse {
     totalCheckins: number;
     totalBonus: number;
     totalPoints: number;
+    comparison?: ReportPeriodComparison & {
+      totalCheckins: number;
+      totalBonus: number;
+      totalPoints: number;
+    };
   };
 }
 
@@ -82,6 +88,7 @@ export interface CcLeaderboardResponse {
 
 export interface CcQueryParams {
   viewMode?: 'month' | 'week' | 'day';
+  comparisonMode?: 'month' | 'week' | 'day';
   dateFrom?: string;
   dateTo?: string;
   storeId?: string;

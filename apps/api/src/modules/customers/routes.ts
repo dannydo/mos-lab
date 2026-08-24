@@ -17,6 +17,56 @@ import { LashBenchmarkService, parseLashSpecs } from '../catalog/services/lash-b
 import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-customer.service.js';
 import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
 import { CustomerAccessService } from './services/customer-access.service.js';
+import { CustomerServiceFilterCatalogService } from './services/customer-service-filter-catalog.service.js';
+
+const parseServiceFilterIds = (value: unknown): number[] => {
+  if (typeof value !== 'string') return [];
+  return Array.from(
+    new Set(
+      value
+        .split(',')
+        .map(Number)
+        .filter((id) => Number.isSafeInteger(id) && id > 0)
+    )
+  );
+};
+
+const buildCompletedServiceUsageJoin = (serviceIds: number[]): string => {
+  const servicePredicate = serviceIds.length > 0 ? ` AND os.service_id IN (${serviceIds.join(',')})` : '';
+  return ` LEFT JOIN (
+    SELECT os.user_id, COUNT(DISTINCT os.order_id) as completedServiceVisitCount
+    FROM order_service os
+    INNER JOIN \`order\` o ON o.id = os.order_id
+    WHERE o.order_state = 'Completed'${servicePredicate}
+    GROUP BY os.user_id
+  ) as service_usage ON u.id = service_usage.user_id`;
+};
+
+/**
+ * Keeps customer-list and customer-stats access scopes identical. Administrators
+ * and super administrators retain the selected scope (including the default
+ * all-customer scope); telesales remains restricted to their own assignments.
+ */
+const resolveEffectiveAssignedStaffId = (
+  user: { id: number; role?: string | null },
+  bucket: BucketType | 'ALL' | 'NEW_LOCA' | 'NOT_COMBO_LIVE' | undefined,
+  assignedStaffId: string | undefined
+): string | undefined => {
+  if (CustomerAccessService.isTelesales(user)) return 'me';
+
+  if (
+    !isAdminOrSuperAdminRole(user.role) &&
+    bucket !== 'NEW_LOCA' &&
+    bucket !== 'COMBO_LIVE' &&
+    assignedStaffId !== 'ALL' &&
+    assignedStaffId !== 'all' &&
+    assignedStaffId !== 'unassigned'
+  ) {
+    return 'me';
+  }
+
+  return assignedStaffId;
+};
 
 export async function customerRoutes(fastify: FastifyInstance) {
   // Start automated allocation expiration cronjob
@@ -64,6 +114,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       totalSpentMax,
       totalVisitsMin,
       totalVisitsMax,
+      serviceIds,
+      serviceVisitCountMin,
+      serviceVisitCountMax,
       promoUsed,
       promoCountMin,
       promoCountMax,
@@ -107,6 +160,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       totalSpentMax?: string;
       totalVisitsMin?: string;
       totalVisitsMax?: string;
+      serviceIds?: string;
+      serviceVisitCountMin?: string;
+      serviceVisitCountMax?: string;
       promoUsed?: 'yes' | 'no' | 'all';
       promoCountMin?: string;
       promoCountMax?: string;
@@ -147,21 +203,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const offsetNum = (pageNum - 1) * limitNum;
     const adminUser = request.user as { id: number; role: string };
 
-    // Preserve the existing non-admin scope; telesales never get the former
-    // campaign, ALL, or unassigned bypasses.
-    let effectiveAssignedStaffId = assignedStaffId;
-    if (CustomerAccessService.isTelesales(adminUser)) {
-      effectiveAssignedStaffId = 'me';
-    } else if (
-      adminUser.role !== 'admin' &&
-      bucket !== 'NEW_LOCA' &&
-      bucket !== 'COMBO_LIVE' &&
-      assignedStaffId !== 'ALL' &&
-      assignedStaffId !== 'all' &&
-      assignedStaffId !== 'unassigned'
-    ) {
-      effectiveAssignedStaffId = 'me';
-    }
+    const effectiveAssignedStaffId = resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
 
     try {
       const sortParam = (sortField || sort || 'id_desc') as string;
@@ -178,6 +220,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const needVisits =
         (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
         (totalVisitsMax !== undefined && totalVisitsMax !== '');
+
+      const selectedServiceIds = parseServiceFilterIds(serviceIds);
+      const needServiceUsage =
+        selectedServiceIds.length > 0 ||
+        (serviceVisitCountMin !== undefined && serviceVisitCountMin !== '') ||
+        (serviceVisitCountMax !== undefined && serviceVisitCountMax !== '');
 
       const needPromo =
         (promoUsed !== undefined && promoUsed !== 'all') ||
@@ -543,6 +591,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           GROUP BY user_id
         ) as order_counts ON u.id = order_counts.user_id`;
       }
+      if (needServiceUsage) {
+        innerJoins += buildCompletedServiceUsageJoin(selectedServiceIds);
+      }
       if (needPromo) {
         innerJoins += ` LEFT JOIN (
           SELECT user_id, COUNT(*) as totalPromotionsUsed
@@ -684,6 +735,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (totalVisitsMax !== undefined && totalVisitsMax !== '') {
         innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) <= ?');
         innerParams.push(parseInt(totalVisitsMax, 10));
+      }
+
+      if (selectedServiceIds.length > 0) {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= 1');
+      }
+      if (serviceVisitCountMin !== undefined && serviceVisitCountMin !== '') {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= ?');
+        innerParams.push(parseInt(serviceVisitCountMin, 10));
+      }
+      if (serviceVisitCountMax !== undefined && serviceVisitCountMax !== '') {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) <= ?');
+        innerParams.push(parseInt(serviceVisitCountMax, 10));
       }
 
       // 5. Promotions and Referrals Filters (using pre-aggregated joins)
@@ -1551,6 +1614,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       totalSpentMax,
       totalVisitsMin,
       totalVisitsMax,
+      serviceIds,
+      serviceVisitCountMin,
+      serviceVisitCountMax,
       promoUsed,
       promoCountMin,
       promoCountMax,
@@ -1590,6 +1656,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       totalSpentMax?: string;
       totalVisitsMin?: string;
       totalVisitsMax?: string;
+      serviceIds?: string;
+      serviceVisitCountMin?: string;
+      serviceVisitCountMax?: string;
       promoUsed?: 'yes' | 'no' | 'all';
       promoCountMin?: string;
       promoCountMax?: string;
@@ -1629,20 +1698,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return cachedStats;
     }
 
-    // Keep stats aligned with the list while removing telesales bypasses.
-    let effectiveAssignedStaffId = assignedStaffId;
-    if (CustomerAccessService.isTelesales(adminUser)) {
-      effectiveAssignedStaffId = 'me';
-    } else if (
-      adminUser.role !== 'admin' &&
-      bucket !== 'NEW_LOCA' &&
-      bucket !== 'COMBO_LIVE' &&
-      assignedStaffId !== 'ALL' &&
-      assignedStaffId !== 'all' &&
-      assignedStaffId !== 'unassigned'
-    ) {
-      effectiveAssignedStaffId = 'me';
-    }
+    const effectiveAssignedStaffId = resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
 
     try {
       // Determine what joins and select fields we need in the inner query to optimize performance
@@ -1652,6 +1708,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const needVisits =
         (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
         (totalVisitsMax !== undefined && totalVisitsMax !== '');
+
+      const selectedServiceIds = parseServiceFilterIds(serviceIds);
+      const needServiceUsage =
+        selectedServiceIds.length > 0 ||
+        (serviceVisitCountMin !== undefined && serviceVisitCountMin !== '') ||
+        (serviceVisitCountMax !== undefined && serviceVisitCountMax !== '');
 
       const needPromo =
         (promoUsed !== undefined && promoUsed !== 'all') ||
@@ -1691,6 +1753,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           WHERE order_state = 'Completed'
           GROUP BY user_id
         ) as order_counts ON u.id = order_counts.user_id`;
+      }
+      if (needServiceUsage) {
+        statsInnerJoins += buildCompletedServiceUsageJoin(selectedServiceIds);
       }
       if (needPromo) {
         statsInnerJoins += ` LEFT JOIN (
@@ -1911,6 +1976,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (totalVisitsMax !== undefined && totalVisitsMax !== '') {
         innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) <= ?');
         innerParams.push(parseInt(totalVisitsMax, 10));
+      }
+
+      if (selectedServiceIds.length > 0) {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= 1');
+      }
+      if (serviceVisitCountMin !== undefined && serviceVisitCountMin !== '') {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= ?');
+        innerParams.push(parseInt(serviceVisitCountMin, 10));
+      }
+      if (serviceVisitCountMax !== undefined && serviceVisitCountMax !== '') {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) <= ?');
+        innerParams.push(parseInt(serviceVisitCountMax, 10));
       }
 
       // 5. Promotions and Referrals Filters (using pre-aggregated joins)
@@ -2660,6 +2737,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       totalSpentMax,
       totalVisitsMin,
       totalVisitsMax,
+      serviceIds,
+      serviceVisitCountMin,
+      serviceVisitCountMax,
       promoUsed,
       promoCountMin,
       promoCountMax,
@@ -2685,6 +2765,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const needVisits =
         (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
         (totalVisitsMax !== undefined && totalVisitsMax !== '');
+      const selectedServiceIds = parseServiceFilterIds(serviceIds);
+      const needServiceUsage =
+        selectedServiceIds.length > 0 ||
+        (serviceVisitCountMin !== undefined && serviceVisitCountMin !== '') ||
+        (serviceVisitCountMax !== undefined && serviceVisitCountMax !== '');
       const needPromo =
         (promoUsed !== undefined && promoUsed !== 'all') ||
         (promoCountMin !== undefined && promoCountMin !== '') ||
@@ -2721,6 +2806,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
           WHERE order_state = 'Completed'
           GROUP BY user_id
         ) as order_counts ON u.id = order_counts.user_id`;
+      }
+      if (needServiceUsage) {
+        innerJoins += buildCompletedServiceUsageJoin(selectedServiceIds);
       }
       if (needPromo) {
         innerJoins += ` LEFT JOIN (
@@ -2914,6 +3002,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
       if (totalVisitsMax !== undefined && totalVisitsMax !== '') {
         innerWhereClauses.push('COALESCE(order_counts.totalVisits, 0) <= ?');
         innerParams.push(parseInt(totalVisitsMax, 10));
+      }
+      if (selectedServiceIds.length > 0) {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= 1');
+      }
+      if (serviceVisitCountMin !== undefined && serviceVisitCountMin !== '') {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) >= ?');
+        innerParams.push(parseInt(serviceVisitCountMin, 10));
+      }
+      if (serviceVisitCountMax !== undefined && serviceVisitCountMax !== '') {
+        innerWhereClauses.push('COALESCE(service_usage.completedServiceVisitCount, 0) <= ?');
+        innerParams.push(parseInt(serviceVisitCountMax, 10));
       }
       if (promoUsed === 'yes') {
         innerWhereClauses.push('COALESCE(promo_counts.totalPromotionsUsed, 0) >= 1');
@@ -3135,6 +3234,20 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply
         .status(500)
         .send({ error: 'Internal Server Error', message: 'Không thể tải danh sách dịch vụ từ hệ thống.' });
+    }
+  });
+
+  // GET /api/customers/service-filter-options
+  // Resolve active catalog services and their lash families to their real service IDs.
+  fastify.get('/customers/service-filter-options', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      return CustomerServiceFilterCatalogService.getOptions(fastify);
+    } catch (error: SafeAny) {
+      request.log.error(error as Error, 'Get customer service filter options error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Không thể tải danh sách dịch vụ để lọc khách hàng.',
+      });
     }
   });
 

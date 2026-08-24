@@ -20,11 +20,18 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { BkBookingLeaderboardEntry, BkBookingRecord, removeVietnameseTones } from '@mos-lab/shared';
+import {
+  BkBookingLeaderboardEntry,
+  BkBookingRecord,
+  removeVietnameseTones,
+  type ReportComparisonMode,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
 import BkLeaderboardCard from './BkLeaderboardCard';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../../components/CustomerDetailDrawer'), { ssr: false });
 
@@ -44,11 +51,13 @@ interface BkBookingTabProps {
   dateRange: [SafeAny, SafeAny];
   selectedStore: string;
   selectedBooker: string;
+  comparisonMode: ReportComparisonMode;
 }
 
-export default function BkBookingTab({ dateRange, selectedStore, selectedBooker }: BkBookingTabProps) {
+export default function BkBookingTab({ dateRange, selectedStore, selectedBooker, comparisonMode }: BkBookingTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
+  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -64,6 +73,13 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
     totalCalls: 0,
     totalPickups: 0,
   });
+  const [previousSummary, setPreviousSummary] = useState<{
+    totalBookings: number;
+    doneBookings: number;
+    conversionRate: number;
+    totalCalls: number;
+    totalPickups: number;
+  } | null>(null);
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
   const [selectedBookerName, setSelectedBookerName] = useState<string | null>(null);
@@ -74,15 +90,21 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.bk.getBookingLeaderboard({
-        dateFrom: dateRange[0].format('YYYY-MM-DD'),
-        dateTo: dateRange[1].format('YYYY-MM-DD'),
-        storeId: selectedStore,
-      });
+      const [res, previousRes] = await Promise.all([
+        apiClient.bk.getBookingLeaderboard({
+          dateFrom: dateRange[0].format('YYYY-MM-DD'),
+          dateTo: dateRange[1].format('YYYY-MM-DD'),
+          storeId: selectedStore,
+        }),
+        previousPeriod
+          ? apiClient.bk.getBookingLeaderboard({ ...previousPeriod.params, storeId: selectedStore })
+          : Promise.resolve(null),
+      ]);
       setLeaderboard(res.leaderboard || []);
       setSummary(
         res.summary || { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 }
       );
+      setPreviousSummary(previousRes?.summary || null);
     } catch (err) {
       console.error('Error loading BK booking leaderboard', err);
     } finally {
@@ -113,7 +135,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [dateRange, selectedStore]);
+  }, [dateRange, previousPeriod, selectedStore]);
 
   useEffect(() => {
     fetchDetails();
@@ -447,6 +469,12 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
               valueStyle={{ color: '#8b5cf6', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<PhoneOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalCalls}
+              previousValue={previousSummary?.totalCalls || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} cuộc`}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6} xl={4}>
@@ -459,6 +487,12 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
               value={summary.totalPickups}
               valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CheckCircleOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalPickups}
+              previousValue={previousSummary?.totalPickups || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} pickup`}
             />
           </Card>
         </Col>
@@ -473,6 +507,12 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
               valueStyle={{ color: '#2563eb', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CalendarOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalBookings}
+              previousValue={previousSummary?.totalBookings || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6} xl={4}>
@@ -485,6 +525,12 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
               value={summary.doneBookings}
               valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CheckCircleOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.doneBookings}
+              previousValue={previousSummary?.doneBookings || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
             />
           </Card>
         </Col>
@@ -499,6 +545,12 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker 
               suffix="%"
               valueStyle={{ color: '#f59e0b', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<TrophyOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.conversionRate}
+              previousValue={previousSummary?.conversionRate || 0}
+              formatter={(value) => `${value.toFixed(1)}%`}
             />
           </Card>
         </Col>

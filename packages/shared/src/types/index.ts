@@ -20,6 +20,7 @@ export * from './menu-access.js';
 export * from './omicall.js';
 export * from './plan.js';
 export * from './revenue-hourly.js';
+export * from './report-period.js';
 export * from './sms.js';
 export * from './social-posts.js';
 export * from './table-config.js';

@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { SafeAny } from '@mos-lab/shared';
+import { ReportComparisonMode, SafeAny } from '@mos-lab/shared';
+import { getPreviousReportPeriod } from '../services/report-period-comparison.js';
 
 /**
  * Công thức Thưởng Kim Cương lũy tiến (VND):
@@ -24,9 +25,14 @@ export function calculateDiamondBonus(referralCount: number): number {
   return bonus;
 }
 
-export async function fetchDiamondData(fastify: FastifyInstance, dateFromDay: string, dateToDay: string) {
+export async function fetchDiamondData(
+  fastify: FastifyInstance,
+  dateFromDay: string,
+  dateToDay: string,
+  endAt?: string
+) {
   const dateFromDt = `${dateFromDay} 00:00:00`;
-  const dateToDt = `${dateToDay} 23:59:59`;
+  const dateToDt = endAt || `${dateToDay} 23:59:59`;
 
   // Fetch ACTIVE_CC_STAFF_CONFIG if present
   let activeCcIds: number[] | null = null;
@@ -123,12 +129,13 @@ export async function fetchDiamondData(fastify: FastifyInstance, dateFromDay: st
 export async function registerExportRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/export-diamond (CSV Export for Google Sheets & JSON for Next.js Web App)
   fastify.get('/kpi/export-diamond', async (request, reply) => {
-    const { key, month, date_from, date_to, format } = request.query as {
+    const { key, month, date_from, date_to, format, comparisonMode } = request.query as {
       key?: string;
       month?: string;
       date_from?: string;
       date_to?: string;
       format?: string;
+      comparisonMode?: ReportComparisonMode;
     };
 
     // Verify key when provided or external integration
@@ -156,7 +163,18 @@ export async function registerExportRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      const result = await fetchDiamondData(fastify, dateFromDay, dateToDay);
+      const comparisonWindow = comparisonMode ? getPreviousReportPeriod(dateFromDay, dateToDay, comparisonMode) : null;
+      const [result, comparisonResult] = await Promise.all([
+        fetchDiamondData(fastify, dateFromDay, dateToDay),
+        comparisonWindow
+          ? fetchDiamondData(fastify, comparisonWindow.dateFrom, comparisonWindow.dateTo, comparisonWindow.endAt).catch(
+              (error: unknown) => {
+                fastify.log.warn(error, 'Unable to load Kim Cương comparison period');
+                return null;
+              }
+            )
+          : null,
+      ]);
 
       // Return CSV if format=csv or key is provided or Accept is text/csv
       if (format === 'csv' || request.headers.accept?.includes('text/csv') || (key && format !== 'json')) {
@@ -178,6 +196,16 @@ export async function registerExportRoutes(fastify: FastifyInstance) {
         dateTo: dateToDay,
         month: month || dateFromDay.substring(0, 7),
         ...result,
+        comparison:
+          comparisonResult && comparisonWindow && comparisonMode
+            ? {
+                mode: comparisonMode,
+                dateFrom: comparisonWindow.dateFrom,
+                dateTo: comparisonWindow.dateTo,
+                totalReferralGuests: comparisonResult.totalReferralGuests,
+                totalDiamondBonus: comparisonResult.totalDiamondBonus,
+              }
+            : undefined,
       };
     } catch (err) {
       fastify.log.error(err as Error, 'Export diamond error');

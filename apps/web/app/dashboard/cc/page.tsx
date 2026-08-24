@@ -17,7 +17,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
-import { CcLeaderboardEntry, CcXoayRecord } from '@mos-lab/shared';
+import { CcLeaderboardEntry, CcXoayRecord, CcXoayReportResponse } from '@mos-lab/shared';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 import CcLeaderboardCard from './components/CcLeaderboardCard';
@@ -158,6 +158,7 @@ export default function CcDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [xoayData, setXoayData] = useState<CcXoayRecord[]>([]);
   const [xoayTotal, setXoayTotal] = useState(0);
+  const [xoaySummary, setXoaySummary] = useState<CcXoayReportResponse['summary']>();
   const [leaderboardData, setLeaderboardData] = useState<CcLeaderboardEntry[]>([]);
   const inFlightCcReportKeysRef = useRef(new Set<string>());
   const latestCcReportKeyRef = useRef<string | null>(null);
@@ -256,6 +257,7 @@ export default function CcDashboardPage() {
       if (xoayRes && xoayRes.data) {
         setXoayData(xoayRes.data);
         setXoayTotal(xoayRes.total);
+        setXoaySummary(xoayRes.summary);
       }
 
       if (lbRes && lbRes.leaderboard) {
@@ -313,6 +315,7 @@ export default function CcDashboardPage() {
             selectedStore={selectedStore}
             selectedConsultant={selectedConsultant}
             includeVat={includeVat}
+            comparisonMode={viewMode}
             refreshKey={ccBonusConfigVersion}
             onSelectConsultant={(ccName) => {
               setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
@@ -334,7 +337,13 @@ export default function CcDashboardPage() {
                 setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
               }}
             />
-            <CcXoayTab data={xoayData} total={xoayTotal} loading={loading} onRefresh={fetchCcData} />
+            <CcXoayTab
+              data={xoayData}
+              total={xoayTotal}
+              summary={xoaySummary}
+              loading={loading}
+              onRefresh={fetchCcData}
+            />
           </div>
         ) : null,
     },
@@ -348,6 +357,7 @@ export default function CcDashboardPage() {
             dateRange={dateRange}
             selectedStore={selectedStore}
             selectedConsultant={selectedConsultant}
+            comparisonMode={viewMode}
             onSelectConsultant={(ccName) => {
               setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
             }}
@@ -363,6 +373,7 @@ export default function CcDashboardPage() {
             dateRange={dateRange}
             selectedStore={selectedStore}
             selectedConsultant={selectedConsultant}
+            comparisonMode={viewMode}
             onClearConsultant={() => setSelectedConsultant('ALL')}
           />
         ) : null,
@@ -375,7 +386,10 @@ export default function CcDashboardPage() {
     {
       key: 'thunhap',
       label: <CcTabLabel icon={<AccountBookOutlined />}>Thu Nhập</CcTabLabel>,
-      children: activeTab === 'thunhap' ? <CcThuNhapTab dateRange={dateRange} selectedStore={selectedStore} /> : null,
+      children:
+        activeTab === 'thunhap' ? (
+          <CcThuNhapTab dateRange={dateRange} selectedStore={selectedStore} comparisonMode={viewMode} />
+        ) : null,
     },
   ];
 

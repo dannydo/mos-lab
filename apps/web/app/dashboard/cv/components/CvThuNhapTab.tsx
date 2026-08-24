@@ -38,7 +38,12 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { CvPaystubRecord, CvWorkLogDetailRecord, removeVietnameseTones } from '@mos-lab/shared';
+import {
+  CvPaystubRecord,
+  CvWorkLogDetailRecord,
+  removeVietnameseTones,
+  type ReportComparisonMode,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import dayjs from 'dayjs';
@@ -46,6 +51,8 @@ import CcAvatar from '../../cc/components/CcAvatar';
 import { MobileRecordList } from '~/components/ui';
 import { formatCompactVND, formatVND } from '../../../../lib/format-utils';
 import { useResponsiveTier, useViewportSize } from '~/hooks/useResponsiveTier';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 const { Text } = Typography;
 
@@ -72,9 +79,10 @@ interface CvThuNhapTabProps {
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
   selectedStore?: string;
   currentUser?: Record<string, unknown> | null;
+  comparisonMode: ReportComparisonMode;
 }
 
-export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: CvThuNhapTabProps) {
+export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, comparisonMode }: CvThuNhapTabProps) {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const tier = useResponsiveTier();
@@ -86,6 +94,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
   const isMobile = tier === 'mobile' && !isTabletDensityLandscape;
   const useCompactMetricFormat = tier === 'mobile' || tier === 'tablet';
   const formatMetricValue = (value: number) => (useCompactMetricFormat ? formatCompactVND(value) : formatVND(value));
+  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
   const [loading, setLoading] = useState(false);
   const [paystubData, setPaystubData] = useState<CvPaystubRecord[]>([]);
   const [summary, setSummary] = useState({
@@ -95,6 +104,13 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
     totalSeniorityBonus: 0,
     grandTotalIncome: 0,
   });
+  const [previousSummary, setPreviousSummary] = useState<{
+    totalHourlyWage: number;
+    totalCvXoayBonus: number;
+    totalCvTipBonus: number;
+    totalSeniorityBonus: number;
+    grandTotalIncome: number;
+  } | null>(null);
 
   const [searchText, setSearchText] = useState('');
   const [pageSize, setPageSize] = useState<number>(20);
@@ -230,11 +246,12 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
       const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD');
       const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD');
 
-      const res = await apiClient.kpi.getCvPaystub({
-        dateFrom,
-        dateTo,
-        storeId: selectedStore,
-      });
+      const [res, previousRes] = await Promise.all([
+        apiClient.kpi.getCvPaystub({ dateFrom, dateTo, storeId: selectedStore }),
+        previousPeriod
+          ? apiClient.kpi.getCvPaystub({ ...previousPeriod.params, storeId: selectedStore })
+          : Promise.resolve(null),
+      ]);
 
       if (res) {
         setPaystubData(res.data || []);
@@ -245,13 +262,24 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
           totalSeniorityBonus: res.summary?.totalSeniorityBonus || 0,
           grandTotalIncome: res.summary?.grandTotalIncome || 0,
         });
+        setPreviousSummary(
+          previousRes
+            ? {
+                totalHourlyWage: previousRes.summary?.totalHourlyWage || 0,
+                totalCvXoayBonus: previousRes.summary?.totalCvXoayBonus || 0,
+                totalCvTipBonus: previousRes.summary?.totalCvTipBonus || 0,
+                totalSeniorityBonus: previousRes.summary?.totalSeniorityBonus || 0,
+                grandTotalIncome: previousRes.summary?.grandTotalIncome || 0,
+              }
+            : null
+        );
       }
     } catch (err) {
       console.error('Error fetching CV Paystub data:', err);
     } finally {
       setLoading(false);
     }
-  }, [dateRange, selectedStore]);
+  }, [dateRange, previousPeriod, selectedStore]);
 
   const fetchSeniorityConfig = async () => {
     setConfigLoading(true);
@@ -655,6 +683,13 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
               valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<ClockCircleOutlined />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalHourlyWage}
+              previousValue={previousSummary?.totalHourlyWage || 0}
+              formatter={formatMetricValue}
+              compact={useCompactMetricFormat}
+            />
           </Card>
         </Col>
 
@@ -670,6 +705,13 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
               formatter={(value) => formatMetricValue(Number(value || 0))}
               valueStyle={{ color: '#3f8600', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<ThunderboltOutlined />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalCvXoayBonus}
+              previousValue={previousSummary?.totalCvXoayBonus || 0}
+              formatter={formatMetricValue}
+              compact={useCompactMetricFormat}
             />
           </Card>
         </Col>
@@ -687,6 +729,13 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
               valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<GiftOutlined />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalSeniorityBonus}
+              previousValue={previousSummary?.totalSeniorityBonus || 0}
+              formatter={formatMetricValue}
+              compact={useCompactMetricFormat}
+            />
           </Card>
         </Col>
 
@@ -703,6 +752,13 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
               valueStyle={{ color: '#722ed1', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<GiftOutlined />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalCvTipBonus}
+              previousValue={previousSummary?.totalCvTipBonus || 0}
+              formatter={formatMetricValue}
+              compact={useCompactMetricFormat}
+            />
           </Card>
         </Col>
 
@@ -718,6 +774,13 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser }: 
               formatter={(value) => formatMetricValue(Number(value || 0))}
               valueStyle={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<WalletOutlined />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.grandTotalIncome}
+              previousValue={previousSummary?.grandTotalIncome || 0}
+              formatter={formatMetricValue}
+              compact={useCompactMetricFormat}
             />
           </Card>
         </Col>

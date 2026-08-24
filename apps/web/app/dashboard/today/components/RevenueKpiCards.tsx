@@ -1,11 +1,14 @@
 import React from 'react';
 import { Row, Col, Card, Progress, Skeleton } from 'antd';
-import type { RevenueHourlySummary } from '@mos-lab/shared';
+import type { ReportPeriodComparison, RevenueHourlySummary } from '@mos-lab/shared';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 interface RevenueKpiCardsProps {
   themeMode: 'light' | 'dark';
   token: any;
   summary: RevenueHourlySummary | null;
+  previousSummary?: RevenueHourlySummary | null;
+  comparison?: ReportPeriodComparison | null;
   loading?: boolean;
   onCardClick?: (type: 'revenue' | 'aov' | 'forecast' | 'combo') => void;
 }
@@ -16,6 +19,8 @@ export const RevenueKpiCards: React.FC<RevenueKpiCardsProps> = ({
   themeMode,
   token,
   summary,
+  previousSummary,
+  comparison,
   loading,
   onCardClick,
 }) => {
@@ -70,6 +75,8 @@ export const RevenueKpiCards: React.FC<RevenueKpiCardsProps> = ({
       value: formatVnd(totalRevenue),
       bg: isDark ? '#062016' : '#ecfdf5',
       border: isDark ? '#14532d' : '#a7f3d0',
+      comparisonValue: totalRevenue,
+      previousComparisonValue: previousSummary?.totalRevenue || 0,
       content: (
         <div style={{ marginTop: 10 }}>
           <Progress percent={revenuePercent} size="small" strokeColor="#10b981" />
@@ -125,6 +132,8 @@ export const RevenueKpiCards: React.FC<RevenueKpiCardsProps> = ({
       value: formatVnd(aov),
       bg: isDark ? '#0c1a2a' : '#ecfeff',
       border: isDark ? '#164e63' : '#a5f3fc',
+      comparisonValue: aov,
+      previousComparisonValue: previousSummary?.aov || 0,
       content: (
         <div style={{ marginTop: 10 }}>
           <div style={{ fontSize: '12px', color: token.colorTextSecondary, marginBottom: 8 }}>
@@ -161,6 +170,8 @@ export const RevenueKpiCards: React.FC<RevenueKpiCardsProps> = ({
       value: isClosed ? formatVnd(projectedRevenue) : `~${formatVnd(projectedRevenue)}`,
       bg: isDark ? (isClosed ? '#181e29' : '#1a0f2e') : isClosed ? '#f8fafc' : '#faf5ff',
       border: isDark ? (isClosed ? '#334155' : '#581c87') : isClosed ? '#e2e8f0' : '#d8b4fe',
+      comparisonValue: projectedRevenue,
+      previousComparisonValue: previousSummary?.projectedRevenue || 0,
       content: (
         <div style={{ marginTop: 10 }}>
           <div style={{ fontSize: '12px', color: token.colorTextSecondary, marginBottom: 8 }}>{forecastSubtext}</div>
@@ -212,6 +223,14 @@ export const RevenueKpiCards: React.FC<RevenueKpiCardsProps> = ({
             <div>
               <div style={{ color: card.color, fontWeight: 'bold', marginBottom: 8 }}>{card.title}</div>
               <div style={{ fontSize: '24px', fontWeight: 600, color: token.colorText }}>{card.value}</div>
+              <PeriodComparison
+                comparison={comparison}
+                currentValue={card.comparisonValue}
+                previousValue={card.previousComparisonValue}
+                formatter={formatVnd}
+                compact
+                className="mt-1.5 border-0 pt-0"
+              />
             </div>
             {card.content}
           </div>

@@ -111,12 +111,17 @@ export async function registerCcRoutes(fastify: FastifyInstance) {
       dateTo?: string;
       storeId?: string;
       consultantId?: string;
+      viewMode?: 'month' | 'week' | 'day';
       page?: number;
       limit?: number;
     };
 
     try {
-      const result = await CcKpiService.getCcXoayReport(fastify, query);
+      const result = await CcKpiService.getCcXoayReport(fastify, {
+        ...query,
+        comparisonMode: query.viewMode,
+        includeComparison: Boolean(query.viewMode),
+      });
       return reply.send(result);
     } catch (err) {
       fastify.log.error(err as Error, 'Error fetching CC Xoay report');

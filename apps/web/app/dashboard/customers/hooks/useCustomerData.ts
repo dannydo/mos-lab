@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
@@ -12,6 +12,7 @@ import { useCustomerAssignment } from './useCustomerAssignment';
 import { useAssignmentHistory } from './useAssignmentHistory';
 import { useRandomSelector } from './useRandomSelector';
 import { useCustomerList } from './useCustomerList';
+import { useCustomerServiceFilterOptions } from './useCustomerServiceFilterOptions';
 
 export interface UseCustomerDataOptions {
   onSuccess?: (msg: string) => void;
@@ -107,7 +108,32 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     setActiveRandomIds(null);
   });
 
-  const { filterParams } = filtersHook;
+  const { filterParams: rawFilterParams } = filtersHook;
+  const { serviceFilterOptions, serviceFilterCategories, serviceFilterOptionsLoading } =
+    useCustomerServiceFilterOptions();
+
+  // A saved category is a UI key. Resolve it to the exact active catalog IDs
+  // before every list/stats/random request so the backend never guesses from a name.
+  const filterParams = useMemo(() => {
+    const directServiceIds = String(rawFilterParams.serviceIds || '')
+      .split(',')
+      .map(Number)
+      .filter((id) => Number.isInteger(id) && id > 0);
+    const selectedCategoryKeys = String(rawFilterParams.serviceCategories || '')
+      .split(',')
+      .map((key) => key.trim())
+      .filter(Boolean);
+    const categoryServiceIds = serviceFilterCategories
+      .filter((category) => selectedCategoryKeys.includes(category.key))
+      .flatMap((category) => category.serviceIds);
+    const serviceIds = Array.from(new Set([...directServiceIds, ...categoryServiceIds]));
+    const { serviceCategories: _serviceCategories, ...requestParams } = rawFilterParams;
+
+    return {
+      ...requestParams,
+      serviceIds: serviceIds.length > 0 ? serviceIds.join(',') : undefined,
+    };
+  }, [rawFilterParams, serviceFilterCategories]);
 
   // Customer List hook
   const listHook = useCustomerList(filterParams, activeRandomIds, optionsRef);
@@ -233,6 +259,10 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     filterParams.totalSpentMax !== undefined ||
     filterParams.totalVisitsMin !== undefined ||
     filterParams.totalVisitsMax !== undefined ||
+    filterParams.serviceIds !== undefined ||
+    filtersHook.serviceCategories.length > 0 ||
+    filterParams.serviceVisitCountMin !== undefined ||
+    filterParams.serviceVisitCountMax !== undefined ||
     filterParams.promoUsed !== 'all' ||
     filterParams.promoCountMin !== undefined ||
     filterParams.promoCountMax !== undefined ||
@@ -275,6 +305,13 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     totalSpentMax: filtersHook.totalSpentMax,
     totalVisitsMin: filtersHook.totalVisitsMin,
     totalVisitsMax: filtersHook.totalVisitsMax,
+    serviceIds: filtersHook.serviceIds,
+    serviceCategories: filtersHook.serviceCategories,
+    serviceVisitCountMin: filtersHook.serviceVisitCountMin,
+    serviceVisitCountMax: filtersHook.serviceVisitCountMax,
+    serviceFilterOptions,
+    serviceFilterCategories,
+    serviceFilterOptionsLoading,
     promoUsed: filtersHook.promoUsed,
     promoCountMin: filtersHook.promoCountMin,
     promoCountMax: filtersHook.promoCountMax,
@@ -349,6 +386,10 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     setTotalSpentMax: filtersHook.setTotalSpentMax,
     setTotalVisitsMin: filtersHook.setTotalVisitsMin,
     setTotalVisitsMax: filtersHook.setTotalVisitsMax,
+    setServiceIds: filtersHook.setServiceIds,
+    setServiceCategories: filtersHook.setServiceCategories,
+    setServiceVisitCountMin: filtersHook.setServiceVisitCountMin,
+    setServiceVisitCountMax: filtersHook.setServiceVisitCountMax,
     setPromoUsed: filtersHook.setPromoUsed,
     setPromoCountMin: filtersHook.setPromoCountMin,
     setPromoCountMax: filtersHook.setPromoCountMax,

@@ -16,11 +16,18 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
-import { BkRevenueLeaderboardEntry, BkRevenueRecord, removeVietnameseTones } from '@mos-lab/shared';
+import {
+  BkRevenueLeaderboardEntry,
+  BkRevenueRecord,
+  removeVietnameseTones,
+  type ReportComparisonMode,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
 import BkLeaderboardCard from './BkLeaderboardCard';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 const { Text } = Typography;
 
@@ -38,11 +45,13 @@ interface BkRevenueTabProps {
   dateRange: [any, any];
   selectedStore: string;
   selectedBooker: string;
+  comparisonMode: ReportComparisonMode;
 }
 
-export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker }: BkRevenueTabProps) {
+export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker, comparisonMode }: BkRevenueTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
+  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -53,6 +62,11 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
     totalRevenue: 0,
     totalCommissionBonus: 0,
   });
+  const [previousSummary, setPreviousSummary] = useState<{
+    completedOrdersCount: number;
+    totalRevenue: number;
+    totalCommissionBonus: number;
+  } | null>(null);
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
   const [selectedBookerName, setSelectedBookerName] = useState<string | null>(null);
@@ -67,13 +81,19 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.bk.getRevenueLeaderboard({
-        dateFrom: dateRange[0].format('YYYY-MM-DD'),
-        dateTo: dateRange[1].format('YYYY-MM-DD'),
-        storeId: selectedStore,
-      });
+      const [res, previousRes] = await Promise.all([
+        apiClient.bk.getRevenueLeaderboard({
+          dateFrom: dateRange[0].format('YYYY-MM-DD'),
+          dateTo: dateRange[1].format('YYYY-MM-DD'),
+          storeId: selectedStore,
+        }),
+        previousPeriod
+          ? apiClient.bk.getRevenueLeaderboard({ ...previousPeriod.params, storeId: selectedStore })
+          : Promise.resolve(null),
+      ]);
       setLeaderboard(res.leaderboard || []);
       setSummary(res.summary || { completedOrdersCount: 0, totalRevenue: 0, totalCommissionBonus: 0 });
+      setPreviousSummary(previousRes?.summary || null);
     } catch (err) {
       console.error('Error loading BK revenue leaderboard', err);
     } finally {
@@ -104,7 +124,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [dateRange, selectedStore]);
+  }, [dateRange, previousPeriod, selectedStore]);
 
   useEffect(() => {
     fetchDetails();
@@ -345,6 +365,12 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
               valueStyle={{ color: '#2563eb', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<ShoppingCartOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.completedOrdersCount}
+              previousValue={previousSummary?.completedOrdersCount || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} đơn`}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
@@ -359,6 +385,12 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
               valueStyle={{ color: '#4f46e5', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<DollarOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalRevenue}
+              previousValue={previousSummary?.totalRevenue || 0}
+              formatter={formatCurrency}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
@@ -372,6 +404,12 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker 
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#9333ea', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<TrophyOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalCommissionBonus}
+              previousValue={previousSummary?.totalCommissionBonus || 0}
+              formatter={formatCurrency}
             />
           </Card>
         </Col>

@@ -1,11 +1,19 @@
 import { FastifyInstance } from 'fastify';
-import { SafeAny, CC_GAMIFICATION_SYSTEM_CONFIG, calculateWheelBonusCap } from '@mos-lab/shared';
+import {
+  CcXoayReportResponse,
+  DailySalesBonusConsultantResponse,
+  ReportComparisonMode,
+  SafeAny,
+  CC_GAMIFICATION_SYSTEM_CONFIG,
+  calculateWheelBonusCap,
+} from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import {
   buildComboBalanceExistsSql,
   buildComboLiveAtBookingSql,
 } from '../../customers/services/combo-recognition.service.js';
 import { getFalReadModelMap } from '../../fal/fal.service.js';
+import { getPreviousReportPeriod } from './report-period-comparison.js';
 
 export interface CcKpiFilters {
   dateFrom?: string;
@@ -14,6 +22,10 @@ export interface CcKpiFilters {
   consultantId?: string | number;
   page?: number;
   limit?: number;
+  /** Internal report options used by Daily Bonus to build an aligned comparison. */
+  comparisonMode?: ReportComparisonMode;
+  includeComparison?: boolean;
+  endAt?: string;
 }
 
 export const FAL_RULE_VALUES = ['Fix', 'Adjust', 'Log', 'Replace'] as const;
@@ -453,10 +465,34 @@ export class CcKpiService {
   /**
    * 1. GET CC Xoay Report Data
    */
-  public static async getCcXoayReport(fastify: FastifyInstance, filters: CcKpiFilters) {
-    const { dateFrom, dateTo, storeId, consultantId, page = 1, limit = 100 } = filters;
+  public static async getCcXoayReport(fastify: FastifyInstance, filters: CcKpiFilters): Promise<CcXoayReportResponse> {
+    const {
+      dateFrom,
+      dateTo,
+      storeId,
+      consultantId,
+      page = 1,
+      limit = 100,
+      comparisonMode,
+      includeComparison = false,
+      endAt,
+    } = filters;
     const { startStr, endStr } = parseDateRange(dateFrom, dateTo);
+    const comparisonWindow =
+      includeComparison && comparisonMode ? getPreviousReportPeriod(startStr, endStr, comparisonMode) : null;
+    const comparisonPromise: Promise<CcXoayReportResponse> | null = comparisonWindow
+      ? this.getCcXoayReport(fastify, {
+          dateFrom: comparisonWindow.dateFrom,
+          dateTo: comparisonWindow.dateTo,
+          storeId,
+          consultantId,
+          page: 1,
+          limit: 1,
+          endAt: comparisonWindow.endAt,
+        })
+      : null;
     const monthStartStr = `${startStr.substring(0, 7)}-01`;
+    const queryEndAt = endAt || `${endStr} 23:59:59`;
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
 
     let activeCcFilter = '';
@@ -536,6 +572,7 @@ export class CcKpiService {
       LEFT JOIN user_profile checkin_p ON os.check_in_staff_id = checkin_p.user_id
       LEFT JOIN user_profile checkout_p ON os.check_out_staff_id = checkout_p.user_id
       WHERE ro.date BETWEEN '${monthStartStr}' AND '${endStr}' 
+        AND ro.actual_booking_date_start <= '${queryEndAt}'
         AND o.order_state = 'Completed'
         ${activeCcFilter}
         ${consultantFilter}
@@ -544,10 +581,26 @@ export class CcKpiService {
     `);
 
     if (!rows || rows.length === 0) {
+      const comparisonResult = comparisonPromise ? await comparisonPromise.catch(() => null) : null;
       return {
         data: [],
         total: 0,
-        summary: { totalCheckins: 0, totalBonus: 0, totalPoints: 0 },
+        summary: {
+          totalCheckins: 0,
+          totalBonus: 0,
+          totalPoints: 0,
+          comparison:
+            comparisonResult?.summary && comparisonWindow && comparisonMode
+              ? {
+                  mode: comparisonMode,
+                  dateFrom: comparisonWindow.dateFrom,
+                  dateTo: comparisonWindow.dateTo,
+                  totalCheckins: comparisonResult.summary.totalCheckins,
+                  totalBonus: comparisonResult.summary.totalBonus,
+                  totalPoints: comparisonResult.summary.totalPoints,
+                }
+              : undefined,
+        },
       };
     }
 
@@ -617,6 +670,7 @@ export class CcKpiService {
       JOIN \`order\` o ON os.order_id = o.id
       JOIN report_order ro ON o.id = ro.order_id
       WHERE ro.date BETWEEN '${monthStartStr}' AND '${endStr}'
+        AND ro.actual_booking_date_start <= '${queryEndAt}'
         AND o.order_state = 'Completed'
         ${activeCcFilter}
         ${storeFilter}
@@ -785,6 +839,12 @@ export class CcKpiService {
     const paginatedRecords = filteredRecords.slice((page - 1) * limit, page * limit);
     const totalBonus = filteredRecords.reduce((sum, r) => sum + r.consultantBonus, 0);
     const totalPoints = filteredRecords.reduce((sum, r) => sum + r.consultantPoints, 0);
+    const comparisonResult = comparisonPromise
+      ? await comparisonPromise.catch((error: unknown) => {
+          fastify.log.warn(error, 'Unable to load CC Xoay comparison period');
+          return null;
+        })
+      : null;
 
     return {
       data: paginatedRecords,
@@ -793,6 +853,17 @@ export class CcKpiService {
         totalCheckins: total,
         totalBonus,
         totalPoints,
+        comparison:
+          comparisonResult?.summary && comparisonWindow && comparisonMode
+            ? {
+                mode: comparisonMode,
+                dateFrom: comparisonWindow.dateFrom,
+                dateTo: comparisonWindow.dateTo,
+                totalCheckins: comparisonResult.summary.totalCheckins,
+                totalBonus: comparisonResult.summary.totalBonus,
+                totalPoints: comparisonResult.summary.totalPoints,
+              }
+            : undefined,
       },
     };
   }
@@ -869,11 +940,25 @@ export class CcKpiService {
   /**
    * 3. GET Daily Sales Bonus for Consultants
    */
-  public static async getCcDailySalesBonus(fastify: FastifyInstance, filters: CcKpiFilters) {
-    const { dateFrom, dateTo, storeId, consultantId } = filters;
+  public static async getCcDailySalesBonus(
+    fastify: FastifyInstance,
+    filters: CcKpiFilters
+  ): Promise<DailySalesBonusConsultantResponse> {
+    const { dateFrom, dateTo, storeId, consultantId, comparisonMode, includeComparison = false, endAt } = filters;
     const activeCcIds = await this.getActiveCcStaffIds(fastify);
 
     const { startStr, endStr } = parseDateRange(dateFrom, dateTo);
+    const comparisonWindow =
+      includeComparison && comparisonMode ? getPreviousReportPeriod(startStr, endStr, comparisonMode) : null;
+    const comparisonPromise: Promise<DailySalesBonusConsultantResponse> | null = comparisonWindow
+      ? this.getCcDailySalesBonus(fastify, {
+          dateFrom: comparisonWindow.dateFrom,
+          dateTo: comparisonWindow.dateTo,
+          storeId,
+          consultantId,
+          endAt: comparisonWindow.endAt,
+        })
+      : null;
 
     let targetStaffIds: number[] = activeCcIds;
     if (consultantId && consultantId !== 'ALL') {
@@ -893,12 +978,15 @@ export class CcKpiService {
     }
 
     // Keep Rule #15 actual-check-in semantics while leaving both date columns sargable.
+    // `endAt` is internal-only and lets an active period compare against the
+    // exact same clock time in the matching previous period.
+    const queryEndAt = endAt || `${endStr} 23:59:59`;
     const actualCheckinRangeClause = `
       AND (
-        (ro.actual_booking_date_start >= '${startStr} 00:00:00' AND ro.actual_booking_date_start <= '${endStr} 23:59:59')
+        (ro.actual_booking_date_start >= '${startStr} 00:00:00' AND ro.actual_booking_date_start <= '${queryEndAt}')
         OR (
           ro.actual_booking_date_start IS NULL
-          AND o.booking_date_start >= '${startStr} 00:00:00' AND o.booking_date_start <= '${endStr} 23:59:59'
+          AND o.booking_date_start >= '${startStr} 00:00:00' AND o.booking_date_start <= '${queryEndAt}'
         )
       )`;
 
@@ -1246,6 +1334,26 @@ export class CcKpiService {
     );
     const totalCcBonus = Math.round(result.reduce((sum, r) => sum + (r.daily_bonus || 0), 0));
 
+    const comparisonResult = comparisonPromise
+      ? await comparisonPromise.catch((error: unknown) => {
+          fastify.log.warn(error, 'Unable to load Daily Bonus comparison period');
+          return null;
+        })
+      : null;
+    const comparison =
+      comparisonResult?.summary && comparisonWindow && comparisonMode
+        ? {
+            mode: comparisonMode,
+            dateFrom: comparisonWindow.dateFrom,
+            dateTo: comparisonWindow.dateTo,
+            totalComboSales: Math.round(comparisonResult.summary.totalComboSales || 0),
+            totalProductSales: Math.round(comparisonResult.summary.totalProductSales || 0),
+            totalSingleSales: Math.round(comparisonResult.summary.totalSingleSales || 0),
+            totalSales: Math.round(comparisonResult.summary.totalSales || 0),
+            totalCcBonus: Math.round(comparisonResult.summary.totalCcBonus || 0),
+          }
+        : undefined;
+
     const summary = {
       totalComboSales,
       totalProductSales,
@@ -1257,6 +1365,7 @@ export class CcKpiService {
       projectedTotalSales: Math.round(totalSales / elapsedRatio),
       projectedCcBonus: Math.round(totalCcBonus / elapsedRatio),
       elapsedRatioPercent: Math.round(elapsedRatio * 1000) / 10,
+      comparison,
     };
 
     return {

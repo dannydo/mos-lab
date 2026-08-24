@@ -52,6 +52,11 @@ export const useCustomerList = (
         if (filterParams.totalSpentMax !== undefined) params.totalSpentMax = filterParams.totalSpentMax.toString();
         if (filterParams.totalVisitsMin !== undefined) params.totalVisitsMin = filterParams.totalVisitsMin.toString();
         if (filterParams.totalVisitsMax !== undefined) params.totalVisitsMax = filterParams.totalVisitsMax.toString();
+        if (filterParams.serviceIds) params.serviceIds = filterParams.serviceIds;
+        if (filterParams.serviceVisitCountMin !== undefined)
+          params.serviceVisitCountMin = filterParams.serviceVisitCountMin.toString();
+        if (filterParams.serviceVisitCountMax !== undefined)
+          params.serviceVisitCountMax = filterParams.serviceVisitCountMax.toString();
 
         if (filterParams.promoUsed && filterParams.promoUsed !== 'all') params.promoUsed = filterParams.promoUsed;
         if (filterParams.promoCountMin !== undefined) params.promoCountMin = filterParams.promoCountMin.toString();
@@ -147,6 +152,11 @@ export const useCustomerList = (
         if (filterParams.totalSpentMax !== undefined) params.totalSpentMax = filterParams.totalSpentMax.toString();
         if (filterParams.totalVisitsMin !== undefined) params.totalVisitsMin = filterParams.totalVisitsMin.toString();
         if (filterParams.totalVisitsMax !== undefined) params.totalVisitsMax = filterParams.totalVisitsMax.toString();
+        if (filterParams.serviceIds) params.serviceIds = filterParams.serviceIds;
+        if (filterParams.serviceVisitCountMin !== undefined)
+          params.serviceVisitCountMin = filterParams.serviceVisitCountMin.toString();
+        if (filterParams.serviceVisitCountMax !== undefined)
+          params.serviceVisitCountMax = filterParams.serviceVisitCountMax.toString();
 
         if (filterParams.promoUsed && filterParams.promoUsed !== 'all') params.promoUsed = filterParams.promoUsed;
         if (filterParams.promoCountMin !== undefined) params.promoCountMin = filterParams.promoCountMin.toString();

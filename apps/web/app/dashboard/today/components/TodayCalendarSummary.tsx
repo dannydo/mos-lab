@@ -37,7 +37,7 @@ import dayjs from 'dayjs';
 import { BookingData, ComingClientData } from '../hooks/useTodayData';
 import { BookerTeamConfig, DEFAULT_BOOKER_TEAMS } from './BookerTeamConfigModal';
 import { removeVietnameseTones, vietnameseSearchFilter } from '@mos-lab/shared';
-import type { RevenueHourlyResponse } from '@mos-lab/shared';
+import type { ReportPeriodComparison, RevenueHourlyResponse } from '@mos-lab/shared';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 import { RevenueKpiCards } from './RevenueKpiCards';
 import { RevenueHourlyChart } from './RevenueHourlyChart';
@@ -85,6 +85,8 @@ interface TodayCalendarSummaryProps {
   selectedDate: dayjs.Dayjs;
   // Revenue props
   revenueData?: RevenueHourlyResponse | null;
+  previousRevenueData?: RevenueHourlyResponse | null;
+  comparison?: ReportPeriodComparison | null;
   revenueLoading?: boolean;
   showRevenueView?: boolean;
   setShowRevenueView?: (val: boolean) => void;
@@ -105,6 +107,8 @@ export default function TodayCalendarSummary({
   openCustomerDrawer,
   selectedDate,
   revenueData,
+  previousRevenueData,
+  comparison,
   revenueLoading,
   showRevenueView,
   setShowRevenueView,
@@ -442,6 +446,8 @@ export default function TodayCalendarSummary({
             themeMode={themeMode}
             token={token}
             summary={revenueData?.summary || null}
+            previousSummary={previousRevenueData?.summary || null}
+            comparison={comparison}
             loading={revenueLoading}
             onCardClick={(type) => {
               if (type === 'revenue' || type === 'combo') {

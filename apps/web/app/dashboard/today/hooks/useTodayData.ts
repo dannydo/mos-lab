@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import { apiClient } from '../../../../lib/api-client';
 import { DEFAULT_BOOKER_TEAMS, BookerTeamConfig } from '../components/BookerTeamConfigModal';
 import type { RevenueHourlyResponse } from '@mos-lab/shared';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+
+dayjs.extend(isoWeek);
 
 export interface BookingData {
   key: string;
@@ -139,6 +143,13 @@ export interface UseTodayDataOptions {
   onError?: (msg: string) => void;
 }
 
+interface PreviousTodaySnapshot {
+  branchesData: Record<string, BranchDetail>;
+  bookingsCombo: BookingData[];
+  bookingsOc: BookingData[];
+  bookingsOther: BookingData[];
+}
+
 function getDashboardDateRange(date: dayjs.Dayjs, mode: 'day' | 'week' | 'month') {
   if (mode === 'week') {
     return {
@@ -166,6 +177,12 @@ export function useTodayData(options?: UseTodayDataOptions) {
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
   const [dateRangeMode, setDateRangeMode] = useState<'day' | 'week' | 'month'>('day');
+  const comparisonRange = useMemo<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(() => {
+    if (!selectedDate) return undefined;
+    const { dateFrom, dateTo } = getDashboardDateRange(selectedDate, dateRangeMode);
+    return [dayjs(dateFrom), dayjs(dateTo)];
+  }, [dateRangeMode, selectedDate]);
+  const previousPeriod = usePreviousReportPeriod(comparisonRange, dateRangeMode);
 
   // Auto-refresh states
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -198,9 +215,11 @@ export function useTodayData(options?: UseTodayDataOptions) {
   const [bookingsCombo, setBookingsCombo] = useState<BookingData[]>([]);
   const [bookingsOc, setBookingsOc] = useState<BookingData[]>([]);
   const [bookingsOther, setBookingsOther] = useState<BookingData[]>([]);
+  const [previousDashboardData, setPreviousDashboardData] = useState<PreviousTodaySnapshot | null>(null);
 
   // Revenue View states
   const [revenueData, setRevenueData] = useState<RevenueHourlyResponse | null>(null);
+  const [previousRevenueData, setPreviousRevenueData] = useState<RevenueHourlyResponse | null>(null);
   const [revenueLoading, setRevenueLoading] = useState(false);
   const [showRevenueView, setShowRevenueView] = useState(false);
 
@@ -298,12 +317,32 @@ export function useTodayData(options?: UseTodayDataOptions) {
         setSilentLoading(true);
       }
       try {
-        const data = (await apiClient.dashboard.getToday(getDashboardDateRange(date, mode))) as SafeAny;
+        const previousRequest = previousPeriod
+          ? apiClient.dashboard.getToday(previousPeriod.params).catch((error) => {
+              console.error('Fetch previous dashboard period error:', error);
+              return null;
+            })
+          : Promise.resolve(null);
+        const [response, previousData] = await Promise.all([
+          apiClient.dashboard.getToday(getDashboardDateRange(date, mode)),
+          previousRequest,
+        ]);
         if (requestVersion !== dashboardRequestVersion.current) return;
+        const data = response as SafeAny;
         setBranchesData(data.branchesData);
         setBookingsCombo(data.bookingsCombo);
         setBookingsOc(data.bookingsOc || []);
         setBookingsOther(data.bookingsOther);
+        setPreviousDashboardData(
+          previousData
+            ? {
+                branchesData: previousData.branchesData as Record<string, BranchDetail>,
+                bookingsCombo: previousData.bookingsCombo as BookingData[],
+                bookingsOc: (previousData.bookingsOc || []) as BookingData[],
+                bookingsOther: previousData.bookingsOther as BookingData[],
+              }
+            : null
+        );
       } catch (err) {
         if (requestVersion !== dashboardRequestVersion.current) return;
         console.error('Fetch dashboard today error:', err);
@@ -319,7 +358,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
         }
       }
     },
-    []
+    [previousPeriod]
   );
 
   const fetchRevenueData = useCallback(
@@ -330,8 +369,25 @@ export function useTodayData(options?: UseTodayDataOptions) {
         const revParams: SafeAny = { ...getDashboardDateRange(date, mode) };
         if (bookingBranch !== 'all') revParams.branchKey = bookingBranch;
         if (selectedBooker && selectedBooker !== 'all') revParams.bookerFilter = selectedBooker;
-        const revData = (await apiClient.dashboard.getRevenueHourly(revParams)) as RevenueHourlyResponse;
-        if (requestVersion === revenueRequestVersion.current) setRevenueData(revData);
+        const previousRevenueParams: SafeAny = previousPeriod ? { ...previousPeriod.params } : null;
+        if (previousRevenueParams && bookingBranch !== 'all') previousRevenueParams.branchKey = bookingBranch;
+        if (previousRevenueParams && selectedBooker && selectedBooker !== 'all') {
+          previousRevenueParams.bookerFilter = selectedBooker;
+        }
+        const previousRevenueRequest = previousRevenueParams
+          ? apiClient.dashboard.getRevenueHourly(previousRevenueParams).catch((error) => {
+              console.error('Fetch previous revenue period error:', error);
+              return null;
+            })
+          : Promise.resolve(null);
+        const [revData, previousRevenue] = await Promise.all([
+          apiClient.dashboard.getRevenueHourly(revParams),
+          previousRevenueRequest,
+        ]);
+        if (requestVersion === revenueRequestVersion.current) {
+          setRevenueData(revData);
+          setPreviousRevenueData(previousRevenue);
+        }
       } catch (err) {
         if (requestVersion === revenueRequestVersion.current) {
           console.error('Fetch revenue hourly error:', err);
@@ -340,7 +396,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
         if (requestVersion === revenueRequestVersion.current) setRevenueLoading(false);
       }
     },
-    [bookingBranch, selectedBooker]
+    [bookingBranch, previousPeriod, selectedBooker]
   );
 
   const refreshTodayData = useCallback(
@@ -508,6 +564,15 @@ export function useTodayData(options?: UseTodayDataOptions) {
     ];
     return combined.sort((a, b) => Number(b.key) - Number(a.key));
   }, [bookingsCombo, bookingsOc, bookingsOther]);
+
+  const previousAllBookings = useMemo(() => {
+    if (!previousDashboardData) return [];
+    return [
+      ...previousDashboardData.bookingsCombo.map((b) => ({ ...b, category: 'combo' as const })),
+      ...previousDashboardData.bookingsOc.map((b) => ({ ...b, category: 'oc' as const })),
+      ...previousDashboardData.bookingsOther.map((b) => ({ ...b, category: 'other' as const })),
+    ];
+  }, [previousDashboardData]);
 
   const matchesBookerFilter = useCallback(
     (bookerName: string | undefined, filter: string | null) => {
@@ -744,6 +809,9 @@ export function useTodayData(options?: UseTodayDataOptions) {
     bookingsCombo,
     bookingsOc,
     bookingsOther,
+    previousBranchesData: previousDashboardData?.branchesData || null,
+    previousAllBookings,
+    comparison: previousPeriod?.comparison || null,
 
     // computed
     allBookings,
@@ -775,6 +843,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
     // Revenue View
     revenueData,
+    previousRevenueData,
     revenueLoading,
     showRevenueView,
     setShowRevenueView: (val: boolean) => {

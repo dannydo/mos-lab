@@ -14,10 +14,17 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CcTipLeaderboardEntry, CcTipRecord, removeVietnameseTones, calculateFractionToday } from '@mos-lab/shared';
+import {
+  CcTipLeaderboardEntry,
+  CcTipLeaderboardResponse,
+  CcTipRecord,
+  removeVietnameseTones,
+  calculateFractionToday,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { formatCompactVND, formatStoreCode } from '../../../../lib/format-utils';
 import CcAvatar from './CcAvatar';
+import CcPeriodComparison from './CcPeriodComparison';
 import { DataTable, MobileRecordList } from '~/components/ui';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
@@ -28,6 +35,7 @@ interface CcTipTabProps {
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
   selectedStore?: string;
   selectedConsultant?: string;
+  comparisonMode?: 'month' | 'week' | 'day';
   onSelectConsultant?: (consultantName: string) => void;
 }
 
@@ -36,6 +44,7 @@ export default function CcTipTab({
   dateRange,
   selectedStore = 'ALL',
   selectedConsultant: parentSelectedConsultant,
+  comparisonMode = 'month',
   onSelectConsultant: parentOnSelectConsultant,
 }: CcTipTabProps) {
   const { token } = theme.useToken();
@@ -55,7 +64,7 @@ export default function CcTipTab({
   const [isCompact, setIsCompact] = useState(false);
 
   // Summary Metrics
-  const [summary, setSummary] = useState({
+  const [summary, setSummary] = useState<CcTipLeaderboardResponse['summary']>({
     totalCcTipBonus: 0,
     totalCustomerTip: 0,
     avgTipRatePercent: 0,
@@ -112,6 +121,7 @@ export default function CcTipTab({
           dateFrom,
           dateTo,
           storeId: selectedStore,
+          comparisonMode,
         }),
         apiClient.kpi.getCcTipRecords({
           dateFrom,
@@ -140,7 +150,7 @@ export default function CcTipTab({
 
   useEffect(() => {
     fetchTipData();
-  }, [dateRange, selectedStore, selectedCcName]);
+  }, [comparisonMode, dateRange, selectedStore, selectedCcName]);
 
   // Local Filtered Records for Detail Table
   const filteredRecords = records.filter((r) => {
@@ -453,6 +463,12 @@ export default function CcTipTab({
               <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-2">
                 Thực nhận 20% tiền tip từ khách hàng
               </div>
+              <CcPeriodComparison
+                comparison={summary.comparison}
+                currentValue={summary.totalCcTipBonus}
+                previousValue={summary.comparison?.totalCcTipBonus || 0}
+                formatter={formatCompactVND}
+              />
             </div>
             {renderForecastSubtext(projectedTotalCcTipBonus)}
           </Card>
@@ -476,6 +492,12 @@ export default function CcTipTab({
               <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-2">
                 Tổng số tiền tip khách hàng để lại
               </div>
+              <CcPeriodComparison
+                comparison={summary.comparison}
+                currentValue={summary.totalCustomerTip}
+                previousValue={summary.comparison?.totalCustomerTip || 0}
+                formatter={formatCompactVND}
+              />
             </div>
             {renderForecastSubtext(projectedTotalCustomerTip)}
           </Card>

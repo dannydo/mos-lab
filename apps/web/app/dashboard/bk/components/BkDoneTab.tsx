@@ -20,11 +20,19 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import { CircleCheck, CircleX, DollarSign, ListFilter, Package } from 'lucide-react';
-import { BkDoneDetailsFilter, BkDoneLeaderboardEntry, BkDoneRecord, removeVietnameseTones } from '@mos-lab/shared';
+import {
+  BkDoneDetailsFilter,
+  BkDoneLeaderboardEntry,
+  BkDoneRecord,
+  removeVietnameseTones,
+  type ReportComparisonMode,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
 import BkLeaderboardCard from './BkLeaderboardCard';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../../components/CustomerDetailDrawer'), { ssr: false });
 
@@ -54,11 +62,13 @@ interface BkDoneTabProps {
   dateRange: [any, any];
   selectedStore: string;
   selectedBooker: string;
+  comparisonMode: ReportComparisonMode;
 }
 
-export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: BkDoneTabProps) {
+export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, comparisonMode }: BkDoneTabProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
+  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -72,6 +82,11 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
     avgDoneRate: 0,
     totalDoneBonus: 0,
   });
+  const [previousSummary, setPreviousSummary] = useState<{
+    totalDone: number;
+    avgDoneRate: number;
+    totalDoneBonus: number;
+  } | null>(null);
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
   const [selectedBookerName, setSelectedBookerName] = useState<string | null>(null);
@@ -89,13 +104,19 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.bk.getDoneLeaderboard({
-        dateFrom: dateRange[0].format('YYYY-MM-DD'),
-        dateTo: dateRange[1].format('YYYY-MM-DD'),
-        storeId: selectedStore,
-      });
+      const [res, previousRes] = await Promise.all([
+        apiClient.bk.getDoneLeaderboard({
+          dateFrom: dateRange[0].format('YYYY-MM-DD'),
+          dateTo: dateRange[1].format('YYYY-MM-DD'),
+          storeId: selectedStore,
+        }),
+        previousPeriod
+          ? apiClient.bk.getDoneLeaderboard({ ...previousPeriod.params, storeId: selectedStore })
+          : Promise.resolve(null),
+      ]);
       setLeaderboard(res.leaderboard || []);
       setSummary(res.summary || { totalDone: 0, avgDoneRate: 0, totalDoneBonus: 0 });
+      setPreviousSummary(previousRes?.summary || null);
     } catch (err) {
       console.error('Error loading BK done leaderboard', err);
     } finally {
@@ -127,7 +148,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [dateRange, selectedStore]);
+  }, [dateRange, previousPeriod, selectedStore]);
 
   useEffect(() => {
     fetchDetails();
@@ -554,6 +575,12 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
               valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CheckCircleOutlined className="mr-2" />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalDone}
+              previousValue={previousSummary?.totalDone || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
@@ -567,6 +594,12 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
               suffix="%"
               valueStyle={{ color: '#f59e0b', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<TrophyOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.avgDoneRate}
+              previousValue={previousSummary?.avgDoneRate || 0}
+              formatter={(value) => `${value.toFixed(1)}%`}
             />
           </Card>
         </Col>
@@ -583,6 +616,12 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker }: 
               formatter={(val) => formatCurrency(Number(val))}
               valueStyle={{ color: '#059669', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<DollarOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalDoneBonus}
+              previousValue={previousSummary?.totalDoneBonus || 0}
+              formatter={formatCurrency}
             />
           </Card>
         </Col>

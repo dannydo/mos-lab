@@ -1,3 +1,5 @@
+import type { ReportPeriodComparison } from './report-period.js';
+
 export interface StaffKPI {
   id: number;
   staffId: number;
@@ -163,6 +165,15 @@ export interface CcPaystubResponse {
     totalMinigameBonus: number;
     totalCcTipBonus: number;
     grandTotalIncome: number;
+    comparison?: ReportPeriodComparison & {
+      totalHourlyWage: number;
+      totalCcXoayBonus: number;
+      totalComboProductBonus: number;
+      totalMinigameBonus: number;
+      totalCcTipBonus: number;
+      totalDiamondBonus: number;
+      grandTotalIncome: number;
+    };
   };
 }
 

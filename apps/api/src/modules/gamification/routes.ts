@@ -106,6 +106,19 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
                   projectedTotalSales: { type: 'number' },
                   projectedCcBonus: { type: 'number' },
                   elapsedRatioPercent: { type: 'number' },
+                  comparison: {
+                    type: 'object',
+                    properties: {
+                      mode: { type: 'string', enum: ['month', 'week', 'day'] },
+                      dateFrom: { type: 'string' },
+                      dateTo: { type: 'string' },
+                      totalComboSales: { type: 'number' },
+                      totalProductSales: { type: 'number' },
+                      totalSingleSales: { type: 'number' },
+                      totalSales: { type: 'number' },
+                      totalCcBonus: { type: 'number' },
+                    },
+                  },
                 },
               },
               activeStaff: {
@@ -132,11 +145,12 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { dateFrom, dateTo, consultantId, storeId } = request.query as {
+      const { dateFrom, dateTo, consultantId, storeId, comparisonMode } = request.query as {
         dateFrom?: string;
         dateTo?: string;
         consultantId?: string;
         storeId?: string;
+        comparisonMode?: 'month' | 'week' | 'day';
       };
 
       try {
@@ -145,6 +159,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           dateTo,
           consultantId,
           storeId,
+          comparisonMode,
+          includeComparison: Boolean(comparisonMode),
         });
         return res;
       } catch (err) {

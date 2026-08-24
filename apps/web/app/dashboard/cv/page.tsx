@@ -224,6 +224,7 @@ export default function CvReportPage() {
                     dateRange={dateRange}
                     selectedStore={selectedStore}
                     selectedConsultant={selectedConsultant}
+                    comparisonMode={viewMode}
                   />
                 ) : null,
             },
@@ -240,6 +241,7 @@ export default function CvReportPage() {
                     dateRange={dateRange}
                     selectedStore={selectedStore}
                     selectedConsultant={selectedConsultant}
+                    comparisonMode={viewMode}
                   />
                 ) : null,
             },
@@ -252,7 +254,12 @@ export default function CvReportPage() {
               ),
               children:
                 activeTab === 'thunhap' ? (
-                  <CvThuNhapTab dateRange={dateRange} selectedStore={selectedStore} currentUser={currentUser} />
+                  <CvThuNhapTab
+                    dateRange={dateRange}
+                    selectedStore={selectedStore}
+                    currentUser={currentUser}
+                    comparisonMode={viewMode}
+                  />
                 ) : null,
             },
             {

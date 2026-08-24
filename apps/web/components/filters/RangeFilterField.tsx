@@ -14,6 +14,7 @@ interface RangeFilterFieldProps {
   max?: number;
   formatter?: (val: SafeAny) => string;
   parser?: (val: SafeAny) => SafeAny;
+  disabled?: boolean;
   themeMode: string;
 }
 
@@ -30,6 +31,7 @@ export const RangeFilterField: React.FC<RangeFilterFieldProps> = ({
   max,
   formatter,
   parser,
+  disabled = false,
   themeMode,
 }) => {
   const labelStyle = { fontSize: '12px', color: themeMode === 'dark' ? '#aaa' : '#555' };
@@ -46,6 +48,7 @@ export const RangeFilterField: React.FC<RangeFilterFieldProps> = ({
             max={max}
             placeholder={minPlaceholder}
             value={minValue}
+            disabled={disabled}
             onChange={(val) => onChangeMin(val ?? undefined)}
             formatter={formatter}
             parser={parser}
@@ -62,6 +65,7 @@ export const RangeFilterField: React.FC<RangeFilterFieldProps> = ({
             max={max}
             placeholder={maxPlaceholder}
             value={maxValue}
+            disabled={disabled}
             onChange={(val) => onChangeMax(val ?? undefined)}
             formatter={formatter}
             parser={parser}

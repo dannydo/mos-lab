@@ -14,8 +14,9 @@ import {
   PushpinFilled,
   AimOutlined,
   PhoneOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
-import { vietnameseSearchFilter } from '@mos-lab/shared';
+import { CustomerServiceFilterCategory, CustomerServiceFilterOption, vietnameseSearchFilter } from '@mos-lab/shared';
 
 // Shared and custom sub-components
 import FilterSectionHeader from '~/components/filters/FilterSectionHeader';
@@ -48,6 +49,17 @@ interface CustomerFiltersProps {
   setTotalVisitsMin: (val: number | undefined) => void;
   totalVisitsMax: number | undefined;
   setTotalVisitsMax: (val: number | undefined) => void;
+  serviceIds: number[];
+  setServiceIds: (val: number[]) => void;
+  serviceCategories: string[];
+  setServiceCategories: (val: string[]) => void;
+  serviceVisitCountMin: number | undefined;
+  setServiceVisitCountMin: (val: number | undefined) => void;
+  serviceVisitCountMax: number | undefined;
+  setServiceVisitCountMax: (val: number | undefined) => void;
+  serviceFilterOptions: CustomerServiceFilterOption[];
+  serviceFilterCategories: CustomerServiceFilterCategory[];
+  serviceFilterOptionsLoading: boolean;
   promoUsed: 'yes' | 'no' | 'all';
   setPromoUsed: (val: 'yes' | 'no' | 'all') => void;
   promoCountMin: number | undefined;
@@ -117,6 +129,17 @@ const CustomerFilters = React.memo(function CustomerFilters({
   setTotalVisitsMin,
   totalVisitsMax,
   setTotalVisitsMax,
+  serviceIds,
+  setServiceIds,
+  serviceCategories,
+  setServiceCategories,
+  serviceVisitCountMin,
+  setServiceVisitCountMin,
+  serviceVisitCountMax,
+  setServiceVisitCountMax,
+  serviceFilterOptions,
+  serviceFilterCategories,
+  serviceFilterOptionsLoading,
   promoUsed,
   setPromoUsed,
   promoCountMin,
@@ -175,6 +198,10 @@ const CustomerFilters = React.memo(function CustomerFilters({
     totalSpentMax,
     totalVisitsMin,
     totalVisitsMax,
+    serviceIds: serviceIds.length > 0 ? serviceIds.join(',') : undefined,
+    serviceCategories: serviceCategories.length > 0 ? serviceCategories.join(',') : undefined,
+    serviceVisitCountMin,
+    serviceVisitCountMax,
     promoUsed,
     promoCountMin,
     promoCountMax,
@@ -213,6 +240,30 @@ const CustomerFilters = React.memo(function CustomerFilters({
         break;
       case 'totalVisitsMax':
         setTotalVisitsMax(undefined);
+        break;
+      case 'serviceIds':
+        setServiceIds([]);
+        if (serviceCategories.length === 0) {
+          setServiceVisitCountMin(undefined);
+          setServiceVisitCountMax(undefined);
+        }
+        break;
+      case 'serviceCategories':
+        setServiceCategories([]);
+        if (serviceIds.length === 0) {
+          setServiceVisitCountMin(undefined);
+          setServiceVisitCountMax(undefined);
+        }
+        break;
+      case 'serviceUsage':
+        setServiceVisitCountMin(undefined);
+        setServiceVisitCountMax(undefined);
+        break;
+      case 'serviceVisitCountMin':
+        setServiceVisitCountMin(undefined);
+        break;
+      case 'serviceVisitCountMax':
+        setServiceVisitCountMax(undefined);
         break;
       case 'promoUsed':
         setPromoUsed('all');
@@ -332,6 +383,13 @@ const CustomerFilters = React.memo(function CustomerFilters({
     if (daysSinceLastVisitMin !== undefined || daysSinceLastVisitMax !== undefined) count++;
     if (totalSpentMin !== undefined || totalSpentMax !== undefined) count++;
     if (totalVisitsMin !== undefined || totalVisitsMax !== undefined) count++;
+    if (
+      serviceIds.length > 0 ||
+      serviceCategories.length > 0 ||
+      serviceVisitCountMin !== undefined ||
+      serviceVisitCountMax !== undefined
+    )
+      count++;
     if (promoUsed !== 'all' || promoCountMin !== undefined || promoCountMax !== undefined) count++;
     if (referralUsed !== 'all' || referralCountMin !== undefined || referralCountMax !== undefined) count++;
     if (assignedStaffId && assignedStaffId !== (currentUser?.role === 'telesales' ? 'me' : 'all')) count++;
@@ -347,6 +405,10 @@ const CustomerFilters = React.memo(function CustomerFilters({
     totalSpentMax,
     totalVisitsMin,
     totalVisitsMax,
+    serviceIds,
+    serviceCategories,
+    serviceVisitCountMin,
+    serviceVisitCountMax,
     promoUsed,
     promoCountMin,
     promoCountMax,
@@ -424,6 +486,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
         onClearFilter={onClearFilter}
         hasActiveFilters={hasActiveFilters}
         staffList={staffList}
+        serviceFilterOptions={serviceFilterOptions}
+        serviceFilterCategories={serviceFilterCategories}
       />
 
       {/* FILTER DRAWER */}
@@ -942,7 +1006,110 @@ const CustomerFilters = React.memo(function CustomerFilters({
             </div>
           </div>
 
-          {/* CARD 4: PHÂN BỔ BOOKER & PHÂN LOẠI */}
+          {/* CARD 4: DỊCH VỤ ĐÃ HOÀN TẤT */}
+          <div
+            style={{
+              background: themeMode === 'dark' ? '#141c2e' : '#ffffff',
+              border: `1px solid ${themeMode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+              borderRadius: '12px',
+              padding: '18px',
+              boxShadow: themeMode === 'dark' ? '0 4px 12px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <FilterSectionHeader
+              icon={<AppstoreOutlined style={{ fontSize: '14px' }} />}
+              title="Dịch vụ & Sản phẩm đã sử dụng"
+              themeMode={themeMode}
+            />
+            <Form.Item
+              label={
+                <span style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                  Chọn thể loại hoặc dịch vụ (có thể chọn nhiều)
+                </span>
+              }
+              style={{ marginBottom: '10px' }}
+            >
+              <Select
+                aria-label="Lọc theo dịch vụ hoặc sản phẩm đã sử dụng"
+                mode="multiple"
+                allowClear
+                showSearch
+                loading={serviceFilterOptionsLoading}
+                placeholder="Ví dụ: Classic (tất cả biến thể), UltraLight..."
+                value={[...serviceCategories.map((category) => `category:${category}`), ...serviceIds.map(String)]}
+                filterOption={vietnameseSearchFilter}
+                optionFilterProp="label"
+                maxTagCount={2}
+                style={{ width: '100%' }}
+                onChange={(values: string[]) => {
+                  const nextCategories = values
+                    .filter((value) => value.startsWith('category:'))
+                    .map((value) => value.slice('category:'.length));
+                  const nextIds = values
+                    .filter((value) => !value.startsWith('category:'))
+                    .map(Number)
+                    .filter((id) => Number.isInteger(id) && id > 0);
+                  setServiceIds(nextIds);
+                  setServiceCategories(nextCategories);
+                  if (nextIds.length === 0 && nextCategories.length === 0) {
+                    setServiceVisitCountMin(undefined);
+                    setServiceVisitCountMax(undefined);
+                  }
+                  setActiveFilterId(null);
+                }}
+                options={[
+                  {
+                    label: 'Thể loại dịch vụ',
+                    options: serviceFilterCategories.map((category) => ({
+                      value: `category:${category.key}`,
+                      label: category.label,
+                      title: `Đã đối chiếu ${category.serviceIds.length} dịch vụ đang hoạt động trong catalog`,
+                    })),
+                  },
+                  {
+                    label: 'Dịch vụ cụ thể',
+                    options: serviceFilterOptions.map((service) => ({
+                      value: String(service.id),
+                      label: service.name,
+                      title: [service.serviceType, service.serviceGroup].filter(Boolean).join(' · '),
+                    })),
+                  },
+                ]}
+                notFoundContent={serviceFilterOptionsLoading ? 'Đang tải dịch vụ...' : 'Không có dịch vụ'}
+              />
+            </Form.Item>
+            <div
+              style={{
+                fontSize: '12px',
+                color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                marginBottom: '12px',
+              }}
+            >
+              Mỗi thể loại sẽ khớp mọi biến thể cùng tên, ví dụ <strong>UltraLight (tất cả biến thể)</strong>. Chỉ tính
+              hóa đơn <strong>Completed</strong>; chọn nhiều mục sẽ tìm khách đã dùng ít nhất một mục.
+            </div>
+            <RangeFilterField
+              minLabel="Số lần dùng tối thiểu"
+              maxLabel="Số lần dùng tối đa"
+              minPlaceholder="VD: 2 lần"
+              maxPlaceholder="VD: 6 lần"
+              minValue={serviceVisitCountMin}
+              maxValue={serviceVisitCountMax}
+              onChangeMin={(val: number | undefined) => {
+                setServiceVisitCountMin(val);
+                setActiveFilterId(null);
+              }}
+              onChangeMax={(val: number | undefined) => {
+                setServiceVisitCountMax(val);
+                setActiveFilterId(null);
+              }}
+              min={1}
+              disabled={serviceIds.length === 0 && serviceCategories.length === 0}
+              themeMode={themeMode}
+            />
+          </div>
+
+          {/* CARD 5: PHÂN BỔ BOOKER & PHÂN LOẠI */}
           <div
             style={{
               background: themeMode === 'dark' ? '#141c2e' : '#ffffff',

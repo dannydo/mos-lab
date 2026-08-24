@@ -1,6 +1,7 @@
 import api from './api';
 import {
   Customer,
+  CustomerServiceFilterOptionsResponse,
   TouchpointStatus,
   ListCustomersParams,
   ListCustomersResponse,
@@ -815,6 +816,10 @@ export const apiClient = {
       const response = await api.get('/customers/services');
       return response.data;
     },
+    getServiceFilterOptions: async (): Promise<CustomerServiceFilterOptionsResponse> => {
+      const response = await api.get('/customers/service-filter-options');
+      return response.data;
+    },
     getBookingSlots: async (params: Record<string, unknown>): Promise<unknown> => {
       const response = await api.get('/customers/booking-slots', { params });
       return response.data;
@@ -999,6 +1004,7 @@ export const apiClient = {
       month?: string;
       date_from?: string;
       date_to?: string;
+      comparisonMode?: 'month' | 'week' | 'day';
     }): Promise<CcDiamondResponse> => {
       const response = await api.get('/kpi/export-diamond', { params: { ...params, format: 'json' } });
       return response.data;
@@ -1309,6 +1315,7 @@ export const apiClient = {
     getRevenueHourly: async (params: {
       dateFrom: string;
       dateTo: string;
+      endAt?: string;
       branchKey?: string;
       bookerFilter?: string;
     }): Promise<RevenueHourlyResponse> => {

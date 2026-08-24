@@ -5,6 +5,23 @@ import { Staff } from '@mos-lab/shared';
 
 import { useDebounce } from '../../../../hooks/useDebounce';
 
+const toServiceIds = (value: unknown): number[] => {
+  const rawValues = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+  return Array.from(new Set(rawValues.map(Number).filter((id) => Number.isInteger(id) && id > 0)));
+};
+
+const toServiceCategories = (value: unknown): string[] => {
+  const rawValues = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+  return Array.from(
+    new Set(
+      rawValues
+        .map(String)
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean)
+    )
+  );
+};
+
 export const useCustomerFilters = (
   currentUser: Staff | null,
   optionsRef: React.MutableRefObject<SafeAny>,
@@ -43,6 +60,10 @@ export const useCustomerFilters = (
   const [totalSpentMax, setTotalSpentMax] = useState<number | undefined>(undefined);
   const [totalVisitsMin, setTotalVisitsMin] = useState<number | undefined>(undefined);
   const [totalVisitsMax, setTotalVisitsMax] = useState<number | undefined>(undefined);
+  const [serviceIds, setServiceIds] = useState<number[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<string[]>([]);
+  const [serviceVisitCountMin, setServiceVisitCountMin] = useState<number | undefined>(undefined);
+  const [serviceVisitCountMax, setServiceVisitCountMax] = useState<number | undefined>(undefined);
 
   const [promoUsed, setPromoUsed] = useState<'yes' | 'no' | 'all'>('all');
   const [promoCountMin, setPromoCountMin] = useState<number | undefined>(undefined);
@@ -171,6 +192,10 @@ export const useCustomerFilters = (
       setTotalSpentMax(criteria.totalSpentMax);
       setTotalVisitsMin(criteria.totalVisitsMin);
       setTotalVisitsMax(criteria.totalVisitsMax);
+      setServiceIds(toServiceIds(criteria.serviceIds));
+      setServiceCategories(toServiceCategories(criteria.serviceCategories));
+      setServiceVisitCountMin(criteria.serviceVisitCountMin);
+      setServiceVisitCountMax(criteria.serviceVisitCountMax);
       setPromoUsed(criteria.promoUsed || 'all');
       setPromoCountMin(criteria.promoCountMin);
       setPromoCountMax(criteria.promoCountMax);
@@ -204,6 +229,10 @@ export const useCustomerFilters = (
         setTotalSpentMax(criteria.totalSpentMax);
         setTotalVisitsMin(criteria.totalVisitsMin);
         setTotalVisitsMax(criteria.totalVisitsMax);
+        setServiceIds(toServiceIds(criteria.serviceIds));
+        setServiceCategories(toServiceCategories(criteria.serviceCategories));
+        setServiceVisitCountMin(criteria.serviceVisitCountMin);
+        setServiceVisitCountMax(criteria.serviceVisitCountMax);
         setPromoUsed(criteria.promoUsed || 'all');
         setPromoCountMin(criteria.promoCountMin);
         setPromoCountMax(criteria.promoCountMax);
@@ -263,6 +292,10 @@ export const useCustomerFilters = (
       totalSpentMax,
       totalVisitsMin,
       totalVisitsMax,
+      serviceIds,
+      serviceCategories,
+      serviceVisitCountMin,
+      serviceVisitCountMax,
       promoUsed,
       promoCountMin,
       promoCountMax,
@@ -282,6 +315,10 @@ export const useCustomerFilters = (
     totalSpentMax,
     totalVisitsMin,
     totalVisitsMax,
+    serviceIds,
+    serviceCategories,
+    serviceVisitCountMin,
+    serviceVisitCountMax,
     promoUsed,
     promoCountMin,
     promoCountMax,
@@ -339,6 +376,10 @@ export const useCustomerFilters = (
         parts.push(`Chi tiêu`);
       }
 
+      if (serviceIds.length > 0 || serviceCategories.length > 0) {
+        parts.push(`Dịch vụ: ${serviceIds.length + serviceCategories.length} lựa chọn`);
+      }
+
       return parts.join(' | ');
     },
     [
@@ -350,6 +391,8 @@ export const useCustomerFilters = (
       assignedDaysMax,
       totalSpentMin,
       totalSpentMax,
+      serviceIds,
+      serviceCategories,
       retainedOnly,
     ]
   );
@@ -387,6 +430,10 @@ export const useCustomerFilters = (
     setTotalSpentMax(undefined);
     setTotalVisitsMin(undefined);
     setTotalVisitsMax(undefined);
+    setServiceIds([]);
+    setServiceCategories([]);
+    setServiceVisitCountMin(undefined);
+    setServiceVisitCountMax(undefined);
     setPromoUsed('all');
     setPromoCountMin(undefined);
     setPromoCountMax(undefined);
@@ -427,6 +474,10 @@ export const useCustomerFilters = (
       totalSpentMax,
       totalVisitsMin,
       totalVisitsMax,
+      serviceIds,
+      serviceCategories,
+      serviceVisitCountMin,
+      serviceVisitCountMax,
       promoUsed,
       promoCountMin,
       promoCountMax,
@@ -461,6 +512,10 @@ export const useCustomerFilters = (
     totalSpentMax,
     totalVisitsMin,
     totalVisitsMax,
+    serviceIds,
+    serviceCategories,
+    serviceVisitCountMin,
+    serviceVisitCountMax,
     promoUsed,
     promoCountMin,
     promoCountMax,
@@ -503,6 +558,10 @@ export const useCustomerFilters = (
       totalSpentMax,
       totalVisitsMin,
       totalVisitsMax,
+      serviceIds: serviceIds.length > 0 ? serviceIds.join(',') : undefined,
+      serviceCategories: serviceCategories.length > 0 ? serviceCategories.join(',') : undefined,
+      serviceVisitCountMin,
+      serviceVisitCountMax,
       promoUsed,
       promoCountMin,
       promoCountMax,
@@ -535,6 +594,10 @@ export const useCustomerFilters = (
       totalSpentMax,
       totalVisitsMin,
       totalVisitsMax,
+      serviceIds,
+      serviceCategories,
+      serviceVisitCountMin,
+      serviceVisitCountMax,
       promoUsed,
       promoCountMin,
       promoCountMax,
@@ -582,6 +645,14 @@ export const useCustomerFilters = (
     setTotalVisitsMin,
     totalVisitsMax,
     setTotalVisitsMax,
+    serviceIds,
+    setServiceIds,
+    serviceCategories,
+    setServiceCategories,
+    serviceVisitCountMin,
+    setServiceVisitCountMin,
+    serviceVisitCountMax,
+    setServiceVisitCountMax,
     promoUsed,
     setPromoUsed,
     promoCountMin,

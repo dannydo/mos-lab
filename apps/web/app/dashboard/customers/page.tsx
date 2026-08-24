@@ -17,7 +17,7 @@ import CustomerTable from './components/CustomerTable';
 import { RetainDataButton } from './components/RetainDataButton';
 import AllocationBatchHeader from './components/AllocationBatchHeader';
 import CustomerRandomSelectorModal from './components/CustomerRandomSelectorModal';
-import { ContentSurface, ResourceListPage, SearchField, StatePanel } from '../../../components/ui';
+import { CollapsibleSearchField, ContentSurface, ResourceListPage, StatePanel } from '../../../components/ui';
 import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
 
 const UndoReasonModal = dynamic(() => import('./components/UndoReasonModal').then((m) => m.UndoReasonModal), {
@@ -209,14 +209,15 @@ function CustomersPageContent() {
         className: 'customer-toolbar',
         primary: (
           <>
-            <SearchField
+            <CollapsibleSearchField
               placeholder="Tìm tên hoặc SĐT..."
               searchButtonLabel="Tìm khách hàng"
+              expandButtonLabel="Mở tìm kiếm khách hàng"
               allowClear
               size="middle"
               onSearch={data.handleSearch}
               className="customer-search"
-              style={{ maxWidth: 280 }}
+              expandedWidth={280}
             />
 
             <CustomerFilters
@@ -241,6 +242,17 @@ function CustomersPageContent() {
               setTotalVisitsMin={data.setTotalVisitsMin}
               totalVisitsMax={data.totalVisitsMax}
               setTotalVisitsMax={data.setTotalVisitsMax}
+              serviceIds={data.serviceIds}
+              setServiceIds={data.setServiceIds}
+              serviceCategories={data.serviceCategories}
+              setServiceCategories={data.setServiceCategories}
+              serviceVisitCountMin={data.serviceVisitCountMin}
+              setServiceVisitCountMin={data.setServiceVisitCountMin}
+              serviceVisitCountMax={data.serviceVisitCountMax}
+              setServiceVisitCountMax={data.setServiceVisitCountMax}
+              serviceFilterOptions={data.serviceFilterOptions}
+              serviceFilterCategories={data.serviceFilterCategories}
+              serviceFilterOptionsLoading={data.serviceFilterOptionsLoading}
               promoUsed={data.promoUsed}
               setPromoUsed={data.setPromoUsed}
               promoCountMin={data.promoCountMin}

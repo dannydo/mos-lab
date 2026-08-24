@@ -15,13 +15,15 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CvXoayRecord, removeVietnameseTones } from '@mos-lab/shared';
+import { CvXoayRecord, removeVietnameseTones, type ReportComparisonMode } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import CcAvatar from '../../cc/components/CcAvatar';
 import { MobileRecordList } from '~/components/ui';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 export const formatStoreCode = (store?: string | null): string => {
   if (!store) return 'PXL';
@@ -37,6 +39,7 @@ interface CvXoayTabProps {
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
   selectedStore?: string;
   selectedConsultant?: string;
+  comparisonMode: ReportComparisonMode;
 }
 
 interface CvLeaderboardRow {
@@ -56,10 +59,12 @@ export default function CvXoayTab({
   dateRange,
   selectedStore = 'ALL',
   selectedConsultant = 'ALL',
+  comparisonMode,
 }: CvXoayTabProps) {
   const { token } = theme.useToken();
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
+  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CvXoayRecord[]>([]);
@@ -70,6 +75,11 @@ export default function CvXoayTab({
     totalBonus: 0,
     totalPoints: 0,
   });
+  const [previousSummary, setPreviousSummary] = useState<{
+    totalServices: number;
+    totalBonus: number;
+    totalPoints: number;
+  } | null>(null);
   const [pageSize, setPageSize] = useState<number>(50);
   const [selectedCvName, setSelectedCvName] = useState<string | null>(null);
 
@@ -92,24 +102,27 @@ export default function CvXoayTab({
       const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD');
       const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD');
 
-      const res = await apiClient.kpi.getCvXoayReport({
-        dateFrom,
-        dateTo,
+      const query = {
         storeId: selectedStore,
         consultantId: selectedConsultant,
         limit: 10000,
-      });
+      };
+      const [res, previousRes] = await Promise.all([
+        apiClient.kpi.getCvXoayReport({ dateFrom, dateTo, ...query }),
+        previousPeriod ? apiClient.kpi.getCvXoayReport({ ...previousPeriod.params, ...query }) : Promise.resolve(null),
+      ]);
 
       if (res) {
         setData(res.data || []);
         setSummary(res.summary || { totalServices: 0, totalBonus: 0, totalPoints: 0 });
+        setPreviousSummary(previousRes?.summary || null);
       }
     } catch (err) {
       console.error('Error fetching CV Xoay report:', err);
     } finally {
       setLoading(false);
     }
-  }, [dateRange, selectedStore, selectedConsultant]);
+  }, [dateRange, previousPeriod, selectedStore, selectedConsultant]);
 
   useEffect(() => {
     fetchData();
@@ -430,6 +443,12 @@ export default function CvXoayTab({
               valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<AppstoreOutlined />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalServices}
+              previousValue={previousSummary?.totalServices || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} Bộ Mi`}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
@@ -445,6 +464,12 @@ export default function CvXoayTab({
               valueStyle={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<TrophyOutlined />}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalPoints}
+              previousValue={previousSummary?.totalPoints || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} pts`}
+            />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
@@ -459,6 +484,12 @@ export default function CvXoayTab({
               suffix="đ"
               valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
               prefix={<DollarOutlined />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalBonus}
+              previousValue={previousSummary?.totalBonus || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} đ`}
             />
           </Card>
         </Col>

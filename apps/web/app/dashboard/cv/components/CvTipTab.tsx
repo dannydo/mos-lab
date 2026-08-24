@@ -31,12 +31,14 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CvTipCustomerVisit, CvTipLeaderboardEntry, CvTipRecord } from '@mos-lab/shared';
+import { CvTipCustomerVisit, CvTipLeaderboardEntry, CvTipRecord, type ReportComparisonMode } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { formatCompactVND, formatVND } from '../../../../lib/format-utils';
 import CcAvatar from '../../cc/components/CcAvatar';
 import { MobileRecordList } from '~/components/ui';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
+import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import PeriodComparison from '../../../../components/ui/PeriodComparison';
 
 const { Text } = Typography;
 
@@ -55,6 +57,7 @@ interface CvTipTabProps {
   selectedStore?: string;
   selectedConsultant?: string;
   onSelectConsultant?: (consultantName: string) => void;
+  comparisonMode: ReportComparisonMode;
 }
 
 export default function CvTipTab({
@@ -63,10 +66,12 @@ export default function CvTipTab({
   selectedStore = 'ALL',
   selectedConsultant: parentSelectedConsultant,
   onSelectConsultant,
+  comparisonMode,
 }: CvTipTabProps) {
   const { token } = theme.useToken();
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
+  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<CvTipLeaderboardEntry[]>([]);
@@ -94,6 +99,13 @@ export default function CvTipTab({
     totalTippedVisits: 0,
     totalVisits: 0,
   });
+  const [previousSummary, setPreviousSummary] = useState<{
+    totalCvTipBonus: number;
+    totalCustomerTip: number;
+    avgTipRatePercent: number;
+    totalTippedVisits: number;
+    totalVisits: number;
+  } | null>(null);
 
   const [pageSize, setPageSize] = useState<number>(() => {
     if (typeof window === 'undefined') return 20;
@@ -128,7 +140,7 @@ export default function CvTipTab({
       const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD');
       const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD');
 
-      const [lbRes, recRes] = await Promise.all([
+      const [lbRes, recRes, previousLbRes] = await Promise.all([
         apiClient.kpi.getCvTipLeaderboard({
           dateFrom,
           dateTo,
@@ -145,6 +157,12 @@ export default function CvTipTab({
           search: deferredSearchText || undefined,
           includeSummary: false,
         }),
+        previousPeriod
+          ? apiClient.kpi.getCvTipLeaderboard({
+              ...previousPeriod.params,
+              storeId: selectedStore,
+            })
+          : Promise.resolve(null),
       ]);
 
       if (lbRes) {
@@ -158,6 +176,7 @@ export default function CvTipTab({
             totalVisits: 0,
           }
         );
+        setPreviousSummary(previousLbRes?.summary || null);
       }
 
       if (recRes) {
@@ -171,6 +190,7 @@ export default function CvTipTab({
     }
   }, [
     dateRange,
+    previousPeriod,
     selectedStore,
     selectedCvName,
     parentSelectedConsultant,
@@ -467,6 +487,12 @@ export default function CvTipTab({
                 </span>
               )}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalCvTipBonus}
+              previousValue={previousSummary?.totalCvTipBonus || 0}
+              formatter={formatVND}
+            />
             <div className="text-[11px] text-gray-400 mt-2">Thực nhận 70% tiền tip từ khách</div>
           </Card>
         </Col>
@@ -483,6 +509,12 @@ export default function CvTipTab({
                 </span>
               )}
             />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalCustomerTip}
+              previousValue={previousSummary?.totalCustomerTip || 0}
+              formatter={formatVND}
+            />
             <div className="text-[11px] text-gray-400 mt-2">Tổng số tiền tip khách hàng để lại</div>
           </Card>
         </Col>
@@ -494,6 +526,12 @@ export default function CvTipTab({
               value={summary.avgTipRatePercent}
               prefix={<PercentageOutlined className="text-cyan-500 mr-2" />}
               formatter={(val) => <span className="tabular-nums font-bold text-2xl text-cyan-400">{val}%</span>}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.avgTipRatePercent}
+              previousValue={previousSummary?.avgTipRatePercent || 0}
+              formatter={(value) => `${value.toFixed(1)}%`}
             />
             <div className="text-[11px] text-gray-400 mt-2">Tỷ lệ chốt tip trên tổng lượt khách phục vụ</div>
           </Card>
@@ -518,6 +556,12 @@ export default function CvTipTab({
                   {val}
                 </button>
               )}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.totalTippedVisits}
+              previousValue={previousSummary?.totalTippedVisits || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
             />
             <div className="text-[11px] text-gray-400 mt-2">Nhấn vào số để xem tất cả lượt tip và không tip</div>
           </Card>
