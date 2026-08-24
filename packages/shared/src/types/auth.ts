@@ -26,6 +26,33 @@ export function isAdminOrSuperAdminRole(role?: string | null): boolean {
   return normalizedRole === 'admin' || normalizedRole === 'super_admin';
 }
 
+/**
+ * Booker is retained as a legacy alias while staff accounts are migrated to
+ * the canonical `telesales` role.
+ */
+export function isTelesalesRole(role?: string | null): boolean {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  return normalizedRole === 'telesales' || normalizedRole === 'booker';
+}
+
+/**
+ * LoCa is an operational customer-care workspace. Telesales can work only
+ * with the customer scope enforced by the API; configuration remains guarded
+ * by its own write authorization.
+ */
+export function canAccessLoca(role?: string | null): boolean {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  return (
+    isAdminOrSuperAdminRole(normalizedRole) ||
+    ['manager', 'oc', 'cc', 'cs', 'control'].includes(normalizedRole) ||
+    isTelesalesRole(normalizedRole)
+  );
+}
+
 export function isCanonicalSuperAdminIdentity(identity: { username?: string | null; email?: string | null }): boolean {
   const username = String(identity.username || '')
     .trim()

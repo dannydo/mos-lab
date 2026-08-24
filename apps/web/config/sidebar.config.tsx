@@ -29,7 +29,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 
-import { isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import { canAccessLoca, isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { AppIcon } from '../components/ui/AppIcon';
 
 export interface SidebarItemConfig {
@@ -60,7 +60,7 @@ export function getSidebarGroups(
   const normalizedRole = userRole?.toLowerCase() || '';
   const isAdmin = isAdminOrSuperAdminRole(normalizedRole);
   const isSuperAdmin = isSuperAdminRole(normalizedRole);
-  const isLocaAllowed = isAdmin || ['manager', 'oc', 'cc', 'cs', 'control'].includes(normalizedRole);
+  const isLocaAllowed = canAccessLoca(normalizedRole);
   const isCrmCategoryVisible = categoryVisibility.crm !== false;
   const isAcademyCategoryVisible = categoryVisibility.academy !== false;
 

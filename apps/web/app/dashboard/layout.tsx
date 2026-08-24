@@ -22,7 +22,7 @@ import {
 } from '@ant-design/icons';
 import { Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRound } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
@@ -49,7 +49,6 @@ import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
 const { Header, Sider, Content } = Layout;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const { themeMode, toggleTheme, desktopDensity, setDesktopDensity } = useTheme();
   const { token } = theme.useToken();
@@ -303,7 +302,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       }
     }
-  }, [router]);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('mos_token');
@@ -311,7 +310,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     localStorage.removeItem('mos_omicall_auto_init');
     localStorage.removeItem('mos_original_token');
     localStorage.removeItem('mos_original_user');
-    router.push('/login');
+    setUser(null);
+    setIsImpersonating(false);
+
+    // End the current app shell immediately so background polling and a stuck
+    // client-side transition cannot keep the user on the dashboard.
+    window.location.replace('/login');
   };
 
   const handleExitImpersonation = () => {

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { canAccessLoca, isTelesalesRole } from '@mos-lab/shared';
 import { CustomerAccessService } from './customer-access.service.js';
 
 test('telesales access requires an active assignment to the same CRM staff member', async () => {
@@ -35,7 +36,7 @@ test('telesales access requires an active assignment to the same CRM staff membe
   assert.ok(where.OR[1].expiresAt && where.OR[1].expiresAt.gt instanceof Date);
 });
 
-test('non-telesales roles bypass the telesales assignment boundary', async () => {
+test('Super Admin bypasses the telesales assignment boundary', async () => {
   let wasQueried = false;
   const fastify = {
     prisma: {
@@ -52,7 +53,7 @@ test('non-telesales roles bypass the telesales assignment boundary', async () =>
 
   const canAccess = await CustomerAccessService.canTelesalesAccessCustomer(
     fastify as never,
-    { id: 41, role: 'BK_CS' },
+    { id: 41, role: 'super_admin' },
     99
   );
 
@@ -78,4 +79,12 @@ test('telesales is denied when the customer is not assigned to them', async () =
   );
 
   assert.equal(canAccess, false);
+});
+
+test('telesales and legacy booker accounts are allowed into LoCa but remain customer-scoped', () => {
+  assert.equal(canAccessLoca('telesales'), true);
+  assert.equal(canAccessLoca('booker'), true);
+  assert.equal(isTelesalesRole('telesales'), true);
+  assert.equal(isTelesalesRole('booker'), true);
+  assert.equal(canAccessLoca('technician'), false);
 });

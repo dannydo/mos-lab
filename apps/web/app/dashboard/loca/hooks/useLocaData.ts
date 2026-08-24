@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 import {
   Customer,
+  isTelesalesRole,
   Staff,
   TouchpointStatus,
   LASH_TOUCHUP_SYSTEM_CONFIG,
@@ -234,6 +235,15 @@ export function useLocaData(options?: UseLocaDataOptions) {
   const [sortField, setSortField] = useState('daysSinceLastVisit');
   const [assignedStaffId, setAssignedStaffId] = useState<string | number>('ALL');
   const [bookingStatusFilter, setBookingStatusFilterState] = useState<'ALL' | 'BOOKED' | 'NOT_BOOKED'>('ALL');
+
+  // The API enforces this boundary too. Keeping the client state aligned
+  // prevents stale browser state from asking the LoCa workspace for a wider
+  // customer scope after a role change.
+  useEffect(() => {
+    if (isTelesalesRole(currentUser?.role)) {
+      setAssignedStaffId('me');
+    }
+  }, [currentUser?.role]);
 
   // Request ID Guard to prevent out-of-order API responses from overwriting data
   const lastRequestIdRef = useRef(0);

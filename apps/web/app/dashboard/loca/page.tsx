@@ -67,7 +67,7 @@ const TableConfigDrawer = dynamic(
 const SMSModal = dynamic(() => import('../../../components/sms/SMSModal').then((m) => m.SMSModal), { ssr: false });
 import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 import { useTableConfig } from '../../../hooks/useTableConfig';
-import { Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/shared';
+import { canAccessLoca, Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useLocaData, TAB_KEYS } from './hooks/useLocaData';
 import { getLocaColumns, getNewLocaColumns } from './components/LocaColumns';
@@ -269,9 +269,7 @@ export default function LocaCampaignPage() {
     onCloseDrawer: () => closeLocaConfig(),
   });
 
-  const isLocaAllowed = ['admin', 'manager', 'oc', 'cc', 'cs', 'control'].includes(
-    currentUser?.role?.toLowerCase() || ''
-  );
+  const isLocaAllowed = canAccessLoca(currentUser?.role);
 
   const [smsModalVisible, setSmsModalVisible] = useState<boolean>(false);
 
@@ -454,7 +452,7 @@ export default function LocaCampaignPage() {
         <Result
           status="403"
           title="403 - Không Có Quyền Truy Cập"
-          subTitle="Chiến dịch LoCa chỉ dành cho Admin, Manager, CS (Customer Care) và Control (Operations Coordinator)."
+          subTitle="Chiến dịch LoCa chỉ dành cho các nhóm vận hành được cấp quyền."
         />
       </Card>
     );

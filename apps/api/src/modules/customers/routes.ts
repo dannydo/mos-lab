@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
-import { BucketType, SafeAny } from '@mos-lab/shared';
+import { BucketType, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { registerAllocationCron } from './services/allocation-cron.service.js';
 import { ComboRecognitionService, parseComboDateBounds } from './services/combo-recognition.service.js';
 import { UserServiceTypeService } from './services/user-service-type.service.js';
@@ -7012,7 +7012,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
       const onlineConsultantName = assigned?.staff?.displayName || 'Chưa phân bổ';
 
-      if (user.role !== 'admin') {
+      // Super Admin inherits the complete Admin customer-detail scope. Keep
+      // the assignment boundary only for roles that are not administrators.
+      if (!isAdminOrSuperAdminRole(user.role)) {
         if (
           CustomerAccessService.isTelesales(user) &&
           !(await ensureTelesalesCustomerAccess(request, reply, customerId))

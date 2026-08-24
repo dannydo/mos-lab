@@ -1,11 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { SafeAny } from '@mos-lab/shared';
+import { canAccessLoca, SafeAny } from '@mos-lab/shared';
+import { CustomerAccessService } from '../services/customer-access.service.js';
 
 function isLocaRoleAllowed(role?: string): boolean {
-  if (!role) return false;
-  const r = role.toLowerCase().trim();
-  return ['admin', 'manager', 'oc', 'cc', 'cs', 'control'].includes(r);
+  return canAccessLoca(role);
 }
 
 export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
@@ -31,6 +30,16 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
 
     if (!customerId || !touchpointKey) {
       return reply.status(400).send({ error: 'BadRequest', message: 'Thiếu customerId hoặc touchpointKey' });
+    }
+
+    if (CustomerAccessService.isTelesales(user)) {
+      const canAccessCustomer = await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, customerId);
+      if (!canAccessCustomer) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.',
+        });
+      }
     }
 
     try {
@@ -170,7 +179,7 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
       return reply.send({ touchpoints: {} });
     }
 
-    const ids = customerIds
+    let ids = customerIds
       .split(',')
       .map((id) => parseInt(id.trim(), 10))
       .filter((id) => !isNaN(id));
@@ -180,6 +189,22 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
     }
 
     try {
+      if (CustomerAccessService.isTelesales(user)) {
+        const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
+          where: {
+            staffId: user.id,
+            legacyUserId: { in: ids },
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          select: { legacyUserId: true },
+        });
+        const allowedCustomerIds = new Set(assignments.map((assignment) => assignment.legacyUserId));
+        ids = ids.filter((id) => allowedCustomerIds.has(id));
+        if (ids.length === 0) {
+          return reply.send({ touchpoints: {} });
+        }
+      }
+
       const touchpointsList = await fastify.prisma.crm.crmLocaTouchpoint.findMany({
         where: { legacyUserId: { in: ids } },
         orderBy: { updatedAt: 'desc' },

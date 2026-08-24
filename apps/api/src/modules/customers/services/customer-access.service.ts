@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { isTelesalesRole } from '@mos-lab/shared';
 
 export interface CustomerAccessUser {
   id: number;
@@ -8,13 +9,13 @@ export interface CustomerAccessUser {
 /**
  * Access boundary for telesales customer data.
  *
- * Telesales may only read or interact with customers currently assigned to
- * their CRM staff account. Roles outside telesales retain their existing
- * endpoint-specific access policies.
+ * Telesales and legacy Booker accounts may only read or interact with
+ * customers currently assigned to their CRM staff account. Roles outside this
+ * customer-facing group retain their existing endpoint-specific access policies.
  */
 export class CustomerAccessService {
   static isTelesales(user: CustomerAccessUser): boolean {
-    return user.role?.trim().toLowerCase() === 'telesales';
+    return isTelesalesRole(user.role);
   }
 
   static async canTelesalesAccessCustomer(

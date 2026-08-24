@@ -153,6 +153,14 @@ describe('UI primitives', () => {
     expect(customerChildren.some((item) => item.key === 'customers-all')).toBe(false);
   });
 
+  it('gives telesales their customer workspace and LoCa campaign entry', () => {
+    const crmGroup = getSidebarGroups('telesales').find((group) => group.groupKey === 'grp-crm');
+    const customerChildren = crmGroup?.items.find((item) => item.key === 'customers-parent')?.children ?? [];
+
+    expect(customerChildren.some((item) => item.key === 'my-customers')).toBe(true);
+    expect(crmGroup?.items.some((item) => item.key === 'loca' && item.path === '/dashboard/loca')).toBe(true);
+  });
+
   it('hides dynamic children together when their menu category is restricted', () => {
     const groups = getSidebarGroups(
       'telesales',

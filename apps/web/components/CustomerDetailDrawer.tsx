@@ -27,6 +27,7 @@ const RescheduleBookingModal = dynamic(() => import('./RescheduleBookingModal').
 const BookingWizardDrawer = dynamic(() => import('./BookingWizardDrawer'), { ssr: false });
 import CalendarPlusIcon from './icons/CalendarPlusIcon';
 import { useCustomerDetail } from './customer-detail/hooks/useCustomerDetail';
+import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 
 // Sub-components
 import { KpiStatsCard } from './customer-detail/components/KpiStatsCard';
@@ -189,7 +190,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
 
   const isManagerOrAdmin = useMemo(() => {
     const role = currentUser?.role?.toLowerCase();
-    return role === 'admin' || role === 'manager';
+    return isAdminOrSuperAdminRole(role) || role === 'manager';
   }, [currentUser]);
 
   const [activeTabKey, setActiveTabKey] = useState<string>('bookings');

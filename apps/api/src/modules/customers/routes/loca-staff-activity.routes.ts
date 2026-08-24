@@ -1,6 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { SafeAny, LocaStaffActivityStats, LocaStaffActivityLogItem } from '@mos-lab/shared';
+import {
+  canAccessLoca,
+  isTelesalesRole,
+  SafeAny,
+  LocaStaffActivityStats,
+  LocaStaffActivityLogItem,
+} from '@mos-lab/shared';
 
 function getPresetDateBounds(
   datePreset?: string,
@@ -90,6 +96,14 @@ function formatAvatarUrl(avatar?: string | null, userId?: number): string | null
 export async function registerLocaStaffActivityRoutes(fastify: FastifyInstance) {
   // GET /api/customers/loca-staff-activity
   fastify.get('/customers/loca-staff-activity', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { id: number; role?: string };
+    if (!canAccessLoca(user.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Bạn không có quyền truy cập báo cáo hoạt động LoCa.',
+      });
+    }
+
     const query = request.query as {
       staffId?: string;
       datePreset?: 'today' | 'week' | 'month' | 'custom';
@@ -102,7 +116,13 @@ export async function registerLocaStaffActivityRoutes(fastify: FastifyInstance) 
       search?: string;
     };
 
-    const targetStaffId = query.staffId && query.staffId !== 'ALL' ? parseInt(query.staffId, 10) : null;
+    // Telesales can see their own activity only; the caller-supplied staff ID
+    // must never widen that scope.
+    const targetStaffId = isTelesalesRole(user.role)
+      ? user.id
+      : query.staffId && query.staffId !== 'ALL'
+        ? parseInt(query.staffId, 10)
+        : null;
     const datePreset = query.datePreset || 'month';
     const page = Math.max(1, parseInt(query.page || '1', 10));
     const pageSize = Math.max(1, parseInt(query.pageSize || '20', 10));
