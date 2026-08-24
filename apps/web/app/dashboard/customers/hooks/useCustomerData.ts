@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer, Staff, BookerAllocationBatchSummary } from '@mos-lab/shared';
+import { canManageCustomerAllocation, Customer, Staff, BookerAllocationBatchSummary } from '@mos-lab/shared';
 
 // Import sub-hooks
 import { useCustomerFilters } from './useCustomerFilters';
@@ -179,7 +179,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
   const [staffList, setStaffList] = useState<SafeAny[]>([]);
   useEffect(() => {
     const loadStaff = async () => {
-      if (currentUser?.role !== 'admin') {
+      if (!canManageCustomerAllocation(currentUser?.role)) {
         return;
       }
       try {

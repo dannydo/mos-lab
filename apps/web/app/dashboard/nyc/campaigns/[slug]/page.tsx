@@ -63,6 +63,14 @@ import dynamic from 'next/dynamic';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../../../context/ThemeContext';
 import { apiClient } from '../../../../../lib/api-client';
+import {
+  getFixedFinalPriceServiceCategories,
+  getFixedFinalPriceServiceOptions,
+  getFixedFinalPriceScopeSummary,
+  splitFixedFinalPriceSelection,
+  validateFixedFinalPricePromotion,
+} from '../../../../../lib/campaign-fixed-price';
+import { normalizeCampaignAccessStaff } from '../../../../../lib/campaign-form-options';
 import { removeVietnameseTones } from '../../../../../lib/utils/search';
 import { formatVND, formatDuration } from '../../../../../lib/format-utils';
 import { useOmiCall } from '../../../../../context/OmiCallContext';
@@ -111,10 +119,17 @@ import {
   CampaignBookingStatusFilter,
   CampaignTouchpoint,
   CampaignPromotion,
+  CampaignPromotionType,
   CampaignStatsResponse,
+  CustomerCampaignPromotionInfo,
+  CustomerCampaignPromotionItem,
+  CustomerServiceFilterCategory,
+  CustomerServiceFilterOption,
   Staff,
   Customer,
   CALL_RESULT_LABELS,
+  isAdminOrSuperAdminRole,
+  vietnameseSearchFilter,
 } from '@mos-lab/shared';
 
 const getRowClassName = (record: any, themeMode: string) => {
@@ -160,6 +175,33 @@ const SMSModal = dynamic(() => import('../../../../../components/sms/SMSModal').
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+
+const toBookingPromotionItem = (promotion: CampaignPromotion): CustomerCampaignPromotionItem => {
+  const value = Math.round(Number(promotion.value || 0));
+  const label =
+    promotion.type === 'PERCENT_DISCOUNT'
+      ? `Giảm ${value}%`
+      : promotion.type === 'FIXED_DISCOUNT'
+        ? `Giảm ${value.toLocaleString('vi-VN')}đ`
+        : promotion.type === 'FIXED_FINAL_PRICE'
+          ? `Đồng giá ${value.toLocaleString('vi-VN')}đ`
+          : promotion.name;
+
+  return {
+    id: promotion.id,
+    campaignId: promotion.campaignId,
+    name: promotion.name,
+    code: promotion.code,
+    type: promotion.type,
+    value,
+    eligibleServiceIds: promotion.eligibleServiceIds || [],
+    eligibleServiceCategoryKeys: promotion.eligibleServiceCategoryKeys || [],
+    description: promotion.description,
+    isActive: promotion.isActive,
+    label,
+    legacyPromotionId: promotion.legacyPromotionId || null,
+  };
+};
 
 const CAMPAIGN_BOOKING_STATUS_OPTIONS: Array<{
   value: CampaignBookingStatusFilter;
@@ -268,6 +310,23 @@ export default function CampaignDetailPage() {
   // User & Staff state
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [serviceFilterOptions, setServiceFilterOptions] = useState<CustomerServiceFilterOption[]>([]);
+  const [serviceFilterCategories, setServiceFilterCategories] = useState<CustomerServiceFilterCategory[]>([]);
+  const [campaignFormOptionsLoading, setCampaignFormOptionsLoading] = useState(true);
+  const [campaignFormOptionsError, setCampaignFormOptionsError] = useState<string | null>(null);
+  const [initialCampaignPromotionContext, setInitialCampaignPromotionContext] = useState<
+    CustomerCampaignPromotionInfo[]
+  >([]);
+
+  // A Fast Refresh can preserve the previous booker selection after a role
+  // correction. Reset the campaign-wide default once the authenticated Admin
+  // or Super Admin identity is known; they can still choose a specific Booker
+  // afterwards from the selector.
+  useEffect(() => {
+    if (isAdminOrSuperAdminRole(currentUser?.role)) {
+      setSelectedBookerId((current) => (current === 'ALL' ? current : 'ALL'));
+    }
+  }, [currentUser?.role]);
 
   // Drawers & Modals
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
@@ -324,6 +383,10 @@ export default function CampaignDetailPage() {
         type: p.type,
         value: p.value,
         code: p.code || '',
+        eligibleServiceSelection: [
+          ...(p.eligibleServiceCategoryKeys || []).map((key) => `category:${key}`),
+          ...(p.eligibleServiceIds || []).map(String),
+        ],
       })),
     });
     setEditCampaignModalVisible(true);
@@ -357,13 +420,30 @@ export default function CampaignDetailPage() {
         color: t.color || '#3b82f6',
       }));
 
-      const updatedPromotions = (values.promotions || []).map((p: any) => ({
-        name: p.name ? p.name.trim() : '',
-        code: p.code ? p.code.trim() : undefined,
-        type: p.type,
-        value: typeof p.value === 'number' ? p.value : 0,
-        description: p.description,
-      }));
+      const updatedPromotions = (values.promotions || []).map((p: any) => {
+        const type = p.type as CampaignPromotionType;
+        const value = Number(p.value);
+        const { eligibleServiceIds, eligibleServiceCategoryKeys } = splitFixedFinalPriceSelection(
+          p.eligibleServiceSelection
+        );
+        validateFixedFinalPricePromotion(
+          type,
+          value,
+          eligibleServiceIds,
+          eligibleServiceCategoryKeys,
+          fixedFinalPriceServices,
+          fixedFinalPriceCategories
+        );
+        return {
+          name: p.name ? p.name.trim() : '',
+          code: p.code ? p.code.trim() : undefined,
+          type,
+          value,
+          eligibleServiceIds: type === 'FIXED_FINAL_PRICE' ? eligibleServiceIds : undefined,
+          eligibleServiceCategoryKeys: type === 'FIXED_FINAL_PRICE' ? eligibleServiceCategoryKeys : undefined,
+          description: p.description,
+        };
+      });
 
       const updateDto = {
         name: values.name,
@@ -404,26 +484,101 @@ export default function CampaignDetailPage() {
       try {
         const u = JSON.parse(storedUser);
         setCurrentUser(u);
-        if (u.role !== 'admin') {
+        // Super Admin has the same campaign-wide scope as Admin. Treating the
+        // role as a regular booker here silently sent `assignedStaffId=<self>`
+        // after any booking refresh, leaving only that booker's rows visible.
+        if (!isAdminOrSuperAdminRole(u.role)) {
           setSelectedBookerId(String(u.id));
+        } else {
+          setSelectedBookerId('ALL');
         }
       } catch (_) {}
     }
-    apiClient.customers
-      .getStaff({ role: 'booker' })
-      .then((res) => {
-        setStaffList(Array.isArray(res) ? res : []);
-      })
-      .catch(console.error);
+    let cancelled = false;
+    const loadCampaignFormOptions = async () => {
+      setCampaignFormOptionsLoading(true);
+      setCampaignFormOptionsError(null);
+      try {
+        const [bookerRows, serviceResponse] = await Promise.all([
+          apiClient.customers.getStaff({ role: 'booker' }),
+          apiClient.customers.getServiceFilterOptions(),
+        ]);
+        let availableStaff = normalizeCampaignAccessStaff(bookerRows);
+        if (availableStaff.length === 0) {
+          availableStaff = normalizeCampaignAccessStaff(await apiClient.customers.getStaff());
+        }
+        if (!cancelled) {
+          setStaffList(availableStaff);
+          setServiceFilterOptions(serviceResponse.services || []);
+          setServiceFilterCategories(serviceResponse.categories || []);
+        }
+      } catch (error) {
+        console.error('Failed to load campaign form options:', error);
+        if (!cancelled) {
+          setCampaignFormOptionsError('Không thể tải danh sách thành viên hoặc dịch vụ. Hãy thử tải lại trang.');
+        }
+      } finally {
+        if (!cancelled) setCampaignFormOptionsLoading(false);
+      }
+    };
+    void loadCampaignFormOptions();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  const fixedFinalPriceServices = getFixedFinalPriceServiceOptions(serviceFilterOptions);
+  const fixedFinalPriceCategories = getFixedFinalPriceServiceCategories(
+    serviceFilterCategories,
+    fixedFinalPriceServices
+  );
+
   const isAdmin =
-    currentUser?.role === 'admin' ||
+    isAdminOrSuperAdminRole(currentUser?.role) ||
     currentUser?.role === 'manager' ||
     currentUser?.role === 'oc' ||
     currentUser?.role === 'ls' ||
     currentUser?.username?.toLowerCase() === 'admin' ||
     currentUser?.username?.toLowerCase() === 'danhdo@gmail.com';
+
+  useEffect(() => {
+    if (!campaign) {
+      setInitialCampaignPromotionContext([]);
+      return;
+    }
+
+    const fixedPriceServices = getFixedFinalPriceServiceOptions(serviceFilterOptions);
+    const fixedPriceCategories = getFixedFinalPriceServiceCategories(serviceFilterCategories, fixedPriceServices);
+    const activePromotions = promotions
+      .filter((promotion) => promotion.isActive !== false)
+      .map((promotion) => {
+        const item = toBookingPromotionItem(promotion);
+        if (promotion.type !== 'FIXED_FINAL_PRICE') return item;
+
+        const categoryKeys = item.eligibleServiceCategoryKeys || [];
+        const categoryMatches = fixedPriceCategories.filter((category) => categoryKeys.includes(category.key));
+        return {
+          ...item,
+          eligibleServiceIds: Array.from(
+            new Set([...(item.eligibleServiceIds || []), ...categoryMatches.flatMap((category) => category.serviceIds)])
+          ),
+          eligibleServiceCategoryLabels: categoryMatches.map((category) => category.label),
+        };
+      });
+
+    setInitialCampaignPromotionContext(
+      activePromotions.length === 0
+        ? []
+        : [
+            {
+              campaignId: campaign.id,
+              campaignName: campaign.name,
+              campaignSlug: campaign.slug,
+              promotions: activePromotions,
+            },
+          ]
+    );
+  }, [campaign, promotions, serviceFilterCategories, serviceFilterOptions]);
 
   // Fetch Campaign Data
   const fetchCampaignData = useCallback(async () => {
@@ -1496,14 +1651,23 @@ export default function CampaignDetailPage() {
           {promotions.length > 0 && (
             <Tooltip
               title={promotions
-                .map((p) => `${p.name}: ${p.type === 'PERCENT_DISCOUNT' ? `${p.value}%` : formatVND(p.value)}`)
+                .map(
+                  (p) =>
+                    `${p.name}: ${p.type === 'PERCENT_DISCOUNT' ? `${p.value}%` : p.type === 'FIXED_FINAL_PRICE' ? `Đồng giá ${formatVND(p.value)}` : formatVND(p.value)}`
+                )
                 .join(', ')}
             >
               <div className="flex items-center gap-1">
                 <GiftOutlined className="text-purple-400" />
                 {promotions.map((p) => (
                   <Tag key={p.id} color="purple" className="m-0 text-[10px] font-medium">
-                    {p.name} ({p.type === 'PERCENT_DISCOUNT' ? `${p.value}%` : formatVND(p.value)})
+                    {p.name} (
+                    {p.type === 'PERCENT_DISCOUNT'
+                      ? `${p.value}%`
+                      : p.type === 'FIXED_FINAL_PRICE'
+                        ? `Đồng giá ${formatVND(p.value)}`
+                        : formatVND(p.value)}
+                    )
                   </Tag>
                 ))}
               </div>
@@ -1608,7 +1772,7 @@ export default function CampaignDetailPage() {
               className="campaign-customer-booker-filter"
               style={{ width: 160 }}
               options={[
-                { value: 'ALL', label: 'Tất cả Booker' },
+                { value: 'ALL', label: 'All Bookers' },
                 ...bookerStaffList.map((s) => ({ value: String(s.id), label: s.displayName })),
               ]}
             />
@@ -1844,6 +2008,7 @@ export default function CampaignDetailPage() {
         open={bookingWizardVisible}
         onClose={() => setBookingWizardVisible(false)}
         initialCustomer={bookingInitialCustomer}
+        initialCampaignPromotions={initialCampaignPromotionContext}
         onSuccess={() => {
           setBookingWizardVisible(false);
           fetchCampaignCustomers();
@@ -1946,7 +2111,16 @@ export default function CampaignDetailPage() {
                           <Select
                             mode="multiple"
                             allowClear
+                            showSearch
+                            loading={campaignFormOptionsLoading}
                             placeholder="Chừa trống = Công Khai (Tất cả nhân sự xem được)"
+                            filterOption={vietnameseSearchFilter}
+                            optionFilterProp="label"
+                            notFoundContent={
+                              campaignFormOptionsLoading
+                                ? 'Đang tải thành viên...'
+                                : campaignFormOptionsError || 'Không có nhân sự hoạt động'
+                            }
                             style={{ width: '100%' }}
                             tagRender={(props) => {
                               const { label, closable, onClose } = props;
@@ -2127,61 +2301,143 @@ export default function CampaignDetailPage() {
                           )}
                           <div className="space-y-2">
                             {fields.map(({ key, name, ...restField }) => (
-                              <div
-                                key={key}
-                                className="campaign-edit-list-row campaign-edit-promotion-row flex items-center gap-2 py-0.5"
-                              >
-                                <div className="campaign-edit-field campaign-edit-promotion-name flex-1">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'name']}
-                                    rules={[{ required: true, message: 'Nhập tên' }]}
-                                    style={{ marginBottom: 0 }}
-                                  >
-                                    <Input placeholder="Tên ưu đãi (VD: Giảm 50%)" />
-                                  </Form.Item>
-                                </div>
-                                <div className="campaign-edit-field campaign-edit-promotion-type w-36">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'type']}
-                                    rules={[{ required: true, message: 'Chọn loại' }]}
-                                    style={{ marginBottom: 0 }}
-                                  >
-                                    <Select
-                                      options={[
-                                        { value: 'PERCENT_DISCOUNT', label: 'Giảm %' },
-                                        { value: 'FIXED_DISCOUNT', label: 'Giảm số tiền' },
-                                        { value: 'FREE_SERVICE', label: 'Tặng dịch vụ' },
-                                        { value: 'FREE_PRODUCT', label: 'Tặng sản phẩm' },
-                                      ]}
+                              <React.Fragment key={key}>
+                                <div className="campaign-edit-list-row campaign-edit-promotion-row flex items-center gap-2 py-0.5">
+                                  <div className="campaign-edit-field campaign-edit-promotion-name flex-1">
+                                    <Form.Item
+                                      {...restField}
+                                      name={[name, 'name']}
+                                      rules={[{ required: true, message: 'Nhập tên' }]}
+                                      style={{ marginBottom: 0 }}
+                                    >
+                                      <Input placeholder="Tên ưu đãi (VD: Giảm 50%)" />
+                                    </Form.Item>
+                                  </div>
+                                  <div className="campaign-edit-field campaign-edit-promotion-type w-36">
+                                    <Form.Item
+                                      {...restField}
+                                      name={[name, 'type']}
+                                      rules={[{ required: true, message: 'Chọn loại' }]}
+                                      style={{ marginBottom: 0 }}
+                                    >
+                                      <Select
+                                        options={[
+                                          { value: 'PERCENT_DISCOUNT', label: 'Giảm %' },
+                                          { value: 'FIXED_DISCOUNT', label: 'Giảm số tiền' },
+                                          { value: 'FIXED_FINAL_PRICE', label: 'Giá đồng nhất' },
+                                          { value: 'FREE_SERVICE', label: 'Tặng dịch vụ' },
+                                          { value: 'FREE_PRODUCT', label: 'Tặng sản phẩm' },
+                                        ]}
+                                      />
+                                    </Form.Item>
+                                  </div>
+                                  <div className="campaign-edit-field campaign-edit-promotion-value w-24">
+                                    <Form.Item
+                                      {...restField}
+                                      name={[name, 'value']}
+                                      rules={[{ required: true, message: 'Nhập giá trị' }]}
+                                      style={{ marginBottom: 0 }}
+                                    >
+                                      <InputNumber min={0} placeholder="Giá trị" style={{ width: '100%' }} />
+                                    </Form.Item>
+                                  </div>
+                                  <div className="campaign-edit-field campaign-edit-promotion-code w-28">
+                                    <Form.Item {...restField} name={[name, 'code']} style={{ marginBottom: 0 }}>
+                                      <Input placeholder="Mã Code" />
+                                    </Form.Item>
+                                  </div>
+                                  <div className="campaign-edit-field campaign-edit-promotion-delete w-8 flex justify-center">
+                                    <Button
+                                      type="text"
+                                      danger
+                                      icon={<MinusCircleOutlined />}
+                                      onClick={() => remove(name)}
                                     />
-                                  </Form.Item>
+                                  </div>
                                 </div>
-                                <div className="campaign-edit-field campaign-edit-promotion-value w-24">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'value']}
-                                    rules={[{ required: true, message: 'Nhập giá trị' }]}
-                                    style={{ marginBottom: 0 }}
-                                  >
-                                    <InputNumber min={0} placeholder="Giá trị" style={{ width: '100%' }} />
-                                  </Form.Item>
-                                </div>
-                                <div className="campaign-edit-field campaign-edit-promotion-code w-28">
-                                  <Form.Item {...restField} name={[name, 'code']} style={{ marginBottom: 0 }}>
-                                    <Input placeholder="Mã Code" />
-                                  </Form.Item>
-                                </div>
-                                <div className="campaign-edit-field campaign-edit-promotion-delete w-8 flex justify-center">
-                                  <Button
-                                    type="text"
-                                    danger
-                                    icon={<MinusCircleOutlined />}
-                                    onClick={() => remove(name)}
-                                  />
-                                </div>
-                              </div>
+                                <Form.Item
+                                  noStyle
+                                  shouldUpdate={(previous, current) =>
+                                    previous.promotions?.[name]?.type !== current.promotions?.[name]?.type ||
+                                    previous.promotions?.[name]?.eligibleServiceSelection !==
+                                      current.promotions?.[name]?.eligibleServiceSelection ||
+                                    previous.promotions?.[name]?.value !== current.promotions?.[name]?.value
+                                  }
+                                >
+                                  {({ getFieldValue }) => {
+                                    const selection = splitFixedFinalPriceSelection(
+                                      getFieldValue(['promotions', name, 'eligibleServiceSelection'])
+                                    );
+                                    const scope = getFixedFinalPriceScopeSummary(
+                                      selection.eligibleServiceIds,
+                                      selection.eligibleServiceCategoryKeys,
+                                      fixedFinalPriceServices,
+                                      fixedFinalPriceCategories
+                                    );
+                                    return getFieldValue(['promotions', name, 'type']) === 'FIXED_FINAL_PRICE' ? (
+                                      <div className="ml-1 mr-10 mb-2 rounded-lg border border-violet-200 bg-violet-50/70 p-2.5 dark:border-violet-500/30 dark:bg-violet-500/10">
+                                        <Form.Item
+                                          {...restField}
+                                          name={[name, 'eligibleServiceSelection']}
+                                          label="Dịch vụ / thể loại nối mi áp dụng"
+                                          rules={[
+                                            {
+                                              required: true,
+                                              type: 'array',
+                                              min: 1,
+                                              message: 'Chọn ít nhất một dịch vụ lẻ nối mi hoặc thể loại.',
+                                            },
+                                          ]}
+                                          style={{ marginBottom: 0 }}
+                                        >
+                                          <Select
+                                            mode="multiple"
+                                            allowClear
+                                            showSearch
+                                            loading={campaignFormOptionsLoading}
+                                            filterOption={vietnameseSearchFilter}
+                                            optionFilterProp="label"
+                                            placeholder="Chọn thể loại (VD: HyperLight) hoặc dịch vụ cụ thể"
+                                            notFoundContent={
+                                              campaignFormOptionsLoading
+                                                ? 'Đang tải dịch vụ từ Bộ lọc nâng cao...'
+                                                : campaignFormOptionsError ||
+                                                  'Không có dịch vụ lẻ nối mi hoặc thể loại hợp lệ'
+                                            }
+                                            options={[
+                                              {
+                                                label: 'Thể loại dịch vụ',
+                                                options: fixedFinalPriceCategories.map((category) => ({
+                                                  value: `category:${category.key}`,
+                                                  label: `${category.label} — ${category.serviceIds.length} dịch vụ, giá từ ${category.minimumPrice.toLocaleString('vi-VN')}đ`,
+                                                })),
+                                              },
+                                              {
+                                                label: 'Dịch vụ cụ thể',
+                                                options: fixedFinalPriceServices.map((service) => ({
+                                                  value: String(service.id),
+                                                  label: `${service.name} — ${service.price.toLocaleString('vi-VN')}đ`,
+                                                })),
+                                              },
+                                            ]}
+                                          />
+                                        </Form.Item>
+                                        <Text type="secondary" className="mt-1 block text-xs">
+                                          Chọn HyperLight sẽ áp dụng toàn bộ biến thể nối mi Normal của HyperLight. Dùng
+                                          cùng catalog với Bộ lọc nâng cao ở Tất cả KH; giá chốt không cộng dồn ưu đãi
+                                          khác.
+                                        </Text>
+                                        {scope.minimumListedPrice !== null && (
+                                          <Text className="mt-1 block text-xs text-violet-700 dark:text-violet-200">
+                                            Phạm vi hiện tại: {scope.services.length} dịch vụ. Giá đồng nhất tối đa:{' '}
+                                            {scope.minimumListedPrice.toLocaleString('vi-VN')}đ.
+                                          </Text>
+                                        )}
+                                      </div>
+                                    ) : null;
+                                  }}
+                                </Form.Item>
+                              </React.Fragment>
                             ))}
                             <Button
                               type="dashed"

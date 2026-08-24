@@ -13,7 +13,7 @@ import {
 import { RevokeAssignmentModal } from './RevokeAssignmentModal';
 import { RetainDataButton } from './RetainDataButton';
 import { AddToCampaignModal } from '../../../../components/campaign/AddToCampaignModal';
-import { SafeAny, Staff, vietnameseSearchFilter } from '@mos-lab/shared';
+import { canManageCustomerAllocation, SafeAny, Staff, vietnameseSearchFilter } from '@mos-lab/shared';
 import CampaignPlusIcon from '../../../../components/icons/CampaignPlusIcon';
 import { AdaptiveModal, ResponsiveFormField, ResponsiveFormGrid } from '../../../../components/ui';
 import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
@@ -85,8 +85,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
 
   const selectedNumericIds = selectedRowKeys.map((k) => Number(k));
 
-  const userRole = currentUser?.role ? String(currentUser.role).toLowerCase() : '';
-  const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+  const isManagerOrAdmin = canManageCustomerAllocation(currentUser?.role);
 
   if (selectedRowKeys.length === 0 || !isManagerOrAdmin) {
     return null;

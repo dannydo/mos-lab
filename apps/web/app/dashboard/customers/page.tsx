@@ -19,6 +19,7 @@ import AllocationBatchHeader from './components/AllocationBatchHeader';
 import CustomerRandomSelectorModal from './components/CustomerRandomSelectorModal';
 import { CollapsibleSearchField, ContentSurface, ResourceListPage, StatePanel } from '../../../components/ui';
 import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
+import { canManageCustomerAllocation } from '@mos-lab/shared';
 
 const UndoReasonModal = dynamic(() => import('./components/UndoReasonModal').then((m) => m.UndoReasonModal), {
   ssr: false,
@@ -175,8 +176,7 @@ function CustomersPageContent() {
     batchId: null,
   });
 
-  const userRole = data.currentUser?.role ? String(data.currentUser.role).toLowerCase() : '';
-  const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+  const isManagerOrAdmin = canManageCustomerAllocation(data.currentUser?.role);
   const sortOptions = [
     { value: 'id_desc', label: 'Mới nhất' },
     { value: 'name_asc', label: 'Tên A → Z' },

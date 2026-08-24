@@ -16,7 +16,12 @@ import {
   PhoneOutlined,
   AppstoreOutlined,
 } from '@ant-design/icons';
-import { CustomerServiceFilterCategory, CustomerServiceFilterOption, vietnameseSearchFilter } from '@mos-lab/shared';
+import {
+  canManageCustomerAllocation,
+  CustomerServiceFilterCategory,
+  CustomerServiceFilterOption,
+  vietnameseSearchFilter,
+} from '@mos-lab/shared';
 
 // Shared and custom sub-components
 import FilterSectionHeader from '~/components/filters/FilterSectionHeader';
@@ -188,8 +193,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
 }: CustomerFiltersProps) {
   const responsiveTier = useResponsiveTier();
   const isCompactTier = responsiveTier === 'mobile' || responsiveTier === 'tablet';
-  const userRole = currentUser?.role ? String(currentUser.role).toLowerCase() : '';
-  const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+  const isManagerOrAdmin = canManageCustomerAllocation(currentUser?.role);
 
   const filterParams = {
     daysSinceLastVisitMin,

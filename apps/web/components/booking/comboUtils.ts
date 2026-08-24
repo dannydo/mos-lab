@@ -45,13 +45,20 @@ export const getCalculatedPrice = (
   selectedCampaignPromotion?: SafeAny
 ) => {
   if (!selectedService) return { original: 0, discount: 0, final: 0 };
-  const original = selectedService.price || 0;
+  const original = Math.max(0, Math.round(Number(selectedService.price || 0)));
   let discount = 0;
   if (selectedCampaignPromotion) {
     if (selectedCampaignPromotion.type === 'PERCENT_DISCOUNT') {
       discount = Math.round((original * (selectedCampaignPromotion.value || 0)) / 100);
     } else if (selectedCampaignPromotion.type === 'FIXED_DISCOUNT') {
       discount = Math.round(selectedCampaignPromotion.value || 0);
+    } else if (selectedCampaignPromotion.type === 'FIXED_FINAL_PRICE') {
+      const eligibleServiceIds = (selectedCampaignPromotion.eligibleServiceIds || []).map(Number);
+      const serviceId = Number(selectedService.id);
+      const finalPrice = Math.round(selectedCampaignPromotion.value || 0);
+      if (eligibleServiceIds.includes(serviceId) && finalPrice > 0 && finalPrice <= original) {
+        discount = original - finalPrice;
+      }
     }
   } else if (selectedPromotion) {
     if (selectedPromotion.discountPercentage > 0) {

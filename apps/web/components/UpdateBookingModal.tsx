@@ -40,6 +40,7 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
   const [staffList, setStaffList] = useState<SafeAny[]>([]);
   const [serviceList, setServiceList] = useState<SafeAny[]>([]);
   const [promotionOptions, setPromotionOptions] = useState<BookingPromotionOptionsResponse | null>(null);
+  const selectedServiceId = Form.useWatch('serviceId', form);
 
   useEffect(() => {
     if (visible && booking) {
@@ -136,6 +137,24 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
   const storeId = Number(booking.storeId || (booking as any).client_store_id || (booking as any).clientStoreId || 16);
   const storeInfo = STORES.find((s) => s.id === storeId) || { name: booking.branchName || 'Estella Place' };
   const fullBranchAddress = getStoreFullAddress(storeInfo);
+
+  const handleServiceChange = (serviceId: number | string | undefined) => {
+    const selectedPromotion = (promotionOptions?.promotions || []).find(
+      (promotion) => form.getFieldValue('promotionSelection') === `${promotion.source}:${promotion.id}`
+    );
+    if (
+      selectedPromotion?.promotionType === 'FIXED_FINAL_PRICE' &&
+      !(selectedPromotion.eligibleServiceIds || []).includes(Number(serviceId))
+    ) {
+      form.setFieldValue('promotionSelection', undefined);
+    }
+  };
+
+  const visiblePromotionOptions = (promotionOptions?.promotions || []).filter(
+    (promotion) =>
+      promotion.promotionType !== 'FIXED_FINAL_PRICE' ||
+      Boolean(selectedServiceId && (promotion.eligibleServiceIds || []).includes(Number(selectedServiceId)))
+  );
 
   const handleSubmit = async () => {
     try {
@@ -383,6 +402,7 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
                 showSearch
                 aria-label="Chọn Dịch vụ thực hiện"
                 optionFilterProp="filterText"
+                onChange={handleServiceChange}
                 getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
               >
                 {serviceList.map((sv: SafeAny) => {
@@ -438,11 +458,16 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
                 aria-label="Chọn chương trình khuyến mãi"
                 filterOption={vietnameseSearchFilter}
                 getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                options={(promotionOptions?.promotions || []).map((promotion) => ({
+                options={visiblePromotionOptions.map((promotion) => ({
                   value: `${promotion.source}:${promotion.id}`,
                   label:
                     promotion.source === 'CUSTOM_CAMPAIGN'
-                      ? `🎯 ${promotion.label} — ${promotion.name}`
+                      ? `🎯 ${promotion.label} — ${promotion.name}${
+                          promotion.promotionType === 'FIXED_FINAL_PRICE' &&
+                          promotion.eligibleServiceCategoryLabels?.length
+                            ? ` · ${promotion.eligibleServiceCategoryLabels.join(', ')}`
+                            : ''
+                        }`
                       : promotion.label === promotion.name
                         ? promotion.name
                         : `${promotion.name} (${promotion.label})`,

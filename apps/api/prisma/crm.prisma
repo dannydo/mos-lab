@@ -656,8 +656,10 @@ model CrmCampaignPromotion {
   campaignId        Int      @map("campaign_id")
   name              String   @db.VarChar(150)
   code              String?  @db.VarChar(50)
-  type              String   @db.VarChar(30) // PERCENT_DISCOUNT | FIXED_DISCOUNT | FREE_SERVICE | FREE_PRODUCT
+  type              String   @db.VarChar(30) // PERCENT_DISCOUNT | FIXED_DISCOUNT | FIXED_FINAL_PRICE | FREE_SERVICE | FREE_PRODUCT
   value             Float    @default(0)
+  eligibleServiceIds String? @map("eligible_service_ids") @db.Text
+  eligibleServiceCategoryKeys String? @map("eligible_service_category_keys") @db.Text
   description       String?  @db.Text
   isActive          Boolean  @default(true) @map("is_active") @db.TinyInt
   legacyPromotionId Int?     @map("legacy_promotion_id")

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag, Switch } from 'antd';
+import { Alert, Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag, Switch } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -44,11 +44,25 @@ import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
 const { TextArea } = Input;
 
+const getFixedPriceScopeLabel = (promotion: CustomerCampaignPromotionItem): string => {
+  const categoryLabels = promotion.eligibleServiceCategoryLabels || [];
+  if (categoryLabels.length > 0) return categoryLabels.join(', ');
+
+  const serviceCount = (promotion.eligibleServiceIds || []).length;
+  return serviceCount === 1 ? '1 dịch vụ mi đã cấu hình' : `${serviceCount} dịch vụ mi đã cấu hình`;
+};
+
 interface BookingWizardDrawerProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   initialCustomer?: SafeAny;
+  /**
+   * Campaign context supplied when booking starts from a campaign customer row.
+   * It is an immediate UI hint only; the API still re-checks membership, status,
+   * date window, service scope, and final price before saving.
+   */
+  initialCampaignPromotions?: CustomerCampaignPromotionInfo[];
   initialCV?: SafeAny;
   initialBranch?: SafeAny;
   initialDate?: dayjs.Dayjs | string;
@@ -61,6 +75,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   onClose,
   onSuccess,
   initialCustomer,
+  initialCampaignPromotions,
   initialCV,
   initialBranch,
   initialDate,
@@ -534,35 +549,59 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
     setBookingChannel('FB');
     setBookingNote(initialIsOverbook ? '[⚠️ Ép lịch Overbook]' : '');
+    setBookingCreationError(null);
     setSelectedPromotion(null);
-    setCustomerCampaignPromotions([]);
+    setCustomerCampaignPromotions(initialCampaignPromotions || []);
     setSelectedCampaignPromotion(null);
     setReferralPhone('');
   };
 
-  const fetchCustomerCampaignPromotions = useCallback(async (customerId: number) => {
-    if (!customerId) {
-      setCustomerCampaignPromotions([]);
-      setSelectedCampaignPromotion(null);
-      return;
-    }
-    setLoadingCampaignPromotions(true);
-    try {
-      const data = await apiClient.campaigns.getCustomerActivePromotions(customerId);
-      const campPromos = data || [];
-      setCustomerCampaignPromotions(campPromos);
-
-      if (campPromos.length > 0 && campPromos[0].promotions && campPromos[0].promotions.length > 0) {
-        setSelectedCampaignPromotion(campPromos[0].promotions[0]);
-        setSelectedPromotion(null);
+  const fetchCustomerCampaignPromotions = useCallback(
+    async (customerId: number) => {
+      if (!customerId) {
+        setCustomerCampaignPromotions([]);
+        setSelectedCampaignPromotion(null);
+        return;
       }
-    } catch (err) {
-      console.error('[BookingWizard] Failed to fetch customer campaign promotions:', err);
-      setCustomerCampaignPromotions([]);
-    } finally {
-      setLoadingCampaignPromotions(false);
-    }
-  }, []);
+      setLoadingCampaignPromotions(true);
+      try {
+        const data = await apiClient.campaigns.getCustomerActivePromotions(customerId);
+        // A booking launched from an active campaign row already carries a
+        // membership-scoped context. Prefer the live API, then retain that
+        // context when the secondary endpoint has not yet returned a promotion.
+        const campPromos = data && data.length > 0 ? data : initialCampaignPromotions || [];
+        setCustomerCampaignPromotions(campPromos);
+
+        const defaultPromotion = campPromos
+          .flatMap((campaign) => campaign.promotions || [])
+          .find((promotion) => promotion.type !== 'FIXED_FINAL_PRICE');
+        if (defaultPromotion) {
+          setSelectedCampaignPromotion(defaultPromotion);
+          setSelectedPromotion(null);
+        } else {
+          setSelectedCampaignPromotion(null);
+        }
+      } catch (err) {
+        console.error('[BookingWizard] Failed to fetch customer campaign promotions:', err);
+        // A campaign page has already proven the customer is a member. Keep that
+        // short-lived UI context if the secondary lookup fails; the booking API is
+        // still authoritative and rejects any stale/invalid selection.
+        setCustomerCampaignPromotions(initialCampaignPromotions || []);
+      } finally {
+        setLoadingCampaignPromotions(false);
+      }
+    },
+    [initialCampaignPromotions]
+  );
+
+  // The campaign detail page loads catalog scope asynchronously. If the drawer
+  // was opened before that context arrived, hydrate its empty list as soon as
+  // the membership-scoped context becomes available. The API remains the source
+  // of truth when a booking is submitted.
+  useEffect(() => {
+    if (!open || isNewLead || !initialCampaignPromotions?.length) return;
+    setCustomerCampaignPromotions((current) => (current.length > 0 ? current : initialCampaignPromotions));
+  }, [initialCampaignPromotions, isNewLead, open]);
 
   useEffect(() => {
     const targetCustId = selectedCustomer?.legacyUserId || selectedCustomer?.id;
@@ -573,6 +612,16 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       setSelectedCampaignPromotion(null);
     }
   }, [selectedCustomer, isNewLead, open, fetchCustomerCampaignPromotions]);
+
+  useEffect(() => {
+    if (
+      selectedCampaignPromotion?.type === 'FIXED_FINAL_PRICE' &&
+      (!selectedService ||
+        !(selectedCampaignPromotion.eligibleServiceIds || []).map(Number).includes(Number(selectedService.id)))
+    ) {
+      setSelectedCampaignPromotion(null);
+    }
+  }, [selectedCampaignPromotion, selectedService]);
 
   const fetchPromotions = async () => {
     try {
@@ -682,6 +731,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   };
 
   const [creatingBooking, setCreatingBooking] = useState(false);
+  const [bookingCreationError, setBookingCreationError] = useState<string | null>(null);
 
   const handleGoToStep4 = async () => {
     if (!selectedCN) {
@@ -730,6 +780,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   };
 
   const handleFinalCreateBooking = async () => {
+    setBookingCreationError(null);
     setCreatingBooking(true);
     try {
       const payload = {
@@ -768,7 +819,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       console.error('[BookingWizard] Failed to create booking:', err);
       const serverMsg =
         (err as SafeAny).response?.data?.message || (err as SafeAny).response?.data?.error || (err as Error).message;
-      message.error(serverMsg || 'Có lỗi xảy ra khi tạo lịch đặt hẹn. Vui lòng kiểm tra lại.');
+      const userMessage = serverMsg || 'Có lỗi xảy ra khi tạo lịch đặt hẹn. Vui lòng kiểm tra lại.';
+      setBookingCreationError(userMessage);
+      message.error(userMessage);
     } finally {
       setCreatingBooking(false);
     }
@@ -832,6 +885,37 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   }, [safeBookingDate, pickerNonce]);
 
   const priceInfo = getCalculatedPrice(selectedService, selectedPromotion, selectedCampaignPromotion);
+  const visibleCustomerCampaignPromotions = useMemo(
+    () =>
+      customerCampaignPromotions
+        .map((campaign) => ({
+          ...campaign,
+          promotions: (campaign.promotions || []).filter(
+            (promotion) =>
+              promotion.type !== 'FIXED_FINAL_PRICE' ||
+              Boolean(
+                selectedService && (promotion.eligibleServiceIds || []).map(Number).includes(Number(selectedService.id))
+              )
+          ),
+        }))
+        .filter((campaign) => campaign.promotions.length > 0),
+    [customerCampaignPromotions, selectedService]
+  );
+  const fixedPriceEligibilityNotices = useMemo(() => {
+    const selectedServiceId = Number(selectedService?.id);
+    if (!Number.isSafeInteger(selectedServiceId) || selectedServiceId <= 0) return [];
+
+    return customerCampaignPromotions.flatMap((campaign) =>
+      (campaign.promotions || [])
+        .filter((promotion) => promotion.type === 'FIXED_FINAL_PRICE')
+        .map((promotion) => ({
+          id: promotion.id,
+          isEligible: (promotion.eligibleServiceIds || []).map(Number).includes(selectedServiceId),
+          price: Math.round(Number(promotion.value || 0)),
+          scopeLabel: getFixedPriceScopeLabel(promotion),
+        }))
+    );
+  }, [customerCampaignPromotions, selectedService]);
 
   return (
     <AdaptiveDrawer
@@ -1208,7 +1292,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           </div>
 
           {/* Campaign Promotion Section (Ưu đãi chiến dịch) */}
-          {customerCampaignPromotions.length > 0 && (
+          {visibleCustomerCampaignPromotions.length > 0 && (
             <div
               style={{
                 padding: '14px',
@@ -1246,7 +1330,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                 )}
               </div>
 
-              {customerCampaignPromotions.map((camp) => (
+              {visibleCustomerCampaignPromotions.map((camp) => (
                 <div key={camp.campaignId} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Tag color="purple" style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
@@ -1258,7 +1342,11 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                     {camp.promotions.map((promo) => {
                       const isSelected = selectedCampaignPromotion?.id === promo.id;
                       let badgeColor = 'purple';
-                      if (promo.type === 'PERCENT_DISCOUNT' || promo.type === 'FIXED_DISCOUNT') {
+                      if (
+                        promo.type === 'PERCENT_DISCOUNT' ||
+                        promo.type === 'FIXED_DISCOUNT' ||
+                        promo.type === 'FIXED_FINAL_PRICE'
+                      ) {
                         badgeColor = 'red';
                       } else if (promo.type === 'FREE_SERVICE') {
                         badgeColor = 'cyan';
@@ -1362,11 +1450,14 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                   }
                 }}
                 options={[
-                  ...customerCampaignPromotions.flatMap((camp) =>
+                  ...visibleCustomerCampaignPromotions.flatMap((camp) =>
                     camp.promotions.map((p) => {
                       let valText = '';
                       if (p.type === 'PERCENT_DISCOUNT') valText = ` (Giảm ${p.value}%)`;
                       else if (p.type === 'FIXED_DISCOUNT') valText = ` (Giảm ${p.value.toLocaleString('vi-VN')}đ)`;
+                      else if (p.type === 'FIXED_FINAL_PRICE') {
+                        valText = ` (Thanh toán ${p.value.toLocaleString('vi-VN')}đ · ${getFixedPriceScopeLabel(p)})`;
+                      }
                       return {
                         value: `CAMP_${p.id}`,
                         label: `🎯 [Ưu đãi Chiến dịch: ${camp.campaignName}] ${p.label}${valText}`,
@@ -1384,6 +1475,20 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                   })),
                 ]}
               />
+              {fixedPriceEligibilityNotices.map((notice) => (
+                <div
+                  key={notice.id}
+                  style={{
+                    marginTop: '7px',
+                    fontSize: '11px',
+                    color: notice.isEligible ? (themeMode === 'dark' ? '#86efac' : '#15803d') : '#fa8c16',
+                  }}
+                >
+                  {notice.isEligible
+                    ? `✓ Dịch vụ đang chọn đủ điều kiện Đồng giá ${notice.price.toLocaleString('vi-VN')}đ (${notice.scopeLabel}).`
+                    : `Đồng giá ${notice.price.toLocaleString('vi-VN')}đ chỉ áp dụng cho ${notice.scopeLabel}; dịch vụ đang chọn không thuộc phạm vi.`}
+                </div>
+              ))}
             </div>
 
             <div>
@@ -1430,6 +1535,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                   <span style={{ fontVariantNumeric: 'tabular-nums' }}>
                     -{priceInfo.discount.toLocaleString('vi-VN')}đ
                   </span>
+                </div>
+              )}
+              {selectedCampaignPromotion?.type === 'FIXED_FINAL_PRICE' && (
+                <div style={{ color: themeMode === 'dark' ? '#c4b5fd' : '#7e22ce', fontSize: '12px' }}>
+                  Đồng giá {Math.round(selectedCampaignPromotion.value).toLocaleString('vi-VN')}đ là giá thanh toán cuối
+                  cùng cho {getFixedPriceScopeLabel(selectedCampaignPromotion)}.
                 </div>
               )}
               <div
@@ -1666,6 +1777,16 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       {/* STEP 3: MESSAGE CONFIRMATION TEMPLATE */}
       {currentStep === 3 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {bookingCreationError && (
+            <Alert
+              type="error"
+              showIcon
+              closable
+              message="Chưa thể tạo lịch"
+              description={bookingCreationError}
+              onClose={() => setBookingCreationError(null)}
+            />
+          )}
           <Card
             title={
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

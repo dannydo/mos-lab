@@ -1,17 +1,18 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { SafeAny } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { getBkPaystubData } from '../../kpi/services/bk-salary.service.js';
 import { BookingAuditService } from '../services/booking-audit.service.js';
 import { UserServiceTypeService } from '../services/user-service-type.service.js';
-import { CampaignPromotionSyncService } from '../../campaigns/campaign-promotion-sync.service.js';
 import { isForeignPhoneNumber, resolveIsForeign } from '../services/foreign-customer.service.js';
+import { BookingPromotionError, BookingPromotionService } from '../services/booking-promotion.service.js';
 
 const ALLOWED_BOOKING_LEGACY_GROUPS = [2, 5, 14, 31, 32, 33, 34, 45];
 
 async function validateLegacyStaffBookingPermission(
   fastify: FastifyInstance,
-  legacyStaffId: number
+  legacyStaffId: number,
+  actorRole?: string | null
 ): Promise<{ valid: boolean; statusCode?: number; message?: string }> {
   const staffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
     `SELECT user_group_id, access_user_group_ids FROM user_profile WHERE user_id = ? AND is_disabled = 0 LIMIT 1`,
@@ -24,6 +25,13 @@ async function validateLegacyStaffBookingPermission(
       statusCode: 400,
       message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị vô hiệu hóa. Vui lòng liên hệ Admin.',
     };
+  }
+
+  // CRM Admin/Super Admin already passed authenticated mOS authorization.
+  // They may create, reschedule, and cancel bookings even when their linked
+  // legacy profile is not in a historical Booker group.
+  if (isAdminOrSuperAdminRole(actorRole)) {
+    return { valid: true };
   }
 
   const profile = staffRows[0];
@@ -120,7 +128,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       }
 
       const legacyStaffId = validStaffId;
-      const permCheck = await validateLegacyStaffBookingPermission(fastify, legacyStaffId);
+      const permCheck = await validateLegacyStaffBookingPermission(fastify, legacyStaffId, user.role);
       if (!permCheck.valid) {
         return reply.status(permCheck.statusCode || 400).send({
           error: permCheck.statusCode === 403 ? 'Forbidden' : 'Bad Request',
@@ -270,90 +278,22 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         srvDuration = 90;
       }
 
-      // Calculate promotional discount if promotionId is provided
-      let selectedPromoId: number | null = null;
-      let campaignId: number | null = null;
-      let discountAmount = 0;
-      let finalPrice = srvPrice;
-
-      if (promotionId) {
-        const promoRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT id, campaign_id, discount_percentage, discount_amount FROM promotion WHERE id = ? LIMIT 1`,
-          promotionId
-        );
-        if (promoRows.length > 0) {
-          selectedPromoId = Number(promoRows[0].id);
-          campaignId = promoRows[0].campaign_id ? Number(promoRows[0].campaign_id) : null;
-          const pct = Number(promoRows[0].discount_percentage || 0);
-          const amt = Number(promoRows[0].discount_amount || 0);
-
-          if (pct > 0) {
-            discountAmount = Math.round((srvPrice * pct) / 100);
-          } else if (amt > 0) {
-            discountAmount = amt;
-          }
-          finalPrice = Math.max(0, srvPrice - discountAmount);
-        }
-      }
-
-      // Calculate custom campaign promotion discount / note if campaignPromotionId is provided
-      let campaignPromotionTag = '';
-      if (campaignPromotionId) {
-        const campaignPromo = await fastify.prisma.crm.crmCampaignPromotion.findUnique({
-          where: { id: Number(campaignPromotionId) },
-          include: { campaign: true },
-        });
-
-        if (campaignPromo && campaignPromo.isActive) {
-          const syncedLegacyId = await CampaignPromotionSyncService.syncPromotionToLegacy(fastify, campaignPromo.id);
-          if (syncedLegacyId) {
-            selectedPromoId = syncedLegacyId;
-          }
-          if (campaignPromo.campaignId) {
-            // NOTE: CRM campaignId is NOT the same as legacy campaign.id
-            // The legacy order.campaign_id has a FK constraint to legacy campaign table.
-            // CRM campaigns don't have legacy counterparts, so we leave campaignId = null.
-          }
-
-          let campaignPromoDiscount = 0;
-
-          if (campaignPromo.type === 'PERCENT_DISCOUNT') {
-            campaignPromoDiscount = Math.round((srvPrice * campaignPromo.value) / 100);
-          } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
-            campaignPromoDiscount = Math.round(campaignPromo.value);
-          }
-
-          if (campaignPromoDiscount > 0) {
-            discountAmount = campaignPromoDiscount;
-            finalPrice = Math.max(0, srvPrice - campaignPromoDiscount);
-          }
-
-          let discountTag = '';
-          if (campaignPromo.type === 'PERCENT_DISCOUNT') {
-            discountTag = `[${campaignPromo.value}%]`;
-          } else if (campaignPromo.type === 'FIXED_DISCOUNT') {
-            discountTag = `[Giảm ${campaignPromo.value.toLocaleString('vi-VN')}đ]`;
-          } else if (campaignPromo.type === 'FREE_SERVICE') {
-            discountTag = `[Tặng Dịch Vụ]`;
-          } else if (campaignPromo.type === 'FREE_PRODUCT') {
-            discountTag = `[Tặng Sản Phẩm]`;
-          } else {
-            discountTag = `[Ưu Đãi]`;
-          }
-
-          const campaignName = campaignPromo.campaign ? campaignPromo.campaign.name : '';
-          const promoName = campaignPromo.name || '';
-          let fullPromoName = campaignName;
-          if (promoName && !campaignName.toLowerCase().includes(promoName.toLowerCase())) {
-            fullPromoName = campaignName ? `${campaignName}: ${promoName}` : promoName;
-          }
-
-          campaignPromotionTag = `${discountTag} ${fullPromoName}`.trim();
-        }
-      }
+      const dateClean = (bookingDate || new Date().toISOString().slice(0, 10)).trim();
+      const promotionResolution = await BookingPromotionService.resolve(fastify, {
+        customerId: finalCustomerId,
+        serviceId: finalServiceId,
+        basePrice: srvPrice,
+        bookingDate: dateClean,
+        promotionId: promotionId ? Number(promotionId) : null,
+        campaignPromotionId: campaignPromotionId ? Number(campaignPromotionId) : null,
+      });
+      const selectedPromoId = promotionResolution.legacyPromotionId;
+      const campaignId = promotionResolution.legacyCampaignId;
+      const discountAmount = promotionResolution.discountAmount;
+      const finalPrice = promotionResolution.finalPrice;
+      const campaignPromotionTag = promotionResolution.campaignPromotionTag || '';
 
       // 4. Calculate booking date start & end
-      const dateClean = (bookingDate || new Date().toISOString().slice(0, 10)).trim();
       const timeClean = (bookingTime || '09:00').trim();
       const timeWithSec = timeClean.length === 5 ? `${timeClean}:00` : timeClean;
       const startStr = `${dateClean}T${timeWithSec}`;
@@ -533,6 +473,9 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
 
       return reply.send({ success: true, orderId, orderKey });
     } catch (error) {
+      if (error instanceof BookingPromotionError) {
+        return reply.status(400).send({ error: 'Bad Request', message: error.message });
+      }
       fastify.log.error(error as Error, '[Booking] Failed to create booking:');
       return reply.status(500).send({
         error: 'Internal Server Error',
@@ -597,7 +540,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const permCheck = await validateLegacyStaffBookingPermission(fastify, crmStaff.legacyStaffId);
+      const permCheck = await validateLegacyStaffBookingPermission(fastify, crmStaff.legacyStaffId, user.role);
       if (!permCheck.valid) {
         return reply.status(permCheck.statusCode || 400).send({
           error: permCheck.statusCode === 403 ? 'Forbidden' : 'Bad Request',
@@ -841,7 +784,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const permCheck = await validateLegacyStaffBookingPermission(fastify, crmStaff.legacyStaffId);
+      const permCheck = await validateLegacyStaffBookingPermission(fastify, crmStaff.legacyStaffId, user.role);
       if (!permCheck.valid) {
         return reply.status(permCheck.statusCode || 400).send({
           error: permCheck.statusCode === 403 ? 'Forbidden' : 'Bad Request',

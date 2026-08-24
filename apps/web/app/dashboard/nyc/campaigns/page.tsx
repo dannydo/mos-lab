@@ -54,15 +54,27 @@ import dayjs from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
 import { DataTable } from '../../../../components/ui';
 import { apiClient } from '../../../../lib/api-client';
+import {
+  getFixedFinalPriceServiceCategories,
+  getFixedFinalPriceServiceOptions,
+  getFixedFinalPriceScopeSummary,
+  splitFixedFinalPriceSelection,
+  validateFixedFinalPricePromotion,
+} from '../../../../lib/campaign-fixed-price';
+import { normalizeCampaignAccessStaff } from '../../../../lib/campaign-form-options';
 import { removeVietnameseTones } from '../../../../lib/utils/search';
 import {
   Campaign,
   CampaignStatus,
   CampaignPromotionType,
+  CustomerServiceFilterCategory,
+  CustomerServiceFilterOption,
   CreateCampaignDto,
   UpdateCampaignDto,
   CreateCampaignTouchpointDto,
   CreateCampaignPromotionDto,
+  Staff,
+  vietnameseSearchFilter,
 } from '@mos-lab/shared';
 
 const { Title, Text } = Typography;
@@ -122,17 +134,51 @@ export default function CampaignManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [staffList, setStaffList] = useState<any[]>([]);
+  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [serviceFilterOptions, setServiceFilterOptions] = useState<CustomerServiceFilterOption[]>([]);
+  const [serviceFilterCategories, setServiceFilterCategories] = useState<CustomerServiceFilterCategory[]>([]);
+  const [campaignFormOptionsLoading, setCampaignFormOptionsLoading] = useState(true);
+  const [campaignFormOptionsError, setCampaignFormOptionsError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiClient.customers
-      .getStaff({ role: 'booker' })
-      .then((res: any) => {
-        if (Array.isArray(res)) setStaffList(res);
-        else if (res?.data && Array.isArray(res.data)) setStaffList(res.data);
-      })
-      .catch(() => {});
+    let cancelled = false;
+    const loadCampaignFormOptions = async () => {
+      setCampaignFormOptionsLoading(true);
+      setCampaignFormOptionsError(null);
+      try {
+        const [bookerRows, serviceResponse] = await Promise.all([
+          apiClient.customers.getStaff({ role: 'booker' }),
+          apiClient.customers.getServiceFilterOptions(),
+        ]);
+        let availableStaff = normalizeCampaignAccessStaff(bookerRows);
+        if (availableStaff.length === 0) {
+          availableStaff = normalizeCampaignAccessStaff(await apiClient.customers.getStaff());
+        }
+        if (!cancelled) {
+          setStaffList(availableStaff);
+          setServiceFilterOptions(serviceResponse.services || []);
+          setServiceFilterCategories(serviceResponse.categories || []);
+        }
+      } catch (error) {
+        console.error('Failed to load campaign form options:', error);
+        if (!cancelled) {
+          setCampaignFormOptionsError('Không thể tải danh sách thành viên hoặc dịch vụ. Hãy thử tải lại trang.');
+        }
+      } finally {
+        if (!cancelled) setCampaignFormOptionsLoading(false);
+      }
+    };
+    void loadCampaignFormOptions();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const fixedFinalPriceServices = getFixedFinalPriceServiceOptions(serviceFilterOptions);
+  const fixedFinalPriceCategories = getFixedFinalPriceServiceCategories(
+    serviceFilterCategories,
+    fixedFinalPriceServices
+  );
 
   // Load User Role & Username
   useEffect(() => {
@@ -255,7 +301,13 @@ export default function CampaignManagementPage() {
             color: tp.color || '#1890ff',
             sortOrder: tp.sortOrder,
           })),
-          promotions: details.promotions || details.CampaignPromotion || [],
+          promotions: (details.promotions || details.CampaignPromotion || []).map((promotion: any) => ({
+            ...promotion,
+            eligibleServiceSelection: [
+              ...(promotion.eligibleServiceCategoryKeys || []).map((key: string) => `category:${key}`),
+              ...(promotion.eligibleServiceIds || []).map(String),
+            ],
+          })),
         });
       }, 50);
     } catch (err) {
@@ -418,13 +470,32 @@ export default function CampaignManagementPage() {
 
       const promotions: CreateCampaignPromotionDto[] = (values.promotions || [])
         .filter((p: any) => p && p.name && String(p.name).trim() !== '')
-        .map((p: any) => ({
-          name: String(p.name).trim(),
-          code: p.code ? String(p.code).trim() : undefined,
-          type: (p.type || 'PERCENT_DISCOUNT') as CampaignPromotionType,
-          value: Number(p.value) || 0,
-          description: p.description ? String(p.description).trim() : undefined,
-        }));
+        .map((p: any) => {
+          const type = (p.type || 'PERCENT_DISCOUNT') as CampaignPromotionType;
+          const value = Number(p.value);
+          const { eligibleServiceIds, eligibleServiceCategoryKeys } = splitFixedFinalPriceSelection(
+            p.eligibleServiceSelection
+          );
+
+          validateFixedFinalPricePromotion(
+            type,
+            value,
+            eligibleServiceIds,
+            eligibleServiceCategoryKeys,
+            fixedFinalPriceServices,
+            fixedFinalPriceCategories
+          );
+
+          return {
+            name: String(p.name).trim(),
+            code: p.code ? String(p.code).trim() : undefined,
+            type,
+            value,
+            eligibleServiceIds: type === 'FIXED_FINAL_PRICE' ? eligibleServiceIds : undefined,
+            eligibleServiceCategoryKeys: type === 'FIXED_FINAL_PRICE' ? eligibleServiceCategoryKeys : undefined,
+            description: p.description ? String(p.description).trim() : undefined,
+          };
+        });
 
       if (editingCampaign) {
         const updateDto: UpdateCampaignDto = {
@@ -918,7 +989,16 @@ export default function CampaignManagementPage() {
                       <Select
                         mode="multiple"
                         allowClear
+                        showSearch
+                        loading={campaignFormOptionsLoading}
                         placeholder="Chừa trống = Công Khai (Tất cả nhân sự xem được)"
+                        filterOption={vietnameseSearchFilter}
+                        optionFilterProp="label"
+                        notFoundContent={
+                          campaignFormOptionsLoading
+                            ? 'Đang tải thành viên...'
+                            : campaignFormOptionsError || 'Không có nhân sự hoạt động'
+                        }
                         style={{ width: '100%' }}
                         tagRender={(props) => {
                           const { label, closable, onClose } = props;
@@ -1069,58 +1149,143 @@ export default function CampaignManagementPage() {
                           )}
                           <div className="space-y-2">
                             {fields.map(({ key, name, ...restField }) => (
-                              <div key={key} className="flex items-center gap-2 py-0.5">
-                                <div className="flex-1">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'name']}
-                                    rules={[{ required: true, message: 'Nhập tên' }]}
-                                    style={{ marginBottom: 0 }}
-                                  >
-                                    <Input placeholder="Tên ưu đãi (VD: Giảm 50%)" />
-                                  </Form.Item>
-                                </div>
-                                <div className="w-36">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'type']}
-                                    rules={[{ required: true, message: 'Chọn loại' }]}
-                                    style={{ marginBottom: 0 }}
-                                  >
-                                    <Select
-                                      options={[
-                                        { value: 'PERCENT_DISCOUNT', label: 'Giảm %' },
-                                        { value: 'FIXED_DISCOUNT', label: 'Giảm số tiền' },
-                                        { value: 'FREE_SERVICE', label: 'Tặng dịch vụ' },
-                                        { value: 'FREE_PRODUCT', label: 'Tặng sản phẩm' },
-                                      ]}
+                              <React.Fragment key={key}>
+                                <div className="flex items-center gap-2 py-0.5">
+                                  <div className="flex-1">
+                                    <Form.Item
+                                      {...restField}
+                                      name={[name, 'name']}
+                                      rules={[{ required: true, message: 'Nhập tên' }]}
+                                      style={{ marginBottom: 0 }}
+                                    >
+                                      <Input placeholder="Tên ưu đãi (VD: Giảm 50%)" />
+                                    </Form.Item>
+                                  </div>
+                                  <div className="w-36">
+                                    <Form.Item
+                                      {...restField}
+                                      name={[name, 'type']}
+                                      rules={[{ required: true, message: 'Chọn loại' }]}
+                                      style={{ marginBottom: 0 }}
+                                    >
+                                      <Select
+                                        options={[
+                                          { value: 'PERCENT_DISCOUNT', label: 'Giảm %' },
+                                          { value: 'FIXED_DISCOUNT', label: 'Giảm số tiền' },
+                                          { value: 'FIXED_FINAL_PRICE', label: 'Giá đồng nhất' },
+                                          { value: 'FREE_SERVICE', label: 'Tặng dịch vụ' },
+                                          { value: 'FREE_PRODUCT', label: 'Tặng sản phẩm' },
+                                        ]}
+                                      />
+                                    </Form.Item>
+                                  </div>
+                                  <div className="w-24">
+                                    <Form.Item
+                                      {...restField}
+                                      name={[name, 'value']}
+                                      rules={[{ required: true, message: 'Nhập giá trị' }]}
+                                      style={{ marginBottom: 0 }}
+                                    >
+                                      <InputNumber min={0} placeholder="Giá trị" style={{ width: '100%' }} />
+                                    </Form.Item>
+                                  </div>
+                                  <div className="w-28">
+                                    <Form.Item {...restField} name={[name, 'code']} style={{ marginBottom: 0 }}>
+                                      <Input placeholder="Mã Code" />
+                                    </Form.Item>
+                                  </div>
+                                  <div className="w-8 flex justify-center">
+                                    <Button
+                                      type="text"
+                                      danger
+                                      icon={<MinusCircleOutlined />}
+                                      onClick={() => remove(name)}
                                     />
-                                  </Form.Item>
+                                  </div>
                                 </div>
-                                <div className="w-24">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'value']}
-                                    rules={[{ required: true, message: 'Nhập giá trị' }]}
-                                    style={{ marginBottom: 0 }}
-                                  >
-                                    <InputNumber min={0} placeholder="Giá trị" style={{ width: '100%' }} />
-                                  </Form.Item>
-                                </div>
-                                <div className="w-28">
-                                  <Form.Item {...restField} name={[name, 'code']} style={{ marginBottom: 0 }}>
-                                    <Input placeholder="Mã Code" />
-                                  </Form.Item>
-                                </div>
-                                <div className="w-8 flex justify-center">
-                                  <Button
-                                    type="text"
-                                    danger
-                                    icon={<MinusCircleOutlined />}
-                                    onClick={() => remove(name)}
-                                  />
-                                </div>
-                              </div>
+                                <Form.Item
+                                  noStyle
+                                  shouldUpdate={(previous, current) =>
+                                    previous.promotions?.[name]?.type !== current.promotions?.[name]?.type ||
+                                    previous.promotions?.[name]?.eligibleServiceSelection !==
+                                      current.promotions?.[name]?.eligibleServiceSelection ||
+                                    previous.promotions?.[name]?.value !== current.promotions?.[name]?.value
+                                  }
+                                >
+                                  {({ getFieldValue }) => {
+                                    const selection = splitFixedFinalPriceSelection(
+                                      getFieldValue(['promotions', name, 'eligibleServiceSelection'])
+                                    );
+                                    const scope = getFixedFinalPriceScopeSummary(
+                                      selection.eligibleServiceIds,
+                                      selection.eligibleServiceCategoryKeys,
+                                      fixedFinalPriceServices,
+                                      fixedFinalPriceCategories
+                                    );
+                                    return getFieldValue(['promotions', name, 'type']) === 'FIXED_FINAL_PRICE' ? (
+                                      <div className="ml-1 mr-10 mb-2 rounded-lg border border-violet-200 bg-violet-50/70 p-2.5 dark:border-violet-500/30 dark:bg-violet-500/10">
+                                        <Form.Item
+                                          {...restField}
+                                          name={[name, 'eligibleServiceSelection']}
+                                          label="Dịch vụ / thể loại nối mi áp dụng"
+                                          rules={[
+                                            {
+                                              required: true,
+                                              type: 'array',
+                                              min: 1,
+                                              message: 'Chọn ít nhất một dịch vụ lẻ nối mi hoặc thể loại.',
+                                            },
+                                          ]}
+                                          style={{ marginBottom: 0 }}
+                                        >
+                                          <Select
+                                            mode="multiple"
+                                            allowClear
+                                            showSearch
+                                            loading={campaignFormOptionsLoading}
+                                            filterOption={vietnameseSearchFilter}
+                                            placeholder="Chọn thể loại (VD: HyperLight) hoặc dịch vụ cụ thể"
+                                            optionFilterProp="label"
+                                            notFoundContent={
+                                              campaignFormOptionsLoading
+                                                ? 'Đang tải dịch vụ từ Bộ lọc nâng cao...'
+                                                : campaignFormOptionsError ||
+                                                  'Không có dịch vụ lẻ nối mi hoặc thể loại hợp lệ'
+                                            }
+                                            options={[
+                                              {
+                                                label: 'Thể loại dịch vụ',
+                                                options: fixedFinalPriceCategories.map((category) => ({
+                                                  value: `category:${category.key}`,
+                                                  label: `${category.label} — ${category.serviceIds.length} dịch vụ, giá từ ${category.minimumPrice.toLocaleString('vi-VN')}đ`,
+                                                })),
+                                              },
+                                              {
+                                                label: 'Dịch vụ cụ thể',
+                                                options: fixedFinalPriceServices.map((service) => ({
+                                                  value: String(service.id),
+                                                  label: `${service.name} — ${service.price.toLocaleString('vi-VN')}đ`,
+                                                })),
+                                              },
+                                            ]}
+                                          />
+                                        </Form.Item>
+                                        <Text type="secondary" className="mt-1 block text-xs">
+                                          Chọn HyperLight sẽ áp dụng toàn bộ biến thể nối mi Normal của HyperLight. Dùng
+                                          cùng catalog với Bộ lọc nâng cao ở Tất cả KH; giá chốt không cộng dồn ưu đãi
+                                          khác.
+                                        </Text>
+                                        {scope.minimumListedPrice !== null && (
+                                          <Text className="mt-1 block text-xs text-violet-700 dark:text-violet-200">
+                                            Phạm vi hiện tại: {scope.services.length} dịch vụ. Giá đồng nhất tối đa:{' '}
+                                            {scope.minimumListedPrice.toLocaleString('vi-VN')}đ.
+                                          </Text>
+                                        )}
+                                      </div>
+                                    ) : null;
+                                  }}
+                                </Form.Item>
+                              </React.Fragment>
                             ))}
                             <Button
                               type="dashed"

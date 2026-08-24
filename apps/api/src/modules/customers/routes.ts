@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
-import { BucketType, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import { BucketType, canManageCustomerAllocation, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { registerAllocationCron } from './services/allocation-cron.service.js';
 import { ComboRecognitionService, parseComboDateBounds } from './services/combo-recognition.service.js';
 import { UserServiceTypeService } from './services/user-service-type.service.js';
@@ -3399,19 +3399,14 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Fetch active promotions for selection during booking
   fastify.get('/customers/promotions', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const promotions = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT p.id, pl.promotion_name as name, p.promotion_key as promotionKey, p.discount_percentage as discountPercentage, p.discount_amount as discountAmount
-         FROM promotion p
-         LEFT JOIN promotion_language pl ON p.id = pl.promotion_id AND pl.language_id = 1
-         WHERE p.is_disabled = 0
-         ORDER BY p.id DESC`
-      );
-      return promotions.map((p) => ({
-        id: Number(p.id),
-        name: p.name || p.promotionKey || `Khuyến mãi #${p.id}`,
-        promotionKey: p.promotionKey,
-        discountPercentage: Number(p.discountPercentage),
-        discountAmount: Number(p.discountAmount),
+      const promotions = await BookingPromotionService.getStandardOptions(fastify);
+      return promotions.map((promotion) => ({
+        id: promotion.id,
+        name: promotion.name,
+        code: promotion.code || undefined,
+        promotionKey: promotion.code || null,
+        discountPercentage: promotion.discountPercentage || 0,
+        discountAmount: promotion.discountAmount || 0,
       }));
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get promotions error:');
@@ -3590,7 +3585,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   fastify.post('/customers/booking', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
     const allowedRoles = ['admin', 'manager', 'oc', 'cc', 'ls', 'telesales', 'booker'];
-    if (!allowedRoles.includes(user.role)) {
+    if (!isAdminOrSuperAdminRole(user.role) && !allowedRoles.includes(user.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
     }
 
@@ -3783,7 +3778,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const promotionResolution = await BookingPromotionService.resolve(fastify, {
         customerId: finalCustomerId,
+        serviceId: finalServiceId,
         basePrice: srvPrice,
+        bookingDate: bookingDate || null,
         promotionId: promotionId ? Number(promotionId) : null,
         campaignPromotionId: campaignPromotionId ? Number(campaignPromotionId) : null,
       });
@@ -4050,7 +4047,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // A custom-campaign booking is deliberately scoped to the promotion list of its originating campaign.
   fastify.get('/customers/booking/:id/promotions', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+    if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'telesales' && user.role !== 'booker') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền xem ưu đãi của lịch hẹn này.' });
     }
 
@@ -4061,7 +4058,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     try {
       const orders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT user_id, promotion_id, selected_promotion_id FROM \`order\` WHERE id = ? LIMIT 1`,
+        `SELECT user_id, promotion_id, selected_promotion_id,
+                DATE_FORMAT(booking_date_start, '%Y-%m-%d') as bookingDate
+         FROM \`order\` WHERE id = ? LIMIT 1`,
         orderId
       );
       const order = orders[0];
@@ -4076,6 +4075,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         await BookingPromotionService.getAvailableOptions(fastify, {
           customerId,
           currentPromotionId,
+          bookingDate: order.bookingDate || null,
         })
       );
     } catch (err: SafeAny) {
@@ -4091,7 +4091,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Reschedule an existing booking
   fastify.put('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+    if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'telesales' && user.role !== 'booker') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
     }
 
@@ -4242,7 +4242,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const promotionResolution = await BookingPromotionService.resolve(fastify, {
         customerId: finalCustomerId,
+        serviceId: finalServiceId,
         basePrice: srvPrice,
+        bookingDate: bookingDate || null,
         promotionId: selectedPromotionId,
         campaignPromotionId: selectedCampaignPromotionId,
         allowedCampaignId: currentCustomCampaign?.campaignId ?? null,
@@ -4441,7 +4443,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Cancel a booking (soft delete by setting order_state = 'Cancelled')
   fastify.delete('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    if (user.role !== 'admin' && user.role !== 'telesales' && user.role !== 'booker') {
+    if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'telesales' && user.role !== 'booker') {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
     }
 
@@ -4891,7 +4893,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     };
     const adminUser = request.user as { id: number; role: string };
 
-    if (adminUser.role !== 'admin') {
+    if (!canManageCustomerAllocation(adminUser.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền phân bổ khách hàng.' });
     }
 
@@ -4975,7 +4977,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const { customerIds } = request.body as { customerIds: number[] };
     const adminUser = request.user as { id: number; role: string };
 
-    if (adminUser.role !== 'admin') {
+    if (!canManageCustomerAllocation(adminUser.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem thông tin thu hồi.' });
     }
 
@@ -5078,7 +5080,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     };
     const adminUser = request.user as { id: number; role: string };
 
-    if (adminUser.role !== 'admin') {
+    if (!canManageCustomerAllocation(adminUser.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền thu hồi phân bổ.' });
     }
 
@@ -5227,7 +5229,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const { customerIds, reason = 'Hủy phân bổ thủ công' } = request.body as { customerIds: number[]; reason?: string };
     const adminUser = request.user as { id: number; role: string };
 
-    if (adminUser.role !== 'admin') {
+    if (!canManageCustomerAllocation(adminUser.role)) {
       return reply
         .status(403)
         .send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hủy phân bổ khách hàng.' });
@@ -5391,7 +5393,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Get history of allocations grouped by batchId
   fastify.get('/customers/assignment-history', { preHandler: [requireAuth] }, async (request, reply) => {
     const adminUser = request.user as { id: number; role: string };
-    if (adminUser.role !== 'admin') {
+    if (!canManageCustomerAllocation(adminUser.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem lịch sử phân bổ.' });
     }
 
@@ -5563,7 +5565,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     { preHandler: [requireAuth] },
     async (request, reply) => {
       const adminUser = request.user as { id: number; role: string };
-      if (adminUser.role !== 'admin') {
+      if (!canManageCustomerAllocation(adminUser.role)) {
         return reply
           .status(403)
           .send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền xem chi tiết phân bổ.' });
@@ -5664,7 +5666,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   // Undo a batch of assignments with MANDATORY reason (supports force option for old batches)
   fastify.post('/customers/assignment-history/undo', { preHandler: [requireAuth] }, async (request, reply) => {
     const adminUser = request.user as { id: number; role: string };
-    if (adminUser.role !== 'admin') {
+    if (!canManageCustomerAllocation(adminUser.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ quản lý mới có quyền hoàn tác phân bổ.' });
     }
 

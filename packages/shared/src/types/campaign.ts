@@ -1,7 +1,8 @@
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ENDED' | 'ARCHIVED' | 'DELETED';
 
-export type CampaignPromotionType = 'PERCENT_DISCOUNT' | 'FIXED_DISCOUNT' | 'FREE_SERVICE' | 'FREE_PRODUCT';
+export type CampaignPromotionType =
+  'PERCENT_DISCOUNT' | 'FIXED_DISCOUNT' | 'FIXED_FINAL_PRICE' | 'FREE_SERVICE' | 'FREE_PRODUCT';
 
 export interface Campaign {
   id: number;
@@ -69,7 +70,15 @@ export interface CampaignPromotion {
   name: string;
   code: string | null;
   type: CampaignPromotionType;
+  /**
+   * VND final price for FIXED_FINAL_PRICE; discount value for legacy promotion
+   * types. All VND values are whole integers.
+   */
   value: number;
+  /** Service IDs that can receive a fixed final price. */
+  eligibleServiceIds?: number[];
+  /** Catalog lash-family keys (for example `hyperlight`) expanded server-side. */
+  eligibleServiceCategoryKeys?: string[];
   description: string | null;
   isActive: boolean;
   legacyPromotionId?: number | null;
@@ -114,6 +123,8 @@ export interface CreateCampaignPromotionDto {
   code?: string;
   type: CampaignPromotionType;
   value: number;
+  eligibleServiceIds?: number[];
+  eligibleServiceCategoryKeys?: string[];
   description?: string;
 }
 
@@ -122,6 +133,8 @@ export interface UpdateCampaignPromotionDto {
   code?: string;
   type?: CampaignPromotionType;
   value?: number;
+  eligibleServiceIds?: number[];
+  eligibleServiceCategoryKeys?: string[];
   description?: string;
   isActive?: boolean;
 }
@@ -209,6 +222,10 @@ export interface CustomerCampaignPromotionItem {
   code: string | null;
   type: CampaignPromotionType;
   value: number;
+  eligibleServiceIds?: number[];
+  eligibleServiceCategoryKeys?: string[];
+  /** Human-readable catalog family labels resolved by the backend. */
+  eligibleServiceCategoryLabels?: string[];
   description: string | null;
   isActive: boolean;
   label: string;
@@ -233,6 +250,12 @@ export interface BookingPromotionOption {
   campaignName?: string | null;
   promotionType: CampaignPromotionType | null;
   value: number;
+  /** Standard-promotion values, supplied so UI previews do not infer a type. */
+  discountPercentage?: number;
+  discountAmount?: number;
+  eligibleServiceIds?: number[];
+  eligibleServiceCategoryKeys?: string[];
+  eligibleServiceCategoryLabels?: string[];
 }
 
 /**

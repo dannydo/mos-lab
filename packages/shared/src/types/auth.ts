@@ -26,6 +26,14 @@ export function isAdminOrSuperAdminRole(role?: string | null): boolean {
   return normalizedRole === 'admin' || normalizedRole === 'super_admin';
 }
 
+/** Roles allowed to allocate, recall, and audit Booker customer assignments. */
+export function canManageCustomerAllocation(role?: string | null): boolean {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  return isAdminOrSuperAdminRole(normalizedRole) || normalizedRole === 'manager';
+}
+
 /**
  * Booker is retained as a legacy alias while staff accounts are migrated to
  * the canonical `telesales` role.

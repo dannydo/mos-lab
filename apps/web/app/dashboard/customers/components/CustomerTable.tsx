@@ -9,7 +9,7 @@ import { UserOutlined, PhoneOutlined, CheckCircleOutlined, PlusOutlined, Message
 import dayjs from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useOmiCall } from '../../../../context/OmiCallContext';
-import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
+import { canManageCustomerAllocation, Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import { formatVND } from '../../../../lib/format-utils';
 import { ResizableHeaderCell } from '../../../../components/ResizableHeaderCell';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
@@ -71,11 +71,7 @@ const CustomerTable = React.memo(
     const { themeMode } = useTheme();
     const { token } = theme.useToken();
     const { makeCall } = useOmiCall();
-    const isManagerOrAdmin =
-      currentUser?.role === 'admin' ||
-      currentUser?.role === 'manager' ||
-      currentUser?.role?.toLowerCase() === 'admin' ||
-      currentUser?.role?.toLowerCase() === 'manager';
+    const isManagerOrAdmin = canManageCustomerAllocation(currentUser?.role);
 
     const getOperationalStatus = React.useCallback((record: Customer): { label: string; tone: OperationalTone } => {
       const days = record.daysSinceLastVisit;

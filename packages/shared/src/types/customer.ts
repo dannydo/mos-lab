@@ -188,6 +188,8 @@ export interface CustomerServiceFilterOption {
   name: string;
   serviceType: string | null;
   serviceGroup: string | null;
+  /** Active VND single-service price, when the catalog exposes one. */
+  singlePrice: number | null;
 }
 
 export interface CustomerServiceFilterCategory {
@@ -471,6 +473,13 @@ export interface Promotion {
   id: number;
   name: string;
   code?: string;
+  /** Stable legacy key, when the legacy promotion exposes one. */
+  promotionKey?: string | null;
+  /** Percentage reduction for a standard legacy promotion. */
+  discountPercentage?: number;
+  /** Whole-VND reduction for a standard legacy promotion. */
+  discountAmount?: number;
+  /** @deprecated Use discountPercentage. Kept for older API consumers. */
   discountPercent?: number;
   description?: string | null;
 }

@@ -20,6 +20,11 @@ import {
   UpdateCampaignDto,
 } from '@mos-lab/shared';
 import { CampaignPromotionSyncService } from './campaign-promotion-sync.service.js';
+import {
+  CustomerServiceFilterCatalogService,
+  normalizeFixedFinalPriceCategoryKeys,
+  resolveFixedFinalPriceScope,
+} from '../customers/services/customer-service-filter-catalog.service.js';
 
 function slugify(text: string): string {
   return text
@@ -35,12 +40,108 @@ function slugify(text: string): string {
     .trim();
 }
 
+function normalizeEligibleServiceIds(value: unknown): number[] {
+  let rawIds: unknown[] = [];
+  if (Array.isArray(value)) {
+    rawIds = value;
+  } else if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      rawIds = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      rawIds = [];
+    }
+  }
+
+  return Array.from(new Set(rawIds.map((id) => Number(id)).filter((id) => Number.isSafeInteger(id) && id > 0)));
+}
+
+function normalizeEligibleServiceCategoryKeys(value: unknown): string[] {
+  let rawKeys: unknown[] = [];
+  if (Array.isArray(value)) {
+    rawKeys = value;
+  } else if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      rawKeys = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      rawKeys = [];
+    }
+  }
+
+  return normalizeFixedFinalPriceCategoryKeys(rawKeys.map((key) => String(key || '')));
+}
+
 export class CampaignService {
+  /**
+   * A fixed-final-price promotion is only valid for active, single-price lash
+   * services. Catalog remains in the legacy DB and is read-only here.
+   */
+  private static async validateCampaignPromotions(
+    fastify: FastifyInstance,
+    promotions: CreateCampaignPromotionDto[] | undefined
+  ): Promise<
+    | Array<CreateCampaignPromotionDto & { eligibleServiceIds?: number[]; eligibleServiceCategoryKeys?: string[] }>
+    | undefined
+  > {
+    if (promotions === undefined) return undefined;
+
+    const normalized = promotions.map((promotion) => ({
+      ...promotion,
+      value: Number(promotion.value),
+      eligibleServiceIds: normalizeEligibleServiceIds(promotion.eligibleServiceIds),
+      eligibleServiceCategoryKeys: normalizeEligibleServiceCategoryKeys(promotion.eligibleServiceCategoryKeys),
+    }));
+
+    const hasFixedFinalPricePromotion = normalized.some((promotion) => promotion.type === 'FIXED_FINAL_PRICE');
+    const catalogOptions = hasFixedFinalPricePromotion
+      ? await CustomerServiceFilterCatalogService.getOptions(fastify)
+      : null;
+
+    for (const promotion of normalized) {
+      if (promotion.type !== 'FIXED_FINAL_PRICE') {
+        promotion.eligibleServiceIds = [];
+        promotion.eligibleServiceCategoryKeys = [];
+        continue;
+      }
+
+      if (!Number.isSafeInteger(promotion.value) || promotion.value <= 0) {
+        throw new Error('Giá đồng nhất phải là số tiền VND nguyên lớn hơn 0.');
+      }
+
+      const scope = resolveFixedFinalPriceScope(
+        catalogOptions!,
+        promotion.eligibleServiceIds,
+        promotion.eligibleServiceCategoryKeys
+      );
+      if (scope.invalidServiceIds.length > 0) {
+        throw new Error('Giá đồng nhất chỉ áp dụng cho dịch vụ lẻ nối mi đang hoạt động.');
+      }
+      if (scope.invalidCategoryKeys.length > 0 || scope.emptyCategoryKeys.length > 0) {
+        throw new Error('Thể loại dịch vụ đồng giá không hợp lệ hoặc không còn dịch vụ lẻ nối mi đang hoạt động.');
+      }
+      if (scope.serviceIds.length === 0) {
+        throw new Error('Ưu đãi giá đồng nhất phải chọn ít nhất một dịch vụ lẻ nối mi hoặc thể loại dịch vụ.');
+      }
+
+      const pricesByServiceId = new Map(
+        catalogOptions!.services.map((service) => [service.id, Math.round(Number(service.singlePrice || 0))])
+      );
+      if (scope.serviceIds.some((serviceId) => promotion.value > (pricesByServiceId.get(serviceId) || 0))) {
+        throw new Error('Giá đồng nhất phải thấp hơn hoặc bằng giá niêm yết của từng dịch vụ đã chọn.');
+      }
+    }
+
+    return normalized;
+  }
+
   /**
    * Auto check and transition campaign statuses based on start/end dates.
    */
   static async checkAndUpdateCampaignStatuses(fastify: FastifyInstance): Promise<void> {
     const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
     try {
       // 1. Auto activate SCHEDULED campaigns where startDate <= now
       const scheduledCampaigns = await fastify.prisma.crm.crmCustomCampaign.findMany({
@@ -57,12 +158,12 @@ export class CampaignService {
         });
       }
 
-      // 2. Auto complete ACTIVE campaigns where endDate <= now
+      // 2. Auto complete ACTIVE campaigns after their final calendar day.
       const expiredCampaigns = await fastify.prisma.crm.crmCustomCampaign.findMany({
         where: {
           status: 'ACTIVE',
           deletedAt: null,
-          endDate: { lte: now },
+          endDate: { lt: todayStart },
         },
       });
       for (const c of expiredCampaigns) {
@@ -280,6 +381,7 @@ export class CampaignService {
 
     const startDate = dto.startDate ? new Date(dto.startDate) : null;
     const endDate = dto.endDate ? new Date(dto.endDate) : null;
+    const promotionsInput = await this.validateCampaignPromotions(fastify, dto.promotions);
 
     // Touchpoints input from DTO (empty array if not provided)
     const touchpointsRaw = dto.touchpoints || [];
@@ -350,8 +452,8 @@ export class CampaignService {
       }
 
       // Create promotions if provided
-      if (dto.promotions && dto.promotions.length > 0) {
-        for (const p of dto.promotions) {
+      if (promotionsInput && promotionsInput.length > 0) {
+        for (const p of promotionsInput) {
           const createdPromo = await tx.crmCampaignPromotion.create({
             data: {
               campaignId: campaign.id,
@@ -359,6 +461,12 @@ export class CampaignService {
               code: p.code || null,
               type: p.type,
               value: p.value,
+              eligibleServiceIds:
+                p.eligibleServiceIds && p.eligibleServiceIds.length > 0 ? JSON.stringify(p.eligibleServiceIds) : null,
+              eligibleServiceCategoryKeys:
+                p.eligibleServiceCategoryKeys && p.eligibleServiceCategoryKeys.length > 0
+                  ? JSON.stringify(p.eligibleServiceCategoryKeys)
+                  : null,
               description: p.description || null,
               isActive: true,
             },
@@ -397,6 +505,8 @@ export class CampaignService {
     if (!existing) {
       throw new Error(`Chiến dịch ID ${id} không tồn tại`);
     }
+
+    const promotionsInput = await this.validateCampaignPromotions(fastify, dto.promotions);
 
     const updateData: any = {};
     if (dto.name !== undefined) updateData.name = dto.name.trim();
@@ -516,7 +626,7 @@ export class CampaignService {
         }
       }
 
-      if (dto.promotions) {
+      if (promotionsInput) {
         const oldPromos = await tx.crmCampaignPromotion.findMany({
           where: { campaignId: id },
         });
@@ -532,7 +642,7 @@ export class CampaignService {
           where: { campaignId: id },
         });
 
-        for (const p of dto.promotions) {
+        for (const p of promotionsInput) {
           const createdPromo = await tx.crmCampaignPromotion.create({
             data: {
               campaignId: id,
@@ -540,6 +650,12 @@ export class CampaignService {
               code: p.code || null,
               type: p.type,
               value: p.value,
+              eligibleServiceIds:
+                p.eligibleServiceIds && p.eligibleServiceIds.length > 0 ? JSON.stringify(p.eligibleServiceIds) : null,
+              eligibleServiceCategoryKeys:
+                p.eligibleServiceCategoryKeys && p.eligibleServiceCategoryKeys.length > 0
+                  ? JSON.stringify(p.eligibleServiceCategoryKeys)
+                  : null,
               description: p.description || null,
               isActive: true,
             },
@@ -905,6 +1021,8 @@ export class CampaignService {
             code: p.code,
             type: p.type,
             value: p.value,
+            eligibleServiceIds: p.eligibleServiceIds,
+            eligibleServiceCategoryKeys: p.eligibleServiceCategoryKeys,
             description: p.description,
             isActive: p.isActive,
           })),
@@ -1783,6 +1901,7 @@ export class CampaignService {
       code: p.code,
       type: p.type as any,
       value: p.value,
+      eligibleServiceIds: normalizeEligibleServiceIds(p.eligibleServiceIds),
       description: p.description,
       isActive: p.isActive,
       createdAt: p.createdAt.toISOString(),
@@ -1804,14 +1923,20 @@ export class CampaignService {
       throw new Error(`Chiến dịch ID ${campaignId} không tồn tại`);
     }
 
+    const promotionInput = (await this.validateCampaignPromotions(fastify, [dto]))![0];
+
     const promotion = await fastify.prisma.crm.crmCampaignPromotion.create({
       data: {
         campaignId,
-        name: dto.name.trim(),
-        code: dto.code || null,
-        type: dto.type,
-        value: dto.value,
-        description: dto.description || null,
+        name: promotionInput.name.trim(),
+        code: promotionInput.code || null,
+        type: promotionInput.type,
+        value: promotionInput.value,
+        eligibleServiceIds:
+          promotionInput.eligibleServiceIds && promotionInput.eligibleServiceIds.length > 0
+            ? JSON.stringify(promotionInput.eligibleServiceIds)
+            : null,
+        description: promotionInput.description || null,
         isActive: true,
       },
     });
@@ -1825,6 +1950,7 @@ export class CampaignService {
       code: promotion.code,
       type: promotion.type as any,
       value: promotion.value,
+      eligibleServiceIds: normalizeEligibleServiceIds(promotion.eligibleServiceIds),
       description: promotion.description,
       isActive: promotion.isActive,
       legacyPromotionId: legacyId,
@@ -2017,6 +2143,8 @@ export class CampaignService {
         code: p.code,
         type: p.type,
         value: p.value,
+        eligibleServiceIds: normalizeEligibleServiceIds(p.eligibleServiceIds),
+        eligibleServiceCategoryKeys: normalizeEligibleServiceCategoryKeys(p.eligibleServiceCategoryKeys),
         description: p.description,
         isActive: p.isActive,
         createdAt: new Date(p.createdAt).toISOString(),
@@ -2038,12 +2166,21 @@ export class CampaignService {
     fastify: FastifyInstance,
     legacyUserId: number
   ): Promise<CustomerCampaignPromotionInfo[]> {
+    await this.checkAndUpdateCampaignStatuses(fastify);
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
     const memberships = await fastify.prisma.crm.crmCampaignCustomer.findMany({
       where: {
         legacyUserId,
         removedAt: null,
         campaign: {
           status: 'ACTIVE',
+          deletedAt: null,
+          AND: [
+            { OR: [{ startDate: null }, { startDate: { lte: now } }] },
+            { OR: [{ endDate: null }, { endDate: { gte: todayStart } }] },
+          ],
         },
       },
       include: {
@@ -2057,6 +2194,13 @@ export class CampaignService {
       },
     });
 
+    const hasFixedFinalPricePromotion = memberships.some((membership) =>
+      membership.campaign.promotions.some((promotion) => promotion.type === 'FIXED_FINAL_PRICE')
+    );
+    const catalogOptions = hasFixedFinalPricePromotion
+      ? await CustomerServiceFilterCatalogService.getOptions(fastify)
+      : null;
+
     return memberships
       .filter((m) => m.campaign && m.campaign.promotions && m.campaign.promotions.length > 0)
       .map((m) => ({
@@ -2069,11 +2213,28 @@ export class CampaignService {
             label = p.value > 0 ? `Giảm ${p.value}%` : p.name;
           } else if (p.type === 'FIXED_DISCOUNT') {
             label = p.value > 0 ? `Giảm ${p.value.toLocaleString('vi-VN')}đ` : p.name;
+          } else if (p.type === 'FIXED_FINAL_PRICE') {
+            label = p.value > 0 ? `Đồng giá ${Math.round(p.value).toLocaleString('vi-VN')}đ` : p.name;
           } else if (p.type === 'FREE_SERVICE') {
             label = p.description && p.description.trim() ? p.description : `Tặng dịch vụ ${p.name}`;
           } else if (p.type === 'FREE_PRODUCT') {
             label = p.description && p.description.trim() ? p.description : `Tặng sản phẩm ${p.name}`;
           }
+          const eligibleServiceCategoryKeys = normalizeEligibleServiceCategoryKeys(p.eligibleServiceCategoryKeys);
+          const eligibleServiceIds =
+            p.type === 'FIXED_FINAL_PRICE' && catalogOptions
+              ? resolveFixedFinalPriceScope(
+                  catalogOptions,
+                  normalizeEligibleServiceIds(p.eligibleServiceIds),
+                  eligibleServiceCategoryKeys
+                ).serviceIds
+              : normalizeEligibleServiceIds(p.eligibleServiceIds);
+          const eligibleServiceCategoryLabels = catalogOptions
+            ? eligibleServiceCategoryKeys
+                .map((key) => catalogOptions.categories.find((category) => category.key === key)?.label)
+                .filter((label): label is string => Boolean(label))
+            : [];
+
           return {
             id: p.id,
             campaignId: p.campaignId,
@@ -2081,6 +2242,9 @@ export class CampaignService {
             code: p.code,
             type: p.type as CampaignPromotionType,
             value: p.value,
+            eligibleServiceIds,
+            eligibleServiceCategoryKeys,
+            eligibleServiceCategoryLabels,
             description: p.description,
             isActive: p.isActive,
             label,
