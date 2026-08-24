@@ -6074,25 +6074,6 @@
 /* Admin course configuration -------------------------------------------------
    Each course is self-contained so the field groups can evolve without a
    fragile, horizontally scrolling table of tightly coupled columns. */
-.courseConfigurationTrigger {
-  align-items: center;
-  background: color-mix(in srgb, var(--academy-talent-cyan) 8%, var(--academy-talent-surface-muted));
-  border: 1px solid color-mix(in srgb, var(--academy-talent-cyan) 34%, var(--academy-talent-border));
-  border-radius: 10px;
-  color: var(--academy-talent-muted);
-  display: flex;
-  font-size: 10px;
-  gap: 10px;
-  justify-content: space-between;
-  margin: 0 auto 12px;
-  max-width: 920px;
-  padding: 7px 9px 7px 11px;
-}
-.courseConfigurationTrigger :global(.ant-btn) {
-  font-size: 10px;
-  font-weight: 800;
-}
-
 .courseConfigurationModal :global(.ant-modal-body) {
   max-height: min(72dvh, 720px);
   overflow: auto;
@@ -6635,13 +6616,6 @@
 }
 
 @media (max-width: 720px) {
-  .courseConfigurationTrigger {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .courseConfigurationTrigger :global(.ant-btn) {
-    align-self: flex-end;
-  }
   .courseConfigurationEditor {
     padding: 14px;
   }

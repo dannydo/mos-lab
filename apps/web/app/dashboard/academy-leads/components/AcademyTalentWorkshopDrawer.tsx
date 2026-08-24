@@ -808,6 +808,12 @@ export function AcademyTalentWorkshopDrawer({
     setStep(1);
   }, []);
 
+  const closeGlobalEditor = React.useCallback(() => {
+    setLadderConfigurationDraft(null);
+    setCourseConfigurationOpen(false);
+    setEditMode(false);
+  }, []);
+
   const openLadderTierEditor = React.useCallback(
     (_tierKey: string, openFromGlobalControl = false) => {
       if (!canEditLadder || (!editMode && !openFromGlobalControl) || !onSaveLadderConfiguration) return;
@@ -887,7 +893,7 @@ export function AcademyTalentWorkshopDrawer({
     setSavingLadderConfiguration(true);
     try {
       await onSaveLadderConfiguration({ tiers });
-      setLadderConfigurationDraft(null);
+      closeGlobalEditor();
       message.success('Đã lưu bảng quyền lợi cho toàn bộ Academy.');
       // The global percentage is financial policy, not decorative text. Refresh
       // the current unsaved quote so the result cards immediately agree with
@@ -907,7 +913,7 @@ export function AcademyTalentWorkshopDrawer({
     } finally {
       setSavingLadderConfiguration(false);
     }
-  }, [draft, isIssued, ladderConfigurationDraft, lead, onPreviewQuote, onSaveLadderConfiguration]);
+  }, [closeGlobalEditor, draft, isIssued, ladderConfigurationDraft, lead, onPreviewQuote, onSaveLadderConfiguration]);
   const presentationView = React.useMemo<AcademyTalentAssessmentView | null>(() => {
     if (!displayView || !previewQuote || !previewResult || !previewPricing) return displayView;
     // Keep every number in the preview document in the same non-persistent
@@ -1408,26 +1414,45 @@ export function AcademyTalentWorkshopDrawer({
               onClick={() => setWorkshopLayoutMode('custom')}
             />
           </Tooltip>
-          {canEditLadder && (
-            <Tooltip title={editMode ? 'Tắt chế độ chỉnh sửa toàn cục' : 'Chỉnh sửa bảng quyền lợi toàn cục'}>
+          {(canEditLadder || canManageCourses) && (
+            <Tooltip
+              title={
+                editMode
+                  ? 'Tắt chế độ chỉnh sửa toàn cục'
+                  : step === 2
+                    ? 'Chỉnh sửa khóa học toàn cục'
+                    : 'Chỉnh sửa bảng quyền lợi toàn cục'
+              }
+            >
               <Button
-                aria-label={editMode ? 'Tắt chế độ chỉnh sửa toàn cục' : 'Chỉnh sửa bảng quyền lợi toàn cục'}
+                aria-label={
+                  editMode
+                    ? 'Tắt chế độ chỉnh sửa toàn cục'
+                    : step === 2
+                      ? 'Chỉnh sửa khóa học toàn cục'
+                      : 'Chỉnh sửa bảng quyền lợi toàn cục'
+                }
                 className={`${styles.topControlButton} ${editMode ? styles.topControlButtonActive : ''}`}
-                disabled={!ladderConfiguration || !onSaveLadderConfiguration}
+                disabled={
+                  step === 2
+                    ? !canManageCourses || !onSaveCourseConfiguration
+                    : !canEditLadder || !ladderConfiguration || !onSaveLadderConfiguration
+                }
                 icon={<AppIcon icon={Pencil} />}
                 size="small"
                 type="text"
                 onClick={() => {
-                  setCourseConfigurationOpen(false);
                   if (editMode) {
-                    setEditMode(false);
-                    setLadderConfigurationDraft(null);
+                    closeGlobalEditor();
                     return;
                   }
+                  setLadderConfigurationDraft(null);
                   setEditMode(true);
-                  // The global pencil is the primary edit entry point. Open
-                  // the editor immediately instead of requiring an operator
-                  // to discover a second click on one of the ladder bubbles.
+                  if (step === 2) {
+                    setCourseConfigurationOpen(true);
+                    return;
+                  }
+                  setCourseConfigurationOpen(false);
                   openLadderTierEditor('', true);
                 }}
               />
@@ -1726,20 +1751,6 @@ export function AcademyTalentWorkshopDrawer({
                         <h3 className={styles.visuallyHidden} id="academy-talent-courses-title">
                           Chọn lộ trình phù hợp
                         </h3>
-
-                        {canManageCourses && editMode && onSaveCourseConfiguration && (
-                          <div className={styles.courseConfigurationTrigger}>
-                            <span>Chế độ quản trị: thay đổi tại đây áp dụng cho toàn bộ Academy.</span>
-                            <Button
-                              icon={<AppIcon icon={Wrench} />}
-                              size="small"
-                              type="primary"
-                              onClick={() => setCourseConfigurationOpen(true)}
-                            >
-                              Cấu hình khóa học
-                            </Button>
-                          </div>
-                        )}
 
                         <div className={styles.marketSwitcher} role="tablist" aria-label="Nhóm học viên Academy">
                           <button
@@ -2495,7 +2506,7 @@ export function AcademyTalentWorkshopDrawer({
         <AcademyTalentCourseConfigurationModal
           open={courseConfigurationOpen}
           courses={courses}
-          onCancel={() => setCourseConfigurationOpen(false)}
+          onCancel={closeGlobalEditor}
           onSave={onSaveCourseConfiguration}
         />
       )}
@@ -2503,7 +2514,7 @@ export function AcademyTalentWorkshopDrawer({
       <AdaptiveModal
         destroyOnClose
         footer={[
-          <Button key="cancel" onClick={() => setLadderConfigurationDraft(null)}>
+          <Button key="cancel" onClick={closeGlobalEditor}>
             Hủy
           </Button>,
           <Button
@@ -2525,7 +2536,7 @@ export function AcademyTalentWorkshopDrawer({
           </div>
         }
         zIndex={11070}
-        onCancel={() => setLadderConfigurationDraft(null)}
+        onCancel={closeGlobalEditor}
       >
         {ladderConfigurationDraft && (
           <div className={styles.ladderEditor}>
