@@ -158,6 +158,13 @@ export function getSidebarGroups(
     },
   ];
 
+  crmGroupItems.push({
+    key: 'nyc-parent',
+    label: 'Chiến dịch NYC',
+    icon: <ClockCircleOutlined />,
+    children: nycChildren,
+  });
+
   if (isLocaAllowed) {
     crmGroupItems.push({
       key: 'loca',
@@ -168,17 +175,17 @@ export function getSidebarGroups(
   }
 
   crmGroupItems.push({
-    key: 'nyc-parent',
-    label: 'Chiến dịch NYC',
-    icon: <ClockCircleOutlined />,
-    children: nycChildren,
-  });
-
-  crmGroupItems.push({
     key: 'cs-hub',
     label: 'Trung Tâm CSKH',
     icon: <CustomerServiceOutlined />,
     path: '/dashboard/cs',
+  });
+
+  crmGroupItems.push({
+    key: 'my-appointments',
+    label: 'Lịch hẹn của tôi',
+    icon: <CalendarOutlined />,
+    path: '/dashboard/appointments',
   });
 
   const academyItems: SidebarItemConfig[] = [];
@@ -267,12 +274,6 @@ export function getSidebarGroups(
 
   // Group 4: VẬN HÀNH CUỘC GỌI
   const operationsItems: SidebarItemConfig[] = [
-    {
-      key: 'my-appointments',
-      label: 'Lịch hẹn của tôi',
-      icon: <CalendarOutlined />,
-      path: '/dashboard/appointments',
-    },
     {
       key: 'plans',
       label: 'Kế hoạch gọi',

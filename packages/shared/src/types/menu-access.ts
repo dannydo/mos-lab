@@ -28,7 +28,7 @@ export const MENU_ACCESS_CATEGORY_DEFINITIONS: readonly MenuAccessCategoryDefini
     key: 'crm',
     label: 'Khách hàng & chiến dịch',
     menuGroupKeys: ['crm'],
-    description: 'Khách hàng, chiến dịch LoCa/NYC và Trung tâm CSKH.',
+    description: 'Khách hàng, chiến dịch LoCa/NYC, Trung tâm CSKH và lịch hẹn.',
   },
   {
     key: 'academy',
@@ -40,7 +40,7 @@ export const MENU_ACCESS_CATEGORY_DEFINITIONS: readonly MenuAccessCategoryDefini
     key: 'operations',
     label: 'Vận hành cuộc gọi',
     menuGroupKeys: ['operations'],
-    description: 'Lịch hẹn, kế hoạch gọi, OmiCall, QA/QC và FAL.',
+    description: 'Kế hoạch gọi, OmiCall, QA/QC và FAL.',
   },
   { key: 'reports', label: 'Báo cáo & KPI', menuGroupKeys: ['reports'], description: 'KPI, Báo cáo CC, CV và BK.' },
   {
@@ -125,6 +125,13 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
     groupLabel: 'Khách hàng & chiến dịch',
     path: '/dashboard/cs',
   },
+  {
+    key: 'my-appointments',
+    label: 'Lịch hẹn của tôi',
+    groupKey: 'crm',
+    groupLabel: 'Khách hàng & chiến dịch',
+    path: '/dashboard/appointments',
+  },
 
   {
     key: 'academy-customers',
@@ -176,13 +183,6 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
     path: '/dashboard/academy-leads/instructors',
   },
 
-  {
-    key: 'my-appointments',
-    label: 'Lịch hẹn của tôi',
-    groupKey: 'operations',
-    groupLabel: 'Vận hành cuộc gọi',
-    path: '/dashboard/appointments',
-  },
   {
     key: 'plans',
     label: 'Kế hoạch gọi',
