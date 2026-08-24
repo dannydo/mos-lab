@@ -12,6 +12,7 @@ import { registerCvSpeedRoutes } from './routes/cv-speed.routes.js';
 import { registerBkRoutes } from './routes/bk.routes.js';
 import { registerPackageAuditRoutes } from './routes/package-audit.routes.js';
 import { calculateBookerSalaryStats } from './services/salary-calculator.js';
+import { getActiveBkTelesalesIds } from './services/bk-salary.service.js';
 import { compareBookerProductivity } from './utils/leaderboard.js';
 
 // Default configuration parameters for Booker Salary
@@ -210,10 +211,15 @@ function formatDateTime(d: Date): string {
 
 /** Resolve the CRM and legacy identities once so KPI summary and trends use the same staff scope. */
 async function resolveTelesalesKpiScope(fastify: FastifyInstance, targetStaffId?: number) {
+  const activeBkTelesalesIds = await getActiveBkTelesalesIds(fastify);
+  if (activeBkTelesalesIds.length === 0) {
+    return { staffIds: [], legacyUserIds: [] };
+  }
+
   const staffList = await fastify.prisma.crm.crmStaff.findMany({
     where: {
-      role: 'telesales',
       isActive: true,
+      legacyStaffId: { in: activeBkTelesalesIds },
       ...(targetStaffId !== undefined ? { id: targetStaffId } : {}),
     },
     select: { id: true, displayName: true, legacyStaffId: true },
@@ -990,8 +996,18 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         return leaderboard;
       }
 
+      const isBkTelesalesLeaderboard = !role || role === 'telesales';
       const staffWhere: SafeAny = { isActive: true };
-      if (staffIds && staffIds.trim() !== '') {
+
+      if (isBkTelesalesLeaderboard) {
+        // The Telesales leaderboard is defined by the active BK_TELESALES
+        // roster, not a CRM account role or a browser-local selection. This
+        // includes operational leaders whose CRM role is `admin` and excludes
+        // all active staff outside the team.
+        const activeBkTelesalesIds = await getActiveBkTelesalesIds(fastify);
+        if (activeBkTelesalesIds.length === 0) return [];
+        staffWhere.legacyStaffId = { in: activeBkTelesalesIds };
+      } else if (staffIds && staffIds.trim() !== '') {
         staffWhere.id = {
           in: staffIds
             .split(',')
@@ -999,7 +1015,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             .filter((n: number) => !isNaN(n)),
         };
       } else {
-        staffWhere.role = role || 'telesales';
+        staffWhere.role = role;
       }
 
       const staffList = await fastify.prisma.crm.crmStaff.findMany({

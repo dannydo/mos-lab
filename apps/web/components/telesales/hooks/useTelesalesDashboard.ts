@@ -16,98 +16,7 @@ export const LEVEL_PRESETS = [
   { emoji: '👼', name: 'Angel', done: 600, booked: 750, happy: 3000, pickups: 3750, calls: 12500 },
 ];
 
-export const members = [
-  {
-    id: 'TN',
-    name: 'Thanh Ngân',
-    color: '#EC4899',
-    gradient: 'linear-gradient(135deg, #EC4899, #DB2777)',
-    teamRole: 'Telesales Leader',
-    textColor: 'text-pink-400',
-    borderColor: 'border-pink-400',
-    hoverGlow: 'shadow-pink-500/20',
-  },
-  {
-    id: 'HM',
-    name: 'Hoài My',
-    color: '#A855F7',
-    gradient: 'linear-gradient(135deg, #A855F7, #9333EA)',
-    teamRole: 'Senior Consultant',
-    textColor: 'text-purple-400',
-    borderColor: 'border-purple-400',
-    hoverGlow: 'shadow-purple-500/20',
-  },
-  {
-    id: 'VT',
-    name: 'Vũ Thảo',
-    color: '#06B6D4',
-    gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)',
-    teamRole: 'Senior Consultant',
-    textColor: 'text-cyan-400',
-    borderColor: 'border-cyan-400',
-    hoverGlow: 'shadow-cyan-500/20',
-  },
-  {
-    id: 'KL',
-    name: 'Kim Loan',
-    color: '#10B981',
-    gradient: 'linear-gradient(135deg, #10B981, #059669)',
-    teamRole: 'Consultant Specialist',
-    textColor: 'text-emerald-400',
-    borderColor: 'border-emerald-400',
-    hoverGlow: 'shadow-emerald-500/20',
-  },
-  {
-    id: 'TH',
-    name: 'Thu Hà',
-    color: '#F97316',
-    gradient: 'linear-gradient(135deg, #F97316, #EA580C)',
-    teamRole: 'Telesales Assistant',
-    textColor: 'text-orange-400',
-    borderColor: 'border-orange-400',
-    hoverGlow: 'shadow-orange-500/20',
-  },
-  {
-    id: 'DD',
-    name: 'Đăng Đô',
-    color: '#D4A84B',
-    gradient: 'linear-gradient(135deg, #D4A84B, #B8902F)',
-    teamRole: 'Telesales Manager',
-    textColor: 'text-gold',
-    borderColor: 'border-gold',
-    hoverGlow: 'shadow-gold/20',
-  },
-];
-
-const baseDataToday: Record<string, Record<string, number>> = {
-  TN: { calls: 62, pickups: 41, happy: 17, booked: 12, done: 8 },
-  DD: { calls: 55, pickups: 36, happy: 14, booked: 10, done: 7 },
-  HM: { calls: 48, pickups: 30, happy: 12, booked: 8, done: 5 },
-  VT: { calls: 43, pickups: 27, happy: 10, booked: 7, done: 4 },
-  KL: { calls: 38, pickups: 22, happy: 8, booked: 5, done: 3 },
-  TH: { calls: 33, pickups: 18, happy: 6, booked: 4, done: 2 },
-};
-
-const multipliers: Record<string, number> = {
-  today: 1,
-  this_week: 5,
-  this_month: 20,
-  yesterday: 0.8,
-  last_week: 4,
-  last_month: 18,
-};
-
-export function getMemberData(memberId: string, period: string): Record<string, number> {
-  const base = baseDataToday[memberId] || baseDataToday.DD;
-  const m = multipliers[period] || 1;
-  return {
-    calls: Math.round(base.calls * m),
-    pickups: Math.round(base.pickups * m),
-    happy: Math.round(base.happy * m),
-    booked: Math.round(base.booked * m),
-    done: Math.round(base.done * m),
-  };
-}
+const EMPTY_PERFORMANCE = { calls: 0, pickups: 0, happy: 0, booked: 0, done: 0 };
 
 const stylesPreset = [
   {
@@ -276,8 +185,6 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configTab, setConfigTab] = useState<'target' | 'staff'>('target');
-  const [systemStaff, setSystemStaff] = useState<SafeAny[]>([]);
-  const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([]);
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [staffLevels, setStaffLevels] = useState<Record<string, number>>({});
@@ -368,9 +275,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
   const getMemberLevelIdx = useCallback(
     (memberId: string | number): number => {
       const idStr = String(memberId);
-      const member =
-        dbMembers.find((m: SafeAny) => String(m.id) === idStr || String(m.initials) === idStr) ||
-        members.find((m: SafeAny) => String(m.id) === idStr || String(m.initials) === idStr);
+      const member = dbMembers.find((m: SafeAny) => String(m.id) === idStr || String(m.initials) === idStr);
 
       if (!member) {
         if (staffLevels[idStr] !== undefined) return Number(staffLevels[idStr]);
@@ -417,9 +322,6 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     const fetchAllLeaderboards = async () => {
       setLoading(true);
       try {
-        const saved = localStorage.getItem('telesales_dashboard_visible_staff');
-        const savedIds: number[] = saved ? JSON.parse(saved) : [];
-
         const periodsToFetch = [
           { id: 'today', start: dayjs(), end: dayjs() },
           { id: 'yesterday', start: dayjs().subtract(1, 'day'), end: dayjs().subtract(1, 'day') },
@@ -447,9 +349,6 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
             };
 
             params.role = 'telesales';
-            if (savedIds.length > 0) {
-              params.staffIds = savedIds.join(',');
-            }
 
             const list = (await apiClient.kpi.getLeaderboard(params)) || [];
 
@@ -471,7 +370,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
                 initials,
                 avatarUrl: item.avatarUrl || item.avatar || null,
                 ...style,
-                teamRole: item.role === 'admin' ? 'Telesales Manager' : 'Telesales Executive',
+                teamRole: 'BK_TELESALES',
                 perf: {
                   calls: item.totalCalled || 0,
                   pickups: item.totalAnswered || 0,
@@ -531,18 +430,13 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     }
   }, [visible, initialMemberId, currentPeriodId, periodDataMap]);
 
-  const toggleStaffSelection = (id: number) => {
-    setSelectedStaffIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
-
-  const saveVisibleStaff = async () => {
+  const saveStaffLevels = async () => {
     try {
-      localStorage.setItem('telesales_dashboard_visible_staff', JSON.stringify(selectedStaffIds));
       if (isAdmin) {
         await apiClient.kpi.updateStaffLevels(staffLevels);
       }
       setIsConfigOpen(false);
-      optionsRef.current?.onSuccess?.('Đã cập nhật danh sách nhân sự và mục tiêu cấp độ!');
+      optionsRef.current?.onSuccess?.('Đã cập nhật mục tiêu cấp độ cho nhóm BK_TELESALES.');
       setRefreshCounter((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to save staff levels:', err);
@@ -550,41 +444,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     }
   };
 
-  // Fetch staff list for settings
-  useEffect(() => {
-    if (visible && isConfigOpen) {
-      const saved = localStorage.getItem('telesales_dashboard_visible_staff');
-      if (saved) {
-        setSelectedStaffIds(JSON.parse(saved));
-      }
-
-      const fetchStaffList = async () => {
-        try {
-          const list = (await apiClient.customers.getStaff()) || [];
-          const ALLOWED_ROLES = ['telesales', 'manager', 'admin'];
-          const filtered = list.filter((s: SafeAny) => s.role && ALLOWED_ROLES.includes(String(s.role).toLowerCase()));
-          setSystemStaff(filtered);
-
-          if (!saved) {
-            const telesalesIds = filtered.map((s: SafeAny) => s.id);
-            setSelectedStaffIds(telesalesIds);
-          }
-        } catch (err) {
-          console.error('Failed to fetch staff list:', err);
-        }
-      };
-      fetchStaffList();
-    }
-  }, [visible, isConfigOpen]);
-
-  const currentMembersList =
-    dbMembers.length > 0
-      ? dbMembers
-      : members.map((m) => ({
-          ...m,
-          initials: m.id,
-          perf: getMemberData(m.id, currentPeriodId),
-        }));
+  const currentMembersList = dbMembers;
 
   const activeMember =
     (currentMemberId
@@ -597,9 +457,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     findTargetMemberOrTopBooker(currentMembersList) ||
     currentMembersList[0];
 
-  const activePerformance = activeMember
-    ? activeMember.perf || getMemberData(activeMember.id, currentPeriodId)
-    : { calls: 0, pickups: 0, happy: 0, booked: 0, done: 0 };
+  const activePerformance = activeMember ? activeMember.perf || EMPTY_PERFORMANCE : EMPTY_PERFORMANCE;
   const activeValue = activePerformance[currentMetricKey] || 0;
   const activeMemberTargets = activeMember
     ? getMemberTarget(activeMember.id, currentPeriodId)
@@ -643,7 +501,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
   const rankings = currentMembersList
     .map((m: SafeAny) => ({
       ...m,
-      value: m.perf ? m.perf[currentMetricKey] : getMemberData(m.id, currentPeriodId)[currentMetricKey],
+      value: m.perf?.[currentMetricKey] || 0,
     }))
     .sort((a, b) => b.value - a.value);
 
@@ -655,8 +513,8 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
   const backRankings = currentMembersList
     .map((m: SafeAny) => ({
       ...m,
-      value: m.perf ? m.perf['done'] : getMemberData(m.id, currentPeriodId)['done'],
-      perf: m.perf || getMemberData(m.id, currentPeriodId),
+      value: m.perf?.done || 0,
+      perf: m.perf || EMPTY_PERFORMANCE,
     }))
     .sort((a, b) => b.value - a.value);
   const top3Back = backRankings.slice(0, 3);
@@ -699,8 +557,6 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
     isFlipped,
     isConfigOpen,
     configTab,
-    systemStaff,
-    selectedStaffIds,
     refreshCounter,
     isAdmin,
     staffLevels,
@@ -744,8 +600,7 @@ export function useTelesalesDashboard(options: UseTelesalesDashboardProps) {
 
     // callbacks
     handleResize,
-    toggleStaffSelection,
-    saveVisibleStaff,
+    saveStaffLevels,
     handleUpdateLevel,
     getMemberLevelIdx,
     getMemberTarget,

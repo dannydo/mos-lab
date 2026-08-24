@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Segmented, Checkbox, Select, message } from 'antd';
+import { Button, Segmented, Select } from 'antd';
 import { CloseOutlined, SaveOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { LEVEL_PRESETS } from '../hooks/useTelesalesDashboard';
 
@@ -19,12 +19,10 @@ interface TelesalesConfigPanelProps {
   metricConfigs: SafeAny[];
   handleTargetChange: (periodId: string, metricKey: string, valStr: string) => void;
   saveTargets: () => void;
-  systemStaff: SafeAny[];
-  selectedStaffIds: number[];
-  toggleStaffSelection: (id: number) => void;
+  teamMembers: SafeAny[];
   getMemberLevelIdx: (memberId: string | number) => number;
   setStaffLevels: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  saveVisibleStaff: () => Promise<void>;
+  saveStaffLevels: () => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -42,12 +40,10 @@ export default function TelesalesConfigPanel({
   metricConfigs,
   handleTargetChange,
   saveTargets,
-  systemStaff,
-  selectedStaffIds,
-  toggleStaffSelection,
+  teamMembers,
   getMemberLevelIdx,
   setStaffLevels,
-  saveVisibleStaff,
+  saveStaffLevels,
   isAdmin,
 }: TelesalesConfigPanelProps) {
   const toggleConfigSection = (periodId: string) => {
@@ -199,58 +195,36 @@ export default function TelesalesConfigPanel({
         <>
           <div className="flex-1 flex flex-col min-h-0 p-3">
             <p className={`text-[10px] ${themeMode === 'dark' ? 'text-gray-400' : 'text-gray-500'} mb-2 shrink-0`}>
-              Chọn nhân viên hiển thị trên bảng xếp hạng (Telesales Executive, Quản lý & Admin):
+              Tất cả thành viên active của nhóm <strong>BK_TELESALES</strong> được hiển thị. Quản lý roster tại Nhân sự
+              → Nhóm.
             </p>
             <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar min-h-0">
-              {systemStaff.map((staff: SafeAny) => {
-                const isChecked = selectedStaffIds.includes(staff.id);
+              {teamMembers.map((staff: SafeAny) => {
                 return (
                   <div
                     key={staff.id}
-                    onClick={() => toggleStaffSelection(staff.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                      isChecked
-                        ? themeMode === 'dark'
-                          ? 'border-gold/30 bg-gold/5 shadow-[0_4px_12px_rgba(212,168,75,0.08)]'
-                          : 'border-gold/25 bg-gold/[0.03] shadow-[0_4px_10px_rgba(212,168,75,0.05)]'
-                        : themeMode === 'dark'
-                          ? 'border-white/[0.04] bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.03]'
-                          : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50'
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 ${
+                      themeMode === 'dark' ? 'border-gold/20 bg-gold/[0.03]' : 'border-gold/15 bg-gold/[0.02]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <Checkbox
-                        checked={isChecked}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={() => toggleStaffSelection(staff.id)}
-                        className="shrink-0 scale-105"
-                      />
+                      <span className="text-sm" aria-hidden>
+                        ✓
+                      </span>
                       <div className="flex flex-col min-w-0 flex-1 select-none">
                         <span
                           className={`text-xs font-bold truncate transition-colors ${
-                            isChecked
-                              ? themeMode === 'dark'
-                                ? 'text-gold'
-                                : 'text-amber-800'
-                              : themeMode === 'dark'
-                                ? 'text-gray-200'
-                                : 'text-gray-800'
+                            themeMode === 'dark' ? 'text-gold' : 'text-amber-800'
                           }`}
                         >
-                          {staff.displayName || staff.username}
+                          {staff.name || staff.displayName || staff.username}
                         </span>
                         <span
                           className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
-                            isChecked
-                              ? themeMode === 'dark'
-                                ? 'text-gold/60'
-                                : 'text-amber-700/60'
-                              : themeMode === 'dark'
-                                ? 'text-gray-500'
-                                : 'text-slate-400'
+                            themeMode === 'dark' ? 'text-gold/60' : 'text-amber-700/60'
                           }`}
                         >
-                          {staff.role === 'telesales' ? 'Telesales Executive' : staff.role}
+                          BK_TELESALES
                         </span>
                       </div>
                     </div>
@@ -272,7 +246,12 @@ export default function TelesalesConfigPanel({
                                     .join('')
                                     .slice(0, 2)
                                     .toUpperCase()
-                                : staff.username?.slice(0, 2).toUpperCase();
+                                : staff.name
+                                    ?.split(' ')
+                                    .map((n: string) => n[0])
+                                    .join('')
+                                    .slice(0, 2)
+                                    .toUpperCase();
                               if (initials) {
                                 next[String(initials)] = val;
                               }
@@ -290,6 +269,13 @@ export default function TelesalesConfigPanel({
                   </div>
                 );
               })}
+              {teamMembers.length === 0 && (
+                <p
+                  className={`px-2 py-4 text-center text-xs ${themeMode === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}
+                >
+                  Chưa có thành viên active trong nhóm BK_TELESALES.
+                </p>
+              )}
             </div>
           </div>
           <div
@@ -298,7 +284,7 @@ export default function TelesalesConfigPanel({
             <Button
               type="primary"
               icon={<SaveOutlined />}
-              onClick={saveVisibleStaff}
+              onClick={saveStaffLevels}
               className="w-full bg-gradient-to-r from-gold to-goldDark hover:from-goldLight border-none text-black font-bold h-9 rounded-xl shadow-md shadow-gold/10 flex items-center justify-center gap-1.5"
             >
               Lưu cấu hình

@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { SafeAny } from '@mos-lab/shared';
+import { getActiveBkTelesalesIds } from './bk-salary.service.js';
 
 const formatDateStr = (d: Date) => {
   return d.toISOString().replace('T', ' ').substring(0, 19);
@@ -84,15 +85,20 @@ export async function calculateBookerSalaryStats(
   // Fetch active config
   const config = await getSalaryConfig(fastify);
 
-  // 1. Fetch CRM Staff list
-  const staffList = await fastify.prisma.crm.crmStaff.findMany({
-    where: {
-      role: 'telesales',
-      isActive: true,
-      ...(targetStaffId !== undefined ? { id: targetStaffId } : {}),
-    },
-    select: { id: true, displayName: true, legacyStaffId: true },
-  });
+  // 1. Keep salary metrics on the same active BK_TELESALES roster as the
+  // leaderboard. A team member may have a CRM role other than `telesales`
+  // (for example, an admin who also books appointments).
+  const activeBkTelesalesIds = await getActiveBkTelesalesIds(fastify);
+  const staffList = activeBkTelesalesIds.length
+    ? await fastify.prisma.crm.crmStaff.findMany({
+        where: {
+          isActive: true,
+          legacyStaffId: { in: activeBkTelesalesIds },
+          ...(targetStaffId !== undefined ? { id: targetStaffId } : {}),
+        },
+        select: { id: true, displayName: true, legacyStaffId: true },
+      })
+    : [];
 
   const staffStats: Record<
     number,

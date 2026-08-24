@@ -36,11 +36,10 @@ export default function TelesalesDashboardModal({
     isFlipped,
     isConfigOpen,
     configTab,
-    systemStaff,
-    selectedStaffIds,
     isAdmin,
     isRadialOpen,
     periodDataMap,
+    dbMembers,
     loading,
     targets,
     expandedSections,
@@ -72,8 +71,7 @@ export default function TelesalesDashboardModal({
     setExpandedSections,
     setStaffLevels,
     handleResize,
-    toggleStaffSelection,
-    saveVisibleStaff,
+    saveStaffLevels,
     handleUpdateLevel,
     getMemberLevelIdx,
     getMemberTarget,
@@ -273,12 +271,10 @@ export default function TelesalesDashboardModal({
           metricConfigs={metricConfigs}
           handleTargetChange={handleTargetChange}
           saveTargets={saveTargets}
-          systemStaff={systemStaff}
-          selectedStaffIds={selectedStaffIds}
-          toggleStaffSelection={toggleStaffSelection}
+          teamMembers={dbMembers}
           getMemberLevelIdx={getMemberLevelIdx}
           setStaffLevels={setStaffLevels}
-          saveVisibleStaff={saveVisibleStaff}
+          saveStaffLevels={saveStaffLevels}
           isAdmin={isAdmin}
         />
 
