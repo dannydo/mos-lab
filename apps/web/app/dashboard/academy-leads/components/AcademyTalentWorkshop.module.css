@@ -4872,7 +4872,7 @@
 @media (min-width: 1920px) {
   .modalAutoScale .body:has(.coursePickerGrid) {
     display: flex;
-    padding: clamp(22px, 1.35vw, 44px) clamp(26px, 1.7vw, 56px) 92px;
+    padding: clamp(22px, 1.35vw, 44px) clamp(14px, 1.6vw, 26px) 92px;
   }
 
   .modalAutoScale .stepPanel:has(.coursePickerGrid) {
@@ -5270,7 +5270,16 @@
      (rather than applying a transform) so every target remains crisp and
      keeps its correct hit area. */
   .modalAutoScale .body:has(.scorePanel) {
-    padding: 28px clamp(36px, 2.15vw, 58px) 26px;
+    /* Keep the same near-edge canvas rhythm as Laptop L: on a 4K display
+       the assessment panel must use the width that the modal already owns,
+       rather than growing an extra editorial gutter with the viewport. */
+    padding: 28px clamp(20px, 1vw, 28px) 26px;
+  }
+  /* Course selection follows the same 4K horizontal canvas as scoring.
+     Its taller bottom inset remains independent because the checkout dock
+     needs room to stay clear of the course cards. */
+  .modalAutoScale .body:has(.coursePickerGrid) {
+    padding-inline: clamp(20px, 1vw, 28px);
   }
   .modalAutoScale .stepPanel.scorePanel {
     align-self: stretch;

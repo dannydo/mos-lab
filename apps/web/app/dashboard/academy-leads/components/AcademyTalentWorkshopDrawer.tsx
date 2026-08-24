@@ -809,8 +809,8 @@ export function AcademyTalentWorkshopDrawer({
   }, []);
 
   const openLadderTierEditor = React.useCallback(
-    (_tierKey: string) => {
-      if (!canEditLadder || !editMode || !onSaveLadderConfiguration) return;
+    (_tierKey: string, openFromGlobalControl = false) => {
+      if (!canEditLadder || (!editMode && !openFromGlobalControl) || !onSaveLadderConfiguration) return;
       if (!ladderConfiguration) return;
       setLadderConfigurationDraft(
         ladderConfiguration.tiers.map((tier) => ({
@@ -1409,18 +1409,26 @@ export function AcademyTalentWorkshopDrawer({
             />
           </Tooltip>
           {canEditLadder && (
-            <Tooltip title={editMode ? 'Tắt chế độ chỉnh sửa toàn cục' : 'Bật chế độ chỉnh sửa toàn cục'}>
+            <Tooltip title={editMode ? 'Tắt chế độ chỉnh sửa toàn cục' : 'Chỉnh sửa bảng quyền lợi toàn cục'}>
               <Button
-                aria-label={editMode ? 'Tắt chế độ chỉnh sửa toàn cục' : 'Bật chế độ chỉnh sửa toàn cục'}
+                aria-label={editMode ? 'Tắt chế độ chỉnh sửa toàn cục' : 'Chỉnh sửa bảng quyền lợi toàn cục'}
                 className={`${styles.topControlButton} ${editMode ? styles.topControlButtonActive : ''}`}
                 disabled={!ladderConfiguration || !onSaveLadderConfiguration}
                 icon={<AppIcon icon={Pencil} />}
                 size="small"
                 type="text"
                 onClick={() => {
-                  setEditMode((current) => !current);
-                  setLadderConfigurationDraft(null);
                   setCourseConfigurationOpen(false);
+                  if (editMode) {
+                    setEditMode(false);
+                    setLadderConfigurationDraft(null);
+                    return;
+                  }
+                  setEditMode(true);
+                  // The global pencil is the primary edit entry point. Open
+                  // the editor immediately instead of requiring an operator
+                  // to discover a second click on one of the ladder bubbles.
+                  openLadderTierEditor('', true);
                 }}
               />
             </Tooltip>
