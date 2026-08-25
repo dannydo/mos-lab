@@ -13,6 +13,7 @@ import { AcademyWorkshopBonusService } from './academy-workshop-bonus.service.js
 import { AcademyWorkshopPublicJoinService, normalizeAcademyWorkshopPhone } from './academy-workshop-public.service.js';
 import {
   WorkshopRealtimeHub,
+  buildAcademyWorkshopQuizDraftReplacementData,
   broadcastAcademyTalentAssessmentState,
   buildAcademyWorkshopQuizCloneData,
   buildAcademyWorkshopQuestionWindow,
@@ -211,6 +212,41 @@ test('clones quiz content into a clean draft without historical answers or rewar
   assert.equal('rewards' in data, false);
   assert.equal('answers' in data.questions.create[0], false);
   assert.equal('rewards' in data.questions.create[0], false);
+});
+
+test('replaces a draft game with fresh template content and clears its runtime question state', () => {
+  const data = buildAcademyWorkshopQuizDraftReplacementData(
+    {
+      title: 'Nỗi đau cô chủ salon mi nhỏ',
+      description: 'Mẫu câu hỏi mới',
+      podiumRewardsJson: '{}',
+      questions: [
+        {
+          type: 'SINGLE_CHOICE',
+          prompt: 'Khi nào cô chủ thấy mệt nhất?',
+          imageUrl: null,
+          durationSeconds: 20,
+          sortOrder: 1,
+          rewardRule: 'NONE',
+          fastestCount: 1,
+          rewardLabel: null,
+          rewardQuantity: 1,
+          options: [
+            { label: 'A', color: null, isCorrect: true, sortOrder: 1 },
+            { label: 'B', color: null, isCorrect: false, sortOrder: 2 },
+          ],
+        },
+      ],
+    },
+    12,
+    34
+  );
+
+  assert.equal(data.status, 'DRAFT');
+  assert.equal(data.activeQuestionId, null);
+  assert.equal(data.questionOpenedAt, null);
+  assert.equal(data.questionClosesAt, null);
+  assert.equal(data.questions.create[0].prompt, 'Khi nào cô chủ thấy mệt nhất?');
 });
 
 test('materializes independent games from one reusable question template', () => {

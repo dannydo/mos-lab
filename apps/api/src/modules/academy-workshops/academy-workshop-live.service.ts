@@ -163,6 +163,20 @@ export function buildAcademyWorkshopQuizCloneData(
   };
 }
 
+export function buildAcademyWorkshopQuizDraftReplacementData(
+  source: SafeAny,
+  workshopId: number,
+  actorId: number,
+  input: CloneAcademyWorkshopQuizRequest = {}
+) {
+  return {
+    ...buildAcademyWorkshopQuizCloneData(source, workshopId, actorId, input),
+    activeQuestionId: null,
+    questionOpenedAt: null,
+    questionClosesAt: null,
+  };
+}
+
 function manager(actor: AcademyActor) {
   return ['admin', 'super_admin', 'manager'].includes(actor.role);
 }
@@ -581,18 +595,30 @@ export class AcademyWorkshopLiveService {
       include: QUIZ_INCLUDE,
     });
     if (!template) throw new AcademySalesError('Không tìm thấy mẫu câu hỏi.', 404);
-    const unfinishedQuiz = await fastify.prisma.crm.crmAcademyWorkshopQuiz.findFirst({
+    const unfinishedQuizzes = await fastify.prisma.crm.crmAcademyWorkshopQuiz.findMany({
       where: { workshopId, isTemplate: false, status: { not: 'COMPLETED' } },
-      select: { id: true },
+      select: { id: true, status: true },
     });
-    if (unfinishedQuiz)
-      throw new AcademySalesError('Hãy chốt hoặc tiếp tục game bản nháp hiện tại trước khi dùng mẫu khác.', 409);
-    const game = await fastify.prisma.crm.crmAcademyWorkshopQuiz.create({
-      data: buildAcademyWorkshopQuizCloneData(template, workshopId, actor.id, {
-        title: String(input.title || '').trim() || template.title,
-      }),
-      include: QUIZ_INCLUDE,
+    const runningQuiz = unfinishedQuizzes.find((quiz) => quiz.status !== 'DRAFT');
+    if (runningQuiz) throw new AcademySalesError('Hãy kết thúc game đang chạy trước khi thay bằng mẫu khác.', 409);
+
+    const copyData = buildAcademyWorkshopQuizDraftReplacementData(template, workshopId, actor.id, {
+      title: String(input.title || '').trim() || template.title,
     });
+    const draftQuiz = unfinishedQuizzes.find((quiz) => quiz.status === 'DRAFT');
+    const game = draftQuiz
+      ? await fastify.prisma.crm.$transaction(async (tx) => {
+          await tx.crmAcademyWorkshopQuizQuestion.deleteMany({ where: { quizId: draftQuiz.id } });
+          return tx.crmAcademyWorkshopQuiz.update({
+            where: { id: draftQuiz.id },
+            data: copyData,
+            include: QUIZ_INCLUDE,
+          });
+        })
+      : await fastify.prisma.crm.crmAcademyWorkshopQuiz.create({
+          data: copyData,
+          include: QUIZ_INCLUDE,
+        });
     return toAcademyWorkshopQuiz(game, true)!;
   }
 
