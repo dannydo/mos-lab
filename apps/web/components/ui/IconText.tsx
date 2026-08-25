@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Space } from 'antd';
 
 export interface IconTextProps {
   icon?: React.ReactNode;
@@ -23,17 +22,17 @@ export function IconText({
   textClassName = '',
 }: IconTextProps) {
   return (
-    <Space
-      size={gap}
-      align="center"
-      className={`inline-flex items-center ${className}`}
-      style={style}
+    <span
+      className={`inline-flex items-center justify-center leading-none ${className}`}
+      style={{ columnGap: gap, ...style }}
     >
-      {icon && <span className="inline-flex items-center shrink-0">{icon}</span>}
-      <span className={`${tabular ? 'tabular-nums' : ''} ${textClassName}`}>
+      {icon && (
+        <span className="inline-flex shrink-0 items-center justify-center leading-none [&>svg]:block">{icon}</span>
+      )}
+      <span className={`inline-flex items-center leading-none ${tabular ? 'tabular-nums' : ''} ${textClassName}`}>
         {children}
       </span>
-    </Space>
+    </span>
   );
 }
 

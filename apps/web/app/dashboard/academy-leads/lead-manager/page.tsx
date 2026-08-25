@@ -1,5 +1,4 @@
 'use client';
-
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button, DatePicker, Select, Space, Tabs, Tooltip, message } from 'antd';
@@ -24,7 +23,6 @@ import {
   type AcademyLead,
   type AcademyLeadStatus,
   type AcademyTalentAssessment,
-  isAdminOrSuperAdminRole,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
@@ -43,7 +41,7 @@ import {
 } from '../../../../components/ui';
 import AcademyLeadDrawer from '../components/AcademyLeadDrawer';
 import { useAcademyAccess } from '../components/AcademyAccessGate';
-import AcademyTalentWorkshopDrawer from '../components/AcademyTalentWorkshopDrawer';
+import AcademyLeadTalentWorkshopOverlay from '../components/AcademyLeadTalentWorkshopOverlay';
 import { useAcademyTalentLadderConfiguration } from '../components/useAcademyTalentLadderConfiguration';
 import AcademyTestCalendar from '../components/AcademyTestCalendar';
 import { academyTalentCourseSelectionRules } from '../components/academy-talent-workshop.adapter';
@@ -67,7 +65,6 @@ import {
   talentWorkshopView,
   userRole,
 } from './lead-manager.helpers';
-
 export default function AcademyLeadManagerPage() {
   const { canAccess: academyAllowed } = useAcademyAccess();
   const workspace = useAcademySalesWorkspace('lead-manager');
@@ -83,7 +80,7 @@ export default function AcademyLeadManagerPage() {
   const [talentLoading, setTalentLoading] = React.useState(false);
   const [talentSaving, setTalentSaving] = React.useState(false);
   const talentLoadVersionRef = React.useRef(0);
-  const paymentLaunchRef = React.useRef<string | null>(null);
+  const talentLaunchRef = React.useRef<string | null>(null);
   const talentAssessmentIdRef = React.useRef<number | null>(null);
 
   React.useEffect(() => setRole(userRole()), []);
@@ -137,16 +134,23 @@ export default function AcademyLeadManagerPage() {
   React.useEffect(() => {
     const leadId = Number(searchParams.get('leadId') || 0);
     const assessmentId = Number(searchParams.get('assessmentId') || 0);
-    if (!academyAllowed || searchParams.get('paymentFollowUp') !== '1' || !Number.isInteger(leadId) || leadId <= 0)
+    const isPaymentFollowUp = searchParams.get('paymentFollowUp') === '1';
+    const isTalentWorkshopLink = searchParams.get('talentWorkshop') === '1';
+    if (!academyAllowed || (!isPaymentFollowUp && !isTalentWorkshopLink) || !Number.isInteger(leadId) || leadId <= 0)
       return;
-    const launchKey = `${leadId}:${Number.isInteger(assessmentId) && assessmentId > 0 ? assessmentId : ''}`;
-    if (paymentLaunchRef.current === launchKey) return;
-    paymentLaunchRef.current = launchKey;
+    const launchKey = `${isPaymentFollowUp ? 'payment' : 'workshop'}:${leadId}:${
+      Number.isInteger(assessmentId) && assessmentId > 0 ? assessmentId : ''
+    }`;
+    if (talentLaunchRef.current === launchKey) return;
+    talentLaunchRef.current = launchKey;
     void apiClient.academySales
       .getLead(leadId)
       .then((lead) => openTalentWorkshop(lead, assessmentId > 0 ? assessmentId : null))
       .catch((error: any) =>
-        message.error(error?.response?.data?.message || 'Không thể mở phiếu học phí cần follow-up.')
+        message.error(
+          error?.response?.data?.message ||
+            (isPaymentFollowUp ? 'Không thể mở phiếu học phí cần follow-up.' : 'Không thể mở phiên Tố Chất.')
+        )
       );
   }, [academyAllowed, openTalentWorkshop, searchParams]);
   const markTested = React.useCallback(
@@ -862,7 +866,8 @@ export default function AcademyLeadManagerPage() {
         onSaved={workspace.refresh}
       />
 
-      <AcademyTalentWorkshopDrawer
+      <AcademyLeadTalentWorkshopOverlay
+        role={role}
         open={talentOpen}
         lead={talentLead}
         courses={courses}
@@ -873,9 +878,6 @@ export default function AcademyLeadManagerPage() {
         courseSelectionRules={talentCourseRules}
         instructors={talentInstructors}
         ladderConfiguration={talentLadder.configuration}
-        canEditLadder={isAdminOrSuperAdminRole(role)}
-        canManageCourses={isAdminOrSuperAdminRole(role)}
-        canConfirmPayment={isAdminOrSuperAdminRole(role) || role === 'manager'}
         autoOpenPaymentFollowUp={searchParams.get('paymentFollowUp') === '1'}
         onClose={closeTalentWorkshop}
         onPreviewQuote={previewTalentQuote}

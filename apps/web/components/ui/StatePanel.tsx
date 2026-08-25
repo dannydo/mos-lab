@@ -33,7 +33,25 @@ export function StatePanel({
     ) : kind === 'error' ? (
       <Result status="error" title={title || 'Không thể tải dữ liệu'} subTitle={description} extra={extra} />
     ) : (
-      <Empty description={description || title || 'Chưa có dữ liệu'} />
+      <div>
+        <Empty
+          description={
+            title || description ? (
+              <div>
+                {title ? (
+                  <div className="font-semibold" style={{ color: token.colorText }}>
+                    {title}
+                  </div>
+                ) : null}
+                {description ? <div className={title ? 'mt-1' : ''}>{description}</div> : null}
+              </div>
+            ) : (
+              'Chưa có dữ liệu'
+            )
+          }
+        />
+        {extra ? <div className="mt-4">{extra}</div> : null}
+      </div>
     );
 
   const panel = (

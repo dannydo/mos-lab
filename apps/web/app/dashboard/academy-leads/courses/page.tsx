@@ -167,6 +167,7 @@ export default function AcademyCoursesPage() {
               market: 'DOMESTIC',
               listPriceVnd: 0,
               promoPriceVnd: 0,
+              teacherBonusVnd: 0,
               kitPriceVnd: 0,
               samplePriceVnd: 0,
               lessonCount: 1,
@@ -199,6 +200,7 @@ export default function AcademyCoursesPage() {
         coverImageUrl: values.coverImageUrl?.trim() || null,
         listPriceVnd: Math.round(Number(values.listPriceVnd) || 0),
         promoPriceVnd: Math.round(Number(values.promoPriceVnd) || 0),
+        teacherBonusVnd: Math.round(Number(values.teacherBonusVnd) || 0),
         kitName: values.kitName?.trim() || null,
         kitUrl: values.kitUrl?.trim() || null,
         kitPriceVnd: Math.round(Number(values.kitPriceVnd) || 0),
@@ -490,6 +492,20 @@ export default function AcademyCoursesPage() {
           <EntityFormField label="Học phí ưu đãi (VNĐ)" name="promoPriceVnd" rules={[{ required: true }]}>
             <InputNumber
               min={0}
+              step={100000}
+              className="w-full"
+              formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+            />
+          </EntityFormField>
+          <EntityFormField
+            label="Thưởng giáo viên khi chốt (VNĐ)"
+            name="teacherBonusVnd"
+            extra="Mức cố định cho mỗi học viên thanh toán đủ khóa này; 0đ sẽ vào hàng đợi chưa cấu hình."
+            rules={[{ required: true }]}
+          >
+            <InputNumber
+              min={0}
+              precision={0}
               step={100000}
               className="w-full"
               formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
