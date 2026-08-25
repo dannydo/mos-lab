@@ -1,10 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AcademyWorkshopPhotoUploadIntent } from '@mos-lab/shared';
+import WebSocket from 'ws';
 import { AcademySalesError } from '../academy-sales/academy-sales.service.js';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+type SupabaseClientOptions = NonNullable<Parameters<typeof createClient>[2]>;
+type RealtimeTransport = NonNullable<SupabaseClientOptions['realtime']>['transport'];
+const nodeWebSocketTransport = WebSocket as unknown as RealtimeTransport;
 
 let client: SupabaseClient | null = null;
 
@@ -16,6 +20,9 @@ function storage() {
   }
   client ||= createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    // Supabase initializes Realtime with the client even though this service
+    // only uses Storage. Node 20 needs an explicit WebSocket transport.
+    realtime: { transport: nodeWebSocketTransport },
   });
   return client.storage.from(process.env.ACADEMY_WORKSHOP_MEDIA_BUCKET || 'academy-workshop-media');
 }
