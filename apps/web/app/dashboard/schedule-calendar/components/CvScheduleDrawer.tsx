@@ -256,7 +256,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
     const dayKey = currentDate.format('YYYY-MM-DD');
     const serverCap = dailyCapacities?.[dayKey] || fetchedCapacities[dayKey];
     const dayAppts = appointmentsByDay?.[dayKey] || fetchedAppointments[dayKey] || [];
-    const ktvCount = serverCap?.workingKtvCount ?? 14;
+    const ktvCount = serverCap?.workingKtvCount ?? 0;
     const isToday = currentDate.isSame(dayjs(), 'day');
 
     // Pre-index dayAppts by technicianId for O(1) lookups during staff list rendering
@@ -325,10 +325,11 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
         });
       }
 
-      return Array.from(staffMap.values()).sort(
-        (a, b) => b.bookedCount - a.bookedCount || b.doneCount - a.doneCount || a.name.localeCompare(b.name)
-      );
-    }, [serverCap?.workingStaffList, serverCap?.offStaffList, dayAppts, currentDate, realtimeData]);
+      return Array.from(staffMap.values()).sort((a, b) => {
+        if (!isToday) return a.name.localeCompare(b.name, 'vi');
+        return b.bookedCount - a.bookedCount || b.doneCount - a.doneCount || a.name.localeCompare(b.name, 'vi');
+      });
+    }, [serverCap?.workingStaffList, serverCap?.offStaffList, dayAppts, currentDate, realtimeData, isToday]);
 
     // Real-Time Store Summary Counts
     const statusCounts = useMemo(() => {
@@ -482,19 +483,19 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
             setStatusFilter={setStatusFilter}
           />
 
-          {/* Section 1: Working CVs */}
-          <div className="space-y-1.5" role="region" aria-label="Danh sách Chuyên viên Đi Làm">
+          {/* Section 1: CVs scheduled for the selected date. This is separate from real check-in attendance. */}
+          <div className="space-y-1.5" role="region" aria-label="Danh sách Chuyên viên được xếp ca">
             <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between px-1">
               <span className="tabular-nums flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 inline-block animate-pulse" />
-                <span>CV Đi Làm ({filteredWorkingStaff.length})</span>
+                <span>CV Xếp Ca ({filteredWorkingStaff.length})</span>
               </span>
-              <span className="text-[10px] font-normal text-slate-400 normal-case">(Xếp theo Lịch book giảm dần)</span>
+              <span className="text-[10px] font-normal text-slate-400 normal-case">(Theo lịch ca ngày đã chọn)</span>
             </div>
 
             {filteredWorkingStaff.length === 0 ? (
               <div className="text-center py-6 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                Không tìm thấy Chuyên viên đi làm phù hợp
+                Không có Chuyên viên được xếp ca ngày này
               </div>
             ) : (
               <div className="space-y-1.5" role="list">
@@ -531,7 +532,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
 
             {filteredOffStaff.length === 0 ? (
               <div className="text-center py-4 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                Không có Chuyên viên nghỉ phép ngày này
+                Không có Chuyên viên OFF ngày này
               </div>
             ) : (
               <div className="space-y-1.5" role="list">
