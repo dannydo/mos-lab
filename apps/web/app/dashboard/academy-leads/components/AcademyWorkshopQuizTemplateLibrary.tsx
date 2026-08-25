@@ -102,7 +102,7 @@ export default function AcademyWorkshopQuizTemplateLibrary({
     try {
       const quiz = await apiClient.academySales.workshops.applyQuizTemplate(workshopId, selected.id);
       onApplied(quiz);
-      message.success(`Đã tạo game độc lập từ mẫu “${selected.title}”.`);
+      message.success(`Đã dùng mẫu “${selected.title}” cho workshop.`);
       onClose();
     } catch (cause) {
       message.error(mutationMessage(cause, 'Không thể dùng mẫu cho workshop này.'));
@@ -242,13 +242,15 @@ export default function AcademyWorkshopQuizTemplateLibrary({
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-inherit p-3">
               <div className="min-w-0">
                 <div className="font-semibold">Thao tác với mẫu</div>
-                <div className="mt-0.5 text-xs opacity-60">Dùng mẫu để tạo game mới hoặc xóa khỏi thư viện.</div>
+                <div className="mt-0.5 text-xs opacity-60">
+                  Dùng mẫu để tạo game mới hoặc thay nội dung game bản nháp.
+                </div>
               </div>
               <Space wrap>
                 <Popconfirm
                   title="Dùng mẫu cho workshop này?"
-                  description="Một game bản nháp mới sẽ được tạo; dữ liệu chơi cũ không được sao chép."
-                  okText="Tạo game"
+                  description="Game bản nháp hiện có sẽ được thay toàn bộ câu hỏi theo mẫu này. Nếu chưa có, hệ thống tạo game nháp mới. Game đang chạy phải kết thúc trước."
+                  okText="Thay bản nháp"
                   cancelText="Hủy"
                   onConfirm={() => void applyTemplate()}
                 >
