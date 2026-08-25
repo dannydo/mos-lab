@@ -2,61 +2,43 @@
 request_feedback: true
 ---
 
-# Commit review — Academy Workshop Google self check-in
+# Commit review — Academy quiz template for small salon owners
 
-## Changed files
+## Danh sách file thay đổi
 
-- `apps/api/prisma/crm.prisma`
-- `apps/api/prisma/migrations/20260825103000_add_workshop_display_join_qr/migration.sql`
-- `apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts`
-- `apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts`
-- `apps/api/src/modules/academy-workshops/academy-workshop-rules.test.ts`
-- `apps/api/src/modules/academy-workshops/academy-workshop.service.ts`
-- `apps/api/src/modules/academy-workshops/public.routes.ts`
-- `apps/api/src/modules/academy-workshops/routes.ts`
-- `apps/api/src/modules/auth/google-identity.service.ts`
-- `apps/api/src/modules/auth/google-identity.service.test.ts`
-- `apps/api/src/modules/auth/routes.ts`
-- `apps/web/app/academy/workshops/components/GoogleWorkshopJoinButton.tsx`
-- `apps/web/app/academy/workshops/display/[code]/page.tsx`
-- `apps/web/app/academy/workshops/lobby/[code]/page.tsx`
-- `apps/web/app/dashboard/academy-leads/components/AcademyWorkshopEditButton.tsx`
-- `apps/web/app/dashboard/academy-leads/components/AcademyWorkshopSharedQrButton.tsx`
-- `apps/web/app/dashboard/academy-leads/components/AcademyWorkshopWorkspaceSections.tsx`
-- `apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx`
-- `apps/web/app/dashboard/academy-leads/workshops/[slug]/page.tsx`
-- `apps/web/lib/api-client.ts`
-- `packages/shared/src/types/academy-workshop.ts`
+- `apps/api/src/scripts/data-migrations/20260825142119_seed_academy_small_salon_owner_quiz_template.ts`
+- `commit_review.md`
 
-## Tóm tắt
+## Tóm tắt thay đổi
 
-- Thêm QR chung trên Leaderboard, staff có thể hiện/ẩn ngay trong Live Control; Stage nhận trạng thái mới qua WebSocket không cần refresh.
-- Học viên đã đăng ký hoặc walk-in chọn hồ sơ để tự check-in; hồ sơ có số điện thoại bắt buộc xác minh đúng số.
-- Học viên chưa có hồ sơ có thể đăng nhập Google để tạo/reuse lead walk-in, được xác nhận và check-in idempotent. Backend xác minh issuer, audience, expiry và email đã xác minh của Google token.
-- Bổ sung khả năng sửa/đổi tên workshop và các UI/workflow liên quan.
+- Thêm migration dữ liệu production, tạo một mẫu câu hỏi Academy dùng chung: **Nỗi khổ cô chủ tiệm mi nhỏ**.
+- Mẫu gồm 5 câu một đáp án, viết bằng ngôn ngữ đời thường cho nhóm chủ salon nhỏ: tiệm rối khi chủ nghỉ, không rõ lời/lỗ, mất khách cũ, nhân viên thiếu động lực và lo không thể mở thêm tiệm.
+- Mỗi câu có 4 lựa chọn; phương án đầu tiên là đáp án đúng. Mẫu ở trạng thái `DRAFT`, không có thưởng và không gắn vào workshop đang chạy.
+- Preflight sẽ dừng deployment nếu production đã có template cùng tên, tránh ghi đè nội dung do người khác tạo.
 
-## Proposed commit
+## Commit message đề xuất
 
 ```text
-feat(workshops): add Google self check-in and leaderboard QR
+feat(academy): seed small salon owner quiz template
 
-- Add shared QR controls with realtime stage updates
-- Support verified Google walk-ins and idempotent self check-in
-- Add workshop editing and secure Google identity validation
+- Add a reusable five-question Academy workshop template
+- Use plain Vietnamese that surfaces small salon owners' core pains
+- Stop safely if the production template already exists
 
 AI-assisted. Reviewed and verified.
 ```
 
 ## Production migration plan
 
-- CRM schema: `20260825103000_add_workshop_display_join_qr` chỉ thêm cột `show_join_qr_on_display TINYINT(1) NOT NULL DEFAULT 0` vào `crm_academy_workshops`.
-- Không có `DROP`, không đổi kiểu dữ liệu, không có production data migration mới.
-- Client OAuth đã cho phép `https://lab.masteros.app`; QR production phải sử dụng domain HTTPS này, không sử dụng IP LAN.
+- CRM schema: **None**.
+- Production data migration: `20260825142119_seed_academy_small_salon_owner_quiz_template`.
+  - Tạo 1 template Academy dùng chung, chưa gắn workshop.
+  - Tạo 5 câu hỏi và 20 lựa chọn đáp án; không sửa/xóa dữ liệu hiện có.
+  - Preflight kiểm tra template cùng tên. Nếu đã tồn tại, migration fail an toàn trước khi ghi dữ liệu.
+- Các migration đã có vẫn chạy qua checksum và được bỏ qua nếu đã áp dụng.
 
 ## Verification
 
-- Focused API tests: 24/24 passed.
-- Web tests: 81/81 passed.
-- Shared build, API/Web typecheck, API/Web lint, UI contract, API/Web production build: passed.
-- `data-migrations:validate`: passed.
-- `migration-plan.sh origin/main`: chỉ liệt kê migration CRM additive ở trên.
+- `pnpm --filter @mos-lab/api data-migrations:validate`: passed (2 migrations hợp lệ).
+- `pnpm --filter @mos-lab/api lint`: passed.
+- `bash scripts/deploy/migration-plan.sh origin/main`: chỉ liệt kê migration dữ liệu mới; không có thay đổi CRM schema.
