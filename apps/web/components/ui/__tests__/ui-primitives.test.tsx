@@ -194,10 +194,10 @@ describe('UI primitives', () => {
     });
     expect(academy?.label).toBe('Academy');
     expect(academy?.path).toBeUndefined();
-    expect(academy?.children).toHaveLength(4);
+    expect(academy?.children).toHaveLength(5);
     expect(academy?.children?.[0]).toMatchObject({
       key: 'academy-customers',
-      label: 'Khách hàng',
+      label: 'Học viên',
       path: '/dashboard/academy-leads',
     });
     expect(academy?.children?.[1]).toMatchObject({
@@ -211,6 +211,11 @@ describe('UI primitives', () => {
       path: '/dashboard/academy-leads/campaigns',
     });
     expect(academy?.children?.[3]).toMatchObject({
+      key: 'academy-workshops',
+      label: 'Workshop OS',
+      path: '/dashboard/academy-leads/workshops',
+    });
+    expect(academy?.children?.[4]).toMatchObject({
       key: 'academy-courses',
       label: 'Khóa học',
       path: '/dashboard/academy-leads/courses',
@@ -218,6 +223,7 @@ describe('UI primitives', () => {
     expect(getSelectedMenuKey('/dashboard/academy-leads')).toBe('academy-customers');
     expect(getSelectedMenuKey('/dashboard/academy-leads/lead-manager')).toBe('academy-lead-manager');
     expect(getSelectedMenuKey('/dashboard/academy-leads/campaigns')).toBe('academy-campaigns');
+    expect(getSelectedMenuKey('/dashboard/academy-leads/workshops')).toBe('academy-workshops');
     expect(getSelectedMenuKey('/dashboard/post-hub')).toBe('post-hub');
     expect(getSelectedMenuKey('/dashboard/academy-leads/courses')).toBe('academy-courses');
     expect(
@@ -428,8 +434,17 @@ describe('UI primitives', () => {
     const { rerender } = render(<StatePanel kind="loading" title="Đang tải khách hàng" />);
     expect(document.querySelector('[aria-busy="true"]')).toBeInTheDocument();
 
-    rerender(<StatePanel kind="empty" title="Chưa có khách hàng" />);
+    rerender(
+      <StatePanel
+        kind="empty"
+        title="Chưa có khách hàng"
+        description="Tạo khách hàng đầu tiên để bắt đầu."
+        extra={<button type="button">Tạo khách hàng</button>}
+      />
+    );
     expect(screen.getByText('Chưa có khách hàng')).toBeInTheDocument();
+    expect(screen.getByText('Tạo khách hàng đầu tiên để bắt đầu.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tạo khách hàng' })).toBeInTheDocument();
 
     rerender(<StatePanel kind="error" title="Không tải được khách hàng" />);
     expect(screen.getByText('Không tải được khách hàng')).toBeInTheDocument();

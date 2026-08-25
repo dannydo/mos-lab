@@ -1,8 +1,25 @@
 import axios from 'axios';
 import { safeStorage } from './safe-storage';
 
+function isPrivateLanHostname(hostname: string): boolean {
+  if (/^10\./.test(hostname) || /^192\.168\./.test(hostname)) return true;
+  const match = hostname.match(/^172\.(\d{1,2})\./);
+  return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
+}
+
+export function resolveApiBaseUrl(): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (configuredUrl) return configuredUrl;
+
+  if (typeof window !== 'undefined' && isPrivateLanHostname(window.location.hostname)) {
+    return '/api';
+  }
+
+  return 'http://localhost:4001/api';
+}
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api',
+  baseURL: resolveApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,7 +30,7 @@ api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
       const token = safeStorage.getItem('mos_token');
-      if (token) {
+      if (token && !config.headers.Authorization) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
@@ -35,7 +52,10 @@ api.interceptors.response.use(
         safeStorage.removeItem('mos_omicall_auto_init');
         safeStorage.removeItem('mos_original_token');
         safeStorage.removeItem('mos_original_user');
-        if (!window.location.pathname.startsWith('/login')) {
+        if (
+          !window.location.pathname.startsWith('/login') &&
+          !window.location.pathname.startsWith('/academy/workshops/')
+        ) {
           window.location.href = '/login';
         }
       }

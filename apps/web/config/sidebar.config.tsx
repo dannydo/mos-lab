@@ -20,6 +20,7 @@ import {
   Egg,
   GraduationCap,
   Rocket,
+  Presentation,
   Settings2,
   Target,
   UserRound,
@@ -193,7 +194,7 @@ export function getSidebarGroups(
     const academyChildren: SidebarItemConfig[] = [
       {
         key: 'academy-customers',
-        label: 'Khách hàng',
+        label: 'Học viên',
         icon: <AppIcon icon={UsersRound} size="sm" />,
         path: '/dashboard/academy-leads',
       },
@@ -208,6 +209,12 @@ export function getSidebarGroups(
         label: 'Chiến dịch',
         icon: <AppIcon icon={Rocket} size="sm" />,
         path: '/dashboard/academy-leads/campaigns',
+      },
+      {
+        key: 'academy-workshops',
+        label: 'Workshop OS',
+        icon: <AppIcon icon={Presentation} size="sm" />,
+        path: '/dashboard/academy-leads/workshops',
       },
     ];
 
@@ -448,6 +455,7 @@ export function getSelectedMenuKey(
   }
   if (pathname.includes('/dashboard/academy-leads/lead-manager')) return 'academy-lead-manager';
   if (pathname.includes('/dashboard/academy-leads/payments')) return 'academy-payment-management';
+  if (pathname.includes('/dashboard/academy-leads/workshops')) return 'academy-workshops';
   if (pathname.startsWith('/dashboard/academy-leads/campaigns/')) {
     const slug = pathname.replace('/dashboard/academy-leads/campaigns/', '').split('/')[0];
     if (academySidebarCampaigns.some((campaign) => String(campaign?.slug || '') === slug)) {

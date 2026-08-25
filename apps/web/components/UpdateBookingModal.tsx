@@ -17,6 +17,7 @@ import { BookingPromotionOptionsResponse, SafeAny, vietnameseSearchFilter } from
 import { apiClient } from '../lib/api-client';
 import { useTheme } from '../context/ThemeContext';
 import { getStoreFullAddress, STORES } from './booking/constants';
+import { buildBookingDetailsUpdateRequest } from './booking/updateBookingPayload';
 import { AdaptiveModal } from './ui/AdaptiveOverlay';
 
 interface UpdateBookingModalProps {
@@ -133,10 +134,16 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
   const formattedTimeStr = bookingDateObj.format('HH:mm');
   const dayOfWeekStr = getVietnameseDayOfWeek(bookingDateObj);
 
-  // Find store address
-  const storeId = Number(booking.storeId || (booking as any).client_store_id || (booking as any).clientStoreId || 16);
-  const storeInfo = STORES.find((s) => s.id === storeId) || { name: booking.branchName || 'Estella Place' };
-  const fullBranchAddress = getStoreFullAddress(storeInfo);
+  // Display the current store only; a missing ID must never imply Estella Place.
+  const rawStoreId = booking.storeId ?? (booking as any).client_store_id ?? (booking as any).clientStoreId;
+  const parsedStoreId = Number(rawStoreId);
+  const storeId = Number.isSafeInteger(parsedStoreId) && parsedStoreId > 0 ? parsedStoreId : null;
+  const matchedStore = storeId ? STORES.find((store) => store.id === storeId) : null;
+  const fullBranchAddress = matchedStore
+    ? getStoreFullAddress(matchedStore)
+    : booking.branchName
+      ? getStoreFullAddress(String(booking.branchName))
+      : 'Chi nhánh chưa xác định';
 
   const handleServiceChange = (serviceId: number | string | undefined) => {
     const selectedPromotion = (promotionOptions?.promotions || []).find(
@@ -187,22 +194,14 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
           ? selectedCampaignPromotionId
           : null;
 
-      const payload = {
-        storeId,
+      const payload = buildBookingDetailsUpdateRequest({
         technicianId: values.technicianId ? Number(values.technicianId) : null,
-        bookingDate: bookingDateObj.format('YYYY-MM-DD'),
-        bookingTime: formattedTimeStr,
         bookingNote: values.bookingNote || '',
         serviceId: finalServiceId,
-        ...(promotionOptions
-          ? {
-              promotionId: validPromotionId,
-              campaignPromotionId: validCampaignPromotionId,
-            }
-          : {}),
-        reasonCategory: 'Cập nhật thông tin đơn hàng',
-        reasonNote: 'Cập nhật KTV/Dịch vụ/Ưu đãi/Ghi chú từ CRM',
-      };
+        includePromotionSelection: Boolean(promotionOptions),
+        promotionId: validPromotionId,
+        campaignPromotionId: validCampaignPromotionId,
+      });
 
       await apiClient.customers.updateBooking(booking.id, payload);
       message.success('Cập nhật thông tin lịch hẹn thành công!');
