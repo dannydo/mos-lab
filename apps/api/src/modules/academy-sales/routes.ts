@@ -41,6 +41,7 @@ import { AcademyImportService } from './academy-import.service.js';
 import { PancakeAcademySyncService, PancakeSyncConfigurationError } from './pancake-sync.service.js';
 import { AcademyTalentAssessmentService } from './academy-talent-assessment.service.js';
 import { AcademyTalentLadderConfigurationService } from './academy-talent-ladder-configuration.service.js';
+import { broadcastAcademyTalentAssessmentState } from '../academy-workshops/academy-workshop-live.service.js';
 
 function actorFrom(request: FastifyRequest): AcademyActor {
   const user = request.user;
@@ -76,6 +77,17 @@ function parseId(value: string, label: string) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) throw new AcademySalesError(`${label} không hợp lệ.`);
   return id;
+}
+
+async function broadcastTalentAssessmentUpdate(fastify: FastifyInstance, assessmentId: number) {
+  try {
+    await broadcastAcademyTalentAssessmentState(fastify, assessmentId);
+  } catch (cause) {
+    // The assessment transaction has already committed. Do not turn a
+    // transient WebSocket snapshot failure into a false save failure that the
+    // operator may retry and duplicate.
+    fastify.log.warn({ cause, assessmentId }, 'Academy Workshop talent realtime broadcast failed');
+  }
 }
 
 function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown, context: string) {
@@ -503,6 +515,7 @@ export async function academySalesRoutes(fastify: FastifyInstance) {
         parseId(id, 'Lead ID'),
         (request.body || {}) as CreateAcademyTalentAssessmentRequest
       );
+      await broadcastTalentAssessmentUpdate(fastify, result.data.id);
       return reply.status(201).send(result);
     } catch (error) {
       return sendError(fastify, reply, error, 'Create Academy talent assessment error');
@@ -512,14 +525,14 @@ export async function academySalesRoutes(fastify: FastifyInstance) {
   fastify.put('/academy-sales/talent-assessments/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const { id } = request.params as { id: string };
-      return reply.send(
-        await AcademyTalentAssessmentService.update(
-          fastify,
-          actorFrom(request),
-          parseId(id, 'Phiên Tố Chất ID'),
-          (request.body || {}) as UpdateAcademyTalentAssessmentRequest
-        )
+      const result = await AcademyTalentAssessmentService.update(
+        fastify,
+        actorFrom(request),
+        parseId(id, 'Phiên Tố Chất ID'),
+        (request.body || {}) as UpdateAcademyTalentAssessmentRequest
       );
+      await broadcastTalentAssessmentUpdate(fastify, result.data.id);
+      return reply.send(result);
     } catch (error) {
       return sendError(fastify, reply, error, 'Update Academy talent assessment error');
     }

@@ -170,6 +170,18 @@ export interface AcademyTalentAssessmentResult {
   rewardLabel: string;
 }
 
+export function formatAcademyTalentBenefitLabel(
+  benefits: Pick<AcademyTalentTier, 'scholarshipPercent' | 'sampleRewardPercent' | 'kitRewardPercent'>,
+  fallback = 'Cam kết bảo đảm vững tay nghề 100% bằng văn bản'
+): string {
+  const percentageBenefits = [
+    benefits.scholarshipPercent > 0 ? `Học bổng ${benefits.scholarshipPercent}%` : null,
+    benefits.sampleRewardPercent > 0 ? `Mẫu ${benefits.sampleRewardPercent}%` : null,
+    benefits.kitRewardPercent > 0 ? `Đồ nghề ${benefits.kitRewardPercent}%` : null,
+  ].filter((benefit): benefit is string => Boolean(benefit));
+  return percentageBenefits.length ? percentageBenefits.join(' · ') : fallback;
+}
+
 /**
  * Academy-native instructor configuration. `surchargePercent` is applied to
  * the tuition after the Tố Chất scholarship, matching the former workshop
@@ -264,10 +276,7 @@ export function calculateAcademyTalentAssessmentResult(
     tier,
     scholarshipPercent: tier.scholarshipPercent,
     rankLabel: `${tier.title} (Học bổng ${tier.scholarshipPercent}%)`,
-    rewardLabel:
-      tier.scholarshipPercent > 0
-        ? `Đặc quyền học bổng giảm trực tiếp ${tier.scholarshipPercent}% học phí`
-        : 'Cam kết bảo đảm vững tay nghề 100% bằng văn bản',
+    rewardLabel: formatAcademyTalentBenefitLabel(tier),
   };
 }
 
@@ -565,6 +574,8 @@ export interface AcademyTalentAssessment {
 }
 
 export interface CreateAcademyTalentAssessmentRequest extends Partial<AcademyTalentAssessmentScores> {
+  /** Optional Workshop OS attribution; the lead must match that participant. */
+  workshopParticipantId?: number;
   selectedCourseIds?: number[];
   selectedSampleCourseIds?: number[];
   selectedKitCourseIds?: number[];
@@ -575,6 +586,8 @@ export interface CreateAcademyTalentAssessmentRequest extends Partial<AcademyTal
 }
 
 export interface UpdateAcademyTalentAssessmentRequest extends Partial<AcademyTalentAssessmentScores> {
+  /** Existing workshop attribution is immutable; accepted only when it matches. */
+  workshopParticipantId?: number;
   selectedCourseIds?: number[];
   selectedSampleCourseIds?: number[];
   selectedKitCourseIds?: number[];

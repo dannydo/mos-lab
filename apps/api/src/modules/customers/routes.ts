@@ -1,6 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
-import { BucketType, canManageCustomerAllocation, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import {
+  BucketType,
+  canManageCustomerAllocation,
+  isAdminOrSuperAdminRole,
+  SafeAny,
+  UpdateBookingRequest,
+} from '@mos-lab/shared';
 import { registerAllocationCron } from './services/allocation-cron.service.js';
 import { ComboRecognitionService, parseComboDateBounds } from './services/combo-recognition.service.js';
 import { UserServiceTypeService } from './services/user-service-type.service.js';
@@ -18,6 +24,11 @@ import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-custom
 import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
 import { CustomerAccessService } from './services/customer-access.service.js';
 import { CustomerServiceFilterCatalogService } from './services/customer-service-filter-catalog.service.js';
+import {
+  BookingUpdateValidationError,
+  buildLegacyBookingWindow,
+  resolveBookingUpdateFields,
+} from './services/booking-update.service.js';
 
 const parseServiceFilterIds = (value: unknown): number[] => {
   if (typeof value !== 'string') return [];
@@ -4088,7 +4099,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
   });
 
   // PUT /api/customers/booking/:id
-  // Reschedule an existing booking
+  // Partially update an existing booking; omitted branch/date/time fields are preserved.
   fastify.put('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
     if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'telesales' && user.role !== 'booker') {
@@ -4101,36 +4112,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ' });
     }
 
-    const {
-      storeId,
-      storeName: _storeName,
-      technicianId,
-      technicianName: _technicianName,
-      bookingDate,
-      bookingTime,
-      bookingNote,
-      serviceId,
-      promotionId,
-      campaignPromotionId,
-    } = request.body as {
-      storeId: number;
-      storeName: string;
-      technicianId: number | null;
-      technicianName?: string;
-      bookingDate: string; // YYYY-MM-DD
-      bookingTime: string; // HH:mm
-      bookingNote?: string | null;
-      serviceId?: number | null;
-      promotionId?: number | null;
-      campaignPromotionId?: number | null;
-    };
-
-    if (!storeId || !bookingDate || !bookingTime) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Các thông tin Chi nhánh, Ngày đặt và Khung giờ trống là bắt buộc',
-      });
-    }
+    const updateInput = (request.body || {}) as UpdateBookingRequest;
+    const { serviceId, promotionId, campaignPromotionId } = updateInput;
 
     try {
       // Verify that the current user has linked legacy staff account
@@ -4160,7 +4143,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 1. Fetch current order details before updating
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT id, user_id, created_staff_id, client_store_id, assigned_staff_id, booking_date_start, booking_note, booking_duration_minute, total_price,
+        `SELECT id, user_id, created_staff_id, client_store_id, assigned_staff_id, booking_date_start, booking_note, booking_duration_minute, total_price, order_state,
                 promotion_id, selected_promotion_id, campaign_id
          FROM \`order\` WHERE id = ?`,
         orderId
@@ -4175,6 +4158,18 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
 
       if (!(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
+
+      const resolvedUpdate = resolveBookingUpdateFields(
+        {
+          storeId: Number(order.client_store_id),
+          technicianId: order.assigned_staff_id ? Number(order.assigned_staff_id) : null,
+          bookingDateStart: new Date(order.booking_date_start ?? Number.NaN),
+          bookingNote: order.booking_note || null,
+        },
+        updateInput
+      );
+      const finalStoreId = resolvedUpdate.storeId;
+      const finalTechnicianId = resolvedUpdate.technicianId;
 
       const oldData = {
         bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,
@@ -4244,7 +4239,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         customerId: finalCustomerId,
         serviceId: finalServiceId,
         basePrice: srvPrice,
-        bookingDate: bookingDate || null,
+        bookingDate: resolvedUpdate.bookingDate,
         promotionId: selectedPromotionId,
         campaignPromotionId: selectedCampaignPromotionId,
         allowedCampaignId: currentCustomCampaign?.campaignId ?? null,
@@ -4252,7 +4247,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const duration = srvDuration;
       const totalPrice = promotionResolution.finalPrice;
 
-      let finalBookingNote = String(bookingNote || '').trim();
+      let finalBookingNote = String(resolvedUpdate.bookingNote || '').trim();
       if (currentCustomCampaign?.tag) {
         finalBookingNote = finalBookingNote
           .split(/\r?\n/)
@@ -4266,22 +4261,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
           : promotionResolution.campaignPromotionTag;
       }
 
-      // 3. Calculate new dates
-      const startStr = `${bookingDate} ${bookingTime}:00`;
-      const startDate = new Date(startStr);
-      const endDate = new Date(startDate.getTime() + duration * 60 * 1000);
-
-      const formatLocalMySQL = (date: Date) => {
-        const pad = (n: number) => String(n).padStart(2, '0');
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-      };
-      const mysqlStart = formatLocalMySQL(startDate);
-      const mysqlEnd = formatLocalMySQL(endDate);
+      // 3. Calculate the legacy wall-clock window without applying the server timezone.
+      const { bookingDateStart: mysqlStart, bookingDateEnd: mysqlEnd } = buildLegacyBookingWindow(
+        resolvedUpdate.bookingDate,
+        resolvedUpdate.bookingTime,
+        duration
+      );
 
       const newData = {
         bookingDateStart: mysqlStart,
-        storeId,
-        technicianId: technicianId || null,
+        storeId: finalStoreId,
+        technicianId: finalTechnicianId,
         bookingNote: finalBookingNote || null,
         promotionId: promotionResolution.legacyPromotionId,
         campaignPromotionId: promotionResolution.campaignPromotionId,
@@ -4289,14 +4279,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
       };
 
       let actionType: 'RESCHEDULE' | 'CHANGE_CV' | 'CHANGE_STORE' | 'EDIT' = 'EDIT';
-      const oldStartStr = order.booking_date_start ? formatLocalMySQL(new Date(order.booking_date_start)) : '';
+      const oldStartStr = resolvedUpdate.currentBookingDateStart;
       if (oldStartStr !== mysqlStart) {
         actionType = 'RESCHEDULE';
-      } else if (Number(order.assigned_staff_id || 0) !== Number(technicianId || 0)) {
+      } else if (Number(order.assigned_staff_id || 0) !== Number(finalTechnicianId || 0)) {
         actionType = 'CHANGE_CV';
-      } else if (Number(order.client_store_id) !== Number(storeId)) {
+      } else if (Number(order.client_store_id) !== Number(finalStoreId)) {
         actionType = 'CHANGE_STORE';
       }
+
+      const finalOrderState = resolvedUpdate.isLockedScheduleUpdateRequested ? 'New' : String(order.order_state);
 
       // 4. Update order in legacy database
       await fastify.prisma.legacy.$executeRawUnsafe(
@@ -4311,37 +4303,41 @@ export async function customerRoutes(fastify: FastifyInstance) {
              promotion_id = ?,
              selected_promotion_id = ?,
              campaign_id = ?,
-             order_state = 'New',
+             order_state = ?,
              date_updated = NOW()
          WHERE id = ?`,
         mysqlStart,
         mysqlEnd,
-        technicianId || null,
-        storeId,
+        finalTechnicianId,
+        finalStoreId,
         finalBookingNote || null,
         duration,
         totalPrice,
         promotionResolution.legacyPromotionId,
         promotionResolution.legacyPromotionId,
         promotionResolution.legacyCampaignId,
+        finalOrderState,
         orderId
       );
 
-      // Insert log record into order_booking_date_change to sync booker details and time on legacy frontend
-      await fastify.prisma.legacy.$executeRawUnsafe(
-        `INSERT INTO order_booking_date_change (
-          created_staff_id, order_id, client_store_id, assigned_staff_id, 
-          booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        crmStaff.legacyStaffId,
-        orderId,
-        storeId,
-        technicianId || null,
-        finalBookingNote || null,
-        duration,
-        mysqlStart,
-        mysqlEnd
-      );
+      const didTechnicianChange = Number(order.assigned_staff_id || 0) !== Number(finalTechnicianId || 0);
+      if (resolvedUpdate.isLockedScheduleUpdateRequested || didTechnicianChange) {
+        // Only actual schedule/CV mutations belong in the legacy reschedule ledger.
+        await fastify.prisma.legacy.$executeRawUnsafe(
+          `INSERT INTO order_booking_date_change (
+            created_staff_id, order_id, client_store_id, assigned_staff_id,
+            booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+          crmStaff.legacyStaffId,
+          orderId,
+          finalStoreId,
+          finalTechnicianId,
+          finalBookingNote || null,
+          duration,
+          mysqlStart,
+          mysqlEnd
+        );
+      }
 
       // 5. Update order_service record KTV assignment, service details, and recalculate user_service_type
       const userServiceType = await UserServiceTypeService.determineUserServiceType(
@@ -4372,8 +4368,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           promotionResolution.discountAmount,
           totalPrice,
           promotionResolution.legacyPromotionId,
-          technicianId || null,
-          technicianId || null,
+          finalTechnicianId,
+          finalTechnicianId,
           userServiceType,
           existingService.id
         );
@@ -4391,8 +4387,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           totalPrice,
           promotionResolution.legacyPromotionId,
           serviceGroup,
-          technicianId || null,
-          technicianId || null,
+          finalTechnicianId,
+          finalTechnicianId,
           userServiceType
         );
       } else {
@@ -4400,8 +4396,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           `UPDATE order_service 
            SET assigned_staff_id = ?, booked_staff_id = ?, user_service_type = ?
            WHERE order_id = ?`,
-          technicianId || null,
-          technicianId || null,
+          finalTechnicianId,
+          finalTechnicianId,
           userServiceType,
           orderId
         );
@@ -4429,7 +4425,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       return reply.send({ success: true, orderId });
     } catch (err: SafeAny) {
-      if (err instanceof BookingPromotionError) {
+      if (err instanceof BookingPromotionError || err instanceof BookingUpdateValidationError) {
         return reply.status(400).send({ error: 'Bad Request', message: err.message });
       }
       fastify.log.error(err, 'Reschedule booking error:');
@@ -7591,10 +7587,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
           bookingNote: b.bookingNote || null,
           orderState: b.orderState,
           totalPrice: Number(b.totalPrice || 0),
+          technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
           technicianName,
           ccInName,
           ccOutName,
           bookerName,
+          storeId: b.storeId ? Number(b.storeId) : null,
           branchName: b.branchName,
           services: servicesByOrderId.get(Number(b.id)) || [],
           serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],

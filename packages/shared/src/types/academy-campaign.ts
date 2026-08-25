@@ -1,5 +1,6 @@
 import type { ActionResponse, PageQuery, PageResponse } from './api.js';
 import type { AcademyLeadStatus } from './academy-sales.js';
+import type { AcademyCampaignKind } from './academy-workshop.js';
 
 /**
  * Academy campaigns are intentionally separate from the NYC/Wings Lashes
@@ -61,6 +62,7 @@ export interface AcademyCampaignTouchpoint {
 
 export interface AcademyCampaign {
   id: number;
+  kind: AcademyCampaignKind;
   name: string;
   slug: string;
   description: string | null;

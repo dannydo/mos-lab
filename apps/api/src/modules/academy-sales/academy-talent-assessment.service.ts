@@ -50,6 +50,7 @@ import {
   type AcademyActor,
 } from './academy-sales.service.js';
 import { AcademyTalentLadderConfigurationService } from './academy-talent-ladder-configuration.service.js';
+import { AcademyWorkshopBonusService } from '../academy-workshops/academy-workshop-bonus.service.js';
 
 const DEFAULT_DEPOSIT_VND = 1_000_000;
 const MAX_ERROR_COUNT = 99;
@@ -133,6 +134,26 @@ function normalizeCourseIds(value: unknown): number[] {
   );
   if (ids.length !== value.length) throw new AcademySalesError('Danh sách khóa học có mã không hợp lệ.');
   return ids.sort((left, right) => left - right);
+}
+
+async function resolveWorkshopParticipantAttribution(
+  fastify: FastifyInstance,
+  leadId: number,
+  value: unknown
+): Promise<number | null> {
+  if (value === undefined || value === null) return null;
+  const participantId = Number(value);
+  if (!Number.isInteger(participantId) || participantId <= 0) {
+    throw new AcademySalesError('Workshop participant không hợp lệ.');
+  }
+  const participant = await fastify.prisma.crm.crmAcademyWorkshopParticipant.findUnique({
+    where: { id: participantId },
+    select: { id: true, campaignLead: { select: { leadId: true, removedAt: true } } },
+  });
+  if (!participant || participant.campaignLead.leadId !== leadId || participant.campaignLead.removedAt) {
+    throw new AcademySalesError('Workshop participant không khớp với học viên Tố Chất.', 409);
+  }
+  return participant.id;
 }
 
 function normalizeInstructorIdsByCourse(value: unknown, selectedCourseIds: number[]): Record<string, number> {
@@ -1344,6 +1365,11 @@ export class AcademyTalentAssessmentService {
     input: CreateAcademyTalentAssessmentRequest = {}
   ): Promise<AcademyTalentAssessmentActionResponse> {
     await AcademySalesService.getAccessibleLead(fastify, actor, leadId);
+    const workshopParticipantId = await resolveWorkshopParticipantAttribution(
+      fastify,
+      leadId,
+      input.workshopParticipantId
+    );
     const now = new Date();
     const scores = toScores({}, input);
     const selectedCourseIds = normalizeCourseIds(input.selectedCourseIds);
@@ -1393,6 +1419,7 @@ export class AcademyTalentAssessmentService {
       const created = await tx.crmAcademyTalentAssessment.create({
         data: {
           leadId,
+          workshopParticipantId,
           evaluatorStaffId: actor.id,
           status,
           ...scores,
@@ -1441,6 +1468,16 @@ export class AcademyTalentAssessmentService {
     input: UpdateAcademyTalentAssessmentRequest
   ): Promise<AcademyTalentAssessmentActionResponse> {
     const existing = await readAccessibleAssessment(fastify, actor, assessmentId);
+    if (input.workshopParticipantId !== undefined) {
+      const requestedParticipantId = await resolveWorkshopParticipantAttribution(
+        fastify,
+        existing.leadId,
+        input.workshopParticipantId
+      );
+      if ((existing.workshopParticipantId ?? null) !== requestedParticipantId) {
+        throw new AcademySalesError('Không thể đổi workshop attribution của phiên Tố Chất đã tạo.', 409);
+      }
+    }
     if (isFullyPaid(existing)) {
       throw new AcademySalesError('Phiếu học phí đã thanh toán đủ và được khóa để giữ đúng đối soát.', 409);
     }
@@ -1834,6 +1871,7 @@ export class AcademyTalentAssessmentService {
       });
       return updated;
     });
+    await AcademyWorkshopBonusService.reconcileForAssessment(fastify, assessmentId);
     return {
       success: true,
       data: toAssessment(row, new Date(), tiers),
