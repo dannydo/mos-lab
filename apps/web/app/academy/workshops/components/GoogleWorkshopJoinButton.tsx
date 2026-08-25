@@ -83,7 +83,7 @@ export default function GoogleWorkshopJoinButton({ disabled = false, onCredentia
           text: 'continue_with',
           logo_alignment: 'center',
           locale: 'vi',
-          width: Math.min(360, Math.max(240, buttonRef.current.clientWidth || 320)),
+          width: Math.min(320, Math.max(240, Math.floor(buttonRef.current.clientWidth || 320))),
         });
         setReady(true);
       } catch {

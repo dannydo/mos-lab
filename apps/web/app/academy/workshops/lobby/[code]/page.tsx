@@ -160,24 +160,24 @@ export default function AcademyWorkshopSharedLobbyPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#154a67_0%,#071a2c_48%,#04101c_100%)] p-4 text-white sm:p-6">
+    <main className="min-h-[100svh] bg-[radial-gradient(circle_at_top,#154a67_0%,#071a2c_48%,#04101c_100%)] p-3 text-white sm:p-6">
       <div className="mx-auto max-w-2xl">
-        <header className="rounded-3xl border border-white/10 bg-white/10 p-5 text-center shadow-2xl backdrop-blur-xl sm:p-7">
+        <header className="rounded-3xl border border-white/10 bg-white/10 p-4 text-center shadow-2xl backdrop-blur-xl sm:p-7">
           <div className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300">Wings Academy · Workshop</div>
-          <h1 className="mt-3 text-3xl font-black sm:text-4xl">{info.workshop.name}</h1>
-          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-white/60">
+          <h1 className="mt-2 text-2xl font-black leading-tight sm:mt-3 sm:text-4xl">{info.workshop.name}</h1>
+          <div className="mt-2 flex items-center justify-center gap-2 text-sm text-white/60 sm:mt-3">
             <MapPin size={16} /> {info.workshop.location}
           </div>
-          <div className="mx-auto mt-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-400/15 text-cyan-300 ring-1 ring-cyan-300/25">
-            <UsersRound size={34} />
+          <div className="mx-auto mt-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400/15 text-cyan-300 ring-1 ring-cyan-300/25 sm:mt-5 sm:h-16 sm:w-16">
+            <UsersRound size={30} className="sm:h-[34px] sm:w-[34px]" />
           </div>
-          <h2 className="mt-4 text-xl font-bold">Bạn là ai?</h2>
+          <h2 className="mt-3 text-lg font-bold sm:mt-4 sm:text-xl">Bạn là ai?</h2>
           <p className="mt-1 text-sm text-white/60">
             Có tên trong danh sách thì chọn hồ sơ; chưa có thì đăng nhập Google.
           </p>
         </header>
 
-        <section className="mt-4 rounded-3xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-xl sm:p-6">
+        <section className="mt-3 rounded-3xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-xl sm:mt-4 sm:p-6">
           <Input
             size="large"
             allowClear
@@ -218,22 +218,22 @@ export default function AcademyWorkshopSharedLobbyPage() {
               ))}
             </div>
           ) : (
-            <div className="mt-6 rounded-2xl bg-white/5 py-8">
+            <div className="mt-4 rounded-2xl bg-white/5 py-6 sm:mt-6 sm:py-8">
               <Empty description={<span className="text-white/55">Không tìm thấy học viên phù hợp</span>} />
             </div>
           )}
 
-          <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.16em] text-white/35">
+          <div className="my-4 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/35 sm:my-6 sm:text-xs sm:tracking-[0.16em]">
             <span className="h-px flex-1 bg-white/10" />
             Chưa có tên trong danh sách?
             <span className="h-px flex-1 bg-white/10" />
           </div>
-          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.07] p-4 text-center sm:p-5">
-            <div className="font-bold">Đăng nhập bằng Google / Gmail</div>
-            <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-white/55">
-              Hệ thống dùng tên, avatar và email Google để tạo hồ sơ walk-in, xác nhận và check-in bạn vào workshop.
+          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.07] p-3 text-center sm:p-5">
+            <div className="text-sm font-bold sm:text-base">Dùng Gmail để vào</div>
+            <p className="mx-auto mt-1 text-xs leading-5 text-white/55 sm:text-sm">
+              Dùng Gmail để tạo hồ sơ và vào workshop.
             </p>
-            <div className="mx-auto mt-4 max-w-[360px]">
+            <div className="mx-auto mt-3 w-full max-w-[320px]">
               <GoogleWorkshopJoinButton disabled={googleJoining || selecting} onCredential={joinWithGoogle} />
             </div>
             {googleJoining ? <div className="mt-3 text-sm text-cyan-200">Đang tạo hồ sơ và check-in…</div> : null}
