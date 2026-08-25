@@ -2,6 +2,7 @@ export * from './types/customer.js';
 export * from './types/academy-sales.js';
 export * from './types/academy-talent-assessment.js';
 export * from './types/academy-campaign.js';
+export * from './types/academy-workshop.js';
 export * from './types/dashboard.js';
 export * from './types/auth.js';
 export * from './types/plan.js';

@@ -135,7 +135,7 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
 
   {
     key: 'academy-customers',
-    label: 'Academy · Khách hàng',
+    label: 'Academy · Học viên',
     groupKey: 'academy',
     groupLabel: 'Academy',
     path: '/dashboard/academy-leads',

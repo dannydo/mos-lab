@@ -6,6 +6,7 @@ import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import compress from '@fastify/compress';
+import websocket from '@fastify/websocket';
 import dotenv from 'dotenv';
 import prismaPlugin from './plugins/prisma.js';
 import cachePlugin from './plugins/cache.js';
@@ -31,6 +32,8 @@ import { qaShopRoutes } from './modules/qa-shop/routes.js';
 import { falRoutes } from './modules/fal/routes.js';
 import { postHubRoutes } from './modules/post-hub/routes.js';
 import { academySalesRoutes } from './modules/academy-sales/routes.js';
+import { academyWorkshopRoutes } from './modules/academy-workshops/routes.js';
+import { academyWorkshopPublicRoutes } from './modules/academy-workshops/public.routes.js';
 import { startPancakeAcademySync } from './modules/academy-sales/pancake-sync.service.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
@@ -49,13 +52,32 @@ const server = Fastify({
   bodyLimit: 50 * 1024 * 1024, // 50MB payload limit for audit submissions with photos
 });
 
+function isDevelopmentLanOrigin(origin: string): boolean {
+  if (process.env.NODE_ENV === 'production') return false;
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'http:' || url.port !== '4000') return false;
+    if (/^10\./.test(url.hostname) || /^192\.168\./.test(url.hostname)) return true;
+    const match = url.hostname.match(/^172\.(\d{1,2})\./);
+    return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
+  } catch {
+    return false;
+  }
+}
+
 const start = async () => {
   try {
     // Register CORS
+    const configuredCorsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
     await server.register(cors, {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      origin: (origin, callback) => {
+        callback(null, !origin || origin === configuredCorsOrigin || isDevelopmentLanOrigin(origin));
+      },
       credentials: true,
     });
+
+    // Must be registered before any route which opts into websocket handling.
+    await server.register(websocket);
 
     // Register JWT
     await server.register(jwt, {
@@ -252,6 +274,8 @@ const start = async () => {
     await server.register(falRoutes, { prefix: '/api' });
     await server.register(postHubRoutes, { prefix: '/api' });
     await server.register(academySalesRoutes, { prefix: '/api' });
+    await server.register(academyWorkshopRoutes, { prefix: '/api' });
+    await server.register(academyWorkshopPublicRoutes, { prefix: '/api' });
 
     startPancakeAcademySync(server);
 

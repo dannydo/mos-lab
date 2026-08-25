@@ -172,6 +172,7 @@ function toCampaign(row: SafeRow): AcademyCampaign {
   const assignedStaffIds = toPositiveIntList(parseJson<unknown>(row.assignedStaffIds, []));
   return {
     id: Number(row.id),
+    kind: row.kind === 'WORKSHOP' ? 'WORKSHOP' : 'CAMPAIGN',
     name: String(row.name),
     slug: String(row.slug),
     description: row.description ?? null,
@@ -489,7 +490,8 @@ export class AcademyCampaignService {
         _count: { select: { leads: { where: { removedAt: null } }, touchpoints: true } },
       },
     });
-    if (!campaign) throw new AcademySalesError('Không tìm thấy chiến dịch Academy.', 404);
+    if (!campaign || campaign.kind !== 'CAMPAIGN')
+      throw new AcademySalesError('Không tìm thấy chiến dịch Academy.', 404);
     if (campaign.deletedAt && !isManager(actor)) throw new AcademySalesError('Không tìm thấy chiến dịch Academy.', 404);
     const visibleIds = await this.visibleStaffIds(fastify, actor);
     if (!isCampaignVisibleToStaff(campaign, actor, visibleIds)) {
@@ -572,7 +574,10 @@ export class AcademyCampaignService {
     if (requestedStatus && !isCampaignStatus(requestedStatus))
       throw new AcademySalesError('Trạng thái chiến dịch không hợp lệ.');
     const rows = await fastify.prisma.crm.crmAcademyCampaign.findMany({
-      where: requestedStatus === 'DELETED' && isManager(actor) ? {} : { deletedAt: null },
+      where:
+        requestedStatus === 'DELETED' && isManager(actor)
+          ? { kind: 'CAMPAIGN' }
+          : { kind: 'CAMPAIGN', deletedAt: null },
       orderBy: { updatedAt: 'desc' },
       include: {
         createdBy: { select: { id: true, displayName: true, username: true, email: true } },
@@ -607,6 +612,7 @@ export class AcademyCampaignService {
     this.assertAcademyAccess(actor);
     const rows = await fastify.prisma.crm.crmAcademyCampaign.findMany({
       where: {
+        kind: 'CAMPAIGN',
         deletedAt: null,
         showInSidebar: true,
         status: { in: ['DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED'] },
@@ -642,7 +648,8 @@ export class AcademyCampaignService {
         _count: { select: { leads: { where: { removedAt: null } }, touchpoints: true } },
       },
     });
-    if (!campaign) throw new AcademySalesError('Không tìm thấy chiến dịch Academy.', 404);
+    if (!campaign || campaign.kind !== 'CAMPAIGN')
+      throw new AcademySalesError('Không tìm thấy chiến dịch Academy.', 404);
     return this.getCampaignById(fastify, actor, campaign.id);
   }
 
@@ -675,6 +682,7 @@ export class AcademyCampaignService {
     const row = await fastify.prisma.crm.$transaction(async (tx) => {
       const campaign = await tx.crmAcademyCampaign.create({
         data: {
+          kind: 'CAMPAIGN',
           name,
           slug,
           description: String(input.description || '').trim() || null,

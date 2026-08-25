@@ -58,6 +58,16 @@ model CrmStaff {
   academyTalentPaymentsConfirmed CrmAcademyTalentPayment[] @relation("AcademyTalentPaymentConfirmer")
   academyTalentPolicyAudits CrmAcademyTalentPolicyAudit[] @relation("AcademyTalentPolicyAuditChanger")
   academyInstructorProfile CrmAcademyInstructor? @relation("AcademyInstructorStaff")
+  academyWorkshopInfoSends CrmAcademyWorkshopParticipant[] @relation("AcademyWorkshopInfoSender")
+  academyWorkshopAttendanceConfirms CrmAcademyWorkshopParticipant[] @relation("AcademyWorkshopAttendanceConfirmer")
+  academyWorkshopCheckIns CrmAcademyWorkshopParticipant[] @relation("AcademyWorkshopCheckInActor")
+  academyWorkshopFeeWaivers CrmAcademyWorkshopParticipant[] @relation("AcademyWorkshopFeeWaiverActor")
+  academyWorkshopEvents CrmAcademyWorkshopParticipantEvent[] @relation("AcademyWorkshopEventActor")
+  academyWorkshopFeePayments CrmAcademyWorkshopFeePayment[] @relation("AcademyWorkshopFeeConfirmer")
+  academyWorkshopPhotos CrmAcademyWorkshopPhoto[] @relation("AcademyWorkshopPhotoActor")
+  academyWorkshopTimelineEvents CrmAcademyWorkshopTimelineEvent[] @relation("AcademyWorkshopTimelineActor")
+  academyWorkshopRewardsFulfilled CrmAcademyWorkshopReward[] @relation("AcademyWorkshopRewardFulfiller")
+  academyInstructorBonusesPaid CrmAcademyInstructorBonus[] @relation("AcademyInstructorBonusPayer")
 
   @@map("crm_staff")
 }
@@ -1092,6 +1102,7 @@ model CrmAcademyCourse {
   coverImageUrl String? @map("cover_image_url") @db.Text
   listPriceVnd Int      @default(0) @map("list_price_vnd")
   promoPriceVnd Int     @default(0) @map("promo_price_vnd")
+  teacherBonusVnd Int   @default(0) @map("teacher_bonus_vnd")
   kitName      String?  @map("kit_name") @db.VarChar(255)
   kitUrl       String?  @map("kit_url") @db.Text
   kitPriceVnd  Int      @default(0) @map("kit_price_vnd")
@@ -1126,6 +1137,8 @@ model CrmAcademyInstructor {
   updatedAt        DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   staff CrmStaff? @relation("AcademyInstructorStaff", fields: [staffId], references: [id], onDelete: SetNull)
+  workshopParticipants CrmAcademyWorkshopParticipant[]
+  workshopBonuses CrmAcademyInstructorBonus[]
 
   @@index([isActive, sortOrder])
   @@map("crm_academy_instructors")
@@ -1163,6 +1176,7 @@ model CrmAcademyTalentAssessment {
   invoicePrintCount     Int       @default(0) @map("invoice_print_count")
   invoiceRevision       Int       @default(0) @map("invoice_revision")
   promotionPolicyAuditId Int?    @map("promotion_policy_audit_id")
+  workshopParticipantId Int?     @map("workshop_participant_id")
   createdAt             DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt             DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
@@ -1170,12 +1184,15 @@ model CrmAcademyTalentAssessment {
   evaluator CrmStaff?      @relation("AcademyTalentAssessmentEvaluator", fields: [evaluatorStaffId], references: [id], onDelete: SetNull)
   invoicePrintedBy CrmStaff? @relation("AcademyTalentAssessmentInvoicePrinter", fields: [invoicePrintedByStaffId], references: [id], onDelete: SetNull)
   promotionPolicyAudit CrmAcademyTalentPolicyAudit? @relation("AcademyTalentAssessmentPolicyAudit", fields: [promotionPolicyAuditId], references: [id], onDelete: SetNull)
+  workshopParticipant CrmAcademyWorkshopParticipant? @relation(fields: [workshopParticipantId], references: [id], onDelete: SetNull)
   payments  CrmAcademyTalentPayment[]
+  workshopBonuses CrmAcademyInstructorBonus[]
 
   @@index([leadId, createdAt])
   @@index([leadId, status])
   @@index([offerExpiresAt])
   @@index([promotionPolicyAuditId])
+  @@index([workshopParticipantId, updatedAt])
   @@map("crm_academy_talent_assessments")
 }
 
@@ -1228,6 +1245,7 @@ model CrmAcademyTalentPayment {
 // of CRM-native Academy leads instead.
 model CrmAcademyCampaign {
   id                 Int       @id @default(autoincrement())
+  kind               String    @default("CAMPAIGN") @db.VarChar(20)
   name               String    @db.VarChar(150)
   slug               String    @unique @db.VarChar(150)
   description        String?   @db.Text
@@ -1246,8 +1264,9 @@ model CrmAcademyCampaign {
   createdBy   CrmStaff?                       @relation("AcademyCampaignCreator", fields: [createdByStaffId], references: [id], onDelete: SetNull)
   leads       CrmAcademyCampaignLead[]
   touchpoints CrmAcademyCampaignTouchpoint[]
+  workshop   CrmAcademyWorkshop?
 
-  @@index([status, deletedAt])
+  @@index([kind, status, deletedAt])
   @@index([showInSidebar, deletedAt])
   @@index([createdByStaffId])
   @@map("crm_academy_campaigns")
@@ -1268,11 +1287,331 @@ model CrmAcademyCampaignLead {
   addedBy        CrmStaff?                         @relation("AcademyCampaignLeadAddedBy", fields: [addedByStaffId], references: [id], onDelete: SetNull)
   removedBy      CrmStaff?                         @relation("AcademyCampaignLeadRemovedBy", fields: [removedByStaffId], references: [id], onDelete: SetNull)
   touchpointLogs CrmAcademyCampaignTouchpointLog[]
+  workshopParticipant CrmAcademyWorkshopParticipant?
 
   @@unique([campaignId, leadId], name: "campaignId_leadId")
   @@index([campaignId, removedAt])
   @@index([leadId, removedAt])
   @@map("crm_academy_campaign_leads")
+}
+
+// ═══════════════════════════════════════════
+// Academy Workshop OS — event funnel, live agenda, game, rewards, and bonus
+// ═══════════════════════════════════════════
+model CrmAcademyWorkshop {
+  id                 Int       @id @default(autoincrement())
+  campaignId         Int       @unique @map("campaign_id")
+  startsAt           DateTime  @map("starts_at") @db.DateTime(0)
+  endsAt             DateTime  @map("ends_at") @db.DateTime(0)
+  location           String    @db.VarChar(255)
+  capacity           Int       @default(100)
+  feeVnd             Int       @default(0) @map("fee_vnd")
+  feeDueAt           DateTime? @map("fee_due_at") @db.DateTime(0)
+  status             String    @default("DRAFT") @db.VarChar(24)
+  liveAgendaItemId   Int?      @map("live_agenda_item_id")
+  displayCode        String    @unique @map("display_code") @db.VarChar(32)
+  displayTokenVersion Int      @default(1) @map("display_token_version")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  campaign      CrmAcademyCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  participants  CrmAcademyWorkshopParticipant[]
+  participantEvents CrmAcademyWorkshopParticipantEvent[]
+  agendaItems   CrmAcademyWorkshopAgendaItem[]
+  timelineEvents CrmAcademyWorkshopTimelineEvent[]
+  quizzes       CrmAcademyWorkshopQuiz[]
+  answers       CrmAcademyWorkshopAnswer[]
+  rewards       CrmAcademyWorkshopReward[]
+  instructorBonuses CrmAcademyInstructorBonus[]
+
+  @@index([status, startsAt])
+  @@index([startsAt, endsAt])
+  @@map("crm_academy_workshops")
+}
+
+model CrmAcademyWorkshopParticipant {
+  id                       Int       @id @default(autoincrement())
+  workshopId               Int       @map("workshop_id")
+  campaignLeadId           Int       @unique @map("campaign_lead_id")
+  qrTokenHash              String    @unique @map("qr_token_hash") @db.Char(64)
+  qrRedeemedAt             DateTime? @map("qr_redeemed_at") @db.DateTime(0)
+  tokenVersion             Int       @default(1) @map("token_version")
+  infoSentAt               DateTime? @map("info_sent_at") @db.DateTime(0)
+  infoSentByStaffId        Int?      @map("info_sent_by_staff_id")
+  attendanceStatus         String    @default("PENDING") @map("attendance_status") @db.VarChar(20)
+  attendanceConfirmedAt    DateTime? @map("attendance_confirmed_at") @db.DateTime(0)
+  attendanceConfirmedByStaffId Int?  @map("attendance_confirmed_by_staff_id")
+  checkedInAt              DateTime? @map("checked_in_at") @db.DateTime(0)
+  checkedInByStaffId       Int?      @map("checked_in_by_staff_id")
+  photoConsentAt           DateTime? @map("photo_consent_at") @db.DateTime(0)
+  photoConsentVersion      String?   @map("photo_consent_version") @db.VarChar(40)
+  primaryInstructorId      Int?      @map("primary_instructor_id")
+  feeWaivedAt              DateTime? @map("fee_waived_at") @db.DateTime(0)
+  feeWaiverReason          String?   @map("fee_waiver_reason") @db.Text
+  feeWaivedByStaffId       Int?      @map("fee_waived_by_staff_id")
+  createdAt                DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt                DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  workshop           CrmAcademyWorkshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  campaignLead        CrmAcademyCampaignLead @relation(fields: [campaignLeadId], references: [id], onDelete: Cascade)
+  infoSentBy          CrmStaff? @relation("AcademyWorkshopInfoSender", fields: [infoSentByStaffId], references: [id], onDelete: SetNull)
+  attendanceConfirmedBy CrmStaff? @relation("AcademyWorkshopAttendanceConfirmer", fields: [attendanceConfirmedByStaffId], references: [id], onDelete: SetNull)
+  checkedInBy         CrmStaff? @relation("AcademyWorkshopCheckInActor", fields: [checkedInByStaffId], references: [id], onDelete: SetNull)
+  feeWaivedBy         CrmStaff? @relation("AcademyWorkshopFeeWaiverActor", fields: [feeWaivedByStaffId], references: [id], onDelete: SetNull)
+  primaryInstructor  CrmAcademyInstructor? @relation(fields: [primaryInstructorId], references: [id], onDelete: SetNull)
+  events              CrmAcademyWorkshopParticipantEvent[]
+  feePayments         CrmAcademyWorkshopFeePayment[]
+  photos              CrmAcademyWorkshopPhoto[]
+  assessments         CrmAcademyTalentAssessment[]
+  answers             CrmAcademyWorkshopAnswer[]
+  rewards             CrmAcademyWorkshopReward[]
+  instructorBonuses   CrmAcademyInstructorBonus[]
+
+  @@unique([workshopId, campaignLeadId], name: "workshopId_campaignLeadId")
+  @@index([workshopId, attendanceStatus])
+  @@index([workshopId, checkedInAt])
+  @@index([primaryInstructorId])
+  @@map("crm_academy_workshop_participants")
+}
+
+model CrmAcademyWorkshopParticipantEvent {
+  id             Int      @id @default(autoincrement())
+  workshopId     Int      @map("workshop_id")
+  participantId  Int?     @map("participant_id")
+  eventType      String   @map("event_type") @db.VarChar(40)
+  metadataJson   String?  @map("metadata_json") @db.LongText
+  actorStaffId   Int?     @map("actor_staff_id")
+  occurredAt     DateTime @default(now()) @map("occurred_at") @db.DateTime(0)
+
+  workshop   CrmAcademyWorkshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  participant CrmAcademyWorkshopParticipant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  actor       CrmStaff? @relation("AcademyWorkshopEventActor", fields: [actorStaffId], references: [id], onDelete: SetNull)
+
+  @@index([workshopId, occurredAt])
+  @@index([participantId, occurredAt])
+  @@map("crm_academy_workshop_participant_events")
+}
+
+model CrmAcademyWorkshopFeePayment {
+  id                 Int      @id @default(autoincrement())
+  participantId      Int      @map("participant_id")
+  amountVnd          Int      @map("amount_vnd")
+  method             String   @db.VarChar(24)
+  reference          String?  @db.VarChar(160)
+  note               String?  @db.Text
+  receivedAt         DateTime @map("received_at") @db.DateTime(0)
+  confirmedByStaffId Int?     @map("confirmed_by_staff_id")
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  participant CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  confirmedBy CrmStaff? @relation("AcademyWorkshopFeeConfirmer", fields: [confirmedByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([participantId, receivedAt])
+  @@index([confirmedByStaffId, createdAt])
+  @@map("crm_academy_workshop_fee_payments")
+}
+
+model CrmAcademyWorkshopPhoto {
+  id                Int      @id @default(autoincrement())
+  participantId     Int      @map("participant_id")
+  storagePath       String   @unique @map("storage_path") @db.VarChar(500)
+  mimeType          String   @map("mime_type") @db.VarChar(80)
+  sizeBytes         Int      @map("size_bytes")
+  caption           String?  @db.Text
+  capturedAt        DateTime @map("captured_at") @db.DateTime(0)
+  capturedByStaffId Int?     @map("captured_by_staff_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  participant CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  capturedBy CrmStaff? @relation("AcademyWorkshopPhotoActor", fields: [capturedByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([participantId, capturedAt])
+  @@map("crm_academy_workshop_photos")
+}
+
+model CrmAcademyWorkshopAgendaItem {
+  id                     Int       @id @default(autoincrement())
+  workshopId             Int       @map("workshop_id")
+  title                  String    @db.VarChar(180)
+  description            String?   @db.Text
+  kind                   String    @default("CONTENT") @db.VarChar(24)
+  plannedDurationSeconds Int       @map("planned_duration_seconds")
+  sortOrder              Int       @default(0) @map("sort_order")
+  status                 String    @default("PENDING") @db.VarChar(20)
+  startedAt              DateTime? @map("started_at") @db.DateTime(3)
+  pausedAt               DateTime? @map("paused_at") @db.DateTime(3)
+  completedAt            DateTime? @map("completed_at") @db.DateTime(3)
+  pausedSeconds          Int       @default(0) @map("paused_seconds")
+  createdAt              DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  workshop CrmAcademyWorkshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  timelineEvents CrmAcademyWorkshopTimelineEvent[]
+
+  @@index([workshopId, sortOrder])
+  @@index([workshopId, status])
+  @@map("crm_academy_workshop_agenda_items")
+}
+
+model CrmAcademyWorkshopTimelineEvent {
+  id           Int      @id @default(autoincrement())
+  workshopId   Int      @map("workshop_id")
+  agendaItemId Int?     @map("agenda_item_id")
+  eventType    String   @map("event_type") @db.VarChar(32)
+  metadataJson String?  @map("metadata_json") @db.LongText
+  actorStaffId Int?     @map("actor_staff_id")
+  occurredAt   DateTime @default(now()) @map("occurred_at") @db.DateTime(3)
+
+  workshop CrmAcademyWorkshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  agendaItem CrmAcademyWorkshopAgendaItem? @relation(fields: [agendaItemId], references: [id], onDelete: SetNull)
+  actor CrmStaff? @relation("AcademyWorkshopTimelineActor", fields: [actorStaffId], references: [id], onDelete: SetNull)
+
+  @@index([workshopId, occurredAt])
+  @@index([agendaItemId, occurredAt])
+  @@map("crm_academy_workshop_timeline_events")
+}
+
+model CrmAcademyWorkshopQuiz {
+  id                 Int       @id @default(autoincrement())
+  workshopId         Int?      @map("workshop_id")
+  title              String    @db.VarChar(180)
+  description        String?   @db.Text
+  isTemplate         Boolean   @default(false) @map("is_template") @db.TinyInt
+  status             String    @default("DRAFT") @db.VarChar(24)
+  activeQuestionId   Int?      @map("active_question_id")
+  questionOpenedAt   DateTime? @map("question_opened_at") @db.DateTime(3)
+  questionClosesAt   DateTime? @map("question_closes_at") @db.DateTime(3)
+  podiumRewardsJson  String?   @map("podium_rewards_json") @db.LongText
+  createdByStaffId   Int?      @map("created_by_staff_id")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  workshop CrmAcademyWorkshop? @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  questions CrmAcademyWorkshopQuizQuestion[]
+  answers CrmAcademyWorkshopAnswer[]
+  rewards CrmAcademyWorkshopReward[]
+
+  @@index([workshopId, status])
+  @@index([isTemplate, updatedAt])
+  @@map("crm_academy_workshop_quizzes")
+}
+
+model CrmAcademyWorkshopQuizQuestion {
+  id              Int      @id @default(autoincrement())
+  quizId          Int      @map("quiz_id")
+  type            String   @default("SINGLE_CHOICE") @db.VarChar(24)
+  prompt          String   @db.Text
+  imageUrl        String?  @map("image_url") @db.Text
+  durationSeconds Int      @default(20) @map("duration_seconds")
+  sortOrder       Int      @default(0) @map("sort_order")
+  rewardRule      String   @default("NONE") @map("reward_rule") @db.VarChar(24)
+  fastestCount    Int      @default(1) @map("fastest_count")
+  rewardLabel     String?  @map("reward_label") @db.VarChar(255)
+  rewardQuantity  Int      @default(1) @map("reward_quantity")
+  createdAt       DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  quiz CrmAcademyWorkshopQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options CrmAcademyWorkshopQuizOption[]
+  answers CrmAcademyWorkshopAnswer[]
+  rewards CrmAcademyWorkshopReward[]
+
+  @@index([quizId, sortOrder])
+  @@map("crm_academy_workshop_quiz_questions")
+}
+
+model CrmAcademyWorkshopQuizOption {
+  id         Int     @id @default(autoincrement())
+  questionId Int    @map("question_id")
+  label      String  @db.Text
+  color      String? @db.VarChar(30)
+  isCorrect  Boolean @default(false) @map("is_correct") @db.TinyInt
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  question CrmAcademyWorkshopQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers CrmAcademyWorkshopAnswer[]
+
+  @@index([questionId, sortOrder])
+  @@map("crm_academy_workshop_quiz_options")
+}
+
+model CrmAcademyWorkshopAnswer {
+  id             Int      @id @default(autoincrement())
+  workshopId     Int      @map("workshop_id")
+  participantId  Int      @map("participant_id")
+  quizId         Int      @map("quiz_id")
+  questionId     Int      @map("question_id")
+  optionId       Int      @map("option_id")
+  idempotencyKey String   @unique @map("idempotency_key") @db.VarChar(80)
+  isCorrect      Boolean  @map("is_correct") @db.TinyInt
+  responseTimeMs Int      @map("response_time_ms")
+  score          Int      @default(0)
+  submittedAt    DateTime @default(now()) @map("submitted_at") @db.DateTime(3)
+
+  workshop CrmAcademyWorkshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  participant CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  quiz CrmAcademyWorkshopQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question CrmAcademyWorkshopQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  option CrmAcademyWorkshopQuizOption @relation(fields: [optionId], references: [id], onDelete: Restrict)
+
+  @@unique([participantId, questionId], name: "participantId_questionId")
+  @@index([workshopId, submittedAt])
+  @@index([quizId, questionId, score])
+  @@map("crm_academy_workshop_answers")
+}
+
+model CrmAcademyWorkshopReward {
+  id                   Int       @id @default(autoincrement())
+  workshopId           Int       @map("workshop_id")
+  participantId        Int       @map("participant_id")
+  quizId               Int?      @map("quiz_id")
+  questionId           Int?      @map("question_id")
+  sourceType           String    @map("source_type") @db.VarChar(20)
+  sourceKey            String    @map("source_key") @db.VarChar(100)
+  label                String    @db.VarChar(255)
+  quantity             Int       @default(1)
+  status               String    @default("PROMISED") @db.VarChar(20)
+  promisedAt           DateTime  @default(now()) @map("promised_at") @db.DateTime(0)
+  fulfilledAt          DateTime? @map("fulfilled_at") @db.DateTime(0)
+  fulfilledByStaffId   Int?      @map("fulfilled_by_staff_id")
+  note                 String?   @db.Text
+
+  workshop CrmAcademyWorkshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  participant CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  quiz CrmAcademyWorkshopQuiz? @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  question CrmAcademyWorkshopQuizQuestion? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  fulfilledBy CrmStaff? @relation("AcademyWorkshopRewardFulfiller", fields: [fulfilledByStaffId], references: [id], onDelete: SetNull)
+
+  @@unique([participantId, sourceType, sourceKey], name: "participantId_sourceType_sourceKey")
+  @@index([workshopId, status])
+  @@map("crm_academy_workshop_rewards")
+}
+
+model CrmAcademyInstructorBonus {
+  id                Int       @id @default(autoincrement())
+  workshopId        Int       @map("workshop_id")
+  participantId     Int       @map("participant_id")
+  assessmentId      Int       @map("assessment_id")
+  courseId          Int       @map("course_id")
+  courseName        String    @map("course_name") @db.VarChar(255)
+  instructorId      Int       @map("instructor_id")
+  amountVnd         Int       @map("amount_vnd")
+  status            String    @default("EARNED") @db.VarChar(24)
+  earnedAt          DateTime  @default(now()) @map("earned_at") @db.DateTime(0)
+  paidAt            DateTime? @map("paid_at") @db.DateTime(0)
+  paidByStaffId     Int?      @map("paid_by_staff_id")
+  note              String?   @db.Text
+
+  workshop CrmAcademyWorkshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  participant CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  assessment CrmAcademyTalentAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  instructor CrmAcademyInstructor @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+  paidBy CrmStaff? @relation("AcademyInstructorBonusPayer", fields: [paidByStaffId], references: [id], onDelete: SetNull)
+
+  @@unique([participantId, assessmentId, courseId], name: "participantId_assessmentId_courseId")
+  @@index([workshopId, status])
+  @@index([instructorId, earnedAt])
+  @@map("crm_academy_instructor_bonuses")
 }
 
 model CrmAcademyCampaignTouchpoint {

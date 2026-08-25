@@ -485,10 +485,11 @@ export interface Promotion {
 }
 
 export interface UpdateBookingRequest {
-  storeId: number;
-  technicianId: number | null;
-  bookingDate: string;
-  bookingTime: string;
+  /** Omit locked schedule fields when editing service details; the API preserves the existing booking values. */
+  storeId?: number;
+  technicianId?: number | null;
+  bookingDate?: string;
+  bookingTime?: string;
   bookingNote?: string | null;
   serviceId?: number | null;
   /** Standard legacy promotion. Mutually exclusive with campaignPromotionId. */

@@ -18,6 +18,10 @@ test('uses the documented six-tier Tố Chất ladder and blocks an excessive-er
   assert.equal(calculateAcademyTalentAssessmentResult({ strands5Min: 10 }).scholarshipPercent, 10);
   assert.equal(calculateAcademyTalentAssessmentResult({ strands5Min: 12 }).tier?.key, 'level4');
   assert.equal(calculateAcademyTalentAssessmentResult({ strands5Min: 12 }).scholarshipPercent, 10);
+  assert.equal(
+    calculateAcademyTalentAssessmentResult({ strands5Min: 12 }).rewardLabel,
+    'Học bổng 10% · Mẫu 10% · Đồ nghề 10%'
+  );
   assert.equal(calculateAcademyTalentAssessmentResult({ strands5Min: 20 }).scholarshipPercent, 50);
   assert.equal(calculateAcademyTalentAssessmentResult({ strands5Min: 35 }).scholarshipPercent, 90);
 

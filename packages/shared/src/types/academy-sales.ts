@@ -266,6 +266,8 @@ export interface AcademyCourse {
   coverImageUrl: string | null;
   listPriceVnd: number;
   promoPriceVnd: number;
+  /** Fixed VND reward earned by the participant's primary workshop instructor after full tuition payment. */
+  teacherBonusVnd: number;
   kitName: string | null;
   kitUrl: string | null;
   /** Catalogue price for the optional lash-kit package, before workshop reward. */
@@ -294,6 +296,7 @@ export interface UpsertAcademyCourseRequest {
   coverImageUrl?: string | null;
   listPriceVnd: number;
   promoPriceVnd: number;
+  teacherBonusVnd?: number;
   kitName?: string | null;
   kitUrl?: string | null;
   kitPriceVnd?: number;
