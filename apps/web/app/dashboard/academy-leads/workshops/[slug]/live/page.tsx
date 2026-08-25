@@ -14,6 +14,7 @@ import {
   Gamepad2,
   MonitorUp,
   Presentation,
+  QrCode,
   SkipForward,
   Square,
   Trophy,
@@ -230,6 +231,22 @@ export default function WorkshopLiveControlPage() {
     [detail, refresh, state]
   );
 
+  const toggleLeaderboardQr = React.useCallback(async () => {
+    if (!detail || !state) return;
+    setBusy(true);
+    try {
+      const nextState = await apiClient.academySales.workshops.updateDisplaySettings(detail.id, {
+        showJoinQrOnDisplay: !state.showJoinQrOnDisplay,
+      });
+      acceptState(nextState);
+      message.success(nextState.showJoinQrOnDisplay ? 'Đã hiện QR check-in trên Leaderboard.' : 'Đã ẩn QR check-in.');
+    } catch (cause: any) {
+      message.error(cause?.response?.data?.message || 'Không thể cập nhật QR trên Leaderboard.');
+    } finally {
+      setBusy(false);
+    }
+  }, [acceptState, detail, state]);
+
   if (error) return <StatePanel kind="error" title={error} />;
   if (!detail || !state) return <StatePanel kind="loading" title="Đang kết nối Live Control…" />;
 
@@ -264,6 +281,15 @@ export default function WorkshopLiveControlPage() {
             joinUrl={detail.sharedJoinUrl}
             label="QR học viên"
           />
+          <Button
+            type={state.showJoinQrOnDisplay ? 'primary' : 'default'}
+            loading={busy}
+            onClick={() => void toggleLeaderboardQr()}
+          >
+            <IconText icon={<AppIcon icon={QrCode} />}>
+              {state.showJoinQrOnDisplay ? 'Ẩn QR trên BXH' : 'Hiện QR trên BXH'}
+            </IconText>
+          </Button>
           <Button onClick={() => window.open(`/academy/workshops/display/${detail.displayCode}`, '_blank')}>
             <IconText icon={<AppIcon icon={MonitorUp} />}>Leaderboard</IconText>
           </Button>

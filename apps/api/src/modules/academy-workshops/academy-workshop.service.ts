@@ -625,8 +625,10 @@ export class AcademyWorkshopService {
     workshopId: number,
     input: UpdateAcademyWorkshopRequest
   ) {
-    if (!canManage(actor)) throw new AcademySalesError('Chỉ Admin hoặc Quản lý được sửa workshop.', 403);
     const row = await this.rowById(fastify, actor, workshopId);
+    if (!canManage(actor) && actor.academyAccess !== true) {
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc staff được phân công mới được sửa workshop.', 403);
+    }
     const name = input.name === undefined ? row.campaign.name : String(input.name).trim();
     const location = input.location === undefined ? row.location : String(input.location).trim();
     const startsAt = input.startsAt === undefined ? row.startsAt : parseDate(input.startsAt, 'Thời gian bắt đầu')!;

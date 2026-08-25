@@ -275,6 +275,7 @@ import {
   CreateAcademyWorkshopPhotoUploadRequest,
   CreateAcademyWorkshopRequest,
   CreateAcademyWorkshopWalkInRequest,
+  JoinAcademyWorkshopWithGoogleRequest,
   ListAcademyWorkshopParticipantsParams,
   ListAcademyWorkshopParticipantsResponse,
   ListAcademyWorkshopQuizTemplatesParams,
@@ -289,6 +290,7 @@ import {
   SubmitAcademyWorkshopAnswerRequest,
   UpdateAcademyInstructorBonusRequest,
   UpdateAcademyWorkshopCareRequest,
+  UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
   UpsertAcademyWorkshopQuestionRequest,
@@ -2054,6 +2056,16 @@ export const apiClient = {
         );
         return response.data.data;
       },
+      updateDisplaySettings: async (
+        workshopId: number,
+        dto: UpdateAcademyWorkshopDisplaySettingsRequest
+      ): Promise<AcademyWorkshopLiveState> => {
+        const response = await api.put<{ data: AcademyWorkshopLiveState }>(
+          `/academy-sales/workshops/${workshopId}/display-settings`,
+          dto
+        );
+        return response.data.data;
+      },
       agendaCommand: async (workshopId: number, agendaItemId: number, dto: AcademyWorkshopAgendaCommandRequest) => {
         const response = await api.post(`/academy-sales/workshops/${workshopId}/agenda/${agendaItemId}/command`, dto);
         return response.data;
@@ -2367,6 +2379,12 @@ export const apiClient = {
         dto,
         { timeout: 15_000 }
       );
+      return response.data.data;
+    },
+    joinWithGoogle: async (dto: JoinAcademyWorkshopWithGoogleRequest): Promise<AcademyWorkshopPublicSession> => {
+      const response = await api.post<{ data: AcademyWorkshopPublicSession }>('/academy/workshops/join-google', dto, {
+        timeout: 20_000,
+      });
       return response.data.data;
     },
     redeemQr: async (dto: RedeemAcademyWorkshopQrRequest): Promise<AcademyWorkshopPublicSession> => {

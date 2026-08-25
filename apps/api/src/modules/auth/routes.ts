@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
-import axios from 'axios';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
 import {
   isAdminOrSuperAdminRole,
@@ -9,6 +8,7 @@ import {
   LoginRequest,
   LoginResponse,
 } from '@mos-lab/shared';
+import { GoogleIdentityError, verifyGoogleCredential } from './google-identity.service.js';
 
 export async function authRoutes(fastify: FastifyInstance) {
   // Helper to resolve auto init based on staff & role
@@ -155,25 +155,10 @@ export async function authRoutes(fastify: FastifyInstance) {
           name = mockName || 'Danh Do (Mock Google)';
           picture = 'https://lh3.googleusercontent.com/a/default-user=s96-c';
         } else {
-          let tokenInfo: SafeAny;
-          try {
-            const tokenRes = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
-            tokenInfo = tokenRes.data;
-          } catch {
-            return reply.status(401).send({
-              error: 'Unauthorized',
-              message: 'Invalid Google credential',
-            });
-          }
-          if (tokenInfo.email_verified !== 'true') {
-            return reply.status(401).send({
-              error: 'Unauthorized',
-              message: 'Google email not verified',
-            });
-          }
-          email = tokenInfo.email;
-          name = tokenInfo.name || tokenInfo.given_name || 'Google User';
-          picture = tokenInfo.picture || null;
+          const identity = await verifyGoogleCredential(credential);
+          email = identity.email;
+          name = identity.name;
+          picture = identity.avatarUrl;
         }
 
         // Find staff in CRM DB
@@ -284,6 +269,12 @@ export async function authRoutes(fastify: FastifyInstance) {
 
         return response;
       } catch (error: SafeAny) {
+        if (error instanceof GoogleIdentityError) {
+          return reply.status(error.statusCode).send({
+            error: error.name,
+            message: error.message,
+          });
+        }
         fastify.log.error(error as Error, 'Google login error:');
         return reply.status(500).send({
           error: 'Internal Server Error',

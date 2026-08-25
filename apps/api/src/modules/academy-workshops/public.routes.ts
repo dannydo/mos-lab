@@ -5,9 +5,11 @@ import type {
   RedeemAcademyWorkshopDisplayRequest,
   RedeemAcademyWorkshopQrRequest,
   SafeAny,
+  JoinAcademyWorkshopWithGoogleRequest,
   SelectAcademyWorkshopParticipantRequest,
   SubmitAcademyWorkshopAnswerRequest,
 } from '@mos-lab/shared';
+import { GoogleIdentityError, verifyGoogleCredential } from '../auth/google-identity.service.js';
 import { AcademySalesError, getAcademyWorkspaceAccess } from '../academy-sales/academy-sales.service.js';
 import { AcademyWorkshopLiveService, academyWorkshopRealtimeHub } from './academy-workshop-live.service.js';
 import { AcademyWorkshopPublicJoinService } from './academy-workshop-public.service.js';
@@ -92,6 +94,9 @@ function sendError(fastify: FastifyInstance, reply: FastifyReply, cause: unknown
   if (cause instanceof AcademySalesError) {
     return reply.status(cause.statusCode).send({ error: cause.name, message: cause.message });
   }
+  if (cause instanceof GoogleIdentityError) {
+    return reply.status(cause.statusCode).send({ error: cause.name, message: cause.message });
+  }
   fastify.log.error(cause, context);
   return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể xử lý Workshop session.' });
 }
@@ -155,9 +160,28 @@ export async function academyWorkshopPublicRoutes(fastify: FastifyInstance) {
         fastify,
         request.body as SelectAcademyWorkshopParticipantRequest
       );
-      return reply.send({ data: await participantSession(fastify, participant) });
+      const data = await participantSession(fastify, participant);
+      void AcademyWorkshopLiveService.broadcastState(fastify, participant.workshopId).catch((cause) =>
+        fastify.log.error(cause, 'Broadcast workshop self check-in')
+      );
+      return reply.send({ data });
     } catch (cause) {
       return sendError(fastify, reply, cause, 'Select shared workshop participant');
+    }
+  });
+
+  fastify.post('/academy/workshops/join-google', async (request, reply) => {
+    try {
+      const input = request.body as JoinAcademyWorkshopWithGoogleRequest;
+      const identity = await verifyGoogleCredential(input.credential);
+      const participant = await AcademyWorkshopPublicJoinService.joinWithGoogle(fastify, input, identity);
+      const data = await participantSession(fastify, participant);
+      void AcademyWorkshopLiveService.broadcastState(fastify, participant.workshopId).catch((cause) =>
+        fastify.log.error(cause, 'Broadcast Google workshop join')
+      );
+      return reply.send({ data });
+    } catch (cause) {
+      return sendError(fastify, reply, cause, 'Join workshop with Google');
     }
   });
 

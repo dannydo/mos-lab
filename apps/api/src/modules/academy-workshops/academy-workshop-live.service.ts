@@ -12,6 +12,7 @@ import {
   type AcademyWorkshopRealtimeEvent,
   type ListAcademyWorkshopQuizTemplatesParams,
   type SafeAny,
+  type UpdateAcademyWorkshopDisplaySettingsRequest,
   type UpsertAcademyWorkshopQuestionRequest,
   type UpsertAcademyWorkshopQuizRequest,
 } from '@mos-lab/shared';
@@ -269,6 +270,7 @@ export class AcademyWorkshopLiveService {
       },
       participantCount: detail.participantCount,
       connectedParticipantCount: academyWorkshopRealtimeHub.connectedParticipants(workshopId),
+      showJoinQrOnDisplay: Boolean(row.showJoinQrOnDisplay),
       activeAgendaItem:
         row.agendaItems.find((item) => item.id === row.liveAgendaItemId) ||
         row.agendaItems.find((item) => ['RUNNING', 'PAUSED'].includes(item.status))
@@ -289,6 +291,21 @@ export class AcademyWorkshopLiveService {
       type: 'STATE_SNAPSHOT',
       data: await this.liveState(fastify, workshopId, 'DISPLAY'),
     });
+  }
+
+  static async updateDisplaySettings(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: UpdateAcademyWorkshopDisplaySettingsRequest
+  ) {
+    await AcademyWorkshopService.rowById(fastify, actor, workshopId);
+    await fastify.prisma.crm.crmAcademyWorkshop.update({
+      where: { id: workshopId },
+      data: { showJoinQrOnDisplay: Boolean(input.showJoinQrOnDisplay) },
+    });
+    await this.broadcastState(fastify, workshopId);
+    return this.liveState(fastify, workshopId, 'STAFF');
   }
 
   static async agendaCommand(

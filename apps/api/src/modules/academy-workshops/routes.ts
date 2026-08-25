@@ -17,6 +17,7 @@ import type {
   SetAcademyWorkshopPhotoConsentRequest,
   UpdateAcademyInstructorBonusRequest,
   UpdateAcademyWorkshopCareRequest,
+  UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
   UpsertAcademyWorkshopQuestionRequest,
@@ -547,6 +548,21 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       });
     } catch (cause) {
       return error(fastify, reply, cause, 'Workshop live state');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/display-settings', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopLiveService.updateDisplaySettings(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as UpdateAcademyWorkshopDisplaySettingsRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật QR trên màn hình Leaderboard.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Update workshop display settings');
     }
   });
 

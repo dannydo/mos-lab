@@ -328,6 +328,7 @@ export interface AcademyWorkshopLiveState {
   >;
   participantCount: number;
   connectedParticipantCount: number;
+  showJoinQrOnDisplay: boolean;
   activeAgendaItem: AcademyWorkshopAgendaItem | null;
   activeQuiz: AcademyWorkshopQuiz | null;
   activeQuestion: AcademyWorkshopQuizQuestion | null;
@@ -524,6 +525,10 @@ export interface AcademyWorkshopGameCommandRequest {
   questionId?: number;
 }
 
+export interface UpdateAcademyWorkshopDisplaySettingsRequest {
+  showJoinQrOnDisplay: boolean;
+}
+
 export interface RedeemAcademyWorkshopQrRequest {
   qrToken: string;
 }
@@ -532,6 +537,11 @@ export interface SelectAcademyWorkshopParticipantRequest {
   displayCode: string;
   participantId: number;
   phone?: string;
+}
+
+export interface JoinAcademyWorkshopWithGoogleRequest {
+  displayCode: string;
+  credential: string;
 }
 
 export interface RedeemAcademyWorkshopDisplayRequest {

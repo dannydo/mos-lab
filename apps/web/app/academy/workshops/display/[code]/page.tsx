@@ -274,6 +274,21 @@ export default function AcademyWorkshopDisplayPage() {
                       </div>
                     ))}
                   </div>
+                  {state.showJoinQrOnDisplay ? (
+                    <div className="mt-[1.3vh] grid grid-cols-[7vw_1fr] items-center gap-[1vw] rounded-[0.9vw] bg-white p-[0.6vw] text-slate-900">
+                      {sharedQrDataUrl ? (
+                        <img src={sharedQrDataUrl} alt="QR tự check-in workshop" className="aspect-square w-full" />
+                      ) : (
+                        <div className="aspect-square w-full animate-pulse rounded-[0.6vw] bg-slate-200" />
+                      )}
+                      <div>
+                        <div className="text-[0.95vw] font-black uppercase tracking-[0.06em]">Quét để check-in</div>
+                        <div className="mt-[0.35vh] text-[0.68vw] font-semibold leading-snug text-slate-500">
+                          Chọn hồ sơ hoặc đăng nhập Google
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -333,36 +348,55 @@ export default function AcademyWorkshopDisplayPage() {
                   </div>
                 )}
               </div>
-              <div className="mt-[3vh] grid gap-[1.2vh]">
-                {state.talentLeaderboard.slice(0, 8).map((entry) => (
-                  <div
-                    key={entry.participantId}
-                    className="grid grid-cols-[5vw_4vw_1.35fr_0.8fr_1.5fr] items-center gap-[1.2vw] rounded-[1vw] border border-white/10 bg-white/[0.065] px-[1.6vw] py-[1.1vh] shadow-xl"
-                  >
+              <div
+                className={`mt-[3vh] grid items-start gap-[2vw] ${state.showJoinQrOnDisplay ? 'grid-cols-[1fr_16vw]' : 'grid-cols-1'}`}
+              >
+                <div className="grid gap-[1.2vh]">
+                  {state.talentLeaderboard.slice(0, 8).map((entry) => (
                     <div
-                      className={`text-center text-[2vw] font-black tabular-nums ${entry.rank <= 3 ? 'text-amber-300' : ''}`}
+                      key={entry.participantId}
+                      className="grid grid-cols-[5vw_4vw_1.35fr_0.8fr_1.5fr] items-center gap-[1.2vw] rounded-[1vw] border border-white/10 bg-white/[0.065] px-[1.6vw] py-[1.1vh] shadow-xl"
                     >
-                      #{entry.rank}
+                      <div
+                        className={`text-center text-[2vw] font-black tabular-nums ${entry.rank <= 3 ? 'text-amber-300' : ''}`}
+                      >
+                        #{entry.rank}
+                      </div>
+                      <Avatar name={entry.name} url={entry.avatarUrl} />
+                      <div className="truncate text-[1.6vw] font-black">{entry.name}</div>
+                      <div>
+                        <div className="text-[0.9vw] uppercase tracking-wider text-white/45">Số sợi / 5 phút</div>
+                        <div className="text-[1.8vw] font-black tabular-nums text-cyan-300">{entry.strands5Min}</div>
+                      </div>
+                      <div className="text-[1.15vw] font-semibold leading-snug text-amber-200 tabular-nums">
+                        {entry.rewardLabel}
+                      </div>
                     </div>
-                    <Avatar name={entry.name} url={entry.avatarUrl} />
-                    <div className="truncate text-[1.6vw] font-black">{entry.name}</div>
-                    <div>
-                      <div className="text-[0.9vw] uppercase tracking-wider text-white/45">Số sợi / 5 phút</div>
-                      <div className="text-[1.8vw] font-black tabular-nums text-cyan-300">{entry.strands5Min}</div>
+                  ))}
+                  {!state.talentLeaderboard.length && (
+                    <div className="py-[16vh] text-center">
+                      <Trophy className="mx-auto h-[6vw] w-[6vw] text-white/20" />
+                      <div className="mt-[2vh] text-[2vw] font-bold text-white/40">
+                        Kết quả Tố Chất sẽ xuất hiện tại đây
+                      </div>
                     </div>
-                    <div className="text-[1.15vw] font-semibold leading-snug text-amber-200 tabular-nums">
-                      {entry.rewardLabel}
+                  )}
+                </div>
+                {state.showJoinQrOnDisplay ? (
+                  <aside className="rounded-[1.4vw] border border-cyan-300/25 bg-white p-[0.8vw] text-center shadow-2xl">
+                    {sharedQrDataUrl ? (
+                      <img src={sharedQrDataUrl} alt="QR tự check-in workshop" className="aspect-square w-full" />
+                    ) : (
+                      <div className="aspect-square w-full animate-pulse rounded-[1vw] bg-slate-200" />
+                    )}
+                    <div className="mt-[0.7vh] text-[1.05vw] font-black uppercase tracking-[0.08em] text-slate-900">
+                      Quét để check-in
                     </div>
-                  </div>
-                ))}
-                {!state.talentLeaderboard.length && (
-                  <div className="py-[16vh] text-center">
-                    <Trophy className="mx-auto h-[6vw] w-[6vw] text-white/20" />
-                    <div className="mt-[2vh] text-[2vw] font-bold text-white/40">
-                      Kết quả Tố Chất sẽ xuất hiện tại đây
+                    <div className="mt-[0.4vh] text-[0.72vw] font-semibold leading-snug text-slate-500">
+                      Chọn hồ sơ hoặc đăng nhập Google
                     </div>
-                  </div>
-                )}
+                  </aside>
+                ) : null}
               </div>
             </div>
           )}

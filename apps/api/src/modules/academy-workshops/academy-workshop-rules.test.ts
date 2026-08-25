@@ -290,15 +290,34 @@ test('shared workshop join lists only avatar/name and requires phone verificatio
 });
 
 test('shared workshop join verifies a configured phone and lets phone-less students enter directly', async () => {
+  const selfCheckInEvents: Array<{ eventType: string }> = [];
   const participant = {
     id: 7,
     workshopId: 5,
     tokenVersion: 1,
+    checkedInAt: null as Date | null,
     workshop: { status: 'LIVE', endsAt: new Date(), campaign: { name: 'Workshop', slug: 'workshop' } },
     campaignLead: { lead: { phone: '0901234567' } },
   };
+  const tx = {
+    crmAcademyWorkshopParticipant: {
+      updateMany: async () => ({ count: participant.checkedInAt ? 0 : 1 }),
+    },
+    crmAcademyWorkshopParticipantEvent: {
+      create: async ({ data }: SafeAny) => {
+        selfCheckInEvents.push(data);
+        participant.checkedInAt = new Date() as SafeAny;
+        return data;
+      },
+    },
+  };
   const fastify = {
-    prisma: { crm: { crmAcademyWorkshopParticipant: { findFirst: async () => participant } } },
+    prisma: {
+      crm: {
+        crmAcademyWorkshopParticipant: { findFirst: async () => participant },
+        $transaction: async (callback: (transaction: SafeAny) => Promise<unknown>) => callback(tx),
+      },
+    },
   } as SafeAny;
 
   await assert.doesNotReject(() =>
@@ -324,6 +343,77 @@ test('shared workshop join verifies a configured phone and lets phone-less stude
       displayCode: 'EFBD14A0',
       participantId: 7,
     })
+  );
+  assert.equal(selfCheckInEvents.length, 1);
+  assert.equal(selfCheckInEvents[0].eventType, 'SELF_CHECKED_IN');
+});
+
+test('Google workshop join creates one walk-in participant and self-checks in idempotently', async () => {
+  const events: Array<{ eventType: string }> = [];
+  let storedLead: SafeAny = null;
+  let storedParticipant: SafeAny = null;
+  const workshop = {
+    id: 5,
+    campaignId: 9,
+    capacity: 100,
+    status: 'LIVE',
+    endsAt: new Date('2026-08-28T05:30:00.000Z'),
+    campaign: { id: 9, name: 'Happy Friday', slug: 'happy-friday' },
+  };
+  const tx: SafeAny = {
+    crmAcademyWorkshop: { findUnique: async () => workshop },
+    crmAcademyLead: {
+      findUnique: async () => storedLead,
+      findFirst: async () => null,
+      update: async ({ data }: SafeAny) => (storedLead = { ...storedLead, ...data }),
+      upsert: async ({ create, update }: SafeAny) => {
+        storedLead = storedLead ? { ...storedLead, ...update } : { id: 41, ...create };
+        return storedLead;
+      },
+    },
+    crmAcademyCampaignLead: {
+      upsert: async () => ({ id: 51, campaignId: 9, leadId: 41 }),
+    },
+    crmAcademyWorkshopParticipant: {
+      findUnique: async () => storedParticipant,
+      count: async () => (storedParticipant ? 1 : 0),
+      create: async ({ data }: SafeAny) =>
+        (storedParticipant = { id: 61, tokenVersion: 1, checkedInAt: null, ...data }),
+      updateMany: async () => {
+        if (storedParticipant?.checkedInAt) return { count: 0 };
+        storedParticipant.checkedInAt = new Date();
+        return { count: 1 };
+      },
+    },
+    crmAcademyWorkshopParticipantEvent: {
+      create: async ({ data }: SafeAny) => {
+        events.push(data);
+        return data;
+      },
+    },
+  };
+  const fastify = {
+    prisma: { crm: { $transaction: async (callback: (transaction: SafeAny) => Promise<unknown>) => callback(tx) } },
+  } as SafeAny;
+  const request = { displayCode: 'EFBD14A0', credential: 'verified-by-route' };
+  const identity = {
+    subject: 'google-123',
+    email: 'student@gmail.com',
+    name: 'Student Google',
+    avatarUrl: 'avatar.jpg',
+  };
+
+  const first = await AcademyWorkshopPublicJoinService.joinWithGoogle(fastify, request, identity);
+  const second = await AcademyWorkshopPublicJoinService.joinWithGoogle(fastify, request, identity);
+
+  assert.equal(first.id, 61);
+  assert.equal(second.id, 61);
+  assert.ok(first.checkedInAt);
+  assert.equal(storedLead.externalKey, 'GOOGLE:google-123');
+  assert.equal(storedLead.sourceSystem, 'GOOGLE');
+  assert.deepEqual(
+    events.map((event) => event.eventType),
+    ['SELF_REGISTERED_GOOGLE', 'SELF_CHECKED_IN']
   );
 });
 

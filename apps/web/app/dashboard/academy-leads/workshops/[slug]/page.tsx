@@ -624,9 +624,16 @@ export default function AcademyWorkshopWorkspacePage() {
       headerActions={
         <AcademyWorkshopHeaderActions
           workshop={workshop}
+          staffOptions={resources.staff}
+          canEdit={canAccess}
           loading={loading}
           onRefresh={() => void load()}
           onOpenLive={() => router.push(`/dashboard/academy-leads/workshops/${workshop.slug}/live`)}
+          onUpdated={(updated) => {
+            setWorkshop(updated);
+            if (updated.slug !== slug)
+              router.replace(`/dashboard/academy-leads/workshops/${encodeURIComponent(updated.slug)}`);
+          }}
         />
       }
     >

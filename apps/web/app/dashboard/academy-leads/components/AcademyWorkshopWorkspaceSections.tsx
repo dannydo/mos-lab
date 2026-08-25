@@ -5,30 +5,44 @@ import { Button } from 'antd';
 import { ExternalLink, Play, RefreshCw, Trophy, Users } from 'lucide-react';
 import type {
   AcademyInstructorBonus,
+  AcademyStaffOption,
   AcademyWorkshopAgendaItem,
   AcademyWorkshopDetail,
   AcademyWorkshopReward,
   AcademyWorkshopSummary,
 } from '@mos-lab/shared';
 import { AppIcon, DataSection, IconText, MetricGrid, StatePanel, StatusTag } from '../../../../components/ui';
+import AcademyWorkshopEditButton from './AcademyWorkshopEditButton';
 import AcademyWorkshopSharedQrButton from './AcademyWorkshopSharedQrButton';
 
 export function AcademyWorkshopHeaderActions({
   workshop,
+  staffOptions,
+  canEdit,
   loading,
   onRefresh,
   onOpenLive,
+  onUpdated,
 }: {
   workshop: AcademyWorkshopDetail;
+  staffOptions: AcademyStaffOption[];
+  canEdit: boolean;
   loading: boolean;
   onRefresh: () => void;
   onOpenLive: () => void;
+  onUpdated: (updated: AcademyWorkshopDetail) => void;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button loading={loading} onClick={onRefresh}>
         <IconText icon={<AppIcon icon={RefreshCw} />}>Làm mới</IconText>
       </Button>
+      <AcademyWorkshopEditButton
+        workshop={workshop}
+        staffOptions={staffOptions}
+        canEdit={canEdit}
+        onUpdated={onUpdated}
+      />
       <AcademyWorkshopSharedQrButton workshopName={workshop.name} joinUrl={workshop.sharedJoinUrl} />
       <Button onClick={() => window.open(`/academy/workshops/display/${workshop.displayCode}`, '_blank')}>
         <IconText icon={<AppIcon icon={ExternalLink} />}>Leaderboard</IconText>

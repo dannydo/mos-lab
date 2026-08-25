@@ -74,7 +74,8 @@ export default function AcademyWorkshopSharedQrButton({
           </div>
           <div className="mt-4 text-lg font-bold">Quét để chọn học viên</div>
           <p className="mx-auto mt-1 max-w-md text-sm opacity-65">
-            Tất cả học viên dùng QR này, sau đó chọn avatar và tên của mình. Hồ sơ có SĐT sẽ được yêu cầu xác minh.
+            Học viên có sẵn chọn avatar và tên; hồ sơ có SĐT sẽ được yêu cầu xác minh. Người chưa có trong danh sách
+            đăng nhập Google/Gmail để tạo hồ sơ walk-in và tự check-in.
           </p>
           <div className="mt-3 break-all rounded-lg border border-inherit px-3 py-2 text-xs opacity-65">{joinUrl}</div>
           <Space wrap className="mt-4 justify-center">

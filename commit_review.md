@@ -2,67 +2,61 @@
 request_feedback: true
 ---
 
-# Commit review — NYC fixed-price campaign release
+# Commit review — Academy Workshop Google self check-in
 
 ## Changed files
 
 - `apps/api/prisma/crm.prisma`
-- `apps/api/prisma/migrations/20260824100000_add_campaign_fixed_final_price/migration.sql`
-- `apps/api/prisma/migrations/20260824110000_add_campaign_fixed_price_categories/migration.sql`
-- `apps/api/src/modules/campaigns/campaign.service.ts`
-- `apps/api/src/modules/customers/routes.ts`
-- `apps/api/src/modules/customers/routes/booking.routes.ts`
-- `apps/api/src/modules/customers/services/booking-promotion.service.ts`
-- `apps/api/src/modules/customers/services/customer-service-filter-catalog.service.ts`
-- `apps/api/src/modules/customers/services/booking-promotion.service.test.ts`
-- `apps/api/src/modules/customers/services/customer-service-filter-catalog.service.test.ts`
-- `apps/web/app/dashboard/customers/components/CustomerBulkActions.tsx`
-- `apps/web/app/dashboard/customers/components/CustomerFilters.tsx`
-- `apps/web/app/dashboard/customers/components/CustomerTable.tsx`
-- `apps/web/app/dashboard/customers/hooks/useCustomerData.ts`
-- `apps/web/app/dashboard/customers/page.tsx`
-- `apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx`
-- `apps/web/app/dashboard/nyc/campaigns/page.tsx`
-- `apps/web/components/BookingWizardDrawer.tsx`
-- `apps/web/components/UpdateBookingModal.tsx`
-- `apps/web/components/booking/comboUtils.ts`
-- `apps/web/lib/campaign-fixed-price.ts`
-- `apps/web/lib/campaign-form-options.ts`
-- `packages/shared/src/types/auth.ts`
-- `packages/shared/src/types/campaign.ts`
-- `packages/shared/src/types/customer.ts`
+- `apps/api/prisma/migrations/20260825103000_add_workshop_display_join_qr/migration.sql`
+- `apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts`
+- `apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts`
+- `apps/api/src/modules/academy-workshops/academy-workshop-rules.test.ts`
+- `apps/api/src/modules/academy-workshops/academy-workshop.service.ts`
+- `apps/api/src/modules/academy-workshops/public.routes.ts`
+- `apps/api/src/modules/academy-workshops/routes.ts`
+- `apps/api/src/modules/auth/google-identity.service.ts`
+- `apps/api/src/modules/auth/google-identity.service.test.ts`
+- `apps/api/src/modules/auth/routes.ts`
+- `apps/web/app/academy/workshops/components/GoogleWorkshopJoinButton.tsx`
+- `apps/web/app/academy/workshops/display/[code]/page.tsx`
+- `apps/web/app/academy/workshops/lobby/[code]/page.tsx`
+- `apps/web/app/dashboard/academy-leads/components/AcademyWorkshopEditButton.tsx`
+- `apps/web/app/dashboard/academy-leads/components/AcademyWorkshopSharedQrButton.tsx`
+- `apps/web/app/dashboard/academy-leads/components/AcademyWorkshopWorkspaceSections.tsx`
+- `apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx`
+- `apps/web/app/dashboard/academy-leads/workshops/[slug]/page.tsx`
+- `apps/web/lib/api-client.ts`
+- `packages/shared/src/types/academy-workshop.ts`
 
 ## Tóm tắt
 
-- Bổ sung ưu đãi NYC **Giá đồng nhất** với giá thanh toán cuối cùng theo dịch vụ lẻ nối mi hoặc thể loại catalog.
-- Backend là nguồn tính giá duy nhất cho tạo/sửa lịch, từ chối dịch vụ ngoài phạm vi, giá cao hơn giá niêm yết, campaign không hoạt động/ngoài thời gian và ưu đãi chồng chéo.
-- Booker thấy đúng ưu đãi campaign; Super Admin được tạo/sửa/hủy lịch, phân bổ khách và xem toàn bộ khách campaign qua `All Bookers`.
-- Thêm thông báo lỗi rõ ràng trong wizard, giữ lại toàn bộ danh sách campaign sau khi đặt lịch, và thêm coverage cho logic đồng giá/catalog.
+- Thêm QR chung trên Leaderboard, staff có thể hiện/ẩn ngay trong Live Control; Stage nhận trạng thái mới qua WebSocket không cần refresh.
+- Học viên đã đăng ký hoặc walk-in chọn hồ sơ để tự check-in; hồ sơ có số điện thoại bắt buộc xác minh đúng số.
+- Học viên chưa có hồ sơ có thể đăng nhập Google để tạo/reuse lead walk-in, được xác nhận và check-in idempotent. Backend xác minh issuer, audience, expiry và email đã xác minh của Google token.
+- Bổ sung khả năng sửa/đổi tên workshop và các UI/workflow liên quan.
 
 ## Proposed commit
 
 ```text
-feat(nyc): add scoped fixed-price campaign promotions
+feat(workshops): add Google self check-in and leaderboard QR
 
-- Enforce fixed final pricing for selected lash services and catalog families
-- Preserve Super Admin booking, allocation, and full campaign visibility
-- Add additive CRM schema migrations and promotion regression coverage
+- Add shared QR controls with realtime stage updates
+- Support verified Google walk-ins and idempotent self check-in
+- Add workshop editing and secure Google identity validation
 
 AI-assisted. Reviewed and verified.
 ```
 
 ## Production migration plan
 
-- CRM schema: hai `ALTER TABLE` chỉ thêm nullable `TEXT` vào `crm_campaign_promotions`:
-  - `20260824100000_add_campaign_fixed_final_price`: `eligible_service_ids`.
-  - `20260824110000_add_campaign_fixed_price_categories`: `eligible_service_category_keys`.
-    Không xóa hay chuyển đổi dữ liệu hiện hữu.
-- Không có production data migration mới trong commit.
-- Nếu VPS chưa ghi nhận migration sẵn có `20260823180000_seed_academy_organization_defaults`, deploy sẽ chạy idempotent: seed catalog/giảng viên/organization Academy và chuẩn hóa tài khoản Super Admin. Đã được duyệt cho phép chạy nếu pending.
+- CRM schema: `20260825103000_add_workshop_display_join_qr` chỉ thêm cột `show_join_qr_on_display TINYINT(1) NOT NULL DEFAULT 0` vào `crm_academy_workshops`.
+- Không có `DROP`, không đổi kiểu dữ liệu, không có production data migration mới.
+- Client OAuth đã cho phép `https://lab.masteros.app`; QR production phải sử dụng domain HTTPS này, không sử dụng IP LAN.
 
 ## Verification
 
-- Focused backend tests: 7/7 passed.
-- Shared build, API build, Web typecheck và scoped Web lint: passed.
-- `data-migrations:validate`: passed (1 module hợp lệ).
-- `migration-plan.sh origin/main`: chỉ liệt kê hai CRM schema migration; không có data migration mới.
+- Focused API tests: 24/24 passed.
+- Web tests: 81/81 passed.
+- Shared build, API/Web typecheck, API/Web lint, UI contract, API/Web production build: passed.
+- `data-migrations:validate`: passed.
+- `migration-plan.sh origin/main`: chỉ liệt kê migration CRM additive ở trên.

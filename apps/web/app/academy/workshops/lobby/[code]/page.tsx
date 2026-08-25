@@ -13,6 +13,7 @@ import {
 import { apiClient } from '../../../../../lib/api-client';
 import { workshopInitials } from '../../../../../lib/academy-workshop-live';
 import AcademyWorkshopPlayer from '../../components/AcademyWorkshopPlayer';
+import GoogleWorkshopJoinButton from '../../components/GoogleWorkshopJoinButton';
 
 function errorMessage(cause: any, fallback: string): string {
   return cause?.response?.data?.message || cause?.message || fallback;
@@ -31,8 +32,10 @@ export default function AcademyWorkshopSharedLobbyPage() {
   const [search, setSearch] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [selecting, setSelecting] = React.useState(false);
+  const [googleJoining, setGoogleJoining] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [phoneError, setPhoneError] = React.useState<string | null>(null);
+  const [googleError, setGoogleError] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
     if (!code) return;
@@ -104,7 +107,28 @@ export default function AcademyWorkshopSharedLobbyPage() {
     setSelected(null);
     setPhone('');
     setPhoneError(null);
+    setGoogleError(null);
   }, [sessionKey]);
+
+  const joinWithGoogle = React.useCallback(
+    async (credential: string) => {
+      setGoogleJoining(true);
+      setGoogleError(null);
+      try {
+        const nextSession = await apiClient.academyWorkshopsPublic.joinWithGoogle({
+          displayCode: code,
+          credential,
+        });
+        window.localStorage.setItem(sessionKey, JSON.stringify(nextSession));
+        setSession(nextSession);
+      } catch (cause) {
+        setGoogleError(errorMessage(cause, 'Không thể đăng nhập Google để vào workshop.'));
+      } finally {
+        setGoogleJoining(false);
+      }
+    },
+    [code, sessionKey]
+  );
 
   const filteredParticipants = React.useMemo(() => {
     const needle = removeVietnameseTones(search);
@@ -148,7 +172,9 @@ export default function AcademyWorkshopSharedLobbyPage() {
             <UsersRound size={34} />
           </div>
           <h2 className="mt-4 text-xl font-bold">Bạn là ai?</h2>
-          <p className="mt-1 text-sm text-white/60">Chọn avatar và tên của bạn để vào phòng chơi.</p>
+          <p className="mt-1 text-sm text-white/60">
+            Có tên trong danh sách thì chọn hồ sơ; chưa có thì đăng nhập Google.
+          </p>
         </header>
 
         <section className="mt-4 rounded-3xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-xl sm:p-6">
@@ -196,10 +222,27 @@ export default function AcademyWorkshopSharedLobbyPage() {
               <Empty description={<span className="text-white/55">Không tìm thấy học viên phù hợp</span>} />
             </div>
           )}
+
+          <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.16em] text-white/35">
+            <span className="h-px flex-1 bg-white/10" />
+            Chưa có tên trong danh sách?
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.07] p-4 text-center sm:p-5">
+            <div className="font-bold">Đăng nhập bằng Google / Gmail</div>
+            <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-white/55">
+              Hệ thống dùng tên, avatar và email Google để tạo hồ sơ walk-in, xác nhận và check-in bạn vào workshop.
+            </p>
+            <div className="mx-auto mt-4 max-w-[360px]">
+              <GoogleWorkshopJoinButton disabled={googleJoining || selecting} onCredential={joinWithGoogle} />
+            </div>
+            {googleJoining ? <div className="mt-3 text-sm text-cyan-200">Đang tạo hồ sơ và check-in…</div> : null}
+            {googleError ? <div className="mt-3 text-sm text-rose-300">{googleError}</div> : null}
+          </div>
         </section>
 
         <footer className="py-5 text-center text-xs text-white/35">
-          Academy Workshop OS · Chỉ hiển thị avatar và tên
+          Academy Workshop OS · Xác minh danh tính và tự check-in
         </footer>
       </div>
 
