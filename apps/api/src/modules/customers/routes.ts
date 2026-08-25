@@ -8020,16 +8020,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const t1 = performance.now();
 
       const candidateIds = candidateOrders.map((o) => Number(o.id)).filter((id) => id > 0);
-
-      if (candidateIds.length === 0) {
-        return { data: [], total: 0 };
-      }
+      // A date without bookings must still return its CV working/OFF plan. The
+      // schedule drawer uses dailyCapacities to plan tomorrow, independently of
+      // whether a customer has booked yet.
+      const candidateIdSql = candidateIds.length > 0 ? candidateIds.join(',') : 'NULL';
 
       // Batch query report_order using indexed order_id
       const reportRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT order_id as orderId, actual_booking_date_start as actualBookingDateStart
         FROM report_order
-        WHERE order_id IN (${candidateIds.join(',')})
+        WHERE order_id IN (${candidateIdSql})
       `);
       const t2 = performance.now();
 
@@ -8043,7 +8043,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       let countSql = `
         SELECT COUNT(*) as total
         FROM \`order\` o
-        WHERE o.id IN (${candidateIds.join(',')})
+        WHERE o.id IN (${candidateIdSql})
       `;
       const countParams: SafeAny[] = [];
 
@@ -8127,7 +8127,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile up_tech ON o.assigned_staff_id = up_tech.user_id
         LEFT JOIN user_profile up_created ON o.created_staff_id = up_created.user_id
         LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
-        WHERE o.id IN (${candidateIds.join(',')})
+        WHERE o.id IN (${candidateIdSql})
       `;
 
       const params: SafeAny[] = [];
@@ -8579,27 +8579,31 @@ export async function customerRoutes(fastify: FastifyInstance) {
             SELECT user_id, start_time, end_time, type, type_value
             FROM staff_working_shift_schedule
             WHERE is_disabled = 0 AND user_id IN (${cvStaffIds.join(',')})
-            ORDER BY type DESC
+            ORDER BY user_id, type DESC
           `);
-          const cvShiftMap = new Map<number, string>();
-          cvStaffIds.forEach((uid: number) => {
-            const userShifts = shiftRows.filter((r) => Number(r.user_id) === uid);
-            let shiftLabel = 'Ca Full';
-            if (userShifts.length > 0) {
-              const primary = userShifts[0];
-              const startHour = primary.start_time ? new Date(primary.start_time).getUTCHours() : 9;
-              const endHour = primary.end_time ? new Date(primary.end_time).getUTCHours() : 20;
-
-              if (startHour <= 9 && endHour <= 18) {
-                shiftLabel = 'Ca Sáng';
-              } else if (startHour >= 11 && endHour >= 20) {
-                shiftLabel = 'Ca Chiều';
-              } else {
-                shiftLabel = 'Ca Full';
-              }
-            }
-            cvShiftMap.set(uid, shiftLabel);
+          const shiftsByCvId = new Map<number, SafeAny[]>();
+          shiftRows.forEach((row) => {
+            const userId = Number(row.user_id);
+            const rows = shiftsByCvId.get(userId) || [];
+            rows.push(row);
+            shiftsByCvId.set(userId, rows);
           });
+
+          // A future roster is a planned shift, not a real attendance event.
+          // A weekday-specific shift takes precedence over the recurring "Day / All" shift.
+          const getScheduledShift = (userId: number, weekday: number): string | null => {
+            const shifts = shiftsByCvId.get(userId) || [];
+            const shift =
+              shifts.find((row) => String(row.type) === 'Weekday' && Number(row.type_value) === weekday) ||
+              shifts.find((row) => String(row.type) === 'Day' && String(row.type_value) === 'All');
+            if (!shift) return null;
+
+            const startHour = shift.start_time ? new Date(shift.start_time).getUTCHours() : 9;
+            const endHour = shift.end_time ? new Date(shift.end_time).getUTCHours() : 20;
+            if (startHour <= 9 && endHour <= 18) return 'Ca Sáng';
+            if (startHour >= 11 && endHour >= 20) return 'Ca Chiều';
+            return 'Ca Full';
+          };
 
           // Filter CV staff pool by storeId if store filter is active
           let activeCvStaffIds = cvStaffIds;
@@ -8801,12 +8805,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
               new Map<number, { reason: string; type: 'urgent_off' | 'planned_off'; daysAhead: number }>();
             const dayBookedMap = rangeBookedMap.get(dateStr) || new Map<number, number>();
             const dayDoneMap = rangeDoneMap.get(dateStr) || new Map<number, number>();
+            const scheduledShiftByCvId = new Map(
+              activeCvStaffIds.map((id: number) => [id, getScheduledShift(id, legacyWeekday)])
+            );
 
             const workingCvIds = activeCvStaffIds.filter((id: number) => {
               const userWeeklyOffs = weeklyOffMap.get(id);
               const isWeeklyOff = userWeeklyOffs ? userWeeklyOffs.has(legacyWeekday) : false;
               const isDateOff = dayDateOffMap.has(id);
-              return !isWeeklyOff && !isDateOff;
+              return !!scheduledShiftByCvId.get(id) && !isWeeklyOff && !isDateOff;
             });
 
             const workingStaffList = workingCvIds.map((id: number) => {
@@ -8817,7 +8824,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 avatarUrl: cvAvatarMap.get(id) || null,
                 branchName: store.name,
                 branchCode: store.code,
-                shift: cvShiftMap.get(id) || 'Ca Full',
+                shift: scheduledShiftByCvId.get(id) || 'Ca Full',
                 bookedCount: dayBookedMap.get(id) || 0,
                 doneCount: dayDoneMap.get(id) || 0,
                 avgDurationMinutes: staffSpeedMap.get(id),

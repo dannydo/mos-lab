@@ -146,7 +146,7 @@ export function computeCvAvailability(
     const isPast = currentDate.isBefore(now, 'day');
     return {
       state: 'IDLE',
-      label: isPast ? 'Đã xong ca' : 'Đã sẵn sàng ca',
+      label: isPast ? 'Đã xong ca' : 'Được xếp ca',
       badgeStyle: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20 font-medium',
       cardStyle: 'bg-white dark:bg-slate-900/60 border-slate-200/60 dark:border-slate-800/60',
     };
