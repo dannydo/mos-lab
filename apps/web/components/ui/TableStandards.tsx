@@ -54,7 +54,11 @@ export function normalizeStandardPagination(
     responsive: pagination.responsive ?? true,
     showTotal:
       pagination.showTotal ??
-      ((total, range) => `Hiển thị ${range[0]}-${range[1]} / Tổng ${total.toLocaleString('vi-VN')}`),
+      ((total, range) => (
+        <span className="tabular-nums">
+          Hiển thị {range[0]}-{range[1]} / Tổng {total.toLocaleString('vi-VN')}
+        </span>
+      )),
   };
 }
 
