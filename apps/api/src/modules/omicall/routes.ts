@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { Prisma } from '../../generated/crm-client/index.js';
 import { requireAuth, requireRole, JwtUserPayload } from '../../middlewares/auth.js';
 import { encrypt, decrypt } from '../../utils/crypto.js';
 import { triggerImmediateAnalysis } from './analyzer.js';
@@ -439,10 +440,16 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       endDate?: string;
     };
 
-    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
-    const take = parseInt(limit, 10);
+    const parsedPage = Number.parseInt(page, 10);
+    const take = Number.parseInt(limit, 10);
 
-    const where: SafeAny = {};
+    if (!Number.isSafeInteger(parsedPage) || parsedPage < 1 || !Number.isSafeInteger(take) || take < 1) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'page and limit must be positive integers' });
+    }
+
+    const skip = (parsedPage - 1) * take;
+
+    const where: Prisma.CrmOmicallLogWhereInput = {};
     if (staffId) where.staffId = parseInt(staffId, 10);
     if (status) where.status = status;
     if (happyCallStatus) where.happyCallStatus = happyCallStatus;
@@ -497,7 +504,7 @@ export async function omicallRoutes(fastify: FastifyInstance) {
       return {
         logs: formattedLogs,
         total,
-        page: parseInt(page, 10),
+        page: parsedPage,
         limit: take,
       };
     } catch (error: SafeAny) {
