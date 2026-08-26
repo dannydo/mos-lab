@@ -9,12 +9,17 @@ import { BookingPromotionError, BookingPromotionService } from '../services/book
 
 const ALLOWED_BOOKING_LEGACY_GROUPS = [2, 5, 14, 31, 32, 33, 34, 45];
 
+interface LegacyStaffAccessProfile {
+  user_group_id: number | string | null;
+  access_user_group_ids: string | null;
+}
+
 async function validateLegacyStaffBookingPermission(
   fastify: FastifyInstance,
   legacyStaffId: number,
   actorRole?: string | null
 ): Promise<{ valid: boolean; statusCode?: number; message?: string }> {
-  const staffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+  const staffRows = await fastify.prisma.legacy.$queryRawUnsafe<LegacyStaffAccessProfile[]>(
     `SELECT user_group_id, access_user_group_ids FROM user_profile WHERE user_id = ? AND is_disabled = 0 LIMIT 1`,
     legacyStaffId
   );
