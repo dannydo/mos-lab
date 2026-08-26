@@ -107,6 +107,12 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
   };
 
   const handleFilterChange = (val: string) => {
+    // A pending debounced search captured the previous action type. Cancel it
+    // before fetching the newly selected filter to avoid a stale follow-up response.
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = null;
+    }
     setFilterAction(val);
     fetchAssignmentHistory(1, searchQuery, val);
   };

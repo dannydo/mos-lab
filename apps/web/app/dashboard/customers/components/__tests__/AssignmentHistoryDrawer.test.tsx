@@ -31,8 +31,28 @@ vi.mock('antd', () => {
     value?: string;
     onChange?: React.ChangeEventHandler<HTMLInputElement>;
   }) => <input placeholder={placeholder} value={value} onChange={onChange} />;
-  const RadioGroup = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
-  const RadioButton = ({ children }: { children: React.ReactNode }) => <button type="button">{children}</button>;
+  const RadioGroup = ({
+    children,
+    onChange,
+  }: {
+    children: React.ReactNode;
+    onChange?: (event: { target: { value: string } }) => void;
+  }) => (
+    <div>
+      {React.Children.map(children, (child) => {
+        if (!React.isValidElement<{ value?: string }>(child)) return child;
+
+        return React.cloneElement(child, {
+          onClick: () => onChange?.({ target: { value: child.props.value ?? '' } }),
+        });
+      })}
+    </div>
+  );
+  const RadioButton = ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
+    <button type="button" onClick={onClick}>
+      {children}
+    </button>
+  );
   const Radio = { Group: RadioGroup, Button: RadioButton };
   const Typography = { Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span> };
 
@@ -130,5 +150,22 @@ describe('AssignmentHistoryDrawer timers', () => {
     });
 
     expect(props.fetchAssignmentHistory).not.toHaveBeenCalled();
+  });
+
+  it('cancels a pending search before applying a different action filter', () => {
+    const props = createProps();
+    render(<AssignmentHistoryDrawer {...props} />);
+
+    fireEvent.change(screen.getByPlaceholderText(/Tìm theo tên Booker/i), { target: { value: 'Ngọc' } });
+    fireEvent.click(screen.getByText('🟢 Phân bổ'));
+
+    expect(props.fetchAssignmentHistory).toHaveBeenCalledOnce();
+    expect(props.fetchAssignmentHistory).toHaveBeenLastCalledWith(1, 'Ngọc', 'ASSIGN');
+
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+
+    expect(props.fetchAssignmentHistory).toHaveBeenCalledOnce();
   });
 });
