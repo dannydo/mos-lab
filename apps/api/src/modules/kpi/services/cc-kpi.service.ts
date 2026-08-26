@@ -131,6 +131,22 @@ export function resolveCcCashBonus(input: {
   return input.isSplit ? Math.round(fullBonus / 2) : fullBonus;
 }
 
+const CC_DAILY_BONUS_TIER_RATES = [
+  { minimumSales: 20_000_000, ratePercent: 2.5 },
+  { minimumSales: 15_000_000, ratePercent: 2.0 },
+  { minimumSales: 10_000_000, ratePercent: 1.5 },
+  { minimumSales: 5_000_000, ratePercent: 1.0 },
+] as const;
+
+/**
+ * Resolves the daily CC commission tier from bonus-eligible sales only.
+ * Keep this separate from the 50/50 allocation: sales are split first,
+ * then the tier is applied to each consultant's daily total.
+ */
+export function resolveCcDailyBonusTierRate(totalSales: number): number {
+  return CC_DAILY_BONUS_TIER_RATES.find(({ minimumSales }) => totalSales >= minimumSales)?.ratePercent ?? 0.5;
+}
+
 interface BuildCcLeaderboardInput {
   selectedRecords: SafeAny[];
   monthlyRecords: SafeAny[];
@@ -1260,18 +1276,7 @@ export class CcKpiService {
       // Total Sales for CC Bonus: Combo Sales + Product Sales + Debt Collected (EXCLUDES single_sales)
       const total_sales = rec.combo_sales + rec.product_sales + (rec.debt_collected || 0);
 
-      let matchedTierRate: number;
-      if (total_sales >= 20000000) {
-        matchedTierRate = 2.5;
-      } else if (total_sales >= 15000000) {
-        matchedTierRate = 2.0;
-      } else if (total_sales >= 10000000) {
-        matchedTierRate = 1.5;
-      } else if (total_sales >= 5000000) {
-        matchedTierRate = 1.0;
-      } else {
-        matchedTierRate = 0.5;
-      }
+      const matchedTierRate = resolveCcDailyBonusTierRate(total_sales);
 
       // Daily Bonus: % Tier Rate on Qualifying Total Sales (Rule #15 actual_booking_date_start)
       const daily_bonus = Math.round((total_sales * matchedTierRate) / 100);

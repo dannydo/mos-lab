@@ -6,6 +6,7 @@ import {
   FAL_RULE_VALUES_SQL,
   FAL_TRACKING_KEY_SQL_CASES,
   filterActiveCcTargets,
+  resolveCcDailyBonusTierRate,
   resolveCcCashBonus,
   resolveFalRule,
   splitCcShares,
@@ -70,6 +71,14 @@ test('uses formula fallback only when the Cash row is genuinely missing', () => 
   assert.equal(resolveCcCashBonus({ dbCashBonus: 0, cashBonusRows: 1, level: 3, isSplit: false }), 0);
   assert.equal(resolveCcCashBonus({ dbCashBonus: -130, cashBonusRows: 1, level: 3, isSplit: false }), -130);
   assert.equal(resolveCcCashBonus({ dbCashBonus: 0, cashBonusRows: 0, level: 2, isSplit: true }), 65);
+});
+
+test('uses the exact daily CC bonus tier thresholds after CC sales allocation', () => {
+  assert.equal(resolveCcDailyBonusTierRate(4_999_999), 0.5);
+  assert.equal(resolveCcDailyBonusTierRate(5_000_000), 1.0);
+  assert.equal(resolveCcDailyBonusTierRate(10_000_000), 1.5);
+  assert.equal(resolveCcDailyBonusTierRate(15_000_000), 2.0);
+  assert.equal(resolveCcDailyBonusTierRate(20_000_000), 2.5);
 });
 
 test('builds leaderboard totals from the same CC Xoay detail records', () => {
