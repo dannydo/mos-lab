@@ -651,3 +651,15 @@ export interface LocaStaffActivityLogItem {
   bookingDate?: string;
   orderId?: number;
 }
+
+/** Paginated LoCa staff activity feed returned by the customer activity API. */
+export interface LocaStaffActivityResponse {
+  stats: LocaStaffActivityStats;
+  logs: LocaStaffActivityLogItem[];
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
+}

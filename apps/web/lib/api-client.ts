@@ -14,8 +14,7 @@ import {
   CreateCallRequest,
   KPISummary,
   CustomerWeeklyProgress,
-  LocaStaffActivityStats,
-  LocaStaffActivityLogItem,
+  LocaStaffActivityResponse,
   ColumnConfig,
   BulkDeleteCustomersResponse,
   CustomerHistoryEntry,
@@ -412,17 +411,6 @@ export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<
   );
 
   return promise;
-}
-
-export interface LocaStaffActivityResponse {
-  stats: LocaStaffActivityStats;
-  logs: LocaStaffActivityLogItem[];
-  pagination: {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-  };
 }
 
 // API Client SDK for mos-lab
