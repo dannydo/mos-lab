@@ -36,12 +36,12 @@ export const CvSearchFilterBar: React.FC<CvSearchFilterBarProps> = React.memo(
           value={selectedBranch}
           onChange={(val) => setSelectedBranch(val as string)}
           options={[
-            { label: 'Tất cả', value: 'all' },
-            { label: 'Đề Thám', value: 'Đề Thám' },
-            { label: 'Estella', value: 'Estella Place' },
+            { label: 'ALL', value: 'all' },
+            { label: 'DT', value: 'Đề Thám' },
+            { label: 'EP', value: 'Estella Place' },
           ]}
           aria-label="Lọc theo Chi nhánh"
-          className="text-xs shrink-0"
+          className="text-xs shrink-0 [&_.ant-segmented-item:nth-child(2)]:text-cyan-700 dark:[&_.ant-segmented-item:nth-child(2)]:text-cyan-300 [&_.ant-segmented-item:nth-child(2).ant-segmented-item-selected]:!bg-cyan-500/20 [&_.ant-segmented-item:nth-child(3)]:text-violet-700 dark:[&_.ant-segmented-item:nth-child(3)]:text-violet-300 [&_.ant-segmented-item:nth-child(3).ant-segmented-item-selected]:!bg-violet-500/20"
         />
         {statusFilter !== 'all' && (
           <Tooltip title="Xóa bộ lọc trạng thái hiện tại" placement="top">

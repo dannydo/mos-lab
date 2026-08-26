@@ -10,6 +10,7 @@ import {
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import { StaffWorkingItem, CvAvailabilityInfo } from './cvDrawerUtils';
+import { getCvBranchBadgeStyle } from './cvBranchBadge';
 
 interface CvWorkingStaffCardProps {
   staff: StaffWorkingItem & { availability: CvAvailabilityInfo };
@@ -64,6 +65,8 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
   const isTopBooked = rankIndex === 0 && (staff.bookedCount || 0) > 0;
   const eta = staff.availability.etaInfo;
   const cleanLabel = (staff.availability.label || '').replace(/^[🟢🔴🟡🔵💬🧹📷⚡🏁📅]\s*/, '');
+  const branchLabel = staff.branchCode || staff.branchName || 'DT';
+  const branchBadgeStyle = getCvBranchBadgeStyle(staff.branchCode, staff.branchName);
 
   const progressColors = useMemo(() => {
     if (!eta) return null;
@@ -197,8 +200,11 @@ export const CvWorkingStaffCard: React.FC<CvWorkingStaffCardProps> = React.memo(
 
           <div className="text-right shrink-0 flex flex-col items-end gap-1 ml-2">
             <div className="flex items-center gap-1">
-              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
-                {staff.branchCode || staff.branchName || 'DT'}
+              <span
+                aria-label={`Chi nhánh ${branchLabel}`}
+                className={`text-[10px] font-semibold px-1.5 py-0.2 rounded border ${branchBadgeStyle}`}
+              >
+                {branchLabel}
               </span>
               {onBookCv && (
                 <Tooltip title="Đặt lịch cho CV này">

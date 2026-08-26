@@ -24,6 +24,7 @@ import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-custom
 import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
 import { CustomerAccessService } from './services/customer-access.service.js';
 import { CustomerServiceFilterCatalogService } from './services/customer-service-filter-catalog.service.js';
+import { CvAttendanceService } from './services/cv-attendance.service.js';
 import {
   BookingUpdateValidationError,
   buildLegacyBookingWindow,
@@ -8929,8 +8930,69 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/customers/cv-schedule-roster
+  // Central roster/OFF snapshot shared with the Today dashboard.
+  fastify.get('/customers/cv-schedule-roster', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { date } = request.query as { date?: string };
+    const nowIct = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const targetDate = date || nowIct.toISOString().slice(0, 10);
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'date phải có định dạng YYYY-MM-DD.',
+      });
+    }
+
+    try {
+      const attendance = await CvAttendanceService.getDailyCvAttendance(fastify, targetDate);
+      const branchForStore = (storeId: number) => {
+        if (storeId === 16) return { branchName: 'Estella Place', branchCode: 'EP' };
+        if (storeId === 2) return { branchName: 'PXL', branchCode: 'PXL' };
+        return { branchName: 'Đề Thám', branchCode: 'DT' };
+      };
+
+      const workingStaffList = attendance
+        .filter((staff) => !staff.isOff)
+        .map((staff) => ({
+          id: staff.id,
+          name: staff.name,
+          avatarUrl: staff.avatarUrl,
+          ...branchForStore(staff.storeId),
+          shift: staff.shift === 'off' ? 'full' : staff.shift,
+          attendance: staff.attendance,
+          bookedCount: staff.bookedCount,
+          doneCount: staff.doneCount,
+        }));
+      const offStaffList = attendance
+        .filter((staff) => staff.isOff)
+        .map((staff) => ({
+          id: staff.id,
+          name: staff.name,
+          avatarUrl: staff.avatarUrl,
+          ...branchForStore(staff.storeId),
+          reason: staff.offReason || 'Nghỉ phép',
+          type: staff.offType || undefined,
+        }));
+
+      return {
+        date: targetDate,
+        workingKtvCount: workingStaffList.length,
+        maxCapacity: workingStaffList.length * 5,
+        workingStaffList,
+        offStaffList,
+      };
+    } catch (error: SafeAny) {
+      fastify.log.error(error, 'CV schedule roster error');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: error?.message || 'Không thể tải roster CV theo lịch.',
+      });
+    }
+  });
+
   // GET /api/customers/cv-realtime-status
-  // Real-time CV availability status from legacy order_state + order_staff_queue
+  // Real-time CV availability status from legacy order_state + order_staff_queue.
   fastify.get('/customers/cv-realtime-status', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const now = new Date();

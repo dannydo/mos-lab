@@ -32,6 +32,7 @@ export interface StaffWorkingItem {
   branchName?: string;
   branchCode?: string;
   shift?: string;
+  attendance?: 'none' | 'checked_in' | 'checked_out' | 'late';
   bookedCount?: number;
   doneCount?: number;
   avgDurationMinutes?: {

@@ -266,3 +266,40 @@ export interface CvRealtimeStatusResponse {
   queueByStore: Record<number, CvQueueEntry[]>;
   timestamp: string;
 }
+
+export type CvRosterAttendance = 'none' | 'checked_in' | 'checked_out' | 'late';
+
+/**
+ * The scheduled CV roster for one day. This deliberately carries the same
+ * attendance and OFF result as the Today dashboard so operational surfaces do
+ * not derive their own weekly-leave rules.
+ */
+export interface CvScheduleRosterWorkingStaff {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  branchName: string;
+  branchCode: string;
+  shift: 'sáng' | 'chiều' | 'full';
+  attendance: CvRosterAttendance;
+  bookedCount: number;
+  doneCount: number;
+}
+
+export interface CvScheduleRosterOffStaff {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  branchName: string;
+  branchCode: string;
+  reason: string;
+  type?: string;
+}
+
+export interface CvScheduleRosterResponse {
+  date: string;
+  workingKtvCount: number;
+  maxCapacity: number;
+  workingStaffList: CvScheduleRosterWorkingStaff[];
+  offStaffList: CvScheduleRosterOffStaff[];
+}

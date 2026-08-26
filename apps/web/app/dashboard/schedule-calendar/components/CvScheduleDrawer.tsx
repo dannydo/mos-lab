@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import dayjs, { Dayjs } from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
 import { AdaptiveDrawer } from '../../../../components/ui';
-import { Appointment, CvRealtimeStatusResponse } from '@mos-lab/shared';
+import { Appointment, CvRealtimeStatusResponse, CvScheduleRosterResponse } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { getViewportSize } from '../../../../hooks/useResponsiveTier';
 
@@ -13,6 +13,7 @@ import {
   DailyCapInfo,
   StaffWorkingItem,
   computeCvAvailability,
+  getStatusStyles,
   realtimeStatusToAvailability,
 } from './cv-drawer/cvDrawerUtils';
 import { CvHeaderToolbar } from './cv-drawer/CvHeaderToolbar';
@@ -58,6 +59,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
 
     // Real-time status from API
     const [realtimeData, setRealtimeData] = useState<CvRealtimeStatusResponse | null>(null);
+    const [scheduleRoster, setScheduleRoster] = useState<CvScheduleRosterResponse | null>(null);
 
     // Quick CV Booking states
     const [selectedCvForBooking, setSelectedCvForBooking] = useState<StaffWorkingItem | null>(null);
@@ -145,6 +147,28 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
       return () => {
         cancelled = true;
         clearInterval(interval);
+      };
+    }, [open, currentDate]);
+
+    // Keep roster and OFF status identical to Today. Real-time order_state is
+    // intentionally fetched separately because it answers a different question.
+    useEffect(() => {
+      if (!open) return;
+      const dayKey = currentDate.format('YYYY-MM-DD');
+      let cancelled = false;
+      setScheduleRoster(null);
+
+      void apiClient.customers
+        .getCvScheduleRoster(dayKey)
+        .then((roster) => {
+          if (!cancelled) setScheduleRoster(roster);
+        })
+        .catch((err) => {
+          console.warn('Failed to fetch unified CV schedule roster:', err);
+        });
+
+      return () => {
+        cancelled = true;
       };
     }, [open, currentDate]);
 
@@ -254,7 +278,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
     }, []);
 
     const dayKey = currentDate.format('YYYY-MM-DD');
-    const serverCap = dailyCapacities?.[dayKey] || fetchedCapacities[dayKey];
+    const serverCap = scheduleRoster || dailyCapacities?.[dayKey] || fetchedCapacities[dayKey];
     const dayAppts = appointmentsByDay?.[dayKey] || fetchedAppointments[dayKey] || [];
     const ktvCount = serverCap?.workingKtvCount ?? 0;
     const isToday = currentDate.isSame(dayjs(), 'day');
@@ -292,7 +316,11 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
         const realtimeStatus = realtimeData?.staffStatuses?.find((s) => s.staffId === staff.id);
         const availability = realtimeStatus
           ? realtimeStatusToAvailability(realtimeStatus)
-          : computeCvAvailability(staff.id, dayAppts, currentDate);
+          : staff.attendance === 'checked_out'
+            ? { state: 'LOCKED' as const, label: 'Đã về', ...getStatusStyles('LOCKED') }
+            : staff.attendance === 'none'
+              ? { state: 'LOCKED' as const, label: 'Chưa check-in', ...getStatusStyles('LOCKED') }
+              : computeCvAvailability(staff.id, dayAppts, currentDate);
 
         staffMap.set(staff.id, {
           ...staff,
@@ -305,7 +333,7 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
 
       // Include any staff from realtimeData who might not be in serverCap.workingStaffList
       // BUT SKIP ANY STAFF WHO ARE IN offStaffList (ON LEAVE/OFF TODAY)
-      if (realtimeData?.staffStatuses) {
+      if (realtimeData?.staffStatuses && !scheduleRoster) {
         realtimeData.staffStatuses.forEach((rt) => {
           if (!staffMap.has(rt.staffId) && !offStaffIds.has(rt.staffId)) {
             const availability = realtimeStatusToAvailability(rt);
@@ -329,7 +357,15 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
         if (!isToday) return a.name.localeCompare(b.name, 'vi');
         return b.bookedCount - a.bookedCount || b.doneCount - a.doneCount || a.name.localeCompare(b.name, 'vi');
       });
-    }, [serverCap?.workingStaffList, serverCap?.offStaffList, dayAppts, currentDate, realtimeData, isToday]);
+    }, [
+      serverCap?.workingStaffList,
+      serverCap?.offStaffList,
+      dayAppts,
+      currentDate,
+      realtimeData,
+      isToday,
+      scheduleRoster,
+    ]);
 
     // Real-Time Store Summary Counts
     const statusCounts = useMemo(() => {

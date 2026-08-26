@@ -168,6 +168,7 @@ import {
   CreateCsCampaignDto,
   UpdateCsCampaignDto,
   CvRealtimeStatusResponse,
+  CvScheduleRosterResponse,
   CvSpeedProfile,
   CvSpeedMatrix,
   CvSpeedRanking,
@@ -789,6 +790,10 @@ export const apiClient = {
     },
     getCvRealtimeStatus: async (): Promise<CvRealtimeStatusResponse> => {
       const response = await api.get('/customers/cv-realtime-status');
+      return response.data;
+    },
+    getCvScheduleRoster: async (date: string): Promise<CvScheduleRosterResponse> => {
+      const response = await api.get('/customers/cv-schedule-roster', { params: { date } });
       return response.data;
     },
     getMissedSummary: async (params?: {

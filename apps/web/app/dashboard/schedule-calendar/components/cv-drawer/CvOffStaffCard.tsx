@@ -4,6 +4,7 @@ import React from 'react';
 import { Avatar, Tooltip } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { StaffOffItem } from './cvDrawerUtils';
+import { getCvBranchBadgeStyle } from './cvBranchBadge';
 
 interface CvOffStaffCardProps {
   staff: StaffOffItem;
@@ -42,6 +43,8 @@ export const CvOffStaffCard: React.FC<CvOffStaffCardProps> = React.memo(({ staff
 
   const typeLabel = isWeeklyOff ? 'OFF Tuần' : isUrgentOff ? 'OFF Gấp' : 'OFF Phép';
   const dotColor = isWeeklyOff ? 'bg-amber-400' : isUrgentOff ? 'bg-rose-500 animate-pulse' : 'bg-orange-400';
+  const branchLabel = staff.branchCode || staff.branchName || 'DT';
+  const branchBadgeStyle = getCvBranchBadgeStyle(staff.branchCode, staff.branchName);
 
   const tooltipContent = (
     <div className="text-xs space-y-1 min-w-[160px]" role="tooltip">
@@ -93,8 +96,11 @@ export const CvOffStaffCard: React.FC<CvOffStaffCardProps> = React.memo(({ staff
         </div>
 
         <div className="text-right shrink-0 ml-2">
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${badgeStyleOff}`}>
-            {staff.branchCode || staff.branchName || 'DT'}
+          <span
+            aria-label={`Chi nhánh ${branchLabel}`}
+            className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${branchBadgeStyle}`}
+          >
+            {branchLabel}
           </span>
         </div>
       </div>
