@@ -10,6 +10,7 @@ import type {
 } from '@mos-lab/shared';
 import { AppIcon, MetricGrid, StatusTag } from '../../../../components/ui';
 import { formatVND } from '../../../../lib/format-utils';
+import styles from './PaymentManagementPage.module.css';
 
 export const PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 export const PAGE_STORAGE_KEY = 'academy-payment-management:page';
@@ -93,15 +94,15 @@ export function mobilePaymentCard(
 ) {
   const status = paymentStatusMeta(row.paymentStatus);
   return (
-    <button type="button" className="w-full rounded-xl border border-inherit p-3 text-left" onClick={() => onOpen(row)}>
+    <button type="button" className={styles.mobilePaymentCard} onClick={() => onOpen(row)}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div className="grid min-w-0 gap-1">
           <strong>{row.lead.name}</strong>
-          <div className="mt-1 truncate text-xs opacity-70">{row.invoiceNumber}</div>
+          <div className="truncate text-xs opacity-70">{row.invoiceNumber}</div>
         </div>
         <StatusTag status={status.tone} label={status.label} />
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+      <div className="grid grid-cols-2 gap-2 text-xs">
         <span className="opacity-70">Đã nhận</span>
         <strong className="text-right tabular-nums">{formatVND(row.totalPaidVnd)}</strong>
         <span className="opacity-70">Còn lại</span>
@@ -122,6 +123,7 @@ export function PaymentSummaryMetrics({
 }) {
   return (
     <MetricGrid
+      className={styles.metricGrid}
       columns={4}
       items={[
         {

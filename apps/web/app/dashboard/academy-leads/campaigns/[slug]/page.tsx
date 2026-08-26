@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Descriptions, Select, Space, Tooltip, message } from 'antd';
+import { Button, Descriptions, Select, Space, message } from 'antd';
 import {
   ArrowLeft,
   CalendarDays,
@@ -34,6 +34,7 @@ import {
   DataSection,
   DataTable,
   FeaturePage,
+  IconButton,
   MetricGrid,
   SearchField,
   StatePanel,
@@ -72,6 +73,7 @@ import {
   talentSessionNumber,
   talentWorkshopView,
 } from './academy-campaign-detail.helpers';
+import styles from './AcademyCampaignDetailPage.module.css';
 import { useCampaignLeadColumns } from './useCampaignLeadColumns';
 
 export default function AcademyCampaignDetailPage() {
@@ -523,23 +525,19 @@ export default function AcademyCampaignDetailPage() {
         }
         headerActions={
           <Space>
-            <Tooltip title="Quay lại danh sách chiến dịch">
-              <Button
-                aria-label="Quay lại danh sách chiến dịch"
-                icon={<AppIcon icon={ArrowLeft} />}
-                onClick={() => router.push('/dashboard/academy-leads/campaigns')}
-              />
-            </Tooltip>
-            <Tooltip title="Làm mới dữ liệu">
-              <Button
-                aria-label="Làm mới chiến dịch"
-                icon={<AppIcon icon={RefreshCw} />}
-                loading={loadingLeads}
-                onClick={() => void refresh()}
-              />
-            </Tooltip>
+            <IconButton
+              label="Quay lại danh sách chiến dịch"
+              icon={ArrowLeft}
+              onClick={() => router.push('/dashboard/academy-leads/campaigns')}
+            />
+            <IconButton
+              label="Làm mới dữ liệu"
+              icon={RefreshCw}
+              loading={loadingLeads}
+              onClick={() => void refresh()}
+            />
             {canManageMembership && (
-              <Button type="primary" icon={<AppIcon icon={UserRoundPlus} />} onClick={() => setLeadPickerOpen(true)}>
+              <Button icon={<AppIcon icon={UserRoundPlus} />} onClick={() => setLeadPickerOpen(true)}>
                 Thêm lead
               </Button>
             )}
@@ -605,6 +603,7 @@ export default function AcademyCampaignDetailPage() {
         }}
       >
         <MetricGrid
+          className={styles.metricGrid}
           columns={4}
           items={[
             {
@@ -613,7 +612,7 @@ export default function AcademyCampaignDetailPage() {
               value: stats.totalLeads,
               format: 'number',
               icon: <AppIcon icon={UsersRound} />,
-              subValue: `${campaign._count?.leads || 0} lead snapshot`,
+              subValue: `${campaign._count?.leads || 0} lead cố định`,
             },
             {
               key: 'touched',

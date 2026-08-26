@@ -14,6 +14,7 @@ export interface FeaturePageProps extends Omit<PageHeaderProps, 'extra' | 'class
   children: React.ReactNode;
   className?: string;
   contentClassName?: string;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -30,9 +31,10 @@ export function FeaturePage({
   children,
   className = '',
   contentClassName = '',
+  style,
 }: FeaturePageProps) {
   return (
-    <main className={`responsive-page responsive-workspace feature-page ${className}`.trim()}>
+    <main className={`responsive-page responsive-workspace feature-page ${className}`.trim()} style={style}>
       <PageHeader title={title} subtitle={subtitle} icon={icon} tag={tag} extra={headerActions} />
       {toolbar && <FeatureToolbar {...toolbar} />}
       <div className={`feature-page-content ${contentClassName}`.trim()}>{children}</div>

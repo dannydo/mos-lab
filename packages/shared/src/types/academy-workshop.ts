@@ -87,6 +87,8 @@ export interface AcademyWorkshopListItem {
 export interface AcademyWorkshopDetail extends AcademyWorkshopListItem {
   showInSidebar: boolean;
   displayCode: string;
+  /** The reusable template that the workshop agenda was copied from. */
+  agendaTemplate: AcademyWorkshopAgendaTemplate | null;
   /** Stable workshop-wide QR target for participant self-selection. */
   sharedJoinUrl: string;
   summary: AcademyWorkshopSummary;
@@ -199,6 +201,25 @@ export interface AcademyWorkshopAgendaItem {
   pausedSeconds: number;
   actualDurationSeconds: number | null;
   remainingSeconds: number;
+}
+
+export interface AcademyWorkshopAgendaTemplateItem {
+  id: number;
+  templateId: number;
+  title: string;
+  description: string | null;
+  kind: AcademyWorkshopAgendaKind;
+  plannedDurationSeconds: number;
+  sortOrder: number;
+}
+
+export interface AcademyWorkshopAgendaTemplate {
+  id: number;
+  title: string;
+  description: string | null;
+  items: AcademyWorkshopAgendaTemplateItem[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AcademyWorkshopTimelineEvent {
@@ -387,6 +408,8 @@ export interface CreateAcademyWorkshopRequest {
   feeDueAt?: string | null;
   assignedStaffIds?: number[];
   showInSidebar?: boolean;
+  agendaTemplateId?: number;
+  /** @deprecated Use agendaPresetKey and the item-level agenda APIs instead. */
   agenda?: UpsertAcademyWorkshopAgendaItemRequest[];
 }
 
@@ -407,6 +430,10 @@ export interface ListAcademyWorkshopParticipantsParams extends PageQuery {
 }
 
 export interface ListAcademyWorkshopQuizTemplatesParams extends PageQuery {
+  search?: string;
+}
+
+export interface ListAcademyWorkshopAgendaTemplatesParams extends PageQuery {
   search?: string;
 }
 
@@ -484,6 +511,32 @@ export interface UpsertAcademyWorkshopAgendaItemRequest {
   plannedDurationSeconds: number;
   sortOrder?: number;
 }
+
+export interface CreateAcademyWorkshopAgendaItemRequest {
+  title: string;
+  description?: string | null;
+  kind: AcademyWorkshopAgendaKind;
+  plannedDurationSeconds: number;
+}
+
+export interface UpdateAcademyWorkshopAgendaItemRequest {
+  title?: string;
+  description?: string | null;
+  kind?: AcademyWorkshopAgendaKind;
+  plannedDurationSeconds?: number;
+}
+
+export interface ReorderAcademyWorkshopAgendaRequest {
+  agendaItemIds: number[];
+}
+
+export interface CreateAcademyWorkshopAgendaTemplateRequest {
+  title: string;
+  description?: string | null;
+  items: UpsertAcademyWorkshopAgendaItemRequest[];
+}
+
+export type UpdateAcademyWorkshopAgendaTemplateRequest = Partial<CreateAcademyWorkshopAgendaTemplateRequest>;
 
 export interface AcademyWorkshopAgendaCommandRequest {
   action: 'START' | 'PAUSE' | 'RESUME' | 'COMPLETE' | 'SKIP';
@@ -578,6 +631,7 @@ export interface UpdateAcademyInstructorBonusRequest {
 export type ListAcademyWorkshopsResponse = PageResponse<AcademyWorkshopListItem, AcademyWorkshopSummary>;
 export type ListAcademyWorkshopParticipantsResponse = PageResponse<AcademyWorkshopParticipant, AcademyWorkshopSummary>;
 export type ListAcademyWorkshopQuizTemplatesResponse = PageResponse<AcademyWorkshopQuiz>;
+export type ListAcademyWorkshopAgendaTemplatesResponse = PageResponse<AcademyWorkshopAgendaTemplate>;
 export type AcademyWorkshopActionResponse = ActionResponse<AcademyWorkshopDetail>;
 export type AcademyWorkshopParticipantActionResponse = ActionResponse<AcademyWorkshopParticipant>;
 export type AcademyWorkshopAgendaActionResponse = ActionResponse<AcademyWorkshopAgendaItem>;

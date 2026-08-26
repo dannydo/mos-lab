@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Button, Form, Progress, Space, Tabs, message } from 'antd';
+import { Button, Form, Progress, Space, Tabs, message, theme } from 'antd';
 import dayjs from 'dayjs';
-import { useParams, useRouter } from 'next/navigation';
-import { Gamepad2, Presentation, QrCode, UserPlus, Users } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Gamepad2, ListChecks, Presentation, QrCode, Trophy, UserPlus, Users } from 'lucide-react';
 import {
   isAdminOrSuperAdminRole,
   removeVietnameseTones,
@@ -25,11 +25,11 @@ import AcademyWorkshopQuizManager from '../../components/AcademyWorkshopQuizMana
 import AcademyWorkshopQuizTemplateLibrary from '../../components/AcademyWorkshopQuizTemplateLibrary';
 import AcademyWorkshopRoster from '../../components/AcademyWorkshopRoster';
 import {
-  AcademyWorkshopAgendaSnapshot,
   AcademyWorkshopHeaderActions,
   AcademyWorkshopMetrics,
   AcademyWorkshopSettlement,
 } from '../../components/AcademyWorkshopWorkspaceSections';
+import AcademyWorkshopAgendaManager from '../../components/AcademyWorkshopAgendaManager';
 import { compressWorkshopImage } from '../../components/academy-workshop-image';
 import AcademyWorkshopParticipantOverlays, {
   type AcademyWorkshopFeeForm,
@@ -49,11 +49,16 @@ import {
   userRole,
 } from '../../lead-manager/lead-manager.helpers';
 import { useAcademyTalentResources } from '../../lead-manager/useAcademyTalentResources';
+import styles from './AcademyWorkshopWorkspace.module.css';
+
+type WorkshopWorkspaceThemeStyle = React.CSSProperties & Record<`--academy-workshop-${string}`, string>;
 
 export default function AcademyWorkshopWorkspacePage() {
+  const { token } = theme.useToken();
   const { canAccess } = useAcademyAccess();
   const params = useParams<{ slug: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = decodeURIComponent(String(params.slug || ''));
   const [workshop, setWorkshop] = React.useState<Awaited<
     ReturnType<typeof apiClient.academySales.workshops.getBySlug>
@@ -104,9 +109,14 @@ export default function AcademyWorkshopWorkspacePage() {
 
   React.useEffect(() => {
     if (!slug) return;
+    const requestedTab = searchParams.get('tab');
+    if (requestedTab && ['roster', 'game', 'agenda', 'settlement'].includes(requestedTab)) {
+      setActiveTab(requestedTab);
+      return;
+    }
     const saved = window.localStorage.getItem(`academy-workshop:${slug}:active-tab`);
     if (saved && ['roster', 'game', 'agenda', 'settlement'].includes(saved)) setActiveTab(saved);
-  }, [slug]);
+  }, [searchParams, slug]);
 
   const load = React.useCallback(async () => {
     if (!canAccess || !slug) return;
@@ -615,12 +625,27 @@ export default function AcademyWorkshopWorkspacePage() {
     return <StatePanel kind="error" title={error} extra={<Button onClick={() => void load()}>Thử lại</Button>} />;
   if (!workshop) return <StatePanel kind="loading" title="Đang dựng workspace workshop…" />;
 
+  const workspaceThemeStyle: WorkshopWorkspaceThemeStyle = {
+    '--academy-workshop-bg': token.colorBgContainer,
+    '--academy-workshop-border': token.colorBorderSecondary,
+    '--academy-workshop-fill': token.colorFillSecondary,
+    '--academy-workshop-fill-alter': token.colorFillAlter,
+    '--academy-workshop-primary': token.colorPrimary,
+    '--academy-workshop-primary-bg': token.colorPrimaryBg,
+    '--academy-workshop-primary-border': token.colorPrimaryBorder,
+    '--academy-workshop-text': token.colorText,
+    '--academy-workshop-text-secondary': token.colorTextSecondary,
+  };
+
   return (
     <FeaturePage
+      className={styles.workspace}
+      contentClassName={styles.content}
+      style={workspaceThemeStyle}
       title={workshop.name}
       subtitle={`${dayjs(workshop.startsAt).format('DD/MM/YYYY · HH:mm')} · ${workshop.location}`}
       icon={<AppIcon icon={Presentation} />}
-      tag={`Mã màn hình ${workshop.displayCode}`}
+      tag={`Mã ${workshop.displayCode}`}
       headerActions={
         <AcademyWorkshopHeaderActions
           workshop={workshop}
@@ -640,6 +665,7 @@ export default function AcademyWorkshopWorkspacePage() {
       <AcademyWorkshopMetrics summary={workshop.summary} />
 
       <Tabs
+        className={styles.tabs}
         activeKey={activeTab}
         onChange={(key) => {
           setActiveTab(key);
@@ -648,7 +674,7 @@ export default function AcademyWorkshopWorkspacePage() {
         items={[
           {
             key: 'roster',
-            label: 'Roster & chăm sóc',
+            label: <IconText icon={<AppIcon icon={Users} size="sm" />}>Roster & chăm sóc</IconText>,
             children: (
               <DataSection
                 title="Học viên workshop"
@@ -709,10 +735,9 @@ export default function AcademyWorkshopWorkspacePage() {
           {
             key: 'game',
             label: (
-              <span className="inline-flex items-center gap-1.5">
-                <AppIcon icon={Gamepad2} />
+              <IconText icon={<AppIcon icon={Gamepad2} />}>
                 Game & câu hỏi ({workshop.activeQuiz?.questions.length || 0})
-              </span>
+              </IconText>
             ),
             children: (
               <AcademyWorkshopQuizManager
@@ -731,12 +756,26 @@ export default function AcademyWorkshopWorkspacePage() {
           },
           {
             key: 'agenda',
-            label: 'Agenda & timeline',
-            children: <AcademyWorkshopAgendaSnapshot agenda={workshop.agenda} />,
+            label: <IconText icon={<AppIcon icon={ListChecks} size="sm" />}>Agenda & timeline</IconText>,
+            children: (
+              <AcademyWorkshopAgendaManager
+                workshop={workshop}
+                canEdit={canAccess}
+                onUpdated={setWorkshop}
+                onRefresh={load}
+              />
+            ),
           },
           {
             key: 'settlement',
-            label: `Thưởng & đối soát (${rewards.filter((item) => item.status === 'PROMISED').length + bonuses.filter((item) => item.status === 'EARNED').length})`,
+            label: (
+              <IconText icon={<AppIcon icon={Trophy} size="sm" />}>
+                Thưởng & đối soát (
+                {rewards.filter((item) => item.status === 'PROMISED').length +
+                  bonuses.filter((item) => item.status === 'EARNED').length}
+                )
+              </IconText>
+            ),
             children: (
               <AcademyWorkshopSettlement
                 rewards={rewards}

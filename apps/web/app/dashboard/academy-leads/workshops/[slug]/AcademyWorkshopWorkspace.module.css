@@ -1,0 +1,395 @@
+.workspace {
+  --academy-workshop-card-radius: 16px;
+}
+
+.content {
+  display: grid;
+  gap: var(--mos-section-gap);
+}
+
+.workspace :global(.responsive-page-header) {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  gap: var(--mos-section-gap);
+  padding: 4px 0;
+}
+
+.workspace :global(.responsive-page-header-title-row) {
+  align-items: center;
+  gap: var(--mos-density-gap);
+}
+
+.workspace :global(.responsive-page-header-title-row > span:first-child) {
+  align-items: center;
+  background: var(--academy-workshop-primary-bg);
+  border: 0;
+  border-radius: var(--mos-control-radius);
+  display: inline-flex;
+  height: var(--mos-control-height);
+  justify-content: center;
+  width: var(--mos-control-height);
+}
+
+.workspace :global(.responsive-page-header-title-row .ant-typography) {
+  font-size: clamp(20px, 1.8vw, 24px);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.workspace :global(.responsive-page-header-title-row > div:last-child) {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--academy-workshop-text-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  padding: 0;
+}
+
+.workspace :global(.responsive-page-header-actions) {
+  align-self: center;
+}
+
+.workspace :global(.responsive-page-header-actions > .ant-space) {
+  display: block;
+}
+
+.workspace :global(.academy-workshop-header-actions) {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mos-density-gap);
+  justify-content: flex-end;
+}
+
+.workspace :global(.academy-workshop-header-actions .ant-btn) {
+  border-radius: var(--mos-control-radius);
+  font-weight: 600;
+}
+
+.workspace :global(.academy-workshop-metric-grid .responsive-stat-card) {
+  border-radius: var(--academy-workshop-card-radius);
+  box-shadow: none;
+  overflow: hidden;
+  position: relative;
+}
+
+.workspace :global(.academy-workshop-metric-grid .responsive-stat-card::after) {
+  background: var(--academy-workshop-primary);
+  content: '';
+  height: 3px;
+  inset: 0 0 auto;
+  opacity: 0;
+  position: absolute;
+  transition: opacity var(--mos-motion-duration) ease;
+}
+
+.workspace :global(.academy-workshop-metric-grid .responsive-stat-card:hover::after) {
+  opacity: 1;
+}
+
+.tabs > :global(.ant-tabs-nav) {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.tabs > :global(.ant-tabs-nav)::before {
+  border-bottom: 1px solid var(--academy-workshop-border) !important;
+}
+
+.tabs > :global(.ant-tabs-nav) :global(.ant-tabs-nav-list) {
+  gap: 0;
+}
+
+.tabs > :global(.ant-tabs-nav) :global(.ant-tabs-tab) {
+  border-radius: 0;
+  color: var(--academy-workshop-text-secondary);
+  font-size: 13px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  transition:
+    background var(--mos-motion-duration) ease,
+    color var(--mos-motion-duration) ease;
+}
+
+.tabs > :global(.ant-tabs-nav) :global(.ant-tabs-tab:hover) {
+  background: color-mix(in srgb, var(--academy-workshop-fill) 72%, transparent);
+  color: var(--academy-workshop-text);
+}
+
+.tabs > :global(.ant-tabs-nav) :global(.ant-tabs-tab.ant-tabs-tab-active) {
+  background: transparent;
+}
+
+.tabs > :global(.ant-tabs-nav) :global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
+  color: var(--academy-workshop-primary);
+  font-weight: 700;
+}
+
+.tabs > :global(.ant-tabs-nav) :global(.ant-tabs-ink-bar) {
+  background: var(--academy-workshop-primary);
+  border-radius: 3px 3px 0 0;
+  display: block;
+  height: 3px;
+}
+
+.tabs > :global(.ant-tabs-content-holder) {
+  margin-top: var(--mos-section-gap);
+}
+
+.workspace :global(.responsive-section-card) {
+  border-radius: var(--academy-workshop-card-radius);
+  box-shadow: none;
+}
+
+.workspace :global(.responsive-section-card .ant-card-head) {
+  border-bottom-color: var(--academy-workshop-border);
+  min-height: 52px;
+}
+
+.workspace :global(.academy-workshop-agenda-section .ant-card-head-title) {
+  align-items: center;
+  display: flex;
+}
+
+.workspace :global(.academy-workshop-template-panel) {
+  background: var(--academy-workshop-bg);
+  border: 1px solid var(--academy-workshop-border);
+  border-radius: var(--mos-radius);
+  padding: var(--mos-density-padding);
+}
+
+.workspace :global(.academy-workshop-template-panel__header) {
+  align-items: center;
+  display: flex;
+  gap: var(--mos-density-gap);
+  justify-content: space-between;
+}
+
+.workspace :global(.academy-workshop-template-panel__title) {
+  align-items: center;
+  display: flex;
+  gap: var(--mos-density-gap);
+  min-width: 0;
+}
+
+.workspace :global(.academy-workshop-template-panel__title h3) {
+  white-space: nowrap;
+}
+
+.workspace :global(.academy-workshop-template-panel__header .ant-btn) {
+  color: var(--academy-workshop-text-secondary);
+  flex: 0 0 auto;
+}
+
+.workspace :global(.academy-workshop-template-panel__selection) {
+  align-items: end;
+  display: grid;
+  gap: var(--mos-density-gap);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-top: var(--mos-density-gap);
+}
+
+.workspace :global(.academy-workshop-template-panel__field) {
+  min-width: 0;
+}
+
+.workspace :global(.academy-workshop-template-panel__action) {
+  align-items: center;
+  display: flex;
+  min-height: var(--mos-control-height-compact);
+}
+
+.workspace :global(.academy-workshop-template-panel__action-hint) {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.workspace :global(.academy-workshop-template-panel__action .ant-btn) {
+  font-weight: 700;
+}
+
+.workspace :global(.academy-workshop-template-panel__details) {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 4px var(--mos-density-gap);
+  line-height: 1.35;
+  padding-top: var(--mos-density-gap);
+}
+
+.workspace :global(.academy-workshop-template-panel__details > :first-child) {
+  flex: 1 1 360px;
+}
+
+.workspace :global(.academy-workshop-template-panel__metadata) {
+  align-items: center;
+  color: var(--academy-workshop-text-secondary);
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--mos-density-gap);
+}
+
+.workspace :global(.academy-workshop-agenda-stack),
+.workspace :global(.academy-workshop-agenda-list) {
+  display: grid;
+}
+
+.workspace :global(.academy-workshop-agenda-stack) {
+  gap: var(--mos-section-gap);
+}
+
+.workspace :global(.academy-workshop-agenda-list) {
+  gap: var(--mos-density-gap);
+}
+
+.workspace :global(.academy-workshop-agenda-item) {
+  align-items: center;
+  background: var(--academy-workshop-bg);
+  border: 1px solid var(--academy-workshop-border);
+  border-color: var(--academy-workshop-border);
+  border-radius: var(--mos-radius);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mos-density-gap);
+  justify-content: space-between;
+  padding: var(--mos-density-padding);
+  transition:
+    background var(--mos-motion-duration) ease,
+    border-color var(--mos-motion-duration) ease,
+    box-shadow var(--mos-motion-duration) ease;
+}
+
+.workspace :global(.academy-workshop-agenda-item__content) {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.workspace :global(.academy-workshop-agenda-item__meta) {
+  align-items: center;
+  color: var(--academy-workshop-text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+.workspace :global(.academy-workshop-agenda-item__controls),
+.workspace :global(.academy-workshop-agenda-item__actions) {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.workspace :global(.academy-workshop-agenda-item__controls) {
+  gap: var(--mos-density-gap);
+}
+
+.workspace :global(.academy-workshop-agenda-item__actions) {
+  gap: 4px;
+}
+
+.workspace :global(.academy-workshop-agenda-item:hover) {
+  background: var(--academy-workshop-fill-alter);
+  border-color: var(--academy-workshop-primary-border);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--academy-workshop-primary) 8%, transparent);
+}
+
+.workspace :global(.academy-workshop-agenda-item__number) {
+  align-items: center;
+  background: var(--academy-workshop-fill);
+  border-radius: 6px;
+  color: var(--academy-workshop-text-secondary);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  height: 22px;
+  justify-content: center;
+  min-width: 22px;
+  padding-inline: 4px;
+}
+
+.workspace :global(.academy-workshop-settlement .responsive-section-card) {
+  height: 100%;
+}
+
+@media (max-width: 767px) {
+  .workspace :global(.responsive-page-header) {
+    gap: var(--mos-section-gap);
+    padding-block: 0;
+  }
+
+  .workspace :global(.responsive-page-header-actions),
+  .workspace :global(.academy-workshop-header-actions) {
+    width: 100%;
+  }
+
+  .workspace :global(.academy-workshop-header-actions) {
+    display: grid;
+    gap: calc(var(--mos-density-gap) / 2);
+    grid-template-columns: repeat(4, var(--mos-control-height)) minmax(0, 1fr);
+  }
+
+  .workspace :global(.academy-workshop-header-actions > .ant-btn) {
+    min-width: 0;
+  }
+
+  .workspace :global(.academy-workshop-header-actions > .ant-btn:last-child) {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .workspace :global(.academy-workshop-metric-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace :global(.academy-workshop-template-panel__header) {
+    align-items: center;
+  }
+
+  .workspace :global(.academy-workshop-template-panel__header .ant-btn) {
+    padding-inline: 4px;
+  }
+
+  .workspace :global(.academy-workshop-template-panel__selection) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace :global(.academy-workshop-template-panel__action) {
+    justify-content: flex-start;
+  }
+
+  .workspace :global(.academy-workshop-template-panel__action .ant-btn) {
+    width: 100%;
+  }
+
+  .workspace :global(.academy-workshop-agenda-item__content),
+  .workspace :global(.academy-workshop-agenda-item__controls) {
+    flex-basis: 100%;
+  }
+
+  .workspace :global(.academy-workshop-agenda-item__controls) {
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .tabs > :global(.ant-tabs-nav) {
+    overflow-x: auto;
+  }
+
+  .tabs > :global(.ant-tabs-nav) :global(.ant-tabs-nav-list) {
+    min-width: max-content;
+  }
+
+  .tabs > :global(.ant-tabs-nav) :global(.ant-tabs-tab) {
+    padding: 10px 12px 12px;
+  }
+}

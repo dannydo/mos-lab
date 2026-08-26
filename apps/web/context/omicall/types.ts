@@ -57,6 +57,9 @@ export interface OmiCallContextType {
   refreshAudioDevices: () => Promise<void>;
   omicallReady: boolean;
   setOmicallReady: (ready: boolean) => void;
+  /** Per-user browser preference for the idle floating OmiCall launcher. Active call controls are never hidden. */
+  floatingLauncherVisible: boolean;
+  setFloatingLauncherVisible: (visible: boolean) => void;
   lastRegisterEvent?: SafeAny;
 
   // Global CallLogModal features

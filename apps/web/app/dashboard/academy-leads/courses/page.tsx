@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Form, Input, InputNumber, Select, Space, Tooltip, message } from 'antd';
+import { Button, Form, Input, InputNumber, Select, Space, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { BookOpen, Pencil, Plus, RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -18,6 +18,7 @@ import {
   EntityFormDrawer,
   EntityFormField,
   FeaturePage,
+  IconButton,
   PagePrimaryIconAction,
   SearchField,
   StatePanel,
@@ -73,17 +74,17 @@ function courseMobileCard(course: AcademyCourse, onOpen: (course: AcademyCourse)
   return (
     <button
       type="button"
-      className="w-full rounded-xl border border-inherit p-3 text-left"
+      className="grid w-full min-w-0 gap-3 border-0 bg-transparent p-0 text-left"
       onClick={() => onOpen(course)}
     >
       <div className="flex items-start justify-between gap-2">
-        <div>
+        <div className="grid min-w-0 gap-1">
           <strong>{course.name}</strong>
-          <div className="mt-1 text-xs opacity-70">{course.nameEn || course.code}</div>
+          <div className="text-xs opacity-70">{course.nameEn || course.code}</div>
         </div>
         <StatusTag status={course.isActive ? 'success' : 'default'} label={course.isActive ? 'Đang dùng' : 'Đã ẩn'} />
       </div>
-      <div className="mt-2 text-xs opacity-70">
+      <div className="text-xs opacity-70">
         {course.lessonCount} buổi · {course.lashModelCount} mẫu nối mi · Ưu đãi: {formatVND(course.promoPriceVnd)}
       </div>
     </button>
@@ -350,14 +351,12 @@ export default function AcademyCoursesPage() {
       tag={<StatusTag status="purple" label="Academy" />}
       headerActions={
         <Space>
-          <Tooltip title="Làm mới danh mục">
-            <Button
-              aria-label="Làm mới danh mục khóa học"
-              icon={<AppIcon icon={RefreshCw} />}
-              loading={loading}
-              onClick={() => void loadCourses()}
-            />
-          </Tooltip>
+          <IconButton
+            label="Làm mới danh mục khóa học"
+            icon={RefreshCw}
+            loading={loading}
+            onClick={() => void loadCourses()}
+          />
           {canManageCourses && (
             <PagePrimaryIconAction title="Thêm khóa học" icon={<AppIcon icon={Plus} />} onClick={() => openEditor()} />
           )}

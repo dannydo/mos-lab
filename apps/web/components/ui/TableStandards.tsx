@@ -103,11 +103,30 @@ export interface PagePrimaryIconActionProps extends Omit<ButtonProps, 'children'
 }
 
 /** Primary create action reserved for the trailing slot of `PageHeader.extra`. */
-export function PagePrimaryIconAction({ title, className = '', ...buttonProps }: PagePrimaryIconActionProps) {
+export function PagePrimaryIconAction({ title, className = '', icon, ...buttonProps }: PagePrimaryIconActionProps) {
+  const actionIcon = icon ? (
+    <span
+      aria-hidden
+      className="page-primary-icon-action__icon"
+      style={{
+        alignItems: 'center',
+        display: 'inline-flex',
+        height: 'var(--mos-action-icon-size)',
+        justifyContent: 'center',
+        lineHeight: 1,
+        verticalAlign: 'middle',
+        width: 'var(--mos-action-icon-size)',
+      }}
+    >
+      {icon}
+    </span>
+  ) : undefined;
+
   return (
     <Tooltip title={title}>
       <Button
         {...buttonProps}
+        icon={actionIcon}
         type="primary"
         aria-label={title}
         className={`page-primary-icon-action ${className}`.trim()}

@@ -3,13 +3,14 @@
 import React from 'react';
 import { Button, Image, Space, message } from 'antd';
 import { Copy, ExternalLink, QrCode } from 'lucide-react';
-import { AdaptiveModal, AppIcon, IconText } from '../../../../components/ui';
+import { AdaptiveModal, AppIcon, IconButton, IconText } from '../../../../components/ui';
 
 export interface AcademyWorkshopSharedQrButtonProps {
   workshopName: string;
   joinUrl: string;
   type?: 'default' | 'primary';
   label?: string;
+  iconOnly?: boolean;
 }
 
 export default function AcademyWorkshopSharedQrButton({
@@ -17,6 +18,7 @@ export default function AcademyWorkshopSharedQrButton({
   joinUrl,
   type = 'default',
   label = 'QR chung',
+  iconOnly = false,
 }: AcademyWorkshopSharedQrButtonProps) {
   const [open, setOpen] = React.useState(false);
   const [qrDataUrl, setQrDataUrl] = React.useState('');
@@ -51,9 +53,18 @@ export default function AcademyWorkshopSharedQrButton({
 
   return (
     <>
-      <Button type={type} onClick={() => setOpen(true)}>
-        <IconText icon={<AppIcon icon={QrCode} />}>{label}</IconText>
-      </Button>
+      {iconOnly ? (
+        <IconButton
+          label={`Mở ${label}`}
+          icon={QrCode}
+          tone={type === 'primary' ? 'primary' : 'default'}
+          onClick={() => setOpen(true)}
+        />
+      ) : (
+        <Button type={type} onClick={() => setOpen(true)}>
+          <IconText icon={<AppIcon icon={QrCode} />}>{label}</IconText>
+        </Button>
+      )}
       <AdaptiveModal
         open={open}
         title={`QR chung · ${workshopName}`}

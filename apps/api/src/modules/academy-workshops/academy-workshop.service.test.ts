@@ -4,6 +4,7 @@ import {
   academyWorkshopTalentSnapshotFromAssessment,
   resolveAcademyWorkshopPublicOrigin,
 } from './academy-workshop.service.js';
+import { normalizeAcademyWorkshopAgendaDefinition } from './academy-workshop-agenda-template.service.js';
 
 const assessment = {
   id: 12,
@@ -82,4 +83,17 @@ test('Workshop QR uses the local Wi-Fi address during development instead of loc
     }),
     'http://192.168.1.25:4000'
   );
+});
+
+test('Agenda template definitions normalize their order and reject empty templates', () => {
+  const items = normalizeAcademyWorkshopAgendaDefinition([
+    { title: 'Mở đầu', kind: 'CONTENT', plannedDurationSeconds: 15 * 60, sortOrder: 99 },
+    { title: 'Hỏi đáp', kind: 'OTHER', plannedDurationSeconds: 20 * 60, sortOrder: 1 },
+  ]);
+
+  assert.deepEqual(
+    items.map((item) => item.sortOrder),
+    [1, 2]
+  );
+  assert.throws(() => normalizeAcademyWorkshopAgendaDefinition([]), /ít nhất một mục/);
 });

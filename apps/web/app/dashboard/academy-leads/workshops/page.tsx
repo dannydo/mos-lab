@@ -4,9 +4,25 @@ import React from 'react';
 import { Button, DatePicker, Form, Input, InputNumber, Select, Space, Switch, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
-import { CalendarDays, MapPin, Play, Plus, Presentation, RefreshCw, Users } from 'lucide-react';
+import {
+  BadgeCheck,
+  CalendarDays,
+  LogIn,
+  MapPin,
+  Play,
+  Plus,
+  Presentation,
+  RefreshCw,
+  Users,
+  WalletCards,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { AcademyWorkshopListItem, AcademyWorkshopStatus, CreateAcademyWorkshopRequest } from '@mos-lab/shared';
+import type {
+  AcademyWorkshopAgendaTemplate,
+  AcademyWorkshopListItem,
+  AcademyWorkshopStatus,
+  CreateAcademyWorkshopRequest,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useAcademyAccess } from '../components/AcademyAccessGate';
 import {
@@ -15,6 +31,7 @@ import {
   DataSection,
   DataTable,
   FeaturePage,
+  IconText,
   MetricGrid,
   PagePrimaryIconAction,
   SearchField,
@@ -22,6 +39,7 @@ import {
   StatusTag,
   TableIndexHeader,
 } from '../../../../components/ui';
+import styles from './AcademyWorkshopsPage.module.css';
 
 const STORAGE_KEY = 'academy-workshops:list:v1';
 const STATUS_LABELS: Record<AcademyWorkshopStatus, string> = {
@@ -77,6 +95,8 @@ export default function AcademyWorkshopsPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [agendaTemplates, setAgendaTemplates] = React.useState<AcademyWorkshopAgendaTemplate[]>([]);
+  const [agendaTemplatesLoading, setAgendaTemplatesLoading] = React.useState(false);
   const deferredSearch = React.useDeferredValue(query.search);
 
   React.useEffect(() => {
@@ -111,6 +131,37 @@ export default function AcademyWorkshopsPage() {
 
   React.useEffect(() => void load(), [load]);
 
+  React.useEffect(() => {
+    if (!canAccess) return;
+    let active = true;
+    setAgendaTemplatesLoading(true);
+    void apiClient.academySales.workshops
+      .listAgendaTemplates({ page: 1, limit: 100 })
+      .then((response) => {
+        if (!active) return;
+        setAgendaTemplates(response.data);
+        if (!form.getFieldValue('agendaTemplateId') && response.data[0]) {
+          form.setFieldValue('agendaTemplateId', response.data[0].id);
+        }
+      })
+      .catch((cause: any) => {
+        if (active) message.error(cause?.response?.data?.message || 'Không thể tải mẫu agenda.');
+      })
+      .finally(() => {
+        if (active) setAgendaTemplatesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [canAccess, form]);
+
+  const openCreateWorkshop = React.useCallback(() => {
+    if (!form.getFieldValue('agendaTemplateId') && agendaTemplates[0]) {
+      form.setFieldValue('agendaTemplateId', agendaTemplates[0].id);
+    }
+    setOpen(true);
+  }, [agendaTemplates, form]);
+
   const createWorkshop = React.useCallback(
     async (values: WorkshopForm) => {
       setSaving(true);
@@ -126,13 +177,7 @@ export default function AcademyWorkshopsPage() {
           feeVnd: Math.round(Number(values.feeVnd) || 0),
           feeDueAt: values.feeDueAt?.toISOString() || null,
           showInSidebar: Boolean(values.showInSidebar),
-          agenda: [
-            { title: 'Đón khách & check-in', kind: 'OTHER', plannedDurationSeconds: 30 * 60, sortOrder: 1 },
-            { title: 'Kiểm tra Tố Chất', kind: 'TALENT_TEST', plannedDurationSeconds: 45 * 60, sortOrder: 2 },
-            { title: 'Nội dung workshop', kind: 'CONTENT', plannedDurationSeconds: 60 * 60, sortOrder: 3 },
-            { title: 'Game tương tác', kind: 'GAME', plannedDurationSeconds: 20 * 60, sortOrder: 4 },
-            { title: 'Tư vấn lộ trình & chốt khóa', kind: 'SALES', plannedDurationSeconds: 30 * 60, sortOrder: 5 },
-          ],
+          agendaTemplateId: values.agendaTemplateId,
         });
         message.success('Đã tạo workspace workshop.');
         setOpen(false);
@@ -223,6 +268,44 @@ export default function AcademyWorkshopsPage() {
     [query.page, query.pageSize, router]
   );
 
+  const renderMobileWorkshop = React.useCallback(
+    (row: AcademyWorkshopListItem) => (
+      <div className={styles.mobileWorkshopRecord}>
+        <div className={styles.mobileWorkshopRecordHeader}>
+          <button
+            type="button"
+            className={styles.mobileWorkshopName}
+            onClick={() => router.push(`/dashboard/academy-leads/workshops/${row.slug}`)}
+          >
+            <span className="block truncate font-semibold">{row.name}</span>
+            <span className="mt-1 block truncate text-xs opacity-60">/{row.slug}</span>
+          </button>
+          <StatusTag status={statusTone(row.status)} label={STATUS_LABELS[row.status]} />
+        </div>
+
+        <div className={styles.mobileWorkshopMetadata}>
+          <IconText icon={<AppIcon icon={CalendarDays} size="sm" />} tabular>
+            {dayjs(row.startsAt).format('DD/MM/YYYY · HH:mm')}
+          </IconText>
+          <IconText icon={<AppIcon icon={MapPin} size="sm" />}>{row.location}</IconText>
+          <IconText icon={<AppIcon icon={Users} size="sm" />} tabular>
+            {row.checkedInCount} check-in / {row.participantCount} học viên · Sức chứa {row.capacity}
+          </IconText>
+        </div>
+
+        <Button
+          block
+          className={styles.mobileWorkshopAction}
+          icon={<AppIcon icon={row.status === 'LIVE' ? Play : Presentation} />}
+          onClick={() => router.push(`/dashboard/academy-leads/workshops/${row.slug}`)}
+        >
+          Mở workspace
+        </Button>
+      </div>
+    ),
+    [router]
+  );
+
   if (!canAccess) return <StatePanel kind="empty" title="Bạn chưa có quyền truy cập Academy Workshop." />;
 
   return (
@@ -236,14 +319,16 @@ export default function AcademyWorkshopsPage() {
           <Button icon={<AppIcon icon={RefreshCw} />} onClick={() => void load()} loading={loading}>
             Làm mới
           </Button>
-          <PagePrimaryIconAction title="Tạo workshop" icon={<AppIcon icon={Plus} />} onClick={() => setOpen(true)} />
+          <PagePrimaryIconAction title="Tạo workshop" icon={<AppIcon icon={Plus} />} onClick={openCreateWorkshop} />
         </Space>
       }
       toolbar={{
         primary: (
           <SearchField
+            behavior="filter"
             value={query.search}
             onChange={(event) => setQuery((previous) => ({ ...previous, search: event.target.value, page: 1 }))}
+            aria-label="Tìm workshop hoặc địa điểm"
             placeholder="Tìm workshop, địa điểm…"
           />
         ),
@@ -261,6 +346,7 @@ export default function AcademyWorkshopsPage() {
       }}
     >
       <MetricGrid
+        className={styles.metricGrid}
         items={[
           {
             key: 'invited',
@@ -269,9 +355,27 @@ export default function AcademyWorkshopsPage() {
             format: 'number',
             icon: <AppIcon icon={Users} />,
           },
-          { key: 'confirmed', title: 'Đã xác nhận', value: summary.confirmed, format: 'number' },
-          { key: 'checkedin', title: 'Đã check-in', value: summary.checkedIn, format: 'number' },
-          { key: 'paid', title: 'Đã đóng đủ học phí', value: summary.tuitionPaid, format: 'number' },
+          {
+            key: 'confirmed',
+            title: 'Đã xác nhận',
+            value: summary.confirmed,
+            format: 'number',
+            icon: <AppIcon icon={BadgeCheck} />,
+          },
+          {
+            key: 'checkedin',
+            title: 'Đã check-in',
+            value: summary.checkedIn,
+            format: 'number',
+            icon: <AppIcon icon={LogIn} />,
+          },
+          {
+            key: 'paid',
+            title: 'Đã đóng đủ học phí',
+            value: summary.tuitionPaid,
+            format: 'number',
+            icon: <AppIcon icon={WalletCards} />,
+          },
         ]}
       />
       <DataSection
@@ -286,6 +390,17 @@ export default function AcademyWorkshopsPage() {
           dataSource={rows}
           loading={loading}
           scroll={{ x: 1050 }}
+          columnPriority={{
+            stt: 'tertiary',
+            name: 'primary',
+            schedule: 'secondary',
+            readiness: 'primary',
+            status: 'primary',
+            action: 'primary',
+          }}
+          mobileRecordKey={(row) => row.id}
+          mobileRenderer={renderMobileWorkshop}
+          mobileEmptyDescription="Chưa có workshop phù hợp"
           pagination={{
             current: query.page,
             pageSize: query.pageSize,
@@ -327,6 +442,19 @@ export default function AcademyWorkshopsPage() {
             </Form.Item>
             <Form.Item name="location" label="Địa điểm" rules={[{ required: true, message: 'Nhập địa điểm' }]}>
               <Input placeholder="Wings Academy · 123…" />
+            </Form.Item>
+            <Form.Item
+              name="agendaTemplateId"
+              label="Mẫu agenda"
+              rules={[{ required: true, message: 'Chọn mẫu agenda cho workshop.' }]}
+            >
+              <Select
+                loading={agendaTemplatesLoading}
+                options={agendaTemplates.map((template) => ({
+                  value: template.id,
+                  label: template.title,
+                }))}
+              />
             </Form.Item>
             <Form.Item name="capacity" label="Sức chứa tối đa">
               <InputNumber min={1} max={100} precision={0} className="w-full" />

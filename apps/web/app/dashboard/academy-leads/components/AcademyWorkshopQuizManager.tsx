@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Alert, Button, Form, Input, InputNumber, Popconfirm, Radio, Select, Space, message } from 'antd';
-import { CirclePlus, Clock3, Gamepad2, Pencil, Play, Trash2, Trophy } from 'lucide-react';
+import { CirclePlus, Clock3, Gamepad2, Pencil, Play, Save, Trash2, Trophy } from 'lucide-react';
 import type {
   AcademyWorkshopQuestionType,
   AcademyWorkshopQuiz,
@@ -329,7 +329,11 @@ export default function AcademyWorkshopQuizManager({
                 <Button icon={<AppIcon icon={Pencil} />} onClick={() => openQuizModal(true)}>
                   {templateMode ? 'Sửa thông tin mẫu' : 'Sửa tên game'}
                 </Button>
-                <Button type="primary" icon={<AppIcon icon={CirclePlus} />} onClick={() => openQuestionDrawer()}>
+                <Button
+                  type={templateMode ? 'default' : 'primary'}
+                  icon={<AppIcon icon={CirclePlus} />}
+                  onClick={() => openQuestionDrawer()}
+                >
                   Thêm câu hỏi
                 </Button>
               </>
@@ -383,7 +387,7 @@ export default function AcademyWorkshopQuizManager({
       >
         <p className="mb-4 mt-0 text-sm opacity-65">
           {templateMode
-            ? 'Mẫu dùng chung có thể được sao chép thành nhiều game độc lập ở nhiều workshop.'
+            ? 'Chỉnh sửa tên, mô tả và nội dung câu hỏi của mẫu đã chọn.'
             : 'Chuẩn bị nội dung tại Workspace; Live Control chỉ dùng để điều khiển phiên chơi.'}
         </p>
         {!quiz ? (
@@ -399,7 +403,9 @@ export default function AcademyWorkshopQuizManager({
           />
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-inherit p-4">
+            <div
+              className={`flex flex-wrap items-start justify-between gap-3 rounded-xl border border-inherit ${templateMode ? 'p-3' : 'p-4'}`}
+            >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <AppIcon icon={Gamepad2} />
@@ -448,7 +454,10 @@ export default function AcademyWorkshopQuizManager({
                 {quiz.questions.map((question, index) => {
                   const correctAnswer = question.options.find((option) => option.isCorrect)?.label || 'Chưa xác định';
                   return (
-                    <div key={question.id} className="rounded-xl border border-inherit p-4">
+                    <div
+                      key={question.id}
+                      className={`rounded-xl border border-inherit ${templateMode ? 'p-3' : 'p-4'}`}
+                    >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
@@ -547,11 +556,27 @@ export default function AcademyWorkshopQuizManager({
               ? 'Tạo mẫu câu hỏi mới'
               : 'Tạo bộ câu hỏi mới'
         }
-        intent="form"
-        okText={editingQuiz ? 'Lưu thay đổi' : templateMode ? 'Tạo mẫu' : 'Tạo bộ câu hỏi'}
-        cancelText="Hủy"
-        confirmLoading={submitting}
-        onOk={() => quizForm.submit()}
+        intent="confirm"
+        footer={
+          <AdaptiveOverlayFooter>
+            <Button
+              onClick={() => {
+                setQuizModalOpen(false);
+                quizForm.resetFields();
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              icon={<AppIcon icon={editingQuiz ? Save : CirclePlus} />}
+              loading={submitting}
+              onClick={() => quizForm.submit()}
+            >
+              {editingQuiz ? 'Lưu thay đổi' : templateMode ? 'Tạo mẫu' : 'Tạo bộ câu hỏi'}
+            </Button>
+          </AdaptiveOverlayFooter>
+        }
         onCancel={() => {
           setQuizModalOpen(false);
           quizForm.resetFields();
@@ -572,7 +597,7 @@ export default function AcademyWorkshopQuizManager({
             />
           </EntityFormField>
           <EntityFormField name="description" label="Mô tả" fullWidth>
-            <Input.TextArea rows={3} placeholder="Mục tiêu hoặc ghi chú cho Host…" />
+            <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} placeholder="Mục tiêu hoặc ghi chú cho Host…" />
           </EntityFormField>
         </EntityForm>
       </AdaptiveModal>

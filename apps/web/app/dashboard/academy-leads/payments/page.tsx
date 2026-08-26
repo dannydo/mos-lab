@@ -21,6 +21,7 @@ import {
   DataSection,
   DataTable,
   FeaturePage,
+  IconText,
   SearchField,
   StatePanel,
   StatusTag,
@@ -367,13 +368,8 @@ export default function AcademyPaymentManagementPage() {
       icon={<AppIcon icon={WalletCards} size="md" />}
       tag={<StatusTag status="purple" label="Academy" />}
       headerActions={
-        <Button
-          aria-label="Làm mới quản lý thu học phí"
-          icon={<AppIcon icon={RefreshCw} size="action" />}
-          loading={loading}
-          onClick={() => void load()}
-        >
-          Làm mới
+        <Button aria-label="Làm mới quản lý thu học phí" loading={loading} onClick={() => void load()}>
+          <IconText icon={loading ? undefined : <AppIcon icon={RefreshCw} size="action" />}>Làm mới</IconText>
         </Button>
       }
       toolbar={{

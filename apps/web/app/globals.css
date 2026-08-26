@@ -2786,6 +2786,57 @@ body {
   width: var(--mos-action-icon-size);
 }
 
+/* Icon actions are semantic controls, not decoration. Keep their contrast
+   and interaction states token-driven so the same primitive is legible in
+   both light and dark modes. */
+.mos-icon-button--default.ant-btn {
+  background: var(--mos-icon-button-bg);
+  border-color: var(--mos-icon-button-border);
+  color: var(--mos-icon-button-color);
+}
+
+.mos-icon-button--default.ant-btn:hover:not(:disabled),
+.mos-icon-button--default.ant-btn[aria-pressed='true'] {
+  background: var(--mos-icon-button-hover-bg) !important;
+  border-color: var(--mos-icon-button-hover-border) !important;
+  color: var(--mos-icon-button-hover-color) !important;
+}
+
+.mos-icon-button--danger.ant-btn {
+  background: var(--mos-icon-button-bg);
+  border-color: var(--mos-icon-button-border);
+  color: var(--mos-icon-button-color);
+}
+
+.mos-icon-button--danger.ant-btn:hover:not(:disabled) {
+  background: var(--mos-icon-button-hover-bg) !important;
+  border-color: var(--mos-icon-button-hover-border) !important;
+  color: var(--mos-icon-button-hover-color) !important;
+}
+
+.mos-icon-button--text.ant-btn {
+  background: var(--mos-icon-button-bg);
+  border-color: var(--mos-icon-button-border);
+  color: var(--mos-icon-button-color);
+}
+
+.mos-icon-button--text.ant-btn:hover:not(:disabled) {
+  background: var(--mos-icon-button-hover-bg) !important;
+  border-color: var(--mos-icon-button-hover-border) !important;
+  color: var(--mos-icon-button-hover-color) !important;
+}
+
+.mos-icon-button.ant-btn:disabled {
+  background: var(--mos-icon-button-disabled-bg) !important;
+  border-color: var(--mos-icon-button-disabled-border) !important;
+  color: var(--mos-icon-button-disabled-color) !important;
+}
+
+.mos-icon-button.ant-btn:focus-visible {
+  outline: 2px solid var(--mos-focus-ring);
+  outline-offset: 2px;
+}
+
 /* Staff rows frequently contain multi-line identity and contact details.
    A middle baseline keeps selection, actions and each data cell visually aligned. */
 .staff-directory-table .ant-table-thead > tr > th,
@@ -3403,6 +3454,26 @@ body {
 
 .page-primary-icon-action {
   box-shadow: 0 2px 6px color-mix(in srgb, var(--ant-color-primary) 32%, transparent);
+}
+
+/* Match the shared primary create action's icon wrapper to the centered
+   optical box used by the other canonical icon-only controls. */
+.page-primary-icon-action .ant-btn-icon {
+  align-items: center;
+  display: inline-flex;
+  height: var(--mos-action-icon-size);
+  justify-content: center;
+  line-height: 1;
+  margin-inline-end: 0;
+  vertical-align: middle;
+  width: var(--mos-action-icon-size);
+}
+
+.page-primary-icon-action .ant-btn-icon > .mos-app-icon {
+  display: block;
+  height: var(--mos-action-icon-size);
+  vertical-align: middle;
+  width: var(--mos-action-icon-size);
 }
 
 .table-toolbar-icon-action {
@@ -4798,16 +4869,22 @@ body {
   white-space: nowrap;
 }
 
-.light-theme .mos-header-action--accent.ant-btn {
-  background: #fffbe6;
-  border-color: #ffe58f;
-  color: #b45309;
+.mos-header-action--accent.ant-btn {
+  background: var(--mos-header-action-bg);
+  border-color: var(--mos-header-action-border);
+  color: var(--mos-header-action-color);
 }
 
-.dark-theme .mos-header-action--accent.ant-btn {
-  background: rgba(212, 168, 75, 0.12);
-  border-color: rgba(212, 168, 75, 0.35);
-  color: #f59e0b;
+.mos-header-action.ant-btn:not(.mos-header-action--accent) {
+  background: var(--mos-header-action-bg);
+  border-color: var(--mos-header-action-border);
+  color: var(--mos-header-action-color);
+}
+
+.mos-header-action.ant-btn:hover:not(:disabled) {
+  background: var(--mos-header-action-hover-bg) !important;
+  border-color: var(--mos-header-action-hover-border) !important;
+  color: var(--mos-header-action-hover-color) !important;
 }
 
 .mos-header-action.ant-btn:focus-visible,

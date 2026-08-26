@@ -33,6 +33,28 @@ import {
 
 const OmiCallContext = createContext<OmiCallContextType | undefined>(undefined);
 
+const FLOATING_LAUNCHER_VISIBILITY_KEY = 'mos_omicall_floating_launcher_visible';
+
+function getFloatingLauncherVisibilityKey() {
+  if (typeof window === 'undefined') return FLOATING_LAUNCHER_VISIBILITY_KEY;
+
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('mos_user') || 'null') as {
+      id?: string | number;
+      username?: string;
+    } | null;
+    const identity = currentUser?.id ?? currentUser?.username;
+    return identity ? `${FLOATING_LAUNCHER_VISIBILITY_KEY}:${identity}` : FLOATING_LAUNCHER_VISIBILITY_KEY;
+  } catch {
+    return FLOATING_LAUNCHER_VISIBILITY_KEY;
+  }
+}
+
+function readFloatingLauncherVisibility() {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem(getFloatingLauncherVisibilityKey()) !== 'false';
+}
+
 export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [sdkError, setSdkErrors] = useState(false);
@@ -52,6 +74,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     }
     return false;
   });
+  const [floatingLauncherVisible, setFloatingLauncherVisibleState] = useState<boolean>(readFloatingLauncherVisibility);
   const [shouldInit, setShouldInit] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const t = localStorage.getItem('mos_token');
@@ -109,6 +132,13 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       }
     }
   };
+
+  const setFloatingLauncherVisible = useCallback((visible: boolean) => {
+    setFloatingLauncherVisibleState(visible);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(getFloatingLauncherVisibilityKey(), String(visible));
+    }
+  }, []);
 
   // Call States
   const [callState, setCallState] = useState<CallState>('idle');
@@ -1038,6 +1068,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         refreshAudioDevices,
         omicallReady,
         setOmicallReady,
+        floatingLauncherVisible,
+        setFloatingLauncherVisible,
         lastRegisterEvent,
         isCallLogModalOpen,
         callLogCustomerInfo,

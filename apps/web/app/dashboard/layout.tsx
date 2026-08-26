@@ -41,6 +41,9 @@ import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
+const OmiCallProfileControl = dynamic(() => import('../../components/omicall-widget/OmiCallHeaderControl'), {
+  ssr: false,
+});
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
@@ -743,7 +746,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={toggleTheme}
                 aria-pressed={themeMode === 'dark'}
               />
-              <Dropdown menu={userMenu} placement="bottomRight" arrow>
+              <Dropdown
+                menu={userMenu}
+                placement="bottomRight"
+                arrow
+                popupRender={(menu) => (
+                  <div
+                    className="overflow-hidden rounded-xl"
+                    style={{ background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}` }}
+                  >
+                    <OmiCallProfileControl />
+                    <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>{menu}</div>
+                  </div>
+                )}
+              >
                 <button
                   type="button"
                   className="mos-header-avatar-action"

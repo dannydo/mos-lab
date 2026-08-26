@@ -16,11 +16,14 @@ import {
   type AcademyWorkshopQuiz,
   type AcademyWorkshopSummary,
   type AcademyWorkshopTalentLeaderboardEntry,
+  type CreateAcademyWorkshopAgendaItemRequest,
   type CreateAcademyWorkshopRequest,
   type CreateAcademyWorkshopWalkInRequest,
   type ListAcademyWorkshopParticipantsParams,
   type ListAcademyWorkshopsParams,
   type SafeAny,
+  type ReorderAcademyWorkshopAgendaRequest,
+  type UpdateAcademyWorkshopAgendaItemRequest,
   type UpdateAcademyWorkshopRequest,
   type UpsertAcademyWorkshopAgendaItemRequest,
 } from '@mos-lab/shared';
@@ -32,6 +35,10 @@ import {
   type AcademyActor,
 } from '../academy-sales/academy-sales.service.js';
 import { AcademyWorkshopStorageService } from './academy-workshop-storage.service.js';
+import {
+  AcademyWorkshopAgendaTemplateService,
+  toAcademyWorkshopAgendaTemplate,
+} from './academy-workshop-agenda-template.service.js';
 
 const WORKSHOP_STATUSES = new Set([
   'DRAFT',
@@ -66,6 +73,7 @@ const PARTICIPANT_INCLUDE: SafeAny = {
 
 const WORKSHOP_INCLUDE: SafeAny = {
   campaign: true,
+  agendaTemplate: { include: { items: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
   agendaItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
   quizzes: {
     where: { isTemplate: false },
@@ -496,6 +504,7 @@ export class AcademyWorkshopService {
       feeVnd: Math.max(0, Math.round(Number(row.feeVnd) || 0)),
       feeDueAt: row.feeDueAt ? new Date(row.feeDueAt).toISOString() : null,
       status: row.status,
+      agendaTemplate: row.agendaTemplate ? toAcademyWorkshopAgendaTemplate(row.agendaTemplate) : null,
       assignedStaffIds: assignedStaffIds(row.campaign.assignedStaffIds),
       participantCount: participants.length,
       checkedInCount: participants.filter((item) => item.checkedInAt).length,
@@ -584,7 +593,10 @@ export class AcademyWorkshopService {
     const staffIds = await this.validateStaffIds(fastify, input.assignedStaffIds || []);
     if (!staffIds.includes(actor.id)) staffIds.push(actor.id);
     const slug = await this.uniqueSlug(fastify, input.slug || name);
-    const agenda = this.normalizeAgenda(input.agenda || []);
+    const agendaTemplate = await AcademyWorkshopAgendaTemplateService.getRequired(fastify, input.agendaTemplateId);
+    const agenda = input.agenda?.length
+      ? this.normalizeAgenda(input.agenda)
+      : this.normalizeAgenda(agendaTemplate.items as UpsertAcademyWorkshopAgendaItemRequest[]);
 
     const created = await fastify.prisma.crm.$transaction(async (tx) => {
       const campaign = await tx.crmAcademyCampaign.create({
@@ -611,6 +623,7 @@ export class AcademyWorkshopService {
           feeVnd,
           feeDueAt,
           status: 'SCHEDULED',
+          agendaTemplateId: agendaTemplate.id,
           displayCode: displayCode(),
           agendaItems: agenda.length ? { create: agenda } : undefined,
         },
@@ -643,6 +656,10 @@ export class AcademyWorkshopService {
         : await this.validateStaffIds(fastify, input.assignedStaffIds);
     const slug =
       input.slug === undefined ? row.campaign.slug : await this.uniqueSlug(fastify, input.slug || name, row.campaignId);
+    const agendaTemplate =
+      input.agendaTemplateId === undefined
+        ? row.agendaTemplate
+        : await AcademyWorkshopAgendaTemplateService.getRequired(fastify, input.agendaTemplateId);
     await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmAcademyCampaign.update({
         where: { id: row.campaignId },
@@ -669,14 +686,15 @@ export class AcademyWorkshopService {
           feeVnd: input.feeVnd === undefined ? row.feeVnd : Math.max(0, Math.round(input.feeVnd)),
           feeDueAt: input.feeDueAt === undefined ? row.feeDueAt : parseDate(input.feeDueAt, 'Hạn đóng phí', true),
           status: input.status || row.status,
+          agendaTemplateId: agendaTemplate?.id ?? null,
         },
       });
-      if (input.agenda) {
-        if (row.agendaItems.some((item: SafeAny) => item.status !== 'PENDING')) {
-          throw new AcademySalesError('Không thể thay agenda sau khi workshop đã chạy.', 409);
-        }
+      if (input.agenda || input.agendaTemplateId !== undefined) {
+        this.assertAgendaStructureEditable(row);
         await tx.crmAcademyWorkshopAgendaItem.deleteMany({ where: { workshopId: row.id } });
-        const agenda = this.normalizeAgenda(input.agenda);
+        const agenda = input.agenda
+          ? this.normalizeAgenda(input.agenda)
+          : this.normalizeAgenda((agendaTemplate?.items || []) as UpsertAcademyWorkshopAgendaItemRequest[]);
         if (agenda.length)
           await tx.crmAcademyWorkshopAgendaItem.createMany({
             data: agenda.map((item) => ({ ...item, workshopId: row.id })),
@@ -707,6 +725,117 @@ export class AcademyWorkshopService {
         sortOrder: item.sortOrder === undefined ? index + 1 : Math.max(0, Math.round(item.sortOrder)),
       };
     });
+  }
+
+  private static assertCanEditAgenda(actor: AcademyActor) {
+    if (!canManage(actor) && actor.academyAccess !== true) {
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc staff được phân công mới được sửa agenda.', 403);
+    }
+  }
+
+  private static assertAgendaStructureEditable(row: SafeAny) {
+    if (row.agendaItems.some((item: SafeAny) => item.status !== 'PENDING')) {
+      throw new AcademySalesError('Không thể thay cấu trúc agenda sau khi workshop đã chạy.', 409);
+    }
+  }
+
+  static async createAgendaItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopAgendaItemRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditAgenda(actor);
+    this.assertAgendaStructureEditable(row);
+    const [item] = this.normalizeAgenda([{ ...input, sortOrder: row.agendaItems.length + 1 }]);
+    const created = await fastify.prisma.crm.crmAcademyWorkshopAgendaItem.create({
+      data: { ...item, workshopId: row.id },
+    });
+    return toAcademyWorkshopAgendaItem(created);
+  }
+
+  static async updateAgendaItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    agendaItemId: number,
+    input: UpdateAcademyWorkshopAgendaItemRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditAgenda(actor);
+    this.assertAgendaStructureEditable(row);
+    const existing = row.agendaItems.find((item: SafeAny) => item.id === positiveId(agendaItemId, 'Agenda ID'));
+    if (!existing) throw new AcademySalesError('Không tìm thấy mục agenda.', 404);
+    const [item] = this.normalizeAgenda([
+      {
+        title: input.title === undefined ? existing.title : input.title,
+        description: input.description === undefined ? existing.description : input.description,
+        kind: input.kind === undefined ? existing.kind : input.kind,
+        plannedDurationSeconds:
+          input.plannedDurationSeconds === undefined ? existing.plannedDurationSeconds : input.plannedDurationSeconds,
+        sortOrder: existing.sortOrder,
+      },
+    ]);
+    const updated = await fastify.prisma.crm.crmAcademyWorkshopAgendaItem.update({
+      where: { id: existing.id },
+      data: item,
+    });
+    return toAcademyWorkshopAgendaItem(updated);
+  }
+
+  static async deleteAgendaItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    agendaItemId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditAgenda(actor);
+    this.assertAgendaStructureEditable(row);
+    const itemId = positiveId(agendaItemId, 'Agenda ID');
+    if (!row.agendaItems.some((item: SafeAny) => item.id === itemId)) {
+      throw new AcademySalesError('Không tìm thấy mục agenda.', 404);
+    }
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmAcademyWorkshopAgendaItem.delete({ where: { id: itemId } });
+      await Promise.all(
+        row.agendaItems
+          .filter((item: SafeAny) => item.id !== itemId)
+          .map((item: SafeAny, index: number) =>
+            tx.crmAcademyWorkshopAgendaItem.update({ where: { id: item.id }, data: { sortOrder: index + 1 } })
+          )
+      );
+    });
+  }
+
+  static async reorderAgenda(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: ReorderAcademyWorkshopAgendaRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditAgenda(actor);
+    this.assertAgendaStructureEditable(row);
+    const ids = Array.isArray(input.agendaItemIds) ? input.agendaItemIds.map(Number) : [];
+    const existingIds = row.agendaItems.map((item: SafeAny) => Number(item.id));
+    if (
+      ids.length !== existingIds.length ||
+      new Set(ids).size !== ids.length ||
+      ids.some((itemId) => !Number.isInteger(itemId) || !existingIds.includes(itemId))
+    ) {
+      throw new AcademySalesError('Thứ tự agenda không hợp lệ.');
+    }
+    await fastify.prisma.crm.$transaction(
+      ids.map((itemId, index) =>
+        fastify.prisma.crm.crmAcademyWorkshopAgendaItem.update({
+          where: { id: itemId },
+          data: { sortOrder: index + 1 },
+        })
+      )
+    );
+    return (await this.getById(fastify, actor, row.id)).agenda;
   }
 
   private static async addLeadIds(fastify: FastifyInstance, actor: AcademyActor, row: SafeAny, leadIds: number[]) {

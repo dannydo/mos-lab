@@ -276,6 +276,9 @@ export default function WorkshopLiveControlPage() {
           <Button onClick={() => router.push(`/dashboard/academy-leads/workshops/${detail.slug}`)}>
             <IconText icon={<AppIcon icon={ArrowLeft} />}>Workspace</IconText>
           </Button>
+          <Button onClick={() => router.push(`/dashboard/academy-leads/workshops/${detail.slug}?tab=agenda`)}>
+            Quản lý agenda
+          </Button>
           <AcademyWorkshopSharedQrButton
             workshopName={detail.name}
             joinUrl={detail.sharedJoinUrl}

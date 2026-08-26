@@ -7,16 +7,22 @@ import type {
   CheckInAcademyWorkshopParticipantRequest,
   CloneAcademyWorkshopQuizRequest,
   ConfirmAcademyWorkshopPhotoRequest,
+  CreateAcademyWorkshopAgendaItemRequest,
+  CreateAcademyWorkshopAgendaTemplateRequest,
   CreateAcademyWorkshopPhotoUploadRequest,
   CreateAcademyWorkshopRequest,
   CreateAcademyWorkshopWalkInRequest,
   ListAcademyWorkshopQuizTemplatesParams,
+  ListAcademyWorkshopAgendaTemplatesParams,
   ListAcademyWorkshopParticipantsParams,
   ListAcademyWorkshopsParams,
   RecordAcademyWorkshopFeeRequest,
+  ReorderAcademyWorkshopAgendaRequest,
   SetAcademyWorkshopPhotoConsentRequest,
   UpdateAcademyInstructorBonusRequest,
   UpdateAcademyWorkshopCareRequest,
+  UpdateAcademyWorkshopAgendaItemRequest,
+  UpdateAcademyWorkshopAgendaTemplateRequest,
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
@@ -33,6 +39,7 @@ import {
 } from '../academy-sales/academy-sales.service.js';
 import { AcademyTalentAssessmentService } from '../academy-sales/academy-talent-assessment.service.js';
 import { AcademyWorkshopBonusService } from './academy-workshop-bonus.service.js';
+import { AcademyWorkshopAgendaTemplateService } from './academy-workshop-agenda-template.service.js';
 import { AcademyWorkshopLiveService } from './academy-workshop-live.service.js';
 import { AcademyWorkshopService } from './academy-workshop.service.js';
 
@@ -72,6 +79,58 @@ function error(fastify: FastifyInstance, reply: FastifyReply, cause: unknown, co
 
 export async function academyWorkshopRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', requireWorkshopAccess);
+
+  fastify.get('/academy-sales/workshop-agenda-templates', async (request, reply) => {
+    try {
+      return reply.send(
+        await AcademyWorkshopAgendaTemplateService.list(
+          fastify,
+          actorFrom(request),
+          request.query as ListAcademyWorkshopAgendaTemplatesParams
+        )
+      );
+    } catch (cause) {
+      return error(fastify, reply, cause, 'List workshop agenda templates');
+    }
+  });
+
+  fastify.post('/academy-sales/workshop-agenda-templates', async (request, reply) => {
+    try {
+      const data = await AcademyWorkshopAgendaTemplateService.create(
+        fastify,
+        actorFrom(request),
+        request.body as CreateAcademyWorkshopAgendaTemplateRequest
+      );
+      return reply.status(201).send({ success: true, data, message: 'Đã tạo mẫu agenda.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Create workshop agenda template');
+    }
+  });
+
+  fastify.put('/academy-sales/workshop-agenda-templates/:templateId', async (request, reply) => {
+    try {
+      const { templateId } = request.params as { templateId: string };
+      const data = await AcademyWorkshopAgendaTemplateService.update(
+        fastify,
+        actorFrom(request),
+        id(templateId, 'Mẫu agenda'),
+        request.body as UpdateAcademyWorkshopAgendaTemplateRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật mẫu agenda.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Update workshop agenda template');
+    }
+  });
+
+  fastify.delete('/academy-sales/workshop-agenda-templates/:templateId', async (request, reply) => {
+    try {
+      const { templateId } = request.params as { templateId: string };
+      await AcademyWorkshopAgendaTemplateService.delete(fastify, actorFrom(request), id(templateId, 'Mẫu agenda'));
+      return reply.send({ success: true, message: 'Đã xóa mẫu agenda.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Delete workshop agenda template');
+    }
+  });
 
   fastify.get('/academy-sales/workshop-quiz-templates', async (request, reply) => {
     try {
@@ -521,6 +580,67 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, data, message: 'Đã cập nhật agenda live.' });
     } catch (cause) {
       return error(fastify, reply, cause, 'Agenda command');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/agenda', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.createAgendaItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as CreateAcademyWorkshopAgendaItemRequest
+      );
+      return reply.status(201).send({ success: true, data, message: 'Đã thêm mục agenda.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Create workshop agenda item');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/agenda/reorder', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.reorderAgenda(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as ReorderAcademyWorkshopAgendaRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã sắp xếp lại agenda.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Reorder workshop agenda');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/agenda/:agendaItemId', async (request, reply) => {
+    try {
+      const { workshopId, agendaItemId } = request.params as { workshopId: string; agendaItemId: string };
+      const data = await AcademyWorkshopService.updateAgendaItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(agendaItemId, 'Agenda ID'),
+        request.body as UpdateAcademyWorkshopAgendaItemRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật mục agenda.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Update workshop agenda item');
+    }
+  });
+
+  fastify.delete('/academy-sales/workshops/:workshopId/agenda/:agendaItemId', async (request, reply) => {
+    try {
+      const { workshopId, agendaItemId } = request.params as { workshopId: string; agendaItemId: string };
+      await AcademyWorkshopService.deleteAgendaItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(agendaItemId, 'Agenda ID')
+      );
+      return reply.send({ success: true, message: 'Đã xóa mục agenda.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Delete workshop agenda item');
     }
   });
 

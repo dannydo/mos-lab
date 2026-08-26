@@ -7,6 +7,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { SafeAny } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { getSidebarGroups, getSelectedMenuKey, SidebarItemConfig } from '../../config/sidebar.config';
+import { AppIcon } from '../ui/AppIcon';
 
 interface SidebarNavProps {
   collapsed: boolean;
@@ -308,6 +309,7 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole, onNa
 
   const expandedMenuItems: SafeAny[] = sidebarGroups.map((group) => {
     const isGroupCollapsed = collapsedGroupKeys.includes(group.groupKey);
+    const isAcademyGroup = group.groupKey === 'grp-academy';
     const collapseAction = isGroupCollapsed ? 'Mở rộng' : 'Thu gọn';
     const visibleItemCount = countLeafItems(group.items);
 
@@ -318,16 +320,18 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole, onNa
         <button
           type="button"
           aria-expanded={!isGroupCollapsed}
-          aria-label={`${collapseAction} section ${group.groupTitle}`}
-          title={`${collapseAction} section ${group.groupTitle}`}
+          aria-label={`${collapseAction} nhóm ${group.groupTitle}`}
+          title={`${collapseAction} nhóm ${group.groupTitle}`}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
             handleGroupCollapse(group.groupKey);
           }}
-          className={`sidebar-group-title flex w-full items-center justify-between text-left font-bold uppercase transition-all duration-200 ${
-            collapsed ? 'hidden' : ''
-          }`}
+          className={`sidebar-group-title flex w-full items-center justify-between text-left font-bold uppercase transition-colors duration-200 ${
+            isAcademyGroup
+              ? 'min-h-7 gap-2 rounded-[var(--mos-control-radius)] px-2 hover:bg-[var(--ant-color-fill-quaternary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mos-focus-ring)]'
+              : ''
+          } ${collapsed ? 'hidden' : ''}`}
           style={{
             background: 'transparent',
             border: 0,
@@ -337,9 +341,22 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole, onNa
           }}
         >
           <span className="sidebar-group-title__label">{group.groupTitle}</span>
-          <span className="sidebar-group-title__meta" aria-hidden>
-            <span className="sidebar-group-title__count">{visibleItemCount}</span>
-            {isGroupCollapsed ? <ChevronRight size={14} strokeWidth={2} /> : <ChevronDown size={14} strokeWidth={2} />}
+          <span
+            className={`sidebar-group-title__meta inline-flex shrink-0 items-center gap-1 leading-none ${
+              isAcademyGroup ? 'text-[var(--ant-color-text-description)]' : ''
+            }`}
+            aria-hidden
+          >
+            <span
+              className={`sidebar-group-title__count tabular-nums ${
+                isAcademyGroup
+                  ? 'inline-flex min-w-4 items-center justify-center rounded-full bg-[var(--ant-color-fill-quaternary)] px-1 text-xs leading-none'
+                  : ''
+              }`}
+            >
+              {visibleItemCount}
+            </span>
+            <AppIcon icon={isGroupCollapsed ? ChevronRight : ChevronDown} size="disclosure" />
           </span>
         </button>
       ),
@@ -382,8 +399,8 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole, onNa
                       {item.icon}
                     </span>
                     {hasChildren && (
-                      <ChevronRight
-                        aria-hidden
+                      <AppIcon
+                        icon={ChevronRight}
                         className="sidebar-rail-action__submenu-indicator"
                         size={9}
                         strokeWidth={2.5}
@@ -459,9 +476,9 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole, onNa
         getPopupContainer={() => document.body}
         expandIcon={({ isOpen }: SafeAny) =>
           isOpen ? (
-            <ChevronDown aria-hidden className="sidebar-menu-chevron" size={14} strokeWidth={2} />
+            <AppIcon icon={ChevronDown} className="sidebar-menu-chevron" size="disclosure" />
           ) : (
-            <ChevronRight aria-hidden className="sidebar-menu-chevron" size={14} strokeWidth={2} />
+            <AppIcon icon={ChevronRight} className="sidebar-menu-chevron" size="disclosure" />
           )
         }
         items={expandedMenuItems}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { forwardRef } from 'react';
-import { Button } from 'antd';
+import { Button, theme } from 'antd';
 import type { ButtonProps } from 'antd';
 import type { LucideIcon } from 'lucide-react';
 import { AppIcon } from './AppIcon';
@@ -24,10 +24,24 @@ export interface HeaderIconButtonProps extends Omit<ButtonProps, 'children' | 'i
  * Lucide optical box; callers keep their Badge, Dropdown and application state.
  */
 export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonProps>(function HeaderIconButton(
-  { action, label, icon: Icon, desktopLabel, tone = 'quiet', className = '', ...buttonProps },
+  { action, label, icon: Icon, desktopLabel, tone = 'quiet', className = '', style: buttonStyle, ...buttonProps },
   ref
 ) {
+  const { token } = theme.useToken();
   const hasDesktopLabel = Boolean(desktopLabel);
+  const semanticStyle = {
+    '--mos-header-action-bg': tone === 'accent' ? token.colorWarningBg : 'transparent',
+    '--mos-header-action-border': tone === 'accent' ? token.colorWarningBorder : 'transparent',
+    '--mos-header-action-color': tone === 'accent' ? token.colorWarning : token.colorTextSecondary,
+    '--mos-header-action-hover-bg': tone === 'accent' ? token.colorWarningBgHover : token.colorFillSecondary,
+    '--mos-header-action-hover-border': tone === 'accent' ? token.colorWarningHover : 'transparent',
+    '--mos-header-action-hover-color': tone === 'accent' ? token.colorWarningHover : token.colorText,
+  } as React.CSSProperties;
+  const baseStyle: React.CSSProperties = {
+    background: tone === 'accent' ? token.colorWarningBg : 'transparent',
+    borderColor: tone === 'accent' ? token.colorWarningBorder : 'transparent',
+    color: tone === 'accent' ? token.colorWarning : token.colorTextSecondary,
+  };
 
   return (
     <Button
@@ -37,6 +51,7 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
       aria-label={label}
       title={label}
       data-header-action={action}
+      style={{ ...semanticStyle, ...baseStyle, ...buttonStyle }}
       className={[
         'mos-header-action',
         `mos-header-action--${tone}`,

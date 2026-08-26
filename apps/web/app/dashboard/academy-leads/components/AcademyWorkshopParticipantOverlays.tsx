@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Descriptions, Form, Image, Input, InputNumber, Select, Space, Upload } from 'antd';
+import { Alert, Button, Descriptions, Form, Image, Input, InputNumber, Select, Space, Typography, Upload } from 'antd';
 import type { FormInstance } from 'antd';
 import dayjs from 'dayjs';
 import {
@@ -22,7 +22,15 @@ import type {
   AcademyWorkshopParticipant,
   AcademyWorkshopResourcesResponse,
 } from '@mos-lab/shared';
-import { AdaptiveDrawer, AdaptiveModal, AppIcon, StatusTag } from '../../../../components/ui';
+import {
+  AdaptiveDrawer,
+  AdaptiveModal,
+  AdaptiveOverlayFooter,
+  AppIcon,
+  EntityForm,
+  EntityFormField,
+  StatusTag,
+} from '../../../../components/ui';
 import { WORKSHOP_ATTENDANCE_LABELS, WORKSHOP_FEE_LABELS } from './AcademyWorkshopRoster';
 
 export type AcademyWorkshopFeeForm = {
@@ -274,16 +282,27 @@ export default function AcademyWorkshopParticipantOverlays({
       <AdaptiveModal
         open={addOpen}
         title="Thêm học viên có sẵn"
-        okText={addLeadIds.length ? `Thêm ${addLeadIds.length} học viên` : 'Thêm vào workshop'}
-        okButtonProps={{ disabled: !addLeadIds.length }}
-        confirmLoading={busy}
-        onOk={onAddExisting}
+        intent="confirm"
+        footer={
+          <AdaptiveOverlayFooter>
+            <Button onClick={onCloseAdd}>Hủy</Button>
+            <Button
+              type="primary"
+              icon={<AppIcon icon={UserPlus} />}
+              disabled={!addLeadIds.length}
+              loading={busy}
+              onClick={onAddExisting}
+            >
+              {addLeadIds.length ? `Thêm ${addLeadIds.length} học viên` : 'Thêm vào workshop'}
+            </Button>
+          </AdaptiveOverlayFooter>
+        }
         onCancel={onCloseAdd}
         destroyOnHidden
       >
-        <div className="mb-2 text-sm opacity-70">
+        <Typography.Paragraph type="secondary" className="!mb-3 !text-sm">
           Tìm theo họ tên, số điện thoại hoặc email. Có thể chọn nhiều học viên cùng lúc.
-        </div>
+        </Typography.Paragraph>
         <Select
           mode="multiple"
           showSearch
@@ -310,13 +329,15 @@ export default function AcademyWorkshopParticipantOverlays({
             label: `${lead.name} · ${lead.phone || lead.email || 'chưa có liên hệ'}`,
           }))}
         />
-        {leadError && <div className="mt-2 text-sm text-red-500">{leadError}</div>}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-inherit p-3">
-          <div className="text-sm">
+        {leadError ? <Alert className="mt-3" type="error" showIcon message={leadError} /> : null}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-inherit px-3 py-2.5">
+          <div className="min-w-0 text-sm">
             <strong>Chưa có học viên?</strong>
-            <div className="text-xs opacity-60">Tạo mới và cấp QR ngay trong workshop.</div>
+            <Typography.Text type="secondary" className="block !text-xs">
+              Tạo mới và cấp QR ngay trong workshop.
+            </Typography.Text>
           </div>
-          <Button icon={<AppIcon icon={UserPlus} />} onClick={onOpenWalkInFromAdd}>
+          <Button type="text" icon={<AppIcon icon={UserPlus} />} onClick={onOpenWalkInFromAdd}>
             Tạo học viên mới
           </Button>
         </div>
@@ -325,31 +346,41 @@ export default function AcademyWorkshopParticipantOverlays({
       <AdaptiveModal
         open={walkInOpen}
         title="Tạo học viên walk-in"
-        okText="Tạo & cấp QR"
-        confirmLoading={busy}
-        onOk={() => walkInForm.submit()}
+        intent="confirm"
+        footer={
+          <AdaptiveOverlayFooter>
+            <Button onClick={onCloseWalkIn}>Hủy</Button>
+            <Button type="primary" icon={<AppIcon icon={QrCode} />} loading={busy} onClick={() => walkInForm.submit()}>
+              Tạo & cấp QR
+            </Button>
+          </AdaptiveOverlayFooter>
+        }
         onCancel={onCloseWalkIn}
         destroyOnHidden
       >
-        <Form form={walkInForm} layout="vertical" onFinish={onCreateWalkIn}>
-          <Form.Item name="name" label="Họ tên" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Form.Item name="phone" label="Số điện thoại">
-              <Input />
-            </Form.Item>
-            <Form.Item name="email" label="Email">
-              <Input />
-            </Form.Item>
-          </div>
-          <Form.Item name="primaryInstructorId" label="Giáo viên chính">
+        <EntityForm form={walkInForm} columns={2} onFinish={onCreateWalkIn}>
+          <EntityFormField
+            name="name"
+            label="Họ tên"
+            fullWidth
+            rules={[{ required: true, message: 'Nhập họ tên học viên.' }]}
+          >
+            <Input autoFocus placeholder="Họ và tên" />
+          </EntityFormField>
+          <EntityFormField name="phone" label="Số điện thoại">
+            <Input inputMode="tel" placeholder="Số điện thoại" />
+          </EntityFormField>
+          <EntityFormField name="email" label="Email">
+            <Input type="email" placeholder="Email" />
+          </EntityFormField>
+          <EntityFormField name="primaryInstructorId" label="Giáo viên chính" fullWidth>
             <Select
               allowClear
+              placeholder="Chọn giáo viên (không bắt buộc)"
               options={resources.instructors.map((item) => ({ value: item.id, label: item.displayName }))}
             />
-          </Form.Item>
-        </Form>
+          </EntityFormField>
+        </EntityForm>
       </AdaptiveModal>
 
       <AdaptiveModal

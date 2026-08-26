@@ -11,7 +11,14 @@ import {
   type UpdateAcademyWorkshopRequest,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
-import { AppIcon, EntityForm, EntityFormDrawer, EntityFormField, IconText } from '../../../../components/ui';
+import {
+  AppIcon,
+  EntityForm,
+  EntityFormDrawer,
+  EntityFormField,
+  IconButton,
+  IconText,
+} from '../../../../components/ui';
 
 type AcademyWorkshopEditFormValues = {
   name: string;
@@ -63,11 +70,13 @@ export default function AcademyWorkshopEditButton({
   workshop,
   staffOptions,
   canEdit,
+  iconOnly = false,
   onUpdated,
 }: {
   workshop: AcademyWorkshopDetail;
   staffOptions: AcademyStaffOption[];
   canEdit: boolean;
+  iconOnly?: boolean;
   onUpdated: (updated: AcademyWorkshopDetail) => void;
 }) {
   const [form] = Form.useForm<AcademyWorkshopEditFormValues>();
@@ -107,9 +116,13 @@ export default function AcademyWorkshopEditButton({
 
   return (
     <>
-      <Button onClick={openEditor}>
-        <IconText icon={<AppIcon icon={PencilLine} />}>Chỉnh sửa</IconText>
-      </Button>
+      {iconOnly ? (
+        <IconButton label="Chỉnh sửa workshop" icon={PencilLine} onClick={openEditor} />
+      ) : (
+        <Button onClick={openEditor}>
+          <IconText icon={<AppIcon icon={PencilLine} />}>Chỉnh sửa</IconText>
+        </Button>
+      )}
       <EntityFormDrawer
         open={open}
         title="Chỉnh sửa workshop"

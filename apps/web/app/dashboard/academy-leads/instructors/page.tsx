@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Form, Input, InputNumber, Select, Space, Tooltip, message } from 'antd';
+import { Button, Form, Input, InputNumber, Select, Space, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Pencil, Plus, RefreshCw, UserRoundCog } from 'lucide-react';
 import { isAdminOrSuperAdminRole, removeVietnameseTones } from '@mos-lab/shared';
@@ -20,6 +20,7 @@ import {
   EntityFormDrawer,
   EntityFormField,
   FeaturePage,
+  IconButton,
   PagePrimaryIconAction,
   SearchField,
   StatePanel,
@@ -201,7 +202,7 @@ export default function AcademyInstructorConfigurationPage() {
               <img src={instructor.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
             ) : (
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-500">
-                <UserRoundCog size={16} />
+                <AppIcon icon={UserRoundCog} size="disclosure" />
               </span>
             )}
             <div className="min-w-0">
@@ -251,12 +252,7 @@ export default function AcademyInstructorConfigurationPage() {
         title: 'Thao tác',
         width: 105,
         render: (_value, instructor) => (
-          <Button
-            type="link"
-            size="small"
-            icon={<AppIcon icon={Pencil} size="sm" />}
-            onClick={() => openEditor(instructor)}
-          >
+          <Button type="link" size="small" icon={<AppIcon icon={Pencil} />} onClick={() => openEditor(instructor)}>
             Sửa
           </Button>
         ),
@@ -280,18 +276,16 @@ export default function AcademyInstructorConfigurationPage() {
     <FeaturePage
       title="Giảng viên Academy"
       subtitle="Thiết lập phụ phí chỉ định giảng viên. Phụ phí chỉ áp dụng trên học phí sau học bổng; phiếu đã in giữ nguyên snapshot cũ."
-      icon={<UserRoundCog size={20} />}
+      icon={<AppIcon icon={UserRoundCog} size="md" />}
       tag={<StatusTag status="purple" label="Academy" />}
       headerActions={
         <Space>
-          <Tooltip title="Làm mới cấu hình">
-            <Button
-              aria-label="Làm mới cấu hình giảng viên"
-              icon={<AppIcon icon={RefreshCw} />}
-              loading={loading}
-              onClick={() => void load()}
-            />
-          </Tooltip>
+          <IconButton
+            label="Làm mới cấu hình giảng viên"
+            icon={RefreshCw}
+            loading={loading}
+            onClick={() => void load()}
+          />
           <PagePrimaryIconAction title="Thêm giảng viên" icon={<AppIcon icon={Plus} />} onClick={() => openEditor()} />
         </Space>
       }
@@ -339,17 +333,17 @@ export default function AcademyInstructorConfigurationPage() {
           mobileRenderer={(instructor) => (
             <button
               type="button"
-              className="w-full rounded-xl border border-inherit p-3 text-left"
+              className="grid w-full min-w-0 gap-2 border-0 bg-transparent p-0 text-left"
               onClick={() => openEditor(instructor)}
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-start justify-between gap-2">
                 <strong>{instructor.displayName}</strong>
                 <StatusTag
                   status={instructor.surchargePercent > 0 ? 'warning' : 'success'}
                   label={rateLabel(instructor.surchargePercent)}
                 />
               </div>
-              <div className="mt-1 text-xs opacity-70">
+              <div className="text-xs opacity-70">
                 {instructor.description || 'Chưa có mô tả'} · {instructor.isActive ? 'Đang dùng' : 'Đã ẩn'}
               </div>
             </button>

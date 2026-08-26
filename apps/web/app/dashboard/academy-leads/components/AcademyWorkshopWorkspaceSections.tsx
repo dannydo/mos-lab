@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from 'antd';
-import { ExternalLink, Play, RefreshCw, Trophy, Users } from 'lucide-react';
+import { BadgeCheck, ExternalLink, LogIn, Play, RefreshCw, Trophy, Users } from 'lucide-react';
 import type {
   AcademyInstructorBonus,
   AcademyStaffOption,
@@ -11,7 +11,15 @@ import type {
   AcademyWorkshopReward,
   AcademyWorkshopSummary,
 } from '@mos-lab/shared';
-import { AppIcon, DataSection, IconText, MetricGrid, StatePanel, StatusTag } from '../../../../components/ui';
+import {
+  AppIcon,
+  DataSection,
+  IconButton,
+  IconText,
+  MetricGrid,
+  StatePanel,
+  StatusTag,
+} from '../../../../components/ui';
 import AcademyWorkshopEditButton from './AcademyWorkshopEditButton';
 import AcademyWorkshopSharedQrButton from './AcademyWorkshopSharedQrButton';
 
@@ -33,20 +41,21 @@ export function AcademyWorkshopHeaderActions({
   onUpdated: (updated: AcademyWorkshopDetail) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button loading={loading} onClick={onRefresh}>
-        <IconText icon={<AppIcon icon={RefreshCw} />}>Làm mới</IconText>
-      </Button>
+    <div className="academy-workshop-header-actions">
+      <IconButton label="Làm mới dữ liệu" icon={RefreshCw} loading={loading} onClick={onRefresh} />
       <AcademyWorkshopEditButton
         workshop={workshop}
         staffOptions={staffOptions}
         canEdit={canEdit}
+        iconOnly
         onUpdated={onUpdated}
       />
-      <AcademyWorkshopSharedQrButton workshopName={workshop.name} joinUrl={workshop.sharedJoinUrl} />
-      <Button onClick={() => window.open(`/academy/workshops/display/${workshop.displayCode}`, '_blank')}>
-        <IconText icon={<AppIcon icon={ExternalLink} />}>Leaderboard</IconText>
-      </Button>
+      <AcademyWorkshopSharedQrButton workshopName={workshop.name} joinUrl={workshop.sharedJoinUrl} iconOnly />
+      <IconButton
+        label="Mở Leaderboard"
+        icon={ExternalLink}
+        onClick={() => window.open(`/academy/workshops/display/${workshop.displayCode}`, '_blank')}
+      />
       <Button type="primary" onClick={onOpenLive}>
         <IconText icon={<AppIcon icon={Play} />}>Live Control</IconText>
       </Button>
@@ -58,13 +67,26 @@ export function AcademyWorkshopMetrics({ summary }: { summary: AcademyWorkshopSu
   const conversion = summary.total ? Math.round((summary.tuitionPaid / summary.total) * 100) : 0;
   return (
     <MetricGrid
+      className="academy-workshop-metric-grid"
       items={[
         { key: 'roster', title: 'Roster', value: summary.total, format: 'number', icon: <AppIcon icon={Users} /> },
-        { key: 'confirmed', title: 'Xác nhận đến', value: summary.confirmed, format: 'number' },
-        { key: 'checkedin', title: 'Check-in', value: summary.checkedIn, format: 'number' },
+        {
+          key: 'confirmed',
+          title: 'Xác nhận',
+          value: summary.confirmed,
+          format: 'number',
+          icon: <AppIcon icon={BadgeCheck} />,
+        },
+        {
+          key: 'checkedin',
+          title: 'Check-in',
+          value: summary.checkedIn,
+          format: 'number',
+          icon: <AppIcon icon={LogIn} />,
+        },
         {
           key: 'conversion',
-          title: 'Conversion học phí',
+          title: 'Chốt học phí',
           value: conversion,
           format: 'percent',
           icon: <AppIcon icon={Trophy} />,
@@ -119,7 +141,7 @@ export function AcademyWorkshopSettlement({
   onPayBonus: (bonusId: number) => void;
 }) {
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
+    <div className="academy-workshop-settlement grid gap-4 xl:grid-cols-2">
       <DataSection title="Phần thưởng game">
         <div className="space-y-2">
           {rewards.length ? (

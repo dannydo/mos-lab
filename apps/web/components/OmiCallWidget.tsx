@@ -53,6 +53,7 @@ export default function OmiCallWidget() {
     refreshAudioDevices,
     omicallReady,
     setOmicallReady,
+    floatingLauncherVisible,
     lastRegisterEvent,
   } = useOmiCall();
 
@@ -120,6 +121,12 @@ export default function OmiCallWidget() {
 
   // Standby or idle check
   if (!isRegistered && callState === 'idle') {
+    // The idle launcher is optional per user. Never suppress connection or active-call UI,
+    // so an operator cannot lose access to a call already in progress.
+    if (!omicallReady && !floatingLauncherVisible) {
+      return null;
+    }
+
     if (!omicallReady) {
       return (
         <div

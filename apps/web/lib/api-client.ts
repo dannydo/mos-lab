@@ -253,6 +253,8 @@ import {
   UpsertAcademyPlaybookRequest,
   AcademyInstructorBonus,
   AcademyWorkshopAgendaCommandRequest,
+  AcademyWorkshopAgendaItem,
+  AcademyWorkshopAgendaTemplate,
   AcademyWorkshopAnswerReceipt,
   AcademyWorkshopDetail,
   AcademyWorkshopGameCommandRequest,
@@ -272,6 +274,8 @@ import {
   CheckInAcademyWorkshopParticipantRequest,
   CloneAcademyWorkshopQuizRequest,
   ConfirmAcademyWorkshopPhotoRequest,
+  CreateAcademyWorkshopAgendaItemRequest,
+  CreateAcademyWorkshopAgendaTemplateRequest,
   CreateAcademyWorkshopPhotoUploadRequest,
   CreateAcademyWorkshopRequest,
   CreateAcademyWorkshopWalkInRequest,
@@ -280,9 +284,12 @@ import {
   ListAcademyWorkshopParticipantsResponse,
   ListAcademyWorkshopQuizTemplatesParams,
   ListAcademyWorkshopQuizTemplatesResponse,
+  ListAcademyWorkshopAgendaTemplatesParams,
+  ListAcademyWorkshopAgendaTemplatesResponse,
   ListAcademyWorkshopsParams,
   ListAcademyWorkshopsResponse,
   RecordAcademyWorkshopFeeRequest,
+  ReorderAcademyWorkshopAgendaRequest,
   RedeemAcademyWorkshopDisplayRequest,
   RedeemAcademyWorkshopQrRequest,
   SetAcademyWorkshopPhotoConsentRequest,
@@ -290,6 +297,8 @@ import {
   SubmitAcademyWorkshopAnswerRequest,
   UpdateAcademyInstructorBonusRequest,
   UpdateAcademyWorkshopCareRequest,
+  UpdateAcademyWorkshopAgendaItemRequest,
+  UpdateAcademyWorkshopAgendaTemplateRequest,
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
@@ -1884,6 +1893,40 @@ export const apiClient = {
       return response.data;
     },
     workshops: {
+      listAgendaTemplates: async (
+        params: ListAcademyWorkshopAgendaTemplatesParams = {}
+      ): Promise<ListAcademyWorkshopAgendaTemplatesResponse> => {
+        const response = await api.get<ListAcademyWorkshopAgendaTemplatesResponse>(
+          '/academy-sales/workshop-agenda-templates',
+          { params }
+        );
+        return response.data;
+      },
+      createAgendaTemplate: async (
+        dto: CreateAcademyWorkshopAgendaTemplateRequest
+      ): Promise<AcademyWorkshopAgendaTemplate> => {
+        const response = await api.post<{ data: AcademyWorkshopAgendaTemplate }>(
+          '/academy-sales/workshop-agenda-templates',
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      updateAgendaTemplate: async (
+        templateId: number,
+        dto: UpdateAcademyWorkshopAgendaTemplateRequest
+      ): Promise<AcademyWorkshopAgendaTemplate> => {
+        const response = await api.put<{ data: AcademyWorkshopAgendaTemplate }>(
+          `/academy-sales/workshop-agenda-templates/${templateId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteAgendaTemplate: async (templateId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshop-agenda-templates/${templateId}`);
+        invalidateAcademySalesReadCache();
+      },
       list: async (params?: ListAcademyWorkshopsParams): Promise<ListAcademyWorkshopsResponse> => {
         return dedupeApiGet<ListAcademyWorkshopsResponse>(
           '/academy-sales/workshops',
@@ -2069,6 +2112,44 @@ export const apiClient = {
       agendaCommand: async (workshopId: number, agendaItemId: number, dto: AcademyWorkshopAgendaCommandRequest) => {
         const response = await api.post(`/academy-sales/workshops/${workshopId}/agenda/${agendaItemId}/command`, dto);
         return response.data;
+      },
+      createAgendaItem: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopAgendaItemRequest
+      ): Promise<AcademyWorkshopAgendaItem> => {
+        const response = await api.post<{ data: AcademyWorkshopAgendaItem }>(
+          `/academy-sales/workshops/${workshopId}/agenda`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      updateAgendaItem: async (
+        workshopId: number,
+        agendaItemId: number,
+        dto: UpdateAcademyWorkshopAgendaItemRequest
+      ): Promise<AcademyWorkshopAgendaItem> => {
+        const response = await api.put<{ data: AcademyWorkshopAgendaItem }>(
+          `/academy-sales/workshops/${workshopId}/agenda/${agendaItemId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteAgendaItem: async (workshopId: number, agendaItemId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshops/${workshopId}/agenda/${agendaItemId}`);
+        invalidateAcademySalesReadCache();
+      },
+      reorderAgenda: async (
+        workshopId: number,
+        dto: ReorderAcademyWorkshopAgendaRequest
+      ): Promise<AcademyWorkshopAgendaItem[]> => {
+        const response = await api.put<{ data: AcademyWorkshopAgendaItem[] }>(
+          `/academy-sales/workshops/${workshopId}/agenda/reorder`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
       },
       timelineReport: async (workshopId: number) => {
         const response = await api.get(`/academy-sales/workshops/${workshopId}/timeline-report`);

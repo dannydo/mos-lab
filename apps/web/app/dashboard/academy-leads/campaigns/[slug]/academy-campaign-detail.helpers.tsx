@@ -17,6 +17,7 @@ import {
   ACADEMY_CAMPAIGN_TOUCHPOINT_OUTCOME_LABELS,
   getTouchpointOutcomeIcon,
 } from '../components/academy-campaign-utils';
+import styles from './AcademyCampaignDetailPage.module.css';
 
 export type CampaignLeadQuery = {
   page: number;
@@ -105,22 +106,22 @@ export function campaignLeadMobileCard(
   runnable: boolean
 ) {
   return (
-    <div className="rounded-xl border border-inherit p-3">
+    <div className={styles.mobileLeadCard}>
       <CustomerIdentityCell
         name={membership.lead.name}
         phone={membership.lead.phone}
         avatar={membership.lead.avatarUrl}
       />
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
         <StatusTag
           status={LEAD_STATUS_TONES[membership.lead.status]}
           label={LEAD_STATUS_LABELS[membership.lead.status]}
         />
         <span className="text-xs opacity-70">{membership.lead.course || 'Chưa chọn khóa'}</span>
       </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
         <Button
-          size="small"
+          className={styles.mobileLeadAction}
           icon={<AppIcon icon={Trophy} />}
           onClick={() => void onOpenTalent(toAcademyTalentLead(membership.lead))}
         >
@@ -131,7 +132,7 @@ export function campaignLeadMobileCard(
           return (
             <Button
               key={touchpoint.id}
-              size="small"
+              className={styles.mobileLeadAction}
               disabled={!runnable}
               icon={getTouchpointOutcomeIcon(log?.status)}
               onClick={() => onOpenTouchpoint(membership, touchpoint)}

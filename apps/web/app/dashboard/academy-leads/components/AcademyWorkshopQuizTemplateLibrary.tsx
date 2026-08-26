@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Pagination, Popconfirm, Space, message, theme } from 'antd';
+import { Alert, Button, Pagination, Popconfirm, message, theme } from 'antd';
 import { BookCopy, Check, CopyPlus, LibraryBig, Trash2 } from 'lucide-react';
 import type {
   AcademyWorkshopQuiz,
@@ -9,7 +9,15 @@ import type {
   UpsertAcademyWorkshopQuizRequest,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
-import { AdaptiveDrawer, AppIcon, DataSection, SearchField, StatePanel, StatusTag } from '../../../../components/ui';
+import {
+  AdaptiveDrawer,
+  AppIcon,
+  DataSection,
+  IconButton,
+  SearchField,
+  StatePanel,
+  StatusTag,
+} from '../../../../components/ui';
 import AcademyWorkshopQuizManager from './AcademyWorkshopQuizManager';
 import { useAcademyWorkshopQuizTemplates } from './useAcademyWorkshopQuizTemplates';
 
@@ -120,27 +128,41 @@ export default function AcademyWorkshopQuizTemplateLibrary({
     <AdaptiveDrawer
       open={open}
       intent="data"
-      width="min(92vw, 1280px)"
+      width="min(94vw, 1280px)"
       title={
-        <span className="inline-flex items-center gap-2">
-          <AppIcon icon={LibraryBig} />
-          Thư viện mẫu câu hỏi
+        <span className="inline-flex items-center gap-3">
+          <span
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg"
+            style={{ background: token.colorPrimaryBg, color: token.colorPrimary }}
+          >
+            <AppIcon icon={LibraryBig} />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold">Thư viện mẫu câu hỏi</span>
+            <span className="block text-xs font-normal opacity-60">Chuẩn hóa game trước khi dùng trong workshop</span>
+          </span>
         </span>
       }
       onClose={onClose}
       destroyOnClose
     >
-      <div className="mb-4 rounded-xl border border-inherit p-4 text-sm">
-        <strong>Một mẫu, nhiều game độc lập.</strong>
-        <div className="mt-1 opacity-65">
-          Khi dùng mẫu, hệ thống sao chép nội dung câu hỏi sang game mới; câu trả lời, điểm, BXH và phần thưởng không
-          được dùng chung.
-        </div>
-      </div>
+      <Alert
+        className="mb-3"
+        type="info"
+        showIcon
+        message="Mỗi workshop nhận một bản sao độc lập"
+        description="Dùng mẫu chỉ sao chép câu hỏi sang game mới; câu trả lời, điểm, BXH và phần thưởng không được dùng chung."
+      />
 
-      <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid items-start gap-3 xl:grid-cols-[288px_minmax(0,1fr)]">
         <DataSection
-          title="Danh sách mẫu"
+          className="h-fit xl:sticky xl:top-0"
+          title={
+            <span className="inline-flex items-center gap-2">
+              <AppIcon icon={LibraryBig} size="sm" />
+              Mẫu câu hỏi
+            </span>
+          }
           extra={
             <Button
               type="primary"
@@ -198,7 +220,7 @@ export default function AcademyWorkshopQuizTemplateLibrary({
                   <button
                     key={template.id}
                     type="button"
-                    className="w-full rounded-xl border p-3 text-left transition-colors"
+                    className="w-full rounded-xl border p-2.5 text-left transition-colors"
                     style={{
                       borderColor: active ? token.colorPrimary : token.colorBorderSecondary,
                       background: active ? token.colorPrimaryBg : token.colorBgContainer,
@@ -214,7 +236,14 @@ export default function AcademyWorkshopQuizTemplateLibrary({
                           {template.description || 'Không có mô tả'}
                         </span>
                       </span>
-                      {active ? <AppIcon icon={Check} className="shrink-0" /> : null}
+                      {active ? (
+                        <span
+                          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                          style={{ background: token.colorPrimary, color: token.colorTextLightSolid }}
+                        >
+                          <AppIcon icon={Check} size="sm" />
+                        </span>
+                      ) : null}
                     </span>
                     <StatusTag label={`${template.questions.length} câu`} className="!mb-0 !mt-2 tabular-nums" />
                   </button>
@@ -237,47 +266,7 @@ export default function AcademyWorkshopQuizTemplateLibrary({
           )}
         </DataSection>
 
-        <div className="space-y-3">
-          {selected && !creating ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-inherit p-3">
-              <div className="min-w-0">
-                <div className="font-semibold">Thao tác với mẫu</div>
-                <div className="mt-0.5 text-xs opacity-60">
-                  Dùng mẫu để tạo game mới hoặc thay nội dung game bản nháp.
-                </div>
-              </div>
-              <Space wrap>
-                <Popconfirm
-                  title="Dùng mẫu cho workshop này?"
-                  description="Game bản nháp hiện có sẽ được thay toàn bộ câu hỏi theo mẫu này. Nếu chưa có, hệ thống tạo game nháp mới. Game đang chạy phải kết thúc trước."
-                  okText="Thay bản nháp"
-                  cancelText="Hủy"
-                  onConfirm={() => void applyTemplate()}
-                >
-                  <Button
-                    type="primary"
-                    loading={applying}
-                    disabled={selected.questions.length === 0}
-                    icon={<AppIcon icon={BookCopy} />}
-                  >
-                    Dùng mẫu
-                  </Button>
-                </Popconfirm>
-                <Popconfirm
-                  title="Xóa mẫu câu hỏi này?"
-                  description="Các game đã tạo từ mẫu vẫn được giữ nguyên."
-                  okText="Xóa mẫu"
-                  cancelText="Hủy"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={() => void deleteTemplate()}
-                >
-                  <Button danger icon={<AppIcon icon={Trash2} />}>
-                    Xóa mẫu
-                  </Button>
-                </Popconfirm>
-              </Space>
-            </div>
-          ) : null}
+        <div className="min-w-0">
           <AcademyWorkshopQuizManager
             mode="TEMPLATE"
             quiz={creating ? null : selected}
@@ -285,6 +274,38 @@ export default function AcademyWorkshopQuizTemplateLibrary({
             onUpdateQuiz={updateTemplate}
             onSaveQuestion={saveQuestion}
             onDeleteQuestion={deleteQuestion}
+            extraActions={
+              selected && !creating ? (
+                <>
+                  <Popconfirm
+                    title="Xóa mẫu câu hỏi này?"
+                    description="Các game đã tạo từ mẫu vẫn được giữ nguyên."
+                    okText="Xóa mẫu"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => void deleteTemplate()}
+                  >
+                    <IconButton label="Xóa mẫu" icon={Trash2} tone="danger" />
+                  </Popconfirm>
+                  <Popconfirm
+                    title="Dùng mẫu cho workshop này?"
+                    description="Game bản nháp hiện có sẽ được thay toàn bộ câu hỏi theo mẫu này. Nếu chưa có, hệ thống tạo game nháp mới. Game đang chạy phải kết thúc trước."
+                    okText="Thay bản nháp"
+                    cancelText="Hủy"
+                    onConfirm={() => void applyTemplate()}
+                  >
+                    <Button
+                      type="primary"
+                      loading={applying}
+                      disabled={selected.questions.length === 0}
+                      icon={<AppIcon icon={BookCopy} />}
+                    >
+                      Dùng cho workshop
+                    </Button>
+                  </Popconfirm>
+                </>
+              ) : null
+            }
           />
         </div>
       </div>
