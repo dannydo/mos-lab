@@ -12,8 +12,6 @@ import {
   type AcademyLead,
   type AcademyTalentAssessment,
   type AcademyWorkshopParticipant,
-  type UpsertAcademyWorkshopQuestionRequest,
-  type UpsertAcademyWorkshopQuizRequest,
   type AcademyWorkshopResourcesResponse,
   type AcademyWorkshopReward,
 } from '@mos-lab/shared';
@@ -42,6 +40,7 @@ import type {
   AcademyTalentLead,
 } from '../../components/academy-talent-workshop.types';
 import { useAcademyTalentLadderConfiguration } from '../../components/useAcademyTalentLadderConfiguration';
+import { useAcademyWorkshopQuizActions } from '../../components/useAcademyWorkshopQuizActions';
 import {
   buildTalentSessions,
   talentAssessmentRequest,
@@ -211,77 +210,15 @@ export default function AcademyWorkshopWorkspacePage() {
     [slug]
   );
 
-  const createWorkshopQuiz = React.useCallback(
-    async (dto: UpsertAcademyWorkshopQuizRequest) => {
-      if (!workshop) return;
-      const quiz = await apiClient.academySales.workshops.createQuiz(workshop.id, dto);
-      setWorkshop((current) => (current ? { ...current, activeQuiz: quiz } : current));
-    },
-    [workshop]
-  );
-
-  const updateWorkshopQuiz = React.useCallback(
-    async (quizId: number, dto: UpsertAcademyWorkshopQuizRequest) => {
-      if (!workshop) return;
-      const quiz = await apiClient.academySales.workshops.updateQuiz(workshop.id, quizId, dto);
-      setWorkshop((current) => (current ? { ...current, activeQuiz: quiz } : current));
-    },
-    [workshop]
-  );
-
-  const saveWorkshopQuestion = React.useCallback(
-    async (quizId: number, questionId: number | null, dto: UpsertAcademyWorkshopQuestionRequest) => {
-      if (!workshop) return;
-      const question = questionId
-        ? await apiClient.academySales.workshops.updateQuestion(workshop.id, quizId, questionId, dto)
-        : await apiClient.academySales.workshops.addQuestion(workshop.id, quizId, dto);
-      setWorkshop((current) => {
-        if (!current?.activeQuiz || current.activeQuiz.id !== quizId) return current;
-        const questions = current.activeQuiz.questions.some((item) => item.id === question.id)
-          ? current.activeQuiz.questions.map((item) => (item.id === question.id ? question : item))
-          : [...current.activeQuiz.questions, question];
-        questions.sort((left, right) => left.sortOrder - right.sortOrder || left.id - right.id);
-        return { ...current, activeQuiz: { ...current.activeQuiz, questions } };
-      });
-    },
-    [workshop]
-  );
-
-  const deleteWorkshopQuestion = React.useCallback(
-    async (quizId: number, questionId: number) => {
-      if (!workshop) return;
-      const quiz = await apiClient.academySales.workshops.deleteQuestion(workshop.id, quizId, questionId);
-      setWorkshop((current) => (current ? { ...current, activeQuiz: quiz } : current));
-    },
-    [workshop]
-  );
-
-  const completeWorkshopQuiz = React.useCallback(
-    async (quizId: number) => {
-      if (!workshop) return;
-      const quiz = await apiClient.academySales.workshops.gameCommand(workshop.id, quizId, { action: 'END_GAME' });
-      setWorkshop((current) => (current ? { ...current, activeQuiz: quiz } : current));
-    },
-    [workshop]
-  );
-
-  const cloneWorkshopQuiz = React.useCallback(
-    async (quizId: number) => {
-      if (!workshop) return;
-      const quiz = await apiClient.academySales.workshops.cloneQuiz(workshop.id, quizId);
-      setWorkshop((current) => (current ? { ...current, activeQuiz: quiz } : current));
-    },
-    [workshop]
-  );
-
-  const saveWorkshopQuizAsTemplate = React.useCallback(
-    async (quizId: number) => {
-      if (!workshop) return;
-      await apiClient.academySales.workshops.saveQuizAsTemplate(workshop.id, quizId);
-      setTemplateLibraryOpen(true);
-    },
-    [workshop]
-  );
+  const {
+    createWorkshopQuiz,
+    updateWorkshopQuiz,
+    saveWorkshopQuestion,
+    deleteWorkshopQuestion,
+    completeWorkshopQuiz,
+    cloneWorkshopQuiz,
+    saveWorkshopQuizAsTemplate,
+  } = useAcademyWorkshopQuizActions({ workshop, setWorkshop, setTemplateLibraryOpen });
 
   const openCareDrawer = React.useCallback((participant: AcademyWorkshopParticipant) => {
     setQrDataUrl('');
