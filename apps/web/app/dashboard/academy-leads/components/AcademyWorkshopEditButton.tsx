@@ -197,7 +197,7 @@ export default function AcademyWorkshopEditButton({
             <InputNumber min={1} max={100} precision={0} className="w-full" />
           </EntityFormField>
           <EntityFormField name="feeVnd" label="Phí tham dự">
-            <InputNumber
+            <InputNumber<number>
               min={0}
               precision={0}
               step={100000}
