@@ -32,6 +32,35 @@ export class GoogleIdentityError extends Error {
   }
 }
 
+function safeGoogleAvatarUrl(value: unknown): string | null {
+  const avatarUrl = String(value || '').trim();
+  if (!avatarUrl) return null;
+  try {
+    const parsed = new URL(avatarUrl);
+    return parsed.protocol === 'https:' ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Google tokeninfo may omit `picture`, even when the signed ID token contains
+ * it. The token is verified by Google before this value is used as a cosmetic
+ * profile image fallback.
+ */
+export function googleIdTokenAvatar(credential: unknown): string | null {
+  try {
+    const payload = String(credential || '')
+      .trim()
+      .split('.')[1];
+    if (!payload) return null;
+    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { picture?: unknown };
+    return safeGoogleAvatarUrl(decoded.picture);
+  } catch {
+    return null;
+  }
+}
+
 export function googleClientId(): string {
   return String(process.env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID).trim();
 }
@@ -67,7 +96,7 @@ export function validateGoogleTokenInfo(
     subject,
     email,
     name: String(tokenInfo.name || tokenInfo.given_name || email.split('@')[0] || 'Google User').trim(),
-    avatarUrl: String(tokenInfo.picture || '').trim() || null,
+    avatarUrl: safeGoogleAvatarUrl(tokenInfo.picture),
   };
 }
 
@@ -80,7 +109,8 @@ export async function verifyGoogleCredential(credential: unknown): Promise<Googl
       params: { id_token: token },
       timeout: 10_000,
     });
-    return validateGoogleTokenInfo(response.data);
+    const identity = validateGoogleTokenInfo(response.data);
+    return { ...identity, avatarUrl: identity.avatarUrl || googleIdTokenAvatar(token) };
   } catch (cause) {
     if (cause instanceof GoogleIdentityError) throw cause;
     throw new GoogleIdentityError('Google credential không hợp lệ hoặc không thể xác minh.');
