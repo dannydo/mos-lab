@@ -118,6 +118,35 @@ function registrationExternalKey(identity: ExternalWorkshopRegistrationIdentity)
 }
 
 export class AcademyWorkshopPublicJoinService {
+  static async findExistingRegistration(
+    fastify: FastifyInstance,
+    rawRegistrationCode: unknown,
+    identity: ExternalWorkshopRegistrationIdentity
+  ): Promise<RegisterAcademyWorkshopResponse | null> {
+    const code = registrationCode(rawRegistrationCode);
+    const externalKey = registrationExternalKey(identity);
+    const email = cleanText(identity.email, 150);
+    const participant = await fastify.prisma.crm.crmAcademyWorkshopParticipant.findFirst({
+      where: {
+        workshop: { registrationCode: code },
+        campaignLead: {
+          lead: {
+            OR: [{ externalKey }, ...(email ? [{ email }] : [])],
+          },
+        },
+      },
+      select: { id: true, attendanceStatus: true },
+    });
+
+    if (!participant) return null;
+    return {
+      participantId: participant.id,
+      attendanceStatus: participant.attendanceStatus as RegisterAcademyWorkshopResponse['attendanceStatus'],
+      alreadyRegistered: true,
+      message: 'Bạn đã đăng ký workshop này. Academy sẽ liên hệ để xác nhận.',
+    };
+  }
+
   private static async selfCheckIn<T extends { id: number; workshopId: number; checkedInAt?: Date | null }>(
     fastify: FastifyInstance,
     participant: T,
@@ -389,6 +418,14 @@ export class AcademyWorkshopPublicJoinService {
     return this.register(fastify, rawRegistrationCode, input, { ...identity, provider: 'GOOGLE' });
   }
 
+  static async findExistingRegistrationWithGoogle(
+    fastify: FastifyInstance,
+    rawRegistrationCode: unknown,
+    identity: GoogleIdentity
+  ) {
+    return this.findExistingRegistration(fastify, rawRegistrationCode, { ...identity, provider: 'GOOGLE' });
+  }
+
   static async registerWithZalo(
     fastify: FastifyInstance,
     rawRegistrationCode: unknown,
@@ -396,6 +433,14 @@ export class AcademyWorkshopPublicJoinService {
     identity: ZaloSocialIdentity
   ): Promise<RegisterAcademyWorkshopResponse> {
     return this.register(fastify, rawRegistrationCode, input, { ...identity, provider: 'ZALO' });
+  }
+
+  static async findExistingRegistrationWithZalo(
+    fastify: FastifyInstance,
+    rawRegistrationCode: unknown,
+    identity: ZaloSocialIdentity
+  ) {
+    return this.findExistingRegistration(fastify, rawRegistrationCode, { ...identity, provider: 'ZALO' });
   }
 
   static async selectParticipant(fastify: FastifyInstance, input: SelectAcademyWorkshopParticipantRequest) {

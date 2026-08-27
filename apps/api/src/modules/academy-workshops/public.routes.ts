@@ -6,6 +6,8 @@ import type {
   RedeemAcademyWorkshopQrRequest,
   SafeAny,
   JoinAcademyWorkshopWithGoogleRequest,
+  FindAcademyWorkshopRegistrationWithGoogleRequest,
+  FindAcademyWorkshopRegistrationWithZaloRequest,
   RegisterAcademyWorkshopRequest,
   RegisterAcademyWorkshopWithGoogleRequest,
   RegisterAcademyWorkshopWithZaloRequest,
@@ -272,6 +274,23 @@ export async function academyWorkshopPublicRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.post('/academy/workshops/registration/:registrationCode/google/status', async (request, reply) => {
+    try {
+      const { registrationCode } = request.params as { registrationCode: string };
+      const input = request.body as FindAcademyWorkshopRegistrationWithGoogleRequest;
+      const identity = await verifyGoogleCredential(input.credential);
+      return reply.send({
+        data: await AcademyWorkshopPublicJoinService.findExistingRegistrationWithGoogle(
+          fastify,
+          registrationCode,
+          identity
+        ),
+      });
+    } catch (cause) {
+      return sendError(fastify, reply, cause, 'Find existing public workshop registration with Google');
+    }
+  });
+
   fastify.get('/academy/workshops/registration/:registrationCode/zalo/authorize', async (request, reply) => {
     try {
       const registrationCodeValue = registrationCode((request.params as { registrationCode: string }).registrationCode);
@@ -323,6 +342,23 @@ export async function academyWorkshopPublicRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ data });
     } catch (cause) {
       return sendError(fastify, reply, cause, 'Register for public workshop with Zalo');
+    }
+  });
+
+  fastify.post('/academy/workshops/registration/:registrationCode/zalo/status', async (request, reply) => {
+    try {
+      const registrationCodeValue = registrationCode((request.params as { registrationCode: string }).registrationCode);
+      const input = request.body as FindAcademyWorkshopRegistrationWithZaloRequest;
+      const identity = verifyZaloRegistrationTicket(input.ticket, registrationCodeValue);
+      return reply.send({
+        data: await AcademyWorkshopPublicJoinService.findExistingRegistrationWithZalo(
+          fastify,
+          registrationCodeValue,
+          identity
+        ),
+      });
+    } catch (cause) {
+      return sendError(fastify, reply, cause, 'Find existing public workshop registration with Zalo');
     }
   });
 

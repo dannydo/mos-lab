@@ -105,6 +105,17 @@ export default function AcademyWorkshopRegistrationPage() {
   const [receipt, setReceipt] = React.useState<string | null>(null);
   const [googleCredential, setGoogleCredential] = React.useState<string | null>(null);
   const [zaloTicket, setZaloTicket] = React.useState<string | null>(null);
+  const receiptStorageKey = React.useMemo(
+    () => (code ? `academy-workshop-registration-receipt:${code}` : null),
+    [code]
+  );
+  const rememberReceipt = React.useCallback(
+    (message: string) => {
+      setReceipt(message);
+      if (receiptStorageKey) window.sessionStorage.setItem(receiptStorageKey, message);
+    },
+    [receiptStorageKey]
+  );
 
   const load = React.useCallback(async () => {
     if (!code) return;
@@ -124,6 +135,14 @@ export default function AcademyWorkshopRegistrationPage() {
   }, [load]);
 
   React.useEffect(() => {
+    if (!receiptStorageKey) {
+      setReceipt(null);
+      return;
+    }
+    setReceipt(window.sessionStorage.getItem(receiptStorageKey));
+  }, [receiptStorageKey]);
+
+  React.useEffect(() => {
     const hash = new URLSearchParams(window.location.hash.slice(1));
     const ticket = hash.get('zalo_ticket');
     const zaloError = hash.get('zalo_error');
@@ -136,10 +155,16 @@ export default function AcademyWorkshopRegistrationPage() {
       setGoogleCredential(null);
       setError(null);
       if (profile.name) form.setFieldValue('name', profile.name);
+      void apiClient.academyWorkshopsPublic
+        .findRegistrationWithZalo(code, { ticket })
+        .then((existingRegistration) => {
+          if (existingRegistration) rememberReceipt(existingRegistration.message);
+        })
+        .catch(() => undefined);
       return;
     }
     setError('Bạn chưa hoàn tất đăng nhập Zalo. Vui lòng thử lại.');
-  }, [form]);
+  }, [code, form, rememberReceipt]);
 
   const submit = React.useCallback(async () => {
     try {
@@ -162,7 +187,7 @@ export default function AcademyWorkshopRegistrationPage() {
               referrer: values.referrer,
             } satisfies RegisterAcademyWorkshopWithZaloRequest)
           : await apiClient.academyWorkshopsPublic.register(code, values);
-      setReceipt(result.message);
+      rememberReceipt(result.message);
       await load();
     } catch (cause) {
       if ((cause as { errorFields?: unknown[] })?.errorFields) return;
@@ -170,10 +195,19 @@ export default function AcademyWorkshopRegistrationPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [code, form, googleCredential, load, zaloTicket]);
+  }, [code, form, googleCredential, load, rememberReceipt, zaloTicket]);
+
+  const startAnotherRegistration = React.useCallback(() => {
+    if (receiptStorageKey) window.sessionStorage.removeItem(receiptStorageKey);
+    setReceipt(null);
+    setGoogleCredential(null);
+    setZaloTicket(null);
+    setError(null);
+    form.resetFields();
+  }, [form, receiptStorageKey]);
 
   const receiveGoogleCredential = React.useCallback(
-    (credential: string) => {
+    async (credential: string) => {
       const profile = googleProfile(credential);
       setGoogleCredential(credential);
       setZaloTicket(null);
@@ -182,8 +216,16 @@ export default function AcademyWorkshopRegistrationPage() {
         name: profile.name || form.getFieldValue('name'),
         email: profile.email || form.getFieldValue('email'),
       });
+      try {
+        const existingRegistration = await apiClient.academyWorkshopsPublic.findRegistrationWithGoogle(code, {
+          credential,
+        });
+        if (existingRegistration) rememberReceipt(existingRegistration.message);
+      } catch {
+        // A status lookup must not block a learner from completing a new registration.
+      }
     },
-    [form]
+    [code, form, rememberReceipt]
   );
 
   if (loading) {
@@ -296,8 +338,13 @@ export default function AcademyWorkshopRegistrationPage() {
                 <Result
                   status="success"
                   icon={<CheckCircle2 className="mx-auto text-emerald-500" size={48} aria-hidden="true" />}
-                  title="Đã nhận đăng ký"
+                  title="Đăng ký đã hoàn tất"
                   subTitle={receipt}
+                  extra={
+                    <Button type="link" onClick={startAnotherRegistration}>
+                      Đăng ký người khác
+                    </Button>
+                  }
                 />
               ) : nonRegistrationPhase && status ? (
                 <>

@@ -284,6 +284,8 @@ import {
   CreateAcademyWorkshopRequest,
   CreateAcademyWorkshopWalkInRequest,
   JoinAcademyWorkshopWithGoogleRequest,
+  FindAcademyWorkshopRegistrationWithGoogleRequest,
+  FindAcademyWorkshopRegistrationWithZaloRequest,
   RegisterAcademyWorkshopRequest,
   RegisterAcademyWorkshopWithGoogleRequest,
   RegisterAcademyWorkshopWithZaloRequest,
@@ -2484,6 +2486,17 @@ export const apiClient = {
       );
       return response.data.data;
     },
+    findRegistrationWithGoogle: async (
+      registrationCode: string,
+      dto: FindAcademyWorkshopRegistrationWithGoogleRequest
+    ): Promise<RegisterAcademyWorkshopResponse | null> => {
+      const response = await api.post<{ data: RegisterAcademyWorkshopResponse | null }>(
+        `/academy/workshops/registration/${encodeURIComponent(registrationCode)}/google/status`,
+        dto,
+        { timeout: 15_000 }
+      );
+      return response.data.data;
+    },
     zaloAuthorizeUrl: (registrationCode: string): string =>
       `${resolveApiBaseUrl()}/academy/workshops/registration/${encodeURIComponent(registrationCode)}/zalo/authorize`,
     registerWithZalo: async (
@@ -2494,6 +2507,17 @@ export const apiClient = {
         `/academy/workshops/registration/${encodeURIComponent(registrationCode)}/zalo`,
         dto,
         { timeout: 20_000 }
+      );
+      return response.data.data;
+    },
+    findRegistrationWithZalo: async (
+      registrationCode: string,
+      dto: FindAcademyWorkshopRegistrationWithZaloRequest
+    ): Promise<RegisterAcademyWorkshopResponse | null> => {
+      const response = await api.post<{ data: RegisterAcademyWorkshopResponse | null }>(
+        `/academy/workshops/registration/${encodeURIComponent(registrationCode)}/zalo/status`,
+        dto,
+        { timeout: 15_000 }
       );
       return response.data.data;
     },
