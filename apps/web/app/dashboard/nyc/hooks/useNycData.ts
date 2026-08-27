@@ -27,6 +27,28 @@ export const TAB_KEYS = [
   { id: 'NYC_365plus', name: 'NYC 365+', rangeText: '> 365 ngày', minDays: 366, maxDays: undefined },
 ];
 
+const NYC_SORT_STORAGE_KEY = 'mos_nyc_sort_field';
+const DEFAULT_NYC_SORT_FIELD = 'daysSinceLastVisit_asc';
+const NYC_SORT_FIELDS = new Set([
+  'daysSinceLastVisit_asc',
+  'daysSinceLastVisit_desc',
+  'totalSpent_asc',
+  'totalSpent_desc',
+  'lastCallDate_asc',
+  'lastCallDate_desc',
+  'name_asc',
+  'name_desc',
+  'id_asc',
+  'id_desc',
+]);
+
+function getInitialNycSortField() {
+  if (typeof window === 'undefined') return DEFAULT_NYC_SORT_FIELD;
+
+  const storedSortField = localStorage.getItem(NYC_SORT_STORAGE_KEY);
+  return storedSortField && NYC_SORT_FIELDS.has(storedSortField) ? storedSortField : DEFAULT_NYC_SORT_FIELD;
+}
+
 export interface UseNycDataOptions {
   settingsForm?: SafeAny; // Ant Design FormInstance
   onSuccess?: (msg: string) => void;
@@ -49,7 +71,7 @@ export function useNycData(options?: UseNycDataOptions) {
   // The field stays controlled by `searchQuery`; server filtering is deferred
   // so rapid typing does not start a list and stats request for each character.
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [sortField, setSortField] = useState('daysSinceLastVisit');
+  const [sortField, setSortFieldState] = useState(getInitialNycSortField);
   const [assignedStaffId, setAssignedStaffId] = useState<string | number>('ALL');
 
   // Pagination
@@ -111,6 +133,15 @@ export function useNycData(options?: UseNycDataOptions) {
   const [addingIds, setAddingIds] = useState<number[]>([]);
   const lastCustomerRequestIdRef = useRef(0);
   const lastStatsRequestIdRef = useRef(0);
+
+  const setSortField = useCallback((nextSortField: string) => {
+    const resolvedSortField = NYC_SORT_FIELDS.has(nextSortField) ? nextSortField : DEFAULT_NYC_SORT_FIELD;
+    setSortFieldState(resolvedSortField);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(NYC_SORT_STORAGE_KEY, resolvedSortField);
+    }
+  }, []);
 
   // Load configuration & Staff lists on mount
   const fetchConfigs = useCallback(async () => {
@@ -294,8 +325,8 @@ export function useNycData(options?: UseNycDataOptions) {
         legacyUserId: customerId,
         date: dayjs().format('YYYY-MM-DD'),
       });
-      optionsRef.current?.onSuccess?.('Đã thêm khách hàng vào kế hoạch gọi hôm nay!');
-      setDailyPlanList((prev) => [...prev, customerId]);
+      optionsRef.current?.onSuccess?.('Đã lên lịch gọi hôm nay.');
+      setDailyPlanList((prev) => (prev.includes(customerId) ? prev : [...prev, customerId]));
     } catch (err) {
       console.error('Failed to add to call plan:', err);
       if ((err as SafeAny).response?.status === 409) {

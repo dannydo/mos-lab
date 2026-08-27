@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Image, Space, Switch, message } from 'antd';
-import { Copy, ExternalLink, QrCode } from 'lucide-react';
+import { Button, Image, Switch, theme, message } from 'antd';
+import { CheckCircle2, Copy, ExternalLink, Link2, QrCode } from 'lucide-react';
 import { AdaptiveModal, AppIcon, IconButton, IconText } from '../../../../components/ui';
 
 export interface AcademyWorkshopSharedQrButtonProps {
@@ -26,6 +26,7 @@ export default function AcademyWorkshopSharedQrButton({
   registrationOpen,
   onRegistrationOpenChange,
 }: AcademyWorkshopSharedQrButtonProps) {
+  const { token } = theme.useToken();
   const [open, setOpen] = React.useState(false);
   const [qrDataUrl, setQrDataUrl] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -74,6 +75,12 @@ export default function AcademyWorkshopSharedQrButton({
     [onRegistrationOpenChange]
   );
 
+  const isRegistrationQr = purpose === 'registration';
+  const statusLabel = registrationOpen ? 'Đang nhận đăng ký' : 'Tạm ngưng nhận đăng ký';
+  const statusDescription = registrationOpen
+    ? 'Học viên có thể quét mã và gửi thông tin ngay.'
+    : 'Học viên vẫn xem được thông tin, nhưng chưa thể gửi đăng ký.';
+
   return (
     <>
       {iconOnly ? (
@@ -90,33 +97,100 @@ export default function AcademyWorkshopSharedQrButton({
       )}
       <AdaptiveModal
         open={open}
-        title={`${purpose === 'registration' ? 'QR đăng ký' : 'QR chung'} · ${workshopName}`}
+        title={
+          <span className="flex min-w-0 items-center gap-2">
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: token.colorPrimaryBg, color: token.colorPrimary }}
+            >
+              <AppIcon icon={QrCode} size={16} />
+            </span>
+            <span className="truncate">
+              {isRegistrationQr ? 'QR đăng ký' : 'QR chung'}{' '}
+              <span style={{ color: token.colorTextSecondary }}>· {workshopName}</span>
+            </span>
+          </span>
+        }
         footer={null}
-        width={520}
+        width={560}
         onCancel={() => setOpen(false)}
         destroyOnHidden
       >
-        <div className="py-2 text-center">
-          <div className="rounded-2xl border border-inherit p-4">
-            {qrDataUrl ? (
-              <Image src={qrDataUrl} alt={`QR chung ${workshopName}`} width={340} preview={false} />
-            ) : (
-              <div className="flex h-[340px] items-center justify-center text-sm opacity-60">
-                {loading ? 'Đang tạo QR…' : 'Chưa có QR'}
+        <div className="pb-1 pt-2">
+          <div
+            className="rounded-3xl border p-3 sm:p-4"
+            style={{ background: token.colorFillAlter, borderColor: token.colorBorderSecondary }}
+          >
+            <div
+              className="mb-3 flex items-center justify-between px-1 text-xs font-medium"
+              style={{ color: token.colorTextSecondary }}
+            >
+              <span className="flex items-center gap-1.5">
+                <AppIcon icon={QrCode} size={14} />
+                Sẵn sàng để quét
+              </span>
+              <span
+                className="rounded-full px-2 py-1"
+                style={{ background: token.colorBgContainer, color: token.colorTextTertiary }}
+              >
+                {isRegistrationQr ? 'Đăng ký workshop' : 'Chọn học viên'}
+              </span>
+            </div>
+            <div
+              className="flex min-h-[min(300px,calc(100vw-128px))] items-center justify-center overflow-hidden rounded-2xl p-3"
+              style={{ background: token.colorBgContainer, boxShadow: token.boxShadowSecondary }}
+            >
+              {qrDataUrl ? (
+                <Image
+                  src={qrDataUrl}
+                  alt={`QR chung ${workshopName}`}
+                  preview={false}
+                  style={{ width: 'min(100%, 300px)', height: 'auto', display: 'block' }}
+                />
+              ) : (
+                <div
+                  className="flex h-[300px] items-center justify-center text-sm"
+                  style={{ color: token.colorTextSecondary }}
+                >
+                  {loading ? 'Đang tạo QR…' : 'Chưa có QR'}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="px-1 pt-5 text-center">
+            <div className="text-xl font-semibold tracking-tight" style={{ color: token.colorText }}>
+              {isRegistrationQr ? 'Quét để đăng ký workshop' : 'Quét để chọn học viên'}
+            </div>
+            <p className="mx-auto mt-1.5 max-w-md text-sm leading-6" style={{ color: token.colorTextSecondary }}>
+              {isRegistrationQr
+                ? 'Học viên xem agenda, điền thông tin và được đưa vào danh sách chờ Academy xác nhận.'
+                : 'Học viên có sẵn chọn avatar và tên; hồ sơ có SĐT sẽ được yêu cầu xác minh. Người chưa có trong danh sách đăng nhập Google/Gmail để tạo hồ sơ walk-in và tự check-in.'}
+            </p>
+          </div>
+
+          {isRegistrationQr && registrationOpen !== undefined ? (
+            <div
+              className="mt-5 flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left"
+              style={{ background: token.colorFillAlter, borderColor: token.colorBorderSecondary }}
+            >
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                style={{
+                  background: registrationOpen ? token.colorSuccessBg : token.colorWarningBg,
+                  color: registrationOpen ? token.colorSuccess : token.colorWarning,
+                }}
+              >
+                <AppIcon icon={registrationOpen ? CheckCircle2 : QrCode} size={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold" style={{ color: token.colorText }}>
+                  {statusLabel}
+                </div>
+                <div className="mt-0.5 text-xs leading-5" style={{ color: token.colorTextSecondary }}>
+                  {statusDescription}
+                </div>
               </div>
-            )}
-          </div>
-          <div className="mt-4 text-lg font-bold">
-            {purpose === 'registration' ? 'Quét để đăng ký workshop' : 'Quét để chọn học viên'}
-          </div>
-          <p className="mx-auto mt-1 max-w-md text-sm opacity-65">
-            {purpose === 'registration'
-              ? 'Học viên xem agenda, điền thông tin đăng ký và được đưa vào danh sách chờ Academy xác nhận.'
-              : 'Học viên có sẵn chọn avatar và tên; hồ sơ có SĐT sẽ được yêu cầu xác minh. Người chưa có trong danh sách đăng nhập Google/Gmail để tạo hồ sơ walk-in và tự check-in.'}
-          </p>
-          {purpose === 'registration' && registrationOpen !== undefined ? (
-            <div className="mx-auto mt-4 flex max-w-md items-center justify-between rounded-xl border border-inherit px-3 py-2 text-left text-sm">
-              <span>Nhận đăng ký online</span>
               <Switch
                 checked={registrationOpen}
                 loading={updatingRegistration}
@@ -126,15 +200,41 @@ export default function AcademyWorkshopSharedQrButton({
               />
             </div>
           ) : null}
-          <div className="mt-3 break-all rounded-lg border border-inherit px-3 py-2 text-xs opacity-65">{joinUrl}</div>
-          <Space wrap className="mt-4 justify-center">
-            <Button onClick={() => void copyLink()}>
-              <IconText icon={<AppIcon icon={Copy} />}>Sao chép link</IconText>
+
+          <div
+            className="mt-4 rounded-2xl border p-1.5"
+            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          >
+            <div
+              className="flex min-w-0 items-center gap-2 rounded-xl px-2.5 py-2"
+              style={{ background: token.colorFillAlter }}
+            >
+              <AppIcon icon={Link2} size={16} style={{ color: token.colorTextSecondary }} />
+              <span
+                className="min-w-0 flex-1 truncate text-xs"
+                title={joinUrl}
+                style={{ color: token.colorTextSecondary }}
+              >
+                {joinUrl}
+              </span>
+              <Button type="text" size="small" aria-label="Sao chép link đăng ký" onClick={() => void copyLink()}>
+                <IconText icon={<AppIcon icon={Copy} size={14} />}>Sao chép</IconText>
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button className="w-full sm:w-auto" onClick={() => setOpen(false)}>
+              Đóng
             </Button>
-            <Button type="primary" onClick={() => window.open(joinUrl, '_blank')}>
-              <IconText icon={<AppIcon icon={ExternalLink} />}>Mở thử</IconText>
+            <Button
+              type="primary"
+              className="w-full sm:w-auto"
+              onClick={() => window.open(joinUrl, '_blank', 'noopener,noreferrer')}
+            >
+              <IconText icon={<AppIcon icon={ExternalLink} />}>Mở trang đăng ký</IconText>
             </Button>
-          </Space>
+          </div>
         </div>
       </AdaptiveModal>
     </>

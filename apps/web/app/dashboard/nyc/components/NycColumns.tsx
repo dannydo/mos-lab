@@ -1,17 +1,11 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { IconButton, TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
-import { Space, Avatar, Typography, Tag, Tooltip, Button } from 'antd';
-import {
-  UserOutlined,
-  PhoneOutlined,
-  EyeOutlined,
-  CheckCircleOutlined,
-  PlusOutlined,
-  MessageOutlined,
-} from '@ant-design/icons';
+import { Space, Avatar, Typography, Tag, Tooltip } from 'antd';
+import { UserOutlined, PhoneOutlined } from '@ant-design/icons';
+import { CalendarPlus, CircleCheck, MessageCircle } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 
@@ -304,44 +298,43 @@ export const getNycColumns = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 110,
+      width: 88,
       align: 'center' as const,
       render: (_: SafeAny, record: Customer) => {
         const isPlanned = dailyPlanList.includes(record.id);
         const isAdding = addingIds.includes(record.id);
+        const planActionLabel = isAdding
+          ? 'Đang thêm vào kế hoạch gọi'
+          : isPlanned
+            ? 'Đã lên lịch gọi hôm nay'
+            : 'Lên lịch gọi hôm nay';
         return (
-          <Space size="small">
-            <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi'}>
-              <Button
-                type={isPlanned ? 'dashed' : 'primary'}
-                ghost={!isPlanned}
-                size="small"
-                loading={isAdding}
-                icon={isPlanned ? <CheckCircleOutlined style={{ color: '#52C41A' }} /> : <PlusOutlined />}
-                onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
-                style={
-                  !isPlanned
-                    ? {
-                        borderColor: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                        color: themeMode === 'dark' ? token.colorPrimary : '#87640a',
-                      }
-                    : {}
-                }
-                disabled={isPlanned || isAdding}
-              />
-            </Tooltip>
-            <Tooltip title="Gửi SMS">
-              <Button
-                type="default"
-                size="small"
-                icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
-                onClick={() => handleOpenSmsModal?.(record)}
-                style={{
-                  borderColor: '#D4A84B',
-                  color: '#D4A84B',
-                }}
-              />
-            </Tooltip>
+          <Space size={4}>
+            <IconButton
+              label={planActionLabel}
+              icon={isPlanned ? CircleCheck : CalendarPlus}
+              tone={isPlanned ? 'default' : 'primary'}
+              loading={isAdding}
+              disabled={isPlanned || isAdding}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!isPlanned && !isAdding) handleAddToPlan(record.id);
+              }}
+            />
+            <IconButton
+              label={`Gửi SMS cho ${record.name}`}
+              icon={MessageCircle}
+              tone="default"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleOpenSmsModal?.(record);
+              }}
+              style={{
+                background: token.colorWarningBg,
+                borderColor: token.colorWarningBorder,
+                color: token.colorWarning,
+              }}
+            />
           </Space>
         );
       },
