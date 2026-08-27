@@ -1312,6 +1312,8 @@ model CrmAcademyWorkshop {
   agendaPresetKey    String    @default("HAPPY_FRIDAY") @map("agenda_preset_key") @db.VarChar(48)
   agendaTemplateId   Int?      @map("agenda_template_id")
   liveAgendaItemId   Int?      @map("live_agenda_item_id")
+  registrationCode   String?   @unique @map("registration_code") @db.VarChar(48)
+  registrationOpen   Boolean   @default(true) @map("registration_open") @db.TinyInt
   displayCode        String    @unique @map("display_code") @db.VarChar(32)
   displayTokenVersion Int      @default(1) @map("display_token_version")
   showJoinQrOnDisplay Boolean  @default(false) @map("show_join_qr_on_display") @db.TinyInt

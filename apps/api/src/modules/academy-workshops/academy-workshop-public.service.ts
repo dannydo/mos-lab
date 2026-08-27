@@ -1,14 +1,59 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type {
+  AcademyWorkshopPublicPhase,
+  AcademyWorkshopPublicRegistrationInfo,
   AcademyWorkshopSharedJoinInfo,
   JoinAcademyWorkshopWithGoogleRequest,
+  RegisterAcademyWorkshopWithGoogleRequest,
+  RegisterAcademyWorkshopWithZaloRequest,
+  RegisterAcademyWorkshopResponse,
   SelectAcademyWorkshopParticipantRequest,
 } from '@mos-lab/shared';
 import type { GoogleIdentity } from '../auth/google-identity.service.js';
-import { AcademySalesError, buildAcademyLeadSearchText } from '../academy-sales/academy-sales.service.js';
+import { isZaloSocialLoginConfigured, type ZaloSocialIdentity } from '../auth/zalo-social-identity.service.js';
+import {
+  AcademySalesError,
+  buildAcademyLeadSearchText,
+  normalizeAcademyPhone,
+} from '../academy-sales/academy-sales.service.js';
+import { resolveAcademyWorkshopPublicOrigin } from './academy-workshop.service.js';
 
 const CLOSED_WORKSHOP_STATUSES = new Set(['CANCELLED', 'ARCHIVED']);
+const LOBBY_OPEN_WORKSHOP_STATUSES = new Set(['CHECKIN_OPEN', 'LIVE', 'PAUSED']);
+const PUBLIC_REGISTRATION_CODE = /^[A-Za-z0-9_-]{12,48}$/;
+
+function registrationCode(value: unknown): string {
+  const code = String(value || '').trim();
+  if (!PUBLIC_REGISTRATION_CODE.test(code)) throw new AcademySalesError('Link đăng ký workshop không hợp lệ.', 404);
+  return code;
+}
+
+function registrationPhase(workshop: { status: string; registrationOpen: boolean }): AcademyWorkshopPublicPhase {
+  if (workshop.status === 'CHECKIN_OPEN') return 'CHECKIN';
+  if (workshop.status === 'LIVE' || workshop.status === 'PAUSED') return 'LIVE';
+  if (workshop.status === 'COMPLETED') return 'COMPLETED';
+  if (workshop.status === 'SCHEDULED' && workshop.registrationOpen) return 'REGISTRATION';
+  return 'CLOSED';
+}
+
+export function getAcademyWorkshopPublicRegistrationPhase(workshop: {
+  status: string;
+  registrationOpen: boolean;
+}): AcademyWorkshopPublicPhase {
+  return registrationPhase(workshop);
+}
+
+export function assertAcademyWorkshopLobbyOpen(workshop: { status: string }) {
+  if (!LOBBY_OPEN_WORKSHOP_STATUSES.has(workshop.status)) {
+    throw new AcademySalesError('Workshop chưa mở check-in. Vui lòng quay lại khi Academy thông báo.', 409);
+  }
+}
+
+function cleanText(value: unknown, maxLength: number): string | null {
+  const text = String(value || '').trim();
+  return text ? text.slice(0, maxLength) : null;
+}
 
 export function normalizeAcademyWorkshopPhone(value: unknown): string {
   let digits = String(value || '').replace(/\D/g, '');
@@ -50,6 +95,26 @@ function publicWorkshop(workshop: {
     location: workshop.location,
     status: workshop.status as AcademyWorkshopSharedJoinInfo['workshop']['status'],
   };
+}
+
+type WorkshopRegistrationInput = {
+  name?: string | null;
+  phone: string;
+  email?: string | null;
+  goal?: string | null;
+  referrer?: string | null;
+};
+
+type ExternalWorkshopRegistrationIdentity = {
+  provider: 'GOOGLE' | 'ZALO';
+  subject: string;
+  name: string;
+  email?: string | null;
+  avatarUrl: string | null;
+};
+
+function registrationExternalKey(identity: ExternalWorkshopRegistrationIdentity): string {
+  return `${identity.provider}:${identity.subject}`.slice(0, 191);
 }
 
 export class AcademyWorkshopPublicJoinService {
@@ -102,6 +167,7 @@ export class AcademyWorkshopPublicJoinService {
     if (!workshop || CLOSED_WORKSHOP_STATUSES.has(workshop.status)) {
       throw new AcademySalesError('Workshop không tồn tại hoặc đã đóng.', 404);
     }
+    assertAcademyWorkshopLobbyOpen(workshop);
     return {
       workshop: publicWorkshop(workshop),
       participants: workshop.participants.map((participant) => ({
@@ -111,6 +177,225 @@ export class AcademyWorkshopPublicJoinService {
         requiresPhone: Boolean(normalizeAcademyWorkshopPhone(participant.campaignLead.lead.phone)),
       })),
     };
+  }
+
+  static async registrationInfo(
+    fastify: FastifyInstance,
+    rawRegistrationCode: unknown
+  ): Promise<AcademyWorkshopPublicRegistrationInfo> {
+    const workshop = await fastify.prisma.crm.crmAcademyWorkshop.findUnique({
+      where: { registrationCode: registrationCode(rawRegistrationCode) },
+      include: {
+        campaign: { select: { name: true, slug: true, description: true } },
+        agendaItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+        _count: { select: { participants: true } },
+      },
+    });
+    if (!workshop || CLOSED_WORKSHOP_STATUSES.has(workshop.status)) {
+      throw new AcademySalesError('Workshop không tồn tại hoặc không còn mở công khai.', 404);
+    }
+
+    const phase = registrationPhase(workshop);
+    const canJoin = phase === 'CHECKIN' || phase === 'LIVE';
+    return {
+      phase,
+      canRegister: phase === 'REGISTRATION' && workshop._count.participants < workshop.capacity,
+      zaloAuthAvailable: isZaloSocialLoginConfigured(),
+      workshop: {
+        name: workshop.campaign.name,
+        slug: workshop.campaign.slug,
+        description: workshop.campaign.description,
+        startsAt: workshop.startsAt.toISOString(),
+        endsAt: workshop.endsAt.toISOString(),
+        location: workshop.location,
+        capacity: workshop.capacity,
+        remainingSeats: Math.max(0, workshop.capacity - workshop._count.participants),
+        feeVnd: workshop.feeVnd,
+        agenda: workshop.agendaItems.map((item) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          kind: item.kind as AcademyWorkshopPublicRegistrationInfo['workshop']['agenda'][number]['kind'],
+          plannedDurationSeconds: item.plannedDurationSeconds,
+          sortOrder: item.sortOrder,
+        })),
+        joinUrl: canJoin
+          ? `${resolveAcademyWorkshopPublicOrigin()}/academy/workshops/lobby/${encodeURIComponent(workshop.displayCode)}`
+          : null,
+      },
+    };
+  }
+
+  static async register(
+    fastify: FastifyInstance,
+    rawRegistrationCode: unknown,
+    input: WorkshopRegistrationInput,
+    externalIdentity?: ExternalWorkshopRegistrationIdentity
+  ): Promise<RegisterAcademyWorkshopResponse> {
+    const code = registrationCode(rawRegistrationCode);
+    const name = cleanText(externalIdentity?.name, 150) || cleanText(input.name, 150);
+    const phone = cleanText(input.phone, 50);
+    const phoneNormalized = normalizeAcademyPhone(phone);
+    const email = cleanText(externalIdentity?.email, 150) || cleanText(input.email, 150);
+    const goal = cleanText(input.goal, 2_000);
+    const referrer = cleanText(input.referrer, 300);
+    const externalKey = externalIdentity ? registrationExternalKey(externalIdentity) : null;
+    const avatarUrl = externalIdentity?.avatarUrl || null;
+    if (!name) throw new AcademySalesError('Vui lòng nhập họ và tên.');
+    if (!phoneNormalized || phoneNormalized.length < 8 || phoneNormalized.length > 15) {
+      throw new AcademySalesError('Vui lòng nhập số điện thoại hợp lệ.');
+    }
+
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      // Lock the workshop row during the capacity decision so concurrent public
+      // registrations cannot overbook the event.
+      const locked = await tx.$queryRawUnsafe<
+        Array<{ id: number; campaign_id: number; capacity: number; status: string; registration_open: number }>
+      >(
+        `SELECT id, campaign_id, capacity, status, registration_open
+         FROM crm_academy_workshops WHERE registration_code = ? FOR UPDATE`,
+        code
+      );
+      const workshop = locked[0];
+      if (!workshop || CLOSED_WORKSHOP_STATUSES.has(workshop.status)) {
+        throw new AcademySalesError('Workshop không tồn tại hoặc không còn mở công khai.', 404);
+      }
+      if (
+        registrationPhase({ status: workshop.status, registrationOpen: Boolean(workshop.registration_open) }) !==
+        'REGISTRATION'
+      ) {
+        throw new AcademySalesError('Đăng ký online hiện đã đóng. Vui lòng liên hệ Academy để được hỗ trợ.', 409);
+      }
+
+      let lead = externalKey ? await tx.crmAcademyLead.findUnique({ where: { externalKey } }) : null;
+      if (!lead) {
+        lead = await tx.crmAcademyLead.findFirst({
+          where: { phoneNormalized },
+          orderBy: { updatedAt: 'desc' },
+        });
+      }
+      if (!lead && email) {
+        lead = await tx.crmAcademyLead.findFirst({
+          where: { email },
+          orderBy: { updatedAt: 'desc' },
+        });
+      }
+      const providerLabel = externalIdentity?.provider === 'ZALO' ? 'Zalo' : 'Google';
+      const source = externalIdentity ? `${providerLabel} Workshop registration` : 'Workshop public link';
+      const note = referrer ? `Đăng ký workshop · Người giới thiệu: ${referrer}` : `Đăng ký workshop từ ${source}`;
+      if (!lead) {
+        lead = await tx.crmAcademyLead.create({
+          data: {
+            ...(externalKey ? { externalKey } : {}),
+            name,
+            phone,
+            phoneNormalized,
+            email,
+            ...(avatarUrl ? { avatarUrl } : {}),
+            sourceSystem: externalIdentity?.provider || 'WORKSHOP_PUBLIC',
+            source,
+            goal,
+            note,
+            status: 'SCHEDULED',
+            searchText: buildAcademyLeadSearchText({ name, phone, email, source, goal, note }),
+          },
+        });
+      } else if (externalIdentity || (!lead.email && email) || (!lead.goal && goal)) {
+        const nextName = externalIdentity ? name : lead.name;
+        const nextEmail = externalIdentity ? email || lead.email : lead.email || email;
+        const nextGoal = lead.goal || goal;
+        const nextAvatarUrl = avatarUrl || lead.avatarUrl;
+        lead = await tx.crmAcademyLead.update({
+          where: { id: lead.id },
+          data: {
+            name: nextName,
+            ...(externalKey && !lead.externalKey ? { externalKey } : {}),
+            email: nextEmail,
+            goal: nextGoal,
+            ...(nextAvatarUrl ? { avatarUrl: nextAvatarUrl } : {}),
+            searchText: buildAcademyLeadSearchText({
+              name: nextName,
+              phone: lead.phone,
+              email: nextEmail,
+              source: lead.source,
+              goal: nextGoal,
+              note: lead.note,
+            }),
+          },
+        });
+      }
+
+      const membership = await tx.crmAcademyCampaignLead.upsert({
+        where: { campaignId_leadId: { campaignId: workshop.campaign_id, leadId: lead.id } },
+        create: { campaignId: workshop.campaign_id, leadId: lead.id },
+        update: { removedAt: null, removedReason: null, removedByStaffId: null },
+      });
+      const existing = await tx.crmAcademyWorkshopParticipant.findUnique({ where: { campaignLeadId: membership.id } });
+      if (existing) {
+        return {
+          participantId: existing.id,
+          attendanceStatus: existing.attendanceStatus as RegisterAcademyWorkshopResponse['attendanceStatus'],
+          alreadyRegistered: true,
+          message: 'Bạn đã đăng ký workshop này. Academy sẽ liên hệ để xác nhận.',
+        };
+      }
+
+      const participantCount = await tx.crmAcademyWorkshopParticipant.count({ where: { workshopId: workshop.id } });
+      if (participantCount >= workshop.capacity) {
+        throw new AcademySalesError('Workshop đã đủ chỗ. Vui lòng liên hệ Academy để vào danh sách chờ.', 409);
+      }
+
+      const participant = await tx.crmAcademyWorkshopParticipant.create({
+        data: {
+          workshopId: workshop.id,
+          campaignLeadId: membership.id,
+          qrTokenHash: workshopQrTokenHash(),
+          attendanceStatus: 'PENDING',
+        },
+      });
+      await tx.crmAcademyWorkshopParticipantEvent.create({
+        data: {
+          workshopId: workshop.id,
+          participantId: participant.id,
+          eventType: externalIdentity
+            ? `SELF_REGISTERED_PUBLIC_${externalIdentity.provider}`
+            : 'SELF_REGISTERED_PUBLIC',
+          metadataJson: JSON.stringify({
+            source: externalIdentity
+              ? `public_registration_${externalIdentity.provider.toLowerCase()}`
+              : 'public_registration_link',
+            provider: externalIdentity?.provider,
+            leadId: lead.id,
+          }),
+        },
+      });
+      return {
+        participantId: participant.id,
+        attendanceStatus: 'PENDING',
+        alreadyRegistered: false,
+        message: externalIdentity
+          ? `Đã xác minh ${providerLabel} và nhận đăng ký. Academy sẽ liên hệ để xác nhận chỗ tham dự của bạn.`
+          : 'Đã nhận đăng ký. Academy sẽ liên hệ để xác nhận chỗ tham dự của bạn.',
+      };
+    });
+  }
+
+  static async registerWithGoogle(
+    fastify: FastifyInstance,
+    rawRegistrationCode: unknown,
+    input: RegisterAcademyWorkshopWithGoogleRequest,
+    identity: GoogleIdentity
+  ): Promise<RegisterAcademyWorkshopResponse> {
+    return this.register(fastify, rawRegistrationCode, input, { ...identity, provider: 'GOOGLE' });
+  }
+
+  static async registerWithZalo(
+    fastify: FastifyInstance,
+    rawRegistrationCode: unknown,
+    input: RegisterAcademyWorkshopWithZaloRequest,
+    identity: ZaloSocialIdentity
+  ): Promise<RegisterAcademyWorkshopResponse> {
+    return this.register(fastify, rawRegistrationCode, input, { ...identity, provider: 'ZALO' });
   }
 
   static async selectParticipant(fastify: FastifyInstance, input: SelectAcademyWorkshopParticipantRequest) {
@@ -129,6 +414,7 @@ export class AcademyWorkshopPublicJoinService {
     if (!participant || CLOSED_WORKSHOP_STATUSES.has(participant.workshop.status)) {
       throw new AcademySalesError('Không tìm thấy học viên trong workshop.', 404);
     }
+    assertAcademyWorkshopLobbyOpen(participant.workshop);
     const expectedPhone = normalizeAcademyWorkshopPhone(participant.campaignLead.lead.phone);
     if (expectedPhone) {
       const suppliedPhone = normalizeAcademyWorkshopPhone(input.phone);
@@ -159,6 +445,7 @@ export class AcademyWorkshopPublicJoinService {
       if (!workshop || CLOSED_WORKSHOP_STATUSES.has(workshop.status)) {
         throw new AcademySalesError('Workshop không tồn tại hoặc đã đóng.', 404);
       }
+      assertAcademyWorkshopLobbyOpen(workshop);
 
       let lead = await tx.crmAcademyLead.findUnique({ where: { externalKey } });
       if (!lead) {

@@ -194,6 +194,10 @@ function displayCode() {
   return randomBytes(4).toString('hex').toUpperCase();
 }
 
+function registrationCode() {
+  return randomBytes(18).toString('base64url');
+}
+
 export function toAcademyWorkshopQuiz(row: SafeAny, revealAnswers = false): AcademyWorkshopQuiz | null {
   if (!row) return null;
   return {
@@ -512,6 +516,11 @@ export class AcademyWorkshopService {
       createdAt: new Date(row.createdAt).toISOString(),
       updatedAt: new Date(row.updatedAt).toISOString(),
       showInSidebar: Boolean(row.campaign.showInSidebar),
+      registrationCode: row.registrationCode ?? null,
+      registrationOpen: Boolean(row.registrationOpen),
+      registrationUrl: row.registrationCode
+        ? `${resolveAcademyWorkshopPublicOrigin()}/academy/workshops/register/${encodeURIComponent(String(row.registrationCode))}`
+        : null,
       displayCode: String(row.displayCode),
       sharedJoinUrl: `${resolveAcademyWorkshopPublicOrigin()}/academy/workshops/lobby/${encodeURIComponent(String(row.displayCode))}`,
       summary: summarize(participants),
@@ -624,6 +633,7 @@ export class AcademyWorkshopService {
           feeDueAt,
           status: 'SCHEDULED',
           agendaTemplateId: agendaTemplate.id,
+          registrationCode: registrationCode(),
           displayCode: displayCode(),
           agendaItems: agenda.length ? { create: agenda } : undefined,
         },
@@ -686,6 +696,8 @@ export class AcademyWorkshopService {
           feeVnd: input.feeVnd === undefined ? row.feeVnd : Math.max(0, Math.round(input.feeVnd)),
           feeDueAt: input.feeDueAt === undefined ? row.feeDueAt : parseDate(input.feeDueAt, 'Hạn đóng phí', true),
           status: input.status || row.status,
+          registrationOpen:
+            input.registrationOpen === undefined ? row.registrationOpen : Boolean(input.registrationOpen),
           agendaTemplateId: agendaTemplate?.id ?? null,
         },
       });

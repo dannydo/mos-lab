@@ -10,7 +10,11 @@ import {
   type SafeAny,
 } from '@mos-lab/shared';
 import { AcademyWorkshopBonusService } from './academy-workshop-bonus.service.js';
-import { AcademyWorkshopPublicJoinService, normalizeAcademyWorkshopPhone } from './academy-workshop-public.service.js';
+import {
+  AcademyWorkshopPublicJoinService,
+  getAcademyWorkshopPublicRegistrationPhase,
+  normalizeAcademyWorkshopPhone,
+} from './academy-workshop-public.service.js';
 import {
   WorkshopRealtimeHub,
   buildAcademyWorkshopQuizDraftReplacementData,
@@ -28,6 +32,20 @@ test('derives workshop fee readiness exclusively from append-only ledger totals 
   assert.equal(calculateAcademyWorkshopFeeStatus(500_000, 500_000, false), 'PAID');
   assert.equal(calculateAcademyWorkshopFeeStatus(500_000, 0, true), 'WAIVED');
   assert.equal(calculateAcademyWorkshopFeeStatus(500_000, 550_000 - 50_000, false), 'PAID');
+});
+
+test('keeps public registration, check-in, and live workshop phases separate', () => {
+  assert.equal(
+    getAcademyWorkshopPublicRegistrationPhase({ status: 'SCHEDULED', registrationOpen: true }),
+    'REGISTRATION'
+  );
+  assert.equal(getAcademyWorkshopPublicRegistrationPhase({ status: 'SCHEDULED', registrationOpen: false }), 'CLOSED');
+  assert.equal(
+    getAcademyWorkshopPublicRegistrationPhase({ status: 'CHECKIN_OPEN', registrationOpen: true }),
+    'CHECKIN'
+  );
+  assert.equal(getAcademyWorkshopPublicRegistrationPhase({ status: 'LIVE', registrationOpen: true }), 'LIVE');
+  assert.equal(getAcademyWorkshopPublicRegistrationPhase({ status: 'COMPLETED', registrationOpen: true }), 'COMPLETED');
 });
 
 test('scores correct answers from 500–1000 and preserves lower response time as tie-break evidence', () => {
@@ -323,6 +341,28 @@ test('shared workshop join lists only avatar/name and requires phone verificatio
     { id: 2, name: 'Không SĐT', avatarUrl: null, requiresPhone: false },
   ]);
   assert.equal('phone' in info.participants[0], false);
+});
+
+test('does not expose the event-day lobby before check-in opens', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmAcademyWorkshop: {
+          findUnique: async () => ({
+            id: 5,
+            campaign: { name: 'Happy Friday', slug: 'happy-friday' },
+            startsAt: new Date('2026-08-28T02:30:00.000Z'),
+            endsAt: new Date('2026-08-28T05:30:00.000Z'),
+            location: 'Wings Academy',
+            status: 'SCHEDULED',
+            participants: [],
+          }),
+        },
+      },
+    },
+  } as SafeAny;
+
+  await assert.rejects(() => AcademyWorkshopPublicJoinService.sharedJoinInfo(fastify, 'EFBD14A0'), /chưa mở check-in/);
 });
 
 test('shared workshop join verifies a configured phone and lets phone-less students enter directly', async () => {

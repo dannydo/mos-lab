@@ -87,6 +87,10 @@ export interface AcademyWorkshopListItem {
 export interface AcademyWorkshopDetail extends AcademyWorkshopListItem {
   showInSidebar: boolean;
   displayCode: string;
+  /** Public code is separate from the event-day display/lobby code. */
+  registrationCode: string | null;
+  registrationOpen: boolean;
+  registrationUrl: string | null;
   /** The reusable template that the workshop agenda was copied from. */
   agendaTemplate: AcademyWorkshopAgendaTemplate | null;
   /** Stable workshop-wide QR target for participant self-selection. */
@@ -385,6 +389,71 @@ export interface AcademyWorkshopSharedJoinInfo {
   participants: AcademyWorkshopSharedJoinParticipant[];
 }
 
+export type AcademyWorkshopPublicPhase = 'REGISTRATION' | 'CHECKIN' | 'LIVE' | 'COMPLETED' | 'CLOSED';
+
+export interface AcademyWorkshopPublicRegistrationInfo {
+  phase: AcademyWorkshopPublicPhase;
+  canRegister: boolean;
+  /** Whether the public Zalo OAuth flow has server-side credentials configured. */
+  zaloAuthAvailable: boolean;
+  workshop: {
+    name: string;
+    slug: string;
+    description: string | null;
+    startsAt: string;
+    endsAt: string;
+    location: string;
+    capacity: number;
+    remainingSeats: number;
+    feeVnd: number;
+    agenda: Array<{
+      id: number;
+      title: string;
+      description: string | null;
+      kind: AcademyWorkshopAgendaKind;
+      plannedDurationSeconds: number;
+      sortOrder: number;
+    }>;
+    /** Available only from check-in onward; never reveal the roster itself. */
+    joinUrl: string | null;
+  };
+}
+
+export interface RegisterAcademyWorkshopRequest {
+  name: string;
+  phone: string;
+  email?: string | null;
+  goal?: string | null;
+  referrer?: string | null;
+}
+
+/**
+ * A Google ID credential identifies the learner; phone is still collected so
+ * Academy can confirm attendance and send practical event instructions.
+ */
+export interface RegisterAcademyWorkshopWithGoogleRequest {
+  credential: string;
+  phone: string;
+  goal?: string | null;
+  referrer?: string | null;
+}
+
+/** A short-lived ticket is issued only after the server completes Zalo OAuth. */
+export interface RegisterAcademyWorkshopWithZaloRequest {
+  ticket: string;
+  phone: string;
+  email?: string | null;
+  goal?: string | null;
+  referrer?: string | null;
+}
+
+export interface RegisterAcademyWorkshopResponse {
+  participantId: number;
+  attendanceStatus: AcademyWorkshopAttendanceStatus;
+  alreadyRegistered: boolean;
+  message: string;
+}
+
 export type AcademyWorkshopRealtimeEvent =
   | { type: 'STATE_SNAPSHOT'; data: AcademyWorkshopLiveState }
   | { type: 'LOBBY_UPDATED'; data: { participantCount: number; connectedParticipantCount: number } }
@@ -415,6 +484,7 @@ export interface CreateAcademyWorkshopRequest {
 
 export interface UpdateAcademyWorkshopRequest extends Partial<CreateAcademyWorkshopRequest> {
   status?: AcademyWorkshopStatus;
+  registrationOpen?: boolean;
 }
 
 export interface ListAcademyWorkshopsParams extends PageQuery {

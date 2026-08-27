@@ -11,6 +11,7 @@ import type {
   AcademyWorkshopReward,
   AcademyWorkshopSummary,
 } from '@mos-lab/shared';
+import { apiClient } from '../../../../lib/api-client';
 import {
   AppIcon,
   DataSection,
@@ -50,7 +51,23 @@ export function AcademyWorkshopHeaderActions({
         iconOnly
         onUpdated={onUpdated}
       />
-      <AcademyWorkshopSharedQrButton workshopName={workshop.name} joinUrl={workshop.sharedJoinUrl} iconOnly />
+      {workshop.registrationUrl ? (
+        <AcademyWorkshopSharedQrButton
+          workshopName={workshop.name}
+          joinUrl={workshop.registrationUrl}
+          label="Link đăng ký"
+          purpose="registration"
+          registrationOpen={workshop.registrationOpen}
+          onRegistrationOpenChange={
+            canEdit
+              ? async (registrationOpen) => {
+                  onUpdated(await apiClient.academySales.workshops.update(workshop.id, { registrationOpen }));
+                }
+              : undefined
+          }
+          iconOnly
+        />
+      ) : null}
       <IconButton
         label="Mở Leaderboard"
         icon={ExternalLink}

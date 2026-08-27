@@ -465,7 +465,11 @@ export default function AcademyWorkshopsPage() {
                 precision={0}
                 step={100000}
                 className="w-full"
-                formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+                formatter={(value, { userTyping }) => {
+                  if (value === undefined) return '';
+                  return userTyping ? String(value) : `${Math.round(Number(value)).toLocaleString('vi-VN')} đ`;
+                }}
+                parser={(value) => Number(String(value || '').replace(/\D/g, ''))}
               />
             </Form.Item>
             <Form.Item name="feeDueAt" label="Hạn đóng phí">
