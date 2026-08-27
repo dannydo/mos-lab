@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { GoogleIdentityError, validateGoogleTokenInfo } from './google-identity.service.js';
+import { GoogleIdentityError, googleIdTokenAvatar, validateGoogleTokenInfo } from './google-identity.service.js';
 
 const VALID_TOKEN_INFO = {
   aud: 'client-id.apps.googleusercontent.com',
@@ -38,4 +38,15 @@ test('rejects expired or unverified Google credentials', () => {
     () => validateGoogleTokenInfo({ ...VALID_TOKEN_INFO, email_verified: 'false' }, VALID_TOKEN_INFO.aud, 1_000),
     /chưa được xác minh/
   );
+});
+
+test('falls back to the signed ID token picture when tokeninfo omits it', () => {
+  const token = [
+    'header',
+    Buffer.from(JSON.stringify({ picture: 'https://lh3.googleusercontent.com/avatar' })).toString('base64url'),
+    'signature',
+  ].join('.');
+  assert.equal(googleIdTokenAvatar(token), 'https://lh3.googleusercontent.com/avatar');
+  assert.equal(googleIdTokenAvatar('not-a-token'), null);
+  assert.equal(googleIdTokenAvatar('header.eyJwaWN0dXJlIjoiaHR0cDovL2V4YW1wbGUuY29tIn0.signature'), null);
 });
