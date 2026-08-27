@@ -438,6 +438,11 @@ export interface RegisterAcademyWorkshopWithGoogleRequest {
   referrer?: string | null;
 }
 
+/** Verifies a Google identity before checking whether it already joined a workshop. */
+export interface FindAcademyWorkshopRegistrationWithGoogleRequest {
+  credential: string;
+}
+
 /** A short-lived ticket is issued only after the server completes Zalo OAuth. */
 export interface RegisterAcademyWorkshopWithZaloRequest {
   ticket: string;
@@ -445,6 +450,11 @@ export interface RegisterAcademyWorkshopWithZaloRequest {
   email?: string | null;
   goal?: string | null;
   referrer?: string | null;
+}
+
+/** Verifies the short-lived Zalo ticket before checking an existing registration. */
+export interface FindAcademyWorkshopRegistrationWithZaloRequest {
+  ticket: string;
 }
 
 export interface RegisterAcademyWorkshopResponse {
