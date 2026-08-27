@@ -20,7 +20,7 @@ import {
   BgColorsOutlined,
   ColumnHeightOutlined,
 } from '@ant-design/icons';
-import { Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRound } from 'lucide-react';
+import { CalendarPlus, Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRound } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -37,6 +37,7 @@ const CvScheduleDrawer = dynamic(
   () => import('./schedule-calendar/components/CvScheduleDrawer').then((m) => m.CvScheduleDrawer),
   { ssr: false }
 );
+const BookingWizardDrawer = dynamic(() => import('../../components/BookingWizardDrawer'), { ssr: false });
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
@@ -88,6 +89,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Global CV Schedule Drawer state
   const [isCvDrawerOpen, setIsCvDrawerOpen] = useState(false);
+  const [isBookingWizardOpen, setIsBookingWizardOpen] = useState(false);
   const [cvDrawerDate, setCvDrawerDate] = useState(() => dayjs());
   const [workingCvCount, setWorkingCvCount] = useState(0);
   const hasAuthenticatedUser = !loading && Boolean(user?.id);
@@ -575,6 +577,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <HeaderIconButton action="navigation" label="Mở điều hướng" icon={Menu} onClick={toggleSidebar} />
               )}
               <HeaderLeftToolbar onOpenCvDrawer={() => setIsCvDrawerOpen(true)} workingCvCount={workingCvCount} />
+              <HeaderIconButton
+                action="book-appointment"
+                label="Book lịch"
+                icon={CalendarPlus}
+                tone="accent"
+                onClick={() => setIsBookingWizardOpen(true)}
+              />
             </div>
             <div className="dashboard-header-right">
               {isImpersonating && (
@@ -813,6 +822,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           open={isPendingAllocationOpen}
           onClose={() => setIsPendingAllocationOpen(false)}
           onSuccessRefresh={fetchPendingAllocationsCount}
+        />
+
+        <BookingWizardDrawer
+          open={isBookingWizardOpen}
+          onClose={() => setIsBookingWizardOpen(false)}
+          onSuccess={() => setIsBookingWizardOpen(false)}
         />
 
         <style jsx global>{`

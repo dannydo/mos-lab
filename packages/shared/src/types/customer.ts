@@ -114,6 +114,39 @@ export interface CustomerStats {
   single: number;
 }
 
+/**
+ * The legacy customer form values that can be captured before an appointment
+ * exists. Name and phone identify the lead; every other legacy field is
+ * deliberately optional.
+ */
+export interface CreateCustomerInput {
+  name: string;
+  phone: string;
+  /** Explicit country status selected by the operator. When absent, infer it from the phone. */
+  isForeign?: boolean | null;
+  referrerPhone?: string | null;
+  genderAttributeId?: number | null;
+  dateOfBirth?: string | null;
+  languageId?: number | null;
+  socialProfileName?: string | null;
+  socialProfileLink?: string | null;
+  socialMessageLink?: string | null;
+  campaignId?: number | null;
+  advertiseId?: number | null;
+  storeId?: number | null;
+}
+
+export interface CreateCustomerResponse {
+  success: boolean;
+  customer: Pick<Customer, 'id' | 'name' | 'phone'>;
+  message: string;
+}
+
+export interface CustomerCreationOptionsResponse {
+  campaigns: Array<{ id: number; name: string }>;
+  advertises: Array<{ id: number; campaignId: number; name: string }>;
+}
+
 export interface DailyActivity {
   date: string; // YYYY-MM-DD
   hasCall: boolean;

@@ -3,6 +3,7 @@ import { requireAuth } from '../../middlewares/auth.js';
 import {
   BucketType,
   canManageCustomerAllocation,
+  CreateCustomerInput,
   isAdminOrSuperAdminRole,
   SafeAny,
   UpdateBookingRequest,
@@ -25,6 +26,7 @@ import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
 import { CustomerAccessService } from './services/customer-access.service.js';
 import { CustomerServiceFilterCatalogService } from './services/customer-service-filter-catalog.service.js';
 import { CvAttendanceService } from './services/cv-attendance.service.js';
+import { CustomerCreationError, CustomerCreationService } from './services/customer-creation.service.js';
 import {
   BookingUpdateValidationError,
   buildLegacyBookingWindow,
@@ -3592,6 +3594,103 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /api/customers/create-options
+  // Source selections used by the legacy-compatible standalone customer form.
+  fastify.get('/customers/create-options', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { role: string };
+    const allowedRoles = ['admin', 'manager', 'oc', 'cc', 'ls', 'telesales', 'booker'];
+    if (!isAdminOrSuperAdminRole(user.role) && !allowedRoles.includes(user.role)) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
+    }
+
+    try {
+      const [campaigns, advertises] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT c.id, COALESCE(MAX(CASE WHEN cl.language_id = 1 THEN cl.campaign_name END), MAX(cl.campaign_name)) AS name
+          FROM campaign c
+          LEFT JOIN campaign_language cl ON cl.campaign_id = c.id
+          WHERE c.is_disabled = 0
+          GROUP BY c.id
+          HAVING name IS NOT NULL
+          ORDER BY name ASC
+        `),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT a.id, a.campaign_id AS campaignId,
+                 COALESCE(MAX(CASE WHEN al.language_id = 1 THEN al.advertise_name END), MAX(al.advertise_name)) AS name
+          FROM advertise a
+          LEFT JOIN advertise_language al ON al.advertise_id = a.id
+          WHERE a.is_disabled = 0
+          GROUP BY a.id, a.campaign_id
+          HAVING name IS NOT NULL
+          ORDER BY name ASC
+        `),
+      ]);
+
+      return reply.send({
+        campaigns: campaigns.map((campaign) => ({ id: Number(campaign.id), name: String(campaign.name) })),
+        advertises: advertises.map((advertise) => ({
+          id: Number(advertise.id),
+          campaignId: Number(advertise.campaignId),
+          name: String(advertise.name),
+        })),
+      });
+    } catch (error) {
+      fastify.log.error(error as Error, 'Get customer creation options error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải nguồn khách hàng.' });
+    }
+  });
+
+  // POST /api/customers/create
+  // Create a customer without creating an appointment, preserving the fields
+  // and referral relationship supported by Wings Lashes legacy.
+  fastify.post('/customers/create', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as { id: number; role: string; displayName?: string };
+    const allowedRoles = ['admin', 'manager', 'oc', 'cc', 'ls', 'telesales', 'booker'];
+    if (!isAdminOrSuperAdminRole(user.role) && !allowedRoles.includes(user.role)) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
+    }
+
+    try {
+      const created = await CustomerCreationService.create(fastify, user, request.body as CreateCustomerInput);
+      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({ where: { id: user.id }, select: { id: true } });
+
+      // A customer created by a Booker must remain accessible to that Booker
+      // even though no booking exists yet to trigger the usual auto-assignment.
+      if (crmStaff) {
+        const existingAssignment = await fastify.prisma.crm.crmCustomerAssignment.findUnique({
+          where: { legacyUserId: created.customer.id },
+          select: { id: true },
+        });
+        if (!existingAssignment) {
+          await fastify.prisma.crm.crmCustomerAssignment.create({
+            data: { legacyUserId: created.customer.id, staffId: user.id, assignedBy: user.id },
+          });
+          await fastify.prisma.crm.crmAssignmentHistory.create({
+            data: {
+              batchId: `alloc_customer_create_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+              legacyUserId: created.customer.id,
+              prevStaffId: null,
+              newStaffId: user.id,
+              assignedBy: user.id,
+            },
+          });
+        }
+      }
+
+      return reply.status(201).send({
+        success: true,
+        customer: created.customer,
+        message: `Đã thêm khách hàng ${created.customer.name}. Chưa tạo lịch hẹn.`,
+      });
+    } catch (error) {
+      if (error instanceof CustomerCreationError) {
+        return reply.status(error.statusCode).send({ error: 'Bad Request', message: error.message });
+      }
+      fastify.log.error(error as Error, 'Create standalone customer error:');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể thêm khách hàng.' });
+    }
+  });
+
   // POST /api/customers/booking
   // Create a new booking (order and order_service) in the legacy core database
   fastify.post('/customers/booking', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -3618,57 +3717,16 @@ export async function customerRoutes(fastify: FastifyInstance) {
       promotionId,
       campaignPromotionId,
       referralPhone,
+      isForeign,
+      is_foreign,
     } = request.body as SafeAny;
 
+    const explicitForeignStatus =
+      typeof isForeign === 'boolean' ? isForeign : typeof is_foreign === 'boolean' ? is_foreign : undefined;
+
     try {
-      // Find matching legacy user ID by CRM user (Resilient lookup with fallback)
-      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { id: user.id },
-        select: { legacyStaffId: true, displayName: true, username: true },
-      });
-
-      let validStaffId: number | null = crmStaff?.legacyStaffId || null;
-      if (validStaffId) {
-        const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT id FROM user WHERE id = ? LIMIT 1`,
-          validStaffId
-        );
-        if (staffExists.length === 0) {
-          validStaffId = null;
-        }
-      }
-
-      if (!validStaffId && user.displayName) {
-        const staffByName = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT user_id FROM user_profile WHERE (full_name = ? OR full_name LIKE ?) AND provider = 'Staff' AND is_disabled = 0 LIMIT 1`,
-          user.displayName.trim(),
-          `%${user.displayName.trim()}%`
-        );
-        if (staffByName.length > 0 && staffByName[0].user_id) {
-          validStaffId = Number(staffByName[0].user_id);
-        }
-      }
-
-      if (!validStaffId) {
-        validStaffId = 1; // Default fallback to Admin / Core Staff ID 1
-      }
-
-      // Check referrer phone
-      let referrerUserId: number | null = null;
-      if (referralPhone && referralPhone.trim()) {
-        const referrerContact = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT user_id FROM user_contact WHERE phone_number = ? AND is_disabled = 0 LIMIT 1`,
-          referralPhone.trim()
-        );
-        if (referrerContact.length > 0) {
-          referrerUserId = Number(referrerContact[0].user_id);
-        } else {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Không tìm thấy tài khoản người giới thiệu với SĐT: ${referralPhone}. Vui lòng kiểm tra lại.`,
-          });
-        }
-      }
+      const validStaffId = await CustomerCreationService.resolveLegacyStaffId(fastify, user);
+      const referrerUserId = await CustomerCreationService.resolveReferrerUserId(fastify, referralPhone);
 
       let finalCustomerId: number | null = null;
       if (customerId !== undefined && customerId !== null && customerId !== '') {
@@ -3678,83 +3736,29 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      if (!finalCustomerId && newCustomerPhone && newCustomerPhone.trim()) {
-        const phoneClean = newCustomerPhone.trim();
-        const existingUser = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT user_id FROM user_contact WHERE phone_number = ? AND is_disabled = 0 LIMIT 1`,
-          phoneClean
-        );
-        if (existingUser.length > 0 && existingUser[0].user_id) {
-          finalCustomerId = Number(existingUser[0].user_id);
-        }
+      if (!finalCustomerId) {
+        finalCustomerId = await CustomerCreationService.findCustomerIdByPhone(fastify, newCustomerPhone);
       }
 
       if (finalCustomerId && !(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
 
-      // 1. If it's a new customer, create parent user, user_profile, and user_contact records
+      // 1. New leads use the same customer-creation service as the standalone
+      // flow, keeping referrer attribution and legacy profile records aligned.
       if (!finalCustomerId) {
-        // Insert parent user record (default to Female 202 to avoid legacy system filtering)
-        await fastify.prisma.legacy.$executeRawUnsafe(
-          `INSERT INTO user (created_staff_id, attribute_gender_id, date_created) VALUES (?, 202, NOW())`,
-          validStaffId
-        );
-
-        const lastInsertedUser =
-          await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`SELECT LAST_INSERT_ID() as id`);
-        if (lastInsertedUser.length === 0 || !lastInsertedUser[0].id) {
-          throw new Error('Failed to create new user ID in legacy database.');
-        }
-        finalCustomerId = Number(lastInsertedUser[0].id);
-
-        const safeCustomerName = (newCustomerName || 'Khách Hàng Mới').trim();
-        const randPasscode = Math.random().toString(36).substring(2, 8);
-        const nameParts = safeCustomerName.split(/\s+/);
-        const lastName = nameParts[0] || '';
-        const firstName = nameParts.slice(1).join(' ') || '';
-
-        await fastify.prisma.legacy.$executeRawUnsafe(
-          `INSERT INTO user_profile (
-            user_id, client_id, client_business_id, user_group_id, passcode, provider, 
-            first_name, last_name, full_name, client_store_id, is_disabled, 
-            is_leaved, is_deleted, date_created, language_id, access_user_group_ids,
-            is_academy, is_temporary, referrer_user_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
-          finalCustomerId,
-          11,
-          1,
-          1,
-          randPasscode,
-          'Client',
-          firstName,
-          lastName,
-          safeCustomerName,
-          Number(storeId) || 1,
-          0,
-          0,
-          0,
-          1,
-          '',
-          0,
-          0,
-          referrerUserId
-        );
-
-        if (newCustomerPhone) {
-          await fastify.prisma.legacy.$executeRawUnsafe(
-            `INSERT INTO user_contact (user_id, phone_number, is_disabled, date_created)
-             VALUES (?, ?, 0, NOW())`,
-            finalCustomerId,
-            newCustomerPhone
-          );
-        }
+        const created = await CustomerCreationService.create(fastify, user, {
+          name: newCustomerName || 'Khách Hàng Mới',
+          phone: newCustomerPhone || '',
+          referrerPhone: referralPhone || null,
+          // The existing booking flow historically defaults this field to Nữ.
+          genderAttributeId: 202,
+          storeId: Number(storeId) || 1,
+          isForeign: explicitForeignStatus,
+        });
+        finalCustomerId = created.customer.id;
       } else {
-        // If existing customer, update referrer if they don't have one yet
-        if (referrerUserId) {
-          await fastify.prisma.legacy.$executeRawUnsafe(
-            `UPDATE user_profile SET referrer_user_id = ? WHERE user_id = ? AND referrer_user_id IS NULL`,
-            referrerUserId,
-            finalCustomerId
-          );
+        await CustomerCreationService.attachReferrerIfMissing(fastify, finalCustomerId, user, referrerUserId);
+        if (typeof explicitForeignStatus === 'boolean') {
+          await CustomerCreationService.setForeignStatus(fastify, finalCustomerId, explicitForeignStatus);
         }
       }
 
@@ -4045,6 +4049,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
     } catch (error: SafeAny) {
       if (error instanceof BookingPromotionError) {
         return reply.status(400).send({ error: 'Bad Request', message: error.message });
+      }
+      if (error instanceof CustomerCreationError) {
+        return reply.status(error.statusCode).send({ error: 'Bad Request', message: error.message });
       }
       fastify.log.error(error as Error, '[Booking] Failed to create booking:');
       return reply.status(500).send({

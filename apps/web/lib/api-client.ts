@@ -1,6 +1,9 @@
 import api from './api';
 import {
   Customer,
+  CreateCustomerInput,
+  CreateCustomerResponse,
+  CustomerCreationOptionsResponse,
   CustomerServiceFilterOptionsResponse,
   TouchpointStatus,
   ListCustomersParams,
@@ -642,6 +645,13 @@ export const apiClient = {
     },
     getStats: async (params: ListCustomersParams): Promise<CustomerStatsResponse> => {
       return dedupeInFlightApiGet<CustomerStatsResponse>('/customers/stats', params);
+    },
+    getCreationOptions: async (): Promise<CustomerCreationOptionsResponse> => {
+      return dedupeInFlightApiGet<CustomerCreationOptionsResponse>('/customers/create-options');
+    },
+    create: async (data: CreateCustomerInput): Promise<CreateCustomerResponse> => {
+      const response = await api.post('/customers/create', data);
+      return response.data;
     },
     getLocaStats: async (
       params?: Record<string, unknown>

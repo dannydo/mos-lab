@@ -39,6 +39,7 @@ import { TechnicianSelector } from './booking/TechnicianSelector';
 import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
 import { CvDatePicker } from './booking/CvDatePicker';
+import CreateCustomerModal from './CreateCustomerModal';
 import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
@@ -96,6 +97,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   const [customerList, setCustomerList] = useState<SafeAny[]>([]);
   const [searchingCustomers, setSearchingCustomers] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<SafeAny>(null);
+  const [isCreateCustomerModalOpen, setIsCreateCustomerModalOpen] = useState(false);
 
   // Promotion & Referral states
   const [promotions, setPromotions] = useState<SafeAny[]>([]);
@@ -1042,17 +1044,35 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                 <span style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
                   <UserOutlined /> THÔNG TIN KHÁCH HÀNG
                 </span>
-                <Radio.Group
-                  size="small"
-                  value={isNewLead ? 'new' : 'existing'}
-                  onChange={(e) => {
-                    setIsNewLead(e.target.value === 'new');
-                    setSelectedCustomer(null);
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                    justifyContent: 'flex-end',
                   }}
                 >
-                  <Radio.Button value="existing">Khách hàng cũ</Radio.Button>
-                  <Radio.Button value="new">Khách mới</Radio.Button>
-                </Radio.Group>
+                  <Button
+                    size="small"
+                    type="dashed"
+                    icon={<UserOutlined />}
+                    onClick={() => setIsCreateCustomerModalOpen(true)}
+                  >
+                    Thêm khách, chưa đặt lịch
+                  </Button>
+                  <Radio.Group
+                    size="small"
+                    value={isNewLead ? 'new' : 'existing'}
+                    onChange={(e) => {
+                      setIsNewLead(e.target.value === 'new');
+                      setSelectedCustomer(null);
+                    }}
+                  >
+                    <Radio.Button value="existing">Khách hàng cũ</Radio.Button>
+                    <Radio.Button value="new">Khách mới</Radio.Button>
+                  </Radio.Group>
+                </div>
               </div>
             }
             styles={{ body: { padding: '16px' } }}
@@ -1972,6 +1992,17 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           </div>
         </div>
       )}
+
+      <CreateCustomerModal
+        open={isCreateCustomerModalOpen}
+        onClose={() => setIsCreateCustomerModalOpen(false)}
+        onCreated={(customer) => {
+          setSelectedCustomer(customer);
+          setCustomerList([customer]);
+          setIsNewLead(false);
+          message.info('Đã chọn khách vừa thêm. Bạn có thể tiếp tục đặt lịch hoặc đóng luồng này.');
+        }}
+      />
 
       {/* Booking Template Manager Modal */}
       <BookingTemplateManagerModal

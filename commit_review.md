@@ -2,43 +2,41 @@
 request_feedback: true
 ---
 
-# Commit review — Compact Google sign-in for workshop lobby
+# Commit review
 
 ## Danh sách file thay đổi
 
-- `apps/web/app/academy/workshops/lobby/[code]/page.tsx`
-- `apps/web/app/academy/workshops/components/GoogleWorkshopJoinButton.tsx`
-- `commit_review.md`
+- `apps/api/src/modules/customers/routes.ts`
+- `apps/api/src/modules/customers/services/customer-creation.service.ts` _(new)_
+- `apps/web/app/dashboard/layout.tsx`
+- `apps/web/components/BookingWizardDrawer.tsx`
+- `apps/web/components/CreateCustomerModal.tsx` _(new)_
+- `apps/web/lib/api-client.ts`
+- `packages/shared/src/types/customer.ts`
 
 ## Tóm tắt thay đổi
 
-- Rút khối Google sign-in còn tiêu đề **Dùng Gmail để vào** và một câu mô tả ngắn, dễ hiểu.
-- Thu gọn padding, tiêu đề, khoảng trống và empty state trên màn hình nhỏ để lobby gọn hơn ở viewport iPhone 12 (390 × 844).
-- Giới hạn Google Identity button ở 320px, vẫn co theo chiều rộng màn hình nên không tràn ngang card trên điện thoại.
-- Không thay đổi Google credential, API, quy tắc check-in, hay trạng thái tải/lỗi.
+- Thêm nút đặt lịch dạng icon trên thanh menu đầu trang và dùng lại Booking Wizard hiện hữu.
+- Thêm flow tạo khách độc lập ngay trong Booking Wizard: tạo hồ sơ không sinh lịch hẹn, sau đó có thể chọn khách vừa tạo để tiếp tục đặt lịch.
+- Đồng bộ form tạo khách với Wings Lashes legacy: họ tên, SĐT, người giới thiệu ưu tiên, hồ sơ tùy chọn, Facebook/Messenger và nguồn campaign/quảng cáo.
+- Thêm tùy chọn khách nước ngoài với tự nhận diện theo SĐT, cho phép xác nhận thủ công và lưu trạng thái override.
+- Tập trung hóa logic tạo khách ở backend để flow tạo khách độc lập và khách mới trong booking dùng cùng nghiệp vụ referral, nguồn khách và dữ liệu legacy.
+
+## Production migration plan
+
+- CRM schema changes: **None**.
+- Pending production data migrations included in this change: **None**.
+- `bash scripts/deploy/migration-plan.sh origin/main`: không có schema hoặc data migration cần deploy.
+- `pnpm --filter @mos-lab/api data-migrations:validate`: đã xác thực 3 production data migrations hiện có; không có migration mới trong thay đổi này.
 
 ## Commit message đề xuất
 
 ```text
-fix(workshops): compact Google sign-in on mobile
+feat(customers): add standalone customer creation flow
 
-- Shorten the Google lobby copy for first-time attendees
-- Reduce lobby spacing and heading scale on phone screens
-- Cap the Google Identity button width at 320px
+- Add a global booking entry point with a legacy-compatible customer form
+- Persist referral, source, social profile, and foreign-customer status
+- Reuse a unified backend service for standalone and booking lead creation
 
 AI-assisted. Reviewed and verified.
 ```
-
-## Production migration plan
-
-- CRM schema: **None**.
-- Production data migrations: **None**.
-- Frontend-only change; Vercel deploys automatically after pushing `main`.
-
-## Verification
-
-- `pnpm --filter @mos-lab/web exec eslint "app/academy/workshops/lobby/[code]/page.tsx" "app/academy/workshops/components/GoogleWorkshopJoinButton.tsx"`: passed.
-- `pnpm --filter @mos-lab/web build`: passed (production compilation and TypeScript).
-- `pnpm --filter @mos-lab/api data-migrations:validate`: passed.
-- `bash scripts/deploy/migration-plan.sh origin/main`: no CRM schema or data migration changes.
-- Browser QA will verify the live Vercel deployment at 390 × 844 before handoff.
