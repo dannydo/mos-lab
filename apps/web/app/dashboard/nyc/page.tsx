@@ -625,22 +625,20 @@ export default function NycCampaignPage() {
         rowKey="id"
         loading={loading}
         className="antd-custom-table"
-        onChange={(pagination, filters, sorter: SafeAny) => {
-          if (sorter && sorter.field) {
-            const field = sorter.field;
-            const order = sorter.order;
-            if (!order) {
-              setSortField('daysSinceLastVisit_asc');
-            } else if (field === 'daysSinceLastVisit') {
-              setSortField(order === 'ascend' ? 'daysSinceLastVisit_asc' : 'daysSinceLastVisit_desc');
-            } else if (field === 'totalSpent') {
-              setSortField(order === 'ascend' ? 'totalSpent_asc' : 'totalSpent_desc');
-            } else if (field === 'name') {
-              setSortField(order === 'ascend' ? 'name_asc' : 'name_desc');
-            } else if (field === 'id') {
-              setSortField(order === 'ascend' ? 'id_asc' : 'id_desc');
-            }
-          }
+        onChange={(_pagination, _filters, tableSorter: SafeAny) => {
+          const sorter = Array.isArray(tableSorter) ? tableSorter[0] : tableSorter;
+          if (!sorter?.field || !sorter.order) return;
+
+          const sortableFields: Record<string, string> = {
+            daysSinceLastVisit: 'daysSinceLastVisit',
+            totalSpent: 'totalSpent',
+            name: 'name',
+            id: 'id',
+          };
+          const sortableField = sortableFields[String(sorter.field)];
+          if (!sortableField) return;
+
+          setSortField(`${sortableField}_${sorter.order === 'ascend' ? 'asc' : 'desc'}`);
         }}
         pagination={{
           current: currentPage,
