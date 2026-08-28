@@ -35,6 +35,7 @@ const MANAGER_ROLES = new Set(['admin', 'super_admin', 'manager']);
 const TEAM_LEADER_ROLE = 'ls';
 const ACADEMY_ROLES = new Set(['admin', 'super_admin', 'manager', 'ls', 'telesales']);
 export const ACADEMY_TEAM_CODE = 'ACADEMY';
+export const ACADEMY_DEPARTMENT_CODE = 'ACADEMY';
 export const ACADEMY_TEAM_FALLBACK_CONFIG_KEY = 'ACTIVE_ACADEMY_STAFF_CONFIG';
 const ICT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 const HOT_WINDOW_HOURS = 72;
@@ -73,20 +74,17 @@ export function canAccessAcademySales(actor: AcademyActor) {
 
 /**
  * Authoritative workspace gate. Role names only determine what an approved
- * Academy user can do inside the workspace; membership determines whether the
- * workspace is visible or reachable at all.
+ * Academy user can do inside the workspace; active membership in an Academy
+ * Department team determines whether the workspace is visible or reachable.
  */
 export async function getAcademyWorkspaceAccess(fastify: FastifyInstance, actor: AcademyActor) {
   if (isAdminOrSuperAdminRole(actor.role)) {
     return { canAccess: true, scope: 'ADMIN' as const };
   }
 
-  const isAcademyTeamMember = await TeamService.isActiveCrmStaffMember(
-    fastify,
-    ACADEMY_TEAM_CODE,
-    actor.id,
-    ACADEMY_TEAM_FALLBACK_CONFIG_KEY
-  );
+  const isAcademyTeamMember =
+    (await TeamService.isActiveCrmStaffMemberInDepartment(fastify, ACADEMY_DEPARTMENT_CODE, actor.id)) ||
+    (await TeamService.isActiveCrmStaffMember(fastify, ACADEMY_TEAM_CODE, actor.id, ACADEMY_TEAM_FALLBACK_CONFIG_KEY));
   return { canAccess: isAcademyTeamMember, scope: isAcademyTeamMember ? ('ACADEMY_TEAM' as const) : null };
 }
 
@@ -452,6 +450,15 @@ export class AcademySalesService {
   ): Promise<Prisma.CrmAcademyLeadWhereInput> {
     const ids = await this.visibleStaffIds(fastify, actor);
     return ids ? { ownerStaffId: { in: ids } } : {};
+  }
+
+  /** Shared read scope for Academy modules that operate over a lead ledger. */
+  static async getLeadAccessWhere(
+    fastify: FastifyInstance,
+    actor: AcademyActor
+  ): Promise<Prisma.CrmAcademyLeadWhereInput> {
+    this.assertAcademyAccess(actor);
+    return this.leadAccessWhere(fastify, actor);
   }
 
   private static async taskAccessWhere(

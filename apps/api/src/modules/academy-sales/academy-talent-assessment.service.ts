@@ -1102,9 +1102,8 @@ export class AcademyTalentAssessmentService {
     actor: AcademyActor,
     params: ListAcademyTalentPaymentManagementParams
   ): Promise<ListAcademyTalentPaymentManagementResponse> {
-    if (!isAdminOrSuperAdminRole(actor.role) && actor.role !== 'manager') {
-      throw new AcademySalesError('Chỉ Admin hoặc Quản lý được xem quản lý thu học phí Academy.', 403);
-    }
+    const canManagePayments = isAdminOrSuperAdminRole(actor.role) || actor.role === 'manager';
+    const leadScope = canManagePayments ? {} : await AcademySalesService.getLeadAccessWhere(fastify, actor);
     const page = Math.max(1, toNonNegativeInteger(params.page, 1, 100000, 'Trang'));
     const limit = Math.max(1, toNonNegativeInteger(params.limit, 20, 100, 'Số dòng mỗi trang'));
     const selectedStatus = String(params.status || 'ALL')
@@ -1123,7 +1122,7 @@ export class AcademyTalentAssessmentService {
     }
     const { month, start, end } = getAcademyIctMonthBounds(params.month);
     const sourceRows = await fastify.prisma.crm.crmAcademyTalentAssessment.findMany({
-      where: { invoiceNumber: { not: null } },
+      where: { invoiceNumber: { not: null }, lead: leadScope },
       include: {
         lead: { select: { id: true, name: true, phone: true } },
         payments: {
@@ -1167,9 +1166,6 @@ export class AcademyTalentAssessmentService {
     actor: AcademyActor,
     assessmentId: number
   ): Promise<AcademyTalentPaymentTraceResponse> {
-    if (!isAdminOrSuperAdminRole(actor.role) && actor.role !== 'manager') {
-      throw new AcademySalesError('Chỉ Admin hoặc Quản lý được xem truy vết thu học phí Academy.', 403);
-    }
     const assessment = await fastify.prisma.crm.crmAcademyTalentAssessment.findUnique({
       where: { id: assessmentId },
       include: {

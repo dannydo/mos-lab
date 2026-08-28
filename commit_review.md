@@ -2,58 +2,54 @@
 request_feedback: true
 ---
 
-# Commit review — Academy public workshop registration
+# Commit review — Academy Marketing & Sales access
 
-## Thay đổi đang chờ commit
+## Danh sách file thay đổi
 
-| Khu vực                 | File                                                                                                                                                          | Nội dung                                                                                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CRM schema & migration  | `apps/api/prisma/crm.prisma`, `apps/api/src/scripts/data-migrations/20260827010000_backfill_academy_workshop_registration_links.ts`                           | Thêm `registration_code` (unique, nullable) và `registration_open`; backfill code công khai ổn định cho các workshop đã tồn tại.                                                                                          |
-| Public registration API | `apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts`, `public.routes.ts`, `zalo-social-identity.service.ts`                            | Public registration theo link; Google/Zalo OAuth; PKCE, signed state, HttpOnly cookie và ticket ngắn hạn.                                                                                                                 |
-| Workshop operations     | `academy-workshop.service.ts`, `AcademyWorkshopEditButton.tsx`, `AcademyWorkshopSharedQrButton.tsx`, `AcademyWorkshopWorkspaceSections.tsx`, workshop listing | Sinh/chia sẻ link đăng ký, bật/tắt public registration, và chỉ mở lobby từ thời điểm check-in.                                                                                                                            |
-| Public web & contracts  | `apps/web/app/academy/workshops/register/[code]/page.tsx`, `apps/web/lib/api-client.ts`, `packages/shared/src/types/academy-workshop.ts`                      | Trang đăng ký show agenda, Google/Zalo/form thường; khi Zalo API chưa có credential, trạng thái chờ cấu hình vẫn hiển thị rõ ràng; hợp đồng API có trạng thái registration, referrer, và trạng thái chờ Academy xác nhận. |
-| Tests & config          | `academy-workshop-rules.test.ts`, `zalo-social-identity.service.test.ts`, `apps/api/.env.example`                                                             | Cover phase/lobby và signed Zalo OAuth; mô tả biến môi trường server-side.                                                                                                                                                |
+| Khu vực                  | File                                                                                                                                                                                                                                            | Nội dung                                                                                                                              |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Academy workspace        | `apps/api/src/modules/academy-sales/academy-sales.service.ts`, `apps/api/src/modules/teams/team.service.ts`, `apps/api/src/modules/academy-sales/routes.ts`, `apps/api/src/modules/academy-workshops/routes.ts`                                 | Cấp workspace Academy cho thành viên active của các team thuộc Department Academy, gồm Marketing & Sales; vẫn giữ fallback roster cũ. |
+| Tuition data scope       | `apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts`, `apps/web/app/dashboard/academy-leads/payments/page.tsx`                                                                                                             | Thành viên không phải Manager chỉ xem học phí của lead trong phạm vi được giao; không thể xác nhận thu tiền.                          |
+| Sidebar & policy         | `packages/shared/src/types/menu-access.ts`, `apps/web/config/sidebar.config.tsx`, `apps/web/app/dashboard/academy-leads/components/AcademyAccessGate.tsx`                                                                                       | Thêm Workshop OS vào policy menu, hiển thị Thu học phí cho thành viên Academy đủ điều kiện và đồng bộ thông điệp quyền.               |
+| Tests                    | `apps/api/src/modules/academy-sales/academy-sales.service.test.ts`, `apps/api/src/modules/menu-access/menu-access.service.test.ts`                                                                                                              | Cover team Marketing & Sales, lead scope cho non-manager và Workshop OS visibility.                                                   |
+| Workshop registration UI | `apps/web/app/academy/workshops/components/AcademyWorkshopRegistrationHero.tsx`, `apps/web/app/academy/workshops/components/GoogleWorkshopJoinButton.tsx`, `apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx` | Di chuyển nút theme, tăng bề rộng Google sign-in và cho phép nút chiếm toàn vùng form.                                                |
+| Review artifact          | `commit_review.md`                                                                                                                                                                                                                              | Cập nhật review cho toàn bộ working tree hiện tại.                                                                                    |
+
+## Tóm tắt thay đổi
+
+- Marketing & Sales được công nhận là team Academy hợp lệ, nên có thể vào Học viên, Lead Manager, Chiến dịch, Workshop OS, Khóa học và Thu học phí.
+- Dữ liệu học phí của thành viên không phải Manager bị giới hạn theo lead scope; hành động xác nhận thu tiền vẫn chỉ dành cho Admin/Manager.
+- Workshop OS được quản trị qua policy menu thay vì là một submenu không có key quyền riêng.
+- Giao diện đăng ký workshop công khai có hero gọn hơn và Google sign-in rộng, dễ thao tác hơn.
 
 ## Kiểm tra đã chạy
 
 - `pnpm --filter @mos-lab/shared build` — pass.
 - `pnpm --filter @mos-lab/api exec tsc --noEmit` — pass.
-- `pnpm --filter @mos-lab/api lint` và `pnpm --filter @mos-lab/web lint` — pass.
-- 27 Academy/Zalo unit tests — pass.
+- Scoped ESLint cho các file API, web và shared thay đổi — pass.
+- `pnpm exec tsx --test apps/api/src/modules/academy-sales/academy-sales.service.test.ts apps/api/src/modules/menu-access/menu-access.service.test.ts` — 16 tests pass.
 - `pnpm --filter @mos-lab/web build` — pass.
 - `git diff --check` — pass.
 
 ## Production migration plan
 
-1. **Schema:** guarded `prisma db push` thêm hai cột vào `crm_academy_workshops`:
-   - `registration_code VARCHAR(48) NULL UNIQUE` — ban đầu nullable để an toàn với dữ liệu cũ.
-   - `registration_open TINYINT NOT NULL DEFAULT 1`.
-2. **Data migration:** `20260827010000_backfill_academy_workshop_registration_links`.
-   - Chỉ cập nhật workshop đang thiếu `registration_code`.
-   - Mỗi code được tạo deterministic từ `id` và `display_code`; không xoá hay thay đổi participant/lead/lịch hẹn.
-   - Idempotent: workshop đã có code không bị chạm lại.
-3. `bash scripts/deploy/migration-plan.sh origin/main` nhận diện đúng schema + migration trên; `pnpm --filter @mos-lab/api data-migrations:validate` đã xác thực 4 migration production.
-
-## Cấu hình Zalo đã thực hiện bên ngoài
-
-- Dùng Zalo Developer App **MasterOS** đang được WingsApp sử dụng.
-- Đã xác thực domain `api.lab.masteros.app`.
-- Đã thêm và lưu callback:
-  `https://api.lab.masteros.app/api/academy/workshops/registration/zalo/callback`
-- Production API vẫn cần bốn biến server-only: `ZALO_SOCIAL_APP_ID`, `ZALO_SOCIAL_SECRET_KEY`, `ZALO_SOCIAL_REDIRECT_URI`, `ZALO_SOCIAL_STATE_SECRET`.
+- CRM schema changes: **None**.
+- Production data migrations included in this commit: **None**.
+- `bash scripts/deploy/migration-plan.sh origin/main` báo `none` cho cả schema và data migrations.
+- `pnpm --filter @mos-lab/api data-migrations:validate` pass; đã xác thực 10 production migration hiện có. Không migration ID nào sẽ được chạy bởi commit này.
 
 ## Commit đề xuất
 
 ```text
-feat(academy): add public workshop registration with social auth
+feat(academy): grant marketing team workspace access
 
-- Add agenda showcase and pending-attendee registration flow
-- Support Google and secure Zalo OAuth registration
-- Add safe registration-link schema backfill for existing workshops
+- Authorize active Academy Department teams and scope tuition ledgers to owned leads
+- Add Workshop OS to the menu-policy matrix and expose tuition view to eligible members
+- Polish the public workshop registration theme and Google sign-in layout
 
 AI-assisted. Reviewed and verified.
 ```
 
 ## Approval required
 
-Xác nhận `Proceed` để mình commit/push. Sau khi CI pass, mình sẽ xin xác nhận deploy VPS theo workflow bắt buộc.
+Reply **`Proceed`** để mình commit và push toàn bộ working tree theo message trên. Sau khi CI pass, mình sẽ xin xác nhận riêng trước khi deploy VPS.

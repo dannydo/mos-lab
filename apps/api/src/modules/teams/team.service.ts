@@ -265,6 +265,40 @@ export class TeamService {
   }
 
   /**
+   * Check active membership in any team belonging to a Department. Team
+   * membership is the source of truth, while the legacy ID branch keeps
+   * production rosters valid during CRM-staff synchronization.
+   */
+  static async isActiveCrmStaffMemberInDepartment(
+    fastify: FastifyInstance,
+    departmentCode: string,
+    crmStaffId: number
+  ): Promise<boolean> {
+    try {
+      const staff = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: crmStaffId },
+        select: { legacyStaffId: true },
+      });
+      const legacyStaffId = Number(staff?.legacyStaffId);
+      const member = await fastify.prisma.crm.crmTeamMember.findFirst({
+        where: {
+          isActive: true,
+          team: {
+            isActive: true,
+            department: { code: departmentCode, isActive: true },
+          },
+          OR: [{ crmStaffId }, ...(legacyStaffId ? [{ legacyStaffId }] : [])],
+        },
+        select: { id: true },
+      });
+      return Boolean(member);
+    } catch (err) {
+      fastify.log.error(err as SafeAny, `Error checking CRM staff membership for department ${departmentCode}`);
+      return false;
+    }
+  }
+
+  /**
    * List all teams with child teams (hierarchy) and member counts
    */
   static async listTeams(fastify: FastifyInstance): Promise<TeamListResponse> {

@@ -8,6 +8,7 @@ test('keeps every managed menu visible when it has no restrictive policy', () =>
   const visibility = resolveMenuVisibility([], [], noScopes, false);
   assert.equal(visibility.dashboard, true);
   assert.equal(visibility['academy-instructors'], true);
+  assert.equal(visibility['academy-workshops'], true);
 });
 
 test('matches a restricted menu through department, team, or individual staff scope', () => {
@@ -50,6 +51,7 @@ test('applies a restricted category to every menu within that category', () => {
 
   assert.equal(visibility['academy-customers'], false);
   assert.equal(visibility['academy-instructors'], false);
+  assert.equal(visibility['academy-workshops'], false);
   assert.equal(visibility['post-hub'], false);
   assert.equal(visibility['customers-all'], true);
 });

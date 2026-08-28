@@ -35,21 +35,22 @@ export default function AcademyWorkshopRegistrationHero({
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(2,6,23,0.93)_0%,rgba(2,6,23,0.78)_48%,rgba(2,6,23,0.3)_100%)]" />
       <div className="absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-[linear-gradient(0deg,rgba(2,6,23,0.8),transparent)]" />
 
+      <IconButton
+        label={themeMode === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+        icon={themeMode === 'dark' ? Sun : Moon}
+        aria-pressed={themeMode === 'dark'}
+        tone="text"
+        className="absolute right-5 top-6 z-10 !h-11 !w-11 !min-w-11 !rounded-full !border !border-white/15 !bg-black/25 !text-white backdrop-blur hover:!border-white/25 hover:!bg-white/15 sm:right-8 sm:top-8 sm:!h-9 sm:!w-9 sm:!min-w-9"
+        onClick={onToggleTheme}
+      />
+
       <div className="relative flex min-h-[272px] max-w-xl flex-col sm:min-h-[296px]">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-white/75">
             <span>Wings Academy</span>
             <span className="h-1 w-1 rounded-full bg-white/45" aria-hidden="true" />
             <span>Lash mastery</span>
           </div>
-          <IconButton
-            label={themeMode === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
-            icon={themeMode === 'dark' ? Sun : Moon}
-            aria-pressed={themeMode === 'dark'}
-            tone="text"
-            className="!h-11 !w-11 !min-w-11 !rounded-full !border !border-white/15 !bg-black/25 !text-white backdrop-blur hover:!border-white/25 hover:!bg-white/15 sm:!h-9 sm:!w-9 sm:!min-w-9"
-            onClick={onToggleTheme}
-          />
         </div>
 
         <div className="mt-auto pt-12">

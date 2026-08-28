@@ -65,7 +65,10 @@ async function requireWorkshopAccess(request: FastifyRequest, reply: FastifyRepl
   if (reply.sent) return;
   const access = await getAcademyWorkspaceAccess(request.server, actorFrom(request));
   if (!access.canAccess) {
-    return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập Academy Workshop.' });
+    return reply.status(403).send({
+      error: 'Forbidden',
+      message: 'Bạn phải là thành viên đang hoạt động của Department Academy để truy cập Academy Workshop.',
+    });
   }
   (request as FastifyRequest & { academyAccess?: boolean }).academyAccess = true;
 }

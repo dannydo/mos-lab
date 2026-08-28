@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  AcademySalesService,
   buildAcademyLeadSearchText,
   canAccessAcademySales,
   getAcademyWorkspaceAccess,
@@ -13,7 +14,7 @@ import {
   sanitizeAcademyCourseRichText,
 } from './academy-sales.service.js';
 
-test('grants the Academy workspace only to an admin or an active Academy-team member', async () => {
+test('grants the Academy workspace only to an admin or an active Academy Department-team member', async () => {
   const adminAccess = await getAcademyWorkspaceAccess({} as never, { id: 1, role: 'admin' });
   assert.deepEqual(adminAccess, { canAccess: true, scope: 'ADMIN' });
   const superAdminAccess = await getAcademyWorkspaceAccess({} as never, { id: 2, role: 'super_admin' });
@@ -34,6 +35,26 @@ test('grants the Academy workspace only to an admin or an active Academy-team me
   const teamMemberAccess = await getAcademyWorkspaceAccess(teamMemberFastify as never, { id: 12, role: 'telesales' });
   assert.deepEqual(teamMemberAccess, { canAccess: true, scope: 'ACADEMY_TEAM' });
 
+  const marketingSalesMemberFastify = {
+    prisma: {
+      crm: {
+        crmTeamMember: {
+          findFirst: async (args: { where: { team?: { department?: { code?: string } } } }) =>
+            args.where.team?.department?.code === 'ACADEMY' ? { id: 2 } : null,
+        },
+        crmStaff: {
+          findUnique: async () => ({ legacyStaffId: 1002 }),
+        },
+      },
+    },
+    log: { error: () => undefined },
+  };
+  const marketingSalesAccess = await getAcademyWorkspaceAccess(marketingSalesMemberFastify as never, {
+    id: 14,
+    role: 'telesales',
+  });
+  assert.deepEqual(marketingSalesAccess, { canAccess: true, scope: 'ACADEMY_TEAM' });
+
   const nonMemberFastify = {
     prisma: {
       crm: {
@@ -45,11 +66,23 @@ test('grants the Academy workspace only to an admin or an active Academy-team me
         },
       },
     },
+    log: { error: () => undefined },
   };
   const nonMemberAccess = await getAcademyWorkspaceAccess(nonMemberFastify as never, { id: 13, role: 'manager' });
   assert.deepEqual(nonMemberAccess, { canAccess: false, scope: null });
   assert.equal(canAccessAcademySales({ id: 12, role: 'telesales', academyAccess: true }), true);
   assert.equal(canAccessAcademySales({ id: 12, role: 'cc' }), false);
+});
+
+test('keeps non-manager Academy members inside their own lead scope', async () => {
+  assert.deepEqual(
+    await AcademySalesService.getLeadAccessWhere({} as never, { id: 14, role: 'telesales', academyAccess: true }),
+    { ownerStaffId: { in: [14] } }
+  );
+  assert.deepEqual(
+    await AcademySalesService.getLeadAccessWhere({} as never, { id: 1, role: 'manager', academyAccess: true }),
+    {}
+  );
 });
 
 test('normalizes legacy Academy statuses into the one supported pipeline', () => {

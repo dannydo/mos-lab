@@ -58,7 +58,7 @@ export default function AcademyAccessGate({ children }: { children: React.ReactN
       <StatePanel
         kind="error"
         title="Bạn không có quyền truy cập Academy"
-        description="Khu vực này chỉ dành cho Admin hoặc thành viên đang hoạt động của đội Academy."
+        description="Khu vực này chỉ dành cho Admin hoặc thành viên đang hoạt động của Department Academy."
       />
     );
   }

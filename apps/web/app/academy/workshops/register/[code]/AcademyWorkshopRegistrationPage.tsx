@@ -947,7 +947,7 @@ export default function AcademyWorkshopRegistrationPage() {
                         <p className={`mt-1 text-xs leading-5 ${styles.mutedText}`}>
                           Tên và email của bạn được xác minh trực tiếp bởi Google.
                         </p>
-                        <div className="mx-auto mt-3 w-full max-w-[320px]">
+                        <div className="mt-3 w-full">
                           <GoogleWorkshopJoinButton disabled={submitting} onCredential={receiveGoogleCredential} />
                         </div>
                       </div>

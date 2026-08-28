@@ -14,6 +14,7 @@ import type {
 } from '@mos-lab/shared';
 import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { useAcademyAccess } from '../components/AcademyAccessGate';
 import { formatVND } from '../../../../lib/format-utils';
 import {
   AdaptiveModal,
@@ -53,6 +54,7 @@ import {
 } from './payment-management.helpers';
 
 export default function AcademyPaymentManagementPage() {
+  const { canAccess: academyAllowed } = useAcademyAccess();
   const [role, setRole] = React.useState('');
   const [month, setMonth] = React.useState<Dayjs>(persistedMonth);
   const [status, setStatus] = React.useState<AcademyTalentPaymentManagementStatus>(persistedStatus);
@@ -123,8 +125,8 @@ export default function AcademyPaymentManagementPage() {
   }, [deferredSearch, month, page, pageSize, status]);
 
   React.useEffect(() => {
-    if (canManage) void load();
-  }, [canManage, load]);
+    if (academyAllowed) void load();
+  }, [academyAllowed, load]);
 
   React.useEffect(() => {
     const assessmentId = detail?.assessmentId;
@@ -332,11 +334,11 @@ export default function AcademyPaymentManagementPage() {
       },
       {
         key: 'actions',
-        title: 'Thu tiền',
+        title: canManage ? 'Thu tiền' : 'Chi tiết',
         width: 164,
         render: (_value, row) => (
           <Space size={2}>
-            {row.paymentStatus !== 'PAID' && (
+            {canManage && row.paymentStatus !== 'PAID' && (
               <Button type="primary" size="small" onClick={() => openCollection(row)}>
                 Thu tiền
               </Button>
@@ -348,16 +350,16 @@ export default function AcademyPaymentManagementPage() {
         ),
       },
     ],
-    [openCollection, page, pageSize]
+    [canManage, openCollection, page, pageSize]
   );
 
   if (!role) return <StatePanel kind="loading" title="Đang xác thực quyền thu học phí Academy…" />;
-  if (!canManage)
+  if (!academyAllowed)
     return (
       <StatePanel
         kind="error"
-        title="Bạn không có quyền quản lý thu học phí"
-        description="Chỉ Admin hoặc Manager được xem cọc, follow-up và doanh thu Academy."
+        title="Bạn không có quyền truy cập thu học phí Academy"
+        description="Khu vực này chỉ dành cho Admin hoặc thành viên đang hoạt động của Department Academy."
       />
     );
 

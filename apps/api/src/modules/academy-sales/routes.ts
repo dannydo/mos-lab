@@ -67,7 +67,7 @@ async function requireAcademyWorkspaceAccess(request: FastifyRequest, reply: Fas
   if (!access.canAccess) {
     return reply.status(403).send({
       error: 'Forbidden',
-      message: 'Chỉ Admin hoặc thành viên đang hoạt động của đội Academy được truy cập khu vực này.',
+      message: 'Chỉ Admin hoặc thành viên đang hoạt động của Department Academy được truy cập khu vực này.',
     });
   }
   (request as FastifyRequest & { academyAccess?: boolean }).academyAccess = true;

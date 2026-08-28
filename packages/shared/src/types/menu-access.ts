@@ -34,7 +34,7 @@ export const MENU_ACCESS_CATEGORY_DEFINITIONS: readonly MenuAccessCategoryDefini
     key: 'academy',
     label: 'Academy',
     menuGroupKeys: ['academy'],
-    description: 'Toàn bộ submenu tuyển sinh, Chiến Thần, khóa học, học phí và giảng viên Academy.',
+    description: 'Toàn bộ submenu tuyển sinh, Workshop OS, Chiến Thần, khóa học, học phí và giảng viên Academy.',
   },
   {
     key: 'operations',
@@ -153,6 +153,13 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
     groupKey: 'academy',
     groupLabel: 'Academy',
     path: '/dashboard/academy-leads/campaigns',
+  },
+  {
+    key: 'academy-workshops',
+    label: 'Academy · Workshop OS',
+    groupKey: 'academy',
+    groupLabel: 'Academy',
+    path: '/dashboard/academy-leads/workshops',
   },
   {
     key: 'post-hub',

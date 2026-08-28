@@ -237,13 +237,14 @@ export function getSidebarGroups(
       path: '/dashboard/academy-leads/courses',
     });
 
+    academyChildren.push({
+      key: 'academy-payment-management',
+      label: 'Thu học phí',
+      icon: <AppIcon icon={WalletCards} size="sm" />,
+      path: '/dashboard/academy-leads/payments',
+    });
+
     if (isAdmin || normalizedRole === 'manager') {
-      academyChildren.push({
-        key: 'academy-payment-management',
-        label: 'Thu học phí',
-        icon: <AppIcon icon={WalletCards} size="sm" />,
-        path: '/dashboard/academy-leads/payments',
-      });
       academyChildren.push({
         key: 'academy-instructors',
         label: 'Giảng viên',
