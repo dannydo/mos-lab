@@ -55,6 +55,9 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
     totalDoneBonus: 0,
     totalTipBonus: 0,
     totalRevenueBonus: 0,
+    totalHolidayBasePay: 0,
+    totalHolidayPremiumPay: 0,
+    totalHolidayPayrollAddition: 0,
     grandTotalIncome: 0,
   });
   const [previousSummary, setPreviousSummary] = useState<{
@@ -62,6 +65,9 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
     totalDoneBonus: number;
     totalTipBonus: number;
     totalRevenueBonus: number;
+    totalHolidayBasePay: number;
+    totalHolidayPremiumPay: number;
+    totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
   } | null>(null);
 
@@ -93,6 +99,9 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
           totalDoneBonus: 0,
           totalTipBonus: 0,
           totalRevenueBonus: 0,
+          totalHolidayBasePay: 0,
+          totalHolidayPremiumPay: 0,
+          totalHolidayPayrollAddition: 0,
           grandTotalIncome: 0,
         }
       );
@@ -188,6 +197,15 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
       align: 'right' as const,
       render: (val: number) => (
         <span className="tabular-nums font-semibold text-xs text-purple-400">+{formatCurrency(val)}</span>
+      ),
+    },
+    {
+      title: 'Phụ cấp lễ x3',
+      dataIndex: 'holidayPremiumPay',
+      key: 'holidayPremiumPay',
+      align: 'right' as const,
+      render: (val: number) => (
+        <span className="tabular-nums font-semibold text-xs text-rose-400">+{formatCurrency(val || 0)}</span>
       ),
     },
     {
@@ -395,6 +413,12 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
                       </dd>
                     </div>
                     <div className="min-w-0">
+                      <dt className="text-[10px] text-slate-500">Phụ cấp lễ x3</dt>
+                      <dd className="truncate text-sm font-bold tabular-nums text-rose-400">
+                        +{formatCurrency(record.holidayPremiumPay || 0)}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Thu nhập</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-amber-400">
                         {formatCurrency(record.totalIncome || 0)}
@@ -492,6 +516,33 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               </div>
               <div className="text-base font-bold text-purple-600 dark:text-purple-400">
                 +{formatCurrency(activePaystub.revenueBonus)}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex justify-between items-center">
+              <div>
+                <div className="text-xs text-rose-600 dark:text-rose-300 font-semibold uppercase">Lương ngày lễ 1x</div>
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {activePaystub.holidayWorkedHours || 0} giờ làm + {activePaystub.holidayPaidLeaveHours || 0} giờ nghỉ
+                  lễ; 1x đã nằm trong lương tháng
+                </div>
+              </div>
+              <div className="text-base font-bold text-rose-600 dark:text-rose-400">
+                {formatCurrency(activePaystub.holidayBasePay || 0)}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex justify-between items-center">
+              <div>
+                <div className="text-xs text-rose-600 dark:text-rose-300 font-semibold uppercase">
+                  Phụ cấp đi làm lễ x3
+                </div>
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {activePaystub.holidayWorkedDays || 0} ngày có roster và chấm công hợp lệ
+                </div>
+              </div>
+              <div className="text-base font-bold text-rose-600 dark:text-rose-400">
+                +{formatCurrency(activePaystub.holidayPremiumPay || 0)}
               </div>
             </div>
 

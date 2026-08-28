@@ -24,6 +24,7 @@ interface CreateStaffInput {
   omicallAutoInit?: boolean | null;
   baseSalary?: number | null;
   hourlyWage?: number | null;
+  payBasis?: 'HOURLY' | 'MONTHLY' | null;
   seniorityOffset?: number | null;
 }
 
@@ -83,6 +84,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         selectFields.lastLoginAt = true;
         selectFields.baseSalary = true;
         selectFields.hourlyWage = true;
+        selectFields.payBasis = true;
         selectFields.seniorityOffset = true;
       }
 
@@ -148,6 +150,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
             ? {
                 baseSalary: true,
                 hourlyWage: true,
+                payBasis: true,
                 seniorityOffset: true,
               }
             : {}),
@@ -190,6 +193,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       omicallAutoInit,
       baseSalary,
       hourlyWage,
+      payBasis,
       seniorityOffset,
     } = request.body as CreateStaffInput;
 
@@ -201,6 +205,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
     }
 
     const assignedRole = role || 'telesales';
+    if (payBasis !== undefined && payBasis !== null && !['HOURLY', 'MONTHLY'].includes(payBasis)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Hình thức trả lương không hợp lệ.' });
+    }
     if (!mayManageSuperAdmin(request.user.role, assignedRole)) {
       return reply.status(403).send({
         error: 'Forbidden',
@@ -256,6 +263,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
           omicallAutoInit: omicallAutoInit !== undefined ? omicallAutoInit : null,
           baseSalary: baseSalary !== undefined && baseSalary !== null ? Number(baseSalary) : null,
           hourlyWage: hourlyWage !== undefined && hourlyWage !== null ? Number(hourlyWage) : null,
+          payBasis: payBasis || null,
           seniorityOffset: seniorityOffset !== undefined && seniorityOffset !== null ? Number(seniorityOffset) : 0,
         },
       });
@@ -317,6 +325,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       omicallAutoInit,
       baseSalary,
       hourlyWage,
+      payBasis,
       seniorityOffset,
     } = request.body as CreateStaffInput;
 
@@ -384,6 +393,12 @@ export async function staffRoutes(fastify: FastifyInstance) {
         if (joinedAt !== undefined) updateData.joinedAt = joinedAt ? new Date(joinedAt) : null;
         if (baseSalary !== undefined) updateData.baseSalary = baseSalary !== null ? Number(baseSalary) : null;
         if (hourlyWage !== undefined) updateData.hourlyWage = hourlyWage !== null ? Number(hourlyWage) : null;
+        if (payBasis !== undefined) {
+          if (payBasis !== null && !['HOURLY', 'MONTHLY'].includes(payBasis)) {
+            return reply.status(400).send({ error: 'Bad Request', message: 'Hình thức trả lương không hợp lệ.' });
+          }
+          updateData.payBasis = payBasis;
+        }
         if (seniorityOffset !== undefined)
           updateData.seniorityOffset = seniorityOffset !== null ? Number(seniorityOffset) : 0;
 
@@ -719,7 +734,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         }
 
         if (matchedStaff) {
-          // Update details, keeping current role/password, but syncing legacyStaffId/email/phone/joinedAt/displayName/avatarUrl/gender/birthDate/address/baseSalary/hourlyWage
+          // Preserve HR overrides while filling missing salary metadata from legacy payroll.
           await fastify.prisma.crm.crmStaff.update({
             where: { id: matchedStaff.id },
             data: {
@@ -740,6 +755,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
                 matchedStaff.hourlyWage !== null && matchedStaff.hourlyWage !== undefined
                   ? matchedStaff.hourlyWage
                   : hourlyWage,
+              payBasis:
+                matchedStaff.payBasis ||
+                (baseSalary && baseSalary > 0 ? 'MONTHLY' : hourlyWage && hourlyWage > 0 ? 'HOURLY' : null),
             },
           });
         } else {
@@ -768,6 +786,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
               address: address,
               baseSalary: baseSalary,
               hourlyWage: hourlyWage,
+              payBasis: baseSalary && baseSalary > 0 ? 'MONTHLY' : hourlyWage && hourlyWage > 0 ? 'HOURLY' : null,
             },
           });
           importedCount++;

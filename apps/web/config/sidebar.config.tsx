@@ -28,6 +28,7 @@ import {
   UserRoundPlus,
   UsersRound,
   WalletCards,
+  CalendarClock,
 } from 'lucide-react';
 
 import { canAccessLoca, isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
@@ -317,6 +318,13 @@ export function getSidebarGroups(
     });
   }
 
+  operationsItems.push({
+    key: 'holiday-work',
+    label: 'Lịch nghỉ lễ',
+    icon: <AppIcon icon={CalendarClock} size="sm" />,
+    path: '/dashboard/holiday-work',
+  });
+
   const operationsGroup: SidebarGroupConfig = {
     groupKey: 'grp-operations',
     groupTitle: 'VẬN HÀNH CUỘC GỌI',
@@ -451,6 +459,7 @@ export function getSelectedMenuKey(
   if (pathname === '/dashboard') return 'dashboard';
   if (pathname.includes('/dashboard/today')) return 'today';
   if (pathname.includes('/dashboard/fal')) return 'fal-control-tower';
+  if (pathname.includes('/dashboard/holiday-work')) return 'holiday-work';
   if (pathname.includes('/dashboard/customers')) {
     return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
   }

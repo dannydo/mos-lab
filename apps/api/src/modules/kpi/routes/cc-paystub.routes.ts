@@ -3,6 +3,7 @@ import { requireAuth } from '../../../middlewares/auth.js';
 import { CcPaystubRecord, CcPaystubResponse, SafeAny, calculateWheelBonusCap } from '@mos-lab/shared';
 import { CcKpiService } from '../services/cc-kpi.service.js';
 import { TeamService } from '../../teams/team.service.js';
+import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 
 export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/cc-paystub
@@ -32,6 +33,10 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             totalCcXoayBonus: 0,
             totalComboProductBonus: 0,
             totalMinigameBonus: 0,
+            totalCcTipBonus: 0,
+            totalHolidayBasePay: 0,
+            totalHolidayPremiumPay: 0,
+            totalHolidayPayrollAddition: 0,
             grandTotalIncome: 0,
           },
         });
@@ -65,6 +70,10 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             totalCcXoayBonus: 0,
             totalComboProductBonus: 0,
             totalMinigameBonus: 0,
+            totalCcTipBonus: 0,
+            totalHolidayBasePay: 0,
+            totalHolidayPremiumPay: 0,
+            totalHolidayPayrollAddition: 0,
             grandTotalIncome: 0,
           },
         });
@@ -148,15 +157,23 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY st.user_id
       `;
 
-      const [hourlyRatesRows, shiftsRows, workDaysRows, xoayReportResult, dailySalesResult, ccTipRows] =
-        await Promise.all([
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(shiftsQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(workDaysQuery),
-          CcKpiService.getCcXoayReport(fastify, { dateFrom: startPart, dateTo: endPart, storeId, limit: 999999 }),
-          CcKpiService.getCcDailySalesBonus(fastify, { dateFrom: startPart, dateTo: endPart, storeId }),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(ccTipBonusQuery),
-        ]);
+      const [
+        hourlyRatesRows,
+        shiftsRows,
+        workDaysRows,
+        xoayReportResult,
+        dailySalesResult,
+        ccTipRows,
+        holidayBreakdownMap,
+      ] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(shiftsQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(workDaysQuery),
+        CcKpiService.getCcXoayReport(fastify, { dateFrom: startPart, dateTo: endPart, storeId, limit: 999999 }),
+        CcKpiService.getCcDailySalesBonus(fastify, { dateFrom: startPart, dateTo: endPart, storeId }),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(ccTipBonusQuery),
+        HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, validStaffIds, startPart, endPart),
+      ]);
 
       const ccTipMap = new Map<number, { bonus: number; count: number }>();
       ccTipRows.forEach((r) =>
@@ -220,6 +237,10 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       let summaryComboProd = 0;
       let summaryMinigame = 0;
       let summaryCcTip = 0;
+      let summaryHolidayBase = 0;
+      let summaryHolidayPremium = 0;
+      let summaryHolidayAddition = 0;
+      let summaryHolidayAdjustment = 0;
 
       const records: CcPaystubRecord[] = filteredStaffProfiles.map((s) => {
         const uid = Number(s.userId);
@@ -249,14 +270,26 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
         const ccTipInfo = ccTipMap.get(uid) || { bonus: 0, count: 0 };
         const ccTipBonus = ccTipInfo.bonus;
+        const holiday = holidayBreakdownMap.get(uid)!;
 
-        const totalIncome = Math.round(hourlyWage + xoayInfo.bonus + dailyBonusInfo.bonus + minigameBonus + ccTipBonus);
+        const totalIncome = Math.round(
+          hourlyWage +
+            xoayInfo.bonus +
+            dailyBonusInfo.bonus +
+            minigameBonus +
+            ccTipBonus +
+            holiday.holidayPaystubAdjustment
+        );
 
         summaryHourly += hourlyWage;
         summaryXoay += xoayInfo.bonus;
         summaryComboProd += dailyBonusInfo.bonus;
         summaryMinigame += minigameBonus;
         summaryCcTip += ccTipBonus;
+        summaryHolidayBase += holiday.holidayBasePay;
+        summaryHolidayPremium += holiday.holidayPremiumPay;
+        summaryHolidayAddition += holiday.holidayPayrollAddition;
+        summaryHolidayAdjustment += holiday.holidayPaystubAdjustment;
 
         return {
           consultantId: uid,
@@ -279,6 +312,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           capStatus: capResult.capStatus,
           ccTipBonus,
           tippedVisitsCount: ccTipInfo.count,
+          ...holiday,
           totalIncome,
         };
       });
@@ -286,7 +320,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       // Sort by total income descending
       records.sort((a, b) => b.totalIncome - a.totalIncome);
 
-      const grandTotalIncome = summaryHourly + summaryXoay + summaryComboProd + summaryMinigame + summaryCcTip;
+      const grandTotalIncome =
+        summaryHourly + summaryXoay + summaryComboProd + summaryMinigame + summaryCcTip + summaryHolidayAdjustment;
 
       const response: CcPaystubResponse = {
         data: records,
@@ -297,6 +332,9 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           totalComboProductBonus: summaryComboProd,
           totalMinigameBonus: summaryMinigame,
           totalCcTipBonus: summaryCcTip,
+          totalHolidayBasePay: summaryHolidayBase,
+          totalHolidayPremiumPay: summaryHolidayPremium,
+          totalHolidayPayrollAddition: summaryHolidayAddition,
           grandTotalIncome,
         },
       };

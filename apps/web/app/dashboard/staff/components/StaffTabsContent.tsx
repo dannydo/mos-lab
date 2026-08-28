@@ -269,7 +269,19 @@ export default function StaffTabsContent({
           {isAdmin && (
             <>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col span={8}>
+                  <Form.Item
+                    name="payBasis"
+                    label={<Text style={{ color: token.colorText }}>Hình thức trả lương</Text>}
+                    rules={[{ required: true, message: 'Chọn hình thức trả lương để tính lương lễ.' }]}
+                  >
+                    <Select placeholder="Chọn loại lương" allowClear>
+                      <Option value="HOURLY">Lương giờ</Option>
+                      <Option value="MONTHLY">Lương cứng tháng</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
                   <Form.Item
                     name="baseSalary"
                     label={<Text style={{ color: token.colorText }}>Lương cứng (Base Salary)</Text>}
@@ -283,7 +295,7 @@ export default function StaffTabsContent({
                     />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col span={8}>
                   <Form.Item
                     name="hourlyWage"
                     label={<Text style={{ color: token.colorText }}>Lương giờ (Hourly Wage)</Text>}

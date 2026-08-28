@@ -34,6 +34,7 @@ import { postHubRoutes } from './modules/post-hub/routes.js';
 import { academySalesRoutes } from './modules/academy-sales/routes.js';
 import { academyWorkshopRoutes } from './modules/academy-workshops/routes.js';
 import { academyWorkshopPublicRoutes } from './modules/academy-workshops/public.routes.js';
+import { holidayWorkRoutes } from './modules/holiday-work/routes.js';
 import { startPancakeAcademySync } from './modules/academy-sales/pancake-sync.service.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
@@ -276,6 +277,7 @@ const start = async () => {
     await server.register(academySalesRoutes, { prefix: '/api' });
     await server.register(academyWorkshopRoutes, { prefix: '/api' });
     await server.register(academyWorkshopPublicRoutes, { prefix: '/api' });
+    await server.register(holidayWorkRoutes, { prefix: '/api' });
 
     startPancakeAcademySync(server);
 

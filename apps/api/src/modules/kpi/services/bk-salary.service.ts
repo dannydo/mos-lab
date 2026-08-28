@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { BkSalaryConfig, BkPaystubRecord, SafeAny } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
+import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 
 export const DEFAULT_BK_CONFIG: BkSalaryConfig = {
   activeBkIds: [43554, 50670, 52316, 32268, 49126, 50585],
@@ -631,6 +632,9 @@ export interface BkPaystubResult {
     totalDoneBonus: number;
     totalTipBonus: number;
     totalRevenueBonus: number;
+    totalHolidayBasePay: number;
+    totalHolidayPremiumPay: number;
+    totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
     totalBasicCheckinBonus: number;
     totalMilestoneBonus: number;
@@ -672,6 +676,9 @@ export async function getBkPaystubData(
         totalDoneBonus: 0,
         totalTipBonus: 0,
         totalRevenueBonus: 0,
+        totalHolidayBasePay: 0,
+        totalHolidayPremiumPay: 0,
+        totalHolidayPayrollAddition: 0,
         grandTotalIncome: 0,
         totalBasicCheckinBonus: 0,
         totalMilestoneBonus: 0,
@@ -686,13 +693,10 @@ export async function getBkPaystubData(
 
   const bkIdsStr = activeBkIds.join(',');
 
-  const { clientBonusMap, orderCheckinMap } = await computeBkOrderCheckins(
-    fastify,
-    startPart,
-    endPart,
-    activeBkIds,
-    storeFilter
-  );
+  const [{ clientBonusMap, orderCheckinMap }, holidayBreakdownMap] = await Promise.all([
+    computeBkOrderCheckins(fastify, startPart, endPart, activeBkIds, storeFilter),
+    HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, activeBkIds, startPart, endPart),
+  ]);
 
   const sql = `
     SELECT 
@@ -737,6 +741,9 @@ export async function getBkPaystubData(
   let grandTotalDoneBonus = 0;
   let grandTotalTipBonus = 0;
   let grandTotalRevenueBonus = 0;
+  let grandTotalHolidayBasePay = 0;
+  let grandTotalHolidayPremiumPay = 0;
+  let grandTotalHolidayPayrollAddition = 0;
   let grandTotalIncome = 0;
 
   let grandTotalBasicCheckinBonus = 0;
@@ -769,13 +776,17 @@ export async function getBkPaystubData(
     const tipBonus = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
     const { rate: revCommissionRate, revLevelMin } = getRevCommissionRateInfo(totalRevenue, config.revBonusTiers);
     const revenueBonus = Math.round((totalRevenue * revCommissionRate) / 100);
+    const holiday = holidayBreakdownMap.get(staffId)!;
 
-    const totalIncome = calculatedBaseSalary + doneBonus + tipBonus + revenueBonus;
+    const totalIncome = calculatedBaseSalary + doneBonus + tipBonus + revenueBonus + holiday.holidayPaystubAdjustment;
 
     grandTotalBaseSalary += calculatedBaseSalary;
     grandTotalDoneBonus += doneBonus;
     grandTotalTipBonus += tipBonus;
     grandTotalRevenueBonus += revenueBonus;
+    grandTotalHolidayBasePay += holiday.holidayBasePay;
+    grandTotalHolidayPremiumPay += holiday.holidayPremiumPay;
+    grandTotalHolidayPayrollAddition += holiday.holidayPayrollAddition;
     grandTotalIncome += totalIncome;
 
     grandTotalBasicCheckinBonus += basicCheckinBonus;
@@ -826,6 +837,7 @@ export async function getBkPaystubData(
       doneBonus,
       tipBonus,
       revenueBonus,
+      ...holiday,
       totalIncome,
     };
   });
@@ -838,6 +850,9 @@ export async function getBkPaystubData(
       totalDoneBonus: grandTotalDoneBonus,
       totalTipBonus: grandTotalTipBonus,
       totalRevenueBonus: grandTotalRevenueBonus,
+      totalHolidayBasePay: grandTotalHolidayBasePay,
+      totalHolidayPremiumPay: grandTotalHolidayPremiumPay,
+      totalHolidayPayrollAddition: grandTotalHolidayPayrollAddition,
       grandTotalIncome,
       totalBasicCheckinBonus: grandTotalBasicCheckinBonus,
       totalMilestoneBonus: grandTotalMilestoneBonus,

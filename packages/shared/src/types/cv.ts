@@ -1,4 +1,5 @@
 import type { FalReadModel } from './fal.js';
+import type { HolidayPayBreakdown } from './holiday-work.js';
 
 export interface CvXoayRecord {
   orderServiceId: number;
@@ -117,7 +118,7 @@ export interface CvTipCustomerHistoryResponse {
   };
 }
 
-export interface CvPaystubRecord {
+export interface CvPaystubRecord extends HolidayPayBreakdown {
   staffId: number;
   staffName: string;
   avatar?: string | null;
@@ -149,6 +150,9 @@ export interface CvPaystubResponse {
     totalCvXoayBonus: number;
     totalCvTipBonus: number;
     totalSeniorityBonus?: number;
+    totalHolidayBasePay: number;
+    totalHolidayPremiumPay: number;
+    totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
   };
 }

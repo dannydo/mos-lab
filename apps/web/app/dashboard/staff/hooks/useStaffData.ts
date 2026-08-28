@@ -168,6 +168,7 @@ export function useStaffData(options?: UseStaffDataOptions) {
           staff.omicallAutoInit === null || staff.omicallAutoInit === undefined ? 'inherit' : staff.omicallAutoInit,
         baseSalary: staff.baseSalary || null,
         hourlyWage: staff.hourlyWage || null,
+        payBasis: staff.payBasis || null,
         seniorityOffset:
           staff.seniorityOffset !== undefined && staff.seniorityOffset !== null ? staff.seniorityOffset : 0,
       });
@@ -181,6 +182,7 @@ export function useStaffData(options?: UseStaffDataOptions) {
         omicallAutoInit: 'inherit',
         baseSalary: null,
         hourlyWage: null,
+        payBasis: null,
         seniorityOffset: 0,
       });
     }

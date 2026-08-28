@@ -75,6 +75,9 @@ type CcIncomeSummary = CcPaystubResponse['summary'] & {
     totalComboProductBonus: number;
     totalMinigameBonus: number;
     totalCcTipBonus: number;
+    totalHolidayBasePay: number;
+    totalHolidayPremiumPay: number;
+    totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
   };
 };
@@ -112,6 +115,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
     totalComboProductBonus: 0,
     totalMinigameBonus: 0,
     totalCcTipBonus: 0,
+    totalHolidayBasePay: 0,
+    totalHolidayPremiumPay: 0,
+    totalHolidayPayrollAddition: 0,
     totalDiamondBonus: 0,
     grandTotalIncome: 0,
   });
@@ -265,6 +271,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
             (r.comboProductBonus || 0) +
             (r.ccTipBonus || 0) +
             (r.minigameBonus || 0) +
+            (r.holidayPaystubAdjustment || 0) +
             dInfo.thuong;
 
           return {
@@ -286,6 +293,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
             totalComboProductBonus: res.summary.totalComboProductBonus || 0,
             totalMinigameBonus: res.summary.totalMinigameBonus || 0,
             totalCcTipBonus: res.summary.totalCcTipBonus || 0,
+            totalHolidayBasePay: res.summary.totalHolidayBasePay || 0,
+            totalHolidayPremiumPay: res.summary.totalHolidayPremiumPay || 0,
+            totalHolidayPayrollAddition: res.summary.totalHolidayPayrollAddition || 0,
             totalDiamondBonus: sumDiamond,
             grandTotalIncome: (res.summary.grandTotalIncome || 0) + sumDiamond,
             comparison:
@@ -297,6 +307,9 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
                     totalComboProductBonus: comparisonPaystub.totalComboProductBonus || 0,
                     totalMinigameBonus: comparisonPaystub.totalMinigameBonus || 0,
                     totalCcTipBonus: comparisonPaystub.totalCcTipBonus || 0,
+                    totalHolidayBasePay: comparisonPaystub.totalHolidayBasePay || 0,
+                    totalHolidayPremiumPay: comparisonPaystub.totalHolidayPremiumPay || 0,
+                    totalHolidayPayrollAddition: comparisonPaystub.totalHolidayPayrollAddition || 0,
                     totalDiamondBonus: comparisonDiamondBonus,
                     grandTotalIncome: (comparisonPaystub.grandTotalIncome || 0) + comparisonDiamondBonus,
                   }
@@ -654,6 +667,18 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
           amount: selectedRecord.diamondBonus || 0,
           note: `Giới thiệu ${selectedRecord.diamondCount || 0} khách hàng mới`,
         },
+        {
+          key: 'holiday-base',
+          item: 'Lương ngày lễ 1x',
+          amount: selectedRecord.holidayBasePay || 0,
+          note: `${selectedRecord.holidayWorkedHours || 0} giờ đi làm + ${selectedRecord.holidayPaidLeaveHours || 0} giờ nghỉ lễ; 1x giờ làm đã nằm trong Lương giờ`,
+        },
+        {
+          key: 'holiday-premium',
+          item: 'Phụ cấp đi làm lễ x3',
+          amount: selectedRecord.holidayPremiumPay || 0,
+          note: `${selectedRecord.holidayWorkedDays || 0} ngày có roster và chấm công hợp lệ`,
+        },
         { key: 6, item: 'Thưởng Kỹ Thuật & Gamification Points', amount: 0, note: 'Điểm kỹ thuật quy đổi' },
         { key: 7, item: 'Thưởng Nóng Minigame', amount: selectedRecord.minigameBonus, note: 'Vượt mốc minigame tuần' },
       ]
@@ -906,6 +931,11 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
                         label: 'Minigame',
                         value: record.minigameBonus || 0,
                         color: 'text-yellow-600 dark:text-yellow-300',
+                      },
+                      {
+                        label: 'Phụ cấp lễ x3',
+                        value: record.holidayPremiumPay || 0,
+                        color: 'text-rose-500 dark:text-rose-300',
                       },
                     ].map((income) => (
                       <div className="min-w-0" key={income.label}>

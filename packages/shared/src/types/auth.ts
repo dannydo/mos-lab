@@ -95,6 +95,7 @@ export interface Staff {
   omicallAutoInit?: boolean | null;
   baseSalary?: number | null;
   hourlyWage?: number | null;
+  payBasis?: import('./holiday-work.js').HolidayPayBasis | null;
   seniorityOffset?: number | null;
   offDays?: string[] | null;
   off_days?: string[] | null;

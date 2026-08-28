@@ -34,6 +34,7 @@ model CrmStaff {
   omicallAutoInit  Boolean?  @map("omicall_auto_init") @db.TinyInt
   baseSalary       Float?    @map("base_salary")
   hourlyWage       Float?    @map("hourly_wage")
+  payBasis         String?   @map("pay_basis") @db.VarChar(12)
   seniorityOffset  Int?      @default(0) @map("seniority_offset")
 
   customerAssignments CrmCustomerAssignment[]
@@ -1792,4 +1793,230 @@ model CrmAcademyCampaignTouchpointLog {
   @@index([touchpointId])
   @@index([completedByStaffId, completedAt])
   @@map("crm_academy_campaign_touchpoint_logs")
+}
+
+// ═══════════════════════════════════════════
+// Holiday Work — roster, recommendation and payroll audit
+// ═══════════════════════════════════════════
+
+model CrmHolidayPeriod {
+  id                       Int       @id @default(autoincrement())
+  code                     String    @unique @db.VarChar(50)
+  name                     String    @db.VarChar(160)
+  startDate                DateTime  @map("start_date") @db.Date
+  endDate                  DateTime  @map("end_date") @db.Date
+  timezone                 String    @default("Asia/Ho_Chi_Minh") @db.VarChar(50)
+  status                   String    @default("DRAFT") @db.VarChar(24)
+  standardShiftHours       Float     @default(9) @map("standard_shift_hours")
+  workPremiumMultiplier    Float     @default(3) @map("work_premium_multiplier")
+  paidLeaveMultiplier      Float     @default(1) @map("paid_leave_multiplier")
+  monthlyStandardDays      Int       @default(26) @map("monthly_standard_days")
+  monthlyStandardHours     Float     @default(234) @map("monthly_standard_hours")
+  selectionWindowDays      Int       @default(90) @map("selection_window_days")
+  selectionWeightsJson     String    @map("selection_weights_json") @db.Text
+  notes                    String?   @db.Text
+  createdByStaffId         Int       @map("created_by_staff_id")
+  publishedByStaffId       Int?      @map("published_by_staff_id")
+  publishedAt              DateTime? @map("published_at") @db.DateTime(0)
+  payrollLockedByStaffId   Int?      @map("payroll_locked_by_staff_id")
+  payrollLockedAt          DateTime? @map("payroll_locked_at") @db.DateTime(0)
+  createdAt                DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt                DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  coverage   CrmHolidayCoverage[]
+  roster     CrmHolidayRoster[]
+  candidates CrmHolidayCandidateSnapshot[]
+  ledger     CrmHolidayPayrollLedger[]
+  adjustments CrmHolidayPayrollAdjustment[]
+  auditLogs  CrmHolidayAuditLog[]
+
+  @@index([status, startDate])
+  @@index([startDate, endDate])
+  @@map("crm_holiday_periods")
+}
+
+model CrmHolidayCoverage {
+  id            Int      @id @default(autoincrement())
+  holidayId     Int      @map("holiday_id")
+  workDate      DateTime @map("work_date") @db.Date
+  storeId       Int?     @map("store_id")
+  storeKey      String   @map("store_key") @db.VarChar(30)
+  teamCode      String   @map("team_code") @db.VarChar(30)
+  shiftStart    String   @map("shift_start") @db.Char(5)
+  shiftEnd      String   @map("shift_end") @db.Char(5)
+  requiredCount Int      @map("required_count")
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  holiday CrmHolidayPeriod @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+
+  @@unique([holidayId, workDate, storeKey, teamCode, shiftStart, shiftEnd], name: "holiday_coverage_slot", map: "holiday_coverage_slot")
+  @@index([holidayId, workDate])
+  @@map("crm_holiday_coverage")
+}
+
+model CrmHolidayRoster {
+  id                Int       @id @default(autoincrement())
+  holidayId         Int       @map("holiday_id")
+  rosterKey         String    @map("roster_key") @db.VarChar(191)
+  workDate          DateTime  @map("work_date") @db.Date
+  crmStaffId        Int?      @map("crm_staff_id")
+  legacyStaffId     Int?      @map("legacy_staff_id")
+  importedName      String?   @map("imported_name") @db.VarChar(160)
+  displayName       String    @map("display_name") @db.VarChar(160)
+  teamCode          String    @map("team_code") @db.VarChar(30)
+  storeId           Int?      @map("store_id")
+  storeKey          String    @map("store_key") @db.VarChar(30)
+  shiftStart        String    @map("shift_start") @db.Char(5)
+  shiftEnd          String    @map("shift_end") @db.Char(5)
+  status            String    @db.VarChar(24)
+  nominationReason  String?   @map("nomination_reason") @db.Text
+  decisionReason    String?   @map("decision_reason") @db.Text
+  isApprovedLeave   Boolean   @default(false) @map("is_approved_leave") @db.TinyInt
+  nominatedByStaffId Int?     @map("nominated_by_staff_id")
+  scheduledByStaffId Int?     @map("scheduled_by_staff_id")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  holiday CrmHolidayPeriod        @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+  ledger  CrmHolidayPayrollLedger?
+
+  @@unique([holidayId, rosterKey], name: "holiday_roster_key", map: "holiday_roster_key")
+  @@index([holidayId, workDate, status])
+  @@index([legacyStaffId, workDate])
+  @@index([crmStaffId, workDate])
+  @@map("crm_holiday_roster")
+}
+
+model CrmHolidayCandidateSnapshot {
+  id                    Int      @id @default(autoincrement())
+  holidayId             Int      @map("holiday_id")
+  workDate              DateTime @map("work_date") @db.Date
+  crmStaffId            Int?     @map("crm_staff_id")
+  legacyStaffId         Int      @map("legacy_staff_id")
+  displayName           String   @map("display_name") @db.VarChar(160)
+  avatarUrl             String?  @map("avatar_url") @db.VarChar(500)
+  teamCode              String   @map("team_code") @db.VarChar(30)
+  storeId               Int?     @map("store_id")
+  storeKey              String   @map("store_key") @db.VarChar(30)
+  scoreWindowFrom       DateTime @map("score_window_from") @db.Date
+  scoreWindowTo         DateTime @map("score_window_to") @db.Date
+  totalScore            Float?   @map("total_score")
+  dataSufficient        Boolean  @default(false) @map("data_sufficient") @db.TinyInt
+  dataCoverageReason    String?  @map("data_coverage_reason") @db.VarChar(255)
+  metricsJson           String   @map("metrics_json") @db.LongText
+  explanationJson       String   @map("explanation_json") @db.Text
+  generatedAt           DateTime @default(now()) @map("generated_at") @db.DateTime(0)
+
+  holiday CrmHolidayPeriod @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+
+  @@unique([holidayId, workDate, legacyStaffId], name: "holiday_candidate_staff_day", map: "holiday_candidate_staff_day")
+  @@index([holidayId, workDate, totalScore], map: "holiday_candidate_period_score_idx")
+  @@map("crm_holiday_candidate_snapshots")
+}
+
+model CrmStaffPerformanceEvent {
+  id                Int       @id @default(autoincrement())
+  crmStaffId        Int?      @map("crm_staff_id")
+  legacyStaffId     Int?      @map("legacy_staff_id")
+  displayName       String    @map("display_name") @db.VarChar(160)
+  eventType         String    @map("event_type") @db.VarChar(30)
+  source            String    @db.VarChar(20)
+  severity          String    @db.VarChar(12)
+  occurredAt        DateTime  @map("occurred_at") @db.DateTime(0)
+  storeId           Int?      @map("store_id")
+  storeKey          String?   @map("store_key") @db.VarChar(30)
+  relatedOrderId    Int?      @map("related_order_id")
+  relatedTicketId   Int?      @map("related_ticket_id")
+  evidenceUrl       String?   @map("evidence_url") @db.Text
+  note              String    @db.Text
+  status            String    @default("PENDING") @db.VarChar(16)
+  createdByStaffId  Int       @map("created_by_staff_id")
+  verifiedByStaffId Int?      @map("verified_by_staff_id")
+  verifiedAt        DateTime? @map("verified_at") @db.DateTime(0)
+  rejectionReason   String?   @map("rejection_reason") @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([legacyStaffId, occurredAt])
+  @@index([crmStaffId, occurredAt])
+  @@index([status, eventType, occurredAt], map: "staff_perf_status_type_date_idx")
+  @@map("crm_staff_performance_events")
+}
+
+model CrmHolidayPayrollLedger {
+  id                          Int       @id @default(autoincrement())
+  holidayId                   Int       @map("holiday_id")
+  rosterId                    Int       @unique @map("roster_id")
+  workDate                    DateTime  @map("work_date") @db.Date
+  crmStaffId                  Int?      @map("crm_staff_id")
+  legacyStaffId               Int?      @map("legacy_staff_id")
+  displayName                 String    @map("display_name") @db.VarChar(160)
+  teamCode                    String    @map("team_code") @db.VarChar(30)
+  storeKey                    String    @map("store_key") @db.VarChar(30)
+  rosterStatus                String    @map("roster_status") @db.VarChar(24)
+  payBasis                    String?   @map("pay_basis") @db.VarChar(12)
+  ledgerStatus                String    @default("EXCEPTION") @map("ledger_status") @db.VarChar(16)
+  attendanceSource            String    @map("attendance_source") @db.VarChar(40)
+  actualMinutes               Int       @default(0) @map("actual_minutes")
+  actualHours                 Float     @default(0) @map("actual_hours")
+  standardShiftHours          Float     @map("standard_shift_hours")
+  hourlyRate                  Int       @default(0) @map("hourly_rate")
+  baseHolidayAmount           Int       @default(0) @map("base_holiday_amount")
+  holidayPremiumAmount        Int       @default(0) @map("holiday_premium_amount")
+  holidayTotalValue           Int       @default(0) @map("holiday_total_value")
+  payrollAdditionAmount       Int       @default(0) @map("payroll_addition_amount")
+  baseIncludedInMonthlySalary Boolean   @default(false) @map("base_included_in_monthly_salary") @db.TinyInt
+  exceptionCode               String?   @map("exception_code") @db.VarChar(50)
+  exceptionMessage            String?   @map("exception_message") @db.Text
+  calculationVersion          String    @map("calculation_version") @db.VarChar(30)
+  lockedAt                    DateTime? @map("locked_at") @db.DateTime(0)
+  lockedByStaffId             Int?      @map("locked_by_staff_id")
+  createdAt                   DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt                   DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  holiday CrmHolidayPeriod @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+  roster  CrmHolidayRoster @relation(fields: [rosterId], references: [id], onDelete: Cascade)
+  adjustments CrmHolidayPayrollAdjustment[]
+
+  @@index([holidayId, workDate, ledgerStatus], map: "holiday_ledger_period_date_status_idx")
+  @@index([legacyStaffId, workDate])
+  @@map("crm_holiday_payroll_ledger")
+}
+
+model CrmHolidayPayrollAdjustment {
+  id               Int      @id @default(autoincrement())
+  holidayId        Int      @map("holiday_id")
+  ledgerId         Int      @map("ledger_id")
+  amount           Int
+  reason           String   @db.Text
+  createdByStaffId Int      @map("created_by_staff_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  holiday CrmHolidayPeriod        @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+  ledger  CrmHolidayPayrollLedger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+
+  @@index([holidayId, createdAt])
+  @@index([ledgerId, createdAt])
+  @@map("crm_holiday_payroll_adjustments")
+}
+
+model CrmHolidayAuditLog {
+  id           Int      @id @default(autoincrement())
+  holidayId    Int      @map("holiday_id")
+  action       String   @db.VarChar(50)
+  entityType   String   @map("entity_type") @db.VarChar(50)
+  entityId     Int?     @map("entity_id")
+  actorStaffId Int      @map("actor_staff_id")
+  reason       String?  @db.Text
+  beforeJson   String?  @map("before_json") @db.LongText
+  afterJson    String?  @map("after_json") @db.LongText
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  holiday CrmHolidayPeriod @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+
+  @@index([holidayId, createdAt])
+  @@index([actorStaffId, createdAt])
+  @@map("crm_holiday_audit_logs")
 }

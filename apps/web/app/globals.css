@@ -5094,6 +5094,10 @@ body {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .holiday-work-metric-grid.metric-grid[data-columns='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .dashboard-mobile-nav-trigger,
   .dashboard-mobile-only {
     display: none !important;

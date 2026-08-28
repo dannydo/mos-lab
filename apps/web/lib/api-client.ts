@@ -1,4 +1,27 @@
 import api, { resolveApiBaseUrl } from './api';
+import type {
+  AnnualHolidayCalendarQuery,
+  AnnualHolidayCalendarResponse,
+  CreateStaffPerformanceEventRequest,
+  CreateHolidayPayrollAdjustmentRequest,
+  HolidayActionResponse,
+  HolidayCandidateScore,
+  HolidayCoverageRequirement,
+  HolidayPayrollLedgerEntry,
+  HolidayPayrollAdjustment,
+  HolidayPeriod,
+  HolidayPeriodListResponse,
+  HolidayPeriodQuery,
+  HolidayRosterEntry,
+  HolidayWorkspaceResponse,
+  StaffPerformanceEvent,
+  StaffPerformanceEventListResponse,
+  StaffPerformanceEventQuery,
+  UpsertHolidayBranchCoverageRequest,
+  UpsertHolidayCoverageRequest,
+  UpsertHolidayPeriodRequest,
+  UpsertHolidayRosterRequest,
+} from '@mos-lab/shared';
 import {
   Customer,
   CreateCustomerInput,
@@ -492,7 +515,7 @@ export const apiClient = {
     },
     me: async (): Promise<Staff> => {
       const response = await api.get('/auth/me');
-      return response.data;
+      return response.data?.user || response.data;
     },
     impersonate: async (userId: number): Promise<LoginResponse> => {
       const response = await api.post('/auth/impersonate', { userId });
@@ -1510,6 +1533,109 @@ export const apiClient = {
       data: UpdateTeamMembersRequest
     ): Promise<{ success: boolean; message: string }> => {
       const response = await api.put(`/teams/${id}/members`, data);
+      return response.data;
+    },
+  },
+
+  holidayWork: {
+    getAnnualCalendar: async (params?: AnnualHolidayCalendarQuery): Promise<AnnualHolidayCalendarResponse> => {
+      const response = await api.get('/holiday-work/calendar', { params });
+      return response.data;
+    },
+    listPeriods: async (params?: HolidayPeriodQuery): Promise<HolidayPeriodListResponse> => {
+      const response = await api.get('/holiday-work/periods', { params });
+      return response.data;
+    },
+    getWorkspace: async (holidayId: number): Promise<HolidayWorkspaceResponse> => {
+      const response = await api.get(`/holiday-work/periods/${holidayId}`);
+      return response.data;
+    },
+    createPeriod: async (data: UpsertHolidayPeriodRequest): Promise<HolidayActionResponse<HolidayPeriod>> => {
+      const response = await api.post('/holiday-work/periods', data);
+      return response.data;
+    },
+    updatePeriod: async (
+      holidayId: number,
+      data: UpsertHolidayPeriodRequest
+    ): Promise<HolidayActionResponse<HolidayPeriod>> => {
+      const response = await api.put(`/holiday-work/periods/${holidayId}`, data);
+      return response.data;
+    },
+    createCoverage: async (
+      holidayId: number,
+      data: UpsertHolidayCoverageRequest
+    ): Promise<HolidayActionResponse<HolidayCoverageRequirement>> => {
+      const response = await api.post(`/holiday-work/periods/${holidayId}/coverage`, data);
+      return response.data;
+    },
+    updateCoverage: async (
+      holidayId: number,
+      coverageId: number,
+      data: UpsertHolidayCoverageRequest
+    ): Promise<HolidayActionResponse<HolidayCoverageRequirement>> => {
+      const response = await api.put(`/holiday-work/periods/${holidayId}/coverage/${coverageId}`, data);
+      return response.data;
+    },
+    upsertBranchCoverage: async (
+      holidayId: number,
+      data: UpsertHolidayBranchCoverageRequest
+    ): Promise<HolidayActionResponse<HolidayCoverageRequirement[]>> => {
+      const response = await api.put(`/holiday-work/periods/${holidayId}/branch-coverage`, data);
+      return response.data;
+    },
+    createRoster: async (
+      holidayId: number,
+      data: UpsertHolidayRosterRequest
+    ): Promise<HolidayActionResponse<HolidayRosterEntry>> => {
+      const response = await api.post(`/holiday-work/periods/${holidayId}/roster`, data);
+      return response.data;
+    },
+    updateRoster: async (
+      holidayId: number,
+      rosterId: number,
+      data: UpsertHolidayRosterRequest
+    ): Promise<HolidayActionResponse<HolidayRosterEntry>> => {
+      const response = await api.put(`/holiday-work/periods/${holidayId}/roster/${rosterId}`, data);
+      return response.data;
+    },
+    generateCandidates: async (holidayId: number): Promise<HolidayActionResponse<HolidayCandidateScore[]>> => {
+      const response = await api.post(`/holiday-work/periods/${holidayId}/candidates/generate`);
+      return response.data;
+    },
+    recalculatePayroll: async (holidayId: number): Promise<HolidayActionResponse<HolidayPayrollLedgerEntry[]>> => {
+      const response = await api.post(`/holiday-work/periods/${holidayId}/payroll/recalculate`);
+      return response.data;
+    },
+    publish: async (holidayId: number): Promise<HolidayActionResponse<HolidayPeriod>> => {
+      const response = await api.post(`/holiday-work/periods/${holidayId}/publish`);
+      return response.data;
+    },
+    lockPayroll: async (holidayId: number): Promise<HolidayActionResponse<HolidayWorkspaceResponse>> => {
+      const response = await api.post(`/holiday-work/periods/${holidayId}/payroll/lock`);
+      return response.data;
+    },
+    createPayrollAdjustment: async (
+      holidayId: number,
+      data: CreateHolidayPayrollAdjustmentRequest
+    ): Promise<HolidayActionResponse<HolidayPayrollAdjustment>> => {
+      const response = await api.post(`/holiday-work/periods/${holidayId}/payroll/adjustments`, data);
+      return response.data;
+    },
+    listPerformanceEvents: async (params?: StaffPerformanceEventQuery): Promise<StaffPerformanceEventListResponse> => {
+      const response = await api.get('/holiday-work/performance-events', { params });
+      return response.data;
+    },
+    createPerformanceEvent: async (
+      data: CreateStaffPerformanceEventRequest
+    ): Promise<HolidayActionResponse<StaffPerformanceEvent>> => {
+      const response = await api.post('/holiday-work/performance-events', data);
+      return response.data;
+    },
+    reviewPerformanceEvent: async (
+      eventId: number,
+      data: { status: 'VERIFIED' | 'REJECTED'; rejectionReason?: string }
+    ): Promise<HolidayActionResponse<StaffPerformanceEvent>> => {
+      const response = await api.post(`/holiday-work/performance-events/${eventId}/review`, data);
       return response.data;
     },
   },

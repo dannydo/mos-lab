@@ -1,4 +1,5 @@
 import type { ReportPeriodComparison } from './report-period.js';
+import type { HolidayPayBreakdown } from './holiday-work.js';
 
 export interface StaffKPI {
   id: number;
@@ -128,7 +129,7 @@ export interface SalaryConfig {
   revBonusTiers: RevBonusTier[];
 }
 
-export interface CcPaystubRecord {
+export interface CcPaystubRecord extends HolidayPayBreakdown {
   consultantId: number;
   userId?: number;
   displayName: string;
@@ -164,6 +165,9 @@ export interface CcPaystubResponse {
     totalComboProductBonus: number;
     totalMinigameBonus: number;
     totalCcTipBonus: number;
+    totalHolidayBasePay: number;
+    totalHolidayPremiumPay: number;
+    totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
     comparison?: ReportPeriodComparison & {
       totalHourlyWage: number;

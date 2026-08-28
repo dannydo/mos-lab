@@ -1,3 +1,5 @@
+import type { HolidayPayBreakdown } from './holiday-work.js';
+
 export interface BkBookingRecord {
   orderId: number;
   orderKey: string;
@@ -236,7 +238,7 @@ export interface BkRevenueResponse {
   };
 }
 
-export interface BkPaystubRecord {
+export interface BkPaystubRecord extends HolidayPayBreakdown {
   staffId: number;
   staffName: string;
   avatar?: string | null;
@@ -259,6 +261,9 @@ export interface BkPaystubResponse {
     totalDoneBonus: number;
     totalTipBonus: number;
     totalRevenueBonus: number;
+    totalHolidayBasePay: number;
+    totalHolidayPremiumPay: number;
+    totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
   };
 }

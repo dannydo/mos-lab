@@ -16,6 +16,7 @@ export * from './customer.js';
 export * from './cv.js';
 export * from './cv-speed.js';
 export * from './dashboard.js';
+export * from './holiday-work.js';
 export * from './kpi.js';
 export * from './menu-access.js';
 export * from './omicall.js';

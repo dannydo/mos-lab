@@ -102,6 +102,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     totalCvXoayBonus: 0,
     totalCvTipBonus: 0,
     totalSeniorityBonus: 0,
+    totalHolidayBasePay: 0,
+    totalHolidayPremiumPay: 0,
+    totalHolidayPayrollAddition: 0,
     grandTotalIncome: 0,
   });
   const [previousSummary, setPreviousSummary] = useState<{
@@ -109,6 +112,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     totalCvXoayBonus: number;
     totalCvTipBonus: number;
     totalSeniorityBonus: number;
+    totalHolidayBasePay: number;
+    totalHolidayPremiumPay: number;
+    totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
   } | null>(null);
 
@@ -260,6 +266,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
           totalCvXoayBonus: res.summary?.totalCvXoayBonus || 0,
           totalCvTipBonus: res.summary?.totalCvTipBonus || 0,
           totalSeniorityBonus: res.summary?.totalSeniorityBonus || 0,
+          totalHolidayBasePay: res.summary?.totalHolidayBasePay || 0,
+          totalHolidayPremiumPay: res.summary?.totalHolidayPremiumPay || 0,
+          totalHolidayPayrollAddition: res.summary?.totalHolidayPayrollAddition || 0,
           grandTotalIncome: res.summary?.grandTotalIncome || 0,
         });
         setPreviousSummary(
@@ -269,6 +278,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                 totalCvXoayBonus: previousRes.summary?.totalCvXoayBonus || 0,
                 totalCvTipBonus: previousRes.summary?.totalCvTipBonus || 0,
                 totalSeniorityBonus: previousRes.summary?.totalSeniorityBonus || 0,
+                totalHolidayBasePay: previousRes.summary?.totalHolidayBasePay || 0,
+                totalHolidayPremiumPay: previousRes.summary?.totalHolidayPremiumPay || 0,
+                totalHolidayPayrollAddition: previousRes.summary?.totalHolidayPayrollAddition || 0,
                 grandTotalIncome: previousRes.summary?.grandTotalIncome || 0,
               }
             : null
@@ -872,6 +884,12 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       </dd>
                     </div>
                     <div className="min-w-0">
+                      <dt className="text-[10px] text-slate-500">Phụ cấp lễ x3</dt>
+                      <dd className="truncate text-sm font-bold tabular-nums text-rose-400">
+                        +{formatCompactVND(record.holidayPremiumPay || 0)}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Thu nhập</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
                         {formatCompactVND(record.totalIncome || 0)}
@@ -1036,6 +1054,24 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                   </div>
                 </>
               )}
+
+              <div className="flex justify-between items-center py-1 border-b bg-rose-500/10 px-2 rounded">
+                <span className="text-sm text-rose-700 dark:text-rose-300 font-medium">
+                  Lương ngày lễ 1x ({selectedRecord.holidayWorkedHours || 0}h làm +{' '}
+                  {selectedRecord.holidayPaidLeaveHours || 0}h nghỉ lễ):
+                </span>
+                <span className="tabular-nums font-bold text-rose-600 dark:text-rose-400">
+                  {selectedRecord.holidayBasePay.toLocaleString('vi-VN')}đ
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b bg-rose-500/10 px-2 rounded">
+                <span className="text-sm text-rose-700 dark:text-rose-300 font-medium">
+                  Phụ cấp đi làm lễ x3 ({selectedRecord.holidayWorkedDays || 0} ngày):
+                </span>
+                <span className="tabular-nums font-bold text-rose-600 dark:text-rose-400">
+                  +{selectedRecord.holidayPremiumPay.toLocaleString('vi-VN')}đ
+                </span>
+              </div>
 
               <div className="flex justify-between items-center pt-2 font-bold text-base">
                 <span>∑ THU NHẬP TẠM TÍNH:</span>

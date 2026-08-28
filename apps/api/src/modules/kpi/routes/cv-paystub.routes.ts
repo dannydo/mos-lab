@@ -9,6 +9,7 @@ import {
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { StaffOffDayService } from '../../staff/services/staff-off-day.service.js';
+import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 
 const getLocalDate = (dStr: string) => {
   const p = dStr.split('-');
@@ -104,7 +105,16 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         return reply.send({
           data: [],
           total: 0,
-          summary: { totalHourlyWage: 0, totalCvXoayBonus: 0, totalCvTipBonus: 0, grandTotalIncome: 0 },
+          summary: {
+            totalHourlyWage: 0,
+            totalCvXoayBonus: 0,
+            totalCvTipBonus: 0,
+            totalSeniorityBonus: 0,
+            totalHolidayBasePay: 0,
+            totalHolidayPremiumPay: 0,
+            totalHolidayPayrollAddition: 0,
+            grandTotalIncome: 0,
+          },
         });
       }
 
@@ -147,6 +157,9 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             totalCvXoayBonus: 0,
             totalCvTipBonus: 0,
             totalSeniorityBonus: 0,
+            totalHolidayBasePay: 0,
+            totalHolidayPremiumPay: 0,
+            totalHolidayPayrollAddition: 0,
             grandTotalIncome: 0,
           },
         });
@@ -282,15 +295,25 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY sb.user_id
       `;
 
-      const [hourlyRatesRows, reportStaffRows, cvXoayBonusRows, cvTipBonusRows, techPointsRows, staffOffDayBatchMap] =
-        await Promise.all([
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(reportStaffQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvXoayBonusQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvTipBonusQuery),
-          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(techPointsQuery),
-          StaffOffDayService.getBatchStaffOffDays(fastify, validStaffIds),
-        ]);
+      const [
+        hourlyRatesRows,
+        reportStaffRows,
+        cvXoayBonusRows,
+        cvTipBonusRows,
+        techPointsRows,
+        staffOffDayBatchMap,
+        holidayBreakdownMap,
+        holidayWorkedDateMap,
+      ] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(reportStaffQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvXoayBonusQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvTipBonusQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(techPointsQuery),
+        StaffOffDayService.getBatchStaffOffDays(fastify, validStaffIds),
+        HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, validStaffIds, startPart, endPart),
+        HolidayWorkService.getPublishedHolidayWorkedDateKeys(fastify, validStaffIds, startPart, endPart),
+      ]);
 
       const techPointsMap = new Map<number, number>();
       techPointsRows.forEach((r: SafeAny) => {
@@ -360,6 +383,9 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       let grandTotalCvXoayBonus = 0;
       let grandTotalCvTipBonus = 0;
       let grandTotalSeniorityBonus = 0;
+      let grandTotalHolidayBasePay = 0;
+      let grandTotalHolidayPremiumPay = 0;
+      let grandTotalHolidayPayrollAddition = 0;
       let grandTotalIncome = 0;
 
       // reportStaffRows already contains the requested range plus the week boundaries used
@@ -389,11 +415,12 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const activeDays = userFilteredDays.length;
 
         const userOffDayDates = userOffDayWorkDatesMap.get(staffId) || new Set();
+        const holidayWorkedDates = holidayWorkedDateMap.get(staffId) || new Set();
 
         userFilteredDays.forEach((r) => {
           const dayHours = Number(r.working_minute || 0) / 60;
           totalWorkHours += dayHours;
-          const isOffDayWork = userOffDayDates.has(r.dateStr);
+          const isOffDayWork = userOffDayDates.has(r.dateStr) && !holidayWorkedDates.has(r.dateStr);
           if (isOffDayWork) {
             offDaysWorked += 1;
             offDaysWorkHours += dayHours;
@@ -439,13 +466,17 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
 
         const totalPoints = techPointsMap.get(staffId) || 0;
         const techLevel = Math.floor(totalPoints / 100) + 1;
+        const holiday = holidayBreakdownMap.get(staffId)!;
 
-        const totalIncome = hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus;
+        const totalIncome = hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus + holiday.holidayPaystubAdjustment;
 
         grandTotalHourlyWage += hourlyWage;
         grandTotalCvXoayBonus += cvXoayBonus;
         grandTotalCvTipBonus += cvTipBonus;
         grandTotalSeniorityBonus += seniorityBonus;
+        grandTotalHolidayBasePay += holiday.holidayBasePay;
+        grandTotalHolidayPremiumPay += holiday.holidayPremiumPay;
+        grandTotalHolidayPayrollAddition += holiday.holidayPayrollAddition;
         grandTotalIncome += totalIncome;
 
         return {
@@ -470,6 +501,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           offDaysWorked,
           offDaysWorkHours,
           offDaysWorkWage,
+          ...holiday,
         };
       });
 
@@ -484,6 +516,9 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           totalCvXoayBonus: grandTotalCvXoayBonus,
           totalCvTipBonus: grandTotalCvTipBonus,
           totalSeniorityBonus: grandTotalSeniorityBonus,
+          totalHolidayBasePay: grandTotalHolidayBasePay,
+          totalHolidayPremiumPay: grandTotalHolidayPremiumPay,
+          totalHolidayPayrollAddition: grandTotalHolidayPayrollAddition,
           grandTotalIncome,
         },
       };

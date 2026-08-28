@@ -8,6 +8,7 @@ export * from './types/auth.js';
 export * from './types/plan.js';
 export * from './types/call.js';
 export * from './types/kpi.js';
+export * from './types/holiday-work.js';
 export * from './constants/index.js';
 export * from './types/table-config.js';
 export * from './types/cc-xoay.js';
