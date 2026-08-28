@@ -816,16 +816,6 @@ export default function ScheduleCalendarPage() {
             setDetailCustomerId(null);
           }}
           onUpdate={fetchAppointments}
-          onBookAppointment={(cust) => {
-            setCustomerDrawerOpen(false);
-            setBookingInitialCustomer({
-              id: cust.id,
-              name: cust.name,
-              phone: cust.phone,
-              bucket: cust.bucket,
-            });
-            setBookingWizardOpen(true);
-          }}
         />
       )}
 

@@ -36,6 +36,7 @@ import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
 import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
+import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
 
 const { TextArea } = Input;
 
@@ -645,10 +646,13 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
       await apiClient.customers.updateBooking(booking.id, payload);
       message.success('Dời lịch hẹn thành công!');
-      window.dispatchEvent(new CustomEvent('mos-booking-updated'));
-      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
-      window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
-      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'reschedule' } }));
+      notifyBookingMutation(
+        {
+          action: 'rescheduled',
+          customerId: toBookingCustomerId(booking?.customerId || booking?.customer?.id),
+        },
+        { refreshCallLog: true }
+      );
       onSuccess();
       onClose();
     } catch (err) {

@@ -42,6 +42,7 @@ import { CvDatePicker } from './booking/CvDatePicker';
 import CreateCustomerModal from './CreateCustomerModal';
 import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
+import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
 
 const { TextArea } = Input;
 
@@ -809,10 +810,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       message.success(
         `Đặt lịch thành công cho khách hàng ${isNewLead ? leadName : selectedCustomer.name || selectedCustomer.customerName}!`
       );
-      window.dispatchEvent(new CustomEvent('mos-booking-updated'));
-      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
-      window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
-      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'booking' } }));
+      notifyBookingMutation(
+        {
+          action: 'created',
+          customerId: isNewLead ? null : toBookingCustomerId(selectedCustomer?.legacyUserId || selectedCustomer?.id),
+        },
+        { refreshCallLog: true }
+      );
 
       setBookingCreated(true);
       onSuccess();

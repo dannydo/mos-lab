@@ -741,16 +741,6 @@ export default function AppointmentsPage() {
           customerId={selectedCustomer?.id || null}
           onClose={() => setDetailModalVisible(false)}
           onUpdate={fetchAppointments}
-          onBookAppointment={(cust) => {
-            setDetailModalVisible(false);
-            setBookingInitialCustomer({
-              id: cust.id,
-              name: cust.name,
-              phone: cust.phone,
-              bucket: cust.bucket,
-            });
-            setBookingWizardVisible(true);
-          }}
         />
       )}
 

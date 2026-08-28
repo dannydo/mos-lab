@@ -624,9 +624,6 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
             onSuccess={() => {
               setIsUpdateModalOpen(false);
               setEditingAppointment(null);
-              // Dispatch refresh events to update timeline & drawer data immediately
-              window.dispatchEvent(new CustomEvent('mos-booking-updated'));
-              window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'booking' } }));
             }}
             booking={editingAppointment}
           />

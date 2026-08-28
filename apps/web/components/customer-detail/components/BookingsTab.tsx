@@ -798,7 +798,14 @@ export const BookingsTab: React.FC<
         {/* Cancel Booking Modal */}
         <CancelBookingModal
           open={cancelModalOpen}
-          booking={selectedBookingForCancel}
+          booking={
+            selectedBookingForCancel
+              ? {
+                  ...selectedBookingForCancel,
+                  customerId: customer?.id,
+                }
+              : null
+          }
           currentStaffId={customer?.assignedStaff?.id}
           onCancel={() => {
             setCancelModalOpen(false);
@@ -818,7 +825,14 @@ export const BookingsTab: React.FC<
         {/* Update Booking Modal */}
         <UpdateBookingModal
           visible={updateModalOpen}
-          booking={selectedBookingForUpdate}
+          booking={
+            selectedBookingForUpdate
+              ? {
+                  ...selectedBookingForUpdate,
+                  customerId: customer?.id,
+                }
+              : null
+          }
           onClose={() => {
             setUpdateModalOpen(false);
             setSelectedBookingForUpdate(null);

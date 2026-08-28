@@ -273,6 +273,12 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     [fetchTabData]
   );
 
+  const refreshBookingHistory = useCallback(async () => {
+    setActiveTab('bookings');
+    await Promise.all([fetchDetails(), fetchTabData('bookings', 1, false, true)]);
+    optionsRef.current?.onUpdate?.();
+  }, [fetchDetails, fetchTabData]);
+
   const refreshAllDetails = useCallback(async () => {
     const loadedTabs = Object.keys(tabDataMapRef.current).filter((key) => ['bookings', 'notes', 'calls'].includes(key));
     await Promise.all([fetchDetails(), ...loadedTabs.map((key) => fetchTabData(key, 1, false, true))]);
@@ -993,6 +999,7 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
     fetchDetails,
     loadDetailedData,
     refetchTabData,
+    refreshBookingHistory,
     refreshAllDetails,
     handleMouseDown,
 

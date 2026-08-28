@@ -19,6 +19,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getStoreFullAddress, STORES } from './booking/constants';
 import { buildBookingDetailsUpdateRequest } from './booking/updateBookingPayload';
 import { AdaptiveModal } from './ui/AdaptiveOverlay';
+import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
 
 interface UpdateBookingModalProps {
   visible: boolean;
@@ -205,6 +206,10 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
 
       await apiClient.customers.updateBooking(booking.id, payload);
       message.success('Cập nhật thông tin lịch hẹn thành công!');
+      notifyBookingMutation({
+        action: 'updated',
+        customerId: toBookingCustomerId(booking?.customerId || booking?.customer?.id),
+      });
       onSuccess();
       onClose();
     } catch (err: SafeAny) {

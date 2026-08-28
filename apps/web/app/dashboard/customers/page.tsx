@@ -113,20 +113,6 @@ function CustomersPageContent() {
     [setSelectedCustomer]
   );
 
-  const handleBookAppointment = React.useCallback(
-    (cust: SafeAny) => {
-      setModalVisible(false);
-      setBookingInitialCustomer({
-        id: cust.id,
-        name: cust.name,
-        phone: cust.phone,
-        bucket: cust.bucket,
-      });
-      setBookingWizardVisible(true);
-    },
-    [setModalVisible, setBookingInitialCustomer, setBookingWizardVisible]
-  );
-
   const handleDeleteSuccess = React.useCallback(() => {
     setModalVisible(false);
     refreshListAndStats();
@@ -551,7 +537,6 @@ function CustomersPageContent() {
         open={data.modalVisible}
         customerId={data.selectedCustomer?.id || null}
         onClose={() => data.setModalVisible(false)}
-        onBookAppointment={handleBookAppointment}
         onDeleteSuccess={handleDeleteSuccess}
         onUpdate={data.refreshListAndStats}
       />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
 import { Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag } from 'antd';
 import {
@@ -20,6 +20,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useOmiCall } from '../context/OmiCallContext';
 import { AdaptiveDrawer } from './ui';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
+import { BOOKING_HISTORY_UPDATED_EVENT, type BookingMutationEventDetail } from '../lib/booking-events';
 
 const RescheduleBookingModal = dynamic(() => import('./RescheduleBookingModal').then((m) => m.RescheduleBookingModal), {
   ssr: false,
@@ -70,7 +71,6 @@ interface CustomerDetailDrawerProps {
   open: boolean;
   customerId: number | null;
   onClose: () => void;
-  onBookAppointment?: (customer: SafeAny) => void;
   onDeleteSuccess?: () => void;
   onUpdate?: () => void;
 }
@@ -79,7 +79,6 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   open,
   customerId,
   onClose,
-  onBookAppointment,
   onDeleteSuccess,
   onUpdate,
 }) => {
@@ -139,6 +138,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     fetchDetails,
     loadDetailedData,
     refetchTabData,
+    refreshBookingHistory,
     refreshAllDetails,
     handleMouseDown,
 
@@ -219,6 +219,25 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       localStorage.setItem('customer_detail_active_tab', key);
     }
   };
+
+  const returnToBookingHistory = useCallback(() => {
+    setActiveTabKey('bookings');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('customer_detail_active_tab', 'bookings');
+    }
+    void refreshBookingHistory();
+  }, [refreshBookingHistory]);
+
+  useEffect(() => {
+    const handleBookingHistoryUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<BookingMutationEventDetail>).detail;
+      if (!open || !customerId || detail?.customerId !== customerId) return;
+      returnToBookingHistory();
+    };
+
+    window.addEventListener(BOOKING_HISTORY_UPDATED_EVENT, handleBookingHistoryUpdated);
+    return () => window.removeEventListener(BOOKING_HISTORY_UPDATED_EVENT, handleBookingHistoryUpdated);
+  }, [customerId, open, returnToBookingHistory]);
 
   const timelineCount = useMemo(() => {
     const bookingIdsWithNotes = new Set<string>();
@@ -558,13 +577,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     borderRadius: '8px',
                     boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
                   }}
-                  onClick={() => {
-                    if (onBookAppointment) {
-                      onBookAppointment(customer);
-                    } else {
-                      setBookingWizardOpen(true);
-                    }
-                  }}
+                  onClick={() => setBookingWizardOpen(true)}
                 />
               </Tooltip>
             </Space>
@@ -987,7 +1000,6 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           onClose={() => setBookingWizardOpen(false)}
           onSuccess={() => {
             setBookingWizardOpen(false);
-            refreshAllDetails();
           }}
           initialCustomer={{
             id: customer.id,

@@ -6,6 +6,7 @@ import { WarningOutlined, CloseCircleOutlined, UserOutlined } from '@ant-design/
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../lib/api-client';
 import { AdaptiveModal } from '../ui/AdaptiveOverlay';
+import { notifyBookingMutation, toBookingCustomerId } from '../../lib/booking-events';
 
 export interface CancelBookingModalProps {
   open: boolean;
@@ -16,6 +17,7 @@ export interface CancelBookingModalProps {
     bookingDate?: string;
     createdStaffId?: number | null;
     createdStaffName?: string | null;
+    customerId?: number | null;
     customerName?: string;
   } | null;
   currentStaffId?: number | null;
@@ -66,6 +68,10 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
         message.success('Đã hủy lịch hẹn thành công.');
       }
 
+      notifyBookingMutation({
+        action: 'cancelled',
+        customerId: toBookingCustomerId(booking.customerId),
+      });
       form.resetFields();
       onSuccess();
     } catch (err: any) {
