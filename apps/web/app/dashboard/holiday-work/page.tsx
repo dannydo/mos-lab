@@ -1,23 +1,7 @@
 'use client';
 
-import { useDeferredValue, useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  DatePicker,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Space,
-  Tabs,
-  Tag,
-  Tooltip,
-  Typography,
-  message,
-} from 'antd';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Form, Input, Modal, Select, Space, Tag, Tooltip, Typography, message } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import {
   AuditOutlined,
@@ -34,44 +18,29 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import {
   DEFAULT_HOLIDAY_SELECTION_WEIGHTS,
-  type HolidayCandidateScore,
   type HolidayPayrollLedgerEntry,
   type HolidayRosterEntry,
   type StaffPerformanceEvent,
   isAdminOrSuperAdminRole,
-  removeVietnameseTones,
 } from '@mos-lab/shared';
-import {
-  AdaptiveDrawer,
-  DataSection,
-  DataTable,
-  FeaturePage,
-  MetricGrid,
-  ResponsiveFormField,
-  ResponsiveFormGrid,
-  StatePanel,
-} from '~/components/ui';
+import { DataSection, FeaturePage, MetricGrid, StatePanel } from '~/components/ui';
 import { HolidayCalendarSection } from './components/HolidayCalendarSection';
+import { holidayCandidateColumns } from './components/holidayCandidateColumns';
+import { HolidayWorkDrawer, type HolidayWorkDrawerMode } from './components/HolidayWorkDrawer';
+import { HolidayWorkspaceTabs } from './components/HolidayWorkspaceTabs';
+import {
+  formatHolidayMoney,
+  holidayNormalizedIncludes,
+  HOLIDAY_ROSTER_STATUS_META,
+  type HolidayBranchCoverageRow,
+  type HolidayWorkTabKey,
+} from './components/holidayWorkPresentation';
 import { useHolidayWork } from './hooks/useHolidayWork';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 const PAGE_STATE_KEY = 'mos_holiday_work_table_state_v1';
 const ACTIVE_TAB_KEY = 'mos_holiday_work_active_tab_v1';
-type TabKey = 'coverage' | 'candidates' | 'roster' | 'ledger' | 'feedback';
-type DrawerMode = 'period' | 'coverage' | 'roster' | 'event' | 'adjustment' | null;
-type PageState = Record<TabKey, { current: number; pageSize: number }>;
-type HolidayBranchCoverageRow = {
-  key: string;
-  workDate: string;
-  storeId: number | null;
-  storeKey: string;
-  shiftStart: string;
-  shiftEnd: string;
-  ccRequiredCount: number;
-  cvRequiredCount: number;
-  requiredCount: number;
-  notes?: string;
-};
+type PageState = Record<HolidayWorkTabKey, { current: number; pageSize: number }>;
 
 const defaultPageState: PageState = {
   coverage: { current: 1, pageSize: 10 },
@@ -81,54 +50,11 @@ const defaultPageState: PageState = {
   feedback: { current: 1, pageSize: 20 },
 };
 
-const rosterStatus: Record<string, { label: string; color: string }> = {
-  NOMINATED: { label: 'Đề cử', color: 'blue' },
-  SCHEDULED: { label: 'Đi làm', color: 'green' },
-  HOLIDAY_OFF: { label: 'Nghỉ lễ', color: 'default' },
-  BOOKED_OFF: { label: 'Book off', color: 'orange' },
-  CANCELLED: { label: 'Đã hủy', color: 'default' },
-  PAYROLL_EXCEPTION: { label: 'Ngoại lệ', color: 'red' },
-};
 const attendanceSourceLabel: Record<HolidayPayrollLedgerEntry['attendanceSource'], string> = {
   REPORT_STAFF_WORKING_MINUTE: 'report_staff.working_minute',
   STAFF_DAY_OFF_APPROVED: 'Leave đã duyệt',
   HOLIDAY_ROSTER_POLICY: 'Roster / chính sách lễ',
 };
-
-const money = (value: number) => `${Math.round(value || 0).toLocaleString('vi-VN')} đ`;
-const normalizedIncludes = (value: unknown, search: string) =>
-  removeVietnameseTones(String(value || '')).includes(removeVietnameseTones(search));
-
-function CompactRecord({
-  title,
-  meta,
-  tag,
-  detail,
-}: {
-  title: string;
-  meta: string;
-  tag?: ReactNode;
-  detail?: string;
-}) {
-  return (
-    <Card size="small" className="w-full">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="truncate font-semibold">{title}</div>
-          <Text type="secondary" className="text-xs tabular-nums">
-            {meta}
-          </Text>
-        </div>
-        {tag}
-      </div>
-      {detail ? (
-        <Paragraph className="mb-0 mt-2 text-xs" ellipsis={{ rows: 2 }}>
-          {detail}
-        </Paragraph>
-      ) : null}
-    </Card>
-  );
-}
 
 export default function HolidayWorkPage() {
   const [messageApi, messageContext] = message.useMessage();
@@ -137,17 +63,17 @@ export default function HolidayWorkPage() {
     onSuccess: (text) => messageApi.success(text),
     onError: (text) => messageApi.error(text),
   });
-  const [activeTab, setActiveTab] = useState<TabKey>('roster');
+  const [activeTab, setActiveTab] = useState<HolidayWorkTabKey>('roster');
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
-  const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
+  const [drawerMode, setDrawerMode] = useState<HolidayWorkDrawerMode>(null);
   const [editingCoverage, setEditingCoverage] = useState<HolidayBranchCoverageRow | null>(null);
   const [editingRoster, setEditingRoster] = useState<HolidayRosterEntry | null>(null);
   const [editingLedger, setEditingLedger] = useState<HolidayPayrollLedgerEntry | null>(null);
   const [pageState, setPageState] = useState<PageState>(defaultPageState);
 
   useEffect(() => {
-    const savedTab = window.localStorage.getItem(ACTIVE_TAB_KEY) as TabKey | null;
+    const savedTab = window.localStorage.getItem(ACTIVE_TAB_KEY) as HolidayWorkTabKey | null;
     if (savedTab && Object.prototype.hasOwnProperty.call(defaultPageState, savedTab)) setActiveTab(savedTab);
     try {
       const savedState = JSON.parse(window.localStorage.getItem(PAGE_STATE_KEY) || 'null') as Partial<PageState> | null;
@@ -195,7 +121,7 @@ export default function HolidayWorkPage() {
 
   const filterRows = <T extends object>(rows: T[], fields: Array<keyof T>) =>
     deferredSearch
-      ? rows.filter((row) => fields.some((field) => normalizedIncludes(row[field], deferredSearch)))
+      ? rows.filter((row) => fields.some((field) => holidayNormalizedIncludes(row[field], deferredSearch)))
       : rows;
 
   const branchCoverage = useMemo(() => {
@@ -229,7 +155,7 @@ export default function HolidayWorkPage() {
   const ledgerRows = filterRows(workspace?.ledger || [], ['displayName', 'teamCode', 'storeKey', 'ledgerStatus']);
   const eventRows = filterRows(holiday.events, ['displayName', 'eventType', 'source', 'status']);
 
-  const pagination = (key: TabKey, total: number): TablePaginationConfig => ({
+  const pagination = (key: HolidayWorkTabKey, total: number): TablePaginationConfig => ({
     current: pageState[key].current,
     pageSize: pageState[key].pageSize,
     total,
@@ -475,65 +401,6 @@ export default function HolidayWorkPage() {
       : []),
   ];
 
-  const candidateColumns: ColumnsType<HolidayCandidateScore> = [
-    {
-      title: 'Ngày',
-      dataIndex: 'workDate',
-      key: 'workDate',
-      render: (value) => <span className="tabular-nums">{dayjs(value).format('DD/MM')}</span>,
-    },
-    {
-      title: 'Nhân sự',
-      dataIndex: 'displayName',
-      key: 'displayName',
-      render: (value, row) => (
-        <div>
-          <b>{value}</b>
-          <div>
-            <Text type="secondary" className="text-xs">
-              {row.teamCode} · {row.storeKey}
-            </Text>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Điểm',
-      dataIndex: 'totalScore',
-      key: 'totalScore',
-      align: 'right',
-      sorter: (a, b) => (a.totalScore || 0) - (b.totalScore || 0),
-      render: (value, row) =>
-        row.dataSufficient ? (
-          <Tooltip title={row.explanation.join(' ')}>
-            <b className="tabular-nums">{Number(value).toFixed(2)}</b>
-          </Tooltip>
-        ) : (
-          <Tag color="gold">Dữ liệu chưa đủ</Tag>
-        ),
-    },
-    {
-      title: 'Feedback / Fix',
-      key: 'quality',
-      render: (_, row) => (
-        <span className="tabular-nums">
-          {row.metrics.verifiedNegativeFeedbackCount} / {row.metrics.fixCount}
-        </span>
-      ),
-    },
-    {
-      title: 'Tip',
-      dataIndex: ['metrics', 'tipRate'],
-      key: 'tip',
-      render: (_, row) =>
-        row.metrics.tipRate === null ? (
-          '-'
-        ) : (
-          <span className="tabular-nums">{(row.metrics.tipRate * 100).toFixed(1)}%</span>
-        ),
-    },
-  ];
-
   const rosterColumns: ColumnsType<HolidayRosterEntry> = [
     {
       title: 'Ngày',
@@ -563,7 +430,9 @@ export default function HolidayWorkPage() {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      render: (value) => <Tag color={rosterStatus[value]?.color}>{rosterStatus[value]?.label || value}</Tag>,
+      render: (value) => (
+        <Tag color={HOLIDAY_ROSTER_STATUS_META[value]?.color}>{HOLIDAY_ROSTER_STATUS_META[value]?.label || value}</Tag>
+      ),
     },
     {
       title: 'Lý do / ghi chú',
@@ -624,27 +493,35 @@ export default function HolidayWorkPage() {
       align: 'right',
       render: (value) => <span className="tabular-nums">{Number(value).toFixed(2)}h</span>,
     },
-    { title: 'Đơn giá', dataIndex: 'hourlyRate', key: 'hourlyRate', align: 'right', render: money },
-    { title: 'Lễ 1x', dataIndex: 'baseHolidayAmount', key: 'baseHolidayAmount', align: 'right', render: money },
+    { title: 'Đơn giá', dataIndex: 'hourlyRate', key: 'hourlyRate', align: 'right', render: formatHolidayMoney },
+    {
+      title: 'Lễ 1x',
+      dataIndex: 'baseHolidayAmount',
+      key: 'baseHolidayAmount',
+      align: 'right',
+      render: formatHolidayMoney,
+    },
     {
       title: 'Phụ cấp x3',
       dataIndex: 'holidayPremiumAmount',
       key: 'holidayPremiumAmount',
       align: 'right',
-      render: money,
+      render: formatHolidayMoney,
     },
     {
       title: 'Cộng payroll',
       dataIndex: 'payrollAdditionAmount',
       key: 'payrollAdditionAmount',
       align: 'right',
-      render: (value) => <b className="tabular-nums">{money(value)}</b>,
+      render: (value) => <b className="tabular-nums">{formatHolidayMoney(value)}</b>,
     },
     {
       title: 'Adjustment',
       key: 'adjustment',
       align: 'right',
-      render: (_, row) => <span className="tabular-nums">{money(adjustmentByLedger.get(row.id) || 0)}</span>,
+      render: (_, row) => (
+        <span className="tabular-nums">{formatHolidayMoney(adjustmentByLedger.get(row.id) || 0)}</span>
+      ),
     },
     {
       title: 'Ledger',
@@ -945,132 +822,21 @@ export default function HolidayWorkPage() {
                     </Space>
                   }
                 >
-                  <Tabs
-                    activeKey={activeTab}
-                    onChange={(key) => setActiveTab(key as TabKey)}
-                    items={[
-                      {
-                        key: 'coverage',
-                        label: `Nhu cầu (${coverageRows.length})`,
-                        children: (
-                          <DataTable
-                            rowKey="key"
-                            columns={coverageColumns}
-                            dataSource={coverageRows}
-                            pagination={pagination('coverage', coverageRows.length)}
-                            mobileRenderer={(row) => (
-                              <CompactRecord
-                                title={row.storeKey}
-                                meta={`${dayjs(row.workDate).format('DD/MM')} · ${row.shiftStart}–${row.shiftEnd}`}
-                                tag={
-                                  <Tag>
-                                    CC {row.ccRequiredCount} · CV {row.cvRequiredCount}
-                                  </Tag>
-                                }
-                                detail={row.notes || undefined}
-                              />
-                            )}
-                          />
-                        ),
-                      },
-                      {
-                        key: 'candidates',
-                        label: `Đề cử (${candidateRows.length})`,
-                        children: (
-                          <DataTable
-                            rowKey="id"
-                            columns={candidateColumns}
-                            dataSource={candidateRows}
-                            pagination={pagination('candidates', candidateRows.length)}
-                            mobileRenderer={(row) => (
-                              <CompactRecord
-                                title={row.displayName}
-                                meta={`${row.teamCode} · ${row.storeKey} · ${dayjs(row.workDate).format('DD/MM')}`}
-                                tag={
-                                  row.dataSufficient ? (
-                                    <Tag color="blue">{row.totalScore?.toFixed(2)}</Tag>
-                                  ) : (
-                                    <Tag color="gold">Chưa đủ mẫu</Tag>
-                                  )
-                                }
-                                detail={row.explanation.join(' ')}
-                              />
-                            )}
-                          />
-                        ),
-                      },
-                      {
-                        key: 'roster',
-                        label: `Roster (${rosterRows.length})`,
-                        children: (
-                          <DataTable
-                            rowKey="id"
-                            columns={rosterColumns}
-                            dataSource={rosterRows}
-                            pagination={pagination('roster', rosterRows.length)}
-                            mobileRenderer={(row) => (
-                              <CompactRecord
-                                title={row.displayName}
-                                meta={`${row.teamCode} · ${row.storeKey} · ${dayjs(row.workDate).format('DD/MM')}`}
-                                tag={
-                                  <Tag color={rosterStatus[row.status]?.color}>{rosterStatus[row.status]?.label}</Tag>
-                                }
-                                detail={row.decisionReason || row.nominationReason || undefined}
-                              />
-                            )}
-                          />
-                        ),
-                      },
-                      ...(canManage
-                        ? [
-                            {
-                              key: 'ledger',
-                              label: `Ledger (${ledgerRows.length})`,
-                              children: (
-                                <DataTable
-                                  rowKey="id"
-                                  columns={ledgerColumns}
-                                  dataSource={ledgerRows}
-                                  pagination={pagination('ledger', ledgerRows.length)}
-                                  scroll={{ x: 1100 }}
-                                  mobileRenderer={(row: HolidayPayrollLedgerEntry) => (
-                                    <CompactRecord
-                                      title={row.displayName}
-                                      meta={`${dayjs(row.workDate).format('DD/MM')} · ${row.actualHours.toFixed(2)}h`}
-                                      tag={
-                                        <Tag color={row.ledgerStatus === 'EXCEPTION' ? 'red' : 'green'}>
-                                          {row.ledgerStatus}
-                                        </Tag>
-                                      }
-                                      detail={`1x ${money(row.baseHolidayAmount)} · x3 ${money(row.holidayPremiumAmount)} · Cộng ${money(row.payrollAdditionAmount)}`}
-                                    />
-                                  )}
-                                />
-                              ),
-                            },
-                          ]
-                        : []),
-                      {
-                        key: 'feedback',
-                        label: `Hiệu suất (${eventRows.length})`,
-                        children: (
-                          <DataTable
-                            rowKey="id"
-                            columns={eventColumns}
-                            dataSource={eventRows}
-                            pagination={pagination('feedback', eventRows.length)}
-                            mobileRenderer={(row) => (
-                              <CompactRecord
-                                title={row.displayName}
-                                meta={`${dayjs(row.occurredAt).format('DD/MM/YYYY')} · ${row.source}`}
-                                tag={<Tag color={row.status === 'VERIFIED' ? 'green' : 'gold'}>{row.status}</Tag>}
-                                detail={row.note}
-                              />
-                            )}
-                          />
-                        ),
-                      },
-                    ]}
+                  <HolidayWorkspaceTabs
+                    activeTab={activeTab}
+                    canManage={canManage}
+                    coverageRows={coverageRows}
+                    candidateRows={candidateRows}
+                    rosterRows={rosterRows}
+                    ledgerRows={ledgerRows}
+                    eventRows={eventRows}
+                    coverageColumns={coverageColumns}
+                    candidateColumns={holidayCandidateColumns}
+                    rosterColumns={rosterColumns}
+                    ledgerColumns={ledgerColumns}
+                    eventColumns={eventColumns}
+                    pagination={pagination}
+                    onTabChange={setActiveTab}
                   />
                 </DataSection>
               </Space>
@@ -1079,288 +845,20 @@ export default function HolidayWorkPage() {
         </Space>
       </FeaturePage>
 
-      <AdaptiveDrawer
-        open={Boolean(drawerMode)}
-        intent="form"
-        title={
-          drawerMode === 'period'
-            ? 'Tạo kỳ lễ'
-            : drawerMode === 'coverage'
-              ? 'Nhu cầu theo chi nhánh'
-              : drawerMode === 'roster'
-                ? 'Roster ngày lễ'
-                : drawerMode === 'adjustment'
-                  ? 'Adjustment sau khóa lương'
-                  : 'Sự kiện hiệu suất'
-        }
+      <HolidayWorkDrawer
+        form={form}
+        mode={drawerMode}
+        canManage={canManage}
+        branches={holiday.branches}
+        candidateOptions={candidateOptions}
+        staffOptions={performanceStaffOptions}
+        editingRoster={editingRoster}
+        editingLedger={editingLedger}
+        adjustmentTotal={editingLedger ? adjustmentByLedger.get(editingLedger.id) || 0 : 0}
+        submitting={holiday.submitting}
         onClose={closeDrawer}
-        destroyOnHidden
-        extra={
-          <Button type="primary" loading={holiday.submitting} onClick={() => void submitDrawer()}>
-            Lưu
-          </Button>
-        }
-      >
-        <Form form={form} layout="vertical" requiredMark="optional">
-          {drawerMode === 'period' ? (
-            <>
-              <Form.Item name="code" label="Mã kỳ" rules={[{ required: true }]}>
-                <Input placeholder="QUOC_KHANH_2026" />
-              </Form.Item>
-              <Form.Item name="name" label="Tên kỳ lễ" rules={[{ required: true }]}>
-                <Input />
-              </Form.Item>
-              <Form.Item name="dates" label="Thời gian" rules={[{ required: true }]}>
-                <DatePicker.RangePicker className="w-full" format="DD/MM/YYYY" />
-              </Form.Item>
-              <Space wrap className="w-full" align="start">
-                <Form.Item name="standardShiftHours" label="Giờ/ca">
-                  <InputNumber min={1} max={24} />
-                </Form.Item>
-                <Form.Item name="workPremiumMultiplier" label="Phụ cấp đi làm (x)">
-                  <InputNumber min={0} />
-                </Form.Item>
-                <Form.Item name="paidLeaveMultiplier" label="Nghỉ lễ (x)">
-                  <InputNumber min={0} />
-                </Form.Item>
-                <Form.Item name="monthlyStandardDays" label="Ngày chuẩn/tháng">
-                  <InputNumber min={1} />
-                </Form.Item>
-                <Form.Item name="monthlyStandardHours" label="Giờ chuẩn/tháng">
-                  <InputNumber min={1} />
-                </Form.Item>
-                <Form.Item name="selectionWindowDays" label="Cửa sổ đánh giá">
-                  <InputNumber min={1} max={365} addonAfter="ngày" />
-                </Form.Item>
-              </Space>
-              <Text strong>Trọng số đề cử (%)</Text>
-              <Space wrap className="mt-3" align="start">
-                {['feedback', 'fix', 'tip', 'speed', 'attendance'].map((key) => (
-                  <Form.Item key={key} name={key} label={key}>
-                    <InputNumber min={0} max={100} />
-                  </Form.Item>
-                ))}
-              </Space>
-              <Form.Item name="notes" label="Ghi chú">
-                <Input.TextArea rows={3} />
-              </Form.Item>
-            </>
-          ) : drawerMode === 'coverage' ? (
-            <>
-              <Alert
-                showIcon
-                type="info"
-                className="mb-4"
-                message="Thiết lập một lần cho cả chi nhánh"
-                description="Nhập số CC và CV cần có mặt trong cùng ngày và khung giờ. Hệ thống sẽ lưu hai nhu cầu riêng để đối chiếu roster."
-              />
-              <ResponsiveFormGrid columns={2}>
-                <ResponsiveFormField>
-                  <Form.Item name="workDate" label="Ngày" rules={[{ required: true }]}>
-                    <DatePicker className="w-full" format="DD/MM/YYYY" />
-                  </Form.Item>
-                </ResponsiveFormField>
-                <ResponsiveFormField>
-                  <Form.Item name="storeId" label="Chi nhánh" rules={[{ required: true, message: 'Chọn chi nhánh.' }]}>
-                    <Select
-                      showSearch
-                      placeholder="Chọn chi nhánh"
-                      filterOption={(input, option) => normalizedIncludes(option?.label, input)}
-                      options={holiday.branches.map((branch) => ({
-                        value: branch.id,
-                        label:
-                          branch.name.trim().toUpperCase() === branch.code.trim().toUpperCase()
-                            ? branch.name
-                            : `${branch.name} (${branch.code})`,
-                      }))}
-                    />
-                  </Form.Item>
-                </ResponsiveFormField>
-                <ResponsiveFormField>
-                  <Form.Item name="shiftStart" label="Bắt đầu" rules={[{ required: true }]}>
-                    <Input placeholder="09:00" />
-                  </Form.Item>
-                </ResponsiveFormField>
-                <ResponsiveFormField>
-                  <Form.Item name="shiftEnd" label="Kết thúc" rules={[{ required: true }]}>
-                    <Input placeholder="18:00" />
-                  </Form.Item>
-                </ResponsiveFormField>
-                <ResponsiveFormField>
-                  <Form.Item
-                    name="ccRequiredCount"
-                    label="Số CC cần"
-                    rules={[{ required: true, message: 'Nhập số CC cần.' }]}
-                  >
-                    <InputNumber className="w-full" min={0} precision={0} />
-                  </Form.Item>
-                </ResponsiveFormField>
-                <ResponsiveFormField>
-                  <Form.Item
-                    name="cvRequiredCount"
-                    label="Số CV cần"
-                    dependencies={['ccRequiredCount']}
-                    rules={[
-                      { required: true, message: 'Nhập số CV cần.' },
-                      ({ getFieldValue }) => ({
-                        validator: () =>
-                          Number(getFieldValue('ccRequiredCount') || 0) +
-                            Number(getFieldValue('cvRequiredCount') || 0) >
-                          0
-                            ? Promise.resolve()
-                            : Promise.reject(new Error('Cần ít nhất 1 CC hoặc CV.')),
-                      }),
-                    ]}
-                  >
-                    <InputNumber className="w-full" min={0} precision={0} />
-                  </Form.Item>
-                </ResponsiveFormField>
-              </ResponsiveFormGrid>
-              <Form.Item name="notes" label="Ghi chú">
-                <Input.TextArea rows={3} />
-              </Form.Item>
-            </>
-          ) : drawerMode === 'roster' ? (
-            <>
-              <Form.Item name="workDate" label="Ngày" rules={[{ required: true }]}>
-                <DatePicker className="w-full" format="DD/MM/YYYY" />
-              </Form.Item>
-              {!editingRoster ? (
-                <Form.Item name="legacyStaffId" label="Nhân sự từ bảng xếp hạng" rules={[{ required: true }]}>
-                  <Select
-                    showSearch
-                    filterOption={(input, option) => normalizedIncludes(option?.label, input)}
-                    options={candidateOptions.map((row) => ({
-                      value: row.legacyStaffId,
-                      label: `${row.displayName} · ${row.teamCode} · ${row.storeKey}`,
-                    }))}
-                  />
-                </Form.Item>
-              ) : !editingRoster.legacyStaffId ? (
-                <Form.Item
-                  name="legacyStaffId"
-                  label="Gắn với hồ sơ nhân sự"
-                  rules={[{ required: true, message: 'Chọn hồ sơ đúng để xử lý ngoại lệ tên.' }]}
-                >
-                  <Select
-                    showSearch
-                    filterOption={(input, option) => normalizedIncludes(option?.label, input)}
-                    options={performanceStaffOptions.map((row) => ({
-                      value: row.legacyStaffId as number,
-                      label: `${row.displayName} · ${row.role}`,
-                    }))}
-                  />
-                </Form.Item>
-              ) : (
-                <Alert
-                  showIcon
-                  message={editingRoster.displayName}
-                  description={`${editingRoster.teamCode} · ${editingRoster.storeKey}`}
-                  className="mb-4"
-                />
-              )}
-              <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
-                <Select
-                  disabled={!canManage}
-                  options={(canManage ? Object.keys(rosterStatus) : ['NOMINATED']).map((value) => ({
-                    value,
-                    label: rosterStatus[value].label,
-                  }))}
-                />
-              </Form.Item>
-              <Space className="w-full" align="start">
-                <Form.Item name="shiftStart" label="Bắt đầu" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-                <Form.Item name="shiftEnd" label="Kết thúc" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-              </Space>
-              <Form.Item name="nominationReason" label="Lý do đề cử" rules={canManage ? [] : [{ required: true }]}>
-                <Input.TextArea rows={3} />
-              </Form.Item>
-              {canManage ? (
-                <Form.Item
-                  name="decisionReason"
-                  label="Lý do quyết định / ngoại lệ"
-                  rules={
-                    editingRoster?.status === 'PAYROLL_EXCEPTION'
-                      ? [{ required: true, message: 'Ghi lý do xử lý ngoại lệ để lưu audit.' }]
-                      : []
-                  }
-                >
-                  <Input.TextArea rows={3} />
-                </Form.Item>
-              ) : null}
-            </>
-          ) : drawerMode === 'event' ? (
-            <>
-              <Form.Item name="legacyStaffId" label="Nhân sự liên quan" rules={[{ required: true }]}>
-                <Select
-                  showSearch
-                  filterOption={(input, option) => normalizedIncludes(option?.label, input)}
-                  options={performanceStaffOptions.map((row) => ({
-                    value: row.legacyStaffId as number,
-                    label: `${row.displayName} · ${row.role}`,
-                  }))}
-                />
-              </Form.Item>
-              <Form.Item name="eventType" label="Loại sự kiện" rules={[{ required: true }]}>
-                <Select
-                  options={[
-                    { value: 'NEGATIVE_FEEDBACK', label: 'Feedback tiêu cực' },
-                    { value: 'UNAPPROVED_OFF', label: 'Off không duyệt' },
-                    { value: 'LATE', label: 'Đi trễ' },
-                    { value: 'EARLY_LEAVE', label: 'Về sớm' },
-                    { value: 'TIME_ISSUE', label: 'Vấn đề thời gian' },
-                  ]}
-                />
-              </Form.Item>
-              <Space className="w-full" align="start">
-                <Form.Item name="source" label="Nguồn" rules={[{ required: true }]}>
-                  <Select options={['COUNTER', 'CS', 'HR', 'SYSTEM'].map((value) => ({ value }))} />
-                </Form.Item>
-                <Form.Item name="severity" label="Mức độ" rules={[{ required: true }]}>
-                  <Select options={['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((value) => ({ value }))} />
-                </Form.Item>
-              </Space>
-              <Form.Item name="occurredAt" label="Thời điểm" rules={[{ required: true }]}>
-                <DatePicker showTime className="w-full" format="DD/MM/YYYY HH:mm" />
-              </Form.Item>
-              <Space className="w-full" align="start">
-                <Form.Item name="relatedOrderId" label="Order ID">
-                  <InputNumber min={1} />
-                </Form.Item>
-                <Form.Item name="relatedTicketId" label="Ticket ID">
-                  <InputNumber min={1} />
-                </Form.Item>
-              </Space>
-              <Form.Item name="evidenceUrl" label="Link chứng cứ">
-                <Input />
-              </Form.Item>
-              <Form.Item name="note" label="Nội dung" rules={[{ required: true }]}>
-                <Input.TextArea rows={5} />
-              </Form.Item>
-            </>
-          ) : drawerMode === 'adjustment' && editingLedger ? (
-            <>
-              <Alert
-                showIcon
-                type="warning"
-                message={`${editingLedger.displayName} · ${dayjs(editingLedger.workDate).format('DD/MM/YYYY')}`}
-                description={`Ledger gốc ${money(editingLedger.payrollAdditionAmount)} sẽ không bị ghi đè. Adjustment hiện tại: ${money(adjustmentByLedger.get(editingLedger.id) || 0)}.`}
-                className="mb-4"
-              />
-              <Form.Item name="amount" label="Số tiền điều chỉnh (+/- VND)" rules={[{ required: true }]}>
-                <InputNumber className="w-full" precision={0} addonAfter="đ" />
-              </Form.Item>
-              <Form.Item name="reason" label="Lý do kiểm toán" rules={[{ required: true, min: 5 }]}>
-                <Input.TextArea rows={5} placeholder="Nêu rõ căn cứ và người xác nhận…" />
-              </Form.Item>
-            </>
-          ) : null}
-        </Form>
-      </AdaptiveDrawer>
+        onSubmit={submitDrawer}
+      />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import { DEFAULT_HOLIDAY_SELECTION_WEIGHTS, type HolidayCandidateMetrics } from '@mos-lab/shared';
+import { DEFAULT_HOLIDAY_SELECTION_WEIGHTS, type HolidayCandidateMetrics, type SafeAny } from '@mos-lab/shared';
 import {
   buildVietnamHolidayCalendar2026,
   calculateHolidayCandidateScore,
@@ -155,22 +155,22 @@ test('new staff remains eligible for manual nomination but has no automatic scor
 });
 
 test('branch coverage saves CC and CV requirements together using the canonical active branch', async () => {
-  const rows: Array<Record<string, any>> = [];
+  const rows: Array<Record<string, SafeAny>> = [];
   let auditCount = 0;
   const coverageModel = {
     findMany: async () => [],
-    findFirst: async ({ where }: any) => rows.find((row) => row.teamCode === where.teamCode) || null,
-    create: async ({ data }: any) => {
+    findFirst: async ({ where }: SafeAny) => rows.find((row) => row.teamCode === where.teamCode) || null,
+    create: async ({ data }: SafeAny) => {
       const saved = { id: rows.length + 1, ...data };
       rows.push(saved);
       return saved;
     },
-    update: async ({ where, data }: any) => {
+    update: async ({ where, data }: SafeAny) => {
       const index = rows.findIndex((row) => row.id === where.id);
       rows[index] = { ...rows[index], ...data };
       return rows[index];
     },
-    delete: async ({ where }: any) => {
+    delete: async ({ where }: SafeAny) => {
       const index = rows.findIndex((row) => row.id === where.id);
       return rows.splice(index, 1)[0];
     },
@@ -197,7 +197,7 @@ test('branch coverage saves CC and CV requirements together using the canonical 
             return {};
           },
         },
-        $transaction: async (callback: (tx: any) => Promise<unknown>) =>
+        $transaction: async (callback: (tx: SafeAny) => Promise<unknown>) =>
           callback({ crmHolidayCoverage: coverageModel }),
       },
     },
@@ -309,7 +309,7 @@ test('roster import is idempotent for the same holiday, date, and staff identity
         crmTeam: { findMany: async () => [{ code: 'CV' }] },
         crmHolidayCandidateSnapshot: { findUnique: async () => null },
         crmHolidayRoster: {
-          upsert: async ({ where, create, update }: any) => {
+          upsert: async ({ where, create, update }: SafeAny) => {
             const key = where.holiday_roster_key.rosterKey as string;
             const existing = rows.get(key);
             const now = new Date('2026-08-28T00:00:00Z');

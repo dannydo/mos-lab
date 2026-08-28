@@ -23,6 +23,7 @@ import {
   type HolidayRosterStatus,
   type HolidaySelectionWeights,
   type HolidayWorkspaceResponse,
+  type SafeAny,
   type StaffPerformanceEvent,
   type StaffPerformanceEventListResponse,
   type StaffPerformanceEventQuery,
@@ -461,7 +462,7 @@ export function calculateHolidayPayroll(input: {
   };
 }
 
-const mapPeriod = (record: any, summary?: HolidayPeriodSummary): HolidayPeriod => ({
+const mapPeriod = (record: SafeAny, summary?: HolidayPeriodSummary): HolidayPeriod => ({
   id: record.id,
   code: record.code,
   name: record.name,
@@ -484,7 +485,7 @@ const mapPeriod = (record: any, summary?: HolidayPeriodSummary): HolidayPeriod =
   summary,
 });
 
-const mapCoverage = (record: any): HolidayCoverageRequirement => ({
+const mapCoverage = (record: SafeAny): HolidayCoverageRequirement => ({
   id: record.id,
   holidayId: record.holidayId,
   workDate: dateKey(record.workDate),
@@ -497,7 +498,7 @@ const mapCoverage = (record: any): HolidayCoverageRequirement => ({
   notes: record.notes,
 });
 
-const mapCandidate = (record: any): HolidayCandidateScore => ({
+const mapCandidate = (record: SafeAny): HolidayCandidateScore => ({
   id: record.id,
   holidayId: record.holidayId,
   workDate: dateKey(record.workDate),
@@ -533,7 +534,7 @@ const mapCandidate = (record: any): HolidayCandidateScore => ({
   generatedAt: record.generatedAt.toISOString(),
 });
 
-const mapRoster = (record: any): HolidayRosterEntry => ({
+const mapRoster = (record: SafeAny): HolidayRosterEntry => ({
   id: record.id,
   holidayId: record.holidayId,
   rosterKey: record.rosterKey,
@@ -557,7 +558,7 @@ const mapRoster = (record: any): HolidayRosterEntry => ({
   updatedAt: record.updatedAt.toISOString(),
 });
 
-const mapLedger = (record: any): HolidayPayrollLedgerEntry => ({
+const mapLedger = (record: SafeAny): HolidayPayrollLedgerEntry => ({
   id: record.id,
   holidayId: record.holidayId,
   rosterId: record.rosterId,
@@ -589,7 +590,7 @@ const mapLedger = (record: any): HolidayPayrollLedgerEntry => ({
   updatedAt: record.updatedAt.toISOString(),
 });
 
-const mapPerformanceEvent = (record: any): StaffPerformanceEvent => ({
+const mapPerformanceEvent = (record: SafeAny): StaffPerformanceEvent => ({
   id: record.id,
   crmStaffId: record.crmStaffId,
   legacyStaffId: record.legacyStaffId,
@@ -613,7 +614,7 @@ const mapPerformanceEvent = (record: any): StaffPerformanceEvent => ({
   updatedAt: record.updatedAt.toISOString(),
 });
 
-const mapAdjustment = (record: any): HolidayPayrollAdjustment => ({
+const mapAdjustment = (record: SafeAny): HolidayPayrollAdjustment => ({
   id: record.id,
   holidayId: record.holidayId,
   ledgerId: record.ledgerId,
@@ -1185,7 +1186,7 @@ export class HolidayWorkService {
       select: { id: true, legacyStaffId: true, displayName: true, avatarUrl: true },
     });
     const crmByLegacyId = new Map(crmStaffs.map((staff) => [Number(staff.legacyStaffId), staff]));
-    const profileRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+    const profileRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
       `SELECT up.user_id AS legacyStaffId,
               up.full_name AS displayName,
               up.client_store_id AS storeId,
@@ -1204,7 +1205,7 @@ export class HolidayWorkService {
       const scoreWindowTo = shiftDate(workDate, -1);
       const scoreWindowFrom = shiftDate(workDate, -period.selectionWindowDays);
       const [cvRows, ccRows, tipRows, eventRows, speedProfiles] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT os.assigned_staff_id AS legacyStaffId,
                   COUNT(DISTINCT os.id) AS completedServices,
                   SUM(CASE WHEN os.next_fix_order_service_id > 0 THEN 1 ELSE 0 END) AS fixCount
@@ -1220,7 +1221,7 @@ export class HolidayWorkService {
           `${scoreWindowFrom} 00:00:00`,
           `${scoreWindowTo} 23:59:59`
         ),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT os.check_in_staff_id AS legacyStaffId,
                   COUNT(DISTINCT o.id) AS completedServices,
                   AVG(CASE
@@ -1240,7 +1241,7 @@ export class HolidayWorkService {
           `${scoreWindowFrom} 00:00:00`,
           `${scoreWindowTo} 23:59:59`
         ),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT st.user_id AS legacyStaffId, COUNT(DISTINCT st.order_id) AS tippedVisits
            FROM staff_tip st
            JOIN \`order\` o ON o.id = st.order_id
@@ -1454,8 +1455,8 @@ export class HolidayWorkService {
     return allSnapshots.sort((a, b) => (b.totalScore ?? -1) - (a.totalScore ?? -1));
   }
 
-  static async detectUnplannedAttendance(fastify: FastifyInstance, period: any, actor: Actor) {
-    const attendanceRows = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+  static async detectUnplannedAttendance(fastify: FastifyInstance, period: SafeAny, actor: Actor) {
+    const attendanceRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
       `SELECT rs.user_id AS legacyStaffId,
               DATE_FORMAT(rs.date, '%Y-%m-%d') AS workDate,
               SUM(rs.working_minute) AS workingMinute,
@@ -1530,7 +1531,7 @@ export class HolidayWorkService {
       ...new Set(roster.map((entry) => entry.legacyStaffId).filter((id): id is number => Boolean(id))),
     ];
     const attendanceRows = legacyStaffIds.length
-      ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT user_id AS legacyStaffId,
                   DATE_FORMAT(date, '%Y-%m-%d') AS workDate,
                   SUM(working_minute) AS workingMinute
@@ -1544,7 +1545,7 @@ export class HolidayWorkService {
         )
       : [];
     const rateRows = legacyStaffIds.length
-      ? await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT user_id AS legacyStaffId, working_hour_rate AS hourlyRate, date, id
            FROM staff_payroll
            WHERE user_id IN (${legacyStaffIds.map(() => '?').join(',')})
