@@ -11,6 +11,7 @@ import {
   type UpdateAcademyWorkshopRequest,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import AcademyWorkshopServerImageUpload from './AcademyWorkshopServerImageUpload';
 import {
   AppIcon,
   EntityForm,
@@ -24,6 +25,7 @@ type AcademyWorkshopEditFormValues = {
   name: string;
   slug: string;
   description?: string | null;
+  heroImageUrl?: string | null;
   startsAt: Dayjs;
   endsAt: Dayjs;
   location: string;
@@ -39,6 +41,7 @@ function toFormValues(workshop: AcademyWorkshopDetail): AcademyWorkshopEditFormV
     name: workshop.name,
     slug: workshop.slug,
     description: workshop.description,
+    heroImageUrl: workshop.heroImageUrl,
     startsAt: dayjs(workshop.startsAt),
     endsAt: dayjs(workshop.endsAt),
     location: workshop.location,
@@ -55,6 +58,7 @@ function toUpdateRequest(values: AcademyWorkshopEditFormValues): UpdateAcademyWo
     name: values.name.trim(),
     slug: values.slug.trim(),
     description: values.description?.trim() || null,
+    heroImageUrl: values.heroImageUrl?.trim() || null,
     startsAt: values.startsAt.toISOString(),
     endsAt: values.endsAt.toISOString(),
     location: values.location.trim(),
@@ -82,6 +86,7 @@ export default function AcademyWorkshopEditButton({
   const [form] = Form.useForm<AcademyWorkshopEditFormValues>();
   const [open, setOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const heroImageUrl = Form.useWatch('heroImageUrl', form);
 
   const openEditor = React.useCallback(() => {
     form.setFieldsValue(toFormValues(workshop));
@@ -229,6 +234,20 @@ export default function AcademyWorkshopEditButton({
           </EntityFormField>
           <EntityFormField name="description" label="Mô tả" fullWidth>
             <Input.TextArea rows={4} placeholder="Mục tiêu, đối tượng và thông tin vận hành…" />
+          </EntityFormField>
+          <EntityFormField
+            name="heroImageUrl"
+            label="Banner hero trang đăng ký"
+            extra="Ảnh ngang tỉ lệ 16:9. Nếu để trống, trang đăng ký dùng banner Academy mặc định."
+            fullWidth
+          >
+            <AcademyWorkshopServerImageUpload
+              workshopId={workshop.id}
+              area="hero"
+              value={heroImageUrl}
+              onChange={(imageUrl) => form.setFieldValue('heroImageUrl', imageUrl)}
+              disabled={saving}
+            />
           </EntityFormField>
         </EntityForm>
       </EntityFormDrawer>

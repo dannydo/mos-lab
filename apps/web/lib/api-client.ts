@@ -260,10 +260,14 @@ import {
   AcademyWorkshopAgendaTemplate,
   AcademyWorkshopAnswerReceipt,
   AcademyWorkshopDetail,
+  AcademyWorkshopEquipmentPackage,
+  AcademyWorkshopEquipmentPackageImage,
   AcademyWorkshopGameCommandRequest,
   AcademyWorkshopLiveState,
+  AcademyWorkshopMenuItem,
   AcademyWorkshopParticipant,
   AcademyWorkshopPhotoUploadIntent,
+  AcademyWorkshopPublicMediaUploadResult,
   AcademyWorkshopPublicRegistrationInfo,
   AcademyWorkshopPublicSession,
   AcademyWorkshopSharedJoinInfo,
@@ -280,7 +284,11 @@ import {
   ConfirmAcademyWorkshopPhotoRequest,
   CreateAcademyWorkshopAgendaItemRequest,
   CreateAcademyWorkshopAgendaTemplateRequest,
+  CreateAcademyWorkshopEquipmentPackageRequest,
+  CreateAcademyWorkshopEquipmentPackageImageRequest,
+  CreateAcademyWorkshopMenuItemRequest,
   CreateAcademyWorkshopPhotoUploadRequest,
+  CreateAcademyWorkshopPublicMediaUploadRequest,
   CreateAcademyWorkshopRequest,
   CreateAcademyWorkshopWalkInRequest,
   JoinAcademyWorkshopWithGoogleRequest,
@@ -309,6 +317,9 @@ import {
   UpdateAcademyWorkshopCareRequest,
   UpdateAcademyWorkshopAgendaItemRequest,
   UpdateAcademyWorkshopAgendaTemplateRequest,
+  UpdateAcademyWorkshopMenuItemRequest,
+  UpdateAcademyWorkshopEquipmentPackageRequest,
+  UpdateAcademyWorkshopEquipmentPackageImageRequest,
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
@@ -1959,6 +1970,125 @@ export const apiClient = {
         const response = await api.put<{ data: AcademyWorkshopDetail }>(`/academy-sales/workshops/${workshopId}`, dto);
         invalidateAcademySalesReadCache();
         return response.data.data;
+      },
+      uploadHeroImage: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopPublicMediaUploadRequest
+      ): Promise<AcademyWorkshopPublicMediaUploadResult> => {
+        const response = await api.post<{ data: AcademyWorkshopPublicMediaUploadResult }>(
+          `/academy-sales/workshops/${workshopId}/hero-image/upload`,
+          dto
+        );
+        return response.data.data;
+      },
+      createMenuItem: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopMenuItemRequest
+      ): Promise<AcademyWorkshopMenuItem> => {
+        const response = await api.post<{ data: AcademyWorkshopMenuItem }>(
+          `/academy-sales/workshops/${workshopId}/menu-items`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      uploadMenuImage: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopPublicMediaUploadRequest
+      ): Promise<AcademyWorkshopPublicMediaUploadResult> => {
+        const response = await api.post<{ data: AcademyWorkshopPublicMediaUploadResult }>(
+          `/academy-sales/workshops/${workshopId}/menu-items/upload-image`,
+          dto
+        );
+        return response.data.data;
+      },
+      updateMenuItem: async (
+        workshopId: number,
+        menuItemId: number,
+        dto: UpdateAcademyWorkshopMenuItemRequest
+      ): Promise<AcademyWorkshopMenuItem> => {
+        const response = await api.put<{ data: AcademyWorkshopMenuItem }>(
+          `/academy-sales/workshops/${workshopId}/menu-items/${menuItemId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteMenuItem: async (workshopId: number, menuItemId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshops/${workshopId}/menu-items/${menuItemId}`);
+        invalidateAcademySalesReadCache();
+      },
+      createEquipmentPackage: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopEquipmentPackageRequest
+      ): Promise<AcademyWorkshopEquipmentPackage> => {
+        const response = await api.post<{ data: AcademyWorkshopEquipmentPackage }>(
+          `/academy-sales/workshops/${workshopId}/equipment-packages`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      uploadEquipmentImage: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopPublicMediaUploadRequest
+      ): Promise<AcademyWorkshopPublicMediaUploadResult> => {
+        const response = await api.post<{ data: AcademyWorkshopPublicMediaUploadResult }>(
+          `/academy-sales/workshops/${workshopId}/equipment-images/upload`,
+          dto
+        );
+        return response.data.data;
+      },
+      updateEquipmentPackage: async (
+        workshopId: number,
+        equipmentPackageId: number,
+        dto: UpdateAcademyWorkshopEquipmentPackageRequest
+      ): Promise<AcademyWorkshopEquipmentPackage> => {
+        const response = await api.put<{ data: AcademyWorkshopEquipmentPackage }>(
+          `/academy-sales/workshops/${workshopId}/equipment-packages/${equipmentPackageId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteEquipmentPackage: async (workshopId: number, equipmentPackageId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshops/${workshopId}/equipment-packages/${equipmentPackageId}`);
+        invalidateAcademySalesReadCache();
+      },
+      createEquipmentPackageImage: async (
+        workshopId: number,
+        equipmentPackageId: number,
+        dto: CreateAcademyWorkshopEquipmentPackageImageRequest
+      ): Promise<AcademyWorkshopEquipmentPackageImage> => {
+        const response = await api.post<{ data: AcademyWorkshopEquipmentPackageImage }>(
+          `/academy-sales/workshops/${workshopId}/equipment-packages/${equipmentPackageId}/images`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      updateEquipmentPackageImage: async (
+        workshopId: number,
+        equipmentPackageId: number,
+        imageId: number,
+        dto: UpdateAcademyWorkshopEquipmentPackageImageRequest
+      ): Promise<AcademyWorkshopEquipmentPackageImage> => {
+        const response = await api.put<{ data: AcademyWorkshopEquipmentPackageImage }>(
+          `/academy-sales/workshops/${workshopId}/equipment-packages/${equipmentPackageId}/images/${imageId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteEquipmentPackageImage: async (
+        workshopId: number,
+        equipmentPackageId: number,
+        imageId: number
+      ): Promise<void> => {
+        await api.delete(
+          `/academy-sales/workshops/${workshopId}/equipment-packages/${equipmentPackageId}/images/${imageId}`
+        );
+        invalidateAcademySalesReadCache();
       },
       resources: async (): Promise<AcademyWorkshopResourcesResponse> => {
         const response = await api.get<{ data: AcademyWorkshopResourcesResponse }>(

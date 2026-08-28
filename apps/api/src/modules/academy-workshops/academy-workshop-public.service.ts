@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type {
+  AcademyWorkshopMenuCategory,
+  AcademyWorkshopMenuSelectionInput,
   AcademyWorkshopPublicPhase,
   AcademyWorkshopPublicRegistrationInfo,
   AcademyWorkshopSharedJoinInfo,
@@ -10,6 +12,7 @@ import type {
   RegisterAcademyWorkshopResponse,
   SelectAcademyWorkshopParticipantRequest,
 } from '@mos-lab/shared';
+import { ACADEMY_WORKSHOP_MENU_CATEGORIES, ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS } from '@mos-lab/shared';
 import type { GoogleIdentity } from '../auth/google-identity.service.js';
 import { isZaloSocialLoginConfigured, type ZaloSocialIdentity } from '../auth/zalo-social-identity.service.js';
 import {
@@ -22,6 +25,7 @@ import { resolveAcademyWorkshopPublicOrigin } from './academy-workshop.service.j
 const CLOSED_WORKSHOP_STATUSES = new Set(['CANCELLED', 'ARCHIVED']);
 const LOBBY_OPEN_WORKSHOP_STATUSES = new Set(['CHECKIN_OPEN', 'LIVE', 'PAUSED']);
 const PUBLIC_REGISTRATION_CODE = /^[A-Za-z0-9_-]{12,48}$/;
+const MENU_CATEGORIES = new Set<AcademyWorkshopMenuCategory>(ACADEMY_WORKSHOP_MENU_CATEGORIES);
 
 function registrationCode(value: unknown): string {
   const code = String(value || '').trim();
@@ -103,6 +107,8 @@ type WorkshopRegistrationInput = {
   email?: string | null;
   goal?: string | null;
   referrer?: string | null;
+  menuSelections?: AcademyWorkshopMenuSelectionInput[];
+  equipmentPackageId?: number;
 };
 
 type ExternalWorkshopRegistrationIdentity = {
@@ -115,6 +121,139 @@ type ExternalWorkshopRegistrationIdentity = {
 
 function registrationExternalKey(identity: ExternalWorkshopRegistrationIdentity): string {
   return `${identity.provider}:${identity.subject}`.slice(0, 191);
+}
+
+type PublicMenuItem = {
+  id: number;
+  category: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+};
+
+type PublicEquipmentPackage = {
+  id: number;
+  name: string;
+  description: string | null;
+  includedItemsJson: string;
+  priceVnd: number;
+  images?: Array<{ id: number; imageUrl: string; altText: string | null; sortOrder: number }>;
+};
+
+function equipmentItems(value: unknown): string[] {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .slice(0, 16);
+  } catch {
+    return [];
+  }
+}
+
+function buildPublicEquipment(
+  packages: PublicEquipmentPackage[]
+): AcademyWorkshopPublicRegistrationInfo['workshop']['equipment'] {
+  return {
+    required: packages.length > 0,
+    packages: packages.map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      includedItems: equipmentItems(item.includedItemsJson),
+      priceVnd: Math.max(0, Math.round(Number(item.priceVnd) || 0)),
+      images: (item.images || []).map((image) => ({
+        id: image.id,
+        imageUrl: image.imageUrl,
+        altText: image.altText,
+      })),
+    })),
+  };
+}
+
+function validateEquipmentSelection(
+  input: unknown,
+  availablePackages: PublicEquipmentPackage[]
+): { equipmentPackageId: number; packageName: string; packageContentsJson: string; priceVnd: number } | null {
+  if (!availablePackages.length) return null;
+  const equipmentPackageId = Math.round(Number(input));
+  if (!Number.isInteger(equipmentPackageId) || equipmentPackageId <= 0) {
+    throw new AcademySalesError('Vui lòng chọn một bộ dụng cụ thực hành.');
+  }
+  const selected = availablePackages.find((item) => item.id === equipmentPackageId);
+  if (!selected) {
+    throw new AcademySalesError('Bộ dụng cụ bạn chọn không còn khả dụng. Vui lòng chọn lại.');
+  }
+  const packageContents = equipmentItems(selected.includedItemsJson);
+  if (!packageContents.length) {
+    throw new AcademySalesError('Bộ dụng cụ được chọn chưa có danh sách chi tiết. Vui lòng liên hệ Academy.', 409);
+  }
+  return {
+    equipmentPackageId: selected.id,
+    packageName: selected.name,
+    packageContentsJson: JSON.stringify(packageContents),
+    priceVnd: Math.max(0, Math.round(Number(selected.priceVnd) || 0)),
+  };
+}
+
+function buildPublicMenu(items: PublicMenuItem[]): AcademyWorkshopPublicRegistrationInfo['workshop']['menu'] {
+  return {
+    required: items.length > 0,
+    categories: ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category) => ({
+      category,
+      label: ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[category],
+      items: items
+        .filter((item) => item.category === category)
+        .map((item) => ({ id: item.id, name: item.name, description: item.description, imageUrl: item.imageUrl })),
+    })),
+  };
+}
+
+function validateMenuSelections(
+  input: AcademyWorkshopMenuSelectionInput[] | undefined,
+  availableItems: PublicMenuItem[]
+): Array<{ category: AcademyWorkshopMenuCategory; menuItemId: number; itemName: string }> {
+  if (!availableItems.length) return [];
+
+  const configuredCategories = new Set(
+    availableItems
+      .map((item) => item.category)
+      .filter((category): category is AcademyWorkshopMenuCategory =>
+        MENU_CATEGORIES.has(category as AcademyWorkshopMenuCategory)
+      )
+  );
+  const incompleteCategory = ACADEMY_WORKSHOP_MENU_CATEGORIES.find((category) => !configuredCategories.has(category));
+  if (incompleteCategory) {
+    throw new AcademySalesError(
+      `Thực đơn workshop chưa có ${ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[incompleteCategory]}. Vui lòng liên hệ Academy.`,
+      409
+    );
+  }
+
+  const selections = Array.isArray(input) ? input : [];
+  if (selections.length !== ACADEMY_WORKSHOP_MENU_CATEGORIES.length) {
+    throw new AcademySalesError('Vui lòng chọn đủ nước ép, món chính và tráng miệng.');
+  }
+
+  const selectedCategories = new Set<AcademyWorkshopMenuCategory>();
+  return selections.map((selection) => {
+    const category = selection?.category;
+    const menuItemId = Math.round(Number(selection?.menuItemId));
+    if (!MENU_CATEGORIES.has(category) || selectedCategories.has(category)) {
+      throw new AcademySalesError('Lựa chọn thực đơn không hợp lệ.');
+    }
+    if (!Number.isInteger(menuItemId) || menuItemId <= 0) {
+      throw new AcademySalesError('Món ăn được chọn không hợp lệ.');
+    }
+    const item = availableItems.find((candidate) => candidate.id === menuItemId && candidate.category === category);
+    if (!item) {
+      throw new AcademySalesError('Một món bạn chọn không còn phục vụ. Vui lòng chọn lại.');
+    }
+    selectedCategories.add(category);
+    return { category, menuItemId: item.id, itemName: item.name };
+  });
 }
 
 export class AcademyWorkshopPublicJoinService {
@@ -217,6 +356,26 @@ export class AcademyWorkshopPublicJoinService {
       include: {
         campaign: { select: { name: true, slug: true, description: true } },
         agendaItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+        menuItems: {
+          where: { isAvailable: true },
+          orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+          select: { id: true, category: true, name: true, description: true, imageUrl: true },
+        },
+        equipmentPackages: {
+          where: { isAvailable: true },
+          orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            includedItemsJson: true,
+            priceVnd: true,
+            images: {
+              select: { id: true, imageUrl: true, altText: true, sortOrder: true },
+              orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+            },
+          },
+        },
         _count: { select: { participants: true } },
       },
     });
@@ -234,12 +393,14 @@ export class AcademyWorkshopPublicJoinService {
         name: workshop.campaign.name,
         slug: workshop.campaign.slug,
         description: workshop.campaign.description,
+        heroImageUrl: workshop.heroImageUrl ?? null,
         startsAt: workshop.startsAt.toISOString(),
         endsAt: workshop.endsAt.toISOString(),
         location: workshop.location,
         capacity: workshop.capacity,
         remainingSeats: Math.max(0, workshop.capacity - workshop._count.participants),
         feeVnd: workshop.feeVnd,
+        equipment: buildPublicEquipment(workshop.equipmentPackages),
         agenda: workshop.agendaItems.map((item) => ({
           id: item.id,
           title: item.title,
@@ -248,6 +409,7 @@ export class AcademyWorkshopPublicJoinService {
           plannedDurationSeconds: item.plannedDurationSeconds,
           sortOrder: item.sortOrder,
         })),
+        menu: buildPublicMenu(workshop.menuItems),
         joinUrl: canJoin
           ? `${resolveAcademyWorkshopPublicOrigin()}/academy/workshops/lobby/${encodeURIComponent(workshop.displayCode)}`
           : null,
@@ -295,6 +457,17 @@ export class AcademyWorkshopPublicJoinService {
       ) {
         throw new AcademySalesError('Đăng ký online hiện đã đóng. Vui lòng liên hệ Academy để được hỗ trợ.', 409);
       }
+
+      const availableMenuItems = await tx.crmAcademyWorkshopMenuItem.findMany({
+        where: { workshopId: workshop.id, isAvailable: true },
+        select: { id: true, category: true, name: true, description: true, imageUrl: true },
+      });
+      const menuSelections = validateMenuSelections(input.menuSelections, availableMenuItems);
+      const availableEquipmentPackages = await tx.crmAcademyWorkshopEquipmentPackage.findMany({
+        where: { workshopId: workshop.id, isAvailable: true },
+        select: { id: true, name: true, description: true, includedItemsJson: true, priceVnd: true },
+      });
+      const equipmentSelection = validateEquipmentSelection(input.equipmentPackageId, availableEquipmentPackages);
 
       let lead = externalKey ? await tx.crmAcademyLead.findUnique({ where: { externalKey } }) : null;
       if (!lead) {
@@ -380,6 +553,24 @@ export class AcademyWorkshopPublicJoinService {
           campaignLeadId: membership.id,
           qrTokenHash: workshopQrTokenHash(),
           attendanceStatus: 'PENDING',
+          ...(menuSelections.length
+            ? {
+                menuSelections: {
+                  create: menuSelections.map((selection) => ({
+                    category: selection.category,
+                    menuItemId: selection.menuItemId,
+                    itemName: selection.itemName,
+                  })),
+                },
+              }
+            : {}),
+          ...(equipmentSelection
+            ? {
+                equipmentSelection: {
+                  create: equipmentSelection,
+                },
+              }
+            : {}),
         },
       });
       await tx.crmAcademyWorkshopParticipantEvent.create({

@@ -6,6 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { Check, Clock3, X } from 'lucide-react';
 import {
+  ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS,
   removeVietnameseTones,
   type AcademyWorkshopParticipant,
   type AcademyWorkshopResourcesResponse,
@@ -237,6 +238,42 @@ export default function AcademyWorkshopRoster({
         ),
       },
       {
+        key: 'menu',
+        title: 'Thực đơn Việt Thái',
+        width: 230,
+        render: (_value, row) =>
+          row.menuSelections.length ? (
+            <div className="space-y-1 text-xs leading-5">
+              {row.menuSelections.map((selection) => (
+                <div key={selection.id} className="flex min-w-0 gap-1.5">
+                  <span className="shrink-0 opacity-55">
+                    {ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[selection.category]}:
+                  </span>
+                  <span className="truncate font-semibold">{selection.itemName}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <StatusTag status="default" label="Chưa chọn món" />
+          ),
+      },
+      {
+        key: 'equipment',
+        title: 'Dụng cụ thực hành',
+        width: 210,
+        render: (_value, row) =>
+          row.equipmentSelection ? (
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold">{row.equipmentSelection.packageName}</div>
+              <div className="mt-1 tabular-nums text-xs opacity-65">
+                Phụ thu {row.equipmentSelection.priceVnd.toLocaleString('vi-VN')} đ
+              </div>
+            </div>
+          ) : (
+            <StatusTag status="default" label="Chưa chọn dụng cụ" />
+          ),
+      },
+      {
         key: 'checkin',
         title: 'Check-in',
         width: 140,
@@ -361,7 +398,7 @@ export default function AcademyWorkshopRoster({
       columns={columns}
       dataSource={participants}
       loading={loading}
-      scroll={{ x: 1250 }}
+      scroll={{ x: 1480 }}
       pagination={{
         current: page,
         pageSize,

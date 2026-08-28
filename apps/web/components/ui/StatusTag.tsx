@@ -33,11 +33,13 @@ export function StatusTag({ status = 'default', label, icon, bordered = true, cl
   return (
     <Tag
       color={conf.color}
-      icon={icon}
       bordered={bordered}
-      className={`inline-flex items-center justify-center leading-none m-0 text-[11px] font-semibold ${conf.borderClass} ${className}`}
+      className={`m-0 inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold leading-none ${conf.borderClass} ${className}`}
       style={style}
     >
+      {icon ? (
+        <span className="inline-flex shrink-0 items-center justify-center leading-none [&>svg]:block">{icon}</span>
+      ) : null}
       <span className="leading-none">{label}</span>
     </Tag>
   );

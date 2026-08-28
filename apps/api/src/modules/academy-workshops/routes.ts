@@ -9,6 +9,10 @@ import type {
   ConfirmAcademyWorkshopPhotoRequest,
   CreateAcademyWorkshopAgendaItemRequest,
   CreateAcademyWorkshopAgendaTemplateRequest,
+  CreateAcademyWorkshopEquipmentPackageRequest,
+  CreateAcademyWorkshopEquipmentPackageImageRequest,
+  CreateAcademyWorkshopMenuItemRequest,
+  CreateAcademyWorkshopPublicMediaUploadRequest,
   CreateAcademyWorkshopPhotoUploadRequest,
   CreateAcademyWorkshopRequest,
   CreateAcademyWorkshopWalkInRequest,
@@ -23,6 +27,9 @@ import type {
   UpdateAcademyWorkshopCareRequest,
   UpdateAcademyWorkshopAgendaItemRequest,
   UpdateAcademyWorkshopAgendaTemplateRequest,
+  UpdateAcademyWorkshopMenuItemRequest,
+  UpdateAcademyWorkshopEquipmentPackageRequest,
+  UpdateAcademyWorkshopEquipmentPackageImageRequest,
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
@@ -301,6 +308,221 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return error(fastify, reply, cause, 'Update workshop');
     }
   });
+
+  fastify.post('/academy-sales/workshops/:workshopId/hero-image/upload', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.uploadHeroImage(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as CreateAcademyWorkshopPublicMediaUploadRequest
+      );
+      return reply.send({ data });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Upload workshop hero image');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/menu-items', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.createMenuItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as CreateAcademyWorkshopMenuItemRequest
+      );
+      return reply.status(201).send({ success: true, data, message: 'Đã thêm món vào thực đơn.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Create workshop menu item');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/menu-items/upload-image', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.uploadMenuImage(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as CreateAcademyWorkshopPublicMediaUploadRequest
+      );
+      return reply.send({ data });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Upload workshop menu image');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/menu-items/:menuItemId', async (request, reply) => {
+    try {
+      const { workshopId, menuItemId } = request.params as { workshopId: string; menuItemId: string };
+      const data = await AcademyWorkshopService.updateMenuItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(menuItemId, 'Món ăn'),
+        request.body as UpdateAcademyWorkshopMenuItemRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật món ăn.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Update workshop menu item');
+    }
+  });
+
+  fastify.delete('/academy-sales/workshops/:workshopId/menu-items/:menuItemId', async (request, reply) => {
+    try {
+      const { workshopId, menuItemId } = request.params as { workshopId: string; menuItemId: string };
+      await AcademyWorkshopService.deleteMenuItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(menuItemId, 'Món ăn')
+      );
+      return reply.send({ success: true, message: 'Đã xóa món ăn.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Delete workshop menu item');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/equipment-packages', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.createEquipmentPackage(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as CreateAcademyWorkshopEquipmentPackageRequest
+      );
+      return reply.status(201).send({ success: true, data, message: 'Đã thêm bộ dụng cụ.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Create workshop equipment package');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/equipment-images/upload', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.uploadEquipmentImage(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as CreateAcademyWorkshopPublicMediaUploadRequest
+      );
+      return reply.send({ data });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Upload workshop equipment image');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId', async (request, reply) => {
+    try {
+      const { workshopId, equipmentPackageId } = request.params as {
+        workshopId: string;
+        equipmentPackageId: string;
+      };
+      const data = await AcademyWorkshopService.updateEquipmentPackage(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(equipmentPackageId, 'Bộ dụng cụ'),
+        request.body as UpdateAcademyWorkshopEquipmentPackageRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật bộ dụng cụ.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Update workshop equipment package');
+    }
+  });
+
+  fastify.delete(
+    '/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId',
+    async (request, reply) => {
+      try {
+        const { workshopId, equipmentPackageId } = request.params as {
+          workshopId: string;
+          equipmentPackageId: string;
+        };
+        await AcademyWorkshopService.deleteEquipmentPackage(
+          fastify,
+          actorFrom(request),
+          id(workshopId, 'Workshop ID'),
+          id(equipmentPackageId, 'Bộ dụng cụ')
+        );
+        return reply.send({ success: true, message: 'Đã xóa bộ dụng cụ.' });
+      } catch (cause) {
+        return error(fastify, reply, cause, 'Delete workshop equipment package');
+      }
+    }
+  );
+
+  fastify.post(
+    '/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images',
+    async (request, reply) => {
+      try {
+        const { workshopId, equipmentPackageId } = request.params as {
+          workshopId: string;
+          equipmentPackageId: string;
+        };
+        const data = await AcademyWorkshopService.createEquipmentPackageImage(
+          fastify,
+          actorFrom(request),
+          id(workshopId, 'Workshop ID'),
+          id(equipmentPackageId, 'Bộ dụng cụ'),
+          request.body as CreateAcademyWorkshopEquipmentPackageImageRequest
+        );
+        return reply.status(201).send({ success: true, data, message: 'Đã thêm ảnh bộ dụng cụ.' });
+      } catch (cause) {
+        return error(fastify, reply, cause, 'Create workshop equipment package image');
+      }
+    }
+  );
+
+  fastify.put(
+    '/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId',
+    async (request, reply) => {
+      try {
+        const { workshopId, equipmentPackageId, imageId } = request.params as {
+          workshopId: string;
+          equipmentPackageId: string;
+          imageId: string;
+        };
+        const data = await AcademyWorkshopService.updateEquipmentPackageImage(
+          fastify,
+          actorFrom(request),
+          id(workshopId, 'Workshop ID'),
+          id(equipmentPackageId, 'Bộ dụng cụ'),
+          id(imageId, 'Ảnh'),
+          request.body as UpdateAcademyWorkshopEquipmentPackageImageRequest
+        );
+        return reply.send({ success: true, data, message: 'Đã cập nhật ảnh bộ dụng cụ.' });
+      } catch (cause) {
+        return error(fastify, reply, cause, 'Update workshop equipment package image');
+      }
+    }
+  );
+
+  fastify.delete(
+    '/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId',
+    async (request, reply) => {
+      try {
+        const { workshopId, equipmentPackageId, imageId } = request.params as {
+          workshopId: string;
+          equipmentPackageId: string;
+          imageId: string;
+        };
+        await AcademyWorkshopService.deleteEquipmentPackageImage(
+          fastify,
+          actorFrom(request),
+          id(workshopId, 'Workshop ID'),
+          id(equipmentPackageId, 'Bộ dụng cụ'),
+          id(imageId, 'Ảnh')
+        );
+        return reply.send({ success: true, message: 'Đã xóa ảnh bộ dụng cụ.' });
+      } catch (cause) {
+        return error(fastify, reply, cause, 'Delete workshop equipment package image');
+      }
+    }
+  );
 
   fastify.get('/academy-sales/workshops/:workshopId/participants', async (request, reply) => {
     try {

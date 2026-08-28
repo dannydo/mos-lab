@@ -8,14 +8,26 @@ import {
   formatAcademyTalentBenefitLabel,
   removeVietnameseTones,
   sortAcademyWorkshopTalentLeaderboard,
+  ACADEMY_WORKSHOP_MENU_CATEGORIES,
   type AcademyTalentAssessmentQuote,
   type AcademyWorkshopAgendaItem,
   type AcademyWorkshopDetail,
+  type AcademyWorkshopEquipmentPackage,
+  type AcademyWorkshopEquipmentPackageImage,
   type AcademyWorkshopListItem,
+  type AcademyWorkshopMenuCategory,
+  type AcademyWorkshopMenuItem,
+  type AcademyWorkshopMenuSelection,
   type AcademyWorkshopParticipant,
+  type AcademyWorkshopParticipantEquipmentSelection,
+  type AcademyWorkshopPublicMediaUploadResult,
   type AcademyWorkshopQuiz,
   type AcademyWorkshopSummary,
   type AcademyWorkshopTalentLeaderboardEntry,
+  type CreateAcademyWorkshopMenuItemRequest,
+  type CreateAcademyWorkshopPublicMediaUploadRequest,
+  type CreateAcademyWorkshopEquipmentPackageRequest,
+  type CreateAcademyWorkshopEquipmentPackageImageRequest,
   type CreateAcademyWorkshopAgendaItemRequest,
   type CreateAcademyWorkshopRequest,
   type CreateAcademyWorkshopWalkInRequest,
@@ -24,6 +36,9 @@ import {
   type SafeAny,
   type ReorderAcademyWorkshopAgendaRequest,
   type UpdateAcademyWorkshopAgendaItemRequest,
+  type UpdateAcademyWorkshopMenuItemRequest,
+  type UpdateAcademyWorkshopEquipmentPackageRequest,
+  type UpdateAcademyWorkshopEquipmentPackageImageRequest,
   type UpdateAcademyWorkshopRequest,
   type UpsertAcademyWorkshopAgendaItemRequest,
 } from '@mos-lab/shared';
@@ -51,6 +66,10 @@ const WORKSHOP_STATUSES = new Set([
   'ARCHIVED',
 ]);
 const AGENDA_KINDS = new Set(['CONTENT', 'TALENT_TEST', 'GAME', 'BREAK', 'SALES', 'OTHER']);
+const MENU_CATEGORIES = new Set<AcademyWorkshopMenuCategory>(ACADEMY_WORKSHOP_MENU_CATEGORIES);
+const MENU_CATEGORY_ORDER = new Map<AcademyWorkshopMenuCategory, number>(
+  ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category, index) => [category, index])
+);
 const MANAGER_ROLES = new Set(['admin', 'super_admin', 'manager']);
 
 const STAFF_SELECT = { id: true, displayName: true, email: true };
@@ -62,6 +81,8 @@ const PARTICIPANT_INCLUDE: SafeAny = {
   primaryInstructor: { include: { staff: { select: { avatarUrl: true } } } },
   feePayments: { include: { confirmedBy: { select: STAFF_SELECT } }, orderBy: [{ receivedAt: 'desc' }] },
   photos: { include: { capturedBy: { select: STAFF_SELECT } }, orderBy: [{ capturedAt: 'desc' }] },
+  menuSelections: { orderBy: [{ category: 'asc' }, { id: 'asc' }] },
+  equipmentSelection: true,
   assessments: {
     include: { payments: { select: { amountVnd: true } } },
     orderBy: [{ updatedAt: 'desc' }],
@@ -75,6 +96,11 @@ const WORKSHOP_INCLUDE: SafeAny = {
   campaign: true,
   agendaTemplate: { include: { items: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
   agendaItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+  menuItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+  equipmentPackages: {
+    include: { images: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } },
+    orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+  },
   quizzes: {
     where: { isTemplate: false },
     include: {
@@ -136,6 +162,18 @@ function parseDate(value: unknown, label: string, nullable = false): Date | null
   const parsed = new Date(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw) ? `${raw}+07:00` : raw);
   if (!Number.isFinite(parsed.getTime())) throw new AcademySalesError(`${label} không hợp lệ.`);
   return parsed;
+}
+
+function normalizeHeroImageUrl(value: unknown): string | null {
+  const imageUrl = String(value ?? '').trim();
+  if (!imageUrl) return null;
+  if (imageUrl.length > 512) {
+    throw new AcademySalesError('URL banner hero không được dài quá 512 ký tự.', 400);
+  }
+  if (!imageUrl.startsWith('/') && !/^https?:\/\//i.test(imageUrl)) {
+    throw new AcademySalesError('URL banner hero phải là đường dẫn nội bộ hoặc URL http(s).', 400);
+  }
+  return imageUrl;
 }
 
 function slugify(value: string) {
@@ -267,6 +305,101 @@ export function toAcademyWorkshopAgendaItem(row: SafeAny, now = new Date()): Aca
       now
     ),
   };
+}
+
+function menuCategory(value: unknown): AcademyWorkshopMenuCategory {
+  if (!MENU_CATEGORIES.has(value as AcademyWorkshopMenuCategory)) {
+    throw new AcademySalesError('Nhóm món ăn không hợp lệ.');
+  }
+  return value as AcademyWorkshopMenuCategory;
+}
+
+function menuItem(row: SafeAny): AcademyWorkshopMenuItem {
+  return {
+    id: Number(row.id),
+    workshopId: Number(row.workshopId),
+    category: menuCategory(row.category),
+    name: String(row.name),
+    description: row.description ?? null,
+    imageUrl: row.imageUrl ?? null,
+    sortOrder: Math.max(0, Number(row.sortOrder) || 0),
+    isAvailable: Boolean(row.isAvailable),
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
+  };
+}
+
+function menuSelection(row: SafeAny): AcademyWorkshopMenuSelection {
+  return {
+    id: Number(row.id),
+    participantId: Number(row.participantId),
+    menuItemId: row.menuItemId == null ? null : Number(row.menuItemId),
+    category: menuCategory(row.category),
+    itemName: String(row.itemName),
+    selectedAt: new Date(row.selectedAt).toISOString(),
+  };
+}
+
+function equipmentItems(value: unknown): string[] {
+  const items = Array.isArray(value) ? value : parseJson<unknown[]>(String(value || ''), []);
+  return Array.from(
+    new Set(
+      items
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .map((item) => item.slice(0, 180))
+    )
+  );
+}
+
+function equipmentPackage(row: SafeAny): AcademyWorkshopEquipmentPackage {
+  return {
+    id: Number(row.id),
+    workshopId: Number(row.workshopId),
+    name: String(row.name),
+    description: row.description ?? null,
+    includedItems: equipmentItems(row.includedItemsJson),
+    priceVnd: Math.max(0, Math.round(Number(row.priceVnd) || 0)),
+    sortOrder: Math.max(0, Number(row.sortOrder) || 0),
+    isAvailable: Boolean(row.isAvailable),
+    images: (row.images || []).map(equipmentPackageImage),
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
+  };
+}
+
+function equipmentPackageImage(row: SafeAny): AcademyWorkshopEquipmentPackageImage {
+  return {
+    id: Number(row.id),
+    equipmentPackageId: Number(row.equipmentPackageId),
+    imageUrl: String(row.imageUrl),
+    altText: row.altText ?? null,
+    sortOrder: Math.max(0, Number(row.sortOrder) || 0),
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
+  };
+}
+
+function equipmentSelection(row: SafeAny): AcademyWorkshopParticipantEquipmentSelection | null {
+  if (!row) return null;
+  return {
+    id: Number(row.id),
+    participantId: Number(row.participantId),
+    equipmentPackageId: row.equipmentPackageId == null ? null : Number(row.equipmentPackageId),
+    packageName: String(row.packageName),
+    packageContents: equipmentItems(row.packageContentsJson),
+    priceVnd: Math.max(0, Math.round(Number(row.priceVnd) || 0)),
+    selectedAt: new Date(row.selectedAt).toISOString(),
+  };
+}
+
+function sortMenuItems(items: AcademyWorkshopMenuItem[]) {
+  return [...items].sort(
+    (left, right) =>
+      (MENU_CATEGORY_ORDER.get(left.category) || 0) - (MENU_CATEGORY_ORDER.get(right.category) || 0) ||
+      left.sortOrder - right.sortOrder ||
+      left.id - right.id
+  );
 }
 
 export function academyWorkshopTalentSnapshotFromAssessment(assessment: SafeAny) {
@@ -410,6 +543,8 @@ async function toParticipant(row: SafeAny, feeVnd: number, qrToken?: string): Pr
       confirmedBy: staff(payment.confirmedBy),
       createdAt: new Date(payment.createdAt).toISOString(),
     })),
+    menuSelections: (row.menuSelections || []).map(menuSelection),
+    equipmentSelection: equipmentSelection(row.equipmentSelection),
     talent: latestTalent,
     gameScore: (row.answers || []).reduce((sum: number, answer: SafeAny) => sum + Number(answer.score || 0), 0),
     gameResponseTimeMs: (row.answers || []).reduce(
@@ -501,6 +636,7 @@ export class AcademyWorkshopService {
       name: String(row.campaign.name),
       slug: String(row.campaign.slug),
       description: row.campaign.description ?? null,
+      heroImageUrl: row.heroImageUrl ?? null,
       startsAt: new Date(row.startsAt).toISOString(),
       endsAt: new Date(row.endsAt).toISOString(),
       location: String(row.location),
@@ -525,6 +661,8 @@ export class AcademyWorkshopService {
       sharedJoinUrl: `${resolveAcademyWorkshopPublicOrigin()}/academy/workshops/lobby/${encodeURIComponent(String(row.displayCode))}`,
       summary: summarize(participants),
       agenda: row.agendaItems.map((item: SafeAny) => toAcademyWorkshopAgendaItem(item)),
+      menuItems: sortMenuItems((row.menuItems || []).map(menuItem)),
+      equipmentPackages: (row.equipmentPackages || []).map(equipmentPackage),
       activeQuiz: toAcademyWorkshopQuiz(row.quizzes?.[0], true),
     };
   }
@@ -599,6 +737,7 @@ export class AcademyWorkshopService {
     const capacity = Math.min(100, Math.max(1, Math.round(Number(input.capacity) || 100)));
     const feeVnd = Math.max(0, Math.round(Number(input.feeVnd) || 0));
     const feeDueAt = parseDate(input.feeDueAt, 'Hạn đóng phí', true);
+    const heroImageUrl = normalizeHeroImageUrl(input.heroImageUrl);
     const staffIds = await this.validateStaffIds(fastify, input.assignedStaffIds || []);
     if (!staffIds.includes(actor.id)) staffIds.push(actor.id);
     const slug = await this.uniqueSlug(fastify, input.slug || name);
@@ -631,6 +770,7 @@ export class AcademyWorkshopService {
           capacity,
           feeVnd,
           feeDueAt,
+          heroImageUrl,
           status: 'SCHEDULED',
           agendaTemplateId: agendaTemplate.id,
           registrationCode: registrationCode(),
@@ -670,6 +810,8 @@ export class AcademyWorkshopService {
       input.agendaTemplateId === undefined
         ? row.agendaTemplate
         : await AcademyWorkshopAgendaTemplateService.getRequired(fastify, input.agendaTemplateId);
+    const heroImageUrl =
+      input.heroImageUrl === undefined ? row.heroImageUrl : normalizeHeroImageUrl(input.heroImageUrl);
     await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmAcademyCampaign.update({
         where: { id: row.campaignId },
@@ -695,6 +837,7 @@ export class AcademyWorkshopService {
             input.capacity === undefined ? row.capacity : Math.min(100, Math.max(1, Math.round(input.capacity))),
           feeVnd: input.feeVnd === undefined ? row.feeVnd : Math.max(0, Math.round(input.feeVnd)),
           feeDueAt: input.feeDueAt === undefined ? row.feeDueAt : parseDate(input.feeDueAt, 'Hạn đóng phí', true),
+          heroImageUrl,
           status: input.status || row.status,
           registrationOpen:
             input.registrationOpen === undefined ? row.registrationOpen : Boolean(input.registrationOpen),
@@ -848,6 +991,313 @@ export class AcademyWorkshopService {
       )
     );
     return (await this.getById(fastify, actor, row.id)).agenda;
+  }
+
+  private static assertCanEditWorkshopMedia(actor: AcademyActor) {
+    if (!canManage(actor) && actor.academyAccess !== true) {
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc staff được phân công mới được sửa hình ảnh workshop.', 403);
+    }
+  }
+
+  private static assertCanEditMenu(actor: AcademyActor) {
+    if (!canManage(actor) && actor.academyAccess !== true) {
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc staff được phân công mới được sửa thực đơn.', 403);
+    }
+  }
+
+  static async uploadHeroImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopPublicMediaUploadRequest
+  ): Promise<AcademyWorkshopPublicMediaUploadResult> {
+    await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditWorkshopMedia(actor);
+    return AcademyWorkshopStorageService.uploadPublicMedia(workshopId, 'hero-images', input);
+  }
+
+  static async uploadMenuImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopPublicMediaUploadRequest
+  ): Promise<AcademyWorkshopPublicMediaUploadResult> {
+    await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditMenu(actor);
+    return AcademyWorkshopStorageService.uploadPublicMedia(workshopId, 'menu-items', input);
+  }
+
+  private static normalizeMenuItem(input: {
+    category: unknown;
+    name: unknown;
+    description?: unknown;
+    imageUrl?: unknown;
+    isAvailable?: unknown;
+  }) {
+    const category = menuCategory(input.category);
+    const name = String(input.name || '').trim();
+    const description = String(input.description || '').trim() || null;
+    const imageUrl = String(input.imageUrl || '').trim() || null;
+    if (!name || name.length > 180) throw new AcademySalesError('Tên món là bắt buộc và tối đa 180 ký tự.');
+    if (description && description.length > 2_000) throw new AcademySalesError('Mô tả món tối đa 2.000 ký tự.');
+    if (!imageUrl) throw new AcademySalesError('Mỗi món cần có ít nhất một ảnh minh họa.');
+    if (imageUrl && imageUrl.length > 512) throw new AcademySalesError('Đường dẫn ảnh món tối đa 512 ký tự.');
+    if (imageUrl && !/^(https?:\/\/|\/)/i.test(imageUrl)) {
+      throw new AcademySalesError('Đường dẫn ảnh món phải bắt đầu bằng https://, http:// hoặc /.');
+    }
+    return {
+      category,
+      name,
+      description,
+      imageUrl,
+      isAvailable: input.isAvailable === undefined ? true : Boolean(input.isAvailable),
+    };
+  }
+
+  static async createMenuItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopMenuItemRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditMenu(actor);
+    const item = this.normalizeMenuItem(input);
+    const sortOrder =
+      Math.max(
+        0,
+        ...row.menuItems
+          .filter((current: SafeAny) => current.category === item.category)
+          .map((current: SafeAny) => Number(current.sortOrder) || 0)
+      ) + 1;
+    const created = await fastify.prisma.crm.crmAcademyWorkshopMenuItem.create({
+      data: { ...item, workshopId: row.id, sortOrder },
+    });
+    return menuItem(created);
+  }
+
+  static async updateMenuItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    menuItemId: number,
+    input: UpdateAcademyWorkshopMenuItemRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditMenu(actor);
+    const itemId = positiveId(menuItemId, 'Món ăn');
+    const existing = row.menuItems.find((item: SafeAny) => item.id === itemId);
+    if (!existing) throw new AcademySalesError('Không tìm thấy món ăn trong thực đơn.', 404);
+    const item = this.normalizeMenuItem({
+      category: input.category === undefined ? existing.category : input.category,
+      name: input.name === undefined ? existing.name : input.name,
+      description: input.description === undefined ? existing.description : input.description,
+      imageUrl: input.imageUrl === undefined ? existing.imageUrl : input.imageUrl,
+      isAvailable: input.isAvailable === undefined ? existing.isAvailable : input.isAvailable,
+    });
+    const sortOrder =
+      item.category === existing.category
+        ? existing.sortOrder
+        : Math.max(
+            0,
+            ...row.menuItems
+              .filter((current: SafeAny) => current.id !== existing.id && current.category === item.category)
+              .map((current: SafeAny) => Number(current.sortOrder) || 0)
+          ) + 1;
+    const updated = await fastify.prisma.crm.crmAcademyWorkshopMenuItem.update({
+      where: { id: existing.id },
+      data: { ...item, sortOrder },
+    });
+    return menuItem(updated);
+  }
+
+  static async deleteMenuItem(fastify: FastifyInstance, actor: AcademyActor, workshopId: number, menuItemId: number) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditMenu(actor);
+    const itemId = positiveId(menuItemId, 'Món ăn');
+    if (!row.menuItems.some((item: SafeAny) => item.id === itemId)) {
+      throw new AcademySalesError('Không tìm thấy món ăn trong thực đơn.', 404);
+    }
+    await fastify.prisma.crm.crmAcademyWorkshopMenuItem.delete({ where: { id: itemId } });
+  }
+
+  private static assertCanEditEquipment(actor: AcademyActor) {
+    if (!canManage(actor) && actor.academyAccess !== true) {
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc staff được phân công mới được sửa bộ dụng cụ.', 403);
+    }
+  }
+
+  static async uploadEquipmentImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopPublicMediaUploadRequest
+  ): Promise<AcademyWorkshopPublicMediaUploadResult> {
+    await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    return AcademyWorkshopStorageService.uploadPublicMedia(workshopId, 'equipment-images', input);
+  }
+
+  private static normalizeEquipmentPackage(input: {
+    name: unknown;
+    description?: unknown;
+    includedItems: unknown;
+    priceVnd: unknown;
+    isAvailable?: unknown;
+  }) {
+    const name = String(input.name || '').trim();
+    const description = String(input.description || '').trim() || null;
+    const includedItems = equipmentItems(input.includedItems);
+    const priceVnd = Math.round(Number(input.priceVnd));
+    if (!name || name.length > 180) throw new AcademySalesError('Tên bộ dụng cụ là bắt buộc và tối đa 180 ký tự.');
+    if (description && description.length > 2_000) throw new AcademySalesError('Mô tả bộ dụng cụ tối đa 2.000 ký tự.');
+    if (!includedItems.length) throw new AcademySalesError('Mỗi bộ dụng cụ cần có ít nhất một món đi kèm.');
+    if (includedItems.length > 16) throw new AcademySalesError('Mỗi bộ dụng cụ tối đa 16 món đi kèm.');
+    if (!Number.isFinite(priceVnd) || priceVnd < 0 || priceVnd > 100_000_000) {
+      throw new AcademySalesError('Giá bộ dụng cụ phải là số tiền VND hợp lệ.');
+    }
+    return {
+      name,
+      description,
+      includedItemsJson: JSON.stringify(includedItems),
+      priceVnd,
+      isAvailable: input.isAvailable === undefined ? true : Boolean(input.isAvailable),
+    };
+  }
+
+  static async createEquipmentPackage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopEquipmentPackageRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    const item = this.normalizeEquipmentPackage(input);
+    const sortOrder =
+      Math.max(0, ...row.equipmentPackages.map((current: SafeAny) => Number(current.sortOrder) || 0)) + 1;
+    const created = await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackage.create({
+      data: { ...item, workshopId: row.id, sortOrder },
+    });
+    return equipmentPackage(created);
+  }
+
+  static async updateEquipmentPackage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    equipmentPackageId: number,
+    input: UpdateAcademyWorkshopEquipmentPackageRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    const itemId = positiveId(equipmentPackageId, 'Bộ dụng cụ');
+    const existing = row.equipmentPackages.find((item: SafeAny) => item.id === itemId);
+    if (!existing) throw new AcademySalesError('Không tìm thấy bộ dụng cụ thực hành.', 404);
+    const item = this.normalizeEquipmentPackage({
+      name: input.name === undefined ? existing.name : input.name,
+      description: input.description === undefined ? existing.description : input.description,
+      includedItems:
+        input.includedItems === undefined ? parseJson<unknown[]>(existing.includedItemsJson, []) : input.includedItems,
+      priceVnd: input.priceVnd === undefined ? existing.priceVnd : input.priceVnd,
+      isAvailable: input.isAvailable === undefined ? existing.isAvailable : input.isAvailable,
+    });
+    const updated = await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackage.update({
+      where: { id: existing.id },
+      data: item,
+    });
+    return equipmentPackage(updated);
+  }
+
+  static async deleteEquipmentPackage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    equipmentPackageId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    const itemId = positiveId(equipmentPackageId, 'Bộ dụng cụ');
+    if (!row.equipmentPackages.some((item: SafeAny) => item.id === itemId)) {
+      throw new AcademySalesError('Không tìm thấy bộ dụng cụ thực hành.', 404);
+    }
+    await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackage.delete({ where: { id: itemId } });
+  }
+
+  private static normalizeEquipmentImage(input: { imageUrl: unknown; altText?: unknown }) {
+    const imageUrl = String(input.imageUrl || '').trim();
+    const altText = String(input.altText || '').trim() || null;
+    if (!imageUrl || imageUrl.length > 512 || !/^(https?:\/\/|\/)/i.test(imageUrl)) {
+      throw new AcademySalesError('Đường dẫn ảnh phải bắt đầu bằng https://, http:// hoặc /.');
+    }
+    if (altText && altText.length > 180) throw new AcademySalesError('Mô tả ảnh tối đa 180 ký tự.');
+    return { imageUrl, altText };
+  }
+
+  static async createEquipmentPackageImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    equipmentPackageId: number,
+    input: CreateAcademyWorkshopEquipmentPackageImageRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    const packageId = positiveId(equipmentPackageId, 'Bộ dụng cụ');
+    const selectedPackage = row.equipmentPackages.find((item: SafeAny) => item.id === packageId);
+    if (!selectedPackage) throw new AcademySalesError('Không tìm thấy bộ dụng cụ thực hành.', 404);
+    const image = this.normalizeEquipmentImage(input);
+    const sortOrder =
+      Math.max(0, ...(selectedPackage.images || []).map((item: SafeAny) => Number(item.sortOrder) || 0)) + 1;
+    const created = await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackageImage.create({
+      data: { ...image, equipmentPackageId: selectedPackage.id, sortOrder },
+    });
+    return equipmentPackageImage(created);
+  }
+
+  static async updateEquipmentPackageImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    equipmentPackageId: number,
+    imageId: number,
+    input: UpdateAcademyWorkshopEquipmentPackageImageRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    const packageId = positiveId(equipmentPackageId, 'Bộ dụng cụ');
+    const selectedPackage = row.equipmentPackages.find((item: SafeAny) => item.id === packageId);
+    if (!selectedPackage) throw new AcademySalesError('Không tìm thấy bộ dụng cụ thực hành.', 404);
+    const selectedImage = (selectedPackage.images || []).find(
+      (item: SafeAny) => item.id === positiveId(imageId, 'Ảnh')
+    );
+    if (!selectedImage) throw new AcademySalesError('Không tìm thấy ảnh của bộ dụng cụ.', 404);
+    const image = this.normalizeEquipmentImage({
+      imageUrl: input.imageUrl === undefined ? selectedImage.imageUrl : input.imageUrl,
+      altText: input.altText === undefined ? selectedImage.altText : input.altText,
+    });
+    const updated = await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackageImage.update({
+      where: { id: selectedImage.id },
+      data: image,
+    });
+    return equipmentPackageImage(updated);
+  }
+
+  static async deleteEquipmentPackageImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    equipmentPackageId: number,
+    imageId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    const packageId = positiveId(equipmentPackageId, 'Bộ dụng cụ');
+    const selectedPackage = row.equipmentPackages.find((item: SafeAny) => item.id === packageId);
+    if (!selectedPackage) throw new AcademySalesError('Không tìm thấy bộ dụng cụ thực hành.', 404);
+    const currentImage = (selectedPackage.images || []).find((item: SafeAny) => item.id === positiveId(imageId, 'Ảnh'));
+    if (!currentImage) throw new AcademySalesError('Không tìm thấy ảnh của bộ dụng cụ.', 404);
+    await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackageImage.delete({ where: { id: currentImage.id } });
   }
 
   private static async addLeadIds(fastify: FastifyInstance, actor: AcademyActor, row: SafeAny, leadIds: number[]) {

@@ -91,6 +91,14 @@
   opacity: 1;
 }
 
+/* Four compact workshop KPIs fit the desktop workspace as a single scan line.
+   Smaller breakpoints retain the shared 2-column metric-grid contract below. */
+@media (min-width: 1200px) {
+  .workspace :global(.academy-workshop-metric-grid) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .tabs > :global(.ant-tabs-nav) {
   background: transparent;
   border: 0;

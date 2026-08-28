@@ -32,6 +32,15 @@ export type AcademyWorkshopAgendaKind = (typeof ACADEMY_WORKSHOP_AGENDA_KINDS)[n
 export const ACADEMY_WORKSHOP_AGENDA_STATUSES = ['PENDING', 'RUNNING', 'PAUSED', 'COMPLETED', 'SKIPPED'] as const;
 export type AcademyWorkshopAgendaStatus = (typeof ACADEMY_WORKSHOP_AGENDA_STATUSES)[number];
 
+export const ACADEMY_WORKSHOP_MENU_CATEGORIES = ['JUICE', 'MAIN_COURSE', 'DESSERT'] as const;
+export type AcademyWorkshopMenuCategory = (typeof ACADEMY_WORKSHOP_MENU_CATEGORIES)[number];
+
+export const ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS: Record<AcademyWorkshopMenuCategory, string> = {
+  JUICE: 'Nước ép trái cây',
+  MAIN_COURSE: 'Món chính',
+  DESSERT: 'Tráng miệng',
+};
+
 export const ACADEMY_WORKSHOP_QUESTION_TYPES = ['SINGLE_CHOICE', 'TRUE_FALSE'] as const;
 export type AcademyWorkshopQuestionType = (typeof ACADEMY_WORKSHOP_QUESTION_TYPES)[number];
 
@@ -69,6 +78,8 @@ export interface AcademyWorkshopListItem {
   name: string;
   slug: string;
   description: string | null;
+  /** Public-facing visual shown on the workshop registration hero. */
+  heroImageUrl: string | null;
   startsAt: string;
   endsAt: string;
   location: string;
@@ -97,6 +108,8 @@ export interface AcademyWorkshopDetail extends AcademyWorkshopListItem {
   sharedJoinUrl: string;
   summary: AcademyWorkshopSummary;
   agenda: AcademyWorkshopAgendaItem[];
+  menuItems: AcademyWorkshopMenuItem[];
+  equipmentPackages: AcademyWorkshopEquipmentPackage[];
   activeQuiz: AcademyWorkshopQuiz | null;
 }
 
@@ -182,12 +195,72 @@ export interface AcademyWorkshopParticipant {
   qrUrl?: string;
   photos: AcademyWorkshopPhoto[];
   feePayments: AcademyWorkshopFeePayment[];
+  menuSelections: AcademyWorkshopMenuSelection[];
+  equipmentSelection: AcademyWorkshopParticipantEquipmentSelection | null;
   talent: AcademyWorkshopTalentSnapshot | null;
   gameScore: number;
   gameResponseTimeMs: number;
   pendingRewardCount: number;
   instructorBonusVnd: number;
   instructorBonusStatus: AcademyInstructorBonusStatus | null;
+}
+
+export interface AcademyWorkshopMenuItem {
+  id: number;
+  workshopId: number;
+  category: AcademyWorkshopMenuCategory;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  sortOrder: number;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AcademyWorkshopMenuSelection {
+  id: number;
+  participantId: number;
+  menuItemId: number | null;
+  category: AcademyWorkshopMenuCategory;
+  itemName: string;
+  selectedAt: string;
+}
+
+/** Configurable practical-kit option for a workshop. Prices are whole VND. */
+export interface AcademyWorkshopEquipmentPackage {
+  id: number;
+  workshopId: number;
+  name: string;
+  description: string | null;
+  includedItems: string[];
+  priceVnd: number;
+  sortOrder: number;
+  isAvailable: boolean;
+  images: AcademyWorkshopEquipmentPackageImage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AcademyWorkshopEquipmentPackageImage {
+  id: number;
+  equipmentPackageId: number;
+  imageUrl: string;
+  altText: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Immutable equipment and price snapshot selected during registration. */
+export interface AcademyWorkshopParticipantEquipmentSelection {
+  id: number;
+  participantId: number;
+  equipmentPackageId: number | null;
+  packageName: string;
+  packageContents: string[];
+  priceVnd: number;
+  selectedAt: string;
 }
 
 export interface AcademyWorkshopAgendaItem {
@@ -400,12 +473,29 @@ export interface AcademyWorkshopPublicRegistrationInfo {
     name: string;
     slug: string;
     description: string | null;
+    heroImageUrl: string | null;
     startsAt: string;
     endsAt: string;
     location: string;
     capacity: number;
     remainingSeats: number;
     feeVnd: number;
+    equipment: {
+      required: boolean;
+      packages: Array<
+        Pick<AcademyWorkshopEquipmentPackage, 'id' | 'name' | 'description' | 'includedItems' | 'priceVnd'> & {
+          images: Array<Pick<AcademyWorkshopEquipmentPackageImage, 'id' | 'imageUrl' | 'altText'>>;
+        }
+      >;
+    };
+    menu: {
+      required: boolean;
+      categories: Array<{
+        category: AcademyWorkshopMenuCategory;
+        label: string;
+        items: Array<Pick<AcademyWorkshopMenuItem, 'id' | 'name' | 'description' | 'imageUrl'>>;
+      }>;
+    };
     agenda: Array<{
       id: number;
       title: string;
@@ -425,6 +515,13 @@ export interface RegisterAcademyWorkshopRequest {
   email?: string | null;
   goal?: string | null;
   referrer?: string | null;
+  menuSelections?: AcademyWorkshopMenuSelectionInput[];
+  equipmentPackageId?: number;
+}
+
+export interface AcademyWorkshopMenuSelectionInput {
+  category: AcademyWorkshopMenuCategory;
+  menuItemId: number;
 }
 
 /**
@@ -436,6 +533,8 @@ export interface RegisterAcademyWorkshopWithGoogleRequest {
   phone: string;
   goal?: string | null;
   referrer?: string | null;
+  menuSelections?: AcademyWorkshopMenuSelectionInput[];
+  equipmentPackageId?: number;
 }
 
 /** Verifies a Google identity before checking whether it already joined a workshop. */
@@ -450,6 +549,8 @@ export interface RegisterAcademyWorkshopWithZaloRequest {
   email?: string | null;
   goal?: string | null;
   referrer?: string | null;
+  menuSelections?: AcademyWorkshopMenuSelectionInput[];
+  equipmentPackageId?: number;
 }
 
 /** Verifies the short-lived Zalo ticket before checking an existing registration. */
@@ -479,6 +580,7 @@ export interface CreateAcademyWorkshopRequest {
   name: string;
   slug?: string;
   description?: string | null;
+  heroImageUrl?: string | null;
   startsAt: string;
   endsAt: string;
   location: string;
@@ -575,6 +677,20 @@ export interface AcademyWorkshopPhotoUploadIntent {
   expiresAt: string;
 }
 
+/** Upload an image that students may view publicly. The API persists the binary on the configured media server. */
+export interface CreateAcademyWorkshopPublicMediaUploadRequest {
+  fileName: string;
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
+  sizeBytes: number;
+  dataBase64: string;
+}
+
+export interface AcademyWorkshopPublicMediaUploadResult {
+  storagePath: string;
+  /** Stable, public URL persisted on the menu item or equipment gallery image. */
+  publicUrl: string;
+}
+
 export interface ConfirmAcademyWorkshopPhotoRequest {
   storagePath: string;
   mimeType: string;
@@ -605,6 +721,40 @@ export interface UpdateAcademyWorkshopAgendaItemRequest {
   kind?: AcademyWorkshopAgendaKind;
   plannedDurationSeconds?: number;
 }
+
+export interface CreateAcademyWorkshopMenuItemRequest {
+  category: AcademyWorkshopMenuCategory;
+  name: string;
+  description?: string | null;
+  imageUrl: string;
+  isAvailable?: boolean;
+}
+
+export interface UpdateAcademyWorkshopMenuItemRequest {
+  category?: AcademyWorkshopMenuCategory;
+  name?: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  isAvailable?: boolean;
+}
+
+export interface CreateAcademyWorkshopEquipmentPackageRequest {
+  name: string;
+  description?: string | null;
+  includedItems: string[];
+  priceVnd: number;
+  isAvailable?: boolean;
+}
+
+export type UpdateAcademyWorkshopEquipmentPackageRequest = Partial<CreateAcademyWorkshopEquipmentPackageRequest>;
+
+export interface CreateAcademyWorkshopEquipmentPackageImageRequest {
+  imageUrl: string;
+  altText?: string | null;
+}
+
+export type UpdateAcademyWorkshopEquipmentPackageImageRequest =
+  Partial<CreateAcademyWorkshopEquipmentPackageImageRequest>;
 
 export interface ReorderAcademyWorkshopAgendaRequest {
   agendaItemIds: number[];

@@ -1,0 +1,330 @@
+.shell,
+.selectionDrawer {
+  --workshop-page: #f7f3f5;
+  --workshop-panel: #fffdfd;
+  --workshop-surface-soft: #fbf7f8;
+  --workshop-surface-raised: #ffffff;
+  --workshop-text: #1d1a1e;
+  --workshop-text-muted: #766e74;
+  --workshop-border: rgba(80, 54, 67, 0.12);
+  --workshop-border-strong: rgba(80, 54, 67, 0.2);
+  --workshop-accent: #dc4169;
+  --workshop-accent-hover: #c9365d;
+  --workshop-accent-soft: rgba(220, 65, 105, 0.09);
+  --workshop-accent-text: #bd3156;
+  --workshop-warm: #a85e24;
+  --workshop-warm-soft: rgba(224, 140, 67, 0.11);
+  --workshop-success: #087c55;
+  --workshop-success-soft: rgba(8, 124, 85, 0.09);
+  --workshop-shadow: 0 16px 48px rgba(61, 38, 49, 0.09);
+  --workshop-card-shadow: 0 5px 18px rgba(61, 38, 49, 0.055);
+}
+
+:global(.dark-theme) .shell,
+:global(.dark-theme) .selectionDrawer {
+  --workshop-page: #100e12;
+  --workshop-panel: #19161b;
+  --workshop-surface-soft: #211d23;
+  --workshop-surface-raised: #29242b;
+  --workshop-text: #fbf7f9;
+  --workshop-text-muted: #b8adb4;
+  --workshop-border: rgba(255, 235, 245, 0.11);
+  --workshop-border-strong: rgba(255, 235, 245, 0.2);
+  --workshop-accent: #ff6488;
+  --workshop-accent-hover: #ff7b99;
+  --workshop-accent-soft: rgba(255, 100, 136, 0.13);
+  --workshop-accent-text: #ff8ba5;
+  --workshop-warm: #ffc180;
+  --workshop-warm-soft: rgba(255, 178, 102, 0.12);
+  --workshop-success: #62dca8;
+  --workshop-success-soft: rgba(98, 220, 168, 0.12);
+  --workshop-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  --workshop-card-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.shell {
+  background: var(--workshop-page);
+  color: var(--workshop-text);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.primarySurface {
+  border: 1px solid var(--workshop-border);
+  background: var(--workshop-panel);
+  box-shadow: var(--workshop-shadow);
+}
+
+.timeline {
+  background: var(--workshop-panel);
+}
+
+.timelineTitle,
+.agendaTitle,
+.selectionActionTitle,
+.authOptionTitle {
+  color: var(--workshop-text);
+}
+
+.mutedText,
+.agendaMeta,
+.agendaDescription {
+  color: var(--workshop-text-muted);
+}
+
+.journeyIcon,
+.selectionActionIcon {
+  background: var(--workshop-accent);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--workshop-accent) 22%, transparent);
+}
+
+.scheduleSummary {
+  border: 1px solid var(--workshop-border);
+  background: var(--workshop-surface-raised);
+  box-shadow: var(--workshop-card-shadow);
+}
+
+.scheduleSummaryCell {
+  border-right: 1px solid var(--workshop-border);
+}
+
+.agendaCard {
+  border: 1px solid var(--workshop-border);
+  background: var(--workshop-surface-raised);
+  box-shadow: var(--workshop-card-shadow);
+}
+
+.agendaCardBreak {
+  border-color: color-mix(in srgb, var(--workshop-warm) 32%, var(--workshop-border));
+  background: color-mix(in srgb, var(--workshop-warm-soft) 70%, var(--workshop-surface-raised));
+}
+
+.agendaDuration {
+  background: var(--workshop-accent-soft);
+  color: var(--workshop-accent-text);
+}
+
+.agendaKind {
+  background: var(--workshop-surface-soft);
+  color: var(--workshop-text-muted);
+}
+
+.agendaIconNeutral,
+.agendaIconBlue,
+.agendaIconViolet,
+.agendaIconGreen,
+.agendaIconWarm {
+  background: var(--workshop-accent-soft);
+  color: var(--workshop-accent-text);
+  --tw-ring-color: color-mix(in srgb, var(--workshop-accent) 22%, transparent);
+}
+
+.agendaIconGreen {
+  background: var(--workshop-success-soft);
+  color: var(--workshop-success);
+  --tw-ring-color: color-mix(in srgb, var(--workshop-success) 24%, transparent);
+}
+
+.agendaIconWarm {
+  background: var(--workshop-warm-soft);
+  color: var(--workshop-warm);
+  --tw-ring-color: color-mix(in srgb, var(--workshop-warm) 24%, transparent);
+}
+
+.agendaIconBlue,
+.agendaIconViolet {
+  background: var(--workshop-surface-soft);
+}
+
+.selectionAction {
+  border: 1px solid var(--workshop-border);
+  background: var(--workshop-surface-soft);
+  box-shadow: none;
+}
+
+.selectionAction:hover {
+  border-color: var(--workshop-border-strong);
+  background: var(--workshop-surface-raised);
+}
+
+.selectionAction:focus-visible,
+.selectionSummaryAction:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--workshop-accent) 52%, transparent);
+  outline-offset: 2px;
+}
+
+.selectionActionDescription {
+  color: var(--workshop-text-muted);
+}
+
+.selectionActionArrow {
+  color: var(--workshop-accent-text);
+}
+
+.selectionSummary {
+  border: 1px solid color-mix(in srgb, var(--workshop-success) 28%, var(--workshop-border));
+  background: color-mix(in srgb, var(--workshop-success-soft) 72%, var(--workshop-surface-raised));
+}
+
+.selectionSummaryItems,
+.selectionSummaryAction {
+  border-top: 1px solid color-mix(in srgb, var(--workshop-success) 24%, var(--workshop-border));
+}
+
+.selectionSummaryItems {
+  background: color-mix(in srgb, var(--workshop-surface-raised) 78%, transparent);
+}
+
+.selectionChip {
+  background: var(--workshop-surface-soft);
+  color: var(--workshop-text-muted);
+}
+
+.selectionSummaryAction {
+  color: var(--workshop-success);
+}
+
+.selectionSummaryAction:hover {
+  background: var(--workshop-success-soft);
+}
+
+.asideCard {
+  border-color: var(--workshop-border) !important;
+  background: var(--workshop-panel) !important;
+  box-shadow: var(--workshop-shadow);
+}
+
+.asideHeader {
+  border-color: var(--workshop-border) !important;
+}
+
+.asideBody :global(.ant-form-item-label > label) {
+  color: var(--workshop-text) !important;
+}
+
+.asideBody :global(.ant-input),
+.asideBody :global(.ant-input-affix-wrapper),
+.asideBody :global(.ant-input-textarea textarea) {
+  border-color: var(--workshop-border) !important;
+  border-radius: 12px !important;
+  background: var(--workshop-surface-soft) !important;
+  color: var(--workshop-text) !important;
+}
+
+.asideBody :global(.ant-input:hover),
+.asideBody :global(.ant-input-affix-wrapper:hover) {
+  border-color: var(--workshop-border-strong) !important;
+}
+
+.asideBody :global(.ant-input:focus),
+.asideBody :global(.ant-input-focused),
+.asideBody :global(.ant-input-affix-wrapper-focused) {
+  border-color: var(--workshop-accent) !important;
+  box-shadow: 0 0 0 3px var(--workshop-accent-soft) !important;
+}
+
+.asideBody :global(.ant-input::placeholder),
+.asideBody :global(.ant-input-textarea textarea::placeholder),
+.asideBody :global(.ant-divider-inner-text) {
+  color: var(--workshop-text-muted) !important;
+}
+
+.formIntro {
+  color: var(--workshop-text-muted) !important;
+}
+
+.authOption {
+  border-color: var(--workshop-border);
+  background: var(--workshop-surface-soft);
+}
+
+.submitButton {
+  background: var(--workshop-accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 9px 24px color-mix(in srgb, var(--workshop-accent) 25%, transparent) !important;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--workshop-accent-hover) !important;
+}
+
+.stateScreen {
+  background: var(--background, #0f172a);
+  color: var(--foreground, #f8fafc);
+}
+
+.selectionDrawer :global(.ant-drawer-content),
+.selectionDrawer :global(.ant-drawer-body) {
+  background: var(--workshop-page) !important;
+  color: var(--workshop-text);
+}
+
+.selectionSheet {
+  background: var(--workshop-page);
+  color: var(--workshop-text);
+}
+
+.selectionSheetGrip {
+  background: color-mix(in srgb, var(--workshop-page) 94%, transparent);
+}
+
+.selectionSheetGrip > span {
+  background: var(--workshop-border-strong);
+}
+
+.selectionSheetCard {
+  border-color: var(--workshop-border);
+  background: var(--workshop-panel);
+  box-shadow: var(--workshop-shadow);
+}
+
+.selectionSheetContent {
+  background: var(--workshop-surface-soft);
+}
+
+.selectionSheetFooter {
+  border-color: var(--workshop-border);
+  background: var(--workshop-panel);
+  box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.1);
+}
+
+.selectionSheet :global(.bg-white),
+.selectionSheet :global(.bg-slate-50),
+.selectionSheet :global(.bg-slate-100) {
+  background-color: var(--workshop-surface-raised) !important;
+}
+
+.selectionSheet :global(.text-slate-950),
+.selectionSheet :global(.text-slate-900),
+.selectionSheet :global(.text-slate-800),
+.selectionSheet :global(.text-slate-700) {
+  color: var(--workshop-text) !important;
+}
+
+.selectionSheet :global(.text-slate-600),
+.selectionSheet :global(.text-slate-500) {
+  color: var(--workshop-text-muted) !important;
+}
+
+.selectionSheet :global(.border-slate-200),
+.selectionSheet :global(.border-slate-100),
+.selectionSheet :global(.ring-slate-200) {
+  border-color: var(--workshop-border) !important;
+  --tw-ring-color: var(--workshop-border) !important;
+}
+
+.selectionSheet :global(.ant-radio-wrapper) {
+  color: var(--workshop-text);
+}
+
+.selectionSheet :global(.ant-radio-wrapper):hover {
+  border-color: var(--workshop-accent) !important;
+  background: var(--workshop-accent-soft) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell {
+    transition: none;
+  }
+}

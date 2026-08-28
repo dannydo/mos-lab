@@ -4,7 +4,17 @@ import React from 'react';
 import { Button, Form, Progress, Space, Tabs, message, theme } from 'antd';
 import dayjs from 'dayjs';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Gamepad2, ListChecks, Presentation, QrCode, Trophy, UserPlus, Users } from 'lucide-react';
+import {
+  Gamepad2,
+  ListChecks,
+  PackageCheck,
+  Presentation,
+  QrCode,
+  Trophy,
+  UserPlus,
+  Users,
+  UtensilsCrossed,
+} from 'lucide-react';
 import {
   isAdminOrSuperAdminRole,
   removeVietnameseTones,
@@ -28,6 +38,8 @@ import {
   AcademyWorkshopSettlement,
 } from '../../components/AcademyWorkshopWorkspaceSections';
 import AcademyWorkshopAgendaManager from '../../components/AcademyWorkshopAgendaManager';
+import AcademyWorkshopMenuManager from '../../components/AcademyWorkshopMenuManager';
+import AcademyWorkshopEquipmentManager from '../../components/AcademyWorkshopEquipmentManager';
 import { compressWorkshopImage } from '../../components/academy-workshop-image';
 import AcademyWorkshopParticipantOverlays, {
   type AcademyWorkshopFeeForm,
@@ -109,12 +121,12 @@ export default function AcademyWorkshopWorkspacePage() {
   React.useEffect(() => {
     if (!slug) return;
     const requestedTab = searchParams.get('tab');
-    if (requestedTab && ['roster', 'game', 'agenda', 'settlement'].includes(requestedTab)) {
+    if (requestedTab && ['roster', 'game', 'agenda', 'menu', 'equipment', 'settlement'].includes(requestedTab)) {
       setActiveTab(requestedTab);
       return;
     }
     const saved = window.localStorage.getItem(`academy-workshop:${slug}:active-tab`);
-    if (saved && ['roster', 'game', 'agenda', 'settlement'].includes(saved)) setActiveTab(saved);
+    if (saved && ['roster', 'game', 'agenda', 'menu', 'equipment', 'settlement'].includes(saved)) setActiveTab(saved);
   }, [searchParams, slug]);
 
   const load = React.useCallback(async () => {
@@ -701,6 +713,18 @@ export default function AcademyWorkshopWorkspacePage() {
                 onUpdated={setWorkshop}
                 onRefresh={load}
               />
+            ),
+          },
+          {
+            key: 'menu',
+            label: <IconText icon={<AppIcon icon={UtensilsCrossed} size="sm" />}>Thực đơn Việt Thái</IconText>,
+            children: <AcademyWorkshopMenuManager workshop={workshop} canEdit={canAccess} onUpdated={setWorkshop} />,
+          },
+          {
+            key: 'equipment',
+            label: <IconText icon={<AppIcon icon={PackageCheck} size="sm" />}>Dụng cụ thực hành</IconText>,
+            children: (
+              <AcademyWorkshopEquipmentManager workshop={workshop} canEdit={canAccess} onUpdated={setWorkshop} />
             ),
           },
           {

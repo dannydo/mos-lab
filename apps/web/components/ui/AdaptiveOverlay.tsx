@@ -46,7 +46,9 @@ export function AdaptiveModal({ intent = 'form', className = '', width, style, s
   // viewport while preserving the full-height workflow composition.
   const mobileModalWidth = 'calc(100vw - 16px)';
   const mobileModalStyle = isMobile ? { ...style, height: 'calc(100dvh - 16px)', margin: '8px auto', top: 0 } : style;
-  const mobileModalStyles = isMobile ? { ...styles, content: { ...styles?.content, height: '100%' } } : styles;
+  const mobileModalStyles = isMobile
+    ? { ...styles, content: { ...styles?.content, height: styles?.content?.height ?? '100%' } }
+    : styles;
 
   return (
     <Modal

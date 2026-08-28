@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Alert, Button, Form, Input, InputNumber, Popconfirm, Select, Space, message, theme } from 'antd';
+import dayjs from 'dayjs';
 import {
   ArrowDown,
   ArrowUp,
@@ -86,6 +87,21 @@ function agendaStatusTone(status: AcademyWorkshopAgendaItem['status']) {
   return 'default';
 }
 
+function buildPlannedAgendaTimeRanges(startsAt: string, agenda: AcademyWorkshopAgendaItem[]): Map<number, string> {
+  let cursor = dayjs(startsAt);
+
+  return new Map(
+    [...agenda]
+      .sort((left, right) => left.sortOrder - right.sortOrder || left.id - right.id)
+      .map((item) => {
+        const durationSeconds = Math.max(0, Math.round(item.plannedDurationSeconds));
+        const startsAtLabel = cursor.format('HH:mm');
+        cursor = cursor.add(durationSeconds, 'second');
+        return [item.id, `${startsAtLabel} – ${cursor.format('HH:mm')}`];
+      })
+  );
+}
+
 export default function AcademyWorkshopAgendaManager({
   workshop,
   canEdit,
@@ -118,6 +134,10 @@ export default function AcademyWorkshopAgendaManager({
     (selectedTemplate?.items.reduce((total, item) => total + item.plannedDurationSeconds, 0) || 0) / 60
   );
   const isCurrentTemplate = templateId === (workshop.agendaTemplate?.id || null);
+  const plannedAgendaTimeRanges = React.useMemo(
+    () => buildPlannedAgendaTimeRanges(workshop.startsAt, workshop.agenda),
+    [workshop.agenda, workshop.startsAt]
+  );
 
   const openCreate = React.useCallback(() => {
     setEditingItem(null);
@@ -366,6 +386,10 @@ export default function AcademyWorkshopAgendaManager({
                   </div>
                   <div className="academy-workshop-agenda-item__meta">
                     <span>{AGENDA_KIND_LABELS[item.kind]}</span>
+                    <span>·</span>
+                    <IconText icon={<AppIcon icon={Clock3} size="sm" />} tabular>
+                      {plannedAgendaTimeRanges.get(item.id) || '—'}
+                    </IconText>
                     <span>·</span>
                     <span className="tabular-nums">{Math.round(item.plannedDurationSeconds / 60)} phút</span>
                     {item.description ? <span>· {item.description}</span> : null}

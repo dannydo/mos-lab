@@ -1308,6 +1308,7 @@ model CrmAcademyWorkshop {
   capacity           Int       @default(100)
   feeVnd             Int       @default(0) @map("fee_vnd")
   feeDueAt           DateTime? @map("fee_due_at") @db.DateTime(0)
+  heroImageUrl       String?   @map("hero_image_url") @db.VarChar(512)
   status             String    @default("DRAFT") @db.VarChar(24)
   agendaPresetKey    String    @default("HAPPY_FRIDAY") @map("agenda_preset_key") @db.VarChar(48)
   agendaTemplateId   Int?      @map("agenda_template_id")
@@ -1325,6 +1326,8 @@ model CrmAcademyWorkshop {
   participants  CrmAcademyWorkshopParticipant[]
   participantEvents CrmAcademyWorkshopParticipantEvent[]
   agendaItems   CrmAcademyWorkshopAgendaItem[]
+  menuItems     CrmAcademyWorkshopMenuItem[]
+  equipmentPackages CrmAcademyWorkshopEquipmentPackage[]
   timelineEvents CrmAcademyWorkshopTimelineEvent[]
   quizzes       CrmAcademyWorkshopQuiz[]
   answers       CrmAcademyWorkshopAnswer[]
@@ -1403,6 +1406,8 @@ model CrmAcademyWorkshopParticipant {
   events              CrmAcademyWorkshopParticipantEvent[]
   feePayments         CrmAcademyWorkshopFeePayment[]
   photos              CrmAcademyWorkshopPhoto[]
+  menuSelections      CrmAcademyWorkshopParticipantMenuSelection[]
+  equipmentSelection  CrmAcademyWorkshopParticipantEquipmentSelection?
   assessments         CrmAcademyTalentAssessment[]
   answers             CrmAcademyWorkshopAnswer[]
   rewards             CrmAcademyWorkshopReward[]
@@ -1413,6 +1418,94 @@ model CrmAcademyWorkshopParticipant {
   @@index([workshopId, checkedInAt])
   @@index([primaryInstructorId])
   @@map("crm_academy_workshop_participants")
+}
+
+model CrmAcademyWorkshopMenuItem {
+  id          Int      @id @default(autoincrement())
+  workshopId  Int      @map("workshop_id")
+  category    String   @db.VarChar(24)
+  name        String   @db.VarChar(180)
+  description String?  @db.Text
+  imageUrl    String?  @map("image_url") @db.VarChar(512)
+  sortOrder   Int      @default(0) @map("sort_order")
+  isAvailable Boolean  @default(true) @map("is_available") @db.TinyInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  workshop   CrmAcademyWorkshop                        @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  selections CrmAcademyWorkshopParticipantMenuSelection[]
+
+  @@index([workshopId, category, sortOrder])
+  @@index([workshopId, isAvailable])
+  @@map("crm_academy_workshop_menu_items")
+}
+
+model CrmAcademyWorkshopParticipantMenuSelection {
+  id            Int      @id @default(autoincrement())
+  participantId Int      @map("participant_id")
+  menuItemId    Int?     @map("menu_item_id")
+  category      String   @db.VarChar(24)
+  itemName      String   @map("item_name") @db.VarChar(180)
+  selectedAt    DateTime @default(now()) @map("selected_at") @db.DateTime(0)
+
+  participant CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  menuItem    CrmAcademyWorkshopMenuItem?   @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  @@unique([participantId, category])
+  @@index([menuItemId])
+  @@map("crm_academy_workshop_participant_menu_selections")
+}
+
+model CrmAcademyWorkshopEquipmentPackage {
+  id                Int      @id @default(autoincrement())
+  workshopId        Int      @map("workshop_id")
+  name              String   @db.VarChar(180)
+  description       String?  @db.Text
+  includedItemsJson String   @map("included_items_json") @db.Text
+  priceVnd          Int      @map("price_vnd")
+  sortOrder         Int      @default(0) @map("sort_order")
+  isAvailable       Boolean  @default(true) @map("is_available") @db.TinyInt
+  createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  workshop   CrmAcademyWorkshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  selections CrmAcademyWorkshopParticipantEquipmentSelection[]
+  images     CrmAcademyWorkshopEquipmentPackageImage[]
+
+  @@index([workshopId, sortOrder])
+  @@index([workshopId, isAvailable])
+  @@map("crm_academy_workshop_equipment_packages")
+}
+
+model CrmAcademyWorkshopEquipmentPackageImage {
+  id                 Int      @id @default(autoincrement())
+  equipmentPackageId Int      @map("equipment_package_id")
+  imageUrl           String   @map("image_url") @db.VarChar(512)
+  altText            String?  @map("alt_text") @db.VarChar(180)
+  sortOrder          Int      @default(0) @map("sort_order")
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  equipmentPackage CrmAcademyWorkshopEquipmentPackage @relation(fields: [equipmentPackageId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentPackageId, sortOrder])
+  @@map("crm_academy_workshop_equipment_package_images")
+}
+
+model CrmAcademyWorkshopParticipantEquipmentSelection {
+  id                  Int      @id @default(autoincrement())
+  participantId       Int      @unique @map("participant_id")
+  equipmentPackageId  Int?     @map("equipment_package_id")
+  packageName         String   @map("package_name") @db.VarChar(180)
+  packageContentsJson String   @map("package_contents_json") @db.Text
+  priceVnd            Int      @map("price_vnd")
+  selectedAt          DateTime @default(now()) @map("selected_at") @db.DateTime(0)
+
+  participant      CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  equipmentPackage CrmAcademyWorkshopEquipmentPackage? @relation(fields: [equipmentPackageId], references: [id], onDelete: SetNull)
+
+  @@index([equipmentPackageId])
+  @@map("crm_academy_workshop_participant_equipment_selections")
 }
 
 model CrmAcademyWorkshopParticipantEvent {

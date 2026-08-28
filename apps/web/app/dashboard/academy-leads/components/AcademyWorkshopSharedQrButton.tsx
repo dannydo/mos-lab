@@ -4,6 +4,7 @@ import React from 'react';
 import { Button, Image, Switch, theme, message } from 'antd';
 import { CheckCircle2, Copy, ExternalLink, Link2, QrCode } from 'lucide-react';
 import { AdaptiveModal, AppIcon, IconButton, IconText } from '../../../../components/ui';
+import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
 
 export interface AcademyWorkshopSharedQrButtonProps {
   workshopName: string;
@@ -27,6 +28,8 @@ export default function AcademyWorkshopSharedQrButton({
   onRegistrationOpenChange,
 }: AcademyWorkshopSharedQrButtonProps) {
   const { token } = theme.useToken();
+  const responsiveTier = useResponsiveTier();
+  const isMobile = responsiveTier === 'mobile';
   const [open, setOpen] = React.useState(false);
   const [qrDataUrl, setQrDataUrl] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -113,16 +116,41 @@ export default function AcademyWorkshopSharedQrButton({
         }
         footer={null}
         width={560}
+        styles={
+          isMobile
+            ? {
+                content: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: 'calc(100dvh - 40px)',
+                  overflow: 'hidden',
+                },
+                header: { flex: '0 0 auto', marginBottom: 0, padding: '14px 16px 10px' },
+                body: {
+                  flex: '1 1 0',
+                  height: 0,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  overscrollBehavior: 'contain',
+                  padding: '0 12px 12px',
+                },
+              }
+            : undefined
+        }
         onCancel={() => setOpen(false)}
         destroyOnHidden
       >
-        <div className="pb-1 pt-2">
+        <div className={isMobile ? 'w-full min-w-0 pb-0 pt-1' : 'pb-1 pt-2'}>
           <div
-            className="rounded-3xl border p-3 sm:p-4"
+            className={isMobile ? 'rounded-2xl border p-2.5' : 'rounded-3xl border p-3 sm:p-4'}
             style={{ background: token.colorFillAlter, borderColor: token.colorBorderSecondary }}
           >
             <div
-              className="mb-3 flex items-center justify-between px-1 text-xs font-medium"
+              className={
+                isMobile
+                  ? 'mb-2 flex items-center justify-between px-0.5 text-[11px] font-medium'
+                  : 'mb-3 flex items-center justify-between px-1 text-xs font-medium'
+              }
               style={{ color: token.colorTextSecondary }}
             >
               <span className="flex items-center gap-1.5">
@@ -137,7 +165,11 @@ export default function AcademyWorkshopSharedQrButton({
               </span>
             </div>
             <div
-              className="flex min-h-[min(300px,calc(100vw-128px))] items-center justify-center overflow-hidden rounded-2xl p-3"
+              className={
+                isMobile
+                  ? 'flex min-h-[min(228px,calc(100vw-132px))] items-center justify-center overflow-hidden rounded-xl p-2'
+                  : 'flex min-h-[min(300px,calc(100vw-128px))] items-center justify-center overflow-hidden rounded-2xl p-3'
+              }
               style={{ background: token.colorBgContainer, boxShadow: token.boxShadowSecondary }}
             >
               {qrDataUrl ? (
@@ -145,11 +177,19 @@ export default function AcademyWorkshopSharedQrButton({
                   src={qrDataUrl}
                   alt={`QR chung ${workshopName}`}
                   preview={false}
-                  style={{ width: 'min(100%, 300px)', height: 'auto', display: 'block' }}
+                  style={{
+                    width: isMobile ? 'min(100%, 220px)' : 'min(100%, 300px)',
+                    height: 'auto',
+                    display: 'block',
+                  }}
                 />
               ) : (
                 <div
-                  className="flex h-[300px] items-center justify-center text-sm"
+                  className={
+                    isMobile
+                      ? 'flex h-[228px] items-center justify-center text-sm'
+                      : 'flex h-[300px] items-center justify-center text-sm'
+                  }
                   style={{ color: token.colorTextSecondary }}
                 >
                   {loading ? 'Đang tạo QR…' : 'Chưa có QR'}
@@ -158,11 +198,19 @@ export default function AcademyWorkshopSharedQrButton({
             </div>
           </div>
 
-          <div className="px-1 pt-5 text-center">
-            <div className="text-xl font-semibold tracking-tight" style={{ color: token.colorText }}>
+          <div className={isMobile ? 'px-0 pt-3 text-center' : 'px-1 pt-5 text-center'}>
+            <div
+              className={isMobile ? 'text-lg font-semibold tracking-tight' : 'text-xl font-semibold tracking-tight'}
+              style={{ color: token.colorText }}
+            >
               {isRegistrationQr ? 'Quét để đăng ký workshop' : 'Quét để chọn học viên'}
             </div>
-            <p className="mx-auto mt-1.5 max-w-md text-sm leading-6" style={{ color: token.colorTextSecondary }}>
+            <p
+              className={
+                isMobile ? 'mx-auto mt-1 max-w-md text-xs leading-5' : 'mx-auto mt-1.5 max-w-md text-sm leading-6'
+              }
+              style={{ color: token.colorTextSecondary }}
+            >
               {isRegistrationQr
                 ? 'Học viên xem agenda, điền thông tin và được đưa vào danh sách chờ Academy xác nhận.'
                 : 'Học viên có sẵn chọn avatar và tên; hồ sơ có SĐT sẽ được yêu cầu xác minh. Người chưa có trong danh sách đăng nhập Google/Gmail để tạo hồ sơ walk-in và tự check-in.'}
@@ -171,11 +219,19 @@ export default function AcademyWorkshopSharedQrButton({
 
           {isRegistrationQr && registrationOpen !== undefined ? (
             <div
-              className="mt-5 flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left"
+              className={
+                isMobile
+                  ? 'mt-3 flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left'
+                  : 'mt-5 flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left'
+              }
               style={{ background: token.colorFillAlter, borderColor: token.colorBorderSecondary }}
             >
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                className={
+                  isMobile
+                    ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg'
+                    : 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl'
+                }
                 style={{
                   background: registrationOpen ? token.colorSuccessBg : token.colorWarningBg,
                   color: registrationOpen ? token.colorSuccess : token.colorWarning,
@@ -187,7 +243,10 @@ export default function AcademyWorkshopSharedQrButton({
                 <div className="text-sm font-semibold" style={{ color: token.colorText }}>
                   {statusLabel}
                 </div>
-                <div className="mt-0.5 text-xs leading-5" style={{ color: token.colorTextSecondary }}>
+                <div
+                  className={isMobile ? 'mt-0.5 text-xs leading-4' : 'mt-0.5 text-xs leading-5'}
+                  style={{ color: token.colorTextSecondary }}
+                >
                   {statusDescription}
                 </div>
               </div>
@@ -202,7 +261,7 @@ export default function AcademyWorkshopSharedQrButton({
           ) : null}
 
           <div
-            className="mt-4 rounded-2xl border p-1.5"
+            className={isMobile ? 'mt-3 rounded-xl border p-1.5' : 'mt-4 rounded-2xl border p-1.5'}
             style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
           >
             <div
@@ -223,7 +282,13 @@ export default function AcademyWorkshopSharedQrButton({
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div
+            className={
+              isMobile
+                ? 'mt-3 flex flex-col-reverse gap-2 pb-1'
+                : 'mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
+            }
+          >
             <Button className="w-full sm:w-auto" onClick={() => setOpen(false)}>
               Đóng
             </Button>
