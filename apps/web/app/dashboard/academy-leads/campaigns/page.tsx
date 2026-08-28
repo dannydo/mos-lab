@@ -44,7 +44,6 @@ import {
   ACADEMY_CAMPAIGN_STATUS_OPTIONS,
   ACADEMY_CAMPAIGN_STATUS_TONES,
   formatCampaignDateRange,
-  isAcademyCampaignManager,
   readAcademyUserRole,
 } from './components/academy-campaign-utils';
 
@@ -100,7 +99,7 @@ function campaignMobileCard(campaign: AcademyCampaign, onOpen: (campaign: Academ
 }
 
 export default function AcademyCampaignsPage() {
-  const { canAccess: academyAllowed } = useAcademyAccess();
+  const { canAccess: academyAllowed, canManage } = useAcademyAccess();
   const router = useRouter();
   const [role, setRole] = React.useState('');
   const [hydrated, setHydrated] = React.useState(false);
@@ -127,7 +126,7 @@ export default function AcademyCampaignsPage() {
     window.localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(query));
   }, [hydrated, query]);
 
-  const canConfigure = isAcademyCampaignManager(role);
+  const canConfigure = canManage;
 
   const loadCampaigns = React.useCallback(async () => {
     if (!hydrated || !academyAllowed) return;

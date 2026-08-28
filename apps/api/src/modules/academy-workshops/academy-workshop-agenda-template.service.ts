@@ -8,7 +8,7 @@ import {
   type UpdateAcademyWorkshopAgendaTemplateRequest,
   type UpsertAcademyWorkshopAgendaItemRequest,
 } from '@mos-lab/shared';
-import { AcademySalesError, type AcademyActor } from '../academy-sales/academy-sales.service.js';
+import { AcademySalesError, canManageAcademySales, type AcademyActor } from '../academy-sales/academy-sales.service.js';
 
 const AGENDA_KINDS = new Set(['CONTENT', 'TALENT_TEST', 'GAME', 'BREAK', 'SALES', 'OTHER']);
 const TEMPLATE_INCLUDE = {
@@ -16,7 +16,7 @@ const TEMPLATE_INCLUDE = {
 };
 
 function manager(actor: AcademyActor) {
-  return ['admin', 'super_admin', 'manager'].includes(actor.role);
+  return canManageAcademySales(actor);
 }
 
 function templateId(value: unknown) {
@@ -78,7 +78,8 @@ export function toAcademyWorkshopAgendaTemplate(row: SafeAny): AcademyWorkshopAg
 
 export class AcademyWorkshopAgendaTemplateService {
   private static assertManager(actor: AcademyActor) {
-    if (!manager(actor)) throw new AcademySalesError('Chỉ Admin hoặc Quản lý được quản lý mẫu agenda.', 403);
+    if (!manager(actor))
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được quản lý mẫu agenda.', 403);
   }
 
   static async getRequired(fastify: FastifyInstance, value?: number | null) {

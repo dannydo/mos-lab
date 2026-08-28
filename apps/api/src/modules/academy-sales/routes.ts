@@ -26,13 +26,13 @@ import {
   type UpsertAcademyCourseRequest,
   type UpsertAcademyTalentInstructorRequest,
   type UpsertAcademyPlaybookRequest,
-  isAdminOrSuperAdminRole,
 } from '@mos-lab/shared';
 import { requireAuth } from '../../middlewares/auth.js';
 import {
   AcademySalesError,
   AcademySalesService,
   canAccessAcademySales,
+  canManageAcademySales,
   getAcademyWorkspaceAccess,
   type AcademyActor,
 } from './academy-sales.service.js';
@@ -51,6 +51,7 @@ function actorFrom(request: FastifyRequest): AcademyActor {
     displayName: user.displayName,
     email: user.email,
     academyAccess: (request as FastifyRequest & { academyAccess?: boolean }).academyAccess,
+    academyCrudAccess: (request as FastifyRequest & { academyCrudAccess?: boolean }).academyCrudAccess,
   };
 }
 
@@ -71,6 +72,7 @@ async function requireAcademyWorkspaceAccess(request: FastifyRequest, reply: Fas
     });
   }
   (request as FastifyRequest & { academyAccess?: boolean }).academyAccess = true;
+  (request as FastifyRequest & { academyCrudAccess?: boolean }).academyCrudAccess = access.canManage;
 }
 
 function parseId(value: string, label: string) {
@@ -99,22 +101,25 @@ function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown
 }
 
 function requireAcademyAdmin(actor: AcademyActor) {
-  if (!isAdminOrSuperAdminRole(actor.role) && actor.role !== 'manager') {
-    throw new AcademySalesError('Chỉ Admin hoặc Quản lý được chạy import và đồng bộ nguồn.', 403);
+  if (!canManageAcademySales(actor)) {
+    throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được chạy import và đồng bộ nguồn.', 403);
   }
 }
 
-/** Ladder rewards alter future tuition quotes, so this is deliberately admin-only. */
+/** Ladder rewards alter future tuition quotes, so this is limited to Academy workspace managers. */
 function requireAcademyLadderAdmin(actor: AcademyActor) {
-  if (!isAdminOrSuperAdminRole(actor.role)) {
-    throw new AcademySalesError('Chỉ Admin được cập nhật bậc thang học bổng Academy.', 403);
+  if (!canManageAcademySales(actor)) {
+    throw new AcademySalesError(
+      'Chỉ Admin, Quản lý hoặc Marketing & Sales được cập nhật bậc thang học bổng Academy.',
+      403
+    );
   }
 }
 
-/** Bank-transfer confirmations are accounting actions, not normal lead edits. */
+/** Bank-transfer confirmations are limited to Academy workspace managers. */
 function requireAcademyPaymentConfirmation(actor: AcademyActor) {
-  if (!isAdminOrSuperAdminRole(actor.role) && actor.role !== 'manager') {
-    throw new AcademySalesError('Chỉ Admin hoặc Quản lý được xác nhận tiền Academy đã nhận.', 403);
+  if (!canManageAcademySales(actor)) {
+    throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được xác nhận tiền Academy đã nhận.', 403);
   }
 }
 

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import AcademyTalentWorkshopDrawer from './AcademyTalentWorkshopDrawer';
 
 type TalentDrawerProps = React.ComponentProps<typeof AcademyTalentWorkshopDrawer>;
@@ -10,17 +9,19 @@ export interface AcademyLeadTalentWorkshopOverlayProps extends Omit<
   TalentDrawerProps,
   'canEditLadder' | 'canManageCourses' | 'canConfirmPayment'
 > {
-  role: string;
+  canManage: boolean;
 }
 
-export default function AcademyLeadTalentWorkshopOverlay({ role, ...props }: AcademyLeadTalentWorkshopOverlayProps) {
-  const canManage = isAdminOrSuperAdminRole(role);
+export default function AcademyLeadTalentWorkshopOverlay({
+  canManage,
+  ...props
+}: AcademyLeadTalentWorkshopOverlayProps) {
   return (
     <AcademyTalentWorkshopDrawer
       {...props}
       canEditLadder={canManage}
       canManageCourses={canManage}
-      canConfirmPayment={canManage || role === 'manager'}
+      canConfirmPayment={canManage}
     />
   );
 }

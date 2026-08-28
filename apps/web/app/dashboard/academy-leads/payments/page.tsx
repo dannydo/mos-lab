@@ -12,7 +12,6 @@ import type {
   AcademyTalentPaymentMethod,
   AcademyTalentPaymentTrace,
 } from '@mos-lab/shared';
-import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useAcademyAccess } from '../components/AcademyAccessGate';
 import { formatVND } from '../../../../lib/format-utils';
@@ -54,7 +53,7 @@ import {
 } from './payment-management.helpers';
 
 export default function AcademyPaymentManagementPage() {
-  const { canAccess: academyAllowed } = useAcademyAccess();
+  const { canAccess: academyAllowed, canManage } = useAcademyAccess();
   const [role, setRole] = React.useState('');
   const [month, setMonth] = React.useState<Dayjs>(persistedMonth);
   const [status, setStatus] = React.useState<AcademyTalentPaymentManagementStatus>(persistedStatus);
@@ -82,7 +81,6 @@ export default function AcademyPaymentManagementPage() {
   const traceRequestVersionRef = React.useRef(0);
 
   React.useEffect(() => setRole(currentRole()), []);
-  const canManage = isAdminOrSuperAdminRole(role) || role === 'manager';
 
   React.useEffect(() => {
     window.localStorage.setItem(PAGE_STORAGE_KEY, String(page));

@@ -83,7 +83,7 @@ function statusTone(status: AcademyWorkshopStatus) {
 }
 
 export default function AcademyWorkshopsPage() {
-  const { canAccess } = useAcademyAccess();
+  const { canAccess, canManage } = useAcademyAccess();
   const router = useRouter();
   const [form] = Form.useForm<WorkshopForm>();
   const [hydrated, setHydrated] = React.useState(false);
@@ -156,11 +156,12 @@ export default function AcademyWorkshopsPage() {
   }, [canAccess, form]);
 
   const openCreateWorkshop = React.useCallback(() => {
+    if (!canManage) return;
     if (!form.getFieldValue('agendaTemplateId') && agendaTemplates[0]) {
       form.setFieldValue('agendaTemplateId', agendaTemplates[0].id);
     }
     setOpen(true);
-  }, [agendaTemplates, form]);
+  }, [agendaTemplates, canManage, form]);
 
   const createWorkshop = React.useCallback(
     async (values: WorkshopForm) => {
@@ -319,7 +320,9 @@ export default function AcademyWorkshopsPage() {
           <Button icon={<AppIcon icon={RefreshCw} />} onClick={() => void load()} loading={loading}>
             Làm mới
           </Button>
-          <PagePrimaryIconAction title="Tạo workshop" icon={<AppIcon icon={Plus} />} onClick={openCreateWorkshop} />
+          {canManage && (
+            <PagePrimaryIconAction title="Tạo workshop" icon={<AppIcon icon={Plus} />} onClick={openCreateWorkshop} />
+          )}
         </Space>
       }
       toolbar={{
@@ -413,77 +416,79 @@ export default function AcademyWorkshopsPage() {
         />
       </DataSection>
 
-      <AdaptiveModal
-        open={open}
-        title="Tạo Academy workshop"
-        okText="Tạo workspace"
-        cancelText="Hủy"
-        confirmLoading={saving}
-        onCancel={() => setOpen(false)}
-        onOk={() => form.submit()}
-        width={760}
-        destroyOnHidden
-      >
-        <Form<WorkshopForm>
-          form={form}
-          layout="vertical"
-          onFinish={createWorkshop}
-          initialValues={{ capacity: 100, feeVnd: 0, showInSidebar: true }}
+      {canManage && (
+        <AdaptiveModal
+          open={open}
+          title="Tạo Academy workshop"
+          okText="Tạo workspace"
+          cancelText="Hủy"
+          confirmLoading={saving}
+          onCancel={() => setOpen(false)}
+          onOk={() => form.submit()}
+          width={760}
+          destroyOnHidden
         >
-          <div className="grid gap-x-4 md:grid-cols-2">
-            <Form.Item name="name" label="Tên workshop" rules={[{ required: true, message: 'Nhập tên workshop' }]}>
-              <Input placeholder="Workshop Tìm kiếm tài năng nối mi" />
-            </Form.Item>
-            <Form.Item name="slug" label="Slug (tùy chọn)">
-              <Input placeholder="workshop-to-chat-thang-9" />
-            </Form.Item>
-            <Form.Item name="schedule" label="Thời gian" rules={[{ required: true, message: 'Chọn thời gian' }]}>
-              <DatePicker.RangePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
-            </Form.Item>
-            <Form.Item name="location" label="Địa điểm" rules={[{ required: true, message: 'Nhập địa điểm' }]}>
-              <Input placeholder="Wings Academy · 123…" />
-            </Form.Item>
-            <Form.Item
-              name="agendaTemplateId"
-              label="Mẫu agenda"
-              rules={[{ required: true, message: 'Chọn mẫu agenda cho workshop.' }]}
-            >
-              <Select
-                loading={agendaTemplatesLoading}
-                options={agendaTemplates.map((template) => ({
-                  value: template.id,
-                  label: template.title,
-                }))}
-              />
-            </Form.Item>
-            <Form.Item name="capacity" label="Sức chứa tối đa">
-              <InputNumber min={1} max={100} precision={0} className="w-full" />
-            </Form.Item>
-            <Form.Item name="feeVnd" label="Phí tham dự">
-              <InputNumber<number>
-                min={0}
-                precision={0}
-                step={100000}
-                className="w-full"
-                formatter={(value, { userTyping }) => {
-                  if (value === undefined) return '';
-                  return userTyping ? String(value) : `${Math.round(Number(value)).toLocaleString('vi-VN')} đ`;
-                }}
-                parser={(value) => Number(String(value || '').replace(/\D/g, ''))}
-              />
-            </Form.Item>
-            <Form.Item name="feeDueAt" label="Hạn đóng phí">
-              <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
-            </Form.Item>
-            <Form.Item name="showInSidebar" label="Ghim nhanh ở menu" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="description" label="Mô tả" className="md:col-span-2">
-              <Input.TextArea rows={3} placeholder="Mục tiêu, đối tượng và thông tin vận hành…" />
-            </Form.Item>
-          </div>
-        </Form>
-      </AdaptiveModal>
+          <Form<WorkshopForm>
+            form={form}
+            layout="vertical"
+            onFinish={createWorkshop}
+            initialValues={{ capacity: 100, feeVnd: 0, showInSidebar: true }}
+          >
+            <div className="grid gap-x-4 md:grid-cols-2">
+              <Form.Item name="name" label="Tên workshop" rules={[{ required: true, message: 'Nhập tên workshop' }]}>
+                <Input placeholder="Workshop Tìm kiếm tài năng nối mi" />
+              </Form.Item>
+              <Form.Item name="slug" label="Slug (tùy chọn)">
+                <Input placeholder="workshop-to-chat-thang-9" />
+              </Form.Item>
+              <Form.Item name="schedule" label="Thời gian" rules={[{ required: true, message: 'Chọn thời gian' }]}>
+                <DatePicker.RangePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
+              </Form.Item>
+              <Form.Item name="location" label="Địa điểm" rules={[{ required: true, message: 'Nhập địa điểm' }]}>
+                <Input placeholder="Wings Academy · 123…" />
+              </Form.Item>
+              <Form.Item
+                name="agendaTemplateId"
+                label="Mẫu agenda"
+                rules={[{ required: true, message: 'Chọn mẫu agenda cho workshop.' }]}
+              >
+                <Select
+                  loading={agendaTemplatesLoading}
+                  options={agendaTemplates.map((template) => ({
+                    value: template.id,
+                    label: template.title,
+                  }))}
+                />
+              </Form.Item>
+              <Form.Item name="capacity" label="Sức chứa tối đa">
+                <InputNumber min={1} max={100} precision={0} className="w-full" />
+              </Form.Item>
+              <Form.Item name="feeVnd" label="Phí tham dự">
+                <InputNumber<number>
+                  min={0}
+                  precision={0}
+                  step={100000}
+                  className="w-full"
+                  formatter={(value, { userTyping }) => {
+                    if (value === undefined) return '';
+                    return userTyping ? String(value) : `${Math.round(Number(value)).toLocaleString('vi-VN')} đ`;
+                  }}
+                  parser={(value) => Number(String(value || '').replace(/\D/g, ''))}
+                />
+              </Form.Item>
+              <Form.Item name="feeDueAt" label="Hạn đóng phí">
+                <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
+              </Form.Item>
+              <Form.Item name="showInSidebar" label="Ghim nhanh ở menu" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name="description" label="Mô tả" className="md:col-span-2">
+                <Input.TextArea rows={3} placeholder="Mục tiêu, đối tượng và thông tin vận hành…" />
+              </Form.Item>
+            </div>
+          </Form>
+        </AdaptiveModal>
+      )}
     </FeaturePage>
   );
 }

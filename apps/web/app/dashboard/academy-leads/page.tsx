@@ -22,7 +22,6 @@ import {
   type SafeAny,
   type UpsertAcademyCourseRequest,
   type UpsertAcademyPlaybookRequest,
-  isAdminOrSuperAdminRole,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
@@ -115,7 +114,7 @@ function leadMobileCard(record: AcademyLead, onOpen: (lead: AcademyLead) => void
 
 export default function AcademyLeadsPage() {
   const workspace = useAcademySalesWorkspace('customers');
-  const { canAccess: academyAllowed } = useAcademyAccess();
+  const { canAccess: academyAllowed, canManage: canManageAcademy } = useAcademyAccess();
   const [role, setRole] = React.useState('');
   const [selectedLeadId, setSelectedLeadId] = React.useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -126,7 +125,7 @@ export default function AcademyLeadsPage() {
 
   React.useEffect(() => setRole(userRole()), []);
 
-  const isContentAdmin = isAdminOrSuperAdminRole(role) || role === 'manager';
+  const isContentAdmin = canManageAcademy;
   const openLead = React.useCallback((lead?: AcademyLead) => {
     setSelectedLeadId(lead?.id || null);
     setDrawerOpen(true);

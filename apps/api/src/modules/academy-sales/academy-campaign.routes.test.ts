@@ -4,7 +4,7 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import type { JwtUserPayload } from '../../middlewares/auth.js';
 import { academySalesRoutes } from './routes.js';
 
-test('GET campaign list keeps a rosterless campaign management-only', async () => {
+test('GET campaign list gives active Marketing & Sales members the Academy manager scope', async () => {
   const app = Fastify();
   const rosterlessCampaign = {
     id: 91,
@@ -32,18 +32,22 @@ test('GET campaign list keeps a rosterless campaign management-only', async () =
         update: async () => ({}),
         findUnique: async () => ({ legacyStaffId: null, role: 'admin', isActive: true }),
       },
-      crmTeamMember: { findFirst: async () => ({ id: 1 }) },
+      crmTeamMember: {
+        findFirst: async ({ where }: { where: { crmStaffId?: number; team?: { code?: string } } }) =>
+          where.team?.code === 'MARKETING_SALES' ? (where.crmStaffId === 193 ? { id: 2 } : null) : { id: 1 },
+      },
       crmAcademyCampaign: { findMany: async () => [rosterlessCampaign] },
     },
     legacy: {},
   } as unknown as FastifyInstance['prisma']);
   app.decorateRequest('user', null as unknown as JwtUserPayload);
   app.decorateRequest('jwtVerify', function (this: FastifyRequest) {
-    const role = this.headers['x-test-role'] === 'manager' ? 'manager' : 'telesales';
+    const testRole = String(this.headers['x-test-role'] || 'telesales');
+    const role = testRole === 'manager' ? 'manager' : 'telesales';
     this.user = {
-      id: role === 'manager' ? 191 : 192,
-      username: role,
-      displayName: role,
+      id: role === 'manager' ? 191 : testRole === 'marketing' ? 193 : 192,
+      username: testRole,
+      displayName: testRole,
       role,
       email: `${role}@example.test`,
     };
@@ -58,6 +62,14 @@ test('GET campaign list keeps a rosterless campaign management-only', async () =
   });
   assert.equal(manager.statusCode, 200);
   assert.equal(manager.json().total, 1);
+
+  const marketing = await app.inject({
+    method: 'GET',
+    url: '/academy-sales/campaigns',
+    headers: { 'x-test-role': 'marketing' },
+  });
+  assert.equal(marketing.statusCode, 200);
+  assert.equal(marketing.json().total, 1);
 
   const telesales = await app.inject({
     method: 'GET',
@@ -143,7 +155,7 @@ test('GET campaign sidebar only exposes pinned Academy links to admins or assign
     headers: { 'x-test-user': 'outsider' },
   });
   assert.equal(outsider.statusCode, 403);
-  assert.match(outsider.json().message, /đội Academy/);
+  assert.match(outsider.json().message, /Department Academy/);
 
   await app.close();
 });

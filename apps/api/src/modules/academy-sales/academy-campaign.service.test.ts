@@ -44,13 +44,14 @@ test('limits campaigns to their assigned team and never broadcasts an empty rost
   assert.equal(isCampaignVisibleToStaff({ assignedStaffIds: [19] }, { id: 1, role: 'manager' }, null), true);
 });
 
-test('shows a sidebar-pinned campaign to every admin but only assigned non-admin staff', () => {
+test('shows a sidebar-pinned campaign to each Academy workspace manager and assigned members', () => {
   const campaign = { assignedStaffIds: [19, 23] };
 
   assert.equal(isAcademyCampaignSidebarVisible(campaign, { id: 1, role: 'admin' }), true);
   assert.equal(isAcademyCampaignSidebarVisible(campaign, { id: 2, role: 'super_admin' }), true);
   assert.equal(isAcademyCampaignSidebarVisible(campaign, { id: 19, role: 'telesales' }), true);
-  assert.equal(isAcademyCampaignSidebarVisible(campaign, { id: 5, role: 'manager' }), false);
+  assert.equal(isAcademyCampaignSidebarVisible(campaign, { id: 5, role: 'manager' }), true);
+  assert.equal(isAcademyCampaignSidebarVisible(campaign, { id: 24, role: 'telesales', academyCrudAccess: true }), true);
   assert.equal(isAcademyCampaignSidebarVisible(campaign, { id: 99, role: 'ls' }), false);
   assert.equal(isAcademyCampaignSidebarVisible({ assignedStaffIds: [] }, { id: 19, role: 'telesales' }), false);
 });

@@ -29,9 +29,11 @@ export interface AcademyStaffOption {
   role: string;
 }
 
-/** Access is granted only to an Admin or an active member of the Academy team. */
+/** Access is granted only to an Admin or an active member of the Academy Department. */
 export interface AcademyWorkspaceAccess {
   canAccess: boolean;
+  /** Admins, Managers, and Marketing & Sales can manage Academy records. */
+  canManage: boolean;
   scope: 'ADMIN' | 'ACADEMY_TEAM' | null;
 }
 

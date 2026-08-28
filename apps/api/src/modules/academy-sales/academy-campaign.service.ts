@@ -26,13 +26,16 @@ import {
   type UpdateAcademyCampaignRequest,
   type AcademyLeadStatus,
   type SafeAny,
-  isAdminOrSuperAdminRole,
   removeVietnameseTones,
 } from '@mos-lab/shared';
-import { AcademySalesError, canAccessAcademySales, type AcademyActor } from './academy-sales.service.js';
+import {
+  AcademySalesError,
+  canAccessAcademySales,
+  canManageAcademySales,
+  type AcademyActor,
+} from './academy-sales.service.js';
 
 const ICT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
-const MANAGER_ROLES = new Set(['admin', 'super_admin', 'manager']);
 const TEAM_LEADER_ROLE = 'ls';
 const ACADEMY_STAFF_ROLES = ['admin', 'super_admin', 'manager', 'ls', 'telesales'];
 
@@ -54,7 +57,7 @@ function roleOf(actor: AcademyActor) {
 }
 
 function isManager(actor: AcademyActor) {
-  return isAdminOrSuperAdminRole(roleOf(actor)) || MANAGER_ROLES.has(roleOf(actor));
+  return canManageAcademySales(actor);
 }
 
 function isTeamLeader(actor: AcademyActor) {
@@ -375,7 +378,7 @@ export function isCampaignVisibleToStaff(
 
 /**
  * Sidebar links are deliberately stricter than campaign management access:
- * only admins receive every pinned campaign, while every other role must be
+ * only Academy workspace managers receive every pinned campaign, while every other role must be
  * explicitly in the campaign roster.  This prevents a manager/leader from
  * discovering an unrelated Academy campaign through navigation.
  */
@@ -383,7 +386,7 @@ export function isAcademyCampaignSidebarVisible(
   campaign: { assignedStaffIds?: string | number[] | null },
   actor: AcademyActor
 ) {
-  if (isAdminOrSuperAdminRole(roleOf(actor))) return true;
+  if (canManageAcademySales(actor)) return true;
   const assigned = Array.isArray(campaign.assignedStaffIds)
     ? toPositiveIntList(campaign.assignedStaffIds)
     : toPositiveIntList(parseJson<unknown>(campaign.assignedStaffIds, []));
@@ -400,14 +403,17 @@ export class AcademyCampaignService {
   private static assertCampaignManager(actor: AcademyActor) {
     this.assertAcademyAccess(actor);
     if (!isManager(actor)) {
-      throw new AcademySalesError('Chỉ Admin hoặc Quản lý được thiết lập chiến dịch Academy.', 403);
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được thiết lập chiến dịch Academy.', 403);
     }
   }
 
   private static assertCampaignOperator(actor: AcademyActor) {
     this.assertAcademyAccess(actor);
     if (!isManager(actor) && !isTeamLeader(actor)) {
-      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Leader Sales được thay đổi tệp khách chiến dịch.', 403);
+      throw new AcademySalesError(
+        'Chỉ Admin, Quản lý, Marketing & Sales hoặc Leader Sales được thay đổi tệp khách chiến dịch.',
+        403
+      );
     }
   }
 

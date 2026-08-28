@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { AcademyInstructorBonus, AcademyTalentAssessmentQuote, SafeAny } from '@mos-lab/shared';
-import { AcademySalesError, type AcademyActor } from '../academy-sales/academy-sales.service.js';
+import { AcademySalesError, canManageAcademySales, type AcademyActor } from '../academy-sales/academy-sales.service.js';
 
 function parseJson<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
@@ -134,8 +134,8 @@ export class AcademyWorkshopBonusService {
     status: 'PAID' | 'VOID',
     note?: string | null
   ) {
-    if (!['admin', 'super_admin', 'manager'].includes(actor.role)) {
-      throw new AcademySalesError('Chỉ Admin hoặc Quản lý được chốt thưởng giáo viên.', 403);
+    if (!canManageAcademySales(actor)) {
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được chốt thưởng giáo viên.', 403);
     }
     const existing = await fastify.prisma.crm.crmAcademyInstructorBonus.findUnique({ where: { id: bonusId } });
     if (!existing) throw new AcademySalesError('Không tìm thấy thưởng giáo viên.', 404);

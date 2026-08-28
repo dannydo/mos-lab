@@ -46,6 +46,7 @@ import {
   AcademySalesError,
   AcademySalesService,
   buildAcademyLeadSearchText,
+  canManageAcademySales,
   normalizeAcademyPhone,
   type AcademyActor,
 } from '../academy-sales/academy-sales.service.js';
@@ -70,7 +71,6 @@ const MENU_CATEGORIES = new Set<AcademyWorkshopMenuCategory>(ACADEMY_WORKSHOP_ME
 const MENU_CATEGORY_ORDER = new Map<AcademyWorkshopMenuCategory, number>(
   ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category, index) => [category, index])
 );
-const MANAGER_ROLES = new Set(['admin', 'super_admin', 'manager']);
 
 const STAFF_SELECT = { id: true, displayName: true, email: true };
 const PARTICIPANT_INCLUDE: SafeAny = {
@@ -573,7 +573,7 @@ function summarize(participants: AcademyWorkshopParticipant[]): AcademyWorkshopS
 }
 
 function canManage(actor: AcademyActor) {
-  return MANAGER_ROLES.has(actor.role);
+  return canManageAcademySales(actor);
 }
 
 export class AcademyWorkshopService {
@@ -726,7 +726,8 @@ export class AcademyWorkshopService {
   }
 
   static async create(fastify: FastifyInstance, actor: AcademyActor, input: CreateAcademyWorkshopRequest) {
-    if (!canManage(actor)) throw new AcademySalesError('Chỉ Admin hoặc Quản lý được tạo workshop.', 403);
+    if (!canManage(actor))
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được tạo workshop.', 403);
     const name = String(input.name || '').trim();
     const location = String(input.location || '').trim();
     if (!name || name.length > 150) throw new AcademySalesError('Tên workshop là bắt buộc và tối đa 150 ký tự.');
@@ -1681,7 +1682,8 @@ export class AcademyWorkshopService {
     waived: boolean,
     reason: string
   ) {
-    if (!canManage(actor)) throw new AcademySalesError('Chỉ Admin hoặc Quản lý được miễn phí workshop.', 403);
+    if (!canManage(actor))
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được miễn phí workshop.', 403);
     await this.participantRow(fastify, actor, workshopId, participantId);
     const cleanReason = String(reason || '').trim();
     if (waived && !cleanReason) throw new AcademySalesError('Cần nhập lý do miễn phí.');

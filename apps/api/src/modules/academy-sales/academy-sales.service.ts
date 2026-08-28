@@ -29,13 +29,21 @@ import {
   type SafeAny,
 } from '@mos-lab/shared';
 
-export type AcademyActor = { id: number; role: string; displayName?: string; email?: string; academyAccess?: boolean };
+export type AcademyActor = {
+  id: number;
+  role: string;
+  displayName?: string;
+  email?: string;
+  academyAccess?: boolean;
+  academyCrudAccess?: boolean;
+};
 
 const MANAGER_ROLES = new Set(['admin', 'super_admin', 'manager']);
 const TEAM_LEADER_ROLE = 'ls';
 const ACADEMY_ROLES = new Set(['admin', 'super_admin', 'manager', 'ls', 'telesales']);
 export const ACADEMY_TEAM_CODE = 'ACADEMY';
 export const ACADEMY_DEPARTMENT_CODE = 'ACADEMY';
+export const ACADEMY_MARKETING_SALES_TEAM_CODE = 'MARKETING_SALES';
 export const ACADEMY_TEAM_FALLBACK_CONFIG_KEY = 'ACTIVE_ACADEMY_STAFF_CONFIG';
 const ICT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 const HOT_WINDOW_HOURS = 72;
@@ -61,7 +69,7 @@ export class AcademySalesError extends Error {
 }
 
 function isManager(actor: AcademyActor) {
-  return isAdminOrSuperAdminRole(actor.role) || MANAGER_ROLES.has(actor.role);
+  return canManageAcademySales(actor);
 }
 
 function isTeamLeader(actor: AcademyActor) {
@@ -72,6 +80,14 @@ export function canAccessAcademySales(actor: AcademyActor) {
   return actor.academyAccess === true || ACADEMY_ROLES.has(actor.role);
 }
 
+/** Full Academy CRUD is explicitly granted to Admins, Managers, and Marketing & Sales. */
+export function canManageAcademySales(actor: AcademyActor) {
+  const role = String(actor.role || '')
+    .trim()
+    .toLowerCase();
+  return isAdminOrSuperAdminRole(role) || MANAGER_ROLES.has(role) || actor.academyCrudAccess === true;
+}
+
 /**
  * Authoritative workspace gate. Role names only determine what an approved
  * Academy user can do inside the workspace; active membership in an Academy
@@ -79,13 +95,21 @@ export function canAccessAcademySales(actor: AcademyActor) {
  */
 export async function getAcademyWorkspaceAccess(fastify: FastifyInstance, actor: AcademyActor) {
   if (isAdminOrSuperAdminRole(actor.role)) {
-    return { canAccess: true, scope: 'ADMIN' as const };
+    return { canAccess: true, canManage: true, scope: 'ADMIN' as const };
   }
 
   const isAcademyTeamMember =
     (await TeamService.isActiveCrmStaffMemberInDepartment(fastify, ACADEMY_DEPARTMENT_CODE, actor.id)) ||
     (await TeamService.isActiveCrmStaffMember(fastify, ACADEMY_TEAM_CODE, actor.id, ACADEMY_TEAM_FALLBACK_CONFIG_KEY));
-  return { canAccess: isAcademyTeamMember, scope: isAcademyTeamMember ? ('ACADEMY_TEAM' as const) : null };
+  const isMarketingSalesMember =
+    isAcademyTeamMember &&
+    (await TeamService.isActiveCrmStaffMember(fastify, ACADEMY_MARKETING_SALES_TEAM_CODE, actor.id, ''));
+  const canManage = isAcademyTeamMember && (canManageAcademySales(actor) || isMarketingSalesMember);
+  return {
+    canAccess: isAcademyTeamMember,
+    canManage,
+    scope: isAcademyTeamMember ? ('ACADEMY_TEAM' as const) : null,
+  };
 }
 
 export function normalizeAcademyPhone(value: string | null | undefined): string | null {
@@ -1049,7 +1073,8 @@ export class AcademySalesService {
     input: UpsertAcademyPlaybookRequest,
     id?: number
   ): Promise<AcademyPlaybook> {
-    if (!isManager(actor)) throw new AcademySalesError('Chỉ Admin hoặc Quản lý được sửa playbook.', 403);
+    if (!isManager(actor))
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được sửa playbook.', 403);
     const title = String(input.title || '').trim();
     const category = String(input.category || '').trim();
     const content = String(input.content || '').trim();
@@ -1084,7 +1109,8 @@ export class AcademySalesService {
     input: UpsertAcademyCourseRequest,
     id?: number
   ): Promise<AcademyCourse> {
-    if (!isManager(actor)) throw new AcademySalesError('Chỉ Admin hoặc Quản lý được sửa khóa học.', 403);
+    if (!isManager(actor))
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được sửa khóa học.', 403);
     const code = String(input.code || '')
       .trim()
       .toLowerCase();

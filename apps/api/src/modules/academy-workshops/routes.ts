@@ -57,6 +57,7 @@ function actorFrom(request: FastifyRequest): AcademyActor {
     displayName: request.user.displayName,
     email: request.user.email,
     academyAccess: (request as FastifyRequest & { academyAccess?: boolean }).academyAccess,
+    academyCrudAccess: (request as FastifyRequest & { academyCrudAccess?: boolean }).academyCrudAccess,
   };
 }
 
@@ -71,6 +72,7 @@ async function requireWorkshopAccess(request: FastifyRequest, reply: FastifyRepl
     });
   }
   (request as FastifyRequest & { academyAccess?: boolean }).academyAccess = true;
+  (request as FastifyRequest & { academyCrudAccess?: boolean }).academyCrudAccess = access.canManage;
 }
 
 function id(value: string, label: string) {

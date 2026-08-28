@@ -5,7 +5,7 @@ import { Button, Form, Input, InputNumber, Select, Space, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { BookOpen, Pencil, Plus, RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
-import { isAdminOrSuperAdminRole, removeVietnameseTones } from '@mos-lab/shared';
+import { removeVietnameseTones } from '@mos-lab/shared';
 import type { AcademyCourse, SafeAny, UpsertAcademyCourseRequest } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useAcademyAccess } from '../components/AcademyAccessGate';
@@ -92,7 +92,7 @@ function courseMobileCard(course: AcademyCourse, onOpen: (course: AcademyCourse)
 }
 
 export default function AcademyCoursesPage() {
-  const { canAccess: academyAllowed } = useAcademyAccess();
+  const { canAccess: academyAllowed, canManage: canManageAcademy } = useAcademyAccess();
   const [role, setRole] = React.useState('');
   const [courses, setCourses] = React.useState<AcademyCourse[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -106,7 +106,7 @@ export default function AcademyCoursesPage() {
 
   React.useEffect(() => setRole(currentRole()), []);
 
-  const canManageCourses = isAdminOrSuperAdminRole(role) || role === 'manager';
+  const canManageCourses = canManageAcademy;
 
   const loadCourses = React.useCallback(async () => {
     setLoading(true);

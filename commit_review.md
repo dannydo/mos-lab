@@ -2,54 +2,48 @@
 request_feedback: true
 ---
 
-# Commit review — Academy Marketing & Sales access
+# Commit review — Academy Marketing & Sales CRUD
 
 ## Danh sách file thay đổi
 
-| Khu vực                  | File                                                                                                                                                                                                                                            | Nội dung                                                                                                                              |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Academy workspace        | `apps/api/src/modules/academy-sales/academy-sales.service.ts`, `apps/api/src/modules/teams/team.service.ts`, `apps/api/src/modules/academy-sales/routes.ts`, `apps/api/src/modules/academy-workshops/routes.ts`                                 | Cấp workspace Academy cho thành viên active của các team thuộc Department Academy, gồm Marketing & Sales; vẫn giữ fallback roster cũ. |
-| Tuition data scope       | `apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts`, `apps/web/app/dashboard/academy-leads/payments/page.tsx`                                                                                                             | Thành viên không phải Manager chỉ xem học phí của lead trong phạm vi được giao; không thể xác nhận thu tiền.                          |
-| Sidebar & policy         | `packages/shared/src/types/menu-access.ts`, `apps/web/config/sidebar.config.tsx`, `apps/web/app/dashboard/academy-leads/components/AcademyAccessGate.tsx`                                                                                       | Thêm Workshop OS vào policy menu, hiển thị Thu học phí cho thành viên Academy đủ điều kiện và đồng bộ thông điệp quyền.               |
-| Tests                    | `apps/api/src/modules/academy-sales/academy-sales.service.test.ts`, `apps/api/src/modules/menu-access/menu-access.service.test.ts`                                                                                                              | Cover team Marketing & Sales, lead scope cho non-manager và Workshop OS visibility.                                                   |
-| Workshop registration UI | `apps/web/app/academy/workshops/components/AcademyWorkshopRegistrationHero.tsx`, `apps/web/app/academy/workshops/components/GoogleWorkshopJoinButton.tsx`, `apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx` | Di chuyển nút theme, tăng bề rộng Google sign-in và cho phép nút chiếm toàn vùng form.                                                |
-| Review artifact          | `commit_review.md`                                                                                                                                                                                                                              | Cập nhật review cho toàn bộ working tree hiện tại.                                                                                    |
+| Khu vực                | File                                                                                                                                                                                                                                                                                  | Nội dung                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Shared access contract | `packages/shared/src/types/academy-sales.ts`                                                                                                                                                                                                                                          | Thêm cờ `canManage` cho Academy workspace.                                                                                        |
+| Academy API            | `apps/api/src/modules/academy-sales/{academy-sales.service.ts,routes.ts,academy-campaign.service.ts,academy-talent-assessment.service.ts}`                                                                                                                                            | Cấp manager scope cho active `MARKETING_SALES` và áp dụng cho lead, campaign, học phí, khóa học, playbook, học bổng, import/sync. |
+| Workshop API           | `apps/api/src/modules/academy-workshops/{routes.ts,academy-workshop.service.ts,academy-workshop-agenda-template.service.ts,academy-workshop-live.service.ts,academy-workshop-bonus.service.ts}`                                                                                       | Áp dụng CRUD scope cho workshop, agenda, phần thưởng và thưởng giáo viên.                                                         |
+| Academy UI             | `apps/web/app/dashboard/academy-leads/{page.tsx,lead-manager/page.tsx,courses/page.tsx,payments/page.tsx,workshops/page.tsx,workshops/[slug]/page.tsx,campaigns/page.tsx,campaigns/[slug]/page.tsx,components/AcademyAccessGate.tsx,components/AcademyLeadTalentWorkshopOverlay.tsx}` | Hiển thị chính xác các thao tác CRUD theo quyền mới.                                                                              |
+| Tests                  | `apps/api/src/modules/academy-sales/{academy-sales.service.test.ts,academy-campaign.service.test.ts,academy-campaign.routes.test.ts}`                                                                                                                                                 | Kiểm thử Marketing & Sales có manager scope và telesales Academy thường không nhận quyền đó.                                      |
 
 ## Tóm tắt thay đổi
 
-- Marketing & Sales được công nhận là team Academy hợp lệ, nên có thể vào Học viên, Lead Manager, Chiến dịch, Workshop OS, Khóa học và Thu học phí.
-- Dữ liệu học phí của thành viên không phải Manager bị giới hạn theo lead scope; hành động xác nhận thu tiền vẫn chỉ dành cho Admin/Manager.
-- Workshop OS được quản trị qua policy menu thay vì là một submenu không có key quyền riêng.
-- Giao diện đăng ký workshop công khai có hero gọn hơn và Google sign-in rộng, dễ thao tác hơn.
+- Thành viên **đang hoạt động** của đúng team `MARKETING_SALES` nhận quyền CRUD toàn bộ Academy: Học viên, Lead Manager, Chiến dịch, Workshop OS, Khóa học, học bổng và Thu học phí.
+- Quyền được kiểm tra ở backend; giao diện chỉ phản ánh quyền từ API, không tự suy luận theo role frontend.
+- Thành viên Academy khác vẫn giữ phạm vi xem/thao tác theo quyền hiện hữu.
 
 ## Kiểm tra đã chạy
 
 - `pnpm --filter @mos-lab/shared build` — pass.
 - `pnpm --filter @mos-lab/api exec tsc --noEmit` — pass.
-- Scoped ESLint cho các file API, web và shared thay đổi — pass.
-- `pnpm exec tsx --test apps/api/src/modules/academy-sales/academy-sales.service.test.ts apps/api/src/modules/menu-access/menu-access.service.test.ts` — 16 tests pass.
+- Scoped ESLint API và web — pass.
+- 17 Academy service/campaign/route tests — pass.
 - `pnpm --filter @mos-lab/web build` — pass.
+- Kiểm tra giao diện Academy cục bộ — pass.
 - `git diff --check` — pass.
 
-## Production migration plan
-
-- CRM schema changes: **None**.
-- Production data migrations included in this commit: **None**.
-- `bash scripts/deploy/migration-plan.sh origin/main` báo `none` cho cả schema và data migrations.
-- `pnpm --filter @mos-lab/api data-migrations:validate` pass; đã xác thực 10 production migration hiện có. Không migration ID nào sẽ được chạy bởi commit này.
-
-## Commit đề xuất
+## Commit message đề xuất
 
 ```text
-feat(academy): grant marketing team workspace access
+feat(academy): grant marketing sales full CRUD access
 
-- Authorize active Academy Department teams and scope tuition ledgers to owned leads
-- Add Workshop OS to the menu-policy matrix and expose tuition view to eligible members
-- Polish the public workshop registration theme and Google sign-in layout
+- Grant active MARKETING_SALES members Academy management scope across leads, campaigns, workshops, courses, scholarships, and tuition payments
+- Surface the shared CRUD permission consistently in Academy UI and cover the access boundary with tests
 
 AI-assisted. Reviewed and verified.
 ```
 
-## Approval required
+## Production migration plan
 
-Reply **`Proceed`** để mình commit và push toàn bộ working tree theo message trên. Sau khi CI pass, mình sẽ xin xác nhận riêng trước khi deploy VPS.
+- CRM schema changes: **None**.
+- Pending production data migrations: **None**.
+- `migration-plan.sh origin/main`: no schema or data migrations.
+- `data-migrations:validate`: validated 10 existing production migration modules; no new migration will run.

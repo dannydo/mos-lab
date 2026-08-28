@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 import {
-  isAdminOrSuperAdminRole,
   ACADEMY_TALENT_STRANDS_5_MIN_MAX,
   ACADEMY_TALENT_PAYMENT_MODES,
   calculateAcademyTalentAssessmentResult,
@@ -45,6 +44,7 @@ import {
 import {
   AcademySalesError,
   AcademySalesService,
+  canManageAcademySales,
   getAcademyIctDayBounds,
   getAcademyIctMonthBounds,
   type AcademyActor,
@@ -1102,7 +1102,7 @@ export class AcademyTalentAssessmentService {
     actor: AcademyActor,
     params: ListAcademyTalentPaymentManagementParams
   ): Promise<ListAcademyTalentPaymentManagementResponse> {
-    const canManagePayments = isAdminOrSuperAdminRole(actor.role) || actor.role === 'manager';
+    const canManagePayments = canManageAcademySales(actor);
     const leadScope = canManagePayments ? {} : await AcademySalesService.getLeadAccessWhere(fastify, actor);
     const page = Math.max(1, toNonNegativeInteger(params.page, 1, 100000, 'Trang'));
     const limit = Math.max(1, toNonNegativeInteger(params.limit, 20, 100, 'Số dòng mỗi trang'));

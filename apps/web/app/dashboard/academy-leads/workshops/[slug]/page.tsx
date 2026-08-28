@@ -16,7 +16,6 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import {
-  isAdminOrSuperAdminRole,
   removeVietnameseTones,
   type AcademyInstructorBonus,
   type AcademyLead,
@@ -57,7 +56,6 @@ import {
   buildTalentSessions,
   talentAssessmentRequest,
   talentWorkshopView,
-  userRole,
 } from '../../lead-manager/lead-manager.helpers';
 import { useAcademyTalentResources } from '../../lead-manager/useAcademyTalentResources';
 import styles from './AcademyWorkshopWorkspace.module.css';
@@ -66,7 +64,7 @@ type WorkshopWorkspaceThemeStyle = React.CSSProperties & Record<`--academy-works
 
 export default function AcademyWorkshopWorkspacePage() {
   const { token } = theme.useToken();
-  const { canAccess } = useAcademyAccess();
+  const { canAccess, canManage } = useAcademyAccess();
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -99,7 +97,6 @@ export default function AcademyWorkshopWorkspacePage() {
   const [qrTargetUrl, setQrTargetUrl] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const [busyParticipantId, setBusyParticipantId] = React.useState<number | null>(null);
-  const [role, setRole] = React.useState('');
   const [talentLead, setTalentLead] = React.useState<AcademyTalentLead | null>(null);
   const [talentParticipantId, setTalentParticipantId] = React.useState<number | null>(null);
   const [talentOpen, setTalentOpen] = React.useState(false);
@@ -115,8 +112,6 @@ export default function AcademyWorkshopWorkspacePage() {
   const talentLadder = useAcademyTalentLadderConfiguration(canAccess);
   const { courses, talentInstructors, saveTalentCourseConfiguration } = useAcademyTalentResources(canAccess);
   const talentCourseRules = React.useMemo(() => academyTalentCourseSelectionRules(courses), [courses]);
-
-  React.useEffect(() => setRole(userRole()), []);
 
   React.useEffect(() => {
     if (!slug) return;
@@ -773,9 +768,9 @@ export default function AcademyWorkshopWorkspacePage() {
         courseSelectionRules={talentCourseRules}
         instructors={talentInstructors}
         ladderConfiguration={talentLadder.configuration}
-        canEditLadder={isAdminOrSuperAdminRole(role)}
-        canManageCourses={isAdminOrSuperAdminRole(role)}
-        canConfirmPayment={isAdminOrSuperAdminRole(role) || role === 'manager'}
+        canEditLadder={canManage}
+        canManageCourses={canManage}
+        canConfirmPayment={canManage}
         onClose={closeTalentAssessment}
         onPreviewQuote={previewTalentQuote}
         onSaveDraft={saveTalentDraft}

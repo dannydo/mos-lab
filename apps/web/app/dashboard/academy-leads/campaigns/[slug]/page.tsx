@@ -27,7 +27,6 @@ import {
   type UpsertAcademyCourseRequest,
   type UpdateAcademyCampaignRequest,
 } from '@mos-lab/shared';
-import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { apiClient } from '../../../../../lib/api-client';
 import {
   AppIcon,
@@ -57,7 +56,6 @@ import {
   ACADEMY_CAMPAIGN_STATUS_LABELS,
   ACADEMY_CAMPAIGN_STATUS_TONES,
   formatCampaignDateRange,
-  isAcademyCampaignManager,
   readAcademyUserRole,
 } from '../components/academy-campaign-utils';
 import {
@@ -77,7 +75,7 @@ import styles from './AcademyCampaignDetailPage.module.css';
 import { useCampaignLeadColumns } from './useCampaignLeadColumns';
 
 export default function AcademyCampaignDetailPage() {
-  const { canAccess: academyAllowed } = useAcademyAccess();
+  const { canAccess: academyAllowed, canManage } = useAcademyAccess();
   const router = useRouter();
   const routeParams = useParams<{ slug?: string | string[] }>();
   const slug = Array.isArray(routeParams.slug) ? routeParams.slug[0] || '' : routeParams.slug || '';
@@ -131,7 +129,7 @@ export default function AcademyCampaignDetailPage() {
   }, [hydrated, query, slug]);
 
   const talentLadder = useAcademyTalentLadderConfiguration(hydrated && academyAllowed);
-  const canConfigure = isAcademyCampaignManager(role);
+  const canConfigure = canManage;
   const canManageMembership = canConfigure || role === 'ls';
   // Mirrors the Academy API: DRAFT/SCHEDULED campaigns may capture early real
   // conversations, while paused and closed campaigns are intentionally read-only.
@@ -780,9 +778,9 @@ export default function AcademyCampaignDetailPage() {
         courseSelectionRules={talentCourseRules}
         instructors={talentInstructors}
         ladderConfiguration={talentLadder.configuration}
-        canEditLadder={isAdminOrSuperAdminRole(role)}
-        canManageCourses={isAdminOrSuperAdminRole(role)}
-        canConfirmPayment={isAdminOrSuperAdminRole(role) || role === 'manager'}
+        canEditLadder={canManage}
+        canManageCourses={canManage}
+        canConfirmPayment={canManage}
         onClose={closeTalentWorkshop}
         onPreviewQuote={previewTalentQuote}
         onSaveDraft={saveTalentDraft}

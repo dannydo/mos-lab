@@ -16,7 +16,7 @@ import {
   type UpsertAcademyWorkshopQuestionRequest,
   type UpsertAcademyWorkshopQuizRequest,
 } from '@mos-lab/shared';
-import { AcademySalesError, type AcademyActor } from '../academy-sales/academy-sales.service.js';
+import { AcademySalesError, canManageAcademySales, type AcademyActor } from '../academy-sales/academy-sales.service.js';
 import {
   AcademyWorkshopService,
   toAcademyWorkshopAgendaItem,
@@ -178,7 +178,7 @@ export function buildAcademyWorkshopQuizDraftReplacementData(
 }
 
 function manager(actor: AcademyActor) {
-  return ['admin', 'super_admin', 'manager'].includes(actor.role);
+  return canManageAcademySales(actor);
 }
 
 function parseJson<T>(value: string | null | undefined, fallback: T): T {
@@ -991,7 +991,8 @@ export class AcademyWorkshopLiveService {
     note?: string | null
   ) {
     await AcademyWorkshopService.rowById(fastify, actor, workshopId);
-    if (!manager(actor)) throw new AcademySalesError('Chỉ Admin hoặc Quản lý được chốt trao thưởng.', 403);
+    if (!manager(actor))
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được chốt trao thưởng.', 403);
     const existing = await fastify.prisma.crm.crmAcademyWorkshopReward.findFirst({
       where: { id: rewardId, workshopId },
     });
