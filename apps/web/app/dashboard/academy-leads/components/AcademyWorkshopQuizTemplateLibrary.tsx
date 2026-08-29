@@ -268,6 +268,7 @@ export default function AcademyWorkshopQuizTemplateLibrary({
 
         <div className="min-w-0">
           <AcademyWorkshopQuizManager
+            workshopId={workshopId}
             mode="TEMPLATE"
             quiz={creating ? null : selected}
             onCreateQuiz={createTemplate}

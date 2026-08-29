@@ -43,6 +43,19 @@ type RegistrationFormValues = Omit<RegisterAcademyWorkshopRequest, 'menuSelectio
   menuSelections?: Partial<Record<AcademyWorkshopMenuCategory, number>>;
 };
 
+const REGISTRATION_DRAFT_VERSION = 1;
+
+type WorkshopRegistrationDraft = {
+  version: typeof REGISTRATION_DRAFT_VERSION;
+  name?: string;
+  phone?: string;
+  email?: string;
+  goal?: string;
+  referrer?: string;
+  equipmentPackageId?: number;
+  menuSelections?: Partial<Record<AcademyWorkshopMenuCategory, number>>;
+};
+
 type WorkshopMenuSelectionSummary = {
   id: number;
   category: AcademyWorkshopMenuCategory;
@@ -50,6 +63,71 @@ type WorkshopMenuSelectionSummary = {
   name: string;
   imageUrl: string | null;
 };
+
+function draftText(value: unknown, maxLength: number) {
+  return typeof value === 'string' ? value.slice(0, maxLength) : undefined;
+}
+
+function draftSelectionId(value: unknown) {
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : undefined;
+}
+
+function registrationDraft(values: Partial<RegistrationFormValues>): WorkshopRegistrationDraft {
+  const menuSelections: Partial<Record<AcademyWorkshopMenuCategory, number>> = {};
+  for (const [category, itemId] of Object.entries(values.menuSelections || {})) {
+    const normalizedItemId = draftSelectionId(itemId);
+    if (normalizedItemId) menuSelections[category as AcademyWorkshopMenuCategory] = normalizedItemId;
+  }
+
+  return {
+    version: REGISTRATION_DRAFT_VERSION,
+    name: draftText(values.name, 160),
+    phone: draftText(values.phone, 32),
+    email: draftText(values.email, 320),
+    goal: draftText(values.goal, 2_000),
+    referrer: draftText(values.referrer, 300),
+    equipmentPackageId: draftSelectionId(values.equipmentPackageId),
+    menuSelections: Object.keys(menuSelections).length ? menuSelections : undefined,
+  };
+}
+
+function hasRegistrationDraftContent(draft: WorkshopRegistrationDraft) {
+  return Boolean(
+    draft.name?.trim() ||
+    draft.phone?.trim() ||
+    draft.email?.trim() ||
+    draft.goal?.trim() ||
+    draft.referrer?.trim() ||
+    draft.equipmentPackageId ||
+    Object.keys(draft.menuSelections || {}).length
+  );
+}
+
+function readRegistrationDraft(serialized: string | null): Partial<RegistrationFormValues> | null {
+  if (!serialized) return null;
+
+  try {
+    const raw = JSON.parse(serialized) as Record<string, unknown>;
+    if (!raw || raw.version !== REGISTRATION_DRAFT_VERSION) return null;
+
+    const draft = registrationDraft({
+      name: raw.name as string | undefined,
+      phone: raw.phone as string | undefined,
+      email: raw.email as string | undefined,
+      goal: raw.goal as string | undefined,
+      referrer: raw.referrer as string | undefined,
+      equipmentPackageId: raw.equipmentPackageId as number | undefined,
+      menuSelections: raw.menuSelections as Partial<Record<AcademyWorkshopMenuCategory, number>> | undefined,
+    });
+
+    if (!hasRegistrationDraftContent(draft)) return null;
+    const { version: _version, ...values } = draft;
+    return values;
+  } catch {
+    return null;
+  }
+}
 
 function useBottomSheetDragToDismiss(onDismiss: () => void, isOpen: boolean) {
   const pointerStartY = React.useRef<number | null>(null);
@@ -136,6 +214,45 @@ function formatCompactAgendaDuration(seconds: number) {
   return remainingMinutes ? `${hours}h ${remainingMinutes}p` : `${hours}h`;
 }
 
+function formatSelectionChangeCountdown(totalSeconds: number) {
+  const seconds = Math.max(0, Math.ceil(totalSeconds));
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  const remainingSeconds = seconds % 60;
+  const paddedHours = String(hours).padStart(2, '0');
+  const paddedMinutes = String(minutes).padStart(2, '0');
+  const paddedSeconds = String(remainingSeconds).padStart(2, '0');
+
+  return days > 0
+    ? `${days} ngày ${paddedHours}:${paddedMinutes}:${paddedSeconds}`
+    : `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
+}
+
+function useWorkshopSelectionChangeCountdown(deadlineAt: string | null | undefined, startsAt: string) {
+  const deadlineAtMs = React.useMemo(() => {
+    const configuredDeadlineMs = new Date(String(deadlineAt || '')).getTime();
+    if (Number.isFinite(configuredDeadlineMs)) return configuredDeadlineMs;
+
+    return new Date(startsAt).getTime();
+  }, [deadlineAt, startsAt]);
+  const [now, setNow] = React.useState(() => Date.now());
+
+  React.useEffect(() => {
+    const tick = () => setNow(Date.now());
+    tick();
+    const interval = window.setInterval(tick, 1_000);
+    return () => window.clearInterval(interval);
+  }, [deadlineAtMs]);
+
+  const remainingSeconds = Number.isFinite(deadlineAtMs) ? Math.max(0, Math.ceil((deadlineAtMs - now) / 1_000)) : null;
+
+  return {
+    locked: remainingSeconds === 0,
+    label: remainingSeconds == null ? 'Chưa xác định hạn' : `Còn ${formatSelectionChangeCountdown(remainingSeconds)}`,
+  };
+}
+
 function agendaKindMeta(kind: AcademyWorkshopAgendaKind) {
   switch (kind) {
     case 'TALENT_TEST':
@@ -157,21 +274,10 @@ function agendaKindMeta(kind: AcademyWorkshopAgendaKind) {
   }
 }
 
-function agendaSelectionSurface(title: string, equipmentRequired: boolean, menuRequired: boolean) {
-  const normalizedTitle = title
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase();
-
-  if (equipmentRequired && /\b(thuc hanh|practice)\b/.test(normalizedTitle)) return 'equipment';
-  if (menuRequired && /\b(nha hang|bua trua|an trua|lunch|dinner|viet thai)\b/.test(normalizedTitle)) return 'menu';
-  return null;
-}
-
 function WorkshopExperienceTimeline({
   startsAt,
+  menuSelectionDeadline,
+  equipmentSelectionDeadline,
   agenda,
   equipment,
   menu,
@@ -180,6 +286,8 @@ function WorkshopExperienceTimeline({
   onOpenSelectionSheet,
 }: {
   startsAt: string;
+  menuSelectionDeadline?: string | null;
+  equipmentSelectionDeadline?: string | null;
   agenda: AcademyWorkshopPublicRegistrationInfo['workshop']['agenda'];
   equipment: AcademyWorkshopPublicRegistrationInfo['workshop']['equipment'];
   menu: AcademyWorkshopPublicRegistrationInfo['workshop']['menu'];
@@ -188,6 +296,8 @@ function WorkshopExperienceTimeline({
   selectedMenuItems: WorkshopMenuSelectionSummary[];
   onOpenSelectionSheet: (selection: 'equipment' | 'menu') => void;
 }) {
+  const equipmentSelectionChangeCountdown = useWorkshopSelectionChangeCountdown(equipmentSelectionDeadline, startsAt);
+  const menuSelectionChangeCountdown = useWorkshopSelectionChangeCountdown(menuSelectionDeadline, startsAt);
   const timeline = React.useMemo(() => {
     let cursor = dayjs(startsAt);
     return [...agenda]
@@ -263,7 +373,6 @@ function WorkshopExperienceTimeline({
           {timeline.map(({ item, beginsAt, endsAt }) => {
             const meta = agendaKindMeta(item.kind);
             const KindIcon = meta.icon;
-            const selectionSurface = agendaSelectionSurface(item.title, equipment.required, menu.required);
             const hasCompleteMenuSelection =
               menu.categories.length > 0 && selectedMenuItems.length === menu.categories.length;
             return (
@@ -309,7 +418,7 @@ function WorkshopExperienceTimeline({
                   >
                     {meta.label}
                   </span>
-                  {selectionSurface === 'equipment' ? (
+                  {item.equipmentSelectionEnabled ? (
                     selectedEquipmentPackage ? (
                       <div className={`mt-3 overflow-hidden rounded-2xl ${styles.selectionSummary}`}>
                         <div className="flex items-start gap-3 p-3">
@@ -363,9 +472,29 @@ function WorkshopExperienceTimeline({
                         <button
                           type="button"
                           className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-xs font-medium transition ${styles.selectionSummaryAction}`}
+                          disabled={equipmentSelectionChangeCountdown.locked}
+                          title={
+                            equipmentSelectionChangeCountdown.locked
+                              ? 'Đã hết hạn thay đổi bộ dụng cụ.'
+                              : 'Bạn có thể thay đổi đến hạn chốt đã đặt.'
+                          }
                           onClick={() => onOpenSelectionSheet('equipment')}
                         >
-                          Thay đổi bộ dụng cụ <ArrowRight size={14} aria-hidden="true" />
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span>
+                              {equipmentSelectionChangeCountdown.locked ? 'Bộ dụng cụ đã chốt' : 'Thay đổi bộ dụng cụ'}
+                            </span>
+                            <span
+                              className={styles.selectionChangeCountdown}
+                              aria-live="polite"
+                              suppressHydrationWarning
+                            >
+                              {equipmentSelectionChangeCountdown.locked
+                                ? 'Đã chốt'
+                                : equipmentSelectionChangeCountdown.label}
+                            </span>
+                          </span>
+                          <ArrowRight size={14} aria-hidden="true" />
                         </button>
                       </div>
                     ) : (
@@ -373,6 +502,12 @@ function WorkshopExperienceTimeline({
                         type="button"
                         aria-haspopup="dialog"
                         className={`group mt-3 flex min-h-14 w-full items-center gap-3 rounded-2xl p-3 text-left transition ${styles.selectionAction}`}
+                        disabled={equipmentSelectionChangeCountdown.locked}
+                        title={
+                          equipmentSelectionChangeCountdown.locked
+                            ? 'Đã hết hạn chọn bộ dụng cụ.'
+                            : 'Chọn bộ dụng cụ trước hạn chốt.'
+                        }
                         onClick={() => onOpenSelectionSheet('equipment')}
                       >
                         <span
@@ -392,55 +527,64 @@ function WorkshopExperienceTimeline({
                       </button>
                     )
                   ) : null}
-                  {selectionSurface === 'menu' ? (
+                  {item.menuSelectionEnabled ? (
                     hasCompleteMenuSelection ? (
                       <div className={`mt-3 overflow-hidden rounded-2xl ${styles.selectionSummary}`}>
-                        <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-3">
+                        <div className={styles.selectionSummaryHeader}>
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+                            <span className={styles.selectionSummaryIcon}>
                               <AppIcon icon={UtensilsCrossed} size="sm" />
                             </span>
                             <div className="min-w-0">
-                              <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                Bữa trưa của bạn
-                              </p>
-                              <p className="mb-0 mt-0.5 text-xs font-medium text-slate-600">
-                                Đã gửi nhà hàng Việt Thái
+                              <p className={styles.selectionSummaryEyebrow}>Phần ăn của bạn</p>
+                              <p className={styles.selectionSummarySubcopy}>
+                                {selectedMenuItems.length} món đã sẵn sàng cho workshop
                               </p>
                             </div>
                           </div>
-                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white">
+                          <span className={styles.selectionSummaryStatus}>
                             <Check size={12} strokeWidth={3} aria-hidden="true" /> Đủ món
                           </span>
                         </div>
-                        <div className="grid gap-1.5 px-3 pb-3">
+                        <div className={styles.menuSelectionGrid}>
                           {selectedMenuItems.map((selection) => (
-                            <div
-                              key={selection.category}
-                              className="flex min-w-0 items-center gap-2 rounded-lg bg-white/80 p-1.5 ring-1 ring-amber-100"
-                            >
+                            <div key={selection.category} className={styles.menuSelectionItem}>
                               {selection.imageUrl ? (
-                                <img
-                                  src={selection.imageUrl}
-                                  alt=""
-                                  className="h-8 w-8 shrink-0 rounded-md object-cover"
-                                />
-                              ) : null}
+                                <img src={selection.imageUrl} alt="" className={styles.menuSelectionImage} />
+                              ) : (
+                                <span className={styles.menuSelectionFallback}>
+                                  <AppIcon icon={UtensilsCrossed} size="sm" />
+                                </span>
+                              )}
                               <div className="min-w-0">
-                                <p className="m-0 truncate text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
-                                  {selection.label}
-                                </p>
-                                <p className="m-0 truncate text-xs font-extrabold text-slate-900">{selection.name}</p>
+                                <p className={styles.menuSelectionLabel}>{selection.label}</p>
+                                <p className={styles.menuSelectionName}>{selection.name}</p>
                               </div>
                             </div>
                           ))}
                         </div>
                         <button
                           type="button"
-                          className="flex w-full items-center justify-between border-t border-slate-200 px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white"
+                          className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-xs font-semibold transition ${styles.selectionSummaryAction}`}
+                          disabled={menuSelectionChangeCountdown.locked}
+                          title={
+                            menuSelectionChangeCountdown.locked
+                              ? 'Đã hết hạn thay đổi phần ăn.'
+                              : 'Bạn có thể thay đổi đến hạn chốt đã đặt.'
+                          }
                           onClick={() => onOpenSelectionSheet('menu')}
                         >
-                          Thay đổi phần ăn <ArrowRight size={14} aria-hidden="true" />
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span>{menuSelectionChangeCountdown.locked ? 'Phần ăn đã chốt' : 'Đổi phần ăn'}</span>
+                            <span
+                              className={styles.selectionChangeCountdown}
+                              aria-live="polite"
+                              suppressHydrationWarning
+                            >
+                              {menuSelectionChangeCountdown.locked ? 'Đã chốt' : menuSelectionChangeCountdown.label}
+                            </span>
+                          </span>
+                          <ArrowRight size={14} aria-hidden="true" />
                         </button>
                       </div>
                     ) : (
@@ -448,6 +592,12 @@ function WorkshopExperienceTimeline({
                         type="button"
                         aria-haspopup="dialog"
                         className={`group mt-3 flex min-h-14 w-full items-center gap-3 rounded-2xl p-3 text-left transition ${styles.selectionAction}`}
+                        disabled={menuSelectionChangeCountdown.locked}
+                        title={
+                          menuSelectionChangeCountdown.locked
+                            ? 'Đã hết hạn chọn phần ăn.'
+                            : 'Chọn phần ăn trước hạn chốt.'
+                        }
                         onClick={() => onOpenSelectionSheet('menu')}
                       >
                         <span
@@ -635,6 +785,7 @@ export default function AcademyWorkshopRegistrationPage() {
   const [form] = Form.useForm<RegistrationFormValues>();
   const selectedMenuChoices = Form.useWatch('menuSelections', form);
   const selectedEquipmentPackageId = Form.useWatch('equipmentPackageId', form);
+  const selectionPersistenceReadyRef = React.useRef(false);
   const [info, setInfo] = React.useState<AcademyWorkshopPublicRegistrationInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
@@ -648,6 +799,36 @@ export default function AcademyWorkshopRegistrationPage() {
   const receiptStorageKey = React.useMemo(
     () => (code ? `academy-workshop-registration-receipt:${code}` : null),
     [code]
+  );
+  const draftStorageKey = React.useMemo(
+    () => (code ? `academy-workshop-registration-draft:v${REGISTRATION_DRAFT_VERSION}:${code}` : null),
+    [code]
+  );
+  const [draftRestored, setDraftRestored] = React.useState(false);
+  const clearDraft = React.useCallback(() => {
+    if (!draftStorageKey || typeof window === 'undefined') return;
+    try {
+      window.localStorage.removeItem(draftStorageKey);
+    } catch {
+      // Browsers can disable local storage; the registration flow must still work.
+    }
+  }, [draftStorageKey]);
+  const persistDraft = React.useCallback(
+    (values: RegistrationFormValues) => {
+      if (!draftStorageKey || !draftRestored || receipt) return;
+
+      try {
+        const draft = registrationDraft(values);
+        if (hasRegistrationDraftContent(draft)) {
+          window.localStorage.setItem(draftStorageKey, JSON.stringify(draft));
+        } else {
+          window.localStorage.removeItem(draftStorageKey);
+        }
+      } catch {
+        // Browsers can disable local storage; registration remains available without a local draft.
+      }
+    },
+    [draftRestored, draftStorageKey, receipt]
   );
   const rememberReceipt = React.useCallback(
     (message: string) => {
@@ -664,6 +845,7 @@ export default function AcademyWorkshopRegistrationPage() {
     try {
       setInfo(await apiClient.academyWorkshopsPublic.getRegistrationInfo(code));
     } catch (cause) {
+      setInfo(null);
       setError(failureMessage(cause, 'Không thể mở link đăng ký workshop.'));
     } finally {
       setLoading(false);
@@ -679,8 +861,60 @@ export default function AcademyWorkshopRegistrationPage() {
       setReceipt(null);
       return;
     }
-    setReceipt(window.sessionStorage.getItem(receiptStorageKey));
-  }, [receiptStorageKey]);
+    const storedReceipt = window.sessionStorage.getItem(receiptStorageKey);
+    setReceipt(storedReceipt);
+    if (storedReceipt) clearDraft();
+  }, [clearDraft, receiptStorageKey]);
+
+  React.useEffect(() => {
+    setDraftRestored(false);
+    selectionPersistenceReadyRef.current = false;
+    form.resetFields();
+
+    if (draftStorageKey) {
+      try {
+        const draft = readRegistrationDraft(window.localStorage.getItem(draftStorageKey));
+        if (draft) form.setFieldsValue(draft);
+      } catch {
+        // Browsers can disable local storage; the registration flow must still work.
+      }
+    }
+
+    setDraftRestored(true);
+  }, [draftStorageKey, form]);
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      selectionPersistenceReadyRef.current = true;
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [draftStorageKey]);
+
+  React.useEffect(() => {
+    if (!draftRestored || !selectionPersistenceReadyRef.current) return;
+    persistDraft({
+      ...(form.getFieldsValue(true) as RegistrationFormValues),
+      equipmentPackageId: draftSelectionId(selectedEquipmentPackageId),
+      menuSelections: (selectedMenuChoices || {}) as Partial<Record<AcademyWorkshopMenuCategory, number>>,
+    });
+  }, [draftRestored, form, persistDraft, selectedEquipmentPackageId, selectedMenuChoices]);
+
+  React.useEffect(() => {
+    const persistBeforeLeaving = () => {
+      persistDraft({
+        ...(form.getFieldsValue(true) as RegistrationFormValues),
+        equipmentPackageId: draftSelectionId(selectedEquipmentPackageId),
+        menuSelections: (selectedMenuChoices || {}) as Partial<Record<AcademyWorkshopMenuCategory, number>>,
+      });
+    };
+
+    window.addEventListener('beforeunload', persistBeforeLeaving);
+    window.addEventListener('pagehide', persistBeforeLeaving);
+    return () => {
+      window.removeEventListener('beforeunload', persistBeforeLeaving);
+      window.removeEventListener('pagehide', persistBeforeLeaving);
+    };
+  }, [form, persistDraft, selectedEquipmentPackageId, selectedMenuChoices]);
 
   React.useEffect(() => {
     const hash = new URLSearchParams(window.location.hash.slice(1));
@@ -694,7 +928,11 @@ export default function AcademyWorkshopRegistrationPage() {
       setZaloTicket(ticket);
       setGoogleCredential(null);
       setError(null);
-      if (profile.name) form.setFieldValue('name', profile.name);
+      if (profile.name) {
+        const values = { ...form.getFieldsValue(true), name: profile.name } as RegistrationFormValues;
+        form.setFieldsValue(values);
+        persistDraft(values);
+      }
       void apiClient.academyWorkshopsPublic
         .findRegistrationWithZalo(code, { ticket })
         .then((existingRegistration) => {
@@ -704,7 +942,7 @@ export default function AcademyWorkshopRegistrationPage() {
       return;
     }
     setError('Bạn chưa hoàn tất đăng nhập Zalo. Vui lòng thử lại.');
-  }, [code, form, rememberReceipt]);
+  }, [code, form, persistDraft, rememberReceipt]);
 
   const submit = React.useCallback(async () => {
     try {
@@ -735,6 +973,7 @@ export default function AcademyWorkshopRegistrationPage() {
               equipmentPackageId: registration.equipmentPackageId,
             } satisfies RegisterAcademyWorkshopWithZaloRequest)
           : await apiClient.academyWorkshopsPublic.register(code, registration);
+      clearDraft();
       rememberReceipt(result.message);
       await load();
     } catch (cause) {
@@ -749,17 +988,18 @@ export default function AcademyWorkshopRegistrationPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [code, form, googleCredential, load, rememberReceipt, zaloTicket]);
+  }, [clearDraft, code, form, googleCredential, load, rememberReceipt, zaloTicket]);
 
   const startAnotherRegistration = React.useCallback(() => {
     if (receiptStorageKey) window.sessionStorage.removeItem(receiptStorageKey);
+    clearDraft();
     setReceipt(null);
     setGoogleCredential(null);
     setZaloTicket(null);
     setActiveSelectionSheet(null);
     setError(null);
     form.resetFields();
-  }, [form, receiptStorageKey]);
+  }, [clearDraft, form, receiptStorageKey]);
 
   const receiveGoogleCredential = React.useCallback(
     async (credential: string) => {
@@ -767,10 +1007,13 @@ export default function AcademyWorkshopRegistrationPage() {
       setGoogleCredential(credential);
       setZaloTicket(null);
       setError(null);
-      form.setFieldsValue({
+      const values = {
+        ...form.getFieldsValue(true),
         name: profile.name || form.getFieldValue('name'),
         email: profile.email || form.getFieldValue('email'),
-      });
+      } as RegistrationFormValues;
+      form.setFieldsValue(values);
+      persistDraft(values);
       try {
         const existingRegistration = await apiClient.academyWorkshopsPublic.findRegistrationWithGoogle(code, {
           credential,
@@ -780,7 +1023,7 @@ export default function AcademyWorkshopRegistrationPage() {
         // A status lookup must not block a learner from completing a new registration.
       }
     },
-    [code, form, rememberReceipt]
+    [code, form, persistDraft, rememberReceipt]
   );
 
   if (loading) {
@@ -842,6 +1085,8 @@ export default function AcademyWorkshopRegistrationPage() {
 
           <WorkshopExperienceTimeline
             startsAt={workshop.startsAt}
+            menuSelectionDeadline={workshop.menuSelectionDeadline}
+            equipmentSelectionDeadline={workshop.equipmentSelectionDeadline}
             agenda={workshop.agenda}
             equipment={workshop.equipment}
             menu={workshop.menu}
@@ -986,7 +1231,16 @@ export default function AcademyWorkshopRegistrationPage() {
                       </Divider>
                     </>
                   )}
-                  <Form form={form} layout="vertical" requiredMark="optional">
+                  <Form
+                    form={form}
+                    layout="vertical"
+                    requiredMark="optional"
+                    onValuesChange={(_changedValues, values) => persistDraft(values as RegistrationFormValues)}
+                  >
+                    <p className={`-mt-1 mb-4 text-xs leading-5 ${styles.mutedText}`}>
+                      Thông tin và lựa chọn của bạn tự lưu trên thiết bị này. Khi gửi đăng ký, Academy sẽ lưu xác nhận
+                      của bạn lâu dài.
+                    </p>
                     <Form.Item
                       label="Họ và tên"
                       name="name"
@@ -1040,6 +1294,7 @@ export default function AcademyWorkshopRegistrationPage() {
                         placement="bottom"
                         closable={false}
                         destroyOnClose={false}
+                        forceRender
                         rootClassName={styles.selectionDrawer}
                         height="min(860px, calc(100dvh - 16px))"
                         onClose={closeSelectionSheet}
@@ -1202,6 +1457,7 @@ export default function AcademyWorkshopRegistrationPage() {
                         placement="bottom"
                         closable={false}
                         destroyOnClose={false}
+                        forceRender
                         rootClassName={styles.selectionDrawer}
                         height="min(860px, calc(100dvh - 16px))"
                         onClose={closeSelectionSheet}

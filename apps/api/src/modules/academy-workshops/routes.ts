@@ -18,10 +18,15 @@ import type {
   CreateAcademyWorkshopWalkInRequest,
   ListAcademyWorkshopQuizTemplatesParams,
   ListAcademyWorkshopAgendaTemplatesParams,
+  ListAcademyWorkshopEquipmentTemplatesParams,
+  ListAcademyWorkshopMenuTemplatesParams,
   ListAcademyWorkshopParticipantsParams,
   ListAcademyWorkshopsParams,
   RecordAcademyWorkshopFeeRequest,
   ReorderAcademyWorkshopAgendaRequest,
+  SaveAcademyWorkshopEquipmentTemplateRequest,
+  SaveAcademyWorkshopMenuTemplateRequest,
+  SetAcademyWorkshopAgendaResourceRequest,
   SetAcademyWorkshopPhotoConsentRequest,
   UpdateAcademyInstructorBonusRequest,
   UpdateAcademyWorkshopCareRequest,
@@ -30,6 +35,7 @@ import type {
   UpdateAcademyWorkshopMenuItemRequest,
   UpdateAcademyWorkshopEquipmentPackageRequest,
   UpdateAcademyWorkshopEquipmentPackageImageRequest,
+  UpdateAcademyWorkshopEquipmentTemplateRequest,
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
@@ -48,6 +54,8 @@ import { AcademyTalentAssessmentService } from '../academy-sales/academy-talent-
 import { AcademyWorkshopBonusService } from './academy-workshop-bonus.service.js';
 import { AcademyWorkshopAgendaTemplateService } from './academy-workshop-agenda-template.service.js';
 import { AcademyWorkshopLiveService } from './academy-workshop-live.service.js';
+import { AcademyWorkshopEquipmentTemplateService } from './academy-workshop-equipment-template.service.js';
+import { AcademyWorkshopMenuTemplateService } from './academy-workshop-menu-template.service.js';
 import { AcademyWorkshopService } from './academy-workshop.service.js';
 
 function actorFrom(request: FastifyRequest): AcademyActor {
@@ -141,6 +149,73 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, message: 'Đã xóa mẫu agenda.' });
     } catch (cause) {
       return error(fastify, reply, cause, 'Delete workshop agenda template');
+    }
+  });
+
+  fastify.get('/academy-sales/workshop-menu-templates', async (request, reply) => {
+    try {
+      return reply.send(
+        await AcademyWorkshopMenuTemplateService.list(
+          fastify,
+          actorFrom(request),
+          request.query as ListAcademyWorkshopMenuTemplatesParams
+        )
+      );
+    } catch (cause) {
+      return error(fastify, reply, cause, 'List workshop menu templates');
+    }
+  });
+
+  fastify.delete('/academy-sales/workshop-menu-templates/:templateId', async (request, reply) => {
+    try {
+      const { templateId } = request.params as { templateId: string };
+      await AcademyWorkshopMenuTemplateService.delete(fastify, actorFrom(request), id(templateId, 'Mẫu thực đơn'));
+      return reply.send({ success: true, message: 'Đã xóa mẫu thực đơn.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Delete workshop menu template');
+    }
+  });
+
+  fastify.get('/academy-sales/workshop-equipment-templates', async (request, reply) => {
+    try {
+      return reply.send(
+        await AcademyWorkshopEquipmentTemplateService.list(
+          fastify,
+          actorFrom(request),
+          request.query as ListAcademyWorkshopEquipmentTemplatesParams
+        )
+      );
+    } catch (cause) {
+      return error(fastify, reply, cause, 'List workshop equipment templates');
+    }
+  });
+
+  fastify.put('/academy-sales/workshop-equipment-templates/:templateId', async (request, reply) => {
+    try {
+      const { templateId } = request.params as { templateId: string };
+      const data = await AcademyWorkshopEquipmentTemplateService.update(
+        fastify,
+        actorFrom(request),
+        id(templateId, 'Mẫu bộ dụng cụ'),
+        request.body as UpdateAcademyWorkshopEquipmentTemplateRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật mẫu bộ dụng cụ.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Update workshop equipment template');
+    }
+  });
+
+  fastify.delete('/academy-sales/workshop-equipment-templates/:templateId', async (request, reply) => {
+    try {
+      const { templateId } = request.params as { templateId: string };
+      await AcademyWorkshopEquipmentTemplateService.delete(
+        fastify,
+        actorFrom(request),
+        id(templateId, 'Mẫu bộ dụng cụ')
+      );
+      return reply.send({ success: true, message: 'Đã xóa mẫu bộ dụng cụ.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Delete workshop equipment template');
     }
   });
 
@@ -329,6 +404,21 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.post('/academy-sales/workshops/:workshopId/quiz-images/upload', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.uploadQuizImage(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as CreateAcademyWorkshopPublicMediaUploadRequest
+      );
+      return reply.send({ data });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Upload workshop quiz image');
+    }
+  });
+
   fastify.post('/academy-sales/workshops/:workshopId/menu-items', async (request, reply) => {
     try {
       const { workshopId } = request.params as { workshopId: string };
@@ -344,6 +434,51 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.post('/academy-sales/workshops/:workshopId/menu-templates', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.saveMenuAsTemplate(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as SaveAcademyWorkshopMenuTemplateRequest
+      );
+      return reply.status(201).send({ success: true, data, message: 'Đã lưu mẫu thực đơn.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Save workshop menu template');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh', async (request, reply) => {
+    try {
+      const { workshopId, templateId } = request.params as { workshopId: string; templateId: string };
+      const data = await AcademyWorkshopService.refreshMenuTemplateFromWorkshop(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(templateId, 'Mẫu thực đơn')
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật nội dung mẫu từ workshop hiện tại.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Refresh workshop menu template');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply', async (request, reply) => {
+    try {
+      const { workshopId, templateId } = request.params as { workshopId: string; templateId: string };
+      const data = await AcademyWorkshopService.applyMenuTemplate(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(templateId, 'Mẫu thực đơn')
+      );
+      return reply.send({ success: true, data, message: 'Đã áp dụng mẫu thực đơn.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Apply workshop menu template');
+    }
+  });
+
   fastify.post('/academy-sales/workshops/:workshopId/menu-items/upload-image', async (request, reply) => {
     try {
       const { workshopId } = request.params as { workshopId: string };
@@ -356,6 +491,36 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return reply.send({ data });
     } catch (cause) {
       return error(fastify, reply, cause, 'Upload workshop menu image');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/menu-service', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.setMenuAgendaItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as SetAcademyWorkshopAgendaResourceRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật mốc phục vụ thực đơn.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Set workshop menu service agenda item');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/equipment-service', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.setEquipmentAgendaItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as SetAcademyWorkshopAgendaResourceRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật mốc sử dụng dụng cụ.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Set workshop equipment service agenda item');
     }
   });
 
@@ -402,6 +567,54 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ success: true, data, message: 'Đã thêm bộ dụng cụ.' });
     } catch (cause) {
       return error(fastify, reply, cause, 'Create workshop equipment package');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/equipment-templates', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.saveEquipmentAsTemplate(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        request.body as SaveAcademyWorkshopEquipmentTemplateRequest
+      );
+      return reply.status(201).send({ success: true, data, message: 'Đã lưu mẫu bộ dụng cụ.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Save workshop equipment template');
+    }
+  });
+
+  fastify.post(
+    '/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh',
+    async (request, reply) => {
+      try {
+        const { workshopId, templateId } = request.params as { workshopId: string; templateId: string };
+        const data = await AcademyWorkshopService.refreshEquipmentTemplateFromWorkshop(
+          fastify,
+          actorFrom(request),
+          id(workshopId, 'Workshop ID'),
+          id(templateId, 'Mẫu bộ dụng cụ')
+        );
+        return reply.send({ success: true, data, message: 'Đã cập nhật nội dung mẫu từ workshop hiện tại.' });
+      } catch (cause) {
+        return error(fastify, reply, cause, 'Refresh workshop equipment template');
+      }
+    }
+  );
+
+  fastify.post('/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply', async (request, reply) => {
+    try {
+      const { workshopId, templateId } = request.params as { workshopId: string; templateId: string };
+      const data = await AcademyWorkshopService.applyEquipmentTemplate(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(templateId, 'Mẫu bộ dụng cụ')
+      );
+      return reply.send({ success: true, data, message: 'Đã áp dụng mẫu bộ dụng cụ.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Apply workshop equipment template');
     }
   });
 
@@ -945,6 +1158,22 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.put('/academy-sales/workshops/:workshopId/quizzes/:quizId/agenda-item', async (request, reply) => {
+    try {
+      const { workshopId, quizId } = request.params as { workshopId: string; quizId: string };
+      const data = await AcademyWorkshopLiveService.setQuizAgendaItem(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(quizId, 'Game ID'),
+        request.body as SetAcademyWorkshopAgendaResourceRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật mốc chạy game.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Set workshop quiz agenda item');
+    }
+  });
+
   fastify.post('/academy-sales/workshops/:workshopId/quizzes/:quizId/clone', async (request, reply) => {
     try {
       const { workshopId, quizId } = request.params as { workshopId: string; quizId: string };
@@ -974,6 +1203,21 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return reply.status(201).send({ success: true, data, message: 'Đã lưu game thành mẫu dùng chung.' });
     } catch (cause) {
       return error(fastify, reply, cause, 'Save workshop quiz as template');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/quizzes/:quizId/template/refresh', async (request, reply) => {
+    try {
+      const { workshopId, quizId } = request.params as { workshopId: string; quizId: string };
+      const data = await AcademyWorkshopLiveService.refreshQuizTemplateFromWorkshop(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(quizId, 'Quiz ID')
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật mẫu game từ bộ câu hỏi hiện tại.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Refresh workshop quiz template');
     }
   });
 

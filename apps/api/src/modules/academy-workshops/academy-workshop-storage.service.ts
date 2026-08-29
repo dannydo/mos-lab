@@ -184,7 +184,7 @@ export class AcademyWorkshopStorageService {
 
   static async uploadPublicMedia(
     workshopId: number,
-    area: 'menu-items' | 'equipment-images' | 'hero-images',
+    area: 'menu-items' | 'equipment-images' | 'hero-images' | 'quiz-images',
     input: CreateAcademyWorkshopPublicMediaUploadRequest
   ): Promise<AcademyWorkshopPublicMediaUploadResult> {
     this.validateImage(input.mimeType, input.sizeBytes);

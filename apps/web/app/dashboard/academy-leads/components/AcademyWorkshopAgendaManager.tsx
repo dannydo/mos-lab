@@ -7,12 +7,15 @@ import {
   ArrowDown,
   ArrowUp,
   Clock3,
+  Gamepad2,
   LibraryBig,
   ListChecks,
+  PackageCheck,
   PencilLine,
   Plus,
   Save,
   Trash2,
+  UtensilsCrossed,
   WandSparkles,
 } from 'lucide-react';
 import {
@@ -54,6 +57,8 @@ const AGENDA_STATUS_LABELS = {
   COMPLETED: 'Hoàn thành',
   SKIPPED: 'Đã bỏ qua',
 } as const;
+
+type AgendaResourceKey = 'MENU' | 'GAME' | 'EQUIPMENT';
 
 type AgendaFormValues = {
   title: string;
@@ -107,17 +112,20 @@ export default function AcademyWorkshopAgendaManager({
   canEdit,
   onUpdated,
   onRefresh,
+  onOpenResourceTab,
 }: {
   workshop: AcademyWorkshopDetail;
   canEdit: boolean;
   onUpdated: (workshop: AcademyWorkshopDetail) => void;
   onRefresh: () => Promise<void> | void;
+  onOpenResourceTab: (tab: 'game' | 'menu' | 'equipment') => void;
 }) {
   const { token } = theme.useToken();
   const [form] = Form.useForm<AgendaFormValues>();
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState<AcademyWorkshopAgendaItem | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [resourceSaving, setResourceSaving] = React.useState<string | null>(null);
   const [templateLibraryOpen, setTemplateLibraryOpen] = React.useState(false);
   const [templateId, setTemplateId] = React.useState<number | null>(workshop.agendaTemplate?.id || null);
   const templates = useAcademyWorkshopAgendaTemplates(true);
@@ -242,6 +250,57 @@ export default function AcademyWorkshopAgendaManager({
       }
     },
     [onUpdated, workshop]
+  );
+
+  const toggleResource = React.useCallback(
+    async (resource: AgendaResourceKey, item: AcademyWorkshopAgendaItem) => {
+      if (resource === 'MENU' && !workshop.menuItems.length) {
+        message.info('Tạo hoặc áp dụng thực đơn trước khi gắn vào Agenda.');
+        onOpenResourceTab('menu');
+        return;
+      }
+      if (resource === 'EQUIPMENT' && !workshop.equipmentPackages.length) {
+        message.info('Tạo hoặc áp dụng bộ dụng cụ trước khi gắn vào Agenda.');
+        onOpenResourceTab('equipment');
+        return;
+      }
+      if (resource === 'GAME' && !workshop.activeQuiz) {
+        message.info('Tạo hoặc áp dụng game trước khi gắn vào Agenda.');
+        onOpenResourceTab('game');
+        return;
+      }
+
+      const actionId = `${resource}:${item.id}`;
+      setResourceSaving(actionId);
+      try {
+        if (resource === 'MENU') {
+          const updated = await apiClient.academySales.workshops.setMenuAgendaItem(workshop.id, {
+            agendaItemId: workshop.menuAgendaItemId === item.id ? null : item.id,
+          });
+          onUpdated(updated);
+        } else if (resource === 'EQUIPMENT') {
+          const updated = await apiClient.academySales.workshops.setEquipmentAgendaItem(workshop.id, {
+            agendaItemId: workshop.equipmentAgendaItemId === item.id ? null : item.id,
+          });
+          onUpdated(updated);
+        } else if (workshop.activeQuiz) {
+          const updatedQuiz = await apiClient.academySales.workshops.setQuizAgendaItem(
+            workshop.id,
+            workshop.activeQuiz.id,
+            {
+              agendaItemId: workshop.activeQuiz.agendaItemId === item.id ? null : item.id,
+            }
+          );
+          onUpdated({ ...workshop, activeQuiz: updatedQuiz });
+        }
+        message.success('Đã cập nhật nội dung gắn với mục Agenda.');
+      } catch (cause: any) {
+        message.error(cause?.response?.data?.message || 'Không thể cập nhật nội dung gắn với Agenda.');
+      } finally {
+        setResourceSaving(null);
+      }
+    },
+    [onOpenResourceTab, onUpdated, workshop]
   );
 
   return (
@@ -394,39 +453,105 @@ export default function AcademyWorkshopAgendaManager({
                     <span className="tabular-nums">{Math.round(item.plannedDurationSeconds / 60)} phút</span>
                     {item.description ? <span>· {item.description}</span> : null}
                   </div>
+                  {workshop.menuAgendaItemId === item.id ||
+                  workshop.activeQuiz?.agendaItemId === item.id ||
+                  workshop.equipmentAgendaItemId === item.id ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5" aria-label={`Nội dung gắn với ${item.title}`}>
+                      {workshop.menuAgendaItemId === item.id ? (
+                        <StatusTag
+                          status="processing"
+                          icon={<AppIcon icon={UtensilsCrossed} size="sm" />}
+                          label="Thực đơn"
+                          className="!mb-0"
+                        />
+                      ) : null}
+                      {workshop.activeQuiz?.agendaItemId === item.id ? (
+                        <StatusTag
+                          status="processing"
+                          icon={<AppIcon icon={Gamepad2} size="sm" />}
+                          label="Game"
+                          className="!mb-0"
+                        />
+                      ) : null}
+                      {workshop.equipmentAgendaItemId === item.id ? (
+                        <StatusTag
+                          status="processing"
+                          icon={<AppIcon icon={PackageCheck} size="sm" />}
+                          label="Dụng cụ"
+                          className="!mb-0"
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="academy-workshop-agenda-item__controls">
                   <StatusTag status={agendaStatusTone(item.status)} label={AGENDA_STATUS_LABELS[item.status]} />
                   {canEdit && !structureLocked ? (
-                    <div className="academy-workshop-agenda-item__actions">
-                      <IconButton
-                        label={`Đưa ${item.title} lên`}
-                        icon={ArrowUp}
-                        disabled={saving || index === 0}
-                        onClick={() => void moveItem(item.id, -1)}
-                      />
-                      <IconButton
-                        label={`Đưa ${item.title} xuống`}
-                        icon={ArrowDown}
-                        disabled={saving || index === workshop.agenda.length - 1}
-                        onClick={() => void moveItem(item.id, 1)}
-                      />
-                      <IconButton
-                        label={`Sửa ${item.title}`}
-                        icon={PencilLine}
-                        disabled={saving}
-                        onClick={() => openEdit(item)}
-                      />
-                      <Popconfirm
-                        title={`Xóa “${item.title}”?`}
-                        description="Mục này sẽ bị xóa khỏi agenda workshop."
-                        okText="Xóa"
-                        cancelText="Hủy"
-                        okButtonProps={{ danger: true }}
-                        onConfirm={() => void deleteItem(item)}
-                      >
-                        <IconButton tone="danger" label={`Xóa ${item.title}`} icon={Trash2} disabled={saving} />
-                      </Popconfirm>
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      <Space size={4} wrap>
+                        <Button
+                          size="small"
+                          type={workshop.menuAgendaItemId === item.id ? 'primary' : 'default'}
+                          loading={resourceSaving === `MENU:${item.id}`}
+                          disabled={saving || Boolean(resourceSaving)}
+                          onClick={() => void toggleResource('MENU', item)}
+                        >
+                          <IconText icon={<AppIcon icon={UtensilsCrossed} size="sm" />}>Thực đơn</IconText>
+                        </Button>
+                        <Button
+                          size="small"
+                          type={workshop.activeQuiz?.agendaItemId === item.id ? 'primary' : 'default'}
+                          loading={resourceSaving === `GAME:${item.id}`}
+                          disabled={saving || Boolean(resourceSaving)}
+                          onClick={() => void toggleResource('GAME', item)}
+                        >
+                          <IconText icon={<AppIcon icon={Gamepad2} size="sm" />}>Game</IconText>
+                        </Button>
+                        <Button
+                          size="small"
+                          type={workshop.equipmentAgendaItemId === item.id ? 'primary' : 'default'}
+                          loading={resourceSaving === `EQUIPMENT:${item.id}`}
+                          disabled={saving || Boolean(resourceSaving)}
+                          onClick={() => void toggleResource('EQUIPMENT', item)}
+                        >
+                          <IconText icon={<AppIcon icon={PackageCheck} size="sm" />}>Dụng cụ</IconText>
+                        </Button>
+                      </Space>
+                      <div className="academy-workshop-agenda-item__actions">
+                        <IconButton
+                          label={`Đưa ${item.title} lên`}
+                          icon={ArrowUp}
+                          disabled={saving || Boolean(resourceSaving) || index === 0}
+                          onClick={() => void moveItem(item.id, -1)}
+                        />
+                        <IconButton
+                          label={`Đưa ${item.title} xuống`}
+                          icon={ArrowDown}
+                          disabled={saving || Boolean(resourceSaving) || index === workshop.agenda.length - 1}
+                          onClick={() => void moveItem(item.id, 1)}
+                        />
+                        <IconButton
+                          label={`Sửa ${item.title}`}
+                          icon={PencilLine}
+                          disabled={saving || Boolean(resourceSaving)}
+                          onClick={() => openEdit(item)}
+                        />
+                        <Popconfirm
+                          title={`Xóa “${item.title}”?`}
+                          description="Mục này sẽ bị xóa khỏi agenda workshop."
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                          onConfirm={() => void deleteItem(item)}
+                        >
+                          <IconButton
+                            tone="danger"
+                            label={`Xóa ${item.title}`}
+                            icon={Trash2}
+                            disabled={saving || Boolean(resourceSaving)}
+                          />
+                        </Popconfirm>
+                      </div>
                     </div>
                   ) : null}
                 </div>

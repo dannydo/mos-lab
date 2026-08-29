@@ -54,7 +54,10 @@ const STATUS_LABELS: Record<AcademyWorkshopStatus, string> = {
 };
 
 type Query = { page: number; pageSize: number; search: string; status: AcademyWorkshopStatus | 'ALL' };
-type WorkshopForm = Omit<CreateAcademyWorkshopRequest, 'startsAt' | 'endsAt' | 'feeDueAt'> & {
+type WorkshopForm = Omit<
+  CreateAcademyWorkshopRequest,
+  'startsAt' | 'endsAt' | 'feeDueAt' | 'menuSelectionDeadline' | 'equipmentSelectionDeadline'
+> & {
   schedule: [Dayjs, Dayjs];
   feeDueAt?: Dayjs | null;
 };
@@ -174,7 +177,7 @@ export default function AcademyWorkshopsPage() {
           startsAt: values.schedule[0].toISOString(),
           endsAt: values.schedule[1].toISOString(),
           location: values.location.trim(),
-          capacity: values.capacity || 100,
+          capacity: values.capacity || 10,
           feeVnd: Math.round(Number(values.feeVnd) || 0),
           feeDueAt: values.feeDueAt?.toISOString() || null,
           showInSidebar: Boolean(values.showInSidebar),
@@ -432,7 +435,7 @@ export default function AcademyWorkshopsPage() {
             form={form}
             layout="vertical"
             onFinish={createWorkshop}
-            initialValues={{ capacity: 100, feeVnd: 0, showInSidebar: true }}
+            initialValues={{ capacity: 10, feeVnd: 0, showInSidebar: true }}
           >
             <div className="grid gap-x-4 md:grid-cols-2">
               <Form.Item name="name" label="Tên workshop" rules={[{ required: true, message: 'Nhập tên workshop' }]}>

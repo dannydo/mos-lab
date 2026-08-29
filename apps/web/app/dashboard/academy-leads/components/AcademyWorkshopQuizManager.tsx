@@ -22,6 +22,7 @@ import {
   StatePanel,
   StatusTag,
 } from '../../../../components/ui';
+import AcademyWorkshopServerImageUpload from './AcademyWorkshopServerImageUpload';
 
 type QuizFormValues = {
   title: string;
@@ -43,6 +44,7 @@ type QuestionFormValues = {
 };
 
 export interface AcademyWorkshopQuizManagerProps {
+  workshopId: number;
   quiz: AcademyWorkshopQuiz | null;
   mode?: 'WORKSHOP' | 'TEMPLATE';
   onCreateQuiz: (dto: UpsertAcademyWorkshopQuizRequest) => Promise<void>;
@@ -122,6 +124,7 @@ function mutationMessage(cause: unknown, fallback: string): string {
 }
 
 export default function AcademyWorkshopQuizManager({
+  workshopId,
   quiz,
   mode = 'WORKSHOP',
   onCreateQuiz,
@@ -635,8 +638,13 @@ export default function AcademyWorkshopQuizManager({
           >
             <Input.TextArea rows={3} placeholder="Nhập câu hỏi hiển thị trên màn hình sân khấu…" />
           </EntityFormField>
-          <EntityFormField name="imageUrl" label="Ảnh minh họa (URL)" fullWidth>
-            <Input placeholder="https://…" />
+          <EntityFormField
+            name="imageUrl"
+            label="Ảnh minh họa"
+            extra="Tải ảnh lên Academy Media để hiển thị cùng câu hỏi."
+            fullWidth
+          >
+            <AcademyWorkshopServerImageUpload workshopId={workshopId} area="quiz" disabled={submitting} />
           </EntityFormField>
           <EntityFormField name="sortOrder" label="Thứ tự" rules={[{ required: true }]}>
             <InputNumber className="w-full" min={1} max={999} />

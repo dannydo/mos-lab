@@ -296,9 +296,11 @@ import {
   AcademyWorkshopDetail,
   AcademyWorkshopEquipmentPackage,
   AcademyWorkshopEquipmentPackageImage,
+  AcademyWorkshopEquipmentTemplate,
   AcademyWorkshopGameCommandRequest,
   AcademyWorkshopLiveState,
   AcademyWorkshopMenuItem,
+  AcademyWorkshopMenuTemplate,
   AcademyWorkshopParticipant,
   AcademyWorkshopPhotoUploadIntent,
   AcademyWorkshopPublicMediaUploadResult,
@@ -338,10 +340,17 @@ import {
   ListAcademyWorkshopQuizTemplatesResponse,
   ListAcademyWorkshopAgendaTemplatesParams,
   ListAcademyWorkshopAgendaTemplatesResponse,
+  ListAcademyWorkshopEquipmentTemplatesParams,
+  ListAcademyWorkshopEquipmentTemplatesResponse,
+  ListAcademyWorkshopMenuTemplatesParams,
+  ListAcademyWorkshopMenuTemplatesResponse,
   ListAcademyWorkshopsParams,
   ListAcademyWorkshopsResponse,
   RecordAcademyWorkshopFeeRequest,
   ReorderAcademyWorkshopAgendaRequest,
+  SaveAcademyWorkshopEquipmentTemplateRequest,
+  SaveAcademyWorkshopMenuTemplateRequest,
+  SetAcademyWorkshopAgendaResourceRequest,
   RedeemAcademyWorkshopDisplayRequest,
   RedeemAcademyWorkshopQrRequest,
   SetAcademyWorkshopPhotoConsentRequest,
@@ -354,6 +363,7 @@ import {
   UpdateAcademyWorkshopMenuItemRequest,
   UpdateAcademyWorkshopEquipmentPackageRequest,
   UpdateAcademyWorkshopEquipmentPackageImageRequest,
+  UpdateAcademyWorkshopEquipmentTemplateRequest,
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
@@ -2119,6 +2129,43 @@ export const apiClient = {
         await api.delete(`/academy-sales/workshop-agenda-templates/${templateId}`);
         invalidateAcademySalesReadCache();
       },
+      listMenuTemplates: async (
+        params: ListAcademyWorkshopMenuTemplatesParams = {}
+      ): Promise<ListAcademyWorkshopMenuTemplatesResponse> => {
+        const response = await api.get<ListAcademyWorkshopMenuTemplatesResponse>(
+          '/academy-sales/workshop-menu-templates',
+          { params }
+        );
+        return response.data;
+      },
+      deleteMenuTemplate: async (templateId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshop-menu-templates/${templateId}`);
+        invalidateAcademySalesReadCache();
+      },
+      listEquipmentTemplates: async (
+        params: ListAcademyWorkshopEquipmentTemplatesParams = {}
+      ): Promise<ListAcademyWorkshopEquipmentTemplatesResponse> => {
+        const response = await api.get<ListAcademyWorkshopEquipmentTemplatesResponse>(
+          '/academy-sales/workshop-equipment-templates',
+          { params }
+        );
+        return response.data;
+      },
+      updateEquipmentTemplate: async (
+        templateId: number,
+        dto: UpdateAcademyWorkshopEquipmentTemplateRequest
+      ): Promise<AcademyWorkshopEquipmentTemplate> => {
+        const response = await api.put<{ data: AcademyWorkshopEquipmentTemplate }>(
+          `/academy-sales/workshop-equipment-templates/${templateId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteEquipmentTemplate: async (templateId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshop-equipment-templates/${templateId}`);
+        invalidateAcademySalesReadCache();
+      },
       list: async (params?: ListAcademyWorkshopsParams): Promise<ListAcademyWorkshopsResponse> => {
         return dedupeApiGet<ListAcademyWorkshopsResponse>(
           '/academy-sales/workshops',
@@ -2152,6 +2199,16 @@ export const apiClient = {
         );
         return response.data.data;
       },
+      uploadQuizImage: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopPublicMediaUploadRequest
+      ): Promise<AcademyWorkshopPublicMediaUploadResult> => {
+        const response = await api.post<{ data: AcademyWorkshopPublicMediaUploadResult }>(
+          `/academy-sales/workshops/${workshopId}/quiz-images/upload`,
+          dto
+        );
+        return response.data.data;
+      },
       createMenuItem: async (
         workshopId: number,
         dto: CreateAcademyWorkshopMenuItemRequest
@@ -2173,6 +2230,28 @@ export const apiClient = {
         );
         return response.data.data;
       },
+      setMenuAgendaItem: async (
+        workshopId: number,
+        dto: SetAcademyWorkshopAgendaResourceRequest
+      ): Promise<AcademyWorkshopDetail> => {
+        const response = await api.put<{ data: AcademyWorkshopDetail }>(
+          `/academy-sales/workshops/${workshopId}/menu-service`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      setEquipmentAgendaItem: async (
+        workshopId: number,
+        dto: SetAcademyWorkshopAgendaResourceRequest
+      ): Promise<AcademyWorkshopDetail> => {
+        const response = await api.put<{ data: AcademyWorkshopDetail }>(
+          `/academy-sales/workshops/${workshopId}/equipment-service`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
       updateMenuItem: async (
         workshopId: number,
         menuItemId: number,
@@ -2188,6 +2267,34 @@ export const apiClient = {
       deleteMenuItem: async (workshopId: number, menuItemId: number): Promise<void> => {
         await api.delete(`/academy-sales/workshops/${workshopId}/menu-items/${menuItemId}`);
         invalidateAcademySalesReadCache();
+      },
+      saveMenuAsTemplate: async (
+        workshopId: number,
+        dto: SaveAcademyWorkshopMenuTemplateRequest
+      ): Promise<AcademyWorkshopMenuTemplate> => {
+        const response = await api.post<{ data: AcademyWorkshopMenuTemplate }>(
+          `/academy-sales/workshops/${workshopId}/menu-templates`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      refreshMenuTemplateFromWorkshop: async (
+        workshopId: number,
+        templateId: number
+      ): Promise<AcademyWorkshopMenuTemplate> => {
+        const response = await api.post<{ data: AcademyWorkshopMenuTemplate }>(
+          `/academy-sales/workshops/${workshopId}/menu-templates/${templateId}/refresh`
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      applyMenuTemplate: async (workshopId: number, templateId: number): Promise<AcademyWorkshopDetail> => {
+        const response = await api.post<{ data: AcademyWorkshopDetail }>(
+          `/academy-sales/workshops/${workshopId}/menu-templates/${templateId}/apply`
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
       },
       createEquipmentPackage: async (
         workshopId: number,
@@ -2225,6 +2332,34 @@ export const apiClient = {
       deleteEquipmentPackage: async (workshopId: number, equipmentPackageId: number): Promise<void> => {
         await api.delete(`/academy-sales/workshops/${workshopId}/equipment-packages/${equipmentPackageId}`);
         invalidateAcademySalesReadCache();
+      },
+      saveEquipmentAsTemplate: async (
+        workshopId: number,
+        dto: SaveAcademyWorkshopEquipmentTemplateRequest
+      ): Promise<AcademyWorkshopEquipmentTemplate> => {
+        const response = await api.post<{ data: AcademyWorkshopEquipmentTemplate }>(
+          `/academy-sales/workshops/${workshopId}/equipment-templates`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      refreshEquipmentTemplateFromWorkshop: async (
+        workshopId: number,
+        templateId: number
+      ): Promise<AcademyWorkshopEquipmentTemplate> => {
+        const response = await api.post<{ data: AcademyWorkshopEquipmentTemplate }>(
+          `/academy-sales/workshops/${workshopId}/equipment-templates/${templateId}/refresh`
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      applyEquipmentTemplate: async (workshopId: number, templateId: number): Promise<AcademyWorkshopDetail> => {
+        const response = await api.post<{ data: AcademyWorkshopDetail }>(
+          `/academy-sales/workshops/${workshopId}/equipment-templates/${templateId}/apply`
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
       },
       createEquipmentPackageImage: async (
         workshopId: number,
@@ -2484,6 +2619,18 @@ export const apiClient = {
         );
         return response.data.data;
       },
+      setQuizAgendaItem: async (
+        workshopId: number,
+        quizId: number,
+        dto: SetAcademyWorkshopAgendaResourceRequest
+      ): Promise<AcademyWorkshopQuiz> => {
+        const response = await api.put<{ data: AcademyWorkshopQuiz }>(
+          `/academy-sales/workshops/${workshopId}/quizzes/${quizId}/agenda-item`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
       cloneQuiz: async (
         workshopId: number,
         quizId: number,
@@ -2504,6 +2651,13 @@ export const apiClient = {
           `/academy-sales/workshops/${workshopId}/quizzes/${quizId}/save-template`,
           dto
         );
+        return response.data.data;
+      },
+      refreshQuizTemplateFromWorkshop: async (workshopId: number, quizId: number): Promise<AcademyWorkshopQuiz> => {
+        const response = await api.post<{ data: AcademyWorkshopQuiz }>(
+          `/academy-sales/workshops/${workshopId}/quizzes/${quizId}/template/refresh`
+        );
+        invalidateAcademySalesReadCache();
         return response.data.data;
       },
       applyQuizTemplate: async (

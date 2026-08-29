@@ -35,6 +35,9 @@ import {
   type ListAcademyWorkshopsParams,
   type SafeAny,
   type ReorderAcademyWorkshopAgendaRequest,
+  type SetAcademyWorkshopAgendaResourceRequest,
+  type SaveAcademyWorkshopEquipmentTemplateRequest,
+  type SaveAcademyWorkshopMenuTemplateRequest,
   type UpdateAcademyWorkshopAgendaItemRequest,
   type UpdateAcademyWorkshopMenuItemRequest,
   type UpdateAcademyWorkshopEquipmentPackageRequest,
@@ -55,6 +58,14 @@ import {
   AcademyWorkshopAgendaTemplateService,
   toAcademyWorkshopAgendaTemplate,
 } from './academy-workshop-agenda-template.service.js';
+import {
+  AcademyWorkshopMenuTemplateService,
+  toAcademyWorkshopMenuTemplate,
+} from './academy-workshop-menu-template.service.js';
+import {
+  AcademyWorkshopEquipmentTemplateService,
+  toAcademyWorkshopEquipmentTemplate,
+} from './academy-workshop-equipment-template.service.js';
 
 const WORKSHOP_STATUSES = new Set([
   'DRAFT',
@@ -95,6 +106,15 @@ const PARTICIPANT_INCLUDE: SafeAny = {
 const WORKSHOP_INCLUDE: SafeAny = {
   campaign: true,
   agendaTemplate: { include: { items: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
+  menuTemplate: { include: { items: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
+  equipmentTemplate: {
+    include: {
+      packages: {
+        include: { images: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } },
+        orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      },
+    },
+  },
   agendaItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
   menuItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
   equipmentPackages: {
@@ -104,6 +124,7 @@ const WORKSHOP_INCLUDE: SafeAny = {
   quizzes: {
     where: { isTemplate: false },
     include: {
+      sourceTemplate: { select: { id: true, title: true } },
       questions: {
         include: { options: { orderBy: { sortOrder: 'asc' as const } } },
         orderBy: { sortOrder: 'asc' as const },
@@ -162,6 +183,14 @@ function parseDate(value: unknown, label: string, nullable = false): Date | null
   const parsed = new Date(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw) ? `${raw}+07:00` : raw);
   if (!Number.isFinite(parsed.getTime())) throw new AcademySalesError(`${label} không hợp lệ.`);
   return parsed;
+}
+
+function selectionDeadline(value: unknown, label: string, startsAt: Date): Date | null {
+  const deadline = parseDate(value, label, true);
+  if (deadline && deadline > startsAt) {
+    throw new AcademySalesError(`${label} phải trước hoặc đúng giờ bắt đầu workshop.`);
+  }
+  return deadline;
 }
 
 function normalizeHeroImageUrl(value: unknown): string | null {
@@ -241,6 +270,9 @@ export function toAcademyWorkshopQuiz(row: SafeAny, revealAnswers = false): Acad
   return {
     id: Number(row.id),
     workshopId: row.workshopId == null ? null : Number(row.workshopId),
+    sourceTemplateId: row.sourceTemplateId == null ? null : Number(row.sourceTemplateId),
+    sourceTemplateTitle: row.sourceTemplate?.title ?? null,
+    agendaItemId: row.agendaItemId == null ? null : Number(row.agendaItemId),
     title: String(row.title),
     description: row.description ?? null,
     isTemplate: Boolean(row.isTemplate),
@@ -639,12 +671,20 @@ export class AcademyWorkshopService {
       heroImageUrl: row.heroImageUrl ?? null,
       startsAt: new Date(row.startsAt).toISOString(),
       endsAt: new Date(row.endsAt).toISOString(),
+      menuSelectionDeadline: row.menuSelectionDeadline ? new Date(row.menuSelectionDeadline).toISOString() : null,
+      equipmentSelectionDeadline: row.equipmentSelectionDeadline
+        ? new Date(row.equipmentSelectionDeadline).toISOString()
+        : null,
       location: String(row.location),
       capacity: Number(row.capacity),
       feeVnd: Math.max(0, Math.round(Number(row.feeVnd) || 0)),
       feeDueAt: row.feeDueAt ? new Date(row.feeDueAt).toISOString() : null,
       status: row.status,
       agendaTemplate: row.agendaTemplate ? toAcademyWorkshopAgendaTemplate(row.agendaTemplate) : null,
+      menuTemplate: row.menuTemplate ? toAcademyWorkshopMenuTemplate(row.menuTemplate) : null,
+      menuAgendaItemId: row.menuAgendaItemId == null ? null : Number(row.menuAgendaItemId),
+      equipmentAgendaItemId: row.equipmentAgendaItemId == null ? null : Number(row.equipmentAgendaItemId),
+      equipmentTemplate: row.equipmentTemplate ? toAcademyWorkshopEquipmentTemplate(row.equipmentTemplate) : null,
       assignedStaffIds: assignedStaffIds(row.campaign.assignedStaffIds),
       participantCount: participants.length,
       checkedInCount: participants.filter((item) => item.checkedInAt).length,
@@ -735,9 +775,15 @@ export class AcademyWorkshopService {
     const startsAt = parseDate(input.startsAt, 'Thời gian bắt đầu')!;
     const endsAt = parseDate(input.endsAt, 'Thời gian kết thúc')!;
     if (endsAt <= startsAt) throw new AcademySalesError('Thời gian kết thúc phải sau thời gian bắt đầu.');
-    const capacity = Math.min(100, Math.max(1, Math.round(Number(input.capacity) || 100)));
+    const capacity = Math.min(100, Math.max(1, Math.round(Number(input.capacity) || 10)));
     const feeVnd = Math.max(0, Math.round(Number(input.feeVnd) || 0));
     const feeDueAt = parseDate(input.feeDueAt, 'Hạn đóng phí', true);
+    const menuSelectionDeadline = selectionDeadline(input.menuSelectionDeadline, 'Hạn chốt thực đơn', startsAt);
+    const equipmentSelectionDeadline = selectionDeadline(
+      input.equipmentSelectionDeadline,
+      'Hạn chốt bộ dụng cụ',
+      startsAt
+    );
     const heroImageUrl = normalizeHeroImageUrl(input.heroImageUrl);
     const staffIds = await this.validateStaffIds(fastify, input.assignedStaffIds || []);
     if (!staffIds.includes(actor.id)) staffIds.push(actor.id);
@@ -771,6 +817,8 @@ export class AcademyWorkshopService {
           capacity,
           feeVnd,
           feeDueAt,
+          menuSelectionDeadline,
+          equipmentSelectionDeadline,
           heroImageUrl,
           status: 'SCHEDULED',
           agendaTemplateId: agendaTemplate.id,
@@ -799,6 +847,18 @@ export class AcademyWorkshopService {
     const endsAt = input.endsAt === undefined ? row.endsAt : parseDate(input.endsAt, 'Thời gian kết thúc')!;
     if (!name || !location || endsAt <= startsAt)
       throw new AcademySalesError('Thông tin thời gian/địa điểm workshop không hợp lệ.');
+    const menuSelectionDeadline = selectionDeadline(
+      input.menuSelectionDeadline === undefined ? row.menuSelectionDeadline : input.menuSelectionDeadline,
+      'Hạn chốt thực đơn',
+      startsAt
+    );
+    const equipmentSelectionDeadline = selectionDeadline(
+      input.equipmentSelectionDeadline === undefined
+        ? row.equipmentSelectionDeadline
+        : input.equipmentSelectionDeadline,
+      'Hạn chốt bộ dụng cụ',
+      startsAt
+    );
     if (input.status && !WORKSHOP_STATUSES.has(input.status))
       throw new AcademySalesError('Trạng thái workshop không hợp lệ.');
     const nextStaffIds =
@@ -838,6 +898,8 @@ export class AcademyWorkshopService {
             input.capacity === undefined ? row.capacity : Math.min(100, Math.max(1, Math.round(input.capacity))),
           feeVnd: input.feeVnd === undefined ? row.feeVnd : Math.max(0, Math.round(input.feeVnd)),
           feeDueAt: input.feeDueAt === undefined ? row.feeDueAt : parseDate(input.feeDueAt, 'Hạn đóng phí', true),
+          menuSelectionDeadline,
+          equipmentSelectionDeadline,
           heroImageUrl,
           status: input.status || row.status,
           registrationOpen:
@@ -1017,6 +1079,17 @@ export class AcademyWorkshopService {
     return AcademyWorkshopStorageService.uploadPublicMedia(workshopId, 'hero-images', input);
   }
 
+  static async uploadQuizImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopPublicMediaUploadRequest
+  ): Promise<AcademyWorkshopPublicMediaUploadResult> {
+    await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditWorkshopMedia(actor);
+    return AcademyWorkshopStorageService.uploadPublicMedia(workshopId, 'quiz-images', input);
+  }
+
   static async uploadMenuImage(
     fastify: FastifyInstance,
     actor: AcademyActor,
@@ -1026,6 +1099,34 @@ export class AcademyWorkshopService {
     await this.rowById(fastify, actor, workshopId);
     this.assertCanEditMenu(actor);
     return AcademyWorkshopStorageService.uploadPublicMedia(workshopId, 'menu-items', input);
+  }
+
+  private static agendaItemIdForResource(row: SafeAny, agendaItemId: number | null) {
+    if (agendaItemId == null) return null;
+    const itemId = positiveId(agendaItemId, 'Mục agenda');
+    if (!row.agendaItems.some((item: SafeAny) => Number(item.id) === itemId)) {
+      throw new AcademySalesError('Mục agenda không thuộc workshop này.', 404);
+    }
+    return itemId;
+  }
+
+  static async setMenuAgendaItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: SetAcademyWorkshopAgendaResourceRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditMenu(actor);
+    const agendaItemId = this.agendaItemIdForResource(
+      row,
+      input.agendaItemId == null ? null : Number(input.agendaItemId)
+    );
+    await fastify.prisma.crm.crmAcademyWorkshop.update({
+      where: { id: row.id },
+      data: { menuAgendaItemId: agendaItemId },
+    });
+    return this.getById(fastify, actor, row.id);
   }
 
   private static normalizeMenuItem(input: {
@@ -1122,6 +1223,62 @@ export class AcademyWorkshopService {
     await fastify.prisma.crm.crmAcademyWorkshopMenuItem.delete({ where: { id: itemId } });
   }
 
+  static async saveMenuAsTemplate(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: SaveAcademyWorkshopMenuTemplateRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditMenu(actor);
+    return AcademyWorkshopMenuTemplateService.createFromWorkshop(fastify, actor, input, row.menuItems || []);
+  }
+
+  static async refreshMenuTemplateFromWorkshop(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    menuTemplateId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditMenu(actor);
+    return AcademyWorkshopMenuTemplateService.replaceItemsFromWorkshop(
+      fastify,
+      actor,
+      menuTemplateId,
+      row.menuItems || []
+    );
+  }
+
+  static async applyMenuTemplate(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    menuTemplateId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditMenu(actor);
+    const template = await AcademyWorkshopMenuTemplateService.getRequired(fastify, menuTemplateId);
+    const menuItems = template.items.map((item) => ({
+      workshopId: row.id,
+      category: item.category,
+      name: item.name,
+      description: item.description,
+      imageUrl: item.imageUrl,
+      sortOrder: item.sortOrder,
+      isAvailable: item.isAvailable,
+    }));
+
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      // Existing participant selections preserve their category/name snapshots.
+      // The nullable foreign key is intentionally cleared by the database.
+      await tx.crmAcademyWorkshopMenuItem.deleteMany({ where: { workshopId: row.id } });
+      await tx.crmAcademyWorkshopMenuItem.createMany({ data: menuItems });
+      await tx.crmAcademyWorkshop.update({ where: { id: row.id }, data: { menuTemplateId: template.id } });
+    });
+    return this.getById(fastify, actor, row.id);
+  }
+
   private static assertCanEditEquipment(actor: AcademyActor) {
     if (!canManage(actor) && actor.academyAccess !== true) {
       throw new AcademySalesError('Chỉ Admin, Quản lý hoặc staff được phân công mới được sửa bộ dụng cụ.', 403);
@@ -1137,6 +1294,25 @@ export class AcademyWorkshopService {
     await this.rowById(fastify, actor, workshopId);
     this.assertCanEditEquipment(actor);
     return AcademyWorkshopStorageService.uploadPublicMedia(workshopId, 'equipment-images', input);
+  }
+
+  static async setEquipmentAgendaItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: SetAcademyWorkshopAgendaResourceRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    const agendaItemId = this.agendaItemIdForResource(
+      row,
+      input.agendaItemId == null ? null : Number(input.agendaItemId)
+    );
+    await fastify.prisma.crm.crmAcademyWorkshop.update({
+      where: { id: row.id },
+      data: { equipmentAgendaItemId: agendaItemId },
+    });
+    return this.getById(fastify, actor, row.id);
   }
 
   private static normalizeEquipmentPackage(input: {
@@ -1223,6 +1399,77 @@ export class AcademyWorkshopService {
       throw new AcademySalesError('Không tìm thấy bộ dụng cụ thực hành.', 404);
     }
     await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackage.delete({ where: { id: itemId } });
+  }
+
+  static async saveEquipmentAsTemplate(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: SaveAcademyWorkshopEquipmentTemplateRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    return AcademyWorkshopEquipmentTemplateService.createFromWorkshop(
+      fastify,
+      actor,
+      input,
+      row.equipmentPackages || []
+    );
+  }
+
+  static async refreshEquipmentTemplateFromWorkshop(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    equipmentTemplateId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    return AcademyWorkshopEquipmentTemplateService.replacePackagesFromWorkshop(
+      fastify,
+      actor,
+      equipmentTemplateId,
+      row.equipmentPackages || []
+    );
+  }
+
+  static async applyEquipmentTemplate(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    equipmentTemplateId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditEquipment(actor);
+    const template = await AcademyWorkshopEquipmentTemplateService.getRequired(fastify, equipmentTemplateId);
+
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      // Selections retain their package name, contents, and price snapshots.
+      // The nullable package foreign key is intentionally cleared by the database.
+      await tx.crmAcademyWorkshopEquipmentPackage.deleteMany({ where: { workshopId: row.id } });
+      for (const equipmentPackage of template.packages) {
+        await tx.crmAcademyWorkshopEquipmentPackage.create({
+          data: {
+            workshopId: row.id,
+            name: equipmentPackage.name,
+            description: equipmentPackage.description,
+            includedItemsJson: equipmentPackage.includedItemsJson,
+            priceVnd: equipmentPackage.priceVnd,
+            sortOrder: equipmentPackage.sortOrder,
+            isAvailable: equipmentPackage.isAvailable,
+            images: {
+              create: equipmentPackage.images.map((image) => ({
+                imageUrl: image.imageUrl,
+                altText: image.altText,
+                sortOrder: image.sortOrder,
+              })),
+            },
+          },
+        });
+      }
+      await tx.crmAcademyWorkshop.update({ where: { id: row.id }, data: { equipmentTemplateId: template.id } });
+    });
+    return this.getById(fastify, actor, row.id);
   }
 
   private static normalizeEquipmentImage(input: { imageUrl: unknown; altText?: unknown }) {

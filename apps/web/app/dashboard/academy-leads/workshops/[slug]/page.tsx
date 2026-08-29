@@ -30,6 +30,7 @@ import { AppIcon, DataSection, FeaturePage, IconText, StatePanel } from '../../.
 import AcademyTalentWorkshopDrawer from '../../components/AcademyTalentWorkshopDrawer';
 import AcademyWorkshopQuizManager from '../../components/AcademyWorkshopQuizManager';
 import AcademyWorkshopQuizTemplateLibrary from '../../components/AcademyWorkshopQuizTemplateLibrary';
+import AcademyWorkshopQuizTemplatePanel from '../../components/AcademyWorkshopQuizTemplatePanel';
 import AcademyWorkshopRoster from '../../components/AcademyWorkshopRoster';
 import {
   AcademyWorkshopHeaderActions,
@@ -224,7 +225,6 @@ export default function AcademyWorkshopWorkspacePage() {
     deleteWorkshopQuestion,
     completeWorkshopQuiz,
     cloneWorkshopQuiz,
-    saveWorkshopQuizAsTemplate,
   } = useAcademyWorkshopQuizActions({ workshop, setWorkshop, setTemplateLibraryOpen });
 
   const openCareDrawer = React.useCallback((participant: AcademyWorkshopParticipant) => {
@@ -569,6 +569,11 @@ export default function AcademyWorkshopWorkspacePage() {
     return <StatePanel kind="error" title={error} extra={<Button onClick={() => void load()}>Thử lại</Button>} />;
   if (!workshop) return <StatePanel kind="loading" title="Đang dựng workspace workshop…" />;
 
+  const selectWorkshopTab = (key: string) => {
+    setActiveTab(key);
+    window.localStorage.setItem(`academy-workshop:${slug}:active-tab`, key);
+  };
+
   const workspaceThemeStyle: WorkshopWorkspaceThemeStyle = {
     '--academy-workshop-bg': token.colorBgContainer,
     '--academy-workshop-border': token.colorBorderSecondary,
@@ -611,10 +616,7 @@ export default function AcademyWorkshopWorkspacePage() {
       <Tabs
         className={styles.tabs}
         activeKey={activeTab}
-        onChange={(key) => {
-          setActiveTab(key);
-          window.localStorage.setItem(`academy-workshop:${slug}:active-tab`, key);
-        }}
+        onChange={selectWorkshopTab}
         items={[
           {
             key: 'roster',
@@ -677,28 +679,6 @@ export default function AcademyWorkshopWorkspacePage() {
             ),
           },
           {
-            key: 'game',
-            label: (
-              <IconText icon={<AppIcon icon={Gamepad2} />}>
-                Game & câu hỏi ({workshop.activeQuiz?.questions.length || 0})
-              </IconText>
-            ),
-            children: (
-              <AcademyWorkshopQuizManager
-                quiz={workshop.activeQuiz}
-                onCreateQuiz={createWorkshopQuiz}
-                onUpdateQuiz={updateWorkshopQuiz}
-                onSaveQuestion={saveWorkshopQuestion}
-                onDeleteQuestion={deleteWorkshopQuestion}
-                onCompleteQuiz={completeWorkshopQuiz}
-                onCloneQuiz={cloneWorkshopQuiz}
-                onOpenLiveControl={() => router.push(`/dashboard/academy-leads/workshops/${workshop.slug}/live`)}
-                onOpenTemplateLibrary={() => setTemplateLibraryOpen(true)}
-                onSaveAsTemplate={saveWorkshopQuizAsTemplate}
-              />
-            ),
-          },
-          {
             key: 'agenda',
             label: <IconText icon={<AppIcon icon={ListChecks} size="sm" />}>Agenda & timeline</IconText>,
             children: (
@@ -707,12 +687,43 @@ export default function AcademyWorkshopWorkspacePage() {
                 canEdit={canAccess}
                 onUpdated={setWorkshop}
                 onRefresh={load}
+                onOpenResourceTab={selectWorkshopTab}
               />
             ),
           },
           {
+            key: 'game',
+            label: (
+              <IconText icon={<AppIcon icon={Gamepad2} />}>
+                Game & câu hỏi ({workshop.activeQuiz?.questions.length || 0})
+              </IconText>
+            ),
+            children: (
+              <div className="space-y-4">
+                <AcademyWorkshopQuizTemplatePanel
+                  workshopId={workshop.id}
+                  quiz={workshop.activeQuiz}
+                  canEdit={canAccess}
+                  onApplied={(quiz) => setWorkshop((current) => (current ? { ...current, activeQuiz: quiz } : current))}
+                  onOpenLibrary={() => setTemplateLibraryOpen(true)}
+                />
+                <AcademyWorkshopQuizManager
+                  workshopId={workshop.id}
+                  quiz={workshop.activeQuiz}
+                  onCreateQuiz={createWorkshopQuiz}
+                  onUpdateQuiz={updateWorkshopQuiz}
+                  onSaveQuestion={saveWorkshopQuestion}
+                  onDeleteQuestion={deleteWorkshopQuestion}
+                  onCompleteQuiz={completeWorkshopQuiz}
+                  onCloneQuiz={cloneWorkshopQuiz}
+                  onOpenLiveControl={() => router.push(`/dashboard/academy-leads/workshops/${workshop.slug}/live`)}
+                />
+              </div>
+            ),
+          },
+          {
             key: 'menu',
-            label: <IconText icon={<AppIcon icon={UtensilsCrossed} size="sm" />}>Thực đơn Việt Thái</IconText>,
+            label: <IconText icon={<AppIcon icon={UtensilsCrossed} size="sm" />}>Thực đơn</IconText>,
             children: <AcademyWorkshopMenuManager workshop={workshop} canEdit={canAccess} onUpdated={setWorkshop} />,
           },
           {

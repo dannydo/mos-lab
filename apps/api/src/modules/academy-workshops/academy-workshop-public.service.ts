@@ -154,10 +154,11 @@ function equipmentItems(value: unknown): string[] {
 }
 
 function buildPublicEquipment(
-  packages: PublicEquipmentPackage[]
+  packages: PublicEquipmentPackage[],
+  selectionEnabled: boolean
 ): AcademyWorkshopPublicRegistrationInfo['workshop']['equipment'] {
   return {
-    required: packages.length > 0,
+    required: selectionEnabled && packages.length > 0,
     packages: packages.map((item) => ({
       id: item.id,
       name: item.name,
@@ -198,9 +199,12 @@ function validateEquipmentSelection(
   };
 }
 
-function buildPublicMenu(items: PublicMenuItem[]): AcademyWorkshopPublicRegistrationInfo['workshop']['menu'] {
+function buildPublicMenu(
+  items: PublicMenuItem[],
+  selectionEnabled: boolean
+): AcademyWorkshopPublicRegistrationInfo['workshop']['menu'] {
   return {
-    required: items.length > 0,
+    required: selectionEnabled && items.length > 0,
     categories: ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category) => ({
       category,
       label: ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[category],
@@ -385,6 +389,8 @@ export class AcademyWorkshopPublicJoinService {
 
     const phase = registrationPhase(workshop);
     const canJoin = phase === 'CHECKIN' || phase === 'LIVE';
+    const equipmentSelectionEnabled = workshop.equipmentAgendaItemId != null && workshop.equipmentPackages.length > 0;
+    const menuSelectionEnabled = workshop.menuAgendaItemId != null && workshop.menuItems.length > 0;
     return {
       phase,
       canRegister: phase === 'REGISTRATION' && workshop._count.participants < workshop.capacity,
@@ -396,11 +402,13 @@ export class AcademyWorkshopPublicJoinService {
         heroImageUrl: workshop.heroImageUrl ?? null,
         startsAt: workshop.startsAt.toISOString(),
         endsAt: workshop.endsAt.toISOString(),
+        menuSelectionDeadline: (workshop.menuSelectionDeadline || workshop.startsAt).toISOString(),
+        equipmentSelectionDeadline: (workshop.equipmentSelectionDeadline || workshop.startsAt).toISOString(),
         location: workshop.location,
         capacity: workshop.capacity,
         remainingSeats: Math.max(0, workshop.capacity - workshop._count.participants),
         feeVnd: workshop.feeVnd,
-        equipment: buildPublicEquipment(workshop.equipmentPackages),
+        equipment: buildPublicEquipment(workshop.equipmentPackages, equipmentSelectionEnabled),
         agenda: workshop.agendaItems.map((item) => ({
           id: item.id,
           title: item.title,
@@ -408,8 +416,10 @@ export class AcademyWorkshopPublicJoinService {
           kind: item.kind as AcademyWorkshopPublicRegistrationInfo['workshop']['agenda'][number]['kind'],
           plannedDurationSeconds: item.plannedDurationSeconds,
           sortOrder: item.sortOrder,
+          equipmentSelectionEnabled: equipmentSelectionEnabled && workshop.equipmentAgendaItemId === item.id,
+          menuSelectionEnabled: menuSelectionEnabled && workshop.menuAgendaItemId === item.id,
         })),
-        menu: buildPublicMenu(workshop.menuItems),
+        menu: buildPublicMenu(workshop.menuItems, menuSelectionEnabled),
         joinUrl: canJoin
           ? `${resolveAcademyWorkshopPublicOrigin()}/academy/workshops/lobby/${encodeURIComponent(workshop.displayCode)}`
           : null,
@@ -441,9 +451,20 @@ export class AcademyWorkshopPublicJoinService {
       // Lock the workshop row during the capacity decision so concurrent public
       // registrations cannot overbook the event.
       const locked = await tx.$queryRawUnsafe<
-        Array<{ id: number; campaign_id: number; capacity: number; status: string; registration_open: number }>
+        Array<{
+          id: number;
+          campaign_id: number;
+          capacity: number;
+          status: string;
+          registration_open: number;
+          starts_at: Date;
+          menu_selection_deadline: Date | null;
+          equipment_selection_deadline: Date | null;
+          menu_agenda_item_id: number | null;
+          equipment_agenda_item_id: number | null;
+        }>
       >(
-        `SELECT id, campaign_id, capacity, status, registration_open
+        `SELECT id, campaign_id, capacity, status, registration_open, starts_at, menu_selection_deadline, equipment_selection_deadline, menu_agenda_item_id, equipment_agenda_item_id
          FROM crm_academy_workshops WHERE registration_code = ? FOR UPDATE`,
         code
       );
@@ -458,16 +479,35 @@ export class AcademyWorkshopPublicJoinService {
         throw new AcademySalesError('Đăng ký online hiện đã đóng. Vui lòng liên hệ Academy để được hỗ trợ.', 409);
       }
 
+      const menuSelectionDeadlineMs = new Date(workshop.menu_selection_deadline || workshop.starts_at).getTime();
+      const equipmentSelectionDeadlineMs = new Date(
+        workshop.equipment_selection_deadline || workshop.starts_at
+      ).getTime();
+      const menuSelectionsAreLocked =
+        !Number.isFinite(menuSelectionDeadlineMs) || menuSelectionDeadlineMs <= Date.now();
+      const equipmentSelectionIsLocked =
+        !Number.isFinite(equipmentSelectionDeadlineMs) || equipmentSelectionDeadlineMs <= Date.now();
+      if (workshop.menu_agenda_item_id && menuSelectionsAreLocked && input.menuSelections?.length) {
+        throw new AcademySalesError('Đã hết hạn thay đổi thực đơn.', 409);
+      }
+      if (workshop.equipment_agenda_item_id && equipmentSelectionIsLocked && input.equipmentPackageId != null) {
+        throw new AcademySalesError('Đã hết hạn thay đổi bộ dụng cụ.', 409);
+      }
+
       const availableMenuItems = await tx.crmAcademyWorkshopMenuItem.findMany({
         where: { workshopId: workshop.id, isAvailable: true },
         select: { id: true, category: true, name: true, description: true, imageUrl: true },
       });
-      const menuSelections = validateMenuSelections(input.menuSelections, availableMenuItems);
+      const menuSelections = workshop.menu_agenda_item_id
+        ? validateMenuSelections(input.menuSelections, availableMenuItems)
+        : [];
       const availableEquipmentPackages = await tx.crmAcademyWorkshopEquipmentPackage.findMany({
         where: { workshopId: workshop.id, isAvailable: true },
         select: { id: true, name: true, description: true, includedItemsJson: true, priceVnd: true },
       });
-      const equipmentSelection = validateEquipmentSelection(input.equipmentPackageId, availableEquipmentPackages);
+      const equipmentSelection = workshop.equipment_agenda_item_id
+        ? validateEquipmentSelection(input.equipmentPackageId, availableEquipmentPackages)
+        : null;
 
       let lead = externalKey ? await tx.crmAcademyLead.findUnique({ where: { externalKey } }) : null;
       if (!lead) {

@@ -12,6 +12,7 @@ import {
   type AcademyWorkshopRealtimeEvent,
   type ListAcademyWorkshopQuizTemplatesParams,
   type SafeAny,
+  type SetAcademyWorkshopAgendaResourceRequest,
   type UpdateAcademyWorkshopDisplaySettingsRequest,
   type UpsertAcademyWorkshopQuestionRequest,
   type UpsertAcademyWorkshopQuizRequest,
@@ -65,6 +66,7 @@ export const academyWorkshopRealtimeHub = new WorkshopRealtimeHub();
 
 const INTERNAL_ACTOR: AcademyActor = { id: 0, role: 'super_admin', academyAccess: true };
 const QUIZ_INCLUDE = {
+  sourceTemplate: { select: { id: true, title: true } },
   questions: { include: { options: { orderBy: { sortOrder: 'asc' } } }, orderBy: { sortOrder: 'asc' } },
 } as const;
 
@@ -133,6 +135,7 @@ export function buildAcademyWorkshopQuizCloneData(
   if (title.length > 180) throw new AcademySalesError('Tên game tối đa 180 ký tự.');
   return {
     workshopId,
+    sourceTemplateId: source.isTemplate ? Number(source.id) : (source.sourceTemplateId ?? null),
     title,
     description: source.description ?? null,
     isTemplate: false,
@@ -488,6 +491,30 @@ export class AcademyWorkshopLiveService {
     return toAcademyWorkshopQuiz(row, true)!;
   }
 
+  static async setQuizAgendaItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    quizId: number,
+    input: SetAcademyWorkshopAgendaResourceRequest
+  ) {
+    const workshop = await AcademyWorkshopService.rowById(fastify, actor, workshopId);
+    const agendaItemId = input.agendaItemId == null ? null : positiveId(Number(input.agendaItemId), 'Mục agenda');
+    if (agendaItemId && !workshop.agendaItems.some((item: SafeAny) => Number(item.id) === agendaItemId)) {
+      throw new AcademySalesError('Mục agenda không thuộc workshop này.', 404);
+    }
+    const quiz = await fastify.prisma.crm.crmAcademyWorkshopQuiz.findFirst({
+      where: { id: positiveId(quizId, 'Game ID'), workshopId, isTemplate: false },
+    });
+    if (!quiz) throw new AcademySalesError('Không tìm thấy game trong workshop.', 404);
+    const updated = await fastify.prisma.crm.crmAcademyWorkshopQuiz.update({
+      where: { id: quiz.id },
+      data: { agendaItemId },
+      include: QUIZ_INCLUDE,
+    });
+    return toAcademyWorkshopQuiz(updated, true)!;
+  }
+
   static async cloneQuizToDraft(
     fastify: FastifyInstance,
     actor: AcademyActor,
@@ -576,10 +603,71 @@ export class AcademyWorkshopLiveService {
       title: String(input.title || '').trim() || source.title,
     });
     const template = await fastify.prisma.crm.crmAcademyWorkshopQuiz.create({
-      data: { ...copyData, workshopId: null, isTemplate: true },
+      data: { ...copyData, workshopId: null, sourceTemplateId: null, isTemplate: true },
       include: QUIZ_INCLUDE,
     });
     return toAcademyWorkshopQuiz(template, true)!;
+  }
+
+  static async refreshQuizTemplateFromWorkshop(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    quizId: number
+  ) {
+    await AcademyWorkshopService.rowById(fastify, actor, workshopId);
+    const source = await fastify.prisma.crm.crmAcademyWorkshopQuiz.findFirst({
+      where: { id: positiveId(quizId, 'Quiz ID'), workshopId, isTemplate: false },
+      include: QUIZ_INCLUDE,
+    });
+    if (!source) throw new AcademySalesError('Không tìm thấy game trong workshop.', 404);
+    if (source.status !== 'DRAFT') {
+      throw new AcademySalesError('Chỉ cập nhật mẫu khi game còn ở bản nháp.', 409);
+    }
+    if (!source.sourceTemplateId) {
+      throw new AcademySalesError('Game này chưa được tạo từ một mẫu để cập nhật.', 409);
+    }
+    const template = await fastify.prisma.crm.crmAcademyWorkshopQuiz.findFirst({
+      where: { id: source.sourceTemplateId, isTemplate: true, workshopId: null },
+    });
+    if (!template) throw new AcademySalesError('Không tìm thấy mẫu game nguồn.', 404);
+
+    const updated = await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmAcademyWorkshopQuizQuestion.deleteMany({ where: { quizId: template.id } });
+      return tx.crmAcademyWorkshopQuiz.update({
+        where: { id: template.id },
+        data: {
+          status: 'DRAFT',
+          activeQuestionId: null,
+          questionOpenedAt: null,
+          questionClosesAt: null,
+          podiumRewardsJson: source.podiumRewardsJson ?? null,
+          questions: {
+            create: source.questions.map((question) => ({
+              type: question.type,
+              prompt: question.prompt,
+              imageUrl: question.imageUrl ?? null,
+              durationSeconds: question.durationSeconds,
+              sortOrder: question.sortOrder,
+              rewardRule: question.rewardRule,
+              fastestCount: question.fastestCount,
+              rewardLabel: question.rewardLabel ?? null,
+              rewardQuantity: question.rewardQuantity,
+              options: {
+                create: question.options.map((option) => ({
+                  label: option.label,
+                  color: option.color ?? null,
+                  isCorrect: option.isCorrect,
+                  sortOrder: option.sortOrder,
+                })),
+              },
+            })),
+          },
+        },
+        include: QUIZ_INCLUDE,
+      });
+    });
+    return toAcademyWorkshopQuiz(updated, true)!;
   }
 
   static async applyQuizTemplate(

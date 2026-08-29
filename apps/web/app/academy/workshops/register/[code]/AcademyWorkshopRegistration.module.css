@@ -148,6 +148,16 @@
   background: var(--workshop-surface-raised);
 }
 
+.selectionAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+}
+
+.selectionAction:disabled:hover {
+  border-color: var(--workshop-border);
+  background: var(--workshop-surface-soft);
+}
+
 .selectionAction:focus-visible,
 .selectionSummaryAction:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--workshop-accent) 52%, transparent);
@@ -167,13 +177,119 @@
   background: color-mix(in srgb, var(--workshop-success-soft) 72%, var(--workshop-surface-raised));
 }
 
-.selectionSummaryItems,
 .selectionSummaryAction {
   border-top: 1px solid color-mix(in srgb, var(--workshop-success) 24%, var(--workshop-border));
 }
 
 .selectionSummaryItems {
+  border-top: 1px solid color-mix(in srgb, var(--workshop-success) 24%, var(--workshop-border));
   background: color-mix(in srgb, var(--workshop-surface-raised) 78%, transparent);
+}
+
+.selectionSummaryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.selectionSummaryIcon,
+.menuSelectionFallback {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--workshop-success) 18%, var(--workshop-surface-raised));
+  color: var(--workshop-success);
+}
+
+.selectionSummaryIcon {
+  width: 2rem;
+  height: 2rem;
+}
+
+.selectionSummaryEyebrow,
+.selectionSummarySubcopy,
+.menuSelectionLabel,
+.menuSelectionName {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectionSummaryEyebrow,
+.menuSelectionLabel {
+  color: var(--workshop-text-muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.selectionSummarySubcopy {
+  margin-top: 0.125rem;
+  color: var(--workshop-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.selectionSummaryStatus {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  background: var(--workshop-success);
+  color: #ffffff;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.menuSelectionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.menuSelectionItem {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--workshop-border);
+  border-radius: 0.75rem;
+  background: var(--workshop-surface-raised);
+  padding: 0.375rem;
+}
+
+.menuSelectionImage,
+.menuSelectionFallback {
+  width: 2rem;
+  height: 2rem;
+}
+
+.menuSelectionImage {
+  flex: 0 0 auto;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.menuSelectionName {
+  margin-top: 0.125rem;
+  color: var(--workshop-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .menuSelectionGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .selectionChip {
@@ -187,6 +303,23 @@
 
 .selectionSummaryAction:hover {
   background: var(--workshop-success-soft);
+}
+
+.selectionSummaryAction:disabled {
+  cursor: not-allowed;
+  color: var(--workshop-text-muted);
+  opacity: 0.72;
+}
+
+.selectionSummaryAction:disabled:hover {
+  background: transparent;
+}
+
+.selectionChangeCountdown {
+  color: var(--workshop-text-muted);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .asideCard {

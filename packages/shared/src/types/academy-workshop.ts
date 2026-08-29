@@ -98,12 +98,24 @@ export interface AcademyWorkshopListItem {
 export interface AcademyWorkshopDetail extends AcademyWorkshopListItem {
   showInSidebar: boolean;
   displayCode: string;
+  /** Meal selection cutoff; defaults to the workshop start when unset. */
+  menuSelectionDeadline: string | null;
+  /** Equipment selection cutoff; defaults to the workshop start when unset. */
+  equipmentSelectionDeadline: string | null;
   /** Public code is separate from the event-day display/lobby code. */
   registrationCode: string | null;
   registrationOpen: boolean;
   registrationUrl: string | null;
   /** The reusable template that the workshop agenda was copied from. */
   agendaTemplate: AcademyWorkshopAgendaTemplate | null;
+  /** The reusable catering template last copied into this workshop. */
+  menuTemplate: AcademyWorkshopMenuTemplate | null;
+  /** The agenda item at which the workshop menu is served. */
+  menuAgendaItemId: number | null;
+  /** The agenda item at which practical equipment is used. */
+  equipmentAgendaItemId: number | null;
+  /** The reusable practical-kit template last copied into this workshop. */
+  equipmentTemplate: AcademyWorkshopEquipmentTemplate | null;
   /** Stable workshop-wide QR target for participant self-selection. */
   sharedJoinUrl: string;
   summary: AcademyWorkshopSummary;
@@ -227,6 +239,28 @@ export interface AcademyWorkshopMenuSelection {
   selectedAt: string;
 }
 
+/** A reusable catering menu that can be copied into any workshop. */
+export interface AcademyWorkshopMenuTemplate {
+  id: number;
+  title: string;
+  description: string | null;
+  items: AcademyWorkshopMenuTemplateItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A stored menu option snapshot belonging to a reusable catering template. */
+export interface AcademyWorkshopMenuTemplateItem {
+  id: number;
+  templateId: number;
+  category: AcademyWorkshopMenuCategory;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  sortOrder: number;
+  isAvailable: boolean;
+}
+
 /** Configurable practical-kit option for a workshop. Prices are whole VND. */
 export interface AcademyWorkshopEquipmentPackage {
   id: number;
@@ -250,6 +284,37 @@ export interface AcademyWorkshopEquipmentPackageImage {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** A reusable set of practical-kit choices that can be copied into a workshop. */
+export interface AcademyWorkshopEquipmentTemplate {
+  id: number;
+  title: string;
+  description: string | null;
+  packages: AcademyWorkshopEquipmentTemplatePackage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A practical-kit package stored inside a reusable workshop equipment template. */
+export interface AcademyWorkshopEquipmentTemplatePackage {
+  id: number;
+  templateId: number;
+  name: string;
+  description: string | null;
+  includedItems: string[];
+  priceVnd: number;
+  sortOrder: number;
+  isAvailable: boolean;
+  images: AcademyWorkshopEquipmentTemplatePackageImage[];
+}
+
+export interface AcademyWorkshopEquipmentTemplatePackageImage {
+  id: number;
+  templatePackageId: number;
+  imageUrl: string;
+  altText: string | null;
+  sortOrder: number;
 }
 
 /** Immutable equipment and price snapshot selected during registration. */
@@ -345,6 +410,11 @@ export interface AcademyWorkshopQuizQuestion {
 export interface AcademyWorkshopQuiz {
   id: number;
   workshopId: number | null;
+  /** The reusable template this workshop game was copied from, when applicable. */
+  sourceTemplateId?: number | null;
+  sourceTemplateTitle?: string | null;
+  /** The agenda item at which this game is run. */
+  agendaItemId?: number | null;
   title: string;
   description: string | null;
   isTemplate: boolean;
@@ -476,6 +546,10 @@ export interface AcademyWorkshopPublicRegistrationInfo {
     heroImageUrl: string | null;
     startsAt: string;
     endsAt: string;
+    /** Effective meal-selection cutoff, with workshop start as the fallback. */
+    menuSelectionDeadline: string;
+    /** Effective equipment-selection cutoff, with workshop start as the fallback. */
+    equipmentSelectionDeadline: string;
     location: string;
     capacity: number;
     remainingSeats: number;
@@ -503,6 +577,10 @@ export interface AcademyWorkshopPublicRegistrationInfo {
       kind: AcademyWorkshopAgendaKind;
       plannedDurationSeconds: number;
       sortOrder: number;
+      /** Show the participant's practical-kit selection at this exact agenda item. */
+      equipmentSelectionEnabled: boolean;
+      /** Show the participant's meal selection at this exact agenda item. */
+      menuSelectionEnabled: boolean;
     }>;
     /** Available only from check-in onward; never reveal the roster itself. */
     joinUrl: string | null;
@@ -587,6 +665,10 @@ export interface CreateAcademyWorkshopRequest {
   capacity?: number;
   feeVnd?: number;
   feeDueAt?: string | null;
+  /** Leave empty to lock meal choices at workshop start. */
+  menuSelectionDeadline?: string | null;
+  /** Leave empty to lock equipment choices at workshop start. */
+  equipmentSelectionDeadline?: string | null;
   assignedStaffIds?: number[];
   showInSidebar?: boolean;
   agendaTemplateId?: number;
@@ -616,6 +698,14 @@ export interface ListAcademyWorkshopQuizTemplatesParams extends PageQuery {
 }
 
 export interface ListAcademyWorkshopAgendaTemplatesParams extends PageQuery {
+  search?: string;
+}
+
+export interface ListAcademyWorkshopMenuTemplatesParams extends PageQuery {
+  search?: string;
+}
+
+export interface ListAcademyWorkshopEquipmentTemplatesParams extends PageQuery {
   search?: string;
 }
 
@@ -736,6 +826,41 @@ export interface UpdateAcademyWorkshopMenuItemRequest {
   description?: string | null;
   imageUrl?: string | null;
   isAvailable?: boolean;
+}
+
+/** Assigns a workshop resource to one item in that workshop's Agenda. */
+export interface SetAcademyWorkshopAgendaResourceRequest {
+  agendaItemId: number | null;
+}
+
+/** @deprecated Use SetAcademyWorkshopAgendaResourceRequest. */
+export type SetAcademyWorkshopMenuAgendaItemRequest = SetAcademyWorkshopAgendaResourceRequest;
+
+/** Saves the menu currently configured on a workshop as a reusable catering template. */
+export interface SaveAcademyWorkshopMenuTemplateRequest {
+  title: string;
+  description?: string | null;
+}
+
+/** Saves all practical-kit package choices on a workshop as one reusable template. */
+export interface SaveAcademyWorkshopEquipmentTemplateRequest {
+  title: string;
+  description?: string | null;
+}
+
+/** An editable practical-kit package persisted inside a reusable template. */
+export interface UpsertAcademyWorkshopEquipmentTemplatePackageRequest {
+  name: string;
+  description?: string | null;
+  includedItems: string[];
+  priceVnd: number;
+  isAvailable?: boolean;
+  images?: CreateAcademyWorkshopEquipmentPackageImageRequest[];
+}
+
+/** Replaces a reusable template's metadata and practical-kit packages for future workshop use. */
+export interface UpdateAcademyWorkshopEquipmentTemplateRequest extends SaveAcademyWorkshopEquipmentTemplateRequest {
+  packages: UpsertAcademyWorkshopEquipmentTemplatePackageRequest[];
 }
 
 export interface CreateAcademyWorkshopEquipmentPackageRequest {
@@ -862,9 +987,13 @@ export type ListAcademyWorkshopsResponse = PageResponse<AcademyWorkshopListItem,
 export type ListAcademyWorkshopParticipantsResponse = PageResponse<AcademyWorkshopParticipant, AcademyWorkshopSummary>;
 export type ListAcademyWorkshopQuizTemplatesResponse = PageResponse<AcademyWorkshopQuiz>;
 export type ListAcademyWorkshopAgendaTemplatesResponse = PageResponse<AcademyWorkshopAgendaTemplate>;
+export type ListAcademyWorkshopMenuTemplatesResponse = PageResponse<AcademyWorkshopMenuTemplate>;
+export type ListAcademyWorkshopEquipmentTemplatesResponse = PageResponse<AcademyWorkshopEquipmentTemplate>;
 export type AcademyWorkshopActionResponse = ActionResponse<AcademyWorkshopDetail>;
 export type AcademyWorkshopParticipantActionResponse = ActionResponse<AcademyWorkshopParticipant>;
 export type AcademyWorkshopAgendaActionResponse = ActionResponse<AcademyWorkshopAgendaItem>;
+export type AcademyWorkshopMenuTemplateActionResponse = ActionResponse<AcademyWorkshopMenuTemplate>;
+export type AcademyWorkshopEquipmentTemplateActionResponse = ActionResponse<AcademyWorkshopEquipmentTemplate>;
 export type AcademyWorkshopQuizActionResponse = ActionResponse<AcademyWorkshopQuiz>;
 export type AcademyWorkshopRewardActionResponse = ActionResponse<AcademyWorkshopReward>;
 export type AcademyInstructorBonusActionResponse = ActionResponse<AcademyInstructorBonus>;

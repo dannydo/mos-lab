@@ -6,7 +6,7 @@ import { ImagePlus, LoaderCircle } from 'lucide-react';
 import { apiClient } from '../../../../lib/api-client';
 import { AppIcon, IconText } from '../../../../components/ui';
 
-type MediaArea = 'hero' | 'menu' | 'equipment';
+type MediaArea = 'hero' | 'menu' | 'equipment' | 'quiz';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -68,7 +68,9 @@ export function AcademyWorkshopServerImageUpload({
             ? await apiClient.academySales.workshops.uploadHeroImage(workshopId, request)
             : area === 'menu'
               ? await apiClient.academySales.workshops.uploadMenuImage(workshopId, request)
-              : await apiClient.academySales.workshops.uploadEquipmentImage(workshopId, request);
+              : area === 'equipment'
+                ? await apiClient.academySales.workshops.uploadEquipmentImage(workshopId, request)
+                : await apiClient.academySales.workshops.uploadQuizImage(workshopId, request);
         onChange?.(saved.publicUrl);
         message.success('Đã tải ảnh lên server.');
       } catch (cause: any) {
