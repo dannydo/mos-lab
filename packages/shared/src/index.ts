@@ -35,5 +35,6 @@ export * from './utils/wheel-cap.js';
 export * from './types/cs.js';
 export * from './types/cv-speed.js';
 export * from './types/staff.js';
+export * from './types/ui-experience.js';
 export * from './types/qa-shop.js';
 export * from './types/menu-access.js';

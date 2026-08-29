@@ -28,3 +28,4 @@ export * from './social-posts.js';
 export * from './table-config.js';
 export * from './team.js';
 export * from './staff.js';
+export * from './ui-experience.js';

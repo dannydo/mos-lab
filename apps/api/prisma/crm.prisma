@@ -166,6 +166,71 @@ model CrmConfig {
   @@map("crm_config")
 }
 
+/// Immutable visual/config revisions for public marketing experiences and
+/// dashboard seasonal accents. Code remains in the deployed manifest registry;
+/// the database stores only activation, schedule, CTA, and audit-safe metadata.
+model CrmUiExperienceActivation {
+  id                   Int      @id @default(autoincrement())
+  seriesKey            String   @map("series_key") @db.Char(36)
+  revision             Int      @default(1)
+  supersedesId         Int?     @map("supersedes_id")
+  surface              String   @db.VarChar(32)
+  routeScope           String   @map("route_scope") @db.VarChar(255)
+  experienceKey        String?  @map("experience_key") @db.VarChar(80)
+  experienceVersion    String?  @map("experience_version") @db.VarChar(30)
+  accentPresetKey      String?  @map("accent_preset_key") @db.VarChar(80)
+  lifecycle            String   @default("DRAFT") @db.VarChar(16)
+  startsAt             DateTime? @map("starts_at") @db.DateTime(0)
+  endsAt               DateTime? @map("ends_at") @db.DateTime(0)
+  ctaLabel              String?  @map("cta_label") @db.VarChar(100)
+  ctaUrl                String?  @map("cta_url") @db.VarChar(600)
+  trackingKey           String?  @map("tracking_key") @db.VarChar(100)
+  createdByStaffId      Int?     @map("created_by_staff_id")
+  createdAt             DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  audits  CrmUiExperienceAudit[]
+  metrics CrmUiExperienceMetric[]
+
+  @@unique([seriesKey, revision], name: "seriesKey_revision")
+  @@index([surface, routeScope, lifecycle], name: "ui_experience_resolver")
+  @@index([startsAt, endsAt], name: "ui_experience_schedule")
+  @@index([supersedesId])
+  @@map("crm_ui_experience_activations")
+}
+
+model CrmUiExperienceAudit {
+  id           Int      @id @default(autoincrement())
+  activationId Int      @map("activation_id")
+  seriesKey    String   @map("series_key") @db.Char(36)
+  action       String   @db.VarChar(40)
+  actorStaffId Int?     @map("actor_staff_id")
+  beforeJson   String?  @map("before_json") @db.LongText
+  afterJson    String?  @map("after_json") @db.LongText
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  activation CrmUiExperienceActivation @relation(fields: [activationId], references: [id], onDelete: Cascade)
+
+  @@index([seriesKey, createdAt])
+  @@index([actorStaffId, createdAt])
+  @@map("crm_ui_experience_audits")
+}
+
+model CrmUiExperienceMetric {
+  id           Int      @id @default(autoincrement())
+  activationId Int      @map("activation_id")
+  metricDate   DateTime @map("metric_date") @db.Date
+  eventType    String   @map("event_type") @db.VarChar(20)
+  eventCount   Int      @default(0) @map("event_count")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  activation CrmUiExperienceActivation @relation(fields: [activationId], references: [id], onDelete: Cascade)
+
+  @@unique([activationId, metricDate, eventType], name: "activationId_metricDate_eventType", map: "ui_experience_metric_unique")
+  @@index([metricDate, eventType], map: "ui_experience_metric_date_event_idx")
+  @@map("crm_ui_experience_metrics")
+}
+
 /// FAL itself is selected in Wings. MOS records only the explanation and
 /// approval gate required before an existing Log may receive a ledger.
 model CrmFalLogExplanation {

@@ -21,6 +21,17 @@ import type {
   UpsertHolidayCoverageRequest,
   UpsertHolidayPeriodRequest,
   UpsertHolidayRosterRequest,
+  CreateUiExperienceRequest,
+  ReviseUiExperienceRequest,
+  RollbackUiExperienceRequest,
+  SetUiExperienceLifecycleRequest,
+  UiExperienceActivation,
+  UiExperienceEventRequest,
+  UiExperienceEventResponse,
+  UiExperienceListResponse,
+  UiExperiencePreviewTokenResponse,
+  UiExperienceResolveParams,
+  UiExperienceResolveResponse,
 } from '@mos-lab/shared';
 import {
   Customer,
@@ -459,6 +470,40 @@ export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<
 
 // API Client SDK for mos-lab
 export const apiClient = {
+  uiExperiences: {
+    resolve: async (params: UiExperienceResolveParams): Promise<UiExperienceResolveResponse> => {
+      const response = await api.get<UiExperienceResolveResponse>('/ui-experiences/resolve', { params });
+      return response.data;
+    },
+    recordEvent: async (payload: UiExperienceEventRequest): Promise<UiExperienceEventResponse> => {
+      const response = await api.post<UiExperienceEventResponse>('/ui-experiences/events', payload);
+      return response.data;
+    },
+    list: async (): Promise<UiExperienceListResponse> => {
+      const response = await api.get<UiExperienceListResponse>('/ui-experiences');
+      return response.data;
+    },
+    create: async (payload: CreateUiExperienceRequest): Promise<UiExperienceActivation> => {
+      const response = await api.post<{ data: UiExperienceActivation }>('/ui-experiences', payload);
+      return response.data.data;
+    },
+    revise: async (id: number, payload: ReviseUiExperienceRequest): Promise<UiExperienceActivation> => {
+      const response = await api.put<{ data: UiExperienceActivation }>(`/ui-experiences/${id}/revisions`, payload);
+      return response.data.data;
+    },
+    setLifecycle: async (id: number, payload: SetUiExperienceLifecycleRequest): Promise<UiExperienceActivation> => {
+      const response = await api.post<{ data: UiExperienceActivation }>(`/ui-experiences/${id}/lifecycle`, payload);
+      return response.data.data;
+    },
+    rollback: async (id: number, payload: RollbackUiExperienceRequest): Promise<UiExperienceActivation> => {
+      const response = await api.post<{ data: UiExperienceActivation }>(`/ui-experiences/${id}/rollback`, payload);
+      return response.data.data;
+    },
+    createPreviewToken: async (id: number): Promise<UiExperiencePreviewTokenResponse> => {
+      const response = await api.post<UiExperiencePreviewTokenResponse>(`/ui-experiences/${id}/preview-token`);
+      return response.data;
+    },
+  },
   fal: {
     listCases: async (params?: {
       rule?: string;

@@ -1,0 +1,95 @@
+.canvas {
+  box-sizing: border-box;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow-x: clip;
+  overflow-y: visible;
+  position: relative;
+  width: 100%;
+}
+
+.cta {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 12px 24px;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 180ms cubic-bezier(0.2, 0, 0, 1),
+    filter 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.cta:hover {
+  filter: brightness(1.04);
+  transform: translateY(-2px);
+}
+
+.cta:focus-visible {
+  box-shadow: 0 0 0 4px var(--marketing-focus-ring, rgba(255, 255, 255, 0.55));
+  outline: none;
+}
+
+.stateShell {
+  align-items: center;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 219, 112, 0.18), transparent 34%),
+    linear-gradient(145deg, #780018, #3b0712);
+  color: #fff8e7;
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 24px;
+}
+
+.stateCard {
+  background: rgba(75, 3, 20, 0.72);
+  border: 1px solid rgba(255, 226, 138, 0.28);
+  border-radius: 28px;
+  box-shadow: 0 28px 80px rgba(28, 0, 8, 0.36);
+  max-width: 560px;
+  padding: clamp(28px, 6vw, 52px);
+  text-align: center;
+  width: 100%;
+}
+
+.stateMark {
+  color: #f6cf62;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.stateTitle {
+  font-size: clamp(24px, 5vw, 38px);
+  line-height: 1.12;
+  margin: 18px 0 12px;
+}
+
+.stateDescription {
+  color: rgba(255, 248, 231, 0.76);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.formShell {
+  display: grid;
+  gap: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta {
+    transition: none;
+  }
+
+  .cta:hover {
+    transform: none;
+  }
+}

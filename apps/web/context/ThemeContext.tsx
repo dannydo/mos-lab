@@ -11,10 +11,13 @@ import updateLocale from 'dayjs/plugin/updateLocale';
 import 'dayjs/locale/vi';
 import { safeStorage } from '../lib/safe-storage';
 import {
+  coreThemeRegistry,
+  DEFAULT_CORE_THEME_ID,
   getDensityMeasurements,
+  getCoreThemeDefinition,
   isDesktopDensity,
   resolveDensityProfile,
-  themeTokens,
+  type CoreThemeMode,
   type DensityProfile,
   type DesktopDensity,
 } from '@mos-lab/shared';
@@ -33,11 +36,15 @@ dayjs.updateLocale('en', {
   weekStart: 1,
 });
 
-type ThemeMode = 'light' | 'dark';
+type ThemeMode = CoreThemeMode;
 
 export const DESKTOP_DENSITY_STORAGE_KEY = 'mos_desktop_density';
+export const CORE_THEME_STORAGE_KEY = 'mos_core_theme';
 
 interface ThemeContextType {
+  coreThemeId: string;
+  availableCoreThemes: ReadonlyArray<{ id: string; label: string }>;
+  setCoreThemeId: (themeId: string) => void;
   themeMode: ThemeMode;
   toggleTheme: () => void;
   /** Saved preference used whenever the viewport is not a phone. */
@@ -50,12 +57,18 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [coreThemeId, setCoreThemeIdState] = useState(() => {
+    const saved = safeStorage.getItem(CORE_THEME_STORAGE_KEY);
+    return saved && coreThemeRegistry[saved] ? saved : DEFAULT_CORE_THEME_ID;
+  });
+  const coreTheme = getCoreThemeDefinition(coreThemeId);
+  const availableCoreThemes = Object.values(coreThemeRegistry).map(({ id, label }) => ({ id, label }));
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     const saved = safeStorage.getItem('mos_theme') as ThemeMode;
     if (saved === 'light' || saved === 'dark') {
       return saved;
     }
-    return 'dark'; // Default to dark premium
+    return coreTheme.defaultMode;
   });
   const [mounted, setMounted] = useState(false);
   const [desktopDensity, setDesktopDensityState] = useState<DesktopDensity>(() => {
@@ -80,8 +93,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.classList.remove('light-theme');
         root.classList.add('dark-theme', 'dark');
       }
-      const semantic = themeTokens.semantic[themeMode];
-      const colors = themeTokens.colors[themeMode];
+      const activeMode = coreTheme.modes[themeMode];
+      const semantic = activeMode.semantic;
+      const colors = activeMode.colors;
+      root.style.setProperty('--mos-surface', semantic.surface);
       root.style.setProperty('--mos-surface-raised', semantic.surfaceRaised);
       root.style.setProperty('--mos-surface-muted', semantic.surfaceMuted);
       root.style.setProperty('--mos-surface-border', semantic.border);
@@ -91,11 +106,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.style.setProperty('--mos-accent', semantic.accent);
       root.style.setProperty('--mos-accent-contrast', semantic.accentContrast);
       root.style.setProperty('--mos-focus-ring', semantic.focusRing);
+      root.style.setProperty('--mos-shadow', semantic.shadow);
       root.style.setProperty('--mos-success', colors.success);
+      root.style.setProperty('--mos-motion-fast', `${coreTheme.motion.fast}ms`);
+      root.style.setProperty('--mos-motion-standard', `${coreTheme.motion.standard}ms`);
+      root.style.setProperty('--mos-motion-slow', `${coreTheme.motion.slow}ms`);
+      root.style.setProperty('--mos-motion-easing', coreTheme.motion.easing);
       root.dataset.uiDensity = effectiveDensity;
       root.dataset.desktopDensity = desktopDensity;
     } catch (_) {}
-  }, [desktopDensity, effectiveDensity, mounted, themeMode]);
+  }, [coreTheme, desktopDensity, effectiveDensity, mounted, themeMode]);
 
   const toggleTheme = () => {
     const nextTheme = themeMode === 'light' ? 'dark' : 'light';
@@ -108,13 +128,32 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     safeStorage.setItem(DESKTOP_DENSITY_STORAGE_KEY, density);
   };
 
+  const setCoreThemeId = (themeId: string) => {
+    if (!coreThemeRegistry[themeId]) return;
+    setCoreThemeIdState(themeId);
+    safeStorage.setItem(CORE_THEME_STORAGE_KEY, themeId);
+  };
+
   const isDark = themeMode === 'dark';
-  const currentTokens = isDark ? themeTokens.colors.dark : themeTokens.colors.light;
-  const semanticTokens = themeTokens.semantic[themeMode];
+  const activeMode = coreTheme.modes[themeMode];
+  const currentTokens = activeMode.colors;
+  const semanticTokens = activeMode.semantic;
+  const componentTokens = activeMode.components;
   const density = getDensityMeasurements(effectiveDensity);
 
   return (
-    <ThemeContext.Provider value={{ themeMode, toggleTheme, desktopDensity, effectiveDensity, setDesktopDensity }}>
+    <ThemeContext.Provider
+      value={{
+        coreThemeId: coreTheme.id,
+        availableCoreThemes,
+        setCoreThemeId,
+        themeMode,
+        toggleTheme,
+        desktopDensity,
+        effectiveDensity,
+        setDesktopDensity,
+      }}
+    >
       <ConfigProvider
         locale={viVN}
         pagination={{
@@ -128,15 +167,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             colorSuccess: currentTokens.success,
             colorWarning: currentTokens.warning,
             colorError: currentTokens.error,
-            controlOutline: isDark ? 'rgba(212, 168, 75, 0.25)' : 'rgba(158, 113, 24, 0.25)',
+            controlOutline: componentTokens.controlOutline,
             controlOutlineWidth: 2,
             controlHeight: density.controlHeight,
             fontSize: density.fontSize,
-            borderRadius: themeTokens.radii.md,
-            borderRadiusLG: themeTokens.radii.xl,
-            borderRadiusSM: themeTokens.radii.sm,
-            borderRadiusXS: themeTokens.radii.xs,
-            fontFamily: themeTokens.typography.fontFamily,
+            borderRadius: coreTheme.radii.md,
+            borderRadiusLG: coreTheme.radii.xl,
+            borderRadiusSM: coreTheme.radii.sm,
+            borderRadiusXS: coreTheme.radii.xs,
+            fontFamily: coreTheme.typography.fontFamily,
             colorBgContainer: currentTokens.bgContainer,
             colorBgElevated: currentTokens.bgElevated,
             colorBgLayout: currentTokens.bgLayout,
@@ -148,23 +187,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           },
           components: {
             DatePicker: {
-              colorBorder: isDark ? '#1f2937' : '#e5e7eb',
+              colorBorder: currentTokens.borderColor,
             },
             Card: {
               paddingLG: 16,
               headerHeight: 48,
               borderRadiusLG: 12,
-              colorBgContainer: isDark ? '#111827' : '#ffffff',
-              colorBorderSecondary: isDark ? '#1f2937' : '#e5e7eb',
+              colorBgContainer: currentTokens.bgContainer,
+              colorBorderSecondary: currentTokens.borderColor,
             },
             Table: {
               padding: density.cellPaddingInline,
               paddingContentVertical: density.cellPaddingBlock,
-              headerBg: isDark ? '#1e293b' : '#f1f5f9',
-              headerColor: isDark ? '#f8fafc' : '#0f172a',
-              headerSplitColor: isDark ? '#334155' : '#cbd5e1',
-              rowHoverBg: isDark ? 'rgba(212, 168, 75, 0.08)' : 'rgba(212, 168, 75, 0.05)',
-              borderColor: isDark ? '#1f2937' : '#e2e8f0',
+              headerBg: componentTokens.tableHeaderBg,
+              headerColor: componentTokens.tableHeaderColor,
+              headerSplitColor: componentTokens.tableHeaderSplit,
+              rowHoverBg: componentTokens.tableRowHover,
+              borderColor: currentTokens.borderColor,
             },
             Button: {
               borderRadius: 6,
@@ -177,11 +216,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             },
             Modal: {
               borderRadiusLG: 16,
-              contentBg: isDark ? '#111827' : '#ffffff',
-              headerBg: isDark ? '#111827' : '#ffffff',
+              contentBg: currentTokens.bgContainer,
+              headerBg: currentTokens.bgContainer,
             },
             Drawer: {
-              colorBgContainer: isDark ? '#111827' : '#ffffff',
+              colorBgContainer: currentTokens.bgContainer,
             },
             Tabs: {
               horizontalItemPadding: '10px 16px',
@@ -189,11 +228,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             },
             Input: {
               borderRadius: 6,
-              colorBgContainer: isDark ? '#1a2234' : '#ffffff',
+              colorBgContainer: componentTokens.inputBg,
             },
             Select: {
               borderRadius: 6,
-              colorBgContainer: isDark ? '#1a2234' : '#ffffff',
+              colorBgContainer: componentTokens.inputBg,
             },
             Pagination: {
               // Pagination is an application control, not a table-specific

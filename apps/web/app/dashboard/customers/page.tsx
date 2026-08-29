@@ -2,11 +2,10 @@
 
 import '../../suppress-warnings';
 import React from 'react';
-import { Tabs, Button, Select, Dropdown, theme, Tooltip, Space, Badge, message } from 'antd';
-import { HistoryOutlined, DeleteOutlined, SettingOutlined, SortAscendingOutlined } from '@ant-design/icons';
+import { Tabs, Button, Select, Dropdown, theme, Space, Badge, message } from 'antd';
+import { ArrowDownAZ, CalendarPlus, History, Settings2, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
-import CalendarPlusIcon from '../../../components/icons/CalendarPlusIcon';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 const BookingWizardDrawer = dynamic(() => import('../../../components/BookingWizardDrawer'), { ssr: false });
@@ -17,7 +16,13 @@ import CustomerTable from './components/CustomerTable';
 import { RetainDataButton } from './components/RetainDataButton';
 import AllocationBatchHeader from './components/AllocationBatchHeader';
 import CustomerRandomSelectorModal from './components/CustomerRandomSelectorModal';
-import { CollapsibleSearchField, ContentSurface, ResourceListPage, StatePanel } from '../../../components/ui';
+import {
+  CollapsibleSearchField,
+  ContentSurface,
+  IconButton,
+  ResourceListPage,
+  StatePanel,
+} from '../../../components/ui';
 import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
 import { canManageCustomerAllocation } from '@mos-lab/shared';
 
@@ -129,7 +134,7 @@ function CustomersPageContent() {
 
   const getTabLabel = (key: string, baseLabel: string, count: number) => {
     const colorByTab: Record<string, string> = {
-      COMBO_LIVE: '#52C41A',
+      COMBO_LIVE: token.colorSuccess,
       NOT_COMBO_LIVE: token.colorInfo,
       COMBO_DEAD: token.colorError,
       SINGLE: token.colorPrimary,
@@ -182,14 +187,12 @@ function CustomersPageContent() {
       title="Danh Sách Khách Hàng"
       subtitle="Quản lý phân loại và phân bổ data real-time"
       headerActions={
-        <Tooltip title="Đặt lịch mới">
-          <Button
-            type="primary"
-            aria-label="Đặt lịch mới"
-            icon={<CalendarPlusIcon fontSize={18} />}
-            onClick={() => data.setBookingWizardVisible(true)}
-          />
-        </Tooltip>
+        <IconButton
+          label="Đặt lịch mới"
+          icon={CalendarPlus}
+          tone="primary"
+          onClick={() => data.setBookingWizardVisible(true)}
+        />
       }
       toolbar={{
         className: 'customer-toolbar',
@@ -294,40 +297,26 @@ function CustomersPageContent() {
             />
 
             {isManagerOrAdmin && (
-              <Tooltip title="Lịch sử phân bổ data">
-                <Button
-                  icon={<HistoryOutlined />}
-                  onClick={() => data.setHistoryDrawerVisible(true)}
-                  style={{ borderColor: '#D4A84B', color: '#D4A84B', borderRadius: '6px' }}
-                />
-              </Tooltip>
+              <IconButton
+                label="Lịch sử phân bổ data"
+                icon={History}
+                onClick={() => data.setHistoryDrawerVisible(true)}
+              />
             )}
 
             {isManagerOrAdmin && (
-              <Tooltip title={data.showTrash ? 'Đang xem thùng rác (Bấm để xem tất cả)' : 'Xem thùng rác khách hàng'}>
-                <Button
-                  icon={<DeleteOutlined />}
-                  danger={data.showTrash}
-                  onClick={() => {
-                    data.setShowTrash(!data.showTrash);
-                    data.setCurrentPage(1);
-                  }}
-                  style={{
-                    borderRadius: '6px',
-                    borderColor: data.showTrash ? '#ff4d4f' : undefined,
-                    background: data.showTrash ? (themeMode === 'dark' ? '#2c1515' : '#fff2f0') : undefined,
-                  }}
-                />
-              </Tooltip>
+              <IconButton
+                label={data.showTrash ? 'Đang xem thùng rác; bấm để xem tất cả' : 'Xem thùng rác khách hàng'}
+                icon={Trash2}
+                tone={data.showTrash ? 'danger' : 'default'}
+                onClick={() => {
+                  data.setShowTrash(!data.showTrash);
+                  data.setCurrentPage(1);
+                }}
+              />
             )}
 
-            <Tooltip title="Cấu hình hiển thị cột">
-              <Button
-                icon={<SettingOutlined />}
-                onClick={() => tableRef.current?.openConfig()}
-                style={{ borderRadius: '6px' }}
-              />
-            </Tooltip>
+            <IconButton label="Cấu hình hiển thị cột" icon={Settings2} onClick={() => tableRef.current?.openConfig()} />
 
             {isMobile ? (
               <Dropdown
@@ -339,9 +328,7 @@ function CustomersPageContent() {
                 }}
                 trigger={['click']}
               >
-                <Tooltip title={`Sắp xếp: ${activeSortLabel}`}>
-                  <Button icon={<SortAscendingOutlined />} aria-label={`Sắp xếp: ${activeSortLabel}`} />
-                </Tooltip>
+                <IconButton label={`Sắp xếp: ${activeSortLabel}`} icon={ArrowDownAZ} />
               </Dropdown>
             ) : (
               <Select
@@ -445,7 +432,7 @@ function CustomersPageContent() {
                       data.myBatches[0].totalCount
                     }
                     overflowCount={99999}
-                    style={{ backgroundColor: '#FA8C16', color: '#fff' }}
+                    color={token.colorWarning}
                   />
                 )}
               </Space>

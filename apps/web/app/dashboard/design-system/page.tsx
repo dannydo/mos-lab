@@ -51,10 +51,12 @@ import {
   CheckCircleFilled,
   ExclamationCircleFilled,
   CloseCircleFilled,
+  RocketOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import ReadyKitsTab from '../../../components/design-system/ReadyKitsTab';
+import UiExperienceControlTower from '../../../components/design-system/UiExperienceControlTower';
 import {
   UI_CATALOG_ITEMS,
   type CatalogStatus,
@@ -103,7 +105,16 @@ const responsiveDemoRecords: ResponsiveDemoRecord[] = [
 ];
 
 export default function DesignSystemPage() {
-  const { themeMode, toggleTheme, desktopDensity, effectiveDensity, setDesktopDensity } = useTheme();
+  const {
+    coreThemeId,
+    availableCoreThemes,
+    setCoreThemeId,
+    themeMode,
+    toggleTheme,
+    desktopDensity,
+    effectiveDensity,
+    setDesktopDensity,
+  } = useTheme();
   const router = useRouter();
   const responsiveTier = useResponsiveTier();
   const [user, setUser] = useState<any>(null);
@@ -282,6 +293,12 @@ export default function DesignSystemPage() {
         subtitle="Catalog UI, ready kits và trạng thái kiểm duyệt của hệ thống"
         extra={
           <Space wrap>
+            <Select
+              aria-label="Core theme"
+              value={coreThemeId}
+              options={availableCoreThemes.map(({ id, label }) => ({ value: id, label }))}
+              onChange={setCoreThemeId}
+            />
             <Button icon={<ClusterOutlined />} onClick={() => router.push('/dashboard/architecture')}>
               Xem Sơ Đồ Graphify
             </Button>
@@ -346,6 +363,16 @@ export default function DesignSystemPage() {
           onChange={setActiveTab}
           type="card"
           items={[
+            {
+              key: 'control-tower',
+              label: (
+                <Space>
+                  <RocketOutlined />
+                  <span>UI Control Tower</span>
+                </Space>
+              ),
+              children: <UiExperienceControlTower />,
+            },
             {
               key: 'ready-kits',
               label: (

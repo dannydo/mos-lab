@@ -194,7 +194,7 @@ describe('UI primitives', () => {
     });
     expect(academy?.label).toBe('Academy');
     expect(academy?.path).toBeUndefined();
-    expect(academy?.children).toHaveLength(5);
+    expect(academy?.children).toHaveLength(6);
     expect(academy?.children?.[0]).toMatchObject({
       key: 'academy-customers',
       label: 'Học viên',
@@ -219,6 +219,11 @@ describe('UI primitives', () => {
       key: 'academy-courses',
       label: 'Khóa học',
       path: '/dashboard/academy-leads/courses',
+    });
+    expect(academy?.children?.[5]).toMatchObject({
+      key: 'academy-payment-management',
+      label: 'Thu học phí',
+      path: '/dashboard/academy-leads/payments',
     });
     expect(getSelectedMenuKey('/dashboard/academy-leads')).toBe('academy-customers');
     expect(getSelectedMenuKey('/dashboard/academy-leads/lead-manager')).toBe('academy-lead-manager');

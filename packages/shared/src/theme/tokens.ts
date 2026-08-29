@@ -184,6 +184,43 @@ export interface SemanticThemeTokens {
   shadow: string;
 }
 
+export type CoreThemeMode = 'light' | 'dark';
+
+export interface CoreThemeComponentTokens {
+  controlOutline: string;
+  tableHeaderBg: string;
+  tableHeaderColor: string;
+  tableHeaderSplit: string;
+  tableRowHover: string;
+  inputBg: string;
+}
+
+export interface CoreThemeModeDefinition {
+  colors: ThemeColors;
+  semantic: SemanticThemeTokens;
+  components: CoreThemeComponentTokens;
+}
+
+/**
+ * A brand theme is a typed registry entry instead of a collection of page
+ * overrides. Adding a theme must not require edits in feature pages.
+ */
+export interface CoreThemeDefinition {
+  id: string;
+  label: string;
+  defaultMode: CoreThemeMode;
+  modes: Record<CoreThemeMode, CoreThemeModeDefinition>;
+  typography: DesignTokens['typography'];
+  radii: RadiusTokens;
+  motion: {
+    fast: number;
+    standard: number;
+    slow: number;
+    easing: string;
+  };
+  chartPalette: string[];
+}
+
 export const themeTokens: DesignTokens = {
   colors: {
     dark: {
@@ -421,6 +458,55 @@ export const themeTokens: DesignTokens = {
     },
   },
 };
+
+export const DEFAULT_CORE_THEME_ID = 'mos';
+
+export const coreThemeRegistry: Readonly<Record<string, CoreThemeDefinition>> = {
+  [DEFAULT_CORE_THEME_ID]: {
+    id: DEFAULT_CORE_THEME_ID,
+    label: 'mOS Gold',
+    defaultMode: 'dark',
+    typography: themeTokens.typography,
+    radii: themeTokens.radii,
+    motion: {
+      fast: 120,
+      standard: 180,
+      slow: 280,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+    },
+    chartPalette: ['#D4A84B', '#38bdf8', '#22c55e', '#a78bfa', '#f97316', '#ec4899'],
+    modes: {
+      dark: {
+        colors: themeTokens.colors.dark,
+        semantic: themeTokens.semantic.dark,
+        components: {
+          controlOutline: 'rgba(212, 168, 75, 0.25)',
+          tableHeaderBg: '#1e293b',
+          tableHeaderColor: '#f8fafc',
+          tableHeaderSplit: '#334155',
+          tableRowHover: 'rgba(212, 168, 75, 0.08)',
+          inputBg: '#1a2234',
+        },
+      },
+      light: {
+        colors: themeTokens.colors.light,
+        semantic: themeTokens.semantic.light,
+        components: {
+          controlOutline: 'rgba(133, 91, 14, 0.25)',
+          tableHeaderBg: '#f1f5f9',
+          tableHeaderColor: '#0f172a',
+          tableHeaderSplit: '#cbd5e1',
+          tableRowHover: 'rgba(212, 168, 75, 0.05)',
+          inputBg: '#ffffff',
+        },
+      },
+    },
+  },
+};
+
+export function getCoreThemeDefinition(themeId = DEFAULT_CORE_THEME_ID): CoreThemeDefinition {
+  return coreThemeRegistry[themeId] ?? coreThemeRegistry[DEFAULT_CORE_THEME_ID];
+}
 
 /** Maps viewport dimensions to the single responsive contract used by the web app. */
 export function getResponsiveTier(viewportWidth: number, viewportHeight?: number): ResponsiveTier {

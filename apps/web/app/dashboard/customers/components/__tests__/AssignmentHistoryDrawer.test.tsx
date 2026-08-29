@@ -40,7 +40,7 @@ vi.mock('antd', () => {
   }) => (
     <div>
       {React.Children.map(children, (child) => {
-        if (!React.isValidElement<{ value?: string }>(child)) return child;
+        if (!React.isValidElement<{ value?: string; onClick?: () => void }>(child)) return child;
 
         return React.cloneElement(child, {
           onClick: () => onChange?.({ target: { value: child.props.value ?? '' } }),

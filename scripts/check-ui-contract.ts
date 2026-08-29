@@ -7,7 +7,6 @@ import { LEGACY_UI_EXCEPTIONS } from './ui-legacy-exceptions.ts';
 
 const workspaceRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const webRoot = join(workspaceRoot, 'apps/web');
-const dashboardRoot = join(webRoot, 'app/dashboard');
 const maxPageLines = 900;
 const uiIndexPath = join(webRoot, 'components/ui/index.ts');
 const forbiddenProductImports = new Set(['Table', 'Modal', 'Drawer', 'Tag', 'Statistic', 'Spin', 'Empty', 'Result']);
@@ -35,11 +34,12 @@ function walk(dir: string): string[] {
 
 const violations: string[] = [];
 const sourceFiles = walk(webRoot).filter((file) => /\.(ts|tsx)$/.test(file) && !file.includes('/.next/'));
+const styleFiles = walk(webRoot).filter((file) => /\.css$/.test(file) && !file.includes('/.next/'));
 
 function getImportedNames(source: string, moduleName: string): string[] {
   const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const importPattern = new RegExp(
-    `import\\s*(?:type\\s*)?\\{([\\s\\S]*?)\\}\\s*from\\s*['\"]${escapedModuleName}['\"]`,
+    `import\\s*(?:type\\s*)?\\{([\\s\\S]*?)\\}\\s*from\\s*['"]${escapedModuleName}['"]`,
     'g'
   );
   const names = new Set<string>();
@@ -64,6 +64,14 @@ function getRawUiImportCounts(source: string) {
   return {
     antdImports,
     antIconImports,
+  };
+}
+
+function getCoreDriftCounts(source: string) {
+  return {
+    literalColors: source.match(/#[0-9a-f]{3,8}\b/gi)?.length ?? 0,
+    importantRules: source.match(/!important\b/g)?.length ?? 0,
+    inlineStyles: source.match(/\bstyle\s*=\s*\{\{/g)?.length ?? 0,
   };
 }
 
@@ -164,6 +172,8 @@ for (const file of sourceFiles) {
 
   const previous = getRawUiImportCounts(getSourceAtRef(baselineRef, displayPath));
   const current = getRawUiImportCounts(source);
+  const previousDrift = getCoreDriftCounts(getSourceAtRef(baselineRef, displayPath));
+  const currentDrift = getCoreDriftCounts(source);
   const exception = legacyExceptions.get(displayPath);
   const increasedAntdImports = current.antdImports.filter(
     (name) => !previous.antdImports.includes(name) && !exception?.allowedAntdImports?.includes(name)
@@ -177,6 +187,42 @@ for (const file of sourceFiles) {
     violations.push(
       `${displayPath}: adds a direct @ant-design/icons import. Use AppIcon with a Lucide symbol instead.`
     );
+  }
+  if (currentDrift.literalColors > previousDrift.literalColors) {
+    violations.push(
+      `${displayPath}: adds literal color values (${previousDrift.literalColors} → ${currentDrift.literalColors}). Use semantic tokens or CSS variables.`
+    );
+  }
+  if (currentDrift.importantRules > previousDrift.importantRules) {
+    violations.push(
+      `${displayPath}: adds !important rules (${previousDrift.importantRules} → ${currentDrift.importantRules}). Fix ownership or specificity at the shared layer.`
+    );
+  }
+  if (currentDrift.inlineStyles > previousDrift.inlineStyles) {
+    violations.push(
+      `${displayPath}: adds inline style objects (${previousDrift.inlineStyles} → ${currentDrift.inlineStyles}). Prefer semantic tokens, primitives, or scoped classes.`
+    );
+  }
+}
+
+for (const file of [...sourceFiles, ...styleFiles]) {
+  const displayPath = relative(webRoot, file);
+  const isMarketingSource = displayPath.startsWith('components/marketing/') || displayPath.startsWith('app/campaigns/');
+  if (!isMarketingSource) continue;
+  const source = readFileSync(file, 'utf8');
+  if (/!important\b/.test(source)) {
+    violations.push(`${displayPath}: Marketing Canvas code must not use !important.`);
+  }
+  if (/dangerouslySetInnerHTML/.test(source)) {
+    violations.push(`${displayPath}: marketing experiences must resolve allowlisted components, not injected HTML.`);
+  }
+  if (file.endsWith('.css')) {
+    if (/:global\s*\(/.test(source) || /(^|[,{\s])(html|body|:root)(?=[\s,{.:#[])/m.test(source)) {
+      violations.push(`${displayPath}: marketing CSS must remain inside its CSS Module boundary.`);
+    }
+    if (/\.ant-[a-z0-9_-]+/i.test(source)) {
+      violations.push(`${displayPath}: marketing CSS must not override Ant Design globals.`);
+    }
   }
 }
 

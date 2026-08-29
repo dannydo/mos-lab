@@ -24,6 +24,7 @@ import { CalendarPlus, Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRou
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
+import { SeasonalAccentProvider } from '../../context/SeasonalAccentContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
@@ -494,7 +495,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <OmiCallProvider>
+    <SeasonalAccentProvider>
+      <OmiCallProvider>
       <Layout className="dashboard-shell" style={{ minHeight: '100dvh' }} suppressHydrationWarning>
         {isMobileTier ? (
           <Drawer
@@ -504,7 +506,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClose={() => setIsMobileNavigationOpen(false)}
             placement="left"
             width="min(86vw, 344px)"
-            styles={{ body: { background: themeMode === 'dark' ? '#000000' : token.colorBgContainer } }}
+            styles={{
+              body: {
+                backgroundColor: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
+                backgroundImage: 'var(--mos-seasonal-sidebar-gradient, none)',
+              },
+            }}
           >
             {renderSidebarContent(false)}
           </Drawer>
@@ -518,8 +525,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             width={persistentNavWidth}
             suppressHydrationWarning
             style={{
-              background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
-              borderRight: `1px solid ${token.colorBorderSecondary}`,
+              backgroundColor: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
+              backgroundImage: 'var(--mos-seasonal-sidebar-gradient, none)',
+              borderRightColor: 'var(--mos-seasonal-border, var(--mos-surface-border))',
+              borderRightStyle: 'solid',
+              borderRightWidth: 1,
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -565,11 +575,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Header
             className="dashboard-header"
             style={{
-              background: token.colorBgContainer,
+              backgroundColor: token.colorBgContainer,
+              backgroundImage: 'var(--mos-seasonal-header-gradient, none)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: `1px solid ${token.colorBorderSecondary}`,
+              borderBottomColor: 'var(--mos-seasonal-border, var(--mos-surface-border))',
+              borderBottomStyle: 'solid',
+              borderBottomWidth: 1,
             }}
           >
             <div className="dashboard-header-left">
@@ -1275,6 +1288,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         currentDate={cvDrawerDate}
         onDateChange={(d) => setCvDrawerDate(d)}
       />
-    </OmiCallProvider>
+      </OmiCallProvider>
+    </SeasonalAccentProvider>
   );
 }
