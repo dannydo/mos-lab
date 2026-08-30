@@ -32,6 +32,15 @@ import type {
   UiExperiencePreviewTokenResponse,
   UiExperienceResolveParams,
   UiExperienceResolveResponse,
+  BugReportDetail,
+  BugReportListQuery,
+  BugReportListResponse,
+  ConfirmCloseBugReportRequest,
+  ConfirmCloseBugReportResponse,
+  CreateBugReportRequest,
+  CreateBugReportResponse,
+  TriageBugReportRequest,
+  TriageBugReportResponse,
 } from '@mos-lab/shared';
 import {
   Customer,
@@ -550,8 +559,36 @@ export const apiClient = {
     },
   },
   release: {
-    get: async (): Promise<{ deployedAt: string | null }> => {
+    get: async (): Promise<{ deployedAt: string | null; commitSha: string | null }> => {
       const response = await api.get('/release');
+      return response.data;
+    },
+  },
+  bugReports: {
+    create: async (data: CreateBugReportRequest): Promise<CreateBugReportResponse> => {
+      const response = await api.post<CreateBugReportResponse>('/bug-reports', data);
+      return response.data;
+    },
+    list: async (params: BugReportListQuery): Promise<BugReportListResponse> => {
+      const response = await api.get<BugReportListResponse>('/bug-reports', { params });
+      return response.data;
+    },
+    detail: async (id: number): Promise<BugReportDetail> => {
+      const response = await api.get<{ data: BugReportDetail }>(`/bug-reports/${id}`);
+      return response.data.data;
+    },
+    triage: async (id: number, data: TriageBugReportRequest): Promise<TriageBugReportResponse> => {
+      const response = await api.patch<TriageBugReportResponse>(`/bug-reports/${id}/triage`, data);
+      return response.data;
+    },
+    confirmClose: async (id: number, data: ConfirmCloseBugReportRequest): Promise<ConfirmCloseBugReportResponse> => {
+      const response = await api.patch<ConfirmCloseBugReportResponse>(`/bug-reports/${id}/confirm-close`, data);
+      return response.data;
+    },
+    attachment: async (reportId: number, attachmentId: number): Promise<Blob> => {
+      const response = await api.get<Blob>(`/bug-reports/${reportId}/attachments/${attachmentId}`, {
+        responseType: 'blob',
+      });
       return response.data;
     },
   },

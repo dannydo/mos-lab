@@ -14,6 +14,7 @@ interface SidebarNavProps {
   themeMode: string;
   token: SafeAny;
   userRole?: string;
+  userIdentity?: { username?: string | null; email?: string | null };
   onNavigate?: () => void;
 }
 
@@ -48,7 +49,14 @@ function containsSelectedItem(item: SidebarItemConfig, selectedKey: string): boo
   return item.key === selectedKey || item.children?.some((child) => containsSelectedItem(child, selectedKey)) === true;
 }
 
-export default function SidebarNav({ collapsed, themeMode, token, userRole, onNavigate }: SidebarNavProps) {
+export default function SidebarNav({
+  collapsed,
+  themeMode,
+  token,
+  userRole,
+  userIdentity,
+  onNavigate,
+}: SidebarNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -257,7 +265,8 @@ export default function SidebarNav({ collapsed, themeMode, token, userRole, onNa
     academySidebarCampaigns,
     academyAccess,
     menuVisibility,
-    categoryVisibility
+    categoryVisibility,
+    userIdentity
   );
 
   const createMenuItem = (item: SidebarItemConfig, depth = 0): SafeAny => {

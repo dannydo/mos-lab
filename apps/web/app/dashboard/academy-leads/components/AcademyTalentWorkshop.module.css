@@ -309,6 +309,7 @@
   color: var(--academy-talent-success);
   display: inline-flex;
   flex: 0 0 auto;
+  font-weight: 700;
   height: 34px;
   justify-content: center;
   object-fit: cover;

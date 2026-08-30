@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { safeStorage } from './safe-storage';
+import { recordApiFailure } from './bug-diagnostics';
 
 function isPrivateLanHostname(hostname: string): boolean {
   if (/^10\./.test(hostname) || /^192\.168\./.test(hostname)) return true;
@@ -45,6 +46,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    recordApiFailure(error);
     if (error.response && error.response.status === 401) {
       if (typeof window !== 'undefined') {
         safeStorage.removeItem('mos_token');

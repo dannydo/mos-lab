@@ -29,3 +29,4 @@ export * from './table-config.js';
 export * from './team.js';
 export * from './staff.js';
 export * from './ui-experience.js';
+export * from './bug-report.js';

@@ -119,6 +119,25 @@ export function normalizeAcademyPhone(value: string | null | undefined): string 
   return raw;
 }
 
+/**
+ * Legacy imports sometimes put a Facebook profile page in `avatar_url`.
+ * A profile page is HTML, not an image, so browsers render it as a broken img.
+ * Keep direct/CDN image URLs and let the UI fall back for known social pages.
+ */
+export function normalizeAcademyAvatarUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const avatarUrl = value.trim();
+  if (!avatarUrl) return null;
+  try {
+    const parsed = new URL(avatarUrl);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    if (['facebook.com', 'www.facebook.com', 'm.facebook.com'].includes(parsed.hostname.toLowerCase())) return null;
+    return avatarUrl;
+  } catch {
+    return null;
+  }
+}
+
 export function buildAcademyLeadSearchText(values: {
   name?: unknown;
   phone?: unknown;
@@ -274,7 +293,7 @@ function toLead(row: SafeAny): AcademyLead {
     facebookPsid: row.facebookPsid ?? null,
     pageId: row.pageId ?? null,
     facebookChatLink: row.facebookChatLink ?? null,
-    avatarUrl: row.avatarUrl ?? null,
+    avatarUrl: normalizeAcademyAvatarUrl(row.avatarUrl),
     status: row.status as AcademyLeadStatus,
     course: row.course ?? null,
     goal: row.goal ?? null,
@@ -376,7 +395,7 @@ function toCalendarEvent(row: SafeAny): AcademyLeadCalendarEvent {
     id: row.id,
     name: row.name,
     phone: row.phone ?? null,
-    avatarUrl: row.avatarUrl ?? null,
+    avatarUrl: normalizeAcademyAvatarUrl(row.avatarUrl),
     status: row.status as AcademyLeadStatus,
     course: row.course ?? null,
     scheduledAt: row.scheduledAt?.toISOString() ?? null,

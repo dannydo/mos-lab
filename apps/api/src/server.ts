@@ -36,6 +36,8 @@ import { academyWorkshopRoutes } from './modules/academy-workshops/routes.js';
 import { academyWorkshopPublicRoutes } from './modules/academy-workshops/public.routes.js';
 import { holidayWorkRoutes } from './modules/holiday-work/routes.js';
 import { uiExperienceRoutes } from './modules/ui-experiences/routes.js';
+import { bugReportRoutes } from './modules/bug-reports/routes.js';
+import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { startPancakeAcademySync } from './modules/academy-sales/pancake-sync.service.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
@@ -280,11 +282,13 @@ const start = async () => {
     await server.register(academyWorkshopPublicRoutes, { prefix: '/api' });
     await server.register(holidayWorkRoutes, { prefix: '/api' });
     await server.register(uiExperienceRoutes, { prefix: '/api' });
+    await server.register(bugReportRoutes, { prefix: '/api' });
 
     startPancakeAcademySync(server);
 
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);
+    startBugReportCleanup(server);
 
     // Run backfill migration for existing CRM promotions to sync to legacy DB
     CampaignPromotionSyncService.backfillExistingPromotions(server).catch((err) => {

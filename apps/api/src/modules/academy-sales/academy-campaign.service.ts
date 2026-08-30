@@ -32,6 +32,7 @@ import {
   AcademySalesError,
   canAccessAcademySales,
   canManageAcademySales,
+  normalizeAcademyAvatarUrl,
   type AcademyActor,
 } from './academy-sales.service.js';
 
@@ -231,7 +232,7 @@ function toCampaignLead(row: SafeRow): AcademyCampaignLead {
       id: Number(lead.id),
       name: String(lead.name),
       phone: lead.phone ?? null,
-      avatarUrl: lead.avatarUrl ?? null,
+      avatarUrl: normalizeAcademyAvatarUrl(lead.avatarUrl),
       status: lead.status as AcademyLeadStatus,
       course: lead.course ?? null,
       source: String(lead.source || 'Manual'),

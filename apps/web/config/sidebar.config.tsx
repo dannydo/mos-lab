@@ -29,9 +29,16 @@ import {
   UsersRound,
   WalletCards,
   CalendarClock,
+  MessageSquareWarning,
 } from 'lucide-react';
 
-import { canAccessLoca, isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import {
+  canAccessLoca,
+  isAdminOrSuperAdminRole,
+  isCanonicalSuperAdminIdentity,
+  isSuperAdminRole,
+  SafeAny,
+} from '@mos-lab/shared';
 import { AppIcon } from '../components/ui/AppIcon';
 
 export interface SidebarItemConfig {
@@ -57,11 +64,13 @@ export function getSidebarGroups(
   academySidebarCampaigns: SafeAny[] = [],
   academyAccess: boolean = false,
   menuVisibility: Record<string, boolean> = {},
-  categoryVisibility: Record<string, boolean> = {}
+  categoryVisibility: Record<string, boolean> = {},
+  currentUser: { username?: string | null; email?: string | null } = {}
 ): SidebarGroupConfig[] {
   const normalizedRole = userRole?.toLowerCase() || '';
   const isAdmin = isAdminOrSuperAdminRole(normalizedRole);
   const isSuperAdmin = isSuperAdminRole(normalizedRole);
+  const canTriageBugInbox = isSuperAdmin && isCanonicalSuperAdminIdentity(currentUser);
   const isLocaAllowed = canAccessLoca(normalizedRole);
   const isCrmCategoryVisible = categoryVisibility.crm !== false;
   const isAcademyCategoryVisible = categoryVisibility.academy !== false;
@@ -388,6 +397,14 @@ export function getSidebarGroups(
         path: '/dashboard/staff/menu-access',
       });
     }
+    if (canTriageBugInbox) {
+      systemGroupItems.push({
+        key: 'bug-reports',
+        label: 'Bug Inbox',
+        icon: <AppIcon icon={MessageSquareWarning} size="sm" />,
+        path: '/dashboard/bug-reports',
+      });
+    }
     systemGroupItems.push(
       {
         key: 'staff',
@@ -504,6 +521,7 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/catalog')) return 'catalog';
   if (pathname.includes('/dashboard/architecture')) return 'architecture';
   if (pathname.includes('/dashboard/design-system')) return 'design-system';
+  if (pathname.includes('/dashboard/bug-reports')) return 'bug-reports';
   if (pathname.includes('/dashboard/cs')) return 'cs-hub';
   return 'today';
 }

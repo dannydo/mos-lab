@@ -4,6 +4,7 @@ export async function healthRoutes(fastify: FastifyInstance) {
   // Deliberately avoids database checks: the sidebar polls this lightweight release marker.
   fastify.get('/release', async () => ({
     deployedAt: process.env.DEPLOYED_AT || null,
+    commitSha: process.env.DEPLOY_COMMIT || null,
   }));
 
   fastify.get('/health', async (request, reply) => {
