@@ -2,7 +2,7 @@
 // Mandatory Customer Phone Number Display Enforced
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Steps, Button, Select, DatePicker, Input, theme, message, notification, Card, Tag } from 'antd';
+import { Steps, Button, Select, DatePicker, Input, theme, message, notification, Card, Tag, Modal } from 'antd';
 import {
   FormOutlined,
   HomeOutlined,
@@ -357,7 +357,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   // Extract existing service ID or Name helper from booking object
   const getBookingServiceInfo = (bookingObj: SafeAny) => {
     if (!bookingObj) return { id: null, name: null };
-    const id = bookingObj.serviceId || bookingObj.service_id || null;
     const name =
       bookingObj.serviceName ||
       bookingObj.service_name ||
@@ -370,6 +369,11 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           : bookingObj.services[0]?.name || bookingObj.services[0]?.serviceName
         : null) ||
       null;
+    // `0` is the deliberate virtual ID for the legacy "Any Lashes" service.
+    // Do not use `||` here: it turns that valid ID into a fake service later.
+    const rawId = bookingObj.serviceId ?? bookingObj.service_id ?? null;
+    const isVirtualAnyLashes = typeof name === 'string' && /\bany\s*[-/]?\s*lashes\b/i.test(name);
+    const id = rawId ?? (isVirtualAnyLashes ? 0 : null);
     return { id, name };
   };
 
@@ -379,7 +383,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       const list = (await apiClient.customers.getServices()) || [];
 
       let matched = null;
-      if (targetId) {
+      if (targetId !== null && targetId !== undefined) {
         matched = list.find((s: SafeAny) => Number(s.id) === Number(targetId));
       }
       if (!matched && targetName) {
@@ -392,7 +396,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         setServices((prev) => (prev.some((s) => s.id === matched.id) ? prev : [matched, ...list]));
       } else if (targetName) {
         const customService = {
-          id: targetId ? Number(targetId) : 999999,
+          // This is only a display fallback. Never invent a numeric service ID:
+          // sending one would make the legacy order_service foreign key fail.
+          id: `unresolved:${String(targetName)}`,
           name: targetName,
           price: booking?.servicePrice || booking?.price || 0,
           duration: 90,
@@ -445,9 +451,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
       // Synchronously set initial service so UI never shows empty placeholder
       const { id: srvId, name: srvName } = getBookingServiceInfo(booking);
-      if (srvName || srvId) {
+      if (srvName || srvId !== null) {
         const initialSrv = {
-          id: srvId ? Number(srvId) : 999999,
+          id: srvId !== null && srvId !== undefined ? Number(srvId) : `unresolved:${String(srvName)}`,
           name: srvName || 'Dịch vụ đã chọn',
           price: booking.servicePrice || booking.price || 0,
           duration: 90,
@@ -633,6 +639,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
     setSubmitting(true);
     try {
+      const parsedServiceId = Number(selectedService?.id);
       const payload = {
         storeId: selectedCN.id,
         storeName: selectedCN.name,
@@ -641,7 +648,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         bookingDate: bookingDate.format('YYYY-MM-DD'),
         bookingTime: selectedSlot,
         bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
-        serviceId: selectedService?.id || null,
+        ...(Number.isInteger(parsedServiceId) && parsedServiceId >= 0 ? { serviceId: parsedServiceId } : {}),
       };
 
       await apiClient.customers.updateBooking(booking.id, payload);
@@ -657,7 +664,13 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       onClose();
     } catch (err) {
       console.error('[Reschedule] Submit failed:', err);
-      message.error((err as SafeAny).response?.data?.message || 'Có lỗi xảy ra khi dời lịch.');
+      const apiError = (err as SafeAny).response;
+      const errorMessage = apiError?.data?.message || 'Có lỗi xảy ra khi dời lịch.';
+      Modal.error({
+        title: 'Không thể dời lịch',
+        content: errorMessage,
+        okText: 'Đã hiểu',
+      });
     } finally {
       setSubmitting(false);
     }

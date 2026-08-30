@@ -32,6 +32,7 @@ import {
   buildLegacyBookingWindow,
   resolveBookingUpdateFields,
 } from './services/booking-update.service.js';
+import { BookingReschedulePermissionService } from './services/booking-reschedule-permission.service.js';
 
 const parseServiceFilterIds = (value: unknown): number[] => {
   if (typeof value !== 'string') return [];
@@ -217,7 +218,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
     const offsetNum = (pageNum - 1) * limitNum;
     const adminUser = request.user as { id: number; role: string };
 
-    const effectiveAssignedStaffId = resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
+    const hasGlobalRescheduleAccess = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(
+      fastify,
+      adminUser
+    );
+    const effectiveAssignedStaffId = hasGlobalRescheduleAccess
+      ? assignedStaffId
+      : resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
 
     try {
       const sortParam = (sortField || sort || 'id_desc') as string;
@@ -1706,13 +1713,19 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
     const adminUser = request.user as { id: number; role: string };
 
-    const cacheKey = `cust_stats:${adminUser?.id || 0}:${adminUser?.role || ''}:${JSON.stringify(request.query)}`;
+    const hasGlobalRescheduleAccess = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(
+      fastify,
+      adminUser
+    );
+    const cacheKey = `cust_stats:${adminUser?.id || 0}:${adminUser?.role || ''}:global-schedule-${hasGlobalRescheduleAccess}:${JSON.stringify(request.query)}`;
     const cachedStats = fastify.cache.get(cacheKey);
     if (cachedStats) {
       return cachedStats;
     }
 
-    const effectiveAssignedStaffId = resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
+    const effectiveAssignedStaffId = hasGlobalRescheduleAccess
+      ? assignedStaffId
+      : resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
 
     try {
       // Determine what joins and select fields we need in the inner query to optimize performance
@@ -4108,11 +4121,40 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
   // PUT /api/customers/booking/:id
   // Partially update an existing booking; omitted branch/date/time fields are preserved.
+  fastify.get(
+    '/customers/booking/:id/reschedule-eligibility',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const user = request.user as { role: string; id: number };
+      const orderId = Number((request.params as { id: string }).id);
+
+      if (!Number.isInteger(orderId) || orderId <= 0) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'ID lịch hẹn không hợp lệ.' });
+      }
+
+      try {
+        const orders = await fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number | string }>>(
+          'SELECT user_id FROM `order` WHERE id = ? LIMIT 1',
+          orderId
+        );
+        const order = orders[0];
+        if (!order) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
+        }
+
+        return reply.send(await BookingReschedulePermissionService.evaluate(fastify, user, Number(order.user_id)));
+      } catch (err: SafeAny) {
+        fastify.log.error(err, 'Check booking reschedule eligibility error:');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể kiểm tra quyền dời lịch. Vui lòng thử lại.',
+        });
+      }
+    }
+  );
+
   fastify.put('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'telesales' && user.role !== 'booker') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
-    }
 
     const { id } = request.params as { id: string };
     const orderId = parseInt(id, 10);
@@ -4165,7 +4207,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const finalCustomerId = Number(order.user_id);
       const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
 
-      if (!(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
+      const permission = await BookingReschedulePermissionService.evaluate(fastify, user, finalCustomerId);
+      if (!permission.allowed) {
+        return reply.status(403).send({ error: 'Forbidden', message: permission.message });
+      }
 
       const resolvedUpdate = resolveBookingUpdateFields(
         {
@@ -4202,7 +4247,15 @@ export async function customerRoutes(fastify: FastifyInstance) {
       );
       const existingService = existingServices[0] || null;
       const hasServiceChange = serviceId !== undefined && serviceId !== null;
-      let finalServiceId = hasServiceChange ? Number(serviceId) : Number(existingService?.service_id || 0) || null;
+      const requestedServiceId = hasServiceChange ? Number(serviceId) : null;
+      if (
+        hasServiceChange &&
+        (requestedServiceId === null || !Number.isInteger(requestedServiceId) || requestedServiceId < 0)
+      ) {
+        throw new BookingUpdateValidationError('Dịch vụ được chọn không hợp lệ. Vui lòng chọn lại dịch vụ.');
+      }
+
+      let finalServiceId = hasServiceChange ? requestedServiceId! : Number(existingService?.service_id || 0) || null;
       if (finalServiceId === 0) finalServiceId = 1; // Map virtual "Any - Lashes 2" to the legacy service.
 
       let srvPrice = Number(existingService?.service_price || order.total_price || 0);
@@ -4226,6 +4279,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           srvPrice = Math.round(Number(srvInfo[0].price || 0));
           srvDuration = Number(srvInfo[0].duration || 90);
           serviceGroup = String(srvInfo[0].serviceGroup || serviceGroup);
+        } else if (hasServiceChange) {
+          throw new BookingUpdateValidationError('Dịch vụ đã chọn không còn tồn tại. Vui lòng chọn lại dịch vụ.');
         }
       }
 
@@ -4298,56 +4353,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const finalOrderState = resolvedUpdate.isLockedScheduleUpdateRequested ? 'New' : String(order.order_state);
 
-      // 4. Update order in legacy database
-      await fastify.prisma.legacy.$executeRawUnsafe(
-        `UPDATE \`order\` 
-         SET booking_date_start = ?, 
-             booking_date_end = ?, 
-             assigned_staff_id = ?, 
-             client_store_id = ?, 
-             booking_note = ?, 
-             booking_duration_minute = ?,
-             total_price = ?,
-             promotion_id = ?,
-             selected_promotion_id = ?,
-             campaign_id = ?,
-             order_state = ?,
-             date_updated = NOW()
-         WHERE id = ?`,
-        mysqlStart,
-        mysqlEnd,
-        finalTechnicianId,
-        finalStoreId,
-        finalBookingNote || null,
-        duration,
-        totalPrice,
-        promotionResolution.legacyPromotionId,
-        promotionResolution.legacyPromotionId,
-        promotionResolution.legacyCampaignId,
-        finalOrderState,
-        orderId
-      );
-
       const didTechnicianChange = Number(order.assigned_staff_id || 0) !== Number(finalTechnicianId || 0);
-      if (resolvedUpdate.isLockedScheduleUpdateRequested || didTechnicianChange) {
-        // Only actual schedule/CV mutations belong in the legacy reschedule ledger.
-        await fastify.prisma.legacy.$executeRawUnsafe(
-          `INSERT INTO order_booking_date_change (
-            created_staff_id, order_id, client_store_id, assigned_staff_id,
-            booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-          crmStaff.legacyStaffId,
-          orderId,
-          finalStoreId,
-          finalTechnicianId,
-          finalBookingNote || null,
-          duration,
-          mysqlStart,
-          mysqlEnd
-        );
-      }
-
-      // 5. Update order_service record KTV assignment, service details, and recalculate user_service_type
       const userServiceType = await UserServiceTypeService.determineUserServiceType(
         fastify,
         finalCustomerId,
@@ -4355,68 +4361,117 @@ export async function customerRoutes(fastify: FastifyInstance) {
         serviceGroup
       );
 
-      if (existingService && finalServiceId) {
-        await fastify.prisma.legacy.$executeRawUnsafe(
-          `UPDATE order_service
-           SET service_id = ?,
-               service_group = ?,
-               duration_minute = ?,
-               service_price = ?,
-               discount_amount = ?,
+      // Keep all legacy writes atomic. A rejected service or a later write failure
+      // must not leave the appointment time updated while its service is unchanged.
+      await fastify.prisma.legacy.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(
+          `UPDATE \`order\`
+           SET booking_date_start = ?,
+               booking_date_end = ?,
+               assigned_staff_id = ?,
+               client_store_id = ?,
+               booking_note = ?,
+               booking_duration_minute = ?,
                total_price = ?,
                promotion_id = ?,
-               assigned_staff_id = ?,
-               booked_staff_id = ?,
-               user_service_type = ?
+               selected_promotion_id = ?,
+               campaign_id = ?,
+               order_state = ?,
+               date_updated = NOW()
            WHERE id = ?`,
-          finalServiceId,
-          serviceGroup,
+          mysqlStart,
+          mysqlEnd,
+          finalTechnicianId,
+          finalStoreId,
+          finalBookingNote || null,
           duration,
-          srvPrice,
-          promotionResolution.discountAmount,
           totalPrice,
           promotionResolution.legacyPromotionId,
-          finalTechnicianId,
-          finalTechnicianId,
-          userServiceType,
-          existingService.id
-        );
-      } else if (finalServiceId) {
-        await fastify.prisma.legacy.$executeRawUnsafe(
-          `INSERT INTO order_service (
-             order_id, service_id, duration_minute, service_price, discount_amount, total_price,
-             promotion_id, service_group, assigned_staff_id, booked_staff_id, user_service_type, date_created
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-          orderId,
-          finalServiceId,
-          duration,
-          srvPrice,
-          promotionResolution.discountAmount,
-          totalPrice,
           promotionResolution.legacyPromotionId,
-          serviceGroup,
-          finalTechnicianId,
-          finalTechnicianId,
-          userServiceType
-        );
-      } else {
-        await fastify.prisma.legacy.$executeRawUnsafe(
-          `UPDATE order_service 
-           SET assigned_staff_id = ?, booked_staff_id = ?, user_service_type = ?
-           WHERE order_id = ?`,
-          finalTechnicianId,
-          finalTechnicianId,
-          userServiceType,
+          promotionResolution.legacyCampaignId,
+          finalOrderState,
           orderId
         );
-      }
 
-      // Update user's last_order_booking date
-      await fastify.prisma.legacy.$executeRawUnsafe(
-        `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
-        mysqlStart,
-        finalCustomerId
-      );
+        if (resolvedUpdate.isLockedScheduleUpdateRequested || didTechnicianChange) {
+          await tx.$executeRawUnsafe(
+            `INSERT INTO order_booking_date_change (
+              created_staff_id, order_id, client_store_id, assigned_staff_id,
+              booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            crmStaff.legacyStaffId,
+            orderId,
+            finalStoreId,
+            finalTechnicianId,
+            finalBookingNote || null,
+            duration,
+            mysqlStart,
+            mysqlEnd
+          );
+        }
+
+        if (existingService && finalServiceId) {
+          await tx.$executeRawUnsafe(
+            `UPDATE order_service
+             SET service_id = ?,
+                 service_group = ?,
+                 duration_minute = ?,
+                 service_price = ?,
+                 discount_amount = ?,
+                 total_price = ?,
+                 promotion_id = ?,
+                 assigned_staff_id = ?,
+                 booked_staff_id = ?,
+                 user_service_type = ?
+             WHERE id = ?`,
+            finalServiceId,
+            serviceGroup,
+            duration,
+            srvPrice,
+            promotionResolution.discountAmount,
+            totalPrice,
+            promotionResolution.legacyPromotionId,
+            finalTechnicianId,
+            finalTechnicianId,
+            userServiceType,
+            existingService.id
+          );
+        } else if (finalServiceId) {
+          await tx.$executeRawUnsafe(
+            `INSERT INTO order_service (
+               order_id, service_id, duration_minute, service_price, discount_amount, total_price,
+               promotion_id, service_group, assigned_staff_id, booked_staff_id, user_service_type, date_created
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            orderId,
+            finalServiceId,
+            duration,
+            srvPrice,
+            promotionResolution.discountAmount,
+            totalPrice,
+            promotionResolution.legacyPromotionId,
+            serviceGroup,
+            finalTechnicianId,
+            finalTechnicianId,
+            userServiceType
+          );
+        } else {
+          await tx.$executeRawUnsafe(
+            `UPDATE order_service
+             SET assigned_staff_id = ?, booked_staff_id = ?, user_service_type = ?
+             WHERE order_id = ?`,
+            finalTechnicianId,
+            finalTechnicianId,
+            userServiceType,
+            orderId
+          );
+        }
+
+        await tx.$executeRawUnsafe(
+          `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
+          mysqlStart,
+          finalCustomerId
+        );
+      });
 
       // 6. Audit Log Recording
       await BookingAuditService.logAction(fastify, {
@@ -6120,7 +6175,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      if (!(await ensureTelesalesCustomerAccess(request, reply, resolvedCustomerId))) return;
+      const canRescheduleAnyCustomer = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(
+        fastify,
+        request.user
+      );
+      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerAccess(request, reply, resolvedCustomerId)))
+        return;
 
       // 1. Fetch CRM Assignment for Online Consultant
       const assigned = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
@@ -7133,7 +7193,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // Super Admin inherits the complete Admin customer-detail scope. Keep
       // the assignment boundary only for roles that are not administrators.
-      if (!isAdminOrSuperAdminRole(user.role)) {
+      const canRescheduleAnyCustomer = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(
+        fastify,
+        user
+      );
+      if (!canRescheduleAnyCustomer) {
         if (
           CustomerAccessService.isTelesales(user) &&
           !(await ensureTelesalesCustomerAccess(request, reply, customerId))
@@ -7422,7 +7486,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
-    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+    const canRescheduleAnyCustomer = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(
+      fastify,
+      request.user
+    );
+    if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
 
     try {
       const countResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
