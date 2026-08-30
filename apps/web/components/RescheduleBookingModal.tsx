@@ -2,7 +2,7 @@
 // Mandatory Customer Phone Number Display Enforced
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Steps, Button, Select, DatePicker, Input, theme, message, notification, Card, Tag, Modal } from 'antd';
+import { Steps, Button, Select, DatePicker, Input, theme, message, notification, Card, Tag } from 'antd';
 import {
   FormOutlined,
   HomeOutlined,
@@ -60,6 +60,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Form Fields State
   const [selectedCN, setSelectedCN] = useState<SafeAny>(null); // Branch/Store
@@ -666,11 +667,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       console.error('[Reschedule] Submit failed:', err);
       const apiError = (err as SafeAny).response;
       const errorMessage = apiError?.data?.message || 'Có lỗi xảy ra khi dời lịch.';
-      Modal.error({
-        title: 'Không thể dời lịch',
-        content: errorMessage,
-        okText: 'Đã hiểu',
-      });
+      setSubmitError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -1359,6 +1356,36 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           >
             Bạn đã thông báo quy định 20:15 này cho khách hàng chưa?
           </div>
+        </div>
+      </AdaptiveModal>
+
+      <AdaptiveModal
+        intent="confirm"
+        className="booking-reschedule-error"
+        open={Boolean(submitError)}
+        zIndex={1500}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ff4d4f', fontSize: '16px' }}>
+            <ExclamationCircleOutlined style={{ fontSize: '19px' }} />
+            <span>Không thể dời lịch</span>
+          </div>
+        }
+        onCancel={() => setSubmitError(null)}
+        footer={
+          <Button type="primary" danger onClick={() => setSubmitError(null)}>
+            Đã hiểu
+          </Button>
+        }
+      >
+        <div
+          style={{
+            padding: '8px 0',
+            color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
+            fontSize: '14px',
+            lineHeight: '1.6',
+          }}
+        >
+          {submitError}
         </div>
       </AdaptiveModal>
     </AdaptiveDrawer>
