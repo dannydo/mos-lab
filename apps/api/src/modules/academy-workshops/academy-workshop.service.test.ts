@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   academyWorkshopTalentSnapshotFromAssessment,
+  calculateAcademyWorkshopEndsAtFromAgenda,
   resolveAcademyWorkshopPublicOrigin,
 } from './academy-workshop.service.js';
 import { normalizeAcademyWorkshopAgendaDefinition } from './academy-workshop-agenda-template.service.js';
@@ -96,4 +97,14 @@ test('Agenda template definitions normalize their order and reject empty templat
     [1, 2]
   );
   assert.throws(() => normalizeAcademyWorkshopAgendaDefinition([]), /ít nhất một mục/);
+});
+
+test('Workshop end time is derived from the planned agenda duration', () => {
+  const endsAt = calculateAcademyWorkshopEndsAtFromAgenda(new Date('2026-08-31T02:00:00.000Z'), [
+    { plannedDurationSeconds: 15 * 60 },
+    { plannedDurationSeconds: 45 * 60 },
+    { plannedDurationSeconds: 75 * 60 },
+  ]);
+
+  assert.equal(endsAt.toISOString(), '2026-08-31T04:15:00.000Z');
 });

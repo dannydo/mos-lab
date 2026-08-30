@@ -174,16 +174,12 @@ export default function AcademyWorkshopAgendaManager({
       setSaving(true);
       try {
         const request = toAgendaRequest(values);
-        const item = editingItem
-          ? await apiClient.academySales.workshops.updateAgendaItem(workshop.id, editingItem.id, request)
-          : await apiClient.academySales.workshops.createAgendaItem(workshop.id, request);
-        const agenda = editingItem
-          ? workshop.agenda.map((current) => (current.id === item.id ? item : current))
-          : [...workshop.agenda, item];
-        onUpdated({
-          ...workshop,
-          agenda: agenda.sort((left, right) => left.sortOrder - right.sortOrder || left.id - right.id),
-        });
+        if (editingItem) {
+          await apiClient.academySales.workshops.updateAgendaItem(workshop.id, editingItem.id, request);
+        } else {
+          await apiClient.academySales.workshops.createAgendaItem(workshop.id, request);
+        }
+        await onRefresh();
         closeEditor();
         message.success(editingItem ? 'Đã cập nhật mục agenda.' : 'Đã thêm mục agenda.');
       } catch (cause: any) {
@@ -239,17 +235,17 @@ export default function AcademyWorkshopAgendaManager({
       [next[from], next[to]] = [next[to], next[from]];
       setSaving(true);
       try {
-        const agenda = await apiClient.academySales.workshops.reorderAgenda(workshop.id, {
+        await apiClient.academySales.workshops.reorderAgenda(workshop.id, {
           agendaItemIds: next.map((item) => item.id),
         });
-        onUpdated({ ...workshop, agenda });
+        await onRefresh();
       } catch (cause: any) {
         message.error(cause?.response?.data?.message || 'Không thể sắp xếp agenda.');
       } finally {
         setSaving(false);
       }
     },
-    [onUpdated, workshop]
+    [onRefresh, workshop]
   );
 
   const toggleResource = React.useCallback(

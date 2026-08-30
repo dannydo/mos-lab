@@ -87,6 +87,20 @@ export default function AcademyWorkshopEditButton({
   const [open, setOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const heroImageUrl = Form.useWatch('heroImageUrl', form);
+  const startsAt = Form.useWatch('startsAt', form);
+  const plannedAgendaMinutes = React.useMemo(
+    () => Math.round(workshop.agenda.reduce((total, item) => total + item.plannedDurationSeconds, 0) / 60),
+    [workshop.agenda]
+  );
+
+  React.useEffect(() => {
+    if (!open || !startsAt || plannedAgendaMinutes <= 0) return;
+    const calculatedEndsAt = startsAt.add(plannedAgendaMinutes, 'minute');
+    const currentEndsAt = form.getFieldValue('endsAt');
+    if (!currentEndsAt || !currentEndsAt.isSame(calculatedEndsAt)) {
+      form.setFieldValue('endsAt', calculatedEndsAt);
+    }
+  }, [form, open, plannedAgendaMinutes, startsAt]);
 
   const openEditor = React.useCallback(() => {
     form.setFieldsValue(toFormValues(workshop));
@@ -173,7 +187,7 @@ export default function AcademyWorkshopEditButton({
           <EntityFormField
             name="endsAt"
             label="Kết thúc"
-            dependencies={['startsAt']}
+            extra={`Tự động tính theo agenda · ${plannedAgendaMinutes} phút`}
             rules={[
               { required: true, message: 'Chọn thời gian kết thúc.' },
               {
@@ -186,7 +200,7 @@ export default function AcademyWorkshopEditButton({
               },
             ]}
           >
-            <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
+            <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" disabled />
           </EntityFormField>
           <EntityFormField
             name="location"

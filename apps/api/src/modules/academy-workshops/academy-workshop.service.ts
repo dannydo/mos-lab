@@ -193,6 +193,18 @@ function selectionDeadline(value: unknown, label: string, startsAt: Date): Date 
   return deadline;
 }
 
+/** The workshop schedule always ends when its planned agenda ends. */
+export function calculateAcademyWorkshopEndsAtFromAgenda(
+  startsAt: Date,
+  agenda: ReadonlyArray<Pick<AcademyWorkshopAgendaItem, 'plannedDurationSeconds'>>
+): Date {
+  const plannedSeconds = agenda.reduce(
+    (total, item) => total + Math.max(0, Math.round(Number(item.plannedDurationSeconds) || 0)),
+    0
+  );
+  return new Date(startsAt.getTime() + plannedSeconds * 1_000);
+}
+
 function normalizeHeroImageUrl(value: unknown): string | null {
   const imageUrl = String(value ?? '').trim();
   if (!imageUrl) return null;
@@ -773,8 +785,6 @@ export class AcademyWorkshopService {
     if (!name || name.length > 150) throw new AcademySalesError('Tên workshop là bắt buộc và tối đa 150 ký tự.');
     if (!location || location.length > 255) throw new AcademySalesError('Địa điểm workshop là bắt buộc.');
     const startsAt = parseDate(input.startsAt, 'Thời gian bắt đầu')!;
-    const endsAt = parseDate(input.endsAt, 'Thời gian kết thúc')!;
-    if (endsAt <= startsAt) throw new AcademySalesError('Thời gian kết thúc phải sau thời gian bắt đầu.');
     const capacity = Math.min(100, Math.max(1, Math.round(Number(input.capacity) || 10)));
     const feeVnd = Math.max(0, Math.round(Number(input.feeVnd) || 0));
     const feeDueAt = parseDate(input.feeDueAt, 'Hạn đóng phí', true);
@@ -792,6 +802,7 @@ export class AcademyWorkshopService {
     const agenda = input.agenda?.length
       ? this.normalizeAgenda(input.agenda)
       : this.normalizeAgenda(agendaTemplate.items as UpsertAcademyWorkshopAgendaItemRequest[]);
+    const endsAt = calculateAcademyWorkshopEndsAtFromAgenda(startsAt, agenda);
 
     const created = await fastify.prisma.crm.$transaction(async (tx) => {
       const campaign = await tx.crmAcademyCampaign.create({
@@ -844,9 +855,7 @@ export class AcademyWorkshopService {
     const name = input.name === undefined ? row.campaign.name : String(input.name).trim();
     const location = input.location === undefined ? row.location : String(input.location).trim();
     const startsAt = input.startsAt === undefined ? row.startsAt : parseDate(input.startsAt, 'Thời gian bắt đầu')!;
-    const endsAt = input.endsAt === undefined ? row.endsAt : parseDate(input.endsAt, 'Thời gian kết thúc')!;
-    if (!name || !location || endsAt <= startsAt)
-      throw new AcademySalesError('Thông tin thời gian/địa điểm workshop không hợp lệ.');
+    if (!name || !location) throw new AcademySalesError('Thông tin thời gian/địa điểm workshop không hợp lệ.');
     const menuSelectionDeadline = selectionDeadline(
       input.menuSelectionDeadline === undefined ? row.menuSelectionDeadline : input.menuSelectionDeadline,
       'Hạn chốt thực đơn',
@@ -871,6 +880,15 @@ export class AcademyWorkshopService {
       input.agendaTemplateId === undefined
         ? row.agendaTemplate
         : await AcademyWorkshopAgendaTemplateService.getRequired(fastify, input.agendaTemplateId);
+    const replacingAgenda = input.agenda !== undefined || input.agendaTemplateId !== undefined;
+    if (replacingAgenda) this.assertAgendaStructureEditable(row);
+    const nextAgenda = replacingAgenda
+      ? input.agenda !== undefined
+        ? this.normalizeAgenda(input.agenda)
+        : this.normalizeAgenda((agendaTemplate?.items || []) as UpsertAcademyWorkshopAgendaItemRequest[])
+      : row.agendaItems;
+    const endsAt = calculateAcademyWorkshopEndsAtFromAgenda(startsAt, nextAgenda);
+    if (endsAt <= startsAt) throw new AcademySalesError('Agenda workshop cần có ít nhất một mục có thời lượng.');
     const heroImageUrl =
       input.heroImageUrl === undefined ? row.heroImageUrl : normalizeHeroImageUrl(input.heroImageUrl);
     await fastify.prisma.crm.$transaction(async (tx) => {
@@ -907,15 +925,11 @@ export class AcademyWorkshopService {
           agendaTemplateId: agendaTemplate?.id ?? null,
         },
       });
-      if (input.agenda || input.agendaTemplateId !== undefined) {
-        this.assertAgendaStructureEditable(row);
+      if (replacingAgenda) {
         await tx.crmAcademyWorkshopAgendaItem.deleteMany({ where: { workshopId: row.id } });
-        const agenda = input.agenda
-          ? this.normalizeAgenda(input.agenda)
-          : this.normalizeAgenda((agendaTemplate?.items || []) as UpsertAcademyWorkshopAgendaItemRequest[]);
-        if (agenda.length)
+        if (nextAgenda.length)
           await tx.crmAcademyWorkshopAgendaItem.createMany({
-            data: agenda.map((item) => ({ ...item, workshopId: row.id })),
+            data: nextAgenda.map((item: SafeAny) => ({ ...item, workshopId: row.id })),
           });
       }
     });
@@ -957,6 +971,18 @@ export class AcademyWorkshopService {
     }
   }
 
+  private static async syncAgendaDrivenEndsAt(tx: SafeAny, row: SafeAny, agenda: SafeAny[]) {
+    const endsAt = calculateAcademyWorkshopEndsAtFromAgenda(new Date(row.startsAt), agenda);
+    if (endsAt <= new Date(row.startsAt)) {
+      throw new AcademySalesError('Agenda workshop cần có ít nhất một mục có thời lượng.');
+    }
+    await Promise.all([
+      tx.crmAcademyWorkshop.update({ where: { id: row.id }, data: { endsAt } }),
+      tx.crmAcademyCampaign.update({ where: { id: row.campaignId }, data: { endDate: endsAt } }),
+    ]);
+    return endsAt;
+  }
+
   static async createAgendaItem(
     fastify: FastifyInstance,
     actor: AcademyActor,
@@ -967,8 +993,12 @@ export class AcademyWorkshopService {
     this.assertCanEditAgenda(actor);
     this.assertAgendaStructureEditable(row);
     const [item] = this.normalizeAgenda([{ ...input, sortOrder: row.agendaItems.length + 1 }]);
-    const created = await fastify.prisma.crm.crmAcademyWorkshopAgendaItem.create({
-      data: { ...item, workshopId: row.id },
+    const created = await fastify.prisma.crm.$transaction(async (tx) => {
+      const created = await tx.crmAcademyWorkshopAgendaItem.create({
+        data: { ...item, workshopId: row.id },
+      });
+      await this.syncAgendaDrivenEndsAt(tx, row, [...row.agendaItems, created]);
+      return created;
     });
     return toAcademyWorkshopAgendaItem(created);
   }
@@ -995,9 +1025,17 @@ export class AcademyWorkshopService {
         sortOrder: existing.sortOrder,
       },
     ]);
-    const updated = await fastify.prisma.crm.crmAcademyWorkshopAgendaItem.update({
-      where: { id: existing.id },
-      data: item,
+    const updated = await fastify.prisma.crm.$transaction(async (tx) => {
+      const updated = await tx.crmAcademyWorkshopAgendaItem.update({
+        where: { id: existing.id },
+        data: item,
+      });
+      await this.syncAgendaDrivenEndsAt(
+        tx,
+        row,
+        row.agendaItems.map((current: SafeAny) => (current.id === updated.id ? updated : current))
+      );
+      return updated;
     });
     return toAcademyWorkshopAgendaItem(updated);
   }
@@ -1017,13 +1055,13 @@ export class AcademyWorkshopService {
     }
     await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmAcademyWorkshopAgendaItem.delete({ where: { id: itemId } });
+      const remainingAgenda = row.agendaItems.filter((item: SafeAny) => item.id !== itemId);
       await Promise.all(
-        row.agendaItems
-          .filter((item: SafeAny) => item.id !== itemId)
-          .map((item: SafeAny, index: number) =>
-            tx.crmAcademyWorkshopAgendaItem.update({ where: { id: item.id }, data: { sortOrder: index + 1 } })
-          )
+        remainingAgenda.map((item: SafeAny, index: number) =>
+          tx.crmAcademyWorkshopAgendaItem.update({ where: { id: item.id }, data: { sortOrder: index + 1 } })
+        )
       );
+      await this.syncAgendaDrivenEndsAt(tx, row, remainingAgenda);
     });
   }
 
@@ -1045,14 +1083,17 @@ export class AcademyWorkshopService {
     ) {
       throw new AcademySalesError('Thứ tự agenda không hợp lệ.');
     }
-    await fastify.prisma.crm.$transaction(
-      ids.map((itemId, index) =>
-        fastify.prisma.crm.crmAcademyWorkshopAgendaItem.update({
-          where: { id: itemId },
-          data: { sortOrder: index + 1 },
-        })
-      )
-    );
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await Promise.all(
+        ids.map((itemId, index) =>
+          tx.crmAcademyWorkshopAgendaItem.update({
+            where: { id: itemId },
+            data: { sortOrder: index + 1 },
+          })
+        )
+      );
+      await this.syncAgendaDrivenEndsAt(tx, row, row.agendaItems);
+    });
     return (await this.getById(fastify, actor, row.id)).agenda;
   }
 
