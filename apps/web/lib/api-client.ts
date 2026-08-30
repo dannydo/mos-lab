@@ -182,6 +182,7 @@ import {
   ToggleCampaignTouchpointLogDto,
   CustomerCampaignPromotionInfo,
   BookingPromotionOptionsResponse,
+  BookingRescheduleEligibilityResponse,
   UpdateBookingRequest,
   CampaignStatsResponse,
   ListCampaignsParams,
@@ -983,6 +984,10 @@ export const apiClient = {
     },
     getBookingPromotionOptions: async (orderId: number): Promise<BookingPromotionOptionsResponse> => {
       const response = await api.get(`/customers/booking/${orderId}/promotions`);
+      return response.data;
+    },
+    getRescheduleEligibility: async (orderId: number): Promise<BookingRescheduleEligibilityResponse> => {
+      const response = await api.get(`/customers/booking/${orderId}/reschedule-eligibility`);
       return response.data;
     },
     updateBooking: async (

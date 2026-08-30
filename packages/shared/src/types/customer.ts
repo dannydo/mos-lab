@@ -533,6 +533,17 @@ export interface UpdateBookingRequest {
   reasonNote?: string | null;
 }
 
+/**
+ * Returned before opening the reschedule wizard so the UI can explain an
+ * authorization block without making the user complete the entire flow.
+ * The booking update endpoint repeats the same check before writing data.
+ */
+export interface BookingRescheduleEligibilityResponse {
+  allowed: boolean;
+  reason: 'ALLOWED' | 'ROLE_NOT_ALLOWED' | 'CUSTOMER_NOT_ASSIGNED';
+  message: string;
+}
+
 export interface Service {
   id: number;
   name: string;

@@ -29,8 +29,7 @@ interface BookingsTabProps {
   themeMode: 'light' | 'dark';
   customer: SafeAny;
   handleCancelBooking: (id: number) => void;
-  setSelectedBookingForReschedule: (b: SafeAny) => void;
-  setRescheduleModalVisible: (visible: boolean) => void;
+  onRequestReschedule: (booking: SafeAny) => void | Promise<void>;
 }
 
 const parseBookingPromoInfo = (rawBookingNote?: string | null, promotionName?: string | null) => {
@@ -180,8 +179,7 @@ export const BookingsTab: React.FC<
     themeMode,
     customer,
     handleCancelBooking,
-    setSelectedBookingForReschedule,
-    setRescheduleModalVisible,
+    onRequestReschedule,
     loading = false,
     hasMore = false,
     onLoadMore,
@@ -749,13 +747,7 @@ export const BookingsTab: React.FC<
                             gap: '4px',
                           }}
                           onClick={() => {
-                            setSelectedBookingForReschedule({
-                              ...b,
-                              customerName: customer?.name || 'Khách Hàng',
-                              customerPhone: customer?.phone || '',
-                              customerId: customer?.id,
-                            });
-                            setRescheduleModalVisible(true);
+                            void onRequestReschedule(b);
                           }}
                         >
                           Đổi lịch

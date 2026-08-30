@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
-import { Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag } from 'antd';
+import { Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag, Modal } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -21,6 +21,7 @@ import { useOmiCall } from '../context/OmiCallContext';
 import { AdaptiveDrawer } from './ui';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
 import { BOOKING_HISTORY_UPDATED_EVENT, type BookingMutationEventDetail } from '../lib/booking-events';
+import { apiClient } from '../lib/api-client';
 
 const RescheduleBookingModal = dynamic(() => import('./RescheduleBookingModal').then((m) => m.RescheduleBookingModal), {
   ssr: false,
@@ -192,6 +193,45 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     const role = currentUser?.role?.toLowerCase();
     return isAdminOrSuperAdminRole(role) || role === 'manager';
   }, [currentUser]);
+
+  const handleRescheduleRequest = useCallback(
+    async (booking: SafeAny) => {
+      const orderId = Number(booking?.id);
+      if (!Number.isInteger(orderId) || orderId <= 0) {
+        Modal.error({
+          title: 'Không thể dời lịch',
+          content: 'Lịch hẹn không hợp lệ. Vui lòng tải lại thông tin khách hàng và thử lại.',
+        });
+        return;
+      }
+
+      try {
+        const eligibility = await apiClient.customers.getRescheduleEligibility(orderId);
+        if (!eligibility.allowed) {
+          Modal.warning({
+            title: 'Không thể dời lịch',
+            content: eligibility.message,
+            okText: 'Đã hiểu',
+          });
+          return;
+        }
+
+        setSelectedBookingForReschedule({
+          ...booking,
+          customerName: customer?.name || 'Khách Hàng',
+          customerPhone: customer?.phone || '',
+          customerId: customer?.id,
+        });
+        setRescheduleModalVisible(true);
+      } catch (err) {
+        Modal.error({
+          title: 'Không thể kiểm tra quyền dời lịch',
+          content: (err as SafeAny).response?.data?.message || 'Vui lòng tải lại trang hoặc thử lại sau.',
+        });
+      }
+    },
+    [customer, setRescheduleModalVisible, setSelectedBookingForReschedule]
+  );
 
   const [activeTabKey, setActiveTabKey] = useState<string>('bookings');
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -849,8 +889,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                               themeMode={themeMode}
                               customer={customer}
                               handleCancelBooking={handleCancelBooking}
-                              setSelectedBookingForReschedule={setSelectedBookingForReschedule}
-                              setRescheduleModalVisible={setRescheduleModalVisible}
+                              onRequestReschedule={handleRescheduleRequest}
                               loading={tabDataMap['bookings']?.loading}
                               hasMore={tabDataMap['bookings']?.hasMore}
                               onLoadMore={() => fetchTabData('bookings', (tabDataMap['bookings']?.page || 1) + 1, true)}
