@@ -4241,7 +4241,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // 2. Resolve the base service and promotion from one authoritative service.
       // This is required when a promotion changes: order.total_price may already be discounted.
       const existingServices = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT id, service_id, service_group, service_price, discount_amount, promotion_id
+        `SELECT id, service_id, service_group, service_price, discount_amount, total_price, promotion_id
          FROM order_service WHERE order_id = ? ORDER BY service_price DESC LIMIT 1`,
         orderId
       );
@@ -4298,15 +4298,40 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ? (campaignPromotionId ?? null)
         : (currentCustomCampaign?.campaignPromotionId ?? null);
 
-      const promotionResolution = await BookingPromotionService.resolve(fastify, {
-        customerId: finalCustomerId,
-        serviceId: finalServiceId,
-        basePrice: srvPrice,
-        bookingDate: resolvedUpdate.bookingDate,
-        promotionId: selectedPromotionId,
-        campaignPromotionId: selectedCampaignPromotionId,
-        allowedCampaignId: currentCustomCampaign?.campaignId ?? null,
-      });
+      const isKeepingCurrentService = Number(existingService?.service_id || 0) === Number(finalServiceId || 0);
+      const mayKeepInactiveLegacyPromotion = Boolean(
+        !hasPromotionSelection && currentPromotionId && !currentCustomCampaign && isKeepingCurrentService
+      );
+      const activeCurrentPromotion = mayKeepInactiveLegacyPromotion
+        ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            'SELECT id FROM promotion WHERE id = ? AND is_disabled = 0 LIMIT 1',
+            currentPromotionId
+          )
+        : [];
+      const shouldKeepInactiveLegacyPromotion = mayKeepInactiveLegacyPromotion && activeCurrentPromotion.length === 0;
+
+      // A historical appointment can reference a legacy campaign promotion whose CRM campaign
+      // has already been retired. Moving its time without changing its service must retain the
+      // booked price instead of rejecting the reschedule for an offer that is no longer selectable.
+      const promotionResolution = shouldKeepInactiveLegacyPromotion
+        ? {
+            source: 'NONE' as const,
+            legacyPromotionId: currentPromotionId,
+            legacyCampaignId: Number(order.campaign_id || 0) || null,
+            discountAmount: Math.round(Number(existingService?.discount_amount || 0)),
+            finalPrice: Math.round(Number(existingService?.total_price ?? order.total_price ?? 0)),
+            campaignPromotionTag: null,
+            campaignPromotionId: null,
+          }
+        : await BookingPromotionService.resolve(fastify, {
+            customerId: finalCustomerId,
+            serviceId: finalServiceId,
+            basePrice: srvPrice,
+            bookingDate: resolvedUpdate.bookingDate,
+            promotionId: selectedPromotionId,
+            campaignPromotionId: selectedCampaignPromotionId,
+            allowedCampaignId: currentCustomCampaign?.campaignId ?? null,
+          });
       const duration = srvDuration;
       const totalPrice = promotionResolution.finalPrice;
 
