@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button, Result } from 'antd';
+import { openBugReport, recordClientError } from '../lib/bug-diagnostics';
 
 interface Props {
   children: ReactNode;
@@ -24,6 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught client error:', error, errorInfo);
+    recordClientError(error);
     if (
       typeof window !== 'undefined' &&
       (error?.name === 'ChunkLoadError' ||
@@ -51,6 +53,9 @@ export class ErrorBoundary extends Component<Props, State> {
             title="Đã xảy ra lỗi trên trình duyệt"
             subTitle={this.state.error?.message || 'Vui lòng làm mới trang hoặc sử dụng trình duyệt Chrome cập nhật.'}
             extra={[
+              <Button key="report" onClick={() => openBugReport(this.state.error)}>
+                Báo lỗi này
+              </Button>,
               <Button type="primary" key="reload" onClick={this.handleReload}>
                 Tải lại trang
               </Button>,

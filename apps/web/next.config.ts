@@ -16,6 +16,10 @@ function localIpv4Hosts(): string[] {
 
 const nextConfig: NextConfig = {
   compress: true,
+  env: {
+    NEXT_PUBLIC_APP_COMMIT_SHA:
+      process.env.NEXT_PUBLIC_APP_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || process.env.DEPLOY_COMMIT || '',
+  },
   // Staff opens the dev app from localhost, while workshop participants scan
   // a LAN QR. Next 16 blocks its dev runtime/WebSocket when that LAN host is
   // not explicitly trusted, which leaves Safari on the server-rendered

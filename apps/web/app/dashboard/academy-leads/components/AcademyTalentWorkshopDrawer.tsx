@@ -80,6 +80,36 @@ const ERROR_CARDS: Array<{ key: AcademyTalentErrorKey; title: string; descriptio
 /** Server stores the legacy 0–4 score; visual stars are intentionally +1. */
 const RATING_LABELS = ['Kiểm tra lại', 'Khá', 'Đạt', 'Giỏi', 'Xuất sắc'];
 
+function AcademyLearnerAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string | null }) {
+  const [imageFailed, setImageFailed] = React.useState(false);
+
+  React.useEffect(() => setImageFailed(false), [avatarUrl]);
+
+  if (avatarUrl && !imageFailed) {
+    return (
+      <img
+        alt={`Ảnh đại diện ${name}`}
+        className={styles.learnerAvatar}
+        src={avatarUrl}
+        onError={() => setImageFailed(true)}
+      />
+    );
+  }
+
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(-2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+  return (
+    <span aria-label={`Chưa có ảnh đại diện của ${name}`} className={styles.learnerAvatar}>
+      {initials || <AppIcon icon={UserRound} />}
+    </span>
+  );
+}
+
 const FALLBACK_MILESTONES: AcademyTalentMilestone[] = [
   {
     key: 'level1',
@@ -1496,13 +1526,7 @@ export function AcademyTalentWorkshopDrawer({
             </div>
             <div className={styles.learnerHeader}>
               <div className={styles.learnerIdentity}>
-                {lead?.avatarUrl ? (
-                  <img alt="" className={styles.learnerAvatar} src={lead.avatarUrl} />
-                ) : (
-                  <span aria-hidden="true" className={styles.learnerAvatar}>
-                    <AppIcon icon={UserRound} />
-                  </span>
-                )}
+                <AcademyLearnerAvatar name={lead?.name || 'Học viên'} avatarUrl={lead?.avatarUrl} />
                 <div className={styles.learnerDetails}>
                   <span>Học viên</span>
                   <strong>{lead?.name || 'Chưa chọn học viên'}</strong>

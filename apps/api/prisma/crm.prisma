@@ -72,6 +72,9 @@ model CrmStaff {
   academyWorkshopEquipmentTemplates CrmAcademyWorkshopEquipmentTemplate[] @relation("AcademyEquipmentTemplateCreator")
   academyWorkshopRewardsFulfilled CrmAcademyWorkshopReward[] @relation("AcademyWorkshopRewardFulfiller")
   academyInstructorBonusesPaid CrmAcademyInstructorBonus[] @relation("AcademyInstructorBonusPayer")
+  bugReportsCreated CrmBugReport[] @relation("BugReportReporter")
+  bugReportsApproved CrmBugReport[] @relation("BugReportApprover")
+  bugReportAudits CrmBugReportAudit[] @relation("BugReportAuditActor")
 
   @@map("crm_staff")
 }
@@ -2193,4 +2196,77 @@ model CrmHolidayAuditLog {
   @@index([holidayId, createdAt])
   @@index([actorStaffId, createdAt])
   @@map("crm_holiday_audit_logs")
+}
+
+// ═══════════════════════════════════════════
+// mOS Bug Inbox — employee reports and Danny triage
+// ═══════════════════════════════════════════
+model CrmBugReport {
+  id                Int       @id @default(autoincrement())
+  reporterStaffId   Int       @map("reporter_staff_id")
+  title             String    @db.VarChar(180)
+  description       String    @db.Text
+  searchNormalized  String    @map("search_normalized") @db.Text
+  status            String    @default("NEW") @db.VarChar(20)
+  priority          String?   @db.VarChar(2)
+  statusSort        Int       @default(0) @map("status_sort")
+  prioritySort      Int       @default(4) @map("priority_sort")
+  businessContext   String?   @map("business_context") @db.Text
+  triageNote        String?   @map("triage_note") @db.Text
+  duplicateOfId     Int?      @map("duplicate_of_id")
+  approvedByStaffId Int?      @map("approved_by_staff_id")
+  approvedAt        DateTime? @map("approved_at") @db.DateTime(0)
+  resolvedAt        DateTime? @map("resolved_at") @db.DateTime(0)
+  closedAt          DateTime? @map("closed_at") @db.DateTime(0)
+  sourcePath        String    @map("source_path") @db.VarChar(500)
+  contextJson       String    @map("context_json") @db.LongText
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  reporter    CrmStaff       @relation("BugReportReporter", fields: [reporterStaffId], references: [id], onDelete: Restrict)
+  approver    CrmStaff?      @relation("BugReportApprover", fields: [approvedByStaffId], references: [id], onDelete: SetNull)
+  duplicateOf CrmBugReport?  @relation("BugReportDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates  CrmBugReport[] @relation("BugReportDuplicates")
+  attachments CrmBugReportAttachment[]
+  audits      CrmBugReportAudit[]
+
+  @@index([statusSort, prioritySort, createdAt])
+  @@index([status, priority, createdAt])
+  @@index([reporterStaffId, createdAt])
+  @@index([duplicateOfId])
+  @@map("crm_bug_reports")
+}
+
+model CrmBugReportAttachment {
+  id           Int       @id @default(autoincrement())
+  reportId     Int       @map("report_id")
+  originalName String    @map("original_name") @db.VarChar(255)
+  storagePath  String    @unique @map("storage_path") @db.VarChar(500)
+  mimeType     String    @map("mime_type") @db.VarChar(50)
+  sizeBytes    Int       @map("size_bytes")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  deletedAt    DateTime? @map("deleted_at") @db.DateTime(0)
+
+  report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId, createdAt])
+  @@map("crm_bug_report_attachments")
+}
+
+model CrmBugReportAudit {
+  id           Int      @id @default(autoincrement())
+  reportId     Int      @map("report_id")
+  actorStaffId Int?     @map("actor_staff_id")
+  action       String   @db.VarChar(40)
+  note         String?  @db.Text
+  beforeJson   String?  @map("before_json") @db.LongText
+  afterJson    String?  @map("after_json") @db.LongText
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  actor  CrmStaff?    @relation("BugReportAuditActor", fields: [actorStaffId], references: [id], onDelete: SetNull)
+
+  @@index([reportId, createdAt])
+  @@index([actorStaffId, createdAt])
+  @@map("crm_bug_report_audits")
 }

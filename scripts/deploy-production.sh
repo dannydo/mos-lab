@@ -18,6 +18,9 @@ git pull --ff-only
 DEPLOY_COMMIT="$(git rev-parse HEAD)"
 echo "[VPS] Deploying ${DEPLOY_COMMIT}"
 
+echo '[VPS] Ensuring private Bug Inbox media directory exists...'
+install -d -m 700 /home/web/mos-data/bug-reports
+
 echo '[VPS] Installing dependencies...'
 pnpm install --frozen-lockfile
 
@@ -61,7 +64,7 @@ fi
 
 echo '[VPS] Restarting Backend API via PM2...'
 DEPLOYED_AT="$(TZ=Asia/Ho_Chi_Minh date -Iseconds)"
-DEPLOYED_AT="${DEPLOYED_AT}" pm2 restart mos-lab-api --update-env
+DEPLOYED_AT="${DEPLOYED_AT}" DEPLOY_COMMIT="${DEPLOY_COMMIT}" pm2 restart mos-lab-api --update-env
 echo "[VPS] Release marker updated: ${DEPLOYED_AT}"
 
 echo '[VPS] Production backend deployment completed.'

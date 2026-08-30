@@ -1,0 +1,191 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import {
+  isCanonicalSuperAdminIdentity,
+  isSuperAdminRole,
+  type BugReportListQuery,
+  type ConfirmCloseBugReportRequest,
+  type CreateBugReportRequest,
+  type TriageBugReportRequest,
+} from '@mos-lab/shared';
+import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
+import { BugReportError, BugReportService, parseBugReportKey } from './bug-report.service.js';
+
+function numericParam(value: unknown, label: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) throw new BugReportError(`${label} không hợp lệ.`);
+  return parsed;
+}
+
+async function requireDanny(request: FastifyRequest, reply: FastifyReply) {
+  const user = request.user as JwtUserPayload | undefined;
+  if (!user) return reply.status(401).send({ error: 'Unauthorized', message: 'Vui lòng đăng nhập.' });
+  if (!canManageBugInbox(user)) {
+    return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ Danny được quyền quản lý Bug Inbox.' });
+  }
+}
+
+function agentToken(): string {
+  return String(process.env.MOS_BUG_AGENT_TOKEN || '').trim();
+}
+
+function secureTokenEqual(actual: string, expected: string): boolean {
+  const actualHash = createHash('sha256').update(actual).digest();
+  const expectedHash = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(actualHash, expectedHash);
+}
+
+export function canManageBugInbox(user: Pick<JwtUserPayload, 'role' | 'username' | 'email'>): boolean {
+  return isSuperAdminRole(user.role) && isCanonicalSuperAdminIdentity(user);
+}
+
+export function isValidAgentAuthorization(header: string, expected: string): boolean {
+  if (expected.trim().length < 32) return false;
+  const actual =
+    String(header || '')
+      .match(/^Bearer\s+(.+)$/i)?.[1]
+      ?.trim() || '';
+  return Boolean(actual && secureTokenEqual(actual, expected.trim()));
+}
+
+async function requireAgent(request: FastifyRequest, reply: FastifyReply) {
+  const expected = agentToken();
+  if (expected.length < 32) {
+    request.log.error('MOS_BUG_AGENT_TOKEN is missing or shorter than 32 characters');
+    return reply.status(503).send({ error: 'Agent Bridge Unavailable', message: 'Agent Bridge chưa được cấu hình.' });
+  }
+  const header = String(request.headers.authorization || '');
+  if (!isValidAgentAuthorization(header, expected)) {
+    return reply.status(401).send({ error: 'Unauthorized', message: 'Agent token không hợp lệ.' });
+  }
+}
+
+function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown, context: string) {
+  if (error instanceof BugReportError) {
+    return reply.status(error.statusCode).send({ error: error.code, message: error.message, code: error.code });
+  }
+  fastify.log.error(error, context);
+  return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể xử lý Bug Inbox.' });
+}
+
+function sendAttachment(reply: FastifyReply, value: Awaited<ReturnType<typeof BugReportService.attachment>>) {
+  const safeName = encodeURIComponent(value.attachment.originalName || `attachment-${value.attachment.id}`);
+  return reply
+    .header('Content-Type', value.attachment.mimeType)
+    .header('Content-Length', String(value.buffer.length))
+    .header('Cache-Control', 'private, no-store')
+    .header('Content-Disposition', `inline; filename*=UTF-8''${safeName}`)
+    .send(value.buffer);
+}
+
+export async function bugReportRoutes(fastify: FastifyInstance) {
+  fastify.post('/bug-reports', { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const data = await BugReportService.create(fastify, request.user.id, request.body as CreateBugReportRequest);
+      return reply.status(201).send({ success: true, data, message: 'Đã ghi nhận báo lỗi.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Create bug report failed');
+    }
+  });
+
+  fastify.get('/bug-reports', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
+    try {
+      return reply.send(await BugReportService.list(fastify, request.query as BugReportListQuery));
+    } catch (error) {
+      return sendError(fastify, reply, error, 'List bug reports failed');
+    }
+  });
+
+  fastify.get('/bug-reports/:id', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      return reply.send({ data: await BugReportService.detail(fastify, id) });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get bug report failed');
+    }
+  });
+
+  fastify.patch('/bug-reports/:id/triage', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      const data = await BugReportService.triage(fastify, request.user.id, id, request.body as TriageBugReportRequest);
+      return reply.send({ success: true, data, message: 'Đã cập nhật ticket.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Triage bug report failed');
+    }
+  });
+
+  fastify.patch(
+    '/bug-reports/:id/confirm-close',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const data = await BugReportService.confirmClose(
+          fastify,
+          request.user.id,
+          id,
+          request.body as ConfirmCloseBugReportRequest
+        );
+        return reply.send({ success: true, data, message: 'Đã xác nhận sửa đúng và đóng ticket.' });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Confirm and close bug report failed');
+      }
+    }
+  );
+
+  fastify.get(
+    '/bug-reports/:id/attachments/:attachmentId',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const params = request.params as { id: string; attachmentId: string };
+        return sendAttachment(
+          reply,
+          await BugReportService.attachment(
+            fastify,
+            numericParam(params.id, 'Ticket ID'),
+            numericParam(params.attachmentId, 'Attachment ID')
+          )
+        );
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Read bug report attachment failed');
+      }
+    }
+  );
+
+  fastify.get('/agent/bug-reports', { preHandler: [requireAgent] }, async (_request, reply) => {
+    try {
+      return reply.send({ data: await BugReportService.agentQueue(fastify) });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'List Agent bug queue failed');
+    }
+  });
+
+  fastify.get('/agent/bug-reports/:key', { preHandler: [requireAgent] }, async (request, reply) => {
+    try {
+      const key = (request.params as { key: string }).key;
+      return reply.send({ data: await BugReportService.agentBundle(fastify, key) });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get Agent bug bundle failed');
+    }
+  });
+
+  fastify.get(
+    '/agent/bug-reports/:key/attachments/:attachmentId',
+    { preHandler: [requireAgent] },
+    async (request, reply) => {
+      try {
+        const params = request.params as { key: string; attachmentId: string };
+        const id = parseBugReportKey(params.key);
+        await BugReportService.agentBundle(fastify, params.key);
+        return sendAttachment(
+          reply,
+          await BugReportService.attachment(fastify, id, numericParam(params.attachmentId, 'Attachment ID'))
+        );
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Read Agent bug attachment failed');
+      }
+    }
+  );
+}

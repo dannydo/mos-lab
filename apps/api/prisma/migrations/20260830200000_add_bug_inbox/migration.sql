@@ -1,0 +1,61 @@
+CREATE TABLE `crm_bug_reports` (
+  `id` INTEGER NOT NULL AUTO_INCREMENT,
+  `reporter_staff_id` INTEGER NOT NULL,
+  `title` VARCHAR(180) NOT NULL,
+  `description` TEXT NOT NULL,
+  `search_normalized` TEXT NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'NEW',
+  `priority` VARCHAR(2) NULL,
+  `status_sort` INTEGER NOT NULL DEFAULT 0,
+  `priority_sort` INTEGER NOT NULL DEFAULT 4,
+  `business_context` TEXT NULL,
+  `triage_note` TEXT NULL,
+  `duplicate_of_id` INTEGER NULL,
+  `approved_by_staff_id` INTEGER NULL,
+  `approved_at` DATETIME(0) NULL,
+  `resolved_at` DATETIME(0) NULL,
+  `closed_at` DATETIME(0) NULL,
+  `source_path` VARCHAR(500) NOT NULL,
+  `context_json` LONGTEXT NOT NULL,
+  `created_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+  `updated_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0),
+  INDEX `crm_bug_reports_status_sort_priority_sort_created_at_idx` (`status_sort`, `priority_sort`, `created_at`),
+  INDEX `crm_bug_reports_status_priority_created_at_idx` (`status`, `priority`, `created_at`),
+  INDEX `crm_bug_reports_reporter_staff_id_created_at_idx` (`reporter_staff_id`, `created_at`),
+  INDEX `crm_bug_reports_duplicate_of_id_idx` (`duplicate_of_id`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `crm_bug_reports_reporter_staff_id_fkey` FOREIGN KEY (`reporter_staff_id`) REFERENCES `crm_staff`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `crm_bug_reports_approved_by_staff_id_fkey` FOREIGN KEY (`approved_by_staff_id`) REFERENCES `crm_staff`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `crm_bug_reports_duplicate_of_id_fkey` FOREIGN KEY (`duplicate_of_id`) REFERENCES `crm_bug_reports`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE `crm_bug_report_attachments` (
+  `id` INTEGER NOT NULL AUTO_INCREMENT,
+  `report_id` INTEGER NOT NULL,
+  `original_name` VARCHAR(255) NOT NULL,
+  `storage_path` VARCHAR(500) NOT NULL,
+  `mime_type` VARCHAR(50) NOT NULL,
+  `size_bytes` INTEGER NOT NULL,
+  `created_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+  `deleted_at` DATETIME(0) NULL,
+  UNIQUE INDEX `crm_bug_report_attachments_storage_path_key` (`storage_path`),
+  INDEX `crm_bug_report_attachments_report_id_created_at_idx` (`report_id`, `created_at`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `crm_bug_report_attachments_report_id_fkey` FOREIGN KEY (`report_id`) REFERENCES `crm_bug_reports`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE `crm_bug_report_audits` (
+  `id` INTEGER NOT NULL AUTO_INCREMENT,
+  `report_id` INTEGER NOT NULL,
+  `actor_staff_id` INTEGER NULL,
+  `action` VARCHAR(40) NOT NULL,
+  `note` TEXT NULL,
+  `before_json` LONGTEXT NULL,
+  `after_json` LONGTEXT NULL,
+  `created_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+  INDEX `crm_bug_report_audits_report_id_created_at_idx` (`report_id`, `created_at`),
+  INDEX `crm_bug_report_audits_actor_staff_id_created_at_idx` (`actor_staff_id`, `created_at`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `crm_bug_report_audits_report_id_fkey` FOREIGN KEY (`report_id`) REFERENCES `crm_bug_reports`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `crm_bug_report_audits_actor_staff_id_fkey` FOREIGN KEY (`actor_staff_id`) REFERENCES `crm_staff`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

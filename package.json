@@ -13,6 +13,7 @@
     "check:ui-contract": "pnpm exec tsx scripts/check-ui-contract.ts",
     "clean": "turbo clean && rm -rf node_modules",
     "graph": "tsx scripts/generate-graph.ts",
+    "bug:agent": "tsx scripts/bug-agent.ts",
     "qa:responsive:baseline": "node scripts/responsive/capture-baseline.mjs",
     "qa:responsive:states": "node scripts/responsive/capture-states.mjs",
     "qa:responsive:gate": "pnpm qa:responsive:baseline && pnpm qa:responsive:states",

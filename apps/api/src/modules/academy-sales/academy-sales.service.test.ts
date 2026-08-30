@@ -8,6 +8,7 @@ import {
   getAcademyWorkspaceAccess,
   getAcademyIctDayBounds,
   normalizeAcademyPhone,
+  normalizeAcademyAvatarUrl,
   normalizeLegacyAcademyStatus,
   parseAcademyIctDate,
   getAcademyIctMonthBounds,
@@ -107,6 +108,16 @@ test('normalizes phone and Vietnamese search text for deterministic dedupe and s
     buildAcademyLeadSearchText({ name: 'Đặng Thảo My', course: 'Nối mi nâng cao', source: 'TikTok' }),
     'dang thao my tiktok noi mi nang cao'
   );
+});
+
+test('keeps direct Academy avatar images and rejects imported social profile pages', () => {
+  assert.equal(
+    normalizeAcademyAvatarUrl('https://scontent.fsgn5-5.fna.fbcdn.net/avatar.jpg'),
+    'https://scontent.fsgn5-5.fna.fbcdn.net/avatar.jpg'
+  );
+  assert.equal(normalizeAcademyAvatarUrl('https://www.facebook.com/daotranvuvyy'), null);
+  assert.equal(normalizeAcademyAvatarUrl('javascript:alert(1)'), null);
+  assert.equal(normalizeAcademyAvatarUrl(null), null);
 });
 
 test('treats date-only Academy values and task boundaries as Asia/Ho_Chi_Minh', () => {
