@@ -117,7 +117,7 @@ export default function GoogleWorkshopJoinButton({ disabled = false, onCredentia
   return (
     <div>
       <div
-        className={`relative flex min-h-11 justify-center overflow-hidden rounded-full ${disabled ? 'pointer-events-none opacity-55' : ''}`}
+        className={`relative flex h-10 items-center justify-center overflow-hidden rounded-full ${disabled ? 'pointer-events-none opacity-55' : ''}`}
       >
         {!ready && !error ? (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-white/55">
@@ -126,7 +126,7 @@ export default function GoogleWorkshopJoinButton({ disabled = false, onCredentia
         ) : null}
         <div
           ref={buttonRef}
-          className="w-full overflow-hidden rounded-full"
+          className="h-10 w-full overflow-hidden rounded-full"
           aria-label="Đăng nhập Google để tham gia workshop"
         />
       </div>
