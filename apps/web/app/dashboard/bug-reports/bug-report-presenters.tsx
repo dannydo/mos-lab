@@ -7,6 +7,7 @@ import type {
   BugReportAgentProgressStage,
   BugReportClarificationFilter,
   BugReportClarificationStatus,
+  BugReportRequestType,
   BugReportStatus,
 } from '@mos-lab/shared';
 import dayjs from 'dayjs';
@@ -143,12 +144,21 @@ export function parseDuplicateKey(value: string): number | null {
   const match = value
     .trim()
     .toUpperCase()
-    .match(/^(?:MOS-BUG-)?(\d+)$/);
+    .match(/^(?:MOS-(?:BUG|FEAT)-)?(\d+)$/);
   return match ? Number(match[1]) : null;
 }
 
 export function BugStatusTag({ status }: { status: BugReportStatus }) {
   return <StatusTag status={STATUS_TONES[status]} label={STATUS_LABELS[status]} />;
+}
+
+export function RequestTypeTag({ requestType }: { requestType: BugReportRequestType }) {
+  return (
+    <StatusTag
+      status={requestType === 'FEATURE' ? 'purple' : 'orange'}
+      label={requestType === 'FEATURE' ? 'Chức năng' : 'Báo lỗi'}
+    />
+  );
 }
 
 export function PriorityTag({ priority }: { priority: BugPriority | null }) {

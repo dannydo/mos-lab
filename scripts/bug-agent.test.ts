@@ -77,11 +77,11 @@ test('Agent CLI lists approved tickets and materializes deterministic bundle fil
   }
 });
 
-test('Agent CLI can ask the reporter instead of attempting an unclear fix', async () => {
+test('Agent CLI can ask the reporter about a feature instead of implementing an unclear request', async () => {
   let receivedBody = '';
   const server = createServer((request, response) => {
     assert.equal(request.headers.authorization, `Bearer ${TOKEN}`);
-    if (request.url !== '/api/agent/bug-reports/MOS-BUG-8/clarification') {
+    if (request.url !== '/api/agent/bug-reports/MOS-FEAT-8/clarification') {
       response.statusCode = 404;
       response.end();
       return;
@@ -104,7 +104,7 @@ test('Agent CLI can ask the reporter instead of attempting an unclear fix', asyn
   process.env.MOS_BUG_AGENT_API_URL = `http://127.0.0.1:${address.port}/api`;
 
   try {
-    const result = await submitClarificationReview('MOS-BUG-8', {
+    const result = await submitClarificationReview('MOS-FEAT-8', {
       decision: 'ASK_REPORTER',
       message: 'Booking nào bị huỷ và kết quả đúng bạn mong đợi là gì?',
     });

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { formatBugReportKey } from '@mos-lab/shared';
 import {
   assertBugReportTransition,
   assertAgentProgressUpdateAllowed,
@@ -9,6 +10,7 @@ import {
   isAgentReadableBugStatus,
   knowledgeTokens,
   normalizeAgentResolution,
+  normalizeFeatureRequestContext,
   parseBugReportKey,
   sanitizeBugReportContext,
 } from './bug-report.service.js';
@@ -181,7 +183,7 @@ test('sanitizes query values and never retains sensitive inputs', () => {
   assert.doesNotMatch(context.recentApiFailures[0].message, /danny@example\.com|0909000000|eyJabcdefgh/);
 });
 
-test('clips diagnostics and accepts only canonical bug keys', () => {
+test('clips diagnostics and accepts canonical bug and feature keys', () => {
   const context = sanitizeBugReportContext({
     overlays: Array.from({ length: 20 }, (_, index) => `Popup ${index}`),
     recentClientErrors: Array.from({ length: 20 }, (_, index) => ({ name: 'Error', message: `Failure ${index}` })),
@@ -189,7 +191,26 @@ test('clips diagnostics and accepts only canonical bug keys', () => {
   assert.equal(context.overlays.length, 10);
   assert.equal(context.recentClientErrors.length, 10);
   assert.equal(parseBugReportKey('MOS-BUG-42'), 42);
+  assert.equal(parseBugReportKey('MOS-FEAT-43'), 43);
+  assert.equal(formatBugReportKey(43, 'FEATURE'), 'MOS-FEAT-43');
   assert.throws(() => parseBugReportKey('MOS-BUG-x'), /không hợp lệ/);
+});
+
+test('normalizes structured feature context before persistence', () => {
+  assert.deepEqual(
+    normalizeFeatureRequestContext({
+      reason: '  Giảm thao tác nhập tay  ',
+      audience: 'TEAM',
+      desiredOutcome: '  Chỉ cần một lần bấm  ',
+    }),
+    {
+      reason: 'Giảm thao tác nhập tay',
+      audience: 'TEAM',
+      desiredOutcome: 'Chỉ cần một lần bấm',
+    }
+  );
+  assert.throws(() => normalizeFeatureRequestContext({ reason: 'x', audience: 'TEAM' }), /vì sao/i);
+  assert.throws(() => normalizeFeatureRequestContext({ reason: 'Hợp lệ', audience: 'UNKNOWN' }), /ai sẽ sử dụng/i);
 });
 
 test('enforces the complete triage workflow before any database write', () => {

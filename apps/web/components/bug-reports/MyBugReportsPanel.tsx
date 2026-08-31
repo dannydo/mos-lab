@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Input, List, Timeline, Typography, message, theme } from 'antd';
+import { Alert, Button, Descriptions, Input, List, Timeline, Typography, message, theme } from 'antd';
 import type {
   BugReportCommentCreateResult,
   BugReportNotification,
+  BugReportRequestType,
   BugReportStatus,
   CreateBugReportCommentRequest,
   MyBugReportItem,
@@ -37,6 +38,31 @@ const STATUS_TONES: Record<BugReportStatus, Parameters<typeof StatusTag>[0]['sta
   DUPLICATE: 'purple',
 };
 
+const FEATURE_STATUS_LABELS: Record<BugReportStatus, string> = {
+  NEW: 'Chờ Danny duyệt',
+  APPROVED: 'Đã duyệt triển khai',
+  IN_PROGRESS: 'Đang triển khai',
+  FIXED: 'Chờ nghiệm thu',
+  CLOSED: 'Đã hoàn tất',
+  REJECTED: 'Không duyệt',
+  DUPLICATE: 'Trùng yêu cầu',
+};
+
+const FEATURE_AUDIENCE_LABELS = {
+  SELF: 'Cá nhân người yêu cầu',
+  TEAM: 'Đội / bộ phận',
+  ALL_STAFF: 'Tất cả nhân viên',
+  CUSTOMER: 'Khách hàng',
+} as const;
+
+function requestTypeLabel(requestType: BugReportRequestType): string {
+  return requestType === 'FEATURE' ? 'Chức năng' : 'Báo lỗi';
+}
+
+function statusLabel(status: BugReportStatus, requestType: BugReportRequestType): string {
+  return requestType === 'FEATURE' ? FEATURE_STATUS_LABELS[status] : STATUS_LABELS[status];
+}
+
 function exactTime(value: string | null): string {
   return value ? dayjs(value).format('DD/MM/YYYY HH:mm') : 'Chưa có';
 }
@@ -61,12 +87,13 @@ function durationBetween(start: string | null, end: string | null): string | nul
 
 function trackingItems(report: MyBugReportItem) {
   const timeline = report.timeline;
+  const isFeature = report.requestType === 'FEATURE';
   return [
     {
       color: 'blue',
       children: (
         <div>
-          <Text strong>Báo lỗi</Text>
+          <Text strong>{isFeature ? 'Gửi yêu cầu chức năng' : 'Báo lỗi'}</Text>
           <div>
             <Text type="secondary">
               {exactTime(timeline.reportedAt)} · {elapsedSince(timeline.reportedAt)}
@@ -79,7 +106,7 @@ function trackingItems(report: MyBugReportItem) {
       color: timeline.approvedAt ? 'blue' : 'gray',
       children: (
         <div>
-          <Text strong>Danny duyệt</Text>
+          <Text strong>{isFeature ? 'Danny quyết định đưa vào triển khai' : 'Danny duyệt'}</Text>
           <div>
             <Text type="secondary">
               {exactTime(timeline.approvedAt)}
@@ -95,7 +122,7 @@ function trackingItems(report: MyBugReportItem) {
       color: timeline.startedAt ? 'blue' : 'gray',
       children: (
         <div>
-          <Text strong>Bắt đầu xử lý</Text>
+          <Text strong>{isFeature ? 'Bắt đầu triển khai' : 'Bắt đầu xử lý'}</Text>
           <div>
             <Text type="secondary">{exactTime(timeline.startedAt)}</Text>
           </div>
@@ -106,7 +133,7 @@ function trackingItems(report: MyBugReportItem) {
       color: timeline.fixedAt ? 'green' : 'gray',
       children: (
         <div>
-          <Text strong>Gửi bản sửa để duyệt</Text>
+          <Text strong>{isFeature ? 'Gửi bản triển khai để nghiệm thu' : 'Gửi bản sửa để duyệt'}</Text>
           <div>
             <Text type="secondary">
               {exactTime(timeline.fixedAt)}
@@ -122,7 +149,7 @@ function trackingItems(report: MyBugReportItem) {
       color: timeline.closedAt ? 'green' : 'gray',
       children: (
         <div>
-          <Text strong>Đóng ticket</Text>
+          <Text strong>{isFeature ? 'Hoàn tất yêu cầu' : 'Đóng ticket'}</Text>
           <div>
             <Text type="secondary">{exactTime(timeline.closedAt)}</Text>
           </div>
@@ -173,7 +200,11 @@ export function MyBugReportsPanel({
     try {
       await onReview(selected.id, { decision, note: reviewNote.trim() || null });
       messageApi.success(
-        decision === 'APPROVE' ? 'Cảm ơn bạn đã duyệt. Ticket đã đóng.' : 'Đã gửi lại cho Agent xử lý.'
+        decision === 'APPROVE'
+          ? selected.requestType === 'FEATURE'
+            ? 'Cảm ơn bạn đã nghiệm thu. Yêu cầu đã hoàn tất.'
+            : 'Cảm ơn bạn đã duyệt. Ticket đã đóng.'
+          : 'Đã gửi lại cho Agent xử lý.'
       );
       setReviewNote('');
     } catch (caught) {
@@ -187,7 +218,7 @@ export function MyBugReportsPanel({
     }
   };
 
-  if (loading && !reports.length) return <StatePanel kind="loading" title="Đang tải lỗi của bạn…" />;
+  if (loading && !reports.length) return <StatePanel kind="loading" title="Đang tải yêu cầu của bạn…" />;
   if (error && !reports.length) {
     return (
       <StatePanel
@@ -202,32 +233,34 @@ export function MyBugReportsPanel({
     return (
       <StatePanel
         kind="empty"
-        title="Bạn chưa báo lỗi nào"
-        description="Các lỗi đã gửi sẽ xuất hiện ở đây cùng tiến độ xử lý."
+        title="Bạn chưa gửi yêu cầu nào"
+        description="Báo lỗi và yêu cầu chức năng sẽ xuất hiện ở đây cùng tiến độ xử lý."
       />
     );
 
   return (
     <div className="space-y-4">
       {messageContext}
-      {notifications.some((item) => !item.readAt && item.type === 'BUG_CLARIFICATION_NEEDED') ? (
+      {notifications.some((item) => !item.readAt && item.type.endsWith('CLARIFICATION_NEEDED')) ? (
         <Alert
           type="warning"
           showIcon
-          message="AI Agent cần bạn làm rõ một ticket"
-          description="Mở ticket bên dưới, trả lời câu hỏi và có thể đính kèm thêm ảnh ngay trong bình luận."
+          message="AI Agent cần bạn làm rõ một yêu cầu"
+          description="Mở yêu cầu bên dưới, trả lời câu hỏi và có thể đính kèm thêm ảnh ngay trong bình luận."
         />
-      ) : notifications.some((item) => !item.readAt && item.type === 'BUG_FIXED_REVIEW') ? (
+      ) : notifications.some(
+          (item) => !item.readAt && ['BUG_FIXED_REVIEW', 'FEATURE_IMPLEMENTED_REVIEW'].includes(item.type)
+        ) ? (
         <Alert
           type="success"
           showIcon
-          message="Có bản sửa đang chờ bạn duyệt"
-          description="Mở ticket bên dưới để xem tóm tắt, link bản sửa và xác nhận kết quả."
+          message="Có kết quả đang chờ bạn nghiệm thu"
+          description="Mở yêu cầu bên dưới để xem tóm tắt, link kết quả và xác nhận."
         />
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(220px,0.8fr)_minmax(0,1.4fr)]">
-        <SectionCard title={`Lỗi của tôi (${reports.length})`}>
+        <SectionCard title={`Yêu cầu của tôi (${reports.length})`}>
           <List
             size="small"
             dataSource={reports}
@@ -252,7 +285,10 @@ export function MyBugReportsPanel({
                         · {elapsedSince(report.createdAt)}
                       </Text>
                     </div>
-                    <StatusTag status={STATUS_TONES[report.status]} label={STATUS_LABELS[report.status]} />
+                    <StatusTag
+                      status={STATUS_TONES[report.status]}
+                      label={statusLabel(report.status, report.requestType)}
+                    />
                   </div>
                   <Text ellipsis={{ tooltip: report.description }} type="secondary" className="mt-1 block min-w-0">
                     {report.description.replace(/\s+/g, ' ').trim()}
@@ -267,16 +303,35 @@ export function MyBugReportsPanel({
           <div className="space-y-4">
             <SectionCard title={`${selected.key} · Tracking`}>
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <StatusTag status={STATUS_TONES[selected.status]} label={STATUS_LABELS[selected.status]} />
+                <StatusTag
+                  status={selected.requestType === 'FEATURE' ? 'purple' : 'orange'}
+                  label={requestTypeLabel(selected.requestType)}
+                />
+                <StatusTag
+                  status={STATUS_TONES[selected.status]}
+                  label={statusLabel(selected.status, selected.requestType)}
+                />
                 <Text type="secondary">{selected.sourcePath}</Text>
               </div>
               <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{selected.description}</Paragraph>
+              {selected.featureRequest ? (
+                <Descriptions size="small" column={1} bordered className="mb-4">
+                  <Descriptions.Item label="Vì sao cần">{selected.featureRequest.reason}</Descriptions.Item>
+                  <Descriptions.Item label="Người sử dụng">
+                    {FEATURE_AUDIENCE_LABELS[selected.featureRequest.audience]}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Kết quả mong muốn">
+                    {selected.featureRequest.desiredOutcome || 'AI Agent sẽ hỏi thêm nếu cần.'}
+                  </Descriptions.Item>
+                </Descriptions>
+              ) : null}
               <Timeline items={trackingItems(selected)} />
             </SectionCard>
 
             <SectionCard title={`Trao đổi với AI Agent (${selected.comments.length})`}>
               <BugReportConversation
                 reportId={selected.id}
+                requestType={selected.requestType}
                 status={selected.status}
                 clarification={selected.clarification}
                 comments={selected.comments}
@@ -285,7 +340,7 @@ export function MyBugReportsPanel({
             </SectionCard>
 
             {selected.resolution ? (
-              <SectionCard title="AI đã sửa gì?">
+              <SectionCard title={selected.requestType === 'FEATURE' ? 'AI đã triển khai gì?' : 'AI đã sửa gì?'}>
                 <div className="space-y-3">
                   <div>
                     <Text strong>Tóm tắt vấn đề</Text>
@@ -317,11 +372,17 @@ export function MyBugReportsPanel({
             ) : null}
 
             {selected.canReview ? (
-              <SectionCard title="Bạn xác nhận giúp mOS">
+              <SectionCard
+                title={selected.requestType === 'FEATURE' ? 'Bạn nghiệm thu giúp mOS' : 'Bạn xác nhận giúp mOS'}
+              >
                 <Input.TextArea
                   value={reviewNote}
                   onChange={(event) => setReviewNote(event.target.value)}
-                  placeholder="Nếu chưa đúng, hãy ghi ngắn gọn điểm còn lỗi…"
+                  placeholder={
+                    selected.requestType === 'FEATURE'
+                      ? 'Nếu chưa đúng nhu cầu, hãy ghi ngắn gọn điểm cần điều chỉnh…'
+                      : 'Nếu chưa đúng, hãy ghi ngắn gọn điểm còn lỗi…'
+                  }
                   maxLength={2000}
                   autoSize={{ minRows: 2, maxRows: 6 }}
                   showCount
@@ -332,7 +393,7 @@ export function MyBugReportsPanel({
                     icon={<AppIcon icon={RotateCcw} size="sm" />}
                     onClick={() => void submitReview('REOPEN')}
                   >
-                    Chưa đúng, sửa tiếp
+                    {selected.requestType === 'FEATURE' ? 'Chưa đúng, điều chỉnh tiếp' : 'Chưa đúng, sửa tiếp'}
                   </Button>
                   <Button
                     type="primary"
@@ -340,7 +401,7 @@ export function MyBugReportsPanel({
                     icon={<AppIcon icon={CheckCircle2} size="sm" />}
                     onClick={() => void submitReview('APPROVE')}
                   >
-                    Đã đúng, đóng ticket
+                    {selected.requestType === 'FEATURE' ? 'Đạt yêu cầu, hoàn tất' : 'Đã đúng, đóng ticket'}
                   </Button>
                 </div>
               </SectionCard>

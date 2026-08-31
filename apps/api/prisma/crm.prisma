@@ -2206,6 +2206,8 @@ model CrmHolidayAuditLog {
 model CrmBugReport {
   id                Int       @id @default(autoincrement())
   reporterStaffId   Int       @map("reporter_staff_id")
+  requestType       String    @default("BUG") @map("request_type") @db.VarChar(16)
+  requestMetadataJson String? @map("request_metadata_json") @db.LongText
   title             String    @db.VarChar(180)
   description       String    @db.Text
   searchNormalized  String    @map("search_normalized") @db.Text
@@ -2240,6 +2242,7 @@ model CrmBugReport {
   comments CrmBugReportComment[]
 
   @@index([statusSort, prioritySort, createdAt])
+  @@index([requestType, statusSort, prioritySort, createdAt], map: "bug_request_type_status_idx")
   @@index([status, priority, createdAt])
   @@index([reporterStaffId, createdAt])
   @@index([duplicateOfId])

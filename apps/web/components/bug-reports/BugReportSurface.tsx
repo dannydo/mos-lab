@@ -1,10 +1,16 @@
 'use client';
 
 import React from 'react';
-import { Badge, Button, Image, Input, Tabs, Tooltip, Upload, message, notification, theme } from 'antd';
-import { CircleHelp, ImagePlus, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
+import { Alert, Badge, Button, Image, Input, Select, Tabs, Tooltip, Upload, message, notification, theme } from 'antd';
+import { CircleHelp, ImagePlus, Lightbulb, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import type { BugReportClientError, BugReportContext, CreateBugReportAttachmentRequest } from '@mos-lab/shared';
+import type {
+  BugReportClientError,
+  BugReportContext,
+  BugReportRequestType,
+  CreateBugReportAttachmentRequest,
+  FeatureRequestAudience,
+} from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '../../lib/bug-report-launcher';
 import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } from '../../lib/bug-diagnostics';
@@ -13,6 +19,7 @@ import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconText } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { BugReportWorkflowModal } from './BugReportWorkflowGuide';
+import { createRequestDrafts, emptyRequestDraft, updateRequestDraft, type RequestDraftView } from './bug-report-drafts';
 import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 import { useMyBugReports } from './useMyBugReports';
 
@@ -21,6 +28,13 @@ const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
 const LAUNCHER_SIZE = 44;
 const LAUNCHER_MARGIN = 12;
 const DRAG_THRESHOLD = 4;
+
+const FEATURE_AUDIENCE_OPTIONS: Array<{ value: FeatureRequestAudience; label: string }> = [
+  { value: 'SELF', label: 'Cá nhân tôi' },
+  { value: 'TEAM', label: 'Đội / bộ phận của tôi' },
+  { value: 'ALL_STAFF', label: 'Tất cả nhân viên' },
+  { value: 'CUSTOMER', label: 'Khách hàng' },
+];
 
 type ReleaseMarker = { deployedAt: string | null; commitSha: string | null };
 
@@ -56,12 +70,13 @@ export function BugReportSurface() {
   const { token } = theme.useToken();
   const [open, setOpen] = React.useState(false);
   const [workflowOpen, setWorkflowOpen] = React.useState(false);
-  const [activeView, setActiveView] = React.useState<'create' | 'history'>('create');
+  const [activeView, setActiveView] = React.useState<'bug' | 'feature' | 'history'>('bug');
   const [selectedReportKey, setSelectedReportKey] = React.useState<string | null>(null);
-  const [description, setDescription] = React.useState('');
-  const [files, setFiles] = React.useState<File[]>([]);
+  const [drafts, setDrafts] = React.useState(createRequestDrafts);
+  const [featureReason, setFeatureReason] = React.useState('');
+  const [featureAudience, setFeatureAudience] = React.useState<FeatureRequestAudience>('TEAM');
+  const [featureDesiredOutcome, setFeatureDesiredOutcome] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
-  const [processingImages, setProcessingImages] = React.useState(false);
   const [authenticated, setAuthenticated] = React.useState(false);
   const [release, setRelease] = React.useState<ReleaseMarker | null>(null);
   const [context, setContext] = React.useState<BugReportContext | null>(null);
@@ -87,6 +102,9 @@ export function BugReportSurface() {
   } = useBugReportLauncherPreferences();
   const savedLauncherX = preferences.position?.x ?? null;
   const savedLauncherY = preferences.position?.y ?? null;
+  const activeRequestView: RequestDraftView = activeView === 'feature' ? 'feature' : 'bug';
+  const activeDraft = drafts[activeRequestView];
+  const descriptionFieldId = activeRequestView === 'feature' ? 'mos-feature-description' : 'mos-bug-description';
 
   const enabled = authenticated && pathname.startsWith('/dashboard');
   const myBugs = useMyBugReports(enabled);
@@ -119,7 +137,7 @@ export function BugReportSurface() {
     (errorBoundary?: BugReportClientError | null) => {
       previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setContext(captureBugReportContext(release, errorBoundary));
-      setActiveView('create');
+      setActiveView('bug');
       setOpen(true);
     },
     [release]
@@ -160,7 +178,7 @@ export function BugReportSurface() {
     const next = myBugs.notifications.find((item) => !item.readAt && !announcedNotificationsRef.current.has(item.id));
     if (!next) return;
     announcedNotificationsRef.current.add(next.id);
-    const isClarification = next.type === 'BUG_CLARIFICATION_NEEDED';
+    const isClarification = next.type.endsWith('CLARIFICATION_NEEDED');
     notification[isClarification ? 'warning' : 'success']({
       key: `bug-report-${next.id}`,
       message: next.title,
@@ -267,39 +285,51 @@ export function BugReportSurface() {
     [persistLauncherPosition]
   );
 
-  const addFiles = React.useCallback(
-    async (selected: File[]) => {
-      const available = Math.max(0, MAX_ATTACHMENTS - files.length);
-      if (!available) {
-        message.warning('Mỗi báo lỗi nhận tối đa 3 ảnh.');
-        return;
-      }
-      setProcessingImages(true);
-      const next: File[] = [];
-      try {
-        for (const file of selected.slice(0, available)) {
-          try {
-            next.push(await compressImageForUpload(file, { maxBytes: MAX_ATTACHMENT_BYTES }));
-          } catch (error) {
-            message.error(error instanceof Error ? error.message : 'Không thể xử lý ảnh.');
-          }
+  const addFiles = async (selected: File[], draftView: RequestDraftView) => {
+    const available = Math.max(0, MAX_ATTACHMENTS - drafts[draftView].files.length);
+    if (!available) {
+      message.warning('Mỗi yêu cầu nhận tối đa 3 ảnh.');
+      return;
+    }
+    setDrafts((current) => updateRequestDraft(current, draftView, { processingImages: true }));
+    const next: File[] = [];
+    try {
+      for (const file of selected.slice(0, available)) {
+        try {
+          next.push(await compressImageForUpload(file, { maxBytes: MAX_ATTACHMENT_BYTES }));
+        } catch (error) {
+          message.error(error instanceof Error ? error.message : 'Không thể xử lý ảnh.');
         }
-        if (next.length) setFiles((current) => [...current, ...next].slice(0, MAX_ATTACHMENTS));
-        if (selected.length > available) message.warning('Chỉ 3 ảnh đầu tiên được giữ lại.');
-      } finally {
-        setProcessingImages(false);
       }
-    },
-    [files.length]
-  );
+      if (next.length) {
+        setDrafts((current) =>
+          updateRequestDraft(current, draftView, (draft) => ({
+            files: [...draft.files, ...next].slice(0, MAX_ATTACHMENTS),
+          }))
+        );
+      }
+      if (selected.length > available) message.warning('Chỉ 3 ảnh đầu tiên được giữ lại.');
+    } finally {
+      setDrafts((current) => updateRequestDraft(current, draftView, { processingImages: false }));
+    }
+  };
 
   const submit = async () => {
-    const normalizedDescription = description.trim();
-    if (normalizedDescription.length < 3 || !context) return;
+    const draftView: RequestDraftView = activeView === 'feature' ? 'feature' : 'bug';
+    const draft = drafts[draftView];
+    const normalizedDescription = draft.description.trim();
+    const requestType: BugReportRequestType = draftView === 'feature' ? 'FEATURE' : 'BUG';
+    const normalizedFeatureReason = featureReason.trim();
+    if (
+      normalizedDescription.length < 3 ||
+      !context ||
+      (requestType === 'FEATURE' && normalizedFeatureReason.length < 3)
+    )
+      return;
     setSubmitting(true);
     try {
       const attachments: CreateBugReportAttachmentRequest[] = await Promise.all(
-        files.map(async (file) => ({
+        draft.files.map(async (file) => ({
           fileName: file.name,
           mimeType: file.type as CreateBugReportAttachmentRequest['mimeType'],
           sizeBytes: file.size,
@@ -307,22 +337,38 @@ export function BugReportSurface() {
         }))
       );
       const response = await apiClient.bugReports.create({
+        requestType,
         description: normalizedDescription,
         context,
+        featureRequest:
+          requestType === 'FEATURE'
+            ? {
+                reason: normalizedFeatureReason,
+                audience: featureAudience,
+                desiredOutcome: featureDesiredOutcome.trim() || null,
+              }
+            : null,
         attachments,
       });
       const result = response.data;
       if (!result) throw new Error('Server không trả mã ticket.');
-      message.success(`Đã ghi nhận ${result.key}. Cảm ơn bạn!`);
+      message.success(
+        requestType === 'FEATURE'
+          ? `Đã gửi ${result.key}. AI Agent sẽ làm rõ trước khi Danny duyệt.`
+          : `Đã ghi nhận ${result.key}. Cảm ơn bạn!`
+      );
       result.attachmentWarnings.forEach((warning) => message.warning(warning));
-      setDescription('');
-      setFiles([]);
-      setContext(null);
+      setDrafts((current) => updateRequestDraft(current, draftView, emptyRequestDraft()));
+      if (draftView === 'feature') {
+        setFeatureReason('');
+        setFeatureAudience('TEAM');
+        setFeatureDesiredOutcome('');
+      }
       setSelectedReportKey(result.key);
       await myBugs.refresh();
       setActiveView('history');
     } catch (error: any) {
-      message.error(error?.response?.data?.message || error?.message || 'Không thể gửi báo lỗi.');
+      message.error(error?.response?.data?.message || error?.message || 'Không thể gửi yêu cầu.');
     } finally {
       setSubmitting(false);
     }
@@ -336,8 +382,8 @@ export function BugReportSurface() {
         <Button
           type="primary"
           shape="circle"
-          aria-label="Báo lỗi mOS"
-          title="Báo lỗi mOS — kéo để di chuyển"
+          aria-label="Phản hồi mOS"
+          title="Báo lỗi hoặc yêu cầu chức năng — kéo để di chuyển"
           data-bug-report-launcher
           onPointerDown={beginLauncherDrag}
           onPointerMove={moveLauncher}
@@ -369,8 +415,8 @@ export function BugReportSurface() {
       ) : null}
 
       <AdaptiveModal
-        intent={activeView === 'create' ? 'form' : 'data'}
-        title="Báo lỗi mOS"
+        intent={activeView === 'history' ? 'data' : 'form'}
+        title="Phản hồi mOS"
         open={open}
         onCancel={closeReporter}
         maskClosable={false}
@@ -381,16 +427,22 @@ export function BugReportSurface() {
           <AdaptiveOverlayFooter className="!static !m-0 !border-t-0 !p-0">
             <div className="ml-auto flex flex-wrap justify-end gap-2">
               <Button onClick={closeReporter} disabled={submitting}>
-                {activeView === 'create' ? 'Hủy' : 'Đóng'}
+                {activeView === 'history' ? 'Đóng' : 'Hủy'}
               </Button>
-              {activeView === 'create' ? (
+              {activeView !== 'history' ? (
                 <Button
                   type="primary"
                   loading={submitting}
-                  disabled={description.trim().length < 3 || processingImages}
+                  disabled={
+                    activeDraft.description.trim().length < 3 ||
+                    activeDraft.processingImages ||
+                    (activeView === 'feature' && featureReason.trim().length < 3)
+                  }
                   onClick={() => void submit()}
                 >
-                  <IconText icon={<AppIcon icon={Send} size="sm" />}>Gửi báo lỗi</IconText>
+                  <IconText icon={<AppIcon icon={Send} size="sm" />}>
+                    {activeView === 'feature' ? 'Gửi yêu cầu' : 'Gửi báo lỗi'}
+                  </IconText>
                 </Button>
               ) : null}
             </div>
@@ -402,15 +454,24 @@ export function BugReportSurface() {
           activeKey={activeView}
           onChange={(key) => {
             if (key === 'history') showHistory(selectedReportKey);
-            else setActiveView('create');
+            else setActiveView(key === 'feature' ? 'feature' : 'bug');
           }}
           items={[
             {
-              key: 'create',
+              key: 'bug',
               label: (
                 <span className="inline-flex items-center gap-2">
                   <AppIcon icon={MessageSquareWarning} size="sm" />
-                  Báo lỗi mới
+                  Báo lỗi
+                </span>
+              ),
+            },
+            {
+              key: 'feature',
+              label: (
+                <span className="inline-flex items-center gap-2">
+                  <AppIcon icon={Lightbulb} size="sm" />
+                  Yêu cầu chức năng
                 </span>
               ),
             },
@@ -419,17 +480,17 @@ export function BugReportSurface() {
               label: (
                 <span className="inline-flex items-center gap-2">
                   <AppIcon icon={ListChecks} size="sm" />
-                  Lỗi của tôi
+                  Yêu cầu của tôi
                   <Badge count={myBugs.unreadCount} size="small" overflowCount={99} />
                 </span>
               ),
             },
           ]}
           tabBarExtraContent={
-            <Tooltip title="Xem workflow xử lý báo lỗi">
+            <Tooltip title="Xem workflow xử lý yêu cầu">
               <Button
                 type="text"
-                aria-label="Xem workflow xử lý báo lỗi"
+                aria-label="Xem workflow xử lý yêu cầu"
                 icon={<AppIcon icon={CircleHelp} size="sm" />}
                 onClick={() => setWorkflowOpen(true)}
               />
@@ -456,51 +517,118 @@ export function BugReportSurface() {
               const pasted = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith('image/'));
               if (pasted.length) {
                 event.preventDefault();
-                void addFiles(pasted);
+                void addFiles(pasted, activeRequestView);
               }
             }}
           >
+            {activeView === 'feature' ? (
+              <Alert
+                type="info"
+                showIcon
+                message="Bạn chỉ cần mô tả nhu cầu — AI Agent sẽ hỏi tiếp nếu còn thiếu"
+                description="Sau khi yêu cầu đủ rõ, Danny là người quyết định cuối cùng có đưa chức năng vào hàng triển khai hay không."
+              />
+            ) : null}
             <div>
-              <label htmlFor="mos-bug-description" className="mb-2 block text-sm font-semibold">
-                Bạn đang gặp vấn đề gì?
+              <label htmlFor={descriptionFieldId} className="mb-2 block text-sm font-semibold">
+                {activeView === 'feature' ? 'Bạn muốn mOS giúp làm việc gì?' : 'Bạn đang gặp vấn đề gì?'}
               </label>
               <Input.TextArea
-                id="mos-bug-description"
+                key={activeRequestView}
+                id={descriptionFieldId}
                 autoFocus
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                value={activeDraft.description}
+                onChange={(event) => {
+                  const nextDescription = event.target.value;
+                  setDrafts((current) =>
+                    updateRequestDraft(current, activeRequestView, { description: nextDescription })
+                  );
+                }}
                 maxLength={2000}
                 showCount
                 rows={5}
-                placeholder="Ví dụ: Tôi bấm Lưu nhưng popup vẫn đứng yên…"
+                placeholder={
+                  activeView === 'feature'
+                    ? 'Ví dụ: Tôi muốn xem lịch sử khách đã đổi lịch ngay trong hồ sơ…'
+                    : 'Ví dụ: Tôi bấm Lưu nhưng popup vẫn đứng yên…'
+                }
               />
               <p className="mb-0 mt-6 text-xs" style={{ color: token.colorTextSecondary }}>
-                mOS tự đính kèm trang, popup, phiên bản và lỗi kỹ thuật gần nhất. Bạn không cần biết thuật ngữ kỹ thuật.
+                {activeView === 'feature'
+                  ? 'Không cần viết đặc tả kỹ thuật. Hãy mô tả công việc theo cách bạn đang làm hằng ngày.'
+                  : 'mOS tự đính kèm trang, popup, phiên bản và lỗi kỹ thuật gần nhất. Bạn không cần biết thuật ngữ kỹ thuật.'}
               </p>
             </div>
 
+            {activeView === 'feature' ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor="mos-feature-reason" className="mb-2 block text-sm font-semibold">
+                    Vì sao chức năng này cần thiết?
+                  </label>
+                  <Input.TextArea
+                    id="mos-feature-reason"
+                    value={featureReason}
+                    onChange={(event) => setFeatureReason(event.target.value)}
+                    maxLength={2000}
+                    showCount
+                    rows={3}
+                    placeholder="Hiện tại bạn phải làm thủ công, mất thời gian hoặc dễ sai ở bước nào?"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="mos-feature-audience" className="mb-2 block text-sm font-semibold">
+                    Ai sẽ sử dụng?
+                  </label>
+                  <Select
+                    id="mos-feature-audience"
+                    aria-label="Ai sẽ sử dụng chức năng"
+                    value={featureAudience}
+                    onChange={setFeatureAudience}
+                    options={FEATURE_AUDIENCE_OPTIONS}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="mos-feature-outcome" className="mb-2 block text-sm font-semibold">
+                    Kết quả mong muốn <span style={{ color: token.colorTextSecondary }}>(không bắt buộc)</span>
+                  </label>
+                  <Input
+                    id="mos-feature-outcome"
+                    value={featureDesiredOutcome}
+                    onChange={(event) => setFeatureDesiredOutcome(event.target.value)}
+                    maxLength={2000}
+                    placeholder="Ví dụ: Giảm còn 1 lần bấm"
+                  />
+                </div>
+              </div>
+            ) : null}
+
             <Upload.Dragger
+              key={`${activeRequestView}-upload`}
               accept="image/jpeg,image/png,image/webp"
               multiple
               showUploadList={false}
-              disabled={processingImages || files.length >= MAX_ATTACHMENTS}
+              disabled={activeDraft.processingImages || activeDraft.files.length >= MAX_ATTACHMENTS}
               beforeUpload={(file, selected) => {
-                if (file.uid === selected[0]?.uid) void addFiles(selected as File[]);
+                if (file.uid === selected[0]?.uid) void addFiles(selected as File[], activeRequestView);
                 return Upload.LIST_IGNORE;
               }}
             >
               <div className="flex flex-col items-center gap-2 py-2">
                 <AppIcon icon={ImagePlus} size="lg" style={{ color: token.colorTextSecondary }} />
-                <span className="text-sm font-medium">Dán, kéo hoặc chọn ảnh nếu cần</span>
+                <span className="text-sm font-medium">
+                  {activeView === 'feature' ? 'Thêm ảnh minh họa nhu cầu' : 'Thêm ảnh chụp lỗi nếu cần'}
+                </span>
                 <span className="text-xs" style={{ color: token.colorTextSecondary }}>
                   Không bắt buộc · tối đa 3 ảnh · mỗi ảnh 3 MB
                 </span>
               </div>
             </Upload.Dragger>
 
-            {files.length > 0 && (
+            {activeDraft.files.length > 0 && (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {files.map((file, index) => (
+                {activeDraft.files.map((file, index) => (
                   <div
                     key={`${file.name}-${file.size}-${index}`}
                     className="flex min-w-0 items-center gap-3 rounded-lg border p-2"
@@ -520,7 +648,13 @@ export function BugReportSurface() {
                       size="small"
                       aria-label={`Xóa ảnh ${file.name}`}
                       icon={<AppIcon icon={X} size="sm" />}
-                      onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                      onClick={() =>
+                        setDrafts((current) =>
+                          updateRequestDraft(current, activeRequestView, (draft) => ({
+                            files: draft.files.filter((_, itemIndex) => itemIndex !== index),
+                          }))
+                        )
+                      }
                     />
                   </div>
                 ))}

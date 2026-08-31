@@ -400,7 +400,7 @@ export function getSidebarGroups(
     if (canTriageBugInbox) {
       systemGroupItems.push({
         key: 'bug-reports',
-        label: 'Bug Inbox',
+        label: 'mOS Inbox',
         icon: <AppIcon icon={MessageSquareWarning} size="sm" />,
         path: '/dashboard/bug-reports',
       });

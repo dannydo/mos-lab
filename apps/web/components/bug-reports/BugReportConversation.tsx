@@ -6,6 +6,7 @@ import type {
   BugReportClarification,
   BugReportComment,
   BugReportCommentCreateResult,
+  BugReportRequestType,
   BugReportStatus,
   CreateBugReportAttachmentRequest,
   CreateBugReportCommentRequest,
@@ -41,6 +42,24 @@ const CLARIFICATION_COPY: Record<
   },
 };
 
+const FEATURE_CLARIFICATION_COPY: typeof CLARIFICATION_COPY = {
+  PENDING_AGENT: {
+    type: 'info',
+    title: 'AI đang phân tích nhu cầu',
+    description: 'Agent sẽ làm rõ người dùng, vấn đề, phạm vi và kết quả mong muốn trước khi trình Danny duyệt.',
+  },
+  WAITING_REPORTER: {
+    type: 'warning',
+    title: 'Cần bạn trả lời thêm',
+    description: 'Yêu cầu chưa được trình Danny cho đến khi bạn trả lời và Agent xác nhận đã đủ rõ.',
+  },
+  READY: {
+    type: 'success',
+    title: 'Yêu cầu đã đủ rõ để Danny quyết định',
+    description: 'Danny sẽ là người duyệt cuối cùng có đưa chức năng này vào hàng triển khai hay không.',
+  },
+};
+
 function initials(value: string): string {
   return value
     .split(/\s+/)
@@ -68,12 +87,14 @@ function CommentFileThumbnail({ file }: { file: File }) {
 
 export function BugReportConversation({
   reportId,
+  requestType,
   status,
   clarification,
   comments,
   onSubmit,
 }: {
   reportId: number;
+  requestType: BugReportRequestType;
   status: BugReportStatus;
   clarification: BugReportClarification;
   comments: BugReportComment[];
@@ -85,7 +106,9 @@ export function BugReportConversation({
   const [files, setFiles] = React.useState<File[]>([]);
   const [processing, setProcessing] = React.useState(false);
   const [sending, setSending] = React.useState(false);
-  const clarificationCopy = CLARIFICATION_COPY[clarification.status];
+  const clarificationCopy = (requestType === 'FEATURE' ? FEATURE_CLARIFICATION_COPY : CLARIFICATION_COPY)[
+    clarification.status
+  ];
   const locked = ['CLOSED', 'REJECTED', 'DUPLICATE'].includes(status);
 
   const addFiles = React.useCallback(
@@ -163,7 +186,7 @@ export function BugReportConversation({
       />
 
       {comments.length ? (
-        <div className="space-y-3" aria-label="Hội thoại làm rõ báo lỗi">
+        <div className="space-y-3" aria-label="Hội thoại làm rõ yêu cầu">
           {comments.map((comment) => {
             const isAgent = comment.authorType === 'AGENT';
             const authorName = isAgent ? 'AI Agent' : comment.author?.displayName || 'Nhân viên';
@@ -216,7 +239,11 @@ export function BugReportConversation({
         <StatePanel
           kind="empty"
           title="Chưa có trao đổi"
-          description="Agent sẽ hỏi tại đây nếu mô tả hoặc biz logic chưa đủ rõ."
+          description={
+            requestType === 'FEATURE'
+              ? 'Agent sẽ hỏi tại đây nếu nhu cầu, phạm vi hoặc kết quả mong muốn chưa đủ rõ.'
+              : 'Agent sẽ hỏi tại đây nếu mô tả hoặc biz logic chưa đủ rõ.'
+          }
         />
       )}
 

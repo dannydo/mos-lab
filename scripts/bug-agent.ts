@@ -67,9 +67,9 @@ function normalizeKey(value: string): string {
   const match = value
     .trim()
     .toUpperCase()
-    .match(/^MOS-BUG-(\d+)$/);
-  if (!match || Number(match[1]) <= 0) throw new Error('Mã ticket phải có dạng MOS-BUG-123.');
-  return `MOS-BUG-${Number(match[1])}`;
+    .match(/^MOS-(BUG|FEAT)-(\d+)$/);
+  if (!match || Number(match[2]) <= 0) throw new Error('Mã ticket phải có dạng MOS-BUG-123 hoặc MOS-FEAT-123.');
+  return `MOS-${match[1]}-${Number(match[2])}`;
 }
 
 function attachmentFileName(id: number, fileName: string): string {
@@ -196,7 +196,7 @@ async function main(): Promise<void> {
   const argument = process.argv[2];
   if (!argument || argument === '--help' || argument === '-h') {
     console.log(
-      'Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123 | pnpm bug:agent --progress MOS-BUG-123 ANALYZING|CHECKING_BUSINESS_LOGIC|IMPLEMENTING|VERIFYING "Cập nhật" | pnpm bug:agent --ask MOS-BUG-123 "Câu hỏi" | pnpm bug:agent --ready MOS-BUG-123 "Kết luận biz logic" | pnpm bug:agent --fixed MOS-BUG-123 [resolution.json]'
+      'Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123|MOS-FEAT-123 | pnpm bug:agent --progress <mã> ANALYZING|CHECKING_BUSINESS_LOGIC|IMPLEMENTING|VERIFYING "Cập nhật" | pnpm bug:agent --ask <mã> "Câu hỏi" | pnpm bug:agent --ready <mã> "Kết luận biz logic" | pnpm bug:agent --fixed <mã> [resolution.json]'
     );
     return;
   }

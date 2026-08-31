@@ -100,8 +100,13 @@ function sendAttachment(reply: FastifyReply, value: Awaited<ReturnType<typeof Bu
 export async function bugReportRoutes(fastify: FastifyInstance) {
   fastify.post('/bug-reports', { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      const data = await BugReportService.create(fastify, request.user.id, request.body as CreateBugReportRequest);
-      return reply.status(201).send({ success: true, data, message: 'Đã ghi nhận báo lỗi.' });
+      const input = request.body as CreateBugReportRequest;
+      const data = await BugReportService.create(fastify, request.user.id, input);
+      return reply.status(201).send({
+        success: true,
+        data,
+        message: input?.requestType === 'FEATURE' ? 'Đã ghi nhận yêu cầu chức năng.' : 'Đã ghi nhận báo lỗi.',
+      });
     } catch (error) {
       return sendError(fastify, reply, error, 'Create bug report failed');
     }

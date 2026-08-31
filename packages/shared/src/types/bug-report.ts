@@ -1,5 +1,17 @@
 import type { ActionResponse, PageQuery, PageResponse } from './api.js';
 
+export const BUG_REPORT_REQUEST_TYPES = ['BUG', 'FEATURE'] as const;
+export type BugReportRequestType = (typeof BUG_REPORT_REQUEST_TYPES)[number];
+
+export const FEATURE_REQUEST_AUDIENCES = ['SELF', 'TEAM', 'ALL_STAFF', 'CUSTOMER'] as const;
+export type FeatureRequestAudience = (typeof FEATURE_REQUEST_AUDIENCES)[number];
+
+export interface FeatureRequestContext {
+  reason: string;
+  audience: FeatureRequestAudience;
+  desiredOutcome: string | null;
+}
+
 export const BUG_REPORT_STATUSES = [
   'NEW',
   'APPROVED',
@@ -91,8 +103,10 @@ export interface CreateBugReportAttachmentRequest {
 }
 
 export interface CreateBugReportRequest {
+  requestType?: BugReportRequestType;
   description: string;
   context: BugReportContext;
+  featureRequest?: FeatureRequestContext | null;
   attachments?: CreateBugReportAttachmentRequest[];
 }
 
@@ -169,6 +183,8 @@ export interface BugReportAuditEntry {
 export interface BugReportSummary {
   id: number;
   key: string;
+  requestType: BugReportRequestType;
+  featureRequest: FeatureRequestContext | null;
   title: string;
   description: string;
   status: BugReportStatus;
@@ -212,7 +228,7 @@ export interface BugReportNotification {
   id: number;
   reportId: number;
   reportKey: string;
-  type: 'BUG_FIXED_REVIEW' | 'BUG_CLARIFICATION_NEEDED';
+  type: 'BUG_FIXED_REVIEW' | 'BUG_CLARIFICATION_NEEDED' | 'FEATURE_IMPLEMENTED_REVIEW' | 'FEATURE_CLARIFICATION_NEEDED';
   title: string;
   message: string;
   actionUrl: string;
@@ -227,6 +243,7 @@ export interface MyBugReportsResponse {
 }
 
 export interface BugReportListQuery extends PageQuery {
+  requestType?: BugReportRequestType | 'ALL';
   status?: BugReportStatus | 'ALL';
   priority?: BugPriority | 'ALL';
   clarification?: BugReportClarificationFilter;
@@ -234,6 +251,8 @@ export interface BugReportListQuery extends PageQuery {
 }
 
 export interface BugReportListSummary {
+  bugCount: number;
+  featureCount: number;
   newCount: number;
   approvedCount: number;
   inProgressCount: number;
@@ -324,6 +343,7 @@ export type BugReportListResponse = PageResponse<BugReportSummary, BugReportList
 export interface AgentBugQueueItem {
   id: number;
   key: string;
+  requestType: BugReportRequestType;
   title: string;
   status: Extract<BugReportStatus, 'NEW' | 'APPROVED' | 'IN_PROGRESS' | 'FIXED'>;
   priority: BugPriority | null;
@@ -349,6 +369,7 @@ export interface AgentBugBundle {
   similarResolutions: AgentBugKnowledgeItem[];
 }
 
-export function formatBugReportKey(id: number): string {
-  return `MOS-BUG-${Math.max(0, Math.trunc(id))}`;
+export function formatBugReportKey(id: number, requestType: BugReportRequestType = 'BUG'): string {
+  const prefix = requestType === 'FEATURE' ? 'MOS-FEAT' : 'MOS-BUG';
+  return `${prefix}-${Math.max(0, Math.trunc(id))}`;
 }

@@ -6,6 +6,7 @@ import type {
   BugReportClarificationFilter,
   BugReportDetail,
   BugReportListSummary,
+  BugReportRequestType,
   BugReportStatus,
   BugReportSummary,
   ConfirmCloseBugReportRequest,
@@ -16,10 +17,12 @@ import type {
 import { useDebounce } from '../../../../hooks/useDebounce';
 import { apiClient } from '../../../../lib/api-client';
 
-const STORAGE_KEY = 'mos_bug_inbox_state_v1';
+const STORAGE_KEY = 'mos_bug_inbox_state_v2';
+const LEGACY_STORAGE_KEY = 'mos_bug_inbox_state_v1';
 
 export interface BugInboxFilters {
   search: string;
+  requestType: BugReportRequestType | 'ALL';
   status: BugReportStatus | 'ALL';
   priority: BugPriority | 'ALL';
   clarification: BugReportClarificationFilter;
@@ -30,9 +33,17 @@ export interface BugInboxPagination {
   pageSize: number;
 }
 
-const DEFAULT_FILTERS: BugInboxFilters = { search: '', status: 'ALL', priority: 'ALL', clarification: 'ALL' };
+const DEFAULT_FILTERS: BugInboxFilters = {
+  search: '',
+  requestType: 'ALL',
+  status: 'ALL',
+  priority: 'ALL',
+  clarification: 'ALL',
+};
 const DEFAULT_PAGINATION: BugInboxPagination = { page: 1, pageSize: 20 };
 const EMPTY_SUMMARY: BugReportListSummary = {
+  bugCount: 0,
+  featureCount: 0,
   newCount: 0,
   approvedCount: 0,
   inProgressCount: 0,
@@ -53,7 +64,7 @@ function getErrorMessage(error: unknown): string {
 
 function readPersistedState(): { filters: BugInboxFilters; pagination: BugInboxPagination } | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(STORAGE_KEY) || window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<{ filters: BugInboxFilters; pagination: BugInboxPagination }>;
     const pageSize = Number(parsed.pagination?.pageSize);
@@ -109,6 +120,7 @@ export function useBugReports() {
           page: pagination.page,
           limit: pagination.pageSize,
           search: debouncedSearch.trim() || undefined,
+          requestType: filters.requestType,
           status: filters.status,
           priority: filters.priority,
           clarification: filters.clarification,
@@ -133,6 +145,7 @@ export function useBugReports() {
       debouncedSearch,
       filters.clarification,
       filters.priority,
+      filters.requestType,
       filters.status,
       hydrated,
       pagination.page,

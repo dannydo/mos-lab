@@ -9,6 +9,7 @@ import { durationBetween, formatDate, formatElapsed } from '../bug-report-presen
 const { Text } = Typography;
 
 export function BugReportResolutionTracking({ detail }: { detail: BugReportDetail }) {
+  const isFeature = detail.requestType === 'FEATURE';
   return (
     <>
       <SectionCard title="Tracking xử lý">
@@ -18,8 +19,8 @@ export function BugReportResolutionTracking({ detail }: { detail: BugReportDetai
               color: 'blue',
               children: (
                 <Text>
-                  <strong>Báo lỗi</strong> · {formatDate(detail.timeline.reportedAt)} ·{' '}
-                  {formatElapsed(detail.timeline.reportedAt)}
+                  <strong>{isFeature ? 'Gửi yêu cầu chức năng' : 'Báo lỗi'}</strong> ·{' '}
+                  {formatDate(detail.timeline.reportedAt)} · {formatElapsed(detail.timeline.reportedAt)}
                 </Text>
               ),
             },
@@ -27,7 +28,8 @@ export function BugReportResolutionTracking({ detail }: { detail: BugReportDetai
               color: detail.timeline.approvedAt ? 'blue' : 'gray',
               children: (
                 <Text>
-                  <strong>Danny duyệt</strong> · {formatDate(detail.timeline.approvedAt)}
+                  <strong>{isFeature ? 'Danny duyệt triển khai' : 'Danny duyệt'}</strong> ·{' '}
+                  {formatDate(detail.timeline.approvedAt)}
                   {durationBetween(detail.timeline.reportedAt, detail.timeline.approvedAt)
                     ? ` · sau ${durationBetween(detail.timeline.reportedAt, detail.timeline.approvedAt)}`
                     : ''}
@@ -38,7 +40,8 @@ export function BugReportResolutionTracking({ detail }: { detail: BugReportDetai
               color: detail.timeline.startedAt ? 'blue' : 'gray',
               children: (
                 <Text>
-                  <strong>Bắt đầu xử lý</strong> · {formatDate(detail.timeline.startedAt)}
+                  <strong>{isFeature ? 'Bắt đầu triển khai' : 'Bắt đầu xử lý'}</strong> ·{' '}
+                  {formatDate(detail.timeline.startedAt)}
                 </Text>
               ),
             },
@@ -46,7 +49,8 @@ export function BugReportResolutionTracking({ detail }: { detail: BugReportDetai
               color: detail.timeline.fixedAt ? 'green' : 'gray',
               children: (
                 <Text>
-                  <strong>Gửi người báo duyệt</strong> · {formatDate(detail.timeline.fixedAt)}
+                  <strong>{isFeature ? 'Gửi người yêu cầu nghiệm thu' : 'Gửi người báo duyệt'}</strong> ·{' '}
+                  {formatDate(detail.timeline.fixedAt)}
                   {durationBetween(detail.timeline.startedAt, detail.timeline.fixedAt)
                     ? ` · xử lý ${durationBetween(detail.timeline.startedAt, detail.timeline.fixedAt)}`
                     : ''}
@@ -57,7 +61,8 @@ export function BugReportResolutionTracking({ detail }: { detail: BugReportDetai
               color: detail.timeline.closedAt ? 'green' : 'gray',
               children: (
                 <Text>
-                  <strong>Đóng ticket</strong> · {formatDate(detail.timeline.closedAt)}
+                  <strong>{isFeature ? 'Hoàn tất yêu cầu' : 'Đóng ticket'}</strong> ·{' '}
+                  {formatDate(detail.timeline.closedAt)}
                 </Text>
               ),
             },
@@ -66,7 +71,13 @@ export function BugReportResolutionTracking({ detail }: { detail: BugReportDetai
       </SectionCard>
 
       {detail.resolution ? (
-        <SectionCard title="AI resolution · dùng lại cho case tương tự">
+        <SectionCard
+          title={
+            isFeature
+              ? 'AI implementation · dùng lại cho yêu cầu tương tự'
+              : 'AI resolution · dùng lại cho case tương tự'
+          }
+        >
           <Descriptions column={1} size="small" bordered>
             <Descriptions.Item label="Tóm tắt vấn đề">{detail.resolution.problemSummary}</Descriptions.Item>
             <Descriptions.Item label="Nguyên nhân gốc">{detail.resolution.rootCause}</Descriptions.Item>

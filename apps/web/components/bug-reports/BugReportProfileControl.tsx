@@ -15,7 +15,7 @@ export default function BugReportProfileControl() {
   return (
     <section
       className={`${responsiveTier === 'mobile' ? 'w-52' : 'w-72'} space-y-3 px-3 py-3`}
-      aria-label="Tùy chọn báo lỗi mOS"
+      aria-label="Tùy chọn phản hồi mOS"
       onClick={(event) => event.stopPropagation()}
     >
       <div className="flex items-start gap-3">
@@ -26,7 +26,7 @@ export default function BugReportProfileControl() {
           <AppIcon icon={MessageSquareWarning} />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="font-semibold">Báo lỗi mOS</div>
+          <div className="font-semibold">Phản hồi mOS</div>
           <div className="mt-1 text-xs leading-4" style={{ color: token.colorTextSecondary }}>
             Kéo icon đến vị trí thuận tiện; mOS sẽ nhớ sau khi tải lại.
           </div>
@@ -38,7 +38,7 @@ export default function BugReportProfileControl() {
         style={{ borderColor: token.colorBorderSecondary, background: token.colorFillAlter }}
       >
         <div className="min-w-0">
-          <div className="text-sm font-medium">Hiển thị icon báo lỗi</div>
+          <div className="text-sm font-medium">Hiển thị icon phản hồi</div>
           <div className="mt-0.5 text-xs leading-4" style={{ color: token.colorTextSecondary }}>
             Có thể bật lại bất cứ lúc nào từ menu này.
           </div>
@@ -46,7 +46,7 @@ export default function BugReportProfileControl() {
         <Switch
           checked={ready && preferences.visible}
           disabled={!ready}
-          aria-label="Hiển thị icon báo lỗi mOS"
+          aria-label="Hiển thị icon phản hồi mOS"
           onChange={setVisible}
         />
       </div>

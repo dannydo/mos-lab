@@ -24,6 +24,7 @@ import type {
   BugReportClarificationFilter,
   BugReportDetail,
   BugReportCommentCreateResult,
+  BugReportRequestType,
   BugReportStatus,
   BugReportSummary,
   ConfirmCloseBugReportRequest,
@@ -32,13 +33,13 @@ import type {
 } from '@mos-lab/shared';
 import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import {
-  Archive,
   CheckCircle2,
   CircleHelp,
   Clipboard,
   Clock3,
   ExternalLink,
   Inbox,
+  Lightbulb,
   LoaderCircle,
   MessageCircleQuestion,
   MessageSquareWarning,
@@ -57,6 +58,7 @@ import { safeStorage } from '../../../lib/safe-storage';
 import { BugReportConversation } from '../../../components/bug-reports/BugReportConversation';
 import { BugReportWorkflowModal } from '../../../components/bug-reports/BugReportWorkflowGuide';
 import { BugReportResolutionTracking } from './components/BugReportResolutionTracking';
+import { FeatureRequestDetails } from './components/FeatureRequestDetails';
 import {
   AgentProgressTag,
   BugStatusTag,
@@ -69,11 +71,11 @@ import {
   parseDuplicateKey,
   PriorityTag,
   ProtectedAttachment,
+  RequestTypeTag,
   STATUS_LABELS,
   TRANSITIONS,
 } from './bug-report-presenters';
 import { useBugReports } from './hooks/useBugReports';
-
 const { Text, Paragraph, Title } = Typography;
 
 interface DetailDrawerProps {
@@ -142,7 +144,7 @@ function DetailDrawer({
       const nextStatus = override?.status ?? status;
       const duplicateOfId = nextStatus === 'DUPLICATE' ? parseDuplicateKey(duplicateKey) : undefined;
       if (nextStatus === 'DUPLICATE' && !duplicateOfId) {
-        messageApi.error('Nhập ticket gốc theo dạng MOS-BUG-123.');
+        messageApi.error('Nhập ticket gốc theo dạng MOS-BUG-123 hoặc MOS-FEAT-123.');
         return;
       }
       setSaving(true);
@@ -156,7 +158,11 @@ function DetailDrawer({
         });
         hydrateForm(updated);
         messageApi.success(
-          nextStatus === 'APPROVED' && detail.status === 'NEW' ? 'Đã approve ticket cho Agent.' : 'Đã cập nhật ticket.'
+          nextStatus === 'APPROVED' && detail.status === 'NEW'
+            ? detail.requestType === 'FEATURE'
+              ? 'Đã duyệt yêu cầu vào hàng triển khai.'
+              : 'Đã approve ticket cho Agent.'
+            : 'Đã cập nhật ticket.'
         );
       } catch (error) {
         const responseMessage =
@@ -204,7 +210,7 @@ function DetailDrawer({
 
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
-    label: `Approve ${item}`,
+    label: detail?.requestType === 'FEATURE' ? `Duyệt triển khai ${item}` : `Approve ${item}`,
     onClick: () => void save({ status: 'APPROVED', priority: item }),
   }));
 
@@ -218,7 +224,7 @@ function DetailDrawer({
         onClose={onClose}
         intent="detail"
         destroyOnHidden
-        title={detail ? `${detail.key} · ${detail.title}` : 'Chi tiết báo lỗi'}
+        title={detail ? `${detail.key} · ${detail.title}` : 'Chi tiết yêu cầu'}
         extra={
           detail ? (
             <Space wrap>
@@ -227,11 +233,19 @@ function DetailDrawer({
                   <Button
                     type="primary"
                     loading={saving}
-                    disabled={detail.clarification.status !== 'READY' && businessContext.trim().length < 10}
-                    title="Cần Agent xác nhận đủ rõ hoặc nhập biz logic/kết quả đúng trước khi approve"
+                    disabled={
+                      detail.requestType === 'FEATURE'
+                        ? detail.clarification.status !== 'READY'
+                        : detail.clarification.status !== 'READY' && businessContext.trim().length < 10
+                    }
+                    title={
+                      detail.requestType === 'FEATURE'
+                        ? 'Agent phải xác nhận yêu cầu đã đủ rõ trước khi Danny duyệt triển khai'
+                        : 'Cần Agent xác nhận đủ rõ hoặc nhập biz logic/kết quả đúng trước khi approve'
+                    }
                     icon={<AppIcon icon={Send} size="sm" />}
                   >
-                    Approve
+                    {detail.requestType === 'FEATURE' ? 'Duyệt triển khai' : 'Approve'}
                   </Button>
                 </Dropdown>
               )}
@@ -287,6 +301,7 @@ function DetailDrawer({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <BugStatusTag status={detail.status} />
+                  <RequestTypeTag requestType={detail.requestType} />
                   <PriorityTag priority={detail.priority} />
                   <ClarificationTag status={detail.clarification.status} />
                   <AgentProgressTag progress={detail.agentProgress} />
@@ -303,9 +318,12 @@ function DetailDrawer({
               </Text>
             </section>
 
+            {detail.featureRequest ? <FeatureRequestDetails featureRequest={detail.featureRequest} /> : null}
+
             <SectionCard title={`Trao đổi & làm rõ (${detail.comments.length})`}>
               <BugReportConversation
                 reportId={detail.id}
+                requestType={detail.requestType}
                 status={detail.status}
                 clarification={detail.clarification}
                 comments={detail.comments}
@@ -416,7 +434,7 @@ function DetailDrawer({
             </SectionCard>
 
             {canTriage ? (
-              <SectionCard title="Danny triage">
+              <SectionCard title={detail.requestType === 'FEATURE' ? 'Danny quyết định sản phẩm' : 'Danny triage'}>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <label className="space-y-1">
                     <Text strong>Trạng thái</Text>
@@ -445,11 +463,17 @@ function DetailDrawer({
                   </label>
                 </div>
                 <label className="mt-4 block space-y-1">
-                  <Text strong>Biz logic / kết quả đúng</Text>
+                  <Text strong>
+                    {detail.requestType === 'FEATURE' ? 'Phạm vi / acceptance criteria' : 'Biz logic / kết quả đúng'}
+                  </Text>
                   <Input.TextArea
                     value={businessContext}
                     onChange={(event) => setBusinessContext(event.target.value)}
-                    placeholder="Bổ sung điều Agent cần hiểu về nghiệp vụ hoặc kết quả đúng mong muốn"
+                    placeholder={
+                      detail.requestType === 'FEATURE'
+                        ? 'Ghi phạm vi đã chốt, điều kiện được xem là đạt và giới hạn nếu có'
+                        : 'Bổ sung điều Agent cần hiểu về nghiệp vụ hoặc kết quả đúng mong muốn'
+                    }
                     maxLength={4000}
                     autoSize={{ minRows: 3, maxRows: 8 }}
                     showCount
@@ -472,7 +496,7 @@ function DetailDrawer({
                     <Input
                       value={duplicateKey}
                       onChange={(event) => setDuplicateKey(event.target.value)}
-                      placeholder="MOS-BUG-123"
+                      placeholder="MOS-BUG-123 hoặc MOS-FEAT-123"
                     />
                   </label>
                 )}
@@ -549,6 +573,7 @@ export default function BugReportsPage() {
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <Text strong>{row.key}</Text>
+                <RequestTypeTag requestType={row.requestType} />
                 <PriorityTag priority={row.priority} />
                 <ClarificationTag status={row.clarification.status} />
               </div>
@@ -633,6 +658,7 @@ export default function BugReportsPage() {
   );
 
   const activeFilterCount =
+    Number(inbox.filters.requestType !== 'ALL') +
     Number(inbox.filters.status !== 'ALL') +
     Number(inbox.filters.priority !== 'ALL') +
     Number(inbox.filters.clarification !== 'ALL');
@@ -640,14 +666,14 @@ export default function BugReportsPage() {
   return (
     <>
       <ResourceListPage<BugReportSummary>
-        title="Bug Inbox"
-        subtitle="Danny duyệt, ưu tiên và giao đúng context cho Agent — tiến độ Agent tự cập nhật mỗi 15 giây."
+        title="mOS Inbox"
+        subtitle="AI làm rõ với người yêu cầu; Danny quyết định cuối cùng trước khi lỗi hoặc chức năng được đưa vào hàng triển khai."
         icon={<AppIcon icon={MessageSquareWarning} size="lg" />}
         headerActions={
-          <Tooltip title="Xem workflow xử lý báo lỗi">
+          <Tooltip title="Xem workflow xử lý yêu cầu">
             <Button
               type="text"
-              aria-label="Xem workflow xử lý báo lỗi"
+              aria-label="Xem workflow xử lý yêu cầu"
               icon={<AppIcon icon={CircleHelp} size="sm" />}
               onClick={() => setWorkflowOpen(true)}
             />
@@ -659,13 +685,24 @@ export default function BugReportsPage() {
               behavior="filter"
               value={inbox.filters.search}
               onChange={(event) => inbox.setFilters({ search: event.target.value })}
-              placeholder="Tìm mã lỗi, nội dung, nhân viên hoặc trang…"
+              placeholder="Tìm mã, nội dung, nhân viên hoặc trang…"
               allowClear
               style={{ width: 'min(100%, 420px)' }}
             />
           ),
           filters: (
             <Space wrap>
+              <Select
+                value={inbox.filters.requestType}
+                onChange={(value: BugReportRequestType | 'ALL') => inbox.setFilters({ requestType: value })}
+                className="min-w-[165px]"
+                aria-label="Lọc loại yêu cầu"
+                options={[
+                  { value: 'ALL', label: 'Mọi loại yêu cầu' },
+                  { value: 'FEATURE', label: 'Yêu cầu chức năng' },
+                  { value: 'BUG', label: 'Báo lỗi' },
+                ]}
+              />
               <Select
                 value={inbox.filters.status}
                 onChange={(value) => inbox.setFilters({ status: value })}
@@ -696,7 +733,7 @@ export default function BugReportsPage() {
           ),
           actions: (
             <Button
-              aria-label="Tải lại Bug Inbox"
+              aria-label="Tải lại mOS Inbox"
               icon={<AppIcon icon={RefreshCw} size="sm" />}
               loading={inbox.loading}
               onClick={() => void inbox.refresh()}
@@ -705,11 +742,21 @@ export default function BugReportsPage() {
             </Button>
           ),
           activeFilterCount,
-          filterTitle: 'Lọc Bug Inbox',
+          filterTitle: 'Lọc mOS Inbox',
         }}
         metrics={{
           columns: 6,
           items: [
+            {
+              key: 'feature',
+              title: 'Yêu cầu chức năng',
+              value: inbox.summary.featureCount,
+              format: 'number',
+              loading: inbox.loading,
+              subValue: `Báo lỗi ${inbox.summary.bugCount}`,
+              icon: <AppIcon icon={Lightbulb} size="md" />,
+              iconBgColor: token.colorInfoBg,
+            },
             {
               key: 'unclear',
               title: 'Chờ làm rõ',
@@ -749,28 +796,19 @@ export default function BugReportsPage() {
             },
             {
               key: 'fixed',
-              title: 'Chờ xác nhận đóng',
+              title: 'Chờ nghiệm thu',
               value: inbox.summary.fixedCount,
               format: 'number',
               loading: inbox.loading,
               icon: <AppIcon icon={CheckCircle2} size="md" />,
               iconBgColor: token.colorSuccessBg,
             },
-            {
-              key: 'closed',
-              title: 'Đã đóng',
-              value: inbox.summary.closedCount,
-              format: 'number',
-              loading: inbox.loading,
-              icon: <AppIcon icon={Archive} size="md" />,
-              iconBgColor: token.colorFillSecondary,
-            },
           ],
         }}
         tableSection={{
-          title: `Danh sách · ${inbox.total.toLocaleString('vi-VN')} ticket`,
+          title: `Danh sách · ${inbox.total.toLocaleString('vi-VN')} yêu cầu`,
           state: inbox.error ? 'error' : undefined,
-          stateTitle: 'Không thể tải Bug Inbox',
+          stateTitle: 'Không thể tải mOS Inbox',
           stateDescription: inbox.error,
           stateExtra: (
             <Button icon={<AppIcon icon={RefreshCw} size="sm" />} onClick={() => void inbox.refresh()}>
@@ -800,11 +838,11 @@ export default function BugReportsPage() {
             total: inbox.total,
             showSizeChanger: true,
             pageSizeOptions: STANDARD_PAGE_SIZE_OPTIONS,
-            showTotal: (total, range) => `${range[0]}–${range[1]} / ${total} ticket`,
+            showTotal: (total, range) => `${range[0]}–${range[1]} / ${total} yêu cầu`,
             onChange: (page, pageSize) => inbox.setPagination({ page, pageSize }),
           },
           mobileRecordKey: (row) => row.id,
-          mobileEmptyDescription: 'Chưa có ticket phù hợp bộ lọc.',
+          mobileEmptyDescription: 'Chưa có yêu cầu phù hợp bộ lọc.',
           mobileRenderer: (row) => (
             <button type="button" className="w-full text-left" onClick={() => setSelectedId(row.id)}>
               <div className="mb-3 flex items-start gap-3">
@@ -815,6 +853,7 @@ export default function BugReportsPage() {
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <Text strong>{row.key}</Text>
                     <div className="flex items-center gap-2">
+                      <RequestTypeTag requestType={row.requestType} />
                       <PriorityTag priority={row.priority} />
                       <BugStatusTag status={row.status} />
                     </div>
