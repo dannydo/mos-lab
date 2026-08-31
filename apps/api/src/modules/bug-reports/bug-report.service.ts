@@ -296,6 +296,7 @@ const AGENT_PROGRESS_DEFAULT_NOTES: Record<BugReportAgentUpdateStage, string> = 
   IMPLEMENTING: 'Agent đã bắt đầu sửa lỗi.',
   VERIFYING: 'Agent đang kiểm thử bản sửa trước khi gửi người báo xác nhận.',
 };
+const AGENT_FIXED_PROGRESS_NOTE = 'Agent đã hoàn tất bản sửa và gửi người báo xác nhận.';
 
 function latestAgentActivity(source: AgentProgressSource) {
   for (let index = source.audits.length - 1; index >= 0; index -= 1) {
@@ -331,7 +332,10 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('STOPPED', source, null, source.closedAt);
   }
   if (source.status === 'FIXED') {
-    return progressResult('AWAITING_REPORTER_REVIEW', source, latest, source.resolvedAt);
+    return {
+      ...progressResult('AWAITING_REPORTER_REVIEW', source, null, source.resolvedAt),
+      note: AGENT_FIXED_PROGRESS_NOTE,
+    };
   }
   if (source.clarificationStatus === 'WAITING_REPORTER') {
     return progressResult('WAITING_REPORTER', source, latest, source.updatedAt);

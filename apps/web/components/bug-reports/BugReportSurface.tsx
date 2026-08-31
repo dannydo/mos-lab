@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Badge, Button, Image, Input, Tooltip, Upload, message, notification, theme } from 'antd';
-import { ImagePlus, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
+import { Badge, Button, Image, Input, Tabs, Tooltip, Upload, message, notification, theme } from 'antd';
+import { CircleHelp, ImagePlus, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import type { BugReportClientError, BugReportContext, CreateBugReportAttachmentRequest } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
@@ -12,6 +12,7 @@ import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconText } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
+import { BugReportWorkflowModal } from './BugReportWorkflowGuide';
 import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 import { useMyBugReports } from './useMyBugReports';
 
@@ -54,6 +55,7 @@ export function BugReportSurface() {
   const pathname = usePathname();
   const { token } = theme.useToken();
   const [open, setOpen] = React.useState(false);
+  const [workflowOpen, setWorkflowOpen] = React.useState(false);
   const [activeView, setActiveView] = React.useState<'create' | 'history'>('create');
   const [selectedReportKey, setSelectedReportKey] = React.useState<string | null>(null);
   const [description, setDescription] = React.useState('');
@@ -318,8 +320,7 @@ export function BugReportSurface() {
       setContext(null);
       setSelectedReportKey(result.key);
       await myBugs.refresh();
-      setOpen(false);
-      window.setTimeout(() => previousFocusRef.current?.focus?.(), 0);
+      setActiveView('history');
     } catch (error: any) {
       message.error(error?.response?.data?.message || error?.message || 'Không thể gửi báo lỗi.');
     } finally {
@@ -369,7 +370,7 @@ export function BugReportSurface() {
 
       <AdaptiveModal
         intent={activeView === 'create' ? 'form' : 'data'}
-        title={activeView === 'create' ? 'Báo lỗi mOS' : 'Lỗi của tôi'}
+        title="Báo lỗi mOS"
         open={open}
         onCancel={closeReporter}
         maskClosable={false}
@@ -378,22 +379,7 @@ export function BugReportSurface() {
         destroyOnHidden
         footer={
           <AdaptiveOverlayFooter className="!static !m-0 !border-t-0 !p-0">
-            <div className="mr-auto">
-              <Tooltip title={activeView === 'create' ? 'Xem lỗi của tôi và trạng thái xử lý' : 'Báo lỗi mới'}>
-                <Badge count={myBugs.unreadCount} size="small" overflowCount={99}>
-                  <Button
-                    type="text"
-                    aria-label={activeView === 'create' ? 'Xem danh sách lỗi của tôi' : 'Quay lại form báo lỗi'}
-                    icon={<AppIcon icon={activeView === 'create' ? ListChecks : MessageSquareWarning} size="sm" />}
-                    onClick={() => {
-                      if (activeView === 'create') showHistory(selectedReportKey);
-                      else setActiveView('create');
-                    }}
-                  />
-                </Badge>
-              </Tooltip>
-            </div>
-            <div className="flex flex-wrap justify-end gap-2">
+            <div className="ml-auto flex flex-wrap justify-end gap-2">
               <Button onClick={closeReporter} disabled={submitting}>
                 {activeView === 'create' ? 'Hủy' : 'Đóng'}
               </Button>
@@ -411,6 +397,46 @@ export function BugReportSurface() {
           </AdaptiveOverlayFooter>
         }
       >
+        <Tabs
+          className="mb-4"
+          activeKey={activeView}
+          onChange={(key) => {
+            if (key === 'history') showHistory(selectedReportKey);
+            else setActiveView('create');
+          }}
+          items={[
+            {
+              key: 'create',
+              label: (
+                <span className="inline-flex items-center gap-2">
+                  <AppIcon icon={MessageSquareWarning} size="sm" />
+                  Báo lỗi mới
+                </span>
+              ),
+            },
+            {
+              key: 'history',
+              label: (
+                <span className="inline-flex items-center gap-2">
+                  <AppIcon icon={ListChecks} size="sm" />
+                  Lỗi của tôi
+                  <Badge count={myBugs.unreadCount} size="small" overflowCount={99} />
+                </span>
+              ),
+            },
+          ]}
+          tabBarExtraContent={
+            <Tooltip title="Xem workflow xử lý báo lỗi">
+              <Button
+                type="text"
+                aria-label="Xem workflow xử lý báo lỗi"
+                icon={<AppIcon icon={CircleHelp} size="sm" />}
+                onClick={() => setWorkflowOpen(true)}
+              />
+            </Tooltip>
+          }
+        />
+
         {activeView === 'history' ? (
           <MyBugReportsPanel
             reports={myBugs.data}
@@ -503,6 +529,7 @@ export function BugReportSurface() {
           </div>
         )}
       </AdaptiveModal>
+      <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} zIndex={12040} />
     </>
   );
 }

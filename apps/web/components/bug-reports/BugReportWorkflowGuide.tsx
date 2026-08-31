@@ -1,19 +1,10 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import {
-  Bug,
-  CheckCircle2,
-  ChevronRight,
-  MessageSquareMore,
-  RefreshCw,
-  ScanSearch,
-  ShieldCheck,
-  Wrench,
-} from 'lucide-react';
-import { Typography } from 'antd';
-import { AppIcon, SectionCard, StatusTag, type StatusType } from '../../../../components/ui';
-import styles from './BugInboxWorkflowGuide.module.css';
+import { Bug, CheckCircle2, MessageSquareMore, RefreshCw, ScanSearch, ShieldCheck, Wrench } from 'lucide-react';
+import { Button, Typography } from 'antd';
+import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, StatusTag, type StatusType } from '../ui';
+import styles from './BugReportWorkflowGuide.module.css';
 
 const { Text } = Typography;
 
@@ -99,68 +90,53 @@ const WORKFLOW_STEPS: WorkflowStep[] = [
   },
 ];
 
-export function BugInboxWorkflowGuide() {
+export function BugReportWorkflowGuide() {
   return (
-    <SectionCard
-      title={
-        <div className="flex items-center gap-2">
-          <AppIcon icon={RefreshCw} size="sm" />
-          <span>Workflow sử dụng Bug Inbox</span>
-        </div>
-      }
-      extra={
-        <Text type="secondary" className="hidden text-xs tabular-nums sm:inline">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <Text type="secondary">Từ lúc gửi báo lỗi đến khi người báo xác nhận và đóng ticket.</Text>
+        <Text type="secondary" className="shrink-0 text-xs tabular-nums">
           6 bước · tiến độ tự cập nhật mỗi 15 giây
         </Text>
-      }
-    >
-      <ol className={`m-0 list-none p-0 ${styles.workflowGrid}`} aria-label="Quy trình xử lý báo lỗi">
+      </div>
+
+      <ol className={`m-0 list-none p-0 ${styles.workflowTimeline}`} aria-label="Quy trình xử lý báo lỗi">
         {WORKFLOW_STEPS.map((step, index) => (
-          <li key={step.title} className="relative min-w-0">
-            <div className={`flex h-full min-h-40 flex-col rounded-xl border p-3 ${styles.stepCard}`}>
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${styles.stepIcon}`}
-                    aria-hidden="true"
-                  >
-                    <AppIcon icon={step.icon} size="sm" />
-                  </span>
-                  <Text strong className={`tabular-nums ${styles.stepNumber}`}>
-                    {index + 1}
+          <li key={step.title} className={styles.workflowStep}>
+            <div className={styles.stepRail} aria-hidden="true">
+              <span className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${styles.stepIcon}`}>
+                <AppIcon icon={step.icon} size="sm" />
+              </span>
+              {index < WORKFLOW_STEPS.length - 1 ? <span className={styles.timelineConnector} /> : null}
+            </div>
+
+            <div className={`min-w-0 rounded-xl border p-3.5 ${styles.stepCard}`}>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <Text strong className={`shrink-0 text-xs tabular-nums ${styles.stepNumber}`}>
+                    Bước {index + 1}
                   </Text>
+                  <Text strong>{step.title}</Text>
+                  {step.conditional ? <StatusTag status="warning" label={step.conditional} /> : null}
                 </div>
                 <StatusTag status={step.roleTone} label={step.role} />
               </div>
 
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Text strong>{step.title}</Text>
-                {step.conditional ? <StatusTag status="warning" label={step.conditional} /> : null}
-              </div>
-              <Text type="secondary" className="mb-3 block text-xs leading-5">
+              <Text type="secondary" className="mt-2 block text-sm leading-5">
                 {step.description}
               </Text>
-              <div className="mt-auto flex flex-wrap gap-1.5" aria-label="Trạng thái tương ứng">
+              <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Trạng thái tương ứng">
                 {step.statuses.map((status) => (
                   <StatusTag key={status.label} status={status.tone} label={status.label} />
                 ))}
               </div>
             </div>
-
-            {index < WORKFLOW_STEPS.length - 1 ? (
-              <span
-                className={`absolute top-1/2 -right-[18px] z-10 -translate-y-1/2 ${styles.connector}`}
-                aria-hidden="true"
-              >
-                <AppIcon icon={ChevronRight} size="sm" />
-              </span>
-            ) : null}
           </li>
         ))}
       </ol>
 
       <div
-        className={`mt-3 flex flex-col gap-2 rounded-xl border px-3 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between ${styles.safetyRule}`}
+        className={`flex flex-col gap-2 rounded-xl border px-3 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between ${styles.safetyRule}`}
       >
         <div className="flex items-start gap-2">
           <AppIcon icon={ShieldCheck} size="sm" className="mt-0.5 shrink-0" />
@@ -169,9 +145,44 @@ export function BugInboxWorkflowGuide() {
           </Text>
         </div>
         <Text type="secondary" className="shrink-0 tabular-nums">
-          Xem tình trạng thật tại cột <strong>AI Agent</strong>
+          Theo dõi trạng thái thật tại mục <strong>AI Agent</strong>
         </Text>
       </div>
-    </SectionCard>
+    </div>
   );
 }
+
+interface BugReportWorkflowModalProps {
+  open: boolean;
+  onClose: () => void;
+  zIndex?: number;
+}
+
+export function BugReportWorkflowModal({ open, onClose, zIndex }: BugReportWorkflowModalProps) {
+  return (
+    <AdaptiveModal
+      intent="form"
+      title={
+        <span className="inline-flex items-center gap-2">
+          <AppIcon icon={RefreshCw} size="sm" />
+          Workflow xử lý báo lỗi
+        </span>
+      }
+      open={open}
+      onCancel={onClose}
+      zIndex={zIndex}
+      destroyOnHidden
+      footer={
+        <AdaptiveOverlayFooter className="!static !m-0 !border-t-0 !p-0">
+          <Button type="primary" onClick={onClose}>
+            Đã hiểu
+          </Button>
+        </AdaptiveOverlayFooter>
+      }
+    >
+      <BugReportWorkflowGuide />
+    </AdaptiveModal>
+  );
+}
+
+export default BugReportWorkflowModal;

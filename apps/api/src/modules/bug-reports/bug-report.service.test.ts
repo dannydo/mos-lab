@@ -76,10 +76,26 @@ test('projects every Agent milestone from canonical ticket state and audit activ
     ).stage,
     'VERIFYING'
   );
-  assert.equal(
-    bugReportAgentProgress(progressSource({ status: 'FIXED', clarificationStatus: 'READY', resolvedAt: agentAt }))
-      .stage,
-    'AWAITING_REPORTER_REVIEW'
+  assert.deepEqual(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'FIXED',
+        clarificationStatus: 'READY',
+        resolvedAt: agentAt,
+        audits: [
+          {
+            action: 'AGENT_PROGRESS_VERIFYING',
+            note: 'Đang chạy test.',
+            createdAt: new Date('2026-08-31T01:04:00.000Z'),
+          },
+        ],
+      })
+    ),
+    {
+      stage: 'AWAITING_REPORTER_REVIEW',
+      note: 'Agent đã hoàn tất bản sửa và gửi người báo xác nhận.',
+      updatedAt: agentAt.toISOString(),
+    }
   );
   assert.equal(bugReportAgentProgress(progressSource({ status: 'CLOSED', closedAt: agentAt })).stage, 'COMPLETED');
 });

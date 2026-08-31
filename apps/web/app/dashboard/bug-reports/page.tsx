@@ -13,6 +13,7 @@ import {
   Select,
   Space,
   Spin,
+  Tooltip,
   Typography,
   message,
   theme,
@@ -33,6 +34,7 @@ import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRol
 import {
   Archive,
   CheckCircle2,
+  CircleHelp,
   Clipboard,
   Clock3,
   ExternalLink,
@@ -53,7 +55,7 @@ import {
 } from '../../../components/ui';
 import { safeStorage } from '../../../lib/safe-storage';
 import { BugReportConversation } from '../../../components/bug-reports/BugReportConversation';
-import { BugInboxWorkflowGuide } from './components/BugInboxWorkflowGuide';
+import { BugReportWorkflowModal } from '../../../components/bug-reports/BugReportWorkflowGuide';
 import { BugReportResolutionTracking } from './components/BugReportResolutionTracking';
 import {
   AgentProgressTag,
@@ -514,6 +516,7 @@ export default function BugReportsPage() {
   const { token } = theme.useToken();
   const inbox = useBugReports();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [workflowOpen, setWorkflowOpen] = useState(false);
   const [canTriage, setCanTriage] = useState(false);
   const [canOverride, setCanOverride] = useState(false);
 
@@ -640,6 +643,16 @@ export default function BugReportsPage() {
         title="Bug Inbox"
         subtitle="Danny duyệt, ưu tiên và giao đúng context cho Agent — tiến độ Agent tự cập nhật mỗi 15 giây."
         icon={<AppIcon icon={MessageSquareWarning} size="lg" />}
+        headerActions={
+          <Tooltip title="Xem workflow xử lý báo lỗi">
+            <Button
+              type="text"
+              aria-label="Xem workflow xử lý báo lỗi"
+              icon={<AppIcon icon={CircleHelp} size="sm" />}
+              onClick={() => setWorkflowOpen(true)}
+            />
+          </Tooltip>
+        }
         toolbar={{
           primary: (
             <SearchField
@@ -830,9 +843,8 @@ export default function BugReportsPage() {
             </button>
           ),
         }}
-      >
-        <BugInboxWorkflowGuide />
-      </ResourceListPage>
+      />
+      <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} />
       <DetailDrawer
         reportId={selectedId}
         onClose={() => setSelectedId(null)}

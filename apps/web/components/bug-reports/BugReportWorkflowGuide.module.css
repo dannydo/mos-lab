@@ -1,0 +1,54 @@
+.workflowTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workflowStep {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  position: relative;
+}
+
+.stepRail {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.stepCard {
+  background: var(--mos-surface-muted);
+  border-color: var(--mos-surface-border);
+}
+
+.stepIcon {
+  color: var(--mos-accent);
+  background: color-mix(in srgb, var(--mos-accent) 14%, transparent);
+}
+
+.stepNumber {
+  color: var(--mos-accent);
+}
+
+.timelineConnector {
+  background: var(--mos-surface-border-strong);
+  bottom: -0.75rem;
+  left: 50%;
+  position: absolute;
+  top: 2.25rem;
+  transform: translateX(-50%);
+  width: 1px;
+}
+
+.safetyRule {
+  background: color-mix(in srgb, var(--mos-accent) 9%, var(--mos-surface));
+  border-color: var(--mos-surface-border-strong);
+}
+
+@media (max-width: 639px) {
+  .workflowStep {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.625rem;
+  }
+}
