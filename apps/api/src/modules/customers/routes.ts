@@ -6281,66 +6281,40 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       // 5. Fetch Combo Balances & Real Purchase Transactions
       const balanceSql = `
+        WITH latest_combo AS (
+          SELECT combo_sales.user_id, combo_sales.service_id, MAX(combo_sales.date_created) AS latest_date
+          FROM (
+            SELECT o3.date_created, osc3.service_id, o3.user_id
+            FROM order_service_combo osc3
+            JOIN \`order\` o3 ON osc3.order_id = o3.id
+            LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
+            WHERE o3.user_id = ? AND o3.order_state = 'Completed' AND osc3.total_price > 0
+              AND (sp3.service_price_package_key IS NULL OR (
+                LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+              ))
+            UNION ALL
+            SELECT o3.date_created, os3.service_id, o3.user_id
+            FROM order_service os3
+            JOIN \`order\` o3 ON os3.order_id = o3.id
+            LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
+            WHERE o3.user_id = ? AND o3.order_state = 'Completed' AND os3.total_price > 0
+              AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
+              AND (sp3.service_price_package_key IS NULL OR (
+                LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
+                AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
+                AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
+              ))
+          ) combo_sales
+          GROUP BY combo_sales.user_id, combo_sales.service_id
+        )
         SELECT 
           CONCAT('osc_', osc.id) as id,
           osc.service_id as serviceId,
           osc.service_group as serviceGroup,
-          CASE WHEN o.date_created = (
-            SELECT MAX(o2.date_created) 
-            FROM (
-              SELECT o3.date_created, osc3.service_id, o3.user_id 
-              FROM order_service_combo osc3 
-              JOIN \`order\` o3 ON osc3.order_id = o3.id 
-              LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
-              WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
-                AND (sp3.service_price_package_key IS NULL OR (
-                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
-                ))
-              UNION ALL
-              SELECT o3.date_created, os3.service_id, o3.user_id 
-              FROM order_service os3 
-              JOIN \`order\` o3 ON os3.order_id = o3.id 
-              LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
-              WHERE o3.order_state = 'Completed' AND os3.total_price > 0
-                AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
-                AND (sp3.service_price_package_key IS NULL OR (
-                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
-                ))
-            ) o2 
-            WHERE o2.user_id = o.user_id AND o2.service_id = osc.service_id
-          ) THEN COALESCE(usb.normal_count, 0) ELSE 0 END as normalCount,
-          CASE WHEN o.date_created = (
-            SELECT MAX(o2.date_created) 
-            FROM (
-              SELECT o3.date_created, osc3.service_id, o3.user_id 
-              FROM order_service_combo osc3 
-              JOIN \`order\` o3 ON osc3.order_id = o3.id 
-              LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
-              WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
-                AND (sp3.service_price_package_key IS NULL OR (
-                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
-                ))
-              UNION ALL
-              SELECT o3.date_created, os3.service_id, o3.user_id 
-              FROM order_service os3 
-              JOIN \`order\` o3 ON os3.order_id = o3.id 
-              LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
-              WHERE o3.order_state = 'Completed' AND os3.total_price > 0
-                AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
-                AND (sp3.service_price_package_key IS NULL OR (
-                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
-                ))
-            ) o2 
-            WHERE o2.user_id = o.user_id AND o2.service_id = osc.service_id
-          ) THEN COALESCE(usb.retain_count, 0) ELSE 0 END as retainCount,
+          CASE WHEN o.date_created = latest_combo.latest_date THEN COALESCE(usb.normal_count, 0) ELSE 0 END as normalCount,
+          CASE WHEN o.date_created = latest_combo.latest_date THEN COALESCE(usb.retain_count, 0) ELSE 0 END as retainCount,
           usb.date_expired as dateExpired,
           o.date_created as dateCreated,
           s.service_key as serviceKey,
@@ -6363,6 +6337,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ) os_cc ON os_cc.order_id = o.id
         LEFT JOIN user_profile up ON COALESCE(os_cc.check_out_staff_id, os_cc.check_in_staff_id, o.created_staff_id) = up.user_id
         LEFT JOIN user_service_balance usb ON usb.user_id = o.user_id AND usb.service_id = osc.service_id AND usb.service_price_id = osc.service_price_id
+        LEFT JOIN latest_combo ON latest_combo.user_id = o.user_id AND latest_combo.service_id = osc.service_id
         WHERE o.user_id = ? AND o.order_state = 'Completed' AND osc.total_price > 0
           AND (sp.service_price_package_key IS NULL OR (
             LOWER(sp.service_price_package_key) NOT LIKE '%single%'
@@ -6376,62 +6351,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           CONCAT('os_', os.id) as id,
           os.service_id as serviceId,
           os.service_group as serviceGroup,
-          CASE WHEN o.date_created = (
-            SELECT MAX(o2.date_created) 
-            FROM (
-              SELECT o3.date_created, osc3.service_id, o3.user_id 
-              FROM order_service_combo osc3 
-              JOIN \`order\` o3 ON osc3.order_id = o3.id 
-              LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
-              WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
-                AND (sp3.service_price_package_key IS NULL OR (
-                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
-                ))
-              UNION ALL
-              SELECT o3.date_created, os3.service_id, o3.user_id 
-              FROM order_service os3 
-              JOIN \`order\` o3 ON os3.order_id = o3.id 
-              LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
-              WHERE o3.order_state = 'Completed' AND os3.total_price > 0
-                AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
-                AND (sp3.service_price_package_key IS NULL OR (
-                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
-                ))
-            ) o2 
-            WHERE o2.user_id = o.user_id AND o2.service_id = os.service_id
-          ) THEN COALESCE(usb.normal_count, 0) ELSE 0 END as normalCount,
-          CASE WHEN o.date_created = (
-            SELECT MAX(o2.date_created) 
-            FROM (
-              SELECT o3.date_created, osc3.service_id, o3.user_id 
-              FROM order_service_combo osc3 
-              JOIN \`order\` o3 ON osc3.order_id = o3.id 
-              LEFT JOIN service_price sp3 ON osc3.service_price_id = sp3.id
-              WHERE o3.order_state = 'Completed' AND osc3.total_price > 0
-                AND (sp3.service_price_package_key IS NULL OR (
-                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
-                ))
-              UNION ALL
-              SELECT o3.date_created, os3.service_id, o3.user_id 
-              FROM order_service os3 
-              JOIN \`order\` o3 ON os3.order_id = o3.id 
-              LEFT JOIN service_price sp3 ON os3.service_price_id = sp3.id
-              WHERE o3.order_state = 'Completed' AND os3.total_price > 0
-                AND (os3.user_service_type = 'combo' OR os3.service_group = 'combo')
-                AND (sp3.service_price_package_key IS NULL OR (
-                  LOWER(sp3.service_price_package_key) NOT LIKE '%single%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%refill%'
-                  AND LOWER(sp3.service_price_package_key) NOT LIKE '%balance%'
-                ))
-            ) o2 
-            WHERE o2.user_id = o.user_id AND o2.service_id = os.service_id
-          ) THEN COALESCE(usb.retain_count, 0) ELSE 0 END as retainCount,
+          CASE WHEN o.date_created = latest_combo.latest_date THEN COALESCE(usb.normal_count, 0) ELSE 0 END as normalCount,
+          CASE WHEN o.date_created = latest_combo.latest_date THEN COALESCE(usb.retain_count, 0) ELSE 0 END as retainCount,
           usb.date_expired as dateExpired,
           o.date_created as dateCreated,
           s.service_key as serviceKey,
@@ -6449,6 +6370,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         LEFT JOIN service_price sp ON os.service_price_id = sp.id
         LEFT JOIN user_profile up ON COALESCE(os.check_out_staff_id, os.check_in_staff_id, o.created_staff_id) = up.user_id
         LEFT JOIN user_service_balance usb ON usb.user_id = o.user_id AND usb.service_id = os.service_id AND usb.service_price_id = os.service_price_id
+        LEFT JOIN latest_combo ON latest_combo.user_id = o.user_id AND latest_combo.service_id = os.service_id
         WHERE o.user_id = ? AND o.order_state = 'Completed'
           AND (os.user_service_type = 'combo' OR s.service_group = 'combo')
           AND os.total_price > 0
@@ -6509,6 +6431,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
       `;
       const comboBalances = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         balanceSql,
+        customerId,
+        customerId,
         customerId,
         customerId,
         customerId
