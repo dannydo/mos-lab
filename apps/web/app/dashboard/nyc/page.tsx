@@ -64,6 +64,10 @@ import { useOmiCall } from '../../../context/OmiCallContext';
 
 const { Title, Text } = Typography;
 
+const NYC_CANONICAL_COLUMN_TITLES = {
+  stt: null,
+} as const;
+
 export default function NycCampaignPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -288,7 +292,7 @@ export default function NycCampaignPage() {
     closeConfig: closeNycConfig,
     saveConfig: saveNycConfig,
     resetConfig: resetNycConfig,
-  } = useTableConfig('nyc_campaign_table', columns);
+  } = useTableConfig('nyc_campaign_table', columns, { canonicalTitles: NYC_CANONICAL_COLUMN_TITLES });
 
   const activeTouchpointsList = configs[activeTab] || [];
 
@@ -516,7 +520,7 @@ export default function NycCampaignPage() {
             <button
               type="button"
               onClick={() => setActiveTouchpointKey('ALL')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 select-none whitespace-nowrap border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 select-none cursor-pointer whitespace-nowrap border ${
                 activeTouchpointKey === 'ALL'
                   ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 font-bold shadow-sm'
                   : themeMode === 'dark'
@@ -551,7 +555,7 @@ export default function NycCampaignPage() {
                   key={tp.key}
                   type="button"
                   onClick={() => setActiveTouchpointKey(tp.key)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 select-none whitespace-nowrap border ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 select-none cursor-pointer whitespace-nowrap border ${
                     isSelected
                       ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 font-bold shadow-sm'
                       : themeMode === 'dark'

@@ -3,16 +3,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Avatar,
   Button,
   Descriptions,
   Dropdown,
-  Image,
   Input,
   List,
   Popconfirm,
   Select,
   Space,
   Spin,
+  Timeline,
   Typography,
   message,
   theme,
@@ -20,15 +21,15 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type {
   BugPriority,
-  BugReportAttachment,
   BugReportDetail,
   BugReportStatus,
   BugReportSummary,
   ConfirmCloseBugReportRequest,
   TriageBugReportRequest,
 } from '@mos-lab/shared';
-import dayjs from 'dayjs';
+import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import {
+  Archive,
   CheckCircle2,
   Clipboard,
   Clock3,
@@ -46,130 +47,23 @@ import {
   SearchField,
   SectionCard,
   STANDARD_PAGE_SIZE_OPTIONS,
-  StatusTag,
 } from '../../../components/ui';
-import { apiClient } from '../../../lib/api-client';
+import { safeStorage } from '../../../lib/safe-storage';
+import {
+  BugStatusTag,
+  durationBetween,
+  formatDate,
+  formatElapsed,
+  initials,
+  parseDuplicateKey,
+  PriorityTag,
+  ProtectedAttachment,
+  STATUS_LABELS,
+  TRANSITIONS,
+} from './bug-report-presenters';
 import { useBugReports } from './hooks/useBugReports';
 
 const { Text, Paragraph, Title } = Typography;
-
-const STATUS_LABELS: Record<BugReportStatus, string> = {
-  NEW: 'Mới',
-  APPROVED: 'Đã duyệt',
-  IN_PROGRESS: 'Đang sửa',
-  FIXED: 'Đã sửa',
-  CLOSED: 'Đã đóng',
-  REJECTED: 'Từ chối',
-  DUPLICATE: 'Trùng lặp',
-};
-
-const STATUS_TONES: Record<BugReportStatus, Parameters<typeof StatusTag>[0]['status']> = {
-  NEW: 'warning',
-  APPROVED: 'processing',
-  IN_PROGRESS: 'cyan',
-  FIXED: 'success',
-  CLOSED: 'default',
-  REJECTED: 'error',
-  DUPLICATE: 'purple',
-};
-
-const PRIORITY_TONES: Record<BugPriority, Parameters<typeof StatusTag>[0]['status']> = {
-  P0: 'error',
-  P1: 'orange',
-  P2: 'warning',
-  P3: 'default',
-};
-
-const TRANSITIONS: Record<BugReportStatus, BugReportStatus[]> = {
-  NEW: ['NEW', 'APPROVED', 'REJECTED', 'DUPLICATE'],
-  APPROVED: ['APPROVED', 'IN_PROGRESS', 'REJECTED', 'DUPLICATE'],
-  IN_PROGRESS: ['IN_PROGRESS', 'APPROVED', 'FIXED'],
-  FIXED: ['FIXED', 'IN_PROGRESS', 'CLOSED'],
-  CLOSED: ['CLOSED', 'IN_PROGRESS'],
-  REJECTED: ['REJECTED', 'NEW'],
-  DUPLICATE: ['DUPLICATE', 'NEW'],
-};
-
-function formatDate(value: string | null): string {
-  return value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '—';
-}
-
-function formatBytes(value: number): string {
-  if (value < 1024) return `${value} B`;
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function parseDuplicateKey(value: string): number | null {
-  const match = value
-    .trim()
-    .toUpperCase()
-    .match(/^(?:MOS-BUG-)?(\d+)$/);
-  return match ? Number(match[1]) : null;
-}
-
-function BugStatusTag({ status }: { status: BugReportStatus }) {
-  return <StatusTag status={STATUS_TONES[status]} label={STATUS_LABELS[status]} />;
-}
-
-function PriorityTag({ priority }: { priority: BugPriority | null }) {
-  return priority ? (
-    <StatusTag status={PRIORITY_TONES[priority]} label={priority} />
-  ) : (
-    <Text type="secondary">Chưa đặt</Text>
-  );
-}
-
-function ProtectedAttachment({ reportId, attachment }: { reportId: number; attachment: BugReportAttachment }) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    let objectUrl: string | null = null;
-    setFailed(false);
-    void apiClient.bugReports
-      .attachment(reportId, attachment.id)
-      .then((blob) => {
-        if (!active) return;
-        objectUrl = URL.createObjectURL(blob);
-        setUrl(objectUrl);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [attachment.id, reportId]);
-
-  if (failed) return <Alert type="warning" showIcon message={`Không tải được ${attachment.fileName}`} />;
-  if (!url) return <Spin size="small" />;
-
-  return (
-    <div className="space-y-2">
-      <Image
-        src={url}
-        alt={`Ảnh đính kèm ${attachment.fileName}`}
-        style={{ maxHeight: 240, objectFit: 'contain', borderRadius: 8 }}
-      />
-      <div className="flex items-center justify-between gap-2">
-        <Text ellipsis title={attachment.fileName}>
-          {attachment.fileName}
-        </Text>
-        <Button
-          type="link"
-          size="small"
-          icon={<AppIcon icon={ExternalLink} size="sm" />}
-          href={url}
-          download={attachment.fileName}
-        >
-          Tải ảnh
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 interface DetailDrawerProps {
   reportId: number | null;
@@ -177,9 +71,19 @@ interface DetailDrawerProps {
   getDetail: (id: number) => Promise<BugReportDetail>;
   triage: (id: number, request: TriageBugReportRequest) => Promise<BugReportDetail>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
+  canTriage: boolean;
+  canOverride: boolean;
 }
 
-function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose }: DetailDrawerProps) {
+function DetailDrawer({
+  reportId,
+  onClose,
+  getDetail,
+  triage,
+  confirmClose,
+  canTriage,
+  canOverride,
+}: DetailDrawerProps) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
   const [detail, setDetail] = useState<BugReportDetail | null>(null);
@@ -305,23 +209,23 @@ function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose }: De
         extra={
           detail ? (
             <Space wrap>
-              {detail.status === 'NEW' && (
+              {canTriage && detail.status === 'NEW' && (
                 <Dropdown menu={{ items: approvalItems }} trigger={['click']}>
                   <Button type="primary" loading={saving} icon={<AppIcon icon={Send} size="sm" />}>
                     Approve
                   </Button>
                 </Dropdown>
               )}
-              {['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
+              {canOverride && ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
                 <Popconfirm
-                  title="Xác nhận bug đã được sửa đúng?"
-                  description="mOS sẽ ghi đủ audit Đang sửa → Đã sửa → Đã đóng cho các bước còn thiếu."
-                  okText="Xác nhận & đóng"
+                  title="Admin override và đóng ticket?"
+                  description="Dùng khi Admin đã tự kiểm tra; mOS vẫn lưu đầy đủ audit cho người báo."
+                  okText="Override & đóng"
                   cancelText="Kiểm tra lại"
                   onConfirm={() => void confirmResolvedAndClose()}
                 >
                   <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                    Xác nhận đã sửa & đóng
+                    Admin override đóng
                   </Button>
                 </Popconfirm>
               )}
@@ -350,10 +254,25 @@ function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose }: De
         {!loading && detail && context && (
           <div className="space-y-4">
             <section>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <BugStatusTag status={detail.status} />
-                <PriorityTag priority={detail.priority} />
-                <Text type="secondary">{formatDate(detail.createdAt)}</Text>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar size={44} src={detail.reporter.avatarUrl || undefined}>
+                    {initials(detail.reporter.displayName)}
+                  </Avatar>
+                  <div className="min-w-0">
+                    <Text strong>{detail.reporter.displayName}</Text>
+                    <div>
+                      <Text type="secondary">Người báo · {detail.reporter.role}</Text>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <BugStatusTag status={detail.status} />
+                  <PriorityTag priority={detail.priority} />
+                  <Text type="secondary" className="tabular-nums">
+                    Đã báo {formatElapsed(detail.createdAt)}
+                  </Text>
+                </div>
               </div>
               <Paragraph style={{ fontSize: 16, whiteSpace: 'pre-wrap', marginBottom: 8 }}>
                 {detail.description}
@@ -362,6 +281,99 @@ function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose }: De
                 Báo bởi {detail.reporter.displayName} · {detail.reporter.role}
               </Text>
             </section>
+
+            <SectionCard title="Tracking xử lý">
+              <Timeline
+                items={[
+                  {
+                    color: 'blue',
+                    children: (
+                      <Text>
+                        <strong>Báo lỗi</strong> · {formatDate(detail.timeline.reportedAt)} ·{' '}
+                        {formatElapsed(detail.timeline.reportedAt)}
+                      </Text>
+                    ),
+                  },
+                  {
+                    color: detail.timeline.approvedAt ? 'blue' : 'gray',
+                    children: (
+                      <Text>
+                        <strong>Danny duyệt</strong> · {formatDate(detail.timeline.approvedAt)}
+                        {durationBetween(detail.timeline.reportedAt, detail.timeline.approvedAt)
+                          ? ` · sau ${durationBetween(detail.timeline.reportedAt, detail.timeline.approvedAt)}`
+                          : ''}
+                      </Text>
+                    ),
+                  },
+                  {
+                    color: detail.timeline.startedAt ? 'blue' : 'gray',
+                    children: (
+                      <Text>
+                        <strong>Bắt đầu xử lý</strong> · {formatDate(detail.timeline.startedAt)}
+                      </Text>
+                    ),
+                  },
+                  {
+                    color: detail.timeline.fixedAt ? 'green' : 'gray',
+                    children: (
+                      <Text>
+                        <strong>Gửi người báo duyệt</strong> · {formatDate(detail.timeline.fixedAt)}
+                        {durationBetween(detail.timeline.startedAt, detail.timeline.fixedAt)
+                          ? ` · xử lý ${durationBetween(detail.timeline.startedAt, detail.timeline.fixedAt)}`
+                          : ''}
+                      </Text>
+                    ),
+                  },
+                  {
+                    color: detail.timeline.closedAt ? 'green' : 'gray',
+                    children: (
+                      <Text>
+                        <strong>Đóng ticket</strong> · {formatDate(detail.timeline.closedAt)}
+                      </Text>
+                    ),
+                  },
+                ]}
+              />
+            </SectionCard>
+
+            {detail.resolution ? (
+              <SectionCard title="AI resolution · dùng lại cho case tương tự">
+                <Descriptions column={1} size="small" bordered>
+                  <Descriptions.Item label="Tóm tắt vấn đề">{detail.resolution.problemSummary}</Descriptions.Item>
+                  <Descriptions.Item label="Nguyên nhân gốc">{detail.resolution.rootCause}</Descriptions.Item>
+                  <Descriptions.Item label="Cách sửa">{detail.resolution.solutionSummary}</Descriptions.Item>
+                  <Descriptions.Item label="Đã kiểm thử">{detail.resolution.verificationSummary}</Descriptions.Item>
+                  <Descriptions.Item label="Commit">
+                    <Text code copyable>
+                      {detail.resolution.commitSha || 'unknown'}
+                    </Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Link bản sửa">
+                    {detail.resolution.releaseUrl ? (
+                      <Button
+                        type="link"
+                        href={detail.resolution.releaseUrl}
+                        target="_blank"
+                        icon={<AppIcon icon={ExternalLink} size="sm" />}
+                      >
+                        Mở bản đã sửa
+                      </Button>
+                    ) : (
+                      'Chưa có'
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Files">
+                    {detail.resolution.changedFiles.length
+                      ? detail.resolution.changedFiles.map((file) => (
+                          <div key={file}>
+                            <Text code>{file}</Text>
+                          </div>
+                        ))
+                      : 'Không ghi nhận'}
+                  </Descriptions.Item>
+                </Descriptions>
+              </SectionCard>
+            ) : null}
 
             {detail.attachments.length > 0 && (
               <SectionCard title={`Ảnh đính kèm (${detail.attachments.length})`}>
@@ -457,69 +469,74 @@ function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose }: De
               )}
             </SectionCard>
 
-            <SectionCard title="Danny triage">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className="space-y-1">
-                  <Text strong>Trạng thái</Text>
-                  <Select
-                    value={status}
-                    onChange={setStatus}
-                    options={TRANSITIONS[detail.status].map((item) => ({ value: item, label: STATUS_LABELS[item] }))}
-                    getPopupContainer={(node) => node.parentElement || document.body}
-                    className="w-full"
-                  />
-                </label>
-                <label className="space-y-1">
-                  <Text strong>Ưu tiên</Text>
-                  <Select
-                    allowClear
-                    placeholder="Chọn P0–P3"
-                    value={priority}
-                    onChange={(value) => setPriority(value ?? null)}
-                    options={(['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({ value: item, label: item }))}
-                    getPopupContainer={(node) => node.parentElement || document.body}
-                    className="w-full"
-                  />
-                </label>
-              </div>
-              <label className="mt-4 block space-y-1">
-                <Text strong>Biz logic / kết quả đúng</Text>
-                <Input.TextArea
-                  value={businessContext}
-                  onChange={(event) => setBusinessContext(event.target.value)}
-                  placeholder="Bổ sung điều Agent cần hiểu về nghiệp vụ hoặc kết quả đúng mong muốn"
-                  maxLength={4000}
-                  autoSize={{ minRows: 3, maxRows: 8 }}
-                  showCount
-                />
-              </label>
-              <label className="mt-4 block space-y-1">
-                <Text strong>Ghi chú xử lý</Text>
-                <Input.TextArea
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  placeholder="Bắt buộc khi Fixed, Rejected hoặc mở lại ticket đã đóng"
-                  maxLength={2000}
-                  autoSize={{ minRows: 2, maxRows: 6 }}
-                  showCount
-                />
-              </label>
-              {status === 'DUPLICATE' && (
+            {canTriage ? (
+              <SectionCard title="Danny triage">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <label className="space-y-1">
+                    <Text strong>Trạng thái</Text>
+                    <Select
+                      value={status}
+                      onChange={setStatus}
+                      options={TRANSITIONS[detail.status].map((item) => ({ value: item, label: STATUS_LABELS[item] }))}
+                      getPopupContainer={(node) => node.parentElement || document.body}
+                      className="w-full"
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <Text strong>Ưu tiên</Text>
+                    <Select
+                      allowClear
+                      placeholder="Chọn P0–P3"
+                      value={priority}
+                      onChange={(value) => setPriority(value ?? null)}
+                      options={(['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
+                        value: item,
+                        label: item,
+                      }))}
+                      getPopupContainer={(node) => node.parentElement || document.body}
+                      className="w-full"
+                    />
+                  </label>
+                </div>
                 <label className="mt-4 block space-y-1">
-                  <Text strong>Ticket gốc</Text>
-                  <Input
-                    value={duplicateKey}
-                    onChange={(event) => setDuplicateKey(event.target.value)}
-                    placeholder="MOS-BUG-123"
+                  <Text strong>Biz logic / kết quả đúng</Text>
+                  <Input.TextArea
+                    value={businessContext}
+                    onChange={(event) => setBusinessContext(event.target.value)}
+                    placeholder="Bổ sung điều Agent cần hiểu về nghiệp vụ hoặc kết quả đúng mong muốn"
+                    maxLength={4000}
+                    autoSize={{ minRows: 3, maxRows: 8 }}
+                    showCount
                   />
                 </label>
-              )}
-              <div className="mt-4 flex justify-end">
-                <Button type="primary" loading={saving} onClick={() => void save()}>
-                  Lưu triage
-                </Button>
-              </div>
-            </SectionCard>
+                <label className="mt-4 block space-y-1">
+                  <Text strong>Ghi chú xử lý</Text>
+                  <Input.TextArea
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="Bắt buộc khi Fixed, Rejected hoặc mở lại ticket đã đóng"
+                    maxLength={2000}
+                    autoSize={{ minRows: 2, maxRows: 6 }}
+                    showCount
+                  />
+                </label>
+                {status === 'DUPLICATE' && (
+                  <label className="mt-4 block space-y-1">
+                    <Text strong>Ticket gốc</Text>
+                    <Input
+                      value={duplicateKey}
+                      onChange={(event) => setDuplicateKey(event.target.value)}
+                      placeholder="MOS-BUG-123"
+                    />
+                  </label>
+                )}
+                <div className="mt-4 flex justify-end">
+                  <Button type="primary" loading={saving} onClick={() => void save()}>
+                    Lưu triage
+                  </Button>
+                </div>
+              </SectionCard>
+            ) : null}
 
             <SectionCard title={`Audit history (${detail.audits.length})`}>
               <List
@@ -553,6 +570,23 @@ export default function BugReportsPage() {
   const { token } = theme.useToken();
   const inbox = useBugReports();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [canTriage, setCanTriage] = useState(false);
+  const [canOverride, setCanOverride] = useState(false);
+
+  useEffect(() => {
+    try {
+      const user = JSON.parse(safeStorage.getItem('mos_user') || '{}') as {
+        role?: string;
+        username?: string | null;
+        email?: string | null;
+      };
+      setCanTriage(isSuperAdminRole(user.role) && isCanonicalSuperAdminIdentity(user));
+      setCanOverride(isAdminOrSuperAdminRole(user.role));
+    } catch {
+      setCanTriage(false);
+      setCanOverride(false);
+    }
+  }, []);
 
   const columns = useMemo<ColumnsType<BugReportSummary>>(
     () => [
@@ -561,14 +595,19 @@ export default function BugReportsPage() {
         key: 'ticket',
         width: 320,
         render: (_, row) => (
-          <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2">
-              <Text strong>{row.key}</Text>
-              <PriorityTag priority={row.priority} />
-            </div>
-            <Text ellipsis={{ tooltip: row.description }}>{row.description}</Text>
-            <div className="mt-1">
-              <Text type="secondary">{row.reporter.displayName}</Text>
+          <div className="flex min-w-0 items-start gap-3">
+            <Avatar size={36} src={row.reporter.avatarUrl || undefined}>
+              {initials(row.reporter.displayName)}
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex items-center gap-2">
+                <Text strong>{row.key}</Text>
+                <PriorityTag priority={row.priority} />
+              </div>
+              <Text ellipsis={{ tooltip: row.description }}>{row.description}</Text>
+              <div className="mt-1">
+                <Text type="secondary">{row.reporter.displayName}</Text>
+              </div>
             </div>
           </div>
         ),
@@ -605,11 +644,22 @@ export default function BugReportsPage() {
         render: (value: number) => <span className="tabular-nums">{value}</span>,
       },
       {
-        title: 'Thời gian',
-        dataIndex: 'createdAt',
-        key: 'createdAt',
-        width: 150,
-        render: (value: string) => formatDate(value),
+        title: 'Tracking',
+        key: 'timeline',
+        width: 210,
+        render: (_, row) => (
+          <div className="space-y-1 text-xs tabular-nums">
+            <div>
+              <Text type="secondary">Đã báo {formatElapsed(row.timeline.reportedAt)}</Text>
+            </div>
+            <div>
+              <Text type="secondary">Duyệt: {formatDate(row.timeline.approvedAt)}</Text>
+            </div>
+            <div>
+              <Text type="secondary">Xử lý: {formatDate(row.timeline.startedAt)}</Text>
+            </div>
+          </div>
+        ),
       },
       {
         title: '',
@@ -687,7 +737,7 @@ export default function BugReportsPage() {
           filterTitle: 'Lọc Bug Inbox',
         }}
         metrics={{
-          columns: 4,
+          columns: 5,
           items: [
             {
               key: 'new',
@@ -725,6 +775,15 @@ export default function BugReportsPage() {
               icon: <AppIcon icon={CheckCircle2} size="md" />,
               iconBgColor: token.colorSuccessBg,
             },
+            {
+              key: 'closed',
+              title: 'Đã đóng',
+              value: inbox.summary.closedCount,
+              format: 'number',
+              loading: inbox.loading,
+              icon: <AppIcon icon={Archive} size="md" />,
+              iconBgColor: token.colorFillSecondary,
+            },
           ],
         }}
         tableSection={{
@@ -749,7 +808,7 @@ export default function BugReportsPage() {
             sourcePath: 'secondary',
             status: 'secondary',
             attachmentCount: 'tertiary',
-            createdAt: 'tertiary',
+            timeline: 'tertiary',
             action: 'primary',
           },
           scroll: { x: 980 },
@@ -767,11 +826,19 @@ export default function BugReportsPage() {
           mobileEmptyDescription: 'Chưa có ticket phù hợp bộ lọc.',
           mobileRenderer: (row) => (
             <button type="button" className="w-full text-left" onClick={() => setSelectedId(row.id)}>
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <Text strong>{row.key}</Text>
-                <div className="flex items-center gap-2">
-                  <PriorityTag priority={row.priority} />
-                  <BugStatusTag status={row.status} />
+              <div className="mb-3 flex items-start gap-3">
+                <Avatar size={36} src={row.reporter.avatarUrl || undefined}>
+                  {initials(row.reporter.displayName)}
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <Text strong>{row.key}</Text>
+                    <div className="flex items-center gap-2">
+                      <PriorityTag priority={row.priority} />
+                      <BugStatusTag status={row.status} />
+                    </div>
+                  </div>
+                  <Text type="secondary">{row.reporter.displayName}</Text>
                 </div>
               </div>
               <Paragraph ellipsis={{ rows: 2 }} style={{ marginBottom: 8 }}>
@@ -779,10 +846,10 @@ export default function BugReportsPage() {
               </Paragraph>
               <div className="flex items-center justify-between gap-2">
                 <Text type="secondary" ellipsis>
-                  {row.reporter.displayName} · {row.sourcePath}
+                  {row.sourcePath}
                 </Text>
                 <Text type="secondary" className="shrink-0">
-                  <AppIcon icon={Clock3} size="sm" /> {formatDate(row.createdAt)}
+                  <AppIcon icon={Clock3} size="sm" /> {formatElapsed(row.createdAt)}
                 </Text>
               </div>
             </button>
@@ -795,6 +862,8 @@ export default function BugReportsPage() {
         getDetail={inbox.getDetail}
         triage={inbox.triage}
         confirmClose={inbox.confirmClose}
+        canTriage={canTriage}
+        canOverride={canOverride}
       />
     </>
   );

@@ -82,8 +82,8 @@ export const SavedFilterDropdown: React.FC<SavedFilterDropdownProps> = ({
       }}
       trigger={['click']}
     >
-      <Button icon={<DownOutlined />}>
-        Bộ lọc đã lưu <DownOutlined />
+      <Button className="customer-saved-filter-trigger" icon={<DownOutlined />}>
+        Bộ lọc đã lưu
       </Button>
     </Dropdown>
   );

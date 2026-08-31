@@ -110,7 +110,9 @@ export default function TodayDashboard() {
     >
       {/* Title & Control Header */}
       <PageHeader
-        title="Control Board Hôm Nay (Today operations)"
+        className="today-page-header"
+        title="Control Board Hôm Nay"
+        tag={<Tag className="today-page-header-context">Today operations</Tag>}
         subtitle="Giám sát thời gian thực lịch đặt mới, luồng khách đến và trạng thái phục vụ của CC & CV"
         icon={<ClockCircleOutlined />}
         extra={

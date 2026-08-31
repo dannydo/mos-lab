@@ -75,6 +75,7 @@ model CrmStaff {
   bugReportsCreated CrmBugReport[] @relation("BugReportReporter")
   bugReportsApproved CrmBugReport[] @relation("BugReportApprover")
   bugReportAudits CrmBugReportAudit[] @relation("BugReportAuditActor")
+  bugReportNotifications CrmBugReportNotification[] @relation("BugReportNotificationRecipient")
 
   @@map("crm_staff")
 }
@@ -2216,6 +2217,7 @@ model CrmBugReport {
   duplicateOfId     Int?      @map("duplicate_of_id")
   approvedByStaffId Int?      @map("approved_by_staff_id")
   approvedAt        DateTime? @map("approved_at") @db.DateTime(0)
+  startedAt         DateTime? @map("started_at") @db.DateTime(0)
   resolvedAt        DateTime? @map("resolved_at") @db.DateTime(0)
   closedAt          DateTime? @map("closed_at") @db.DateTime(0)
   sourcePath        String    @map("source_path") @db.VarChar(500)
@@ -2229,12 +2231,53 @@ model CrmBugReport {
   duplicates  CrmBugReport[] @relation("BugReportDuplicates")
   attachments CrmBugReportAttachment[]
   audits      CrmBugReportAudit[]
+  resolution  CrmBugReportResolution?
+  notifications CrmBugReportNotification[]
 
   @@index([statusSort, prioritySort, createdAt])
   @@index([status, priority, createdAt])
   @@index([reporterStaffId, createdAt])
   @@index([duplicateOfId])
   @@map("crm_bug_reports")
+}
+
+model CrmBugReportResolution {
+  id                  Int      @id @default(autoincrement())
+  reportId            Int      @unique @map("report_id")
+  problemSummary      String   @map("problem_summary") @db.Text
+  rootCause           String   @map("root_cause") @db.Text
+  solutionSummary     String   @map("solution_summary") @db.Text
+  verificationSummary String   @map("verification_summary") @db.Text
+  changedFilesJson    String   @map("changed_files_json") @db.LongText
+  commitSha           String?  @map("commit_sha") @db.VarChar(64)
+  releaseUrl          String?  @map("release_url") @db.VarChar(500)
+  searchNormalized    String   @map("search_normalized") @db.Text
+  createdAt           DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
+  @@map("crm_bug_report_resolutions")
+}
+
+model CrmBugReportNotification {
+  id               Int       @id @default(autoincrement())
+  reportId         Int       @map("report_id")
+  recipientStaffId Int       @map("recipient_staff_id")
+  type             String    @db.VarChar(40)
+  title            String    @db.VarChar(180)
+  message          String    @db.Text
+  actionUrl        String    @map("action_url") @db.VarChar(500)
+  readAt           DateTime? @map("read_at") @db.DateTime(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  report    CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  recipient CrmStaff     @relation("BugReportNotificationRecipient", fields: [recipientStaffId], references: [id], onDelete: Cascade)
+
+  @@index([recipientStaffId, readAt, createdAt], map: "bug_notification_recipient_unread_idx")
+  @@index([reportId, createdAt], map: "bug_notification_report_created_idx")
+  @@map("crm_bug_report_notifications")
 }
 
 model CrmBugReportAttachment {

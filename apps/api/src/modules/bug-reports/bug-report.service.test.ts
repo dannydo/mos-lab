@@ -4,6 +4,8 @@ import {
   assertBugReportTransition,
   bugReportCompletionPath,
   isAgentReadableBugStatus,
+  knowledgeTokens,
+  normalizeAgentResolution,
   parseBugReportKey,
   sanitizeBugReportContext,
 } from './bug-report.service.js';
@@ -133,4 +135,60 @@ test('builds the one-click completion path without skipping audit states', () =>
   assert.deepEqual(bugReportCompletionPath('FIXED'), ['CLOSED']);
   assert.throws(() => bugReportCompletionPath('NEW'), /đã duyệt hoặc đang xử lý/);
   assert.throws(() => bugReportCompletionPath('CLOSED'), /đã duyệt hoặc đang xử lý/);
+});
+
+test('requires a structured Agent resolution and safe release link', () => {
+  assert.deepEqual(
+    normalizeAgentResolution({
+      problemSummary: 'Popup không lưu được thay đổi của người dùng.',
+      rootCause: 'Mutation không refresh cache.',
+      solutionSummary: 'Invalidate cache sau khi mutation thành công.',
+      verificationSummary: 'Unit test và browser QA đều đạt.',
+      changedFiles: ['apps/web/example.tsx'],
+      commitSha: 'abc123',
+      releaseUrl: 'https://lab.masteros.app/dashboard',
+    }),
+    {
+      problemSummary: 'Popup không lưu được thay đổi của người dùng.',
+      rootCause: 'Mutation không refresh cache.',
+      solutionSummary: 'Invalidate cache sau khi mutation thành công.',
+      verificationSummary: 'Unit test và browser QA đều đạt.',
+      changedFiles: ['apps/web/example.tsx'],
+      commitSha: 'abc123',
+      releaseUrl: 'https://lab.masteros.app/dashboard',
+    }
+  );
+  assert.throws(
+    () =>
+      normalizeAgentResolution({
+        problemSummary: 'Quá ngắn',
+        rootCause: 'x',
+        solutionSummary: 'Quá ngắn',
+        verificationSummary: 'x',
+        releaseUrl: 'javascript:alert(1)',
+      }),
+    /ít nhất|nguyên nhân|link/i
+  );
+  assert.throws(
+    () =>
+      normalizeAgentResolution({
+        problemSummary: 'Popup không lưu được thay đổi của người dùng.',
+        rootCause: 'Mutation không refresh cache.',
+        solutionSummary: 'Invalidate cache sau khi mutation thành công.',
+        verificationSummary: 'Unit test và browser QA đều đạt.',
+        releaseUrl: '//example.com/phishing',
+      }),
+    /link/i
+  );
+});
+
+test('normalizes Vietnamese issue text into reusable knowledge tokens', () => {
+  assert.deepEqual(knowledgeTokens('Không lưu được trạng thái trong Popup khách hàng'), [
+    'luu',
+    'trang',
+    'thai',
+    'popup',
+    'khach',
+    'hang',
+  ]);
 });

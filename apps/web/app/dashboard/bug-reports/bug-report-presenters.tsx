@@ -1,0 +1,153 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Alert, Button, Image, Typography } from 'antd';
+import type { BugPriority, BugReportAttachment, BugReportStatus } from '@mos-lab/shared';
+import dayjs from 'dayjs';
+import { ExternalLink, LoaderCircle } from 'lucide-react';
+import { AppIcon, StatusTag } from '../../../components/ui';
+import { apiClient } from '../../../lib/api-client';
+
+const { Text } = Typography;
+
+export const STATUS_LABELS: Record<BugReportStatus, string> = {
+  NEW: 'Mới',
+  APPROVED: 'Đã duyệt',
+  IN_PROGRESS: 'Đang sửa',
+  FIXED: 'Chờ người báo duyệt',
+  CLOSED: 'Đã đóng',
+  REJECTED: 'Từ chối',
+  DUPLICATE: 'Trùng lặp',
+};
+
+const STATUS_TONES: Record<BugReportStatus, Parameters<typeof StatusTag>[0]['status']> = {
+  NEW: 'warning',
+  APPROVED: 'processing',
+  IN_PROGRESS: 'cyan',
+  FIXED: 'success',
+  CLOSED: 'default',
+  REJECTED: 'error',
+  DUPLICATE: 'purple',
+};
+
+const PRIORITY_TONES: Record<BugPriority, Parameters<typeof StatusTag>[0]['status']> = {
+  P0: 'error',
+  P1: 'orange',
+  P2: 'warning',
+  P3: 'default',
+};
+
+export const TRANSITIONS: Record<BugReportStatus, BugReportStatus[]> = {
+  NEW: ['NEW', 'APPROVED', 'REJECTED', 'DUPLICATE'],
+  APPROVED: ['APPROVED', 'IN_PROGRESS', 'REJECTED', 'DUPLICATE'],
+  IN_PROGRESS: ['IN_PROGRESS', 'APPROVED', 'FIXED'],
+  FIXED: ['FIXED', 'IN_PROGRESS', 'CLOSED'],
+  CLOSED: ['CLOSED', 'IN_PROGRESS'],
+  REJECTED: ['REJECTED', 'NEW'],
+  DUPLICATE: ['DUPLICATE', 'NEW'],
+};
+
+export function formatDate(value: string | null): string {
+  return value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '—';
+}
+
+export function formatElapsed(value: string): string {
+  const minutes = Math.max(0, dayjs().diff(dayjs(value), 'minute'));
+  if (minutes < 1) return 'vừa xong';
+  if (minutes < 60) return `${minutes} phút`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} giờ`;
+  return `${Math.floor(hours / 24)} ngày`;
+}
+
+export function durationBetween(start: string | null, end: string | null): string | null {
+  if (!start || !end) return null;
+  const minutes = Math.max(0, dayjs(end).diff(dayjs(start), 'minute'));
+  if (minutes < 60) return `${minutes} phút`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} giờ ${minutes % 60} phút`;
+  return `${Math.floor(hours / 24)} ngày ${hours % 24} giờ`;
+}
+
+export function initials(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(-2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
+}
+
+export function parseDuplicateKey(value: string): number | null {
+  const match = value
+    .trim()
+    .toUpperCase()
+    .match(/^(?:MOS-BUG-)?(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+export function BugStatusTag({ status }: { status: BugReportStatus }) {
+  return <StatusTag status={STATUS_TONES[status]} label={STATUS_LABELS[status]} />;
+}
+
+export function PriorityTag({ priority }: { priority: BugPriority | null }) {
+  return priority ? (
+    <StatusTag status={PRIORITY_TONES[priority]} label={priority} />
+  ) : (
+    <Text type="secondary">Chưa đặt</Text>
+  );
+}
+
+export function ProtectedAttachment({ reportId, attachment }: { reportId: number; attachment: BugReportAttachment }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+    setFailed(false);
+    void apiClient.bugReports
+      .attachment(reportId, attachment.id)
+      .then((blob) => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+      })
+      .catch(() => {
+        if (active) setFailed(true);
+      });
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [attachment.id, reportId]);
+
+  if (failed) return <Alert type="warning" showIcon message={`Không tải được ${attachment.fileName}`} />;
+  if (!url) {
+    return (
+      <div className="flex min-h-24 items-center justify-center">
+        <AppIcon icon={LoaderCircle} size="md" className="animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Image src={url} alt={`Ảnh đính kèm ${attachment.fileName}`} className="max-h-60 rounded-lg object-contain" />
+      <div className="flex items-center justify-between gap-2">
+        <Text ellipsis title={attachment.fileName}>
+          {attachment.fileName}
+        </Text>
+        <Button
+          type="link"
+          size="small"
+          icon={<AppIcon icon={ExternalLink} size="sm" />}
+          href={url}
+          download={attachment.fileName}
+        >
+          Tải ảnh
+        </Button>
+      </div>
+    </div>
+  );
+}

@@ -2,7 +2,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { AgentBugBundle, AgentBugQueueItem } from '@mos-lab/shared';
+import type {
+  AgentBugBundle,
+  AgentBugQueueItem,
+  AgentMarkBugFixedRequest,
+  AgentMarkBugFixedResponse,
+} from '@mos-lab/shared';
 
 const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
 
@@ -29,10 +34,16 @@ function getConfiguration(): { apiUrl: string; token: string } {
   return { apiUrl, token };
 }
 
-async function agentFetch(path: string): Promise<Response> {
+async function agentFetch(path: string, init?: RequestInit): Promise<Response> {
   const { apiUrl, token } = getConfiguration();
   const response = await fetch(`${apiUrl}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...init?.headers,
+    },
   });
   if (!response.ok) {
     const body = await response.text();
@@ -84,6 +95,16 @@ export async function downloadBugBundle(
     throw new Error('Đường dẫn ticket không an toàn.');
   }
   await mkdir(destination, { recursive: true, mode: 0o700 });
+  const resolutionPath = resolve(destination, 'resolution.json');
+  const resolutionTemplate: AgentMarkBugFixedRequest = {
+    problemSummary: '',
+    rootCause: '',
+    solutionSummary: '',
+    verificationSummary: '',
+    changedFiles: [],
+    commitSha: null,
+    releaseUrl: null,
+  };
   await Promise.all([
     writeFile(resolve(destination, 'report.md'), bundle.markdown, { encoding: 'utf8', mode: 0o600 }),
     writeFile(resolve(destination, 'context.json'), `${JSON.stringify(bundle.report.context, null, 2)}\n`, {
@@ -94,6 +115,22 @@ export async function downloadBugBundle(
       encoding: 'utf8',
       mode: 0o600,
     }),
+    writeFile(
+      resolve(destination, 'similar-resolutions.json'),
+      `${JSON.stringify(bundle.similarResolutions, null, 2)}\n`,
+      {
+        encoding: 'utf8',
+        mode: 0o600,
+      }
+    ),
+    ...(existsSync(resolutionPath)
+      ? []
+      : [
+          writeFile(resolutionPath, `${JSON.stringify(resolutionTemplate, null, 2)}\n`, {
+            encoding: 'utf8',
+            mode: 0o600,
+          }),
+        ]),
     ...bundle.attachments.map(async (attachment) => {
       const attachmentResponse = await agentFetch(
         `/agent/bug-reports/${encodeURIComponent(key)}/attachments/${attachment.id}`
@@ -107,10 +144,32 @@ export async function downloadBugBundle(
   return destination;
 }
 
+export async function submitBugResolution(
+  keyInput: string,
+  resolutionFile?: string
+): Promise<AgentMarkBugFixedResponse> {
+  const key = normalizeKey(keyInput);
+  const filePath = resolve(resolutionFile || `scratch/bug-reports/${key}/resolution.json`);
+  if (!existsSync(filePath)) throw new Error(`Không tìm thấy resolution file: ${filePath}`);
+  let resolution: AgentMarkBugFixedRequest;
+  try {
+    resolution = JSON.parse(readFileSync(filePath, 'utf8')) as AgentMarkBugFixedRequest;
+  } catch {
+    throw new Error(`Resolution file không phải JSON hợp lệ: ${filePath}`);
+  }
+  const response = await agentFetch(`/agent/bug-reports/${encodeURIComponent(key)}/fixed`, {
+    method: 'PATCH',
+    body: JSON.stringify(resolution),
+  });
+  return (await response.json()) as AgentMarkBugFixedResponse;
+}
+
 async function main(): Promise<void> {
   const argument = process.argv[2];
   if (!argument || argument === '--help' || argument === '-h') {
-    console.log('Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123');
+    console.log(
+      'Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123 | pnpm bug:agent --fixed MOS-BUG-123 [resolution.json]'
+    );
     return;
   }
   if (argument === '--list') {
@@ -131,9 +190,19 @@ async function main(): Promise<void> {
     );
     return;
   }
+  if (argument === '--fixed') {
+    const key = process.argv[3];
+    if (!key) throw new Error('Thiếu mã ticket cho --fixed.');
+    const result = await submitBugResolution(key, process.argv[4]);
+    console.log(result.message || `Đã gửi bản sửa ${normalizeKey(key)} cho người báo duyệt.`);
+    return;
+  }
   const destination = await downloadBugBundle(argument);
   console.log(`Đã tải bundle vào ${destination}`);
   console.log(`Mở ${resolve(destination, 'report.md')} để bắt đầu phân tích.`);
+  console.log(
+    `Sau khi sửa, điền ${resolve(destination, 'resolution.json')} rồi chạy pnpm bug:agent --fixed ${normalizeKey(argument)}`
+  );
 }
 
 const isMainModule = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);

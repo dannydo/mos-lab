@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Image, Input, Upload, message, theme } from 'antd';
-import { ImagePlus, MessageSquareWarning, Send, X } from 'lucide-react';
+import { Badge, Button, Image, Input, Tooltip, Upload, message, notification, theme } from 'antd';
+import { ImagePlus, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import type { BugReportClientError, BugReportContext, CreateBugReportAttachmentRequest } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
@@ -11,7 +11,9 @@ import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } fro
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconText } from '../ui';
+import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
+import { useMyBugReports } from './useMyBugReports';
 
 const MAX_ATTACHMENTS = 3;
 const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
@@ -52,6 +54,8 @@ export function BugReportSurface() {
   const pathname = usePathname();
   const { token } = theme.useToken();
   const [open, setOpen] = React.useState(false);
+  const [activeView, setActiveView] = React.useState<'create' | 'history'>('create');
+  const [selectedReportKey, setSelectedReportKey] = React.useState<string | null>(null);
   const [description, setDescription] = React.useState('');
   const [files, setFiles] = React.useState<File[]>([]);
   const [submitting, setSubmitting] = React.useState(false);
@@ -72,6 +76,8 @@ export function BugReportSurface() {
     latest: BugReportLauncherPosition;
   } | null>(null);
   const suppressClickUntilRef = React.useRef(0);
+  const announcedNotificationsRef = React.useRef(new Set<number>());
+  const handledReviewLinkRef = React.useRef<string | null>(null);
   const {
     preferences,
     ready: launcherPreferencesReady,
@@ -81,6 +87,7 @@ export function BugReportSurface() {
   const savedLauncherY = preferences.position?.y ?? null;
 
   const enabled = authenticated && pathname.startsWith('/dashboard');
+  const myBugs = useMyBugReports(enabled);
 
   React.useEffect(() => {
     setAuthenticated(Boolean(safeStorage.getItem('mos_token')));
@@ -110,6 +117,7 @@ export function BugReportSurface() {
     (errorBoundary?: BugReportClientError | null) => {
       previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setContext(captureBugReportContext(release, errorBoundary));
+      setActiveView('create');
       setOpen(true);
     },
     [release]
@@ -124,6 +132,44 @@ export function BugReportSurface() {
     window.addEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
   }, [enabled, showReporter]);
+
+  const showHistory = React.useCallback(
+    (key?: string | null) => {
+      previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setSelectedReportKey(key || myBugs.data.find((item) => item.canReview)?.key || myBugs.data[0]?.key || null);
+      setActiveView('history');
+      setOpen(true);
+      void myBugs.refresh();
+      if (myBugs.unreadCount) void myBugs.markNotificationsRead();
+    },
+    [myBugs.data, myBugs.markNotificationsRead, myBugs.refresh, myBugs.unreadCount]
+  );
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    const key = new URLSearchParams(window.location.search).get('bugReview');
+    if (key && handledReviewLinkRef.current !== key) {
+      handledReviewLinkRef.current = key;
+      showHistory(key.toUpperCase());
+    }
+  }, [enabled, showHistory]);
+
+  React.useEffect(() => {
+    const next = myBugs.notifications.find((item) => !item.readAt && !announcedNotificationsRef.current.has(item.id));
+    if (!next) return;
+    announcedNotificationsRef.current.add(next.id);
+    notification.success({
+      key: `bug-report-${next.id}`,
+      message: next.title,
+      description: next.message,
+      duration: 0,
+      btn: (
+        <Button type="primary" size="small" onClick={() => showHistory(next.reportKey)}>
+          Xem & duyệt
+        </Button>
+      ),
+    });
+  }, [myBugs.notifications, showHistory]);
 
   React.useEffect(() => {
     if (!launcherPreferencesReady || dragging) return;
@@ -269,6 +315,8 @@ export function BugReportSurface() {
       setDescription('');
       setFiles([]);
       setContext(null);
+      setSelectedReportKey(result.key);
+      await myBugs.refresh();
       setOpen(false);
       window.setTimeout(() => previousFocusRef.current?.focus?.(), 0);
     } catch (error: any) {
@@ -319,8 +367,8 @@ export function BugReportSurface() {
       ) : null}
 
       <AdaptiveModal
-        intent="form"
-        title="Báo lỗi mOS"
+        intent={activeView === 'create' ? 'form' : 'data'}
+        title={activeView === 'create' ? 'Báo lỗi mOS' : 'Lỗi của tôi'}
         open={open}
         onCancel={closeReporter}
         maskClosable={false}
@@ -328,98 +376,130 @@ export function BugReportSurface() {
         zIndex={12010}
         destroyOnHidden
         footer={
-          <AdaptiveOverlayFooter>
-            <Button onClick={closeReporter} disabled={submitting}>
-              Hủy
-            </Button>
-            <Button
-              type="primary"
-              loading={submitting}
-              disabled={description.trim().length < 3 || processingImages}
-              onClick={() => void submit()}
-            >
-              <IconText icon={<AppIcon icon={Send} size="sm" />}>Gửi báo lỗi</IconText>
-            </Button>
+          <AdaptiveOverlayFooter className="!static !m-0 !border-t-0 !p-0">
+            <div className="mr-auto">
+              <Tooltip title={activeView === 'create' ? 'Xem lỗi của tôi và trạng thái xử lý' : 'Báo lỗi mới'}>
+                <Badge count={myBugs.unreadCount} size="small" overflowCount={99}>
+                  <Button
+                    type="text"
+                    aria-label={activeView === 'create' ? 'Xem danh sách lỗi của tôi' : 'Quay lại form báo lỗi'}
+                    icon={<AppIcon icon={activeView === 'create' ? ListChecks : MessageSquareWarning} size="sm" />}
+                    onClick={() => {
+                      if (activeView === 'create') showHistory(selectedReportKey);
+                      else setActiveView('create');
+                    }}
+                  />
+                </Badge>
+              </Tooltip>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button onClick={closeReporter} disabled={submitting}>
+                {activeView === 'create' ? 'Hủy' : 'Đóng'}
+              </Button>
+              {activeView === 'create' ? (
+                <Button
+                  type="primary"
+                  loading={submitting}
+                  disabled={description.trim().length < 3 || processingImages}
+                  onClick={() => void submit()}
+                >
+                  <IconText icon={<AppIcon icon={Send} size="sm" />}>Gửi báo lỗi</IconText>
+                </Button>
+              ) : null}
+            </div>
           </AdaptiveOverlayFooter>
         }
       >
-        <div
-          className="space-y-5"
-          onPaste={(event) => {
-            const pasted = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith('image/'));
-            if (pasted.length) {
-              event.preventDefault();
-              void addFiles(pasted);
-            }
-          }}
-        >
-          <div>
-            <label htmlFor="mos-bug-description" className="mb-2 block text-sm font-semibold">
-              Bạn đang gặp vấn đề gì?
-            </label>
-            <Input.TextArea
-              id="mos-bug-description"
-              autoFocus
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              maxLength={2000}
-              showCount
-              rows={5}
-              placeholder="Ví dụ: Tôi bấm Lưu nhưng popup vẫn đứng yên…"
-            />
-            <p className="mb-0 mt-6 text-xs" style={{ color: token.colorTextSecondary }}>
-              mOS tự đính kèm trang, popup, phiên bản và lỗi kỹ thuật gần nhất. Bạn không cần biết thuật ngữ kỹ thuật.
-            </p>
-          </div>
-
-          <Upload.Dragger
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            showUploadList={false}
-            disabled={processingImages || files.length >= MAX_ATTACHMENTS}
-            beforeUpload={(file, selected) => {
-              if (file.uid === selected[0]?.uid) void addFiles(selected as File[]);
-              return Upload.LIST_IGNORE;
+        {activeView === 'history' ? (
+          <MyBugReportsPanel
+            reports={myBugs.data}
+            notifications={myBugs.notifications}
+            selectedKey={selectedReportKey}
+            loading={myBugs.loading}
+            error={myBugs.error}
+            onSelect={setSelectedReportKey}
+            onRefresh={myBugs.refresh}
+            onReview={myBugs.review}
+          />
+        ) : (
+          <div
+            className="space-y-5"
+            onPaste={(event) => {
+              const pasted = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith('image/'));
+              if (pasted.length) {
+                event.preventDefault();
+                void addFiles(pasted);
+              }
             }}
           >
-            <div className="flex flex-col items-center gap-2 py-2">
-              <AppIcon icon={ImagePlus} size="lg" style={{ color: token.colorTextSecondary }} />
-              <span className="text-sm font-medium">Dán, kéo hoặc chọn ảnh nếu cần</span>
-              <span className="text-xs" style={{ color: token.colorTextSecondary }}>
-                Không bắt buộc · tối đa 3 ảnh · mỗi ảnh 3 MB
-              </span>
+            <div>
+              <label htmlFor="mos-bug-description" className="mb-2 block text-sm font-semibold">
+                Bạn đang gặp vấn đề gì?
+              </label>
+              <Input.TextArea
+                id="mos-bug-description"
+                autoFocus
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                maxLength={2000}
+                showCount
+                rows={5}
+                placeholder="Ví dụ: Tôi bấm Lưu nhưng popup vẫn đứng yên…"
+              />
+              <p className="mb-0 mt-6 text-xs" style={{ color: token.colorTextSecondary }}>
+                mOS tự đính kèm trang, popup, phiên bản và lỗi kỹ thuật gần nhất. Bạn không cần biết thuật ngữ kỹ thuật.
+              </p>
             </div>
-          </Upload.Dragger>
 
-          {files.length > 0 && (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {files.map((file, index) => (
-                <div
-                  key={`${file.name}-${file.size}-${index}`}
-                  className="flex min-w-0 items-center gap-3 rounded-lg border p-2"
-                  style={{ borderColor: token.colorBorderSecondary, background: token.colorFillQuaternary }}
-                >
-                  <BugReportFileThumbnail file={file} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium" title={file.name}>
-                      {file.name}
+            <Upload.Dragger
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              showUploadList={false}
+              disabled={processingImages || files.length >= MAX_ATTACHMENTS}
+              beforeUpload={(file, selected) => {
+                if (file.uid === selected[0]?.uid) void addFiles(selected as File[]);
+                return Upload.LIST_IGNORE;
+              }}
+            >
+              <div className="flex flex-col items-center gap-2 py-2">
+                <AppIcon icon={ImagePlus} size="lg" style={{ color: token.colorTextSecondary }} />
+                <span className="text-sm font-medium">Dán, kéo hoặc chọn ảnh nếu cần</span>
+                <span className="text-xs" style={{ color: token.colorTextSecondary }}>
+                  Không bắt buộc · tối đa 3 ảnh · mỗi ảnh 3 MB
+                </span>
+              </div>
+            </Upload.Dragger>
+
+            {files.length > 0 && (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {files.map((file, index) => (
+                  <div
+                    key={`${file.name}-${file.size}-${index}`}
+                    className="flex min-w-0 items-center gap-3 rounded-lg border p-2"
+                    style={{ borderColor: token.colorBorderSecondary, background: token.colorFillQuaternary }}
+                  >
+                    <BugReportFileThumbnail file={file} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-medium" title={file.name}>
+                        {file.name}
+                      </div>
+                      <div className="mt-1 text-xs" style={{ color: token.colorTextSecondary }}>
+                        {(file.size / 1024).toFixed(0)} KB · bấm ảnh để xem
+                      </div>
                     </div>
-                    <div className="mt-1 text-xs" style={{ color: token.colorTextSecondary }}>
-                      {(file.size / 1024).toFixed(0)} KB · bấm ảnh để xem
-                    </div>
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={`Xóa ảnh ${file.name}`}
+                      icon={<AppIcon icon={X} size="sm" />}
+                      onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                    />
                   </div>
-                  <Button
-                    type="text"
-                    size="small"
-                    aria-label={`Xóa ảnh ${file.name}`}
-                    icon={<AppIcon icon={X} size="sm" />}
-                    onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </AdaptiveModal>
     </>
   );

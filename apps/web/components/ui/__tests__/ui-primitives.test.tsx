@@ -527,7 +527,7 @@ describe('UI primitives', () => {
   it('renders KPI cards from a data-only metric grid', () => {
     render(
       <MetricGrid
-        columns={3}
+        columns={5}
         items={[
           { key: 'revenue', title: 'Doanh thu', value: '12.500.000 đ' },
           { key: 'orders', title: 'Đơn hoàn thành', value: 24 },
@@ -535,7 +535,7 @@ describe('UI primitives', () => {
       />
     );
 
-    expect(screen.getByLabelText('Chỉ số tổng quan')).toHaveAttribute('data-columns', '3');
+    expect(screen.getByLabelText('Chỉ số tổng quan')).toHaveAttribute('data-columns', '5');
     expect(screen.getByText('Doanh thu')).toBeInTheDocument();
     expect(screen.getByText('12.500.000 đ')).toBeInTheDocument();
   });

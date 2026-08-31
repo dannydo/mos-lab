@@ -33,6 +33,7 @@ const EMPTY_SUMMARY: BugReportListSummary = {
   approvedCount: 0,
   inProgressCount: 0,
   fixedCount: 0,
+  closedCount: 0,
 };
 
 function getErrorMessage(error: unknown): string {

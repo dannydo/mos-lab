@@ -1,11 +1,15 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import {
+  isAdminOrSuperAdminRole,
   isCanonicalSuperAdminIdentity,
   isSuperAdminRole,
+  type AgentMarkBugFixedRequest,
   type BugReportListQuery,
   type ConfirmCloseBugReportRequest,
   type CreateBugReportRequest,
+  type MarkBugReportNotificationsReadRequest,
+  type ReviewBugReportRequest,
   type TriageBugReportRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
@@ -25,6 +29,14 @@ async function requireDanny(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
+async function requireBugAdmin(request: FastifyRequest, reply: FastifyReply) {
+  const user = request.user as JwtUserPayload | undefined;
+  if (!user) return reply.status(401).send({ error: 'Unauthorized', message: 'Vui lòng đăng nhập.' });
+  if (!canOverrideBugReview(user)) {
+    return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ Admin được xem hoặc override Bug Inbox.' });
+  }
+}
+
 function agentToken(): string {
   return String(process.env.MOS_BUG_AGENT_TOKEN || '').trim();
 }
@@ -37,6 +49,10 @@ function secureTokenEqual(actual: string, expected: string): boolean {
 
 export function canManageBugInbox(user: Pick<JwtUserPayload, 'role' | 'username' | 'email'>): boolean {
   return isSuperAdminRole(user.role) && isCanonicalSuperAdminIdentity(user);
+}
+
+export function canOverrideBugReview(user: Pick<JwtUserPayload, 'role'>): boolean {
+  return isAdminOrSuperAdminRole(user.role);
 }
 
 export function isValidAgentAuthorization(header: string, expected: string): boolean {
@@ -88,7 +104,38 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/bug-reports', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
+  fastify.get('/bug-reports/mine', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      return reply.send(await BugReportService.mine(fastify, request.user.id));
+    } catch (error) {
+      return sendError(fastify, reply, error, 'List own bug reports failed');
+    }
+  });
+
+  fastify.patch('/bug-reports/notifications/read', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const updatedCount = await BugReportService.markNotificationsRead(
+        fastify,
+        request.user.id,
+        request.body as MarkBugReportNotificationsReadRequest
+      );
+      return reply.send({ success: true, data: { updatedCount }, message: 'Đã đọc thông báo.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Mark bug notifications read failed');
+    }
+  });
+
+  fastify.patch('/bug-reports/:id/review', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      const data = await BugReportService.review(fastify, request.user.id, id, request.body as ReviewBugReportRequest);
+      return reply.send({ success: true, data, message: 'Đã ghi nhận phản hồi bản sửa.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Review fixed bug report failed');
+    }
+  });
+
+  fastify.get('/bug-reports', { preHandler: [requireAuth, requireBugAdmin] }, async (request, reply) => {
     try {
       return reply.send(await BugReportService.list(fastify, request.query as BugReportListQuery));
     } catch (error) {
@@ -96,7 +143,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/bug-reports/:id', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
+  fastify.get('/bug-reports/:id', { preHandler: [requireAuth, requireBugAdmin] }, async (request, reply) => {
     try {
       const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
       return reply.send({ data: await BugReportService.detail(fastify, id) });
@@ -117,7 +164,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
 
   fastify.patch(
     '/bug-reports/:id/confirm-close',
-    { preHandler: [requireAuth, requireDanny] },
+    { preHandler: [requireAuth, requireBugAdmin] },
     async (request, reply) => {
       try {
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
@@ -136,7 +183,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     '/bug-reports/:id/attachments/:attachmentId',
-    { preHandler: [requireAuth, requireDanny] },
+    { preHandler: [requireAuth, requireBugAdmin] },
     async (request, reply) => {
       try {
         const params = request.params as { id: string; attachmentId: string };
@@ -168,6 +215,16 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       return reply.send({ data: await BugReportService.agentBundle(fastify, key) });
     } catch (error) {
       return sendError(fastify, reply, error, 'Get Agent bug bundle failed');
+    }
+  });
+
+  fastify.patch('/agent/bug-reports/:key/fixed', { preHandler: [requireAgent] }, async (request, reply) => {
+    try {
+      const key = (request.params as { key: string }).key;
+      const data = await BugReportService.markFixedByAgent(fastify, key, request.body as AgentMarkBugFixedRequest);
+      return reply.send({ success: true, data, message: 'Đã gửi bản sửa cho người báo duyệt.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Mark Agent bug fixed failed');
     }
   });
 

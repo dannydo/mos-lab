@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Form, Select, Button, Space, Badge, Tooltip } from 'antd';
+import { Form, Select, Button, Badge, Tooltip } from 'antd';
 import {
   FilterOutlined,
   CalendarOutlined,
@@ -432,67 +432,77 @@ const CustomerFilters = React.memo(function CustomerFilters({
 
   return (
     <>
-      <Space wrap size="small" className="customer-filter-controls">
-        <SavedFilterDropdown
-          savedFilters={savedFilters}
-          presetFilters={PRESET_FILTERS}
-          handleDeleteFilter={handleDeleteFilter}
-          applyFilter={applyFilter}
+      <div className="customer-filter-workspace">
+        <div className="customer-filter-controls" role="group" aria-label="Bộ lọc danh sách khách hàng">
+          <div className="customer-filter-controls__group">
+            <SavedFilterDropdown
+              savedFilters={savedFilters}
+              presetFilters={PRESET_FILTERS}
+              handleDeleteFilter={handleDeleteFilter}
+              applyFilter={applyFilter}
+            />
+
+            <Tooltip title="Bộ lọc nâng cao">
+              <Badge dot={hasActiveFilters} offset={[-2, 2]}>
+                <Button
+                  data-ui="customer-filter-trigger"
+                  aria-label="Mở bộ lọc nâng cao"
+                  icon={<FilterOutlined />}
+                  onClick={() => setFilterDrawerVisible(true)}
+                  style={{
+                    borderColor: hasActiveFilters ? '#1677ff' : undefined,
+                    color: hasActiveFilters ? '#1677ff' : undefined,
+                    borderRadius: '6px',
+                  }}
+                />
+              </Badge>
+            </Tooltip>
+          </div>
+
+          {onOpenRandomModal && isManagerOrAdmin && (
+            <div className="customer-filter-controls__group customer-filter-controls__group--selection">
+              <Tooltip title="Chọn ngẫu nhiên khách hàng theo bộ lọc">
+                <Button
+                  aria-label="Chọn ngẫu nhiên khách hàng theo bộ lọc"
+                  icon={<AimOutlined />}
+                  onClick={onOpenRandomModal}
+                  style={{
+                    borderColor: themeMode === 'dark' ? '#D4A84B' : '#d97706',
+                    color: themeMode === 'dark' ? '#D4A84B' : '#d97706',
+                    borderRadius: '6px',
+                  }}
+                />
+              </Tooltip>
+            </div>
+          )}
+
+          {hasActiveFilters && (
+            <div className="customer-filter-controls__group customer-filter-controls__group--active">
+              <Tooltip title="Xóa tất cả bộ lọc">
+                <Button icon={<ClearOutlined />} danger onClick={clearFilters} style={{ borderRadius: '6px' }} />
+              </Tooltip>
+              <Tooltip title="Lưu bộ lọc hiện tại">
+                <Button
+                  aria-label="Lưu bộ lọc hiện tại"
+                  icon={<SaveOutlined />}
+                  onClick={() => setSaveFilterModalVisible(true)}
+                  style={{ borderColor: '#D4A84B', color: '#D4A84B', borderRadius: '6px' }}
+                />
+              </Tooltip>
+            </div>
+          )}
+        </div>
+
+        <ActiveFilterTags
+          inline
+          filterParams={filterParams}
+          onClearFilter={onClearFilter}
+          hasActiveFilters={hasActiveFilters}
+          staffList={staffList}
+          serviceFilterOptions={serviceFilterOptions}
+          serviceFilterCategories={serviceFilterCategories}
         />
-
-        <Tooltip title="Bộ lọc nâng cao">
-          <Badge dot={hasActiveFilters} offset={[-2, 2]}>
-            <Button
-              data-ui="customer-filter-trigger"
-              icon={<FilterOutlined />}
-              onClick={() => setFilterDrawerVisible(true)}
-              style={{
-                borderColor: hasActiveFilters ? '#1677ff' : undefined,
-                color: hasActiveFilters ? '#1677ff' : undefined,
-                borderRadius: '6px',
-              }}
-            />
-          </Badge>
-        </Tooltip>
-
-        {onOpenRandomModal && isManagerOrAdmin && (
-          <Tooltip title="Chọn ngẫu nhiên khách hàng theo bộ lọc">
-            <Button
-              icon={<AimOutlined />}
-              onClick={onOpenRandomModal}
-              style={{
-                borderColor: themeMode === 'dark' ? '#D4A84B' : '#d97706',
-                color: themeMode === 'dark' ? '#D4A84B' : '#d97706',
-                borderRadius: '6px',
-              }}
-            />
-          </Tooltip>
-        )}
-
-        {hasActiveFilters && (
-          <>
-            <Tooltip title="Xóa tất cả bộ lọc">
-              <Button icon={<ClearOutlined />} danger onClick={clearFilters} style={{ borderRadius: '6px' }} />
-            </Tooltip>
-            <Tooltip title="Lưu bộ lọc hiện tại">
-              <Button
-                icon={<SaveOutlined />}
-                onClick={() => setSaveFilterModalVisible(true)}
-                style={{ borderColor: '#D4A84B', color: '#D4A84B', borderRadius: '6px' }}
-              />
-            </Tooltip>
-          </>
-        )}
-      </Space>
-
-      <ActiveFilterTags
-        filterParams={filterParams}
-        onClearFilter={onClearFilter}
-        hasActiveFilters={hasActiveFilters}
-        staffList={staffList}
-        serviceFilterOptions={serviceFilterOptions}
-        serviceFilterCategories={serviceFilterCategories}
-      />
+      </div>
 
       {/* FILTER DRAWER */}
       <AdaptiveDrawer

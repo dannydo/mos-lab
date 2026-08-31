@@ -39,6 +39,11 @@ import type {
   ConfirmCloseBugReportResponse,
   CreateBugReportRequest,
   CreateBugReportResponse,
+  MarkBugReportNotificationsReadRequest,
+  MarkBugReportNotificationsReadResponse,
+  MyBugReportsResponse,
+  ReviewBugReportRequest,
+  ReviewBugReportResponse,
   TriageBugReportRequest,
   TriageBugReportResponse,
 } from '@mos-lab/shared';
@@ -567,6 +572,20 @@ export const apiClient = {
   bugReports: {
     create: async (data: CreateBugReportRequest): Promise<CreateBugReportResponse> => {
       const response = await api.post<CreateBugReportResponse>('/bug-reports', data);
+      return response.data;
+    },
+    mine: async (): Promise<MyBugReportsResponse> => {
+      const response = await api.get<MyBugReportsResponse>('/bug-reports/mine');
+      return response.data;
+    },
+    review: async (id: number, data: ReviewBugReportRequest): Promise<ReviewBugReportResponse> => {
+      const response = await api.patch<ReviewBugReportResponse>(`/bug-reports/${id}/review`, data);
+      return response.data;
+    },
+    markNotificationsRead: async (
+      data: MarkBugReportNotificationsReadRequest
+    ): Promise<MarkBugReportNotificationsReadResponse> => {
+      const response = await api.patch<MarkBugReportNotificationsReadResponse>('/bug-reports/notifications/read', data);
       return response.data;
     },
     list: async (params: BugReportListQuery): Promise<BugReportListResponse> => {

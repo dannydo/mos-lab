@@ -12,6 +12,8 @@ interface ActiveFilterTagsProps {
   staffList?: SafeAny[];
   serviceFilterOptions?: Array<{ id: number; name: string }>;
   serviceFilterCategories?: CustomerServiceFilterCategory[];
+  /** Keeps filter context compact when it belongs in a one-line toolbar. */
+  inline?: boolean;
 }
 
 export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
@@ -21,6 +23,7 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
   staffList = [],
   serviceFilterOptions = [],
   serviceFilterCategories = [],
+  inline = false,
 }) => {
   const { token } = theme.useToken();
   const {
@@ -102,7 +105,7 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
   };
 
   return (
-    <div style={{ marginTop: '12px' }}>
+    <div className={inline ? 'active-filter-tags active-filter-tags--inline' : 'active-filter-tags'}>
       <Space wrap size="small">
         <Text style={{ fontSize: '12px', color: token.colorTextDescription }}>Đang lọc:</Text>
 

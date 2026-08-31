@@ -2738,6 +2738,34 @@ body {
   min-width: 0;
 }
 
+/* The Today dashboard has an intentionally dense operating toolbar. Keep it
+   on a dedicated row so a narrow desktop workspace never squeezes the page
+   title into one-word lines. */
+.responsive-page-header.today-page-header {
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.today-page-header .responsive-page-header-actions > .ant-space {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.today-page-header-context.ant-tag {
+  align-items: center;
+  background: var(--ant-color-fill-tertiary);
+  border-color: var(--ant-color-border-secondary);
+  border-radius: 999px;
+  color: var(--ant-color-text-secondary);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  margin-inline-end: 0;
+  padding: 5px 8px;
+}
+
 .today-realtime-clock {
   display: grid;
   gap: 1px;
@@ -4285,12 +4313,122 @@ body {
 }
 
 .customer-search {
-  width: min(100%, 360px);
+  max-width: 100%;
+  width: auto;
 }
 
-.customer-filter-controls .ant-btn {
+.active-filter-tags {
+  margin-top: 12px;
+}
+
+.active-filter-tags--inline {
+  margin-top: 0;
+}
+
+.customer-filter-workspace,
+.customer-filter-workspace .active-filter-tags--inline {
+  align-items: center;
+  display: flex;
+  min-width: 0;
+}
+
+.customer-filter-workspace {
+  gap: 8px;
+}
+
+.customer-filter-workspace .active-filter-tags--inline {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.customer-filter-workspace .active-filter-tags--inline > .ant-space {
+  align-items: center;
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.customer-filter-workspace .active-filter-tags--inline .ant-space-item,
+.customer-filter-workspace .active-filter-tags--inline .ant-tag {
+  min-width: 0;
+}
+
+.customer-filter-workspace .active-filter-tags--inline .ant-tag {
+  margin-inline-end: 0;
+  white-space: nowrap;
+}
+
+.customer-filter-controls,
+.customer-filter-controls__group,
+.customer-toolbar-action-cluster,
+.customer-toolbar-action-cluster__tools {
+  align-items: center;
+  display: flex;
+}
+
+.customer-filter-controls,
+.customer-toolbar-action-cluster {
+  gap: 8px;
+  min-width: 0;
+}
+
+.customer-filter-controls__group,
+.customer-toolbar-action-cluster__tools {
+  gap: 4px;
+}
+
+.customer-filter-controls__group + .customer-filter-controls__group,
+.customer-toolbar-action-cluster__tools {
+  border-inline-start: 1px solid var(--ant-color-border-secondary);
+  padding-inline-start: 8px;
+}
+
+.customer-filter-controls .ant-btn,
+.customer-saved-filter-trigger.ant-btn {
   min-height: var(--mos-control-height-compact);
   min-width: var(--mos-control-height-compact);
+}
+
+.customer-saved-filter-trigger.ant-btn {
+  align-items: center;
+  border-radius: var(--mos-control-radius);
+  display: inline-flex;
+  font-weight: 500;
+  gap: 6px;
+  padding-inline: 10px 8px;
+}
+
+.customer-toolbar-action-cluster .ant-tag {
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+  margin-inline-end: 0;
+  min-height: var(--mos-control-height-compact);
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  .customer-toolbar .responsive-toolbar-layout,
+  .customer-toolbar .responsive-toolbar-primary,
+  .customer-filter-workspace,
+  .customer-toolbar-action-cluster {
+    flex-wrap: nowrap;
+  }
+
+  .customer-toolbar .responsive-toolbar-primary {
+    flex: 1 1 0;
+  }
+
+  .customer-toolbar .customer-search {
+    flex: 0 1 auto;
+  }
+
+  .customer-toolbar .responsive-toolbar-actions {
+    flex: 0 0 auto;
+  }
+
+  .customer-toolbar .responsive-toolbar-actions > .ant-space {
+    flex-wrap: nowrap;
+  }
 }
 
 .customer-bucket-tabs .ant-tabs-nav {
@@ -5064,7 +5202,8 @@ body {
 
   .metric-grid[data-columns='2'],
   .metric-grid[data-columns='3'],
-  .metric-grid[data-columns='4'] {
+  .metric-grid[data-columns='4'],
+  .metric-grid[data-columns='5'] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -5086,7 +5225,8 @@ body {
   }
 
   .metric-grid[data-columns='3'],
-  .metric-grid[data-columns='4'] {
+  .metric-grid[data-columns='4'],
+  .metric-grid[data-columns='5'] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -5111,6 +5251,10 @@ body {
 
   .metric-grid[data-columns='4'] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .metric-grid[data-columns='5'] {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 

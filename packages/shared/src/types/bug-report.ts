@@ -67,6 +67,28 @@ export interface BugReportReporter {
   id: number;
   displayName: string;
   role: string;
+  avatarUrl: string | null;
+}
+
+export interface BugReportTimeline {
+  reportedAt: string;
+  approvedAt: string | null;
+  startedAt: string | null;
+  fixedAt: string | null;
+  closedAt: string | null;
+  updatedAt: string;
+}
+
+export interface BugReportResolution {
+  problemSummary: string;
+  rootCause: string;
+  solutionSummary: string;
+  verificationSummary: string;
+  changedFiles: string[];
+  commitSha: string | null;
+  releaseUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BugReportAttachment {
@@ -100,6 +122,7 @@ export interface BugReportSummary {
   attachmentCount: number;
   reporter: BugReportReporter;
   approvedAt: string | null;
+  timeline: BugReportTimeline;
   createdAt: string;
   updatedAt: string;
 }
@@ -113,8 +136,33 @@ export interface BugReportDetail extends BugReportSummary {
   resolvedAt: string | null;
   closedAt: string | null;
   context: BugReportContext;
+  resolution: BugReportResolution | null;
   attachments: BugReportAttachment[];
   audits: BugReportAuditEntry[];
+}
+
+export interface MyBugReportItem extends BugReportSummary {
+  resolution: BugReportResolution | null;
+  reviewUrl: string;
+  canReview: boolean;
+}
+
+export interface BugReportNotification {
+  id: number;
+  reportId: number;
+  reportKey: string;
+  type: 'BUG_FIXED_REVIEW';
+  title: string;
+  message: string;
+  actionUrl: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface MyBugReportsResponse {
+  data: MyBugReportItem[];
+  notifications: BugReportNotification[];
+  unreadCount: number;
 }
 
 export interface BugReportListQuery extends PageQuery {
@@ -128,6 +176,7 @@ export interface BugReportListSummary {
   approvedCount: number;
   inProgressCount: number;
   fixedCount: number;
+  closedCount: number;
 }
 
 export interface TriageBugReportRequest {
@@ -143,6 +192,32 @@ export interface ConfirmCloseBugReportRequest {
   note?: string | null;
 }
 
+export interface ReviewBugReportRequest {
+  decision: 'APPROVE' | 'REOPEN';
+  note?: string | null;
+}
+
+export interface MarkBugReportNotificationsReadRequest {
+  notificationIds?: number[];
+}
+
+export interface AgentMarkBugFixedRequest {
+  problemSummary: string;
+  rootCause: string;
+  solutionSummary: string;
+  verificationSummary: string;
+  changedFiles?: string[];
+  commitSha?: string | null;
+  releaseUrl?: string | null;
+}
+
+export interface AgentBugKnowledgeItem extends BugReportResolution {
+  key: string;
+  title: string;
+  sourcePath: string;
+  fixedAt: string | null;
+}
+
 export interface BugReportCreateResult {
   id: number;
   key: string;
@@ -152,6 +227,9 @@ export interface BugReportCreateResult {
 export type CreateBugReportResponse = ActionResponse<BugReportCreateResult>;
 export type TriageBugReportResponse = ActionResponse<BugReportDetail>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;
+export type ReviewBugReportResponse = ActionResponse<BugReportDetail>;
+export type MarkBugReportNotificationsReadResponse = ActionResponse<{ updatedCount: number }>;
+export type AgentMarkBugFixedResponse = ActionResponse<BugReportDetail>;
 export type BugReportListResponse = PageResponse<BugReportSummary, BugReportListSummary>;
 
 export interface AgentBugQueueItem {
@@ -161,6 +239,7 @@ export interface AgentBugQueueItem {
   status: Extract<BugReportStatus, 'APPROVED' | 'IN_PROGRESS' | 'FIXED'>;
   priority: BugPriority;
   sourcePath: string;
+  timeline: BugReportTimeline;
   updatedAt: string;
 }
 
@@ -175,6 +254,7 @@ export interface AgentBugBundle {
   report: BugReportDetail;
   markdown: string;
   attachments: AgentBugAttachment[];
+  similarResolutions: AgentBugKnowledgeItem[];
 }
 
 export function formatBugReportKey(id: number): string {

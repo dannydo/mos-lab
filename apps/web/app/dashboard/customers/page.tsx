@@ -289,34 +289,44 @@ function CustomersPageContent() {
           </>
         ),
         actions: (
-          <>
+          <div className="customer-toolbar-action-cluster">
             <RetainDataButton
               mode="quota-badge"
               retainedOnly={data.retainedOnly}
               onToggleRetainedFilter={() => data.setRetainedOnly(!data.retainedOnly)}
             />
 
-            {isManagerOrAdmin && (
-              <IconButton
-                label="Lịch sử phân bổ data"
-                icon={History}
-                onClick={() => data.setHistoryDrawerVisible(true)}
-              />
-            )}
+            <div
+              className="customer-toolbar-action-cluster__tools"
+              role="group"
+              aria-label="Thao tác danh sách khách hàng"
+            >
+              {isManagerOrAdmin && (
+                <IconButton
+                  label="Lịch sử phân bổ data"
+                  icon={History}
+                  onClick={() => data.setHistoryDrawerVisible(true)}
+                />
+              )}
 
-            {isManagerOrAdmin && (
-              <IconButton
-                label={data.showTrash ? 'Đang xem thùng rác; bấm để xem tất cả' : 'Xem thùng rác khách hàng'}
-                icon={Trash2}
-                tone={data.showTrash ? 'danger' : 'default'}
-                onClick={() => {
-                  data.setShowTrash(!data.showTrash);
-                  data.setCurrentPage(1);
-                }}
-              />
-            )}
+              {isManagerOrAdmin && (
+                <IconButton
+                  label={data.showTrash ? 'Đang xem thùng rác; bấm để xem tất cả' : 'Xem thùng rác khách hàng'}
+                  icon={Trash2}
+                  tone={data.showTrash ? 'danger' : 'default'}
+                  onClick={() => {
+                    data.setShowTrash(!data.showTrash);
+                    data.setCurrentPage(1);
+                  }}
+                />
+              )}
 
-            <IconButton label="Cấu hình hiển thị cột" icon={Settings2} onClick={() => tableRef.current?.openConfig()} />
+              <IconButton
+                label="Cấu hình hiển thị cột"
+                icon={Settings2}
+                onClick={() => tableRef.current?.openConfig()}
+              />
+            </div>
 
             {isMobile ? (
               <Dropdown
@@ -340,7 +350,7 @@ function CustomersPageContent() {
                 options={sortOptions}
               />
             )}
-          </>
+          </div>
         ),
       }}
     >

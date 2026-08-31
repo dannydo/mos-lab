@@ -4,7 +4,7 @@ import React from 'react';
 import { StatCard } from './StatCard';
 import type { StatCardProps } from './StatCard';
 
-export type MetricGridColumns = 1 | 2 | 3 | 4;
+export type MetricGridColumns = 1 | 2 | 3 | 4 | 5;
 export type MetricValueFormat = 'number' | 'vnd' | 'percent';
 
 export interface MetricGridItem extends StatCardProps {
