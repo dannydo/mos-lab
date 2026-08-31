@@ -76,6 +76,7 @@ model CrmStaff {
   bugReportsApproved CrmBugReport[] @relation("BugReportApprover")
   bugReportAudits CrmBugReportAudit[] @relation("BugReportAuditActor")
   bugReportNotifications CrmBugReportNotification[] @relation("BugReportNotificationRecipient")
+  bugReportComments CrmBugReportComment[] @relation("BugReportCommentAuthor")
 
   @@map("crm_staff")
 }
@@ -2214,6 +2215,9 @@ model CrmBugReport {
   prioritySort      Int       @default(4) @map("priority_sort")
   businessContext   String?   @map("business_context") @db.Text
   triageNote        String?   @map("triage_note") @db.Text
+  clarificationStatus String    @default("PENDING_AGENT") @map("clarification_status") @db.VarChar(24)
+  clarificationSummary String?   @map("clarification_summary") @db.Text
+  clarifiedAt          DateTime? @map("clarified_at") @db.DateTime(0)
   duplicateOfId     Int?      @map("duplicate_of_id")
   approvedByStaffId Int?      @map("approved_by_staff_id")
   approvedAt        DateTime? @map("approved_at") @db.DateTime(0)
@@ -2233,6 +2237,7 @@ model CrmBugReport {
   audits      CrmBugReportAudit[]
   resolution  CrmBugReportResolution?
   notifications CrmBugReportNotification[]
+  comments CrmBugReportComment[]
 
   @@index([statusSort, prioritySort, createdAt])
   @@index([status, priority, createdAt])
@@ -2283,6 +2288,7 @@ model CrmBugReportNotification {
 model CrmBugReportAttachment {
   id           Int       @id @default(autoincrement())
   reportId     Int       @map("report_id")
+  commentId    Int?      @map("comment_id")
   originalName String    @map("original_name") @db.VarChar(255)
   storagePath  String    @unique @map("storage_path") @db.VarChar(500)
   mimeType     String    @map("mime_type") @db.VarChar(50)
@@ -2291,9 +2297,29 @@ model CrmBugReportAttachment {
   deletedAt    DateTime? @map("deleted_at") @db.DateTime(0)
 
   report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  comment CrmBugReportComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@index([reportId, createdAt])
+  @@index([commentId, createdAt])
   @@map("crm_bug_report_attachments")
+}
+
+model CrmBugReportComment {
+  id            Int      @id @default(autoincrement())
+  reportId      Int      @map("report_id")
+  authorStaffId Int?     @map("author_staff_id")
+  authorType    String   @map("author_type") @db.VarChar(16)
+  kind          String   @db.VarChar(32)
+  body          String   @db.Text
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  report      CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  author      CrmStaff? @relation("BugReportCommentAuthor", fields: [authorStaffId], references: [id], onDelete: SetNull)
+  attachments CrmBugReportAttachment[]
+
+  @@index([reportId, createdAt])
+  @@index([authorStaffId, createdAt])
+  @@map("crm_bug_report_comments")
 }
 
 model CrmBugReportAudit {

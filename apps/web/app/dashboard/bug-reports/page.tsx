@@ -22,9 +22,11 @@ import type { ColumnsType } from 'antd/es/table';
 import type {
   BugPriority,
   BugReportDetail,
+  BugReportCommentCreateResult,
   BugReportStatus,
   BugReportSummary,
   ConfirmCloseBugReportRequest,
+  CreateBugReportCommentRequest,
   TriageBugReportRequest,
 } from '@mos-lab/shared';
 import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
@@ -49,6 +51,7 @@ import {
   STANDARD_PAGE_SIZE_OPTIONS,
 } from '../../../components/ui';
 import { safeStorage } from '../../../lib/safe-storage';
+import { BugReportConversation } from '../../../components/bug-reports/BugReportConversation';
 import {
   BugStatusTag,
   durationBetween,
@@ -71,6 +74,7 @@ interface DetailDrawerProps {
   getDetail: (id: number) => Promise<BugReportDetail>;
   triage: (id: number, request: TriageBugReportRequest) => Promise<BugReportDetail>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
+  comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
   canOverride: boolean;
 }
@@ -81,6 +85,7 @@ function DetailDrawer({
   getDetail,
   triage,
   confirmClose,
+  comment,
   canTriage,
   canOverride,
 }: DetailDrawerProps) {
@@ -211,7 +216,13 @@ function DetailDrawer({
             <Space wrap>
               {canTriage && detail.status === 'NEW' && (
                 <Dropdown menu={{ items: approvalItems }} trigger={['click']}>
-                  <Button type="primary" loading={saving} icon={<AppIcon icon={Send} size="sm" />}>
+                  <Button
+                    type="primary"
+                    loading={saving}
+                    disabled={detail.clarification.status !== 'READY' && businessContext.trim().length < 10}
+                    title="Cần Agent xác nhận đủ rõ hoặc nhập biz logic/kết quả đúng trước khi approve"
+                    icon={<AppIcon icon={Send} size="sm" />}
+                  >
                     Approve
                   </Button>
                 </Dropdown>
@@ -281,6 +292,20 @@ function DetailDrawer({
                 Báo bởi {detail.reporter.displayName} · {detail.reporter.role}
               </Text>
             </section>
+
+            <SectionCard title={`Trao đổi & làm rõ (${detail.comments.length})`}>
+              <BugReportConversation
+                reportId={detail.id}
+                status={detail.status}
+                clarification={detail.clarification}
+                comments={detail.comments}
+                onSubmit={async (request) => {
+                  const result = await comment(detail.id, request);
+                  hydrateForm(result.report);
+                  return result;
+                }}
+              />
+            </SectionCard>
 
             <SectionCard title="Tracking xử lý">
               <Timeline
@@ -375,11 +400,13 @@ function DetailDrawer({
               </SectionCard>
             ) : null}
 
-            {detail.attachments.length > 0 && (
-              <SectionCard title={`Ảnh đính kèm (${detail.attachments.length})`}>
+            {detail.attachments.some((item) => !item.deletedAt && !item.commentId) && (
+              <SectionCard
+                title={`Ảnh đính kèm (${detail.attachments.filter((item) => !item.deletedAt && !item.commentId).length})`}
+              >
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {detail.attachments
-                    .filter((item) => !item.deletedAt)
+                    .filter((item) => !item.deletedAt && !item.commentId)
                     .map((attachment) => (
                       <ProtectedAttachment key={attachment.id} reportId={detail.id} attachment={attachment} />
                     ))}
@@ -862,6 +889,7 @@ export default function BugReportsPage() {
         getDetail={inbox.getDetail}
         triage={inbox.triage}
         confirmClose={inbox.confirmClose}
+        comment={inbox.comment}
         canTriage={canTriage}
         canOverride={canOverride}
       />

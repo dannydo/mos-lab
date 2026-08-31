@@ -158,14 +158,15 @@ export function BugReportSurface() {
     const next = myBugs.notifications.find((item) => !item.readAt && !announcedNotificationsRef.current.has(item.id));
     if (!next) return;
     announcedNotificationsRef.current.add(next.id);
-    notification.success({
+    const isClarification = next.type === 'BUG_CLARIFICATION_NEEDED';
+    notification[isClarification ? 'warning' : 'success']({
       key: `bug-report-${next.id}`,
       message: next.title,
       description: next.message,
       duration: 0,
       btn: (
         <Button type="primary" size="small" onClick={() => showHistory(next.reportKey)}>
-          Xem & duyệt
+          {isClarification ? 'Trả lời Agent' : 'Xem & duyệt'}
         </Button>
       ),
     });
@@ -420,6 +421,7 @@ export function BugReportSurface() {
             onSelect={setSelectedReportKey}
             onRefresh={myBugs.refresh}
             onReview={myBugs.review}
+            onComment={myBugs.comment}
           />
         ) : (
           <div

@@ -7,6 +7,8 @@ import type {
   AgentBugQueueItem,
   AgentMarkBugFixedRequest,
   AgentMarkBugFixedResponse,
+  AgentReviewBugReportRequest,
+  AgentReviewBugReportResponse,
 } from '@mos-lab/shared';
 
 const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
@@ -164,11 +166,23 @@ export async function submitBugResolution(
   return (await response.json()) as AgentMarkBugFixedResponse;
 }
 
+export async function submitClarificationReview(
+  keyInput: string,
+  request: AgentReviewBugReportRequest
+): Promise<AgentReviewBugReportResponse> {
+  const key = normalizeKey(keyInput);
+  const response = await agentFetch(`/agent/bug-reports/${encodeURIComponent(key)}/clarification`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+  return (await response.json()) as AgentReviewBugReportResponse;
+}
+
 async function main(): Promise<void> {
   const argument = process.argv[2];
   if (!argument || argument === '--help' || argument === '-h') {
     console.log(
-      'Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123 | pnpm bug:agent --fixed MOS-BUG-123 [resolution.json]'
+      'Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123 | pnpm bug:agent --ask MOS-BUG-123 "Câu hỏi" | pnpm bug:agent --ready MOS-BUG-123 "Kết luận biz logic" | pnpm bug:agent --fixed MOS-BUG-123 [resolution.json]'
     );
     return;
   }
@@ -179,15 +193,30 @@ async function main(): Promise<void> {
       return;
     }
     console.table(
-      queue.map(({ key, priority, status, title, sourcePath, updatedAt }) => ({
+      queue.map(({ key, workType, priority, status, clarification, title, sourcePath, updatedAt }) => ({
         key,
-        priority,
+        workType,
+        priority: priority || '—',
         status,
+        clarity: clarification.status,
         title,
         route: sourcePath,
         updatedAt,
       }))
     );
+    return;
+  }
+  if (argument === '--ask' || argument === '--ready') {
+    const key = process.argv[3];
+    const message = process.argv.slice(4).join(' ').trim();
+    if (!key) throw new Error(`Thiếu mã ticket cho ${argument}.`);
+    if (!message) throw new Error(`Thiếu nội dung cho ${argument}.`);
+    const result = await submitClarificationReview(key, {
+      decision: argument === '--ask' ? 'ASK_REPORTER' : 'READY_FOR_TRIAGE',
+      message,
+      ...(argument === '--ready' ? { businessContext: message } : {}),
+    });
+    console.log(result.message || `Đã cập nhật bước làm rõ cho ${normalizeKey(key)}.`);
     return;
   }
   if (argument === '--fixed') {

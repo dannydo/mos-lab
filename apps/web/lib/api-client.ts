@@ -37,6 +37,8 @@ import type {
   BugReportListResponse,
   ConfirmCloseBugReportRequest,
   ConfirmCloseBugReportResponse,
+  CreateBugReportCommentRequest,
+  CreateBugReportCommentResponse,
   CreateBugReportRequest,
   CreateBugReportResponse,
   MarkBugReportNotificationsReadRequest,
@@ -580,6 +582,10 @@ export const apiClient = {
     },
     review: async (id: number, data: ReviewBugReportRequest): Promise<ReviewBugReportResponse> => {
       const response = await api.patch<ReviewBugReportResponse>(`/bug-reports/${id}/review`, data);
+      return response.data;
+    },
+    comment: async (id: number, data: CreateBugReportCommentRequest): Promise<CreateBugReportCommentResponse> => {
+      const response = await api.post<CreateBugReportCommentResponse>(`/bug-reports/${id}/comments`, data);
       return response.data;
     },
     markNotificationsRead: async (

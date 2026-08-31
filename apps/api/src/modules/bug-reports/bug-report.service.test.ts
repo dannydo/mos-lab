@@ -60,6 +60,7 @@ test('enforces the complete triage workflow before any database write', () => {
       priority: 'P1',
       note: null,
       duplicateOfId: null,
+      clarificationStatus: 'READY',
     })
   );
   assert.throws(
@@ -71,6 +72,7 @@ test('enforces the complete triage workflow before any database write', () => {
         priority: null,
         note: null,
         duplicateOfId: null,
+        clarificationStatus: 'READY',
       }),
     /priority/i
   );
@@ -83,6 +85,7 @@ test('enforces the complete triage workflow before any database write', () => {
         priority: 'P1',
         note: null,
         duplicateOfId: null,
+        clarificationStatus: 'READY',
       }),
     /ghi chú/i
   );
@@ -95,6 +98,7 @@ test('enforces the complete triage workflow before any database write', () => {
         priority: 'P2',
         note: null,
         duplicateOfId: null,
+        clarificationStatus: 'READY',
       }),
     /mở lại/i
   );
@@ -107,6 +111,7 @@ test('enforces the complete triage workflow before any database write', () => {
         priority: null,
         note: null,
         duplicateOfId: 42,
+        clarificationStatus: 'PENDING_AGENT',
       }),
     /ticket gốc/i
   );
@@ -119,14 +124,31 @@ test('enforces the complete triage workflow before any database write', () => {
         priority: null,
         note: null,
         duplicateOfId: null,
+        clarificationStatus: 'PENDING_AGENT',
       }),
     /Không thể chuyển/i
   );
-  assert.equal(isAgentReadableBugStatus('NEW'), false);
+  assert.equal(isAgentReadableBugStatus('NEW'), true);
   assert.equal(isAgentReadableBugStatus('APPROVED'), true);
   assert.equal(isAgentReadableBugStatus('IN_PROGRESS'), true);
   assert.equal(isAgentReadableBugStatus('FIXED'), true);
   assert.equal(isAgentReadableBugStatus('CLOSED'), false);
+});
+
+test('blocks Agent work until clarification is explicitly ready', () => {
+  assert.throws(
+    () =>
+      assertBugReportTransition({
+        reportId: 42,
+        previousStatus: 'NEW',
+        status: 'APPROVED',
+        priority: 'P1',
+        note: null,
+        duplicateOfId: null,
+        clarificationStatus: 'WAITING_REPORTER',
+      }),
+    /chưa đủ rõ/i
+  );
 });
 
 test('builds the one-click completion path without skipping audit states', () => {

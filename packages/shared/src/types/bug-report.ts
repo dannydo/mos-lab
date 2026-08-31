@@ -15,6 +15,12 @@ export type BugReportStatus = (typeof BUG_REPORT_STATUSES)[number];
 export const BUG_REPORT_PRIORITIES = ['P0', 'P1', 'P2', 'P3'] as const;
 export type BugPriority = (typeof BUG_REPORT_PRIORITIES)[number];
 
+export const BUG_REPORT_CLARIFICATION_STATUSES = ['PENDING_AGENT', 'WAITING_REPORTER', 'READY'] as const;
+export type BugReportClarificationStatus = (typeof BUG_REPORT_CLARIFICATION_STATUSES)[number];
+
+export const BUG_REPORT_COMMENT_KINDS = ['COMMENT', 'CLARIFICATION_QUESTION', 'CLARIFICATION_REVIEW'] as const;
+export type BugReportCommentKind = (typeof BUG_REPORT_COMMENT_KINDS)[number];
+
 export interface BugReportApiFailure {
   occurredAt: string;
   method: string;
@@ -93,11 +99,28 @@ export interface BugReportResolution {
 
 export interface BugReportAttachment {
   id: number;
+  commentId: number | null;
   fileName: string;
   mimeType: string;
   sizeBytes: number;
   createdAt: string;
   deletedAt: string | null;
+}
+
+export interface BugReportClarification {
+  status: BugReportClarificationStatus;
+  summary: string | null;
+  clarifiedAt: string | null;
+}
+
+export interface BugReportComment {
+  id: number;
+  kind: BugReportCommentKind;
+  body: string;
+  authorType: 'STAFF' | 'AGENT';
+  author: BugReportReporter | null;
+  attachments: BugReportAttachment[];
+  createdAt: string;
 }
 
 export interface BugReportAuditEntry {
@@ -120,6 +143,8 @@ export interface BugReportSummary {
   sourcePath: string;
   overlay: string | null;
   attachmentCount: number;
+  commentCount: number;
+  clarification: BugReportClarification;
   reporter: BugReportReporter;
   approvedAt: string | null;
   timeline: BugReportTimeline;
@@ -138,11 +163,13 @@ export interface BugReportDetail extends BugReportSummary {
   context: BugReportContext;
   resolution: BugReportResolution | null;
   attachments: BugReportAttachment[];
+  comments: BugReportComment[];
   audits: BugReportAuditEntry[];
 }
 
 export interface MyBugReportItem extends BugReportSummary {
   resolution: BugReportResolution | null;
+  comments: BugReportComment[];
   reviewUrl: string;
   canReview: boolean;
 }
@@ -151,7 +178,7 @@ export interface BugReportNotification {
   id: number;
   reportId: number;
   reportKey: string;
-  type: 'BUG_FIXED_REVIEW';
+  type: 'BUG_FIXED_REVIEW' | 'BUG_CLARIFICATION_NEEDED';
   title: string;
   message: string;
   actionUrl: string;
@@ -197,6 +224,17 @@ export interface ReviewBugReportRequest {
   note?: string | null;
 }
 
+export interface CreateBugReportCommentRequest {
+  body?: string | null;
+  attachments?: CreateBugReportAttachmentRequest[];
+}
+
+export interface AgentReviewBugReportRequest {
+  decision: 'ASK_REPORTER' | 'READY_FOR_TRIAGE';
+  message: string;
+  businessContext?: string | null;
+}
+
 export interface MarkBugReportNotificationsReadRequest {
   notificationIds?: number[];
 }
@@ -224,10 +262,17 @@ export interface BugReportCreateResult {
   attachmentWarnings: string[];
 }
 
+export interface BugReportCommentCreateResult {
+  report: BugReportDetail;
+  attachmentWarnings: string[];
+}
+
 export type CreateBugReportResponse = ActionResponse<BugReportCreateResult>;
 export type TriageBugReportResponse = ActionResponse<BugReportDetail>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportResponse = ActionResponse<BugReportDetail>;
+export type CreateBugReportCommentResponse = ActionResponse<BugReportCommentCreateResult>;
+export type AgentReviewBugReportResponse = ActionResponse<BugReportDetail>;
 export type MarkBugReportNotificationsReadResponse = ActionResponse<{ updatedCount: number }>;
 export type AgentMarkBugFixedResponse = ActionResponse<BugReportDetail>;
 export type BugReportListResponse = PageResponse<BugReportSummary, BugReportListSummary>;
@@ -236,8 +281,10 @@ export interface AgentBugQueueItem {
   id: number;
   key: string;
   title: string;
-  status: Extract<BugReportStatus, 'APPROVED' | 'IN_PROGRESS' | 'FIXED'>;
-  priority: BugPriority;
+  status: Extract<BugReportStatus, 'NEW' | 'APPROVED' | 'IN_PROGRESS' | 'FIXED'>;
+  priority: BugPriority | null;
+  workType: 'CLARIFY' | 'FIX';
+  clarification: BugReportClarification;
   sourcePath: string;
   timeline: BugReportTimeline;
   updatedAt: string;

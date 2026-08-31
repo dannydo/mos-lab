@@ -1,7 +1,13 @@
 'use client';
 
 import React from 'react';
-import type { BugReportNotification, MyBugReportItem, ReviewBugReportRequest } from '@mos-lab/shared';
+import type {
+  BugReportCommentCreateResult,
+  BugReportNotification,
+  CreateBugReportCommentRequest,
+  MyBugReportItem,
+  ReviewBugReportRequest,
+} from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 
 function errorMessage(error: unknown): string {
@@ -56,6 +62,16 @@ export function useMyBugReports(enabled: boolean) {
     [refresh]
   );
 
+  const comment = React.useCallback(
+    async (id: number, request: CreateBugReportCommentRequest): Promise<BugReportCommentCreateResult> => {
+      const response = await apiClient.bugReports.comment(id, request);
+      if (!response.data) throw new Error('Máy chủ không trả về hội thoại sau khi bình luận.');
+      await refresh();
+      return response.data;
+    },
+    [refresh]
+  );
+
   const markNotificationsRead = React.useCallback(
     async (notificationIds?: number[]) => {
       if (!unreadCount) return;
@@ -70,5 +86,5 @@ export function useMyBugReports(enabled: boolean) {
     [unreadCount]
   );
 
-  return { data, notifications, unreadCount, loading, error, refresh, review, markNotificationsRead };
+  return { data, notifications, unreadCount, loading, error, refresh, review, comment, markNotificationsRead };
 }

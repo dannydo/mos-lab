@@ -8,6 +8,8 @@ import type {
   BugReportStatus,
   BugReportSummary,
   ConfirmCloseBugReportRequest,
+  BugReportCommentCreateResult,
+  CreateBugReportCommentRequest,
   TriageBugReportRequest,
 } from '@mos-lab/shared';
 import { useDebounce } from '../../../../hooks/useDebounce';
@@ -152,6 +154,16 @@ export function useBugReports() {
     [load]
   );
 
+  const comment = useCallback(
+    async (id: number, request: CreateBugReportCommentRequest): Promise<BugReportCommentCreateResult> => {
+      const response = await apiClient.bugReports.comment(id, request);
+      if (!response.data) throw new Error('Máy chủ không trả về hội thoại sau khi bình luận.');
+      await load();
+      return response.data;
+    },
+    [load]
+  );
+
   return {
     data,
     total,
@@ -166,5 +178,6 @@ export function useBugReports() {
     getDetail,
     triage,
     confirmClose,
+    comment,
   };
 }

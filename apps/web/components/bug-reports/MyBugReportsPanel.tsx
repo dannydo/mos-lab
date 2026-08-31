@@ -2,10 +2,18 @@
 
 import React from 'react';
 import { Alert, Button, Input, List, Timeline, Typography, message, theme } from 'antd';
-import type { BugReportNotification, BugReportStatus, MyBugReportItem, ReviewBugReportRequest } from '@mos-lab/shared';
+import type {
+  BugReportCommentCreateResult,
+  BugReportNotification,
+  BugReportStatus,
+  CreateBugReportCommentRequest,
+  MyBugReportItem,
+  ReviewBugReportRequest,
+} from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { CheckCircle2, ExternalLink, RotateCcw } from 'lucide-react';
 import { AppIcon, SectionCard, StatePanel, StatusTag } from '../ui';
+import { BugReportConversation } from './BugReportConversation';
 
 const { Text, Paragraph } = Typography;
 
@@ -133,6 +141,7 @@ interface MyBugReportsPanelProps {
   onSelect: (key: string) => void;
   onRefresh: () => Promise<void>;
   onReview: (id: number, request: ReviewBugReportRequest) => Promise<unknown>;
+  onComment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
 }
 
 export function MyBugReportsPanel({
@@ -144,6 +153,7 @@ export function MyBugReportsPanel({
   onSelect,
   onRefresh,
   onReview,
+  onComment,
 }: MyBugReportsPanelProps) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
@@ -200,7 +210,14 @@ export function MyBugReportsPanel({
   return (
     <div className="space-y-4">
       {messageContext}
-      {notifications.some((item) => !item.readAt) ? (
+      {notifications.some((item) => !item.readAt && item.type === 'BUG_CLARIFICATION_NEEDED') ? (
+        <Alert
+          type="warning"
+          showIcon
+          message="AI Agent cần bạn làm rõ một ticket"
+          description="Mở ticket bên dưới, trả lời câu hỏi và có thể đính kèm thêm ảnh ngay trong bình luận."
+        />
+      ) : notifications.some((item) => !item.readAt && item.type === 'BUG_FIXED_REVIEW') ? (
         <Alert
           type="success"
           showIcon
@@ -255,6 +272,16 @@ export function MyBugReportsPanel({
               </div>
               <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{selected.description}</Paragraph>
               <Timeline items={trackingItems(selected)} />
+            </SectionCard>
+
+            <SectionCard title={`Trao đổi với AI Agent (${selected.comments.length})`}>
+              <BugReportConversation
+                reportId={selected.id}
+                status={selected.status}
+                clarification={selected.clarification}
+                comments={selected.comments}
+                onSubmit={(request) => onComment(selected.id, request)}
+              />
             </SectionCard>
 
             {selected.resolution ? (

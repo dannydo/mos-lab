@@ -5,8 +5,10 @@ import {
   isCanonicalSuperAdminIdentity,
   isSuperAdminRole,
   type AgentMarkBugFixedRequest,
+  type AgentReviewBugReportRequest,
   type BugReportListQuery,
   type ConfirmCloseBugReportRequest,
+  type CreateBugReportCommentRequest,
   type CreateBugReportRequest,
   type MarkBugReportNotificationsReadRequest,
   type ReviewBugReportRequest,
@@ -135,6 +137,26 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.post(
+    '/bug-reports/:id/comments',
+    { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const data = await BugReportService.addComment(
+          fastify,
+          request.user.id,
+          id,
+          canOverrideBugReview(request.user),
+          request.body as CreateBugReportCommentRequest
+        );
+        return reply.status(201).send({ success: true, data, message: 'Đã gửi bình luận.' });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Create bug report comment failed');
+      }
+    }
+  );
+
   fastify.get('/bug-reports', { preHandler: [requireAuth, requireBugAdmin] }, async (request, reply) => {
     try {
       return reply.send(await BugReportService.list(fastify, request.query as BugReportListQuery));
@@ -181,25 +203,23 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   );
 
-  fastify.get(
-    '/bug-reports/:id/attachments/:attachmentId',
-    { preHandler: [requireAuth, requireBugAdmin] },
-    async (request, reply) => {
-      try {
-        const params = request.params as { id: string; attachmentId: string };
-        return sendAttachment(
-          reply,
-          await BugReportService.attachment(
-            fastify,
-            numericParam(params.id, 'Ticket ID'),
-            numericParam(params.attachmentId, 'Attachment ID')
-          )
-        );
-      } catch (error) {
-        return sendError(fastify, reply, error, 'Read bug report attachment failed');
-      }
+  fastify.get('/bug-reports/:id/attachments/:attachmentId', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string; attachmentId: string };
+      return sendAttachment(
+        reply,
+        await BugReportService.attachmentForUser(
+          fastify,
+          request.user.id,
+          numericParam(params.id, 'Ticket ID'),
+          numericParam(params.attachmentId, 'Attachment ID'),
+          canOverrideBugReview(request.user)
+        )
+      );
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Read bug report attachment failed');
     }
-  );
+  });
 
   fastify.get('/agent/bug-reports', { preHandler: [requireAgent] }, async (_request, reply) => {
     try {
@@ -215,6 +235,20 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       return reply.send({ data: await BugReportService.agentBundle(fastify, key) });
     } catch (error) {
       return sendError(fastify, reply, error, 'Get Agent bug bundle failed');
+    }
+  });
+
+  fastify.post('/agent/bug-reports/:key/clarification', { preHandler: [requireAgent] }, async (request, reply) => {
+    try {
+      const key = (request.params as { key: string }).key;
+      const data = await BugReportService.reviewClarificationByAgent(
+        fastify,
+        key,
+        request.body as AgentReviewBugReportRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật bước làm rõ ticket.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Review Agent bug clarification failed');
     }
   });
 

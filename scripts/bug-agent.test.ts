@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { downloadBugBundle, listApprovedQueue } from './bug-agent.js';
+import { downloadBugBundle, listApprovedQueue, submitClarificationReview } from './bug-agent.js';
 
 const TOKEN = 'test-agent-token-that-is-longer-than-32-characters';
 
@@ -72,6 +72,49 @@ test('Agent CLI lists approved tickets and materializes deterministic bundle fil
   } finally {
     server.close();
     await rm(destinationRoot, { recursive: true, force: true });
+    delete process.env.MOS_BUG_AGENT_TOKEN;
+    delete process.env.MOS_BUG_AGENT_API_URL;
+  }
+});
+
+test('Agent CLI can ask the reporter instead of attempting an unclear fix', async () => {
+  let receivedBody = '';
+  const server = createServer((request, response) => {
+    assert.equal(request.headers.authorization, `Bearer ${TOKEN}`);
+    if (request.url !== '/api/agent/bug-reports/MOS-BUG-8/clarification') {
+      response.statusCode = 404;
+      response.end();
+      return;
+    }
+    assert.equal(request.method, 'POST');
+    request.setEncoding('utf8');
+    request.on('data', (chunk) => {
+      receivedBody += chunk;
+    });
+    request.on('end', () => {
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ success: true, message: 'Đã gửi câu hỏi.' }));
+    });
+  });
+
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  process.env.MOS_BUG_AGENT_TOKEN = TOKEN;
+  process.env.MOS_BUG_AGENT_API_URL = `http://127.0.0.1:${address.port}/api`;
+
+  try {
+    const result = await submitClarificationReview('MOS-BUG-8', {
+      decision: 'ASK_REPORTER',
+      message: 'Booking nào bị huỷ và kết quả đúng bạn mong đợi là gì?',
+    });
+    assert.equal(result.success, true);
+    assert.deepEqual(JSON.parse(receivedBody), {
+      decision: 'ASK_REPORTER',
+      message: 'Booking nào bị huỷ và kết quả đúng bạn mong đợi là gì?',
+    });
+  } finally {
+    server.close();
     delete process.env.MOS_BUG_AGENT_TOKEN;
     delete process.env.MOS_BUG_AGENT_API_URL;
   }
