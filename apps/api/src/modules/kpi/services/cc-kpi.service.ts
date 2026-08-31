@@ -8,10 +8,7 @@ import {
   calculateWheelBonusCap,
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
-import {
-  buildComboBalanceExistsSql,
-  buildComboLiveAtBookingSql,
-} from '../../customers/services/combo-recognition.service.js';
+import { buildComboBalanceExistsSql } from '../../customers/services/combo-recognition.service.js';
 import { getFalReadModelMap } from '../../fal/fal.service.js';
 import { getPreviousReportPeriod } from './report-period-comparison.js';
 
@@ -35,6 +32,19 @@ export const FAL_RULE_VALUES_SQL = FAL_RULE_VALUES.map((rule) => `'${rule}'`).jo
 export const FAL_TRACKING_KEY_SQL_CASES = FAL_RULE_VALUES.map(
   (rule) => `WHEN sb.tracking_key LIKE '%"next_service_type":"${rule}"%' THEN '${rule}'`
 ).join('\n');
+
+/**
+ * Legacy iOS draws the green customer ring from the immutable booking
+ * snapshot `order.combo_sale_required`. Do not infer this from `is_new` or
+ * from the customer's current combo balance because both can change later.
+ */
+export function buildGreenVisitEligibilitySql(orderAlias = 'o'): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(orderAlias)) {
+    throw new Error('Invalid SQL alias for green-visit eligibility.');
+  }
+
+  return `COALESCE(${orderAlias}.combo_sale_required, 0) <> 0`;
+}
 
 export function resolveFalRule(input: {
   nextFixOrderServiceId?: number | null;
@@ -1036,7 +1046,7 @@ export class CcKpiService {
         ) as cc_out_id,
         GREATEST(0, (COALESCE(NULLIF(osc.total_price - osc.tax_amount, 0), osc.service_price - osc.discount_amount - osc.tax_amount, 0) - COALESCE(ud.debt_amount, 0))) as combo_sales,
         COALESCE(osc.quantity, 1) as combo_count,
-        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 0 ELSE 1 END as is_green_visit,
+        CASE WHEN ${buildGreenVisitEligibilitySql('o')} THEN 1 ELSE 0 END as is_green_visit,
         UPPER(cs.client_store_key) as store_code
       FROM \`order\` o
       JOIN \`order_service_combo\` osc ON osc.order_id = o.id
@@ -1115,17 +1125,16 @@ export class CcKpiService {
         ${storeFilterClause}
     `;
 
-    // A "Vòng Xanh" appointment is one whose customer was NOT COMBO_LIVE
-    // when the appointment was created. Completion and reporting date still
-    // follow the actual check-in window (Rule #15); only eligibility is a
-    // booking-time snapshot.
+    // A "Vòng Xanh" appointment uses the same combo-sale eligibility snapshot
+    // persisted by Legacy when the booking was created. Completion and report
+    // date still follow the actual check-in window (Rule #15).
     const visitMetricsQuery = `
       SELECT
         DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as visit_date,
         MAX(os.check_in_staff_id) as cc_in_id,
         MAX(os.check_out_staff_id) as cc_out_id,
         UPPER(cs.client_store_key) as store_code,
-        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 0 ELSE 1 END as is_green_visit
+        CASE WHEN ${buildGreenVisitEligibilitySql('o')} THEN 1 ELSE 0 END as is_green_visit
       FROM \`order\` o
       JOIN \`order_service\` os ON os.order_id = o.id
       LEFT JOIN \`report_order\` ro ON o.id = ro.order_id

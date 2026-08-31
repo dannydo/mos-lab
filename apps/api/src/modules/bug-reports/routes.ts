@@ -6,6 +6,7 @@ import {
   isSuperAdminRole,
   type AgentMarkBugFixedRequest,
   type AgentReviewBugReportRequest,
+  type AgentUpdateBugProgressRequest,
   type BugReportListQuery,
   type ConfirmCloseBugReportRequest,
   type CreateBugReportCommentRequest,
@@ -249,6 +250,20 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, data, message: 'Đã cập nhật bước làm rõ ticket.' });
     } catch (error) {
       return sendError(fastify, reply, error, 'Review Agent bug clarification failed');
+    }
+  });
+
+  fastify.patch('/agent/bug-reports/:key/progress', { preHandler: [requireAgent] }, async (request, reply) => {
+    try {
+      const key = (request.params as { key: string }).key;
+      const data = await BugReportService.updateAgentProgress(
+        fastify,
+        key,
+        request.body as AgentUpdateBugProgressRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật tiến độ Agent.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Update Agent bug progress failed');
     }
   });
 

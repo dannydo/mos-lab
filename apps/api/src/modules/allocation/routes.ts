@@ -163,7 +163,7 @@ export async function allocationRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 8. 30-Day Allocation History
+  // 8. Allocation History
   fastify.get(
     '/allocation/history',
     { preHandler: [requireAuth] },

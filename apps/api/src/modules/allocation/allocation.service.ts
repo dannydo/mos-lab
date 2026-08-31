@@ -12,6 +12,7 @@ import {
   AllocationBatchStatus,
   BookerAllocationBatchSummary,
 } from '@mos-lab/shared';
+import { buildDurableCustomerAssignmentData } from '../customers/services/customer-assignment-policy.service.js';
 
 export const ACCEPT_ACTION_TYPES = ['ACCEPT', 'ACCEPT_ALLOCATION'];
 
@@ -26,8 +27,8 @@ export function getHistoryAcceptWhereCondition() {
 
 export class AllocationService {
   /**
-   * Automatic background check to expire 24h pending verification batches
-   * and 30-day data retention expired batches.
+   * Expire only unaccepted batches after their 24-hour verification window.
+   * Accepted customer ownership is durable until an explicit manager recall.
    */
   static async checkAndExpireBatches(fastify: FastifyInstance): Promise<void> {
     const now = new Date();
@@ -74,61 +75,6 @@ export class AllocationService {
               reason: 'Tự động hết hạn 24h chờ xác nhận (Auto Expired 24h)',
             },
           });
-        }
-      });
-    }
-
-    // 2. Expire 30-day data retention for accepted batches that passed retentionExpiresAt
-    const overdueRetentionBatches = await fastify.prisma.crm.crmAllocationBatch.findMany({
-      where: {
-        status: 'ACCEPTED',
-        retentionExpiresAt: { lte: now, not: null },
-      },
-      include: { items: true },
-    });
-
-    for (const batch of overdueRetentionBatches) {
-      await fastify.prisma.crm.$transaction(async (tx) => {
-        const updateRes = await tx.crmAllocationBatch.updateMany({
-          where: {
-            id: batch.id,
-            status: 'ACCEPTED',
-          },
-          data: { status: 'EXPIRED' },
-        });
-
-        if (updateRes.count === 0) {
-          return;
-        }
-
-        await tx.crmAllocationBatchItem.updateMany({
-          where: { batchId: batch.id },
-          data: { status: 'EXPIRED' },
-        });
-
-        for (const item of batch.items) {
-          // Remove from active assignments if not manually retained by Booker
-          const existingAssignment = await tx.crmCustomerAssignment.findUnique({
-            where: { legacyUserId: item.customerId },
-          });
-
-          if (existingAssignment && !existingAssignment.isRetained && existingAssignment.staffId === batch.bookerId) {
-            await tx.crmCustomerAssignment.delete({
-              where: { legacyUserId: item.customerId },
-            });
-
-            await tx.crmAssignmentHistory.create({
-              data: {
-                batchId: batch.batchCode,
-                legacyUserId: item.customerId,
-                prevStaffId: batch.bookerId,
-                newStaffId: null,
-                assignedBy: batch.assignerId,
-                actionType: 'EXPIRE',
-                reason: 'Hết hạn lưu giữ data 30 ngày (Auto Expired 30d)',
-              },
-            });
-          }
         }
       });
     }
@@ -448,7 +394,7 @@ export class AllocationService {
 
   /**
    * Booker accepts an allocation batch ("Chấp nhận toàn bộ").
-   * Updates batch & items to ACCEPTED, sets 30-day retention countdown,
+   * Updates batch & items to ACCEPTED and creates durable assignments,
    * and atomically assigns exact +N customers to Booker via Prisma $transaction.
    */
   static async acceptBatch(
@@ -490,7 +436,7 @@ export class AllocationService {
     return fastify.prisma.crm.$transaction(async (tx) => {
       const batch = await tx.crmAllocationBatch.findUnique({
         where: { id: batchId },
-        include: { items: true, campaign: true },
+        include: { items: true },
       });
 
       if (!batch) {
@@ -510,21 +456,13 @@ export class AllocationService {
         throw new Error('Đợt phân bổ đã vượt quá 24h xác nhận');
       }
 
-      let retentionExpiresAt = new Date(txNow.getTime() + 30 * 24 * 60 * 60 * 1000); // 30-Day Retention Countdown
-      if (batch.campaignId && batch.campaign && batch.campaign.endDate) {
-        const campaignEnd = new Date(batch.campaign.endDate);
-        if (campaignEnd < retentionExpiresAt) {
-          retentionExpiresAt = campaignEnd;
-        }
-      }
-
       // Update Batch Status
       await tx.crmAllocationBatch.update({
         where: { id: batchId },
         data: {
           status: 'ACCEPTED',
           acceptedAt: txNow,
-          retentionExpiresAt,
+          retentionExpiresAt: null,
         },
       });
 
@@ -535,22 +473,17 @@ export class AllocationService {
 
       // R2: Exact +N Customer assignment & Audit logging
       for (const item of batch.items) {
+        const durableAssignment = buildDurableCustomerAssignmentData({
+          staffId: bookerId,
+          assignedBy: batch.assignerId,
+          assignedAt: txNow,
+        });
         await tx.crmCustomerAssignment.upsert({
           where: { legacyUserId: item.customerId },
-          update: {
-            staffId: bookerId,
-            assignedBy: batch.assignerId,
-            assignedAt: txNow,
-            expiresAt: retentionExpiresAt,
-            isRetained: false,
-          },
+          update: durableAssignment,
           create: {
             legacyUserId: item.customerId,
-            staffId: bookerId,
-            assignedBy: batch.assignerId,
-            assignedAt: txNow,
-            expiresAt: retentionExpiresAt,
-            isRetained: false,
+            ...durableAssignment,
           },
         });
 
@@ -561,7 +494,7 @@ export class AllocationService {
             newStaffId: bookerId,
             assignedBy: batch.assignerId,
             assignedAt: txNow,
-            expiresAt: retentionExpiresAt,
+            expiresAt: null,
             actionType: 'ACCEPT_ALLOCATION',
             reason: 'Booker đã chấp nhận đợt phân bổ data',
           },
@@ -745,9 +678,7 @@ export class AllocationService {
     });
   }
 
-  /**
-   * Retrieves 30-Day Allocation History with countdown badges for Booker & Admin/Manager.
-   */
+  /** Retrieves allocation history for Booker and Admin/Manager. */
   static async get30DayHistory(
     fastify: FastifyInstance,
     params: AllocationHistoryQueryParams,

@@ -3,7 +3,7 @@ import test from 'node:test';
 import { canAccessLoca, isTelesalesRole } from '@mos-lab/shared';
 import { CustomerAccessService } from './customer-access.service.js';
 
-test('telesales access requires an active assignment to the same CRM staff member', async () => {
+test('telesales access requires a durable assignment to the same CRM staff member', async () => {
   let capturedWhere: unknown;
   const fastify = {
     prisma: {
@@ -28,12 +28,10 @@ test('telesales access requires an active assignment to the same CRM staff membe
   const where = capturedWhere as {
     legacyUserId: number;
     staffId: number;
-    OR: Array<{ expiresAt: null | { gt: Date } }>;
   };
   assert.equal(where.legacyUserId, 99);
   assert.equal(where.staffId, 41);
-  assert.equal(where.OR[0].expiresAt, null);
-  assert.ok(where.OR[1].expiresAt && where.OR[1].expiresAt.gt instanceof Date);
+  assert.deepEqual(where, { legacyUserId: 99, staffId: 41 });
 });
 
 test('Super Admin bypasses the telesales assignment boundary', async () => {

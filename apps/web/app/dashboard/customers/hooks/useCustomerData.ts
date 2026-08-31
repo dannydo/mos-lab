@@ -334,8 +334,6 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     selectedRowKeys: assignmentHook.selectedRowKeys,
     assignModalVisible: assignmentHook.assignModalVisible,
     targetStaffId: assignmentHook.targetStaffId,
-    durationDays: assignmentHook.durationDays,
-    setDurationDays: assignmentHook.setDurationDays,
     assigning: assignmentHook.assigning,
     unassigning: assignmentHook.unassigning,
     randomModalVisible: randomSelectorHook.randomModalVisible,

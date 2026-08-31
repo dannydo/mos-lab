@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   assertBugReportTransition,
+  assertAgentProgressUpdateAllowed,
+  bugReportAgentProgress,
+  bugReportClarificationWhere,
   bugReportCompletionPath,
   isAgentReadableBugStatus,
   knowledgeTokens,
@@ -9,6 +12,128 @@ import {
   parseBugReportKey,
   sanitizeBugReportContext,
 } from './bug-report.service.js';
+
+function progressSource(
+  overrides: Partial<Parameters<typeof bugReportAgentProgress>[0]> = {}
+): Parameters<typeof bugReportAgentProgress>[0] {
+  const createdAt = new Date('2026-08-31T01:00:00.000Z');
+  return {
+    status: 'NEW',
+    clarificationStatus: 'PENDING_AGENT',
+    createdAt,
+    approvedAt: null,
+    startedAt: null,
+    resolvedAt: null,
+    closedAt: null,
+    updatedAt: createdAt,
+    audits: [],
+    ...overrides,
+  };
+}
+
+test('projects every Agent milestone from canonical ticket state and audit activity', () => {
+  const agentAt = new Date('2026-08-31T01:05:00.000Z');
+  assert.equal(bugReportAgentProgress(progressSource()).stage, 'NOT_VIEWED');
+  assert.deepEqual(
+    bugReportAgentProgress(
+      progressSource({
+        audits: [{ action: 'AGENT_PROGRESS_ANALYZING', note: 'Đang phân tích.', createdAt: agentAt }],
+      })
+    ),
+    { stage: 'ANALYZING', note: 'Đang phân tích.', updatedAt: agentAt.toISOString() }
+  );
+  assert.equal(
+    bugReportAgentProgress(progressSource({ clarificationStatus: 'WAITING_REPORTER', updatedAt: agentAt })).stage,
+    'WAITING_REPORTER'
+  );
+  assert.equal(
+    bugReportAgentProgress(
+      progressSource({
+        audits: [{ action: 'CLARIFICATION_ANSWERED', note: 'Đã bổ sung ảnh.', createdAt: agentAt }],
+      })
+    ).stage,
+    'REPORTER_REPLIED'
+  );
+  assert.equal(bugReportAgentProgress(progressSource({ clarificationStatus: 'READY' })).stage, 'READY_FOR_TRIAGE');
+  assert.equal(
+    bugReportAgentProgress(progressSource({ status: 'APPROVED', clarificationStatus: 'READY', approvedAt: agentAt }))
+      .stage,
+    'QUEUED_FOR_FIX'
+  );
+  assert.equal(
+    bugReportAgentProgress(progressSource({ status: 'IN_PROGRESS', clarificationStatus: 'READY', startedAt: agentAt }))
+      .stage,
+    'IMPLEMENTING'
+  );
+  assert.equal(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        startedAt: agentAt,
+        audits: [{ action: 'AGENT_PROGRESS_VERIFYING', note: 'Đang chạy test.', createdAt: agentAt }],
+      })
+    ).stage,
+    'VERIFYING'
+  );
+  assert.equal(
+    bugReportAgentProgress(progressSource({ status: 'FIXED', clarificationStatus: 'READY', resolvedAt: agentAt }))
+      .stage,
+    'AWAITING_REPORTER_REVIEW'
+  );
+  assert.equal(bugReportAgentProgress(progressSource({ status: 'CLOSED', closedAt: agentAt })).stage, 'COMPLETED');
+});
+
+test('allows fix progress only after clarity, approval, and priority are present', () => {
+  assert.doesNotThrow(() =>
+    assertAgentProgressUpdateAllowed({
+      stage: 'CHECKING_BUSINESS_LOGIC',
+      status: 'NEW',
+      clarificationStatus: 'PENDING_AGENT',
+      priority: null,
+    })
+  );
+  assert.doesNotThrow(() =>
+    assertAgentProgressUpdateAllowed({
+      stage: 'IMPLEMENTING',
+      status: 'APPROVED',
+      clarificationStatus: 'READY',
+      priority: 'P1',
+    })
+  );
+  assert.throws(
+    () =>
+      assertAgentProgressUpdateAllowed({
+        stage: 'IMPLEMENTING',
+        status: 'APPROVED',
+        clarificationStatus: 'WAITING_REPORTER',
+        priority: 'P1',
+      }),
+    /chưa thể sửa/i
+  );
+  assert.throws(
+    () =>
+      assertAgentProgressUpdateAllowed({
+        stage: 'VERIFYING',
+        status: 'NEW',
+        clarificationStatus: 'READY',
+        priority: null,
+      }),
+    /chưa được duyệt/i
+  );
+});
+
+test('maps clarification tracking filters to canonical database states', () => {
+  assert.deepEqual(bugReportClarificationWhere(undefined), {});
+  assert.deepEqual(bugReportClarificationWhere('ALL'), {});
+  assert.deepEqual(bugReportClarificationWhere('INVALID'), {});
+  assert.deepEqual(bugReportClarificationWhere('UNCLEAR'), {
+    clarificationStatus: { in: ['PENDING_AGENT', 'WAITING_REPORTER'] },
+  });
+  assert.deepEqual(bugReportClarificationWhere('PENDING_AGENT'), { clarificationStatus: 'PENDING_AGENT' });
+  assert.deepEqual(bugReportClarificationWhere('WAITING_REPORTER'), { clarificationStatus: 'WAITING_REPORTER' });
+  assert.deepEqual(bugReportClarificationWhere('READY'), { clarificationStatus: 'READY' });
+});
 
 test('sanitizes query values and never retains sensitive inputs', () => {
   const context = sanitizeBugReportContext({

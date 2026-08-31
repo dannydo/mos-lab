@@ -278,7 +278,11 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
       ),
     },
     {
-      title: 'Booking Thành Công (Done)',
+      title: (
+        <Tooltip title="Booking được tạo trong kỳ đã chuyển sang trạng thái Done; cohort tính theo ngày tạo booking.">
+          <span>Booking tạo trong kỳ đã Done</span>
+        </Tooltip>
+      ),
       dataIndex: 'doneBookings',
       key: 'doneBookings',
       align: 'center' as const,
@@ -521,7 +525,11 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Booking Done</span>}
+              title={
+                <Tooltip title="Booking được tạo trong kỳ đã chuyển sang trạng thái Done; không phải tổng lượt check-in diễn ra trong kỳ.">
+                  <span className="text-xs font-semibold text-slate-500 uppercase">Booking tạo trong kỳ đã Done</span>
+                </Tooltip>
+              }
               value={summary.doneBookings}
               valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CheckCircleOutlined className="mr-2" />}

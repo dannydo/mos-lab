@@ -360,8 +360,8 @@ export default function CcThuongTab({
     const maxBonus = sorted.length > 0 ? sorted[0].totalBonus : 1;
 
     return sorted.map((item, idx) => {
-      // Vòng Xanh is the eligible customer pool: every Combo sold is measured
-      // against it, including a sale that was completed after the booking snapshot.
+      // Vòng Xanh is the Legacy combo-sale-required pool captured at booking time.
+      // Every Combo sold is measured against that immutable eligibility snapshot.
       // This keeps the displayed conversion aligned with the operational formula:
       // total Combo sold / Vòng Xanh visits (for example, 13.5 / 96 = 14%).
       const greenConversionRate =
@@ -477,7 +477,7 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
-          title={`Tổng lượt khách đã hoàn tất: ${formatVisitCount(val)} lượt | Vòng Xanh: khách chưa COMBO_LIVE tại lúc đặt lịch: ${formatVisitCount(record.greenVisits)} lượt`}
+          title={`Tổng lượt khách đã hoàn tất: ${formatVisitCount(val)} lượt | Vòng Xanh: booking được Legacy đánh dấu cần tư vấn combo: ${formatVisitCount(record.greenVisits)} lượt`}
         >
           <div className="w-full text-right">
             <div className="tabular-nums inline-flex items-center justify-end gap-1 font-semibold text-blue-400 text-xs">

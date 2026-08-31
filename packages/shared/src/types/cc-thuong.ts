@@ -21,7 +21,7 @@ export interface DailySalesBonusConsultantRecord {
   store_code?: string;
   combo_sales: number;
   combo_count?: number;
-  /** Combo quantities sold on visits that were Vòng Xanh at booking time. */
+  /** Combo quantities sold on visits whose Legacy booking snapshot required a combo sale. */
   green_combo_count: number;
   product_sales: number;
   product_count?: number;

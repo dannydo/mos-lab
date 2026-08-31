@@ -152,18 +152,6 @@ export const AllocationHistoryScreen: React.FC = () => {
     setPage(1);
   };
 
-  const calculateRetentionCountdown = (retentionExpiresAt?: string | null) => {
-    if (!retentionExpiresAt) return null;
-    const target = new Date(retentionExpiresAt).getTime();
-    const now = Date.now();
-    const diff = Math.max(0, Math.floor((target - now) / 1000));
-    if (diff === 0) return 'Đã hết hạn';
-
-    const days = Math.floor(diff / 86400);
-    const hours = Math.floor((diff % 86400) / 3600);
-    return `Còn ${days}d ${hours}h lưu giữ`;
-  };
-
   const renderStatusTag = (record: CustomerAllocationBatch) => {
     switch (record.status) {
       case 'PENDING_ACCEPT':
@@ -172,22 +160,14 @@ export const AllocationHistoryScreen: React.FC = () => {
             Chờ xác nhận 24h
           </Tag>
         );
-      case 'ACCEPTED': {
-        const countdownText = calculateRetentionCountdown(record.retentionExpiresAt);
+      case 'ACCEPTED':
         return (
-          <div className="flex flex-col gap-1 items-start">
+          <Tooltip title="Data được giữ cho Booker cho đến khi Quản lý chủ động thu hồi hoặc phân bổ lại.">
             <Tag color="emerald" icon={<CheckCircleOutlined />}>
-              Đã chấp nhận
+              Đã chấp nhận · Giữ lâu dài
             </Tag>
-            {countdownText && (
-              <span className="allocation-history-countdown tabular-nums">
-                <ClockCircleOutlined aria-hidden />
-                <span>{countdownText}</span>
-              </span>
-            )}
-          </div>
+          </Tooltip>
         );
-      }
       case 'DECLINED':
         return (
           <Tooltip title={record.declineReason || 'Lý do chưa cập nhật'}>
@@ -199,7 +179,7 @@ export const AllocationHistoryScreen: React.FC = () => {
       case 'EXPIRED':
         return (
           <Tag color="purple" icon={<ExclamationCircleOutlined />}>
-            Hết hạn phân bổ
+            Quá hạn xác nhận
           </Tag>
         );
       case 'RECALLED':
@@ -247,7 +227,7 @@ export const AllocationHistoryScreen: React.FC = () => {
       render: (count: number) => <span className="allocation-history-total tabular-nums">{count} KH</span>,
     },
     {
-      title: 'Trạng thái & Countdown 30 ngày',
+      title: 'Trạng thái phân bổ',
       key: 'status',
       render: (_: any, record: CustomerAllocationBatch) => renderStatusTag(record),
     },

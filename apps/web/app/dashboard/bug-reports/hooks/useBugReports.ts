@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   BugPriority,
+  BugReportClarificationFilter,
   BugReportDetail,
   BugReportListSummary,
   BugReportStatus,
@@ -21,6 +22,7 @@ export interface BugInboxFilters {
   search: string;
   status: BugReportStatus | 'ALL';
   priority: BugPriority | 'ALL';
+  clarification: BugReportClarificationFilter;
 }
 
 export interface BugInboxPagination {
@@ -28,7 +30,7 @@ export interface BugInboxPagination {
   pageSize: number;
 }
 
-const DEFAULT_FILTERS: BugInboxFilters = { search: '', status: 'ALL', priority: 'ALL' };
+const DEFAULT_FILTERS: BugInboxFilters = { search: '', status: 'ALL', priority: 'ALL', clarification: 'ALL' };
 const DEFAULT_PAGINATION: BugInboxPagination = { page: 1, pageSize: 20 };
 const EMPTY_SUMMARY: BugReportListSummary = {
   newCount: 0,
@@ -36,6 +38,9 @@ const EMPTY_SUMMARY: BugReportListSummary = {
   inProgressCount: 0,
   fixedCount: 0,
   closedCount: 0,
+  unclearCount: 0,
+  pendingAgentCount: 0,
+  waitingReporterCount: 0,
 };
 
 function getErrorMessage(error: unknown): string {
@@ -91,37 +96,59 @@ export function useBugReports() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ filters, pagination }));
   }, [filters, hydrated, pagination]);
 
-  const load = useCallback(async () => {
-    if (!hydrated) return;
-    const requestVersion = ++requestVersionRef.current;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await apiClient.bugReports.list({
-        page: pagination.page,
-        limit: pagination.pageSize,
-        search: debouncedSearch.trim() || undefined,
-        status: filters.status,
-        priority: filters.priority,
-      });
-      if (requestVersion !== requestVersionRef.current) return;
-      setData(result.data);
-      setTotal(result.total);
-      setSummary(result.summary ?? EMPTY_SUMMARY);
-    } catch (caught) {
-      if (requestVersion !== requestVersionRef.current) return;
-      setError(getErrorMessage(caught));
-      setData([]);
-      setTotal(0);
-      setSummary(EMPTY_SUMMARY);
-    } finally {
-      if (requestVersion === requestVersionRef.current) setLoading(false);
-    }
-  }, [debouncedSearch, filters.priority, filters.status, hydrated, pagination.page, pagination.pageSize]);
+  const load = useCallback(
+    async (showLoading = true) => {
+      if (!hydrated) return;
+      const requestVersion = ++requestVersionRef.current;
+      if (showLoading) {
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const result = await apiClient.bugReports.list({
+          page: pagination.page,
+          limit: pagination.pageSize,
+          search: debouncedSearch.trim() || undefined,
+          status: filters.status,
+          priority: filters.priority,
+          clarification: filters.clarification,
+        });
+        if (requestVersion !== requestVersionRef.current) return;
+        setData(result.data);
+        setTotal(result.total);
+        setSummary(result.summary ?? EMPTY_SUMMARY);
+      } catch (caught) {
+        if (requestVersion !== requestVersionRef.current) return;
+        if (showLoading) {
+          setError(getErrorMessage(caught));
+          setData([]);
+          setTotal(0);
+          setSummary(EMPTY_SUMMARY);
+        }
+      } finally {
+        if (showLoading && requestVersion === requestVersionRef.current) setLoading(false);
+      }
+    },
+    [
+      debouncedSearch,
+      filters.clarification,
+      filters.priority,
+      filters.status,
+      hydrated,
+      pagination.page,
+      pagination.pageSize,
+    ]
+  );
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const interval = window.setInterval(() => void load(false), 15_000);
+    return () => window.clearInterval(interval);
+  }, [hydrated, load]);
 
   const setFilters = useCallback((next: Partial<BugInboxFilters>) => {
     setFiltersState((current) => ({ ...current, ...next }));

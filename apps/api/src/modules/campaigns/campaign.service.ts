@@ -1408,14 +1408,13 @@ export class CampaignService {
       };
     });
 
-    // Security scope: a telesales user only sees customers actively assigned to
+    // Security scope: a telesales user only sees customers durably assigned to
     // their own CRM staff account. Pending allocation batches are not enough.
     if (restrictToAssignedStaffId) {
       const activeAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: {
           staffId: restrictToAssignedStaffId,
           legacyUserId: { in: enriched.map((customer) => customer.legacyUserId) },
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
         select: { legacyUserId: true },
       });
@@ -1797,7 +1796,6 @@ export class CampaignService {
         where: {
           legacyUserId: campaignCustomer.legacyUserId,
           staffId: restrictToAssignedStaffId,
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
         select: { id: true },
       });
@@ -2017,7 +2015,6 @@ export class CampaignService {
         where: {
           staffId: restrictToAssignedStaffId,
           legacyUserId: { in: customers.map((customer) => customer.legacyUserId) },
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
         select: { legacyUserId: true },
       });

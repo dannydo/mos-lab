@@ -35,7 +35,8 @@ export interface CustomerAllocationBatch {
   acceptedAt?: string | null;
   declinedAt?: string | null;
   recalledAt?: string | null;
-  retentionExpiresAt?: string | null; // 30-day countdown expiry
+  /** Historical compatibility only; accepted assignments are now durable and return null. */
+  retentionExpiresAt?: string | null;
   sourceFilterSummary?: string | null;
   sourceFilterJson?: string | null;
   createdAt: string;

@@ -261,7 +261,6 @@ export async function callRoutes(fastify: FastifyInstance) {
           where: {
             staffId: user.id,
             legacyUserId: { in: logs.map((log) => log.legacyUserId) },
-            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
           select: { legacyUserId: true },
         });

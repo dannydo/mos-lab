@@ -389,8 +389,6 @@ function CustomersPageContent() {
         assignModalVisible={data.assignModalVisible}
         targetStaffId={data.targetStaffId}
         setTargetStaffId={data.setTargetStaffId}
-        durationDays={data.durationDays}
-        setDurationDays={data.setDurationDays}
         staffList={data.staffList}
         assigning={data.assigning}
         unassigning={data.unassigning}

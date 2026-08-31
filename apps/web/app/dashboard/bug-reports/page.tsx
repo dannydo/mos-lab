@@ -21,6 +21,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type {
   BugPriority,
+  BugReportClarificationFilter,
   BugReportDetail,
   BugReportCommentCreateResult,
   BugReportStatus,
@@ -38,6 +39,7 @@ import {
   ExternalLink,
   Inbox,
   LoaderCircle,
+  MessageCircleQuestion,
   MessageSquareWarning,
   RefreshCw,
   Send,
@@ -53,10 +55,14 @@ import {
 import { safeStorage } from '../../../lib/safe-storage';
 import { BugReportConversation } from '../../../components/bug-reports/BugReportConversation';
 import {
+  AgentProgressTag,
   BugStatusTag,
+  CLARIFICATION_FILTER_LABELS,
+  ClarificationTag,
   durationBetween,
   formatDate,
   formatElapsed,
+  formatProgressUpdated,
   initials,
   parseDuplicateKey,
   PriorityTag,
@@ -280,6 +286,8 @@ function DetailDrawer({
                 <div className="flex flex-wrap items-center gap-2">
                   <BugStatusTag status={detail.status} />
                   <PriorityTag priority={detail.priority} />
+                  <ClarificationTag status={detail.clarification.status} />
+                  <AgentProgressTag progress={detail.agentProgress} />
                   <Text type="secondary" className="tabular-nums">
                     Đã báo {formatElapsed(detail.createdAt)}
                   </Text>
@@ -627,9 +635,10 @@ export default function BugReportsPage() {
               {initials(row.reporter.displayName)}
             </Avatar>
             <div className="min-w-0 flex-1">
-              <div className="mb-1 flex items-center gap-2">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
                 <Text strong>{row.key}</Text>
                 <PriorityTag priority={row.priority} />
+                <ClarificationTag status={row.clarification.status} />
               </div>
               <Text ellipsis={{ tooltip: row.description }}>{row.description}</Text>
               <div className="mt-1">
@@ -671,20 +680,22 @@ export default function BugReportsPage() {
         render: (value: number) => <span className="tabular-nums">{value}</span>,
       },
       {
-        title: 'Tracking',
-        key: 'timeline',
-        width: 210,
+        title: 'AI Agent',
+        key: 'agentProgress',
+        width: 250,
         render: (_, row) => (
-          <div className="space-y-1 text-xs tabular-nums">
+          <div className="min-w-0 space-y-1.5 text-xs">
+            <AgentProgressTag progress={row.agentProgress} />
             <div>
-              <Text type="secondary">Đã báo {formatElapsed(row.timeline.reportedAt)}</Text>
+              <Text type="secondary" className="tabular-nums">
+                {formatProgressUpdated(row.agentProgress.updatedAt)}
+              </Text>
             </div>
-            <div>
-              <Text type="secondary">Duyệt: {formatDate(row.timeline.approvedAt)}</Text>
-            </div>
-            <div>
-              <Text type="secondary">Xử lý: {formatDate(row.timeline.startedAt)}</Text>
-            </div>
+            {row.agentProgress.note ? (
+              <Text type="secondary" ellipsis={{ tooltip: row.agentProgress.note }}>
+                {row.agentProgress.note}
+              </Text>
+            ) : null}
           </div>
         ),
       },
@@ -709,13 +720,16 @@ export default function BugReportsPage() {
     []
   );
 
-  const activeFilterCount = Number(inbox.filters.status !== 'ALL') + Number(inbox.filters.priority !== 'ALL');
+  const activeFilterCount =
+    Number(inbox.filters.status !== 'ALL') +
+    Number(inbox.filters.priority !== 'ALL') +
+    Number(inbox.filters.clarification !== 'ALL');
 
   return (
     <>
       <ResourceListPage<BugReportSummary>
         title="Bug Inbox"
-        subtitle="Danny duyệt, ưu tiên và giao đúng context cho Agent — nhân viên chỉ cần mô tả một câu."
+        subtitle="Danny duyệt, ưu tiên và giao đúng context cho Agent — tiến độ Agent tự cập nhật mỗi 15 giây."
         icon={<AppIcon icon={MessageSquareWarning} size="lg" />}
         toolbar={{
           primary: (
@@ -748,6 +762,14 @@ export default function BugReportsPage() {
                   ...(['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((value) => ({ value, label: value })),
                 ]}
               />
+              <Select
+                value={inbox.filters.clarification}
+                onChange={(value) => inbox.setFilters({ clarification: value })}
+                style={{ minWidth: 170 }}
+                options={(Object.entries(CLARIFICATION_FILTER_LABELS) as [BugReportClarificationFilter, string][]).map(
+                  ([value, label]) => ({ value, label })
+                )}
+              />
             </Space>
           ),
           actions: (
@@ -764,8 +786,18 @@ export default function BugReportsPage() {
           filterTitle: 'Lọc Bug Inbox',
         }}
         metrics={{
-          columns: 5,
+          columns: 6,
           items: [
+            {
+              key: 'unclear',
+              title: 'Chờ làm rõ',
+              value: inbox.summary.unclearCount,
+              format: 'number',
+              loading: inbox.loading,
+              subValue: `Agent ${inbox.summary.pendingAgentCount} · Người báo ${inbox.summary.waitingReporterCount}`,
+              icon: <AppIcon icon={MessageCircleQuestion} size="md" />,
+              iconBgColor: token.colorWarningBg,
+            },
             {
               key: 'new',
               title: 'Chờ Danny duyệt',
@@ -835,7 +867,7 @@ export default function BugReportsPage() {
             sourcePath: 'secondary',
             status: 'secondary',
             attachmentCount: 'tertiary',
-            timeline: 'tertiary',
+            agentProgress: 'secondary',
             action: 'primary',
           },
           scroll: { x: 980 },
@@ -864,6 +896,13 @@ export default function BugReportsPage() {
                       <PriorityTag priority={row.priority} />
                       <BugStatusTag status={row.status} />
                     </div>
+                  </div>
+                  <ClarificationTag status={row.clarification.status} />
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <AgentProgressTag progress={row.agentProgress} />
+                    <Text type="secondary" className="tabular-nums text-xs">
+                      {formatProgressUpdated(row.agentProgress.updatedAt)}
+                    </Text>
                   </div>
                   <Text type="secondary">{row.reporter.displayName}</Text>
                 </div>

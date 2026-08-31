@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  buildGreenVisitEligibilitySql,
   buildCcLeaderboard,
   FAL_RULE_VALUES,
   FAL_RULE_VALUES_SQL,
@@ -13,6 +14,12 @@ import {
 } from './cc-kpi.service.js';
 
 const expectedRules = ['Fix', 'Adjust', 'Log', 'Replace'] as const;
+
+test('uses the immutable Legacy combo-sale snapshot for Vòng Xanh eligibility', () => {
+  assert.equal(buildGreenVisitEligibilitySql(), 'COALESCE(o.combo_sale_required, 0) <> 0');
+  assert.equal(buildGreenVisitEligibilitySql('booking'), 'COALESCE(booking.combo_sale_required, 0) <> 0');
+  assert.throws(() => buildGreenVisitEligibilitySql('o; DROP TABLE order'), /Invalid SQL alias/);
+});
 
 test('recognizes every FAL rule from service_type', () => {
   for (const rule of expectedRules) {

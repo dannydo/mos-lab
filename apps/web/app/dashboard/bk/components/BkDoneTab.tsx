@@ -570,7 +570,11 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Lượt Check-in Thắng</span>}
+              title={
+                <Tooltip title="Đơn hoàn tất có thời điểm check-in thực tế nằm trong kỳ; có thể khác cohort booking được tạo trong kỳ.">
+                  <span className="text-xs font-semibold text-slate-500 uppercase">Lượt Check-in trong kỳ</span>
+                </Tooltip>
+              }
               value={summary.totalDone}
               valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
               prefix={<CheckCircleOutlined className="mr-2" />}

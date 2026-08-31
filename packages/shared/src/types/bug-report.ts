@@ -18,6 +18,33 @@ export type BugPriority = (typeof BUG_REPORT_PRIORITIES)[number];
 export const BUG_REPORT_CLARIFICATION_STATUSES = ['PENDING_AGENT', 'WAITING_REPORTER', 'READY'] as const;
 export type BugReportClarificationStatus = (typeof BUG_REPORT_CLARIFICATION_STATUSES)[number];
 
+export const BUG_REPORT_CLARIFICATION_FILTERS = ['ALL', 'UNCLEAR', ...BUG_REPORT_CLARIFICATION_STATUSES] as const;
+export type BugReportClarificationFilter = (typeof BUG_REPORT_CLARIFICATION_FILTERS)[number];
+
+export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
+  'NOT_VIEWED',
+  'ANALYZING',
+  'CHECKING_BUSINESS_LOGIC',
+  'WAITING_REPORTER',
+  'REPORTER_REPLIED',
+  'READY_FOR_TRIAGE',
+  'QUEUED_FOR_FIX',
+  'IMPLEMENTING',
+  'VERIFYING',
+  'AWAITING_REPORTER_REVIEW',
+  'COMPLETED',
+  'STOPPED',
+] as const;
+export type BugReportAgentProgressStage = (typeof BUG_REPORT_AGENT_PROGRESS_STAGES)[number];
+
+export const BUG_REPORT_AGENT_UPDATE_STAGES = [
+  'ANALYZING',
+  'CHECKING_BUSINESS_LOGIC',
+  'IMPLEMENTING',
+  'VERIFYING',
+] as const;
+export type BugReportAgentUpdateStage = (typeof BUG_REPORT_AGENT_UPDATE_STAGES)[number];
+
 export const BUG_REPORT_COMMENT_KINDS = ['COMMENT', 'CLARIFICATION_QUESTION', 'CLARIFICATION_REVIEW'] as const;
 export type BugReportCommentKind = (typeof BUG_REPORT_COMMENT_KINDS)[number];
 
@@ -113,6 +140,12 @@ export interface BugReportClarification {
   clarifiedAt: string | null;
 }
 
+export interface BugReportAgentProgress {
+  stage: BugReportAgentProgressStage;
+  note: string | null;
+  updatedAt: string;
+}
+
 export interface BugReportComment {
   id: number;
   kind: BugReportCommentKind;
@@ -145,6 +178,7 @@ export interface BugReportSummary {
   attachmentCount: number;
   commentCount: number;
   clarification: BugReportClarification;
+  agentProgress: BugReportAgentProgress;
   reporter: BugReportReporter;
   approvedAt: string | null;
   timeline: BugReportTimeline;
@@ -195,6 +229,7 @@ export interface MyBugReportsResponse {
 export interface BugReportListQuery extends PageQuery {
   status?: BugReportStatus | 'ALL';
   priority?: BugPriority | 'ALL';
+  clarification?: BugReportClarificationFilter;
   search?: string;
 }
 
@@ -204,6 +239,9 @@ export interface BugReportListSummary {
   inProgressCount: number;
   fixedCount: number;
   closedCount: number;
+  unclearCount: number;
+  pendingAgentCount: number;
+  waitingReporterCount: number;
 }
 
 export interface TriageBugReportRequest {
@@ -233,6 +271,11 @@ export interface AgentReviewBugReportRequest {
   decision: 'ASK_REPORTER' | 'READY_FOR_TRIAGE';
   message: string;
   businessContext?: string | null;
+}
+
+export interface AgentUpdateBugProgressRequest {
+  stage: BugReportAgentUpdateStage;
+  note?: string | null;
 }
 
 export interface MarkBugReportNotificationsReadRequest {
@@ -273,6 +316,7 @@ export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportResponse = ActionResponse<BugReportDetail>;
 export type CreateBugReportCommentResponse = ActionResponse<BugReportCommentCreateResult>;
 export type AgentReviewBugReportResponse = ActionResponse<BugReportDetail>;
+export type AgentUpdateBugProgressResponse = ActionResponse<BugReportDetail>;
 export type MarkBugReportNotificationsReadResponse = ActionResponse<{ updatedCount: number }>;
 export type AgentMarkBugFixedResponse = ActionResponse<BugReportDetail>;
 export type BugReportListResponse = PageResponse<BugReportSummary, BugReportListSummary>;
@@ -285,6 +329,7 @@ export interface AgentBugQueueItem {
   priority: BugPriority | null;
   workType: 'CLARIFY' | 'FIX';
   clarification: BugReportClarification;
+  agentProgress: BugReportAgentProgress;
   sourcePath: string;
   timeline: BugReportTimeline;
   updatedAt: string;

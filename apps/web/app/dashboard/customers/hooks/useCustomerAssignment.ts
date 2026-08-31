@@ -11,7 +11,6 @@ export const useCustomerAssignment = (
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [targetStaffId, setTargetStaffId] = useState<number | undefined>(undefined);
-  const [durationDays, setDurationDays] = useState<number | undefined>(7);
   const [assigning, setAssigning] = useState(false);
   const [unassigning, setUnassigning] = useState(false);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
@@ -65,7 +64,6 @@ export const useCustomerAssignment = (
     [
       targetStaffId,
       selectedRowKeys,
-      durationDays,
       lastSourceType,
       getFilterCriteria,
       buildFilterSummary,
@@ -123,8 +121,6 @@ export const useCustomerAssignment = (
     setAssignModalVisible,
     targetStaffId,
     setTargetStaffId,
-    durationDays,
-    setDurationDays,
     lastSourceType,
     setLastSourceType,
     assigning,

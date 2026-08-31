@@ -135,7 +135,6 @@ export async function planRoutes(fastify: FastifyInstance) {
           where: {
             staffId: user.id,
             legacyUserId: { in: plans.map((plan) => plan.legacyUserId) },
-            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
           select: { legacyUserId: true },
         });
@@ -193,7 +192,6 @@ export async function planRoutes(fastify: FastifyInstance) {
           where: {
             staffId: user.id,
             legacyUserId: { in: plans.map((plan) => plan.legacyUserId) },
-            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
           select: { legacyUserId: true },
         });
@@ -399,7 +397,6 @@ export async function planRoutes(fastify: FastifyInstance) {
         ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
             where: {
               staffId: user.id,
-              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
             },
             select: { legacyUserId: true },
           })
@@ -626,7 +623,6 @@ export async function planRoutes(fastify: FastifyInstance) {
       const myAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: {
           staffId: user.id,
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           NOT: {
             legacyUserId: { in: plannedUserIds },
           },

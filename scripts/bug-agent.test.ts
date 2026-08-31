@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { downloadBugBundle, listApprovedQueue, submitClarificationReview } from './bug-agent.js';
+import { downloadBugBundle, listApprovedQueue, submitBugProgress, submitClarificationReview } from './bug-agent.js';
 
 const TOKEN = 'test-agent-token-that-is-longer-than-32-characters';
 
@@ -112,6 +112,45 @@ test('Agent CLI can ask the reporter instead of attempting an unclear fix', asyn
     assert.deepEqual(JSON.parse(receivedBody), {
       decision: 'ASK_REPORTER',
       message: 'Booking nào bị huỷ và kết quả đúng bạn mong đợi là gì?',
+    });
+  } finally {
+    server.close();
+    delete process.env.MOS_BUG_AGENT_TOKEN;
+    delete process.env.MOS_BUG_AGENT_API_URL;
+  }
+});
+
+test('Agent CLI publishes intermediate progress for the Bug Inbox timeline', async () => {
+  let receivedBody = '';
+  const server = createServer((request, response) => {
+    assert.equal(request.headers.authorization, `Bearer ${TOKEN}`);
+    assert.equal(request.url, '/api/agent/bug-reports/MOS-BUG-9/progress');
+    assert.equal(request.method, 'PATCH');
+    request.setEncoding('utf8');
+    request.on('data', (chunk) => {
+      receivedBody += chunk;
+    });
+    request.on('end', () => {
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ success: true, message: 'Đã cập nhật tiến độ.' }));
+    });
+  });
+
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  process.env.MOS_BUG_AGENT_TOKEN = TOKEN;
+  process.env.MOS_BUG_AGENT_API_URL = `http://127.0.0.1:${address.port}/api`;
+
+  try {
+    const result = await submitBugProgress('MOS-BUG-9', {
+      stage: 'CHECKING_BUSINESS_LOGIC',
+      note: 'Đang đối chiếu quy tắc booking với source Legacy.',
+    });
+    assert.equal(result.success, true);
+    assert.deepEqual(JSON.parse(receivedBody), {
+      stage: 'CHECKING_BUSINESS_LOGIC',
+      note: 'Đang đối chiếu quy tắc booking với source Legacy.',
     });
   } finally {
     server.close();

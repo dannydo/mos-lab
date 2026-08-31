@@ -194,7 +194,6 @@ export async function registerLocaTouchpointRoutes(fastify: FastifyInstance) {
           where: {
             staffId: user.id,
             legacyUserId: { in: ids },
-            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
           select: { legacyUserId: true },
         });

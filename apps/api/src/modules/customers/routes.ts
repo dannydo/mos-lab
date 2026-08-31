@@ -8,7 +8,6 @@ import {
   SafeAny,
   UpdateBookingRequest,
 } from '@mos-lab/shared';
-import { registerAllocationCron } from './services/allocation-cron.service.js';
 import { ComboRecognitionService, parseComboDateBounds } from './services/combo-recognition.service.js';
 import { UserServiceTypeService } from './services/user-service-type.service.js';
 import { getBkPaystubData } from '../kpi/services/bk-salary.service.js';
@@ -24,6 +23,7 @@ import { LashBenchmarkService, parseLashSpecs } from '../catalog/services/lash-b
 import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-customer.service.js';
 import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
 import { CustomerAccessService } from './services/customer-access.service.js';
+import { buildDurableCustomerAssignmentData } from './services/customer-assignment-policy.service.js';
 import { CustomerServiceFilterCatalogService } from './services/customer-service-filter-catalog.service.js';
 import { CvAttendanceService } from './services/cv-attendance.service.js';
 import { CustomerCreationError, CustomerCreationService } from './services/customer-creation.service.js';
@@ -84,9 +84,6 @@ const resolveEffectiveAssignedStaffId = (
 };
 
 export async function customerRoutes(fastify: FastifyInstance) {
-  // Start automated allocation expiration cronjob
-  registerAllocationCron(fastify);
-
   // Register dashboard sub-routes (revenue-hourly, revenue-detail)
   await registerDashboardRoutes(fastify);
   await bookingAuditRoutes(fastify);
@@ -306,9 +303,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
             }
           } else {
             assignedWhere.staffId = { not: null };
-          }
-          if (CustomerAccessService.isTelesales(adminUser)) {
-            assignedWhere.OR = [{ expiresAt: null }, { expiresAt: { gt: new Date() } }];
           }
           if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
             const minDays = parseInt(assignedDaysMin, 10);
@@ -1838,9 +1832,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
           } else {
             assignedWhere.staffId = { not: null };
           }
-          if (CustomerAccessService.isTelesales(adminUser)) {
-            assignedWhere.OR = [{ expiresAt: null }, { expiresAt: { gt: new Date() } }];
-          }
           if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
             const minDays = parseInt(assignedDaysMin, 10);
             if (!isNaN(minDays)) {
@@ -2283,12 +2274,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
           if (!isNaN(targetStaffId)) {
             const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: {
-                staffId: targetStaffId,
-                ...(CustomerAccessService.isTelesales(adminUser)
-                  ? { OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }
-                  : {}),
-              },
+              where: { staffId: targetStaffId },
               select: { legacyUserId: true },
             });
             allowedUserIds = assignments.map((a) => a.legacyUserId);
@@ -2583,12 +2569,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           }
           if (!isNaN(targetStaffId)) {
             const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-              where: {
-                staffId: targetStaffId,
-                ...(CustomerAccessService.isTelesales(adminUser)
-                  ? { OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }
-                  : {}),
-              },
+              where: { staffId: targetStaffId },
               select: { legacyUserId: true },
             });
             allowedUserIds = assignments.map((a) => a.legacyUserId);
@@ -2893,9 +2874,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
           } else {
             assignedWhere.staffId = { not: null };
           }
-          if (CustomerAccessService.isTelesales(currentUser)) {
-            assignedWhere.OR = [{ expiresAt: null }, { expiresAt: { gt: new Date() } }];
-          }
           if (assignedDaysMin !== undefined && assignedDaysMin !== '') {
             const minDays = parseInt(assignedDaysMin, 10);
             if (!isNaN(minDays)) {
@@ -2929,10 +2907,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       } else if (excludeAssigned === 'true') {
         const allAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-          where: {
-            staffId: { not: null },
-            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-          },
+          where: { staffId: { not: null } },
           select: { legacyUserId: true },
         });
         const excludedUserIds = allAssignments.map((a) => a.legacyUserId);
@@ -4956,12 +4931,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
   });
 
   // POST /api/customers/assign
-  // Assign multiple customers to a staff member with expiration & source tracking
+  // Assign multiple customers to a staff member with durable ownership and source tracking
   fastify.post('/customers/assign', { preHandler: [requireAuth] }, async (request, reply) => {
     const {
       customerIds,
       staffId,
-      durationDays,
       sourceType = 'MANUAL',
       sourceFilterSummary,
       sourceFilterJson,
@@ -4969,7 +4943,6 @@ export async function customerRoutes(fastify: FastifyInstance) {
     } = request.body as {
       customerIds: number[];
       staffId: number;
-      durationDays?: number;
       sourceType?: string;
       sourceFilterSummary?: string;
       sourceFilterJson?: string;
@@ -4992,10 +4965,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
       const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
 
-      // 2. Calculate expiration date if durationDays provided
       const now = new Date();
-      const durationNum = durationDays && durationDays > 0 ? Number(durationDays) : null;
-      const expiresAt = durationNum ? new Date(now.getTime() + durationNum * 24 * 60 * 60 * 1000) : null;
+      const durableAssignment = buildDurableCustomerAssignmentData({
+        staffId,
+        assignedBy: adminUser.id,
+        assignedAt: now,
+      });
 
       // 3. Generate a unique batch ID
       const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -5009,22 +4984,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
           fastify.prisma.crm.crmCustomerAssignment.upsert({
             where: { legacyUserId: cid },
             update: {
-              staffId,
-              assignedBy: adminUser.id,
-              assignedAt: now,
-              expiresAt,
-              assignedDurationDays: durationNum,
-              isRetained: false,
+              ...durableAssignment,
               retainedAt: null,
             },
             create: {
               legacyUserId: cid,
-              staffId,
-              assignedBy: adminUser.id,
-              assignedAt: now,
-              expiresAt,
-              assignedDurationDays: durationNum,
-              isRetained: false,
+              ...durableAssignment,
             },
           })
         ),
@@ -5037,7 +5002,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
               newStaffId: staffId,
               assignedBy: adminUser.id,
               assignedAt: now,
-              expiresAt,
+              expiresAt: null,
               sourceType: sourceType || 'MANUAL',
               sourceFilterSummary: summaryText,
               sourceFilterJson: sourceFilterJson || null,
@@ -8059,10 +8024,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
 
       const telesalesAssignmentIds = CustomerAccessService.isTelesales(user)
         ? await fastify.prisma.crm.crmCustomerAssignment.findMany({
-            where: {
-              staffId: user.id,
-              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-            },
+            where: { staffId: user.id },
             select: { legacyUserId: true },
           })
         : [];

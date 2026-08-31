@@ -10,7 +10,8 @@ export interface CustomerAccessUser {
  * Access boundary for telesales customer data.
  *
  * Telesales and legacy Booker accounts may only read or interact with
- * customers currently assigned to their CRM staff account. Roles outside this
+ * customers assigned to their CRM staff account. Assignments are durable until
+ * a manager explicitly moves or recalls them. Roles outside this
  * customer-facing group retain their existing endpoint-specific access policies.
  */
 export class CustomerAccessService {
@@ -29,7 +30,6 @@ export class CustomerAccessService {
       where: {
         legacyUserId,
         staffId: user.id,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
       select: { id: true },
     });

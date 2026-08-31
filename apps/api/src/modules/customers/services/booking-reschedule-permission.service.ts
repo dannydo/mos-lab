@@ -55,7 +55,6 @@ export class BookingReschedulePermissionService {
       where: {
         legacyUserId,
         staffId: actor.id,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
       select: { id: true },
     });

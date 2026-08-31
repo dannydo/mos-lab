@@ -5203,7 +5203,8 @@ body {
   .metric-grid[data-columns='2'],
   .metric-grid[data-columns='3'],
   .metric-grid[data-columns='4'],
-  .metric-grid[data-columns='5'] {
+  .metric-grid[data-columns='5'],
+  .metric-grid[data-columns='6'] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -5226,7 +5227,8 @@ body {
 
   .metric-grid[data-columns='3'],
   .metric-grid[data-columns='4'],
-  .metric-grid[data-columns='5'] {
+  .metric-grid[data-columns='5'],
+  .metric-grid[data-columns='6'] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -5255,6 +5257,10 @@ body {
 
   .metric-grid[data-columns='5'] {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .metric-grid[data-columns='6'] {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 

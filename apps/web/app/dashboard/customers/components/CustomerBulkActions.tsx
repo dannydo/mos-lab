@@ -1,15 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Space, Button, Typography, Popconfirm, Select, InputNumber, Radio, Dropdown } from 'antd';
-import {
-  TeamOutlined,
-  DeleteOutlined,
-  WarningOutlined,
-  ClockCircleOutlined,
-  RocketOutlined,
-  MoreOutlined,
-} from '@ant-design/icons';
+import { Alert, Space, Button, Typography, Popconfirm, Select, Dropdown } from 'antd';
+import { TeamOutlined, DeleteOutlined, WarningOutlined, RocketOutlined, MoreOutlined } from '@ant-design/icons';
 import { RevokeAssignmentModal } from './RevokeAssignmentModal';
 import { RetainDataButton } from './RetainDataButton';
 import { AddToCampaignModal } from '../../../../components/campaign/AddToCampaignModal';
@@ -32,8 +25,6 @@ interface CustomerBulkActionsProps {
   assignModalVisible: boolean;
   targetStaffId: number | undefined;
   setTargetStaffId: (id: number | undefined) => void;
-  durationDays?: number;
-  setDurationDays?: (days: number | undefined) => void;
   staffList: Staff[];
   assigning: boolean;
   unassigning: boolean;
@@ -42,16 +33,6 @@ interface CustomerBulkActionsProps {
   onRefresh?: () => void;
   randomBatchId?: string | null;
 }
-
-const DURATION_PRESETS = [
-  { label: '1 ngày', value: 1 },
-  { label: '3 ngày', value: 3 },
-  { label: '5 ngày', value: 5 },
-  { label: '7 ngày', value: 7 },
-  { label: '14 ngày', value: 14 },
-  { label: '30 ngày', value: 30 },
-  { label: 'Không giới hạn', value: 0 },
-];
 
 const CustomerBulkActions = React.memo(function CustomerBulkActions({
   themeMode,
@@ -65,8 +46,6 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
   assignModalVisible,
   targetStaffId,
   setTargetStaffId,
-  durationDays = 7,
-  setDurationDays,
   staffList,
   assigning,
   unassigning,
@@ -77,8 +56,6 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
 }: CustomerBulkActionsProps) {
   const [revokeModalVisible, setRevokeModalVisible] = useState(false);
   const [addToCampaignModalVisible, setAddToCampaignModalVisible] = useState(false);
-  const [customDays, setCustomDays] = useState<number | undefined>(undefined);
-  const [isCustomMode, setIsCustomMode] = useState(false);
   const [mobileDeleteConfirmVisible, setMobileDeleteConfirmVisible] = useState(false);
   const responsiveTier = useResponsiveTier();
   const isMobile = responsiveTier === 'mobile';
@@ -309,55 +286,13 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
             </ResponsiveFormField>
           </ResponsiveFormGrid>
 
-          <div
-            className="customer-allocation-duration"
-            style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #303030' }}
-          >
-            <p style={{ marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ClockCircleOutlined style={{ color: '#D4A84B' }} /> Thời hạn tự động thu hồi (Retention Days):
-            </p>
-            <Radio.Group
-              value={isCustomMode ? 'custom' : durationDays}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === 'custom') {
-                  setIsCustomMode(true);
-                  if (setDurationDays && customDays !== undefined) setDurationDays(customDays);
-                } else {
-                  setIsCustomMode(false);
-                  if (setDurationDays) setDurationDays(Number(val));
-                }
-              }}
-              style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}
-            >
-              {DURATION_PRESETS.map((preset) => (
-                <Radio.Button key={preset.value} value={preset.value}>
-                  {preset.label}
-                </Radio.Button>
-              ))}
-              <Radio.Button value="custom">Tùy chỉnh...</Radio.Button>
-            </Radio.Group>
-
-            {isCustomMode && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                <span>Nhập số ngày:</span>
-                <InputNumber
-                  min={1}
-                  max={365}
-                  value={customDays}
-                  onChange={(val) => {
-                    setCustomDays(val ?? undefined);
-                    if (setDurationDays && val !== null && val !== undefined) {
-                      setDurationDays(val);
-                    }
-                  }}
-                  placeholder="Ví dụ: 10"
-                  style={{ width: '120px' }}
-                />
-                <span>ngày</span>
-              </div>
-            )}
-          </div>
+          <Alert
+            className="mt-4"
+            type="info"
+            showIcon
+            message="Assignment được giữ lâu dài"
+            description="Sau khi Booker chấp nhận, data chỉ rời danh sách khi Quản lý chủ động thu hồi hoặc phân bổ lại."
+          />
         </div>
       </AdaptiveModal>
     </>

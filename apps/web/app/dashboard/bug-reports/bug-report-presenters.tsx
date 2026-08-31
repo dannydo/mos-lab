@@ -1,13 +1,70 @@
 'use client';
 
 import { Typography } from 'antd';
-import type { BugPriority, BugReportStatus } from '@mos-lab/shared';
+import type {
+  BugPriority,
+  BugReportAgentProgress,
+  BugReportAgentProgressStage,
+  BugReportClarificationFilter,
+  BugReportClarificationStatus,
+  BugReportStatus,
+} from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { StatusTag } from '../../../components/ui';
 
 export { BugReportAttachmentPreview as ProtectedAttachment } from '../../../components/bug-reports/BugReportAttachmentPreview';
 
 const { Text } = Typography;
+
+export const CLARIFICATION_FILTER_LABELS: Record<BugReportClarificationFilter, string> = {
+  ALL: 'Mọi mức độ rõ',
+  UNCLEAR: 'Chờ làm rõ',
+  PENDING_AGENT: 'Agent cần làm rõ',
+  WAITING_REPORTER: 'Chờ người báo',
+  READY: 'Đã đủ rõ',
+};
+
+const CLARIFICATION_LABELS: Record<BugReportClarificationStatus, string> = {
+  PENDING_AGENT: 'Agent cần làm rõ',
+  WAITING_REPORTER: 'Chờ người báo',
+  READY: 'Đã đủ rõ',
+};
+
+const CLARIFICATION_TONES: Record<BugReportClarificationStatus, Parameters<typeof StatusTag>[0]['status']> = {
+  PENDING_AGENT: 'orange',
+  WAITING_REPORTER: 'purple',
+  READY: 'success',
+};
+
+export const AGENT_PROGRESS_LABELS: Record<BugReportAgentProgressStage, string> = {
+  NOT_VIEWED: 'Agent chưa xem',
+  ANALYZING: 'Đang phân tích',
+  CHECKING_BUSINESS_LOGIC: 'Đối chiếu biz logic',
+  WAITING_REPORTER: 'Chờ người báo',
+  REPORTER_REPLIED: 'Người báo đã trả lời',
+  READY_FOR_TRIAGE: 'Đã hiểu · chờ duyệt',
+  QUEUED_FOR_FIX: 'Đã nhận · chờ sửa',
+  IMPLEMENTING: 'Đang sửa',
+  VERIFYING: 'Đang kiểm thử',
+  AWAITING_REPORTER_REVIEW: 'Đã sửa · chờ xác nhận',
+  COMPLETED: 'Hoàn tất',
+  STOPPED: 'Dừng xử lý',
+};
+
+const AGENT_PROGRESS_TONES: Record<BugReportAgentProgressStage, Parameters<typeof StatusTag>[0]['status']> = {
+  NOT_VIEWED: 'default',
+  ANALYZING: 'processing',
+  CHECKING_BUSINESS_LOGIC: 'orange',
+  WAITING_REPORTER: 'purple',
+  REPORTER_REPLIED: 'cyan',
+  READY_FOR_TRIAGE: 'gold',
+  QUEUED_FOR_FIX: 'processing',
+  IMPLEMENTING: 'cyan',
+  VERIFYING: 'orange',
+  AWAITING_REPORTER_REVIEW: 'success',
+  COMPLETED: 'success',
+  STOPPED: 'default',
+};
 
 export const STATUS_LABELS: Record<BugReportStatus, string> = {
   NEW: 'Mới',
@@ -59,6 +116,11 @@ export function formatElapsed(value: string): string {
   return `${Math.floor(hours / 24)} ngày`;
 }
 
+export function formatProgressUpdated(value: string): string {
+  const elapsed = formatElapsed(value);
+  return elapsed === 'vừa xong' ? 'Vừa cập nhật' : `Cập nhật ${elapsed} trước`;
+}
+
 export function durationBetween(start: string | null, end: string | null): string | null {
   if (!start || !end) return null;
   const minutes = Math.max(0, dayjs(end).diff(dayjs(start), 'minute'));
@@ -95,4 +157,19 @@ export function PriorityTag({ priority }: { priority: BugPriority | null }) {
   ) : (
     <Text type="secondary">Chưa đặt</Text>
   );
+}
+
+export function ClarificationTag({
+  status,
+  showReady = false,
+}: {
+  status: BugReportClarificationStatus;
+  showReady?: boolean;
+}) {
+  if (status === 'READY' && !showReady) return null;
+  return <StatusTag status={CLARIFICATION_TONES[status]} label={CLARIFICATION_LABELS[status]} />;
+}
+
+export function AgentProgressTag({ progress }: { progress: BugReportAgentProgress }) {
+  return <StatusTag status={AGENT_PROGRESS_TONES[progress.stage]} label={AGENT_PROGRESS_LABELS[progress.stage]} />;
 }

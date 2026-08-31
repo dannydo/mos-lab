@@ -9,6 +9,8 @@ import type {
   AgentMarkBugFixedResponse,
   AgentReviewBugReportRequest,
   AgentReviewBugReportResponse,
+  AgentUpdateBugProgressRequest,
+  AgentUpdateBugProgressResponse,
 } from '@mos-lab/shared';
 
 const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
@@ -178,11 +180,23 @@ export async function submitClarificationReview(
   return (await response.json()) as AgentReviewBugReportResponse;
 }
 
+export async function submitBugProgress(
+  keyInput: string,
+  request: AgentUpdateBugProgressRequest
+): Promise<AgentUpdateBugProgressResponse> {
+  const key = normalizeKey(keyInput);
+  const response = await agentFetch(`/agent/bug-reports/${encodeURIComponent(key)}/progress`, {
+    method: 'PATCH',
+    body: JSON.stringify(request),
+  });
+  return (await response.json()) as AgentUpdateBugProgressResponse;
+}
+
 async function main(): Promise<void> {
   const argument = process.argv[2];
   if (!argument || argument === '--help' || argument === '-h') {
     console.log(
-      'Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123 | pnpm bug:agent --ask MOS-BUG-123 "Câu hỏi" | pnpm bug:agent --ready MOS-BUG-123 "Kết luận biz logic" | pnpm bug:agent --fixed MOS-BUG-123 [resolution.json]'
+      'Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123 | pnpm bug:agent --progress MOS-BUG-123 ANALYZING|CHECKING_BUSINESS_LOGIC|IMPLEMENTING|VERIFYING "Cập nhật" | pnpm bug:agent --ask MOS-BUG-123 "Câu hỏi" | pnpm bug:agent --ready MOS-BUG-123 "Kết luận biz logic" | pnpm bug:agent --fixed MOS-BUG-123 [resolution.json]'
     );
     return;
   }
@@ -219,6 +233,16 @@ async function main(): Promise<void> {
     console.log(result.message || `Đã cập nhật bước làm rõ cho ${normalizeKey(key)}.`);
     return;
   }
+  if (argument === '--progress') {
+    const key = process.argv[3];
+    const stage = process.argv[4] as AgentUpdateBugProgressRequest['stage'] | undefined;
+    const note = process.argv.slice(5).join(' ').trim();
+    if (!key) throw new Error('Thiếu mã ticket cho --progress.');
+    if (!stage) throw new Error('Thiếu giai đoạn Agent cho --progress.');
+    const result = await submitBugProgress(key, { stage, note: note || undefined });
+    console.log(result.message || `Đã cập nhật tiến độ ${normalizeKey(key)}: ${stage}.`);
+    return;
+  }
   if (argument === '--fixed') {
     const key = process.argv[3];
     if (!key) throw new Error('Thiếu mã ticket cho --fixed.');
@@ -229,6 +253,9 @@ async function main(): Promise<void> {
   const destination = await downloadBugBundle(argument);
   console.log(`Đã tải bundle vào ${destination}`);
   console.log(`Mở ${resolve(destination, 'report.md')} để bắt đầu phân tích.`);
+  console.log(
+    `Trong lúc xử lý, cập nhật bằng pnpm bug:agent --progress ${normalizeKey(argument)} CHECKING_BUSINESS_LOGIC|IMPLEMENTING|VERIFYING "Nội dung ngắn"`
+  );
   console.log(
     `Sau khi sửa, điền ${resolve(destination, 'resolution.json')} rồi chạy pnpm bug:agent --fixed ${normalizeKey(argument)}`
   );
