@@ -240,6 +240,8 @@ export interface MyBugReportsResponse {
   data: MyBugReportItem[];
   notifications: BugReportNotification[];
   unreadCount: number;
+  /** Requests that still need a response or acceptance from the reporter. */
+  actionRequiredCount: number;
 }
 
 export interface BugReportListQuery extends PageQuery {
@@ -254,6 +256,8 @@ export interface BugReportListSummary {
   bugCount: number;
   featureCount: number;
   newCount: number;
+  /** Tickets whose clarification is complete and are waiting for Danny's final triage decision. */
+  readyForDannyCount: number;
   approvedCount: number;
   inProgressCount: number;
   fixedCount: number;

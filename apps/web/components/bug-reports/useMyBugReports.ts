@@ -22,6 +22,7 @@ export function useMyBugReports(enabled: boolean) {
   const [data, setData] = React.useState<MyBugReportItem[]>([]);
   const [notifications, setNotifications] = React.useState<BugReportNotification[]>([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const [actionRequiredCount, setActionRequiredCount] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const requestVersionRef = React.useRef(0);
@@ -37,6 +38,7 @@ export function useMyBugReports(enabled: boolean) {
       setData(response.data);
       setNotifications(response.notifications);
       setUnreadCount(response.unreadCount);
+      setActionRequiredCount(response.actionRequiredCount);
     } catch (caught) {
       if (requestVersion !== requestVersionRef.current) return;
       setError(errorMessage(caught));
@@ -86,5 +88,16 @@ export function useMyBugReports(enabled: boolean) {
     [unreadCount]
   );
 
-  return { data, notifications, unreadCount, loading, error, refresh, review, comment, markNotificationsRead };
+  return {
+    data,
+    notifications,
+    unreadCount,
+    actionRequiredCount,
+    loading,
+    error,
+    refresh,
+    review,
+    comment,
+    markNotificationsRead,
+  };
 }

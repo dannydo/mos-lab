@@ -9,6 +9,7 @@ import type {
   BugReportClarificationStatus,
   BugReportRequestType,
   BugReportStatus,
+  BugReportSummary,
 } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { StatusTag } from '../../../components/ui';
@@ -182,4 +183,16 @@ export function ClarificationTag({
 
 export function AgentProgressTag({ progress }: { progress: BugReportAgentProgress }) {
   return <StatusTag status={AGENT_PROGRESS_TONES[progress.stage]} label={AGENT_PROGRESS_LABELS[progress.stage]} />;
+}
+
+/** A reporter must act when the agent needs clarification or has a result ready for confirmation. */
+export function needsReporterAttention(
+  report: Pick<BugReportSummary, 'status' | 'clarification' | 'agentProgress'>
+): boolean {
+  return (
+    report.status === 'FIXED' ||
+    report.clarification.status === 'WAITING_REPORTER' ||
+    report.agentProgress.stage === 'WAITING_REPORTER' ||
+    report.agentProgress.stage === 'AWAITING_REPORTER_REVIEW'
+  );
 }

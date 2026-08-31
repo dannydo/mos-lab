@@ -137,6 +137,27 @@ describe('UI primitives', () => {
     );
   });
 
+  it('shows Danny only the tickets that are ready for a final Inbox decision', () => {
+    const systemGroup = getSidebarGroups(
+      'super_admin',
+      [],
+      true,
+      {},
+      [],
+      false,
+      {},
+      {},
+      { email: 'danhdo@gmail.com' },
+      3
+    ).find((group) => group.groupKey === 'grp-system');
+
+    expect(systemGroup?.items.find((item) => item.key === 'bug-reports')).toMatchObject({
+      label: 'mOS Inbox',
+      badgeCount: 3,
+      path: '/dashboard/bug-reports',
+    });
+  });
+
   it('filters restricted leaves while preserving the visible menu hierarchy and role guards', () => {
     const groups = getSidebarGroups('telesales', [], true, {}, [], true, {
       'academy-lead-manager': false,

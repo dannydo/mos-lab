@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Avatar,
+  Badge,
   Button,
   Descriptions,
   Dropdown,
@@ -68,6 +69,7 @@ import {
   formatElapsed,
   formatProgressUpdated,
   initials,
+  needsReporterAttention,
   parseDuplicateKey,
   PriorityTag,
   ProtectedAttachment,
@@ -620,21 +622,30 @@ export default function BugReportsPage() {
         title: 'AI Agent',
         key: 'agentProgress',
         width: 250,
-        render: (_, row) => (
-          <div className="min-w-0 space-y-1.5 text-xs">
-            <AgentProgressTag progress={row.agentProgress} />
-            <div>
-              <Text type="secondary" className="tabular-nums">
-                {formatProgressUpdated(row.agentProgress.updatedAt)}
-              </Text>
+        render: (_, row) => {
+          const reporterAttention = needsReporterAttention(row);
+          return (
+            <div className="min-w-0 space-y-1.5 text-xs">
+              <Tooltip title={reporterAttention ? 'Đang cần người báo phản hồi hoặc xác nhận' : undefined}>
+                <Badge dot={reporterAttention}>
+                  <span className="inline-flex">
+                    <AgentProgressTag progress={row.agentProgress} />
+                  </span>
+                </Badge>
+              </Tooltip>
+              <div>
+                <Text type="secondary" className="tabular-nums">
+                  {formatProgressUpdated(row.agentProgress.updatedAt)}
+                </Text>
+              </div>
+              {row.agentProgress.note ? (
+                <Text type="secondary" ellipsis={{ tooltip: row.agentProgress.note }}>
+                  {row.agentProgress.note}
+                </Text>
+              ) : null}
             </div>
-            {row.agentProgress.note ? (
-              <Text type="secondary" ellipsis={{ tooltip: row.agentProgress.note }}>
-                {row.agentProgress.note}
-              </Text>
-            ) : null}
-          </div>
-        ),
+          );
+        },
       },
       {
         title: '',
@@ -770,9 +781,13 @@ export default function BugReportsPage() {
             {
               key: 'new',
               title: 'Chờ Danny duyệt',
-              value: inbox.summary.newCount,
+              value: inbox.summary.readyForDannyCount,
               format: 'number',
               loading: inbox.loading,
+              subValue:
+                inbox.summary.newCount > inbox.summary.readyForDannyCount
+                  ? 'Chỉ ticket đã rõ yêu cầu quyết định'
+                  : undefined,
               icon: <AppIcon icon={Inbox} size="md" />,
               iconBgColor: token.colorWarningBg,
             },
@@ -843,44 +858,53 @@ export default function BugReportsPage() {
           },
           mobileRecordKey: (row) => row.id,
           mobileEmptyDescription: 'Chưa có yêu cầu phù hợp bộ lọc.',
-          mobileRenderer: (row) => (
-            <button type="button" className="w-full text-left" onClick={() => setSelectedId(row.id)}>
-              <div className="mb-3 flex items-start gap-3">
-                <Avatar size={36} src={row.reporter.avatarUrl || undefined}>
-                  {initials(row.reporter.displayName)}
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <Text strong>{row.key}</Text>
-                    <div className="flex items-center gap-2">
-                      <RequestTypeTag requestType={row.requestType} />
-                      <PriorityTag priority={row.priority} />
-                      <BugStatusTag status={row.status} />
+          mobileRenderer: (row) => {
+            const reporterAttention = needsReporterAttention(row);
+            return (
+              <button type="button" className="w-full text-left" onClick={() => setSelectedId(row.id)}>
+                <div className="mb-3 flex items-start gap-3">
+                  <Avatar size={36} src={row.reporter.avatarUrl || undefined}>
+                    {initials(row.reporter.displayName)}
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <Text strong>{row.key}</Text>
+                      <div className="flex items-center gap-2">
+                        <RequestTypeTag requestType={row.requestType} />
+                        <PriorityTag priority={row.priority} />
+                        <BugStatusTag status={row.status} />
+                      </div>
                     </div>
+                    <ClarificationTag status={row.clarification.status} />
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Tooltip title={reporterAttention ? 'Đang cần người báo phản hồi hoặc xác nhận' : undefined}>
+                        <Badge dot={reporterAttention}>
+                          <span className="inline-flex">
+                            <AgentProgressTag progress={row.agentProgress} />
+                          </span>
+                        </Badge>
+                      </Tooltip>
+                      <Text type="secondary" className="tabular-nums text-xs">
+                        {formatProgressUpdated(row.agentProgress.updatedAt)}
+                      </Text>
+                    </div>
+                    <Text type="secondary">{row.reporter.displayName}</Text>
                   </div>
-                  <ClarificationTag status={row.clarification.status} />
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <AgentProgressTag progress={row.agentProgress} />
-                    <Text type="secondary" className="tabular-nums text-xs">
-                      {formatProgressUpdated(row.agentProgress.updatedAt)}
-                    </Text>
-                  </div>
-                  <Text type="secondary">{row.reporter.displayName}</Text>
                 </div>
-              </div>
-              <Paragraph ellipsis={{ rows: 2 }} style={{ marginBottom: 8 }}>
-                {row.description}
-              </Paragraph>
-              <div className="flex items-center justify-between gap-2">
-                <Text type="secondary" ellipsis>
-                  {row.sourcePath}
-                </Text>
-                <Text type="secondary" className="shrink-0">
-                  <AppIcon icon={Clock3} size="sm" /> {formatElapsed(row.createdAt)}
-                </Text>
-              </div>
-            </button>
-          ),
+                <Paragraph ellipsis={{ rows: 2 }} style={{ marginBottom: 8 }}>
+                  {row.description}
+                </Paragraph>
+                <div className="flex items-center justify-between gap-2">
+                  <Text type="secondary" ellipsis>
+                    {row.sourcePath}
+                  </Text>
+                  <Text type="secondary" className="shrink-0">
+                    <AppIcon icon={Clock3} size="sm" /> {formatElapsed(row.createdAt)}
+                  </Text>
+                </div>
+              </button>
+            );
+          },
         }}
       />
       <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} />

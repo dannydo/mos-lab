@@ -16,7 +16,7 @@ import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '
 import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } from '../../lib/bug-diagnostics';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
-import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconText } from '../ui';
+import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, HeaderActionIndicator, IconText } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { BugReportWorkflowModal } from './BugReportWorkflowGuide';
 import { createRequestDrafts, emptyRequestDraft, updateRequestDraft, type RequestDraftView } from './bug-report-drafts';
@@ -156,7 +156,12 @@ export function BugReportSurface() {
   const showHistory = React.useCallback(
     (key?: string | null) => {
       previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      setSelectedReportKey(key || myBugs.data.find((item) => item.canReview)?.key || myBugs.data[0]?.key || null);
+      setSelectedReportKey(
+        key ||
+          myBugs.data.find((item) => item.clarification.status === 'WAITING_REPORTER' || item.canReview)?.key ||
+          myBugs.data[0]?.key ||
+          null
+      );
       setActiveView('history');
       setOpen(true);
       void myBugs.refresh();
@@ -379,24 +384,10 @@ export function BugReportSurface() {
   return (
     <>
       {launcherPreferencesReady && preferences.visible ? (
-        <Button
-          type="primary"
-          shape="circle"
-          aria-label="Phản hồi mOS"
-          title="Báo lỗi hoặc yêu cầu chức năng — kéo để di chuyển"
-          data-bug-report-launcher
-          onPointerDown={beginLauncherDrag}
-          onPointerMove={moveLauncher}
-          onPointerUp={finishLauncherDrag}
-          onPointerCancel={finishLauncherDrag}
-          onClick={(event) => {
-            if (Date.now() < suppressClickUntilRef.current) {
-              event.preventDefault();
-              return;
-            }
-            showReporter(null);
-          }}
-          icon={<AppIcon icon={MessageSquareWarning} size="sm" />}
+        <HeaderActionIndicator
+          variant="count"
+          count={myBugs.actionRequiredCount || myBugs.unreadCount}
+          surface="accent"
           style={{
             position: 'fixed',
             left: launcherPosition ? launcherPosition.x : 'max(12px, env(safe-area-inset-left))',
@@ -404,14 +395,57 @@ export function BugReportSurface() {
             bottom: launcherPosition ? undefined : 'max(14px, env(safe-area-inset-bottom))',
             zIndex: 12000,
             width: LAUNCHER_SIZE,
-            minWidth: LAUNCHER_SIZE,
             height: LAUNCHER_SIZE,
-            cursor: dragging ? 'grabbing' : 'grab',
-            touchAction: 'none',
-            boxShadow: token.boxShadowSecondary,
             transition: dragging ? 'none' : undefined,
           }}
-        />
+        >
+          <Button
+            type="primary"
+            shape="circle"
+            aria-label={
+              myBugs.actionRequiredCount
+                ? `Phản hồi mOS — ${myBugs.actionRequiredCount} yêu cầu đang chờ bạn phản hồi hoặc xác nhận`
+                : myBugs.unreadCount
+                  ? `Phản hồi mOS — ${myBugs.unreadCount} cập nhật mới đang chờ bạn xem`
+                  : 'Phản hồi mOS'
+            }
+            title={
+              myBugs.actionRequiredCount
+                ? `${myBugs.actionRequiredCount} yêu cầu đang chờ bạn phản hồi hoặc xác nhận — bấm để mở Yêu cầu của tôi, kéo để di chuyển`
+                : myBugs.unreadCount
+                  ? `${myBugs.unreadCount} cập nhật mới đang chờ bạn xem — bấm để mở Yêu cầu của tôi, kéo để di chuyển`
+                  : 'Báo lỗi hoặc yêu cầu chức năng — kéo để di chuyển'
+            }
+            data-bug-report-launcher
+            onPointerDown={beginLauncherDrag}
+            onPointerMove={moveLauncher}
+            onPointerUp={finishLauncherDrag}
+            onPointerCancel={finishLauncherDrag}
+            onClick={(event) => {
+              if (Date.now() < suppressClickUntilRef.current) {
+                event.preventDefault();
+                return;
+              }
+              if (myBugs.actionRequiredCount || myBugs.unreadCount) {
+                showHistory(
+                  myBugs.data.find((item) => item.clarification.status === 'WAITING_REPORTER' || item.canReview)?.key ||
+                    myBugs.notifications.find((item) => !item.readAt)?.reportKey
+                );
+                return;
+              }
+              showReporter(null);
+            }}
+            icon={<AppIcon icon={MessageSquareWarning} size="sm" />}
+            style={{
+              width: LAUNCHER_SIZE,
+              minWidth: LAUNCHER_SIZE,
+              height: LAUNCHER_SIZE,
+              cursor: dragging ? 'grabbing' : 'grab',
+              touchAction: 'none',
+              boxShadow: token.boxShadowSecondary,
+            }}
+          />
+        </HeaderActionIndicator>
       ) : null}
 
       <AdaptiveModal

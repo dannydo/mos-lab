@@ -45,6 +45,7 @@ const EMPTY_SUMMARY: BugReportListSummary = {
   bugCount: 0,
   featureCount: 0,
   newCount: 0,
+  readyForDannyCount: 0,
   approvedCount: 0,
   inProgressCount: 0,
   fixedCount: 0,
@@ -179,6 +180,7 @@ export function useBugReports() {
       const response = await apiClient.bugReports.triage(id, request);
       if (!response.data) throw new Error('Máy chủ không trả về ticket sau khi cập nhật.');
       await load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
       return response.data;
     },
     [load]

@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Menu, Popover, Tooltip } from 'antd';
+import { Badge, Menu, Popover, Tooltip } from 'antd';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { SafeAny } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { getSidebarGroups, getSelectedMenuKey, SidebarItemConfig } from '../../config/sidebar.config';
 import { AppIcon } from '../ui/AppIcon';
@@ -21,6 +21,7 @@ interface SidebarNavProps {
 const SIDEBAR_COLLAPSED_GROUPS_STORAGE_KEY = 'mos_sidebar_collapsed_groups_v1';
 const LEGACY_SIDEBAR_COLLAPSED_GROUPS_STORAGE_KEY = 'mos_sidebar_collapsed_groups';
 const SIDEBAR_COLLAPSED_GROUPS_CHANGED_EVENT = 'mos_sidebar_collapsed_groups_changed';
+const BUG_INBOX_UPDATED_EVENT = 'mos-bug-inbox-updated';
 
 function readCollapsedGroupKeys(): string[] {
   try {
@@ -68,6 +69,7 @@ export default function SidebarNav({
   const [academyAccess, setAcademyAccess] = useState(false);
   const [menuVisibility, setMenuVisibility] = useState<Record<string, boolean>>({});
   const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({});
+  const [bugInboxApprovalCount, setBugInboxApprovalCount] = useState(0);
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<string[]>([]);
   const [openRailMenuKey, setOpenRailMenuKey] = useState<string | null>(null);
   const [showCustomCampaigns, setShowCustomCampaigns] = useState<boolean>(() => {
@@ -136,6 +138,18 @@ export default function SidebarNav({
       });
   }, []);
 
+  const canTriageBugInbox = isSuperAdminRole(userRole) && isCanonicalSuperAdminIdentity(userIdentity ?? {});
+  const fetchBugInboxApprovalCount = useCallback(() => {
+    if (!canTriageBugInbox) {
+      setBugInboxApprovalCount(0);
+      return;
+    }
+    apiClient.bugReports
+      .list({ page: 1, limit: 10, requestType: 'ALL', status: 'ALL', priority: 'ALL', clarification: 'ALL' })
+      .then((response) => setBugInboxApprovalCount(response.summary?.readyForDannyCount ?? 0))
+      .catch(() => setBugInboxApprovalCount(0));
+  }, [canTriageBugInbox]);
+
   useEffect(() => {
     const handleToggle = () => {
       const saved = localStorage.getItem('mos_sidebar_show_custom_campaigns');
@@ -183,6 +197,18 @@ export default function SidebarNav({
   useEffect(() => {
     fetchMenuVisibility();
   }, [fetchMenuVisibility, userRole]);
+
+  useEffect(() => {
+    fetchBugInboxApprovalCount();
+    if (!canTriageBugInbox) return;
+    const refresh = () => fetchBugInboxApprovalCount();
+    const interval = window.setInterval(refresh, 30_000);
+    window.addEventListener(BUG_INBOX_UPDATED_EVENT, refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener(BUG_INBOX_UPDATED_EVENT, refresh);
+    };
+  }, [canTriageBugInbox, fetchBugInboxApprovalCount]);
 
   useEffect(() => {
     const syncCollapsedGroups = () => setCollapsedGroupKeys(readCollapsedGroupKeys());
@@ -266,7 +292,8 @@ export default function SidebarNav({
     academyAccess,
     menuVisibility,
     categoryVisibility,
-    userIdentity
+    userIdentity,
+    bugInboxApprovalCount
   );
 
   const createMenuItem = (item: SidebarItemConfig, depth = 0): SafeAny => {
@@ -285,8 +312,18 @@ export default function SidebarNav({
 
     return {
       key: item.key,
-      icon: item.icon,
-      title: item.label,
+      icon:
+        item.badgeCount && item.badgeCount > 0 ? (
+          <Badge count={item.badgeCount} color={token.colorWarning} overflowCount={99} offset={[3, 0]} size="small">
+            <span className="inline-flex">{item.icon}</span>
+          </Badge>
+        ) : (
+          item.icon
+        ),
+      title:
+        item.badgeCount && item.badgeCount > 0
+          ? `${item.label} — ${item.badgeCount} ticket đang chờ Danny duyệt`
+          : item.label,
       className:
         depth === 0 ? 'sidebar-menu-entry sidebar-menu-entry--root' : 'sidebar-menu-entry sidebar-menu-entry--nested',
       label: item.path ? (

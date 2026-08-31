@@ -891,6 +891,7 @@ export class BugReportService {
       bugCount,
       featureCount,
       newCount,
+      readyForDannyCount,
       approvedCount,
       inProgressCount,
       fixedCount,
@@ -909,6 +910,7 @@ export class BugReportService {
       fastify.prisma.crm.crmBugReport.count({ where: { requestType: 'BUG' } }),
       fastify.prisma.crm.crmBugReport.count({ where: { requestType: 'FEATURE' } }),
       fastify.prisma.crm.crmBugReport.count({ where: { status: 'NEW' } }),
+      fastify.prisma.crm.crmBugReport.count({ where: { status: 'NEW', clarificationStatus: 'READY' } }),
       fastify.prisma.crm.crmBugReport.count({ where: { status: 'APPROVED' } }),
       fastify.prisma.crm.crmBugReport.count({ where: { status: 'IN_PROGRESS' } }),
       fastify.prisma.crm.crmBugReport.count({ where: { status: 'FIXED' } }),
@@ -925,6 +927,7 @@ export class BugReportService {
         bugCount,
         featureCount,
         newCount,
+        readyForDannyCount,
         approvedCount,
         inProgressCount,
         fixedCount,
@@ -943,7 +946,7 @@ export class BugReportService {
   }
 
   static async mine(fastify: FastifyInstance, reporterStaffId: number): Promise<MyBugReportsResponse> {
-    const [rows, notifications, unreadCount] = await fastify.prisma.crm.$transaction([
+    const [rows, notifications, unreadCount, actionRequiredCount] = await fastify.prisma.crm.$transaction([
       fastify.prisma.crm.crmBugReport.findMany({
         where: { reporterStaffId },
         include: reportInclude,
@@ -958,11 +961,18 @@ export class BugReportService {
       fastify.prisma.crm.crmBugReportNotification.count({
         where: { recipientStaffId: reporterStaffId, readAt: null },
       }),
+      fastify.prisma.crm.crmBugReport.count({
+        where: {
+          reporterStaffId,
+          OR: [{ clarificationStatus: 'WAITING_REPORTER' }, { status: 'FIXED' }],
+        },
+      }),
     ]);
     return {
       data: rows.map(myReportDto),
       notifications: notifications.map(notificationDto),
       unreadCount,
+      actionRequiredCount,
     };
   }
 

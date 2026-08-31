@@ -45,6 +45,7 @@ export interface SidebarItemConfig {
   key: string;
   label: string;
   icon?: React.ReactNode;
+  badgeCount?: number;
   path?: string;
   allowedRoles?: string[];
   children?: SidebarItemConfig[];
@@ -65,7 +66,8 @@ export function getSidebarGroups(
   academyAccess: boolean = false,
   menuVisibility: Record<string, boolean> = {},
   categoryVisibility: Record<string, boolean> = {},
-  currentUser: { username?: string | null; email?: string | null } = {}
+  currentUser: { username?: string | null; email?: string | null } = {},
+  bugInboxApprovalCount: number = 0
 ): SidebarGroupConfig[] {
   const normalizedRole = userRole?.toLowerCase() || '';
   const isAdmin = isAdminOrSuperAdminRole(normalizedRole);
@@ -402,6 +404,7 @@ export function getSidebarGroups(
         key: 'bug-reports',
         label: 'mOS Inbox',
         icon: <AppIcon icon={MessageSquareWarning} size="sm" />,
+        badgeCount: bugInboxApprovalCount,
         path: '/dashboard/bug-reports',
       });
     }
