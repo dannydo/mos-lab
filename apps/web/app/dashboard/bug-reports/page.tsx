@@ -53,6 +53,7 @@ import {
 } from '../../../components/ui';
 import { safeStorage } from '../../../lib/safe-storage';
 import { BugReportConversation } from '../../../components/bug-reports/BugReportConversation';
+import { BugInboxWorkflowGuide } from './components/BugInboxWorkflowGuide';
 import { BugReportResolutionTracking } from './components/BugReportResolutionTracking';
 import {
   AgentProgressTag,
@@ -829,7 +830,9 @@ export default function BugReportsPage() {
             </button>
           ),
         }}
-      />
+      >
+        <BugInboxWorkflowGuide />
+      </ResourceListPage>
       <DetailDrawer
         reportId={selectedId}
         onClose={() => setSelectedId(null)}
