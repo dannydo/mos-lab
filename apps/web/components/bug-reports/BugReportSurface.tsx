@@ -6,13 +6,18 @@ import { ImagePlus, MessageSquareWarning, Send, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import type { BugReportClientError, BugReportContext, CreateBugReportAttachmentRequest } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
+import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '../../lib/bug-report-launcher';
 import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } from '../../lib/bug-diagnostics';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconText } from '../ui';
+import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 
 const MAX_ATTACHMENTS = 3;
 const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
+const LAUNCHER_SIZE = 44;
+const LAUNCHER_MARGIN = 12;
+const DRAG_THRESHOLD = 4;
 
 type ReleaseMarker = { deployedAt: string | null; commitSha: string | null };
 
@@ -54,7 +59,26 @@ export function BugReportSurface() {
   const [authenticated, setAuthenticated] = React.useState(false);
   const [release, setRelease] = React.useState<ReleaseMarker | null>(null);
   const [context, setContext] = React.useState<BugReportContext | null>(null);
+  const [launcherPosition, setLauncherPosition] = React.useState<BugReportLauncherPosition | null>(null);
+  const [dragging, setDragging] = React.useState(false);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
+  const dragRef = React.useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+    latest: BugReportLauncherPosition;
+  } | null>(null);
+  const suppressClickUntilRef = React.useRef(0);
+  const {
+    preferences,
+    ready: launcherPreferencesReady,
+    setPosition: persistLauncherPosition,
+  } = useBugReportLauncherPreferences();
+  const savedLauncherX = preferences.position?.x ?? null;
+  const savedLauncherY = preferences.position?.y ?? null;
 
   const enabled = authenticated && pathname.startsWith('/dashboard');
 
@@ -101,11 +125,98 @@ export function BugReportSurface() {
     return () => window.removeEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
   }, [enabled, showReporter]);
 
+  React.useEffect(() => {
+    if (!launcherPreferencesReady || dragging) return;
+    if (savedLauncherX === null || savedLauncherY === null) {
+      setLauncherPosition(null);
+      return;
+    }
+    const next = clampBugReportLauncherPosition(
+      { x: savedLauncherX, y: savedLauncherY },
+      { width: window.innerWidth, height: window.innerHeight },
+      LAUNCHER_SIZE,
+      LAUNCHER_MARGIN
+    );
+    setLauncherPosition(next);
+    if (next.x !== savedLauncherX || next.y !== savedLauncherY) {
+      persistLauncherPosition(next);
+    }
+  }, [dragging, launcherPreferencesReady, persistLauncherPosition, savedLauncherX, savedLauncherY]);
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    const onResize = () => {
+      setLauncherPosition((current) => {
+        if (!current) return current;
+        const next = clampBugReportLauncherPosition(
+          current,
+          { width: window.innerWidth, height: window.innerHeight },
+          LAUNCHER_SIZE,
+          LAUNCHER_MARGIN
+        );
+        if (next.x !== current.x || next.y !== current.y) persistLauncherPosition(next);
+        return next;
+      });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [enabled, persistLauncherPosition]);
+
   const closeReporter = React.useCallback(() => {
     if (submitting) return;
     setOpen(false);
     window.setTimeout(() => previousFocusRef.current?.focus?.(), 0);
   }, [submitting]);
+
+  const beginLauncherDrag = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const origin = { x: bounds.left, y: bounds.top };
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: origin.x,
+      originY: origin.y,
+      moved: false,
+      latest: origin,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }, []);
+
+  const moveLauncher = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD) return;
+    drag.moved = true;
+    setDragging(true);
+    drag.latest = clampBugReportLauncherPosition(
+      { x: drag.originX + deltaX, y: drag.originY + deltaY },
+      { width: window.innerWidth, height: window.innerHeight },
+      LAUNCHER_SIZE,
+      LAUNCHER_MARGIN
+    );
+    setLauncherPosition(drag.latest);
+  }, []);
+
+  const finishLauncherDrag = React.useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      if (drag.moved) {
+        suppressClickUntilRef.current = Date.now() + 300;
+        persistLauncherPosition(drag.latest);
+      }
+      dragRef.current = null;
+      setDragging(false);
+    },
+    [persistLauncherPosition]
+  );
 
   const addFiles = React.useCallback(
     async (selected: File[]) => {
@@ -171,25 +282,41 @@ export function BugReportSurface() {
 
   return (
     <>
-      <Button
-        type="primary"
-        aria-label="Báo lỗi mOS"
-        title="Báo lỗi mOS"
-        data-bug-report-launcher
-        onClick={() => showReporter(null)}
-        icon={<AppIcon icon={MessageSquareWarning} size="sm" />}
-        style={{
-          position: 'fixed',
-          left: 'max(12px, env(safe-area-inset-left))',
-          bottom: 'max(14px, env(safe-area-inset-bottom))',
-          zIndex: 12000,
-          height: 40,
-          borderRadius: token.borderRadiusLG,
-          boxShadow: token.boxShadowSecondary,
-        }}
-      >
-        Báo lỗi
-      </Button>
+      {launcherPreferencesReady && preferences.visible ? (
+        <Button
+          type="primary"
+          shape="circle"
+          aria-label="Báo lỗi mOS"
+          title="Báo lỗi mOS — kéo để di chuyển"
+          data-bug-report-launcher
+          onPointerDown={beginLauncherDrag}
+          onPointerMove={moveLauncher}
+          onPointerUp={finishLauncherDrag}
+          onPointerCancel={finishLauncherDrag}
+          onClick={(event) => {
+            if (Date.now() < suppressClickUntilRef.current) {
+              event.preventDefault();
+              return;
+            }
+            showReporter(null);
+          }}
+          icon={<AppIcon icon={MessageSquareWarning} size="sm" />}
+          style={{
+            position: 'fixed',
+            left: launcherPosition ? launcherPosition.x : 'max(12px, env(safe-area-inset-left))',
+            top: launcherPosition ? launcherPosition.y : undefined,
+            bottom: launcherPosition ? undefined : 'max(14px, env(safe-area-inset-bottom))',
+            zIndex: 12000,
+            width: LAUNCHER_SIZE,
+            minWidth: LAUNCHER_SIZE,
+            height: LAUNCHER_SIZE,
+            cursor: dragging ? 'grabbing' : 'grab',
+            touchAction: 'none',
+            boxShadow: token.boxShadowSecondary,
+            transition: dragging ? 'none' : undefined,
+          }}
+        />
+      ) : null}
 
       <AdaptiveModal
         intent="form"

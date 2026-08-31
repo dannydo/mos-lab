@@ -46,6 +46,9 @@ const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { 
 const OmiCallProfileControl = dynamic(() => import('../../components/omicall-widget/OmiCallHeaderControl'), {
   ssr: false,
 });
+const BugReportProfileControl = dynamic(() => import('../../components/bug-reports/BugReportProfileControl'), {
+  ssr: false,
+});
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
@@ -783,6 +786,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       style={{ background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}` }}
                     >
                       <OmiCallProfileControl />
+                      <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>
+                        <BugReportProfileControl />
+                      </div>
                       <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>{menu}</div>
                     </div>
                   )}
@@ -1168,8 +1174,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               border: 1px solid ${themeMode === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.13)'};
               border-radius: 12px !important;
               box-shadow: ${
-              themeMode === 'dark' ? '0 14px 36px rgba(0, 0, 0, 0.5)' : '0 14px 36px rgba(15, 23, 42, 0.18)'
-            };
+                themeMode === 'dark' ? '0 14px 36px rgba(0, 0, 0, 0.5)' : '0 14px 36px rgba(15, 23, 42, 0.18)'
+              };
               min-width: 224px;
               padding: 6px !important;
             }
