@@ -4,7 +4,7 @@ import { basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { AgentBugBundle, AgentBugQueueItem } from '@mos-lab/shared';
 
-const DEFAULT_API_URL = 'https://lab.masteros.app/api';
+const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
 
 function loadLocalAgentEnv(): void {
   for (const filePath of [resolve('.env'), resolve('apps/api/.env')]) {
