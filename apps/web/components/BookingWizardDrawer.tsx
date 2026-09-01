@@ -176,51 +176,6 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
   const { staffList, loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs } = useBookingStaff(null, favoriteTechs);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const styleId = 'override-antd-today-border-force';
-      let styleEl = document.getElementById(styleId);
-      if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = styleId;
-        styleEl.innerHTML = `
-          .ant-picker-cell-today .ant-picker-cell-inner::before {
-            display: none !important;
-            content: none !important;
-          }
-        `;
-        document.head.appendChild(styleEl);
-      }
-
-      const handleCaptureEvent = (e: Event) => {
-        const target = e.target as HTMLElement | null;
-        if (!target) return;
-        const td = target.closest('td');
-        if (td) {
-          const title = td.getAttribute('title') || '';
-          const isDisabled = td.classList.contains('ant-picker-cell-disabled');
-          if (isDisabled || title.includes('2026-07-27') || title.includes('2026-07-26')) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            return false;
-          }
-        }
-      };
-
-      window.addEventListener('mousedown', handleCaptureEvent, true);
-      window.addEventListener('mouseup', handleCaptureEvent, true);
-      window.addEventListener('click', handleCaptureEvent, true);
-      window.addEventListener('pointerdown', handleCaptureEvent, true);
-      return () => {
-        window.removeEventListener('mousedown', handleCaptureEvent, true);
-        window.removeEventListener('mouseup', handleCaptureEvent, true);
-        window.removeEventListener('click', handleCaptureEvent, true);
-        window.removeEventListener('pointerdown', handleCaptureEvent, true);
-      };
-    }
-  }, []);
-
   const [pickerNonce, setPickerNonce] = useState<number>(0);
 
   const {
@@ -447,40 +402,6 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     const target = bookingDate || dayjs();
     return getNextAvailableDate(target, selectedCV);
   }, [bookingDate, selectedCV, getNextAvailableDate]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const enforce = () => {
-      const activeVal = safeBookingDate ? safeBookingDate.format('DD/MM/YYYY') : '29/07/2026';
-      const inputs = Array.from(document.querySelectorAll('input'));
-      inputs.forEach((inp) => {
-        const val = inp.value || '';
-        if (
-          val.includes('27/07/2026') ||
-          val.includes('26/07/2026') ||
-          val.includes('27/07') ||
-          val.includes('26/07')
-        ) {
-          const valueSetter = Object.getOwnPropertyDescriptor(inp, 'value')?.set;
-          const prototype = Object.getPrototypeOf(inp);
-          const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
-
-          if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
-            prototypeValueSetter.call(inp, activeVal);
-          } else if (valueSetter) {
-            valueSetter.call(inp, activeVal);
-          } else {
-            inp.value = activeVal;
-          }
-          inp.dispatchEvent(new Event('input', { bubbles: true }));
-          inp.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      });
-    };
-    enforce();
-    const timer = setInterval(enforce, 50);
-    return () => clearInterval(timer);
-  }, [safeBookingDate, pickerNonce]);
 
   useEffect(() => {
     if (open) {
@@ -871,24 +792,6 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     onSuccess();
     onClose();
   };
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const enforceValidDateInput = () => {
-      const activeVal = safeBookingDate ? safeBookingDate.format('DD/MM/YYYY') : '';
-      const inputs = document.querySelectorAll('.ant-drawer .ant-picker input');
-      inputs.forEach((inp) => {
-        const inputEl = inp as HTMLInputElement;
-        if (inputEl.value.includes('27/07/2026') || inputEl.value.includes('26/07/2026')) {
-          inputEl.value = activeVal;
-        }
-      });
-    };
-
-    enforceValidDateInput();
-    const interval = setInterval(enforceValidDateInput, 100);
-    return () => clearInterval(interval);
-  }, [safeBookingDate, pickerNonce]);
 
   const priceInfo = getCalculatedPrice(selectedService, selectedPromotion, selectedCampaignPromotion);
   const visibleCustomerCampaignPromotions = useMemo(

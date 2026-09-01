@@ -4,7 +4,11 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import type { JwtUserPayload } from '../../middlewares/auth.js';
 import { academySalesRoutes } from './routes.js';
 
-function createTalentRouteApp(lead: Record<string, unknown> | null, role: JwtUserPayload['role'] = 'telesales') {
+function createTalentRouteApp(
+  lead: Record<string, unknown> | null,
+  role: JwtUserPayload['role'] = 'telesales',
+  isMarketingSalesMember = false
+) {
   const app = Fastify();
   let ladderConfig: { value: string; updatedAt: Date } | null = null;
   let nextPolicyAuditId = 1;
@@ -22,7 +26,8 @@ function createTalentRouteApp(lead: Record<string, unknown> | null, role: JwtUse
     },
     crmTeamMember: {
       findMany: async () => [],
-      findFirst: async () => ({ id: 1 }),
+      findFirst: async ({ where }: { where: { team?: { code?: string } } }) =>
+        where.team?.code === 'MARKETING_SALES' ? (isMarketingSalesMember ? { id: 2 } : null) : { id: 1 },
     },
     crmAcademyLead: { findFirst: async () => lead },
     crmAcademyCourse: {
@@ -107,18 +112,8 @@ test('Tố Chất instructor configuration is limited to Admin and Manager', asy
   await managerApp.close();
 });
 
-test('only Admin can persist global ladder bubbles and the configured reward drives new previews', async () => {
-  const managerApp = createTalentRouteApp({ id: 41, ownerStaffId: 82 }, 'manager');
-  await managerApp.register(academySalesRoutes);
-  const managerDenied = await managerApp.inject({
-    method: 'PUT',
-    url: '/academy-sales/talent-ladder',
-    payload: { tiers: [] },
-  });
-  assert.equal(managerDenied.statusCode, 403);
-  await managerApp.close();
-
-  const app = createTalentRouteApp({ id: 41, ownerStaffId: 82 }, 'admin');
+test('Academy managers can persist global ladder bubbles and the configured reward drives new previews', async () => {
+  const app = createTalentRouteApp({ id: 41, ownerStaffId: 82 }, 'manager');
   await app.register(academySalesRoutes);
   const defaults = await app.inject({ method: 'GET', url: '/academy-sales/talent-ladder' });
   assert.equal(defaults.statusCode, 200);

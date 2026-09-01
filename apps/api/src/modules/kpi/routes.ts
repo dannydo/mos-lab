@@ -11,74 +11,9 @@ import { registerCvPaystubRoutes } from './routes/cv-paystub.routes.js';
 import { registerCvSpeedRoutes } from './routes/cv-speed.routes.js';
 import { registerBkRoutes } from './routes/bk.routes.js';
 import { registerPackageAuditRoutes } from './routes/package-audit.routes.js';
-import { calculateBookerSalaryStats } from './services/salary-calculator.js';
+import { calculateBookerSalaryStats, getSalaryConfig, setCachedSalaryConfig } from './services/salary-calculator.js';
 import { getActiveBkTelesalesIds } from './services/bk-salary.service.js';
 import { compareBookerProductivity } from './utils/leaderboard.js';
-
-// Default configuration parameters for Booker Salary
-const DEFAULT_SALARY_CONFIG = {
-  baseSalary: 5500000,
-  tipsPercent: 7,
-  clientBonusRefill: {
-    discount30: 9000,
-    discount50: 6000,
-    discountMore: 1000,
-  },
-  clientBonusFullSet: {
-    discount0: 35000,
-    discount30: 12000,
-    discount50: 6000,
-    discountMore: 1000,
-  },
-  doneBonusTiers: [
-    { minCount: 100, bonus: 300000 },
-    { minCount: 150, bonus: 600000 },
-    { minCount: 200, bonus: 900000 },
-    { minCount: 250, bonus: 1200000 },
-    { minCount: 300, bonus: 1500000 },
-    { minCount: 350, bonus: 1800000 },
-    { minCount: 400, bonus: 2100000 },
-    { minCount: 450, bonus: 2400000 },
-    { minCount: 500, bonus: 2700000 },
-  ],
-  missedBonusTiers: [
-    { maxRate: 10, bonus: 1000000 },
-    { maxRate: 15, bonus: 500000 },
-    { maxRate: 20, bonus: 0 },
-    { maxRate: 25, bonus: -500000 },
-    { maxRate: 100, bonus: -1000000 },
-  ],
-  revBonusTiers: [
-    { minRev: 50000000, rate: 0.007 },
-    { minRev: 100000000, rate: 0.008 },
-    { minRev: 150000000, rate: 0.009 },
-    { minRev: 200000000, rate: 0.01 },
-    { minRev: 250000000, rate: 0.011 },
-    { minRev: 300000000, rate: 0.012 },
-  ],
-};
-
-// Global in-memory cache for Booker Salary Config
-let cachedSalaryConfig: SafeAny = null;
-
-// Fetch salary config from DB or fallback to default
-async function getSalaryConfig(fastify: FastifyInstance) {
-  if (cachedSalaryConfig !== null) {
-    return cachedSalaryConfig;
-  }
-  try {
-    const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
-      where: { key: 'BOOKER_SALARY_CONFIG' },
-    });
-    if (configRecord) {
-      cachedSalaryConfig = JSON.parse(configRecord.value);
-      return cachedSalaryConfig;
-    }
-  } catch (err) {
-    fastify.log.error(err as SafeAny, 'Error fetching Booker salary config from DB');
-  }
-  return DEFAULT_SALARY_CONFIG;
-}
 
 async function calculateConsultantSalaryStats(
   fastify: SafeAny,
@@ -696,7 +631,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       });
 
       // Update in-memory cache
-      cachedSalaryConfig = newConfig;
+      setCachedSalaryConfig(newConfig);
 
       return { success: true, message: 'Cấu hình lương Booker đã được cập nhật thành công.' };
     } catch (err: SafeAny) {
