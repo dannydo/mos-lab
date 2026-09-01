@@ -503,7 +503,13 @@ describe('UI primitives', () => {
         dataSource={records}
         columns={[{ title: 'Khách', dataIndex: 'name', key: 'name', width: 160 }]}
         rowKey="key"
-        pagination={{ current: 2, pageSize: 10, showSizeChanger: true, showTotal: (total) => `${total} customers` }}
+        pagination={{
+          current: 2,
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `${total} customers`,
+          onChange: vi.fn(),
+        }}
         mobileRenderer={(record) => <span>Mobile: {record.name}</span>}
       />
     );

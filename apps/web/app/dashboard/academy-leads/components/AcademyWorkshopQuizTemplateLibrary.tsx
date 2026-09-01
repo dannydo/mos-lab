@@ -144,7 +144,7 @@ export default function AcademyWorkshopQuizTemplateLibrary({
         </span>
       }
       onClose={onClose}
-      destroyOnClose
+      destroyOnHidden
     >
       <Alert
         className="mb-3"

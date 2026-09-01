@@ -890,7 +890,7 @@ export default function CampaignManagementPage() {
         onCancel={() => setIsModalOpen(false)}
         footer={null}
         width={720}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

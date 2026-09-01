@@ -101,7 +101,7 @@ export default function DepartmentHandlerModal({ open, onClose, onSuccess }: Dep
       onCancel={onClose}
       footer={null}
       width={640}
-      destroyOnClose
+      destroyOnHidden
     >
       <div className="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
         📌 Khi phát sinh Ticket mới (tự động từ khảo sát $\le 3$ sao hoặc tạo thủ công), hệ thống sẽ{' '}

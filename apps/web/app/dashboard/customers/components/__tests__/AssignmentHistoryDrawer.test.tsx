@@ -121,7 +121,7 @@ describe('AssignmentHistoryDrawer timers', () => {
   });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers();
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 

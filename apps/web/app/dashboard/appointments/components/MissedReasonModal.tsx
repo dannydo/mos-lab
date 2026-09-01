@@ -156,7 +156,7 @@ export default function MissedReasonModal({
       ]}
       width={600}
       centered
-      destroyOnClose
+      destroyOnHidden
     >
       <div className="py-2">
         {/* Customer & Booking Summary Header */}

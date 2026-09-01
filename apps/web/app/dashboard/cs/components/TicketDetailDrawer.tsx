@@ -644,7 +644,7 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
         open={scheduleModalOpen}
         onCancel={() => setScheduleModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         width={500}
       >
         <Form form={scheduleForm} layout="vertical" onFinish={handleScheduleInspectionSubmit} className="mt-4">
@@ -699,7 +699,7 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
         open={subtaskModalOpen}
         onCancel={() => setSubtaskModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         width={550}
       >
         <Form form={subtaskForm} layout="vertical" onFinish={handleResolveSubtaskSubmit} className="mt-4">

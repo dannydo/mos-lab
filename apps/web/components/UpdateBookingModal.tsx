@@ -238,7 +238,7 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
           </Tag>
         </div>
       }
-      destroyOnClose
+      destroyOnHidden
       style={{ top: 24 }}
       styles={{
         content: {

@@ -90,7 +90,7 @@ export function CvSpeedDetailModal({ open, loading, staffId, cvDetail, onCancel 
           boxShadow: isDark ? '0 20px 45px -15px rgba(0, 0, 0, 0.8)' : '0 20px 45px -15px rgba(0, 0, 0, 0.12)',
         },
       }}
-      destroyOnClose
+      destroyOnHidden
       closeIcon={null}
     >
       <div

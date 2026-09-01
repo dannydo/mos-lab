@@ -102,7 +102,7 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
         form.resetFields();
         onCancel();
       }}
-      destroyOnClose
+      destroyOnHidden
     >
       <div style={{ marginTop: '12px', marginBottom: '16px' }}>
         {booking?.customerName && (

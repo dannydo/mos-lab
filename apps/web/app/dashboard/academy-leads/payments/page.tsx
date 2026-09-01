@@ -826,7 +826,7 @@ export default function AcademyPaymentManagementPage() {
 
       <AdaptiveModal
         className={styles.paymentSlipPreviewModal}
-        destroyOnClose
+        destroyOnHidden
         open={paymentSlipOpen && Boolean(collecting && paymentSlipSnapshot)}
         title="Xem trước phiếu yêu cầu thanh toán"
         onCancel={() => setPaymentSlipOpen(false)}

@@ -216,7 +216,7 @@ export default function AcademyWorkshopAgendaTemplateLibrary({
         </span>
       }
       onClose={onClose}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <AdaptiveOverlayFooter>
           <div className="mr-auto hidden items-center gap-2 text-xs opacity-65 sm:flex">

@@ -120,7 +120,7 @@ export default function CreateCustomerModal({ open, onClose, onCreated }: Create
         </div>
       }
       zIndex={1050}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} disabled={submitting}>

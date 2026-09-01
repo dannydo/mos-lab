@@ -2032,7 +2032,7 @@ export default function CampaignDetailPage() {
         onCancel={() => setEditCampaignModalVisible(false)}
         footer={null}
         width={720}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={editForm}

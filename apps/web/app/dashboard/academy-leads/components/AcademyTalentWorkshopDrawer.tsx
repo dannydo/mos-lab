@@ -1412,7 +1412,7 @@ export function AcademyTalentWorkshopDrawer({
             position: 'relative',
           },
         }}
-        destroyOnClose={false}
+        destroyOnHidden={false}
         aria-label="Workshop Tố Chất Academy"
       >
         {layoutMode === 'custom' && (
@@ -2247,7 +2247,7 @@ export function AcademyTalentWorkshopDrawer({
 
       <AdaptiveModal
         className={styles.invoicePreviewModal}
-        destroyOnClose
+        destroyOnHidden
         footer={[
           <Button key="cancel" onClick={() => setPrintPreviewOpen(false)}>
             Quay lại workshop
@@ -2312,7 +2312,7 @@ export function AcademyTalentWorkshopDrawer({
 
       <AdaptiveModal
         className={styles.paymentFollowUpModal}
-        destroyOnClose
+        destroyOnHidden
         footer={[
           <Button key="payment-slip" icon={<AppIcon icon={Printer} />} onClick={openPaymentSlipPreview}>
             Lập phiếu thanh toán
@@ -2498,7 +2498,7 @@ export function AcademyTalentWorkshopDrawer({
 
       <AdaptiveModal
         className={styles.paymentSlipPreviewModal}
-        destroyOnClose
+        destroyOnHidden
         footer={[
           <Button key="back" onClick={() => setPaymentSlipOpen(false)}>
             Quay lại follow-up
@@ -2536,7 +2536,7 @@ export function AcademyTalentWorkshopDrawer({
       )}
 
       <AdaptiveModal
-        destroyOnClose
+        destroyOnHidden
         footer={[
           <Button key="cancel" onClick={closeGlobalEditor}>
             Hủy

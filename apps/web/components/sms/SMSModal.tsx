@@ -447,7 +447,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
         </div>
       }
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       styles={{
         content: {
           backgroundColor: themeMode === 'dark' ? '#141414' : '#ffffff',
@@ -760,7 +760,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
         confirmLoading={savingTemplate}
         okText="Lưu Mẫu"
         cancelText="Hủy"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form layout="vertical" className="pt-2">
           <Form.Item label="Tên Mẫu Template" required>

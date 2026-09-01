@@ -110,7 +110,7 @@ export default function DailyCallsDrawer({ open, onClose }: DailyCallsDrawerProp
           background: themeMode === 'dark' ? '#0b0f19' : '#ffffff',
         },
       }}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Absolute resize handle on the left edge of the Drawer body content */}
       {isResizableDesktop && (

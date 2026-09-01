@@ -29,7 +29,7 @@ export function OffDayRescheduleWarningModal({
     <AdaptiveModal
       intent="confirm"
       open={open}
-      destroyOnClose
+      destroyOnHidden
       onCancel={onCancel}
       width={500}
       zIndex={2000}

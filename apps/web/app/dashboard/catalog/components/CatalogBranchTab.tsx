@@ -597,7 +597,7 @@ export default function CatalogBranchTab({ onRegisterCreate }: CatalogBranchTabP
         width={720}
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
-        destroyOnClose
+        destroyOnHidden
         extra={
           drawerMode !== 'view' && (
             <Space>

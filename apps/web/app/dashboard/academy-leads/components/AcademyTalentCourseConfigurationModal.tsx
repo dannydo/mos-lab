@@ -455,7 +455,7 @@ export function AcademyTalentCourseConfigurationModal({
   return (
     <AdaptiveModal
       className={styles.courseConfigurationModal}
-      destroyOnClose
+      destroyOnHidden
       footer={[
         <Button key="cancel" disabled={saving} onClick={onCancel}>
           Hủy

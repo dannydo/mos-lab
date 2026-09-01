@@ -609,7 +609,7 @@ export default function AcademyWorkshopQuizManager({
         open={questionDrawerOpen}
         title={editingQuestion ? 'Sửa câu hỏi' : 'Thêm câu hỏi'}
         intent="form"
-        destroyOnClose
+        destroyOnHidden
         onClose={closeQuestionDrawer}
         footer={
           <AdaptiveOverlayFooter>

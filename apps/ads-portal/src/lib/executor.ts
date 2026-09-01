@@ -1,5 +1,4 @@
-import { execFile } from 'child_process';
-import path from 'path';
+import { execFile, type ExecFileException } from 'child_process';
 
 interface RunResult {
   status: 'success' | 'error';
@@ -8,26 +7,10 @@ interface RunResult {
   stderr?: string;
 }
 
-const scriptPaths = {
-  'auto_sync_pancake.py': path.join(process.cwd(), 'scripts', 'auto_sync_pancake.py'),
-  'generate_weekly_dashboard.py': path.join(process.cwd(), 'scripts', 'generate_weekly_dashboard.py'),
-} as const;
-
 export function runPythonScript(scriptName: string, args: string[] = []): Promise<RunResult> {
   return new Promise((resolve) => {
     const rootDir = process.cwd();
-    const scriptPath = scriptPaths[scriptName as keyof typeof scriptPaths];
-    if (!scriptPath) {
-      return resolve({
-        status: 'error',
-        message: 'Invalid script name',
-      });
-    }
-
-    const configuredPython = process.env.ADS_PORTAL_PYTHON?.trim();
-    const pythonExecutable = configuredPython || 'python3';
-
-    execFile(pythonExecutable, [scriptPath, ...args], { cwd: rootDir }, (error, stdout, stderr) => {
+    const handleResult = (error: ExecFileException | null, stdout: string, stderr: string) => {
       if (error) {
         return resolve({
           status: 'error',
@@ -43,6 +26,21 @@ export function runPythonScript(scriptName: string, args: string[] = []): Promis
         stdout: stdout.trim(),
         stderr: stderr.trim(),
       });
+    };
+
+    if (scriptName === 'auto_sync_pancake.py') {
+      execFile('python3', ['scripts/auto_sync_pancake.py', ...args], { cwd: rootDir }, handleResult);
+      return;
+    }
+
+    if (scriptName === 'generate_weekly_dashboard.py') {
+      execFile('python3', ['scripts/generate_weekly_dashboard.py', ...args], { cwd: rootDir }, handleResult);
+      return;
+    }
+
+    resolve({
+      status: 'error',
+      message: 'Invalid script name',
     });
   });
 }

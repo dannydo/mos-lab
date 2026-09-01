@@ -54,4 +54,4 @@ pnpm dev
 
 ## Secrets
 
-Never commit passwords, private keys, session cookies, or JWT caches. Use environment variables, the approved secret manager, or local SSH aliases. `apps/ads-portal/configs/pancake_jwt.json` is a gitignored local cache; `PANCAKE_JWT` may be injected instead. Set `ADS_PORTAL_PYTHON` to use a project-specific Python virtualenv; otherwise Ads Portal uses `python3` from `PATH`.
+Never commit passwords, private keys, session cookies, or JWT caches. Use environment variables, the approved secret manager, or local SSH aliases. `apps/ads-portal/configs/pancake_jwt.json` is a gitignored local cache; `PANCAKE_JWT` may be injected instead. Ads Portal runs Python scripts with `python3` from `PATH`, so activate the intended virtualenv before starting the app.

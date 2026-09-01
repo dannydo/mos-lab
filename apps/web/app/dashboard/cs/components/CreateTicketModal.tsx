@@ -91,7 +91,7 @@ export default function CreateTicketModal({ open, onClose, onSuccess }: CreateTi
         onClose();
       }}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit} className="mt-4">
         <Form.Item

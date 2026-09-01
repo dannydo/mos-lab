@@ -690,7 +690,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       }
       open={open}
       onClose={onClose}
-      destroyOnClose
+      destroyOnHidden
       styles={{
         body: {
           padding: '24px',

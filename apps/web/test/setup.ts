@@ -16,6 +16,14 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// jsdom does not implement pseudo-element styles. Ant Design only needs the
+// element styles in these tests, so omit the unsupported second argument.
+const getComputedStyle = window.getComputedStyle.bind(window);
+Object.defineProperty(window, 'getComputedStyle', {
+  configurable: true,
+  value: (element: Element) => getComputedStyle(element),
+});
+
 // Mock HTMLAudioElement
 window.HTMLAudioElement.prototype.play = vi.fn().mockImplementation(() => Promise.resolve());
 window.HTMLAudioElement.prototype.pause = vi.fn();

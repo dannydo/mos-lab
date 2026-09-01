@@ -1293,7 +1293,7 @@ export default function AcademyWorkshopRegistrationPage() {
                         open={activeSelectionSheet === 'equipment'}
                         placement="bottom"
                         closable={false}
-                        destroyOnClose={false}
+                        destroyOnHidden={false}
                         forceRender
                         rootClassName={styles.selectionDrawer}
                         height="min(860px, calc(100dvh - 16px))"
@@ -1456,7 +1456,7 @@ export default function AcademyWorkshopRegistrationPage() {
                         open={activeSelectionSheet === 'menu'}
                         placement="bottom"
                         closable={false}
-                        destroyOnClose={false}
+                        destroyOnHidden={false}
                         forceRender
                         rootClassName={styles.selectionDrawer}
                         height="min(860px, calc(100dvh - 16px))"

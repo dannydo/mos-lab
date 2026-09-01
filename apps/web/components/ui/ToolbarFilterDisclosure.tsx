@@ -54,7 +54,7 @@ export function ToolbarFilterDisclosure({
         title={title}
         open={open}
         onClose={() => setOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         className="toolbar-filter-disclosure-drawer"
       >
         <div className="toolbar-filter-disclosure-content">{children}</div>

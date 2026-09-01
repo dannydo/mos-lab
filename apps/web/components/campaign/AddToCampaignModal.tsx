@@ -585,7 +585,7 @@ export function AddToCampaignModal({
           Xác nhận thêm vào chiến dịch
         </Button>,
       ]}
-      destroyOnClose
+      destroyOnHidden
     >
       <div className="py-2">
         <Paragraph type="secondary" className="text-xs mb-4">

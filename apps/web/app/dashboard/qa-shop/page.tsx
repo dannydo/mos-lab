@@ -2203,7 +2203,7 @@ export default function QaShopPage() {
           closable={false}
           zIndex={10050}
           styles={{ body: { padding: 0, backgroundColor: '#020617', color: '#f8fafc' } }}
-          destroyOnClose
+          destroyOnHidden
           getContainer={() => document.body}
         >
           {selectedAudit && (
@@ -2441,7 +2441,7 @@ export default function QaShopPage() {
               In / Xuất PDF
             </Button>,
           ]}
-          destroyOnClose
+          destroyOnHidden
           zIndex={10050}
           getContainer={() => document.body}
         >
@@ -2662,7 +2662,7 @@ export default function QaShopPage() {
         footer={null}
         width={700}
         centered
-        destroyOnClose
+        destroyOnHidden
         getContainer={() => document.body}
       >
         {previewImageUrl && (
@@ -2703,7 +2703,7 @@ export default function QaShopPage() {
           </Button>,
         ]}
         width={640}
-        destroyOnClose
+        destroyOnHidden
         getContainer={() => document.body}
       >
         <div className="space-y-3 py-2">
@@ -2780,7 +2780,7 @@ export default function QaShopPage() {
         onCancel={() => setIsManageModalOpen(false)}
         footer={null}
         width={900}
-        destroyOnClose
+        destroyOnHidden
         getContainer={() => document.body}
       >
         <div className="space-y-4 py-2">
@@ -2927,7 +2927,7 @@ export default function QaShopPage() {
         okText={editingItem ? 'Cập Nhật' : 'Thêm Mới'}
         cancelText="Hủy"
         width={580}
-        destroyOnClose
+        destroyOnHidden
         getContainer={() => document.body}
       >
         <Form form={crudForm} layout="vertical" className="mt-3 space-y-2">
@@ -3387,7 +3387,7 @@ export default function QaShopPage() {
         onCancel={() => setIsManageModalOpen(false)}
         footer={null}
         width={900}
-        destroyOnClose
+        destroyOnHidden
         getContainer={() => document.body}
       >
         <div className="space-y-4 py-2">
@@ -3534,7 +3534,7 @@ export default function QaShopPage() {
         okText={editingItem ? 'Cập Nhật' : 'Thêm Mới'}
         cancelText="Hủy"
         width={580}
-        destroyOnClose
+        destroyOnHidden
         getContainer={() => document.body}
       >
         <Form form={crudForm} layout="vertical" className="mt-3 space-y-2">
