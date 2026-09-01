@@ -109,7 +109,7 @@ prisma db pull --schema=./prisma/legacy.prisma
 
 ---
 
-## 4. Repo: **Mới (`wings-crm`)** ✅
+## 4. Repo: **`mos-lab`** ✅
 
 Không cần giải thích nhiều:
 
@@ -165,19 +165,19 @@ Semantic (CRM):
 
 ## Tóm Tắt — Tech Stack Final (Tối Ưu Cho AI)
 
-| Layer          | Chọn (AI-optimized)                             | Thay đổi | Lý do                                               |
-| :------------- | :---------------------------------------------- | :------- | :-------------------------------------------------- |
-| **UI Library** | **Ant Design 5**                                | ⚡ Đổi   | Ít code 3-5×, training data nhiều nhất              |
-| **CSS**        | **Ant Design Theme** (không cần Tailwind riêng) | ⚡ Đổi   | Ant Design tự quản lý styling                       |
-| **ORM**        | **Prisma**                                      | ⚡ Đổi   | `db pull` auto-generate schema, training data nhiều |
-| **Frontend**   | Next.js 15                                      | Giữ      | —                                                   |
-| **Backend**    | Fastify 5                                       | Giữ      | —                                                   |
-| **Monorepo**   | Turborepo + pnpm                                | Giữ      | Shared types quan trọng                             |
-| **Repo**       | `wings-crm` (mới)                               | Giữ      | Clean start                                         |
-| **State**      | TanStack Query + Zustand                        | Giữ      | —                                                   |
-| **Forms**      | Ant Design Form (built-in)                      | ⚡ Đổi   | Không cần React Hook Form riêng                     |
-| **Charts**     | Ant Design Charts (@ant-design/charts)          | ⚡ Đổi   | Tích hợp sẵn, consistent                            |
-| **Branding**   | Gold #D4A84B + Black #000000                    | Mới      | Wings Lashes brand                                  |
+| Layer          | Chọn (AI-optimized)                    | Thay đổi | Lý do                                               |
+| :------------- | :------------------------------------- | :------- | :-------------------------------------------------- |
+| **UI Library** | **Ant Design 5**                       | ⚡ Đổi   | Ít code 3-5×, training data nhiều nhất              |
+| **CSS**        | **Tailwind CSS 4 + Ant Design Theme**  | ⚡ Đổi   | Layout utilities + component design tokens          |
+| **ORM**        | **Prisma**                             | ⚡ Đổi   | `db pull` auto-generate schema, training data nhiều |
+| **Frontend**   | Next.js 16                             | Giữ      | App Router + route type generation                  |
+| **Backend**    | Fastify 5                              | Giữ      | —                                                   |
+| **Monorepo**   | Turborepo + pnpm                       | Giữ      | Shared types quan trọng                             |
+| **Repo**       | `mos-lab`                              | Giữ      | Living-lab monorepo                                 |
+| **State**      | TanStack Query + Zustand               | Giữ      | —                                                   |
+| **Forms**      | Ant Design Form (built-in)             | ⚡ Đổi   | Không cần React Hook Form riêng                     |
+| **Charts**     | Ant Design Charts (@ant-design/charts) | ⚡ Đổi   | Tích hợp sẵn, consistent                            |
+| **Branding**   | Gold #D4A84B + Black #000000           | Mới      | Wings Lashes brand                                  |
 
 ### Điểm khác biệt lớn nhất:
 

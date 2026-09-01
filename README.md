@@ -12,7 +12,7 @@ A living lab where MasterOS features are prototyped and tested on real businesse
 
 | Layer     | Technology                          |
 | :-------- | :---------------------------------- |
-| Frontend  | Next.js 15 + Ant Design 5           |
+| Frontend  | Next.js 16 + Ant Design 5           |
 | Backend   | Fastify 5 + TypeScript              |
 | ORM       | Prisma                              |
 | Database  | MariaDB (legacy reads + CRM writes) |
@@ -37,6 +37,7 @@ When biz rules are proven → Port to MasterOS (masteros.app)
 
 Hệ thống tài liệu hướng dẫn và vận hành của dự án:
 
-- [Kiến trúc hệ thống](file:///Users/dannydo/projects/mos-lab/docs/ARCHITECTURE.md) — Sơ đồ luồng dữ liệu, Tech stack và mô tả Database.
-- [Cấu hình & Biểu phí OmiCall](file:///Users/dannydo/projects/mos-lab/docs/wiki/omicall_reference.md) — Chi tiết cấu hình các hotline Viettel SIP Trunk và đơn giá cước thoại.
-- [Tech Stack chi tiết](file:///Users/dannydo/projects/mos-lab/docs/TECH_STACK.md) — Các công nghệ sử dụng trong monorepo.
+- [Development & AI Agent Quickstart](docs/DEVELOPMENT.md) — Package map, canonical commands, and verification workflow.
+- [Kiến trúc hệ thống](docs/ARCHITECTURE.md) — Sơ đồ luồng dữ liệu, Tech stack và mô tả Database.
+- [Cấu hình & Biểu phí OmiCall](docs/wiki/omicall_reference.md) — Chi tiết cấu hình các hotline Viettel SIP Trunk và đơn giá cước thoại.
+- [Tech Stack chi tiết](docs/TECH_STACK.md) — Các công nghệ sử dụng trong monorepo.

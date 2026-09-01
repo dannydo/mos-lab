@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev --webpack --port 8000",
     "build": "next build",
+    "clean": "rm -rf .next out",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.2",

@@ -10,6 +10,7 @@ const webRoot = join(workspaceRoot, 'apps/web');
 const maxPageLines = 900;
 const uiIndexPath = join(webRoot, 'components/ui/index.ts');
 const forbiddenProductImports = new Set(['Table', 'Modal', 'Drawer', 'Tag', 'Statistic', 'Spin', 'Empty', 'Result']);
+const ignoredTraversalDirectories = new Set(['node_modules', '.turbo', 'out', 'build', 'coverage']);
 
 // These legacy screens are deliberately tracked as migration work. New pages
 // must meet the limit; an existing exception may only be removed, never added.
@@ -28,13 +29,16 @@ const legacyPageExceptions = new Set([
 function walk(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = join(dir, entry.name);
-    return entry.isDirectory() ? walk(entryPath) : [entryPath];
+    if (!entry.isDirectory()) return [entryPath];
+    if (entry.name.startsWith('.next') || ignoredTraversalDirectories.has(entry.name)) return [];
+    return walk(entryPath);
   });
 }
 
 const violations: string[] = [];
-const sourceFiles = walk(webRoot).filter((file) => /\.(ts|tsx)$/.test(file) && !file.includes('/.next/'));
-const styleFiles = walk(webRoot).filter((file) => /\.css$/.test(file) && !file.includes('/.next/'));
+const webFiles = walk(webRoot);
+const sourceFiles = webFiles.filter((file) => /\.(ts|tsx)$/.test(file));
+const styleFiles = webFiles.filter((file) => /\.css$/.test(file));
 
 function getImportedNames(source: string, moduleName: string): string[] {
   const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

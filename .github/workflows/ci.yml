@@ -27,23 +27,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
-
-      - name: Generate Prisma Clients
-        run: pnpm --filter @mos-lab/api prisma:generate
+      - name: Verify
+        run: pnpm verify
 
       - name: Validate Production Data Migrations
         run: pnpm --filter @mos-lab/api data-migrations:validate
-
-      - name: Build Shared
-        run: pnpm --filter @mos-lab/shared build
-
-      - name: Type Check (API)
-        run: pnpm --filter @mos-lab/api exec tsc --noEmit
-
-      - name: Type Check (Shared)
-        run: pnpm --filter @mos-lab/shared exec tsc --noEmit
-
-      - name: Build
-        run: pnpm build

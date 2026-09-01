@@ -1,6 +1,6 @@
 {
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm run build",
+  "buildCommand": "pnpm --filter @mos-lab/shared build && pnpm run build",
   "outputDirectory": ".next",
   "framework": "nextjs"
 }

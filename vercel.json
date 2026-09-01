@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @mos-lab/web build",
+  "buildCommand": "pnpm build:web",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs"
 }

@@ -15,8 +15,10 @@
   },
   "scripts": {
     "build": "tsc",
+    "clean": "rm -rf dist",
     "dev": "tsc --watch",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

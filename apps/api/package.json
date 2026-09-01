@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "pnpm prisma:generate && tsc && pnpm postbuild",
+    "clean": "rm -rf dist",
     "postbuild": "rm -rf dist/generated && cp -r src/generated dist/generated && mkdir -p dist/modules/qa-shop && cp src/modules/qa-shop/*.json dist/modules/qa-shop/ 2>/dev/null || true",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate --schema=prisma/legacy.prisma && prisma generate --schema=prisma/crm.prisma",
@@ -18,6 +19,9 @@
     "legacy:indexes:phase1": "tsx src/scripts/apply-dashboard-phase1-indexes.ts",
     "legacy:indexes:customers": "tsx src/scripts/apply-customer-query-perf-indexes.ts",
     "lint": "eslint src/ --max-warnings=-1",
+    "typecheck": "pnpm prisma:generate && tsc --noEmit",
+    "test": "pnpm prisma:generate && tsx --test 'src/**/*.test.ts'",
+    "test:run": "pnpm test",
     "prisma:db:pull:legacy": "prisma db pull --schema=prisma/legacy.prisma"
   },
   "dependencies": {

@@ -353,7 +353,7 @@ class MonorepoGraphGenerator {
         id: nodeId,
         type: 'Component',
         label: `App Page: ${normalizedRoute}`,
-        category: 'Next.js 15 Page',
+        category: 'Next.js 16 Page',
         filePath: relativePath,
         metadata: {
           routePath: normalizedRoute,
@@ -807,7 +807,7 @@ class MonorepoGraphGenerator {
 
 ## 1. Executive Summary & Graph Topology Metrics
 
-Graphify parsed the \`mos-lab\` codebase AST, dual Prisma database schemas, Fastify HTTP routes, Next.js 15 pages, and TypeScript shared contracts into a queryable semantic Knowledge Graph.
+Graphify parsed the \`mos-lab\` codebase AST, dual Prisma database schemas, Fastify HTTP routes, Next.js 16 pages, and TypeScript shared contracts into a queryable semantic Knowledge Graph.
 
 | Metric Label | Value | Description |
 | :--- | :--- | :--- |
@@ -815,7 +815,7 @@ Graphify parsed the \`mos-lab\` codebase AST, dual Prisma database schemas, Fast
 | **Total Graph Edges** | **${data.stats.totalEdges}** | Cross-layer structural & semantic relationships |
 | **Fastify REST Routes** | **${data.stats.fastifyRouteCount}** | Parsed HTTP endpoints (\`apps/api/src/modules/*/routes.ts\`) |
 | **Prisma Schema Models** | **${data.stats.prismaModelCount}** | Dual-DB Models (\`crm.prisma\` & \`legacy.prisma\`) |
-| **Next.js 15 Pages** | **${data.stats.nextPageCount}** | App Router page components (\`apps/web/app/**/page.tsx\`) |
+| **Next.js 16 Pages** | **${data.stats.nextPageCount}** | App Router page components (\`apps/web/app/**/page.tsx\`) |
 | **Shared DTO Contracts** | **${data.stats.sharedTypeCount}** | Exported interfaces in \`@mos-lab/shared\` |
 
 ### Breakdown by Node Classification

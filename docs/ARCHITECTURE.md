@@ -41,13 +41,13 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph "Vercel — FREE (lab.masteros.app)"
-        NEXT["Next.js 15<br/>Ant Design 5<br/>Mobile-first PWA"]
+        NEXT["Next.js 16<br/>Ant Design 5<br/>Mobile-first PWA"]
     end
 
     subgraph "VPS — 194.233.76.123 (có sẵn)"
         direction TB
 
-        FAST["Fastify 5 + TypeScript<br/>REST API (port 3001)<br/>~100MB RAM"]
+        FAST["Fastify 5 + TypeScript<br/>REST API (port 4001)<br/>~100MB RAM"]
 
         LEGACY["MariaDB — management<br/>user (52K) · order (283K)<br/>order_service · user_service_balance<br/>🔒 READ-ONLY"]
 
@@ -63,7 +63,7 @@ flowchart TB
 
 ### Nguyên tắc an toàn:
 
-- ✅ Fastify **chỉ ĐỌC** database legacy (`management`)
+- ✅ Fastify chỉ đọc các bảng giao dịch legacy; Catalog Admin là ngoại lệ ghi metadata có phân quyền và transaction
 - ✅ Data CRM mới ghi vào database riêng (`mos_lab`)
 - ✅ MySQL port 3306 **đóng kín** — chỉ Fastify (localhost) truy cập
 - ✅ Legacy Wings Lashes web **không bị ảnh hưởng**
@@ -75,7 +75,7 @@ flowchart TB
 | Layer         | Công nghệ               | Tại sao                                       |
 | :------------ | :---------------------- | :-------------------------------------------- |
 | **UI**        | Ant Design 5            | AI viết ít code 3-5×, CRM components built-in |
-| **Frontend**  | Next.js 15 (App Router) | Vercel native, SSR                            |
+| **Frontend**  | Next.js 16 (App Router) | Vercel native, SSR                            |
 | **Backend**   | Fastify 5 + TypeScript  | Nhanh nhất, trên VPS, đọc MySQL trực tiếp     |
 | **ORM**       | Prisma                  | `prisma db pull` auto-generate schema legacy  |
 | **Database**  | MariaDB 10.3 (có sẵn)   | 0 setup, real-time data                       |
@@ -102,7 +102,7 @@ flowchart TB
 ```
 mos-lab/
 ├── apps/
-│   ├── web/                          # Next.js 15 + Ant Design
+│   ├── web/                          # Next.js 16 + Ant Design
 │   │   ├── app/
 │   │   │   ├── (auth)/login/         # Login page
 │   │   │   ├── (dashboard)/          # Layout chính
@@ -325,4 +325,4 @@ Day 6+ ──→ 💥 Iterate biz rules cho đến khi proven
 
 Hệ thống tích hợp các dịch vụ bên thứ ba và tài liệu hướng dẫn vận hành chi tiết:
 
-- [Tài liệu cấu hình & biểu phí OmiCall](file:///Users/dannydo/projects/mos-lab/docs/wiki/omicall_reference.md) — Chi tiết về các đầu số hotline mạng Viettel, cơ chế định tuyến, chính sách chặn cuộc gọi, cảnh báo số dư tài khoản và biểu phí cước gọi di động/cố định/1800.
+- [Tài liệu cấu hình & biểu phí OmiCall](wiki/omicall_reference.md) — Chi tiết về các đầu số hotline mạng Viettel, cơ chế định tuyến, chính sách chặn cuộc gọi, cảnh báo số dư tài khoản và biểu phí cước gọi di động/cố định/1800.
