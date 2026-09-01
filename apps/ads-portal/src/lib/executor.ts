@@ -1,6 +1,5 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import path from 'path';
-import fs from 'fs';
 
 interface RunResult {
   status: 'success' | 'error';
@@ -9,27 +8,26 @@ interface RunResult {
   stderr?: string;
 }
 
+const scriptPaths = {
+  'auto_sync_pancake.py': path.join(process.cwd(), 'scripts', 'auto_sync_pancake.py'),
+  'generate_weekly_dashboard.py': path.join(process.cwd(), 'scripts', 'generate_weekly_dashboard.py'),
+} as const;
+
 export function runPythonScript(scriptName: string, args: string[] = []): Promise<RunResult> {
   return new Promise((resolve) => {
     const rootDir = process.cwd();
-    const scriptPath = path.join(rootDir, 'scripts', scriptName);
-
-    // Obfuscating the path construction to prevent Next.js compile-time static analysis
-    const parts = ['..', '.venv-ads-portal', 'bin', 'python'];
-    const venvPython = path.join(rootDir, ...parts);
-
-    const pythonExecutable = fs.existsSync(venvPython) ? venvPython : 'python3';
-
-    if (!fs.existsSync(scriptPath)) {
+    const scriptPath = scriptPaths[scriptName as keyof typeof scriptPaths];
+    if (!scriptPath) {
       return resolve({
         status: 'error',
-        message: `Script not found: ${scriptPath}`,
+        message: 'Invalid script name',
       });
     }
 
-    const command = `"${pythonExecutable}" "${scriptPath}" ${args.map((a) => `"${a}"`).join(' ')}`;
+    const configuredPython = process.env.ADS_PORTAL_PYTHON?.trim();
+    const pythonExecutable = configuredPython || 'python3';
 
-    exec(command, { cwd: rootDir }, (error, stdout, stderr) => {
+    execFile(pythonExecutable, [scriptPath, ...args], { cwd: rootDir }, (error, stdout, stderr) => {
       if (error) {
         return resolve({
           status: 'error',

@@ -107,12 +107,15 @@ def validate_pancake_jwt(pos_jwt):
 
 # ─── Main Execution Flow ───────────────────────────────────────────────────────
 def main():
-    # Attempt to read token from cache
-    project_dir = os.path.dirname(os.path.abspath(__file__))
+    # Prefer an injected secret, then fall back to the gitignored local cache.
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     cache_path = os.path.join(project_dir, "configs/pancake_jwt.json")
-    pos_jwt = None
+    pos_jwt = os.environ.get("PANCAKE_JWT", "").strip() or None
+
+    if pos_jwt and not validate_pancake_jwt(pos_jwt):
+        pos_jwt = None
     
-    if os.path.exists(cache_path):
+    if not pos_jwt and os.path.exists(cache_path):
         try:
             with open(cache_path, "r", encoding="utf-8") as f:
                 cache_data = json.load(f)
@@ -126,7 +129,7 @@ def main():
         # Fallback to browser CDP retrieval
         pos_jwt = get_pancake_jwt_via_cdp()
         
-        # Save token to cache if retrieved successfully
+        # Save browser-derived tokens only to the gitignored local cache.
         if pos_jwt:
             try:
                 os.makedirs(os.path.dirname(cache_path), exist_ok=True)

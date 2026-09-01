@@ -3,20 +3,22 @@
 Để đảm bảo hệ thống hỗ trợ cả giao diện sáng (Light Theme) và tối (Dark Theme) chính xác, tất cả các tác vụ cập nhật giao diện trong tương lai cần tuân thủ nghiêm ngặt các quy tắc sau:
 
 ## 1. Cơ chế hoạt động của Theme
-* Hệ thống sử dụng một biến trạng thái toàn cục `themeMode` ('light' | 'dark') được cấp phát qua `useTheme()` trong `ThemeContext.tsx`.
-* Khi `themeMode` thay đổi, class `.light-theme` hoặc `.dark-theme` tương ứng sẽ được áp dụng trực tiếp lên thẻ `<html>` gốc (`document.documentElement`).
+
+- Hệ thống sử dụng một biến trạng thái toàn cục `themeMode` ('light' | 'dark') được cấp phát qua `useTheme()` trong `ThemeContext.tsx`.
+- Khi `themeMode` thay đổi, class `.light-theme` hoặc `.dark-theme` tương ứng sẽ được áp dụng trực tiếp lên thẻ `<html>` gốc (`document.documentElement`).
 
 ## 2. Quy tắc ghi đè CSS (CSS Overrides Rules)
-* **Tuyệt đối KHÔNG** hardcode trực tiếp các thuộc tính màu nền tối (như `background: #141414 !important` hoặc `color: #fff`) trong các selector CSS toàn cục.
-* Toàn bộ các quy tắc ghi đè màu sắc của thư viện (như `ant-table`, `ant-drawer`, `ant-tabs`) phải được phân vùng rõ ràng theo cấu trúc phân cấp dưới class theme của thẻ gốc:
-  
+
+- **Tuyệt đối KHÔNG** hardcode trực tiếp các thuộc tính màu nền tối (như `background: #141414 !important` hoặc `color: #fff`) trong các selector CSS toàn cục.
+- Toàn bộ các quy tắc ghi đè màu sắc của thư viện (như `ant-table`, `ant-drawer`, `ant-tabs`) phải được phân vùng rõ ràng theo cấu trúc phân cấp dưới class theme của thẻ gốc:
+
   ```css
   /* Ghi đè màu sắc chỉ áp dụng for Dark Theme */
   .dark-theme .antd-custom-table .ant-table {
     background: #141414 !important;
     color: #ccc !important;
   }
-  
+
   /* Ghi đè màu sắc chỉ áp dụng cho Light Theme */
   .light-theme .antd-custom-table .ant-table {
     background: #ffffff !important;
@@ -25,40 +27,45 @@
   ```
 
 ## 3. Sử dụng inline style trong React
-* Đối với các thuộc tính màu sắc viết trực tiếp bằng React `style={{ ... }}`, **luôn luôn** sử dụng toán tử điều kiện dựa trên trạng thái `themeMode` thay vì hardcode một giá trị màu cố định:
-  
-  * **Sai:** `style={{ background: '#141414', border: '1px solid #2a2a2a' }}`
-  * **Đúng:** `style={{ background: themeMode === 'dark' ? '#141414' : '#ffffff', border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}` }}`
 
-* Hoặc tối ưu hơn, hãy sử dụng các Design Token chính thức của Ant Design bằng hook `theme.useToken()`:
+- Đối với các thuộc tính màu sắc viết trực tiếp bằng React `style={{ ... }}`, **luôn luôn** sử dụng toán tử điều kiện dựa trên trạng thái `themeMode` thay vì hardcode một giá trị màu cố định:
+
+  - **Sai:** `style={{ background: '#141414', border: '1px solid #2a2a2a' }}`
+  - **Đúng:** `style={{ background: themeMode === 'dark' ? '#141414' : '#ffffff', border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}` }}`
+
+- Hoặc tối ưu hơn, hãy sử dụng các Design Token chính thức của Ant Design bằng hook `theme.useToken()`:
   ```typescript
   const { token } = theme.useToken();
   // Sử dụng token.colorBgContainer, token.colorBorderSecondary, v.v.
   ```
 
 ## 4. Kiểm thử trước khi đẩy code
-* Trước khi hoàn thành chỉnh sửa UI, lập trình viên/Agent phải thực hiện kiểm thử giao diện bằng cách nhấp vào biểu tượng theme (mặt trời/mặt trăng) trên header để verify các bảng biểu, modal, drawer và văn bản hiển thị rõ ràng trên cả hai nền sáng và tối.
+
+- Trước khi hoàn thành chỉnh sửa UI, lập trình viên/Agent phải thực hiện kiểm thử giao diện bằng cách nhấp vào biểu tượng theme (mặt trời/mặt trăng) trên header để verify các bảng biểu, modal, drawer và văn bản hiển thị rõ ràng trên cả hai nền sáng và tối.
 
 ## 5. Quy tắc định dạng số & Ngăn chặn giật giao diện (Number Jitter Prevention Rules)
-* Đối với tất cả các thành phần hiển thị thời gian chạy, thời gian thực tế, thời lượng cuộc gọi, số đếm ngược, hoặc bất kỳ chỉ số dạng số nào thay đổi liên tục:
-  * **Luôn sử dụng** định dạng hiển thị **Tabular Numbers** (các chữ số có chiều rộng bằng nhau) để ngăn chặn hiện tượng số thay đổi làm xê dịch chiều ngang của dòng chữ ("giật giật").
-  * **Cách thực hiện trong CSS/Tailwind:** Sử dụng class Tailwind `tabular-nums` hoặc style `font-variant-numeric: tabular-nums` (kèm theo `font-feature-settings: "tnum"` để tối ưu hiển thị trên các trình duyệt cũ/hệ điều hành cũ).
-  * **Ví dụ trong React inline style:**
+
+- Đối với tất cả các thành phần hiển thị thời gian chạy, thời gian thực tế, thời lượng cuộc gọi, số đếm ngược, hoặc bất kỳ chỉ số dạng số nào thay đổi liên tục:
+  - **Luôn sử dụng** định dạng hiển thị **Tabular Numbers** (các chữ số có chiều rộng bằng nhau) để ngăn chặn hiện tượng số thay đổi làm xê dịch chiều ngang của dòng chữ ("giật giật").
+  - **Cách thực hiện trong CSS/Tailwind:** Sử dụng class Tailwind `tabular-nums` hoặc style `font-variant-numeric: tabular-nums` (kèm theo `font-feature-settings: "tnum"` để tối ưu hiển thị trên các trình duyệt cũ/hệ điều hành cũ).
+  - **Ví dụ trong React inline style:**
     ```typescript
     style={{ fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' }}
     ```
-  * **Ví dụ trong Tailwind class:**
+  - **Ví dụ trong Tailwind class:**
     ```html
     <span className="tabular-nums">...</span>
     ```
 
 ## 6. Single Source of Truth Design Tokens & Responsive / Density Standardization Rules
-* **Lưu trữ Design Tokens tập trung**: Toàn bộ quy chuẩn màu sắc, bo góc, typography, responsive breakpoints (`phone: 375`, `ipad: 768`, `laptop: 1024`, `desktop: 1440`, `fourK: 2560`) và mật độ hiển thị (`compact`, `comfort`, `spacious`) bắt buộc phải lấy từ `themeTokens` trong `@mos-lab/shared` (`packages/shared/src/theme/tokens.ts`).
-* **Tái sử dụng UI Primitives**: Ưu tiên sử dụng các UI components dùng chung tại `apps/web/components/ui` (`StatCard`, `SectionCard`, `PageHeader`, `StatusTag`, `IconText`, `DensityContainer`) thay vì viết lại các khối giao diện tương tự rải rác.
+
+- **Lưu trữ Design Tokens tập trung**: Toàn bộ quy chuẩn màu sắc, bo góc, typography, responsive breakpoints (`phone: 375`, `ipad: 768`, `laptop: 1024`, `desktop: 1440`, `fourK: 2560`) và mật độ hiển thị (`compact`, `comfort`, `spacious`) bắt buộc phải lấy từ `themeTokens` trong `@mos-lab/shared` (`packages/shared/src/theme/tokens.ts`).
+- **Tái sử dụng UI Primitives**: Ưu tiên sử dụng các UI components dùng chung tại `apps/web/components/ui` (`StatCard`, `SectionCard`, `PageHeader`, `StatusTag`, `IconText`, `DensityContainer`) thay vì viết lại các khối giao diện tương tự rải rác.
 
 ## 7. Strict Vertical Alignment (v-align) & Flex Centering Rules
-* **Tuyệt đối KHÔNG sử dụng class `align-center`**: Class `align-center` không tồn tại trong Tailwind CSS. Khi cần căn giữa theo chiều dọc trong flex container, luôn luôn sử dụng class `items-center` (`align-items: center`).
-* **Căn giữa chuẩn cho Badges, Tags & Pills**: Tất cả các thành phần dạng nhãn (Thẻ Tag, Badges, Pills, Status Badge) bắt buộc phải dùng `inline-flex items-center justify-center leading-none` kèm padding cân đối (`py-1 px-2.5`) để văn bản và biểu tượng vector luôn nằm chính giữa tuyệt đối theo chiều dọc, không bị lệch lề trên hay lề dưới.
+
+- **Tuyệt đối KHÔNG sử dụng class `align-center`**: Class `align-center` không tồn tại trong Tailwind CSS. Khi cần căn giữa theo chiều dọc trong flex container, luôn luôn sử dụng class `items-center` (`align-items: center`).
+- **Căn giữa chuẩn cho Badges, Tags & Pills**: Tất cả các thành phần dạng nhãn (Thẻ Tag, Badges, Pills, Status Badge) bắt buộc phải dùng `inline-flex items-center justify-center leading-none` kèm padding cân đối (`py-1 px-2.5`) để văn bản và biểu tượng vector luôn nằm chính giữa tuyệt đối theo chiều dọc, không bị lệch lề trên hay lề dưới.
 
 ---
 
@@ -67,10 +74,11 @@
 Để đảm bảo an toàn thông tin và tính riêng tư của dữ liệu doanh nghiệp mos-lab, các tác vụ liên quan đến API xuất dữ liệu tính lương Booker phải tuân thủ nghiêm ngặt quy tắc sau:
 
 ## 1. Tính độc lập của API (No Shared API)
-* **Tuyệt đối KHÔNG** sử dụng chung hoặc gọi trực tiếp đến API ngoài của Wingslashes (`api.wingslashes.com`).
-* Toàn bộ việc xuất dữ liệu và tính lương cho Booker phải được xử lý độc lập và khép kín qua endpoint nội bộ của Fastify tại:
+
+- **Tuyệt đối KHÔNG** sử dụng chung hoặc gọi trực tiếp đến API ngoài của Wingslashes (`api.wingslashes.com`).
+- Toàn bộ việc xuất dữ liệu và tính lương cho Booker phải được xử lý độc lập và khép kín qua endpoint nội bộ của Fastify tại:
   `GET /api/kpi/export-booker-salary`
-* Mọi ứng dụng liên kết (như Google Sheets, App Scripts) hoặc các Module tính toán Leaderboard bắt buộc phải chuyển hướng cấu hình gọi qua domain nội bộ của hệ thống mos-lab với API key đi kèm:
+- Mọi ứng dụng liên kết (như Google Sheets, App Scripts) hoặc các Module tính toán Leaderboard bắt buộc phải chuyển hướng cấu hình gọi qua domain nội bộ của hệ thống mos-lab với API key đi kèm:
   `?key=FDC0D0A177694777A&booker=...&date_from=...&date_to=...`
 
 ---
@@ -80,14 +88,16 @@
 Để tránh việc Agent vô tình chỉnh sửa mã nguồn của các dự án/workspace khác khi đang làm việc trong workspace này:
 
 ## 1. Hạn chế phạm vi hoạt động (Workspace Isolation)
-* Agent **được phép ĐỌC** thông tin từ các tệp tin nằm ngoài thư mục workspace hiện tại (`/Users/dannydo/projects/mos-lab`) để tham khảo, đối chiếu hoặc tìm hiểu ngữ cảnh phục vụ công việc.
-* Tuy nhiên, **tuyệt đối KHÔNG tự ý chỉnh sửa (ghi, tạo mới hoặc thay đổi)** bất kỳ tệp tin nào nằm ngoài thư mục workspace hiện tại.
-* Nếu người dùng yêu cầu chỉnh sửa hoặc ghi tệp tin nằm ngoài workspace hiện tại, Agent **bắt buộc phải cảnh báo người dùng** trước khi thực hiện:
-  * Nêu rõ đường dẫn tuyệt đối của tệp tin/dự án ngoài workspace sẽ bị tác động.
-  * Yêu cầu xác nhận rõ ràng từ người dùng (ví dụ: "Bạn có chắc chắn muốn chỉnh sửa tệp tin ngoài workspace này không?") trước khi gọi bất kỳ công cụ ghi/sửa tệp tin nào (`write_to_file`, `replace_file_content`, v.v.).
+
+- Agent **được phép ĐỌC** thông tin từ các tệp tin nằm ngoài thư mục workspace hiện tại (`/Users/dannydo/projects/mos-lab`) để tham khảo, đối chiếu hoặc tìm hiểu ngữ cảnh phục vụ công việc.
+- Tuy nhiên, **tuyệt đối KHÔNG tự ý chỉnh sửa (ghi, tạo mới hoặc thay đổi)** bất kỳ tệp tin nào nằm ngoài thư mục workspace hiện tại.
+- Nếu người dùng yêu cầu chỉnh sửa hoặc ghi tệp tin nằm ngoài workspace hiện tại, Agent **bắt buộc phải cảnh báo người dùng** trước khi thực hiện:
+  - Nêu rõ đường dẫn tuyệt đối của tệp tin/dự án ngoài workspace sẽ bị tác động.
+  - Yêu cầu xác nhận rõ ràng từ người dùng (ví dụ: "Bạn có chắc chắn muốn chỉnh sửa tệp tin ngoài workspace này không?") trước khi gọi bất kỳ công cụ ghi/sửa tệp tin nào (`write_to_file`, `replace_file_content`, v.v.).
 
 ## 2. Xác thực trước khi sửa đổi
-* Chỉ tiến hành thay đổi mã nguồn ở workspace khác khi và chỉ khi nhận được sự đồng ý bằng văn bản rõ ràng từ người dùng trong phiên chat hiện tại.
+
+- Chỉ tiến hành thay đổi mã nguồn ở workspace khác khi và chỉ khi nhận được sự đồng ý bằng văn bản rõ ràng từ người dùng trong phiên chat hiện tại.
 
 ---
 
@@ -96,37 +106,37 @@
 Để xây dựng giao diện ứng dụng quản lý `mos-lab` vừa vững chắc về tính năng, vừa có tính thẩm mỹ cao (Premium UI) và đồng bộ, Agent cần tuân thủ workflow phối hợp sau:
 
 ## 1. Phân chia vai trò công nghệ
-* **Ant Design 5 (Trụ cột chức năng):** Sử dụng các component sẵn có của Antd cho các thành phần có trạng thái (state) phức tạp, tương tác dữ liệu cao hoặc cần tuân thủ form/bảng biểu:
-  * `<Table>`, `<Form>`, `<Form.Item>`, `<Select>`, `<DatePicker>`, `<Modal>`, `<Drawer>`, `<Tabs>`, `<Steps>`, `<Upload>`.
-* **Tailwind CSS v4 (Thẩm mỹ & Bố cục):** Sử dụng các utility classes của Tailwind để dựng bố cục, căn lề, khoảng cách, và trang trí nâng cao:
-  * Layout: `grid`, `flex`, `gap-*`, `w-*`, `h-*`.
-  * Visual: Gradient nền (`bg-gradient-to-r`), hiệu ứng bóng mờ (`shadow-*`), bo góc (`rounded-*`), và backdrop-filter (glassmorphism).
-  * Animations: Hiệu ứng hover, chuyển cảnh mượt mà (`transition-all duration-300 ease-in-out hover:scale-[1.02]`).
+
+- **Ant Design 5 (Trụ cột chức năng):** Sử dụng các component sẵn có của Antd cho các thành phần có trạng thái (state) phức tạp, tương tác dữ liệu cao hoặc cần tuân thủ form/bảng biểu:
+  - `<Table>`, `<Form>`, `<Form.Item>`, `<Select>`, `<DatePicker>`, `<Modal>`, `<Drawer>`, `<Tabs>`, `<Steps>`, `<Upload>`.
+- **Tailwind CSS v4 (Thẩm mỹ & Bố cục):** Sử dụng các utility classes của Tailwind để dựng bố cục, căn lề, khoảng cách, và trang trí nâng cao:
+  - Layout: `grid`, `flex`, `gap-*`, `w-*`, `h-*`.
+  - Visual: Gradient nền (`bg-gradient-to-r`), hiệu ứng bóng mờ (`shadow-*`), bo góc (`rounded-*`), và backdrop-filter (glassmorphism).
+  - Animations: Hiệu ứng hover, chuyển cảnh mượt mà (`transition-all duration-300 ease-in-out hover:scale-[1.02]`).
 
 ## 2. Quy tắc tích hợp & Tránh xung đột
-* **Không lạm dụng custom CSS:** Ưu tiên dùng Tailwind class trực tiếp trên thẻ hoặc cấu hình `className` của Antd. Hạn chế tối đa việc viết thêm file `.css` mới trừ khi ghi đè (override) component của Antd.
-* **Ghi đè phong cách Antd (Antd Customization):**
-  * Sử dụng thuộc tính `className` kết hợp với Tailwind (ví dụ: `<Card className="shadow-lg border border-slate-100 dark:border-slate-800">`).
-  * Khi cần ghi đè CSS sâu của Antd (ví dụ `.ant-table`), hãy đặt trong các block CSS phân vùng rõ ràng theo theme `.dark-theme` / `.light-theme` trong file CSS toàn cục như quy định ở phần "Frontend Theme Customization Rules".
-* **Đồng bộ màu sắc với Design Tokens:**
-  * Khi dùng Tailwind class hoặc inline style liên quan đến màu sắc, hãy đảm bảo chúng khớp với trạng thái `themeMode` hiện tại.
-  * Ưu tiên dùng CSS Variables hoặc Antd Design Tokens (`theme.useToken()`) để các màu sắc (background, border, text) tự động thay đổi khi chuyển đổi qua lại giữa Light/Dark theme.
+
+- **Không lạm dụng custom CSS:** Ưu tiên dùng Tailwind class trực tiếp trên thẻ hoặc cấu hình `className` của Antd. Hạn chế tối đa việc viết thêm file `.css` mới trừ khi ghi đè (override) component của Antd.
+- **Ghi đè phong cách Antd (Antd Customization):**
+  - Sử dụng thuộc tính `className` kết hợp với Tailwind (ví dụ: `<Card className="shadow-lg border border-slate-100 dark:border-slate-800">`).
+  - Khi cần ghi đè CSS sâu của Antd (ví dụ `.ant-table`), hãy đặt trong các block CSS phân vùng rõ ràng theo theme `.dark-theme` / `.light-theme` trong file CSS toàn cục như quy định ở phần "Frontend Theme Customization Rules".
+- **Đồng bộ màu sắc với Design Tokens:**
+  - Khi dùng Tailwind class hoặc inline style liên quan đến màu sắc, hãy đảm bảo chúng khớp với trạng thái `themeMode` hiện tại.
+  - Ưu tiên dùng CSS Variables hoặc Antd Design Tokens (`theme.useToken()`) để các màu sắc (background, border, text) tự động thay đổi khi chuyển đổi qua lại giữa Light/Dark theme.
 
 ## 3. Tiêu chuẩn giao diện cao cấp (Premium UI)
-* **Tránh giao diện mặc định đơn điệu:** Tuyệt đối không để nguyên giao diện mặc định thô cứng của Antd. Hãy bo tròn các góc mềm mại hơn, thêm shadow nhẹ, và dùng màu nền tinh tế (thay vì màu xám/trắng mặc định).
-* **Micro-animations:** Thêm hiệu ứng transition nhẹ nhàng khi hover vào các thẻ card, nút bấm hoặc dòng trong bảng để giao diện có cảm giác "sống động" và phản hồi tốt.
-* **Không dùng hình ảnh giữ chỗ (placeholders):** Sử dụng biểu tượng SVG chất lượng cao hoặc sinh ảnh thực tế bằng công cụ AI nếu cần minh họa.
+
+- **Tránh giao diện mặc định đơn điệu:** Tuyệt đối không để nguyên giao diện mặc định thô cứng của Antd. Hãy bo tròn các góc mềm mại hơn, thêm shadow nhẹ, và dùng màu nền tinh tế (thay vì màu xám/trắng mặc định).
+- **Micro-animations:** Thêm hiệu ứng transition nhẹ nhàng khi hover vào các thẻ card, nút bấm hoặc dòng trong bảng để giao diện có cảm giác "sống động" và phản hồi tốt.
+- **Không dùng hình ảnh giữ chỗ (placeholders):** Sử dụng biểu tượng SVG chất lượng cao hoặc sinh ảnh thực tế bằng công cụ AI nếu cần minh họa.
 
 ---
 
-# External Server Details (Image Storage Server)
-*Đây là thông tin cấu hình máy chủ dùng để lưu trữ ảnh cho dự án Wings Lashes (tác vụ phân tích tiếng cười đã chuyển qua sử dụng trực tiếp Gemini API).*
+# External Server Credential Handling
 
-*   **IP:** `75.119.148.205`
-*   **Port:** `22`
-*   **User:** `root`
-*   **Password:** `qyRUPgRjsV26FYD6qcUe`
-*   **Ghi chú:** Máy chủ chạy Ubuntu 20.04 LTS, có 31GB RAM trống và 8 vCPUs (AMD EPYC). Không được hỏi lại người dùng thông tin này.
+- Never store server passwords, private keys, API tokens, or session cookies in repository documentation.
+- Resolve SSH destinations through the operator's local `~/.ssh/config` aliases and load application secrets from the environment or the approved secret manager.
+- If a required credential is unavailable, report the missing variable or SSH alias without printing or reconstructing its value.
 
 ---
 
@@ -135,6 +145,7 @@
 Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho Client Consultant (CC) bắt buộc phải tuân thủ nghiêm ngặt các quy tắc công thức sau:
 
 ## 1. Công thức Level CC
+
 - **Quy tắc Level**: $100\text{ pts} = 1\text{ Level}$.
   - $0 \text{ đến } 99\text{ pts} = \text{Level 1}$
   - $100 \text{ đến } 199\text{ pts} = \text{Level 2}$
@@ -144,25 +155,29 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 - **Reset**: Mỗi đầu tháng, Level reset về `1` và Điểm Tích Luỹ reset về `0`.
 
 ## 2. Công thức Tiền Thưởng CC Bonus (đ)
+
 - **Công thức ca làm chuẩn**:
   $$\text{CC Bonus (đ)} = \text{Level CC} \times 65\text{đ}$$
 - **Quy tắc phân chia CC In != CC Out**:
   - Khi nhân viên CC In khác CC Out, cả **Điểm CC (+pts)** và **Tiền thưởng CC Bonus (đ)** đều được **chia 50/50** cho mỗi CC:
-  $$\text{CC Bonus (đ)} = \frac{\text{Level CC} \times 65\text{đ}}{2}$$
-  $$\text{Điểm CC (+pts)} = \frac{\text{Tổng điểm ca}}{2}$$
+    $$\text{CC Bonus (đ)} = \frac{\text{Level CC} \times 65\text{đ}}{2}$$
+    $$\text{Điểm CC (+pts)} = \frac{\text{Tổng điểm ca}}{2}$$
 
 ## 3. Thứ tự sắp xếp & Tích luỹ (Ordering & Accumulation)
+
 - Kết quả báo cáo xếp theo thứ tự check-in mới nhất nằm trên (`ORDER BY ro.actual_booking_date_start DESC, os.id DESC`).
 - Điểm tích luỹ `Points Accu` được tính dồn ngược từ ca cũ nhất (dưới cùng) lên ca mới nhất (trên cùng) theo từng nhân viên CC.
 - **Leaderboard Sum**: Tiền thưởng `Thưởng CC Bonus` trên Bảng Xếp Hạng phải là tổng tiền thưởng thực tế của từng ca làm dịch vụ trong tháng của CC đó, đảm bảo khớp 100% từng đồng khi lọc chi tiết.
 
 ## 4. Công thức CC Tip Bonus & Quy tắc chia 50/50
+
 - **Tỷ lệ Thưởng CC Tip**: CC nhận 20% trên tổng số tiền tip mà khách hàng cho (`staff_tip` lưu `tip_percentage = 20`).
 - **Quy tắc CC In != CC Out**: Khi nhân viên CC In khác CC Out, cả hai CC đều được **chia 50/50** khoản Thưởng CC Tip (20%) (mỗi CC nhận 10% tip share, tức `tip_percentage = 10` trong cơ sở dữ liệu `staff_tip`).
 - **Lọc theo đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order.order_state = 'Completed'` trong khoảng thời gian được lọc.
 - **Tránh SQL Duplication**: Tuyệt đối không `JOIN order_service` hoặc `JOIN staff_bonus` trực tiếp khi tính `SUM(st.tip_amount)`, tránh hiện tượng đơn hàng có nhiều dịch vụ làm nhân bản tổng tiền tip. Hãy query trực tiếp từ `staff_tip` JOIN `order` theo `st.user_id` hoặc `st.id`.
 
 ## 5. CC Daily Sales Bonus Calculation Pipeline (Immutable — Finalized 2026-08-05)
+
 - **4 Danh Mục Doanh Số**: (1) Combo Bán Mới (`order_service_combo`), (2) Sản Phẩm Bán Lẻ (`order_product`), (3) Thu Nợ Cũ (`user_debt_payment`), và (4) Nâng Cấp Gói Combo (`order_service.upgrade_price > 0`).
 - **CC Chủ Đơn**: `COALESCE(check_out_staff_id, check_in_staff_id)` — ưu tiên CC OUT.
 - **Mốc Ngày**: `COALESCE(ro.actual_booking_date_start, o.booking_date_start)` (Rule #15). Tuyệt đối KHÔNG dùng `staff_bonus.date_created` hay `order.date_created`.
@@ -176,27 +191,31 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 - **Thu Nợ Lần Sau**: Khoản tiền nợ thu được trong `user_debt_payment` cộng dồn vào danh mục Thu Nợ cho CC IN/CC OUT của ca/ngày thu nợ đó, chia 50/50 (nếu CC IN ≠ CC OUT) hoặc 100%.
 - **⚠️ KHÔNG sao chép logic WingsLashes**: WingsLashes (`generate-staff-payroll-user-group.php` L348-350) cộng raw `check_in_amount + check_out_amount` gây double-count khi CC IN = CC OUT. MOS sử dụng logic đúng nghiệp vụ.
 
-
 ## 6. Cấu hình danh sách CC (`ACTIVE_CC_STAFF_CONFIG`) & Paystub Live
+
 - **Lọc theo Active CC Config**: Tất cả các tab báo cáo CC (Leaderboard, CC Xoay, CC Thưởng, CC Tip, CC Live Paystub) bắt buộc phải lọc theo danh sách ID tư vấn viên đang hoạt động trong `crmConfig` với key `ACTIVE_CC_STAFF_CONFIG`.
 - **Công thức Paystub Live**: `Tổng Thu Nhập Tạm Tính` = `Lương Giờ` + `Thưởng CC Xoay` + `Thưởng Combo & SP` + `Thưởng Minigame` + `Thưởng CC Tip (20%)`.
 
 ## 6. External API References & `wingslashes` Source Code Inspection
+
 - Mỗi khi người dùng cung cấp đường dẫn API (ví dụ: `https://api.wingslashes.com/...` hoặc `https://api.orb/...`), **không gọi trực tiếp endpoint ngoài**.
 - **Chủ động tra cứu source code `wingslashes` nội bộ**: Truy cập và kiểm tra mã nguồn/repository `wingslashes` trên hệ thống local để đối chiếu câu lệnh SQL, công thức tính toán và logic dữ liệu chính xác của API đó.
 
 ## 7. Booker "Booked / Tạo Lịch" Metric & Productivity Definition Rule
+
 - **Định nghĩa Booked/Tạo lịch**: Tất cả các báo cáo, widget, modal KPI và Leaderboard của Booker/Telesales khi đếm số lượng **"Booked / Đặt lịch / Tạo lịch"** bắt buộc phải tính theo **ngày tạo đơn thực tế trong kỳ (`date_created` trong khoảng thời gian được lọc)**.
 - **Mục đích đo lường**: Đơn đếm `Booked` đại diện cho **hiệu suất lao động (năng suất công việc)** của Booker tạo ra trong ca/ngày/tuần/tháng đó.
 - **Không dùng OR với booking_date_start**: Tuyệt đối không dùng câu lệnh `OR` hợp nhất với `booking_date_start` (ngày khách hẹn đến) khi đếm số lượng đặt lịch của Booker.
 
 ## 8. Unified Business Logic & Fastify Backend Model Rule (Single Source of Truth)
+
 - **Khi có từ 2 vị trí trở lên cần xử lý/tính toán cùng một loại thông tin/chỉ số (Business Logic)**:
   - **Không duplicate logic**: Tuyệt đối không tính toán hay tự `reduce` rải rác ở Frontend hay viết nhiều câu SQL inline lệch nhau.
   - **Tập trung tại Fastify Backend Model / Service**: Bắt buộc xây dựng Model/Service tập trung tại Fastify Backend (`apps/api`), định nghĩa kiểu dữ liệu chuẩn tại `@mos-lab/shared`.
   - **Mục đích**: Đảm bảo tất cả các trang, tab báo cáo, Leaderboard và API xuất file nhận kết quả tính toán đồng bộ 100% từng đồng từ một Nguồn dữ liệu chuẩn duy nhất (Single Source of Truth).
 
 ## 9. CC Bonus DB Synchronization & Order Regeneration Rules
+
 1. **Nguồn Dữ liệu Thưởng CC Chuẩn**:
    - Khi hiển thị thưởng CC Bonus trên tất cả các tab báo cáo (CC Leaderboard, CC Xoay, CC Thu nhập), query trực tiếp từ `staff_bonus` với `bonus_type = 'Cash'` và `staff_bonus_rule_id = 248`.
    - Dữ liệu này phản ánh chính xác số tiền kế toán đã chi trả, giữ nguyên mức Level chốt tại thời điểm hoàn thành ca (Post-shift Level) và các khoản thưởng lẻ $0,5\text{đ}$ từ các ca chia 50/50 sau khi chạy script `regenerate order batch` (`OrderRegenerationService.php`).
@@ -209,6 +228,7 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
    - Trường hợp DB legacy chưa kịp chạy regenerate hoặc bị thiếu log `Cash`, `CcKpiService` tự động dùng công thức $\text{Level} \times 65\text{đ}$ (chia 50/50 nếu CC In != CC Out) để dự phòng.
 
 ## 10. FAL (Fix, Adjust, Log) & Midnight Regeneration Rules
+
 1. **Quy tắc Nghiệp vụ FAL (Fix, Adjust, Log)**:
    - **Fix**: Sửa mi hỏng $\le 25$ phút $\rightarrow$ KTV sửa mi được điểm Banana. Khi $> 25$ phút $\rightarrow$ KTV mới không được điểm Banana (chỉ tính Lương giờ cứng). KTV cũ ca hỏng mi luôn bị phạt thu hồi thưởng (`_punishBonus`) 100%.
    - **Adjust**: Chỉnh dáng mi $\le 25$ phút $\rightarrow$ KTV mới được điểm Banana. Khi $> 25$ phút $\rightarrow$ KTV mới không được điểm Banana. CC cũ ca tư vấn sai dáng mi luôn bị phạt thu hồi thưởng (`_punishBonus`) 100% (KHÔNG phạt KTV).
@@ -220,6 +240,7 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
    - Cronjob batch regenerate trên Prod đặt vào **02:00 AM, 02:10 AM, 02:20 AM giờ Việt Nam (`Asia/Ho_Chi_Minh`)** quét 3 ngày lùi (`1 day ago`, `2 days ago`, `3 days ago`) để làm sạch 100% rủi ro race condition cuối ngày.
 
 ## 12. SVG Diagram Event Delegation & Ant Design Z-Index Stacking Rules
+
 1. **SVG Node Click Event Delegation & State Batching**:
    - Khi gắn sự kiện tương tác click lên các phần tử SVG động (Mermaid flowchart nodes), luôn sử dụng **Event Delegation trên Container SVG Gốc (`svgWrapperRef`)** dùng `.closest('.node')`.
    - Tất cả các hàm cập nhật trạng thái React (`setSelectedNode`, `setModalOpen`) gọi từ listener DOM SVG gốc phải bọc trong `flushSync(() => { ... })` từ `'react-dom'` để đảm bảo React 19 / Next.js 16 re-render giao diện ngay lập tức.
@@ -229,7 +250,6 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
    - Đặt `zIndex={1050}` chuẩn cho Modal/Drawer thay vì dùng mốc quá lớn (`10000`) để không kích hoạt cảnh báo Ant Design `[antd: SelectLike] zIndex is over design token zIndexPopupBase`.
 
 ---
-
 
 # 📞 OmiCall Switchboard Diagnostic & Testing Rules
 
@@ -252,12 +272,13 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
    - Do khách checkout/thanh toán trễ khoảng **2 tiếng**, khung giờ tính toán tiến độ dòng tiền thực tế được delay thành **11:00 AM – 23:00 PM**.
 
 2. **Công thức Tiến độ Ngày (Real-time Fraction Today)**:
-   $$\text{fractionToday} = \begin{cases} 
-   0 & \text{khi giờ } < 11 \\ 
-   1 & \text{khi giờ } > 22 \\ 
-   \frac{\text{HOUR(NOW())} - 11 + 1}{12} & \text{khi } 11 \le \text{giờ } \le 22 
+   $$ \text{fractionToday} = \begin{cases}
+   0 & \text{khi giờ } < 11 \\
+   1 & \text{khi giờ } > 22 \\
+   \frac{\text{HOUR(NOW())} - 11 + 1}{12} & \text{khi } 11 \le \text{giờ } \le 22
    \end{cases}$$
 
+   $$
 3. **Công thức Tỷ lệ Trôi qua Tháng (Elapsed Ratio)**:
    $$E = \min\left(1.0, \max\left(0.001, \frac{\text{Số ngày đã qua trước hôm nay} + \text{fractionToday}}{\text{Tổng số ngày trong kỳ}}\right)\right)$$
 
@@ -304,7 +325,7 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 
 # 🌙 Night Shift Autonomous Optimization Protocol & Safety Rules
 
-1. **Trigger Phrase**: Khi nhận yêu cầu *"Bắt đầu Night Shift"*, *"night shift"*, *"tối ưu xuyên đêm"*, hoặc kích hoạt skill `/night-shift`.
+1. **Trigger Phrase**: Khi nhận yêu cầu _"Bắt đầu Night Shift"_, _"night shift"_, _"tối ưu xuyên đêm"_, hoặc kích hoạt skill `/night-shift`.
 2. **Git Branch Isolation**: Luôn tự động checkout sang nhánh `night-shift/YYYY-MM-DD`. Tuyệt đối không làm việc trực tiếp trên `main`.
 3. **Strict Verification Loop**: Mỗi thay đổi phải vượt qua script `bash scripts/night-shift-runner.sh` (`pnpm lint`, `pnpm --filter @mos-lab/shared build`, `pnpm build`). Nếu lỗi, tự động rollback bằng `git checkout -- .`.
 4. **Walkthrough Artifact Report**: Xuất file Báo cáo tổng hợp `walkthrough.md` trong Artifacts kèm danh sách commit và lệnh merge cho người dùng khi hoàn tất.
@@ -369,7 +390,7 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 1. **Công thức Giá Gợi Ý**: Giá trọn gói combo mặc định được tính theo số lượt mua và giá bán lẻ dịch vụ niêm yết:
    $$\text{Suggested Combo Price} = (\text{Retail Price} \times \text{Purchased Count})$$
 2. **Lượt Tặng 0đ**: Tất cả các lượt tặng (`bonusNormalCount`, `bonusRetainCount`) có giá bằng **0đ** và không được cộng vào giá trọn gói.
-3. **Tính năng Auto-fill & Override**: Khi Admin chọn Dịch vụ hoặc đổi Số lượt mua trong Form Combo, CRM tự động điền Giá gợi ý vào ô *Giá trọn gói (VNĐ)*. Admin có thể nhập đè nếu gói có ưu đãi đặc biệt.
+3. **Tính năng Auto-fill & Override**: Khi Admin chọn Dịch vụ hoặc đổi Số lượt mua trong Form Combo, CRM tự động điền Giá gợi ý vào ô _Giá trọn gói (VNĐ)_. Admin có thể nhập đè nếu gói có ưu đãi đặc biệt.
 
 ---
 
@@ -474,8 +495,8 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 
 # ➕ Creation & Addition Action Button Standard (Quy tắc Nút Thao Tác Thêm Mới Bắt Buộc Có Dấu `+`)
 
-1. **Required Plus Icon (`+`) for Creation Actions**: Tất cả các nút bấm, icon button hoặc menu action đại diện cho thao tác **Thêm mới / Tạo mới / Đặt lịch mới** (ví dụ: *Đặt lịch mới*, *Tạo chiến dịch*, *Thêm mốc chạm*, *Tạo phân bổ*) **bắt buộc phải có biểu tượng dấu cộng (`+` / `<PlusOutlined />`)** đi kèm để người dùng dễ dàng nhận biết tính năng khởi tạo tại mọi vị trí giao diện.
-2. **Compact Icon Button Visual Standard**: Đối với các nút icon bấm nhanh compact (ví dụ: nút Vàng kim *Đặt lịch mới* trên Toolbar LoCa/NYC/Tất cả KH), sử dụng icon `<PlusOutlined />` (hoặc kết hợp icon + nhãn Tooltip rõ ràng) để không bị nhầm lẫn với icon Lịch `[ 📅 ]` thông thường.
+1. **Required Plus Icon (`+`) for Creation Actions**: Tất cả các nút bấm, icon button hoặc menu action đại diện cho thao tác **Thêm mới / Tạo mới / Đặt lịch mới** (ví dụ: _Đặt lịch mới_, _Tạo chiến dịch_, _Thêm mốc chạm_, _Tạo phân bổ_) **bắt buộc phải có biểu tượng dấu cộng (`+` / `<PlusOutlined />`)** đi kèm để người dùng dễ dàng nhận biết tính năng khởi tạo tại mọi vị trí giao diện.
+2. **Compact Icon Button Visual Standard**: Đối với các nút icon bấm nhanh compact (ví dụ: nút Vàng kim _Đặt lịch mới_ trên Toolbar LoCa/NYC/Tất cả KH), sử dụng icon `<PlusOutlined />` (hoặc kết hợp icon + nhãn Tooltip rõ ràng) để không bị nhầm lẫn với icon Lịch `[ 📅 ]` thông thường.
 3. **Combined Icon Pattern for Text Buttons**: Đối với nút bấm có nhãn chữ (ví dụ `<Button icon={<PlusOutlined />}>Đặt lịch mới</Button>`), luôn đặt `<PlusOutlined />` làm icon mặc định.
 
 ---
@@ -563,8 +584,8 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
 3. **Các quy chuẩn bắt buộc của `<CvDatePicker>`**:
    - **Khóa ngày quá khứ**: Tự động vô hiệu hóa tất cả các ngày trước hôm nay (`isBefore(dayjs().startOf('day'))`).
    - **Gạch ngang ngày off của CV**: Tự động gạch ngang (`line-through`), mờ nền và chặn click đối với ngày nghỉ cố định tuần (`offDays`) và ngày nghỉ phép đã được duyệt (`approvedOffDates`).
-   - **Cảnh báo đơn xin nghỉ phép chưa duyệt (`New`)**: Hiển thị chấm màu cam (`#f59e0b`) trên ô ngày + Tooltip + Alert Banner cảnh báo: *"CV [Tên] có đơn xin nghỉ phép đang chờ duyệt vào ngày này!"*.
-   - **Cảnh báo đơn xin nghỉ phép bị từ chối (`Rejected`)**: Hiển thị chấm màu đỏ (`#ef4444`) trên ô ngày + Tooltip + Alert Banner cảnh báo: *"CV [Tên] có đơn xin nghỉ phép bị từ chối/không được duyệt vào ngày này!"*.
+   - **Cảnh báo đơn xin nghỉ phép chưa duyệt (`New`)**: Hiển thị chấm màu cam (`#f59e0b`) trên ô ngày + Tooltip + Alert Banner cảnh báo: _"CV [Tên] có đơn xin nghỉ phép đang chờ duyệt vào ngày này!"_.
+   - **Cảnh báo đơn xin nghỉ phép bị từ chối (`Rejected`)**: Hiển thị chấm màu đỏ (`#ef4444`) trên ô ngày + Tooltip + Alert Banner cảnh báo: _"CV [Tên] có đơn xin nghỉ phép bị từ chối/không được duyệt vào ngày này!"_.
    - **Tuần bắt đầu từ Thứ 2 (`Monday-First`)**: Đảm bảo tiêu đề bảng thứ hiển thị `T2 T3 T4 T5 T6 T7 CN` theo Rule #22.
    - **Tự động chuyển ngày hợp lệ (`getNextAvailableDate`)**: Nếu ngày được chọn rơi vào ngày off, tự động nhảy sang ngày làm việc tiếp theo gần nhất của CV.
 
@@ -592,11 +613,3 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
    - Khai báo chuẩn tại `@mos-lab/shared` (`packages/shared/src/types/catalog.ts`): đối tượng `LASH_STYLES` và kiểu dữ liệu `LashStyle`.
    - Service backend (`LashBenchmarkService.parseLashSpecs()`) phân tích `service_key` / `service_name` thành `{ lashStyle, lashCount }`.
    - Không nhầm lẫn **Dòng Mi / Dáng Mi** (`lashStyle`: Classic, Mink, Volume, Ivylight...) với **Loại Dịch Vụ** (`serviceType`: Normal, Retain, Fix, Adjust, Removal) hay **Nhóm Dịch Vụ** (`serviceGroup`: LashesTop, LashesUnder, Sauna...).
-
-
-
-
-
-
-
-
