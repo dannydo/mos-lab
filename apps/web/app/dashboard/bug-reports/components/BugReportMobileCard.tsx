@@ -4,6 +4,7 @@ import { Avatar, Badge, Tooltip, Typography } from 'antd';
 import type { BugReportSummary } from '@mos-lab/shared';
 import { Clock3 } from 'lucide-react';
 import { AppIcon } from '../../../../components/ui';
+import { BugReportWorkflowProgress } from '../../../../components/bug-reports/BugReportWorkflowProgress';
 import {
   BugStatusTag,
   ClarificationTag,
@@ -41,6 +42,9 @@ export function BugReportMobileCard({ report, onOpen }: BugReportMobileCardProps
             </div>
           </div>
           <ClarificationTag status={report.clarification.status} />
+          <div className="mt-2">
+            <BugReportWorkflowProgress report={report} />
+          </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Tooltip title={reporterAttention ? 'Đang cần người báo phản hồi hoặc xác nhận' : undefined}>
               <Badge dot={reporterAttention}>

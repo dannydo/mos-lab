@@ -309,7 +309,12 @@ export function useTodayData(options?: UseTodayDataOptions) {
   };
 
   const fetchDashboardData = useCallback(
-    async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day', isSilent = false) => {
+    async (
+      date: dayjs.Dayjs,
+      mode: 'day' | 'week' | 'month' = 'day',
+      isSilent = false,
+      includePreviousPeriod = true
+    ) => {
       const requestVersion = ++dashboardRequestVersion.current;
       if (!isSilent) {
         setLoading(true);
@@ -317,12 +322,13 @@ export function useTodayData(options?: UseTodayDataOptions) {
         setSilentLoading(true);
       }
       try {
-        const previousRequest = previousPeriod
-          ? apiClient.dashboard.getToday(previousPeriod.params).catch((error) => {
-              console.error('Fetch previous dashboard period error:', error);
-              return null;
-            })
-          : Promise.resolve(null);
+        const previousRequest =
+          includePreviousPeriod && previousPeriod
+            ? apiClient.dashboard.getToday(previousPeriod.params).catch((error) => {
+                console.error('Fetch previous dashboard period error:', error);
+                return null;
+              })
+            : Promise.resolve(null);
         const [response, previousData] = await Promise.all([
           apiClient.dashboard.getToday(getDashboardDateRange(date, mode)),
           previousRequest,
@@ -362,14 +368,15 @@ export function useTodayData(options?: UseTodayDataOptions) {
   );
 
   const fetchRevenueData = useCallback(
-    async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day') => {
+    async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day', includePreviousPeriod = true) => {
       const requestVersion = ++revenueRequestVersion.current;
       setRevenueLoading(true);
       try {
         const revParams: SafeAny = { ...getDashboardDateRange(date, mode) };
         if (bookingBranch !== 'all') revParams.branchKey = bookingBranch;
         if (selectedBooker && selectedBooker !== 'all') revParams.bookerFilter = selectedBooker;
-        const previousRevenueParams: SafeAny = previousPeriod ? { ...previousPeriod.params } : null;
+        const previousRevenueParams: SafeAny =
+          includePreviousPeriod && previousPeriod ? { ...previousPeriod.params } : null;
         if (previousRevenueParams && bookingBranch !== 'all') previousRevenueParams.branchKey = bookingBranch;
         if (previousRevenueParams && selectedBooker && selectedBooker !== 'all') {
           previousRevenueParams.bookerFilter = selectedBooker;
@@ -400,10 +407,19 @@ export function useTodayData(options?: UseTodayDataOptions) {
   );
 
   const refreshTodayData = useCallback(
-    async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day', isSilent = false) => {
-      await Promise.all([fetchDashboardData(date, mode, isSilent), fetchRevenueData(date, mode)]);
+    async (
+      date: dayjs.Dayjs,
+      mode: 'day' | 'week' | 'month' = 'day',
+      isSilent = false,
+      includePreviousPeriod = true
+    ) => {
+      const requests = [fetchDashboardData(date, mode, isSilent, includePreviousPeriod)];
+      if (showRevenueView) {
+        requests.push(fetchRevenueData(date, mode, includePreviousPeriod));
+      }
+      await Promise.all(requests);
     },
-    [fetchDashboardData, fetchRevenueData]
+    [fetchDashboardData, fetchRevenueData, showRevenueView]
   );
 
   useEffect(() => {
@@ -412,18 +428,18 @@ export function useTodayData(options?: UseTodayDataOptions) {
     }
   }, [selectedDate, dateRangeMode, fetchDashboardData]);
 
-  // Revenue-only filters must not reload the significantly heavier operations payload.
+  // Revenue is opt-in: avoid two additional requests until the user opens the revenue view.
   useEffect(() => {
-    if (selectedDate) {
+    if (showRevenueView && selectedDate) {
       void fetchRevenueData(selectedDate, dateRangeMode);
     }
-  }, [selectedDate, dateRangeMode, fetchRevenueData]);
+  }, [showRevenueView, selectedDate, dateRangeMode, fetchRevenueData]);
 
   // Instantly refresh today dashboard tables when popup/modal updates data
   useEffect(() => {
     const handleDataChanged = () => {
       if (selectedDate) {
-        void refreshTodayData(selectedDate, dateRangeMode, true);
+        void refreshTodayData(selectedDate, dateRangeMode, true, false);
       }
     };
     window.addEventListener('mos-data-updated', handleDataChanged);
@@ -512,7 +528,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       }
       setCountdown((prev) => {
         if (prev <= 1) {
-          void refreshTodayData(selectedDate, dateRangeMode, true);
+          void refreshTodayData(selectedDate, dateRangeMode, true, false);
           return refreshInterval;
         }
         return prev - 1;
@@ -523,7 +539,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        void refreshTodayData(selectedDate, dateRangeMode, true);
+        void refreshTodayData(selectedDate, dateRangeMode, true, false);
         setCountdown(refreshInterval);
       }
     };

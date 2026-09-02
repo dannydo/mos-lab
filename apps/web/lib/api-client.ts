@@ -640,6 +640,10 @@ export const apiClient = {
       const response = await api.post('/auth/impersonate', { userId });
       return response.data;
     },
+    endImpersonation: async (auditId: number): Promise<{ success: boolean }> => {
+      const response = await api.post('/auth/impersonate/exit', { auditId });
+      return response.data;
+    },
   },
 
   catalog: {

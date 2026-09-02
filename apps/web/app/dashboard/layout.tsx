@@ -265,7 +265,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Check authentication
     const tokenStr = localStorage.getItem('mos_token');
     const storedUser = localStorage.getItem('mos_user');
-    const hasOriginal = !!localStorage.getItem('mos_original_token');
+    const originalToken = localStorage.getItem('mos_original_token');
+    const originalUser = localStorage.getItem('mos_original_user');
+    const hasOriginal = Boolean(originalToken && originalUser);
+
+    if (!hasOriginal) {
+      localStorage.removeItem('mos_original_token');
+      localStorage.removeItem('mos_original_user');
+      localStorage.removeItem('mos_original_omicall_auto_init');
+      localStorage.removeItem('mos_impersonation_audit_id');
+    }
 
     if (!tokenStr || !storedUser) {
       localStorage.removeItem('mos_token');
@@ -273,6 +282,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       localStorage.removeItem('mos_omicall_auto_init');
       localStorage.removeItem('mos_original_token');
       localStorage.removeItem('mos_original_user');
+      localStorage.removeItem('mos_original_omicall_auto_init');
+      localStorage.removeItem('mos_impersonation_audit_id');
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
         window.location.href = '/login';
       }
@@ -289,13 +300,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         // Background profile sync to fetch latest user config & auto-init roles
         apiClient.auth
           .me()
-          .then((res: SafeAny) => {
-            if (res?.user) {
-              localStorage.setItem('mos_user', JSON.stringify(res.user));
-              if (res.resolvedOmicallAutoInit !== undefined) {
-                localStorage.setItem('mos_omicall_auto_init', String(!!res.resolvedOmicallAutoInit));
-              }
-              setUser(res.user);
+          .then((freshUser: SafeAny) => {
+            if (freshUser?.id) {
+              localStorage.setItem('mos_user', JSON.stringify(freshUser));
+              setUser(freshUser);
             }
           })
           .catch((err) => {
@@ -308,6 +316,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         localStorage.removeItem('mos_omicall_auto_init');
         localStorage.removeItem('mos_original_token');
         localStorage.removeItem('mos_original_user');
+        localStorage.removeItem('mos_original_omicall_auto_init');
+        localStorage.removeItem('mos_impersonation_audit_id');
         if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
           window.location.href = '/login';
         }
@@ -321,6 +331,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     localStorage.removeItem('mos_omicall_auto_init');
     localStorage.removeItem('mos_original_token');
     localStorage.removeItem('mos_original_user');
+    localStorage.removeItem('mos_original_omicall_auto_init');
+    localStorage.removeItem('mos_impersonation_audit_id');
     setUser(null);
     setIsImpersonating(false);
 
@@ -329,14 +341,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.location.replace('/login');
   };
 
-  const handleExitImpersonation = () => {
+  const handleExitImpersonation = async () => {
     const origToken = localStorage.getItem('mos_original_token');
     const origUser = localStorage.getItem('mos_original_user');
     if (origToken && origUser) {
+      const auditId = Number(localStorage.getItem('mos_impersonation_audit_id'));
+      const originalOmicallAutoInit = localStorage.getItem('mos_original_omicall_auto_init');
       localStorage.setItem('mos_token', origToken);
       localStorage.setItem('mos_user', origUser);
+      if (originalOmicallAutoInit !== null) {
+        localStorage.setItem('mos_omicall_auto_init', originalOmicallAutoInit);
+      } else {
+        localStorage.removeItem('mos_omicall_auto_init');
+      }
       localStorage.removeItem('mos_original_token');
       localStorage.removeItem('mos_original_user');
+      localStorage.removeItem('mos_original_omicall_auto_init');
+      localStorage.removeItem('mos_impersonation_audit_id');
+      if (Number.isInteger(auditId) && auditId > 0) {
+        await apiClient.auth.endImpersonation(auditId).catch((err) => {
+          console.error('Failed to record impersonation exit:', err);
+        });
+      }
       message.success('Đã quay lại tài khoản Admin');
       window.location.href = '/dashboard/staff';
     }

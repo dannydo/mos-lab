@@ -1,14 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
-import {
-  isAdminOrSuperAdminRole,
-  isCanonicalSuperAdminIdentity,
-  isSuperAdminRole,
-  LoginRequest,
-  LoginResponse,
-} from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole, LoginRequest, LoginResponse } from '@mos-lab/shared';
 import { GoogleIdentityError, verifyGoogleCredential } from './google-identity.service.js';
+import { evaluateImpersonationPolicy } from './impersonation-policy.js';
+
+const IMPERSONATION_SESSION_MINUTES = 30;
 
 export async function authRoutes(fastify: FastifyInstance) {
   // Helper to resolve auto init based on staff & role
@@ -335,14 +332,14 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // POST /api/auth/impersonate (Admin only, cannot impersonate other admins)
+  // POST /api/auth/impersonate
   fastify.post(
     '/auth/impersonate',
     {
       preHandler: [requireAuth],
       schema: {
         tags: ['Auth'],
-        summary: 'Admin impersonate staff account',
+        summary: 'Switch into an active staff account for support',
         security: [{ bearerAuth: [] }],
         body: {
           type: 'object',
@@ -355,14 +352,6 @@ export async function authRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const currentUser = request.user as JwtUserPayload;
-
-      if (!isAdminOrSuperAdminRole(currentUser.role)) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Quyền truy cập bị từ chối. Chỉ Admin mới có thể thực hiện chức năng này.',
-        });
-      }
-
       const { userId } = request.body as { userId: number };
 
       if (!userId) {
@@ -373,43 +362,64 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        const targetStaff = await fastify.prisma.crm.crmStaff.findUnique({
-          where: { id: userId },
+        // Re-read the actor from the database. This makes a newly promoted
+        // Super Admin effective immediately even if their browser still has an
+        // older Admin JWT.
+        const [actorStaff, targetStaff] = await Promise.all([
+          fastify.prisma.crm.crmStaff.findUnique({ where: { id: currentUser.id } }),
+          fastify.prisma.crm.crmStaff.findUnique({ where: { id: userId } }),
+        ]);
+
+        const decision = evaluateImpersonationPolicy({
+          actor: actorStaff,
+          target: targetStaff,
+          isAlreadyImpersonating: Boolean(currentUser.impersonatorId),
         });
-
-        if (!targetStaff) {
-          return reply.status(404).send({
-            error: 'Not Found',
-            message: 'Không tìm thấy người dùng đích',
+        if (!decision.allowed) {
+          const errorByStatus = {
+            400: 'Bad Request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+            404: 'Not Found',
+            409: 'Conflict',
+          } as const;
+          return reply.status(decision.statusCode).send({
+            error: errorByStatus[decision.statusCode],
+            message: decision.message,
           });
         }
 
-        if (!targetStaff.isActive) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: 'Không thể đăng nhập dưới quyền tài khoản đang bị khóa',
-          });
+        // The policy guarantees both records are present and active here.
+        if (!actorStaff || !targetStaff) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tài khoản.' });
         }
 
-        const targetIsSuperAdmin = isSuperAdminRole(targetStaff.role);
-        const targetIsAdmin = isAdminOrSuperAdminRole(targetStaff.role);
-        if (targetIsSuperAdmin || (targetIsAdmin && !isSuperAdminRole(currentUser.role))) {
-          return reply.status(403).send({
-            error: 'Forbidden',
-            message: targetIsSuperAdmin
-              ? 'Không được phép đăng nhập dưới quyền của Super Admin.'
-              : 'Chỉ Super Admin mới được đăng nhập dưới quyền của Admin khác.',
-          });
-        }
+        const issuedAt = new Date();
+        const expiresAt = new Date(issuedAt.getTime() + IMPERSONATION_SESSION_MINUTES * 60 * 1000);
+        const audit = await fastify.prisma.crm.crmImpersonationAudit.create({
+          data: {
+            actorStaffId: actorStaff.id,
+            targetStaffId: targetStaff.id,
+            actorUsername: actorStaff.username,
+            actorDisplayName: actorStaff.displayName,
+            targetUsername: targetStaff.username,
+            targetDisplayName: targetStaff.displayName,
+            expiresAt,
+          },
+        });
 
         const payload: JwtUserPayload = {
           id: targetStaff.id,
           username: targetStaff.username,
           displayName: targetStaff.displayName,
           role: targetStaff.role as SafeAny,
+          email: targetStaff.email || targetStaff.username,
+          impersonatorId: actorStaff.id,
+          impersonatorUsername: actorStaff.username,
+          impersonationAuditId: audit.id,
         };
 
-        const token = fastify.jwt.sign(payload, { expiresIn: '7d' });
+        const token = fastify.jwt.sign(payload, { expiresIn: `${IMPERSONATION_SESSION_MINUTES}m` });
 
         return {
           token,
@@ -424,12 +434,63 @@ export async function authRoutes(fastify: FastifyInstance) {
             createdAt: targetStaff.createdAt.toISOString(),
           },
           resolvedOmicallAutoInit: await resolveOmicallAutoInit(targetStaff),
+          impersonation: {
+            auditId: audit.id,
+            expiresAt: expiresAt.toISOString(),
+          },
         };
       } catch (error: SafeAny) {
         fastify.log.error(error as Error, 'Impersonation error:');
         return reply.status(500).send({
           error: 'Internal Server Error',
           message: 'Đăng nhập giả lập thất bại',
+        });
+      }
+    }
+  );
+
+  // POST /api/auth/impersonate/exit
+  fastify.post(
+    '/auth/impersonate/exit',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        tags: ['Auth'],
+        summary: 'Record a return from an account-switch session',
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: 'object',
+          required: ['auditId'],
+          properties: {
+            auditId: { type: 'integer' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const currentUser = request.user as JwtUserPayload;
+      const { auditId } = request.body as { auditId: number };
+
+      if (!auditId) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'Yêu cầu auditId.' });
+      }
+
+      try {
+        const updated = await fastify.prisma.crm.crmImpersonationAudit.updateMany({
+          where: {
+            id: auditId,
+            actorStaffId: currentUser.id,
+            endedAt: null,
+          },
+          data: { endedAt: new Date() },
+        });
+
+        return { success: updated.count > 0 };
+      } catch (error: SafeAny) {
+        fastify.log.error(error as Error, 'Impersonation exit audit error:');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể cập nhật lịch sử phiên giả lập.',
         });
       }
     }

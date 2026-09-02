@@ -18,6 +18,12 @@ describe('Kinh Thánh mOS contextual registry', () => {
     expect(ids).toContain('CAT-001');
   });
 
+  it('shows privileged account-switch rules on the Staff screen', () => {
+    const ids = getMosBibleCommandmentsForPath('/dashboard/staff').map((item) => item.id);
+
+    expect(ids).toContain('PEOPLE-002');
+  });
+
   it('searches Vietnamese terms without tones', () => {
     const results = filterMosBibleCommandments(MOS_BIBLE_COMMANDMENTS, 'khong dau');
 

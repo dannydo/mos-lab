@@ -111,6 +111,10 @@ export interface LoginResponse {
   token: string;
   user: Staff;
   resolvedOmicallAutoInit?: boolean;
+  impersonation?: {
+    auditId: number;
+    expiresAt: string;
+  };
 }
 
 export interface AuthState {

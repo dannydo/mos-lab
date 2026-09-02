@@ -8,6 +8,10 @@ export interface JwtUserPayload {
   displayName: string;
   role: UserRole;
   email?: string;
+  /** Present only on a short-lived session issued through account switching. */
+  impersonatorId?: number;
+  impersonatorUsername?: string;
+  impersonationAuditId?: number;
 }
 
 declare module '@fastify/jwt' {

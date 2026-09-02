@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BugReportSummary } from '@mos-lab/shared';
-import { needsReporterAttention } from './bug-report-presenters';
+import { getBugReportWorkflowStage, needsReporterAttention } from './bug-report-presenters';
 
 const baseReport = {
   status: 'IN_PROGRESS',
@@ -27,5 +27,50 @@ describe('needsReporterAttention', () => {
 
   it('does not flag tickets that are still being processed', () => {
     expect(needsReporterAttention(baseReport)).toBe(false);
+  });
+});
+
+describe('getBugReportWorkflowStage', () => {
+  it('condenses the API workflow into the current visual handoff, not an estimated percentage', () => {
+    expect(
+      getBugReportWorkflowStage({
+        ...baseReport,
+        status: 'NEW',
+        agentProgress: { ...baseReport.agentProgress, stage: 'WAITING_REPORTER' },
+      })
+    ).toMatchObject({ position: 1, label: 'Chờ người báo làm rõ' });
+    expect(
+      getBugReportWorkflowStage({
+        ...baseReport,
+        status: 'NEW',
+        agentProgress: { ...baseReport.agentProgress, stage: 'READY_FOR_TRIAGE' },
+      })
+    ).toMatchObject({ position: 2, label: 'Đủ rõ · chờ Danny duyệt' });
+    expect(getBugReportWorkflowStage(baseReport)).toMatchObject({ position: 3, label: 'Đang xử lý' });
+    expect(
+      getBugReportWorkflowStage({
+        ...baseReport,
+        status: 'FIXED',
+        agentProgress: { ...baseReport.agentProgress, stage: 'AWAITING_REPORTER_REVIEW' },
+      })
+    ).toMatchObject({ position: 4, label: 'Chờ người báo nghiệm thu' });
+    expect(
+      getBugReportWorkflowStage({
+        ...baseReport,
+        status: 'CLOSED',
+        agentProgress: { ...baseReport.agentProgress, stage: 'COMPLETED' },
+      })
+    ).toMatchObject({ position: 5, label: 'Hoàn tất' });
+  });
+
+  it('shows rejected and duplicate tickets as stopped instead of complete', () => {
+    expect(getBugReportWorkflowStage({ ...baseReport, status: 'REJECTED' })).toMatchObject({
+      position: null,
+      label: 'Từ chối',
+    });
+    expect(getBugReportWorkflowStage({ ...baseReport, status: 'DUPLICATE' })).toMatchObject({
+      position: null,
+      label: 'Trùng lặp',
+    });
   });
 });

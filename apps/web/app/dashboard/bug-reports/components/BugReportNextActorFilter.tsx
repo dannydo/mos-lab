@@ -15,14 +15,16 @@ const OPTIONS = [
 export function BugReportNextActorFilter({
   value,
   onChange,
+  className,
 }: {
   value: BugReportNextActor | 'ALL';
   onChange: (value: BugReportNextActor | 'ALL') => void;
+  className?: string;
 }) {
   return (
     <Select
       aria-label="Lọc người cần hành động tiếp"
-      className="min-w-48"
+      className={['min-w-48', className].filter(Boolean).join(' ')}
       value={value}
       onChange={onChange}
       options={OPTIONS}

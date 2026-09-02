@@ -188,6 +188,11 @@ export function useBugReports() {
     setPaginationState((current) => ({ ...current, page: 1 }));
   }, []);
 
+  const clearFilters = useCallback(() => {
+    setFiltersState(DEFAULT_FILTERS);
+    setPaginationState((current) => ({ ...current, page: 1 }));
+  }, []);
+
   const setPagination = useCallback((next: BugInboxPagination) => {
     setPaginationState({ page: Math.max(1, next.page), pageSize: next.pageSize });
   }, []);
@@ -234,6 +239,7 @@ export function useBugReports() {
     filters,
     pagination,
     setFilters,
+    clearFilters,
     setPagination,
     refresh: load,
     getDetail,

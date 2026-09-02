@@ -49,11 +49,33 @@ api.interceptors.response.use(
     recordApiFailure(error);
     if (error.response && error.response.status === 401) {
       if (typeof window !== 'undefined') {
+        const originalToken = safeStorage.getItem('mos_original_token');
+        const originalUser = safeStorage.getItem('mos_original_user');
+        if (originalToken && originalUser) {
+          const originalOmicallAutoInit = safeStorage.getItem('mos_original_omicall_auto_init');
+          safeStorage.setItem('mos_token', originalToken);
+          safeStorage.setItem('mos_user', originalUser);
+          if (originalOmicallAutoInit !== null) {
+            safeStorage.setItem('mos_omicall_auto_init', originalOmicallAutoInit);
+          } else {
+            safeStorage.removeItem('mos_omicall_auto_init');
+          }
+          safeStorage.removeItem('mos_original_token');
+          safeStorage.removeItem('mos_original_user');
+          safeStorage.removeItem('mos_original_omicall_auto_init');
+          safeStorage.removeItem('mos_impersonation_audit_id');
+          if (!window.location.pathname.startsWith('/login')) {
+            window.location.href = '/dashboard/staff';
+          }
+          return Promise.reject(error);
+        }
         safeStorage.removeItem('mos_token');
         safeStorage.removeItem('mos_user');
         safeStorage.removeItem('mos_omicall_auto_init');
         safeStorage.removeItem('mos_original_token');
         safeStorage.removeItem('mos_original_user');
+        safeStorage.removeItem('mos_original_omicall_auto_init');
+        safeStorage.removeItem('mos_impersonation_audit_id');
         if (
           !window.location.pathname.startsWith('/login') &&
           !window.location.pathname.startsWith('/academy/workshops/')

@@ -15,6 +15,11 @@ import type {
 } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { StatusTag } from '../../../components/ui';
+export {
+  BUG_REPORT_WORKFLOW_STEPS,
+  getBugReportWorkflowStage,
+  type BugReportWorkflowStage,
+} from '../../../components/bug-reports/bug-report-workflow';
 
 export { BugReportAttachmentPreview as ProtectedAttachment } from '../../../components/bug-reports/BugReportAttachmentPreview';
 

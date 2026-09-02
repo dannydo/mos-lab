@@ -3187,6 +3187,23 @@ body {
   line-height: calc(var(--mos-control-height) - 2px) !important;
 }
 
+/* mOS Inbox: make persisted/applied filters unmistakable without hardcoding a theme. */
+.mos-inbox-filter-control.is-active.ant-select .ant-select-selector,
+.mos-inbox-filter-control.is-active.mos-search-field {
+  background: color-mix(in srgb, var(--mos-accent) 14%, var(--mos-surface-raised)) !important;
+  border-color: color-mix(in srgb, var(--mos-accent) 74%, var(--mos-surface-border)) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mos-accent) 16%, transparent);
+}
+
+.mos-inbox-filter-control.is-active.ant-select .ant-select-selection-item,
+.mos-inbox-filter-control.is-active.ant-select .ant-select-arrow,
+.mos-inbox-filter-control.is-active.mos-search-field,
+.mos-inbox-filter-control.is-active.mos-search-field input,
+.mos-inbox-filter-control.is-active.mos-search-field .ant-input-prefix {
+  color: var(--mos-accent) !important;
+  font-weight: 600;
+}
+
 .responsive-toolbar .ant-radio-group {
   align-items: stretch;
   display: inline-flex;

@@ -1,10 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Avatar,
-  Badge,
   Button,
   Descriptions,
   Dropdown,
@@ -19,7 +18,6 @@ import {
   message,
   theme,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import type {
   BugPriority,
   BugReportClarificationFilter,
@@ -38,7 +36,6 @@ import {
   Bot,
   CircleHelp,
   Clipboard,
-  ExternalLink,
   Gavel,
   Inbox,
   LoaderCircle,
@@ -59,9 +56,15 @@ import { safeStorage } from '../../../lib/safe-storage';
 import { BugReportConversation } from '../../../components/bug-reports/BugReportConversation';
 import { BugReportWorkflowModal } from '../../../components/bug-reports/BugReportWorkflowGuide';
 import { BugReportNextActorFilter } from './components/BugReportNextActorFilter';
+import {
+  BugReportFilterEmptyState,
+  bugReportFilterControlClassName,
+  getActiveBugInboxFilterLabels,
+} from './components/BugReportFilterEmptyState';
 import { BugReportResolutionTracking } from './components/BugReportResolutionTracking';
 import { BugReportMobileCard } from './components/BugReportMobileCard';
 import { FeatureRequestDetails } from './components/FeatureRequestDetails';
+import { useBugReportInboxColumns } from './components/useBugReportInboxColumns';
 import {
   AgentProgressTag,
   BugStatusTag,
@@ -70,7 +73,6 @@ import {
   formatDate,
   formatElapsed,
   initials,
-  needsReporterAttention,
   NextActionTag,
   parseDuplicateKey,
   PriorityTag,
@@ -581,117 +583,16 @@ export default function BugReportsPage() {
     }
   }, []);
 
-  const columns = useMemo<ColumnsType<BugReportSummary>>(
-    () => [
-      {
-        title: 'Ticket',
-        key: 'ticket',
-        width: 320,
-        render: (_, row) => (
-          <div className="flex min-w-0 items-start gap-3">
-            <Avatar size={36} src={row.reporter.avatarUrl || undefined}>
-              {initials(row.reporter.displayName)}
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="mb-1 flex flex-wrap items-center gap-2">
-                <Text strong>{row.key}</Text>
-                <RequestTypeTag requestType={row.requestType} />
-                <PriorityTag priority={row.priority} />
-                <ClarificationTag status={row.clarification.status} />
-              </div>
-              <Text ellipsis={{ tooltip: row.description }}>{row.description}</Text>
-              <div className="mt-1">
-                <Text type="secondary">{row.reporter.displayName}</Text>
-              </div>
-            </div>
-          </div>
-        ),
-      },
-      {
-        title: 'Vị trí',
-        dataIndex: 'sourcePath',
-        key: 'sourcePath',
-        width: 230,
-        render: (value: string, row) => (
-          <div>
-            <Text code>{value}</Text>
-            {row.overlay && (
-              <div className="mt-1">
-                <Text type="secondary">{row.overlay}</Text>
-              </div>
-            )}
-          </div>
-        ),
-      },
-      {
-        title: 'Trạng thái',
-        dataIndex: 'status',
-        key: 'status',
-        width: 120,
-        render: (value: BugReportStatus) => <BugStatusTag status={value} />,
-      },
-      {
-        title: 'Ảnh',
-        dataIndex: 'attachmentCount',
-        key: 'attachmentCount',
-        width: 72,
-        align: 'center',
-        render: (value: number) => <span className="tabular-nums">{value}</span>,
-      },
-      {
-        title: 'Bước tiếp theo',
-        key: 'agentProgress',
-        width: 290,
-        render: (_, row) => {
-          const reporterAttention = needsReporterAttention(row);
-          return (
-            <div className="min-w-0 space-y-1.5 text-xs">
-              <Tooltip title={reporterAttention ? 'Đang cần người báo phản hồi hoặc xác nhận' : undefined}>
-                <Badge dot={reporterAttention}>
-                  <span className="inline-flex">
-                    <NextActionTag action={row.nextAction} />
-                  </span>
-                </Badge>
-              </Tooltip>
-              <div>
-                <Text type="secondary" className="tabular-nums">
-                  Chờ {formatElapsed(row.nextAction.waitingSince)}
-                </Text>
-              </div>
-              <Text type="secondary" ellipsis={{ tooltip: row.nextAction.detail }}>
-                {row.nextAction.detail}
-              </Text>
-            </div>
-          );
-        },
-      },
-      {
-        title: '',
-        key: 'action',
-        width: 70,
-        fixed: 'right',
-        render: (_, row) => (
-          <Button
-            type="text"
-            aria-label={`Mở ${row.key}`}
-            icon={<AppIcon icon={ExternalLink} size="sm" />}
-            onClick={(event) => {
-              event.stopPropagation();
-              setSelectedId(row.id);
-            }}
-          />
-        ),
-      },
-    ],
-    []
-  );
+  const columns = useBugReportInboxColumns(setSelectedId);
 
-  const activeFilterCount =
-    Number(inbox.filters.requestType !== 'ALL') +
-    Number(inbox.filters.status !== 'ALL') +
-    Number(inbox.filters.priority !== 'ALL') +
-    Number(inbox.filters.clarification !== 'ALL') +
-    Number(inbox.filters.nextActor !== 'ALL');
+  const appliedFilterLabels = getActiveBugInboxFilterLabels(inbox.filters);
+  const activeFilterCount = appliedFilterLabels.length;
+  const isEmptyBecauseOfFilters = !inbox.loading && inbox.total === 0 && activeFilterCount > 0;
+  const emptyInboxMessage = isEmptyBecauseOfFilters ? (
+    <BugReportFilterEmptyState labels={appliedFilterLabels} onClear={inbox.clearFilters} />
+  ) : (
+    'Chưa có yêu cầu trong mOS Inbox.'
+  );
 
   return (
     <>
@@ -717,6 +618,7 @@ export default function BugReportsPage() {
               onChange={(event) => inbox.setFilters({ search: event.target.value })}
               placeholder="Tìm mã, nội dung, nhân viên hoặc trang…"
               allowClear
+              className={bugReportFilterControlClassName(Boolean(inbox.filters.search.trim()))}
               style={{ width: 'min(100%, 420px)' }}
             />
           ),
@@ -725,7 +627,7 @@ export default function BugReportsPage() {
               <Select
                 value={inbox.filters.requestType}
                 onChange={(value: BugReportRequestType | 'ALL') => inbox.setFilters({ requestType: value })}
-                className="min-w-[165px]"
+                className={bugReportFilterControlClassName(inbox.filters.requestType !== 'ALL', 'min-w-[165px]')}
                 aria-label="Lọc loại yêu cầu"
                 options={[
                   { value: 'ALL', label: 'Mọi loại yêu cầu' },
@@ -736,10 +638,12 @@ export default function BugReportsPage() {
               <BugReportNextActorFilter
                 value={inbox.filters.nextActor}
                 onChange={(nextActor) => inbox.setFilters({ nextActor })}
+                className={bugReportFilterControlClassName(inbox.filters.nextActor !== 'ALL')}
               />
               <Select
                 value={inbox.filters.status}
                 onChange={(value) => inbox.setFilters({ status: value })}
+                className={bugReportFilterControlClassName(inbox.filters.status !== 'ALL')}
                 style={{ minWidth: 150 }}
                 options={[
                   { value: 'ALL', label: 'Mọi trạng thái' },
@@ -749,6 +653,7 @@ export default function BugReportsPage() {
               <Select
                 value={inbox.filters.priority}
                 onChange={(value) => inbox.setFilters({ priority: value })}
+                className={bugReportFilterControlClassName(inbox.filters.priority !== 'ALL')}
                 style={{ minWidth: 130 }}
                 options={[
                   { value: 'ALL', label: 'Mọi priority' },
@@ -758,6 +663,7 @@ export default function BugReportsPage() {
               <Select
                 value={inbox.filters.clarification}
                 onChange={(value) => inbox.setFilters({ clarification: value })}
+                className={bugReportFilterControlClassName(inbox.filters.clarification !== 'ALL')}
                 style={{ minWidth: 170 }}
                 options={(Object.entries(CLARIFICATION_FILTER_LABELS) as [BugReportClarificationFilter, string][]).map(
                   ([value, label]) => ({ value, label })
@@ -879,8 +785,9 @@ export default function BugReportsPage() {
             onChange: (page, pageSize) => inbox.setPagination({ page, pageSize }),
           },
           mobileRecordKey: (row) => row.id,
-          mobileEmptyDescription: 'Chưa có yêu cầu phù hợp bộ lọc.',
+          mobileEmptyDescription: emptyInboxMessage,
           mobileRenderer: (row) => <BugReportMobileCard report={row} onOpen={setSelectedId} />,
+          locale: { emptyText: emptyInboxMessage },
         }}
       />
       <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} />

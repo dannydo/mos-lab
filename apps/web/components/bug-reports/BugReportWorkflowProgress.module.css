@@ -1,0 +1,91 @@
+.root {
+  --bug-ticket-workflow-color: var(--mos-accent);
+  min-width: 0;
+}
+
+.summary {
+  align-items: baseline;
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+}
+
+.position {
+  color: var(--bug-ticket-workflow-color);
+  flex: none;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 650;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track {
+  display: grid;
+  gap: 3px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-block: 5px 4px;
+}
+
+.segment {
+  background: var(--mos-surface-border);
+  border-radius: 999px;
+  height: 4px;
+}
+
+.segmentComplete {
+  background: color-mix(in srgb, var(--bug-ticket-workflow-color) 62%, var(--mos-surface-border));
+}
+
+.segmentActive {
+  background: var(--bug-ticket-workflow-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bug-ticket-workflow-color) 16%, transparent);
+}
+
+.stopped .segment {
+  opacity: 0.62;
+}
+
+.detail {
+  display: block;
+  font-size: 11px;
+  line-height: 1.3;
+  opacity: 0.74;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+}
+
+.compact .track {
+  flex: 0 0 52px;
+  margin: 0;
+}
+
+.compact .segment {
+  height: 3px;
+}
+
+.compactSummary {
+  align-items: baseline;
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.compact .position,
+.compact .label {
+  font-size: 10px;
+}

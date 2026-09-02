@@ -77,8 +77,33 @@ model CrmStaff {
   bugReportAudits CrmBugReportAudit[] @relation("BugReportAuditActor")
   bugReportNotifications CrmBugReportNotification[] @relation("BugReportNotificationRecipient")
   bugReportComments CrmBugReportComment[] @relation("BugReportCommentAuthor")
+  impersonationAuditsStarted CrmImpersonationAudit[] @relation("ImpersonationAuditActor")
+  impersonationAuditsTargeted CrmImpersonationAudit[] @relation("ImpersonationAuditTarget")
 
   @@map("crm_staff")
+}
+
+/// Immutable security trail for privileged account-switch sessions. Identity
+/// snapshots are retained if either staff account is later removed.
+model CrmImpersonationAudit {
+  id               Int       @id @default(autoincrement())
+  actorStaffId     Int?      @map("actor_staff_id")
+  targetStaffId    Int?      @map("target_staff_id")
+  actorUsername    String    @map("actor_username") @db.VarChar(100)
+  actorDisplayName String    @map("actor_display_name") @db.VarChar(100)
+  targetUsername   String    @map("target_username") @db.VarChar(100)
+  targetDisplayName String   @map("target_display_name") @db.VarChar(100)
+  expiresAt        DateTime  @map("expires_at") @db.DateTime(0)
+  endedAt          DateTime? @map("ended_at") @db.DateTime(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  actor  CrmStaff? @relation("ImpersonationAuditActor", fields: [actorStaffId], references: [id], onDelete: SetNull)
+  target CrmStaff? @relation("ImpersonationAuditTarget", fields: [targetStaffId], references: [id], onDelete: SetNull)
+
+  @@index([actorStaffId, createdAt])
+  @@index([targetStaffId, createdAt])
+  @@index([expiresAt])
+  @@map("crm_impersonation_audits")
 }
 
 /// mOS-native social-post ledger. Historical Google Sheet imports are retained

@@ -333,6 +333,30 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     sources: [{ label: 'Lịch OFF chuẩn', reference: 'AGENTS.md · Rule #31' }],
   },
   {
+    id: 'PEOPLE-002',
+    book: 'PEOPLE',
+    title: 'Mượn áo, không mượn quyền',
+    summary:
+      'Super Admin có thể vào tài khoản đang hoạt động để hỗ trợ, kể cả Admin; phiên đó luôn ngắn hạn và có dấu vết.',
+    commandments: [
+      'Admin thường chỉ được giả lập tài khoản đang hoạt động không phải Admin; Super Admin được giả lập thêm tài khoản Admin.',
+      'Không giả lập tài khoản Super Admin khác, tài khoản đang khóa, chính mình hoặc nối tiếp từ một phiên giả lập.',
+      'Phiên giả lập hết hạn sau 30 phút, luôn có banner và thao tác quay về tài khoản gốc không cần mật khẩu.',
+      'Mỗi lần bắt đầu/kết thúc phải lưu actor, target, thời điểm và hạn phiên trong crm_impersonation_audits; không bao giờ đọc hoặc lộ mật khẩu nhân sự.',
+    ],
+    rationale:
+      'Hỗ trợ và kiểm tra theo đúng góc nhìn người dùng, nhưng vẫn giữ ranh giới đặc quyền và khả năng truy vết.',
+    tags: ['nhân sự', 'Super Admin', 'Admin', 'giả lập', 'bảo mật', 'audit'],
+    routeScopes: ['/dashboard/staff'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-02',
+    sources: [
+      { label: 'Policy giả lập', reference: 'apps/api/src/modules/auth/impersonation-policy.ts' },
+      { label: 'Auth account-switch API', reference: 'apps/api/src/modules/auth/routes.ts' },
+    ],
+  },
+  {
     id: 'CAT-001',
     book: 'CATALOG',
     title: 'Một đồng là một đồng, không có 0,18 đồng',

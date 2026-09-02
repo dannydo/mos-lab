@@ -78,6 +78,17 @@ export function useStaffData(options?: UseStaffDataOptions) {
       if (stored) {
         setCurrentUser(JSON.parse(stored));
       }
+
+      // The profile endpoint is authoritative. In particular, it makes a
+      // Super Admin promotion available on this screen without a manual
+      // logout/login cycle.
+      void apiClient.auth
+        .me()
+        .then((freshUser) => {
+          setCurrentUser(freshUser);
+          localStorage.setItem('mos_user', JSON.stringify(freshUser));
+        })
+        .catch((err) => console.error('Refresh current staff permissions error:', err));
     }
   }, []);
 
@@ -255,8 +266,38 @@ export function useStaffData(options?: UseStaffDataOptions) {
       const res = await apiClient.auth.impersonate(userId);
       const { token, user } = res;
 
+      const originalToken = localStorage.getItem('mos_token');
+      const originalUser = localStorage.getItem('mos_user');
+      if (!originalToken || !originalUser) {
+        throw new Error('Không tìm thấy phiên Super Admin hiện tại để quay lại.');
+      }
+
+      // Keep the source session once only. The API rejects nested switching,
+      // and these values make the return action immediate and password-free.
+      if (!localStorage.getItem('mos_original_token') || !localStorage.getItem('mos_original_user')) {
+        localStorage.setItem('mos_original_token', originalToken);
+        localStorage.setItem('mos_original_user', originalUser);
+
+        const originalOmicallAutoInit = localStorage.getItem('mos_omicall_auto_init');
+        if (originalOmicallAutoInit !== null) {
+          localStorage.setItem('mos_original_omicall_auto_init', originalOmicallAutoInit);
+        } else {
+          localStorage.removeItem('mos_original_omicall_auto_init');
+        }
+      }
+
       localStorage.setItem('mos_token', token);
       localStorage.setItem('mos_user', JSON.stringify(user));
+      if (res.resolvedOmicallAutoInit !== undefined) {
+        localStorage.setItem('mos_omicall_auto_init', String(!!res.resolvedOmicallAutoInit));
+      } else {
+        localStorage.removeItem('mos_omicall_auto_init');
+      }
+      if (res.impersonation) {
+        localStorage.setItem('mos_impersonation_audit_id', String(res.impersonation.auditId));
+      } else {
+        localStorage.removeItem('mos_impersonation_audit_id');
+      }
 
       optionsRef.current?.onSuccess?.(`Đang đăng nhập giả lập dưới quyền ${displayName}`);
       window.location.href = '/dashboard/customers';

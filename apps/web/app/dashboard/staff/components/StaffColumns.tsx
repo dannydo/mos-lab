@@ -274,7 +274,15 @@ export const getStaffColumns = ({
         const isSuperAdmin = isSuperAdminRole(currentUser?.role);
         const isTargetAdmin = isAdminOrSuperAdminRole(record.role);
         const isTargetSuperAdmin = isSuperAdminRole(record.role);
-        const canImpersonate = isAdmin && !isTargetSuperAdmin && (!isTargetAdmin || isSuperAdmin) && record.isActive;
+        const canImpersonate =
+          isAdmin &&
+          record.id !== currentUser?.id &&
+          !isTargetSuperAdmin &&
+          (!isTargetAdmin || isSuperAdmin) &&
+          record.isActive;
+        const impersonationLabel = isTargetAdmin
+          ? `Super Admin đăng nhập dưới quyền ${record.displayName} (phiên 30 phút)`
+          : `Đăng nhập dưới quyền ${record.displayName} (phiên 30 phút)`;
 
         return (
           <Space size="middle">
@@ -288,7 +296,7 @@ export const getStaffColumns = ({
               </Tooltip>
             )}
             {canImpersonate && (
-              <Tooltip title={`Đăng nhập dưới quyền ${record.displayName}`}>
+              <Tooltip title={impersonationLabel}>
                 <Button
                   type="text"
                   icon={<KeyOutlined style={{ color: '#52c41a' }} />}

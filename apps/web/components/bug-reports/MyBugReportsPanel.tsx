@@ -15,6 +15,7 @@ import dayjs from 'dayjs';
 import { CheckCircle2, ExternalLink, RotateCcw } from 'lucide-react';
 import { AppIcon, SectionCard, StatePanel, StatusTag } from '../ui';
 import { BugReportConversation } from './BugReportConversation';
+import { BugReportWorkflowProgress } from './BugReportWorkflowProgress';
 
 const { Text, Paragraph } = Typography;
 
@@ -269,7 +270,7 @@ export function MyBugReportsPanel({
                 <button
                   type="button"
                   aria-current={selected?.id === report.id ? 'true' : undefined}
-                  className="relative w-full px-3 py-3 text-left transition-colors"
+                  className="relative w-full px-3 py-2.5 text-left transition-colors"
                   style={{
                     border: 0,
                     borderRadius: token.borderRadiusSM,
@@ -278,9 +279,11 @@ export function MyBugReportsPanel({
                   }}
                   onClick={() => onSelect(report.key)}
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
-                      <Text strong>{report.key}</Text>
+                      <Text strong ellipsis={{ tooltip: report.key }} className="min-w-0 truncate">
+                        {report.key}
+                      </Text>
                       <Text type="secondary" className="shrink-0 text-xs tabular-nums">
                         · {elapsedSince(report.createdAt)}
                       </Text>
@@ -288,7 +291,11 @@ export function MyBugReportsPanel({
                     <StatusTag
                       status={STATUS_TONES[report.status]}
                       label={statusLabel(report.status, report.requestType)}
+                      className="shrink-0"
                     />
+                  </div>
+                  <div className="mt-1.5">
+                    <BugReportWorkflowProgress report={report} compact />
                   </div>
                   <Text ellipsis={{ tooltip: report.description }} type="secondary" className="mt-1 block min-w-0">
                     {report.description.replace(/\s+/g, ' ').trim()}
@@ -312,6 +319,9 @@ export function MyBugReportsPanel({
                   label={statusLabel(selected.status, selected.requestType)}
                 />
                 <Text type="secondary">{selected.sourcePath}</Text>
+              </div>
+              <div className="mb-4">
+                <BugReportWorkflowProgress report={selected} />
               </div>
               <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{selected.description}</Paragraph>
               {selected.featureRequest ? (
