@@ -1,15 +1,13 @@
-import { execFile } from 'node:child_process';
+import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process';
 import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import { promisify } from 'node:util';
 import type { RequestClassificationWorkerJob, RequestClassificationWorkerResult } from '@mos-lab/shared';
 import type { RequestConversationWorkerJob, RequestConversationWorkerResult } from '@mos-lab/shared';
 import type { InboxFollowUpWorkerJob, InboxFollowUpWorkerResult } from '@mos-lab/shared';
 import WebSocket from 'ws';
 
-const execFileAsync = promisify(execFile);
 const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
 const POLL_INTERVAL_MS = 30_000;
 const CODEX_TIMEOUT_MS = 90_000;
@@ -40,6 +38,99 @@ export function resolveCodexCliPath(
   const discovered = MACOS_CODEX_CANDIDATES.find(isExecutable);
   if (!discovered) throw new Error('Codex CLI was not found; set MOS_CODEX_CLI_PATH for the launchd worker.');
   return discovered;
+}
+
+export type CodexCliFailureCode = 'CODEX_EXEC_TIMEOUT' | 'CODEX_EXEC_FAILED' | 'CODEX_OUTPUT_MISSING';
+
+class CodexCliError extends Error {
+  constructor(readonly code: CodexCliFailureCode) {
+    super(code);
+  }
+}
+
+type SpawnProcess = (command: string, args: readonly string[], options: SpawnOptions) => ChildProcess;
+
+export function buildCodexExecArgs(schemaPath: string, outputPath: string, prompt: string): string[] {
+  return [
+    'exec',
+    '--ephemeral',
+    '--sandbox',
+    'read-only',
+    '--color',
+    'never',
+    '--output-schema',
+    schemaPath,
+    '--output-last-message',
+    outputPath,
+    prompt,
+  ];
+}
+
+export async function executeCodexCli(
+  command: string,
+  args: readonly string[],
+  cwd: string,
+  timeoutMs = CODEX_TIMEOUT_MS,
+  spawnProcess: SpawnProcess = spawn
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    let finished = false;
+    const finish = (callback: () => void) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timeout);
+      callback();
+    };
+    const child = spawnProcess(command, args, {
+      cwd,
+      // Codex otherwise waits for EOF and treats an inherited pipe as extra prompt input.
+      // Final structured output is written exclusively to --output-last-message.
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    const timeout = setTimeout(() => {
+      child.kill('SIGTERM');
+      finish(() => reject(new CodexCliError('CODEX_EXEC_TIMEOUT')));
+    }, timeoutMs);
+    child.once('error', () => finish(() => reject(new CodexCliError('CODEX_EXEC_FAILED'))));
+    child.once('exit', (code) => {
+      if (code === 0) finish(resolve);
+      else finish(() => reject(new CodexCliError('CODEX_EXEC_FAILED')));
+    });
+  });
+}
+
+async function invokeStructuredCodex(
+  schemaPath: string,
+  workDir: string,
+  outputName: string,
+  prompt: string
+): Promise<string> {
+  const outputPath = join(workDir, outputName);
+  await executeCodexCli(resolveCodexCliPath(), buildCodexExecArgs(schemaPath, outputPath, prompt), workDir);
+  try {
+    return await readFile(outputPath, 'utf8');
+  } catch {
+    throw new CodexCliError('CODEX_OUTPUT_MISSING');
+  }
+}
+
+export function inboxFollowUpFailureCode(
+  error: unknown
+): CodexCliFailureCode | 'INVALID_STRUCTURED_OUTPUT' | 'BRIDGE_REQUEST_FAILED' | 'UNEXPECTED_FAILURE' {
+  if (error instanceof CodexCliError) return error.code;
+  if (
+    error instanceof SyntaxError ||
+    (error instanceof Error && error.message === 'Codex did not return a valid inbox follow-up JSON object.')
+  ) {
+    return 'INVALID_STRUCTURED_OUTPUT';
+  }
+  if (error instanceof Error && error.message.startsWith('Worker bridge ')) return 'BRIDGE_REQUEST_FAILED';
+  return 'UNEXPECTED_FAILURE';
+}
+
+export function formatInboxFollowUpFailure(phase: string, error: unknown): string {
+  return `Inbox follow-up class=inbox_follow_up phase=${phase} code=${inboxFollowUpFailureCode(error)}`;
 }
 
 function loadLocalWorkerEnv(): void {
@@ -221,17 +312,9 @@ async function invokeCodex(
     `Description: ${job.description}`,
     `Attachments in the current directory: ${attachmentNames.join(', ') || '(none)'}`,
   ].join('\n\n');
-  const result = await execFileAsync(
-    resolveCodexCliPath(),
-    ['exec', '--sandbox', 'read-only', '--output-schema', schemaPath, prompt],
-    {
-      cwd: workDir,
-      timeout: CODEX_TIMEOUT_MS,
-      maxBuffer: 32 * 1024,
-      windowsHide: true,
-    }
+  return parseCodexClassification(
+    await invokeStructuredCodex(schemaPath, workDir, 'classification-output.json', prompt)
   );
-  return parseCodexClassification(result.stdout);
 }
 
 async function processOne(): Promise<boolean> {
@@ -250,7 +333,7 @@ async function processOne(): Promise<boolean> {
       method: 'POST',
       body: JSON.stringify({ leaseToken: job.leaseToken, result }),
     });
-    console.log(`Classified ${job.id}.`);
+    console.log('Classification completed.');
   } catch {
     // Do not emit intake text, attachments, authorization data, or Codex output to logs.
     await workerFetch(`/request-classifier/jobs/${encodeURIComponent(job.id)}/fail`, {
@@ -260,7 +343,7 @@ async function processOne(): Promise<boolean> {
         reason: 'Mac worker timed out or could not validate a structured response.',
       }),
     }).catch(() => undefined);
-    console.log(`Classification attempt failed for ${job.id}; retry policy applied.`);
+    console.log('Classification retry policy applied.');
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
@@ -304,12 +387,7 @@ async function invokeConversation(
     `Current summary JSON: ${JSON.stringify(job.summary)}`,
     `Conversation JSON: ${JSON.stringify(job.messages)}`,
   ].join('\n\n');
-  const result = await execFileAsync(
-    resolveCodexCliPath(),
-    ['exec', '--sandbox', 'read-only', '--output-schema', schemaPath, prompt],
-    { cwd: workDir, timeout: CODEX_TIMEOUT_MS, maxBuffer: 32 * 1024, windowsHide: true }
-  );
-  return parseCodexConversation(result.stdout);
+  return parseCodexConversation(await invokeStructuredCodex(schemaPath, workDir, 'conversation-output.json', prompt));
 }
 async function processConversationOne(): Promise<boolean> {
   const { workerId } = configuration();
@@ -326,7 +404,7 @@ async function processConversationOne(): Promise<boolean> {
       method: 'POST',
       body: JSON.stringify({ leaseToken: job.leaseToken, result }),
     });
-    console.log(`Guided intake advanced ${job.id}.`);
+    console.log('Guided intake advanced.');
   } catch {
     await workerFetch(`/request-classifier/conversations/${encodeURIComponent(job.id)}/fail`, {
       method: 'POST',
@@ -335,7 +413,7 @@ async function processConversationOne(): Promise<boolean> {
         reason: 'Mac worker timed out or could not validate a structured response.',
       }),
     }).catch(() => undefined);
-    console.log(`Guided intake attempt failed for ${job.id}; retry policy applied.`);
+    console.log('Guided intake retry policy applied.');
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
@@ -368,7 +446,7 @@ async function processInboxFollowUpOne(): Promise<boolean> {
       body: JSON.stringify({ workerId }),
     });
   } catch (error) {
-    console.log(`Inbox follow-up phase=${phase} error=${error instanceof Error ? error.message : 'unknown'}`);
+    console.log(formatInboxFollowUpFailure(phase, error));
     return false;
   }
   const job = ((await response.json()) as { data: InboxFollowUpWorkerJob | null }).data;
@@ -383,25 +461,21 @@ async function processInboxFollowUpOne(): Promise<boolean> {
       'Return only JSON. Choose NO_OP if the ticket already has READY clarification and this is not a new reporter reply, or if no clarification is genuinely needed. Choose PROGRESS_REVIEWED for a concise safe acknowledgement. Choose ASK_REPORTER only when one missing material fact remains; ask exactly one focused Vietnamese question.',
       JSON.stringify(job.context),
     ].join('\n\n');
-    const result = await execFileAsync(
-      resolveCodexCliPath(),
-      ['exec', '--sandbox', 'read-only', '--output-schema', schemaPath, prompt],
-      { cwd: workDir, timeout: CODEX_TIMEOUT_MS, maxBuffer: 32 * 1024 }
-    );
+    const output = await invokeStructuredCodex(schemaPath, workDir, 'inbox-follow-up-output.json', prompt);
     phase = 'complete';
     await workerFetch(`/request-classifier/inbox-follow-ups/${job.id}/complete`, {
       method: 'POST',
-      body: JSON.stringify({ leaseToken: job.leaseToken, result: parseCodexInboxFollowUp(result.stdout) }),
+      body: JSON.stringify({ leaseToken: job.leaseToken, result: parseCodexInboxFollowUp(output) }),
     });
-    console.log(`Inbox follow-up completed ${job.id}.`);
+    console.log('Inbox follow-up completed.');
   } catch (error) {
-    console.log(`Inbox follow-up phase=${phase} error=${error instanceof Error ? error.message : 'unknown'}`);
+    console.log(formatInboxFollowUpFailure(phase, error));
     phase = 'fail';
     await workerFetch(`/request-classifier/inbox-follow-ups/${job.id}/fail`, {
       method: 'POST',
       body: JSON.stringify({ leaseToken: job.leaseToken }),
     }).catch(() => undefined);
-    console.log(`Inbox follow-up failed ${job.id}; retry policy applied.`);
+    console.log('Inbox follow-up retry policy applied.');
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }

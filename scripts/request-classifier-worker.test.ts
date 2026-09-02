@@ -1,11 +1,83 @@
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import test from 'node:test';
 import {
+  buildCodexExecArgs,
+  executeCodexCli,
+  formatInboxFollowUpFailure,
   parseCodexClassification,
   parseCodexConversation,
   parseCodexInboxFollowUp,
   resolveCodexCliPath,
 } from './request-classifier-worker.js';
+
+test('builds a noninteractive Codex invocation with private structured output', async () => {
+  const prompt = 'QA controlled input';
+  const args = buildCodexExecArgs('/tmp/schema.json', '/tmp/final.json', prompt);
+  assert.deepEqual(args, [
+    'exec',
+    '--ephemeral',
+    '--sandbox',
+    'read-only',
+    '--color',
+    'never',
+    '--output-schema',
+    '/tmp/schema.json',
+    '--output-last-message',
+    '/tmp/final.json',
+    prompt,
+  ]);
+
+  const child = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  const calls: Array<{ command: string; args: readonly string[]; options: unknown }> = [];
+  await executeCodexCli('/custom/codex', args, '/tmp', 1_000, ((command, invocationArgs, options) => {
+    calls.push({ command, args: invocationArgs, options });
+    queueMicrotask(() => child.emit('exit', 0));
+    return child;
+  }) as never);
+  assert.deepEqual(calls, [
+    {
+      command: '/custom/codex',
+      args,
+      options: { cwd: '/tmp', stdio: 'ignore', windowsHide: true },
+    },
+  ]);
+});
+
+test('never includes child-process content in Inbox failure telemetry', () => {
+  const sensitive = 'QA title and reporter message must never reach logs';
+  const line = formatInboxFollowUpFailure('codex_exec', new Error(`Command failed: ${sensitive}`));
+  assert.equal(line, 'Inbox follow-up class=inbox_follow_up phase=codex_exec code=UNEXPECTED_FAILURE');
+  assert.doesNotMatch(line, /QA title|reporter message|Command failed/);
+});
+
+test('maps raw Codex process errors and timeouts to safe failure codes', async () => {
+  const sensitive = 'prompt text must never be logged';
+  const failedChild = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  await assert.rejects(
+    executeCodexCli('/custom/codex', ['exec'], '/tmp', 1_000, (() => {
+      queueMicrotask(() => failedChild.emit('error', new Error(sensitive)));
+      return failedChild;
+    }) as never),
+    (error) => {
+      const line = formatInboxFollowUpFailure('codex_exec', error);
+      assert.equal(line, 'Inbox follow-up class=inbox_follow_up phase=codex_exec code=CODEX_EXEC_FAILED');
+      assert.doesNotMatch(line, /prompt text|custom\/codex/);
+      return true;
+    }
+  );
+
+  const timeoutChild = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  let killed = false;
+  timeoutChild.kill = () => {
+    killed = true;
+    return true;
+  };
+  await assert.rejects(executeCodexCli('/custom/codex', ['exec'], '/tmp', 1, (() => timeoutChild) as never), (error) =>
+    formatInboxFollowUpFailure('codex_exec', error).endsWith('code=CODEX_EXEC_TIMEOUT')
+  );
+  assert.equal(killed, true);
+});
 
 test('accepts Codex structured JSON and rejects unsafe output', () => {
   assert.deepEqual(
