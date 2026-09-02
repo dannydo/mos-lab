@@ -2488,7 +2488,7 @@ model CrmInboxFollowUpJob {
   createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
   report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  @@unique([reportId, eventVersion])
+  @@unique([reportId, eventKind, eventVersion])
   @@index([status, expiresAt])
   @@index([leaseExpiresAt])
   @@map("crm_inbox_follow_up_jobs")
@@ -2513,7 +2513,7 @@ model CrmInboxPlanJob {
   updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
   report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
-  @@unique([reportId, eventKind, eventVersion])
+  @@unique([reportId, eventVersion])
   @@index([status, expiresAt])
   @@index([leaseExpiresAt])
   @@map("crm_inbox_plan_jobs")
