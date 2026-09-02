@@ -32,13 +32,7 @@ import {
   MessageSquareWarning,
 } from 'lucide-react';
 
-import {
-  canAccessLoca,
-  isAdminOrSuperAdminRole,
-  isCanonicalSuperAdminIdentity,
-  isSuperAdminRole,
-  SafeAny,
-} from '@mos-lab/shared';
+import { canAccessLoca, isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { AppIcon } from '../components/ui/AppIcon';
 
 export interface SidebarItemConfig {
@@ -66,13 +60,12 @@ export function getSidebarGroups(
   academyAccess: boolean = false,
   menuVisibility: Record<string, boolean> = {},
   categoryVisibility: Record<string, boolean> = {},
-  currentUser: { username?: string | null; email?: string | null } = {},
+  _currentUser: { username?: string | null; email?: string | null } = {},
   bugInboxApprovalCount: number = 0
 ): SidebarGroupConfig[] {
   const normalizedRole = userRole?.toLowerCase() || '';
   const isAdmin = isAdminOrSuperAdminRole(normalizedRole);
   const isSuperAdmin = isSuperAdminRole(normalizedRole);
-  const canTriageBugInbox = isSuperAdmin && isCanonicalSuperAdminIdentity(currentUser);
   const isLocaAllowed = canAccessLoca(normalizedRole);
   const isCrmCategoryVisible = categoryVisibility.crm !== false;
   const isAcademyCategoryVisible = categoryVisibility.academy !== false;
@@ -399,7 +392,7 @@ export function getSidebarGroups(
         path: '/dashboard/staff/menu-access',
       });
     }
-    if (canTriageBugInbox) {
+    if (isAdmin) {
       systemGroupItems.push({
         key: 'bug-reports',
         label: 'mOS Inbox',

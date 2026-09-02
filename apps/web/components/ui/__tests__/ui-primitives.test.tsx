@@ -137,8 +137,11 @@ describe('UI primitives', () => {
     );
   });
 
-  it('shows Danny only the tickets that are ready for a final Inbox decision', () => {
-    const systemGroup = getSidebarGroups(
+  it('shows every admin the mOS Inbox while preserving Danny’s final-decision badge', () => {
+    const adminSystemGroup = getSidebarGroups('admin', [], true, {}, [], false, {}, {}, {}, 3).find(
+      (group) => group.groupKey === 'grp-system'
+    );
+    const superAdminSystemGroup = getSidebarGroups(
       'super_admin',
       [],
       true,
@@ -151,11 +154,13 @@ describe('UI primitives', () => {
       3
     ).find((group) => group.groupKey === 'grp-system');
 
-    expect(systemGroup?.items.find((item) => item.key === 'bug-reports')).toMatchObject({
+    const expectedInbox = {
       label: 'mOS Inbox',
       badgeCount: 3,
       path: '/dashboard/bug-reports',
-    });
+    };
+    expect(adminSystemGroup?.items.find((item) => item.key === 'bug-reports')).toMatchObject(expectedInbox);
+    expect(superAdminSystemGroup?.items.find((item) => item.key === 'bug-reports')).toMatchObject(expectedInbox);
   });
 
   it('filters restricted leaves while preserving the visible menu hierarchy and role guards', () => {

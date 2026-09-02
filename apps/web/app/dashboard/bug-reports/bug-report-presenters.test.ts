@@ -37,8 +37,9 @@ describe('getBugReportWorkflowStage', () => {
         ...baseReport,
         status: 'NEW',
         agentProgress: { ...baseReport.agentProgress, stage: 'WAITING_REPORTER' },
+        reporter: { displayName: 'Nguyễn Quang Khải' },
       })
-    ).toMatchObject({ position: 1, label: 'Chờ người báo làm rõ' });
+    ).toMatchObject({ position: 1, label: 'Chờ Quang Khải làm rõ' });
     expect(
       getBugReportWorkflowStage({
         ...baseReport,
@@ -52,8 +53,9 @@ describe('getBugReportWorkflowStage', () => {
         ...baseReport,
         status: 'FIXED',
         agentProgress: { ...baseReport.agentProgress, stage: 'AWAITING_REPORTER_REVIEW' },
+        reporter: { displayName: 'Nguyễn Quang Khải' },
       })
-    ).toMatchObject({ position: 4, label: 'Chờ người báo nghiệm thu' });
+    ).toMatchObject({ position: 4, label: 'Chờ Quang Khải nghiệm thu' });
     expect(
       getBugReportWorkflowStage({
         ...baseReport,

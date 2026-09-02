@@ -32,11 +32,11 @@ async function requireDanny(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
-async function requireBugAdmin(request: FastifyRequest, reply: FastifyReply) {
+async function requireBugInboxRead(request: FastifyRequest, reply: FastifyReply) {
   const user = request.user as JwtUserPayload | undefined;
   if (!user) return reply.status(401).send({ error: 'Unauthorized', message: 'Vui lòng đăng nhập.' });
-  if (!canOverrideBugReview(user)) {
-    return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ Admin được xem hoặc override Bug Inbox.' });
+  if (!canReadBugInbox(user)) {
+    return reply.status(403).send({ error: 'Forbidden', message: 'Chỉ Admin được xem mOS Inbox.' });
   }
 }
 
@@ -54,7 +54,7 @@ export function canManageBugInbox(user: Pick<JwtUserPayload, 'role' | 'username'
   return isSuperAdminRole(user.role) && isCanonicalSuperAdminIdentity(user);
 }
 
-export function canOverrideBugReview(user: Pick<JwtUserPayload, 'role'>): boolean {
+export function canReadBugInbox(user: Pick<JwtUserPayload, 'role'>): boolean {
   return isAdminOrSuperAdminRole(user.role);
 }
 
@@ -153,7 +153,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           fastify,
           request.user.id,
           id,
-          canOverrideBugReview(request.user),
+          canManageBugInbox(request.user),
           request.body as CreateBugReportCommentRequest
         );
         return reply.status(201).send({ success: true, data, message: 'Đã gửi bình luận.' });
@@ -163,7 +163,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   );
 
-  fastify.get('/bug-reports', { preHandler: [requireAuth, requireBugAdmin] }, async (request, reply) => {
+  fastify.get('/bug-reports', { preHandler: [requireAuth, requireBugInboxRead] }, async (request, reply) => {
     try {
       return reply.send(await BugReportService.list(fastify, request.query as BugReportListQuery));
     } catch (error) {
@@ -171,7 +171,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/bug-reports/:id', { preHandler: [requireAuth, requireBugAdmin] }, async (request, reply) => {
+  fastify.get('/bug-reports/:id', { preHandler: [requireAuth, requireBugInboxRead] }, async (request, reply) => {
     try {
       const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
       return reply.send({ data: await BugReportService.detail(fastify, id) });
@@ -192,7 +192,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
 
   fastify.patch(
     '/bug-reports/:id/confirm-close',
-    { preHandler: [requireAuth, requireBugAdmin] },
+    { preHandler: [requireAuth, requireDanny] },
     async (request, reply) => {
       try {
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
@@ -219,7 +219,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           request.user.id,
           numericParam(params.id, 'Ticket ID'),
           numericParam(params.attachmentId, 'Attachment ID'),
-          canOverrideBugReview(request.user)
+          canReadBugInbox(request.user)
         )
       );
     } catch (error) {

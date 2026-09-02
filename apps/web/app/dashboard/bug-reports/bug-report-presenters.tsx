@@ -15,11 +15,13 @@ import type {
 } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { StatusTag } from '../../../components/ui';
+import { shortBugReportReporterName } from '../../../components/bug-reports/bug-report-workflow';
 export {
   BUG_REPORT_WORKFLOW_STEPS,
   getBugReportWorkflowStage,
   type BugReportWorkflowStage,
 } from '../../../components/bug-reports/bug-report-workflow';
+export { shortBugReportReporterName };
 
 export { BugReportAttachmentPreview as ProtectedAttachment } from '../../../components/bug-reports/BugReportAttachmentPreview';
 
@@ -158,8 +160,17 @@ export function parseDuplicateKey(value: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
-export function BugStatusTag({ status }: { status: BugReportStatus }) {
-  return <StatusTag status={STATUS_TONES[status]} label={STATUS_LABELS[status]} />;
+function reporterWaitingLabel(reporterName?: string | null): string {
+  return `Chờ ${shortBugReportReporterName(reporterName) || 'người báo'}`;
+}
+
+function reporterActorLabel(reporterName?: string | null): string {
+  return shortBugReportReporterName(reporterName) || NEXT_ACTOR_LABELS.REPORTER;
+}
+
+export function BugStatusTag({ status, reporterName }: { status: BugReportStatus; reporterName?: string | null }) {
+  const label = status === 'FIXED' ? `${reporterWaitingLabel(reporterName)} duyệt` : STATUS_LABELS[status];
+  return <StatusTag status={STATUS_TONES[status]} label={label} />;
 }
 
 export function RequestTypeTag({ requestType }: { requestType: BugReportRequestType }) {
@@ -182,16 +193,38 @@ export function PriorityTag({ priority }: { priority: BugPriority | null }) {
 export function ClarificationTag({
   status,
   showReady = false,
+  reporterName,
 }: {
   status: BugReportClarificationStatus;
   showReady?: boolean;
+  reporterName?: string | null;
 }) {
   if (status === 'READY' && !showReady) return null;
-  return <StatusTag status={CLARIFICATION_TONES[status]} label={CLARIFICATION_LABELS[status]} />;
+  return (
+    <StatusTag
+      status={CLARIFICATION_TONES[status]}
+      label={status === 'WAITING_REPORTER' ? reporterWaitingLabel(reporterName) : CLARIFICATION_LABELS[status]}
+    />
+  );
 }
 
-export function AgentProgressTag({ progress }: { progress: BugReportAgentProgress }) {
-  return <StatusTag status={AGENT_PROGRESS_TONES[progress.stage]} label={AGENT_PROGRESS_LABELS[progress.stage]} />;
+export function AgentProgressTag({
+  progress,
+  reporterName,
+}: {
+  progress: BugReportAgentProgress;
+  reporterName?: string | null;
+}) {
+  const reporterLabel = reporterActorLabel(reporterName);
+  const label =
+    progress.stage === 'WAITING_REPORTER'
+      ? reporterWaitingLabel(reporterName)
+      : progress.stage === 'REPORTER_REPLIED'
+        ? `${reporterLabel} đã trả lời`
+        : progress.stage === 'REOPENED_BY_REPORTER'
+          ? `${reporterLabel} yêu cầu sửa lại`
+          : AGENT_PROGRESS_LABELS[progress.stage];
+  return <StatusTag status={AGENT_PROGRESS_TONES[progress.stage]} label={label} />;
 }
 
 export const NEXT_ACTOR_LABELS: Record<BugReportNextActor, string> = {
@@ -208,11 +241,15 @@ const NEXT_ACTOR_TONES: Record<BugReportNextActor, Parameters<typeof StatusTag>[
   NONE: 'default',
 };
 
-export function NextActionTag({ action }: { action: BugReportNextAction }) {
+export function NextActionTag({ action, reporterName }: { action: BugReportNextAction; reporterName?: string | null }) {
   return (
     <StatusTag
       status={NEXT_ACTOR_TONES[action.actor]}
-      label={action.actor === 'NONE' ? NEXT_ACTOR_LABELS.NONE : `${NEXT_ACTOR_LABELS[action.actor]} · ${action.label}`}
+      label={
+        action.actor === 'NONE'
+          ? NEXT_ACTOR_LABELS.NONE
+          : `${action.actor === 'REPORTER' ? reporterActorLabel(reporterName) : NEXT_ACTOR_LABELS[action.actor]} · ${action.label}`
+      }
     />
   );
 }

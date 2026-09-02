@@ -14,6 +14,7 @@ import {
   NextActionTag,
   PriorityTag,
   RequestTypeTag,
+  shortBugReportReporterName,
 } from '../bug-report-presenters';
 
 const { Paragraph, Text } = Typography;
@@ -38,18 +39,24 @@ export function BugReportMobileCard({ report, onOpen }: BugReportMobileCardProps
             <div className="flex items-center gap-2">
               <RequestTypeTag requestType={report.requestType} />
               <PriorityTag priority={report.priority} />
-              <BugStatusTag status={report.status} />
+              <BugStatusTag status={report.status} reporterName={report.reporter.displayName} />
             </div>
           </div>
-          <ClarificationTag status={report.clarification.status} />
+          <ClarificationTag status={report.clarification.status} reporterName={report.reporter.displayName} />
           <div className="mt-2">
             <BugReportWorkflowProgress report={report} />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Tooltip title={reporterAttention ? 'Đang cần người báo phản hồi hoặc xác nhận' : undefined}>
+            <Tooltip
+              title={
+                reporterAttention
+                  ? `Đang cần ${shortBugReportReporterName(report.reporter.displayName) || 'người báo'} phản hồi hoặc xác nhận`
+                  : undefined
+              }
+            >
               <Badge dot={reporterAttention}>
                 <span className="inline-flex">
-                  <NextActionTag action={report.nextAction} />
+                  <NextActionTag action={report.nextAction} reporterName={report.reporter.displayName} />
                 </span>
               </Badge>
             </Tooltip>

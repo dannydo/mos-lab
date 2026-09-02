@@ -9,6 +9,14 @@ export interface BugReportWorkflowStage {
   tone: 'warning' | 'primary' | 'info' | 'success' | 'muted';
 }
 
+export function shortBugReportReporterName(value?: string | null): string | null {
+  const parts = String(value || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return parts.length ? parts.slice(-2).join(' ') : null;
+}
+
 const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugReportWorkflowStage> = {
   NOT_VIEWED: { position: 1, label: 'Mới tiếp nhận', detail: 'Chờ AI xem', tone: 'warning' },
   ANALYZING: { position: 1, label: 'Đang phân tích', detail: 'Đang làm rõ yêu cầu', tone: 'warning' },
@@ -70,7 +78,9 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
  * A stage indicates the current handoff, never an estimated completion percentage.
  */
 export function getBugReportWorkflowStage(
-  report: Pick<BugReportSummary, 'status' | 'agentProgress'>
+  report: Pick<BugReportSummary, 'status' | 'agentProgress'> & {
+    reporter?: Pick<BugReportSummary['reporter'], 'displayName'> | null;
+  }
 ): BugReportWorkflowStage {
   if (report.status === 'REJECTED') {
     return { position: null, label: 'Từ chối', detail: 'Ticket không triển khai', tone: 'muted' };
@@ -78,5 +88,14 @@ export function getBugReportWorkflowStage(
   if (report.status === 'DUPLICATE') {
     return { position: null, label: 'Trùng lặp', detail: 'Theo dõi ticket gốc', tone: 'muted' };
   }
-  return WORKFLOW_STAGE_BY_AGENT_PROGRESS[report.agentProgress.stage];
+  const workflow = WORKFLOW_STAGE_BY_AGENT_PROGRESS[report.agentProgress.stage];
+  const reporterName = shortBugReportReporterName(report.reporter?.displayName);
+  if (!reporterName) return workflow;
+  if (report.agentProgress.stage === 'WAITING_REPORTER') {
+    return { ...workflow, label: `Chờ ${reporterName} làm rõ` };
+  }
+  if (report.agentProgress.stage === 'AWAITING_REPORTER_REVIEW') {
+    return { ...workflow, label: `Chờ ${reporterName} nghiệm thu` };
+  }
+  return workflow;
 }

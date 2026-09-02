@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Alert, Badge, Button, Image, Input, Select, Tabs, Tooltip, Upload, message, notification, theme } from 'antd';
-import { CircleHelp, ImagePlus, Lightbulb, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
+import { CircleHelp, ImagePlus, Inbox, Lightbulb, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type {
   BugReportClientError,
@@ -11,6 +12,7 @@ import type {
   CreateBugReportAttachmentRequest,
   FeatureRequestAudience,
 } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '../../lib/bug-report-launcher';
 import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } from '../../lib/bug-diagnostics';
@@ -79,6 +81,7 @@ export function BugReportSurface() {
   const [featureDesiredOutcome, setFeatureDesiredOutcome] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [authenticated, setAuthenticated] = React.useState(false);
+  const [canViewInbox, setCanViewInbox] = React.useState(false);
   const [release, setRelease] = React.useState<ReleaseMarker | null>(null);
   const [context, setContext] = React.useState<BugReportContext | null>(null);
   const [launcherPosition, setLauncherPosition] = React.useState<BugReportLauncherPosition | null>(null);
@@ -112,6 +115,12 @@ export function BugReportSurface() {
 
   React.useEffect(() => {
     setAuthenticated(Boolean(safeStorage.getItem('mos_token')));
+    try {
+      const user = JSON.parse(safeStorage.getItem('mos_user') || '{}') as { role?: string };
+      setCanViewInbox(isAdminOrSuperAdminRole(user.role));
+    } catch {
+      setCanViewInbox(false);
+    }
   }, [pathname]);
 
   React.useEffect(() => {
@@ -532,14 +541,28 @@ export function BugReportSurface() {
             },
           ]}
           tabBarExtraContent={
-            <Tooltip title="Xem workflow xử lý yêu cầu">
-              <Button
-                type="text"
-                aria-label="Xem workflow xử lý yêu cầu"
-                icon={<AppIcon icon={CircleHelp} size="sm" />}
-                onClick={() => setWorkflowOpen(true)}
-              />
-            </Tooltip>
+            <div className="flex items-center gap-1">
+              {canViewInbox ? (
+                <Tooltip title="Mở mOS Inbox">
+                  <Link
+                    href="/dashboard/bug-reports"
+                    aria-label="Mở mOS Inbox"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition-opacity hover:opacity-80"
+                    style={{ color: token.colorText }}
+                  >
+                    <AppIcon icon={Inbox} size="sm" />
+                  </Link>
+                </Tooltip>
+              ) : null}
+              <Tooltip title="Xem workflow xử lý yêu cầu">
+                <Button
+                  type="text"
+                  aria-label="Xem workflow xử lý yêu cầu"
+                  icon={<AppIcon icon={CircleHelp} size="sm" />}
+                  onClick={() => setWorkflowOpen(true)}
+                />
+              </Tooltip>
+            </div>
           }
         />
 

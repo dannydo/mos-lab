@@ -15,6 +15,7 @@ import {
   NextActionTag,
   PriorityTag,
   RequestTypeTag,
+  shortBugReportReporterName,
 } from '../bug-report-presenters';
 
 const { Text } = Typography;
@@ -36,7 +37,7 @@ export function useBugReportInboxColumns(onOpen: (id: number) => void) {
                 <Text strong>{row.key}</Text>
                 <RequestTypeTag requestType={row.requestType} />
                 <PriorityTag priority={row.priority} />
-                <ClarificationTag status={row.clarification.status} />
+                <ClarificationTag status={row.clarification.status} reporterName={row.reporter.displayName} />
               </div>
               <Text ellipsis={{ tooltip: row.description }}>{row.description}</Text>
               <div className="mt-1">
@@ -84,10 +85,16 @@ export function useBugReportInboxColumns(onOpen: (id: number) => void) {
           const reporterAttention = needsReporterAttention(row);
           return (
             <div className="min-w-0 space-y-1.5 text-xs">
-              <Tooltip title={reporterAttention ? 'Đang cần người báo phản hồi hoặc xác nhận' : undefined}>
+              <Tooltip
+                title={
+                  reporterAttention
+                    ? `Đang cần ${shortBugReportReporterName(row.reporter.displayName) || 'người báo'} phản hồi hoặc xác nhận`
+                    : undefined
+                }
+              >
                 <Badge dot={reporterAttention}>
                   <span className="inline-flex">
-                    <NextActionTag action={row.nextAction} />
+                    <NextActionTag action={row.nextAction} reporterName={row.reporter.displayName} />
                   </span>
                 </Badge>
               </Tooltip>

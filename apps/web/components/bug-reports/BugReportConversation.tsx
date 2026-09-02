@@ -92,6 +92,7 @@ export function BugReportConversation({
   clarification,
   comments,
   onSubmit,
+  readOnly = false,
 }: {
   reportId: number;
   requestType: BugReportRequestType;
@@ -99,6 +100,7 @@ export function BugReportConversation({
   clarification: BugReportClarification;
   comments: BugReportComment[];
   onSubmit: (request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
+  readOnly?: boolean;
 }) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
@@ -110,6 +112,7 @@ export function BugReportConversation({
     clarification.status
   ];
   const locked = ['CLOSED', 'REJECTED', 'DUPLICATE'].includes(status);
+  const isReadOnly = readOnly || locked;
 
   const addFiles = React.useCallback(
     async (selected: File[]) => {
@@ -169,7 +172,7 @@ export function BugReportConversation({
     <div
       className="space-y-4"
       onPaste={(event) => {
-        if (locked) return;
+        if (isReadOnly) return;
         const pasted = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith('image/'));
         if (pasted.length) {
           event.preventDefault();
@@ -247,8 +250,10 @@ export function BugReportConversation({
         />
       )}
 
-      {locked ? (
-        <Text type="secondary">Ticket đã kết thúc; hội thoại đang ở chế độ chỉ đọc.</Text>
+      {isReadOnly ? (
+        <Text type="secondary">
+          {locked ? 'Ticket đã kết thúc; hội thoại đang ở chế độ chỉ đọc.' : 'mOS Inbox chỉ phục vụ theo dõi.'}
+        </Text>
       ) : (
         <div className="rounded-xl border p-3" style={{ borderColor: token.colorBorderSecondary }}>
           <Input.TextArea

@@ -30,7 +30,7 @@ import type {
   CreateBugReportCommentRequest,
   TriageBugReportRequest,
 } from '@mos-lab/shared';
-import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import {
   CheckCircle2,
   Bot,
@@ -92,19 +92,9 @@ interface DetailDrawerProps {
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
-  canOverride: boolean;
 }
 
-function DetailDrawer({
-  reportId,
-  onClose,
-  getDetail,
-  triage,
-  confirmClose,
-  comment,
-  canTriage,
-  canOverride,
-}: DetailDrawerProps) {
+function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose, comment, canTriage }: DetailDrawerProps) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
   const [detail, setDetail] = useState<BugReportDetail | null>(null);
@@ -260,7 +250,7 @@ function DetailDrawer({
                   </Button>
                 </Dropdown>
               )}
-              {canOverride && ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
+              {canTriage && ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
                 <Popconfirm
                   title="Đóng ticket bằng ngoại lệ Admin?"
                   description="Bắt buộc ghi bằng chứng/lý do ở ô Ghi chú xử lý. mOS không tạo trạng thái sửa giả."
@@ -311,11 +301,11 @@ function DetailDrawer({
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <BugStatusTag status={detail.status} />
+                  <BugStatusTag status={detail.status} reporterName={detail.reporter.displayName} />
                   <RequestTypeTag requestType={detail.requestType} />
                   <PriorityTag priority={detail.priority} />
-                  <ClarificationTag status={detail.clarification.status} />
-                  <AgentProgressTag progress={detail.agentProgress} />
+                  <ClarificationTag status={detail.clarification.status} reporterName={detail.reporter.displayName} />
+                  <AgentProgressTag progress={detail.agentProgress} reporterName={detail.reporter.displayName} />
                   <Text type="secondary" className="tabular-nums">
                     Đã báo {formatElapsed(detail.createdAt)}
                   </Text>
@@ -331,7 +321,7 @@ function DetailDrawer({
 
             <SectionCard title="Bàn giao tiếp theo">
               <div className="space-y-2">
-                <NextActionTag action={detail.nextAction} />
+                <NextActionTag action={detail.nextAction} reporterName={detail.reporter.displayName} />
                 <div>
                   <Text>{detail.nextAction.detail}</Text>
                 </div>
@@ -351,6 +341,7 @@ function DetailDrawer({
                 status={detail.status}
                 clarification={detail.clarification}
                 comments={detail.comments}
+                readOnly={!canTriage}
                 onSubmit={async (request) => {
                   const result = await comment(detail.id, request);
                   hydrateForm(result.report);
@@ -566,7 +557,6 @@ export default function BugReportsPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [canTriage, setCanTriage] = useState(false);
-  const [canOverride, setCanOverride] = useState(false);
 
   useEffect(() => {
     try {
@@ -576,10 +566,8 @@ export default function BugReportsPage() {
         email?: string | null;
       };
       setCanTriage(isSuperAdminRole(user.role) && isCanonicalSuperAdminIdentity(user));
-      setCanOverride(isAdminOrSuperAdminRole(user.role));
     } catch {
       setCanTriage(false);
-      setCanOverride(false);
     }
   }, []);
 
@@ -799,7 +787,6 @@ export default function BugReportsPage() {
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}
-        canOverride={canOverride}
       />
     </>
   );
