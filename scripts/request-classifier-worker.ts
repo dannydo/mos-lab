@@ -61,6 +61,8 @@ export function buildCodexExecArgs(schemaPath: string, outputPath: string, promp
     '--ephemeral',
     '--sandbox',
     'read-only',
+    // Every worker job runs in a private temporary directory, not the repository.
+    '--skip-git-repo-check',
     '--color',
     'never',
     '--output-schema',
