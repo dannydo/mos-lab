@@ -180,7 +180,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       socket.close(1013, 'Rate limited');
       return;
     }
-    RequestClassifierWorkerHub.add(socket);
+    RequestClassifierWorkerHub.add(String(request.headers['x-worker-id'] || ''), socket);
     socket.send(JSON.stringify({ type: 'connected' }));
     socket.on('close', () => RequestClassifierWorkerHub.remove(socket));
     socket.on('error', () => RequestClassifierWorkerHub.remove(socket));

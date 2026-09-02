@@ -19,6 +19,13 @@ const STATE_COLORS: Record<RequestClassifierWorkerHealthState, StatusType> = {
   OFFLINE: 'error',
 };
 
+const CONNECTION_LABELS = {
+  CONNECTED: 'Đã kết nối WebSocket',
+  POLLING: 'Polling dự phòng',
+  RECONNECTING: 'Đang kết nối lại',
+  UNAVAILABLE: 'Không khả dụng',
+} as const;
+
 function formatDate(value: string | null): string {
   if (!value) return 'Chưa có';
   const date = new Date(value);
@@ -107,7 +114,7 @@ export function RequestClassifierWorkerHealthCard({
           <Descriptions column={{ xs: 1, sm: 2, md: 3 }} size="small" bordered>
             <Descriptions.Item label="Worker">{health.workerId || 'Chưa ghi nhận'}</Descriptions.Item>
             <Descriptions.Item label="Phiên bản">{health.workerVersion || '—'}</Descriptions.Item>
-            <Descriptions.Item label="Kết nối">{health.connectionMode || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Kết nối">{CONNECTION_LABELS[health.connectionState]}</Descriptions.Item>
             <Descriptions.Item label="Heartbeat gần nhất">
               <span className="tabular-nums">{formatDate(health.lastHeartbeatAt)}</span>
             </Descriptions.Item>

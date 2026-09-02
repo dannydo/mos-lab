@@ -6,6 +6,7 @@ import {
   REQUEST_CLASSIFIER_WORKER_OUTCOME_SEVERITIES,
   REQUEST_CLASSIFIER_WORKER_OUTCOME_STATUSES,
   type RequestClassifierWorkerConnectionMode,
+  type RequestClassifierWorkerConnectionState,
   type RequestClassifierWorkerHealth,
   type RequestClassifierWorkerHealthState,
   type RequestClassifierWorkerHealthThresholds,
@@ -14,6 +15,7 @@ import {
   type RequestClassifierWorkerOutcomeSeverity,
   type RequestClassifierWorkerOutcomeStatus,
 } from '@mos-lab/shared';
+import { RequestClassifierWorkerHub } from './request-classifier-worker-hub.js';
 
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 const MAX_ACTIVE_JOB_AGE_MS = 24 * 60 * 60 * 1000;
@@ -114,6 +116,21 @@ function toState(value: string | null | undefined): RequestClassifierWorkerHealt
 
 function toConnectionMode(value: string | null): RequestClassifierWorkerConnectionMode | null {
   return enumValue(value, REQUEST_CLASSIFIER_WORKER_CONNECTION_MODES);
+}
+
+export function deriveRequestClassifierWorkerConnectionState({
+  healthState,
+  connectionMode,
+  hasEventStream,
+}: {
+  healthState: RequestClassifierWorkerHealthState;
+  connectionMode: string | null;
+  hasEventStream: boolean;
+}): RequestClassifierWorkerConnectionState {
+  if (healthState === 'OFFLINE') return 'UNAVAILABLE';
+  if (hasEventStream) return 'CONNECTED';
+  if (toConnectionMode(connectionMode) === 'POLLING') return 'POLLING';
+  return 'RECONNECTING';
 }
 
 function toJobKind(value: string | null): RequestClassifierWorkerJobKind | null {
@@ -257,6 +274,7 @@ function healthDto(
       lastHeartbeatAt: null,
       secondsSinceHeartbeat: null,
       connectionMode: null,
+      connectionState: 'UNAVAILABLE',
       activeJob: null,
       latestOutcome: null,
       lastCompletedAt: null,
@@ -281,6 +299,11 @@ function healthDto(
     lastHeartbeatAt: row.lastHeartbeatAt.toISOString(),
     secondsSinceHeartbeat: derived.secondsSinceHeartbeat,
     connectionMode: toConnectionMode(row.connectionMode),
+    connectionState: deriveRequestClassifierWorkerConnectionState({
+      healthState: derived.state,
+      connectionMode: row.connectionMode,
+      hasEventStream: RequestClassifierWorkerHub.isConnected(row.workerId),
+    }),
     activeJob: jobKind ? { kind: jobKind, startedAt: row.activeJobStartedAt?.toISOString() ?? null } : null,
     latestOutcome:
       outcomeKind && outcomeStatus && outcomeSeverity && row.lastOutcomeCode

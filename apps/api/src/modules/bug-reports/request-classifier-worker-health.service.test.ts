@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  deriveRequestClassifierWorkerConnectionState,
   deriveRequestClassifierWorkerHealthState,
   isStaleRequestClassifierWorkerHeartbeat,
   normalizeRequestClassifierWorkerHeartbeat,
@@ -62,6 +63,41 @@ test('current serious errors and sustained failures degrade a fresh heartbeat', 
       thresholds
     ).reason,
     'SUSTAINED_FAILURES'
+  );
+});
+
+test('connection display is derived from the current server WebSocket handshake, never raw STARTING telemetry', () => {
+  assert.equal(
+    deriveRequestClassifierWorkerConnectionState({
+      healthState: 'ONLINE',
+      connectionMode: 'STARTING',
+      hasEventStream: true,
+    }),
+    'CONNECTED'
+  );
+  assert.equal(
+    deriveRequestClassifierWorkerConnectionState({
+      healthState: 'ONLINE',
+      connectionMode: 'STARTING',
+      hasEventStream: false,
+    }),
+    'RECONNECTING'
+  );
+  assert.equal(
+    deriveRequestClassifierWorkerConnectionState({
+      healthState: 'ONLINE',
+      connectionMode: 'POLLING',
+      hasEventStream: false,
+    }),
+    'POLLING'
+  );
+  assert.equal(
+    deriveRequestClassifierWorkerConnectionState({
+      healthState: 'OFFLINE',
+      connectionMode: 'WEBSOCKET',
+      hasEventStream: true,
+    }),
+    'UNAVAILABLE'
   );
 });
 

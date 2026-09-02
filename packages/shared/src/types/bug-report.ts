@@ -174,6 +174,15 @@ export type RequestClassificationWorkerResult = RequestClassificationRecommendat
 export const REQUEST_CLASSIFIER_WORKER_CONNECTION_MODES = ['STARTING', 'WEBSOCKET', 'POLLING', 'RECONNECTING'] as const;
 export type RequestClassifierWorkerConnectionMode = (typeof REQUEST_CLASSIFIER_WORKER_CONNECTION_MODES)[number];
 
+/** Server-derived stream availability; this is the value shown in the Inbox. */
+export const REQUEST_CLASSIFIER_WORKER_CONNECTION_STATES = [
+  'CONNECTED',
+  'POLLING',
+  'RECONNECTING',
+  'UNAVAILABLE',
+] as const;
+export type RequestClassifierWorkerConnectionState = (typeof REQUEST_CLASSIFIER_WORKER_CONNECTION_STATES)[number];
+
 export const REQUEST_CLASSIFIER_WORKER_JOB_KINDS = [
   'CLASSIFICATION',
   'CONVERSATION',
@@ -236,6 +245,7 @@ export interface RequestClassifierWorkerHealth {
   lastHeartbeatAt: string | null;
   secondsSinceHeartbeat: number | null;
   connectionMode: RequestClassifierWorkerConnectionMode | null;
+  connectionState: RequestClassifierWorkerConnectionState;
   activeJob: {
     kind: RequestClassifierWorkerJobKind;
     startedAt: string | null;
