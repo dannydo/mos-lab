@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { formatBugReportKey, type InboxFollowUpWorkerJob, type InboxFollowUpWorkerResult } from '@mos-lab/shared';
+import {
+  formatBugReportKey,
+  type BugReportClarificationStatus,
+  type InboxFollowUpWorkerJob,
+  type InboxFollowUpWorkerResult,
+} from '@mos-lab/shared';
 import { BugReportService } from './bug-report.service.js';
 
 const TTL = 24 * 60 * 60 * 1000;
@@ -37,6 +42,18 @@ export function normalizeInboxFollowUpResult(value: unknown): InboxFollowUpWorke
   if (!note) throw new InboxFollowUpError('Thiếu ghi chú an toàn.', 422);
   return { action, note, question } as InboxFollowUpWorkerResult;
 }
+
+export function resolveInboxFollowUpCompletion(
+  action: InboxFollowUpWorkerResult['action'],
+  clarificationStatus: BugReportClarificationStatus
+): { resultAction: InboxFollowUpWorkerResult['action']; confirmClarity: boolean } {
+  if (action === 'ASK_REPORTER') return { resultAction: action, confirmClarity: false };
+  if (clarificationStatus === 'PENDING_AGENT') {
+    return { resultAction: 'PROGRESS_REVIEWED', confirmClarity: true };
+  }
+  return { resultAction: action, confirmClarity: false };
+}
+
 export class InboxFollowUpService {
   static async enqueue(
     fastify: FastifyInstance,
@@ -119,13 +136,22 @@ export class InboxFollowUpService {
       where: { id, status: 'LEASED', leaseToken, leaseExpiresAt: { gt: new Date() } },
     });
     if (!job) throw new InboxFollowUpError('Lease đã hết hạn.', 409);
-    if (result.action === 'PROGRESS_REVIEWED')
+    const report = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id: job.reportId } });
+    if (!report) throw new InboxFollowUpError('Ticket không còn tồn tại.', 404, 'BUG_NOT_FOUND');
+    const completion = resolveInboxFollowUpCompletion(
+      result.action,
+      report.clarificationStatus as BugReportClarificationStatus
+    );
+    if (completion.confirmClarity) {
+      await BugReportService.markInboxFollowUpReviewed(fastify, formatBugReportKey(job.reportId), result.note);
+    } else if (result.action === 'PROGRESS_REVIEWED') {
       await BugReportService.updateAgentProgress(
         fastify,
         formatBugReportKey(job.reportId),
         { stage: 'CHECKING_BUSINESS_LOGIC', note: result.note },
         { dedupeSameStage: true }
       );
+    }
     if (result.action === 'ASK_REPORTER')
       await BugReportService.reviewClarificationByAgent(fastify, formatBugReportKey(job.reportId), {
         decision: 'ASK_REPORTER',
@@ -133,7 +159,7 @@ export class InboxFollowUpService {
       });
     await fastify.prisma.crm.crmInboxFollowUpJob.update({
       where: { id },
-      data: { status: 'COMPLETED', resultAction: result.action, leaseToken: null, leaseExpiresAt: null },
+      data: { status: 'COMPLETED', resultAction: completion.resultAction, leaseToken: null, leaseExpiresAt: null },
     });
   }
   static async fail(fastify: FastifyInstance, id: string, leaseToken: string) {

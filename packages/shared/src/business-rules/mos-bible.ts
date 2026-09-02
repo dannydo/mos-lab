@@ -511,6 +511,37 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'Campaign visibility service', reference: 'apps/api/src/modules/campaigns/campaign.service.ts' },
     ],
   },
+  {
+    id: 'UI-004',
+    book: 'SYSTEM',
+    title: 'Inbox đã xem phải đổi chủ nhân rõ ràng',
+    summary:
+      'Một phản hồi AI theo sự kiện chỉ được xem là hoàn tất khi Inbox hiển thị bước tiếp theo rõ ràng: hỏi đúng một câu hoặc xác nhận ticket đã đủ rõ để Danny duyệt.',
+    commandments: [
+      'Ticket PENDING_AGENT nhận kết quả không cần hỏi thêm phải chuyển thành READY, lưu tóm tắt an toàn và audit CHECKING_BUSINESS_LOGIC.',
+      'Nếu còn thiếu dữ kiện trọng yếu, AI chỉ tạo đúng một câu hỏi và chuyển ticket sang WAITING_REPORTER.',
+      'NO_OP chỉ dùng cho ticket đã qua bước Agent-needed hoặc sự kiện đã lỗi thời; không được đóng job mà UI vẫn ghi Agent cần làm rõ.',
+      'Job follow-up hoàn tất phải phản ánh resultAction thực tế: PROGRESS_REVIEWED, ASK_REPORTER hoặc NO_OP.',
+    ],
+    rationale:
+      'Người báo và Danny phải nhìn thấy cùng một chủ nhân bước tiếp theo; completed trong background không thể thay cho tiến độ vận hành trên Inbox.',
+    examples: [
+      'Ticket QA PENDING_AGENT nêu rõ không cần hỏi thêm: AI review xong, Inbox hiển thị Đã đủ rõ và Danny là người duyệt tiếp theo.',
+      'Ticket thiếu bước tái hiện lỗi: AI hỏi một câu trọng yếu, Inbox hiển thị Chờ người báo.',
+    ],
+    tags: ['mOS Inbox', 'Agent cần làm rõ', 'READY', 'ASK_REPORTER', 'follow-up', 'AI review'],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-03',
+    sources: [
+      {
+        label: 'Inbox follow-up source of truth',
+        reference: 'apps/api/src/modules/bug-reports/inbox-follow-up.service.ts',
+      },
+      { label: 'Visible review transition', reference: 'apps/api/src/modules/bug-reports/bug-report.service.ts' },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

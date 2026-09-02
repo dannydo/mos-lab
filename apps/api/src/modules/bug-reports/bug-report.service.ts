@@ -1590,6 +1590,37 @@ export class BugReportService {
     return this.detail(fastify, id);
   }
 
+  static async markInboxFollowUpReviewed(fastify: FastifyInstance, key: string, note: string): Promise<boolean> {
+    const id = parseBugReportKey(key);
+    const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
+    if (!existing) throw new BugReportError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    if (existing.clarificationStatus !== 'PENDING_AGENT') return false;
+
+    const now = new Date();
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      const updated = await tx.crmBugReport.update({
+        where: { id },
+        data: {
+          businessContext: existing.businessContext || note,
+          clarificationStatus: 'READY',
+          clarificationSummary: note,
+          clarifiedAt: now,
+          updatedAt: now,
+        },
+      });
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId: id,
+          action: `${AGENT_PROGRESS_AUDIT_PREFIX}CHECKING_BUSINESS_LOGIC`,
+          note,
+          beforeJson: serialize(stateSnapshot(existing)),
+          afterJson: serialize(stateSnapshot(updated)),
+        },
+      });
+    });
+    return true;
+  }
+
   static async updateAgentProgress(
     fastify: FastifyInstance,
     key: string,
