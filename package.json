@@ -19,6 +19,8 @@
     "clean": "turbo run clean && rm -rf .turbo",
     "graph": "tsx scripts/generate-graph.ts",
     "bug:agent": "tsx scripts/bug-agent.ts",
+    "request-classifier:worker": "tsx scripts/request-classifier-worker.ts",
+    "request-classifier:worker:once": "tsx scripts/request-classifier-worker.ts --once",
     "qa:responsive:baseline": "node scripts/responsive/capture-baseline.mjs",
     "qa:responsive:states": "node scripts/responsive/capture-states.mjs",
     "qa:responsive:gate": "pnpm qa:responsive:baseline && pnpm qa:responsive:states",

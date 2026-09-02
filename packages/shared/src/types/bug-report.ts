@@ -124,7 +124,48 @@ export interface CreateBugReportRequest {
   context: BugReportContext;
   featureRequest?: FeatureRequestContext | null;
   attachments?: CreateBugReportAttachmentRequest[];
+  /** Advisory recommendation that the reporter explicitly accepted or overrode. */
+  classificationJobId?: string | null;
 }
+
+export const REQUEST_CLASSIFICATION_JOB_STATUSES = ['PENDING', 'LEASED', 'COMPLETED', 'FAILED', 'EXPIRED'] as const;
+export type RequestClassificationJobStatus = (typeof REQUEST_CLASSIFICATION_JOB_STATUSES)[number];
+
+export interface RequestClassificationRecommendation {
+  requestType: BugReportRequestType;
+  confidence: number;
+  rationale: string;
+  clarificationQuestion: string | null;
+}
+
+export interface CreateRequestClassificationJobRequest {
+  description: string;
+  context: Pick<BugReportContext, 'path' | 'pageTitle' | 'online'>;
+  attachments?: CreateBugReportAttachmentRequest[];
+}
+
+export interface RequestClassificationJob {
+  id: string;
+  status: RequestClassificationJobStatus;
+  recommendation: RequestClassificationRecommendation | null;
+  fallbackReason: string | null;
+  expiresAt: string;
+  updatedAt: string;
+}
+
+export interface RequestClassificationWorkerJob {
+  id: string;
+  description: string;
+  context: Pick<BugReportContext, 'path' | 'pageTitle'>;
+  attachments: Array<{ id: number; fileName: string; mimeType: string; sizeBytes: number }>;
+  attemptCount: number;
+  leaseToken: string;
+  leaseExpiresAt: string;
+}
+
+export type RequestClassificationWorkerResult = RequestClassificationRecommendation;
+
+export type CreateRequestClassificationJobResponse = ActionResponse<RequestClassificationJob>;
 
 export interface BugReportReporter {
   id: number;

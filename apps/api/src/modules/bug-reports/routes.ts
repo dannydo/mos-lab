@@ -11,12 +11,14 @@ import {
   type ConfirmCloseBugReportRequest,
   type CreateBugReportCommentRequest,
   type CreateBugReportRequest,
+  type CreateRequestClassificationJobRequest,
   type MarkBugReportNotificationsReadRequest,
   type ReviewBugReportRequest,
   type TriageBugReportRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { BugReportError, BugReportService, parseBugReportKey } from './bug-report.service.js';
+import { RequestClassificationError, RequestClassificationService } from './request-classification.service.js';
 
 function numericParam(value: unknown, label: string): number {
   const parsed = Number(value);
@@ -42,6 +44,10 @@ async function requireBugInboxRead(request: FastifyRequest, reply: FastifyReply)
 
 function agentToken(): string {
   return String(process.env.MOS_BUG_AGENT_TOKEN || '').trim();
+}
+
+function classifierWorkerToken(): string {
+  return String(process.env.MOS_REQUEST_CLASSIFIER_WORKER_TOKEN || '').trim();
 }
 
 function secureTokenEqual(actual: string, expected: string): boolean {
@@ -79,8 +85,19 @@ async function requireAgent(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
+async function requireClassifierWorker(request: FastifyRequest, reply: FastifyReply) {
+  const expected = classifierWorkerToken();
+  if (expected.length < 32) {
+    request.log.error('MOS_REQUEST_CLASSIFIER_WORKER_TOKEN is missing or shorter than 32 characters');
+    return reply.status(503).send({ error: 'Classifier Worker Unavailable', message: 'Worker phân loại chưa được cấu hình.' });
+  }
+  if (!isValidAgentAuthorization(String(request.headers.authorization || ''), expected)) {
+    return reply.status(401).send({ error: 'Unauthorized', message: 'Worker token không hợp lệ.' });
+  }
+}
+
 function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown, context: string) {
-  if (error instanceof BugReportError) {
+  if (error instanceof BugReportError || error instanceof RequestClassificationError) {
     return reply.status(error.statusCode).send({ error: error.code, message: error.message, code: error.code });
   }
   fastify.log.error(error, context);
@@ -98,6 +115,32 @@ function sendAttachment(reply: FastifyReply, value: Awaited<ReturnType<typeof Bu
 }
 
 export async function bugReportRoutes(fastify: FastifyInstance) {
+  fastify.post(
+    '/request-classifications',
+    { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const data = await RequestClassificationService.create(
+          fastify,
+          request.user.id,
+          request.body as CreateRequestClassificationJobRequest
+        );
+        return reply.status(202).send({ success: true, data, message: 'Đang hỏi AI đề xuất loại yêu cầu.' });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Create request classification failed');
+      }
+    }
+  );
+
+  fastify.get('/request-classifications/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const id = String((request.params as { id: string }).id || '');
+      return reply.send({ data: await RequestClassificationService.status(fastify, request.user.id, id) });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Read request classification failed');
+    }
+  });
+
   fastify.post('/bug-reports', { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const input = request.body as CreateBugReportRequest;
@@ -299,4 +342,65 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  fastify.post('/request-classifier/heartbeat', { preHandler: [requireClassifierWorker] }, async (request, reply) => {
+    try {
+      await RequestClassificationService.heartbeat(fastify, String((request.body as { workerId?: string })?.workerId || ''));
+      return reply.send({ success: true });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Request classifier heartbeat failed');
+    }
+  });
+
+  fastify.post('/request-classifier/claim', { preHandler: [requireClassifierWorker] }, async (request, reply) => {
+    try {
+      const workerId = String((request.body as { workerId?: string })?.workerId || '');
+      await RequestClassificationService.heartbeat(fastify, workerId);
+      return reply.send({ data: await RequestClassificationService.claim(fastify, workerId) });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Request classifier claim failed');
+    }
+  });
+
+  fastify.get(
+    '/request-classifier/jobs/:id/attachments/:attachmentId',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const params = request.params as { id: string; attachmentId: string };
+        const leaseToken = String(request.headers['x-classification-lease'] || '');
+        const value = await RequestClassificationService.attachment(
+          fastify,
+          params.id,
+          numericParam(params.attachmentId, 'Attachment ID'),
+          leaseToken
+        );
+        return reply.header('Content-Type', value.mimeType).header('Cache-Control', 'private, no-store').send(value.buffer);
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Read classifier attachment failed');
+      }
+    }
+  );
+
+  fastify.post('/request-classifier/jobs/:id/complete', { preHandler: [requireClassifierWorker] }, async (request, reply) => {
+    try {
+      const id = String((request.params as { id: string }).id || '');
+      const body = request.body as { leaseToken?: string; result?: unknown };
+      const data = await RequestClassificationService.complete(fastify, id, String(body?.leaseToken || ''), body?.result);
+      return reply.send({ success: true, data });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Complete request classification failed');
+    }
+  });
+
+  fastify.post('/request-classifier/jobs/:id/fail', { preHandler: [requireClassifierWorker] }, async (request, reply) => {
+    try {
+      const id = String((request.params as { id: string }).id || '');
+      const body = request.body as { leaseToken?: string; reason?: string };
+      await RequestClassificationService.fail(fastify, id, String(body?.leaseToken || ''), body?.reason);
+      return reply.send({ success: true });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Fail request classification failed');
+    }
+  });
 }

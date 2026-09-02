@@ -41,6 +41,8 @@ import type {
   CreateBugReportCommentResponse,
   CreateBugReportRequest,
   CreateBugReportResponse,
+  CreateRequestClassificationJobRequest,
+  CreateRequestClassificationJobResponse,
   MarkBugReportNotificationsReadRequest,
   MarkBugReportNotificationsReadResponse,
   MyBugReportsResponse,
@@ -48,6 +50,7 @@ import type {
   ReviewBugReportResponse,
   TriageBugReportRequest,
   TriageBugReportResponse,
+  RequestClassificationJob,
 } from '@mos-lab/shared';
 import {
   Customer,
@@ -573,6 +576,16 @@ export const apiClient = {
     },
   },
   bugReports: {
+    classifyRequest: async (
+      data: CreateRequestClassificationJobRequest
+    ): Promise<CreateRequestClassificationJobResponse> => {
+      const response = await api.post<CreateRequestClassificationJobResponse>('/request-classifications', data);
+      return response.data;
+    },
+    classificationStatus: async (id: string): Promise<RequestClassificationJob> => {
+      const response = await api.get<{ data: RequestClassificationJob }>(`/request-classifications/${encodeURIComponent(id)}`);
+      return response.data.data;
+    },
     create: async (data: CreateBugReportRequest): Promise<CreateBugReportResponse> => {
       const response = await api.post<CreateBugReportResponse>('/bug-reports', data);
       return response.data;

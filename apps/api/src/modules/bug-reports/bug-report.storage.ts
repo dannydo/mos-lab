@@ -64,7 +64,7 @@ function decodedImage(input: CreateBugReportAttachmentRequest): Buffer {
 
 function absoluteStoragePath(storagePath: string): string {
   const normalized = String(storagePath || '').replace(/\\/g, '/');
-  if (!/^\d+\/[a-f0-9-]+\.(?:jpg|png|webp)$/.test(normalized)) {
+  if (!/^(?:\d+|classifier\/[a-f0-9-]{36})\/[a-f0-9-]+\.(?:jpg|png|webp)$/.test(normalized)) {
     throw new BugReportStorageError('Đường dẫn ảnh không hợp lệ.');
   }
   const root = bugReportStorageRoot();
@@ -78,6 +78,17 @@ export class BugReportStorage {
     const buffer = decodedImage(input);
     const extension = MIME_EXTENSIONS[input.mimeType];
     const storagePath = `${reportId}/${randomUUID()}.${extension}`;
+    const target = absoluteStoragePath(storagePath);
+    await mkdir(resolve(target, '..'), { recursive: true, mode: 0o700 });
+    await writeFile(target, buffer, { flag: 'wx', mode: 0o600 });
+    return { storagePath, sizeBytes: buffer.length };
+  }
+
+  /** Private, short-lived attachment storage for request classification jobs. */
+  static async saveClassificationAttachment(jobId: string, input: CreateBugReportAttachmentRequest) {
+    const buffer = decodedImage(input);
+    const extension = MIME_EXTENSIONS[input.mimeType];
+    const storagePath = `classifier/${jobId}/${randomUUID()}.${extension}`;
     const target = absoluteStoragePath(storagePath);
     await mkdir(resolve(target, '..'), { recursive: true, mode: 0o700 });
     await writeFile(target, buffer, { flag: 'wx', mode: 0o600 });

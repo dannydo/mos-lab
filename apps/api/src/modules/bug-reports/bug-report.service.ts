@@ -965,7 +965,13 @@ export class BugReportService {
     const description = clipped(rawDescription, 2000);
     if (description.length < 3) throw new BugReportError('Vui lòng mô tả vấn đề bằng ít nhất 3 ký tự.');
     const attachments = normalizedAttachments(input?.attachments);
-    const featureRequest = requestType === 'FEATURE' ? normalizeFeatureRequestContext(input?.featureRequest) : null;
+    const featureRequest =
+      requestType === 'FEATURE'
+        ? normalizeFeatureRequestContext(
+            input?.featureRequest || { reason: description, audience: 'TEAM', desiredOutcome: null }
+          )
+        : null;
+    const classificationJobId = clipped(input?.classificationJobId, 36) || null;
 
     const since = new Date(Date.now() - 60 * 60 * 1000);
     const recentCount = await fastify.prisma.crm.crmBugReport.count({
@@ -986,6 +992,11 @@ export class BugReportService {
     );
 
     const report = await fastify.prisma.crm.$transaction(async (tx) => {
+      const classification = classificationJobId
+        ? await tx.crmRequestClassificationJob.findFirst({
+            where: { id: classificationJobId, reporterStaffId, status: 'COMPLETED', expiresAt: { gt: new Date() } },
+          })
+        : null;
       const created = await tx.crmBugReport.create({
         data: {
           reporterStaffId,
@@ -1006,6 +1017,18 @@ export class BugReportService {
           afterJson: serialize(stateSnapshot(created)),
         },
       });
+      if (classification) {
+        await tx.crmRequestClassificationJob.update({ where: { id: classification.id }, data: { consumedAt: new Date() } });
+        await tx.crmBugReportAudit.create({
+          data: {
+            reportId: created.id,
+            actorStaffId: reporterStaffId,
+            action: 'CLASSIFICATION_APPLIED',
+            note: `AI đề xuất ${safeJsonParse<{ requestType?: string }>(classification.recommendationJson, {}).requestType || 'UNKNOWN'}; người báo chọn ${requestType}.`,
+            afterJson: serialize({ classificationJobId: classification.id, recommendation: safeJsonParse(classification.recommendationJson, null), finalRequestType: requestType }),
+          },
+        });
+      }
       return created;
     });
 

@@ -31,3 +31,13 @@ export function updateRequestDraft(
     [view]: { ...currentDraft, ...patch },
   };
 }
+
+/** Carries a live intake to a manually corrected type without overwriting that type's saved draft. */
+export function carryRequestDraft(
+  drafts: RequestDrafts,
+  from: RequestDraftView,
+  to: RequestDraftView
+): RequestDrafts {
+  if (from === to || drafts[to].description || drafts[to].files.length) return drafts;
+  return updateRequestDraft(drafts, to, { description: drafts[from].description, files: drafts[from].files });
+}

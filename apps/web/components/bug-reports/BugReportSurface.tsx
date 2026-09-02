@@ -10,6 +10,7 @@ import type {
   BugReportRequestType,
   CreateBugReportAttachmentRequest,
   FeatureRequestAudience,
+  RequestClassificationJob,
 } from '@mos-lab/shared';
 import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
@@ -20,7 +21,7 @@ import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, HeaderActionIndicator, IconButton, IconText } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
-import { createRequestDrafts, emptyRequestDraft, updateRequestDraft, type RequestDraftView } from './bug-report-drafts';
+import { carryRequestDraft, createRequestDrafts, emptyRequestDraft, updateRequestDraft, type RequestDraftView } from './bug-report-drafts';
 import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 import { useMyBugReports } from './useMyBugReports';
 
@@ -83,6 +84,7 @@ export function BugReportSurface() {
   const [canViewInbox, setCanViewInbox] = React.useState(false);
   const [release, setRelease] = React.useState<ReleaseMarker | null>(null);
   const [context, setContext] = React.useState<BugReportContext | null>(null);
+  const [classification, setClassification] = React.useState<RequestClassificationJob | null>(null);
   const [launcherPosition, setLauncherPosition] = React.useState<BugReportLauncherPosition | null>(null);
   const [dragging, setDragging] = React.useState(false);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
@@ -98,6 +100,7 @@ export function BugReportSurface() {
   const suppressClickUntilRef = React.useRef(0);
   const announcedNotificationsRef = React.useRef(new Set<number>());
   const handledReviewLinkRef = React.useRef<string | null>(null);
+  const classificationVersionRef = React.useRef(0);
   const {
     preferences,
     ready: launcherPreferencesReady,
@@ -108,6 +111,12 @@ export function BugReportSurface() {
   const activeRequestView: RequestDraftView = activeView === 'feature' ? 'feature' : 'bug';
   const activeDraft = drafts[activeRequestView];
   const descriptionFieldId = activeRequestView === 'feature' ? 'mos-feature-description' : 'mos-bug-description';
+
+  const switchRequestView = React.useCallback((nextView: RequestDraftView) => {
+    if (nextView === activeRequestView) return;
+    setDrafts((current) => carryRequestDraft(current, activeRequestView, nextView));
+    setActiveView(nextView);
+  }, [activeRequestView]);
 
   const enabled = authenticated && pathname.startsWith('/dashboard');
   const myBugs = useMyBugReports(enabled);
@@ -171,6 +180,90 @@ export function BugReportSurface() {
     window.addEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_BUG_REPORT_EVENT, onOpen);
   }, [enabled, showReporter]);
+
+  React.useEffect(() => {
+    if (!open || activeView === 'history') return;
+    const description = activeDraft.description.trim();
+    const version = ++classificationVersionRef.current;
+    setClassification(null);
+    if (description.length < 3) return;
+    if (!navigator.onLine) {
+      setClassification({
+        id: `offline-${version}`,
+        status: 'FAILED',
+        recommendation: null,
+        fallbackReason: 'Bạn đang offline; vẫn có thể tự chọn Báo lỗi hoặc Yêu cầu chức năng.',
+        expiresAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      return;
+    }
+
+    let cancelled = false;
+    let pollTimer: number | null = null;
+    const poll = async (jobId: string) => {
+      try {
+        const next = await apiClient.bugReports.classificationStatus(jobId);
+        if (cancelled || version !== classificationVersionRef.current) return;
+        setClassification(next);
+        if (next.status === 'PENDING' || next.status === 'LEASED') {
+          pollTimer = window.setTimeout(() => void poll(jobId), 1500);
+        }
+      } catch {
+        if (cancelled || version !== classificationVersionRef.current) return;
+        setClassification({
+          id: jobId,
+          status: 'FAILED',
+          recommendation: null,
+          fallbackReason: 'AI tạm thời không phản hồi; bạn vẫn có thể tự chọn loại yêu cầu.',
+          expiresAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    };
+    const debounce = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const attachments: CreateBugReportAttachmentRequest[] = await Promise.all(
+            activeDraft.files.map(async (file) => ({
+              fileName: file.name,
+              mimeType: file.type as CreateBugReportAttachmentRequest['mimeType'],
+              sizeBytes: file.size,
+              dataBase64: await fileDataBase64(file),
+            }))
+          );
+          const response = await apiClient.bugReports.classifyRequest({
+            description,
+            context: {
+              path: context?.path || pathname,
+              pageTitle: context?.pageTitle || document.title,
+              online: true,
+            },
+            attachments,
+          });
+          const job = response.data;
+          if (!job || cancelled || version !== classificationVersionRef.current) return;
+          setClassification(job);
+          void poll(job.id);
+        } catch {
+          if (cancelled || version !== classificationVersionRef.current) return;
+          setClassification({
+            id: `unavailable-${version}`,
+            status: 'FAILED',
+            recommendation: null,
+            fallbackReason: 'Không thể hỏi AI lúc này; bạn vẫn có thể tự chọn loại yêu cầu.',
+            expiresAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      })();
+    }, 700);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(debounce);
+      if (pollTimer !== null) window.clearTimeout(pollTimer);
+    };
+  }, [activeDraft.description, activeDraft.files, activeView, context?.pageTitle, context?.path, open, pathname]);
 
   const showHistory = React.useCallback(
     (key?: string | null) => {
@@ -344,12 +437,7 @@ export function BugReportSurface() {
     const normalizedDescription = draft.description.trim();
     const requestType: BugReportRequestType = draftView === 'feature' ? 'FEATURE' : 'BUG';
     const normalizedFeatureReason = featureReason.trim();
-    if (
-      normalizedDescription.length < 3 ||
-      !context ||
-      (requestType === 'FEATURE' && normalizedFeatureReason.length < 3)
-    )
-      return;
+    if (normalizedDescription.length < 3 || !context) return;
     setSubmitting(true);
     try {
       const attachments: CreateBugReportAttachmentRequest[] = await Promise.all(
@@ -364,10 +452,11 @@ export function BugReportSurface() {
         requestType,
         description: normalizedDescription,
         context,
+        classificationJobId: classification?.status === 'COMPLETED' ? classification.id : null,
         featureRequest:
           requestType === 'FEATURE'
             ? {
-                reason: normalizedFeatureReason,
+                reason: normalizedFeatureReason || normalizedDescription,
                 audience: featureAudience,
                 desiredOutcome: featureDesiredOutcome.trim() || null,
               }
@@ -488,8 +577,7 @@ export function BugReportSurface() {
                   loading={submitting}
                   disabled={
                     activeDraft.description.trim().length < 3 ||
-                    activeDraft.processingImages ||
-                    (activeView === 'feature' && featureReason.trim().length < 3)
+                    activeDraft.processingImages
                   }
                   onClick={() => void submit()}
                 >
@@ -507,7 +595,7 @@ export function BugReportSurface() {
           activeKey={activeView}
           onChange={(key) => {
             if (key === 'history') showHistory(selectedReportKey);
-            else setActiveView(key === 'feature' ? 'feature' : 'bug');
+            else switchRequestView(key === 'feature' ? 'feature' : 'bug');
           }}
           items={[
             {
@@ -583,6 +671,37 @@ export function BugReportSurface() {
                 showIcon
                 message="Bạn chỉ cần mô tả nhu cầu — AI Agent sẽ hỏi tiếp nếu còn thiếu"
                 description="Sau khi yêu cầu đủ rõ, Danny là người quyết định cuối cùng có đưa chức năng vào hàng triển khai hay không."
+              />
+            ) : null}
+            {classification ? (
+              <Alert
+                type={classification.status === 'COMPLETED' ? 'success' : classification.status === 'FAILED' || classification.status === 'EXPIRED' ? 'warning' : 'info'}
+                showIcon
+                message={
+                  classification.status === 'COMPLETED' && classification.recommendation
+                    ? `AI đề xuất: ${classification.recommendation.requestType === 'FEATURE' ? 'Yêu cầu chức năng' : 'Báo lỗi'} · ${Math.round(classification.recommendation.confidence * 100)}%`
+                    : classification.status === 'PENDING' || classification.status === 'LEASED'
+                      ? 'AI đang xem mô tả để đề xuất loại yêu cầu…'
+                      : 'Bạn vẫn có thể tự chọn loại yêu cầu'
+                }
+                description={
+                  classification.status === 'COMPLETED' && classification.recommendation ? (
+                    <div className="space-y-2">
+                      <div>{classification.recommendation.rationale}</div>
+                      {classification.recommendation.clarificationQuestion ? (
+                        <div className="font-medium">Cần làm rõ: {classification.recommendation.clarificationQuestion}</div>
+                      ) : null}
+                      <Button
+                        size="small"
+                        onClick={() => switchRequestView(classification.recommendation!.requestType === 'FEATURE' ? 'feature' : 'bug')}
+                      >
+                        Dùng đề xuất này
+                      </Button>
+                    </div>
+                  ) : (
+                    classification.fallbackReason || 'Bạn có thể gửi ticket ngay cả khi không có đề xuất.'
+                  )
+                }
               />
             ) : null}
             <div>

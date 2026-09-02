@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createRequestDrafts, emptyRequestDraft, updateRequestDraft } from './bug-report-drafts';
+import { carryRequestDraft, createRequestDrafts, emptyRequestDraft, updateRequestDraft } from './bug-report-drafts';
 
 describe('bug report form drafts', () => {
   it('keeps descriptions and uploaded images isolated by request type', () => {
@@ -37,5 +37,18 @@ describe('bug report form drafts', () => {
     expect(afterBugReset.bug).toEqual(emptyRequestDraft());
     expect(afterBugReset.feature.files).toEqual([featureImage]);
     expect(afterBugReset.feature.description).toBe('Cần thêm chức năng mới');
+  });
+
+  it('carries an unfinished intake and attachments across a manual type correction', () => {
+    const image = { name: 'evidence.png', size: 1024 } as File;
+    const bugDraft = updateRequestDraft(createRequestDrafts(), 'bug', {
+      description: 'Nút lưu không hoạt động',
+      files: [image],
+    });
+
+    expect(carryRequestDraft(bugDraft, 'bug', 'feature').feature).toMatchObject({
+      description: 'Nút lưu không hoạt động',
+      files: [image],
+    });
   });
 });
