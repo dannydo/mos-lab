@@ -79,6 +79,17 @@ test('maps raw Codex process errors and timeouts to safe failure codes', async (
   assert.equal(killed, true);
 });
 
+test('reports a numeric Codex exit code without child output', async () => {
+  const child = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  await assert.rejects(
+    executeCodexCli('/custom/codex', ['exec'], '/tmp', 1_000, (() => {
+      queueMicrotask(() => child.emit('exit', 1, null));
+      return child;
+    }) as never),
+    (error) => formatInboxFollowUpFailure('codex_exec', error).endsWith('code=CODEX_EXEC_EXIT_1')
+  );
+});
+
 test('accepts Codex structured JSON and rejects unsafe output', () => {
   assert.deepEqual(
     parseCodexClassification(

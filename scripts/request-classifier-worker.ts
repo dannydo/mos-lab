@@ -40,7 +40,12 @@ export function resolveCodexCliPath(
   return discovered;
 }
 
-export type CodexCliFailureCode = 'CODEX_EXEC_TIMEOUT' | 'CODEX_EXEC_FAILED' | 'CODEX_OUTPUT_MISSING';
+export type CodexCliFailureCode =
+  | 'CODEX_EXEC_TIMEOUT'
+  | 'CODEX_EXEC_FAILED'
+  | 'CODEX_EXEC_SIGNAL'
+  | 'CODEX_OUTPUT_MISSING'
+  | `CODEX_EXEC_EXIT_${number}`;
 
 class CodexCliError extends Error {
   constructor(readonly code: CodexCliFailureCode) {
@@ -93,9 +98,10 @@ export async function executeCodexCli(
       finish(() => reject(new CodexCliError('CODEX_EXEC_TIMEOUT')));
     }, timeoutMs);
     child.once('error', () => finish(() => reject(new CodexCliError('CODEX_EXEC_FAILED'))));
-    child.once('exit', (code) => {
+    child.once('exit', (code, signal) => {
       if (code === 0) finish(resolve);
-      else finish(() => reject(new CodexCliError('CODEX_EXEC_FAILED')));
+      else if (signal) finish(() => reject(new CodexCliError('CODEX_EXEC_SIGNAL')));
+      else finish(() => reject(new CodexCliError(`CODEX_EXEC_EXIT_${Number.isInteger(code) ? code : -1}`)));
     });
   });
 }
