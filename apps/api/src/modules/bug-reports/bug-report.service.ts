@@ -972,6 +972,7 @@ export class BugReportService {
           )
         : null;
     const classificationJobId = clipped(input?.classificationJobId, 36) || null;
+    const conversationSessionId = clipped(input?.conversationSessionId, 36) || null;
 
     const since = new Date(Date.now() - 60 * 60 * 1000);
     const recentCount = await fastify.prisma.crm.crmBugReport.count({
@@ -997,6 +998,11 @@ export class BugReportService {
             where: { id: classificationJobId, reporterStaffId, status: 'COMPLETED', expiresAt: { gt: new Date() } },
           })
         : null;
+      const conversation = conversationSessionId
+        ? await tx.crmRequestConversation.findFirst({
+            where: { id: conversationSessionId, reporterStaffId, status: 'READY', expiresAt: { gt: new Date() } },
+          })
+        : null;
       const created = await tx.crmBugReport.create({
         data: {
           reporterStaffId,
@@ -1018,14 +1024,37 @@ export class BugReportService {
         },
       });
       if (classification) {
-        await tx.crmRequestClassificationJob.update({ where: { id: classification.id }, data: { consumedAt: new Date() } });
+        await tx.crmRequestClassificationJob.update({
+          where: { id: classification.id },
+          data: { consumedAt: new Date() },
+        });
         await tx.crmBugReportAudit.create({
           data: {
             reportId: created.id,
             actorStaffId: reporterStaffId,
             action: 'CLASSIFICATION_APPLIED',
             note: `AI đề xuất ${safeJsonParse<{ requestType?: string }>(classification.recommendationJson, {}).requestType || 'UNKNOWN'}; người báo chọn ${requestType}.`,
-            afterJson: serialize({ classificationJobId: classification.id, recommendation: safeJsonParse(classification.recommendationJson, null), finalRequestType: requestType }),
+            afterJson: serialize({
+              classificationJobId: classification.id,
+              recommendation: safeJsonParse(classification.recommendationJson, null),
+              finalRequestType: requestType,
+            }),
+          },
+        });
+      }
+      if (conversation) {
+        await tx.crmRequestConversation.update({ where: { id: conversation.id }, data: { consumedAt: new Date() } });
+        await tx.crmBugReportAudit.create({
+          data: {
+            reportId: created.id,
+            actorStaffId: reporterStaffId,
+            action: 'CONVERSATION_APPLIED',
+            note: `Người báo xác nhận ${requestType} sau bước làm rõ AI.`,
+            afterJson: serialize({
+              conversationSessionId: conversation.id,
+              finalRequestType: requestType,
+              appliedAt: new Date().toISOString(),
+            }),
           },
         });
       }

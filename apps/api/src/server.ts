@@ -39,6 +39,7 @@ import { uiExperienceRoutes } from './modules/ui-experiences/routes.js';
 import { bugReportRoutes } from './modules/bug-reports/routes.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { RequestClassificationService } from './modules/bug-reports/request-classification.service.js';
+import { RequestConversationService } from './modules/bug-reports/request-conversation.service.js';
 import { startPancakeAcademySync } from './modules/academy-sales/pancake-sync.service.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
@@ -298,6 +299,14 @@ const start = async () => {
     classificationCleanupInitial.unref();
     const classificationCleanupInterval = setInterval(cleanupClassifications, 10 * 60 * 1000);
     classificationCleanupInterval.unref();
+    const cleanupConversations = () =>
+      RequestConversationService.cleanupExpired(server).catch((error) =>
+        server.log.warn({ error }, 'Request conversation cleanup failed')
+      );
+    const conversationCleanupInitial = setTimeout(cleanupConversations, 50_000);
+    conversationCleanupInitial.unref();
+    const conversationCleanupInterval = setInterval(cleanupConversations, 10 * 60 * 1000);
+    conversationCleanupInterval.unref();
 
     // Run backfill migration for existing CRM promotions to sync to legacy DB
     CampaignPromotionSyncService.backfillExistingPromotions(server).catch((err) => {

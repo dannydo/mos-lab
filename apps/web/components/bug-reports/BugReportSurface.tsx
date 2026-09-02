@@ -20,8 +20,15 @@ import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, HeaderActionIndicator, IconButton, IconText } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
+import { GuidedRequestConversation } from './GuidedRequestConversation';
 import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
-import { carryRequestDraft, createRequestDrafts, emptyRequestDraft, updateRequestDraft, type RequestDraftView } from './bug-report-drafts';
+import {
+  carryRequestDraft,
+  createRequestDrafts,
+  emptyRequestDraft,
+  updateRequestDraft,
+  type RequestDraftView,
+} from './bug-report-drafts';
 import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 import { useMyBugReports } from './useMyBugReports';
 
@@ -85,6 +92,7 @@ export function BugReportSurface() {
   const [release, setRelease] = React.useState<ReleaseMarker | null>(null);
   const [context, setContext] = React.useState<BugReportContext | null>(null);
   const [classification, setClassification] = React.useState<RequestClassificationJob | null>(null);
+  const [conversationSessionId, setConversationSessionId] = React.useState<string | null>(null);
   const [launcherPosition, setLauncherPosition] = React.useState<BugReportLauncherPosition | null>(null);
   const [dragging, setDragging] = React.useState(false);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
@@ -112,11 +120,15 @@ export function BugReportSurface() {
   const activeDraft = drafts[activeRequestView];
   const descriptionFieldId = activeRequestView === 'feature' ? 'mos-feature-description' : 'mos-bug-description';
 
-  const switchRequestView = React.useCallback((nextView: RequestDraftView) => {
-    if (nextView === activeRequestView) return;
-    setDrafts((current) => carryRequestDraft(current, activeRequestView, nextView));
-    setActiveView(nextView);
-  }, [activeRequestView]);
+  const switchRequestView = React.useCallback(
+    (nextView: RequestDraftView) => {
+      if (nextView === activeRequestView) return;
+      setDrafts((current) => carryRequestDraft(current, activeRequestView, nextView));
+      setConversationSessionId(null);
+      setActiveView(nextView);
+    },
+    [activeRequestView]
+  );
 
   const enabled = authenticated && pathname.startsWith('/dashboard');
   const myBugs = useMyBugReports(enabled);
@@ -453,6 +465,7 @@ export function BugReportSurface() {
         description: normalizedDescription,
         context,
         classificationJobId: classification?.status === 'COMPLETED' ? classification.id : null,
+        conversationSessionId,
         featureRequest:
           requestType === 'FEATURE'
             ? {
@@ -575,10 +588,7 @@ export function BugReportSurface() {
                 <Button
                   type="primary"
                   loading={submitting}
-                  disabled={
-                    activeDraft.description.trim().length < 3 ||
-                    activeDraft.processingImages
-                  }
+                  disabled={activeDraft.description.trim().length < 3 || activeDraft.processingImages}
                   onClick={() => void submit()}
                 >
                   <IconText icon={<AppIcon icon={Send} size="sm" />}>
@@ -675,7 +685,13 @@ export function BugReportSurface() {
             ) : null}
             {classification ? (
               <Alert
-                type={classification.status === 'COMPLETED' ? 'success' : classification.status === 'FAILED' || classification.status === 'EXPIRED' ? 'warning' : 'info'}
+                type={
+                  classification.status === 'COMPLETED'
+                    ? 'success'
+                    : classification.status === 'FAILED' || classification.status === 'EXPIRED'
+                      ? 'warning'
+                      : 'info'
+                }
                 showIcon
                 message={
                   classification.status === 'COMPLETED' && classification.recommendation
@@ -689,11 +705,17 @@ export function BugReportSurface() {
                     <div className="space-y-2">
                       <div>{classification.recommendation.rationale}</div>
                       {classification.recommendation.clarificationQuestion ? (
-                        <div className="font-medium">Cần làm rõ: {classification.recommendation.clarificationQuestion}</div>
+                        <div className="font-medium">
+                          Cần làm rõ: {classification.recommendation.clarificationQuestion}
+                        </div>
                       ) : null}
                       <Button
                         size="small"
-                        onClick={() => switchRequestView(classification.recommendation!.requestType === 'FEATURE' ? 'feature' : 'bug')}
+                        onClick={() =>
+                          switchRequestView(
+                            classification.recommendation!.requestType === 'FEATURE' ? 'feature' : 'bug'
+                          )
+                        }
                       >
                         Dùng đề xuất này
                       </Button>
@@ -704,6 +726,19 @@ export function BugReportSurface() {
                 }
               />
             ) : null}
+            <GuidedRequestConversation
+              key={`${activeRequestView}:${activeDraft.description}`}
+              description={activeDraft.description}
+              requestType={activeView === 'feature' ? 'FEATURE' : 'BUG'}
+              path={context?.path || pathname}
+              pageTitle={context?.pageTitle || document.title}
+              attachmentCount={activeDraft.files.length}
+              onSession={setConversationSessionId}
+              onTypeRecommendation={(type) => switchRequestView(type === 'FEATURE' ? 'feature' : 'bug')}
+              onApply={(value) => {
+                setDrafts((current) => updateRequestDraft(current, activeRequestView, { description: value }));
+              }}
+            />
             <div>
               <label htmlFor={descriptionFieldId} className="mb-2 block text-sm font-semibold">
                 {activeView === 'feature' ? 'Bạn muốn mOS giúp làm việc gì?' : 'Bạn đang gặp vấn đề gì?'}
@@ -718,6 +753,7 @@ export function BugReportSurface() {
                   setDrafts((current) =>
                     updateRequestDraft(current, activeRequestView, { description: nextDescription })
                   );
+                  setConversationSessionId(null);
                 }}
                 maxLength={2000}
                 showCount

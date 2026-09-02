@@ -126,6 +126,8 @@ export interface CreateBugReportRequest {
   attachments?: CreateBugReportAttachmentRequest[];
   /** Advisory recommendation that the reporter explicitly accepted or overrode. */
   classificationJobId?: string | null;
+  /** Optional, reporter-owned guided intake; the reporter's final form remains authoritative. */
+  conversationSessionId?: string | null;
 }
 
 export const REQUEST_CLASSIFICATION_JOB_STATUSES = ['PENDING', 'LEASED', 'COMPLETED', 'FAILED', 'EXPIRED'] as const;
@@ -166,6 +168,82 @@ export interface RequestClassificationWorkerJob {
 export type RequestClassificationWorkerResult = RequestClassificationRecommendation;
 
 export type CreateRequestClassificationJobResponse = ActionResponse<RequestClassificationJob>;
+
+export const REQUEST_CONVERSATION_STATUSES = [
+  'PENDING',
+  'LEASED',
+  'WAITING_REPORTER',
+  'READY',
+  'FAILED',
+  'EXPIRED',
+] as const;
+export type RequestConversationStatus = (typeof REQUEST_CONVERSATION_STATUSES)[number];
+
+export interface RequestConversationSummary {
+  requestType: BugReportRequestType;
+  whereItHappened: string | null;
+  userAction: string | null;
+  observedResult: string | null;
+  expectedResult: string | null;
+  impact: string | null;
+  userOrAudience: string | null;
+  problem: string | null;
+  desiredOutcome: string | null;
+  currentWorkaround: string | null;
+  priorityOrImpact: string | null;
+  constraints: string | null;
+}
+
+export interface RequestConversationMessage {
+  id: string;
+  role: 'REPORTER' | 'ASSISTANT';
+  body: string;
+  createdAt: string;
+}
+
+export interface CreateRequestConversationRequest {
+  description: string;
+  preferredRequestType?: BugReportRequestType | null;
+  context: Pick<BugReportContext, 'path' | 'pageTitle'>;
+  attachmentCount?: number;
+}
+
+export interface ReplyRequestConversationRequest {
+  message: string;
+}
+
+export interface RequestConversation {
+  id: string;
+  status: RequestConversationStatus;
+  summary: RequestConversationSummary;
+  messages: RequestConversationMessage[];
+  nextQuestion: string | null;
+  fallbackReason: string | null;
+  expiresAt: string;
+  updatedAt: string;
+}
+
+export interface RequestConversationWorkerJob {
+  id: string;
+  description: string;
+  preferredRequestType: BugReportRequestType | null;
+  context: Pick<BugReportContext, 'path' | 'pageTitle'>;
+  attachmentCount: number;
+  summary: RequestConversationSummary;
+  messages: RequestConversationMessage[];
+  leaseToken: string;
+  attemptCount: number;
+}
+
+export interface RequestConversationWorkerResult {
+  requestType: BugReportRequestType;
+  summary: RequestConversationSummary;
+  nextQuestion: string | null;
+  readyToSubmit: boolean;
+}
+
+export type CreateRequestConversationResponse = ActionResponse<RequestConversation>;
+export type ReplyRequestConversationResponse = ActionResponse<RequestConversation>;
 
 export interface BugReportReporter {
   id: number;

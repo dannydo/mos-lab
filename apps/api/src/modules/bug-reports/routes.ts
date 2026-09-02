@@ -12,6 +12,8 @@ import {
   type CreateBugReportCommentRequest,
   type CreateBugReportRequest,
   type CreateRequestClassificationJobRequest,
+  type CreateRequestConversationRequest,
+  type ReplyRequestConversationRequest,
   type MarkBugReportNotificationsReadRequest,
   type ReviewBugReportRequest,
   type TriageBugReportRequest,
@@ -19,6 +21,8 @@ import {
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { BugReportError, BugReportService, parseBugReportKey } from './bug-report.service.js';
 import { RequestClassificationError, RequestClassificationService } from './request-classification.service.js';
+import { RequestConversationError, RequestConversationService } from './request-conversation.service.js';
+import { RequestClassifierWorkerHub } from './request-classifier-worker-hub.js';
 
 function numericParam(value: unknown, label: string): number {
   const parsed = Number(value);
@@ -89,7 +93,9 @@ async function requireClassifierWorker(request: FastifyRequest, reply: FastifyRe
   const expected = classifierWorkerToken();
   if (expected.length < 32) {
     request.log.error('MOS_REQUEST_CLASSIFIER_WORKER_TOKEN is missing or shorter than 32 characters');
-    return reply.status(503).send({ error: 'Classifier Worker Unavailable', message: 'Worker phân loại chưa được cấu hình.' });
+    return reply
+      .status(503)
+      .send({ error: 'Classifier Worker Unavailable', message: 'Worker phân loại chưa được cấu hình.' });
   }
   if (!isValidAgentAuthorization(String(request.headers.authorization || ''), expected)) {
     return reply.status(401).send({ error: 'Unauthorized', message: 'Worker token không hợp lệ.' });
@@ -97,7 +103,11 @@ async function requireClassifierWorker(request: FastifyRequest, reply: FastifyRe
 }
 
 function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown, context: string) {
-  if (error instanceof BugReportError || error instanceof RequestClassificationError) {
+  if (
+    error instanceof BugReportError ||
+    error instanceof RequestClassificationError ||
+    error instanceof RequestConversationError
+  ) {
     return reply.status(error.statusCode).send({ error: error.code, message: error.message, code: error.code });
   }
   fastify.log.error(error, context);
@@ -115,6 +125,16 @@ function sendAttachment(reply: FastifyReply, value: Awaited<ReturnType<typeof Bu
 }
 
 export async function bugReportRoutes(fastify: FastifyInstance) {
+  fastify.get('/request-classifier/stream', { websocket: true }, (socket, request) => {
+    if (!isValidAgentAuthorization(String(request.headers.authorization || ''), classifierWorkerToken())) {
+      socket.close(1008, 'Unauthorized');
+      return;
+    }
+    RequestClassifierWorkerHub.add(socket);
+    socket.send(JSON.stringify({ type: 'connected' }));
+    socket.on('close', () => RequestClassifierWorkerHub.remove(socket));
+    socket.on('error', () => RequestClassifierWorkerHub.remove(socket));
+  });
   fastify.post(
     '/request-classifications',
     { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] },
@@ -125,6 +145,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           request.user.id,
           request.body as CreateRequestClassificationJobRequest
         );
+        RequestClassifierWorkerHub.notify('classification_available');
         return reply.status(202).send({ success: true, data, message: 'Đang hỏi AI đề xuất loại yêu cầu.' });
       } catch (error) {
         return sendError(fastify, reply, error, 'Create request classification failed');
@@ -138,6 +159,47 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       return reply.send({ data: await RequestClassificationService.status(fastify, request.user.id, id) });
     } catch (error) {
       return sendError(fastify, reply, error, 'Read request classification failed');
+    }
+  });
+
+  fastify.post('/request-conversations', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const data = await RequestConversationService.create(
+        fastify,
+        request.user.id,
+        request.body as CreateRequestConversationRequest
+      );
+      RequestClassifierWorkerHub.notify('conversation_available');
+      return reply.status(202).send({ success: true, data, message: 'Đang chuẩn bị câu hỏi làm rõ.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Create request conversation failed');
+    }
+  });
+  fastify.get('/request-conversations/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      return reply.send({
+        data: await RequestConversationService.status(
+          fastify,
+          request.user.id,
+          String((request.params as { id: string }).id || '')
+        ),
+      });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Read request conversation failed');
+    }
+  });
+  fastify.post('/request-conversations/:id/replies', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const data = await RequestConversationService.reply(
+        fastify,
+        request.user.id,
+        String((request.params as { id: string }).id || ''),
+        request.body as ReplyRequestConversationRequest
+      );
+      RequestClassifierWorkerHub.notify('conversation_available');
+      return reply.status(202).send({ success: true, data, message: 'Đang chuẩn bị câu hỏi tiếp theo.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Reply request conversation failed');
     }
   });
 
@@ -345,7 +407,10 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
 
   fastify.post('/request-classifier/heartbeat', { preHandler: [requireClassifierWorker] }, async (request, reply) => {
     try {
-      await RequestClassificationService.heartbeat(fastify, String((request.body as { workerId?: string })?.workerId || ''));
+      await RequestClassificationService.heartbeat(
+        fastify,
+        String((request.body as { workerId?: string })?.workerId || '')
+      );
       return reply.send({ success: true });
     } catch (error) {
       return sendError(fastify, reply, error, 'Request classifier heartbeat failed');
@@ -362,6 +427,58 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.post(
+    '/request-classifier/conversations/claim',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const workerId = String((request.body as { workerId?: string })?.workerId || '');
+        await RequestClassificationService.heartbeat(fastify, workerId);
+        return reply.send({ data: await RequestConversationService.claim(fastify, workerId) });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Request conversation claim failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/conversations/:id/complete',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as { leaseToken?: string; result?: unknown };
+        return reply.send({
+          success: true,
+          data: await RequestConversationService.complete(
+            fastify,
+            String((request.params as { id: string }).id || ''),
+            String(body?.leaseToken || ''),
+            body?.result
+          ),
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Complete request conversation failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/conversations/:id/fail',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as { leaseToken?: string; reason?: string };
+        await RequestConversationService.fail(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || ''),
+          body?.reason
+        );
+        return reply.send({ success: true });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Fail request conversation failed');
+      }
+    }
+  );
+
   fastify.get(
     '/request-classifier/jobs/:id/attachments/:attachmentId',
     { preHandler: [requireClassifierWorker] },
@@ -375,32 +492,48 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           numericParam(params.attachmentId, 'Attachment ID'),
           leaseToken
         );
-        return reply.header('Content-Type', value.mimeType).header('Cache-Control', 'private, no-store').send(value.buffer);
+        return reply
+          .header('Content-Type', value.mimeType)
+          .header('Cache-Control', 'private, no-store')
+          .send(value.buffer);
       } catch (error) {
         return sendError(fastify, reply, error, 'Read classifier attachment failed');
       }
     }
   );
 
-  fastify.post('/request-classifier/jobs/:id/complete', { preHandler: [requireClassifierWorker] }, async (request, reply) => {
-    try {
-      const id = String((request.params as { id: string }).id || '');
-      const body = request.body as { leaseToken?: string; result?: unknown };
-      const data = await RequestClassificationService.complete(fastify, id, String(body?.leaseToken || ''), body?.result);
-      return reply.send({ success: true, data });
-    } catch (error) {
-      return sendError(fastify, reply, error, 'Complete request classification failed');
+  fastify.post(
+    '/request-classifier/jobs/:id/complete',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const id = String((request.params as { id: string }).id || '');
+        const body = request.body as { leaseToken?: string; result?: unknown };
+        const data = await RequestClassificationService.complete(
+          fastify,
+          id,
+          String(body?.leaseToken || ''),
+          body?.result
+        );
+        return reply.send({ success: true, data });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Complete request classification failed');
+      }
     }
-  });
+  );
 
-  fastify.post('/request-classifier/jobs/:id/fail', { preHandler: [requireClassifierWorker] }, async (request, reply) => {
-    try {
-      const id = String((request.params as { id: string }).id || '');
-      const body = request.body as { leaseToken?: string; reason?: string };
-      await RequestClassificationService.fail(fastify, id, String(body?.leaseToken || ''), body?.reason);
-      return reply.send({ success: true });
-    } catch (error) {
-      return sendError(fastify, reply, error, 'Fail request classification failed');
+  fastify.post(
+    '/request-classifier/jobs/:id/fail',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const id = String((request.params as { id: string }).id || '');
+        const body = request.body as { leaseToken?: string; reason?: string };
+        await RequestClassificationService.fail(fastify, id, String(body?.leaseToken || ''), body?.reason);
+        return reply.send({ success: true });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Fail request classification failed');
+      }
     }
-  });
+  );
 }

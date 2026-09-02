@@ -43,6 +43,10 @@ import type {
   CreateBugReportResponse,
   CreateRequestClassificationJobRequest,
   CreateRequestClassificationJobResponse,
+  CreateRequestConversationRequest,
+  CreateRequestConversationResponse,
+  ReplyRequestConversationRequest,
+  ReplyRequestConversationResponse,
   MarkBugReportNotificationsReadRequest,
   MarkBugReportNotificationsReadResponse,
   MyBugReportsResponse,
@@ -51,6 +55,7 @@ import type {
   TriageBugReportRequest,
   TriageBugReportResponse,
   RequestClassificationJob,
+  RequestConversation,
 } from '@mos-lab/shared';
 import {
   Customer,
@@ -583,8 +588,28 @@ export const apiClient = {
       return response.data;
     },
     classificationStatus: async (id: string): Promise<RequestClassificationJob> => {
-      const response = await api.get<{ data: RequestClassificationJob }>(`/request-classifications/${encodeURIComponent(id)}`);
+      const response = await api.get<{ data: RequestClassificationJob }>(
+        `/request-classifications/${encodeURIComponent(id)}`
+      );
       return response.data.data;
+    },
+    createConversation: async (data: CreateRequestConversationRequest): Promise<CreateRequestConversationResponse> => {
+      const response = await api.post<CreateRequestConversationResponse>('/request-conversations', data);
+      return response.data;
+    },
+    conversationStatus: async (id: string): Promise<RequestConversation> => {
+      const response = await api.get<{ data: RequestConversation }>(`/request-conversations/${encodeURIComponent(id)}`);
+      return response.data.data;
+    },
+    replyConversation: async (
+      id: string,
+      data: ReplyRequestConversationRequest
+    ): Promise<ReplyRequestConversationResponse> => {
+      const response = await api.post<ReplyRequestConversationResponse>(
+        `/request-conversations/${encodeURIComponent(id)}/replies`,
+        data
+      );
+      return response.data;
     },
     create: async (data: CreateBugReportRequest): Promise<CreateBugReportResponse> => {
       const response = await api.post<CreateBugReportResponse>('/bug-reports', data);

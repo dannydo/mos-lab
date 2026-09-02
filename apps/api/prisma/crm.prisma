@@ -78,6 +78,7 @@ model CrmStaff {
   bugReportNotifications CrmBugReportNotification[] @relation("BugReportNotificationRecipient")
   bugReportComments CrmBugReportComment[] @relation("BugReportCommentAuthor")
   requestClassificationJobs CrmRequestClassificationJob[] @relation("RequestClassificationReporter")
+  requestConversations CrmRequestConversation[] @relation("RequestConversationReporter")
   impersonationAuditsStarted CrmImpersonationAudit[] @relation("ImpersonationAuditActor")
   impersonationAuditsTargeted CrmImpersonationAudit[] @relation("ImpersonationAuditTarget")
 
@@ -2420,4 +2421,51 @@ model CrmRequestClassificationWorkerHeartbeat {
 
   @@index([lastSeenAt])
   @@map("crm_request_classification_worker_heartbeats")
+}
+
+// Private, short-lived conversation state. Message text is only available to the
+// reporter and the authenticated outbound worker; audit rows store event metadata only.
+model CrmRequestConversation {
+  id                   String    @id @db.VarChar(36)
+  reporterStaffId      Int       @map("reporter_staff_id")
+  preferredRequestType String?   @map("preferred_request_type") @db.VarChar(16)
+  description          String    @db.Text
+  contextJson          String    @map("context_json") @db.LongText
+  attachmentCount      Int       @default(0) @map("attachment_count")
+  summaryJson          String    @map("summary_json") @db.LongText
+  messagesJson         String    @map("messages_json") @db.LongText
+  status               String    @default("PENDING") @db.VarChar(20)
+  nextQuestion         String?   @map("next_question") @db.Text
+  fallbackReason       String?   @map("fallback_reason") @db.VarChar(400)
+  attemptCount         Int       @default(0) @map("attempt_count")
+  leaseToken           String?   @map("lease_token") @db.VarChar(64)
+  leasedBy             String?   @map("leased_by") @db.VarChar(100)
+  leasedAt             DateTime? @map("leased_at") @db.DateTime(0)
+  leaseExpiresAt       DateTime? @map("lease_expires_at") @db.DateTime(0)
+  readyAt              DateTime? @map("ready_at") @db.DateTime(0)
+  consumedAt           DateTime? @map("consumed_at") @db.DateTime(0)
+  expiresAt            DateTime  @map("expires_at") @db.DateTime(0)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  reporter CrmStaff                    @relation("RequestConversationReporter", fields: [reporterStaffId], references: [id], onDelete: Cascade)
+  audits   CrmRequestConversationAudit[]
+
+  @@index([reporterStaffId, createdAt])
+  @@index([status, expiresAt])
+  @@index([leaseExpiresAt])
+  @@map("crm_request_conversations")
+}
+
+model CrmRequestConversationAudit {
+  id             Int      @id @default(autoincrement())
+  conversationId String   @map("conversation_id") @db.VarChar(36)
+  action         String   @db.VarChar(50)
+  metadataJson   String?  @map("metadata_json") @db.LongText
+  createdAt      DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  conversation CrmRequestConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("crm_request_conversation_audits")
 }
