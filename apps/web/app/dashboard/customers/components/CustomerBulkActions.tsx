@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, Space, Button, Typography, Popconfirm, Select, Dropdown } from 'antd';
 import { TeamOutlined, DeleteOutlined, WarningOutlined, RocketOutlined, MoreOutlined } from '@ant-design/icons';
 import { RevokeAssignmentModal } from './RevokeAssignmentModal';
@@ -12,6 +12,33 @@ import { AdaptiveModal, ResponsiveFormField, ResponsiveFormGrid } from '../../..
 import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
 
 const { Text } = Typography;
+
+const ALLOCATION_ROLE_LABELS: Record<string, string> = {
+  admin: 'Quản trị viên',
+  super_admin: 'Quản trị viên hệ thống',
+  manager: 'Quản lý',
+  oc: 'Online Consultant',
+  cc: 'Client Consultant',
+  ls: 'Leader Sales',
+  telesales: 'Telesales Executive',
+  booker: 'Booker / Telesales',
+  technician: 'Kỹ thuật viên',
+  qa: 'QA',
+  qc: 'QC',
+  qa_qc: 'QA / QC',
+};
+
+function roleLabel(role: string): string {
+  const normalizedRole = role.trim().toLowerCase();
+  return (
+    ALLOCATION_ROLE_LABELS[normalizedRole] ||
+    normalizedRole
+      .split(/[_-]+/)
+      .filter(Boolean)
+      .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+      .join(' ')
+  );
+}
 
 interface CustomerBulkActionsProps {
   themeMode: string;
@@ -57,12 +84,39 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
   const [revokeModalVisible, setRevokeModalVisible] = useState(false);
   const [addToCampaignModalVisible, setAddToCampaignModalVisible] = useState(false);
   const [mobileDeleteConfirmVisible, setMobileDeleteConfirmVisible] = useState(false);
+  const [targetRole, setTargetRole] = useState<string | undefined>(undefined);
   const responsiveTier = useResponsiveTier();
   const isMobile = responsiveTier === 'mobile';
 
   const selectedNumericIds = selectedRowKeys.map((k) => Number(k));
 
   const isManagerOrAdmin = canManageCustomerAllocation(currentUser?.role);
+  const activeStaff = useMemo(
+    () =>
+      staffList
+        .filter((staff) => staff.isActive !== false && Boolean(staff.role))
+        .slice()
+        .sort((left, right) => {
+          const byRole = roleLabel(left.role).localeCompare(roleLabel(right.role), 'vi');
+          return byRole || (left.displayName || left.username).localeCompare(right.displayName || right.username, 'vi');
+        }),
+    [staffList]
+  );
+  const roleOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    activeStaff.forEach((staff) => {
+      const role = staff.role.trim().toLowerCase();
+      counts.set(role, (counts.get(role) || 0) + 1);
+    });
+    return Array.from(counts, ([value, count]) => ({
+      value,
+      label: `${roleLabel(value)} (${count})`,
+    })).sort((left, right) => left.label.localeCompare(right.label, 'vi'));
+  }, [activeStaff]);
+  const targetRoleStaff = useMemo(
+    () => activeStaff.filter((staff) => staff.role.trim().toLowerCase() === targetRole),
+    [activeStaff, targetRole]
+  );
 
   if (selectedRowKeys.length === 0 || !isManagerOrAdmin) {
     return null;
@@ -108,7 +162,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
               onClick={() => setAssignModalVisible(true)}
               style={{ background: '#D4A84B', borderColor: '#D4A84B', borderRadius: '6px', fontWeight: 600 }}
             >
-              Phân bổ
+              Phân bổ data
             </Button>
             <Dropdown
               trigger={['click']}
@@ -160,7 +214,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
               onClick={() => setAssignModalVisible(true)}
               style={{ background: '#D4A84B', borderColor: '#D4A84B', borderRadius: '6px', fontWeight: 600 }}
             >
-              Phân bổ Booker
+              Phân bổ data
             </Button>
 
             <Button
@@ -253,32 +307,56 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         Bạn sắp xóa {selectedRowKeys.length} khách hàng đã chọn. Khách hàng sẽ được chuyển vào thùng rác.
       </AdaptiveModal>
 
-      {/* MODAL PHÂN BỔ BOOKER */}
+      {/* MODAL PHÂN BỔ DATA */}
       <AdaptiveModal
         intent="form"
         className="customer-allocation-overlay"
-        title={`Phân bổ ${selectedRowKeys.length} khách hàng cho Booker`}
+        title={`Phân bổ ${selectedRowKeys.length} khách hàng`}
         open={assignModalVisible}
         onOk={() => handleAssignCustomers(undefined, randomBatchId)}
-        onCancel={() => setAssignModalVisible(false)}
+        onCancel={() => {
+          setAssignModalVisible(false);
+          setTargetRole(undefined);
+          setTargetStaffId(undefined);
+        }}
         confirmLoading={assigning}
         okText="Xác nhận Phân bổ"
         cancelText="Hủy"
-        okButtonProps={{ disabled: !targetStaffId, style: { background: '#D4A84B', borderColor: '#D4A84B' } }}
+        okButtonProps={{
+          disabled: !targetRole || !targetStaffId,
+          style: { background: '#D4A84B', borderColor: '#D4A84B' },
+        }}
       >
         <div style={{ margin: '16px 0' }}>
           <ResponsiveFormGrid columns={2}>
             <ResponsiveFormField fullWidth>
-              <p style={{ marginBottom: '8px' }}>Chọn Booker nhận phân bổ:</p>
+              <p style={{ marginBottom: '8px' }}>1. Chọn vai trò:</p>
               <Select
                 showSearch
                 style={{ width: '100%' }}
-                placeholder="Tìm và chọn Booker..."
-                value={targetStaffId}
-                onChange={(value) => setTargetStaffId(value)}
+                placeholder="Chọn vai trò nhân sự..."
+                value={targetRole}
+                onChange={(value) => {
+                  setTargetRole(value);
+                  setTargetStaffId(undefined);
+                }}
                 filterOption={vietnameseSearchFilter}
                 getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                options={staffList.map((staff) => ({
+                options={roleOptions}
+              />
+            </ResponsiveFormField>
+            <ResponsiveFormField fullWidth>
+              <p style={{ marginBottom: '8px' }}>2. Chọn nhân sự nhận phân bổ:</p>
+              <Select
+                showSearch
+                style={{ width: '100%' }}
+                placeholder={targetRole ? 'Tìm và chọn nhân sự...' : 'Chọn vai trò trước'}
+                value={targetStaffId}
+                onChange={(value) => setTargetStaffId(value)}
+                disabled={!targetRole}
+                filterOption={vietnameseSearchFilter}
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                options={targetRoleStaff.map((staff) => ({
                   value: staff.id,
                   label: `${staff.displayName || staff.username} (ID: ${staff.id})`,
                 }))}
@@ -291,7 +369,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
             type="info"
             showIcon
             message="Assignment được giữ lâu dài"
-            description="Sau khi Booker chấp nhận, data chỉ rời danh sách khi Quản lý chủ động thu hồi hoặc phân bổ lại."
+            description="Sau khi nhân sự nhận phân bổ chấp nhận, data chỉ rời danh sách khi Quản lý chủ động thu hồi hoặc phân bổ lại."
           />
         </div>
       </AdaptiveModal>

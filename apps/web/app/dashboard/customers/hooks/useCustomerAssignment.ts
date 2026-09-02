@@ -19,7 +19,7 @@ export const useCustomerAssignment = (
   const handleAssignCustomers = useCallback(
     async (sourceTypeOverride?: unknown, randomBatchId?: string | null) => {
       if (!targetStaffId) {
-        optionsRef.current?.onError?.('Vui lòng chọn nhân viên Booker');
+        optionsRef.current?.onError?.('Vui lòng chọn nhân sự nhận phân bổ');
         return;
       }
       setAssigning(true);
@@ -46,7 +46,7 @@ export const useCustomerAssignment = (
           parentBatchId: randomBatchId || undefined,
         });
         optionsRef.current?.onSuccess?.(
-          `Đã tạo đợt phân bổ thành công cho Booker! (${selectedRowKeys.length} KH) - Chờ Booker xác nhận 24h.`
+          `Đã tạo đợt phân bổ thành công! (${selectedRowKeys.length} KH) - Chờ nhân sự nhận phân bổ xác nhận 24h.`
         );
         setSelectedRowKeys([]);
         clearRandomSelection();
