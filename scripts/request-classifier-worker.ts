@@ -51,7 +51,10 @@ async function workerFetch(path: string, init?: RequestInit): Promise<Response> 
       ...init?.headers,
     },
   });
-  if (!response.ok) throw new Error(`Worker bridge HTTP ${response.status}`);
+  if (!response.ok)
+    throw new Error(
+      `Worker bridge ${path.includes('inbox-follow-ups') ? 'inbox-follow-up' : 'classifier'} HTTP ${response.status}`
+    );
   return response;
 }
 
@@ -329,14 +332,22 @@ export function parseCodexInboxFollowUp(stdout: string): InboxFollowUpWorkerResu
 }
 async function processInboxFollowUpOne(): Promise<boolean> {
   const { workerId } = configuration();
-  const response = await workerFetch('/request-classifier/inbox-follow-ups/claim', {
-    method: 'POST',
-    body: JSON.stringify({ workerId }),
-  });
+  let phase = 'claim';
+  let response: Response;
+  try {
+    response = await workerFetch('/request-classifier/inbox-follow-ups/claim', {
+      method: 'POST',
+      body: JSON.stringify({ workerId }),
+    });
+  } catch (error) {
+    console.log(`Inbox follow-up phase=${phase} error=${error instanceof Error ? error.message : 'unknown'}`);
+    return false;
+  }
   const job = ((await response.json()) as { data: InboxFollowUpWorkerJob | null }).data;
   if (!job) return false;
   const workDir = await mkdtemp(join(tmpdir(), 'mos-inbox-follow-up-'));
   try {
+    phase = 'codex_exec';
     const schemaPath = join(workDir, 'schema.json');
     await writeFile(schemaPath, inboxFollowUpSchema(), { mode: 0o600 });
     const prompt = [
@@ -349,12 +360,15 @@ async function processInboxFollowUpOne(): Promise<boolean> {
       ['exec', '--sandbox', 'read-only', '--output-schema', schemaPath, prompt],
       { cwd: workDir, timeout: CODEX_TIMEOUT_MS, maxBuffer: 32 * 1024 }
     );
+    phase = 'complete';
     await workerFetch(`/request-classifier/inbox-follow-ups/${job.id}/complete`, {
       method: 'POST',
       body: JSON.stringify({ leaseToken: job.leaseToken, result: parseCodexInboxFollowUp(result.stdout) }),
     });
     console.log(`Inbox follow-up completed ${job.id}.`);
-  } catch {
+  } catch (error) {
+    console.log(`Inbox follow-up phase=${phase} error=${error instanceof Error ? error.message : 'unknown'}`);
+    phase = 'fail';
     await workerFetch(`/request-classifier/inbox-follow-ups/${job.id}/fail`, {
       method: 'POST',
       body: JSON.stringify({ leaseToken: job.leaseToken }),
