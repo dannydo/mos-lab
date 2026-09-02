@@ -18,7 +18,7 @@ import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, HeaderActionIndicator, IconText } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
-import { BugReportWorkflowModal } from './BugReportWorkflowGuide';
+import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
 import { createRequestDrafts, emptyRequestDraft, updateRequestDraft, type RequestDraftView } from './bug-report-drafts';
 import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 import { useMyBugReports } from './useMyBugReports';
@@ -70,6 +70,7 @@ export function BugReportSurface() {
   const { token } = theme.useToken();
   const [open, setOpen] = React.useState(false);
   const [workflowOpen, setWorkflowOpen] = React.useState(false);
+  const [externalWorkflowOpen, setExternalWorkflowOpen] = React.useState(false);
   const [activeView, setActiveView] = React.useState<'bug' | 'feature' | 'history'>('bug');
   const [selectedReportKey, setSelectedReportKey] = React.useState<string | null>(null);
   const [drafts, setDrafts] = React.useState(createRequestDrafts);
@@ -112,6 +113,16 @@ export function BugReportSurface() {
   React.useEffect(() => {
     setAuthenticated(Boolean(safeStorage.getItem('mos_token')));
   }, [pathname]);
+
+  React.useEffect(() => {
+    const handleWorkflowVisibility = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open?: boolean }>;
+      setExternalWorkflowOpen(Boolean(customEvent.detail?.open));
+    };
+
+    window.addEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, handleWorkflowVisibility);
+    return () => window.removeEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, handleWorkflowVisibility);
+  }, []);
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -383,7 +394,7 @@ export function BugReportSurface() {
 
   return (
     <>
-      {launcherPreferencesReady && preferences.visible ? (
+      {launcherPreferencesReady && preferences.visible && !open && !workflowOpen && !externalWorkflowOpen ? (
         <HeaderActionIndicator
           variant="count"
           count={myBugs.actionRequiredCount || myBugs.unreadCount}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   Bug,
@@ -16,6 +17,8 @@ import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, StatusTag, type StatusTy
 import styles from './BugReportWorkflowGuide.module.css';
 
 const { Text } = Typography;
+
+export const BUG_REPORT_WORKFLOW_VISIBILITY_EVENT = 'mos:bug-report-workflow-visibility';
 
 interface WorkflowStatus {
   label: string;
@@ -39,62 +42,50 @@ const BUG_WORKFLOW_STEPS: WorkflowStep[] = [
     roleTone: 'purple',
     description: 'Mô tả vấn đề bằng một câu và đính kèm ảnh nếu có.',
     icon: Bug,
-    statuses: [{ label: 'Agent chưa xem', tone: 'default' }],
+    statuses: [{ label: 'AI Agent · Làm rõ yêu cầu', tone: 'processing' }],
   },
   {
     title: 'Đọc & đối chiếu',
     role: 'AI Agent',
     roleTone: 'cyan',
-    description: 'Agent kiểm tra context, ảnh và biz logic trước khi quyết định sửa.',
+    description: 'Agent kiểm tra context, ảnh, repository và biz logic trước khi kết luận ticket đã đủ rõ.',
     icon: ScanSearch,
     statuses: [
-      { label: 'Đang phân tích', tone: 'processing' },
-      { label: 'Đối chiếu biz logic', tone: 'orange' },
+      { label: 'Người báo · Bổ sung thông tin', tone: 'purple' },
+      { label: 'Danny · Quyết định', tone: 'gold' },
     ],
   },
   {
-    title: 'Bổ sung thông tin',
-    role: 'Người báo',
-    roleTone: 'purple',
-    description: 'Trả lời comment của Agent và upload thêm ảnh minh họa.',
-    icon: MessageSquareMore,
-    statuses: [
-      { label: 'Chờ người báo', tone: 'purple' },
-      { label: 'Người báo đã trả lời', tone: 'cyan' },
-    ],
-    conditional: 'Chỉ khi chưa rõ',
-  },
-  {
-    title: 'Duyệt & xếp ưu tiên',
+    title: 'Quyết định & xếp ưu tiên',
     role: 'Danny',
     roleTone: 'gold',
-    description: 'Chốt kết quả đúng mong đợi và chọn priority P0–P3.',
+    description: 'Chốt kết quả đúng, phạm vi, priority P0–P3 và quyết định duyệt, từ chối hoặc đánh dấu trùng.',
     icon: ShieldCheck,
     statuses: [
-      { label: 'Đã hiểu · chờ duyệt', tone: 'gold' },
-      { label: 'Đã nhận · chờ sửa', tone: 'processing' },
+      { label: 'AI Agent · Bắt đầu triển khai', tone: 'processing' },
+      { label: 'Hoàn tất · Không triển khai', tone: 'default' },
     ],
   },
   {
     title: 'Sửa & kiểm thử',
     role: 'AI Agent',
     roleTone: 'cyan',
-    description: 'Agent cập nhật tiến độ liên tục trong lúc sửa và kiểm thử.',
+    description: 'Agent nhận bundle, cập nhật tiến độ, sửa trong phạm vi đã duyệt và kiểm thử hồi quy.',
     icon: Wrench,
     statuses: [
-      { label: 'Đang sửa', tone: 'cyan' },
-      { label: 'Đang kiểm thử', tone: 'orange' },
+      { label: 'AI Agent · Tiếp tục triển khai', tone: 'cyan' },
+      { label: 'Người báo · Nghiệm thu', tone: 'success' },
     ],
   },
   {
-    title: 'Xác nhận & đóng',
-    role: 'Người báo / Admin',
+    title: 'Nghiệm thu hoặc reopen',
+    role: 'Người báo',
     roleTone: 'success',
-    description: 'Kiểm tra bản sửa; đúng thì xác nhận để đóng ticket.',
+    description: 'Đúng thì xác nhận đóng; chưa đúng thì mô tả điểm còn lỗi để ticket quay lại đúng Agent xử lý tiếp.',
     icon: CheckCircle2,
     statuses: [
-      { label: 'Đã sửa · chờ xác nhận', tone: 'success' },
       { label: 'Hoàn tất', tone: 'success' },
+      { label: 'AI Agent · Xử lý phản hồi reopen', tone: 'orange' },
     ],
   },
 ];
@@ -106,18 +97,17 @@ const FEATURE_WORKFLOW_STEPS: WorkflowStep[] = [
     roleTone: 'purple',
     description: 'Nói công việc bạn muốn mOS hỗ trợ, lý do cần và ai sẽ sử dụng.',
     icon: Lightbulb,
-    statuses: [{ label: 'Đã tiếp nhận', tone: 'default' }],
+    statuses: [{ label: 'AI Agent · Làm rõ yêu cầu', tone: 'processing' }],
   },
   {
     title: 'Làm rõ yêu cầu',
     role: 'AI Agent',
     roleTone: 'cyan',
-    description: 'Agent làm rõ vấn đề, phạm vi, người dùng và kết quả được xem là đạt.',
+    description: 'Agent đối chiếu repository và làm rõ vấn đề, phạm vi, người dùng cùng kết quả được xem là đạt.',
     icon: MessageSquareMore,
     statuses: [
-      { label: 'Đang phân tích', tone: 'processing' },
-      { label: 'Chờ bạn trả lời', tone: 'purple' },
-      { label: 'Đã đủ rõ', tone: 'success' },
+      { label: 'Người yêu cầu · Bổ sung thông tin', tone: 'purple' },
+      { label: 'Danny · Quyết định', tone: 'gold' },
     ],
   },
   {
@@ -127,31 +117,30 @@ const FEATURE_WORKFLOW_STEPS: WorkflowStep[] = [
     description: 'Danny xem giá trị, phạm vi và ưu tiên rồi quyết định có đưa vào hàng triển khai hay không.',
     icon: ShieldCheck,
     statuses: [
-      { label: 'Chờ Danny duyệt', tone: 'gold' },
-      { label: 'Đã duyệt triển khai', tone: 'processing' },
-      { label: 'Không duyệt', tone: 'error' },
+      { label: 'AI Agent · Bắt đầu triển khai', tone: 'processing' },
+      { label: 'Hoàn tất · Không triển khai', tone: 'default' },
     ],
   },
   {
     title: 'Triển khai & kiểm thử',
     role: 'AI Agent',
     roleTone: 'cyan',
-    description: 'Chỉ yêu cầu đã được Danny duyệt mới được đưa vào code và kiểm thử.',
+    description: 'Agent nhận bundle, cập nhật tiến độ và chỉ triển khai phạm vi đã được Danny duyệt.',
     icon: Wrench,
     statuses: [
-      { label: 'Đang triển khai', tone: 'cyan' },
-      { label: 'Đang kiểm thử', tone: 'orange' },
+      { label: 'AI Agent · Tiếp tục triển khai', tone: 'cyan' },
+      { label: 'Người yêu cầu · Nghiệm thu', tone: 'success' },
     ],
   },
   {
-    title: 'Nghiệm thu & hoàn tất',
+    title: 'Nghiệm thu hoặc yêu cầu chỉnh',
     role: 'Người yêu cầu',
     roleTone: 'success',
-    description: 'Người yêu cầu kiểm tra kết quả; chưa đạt thì phản hồi để Agent điều chỉnh tiếp.',
+    description: 'Đúng thì xác nhận đóng; chưa đạt thì nêu rõ điểm cần chỉnh để ticket quay lại Agent.',
     icon: CheckCircle2,
     statuses: [
-      { label: 'Chờ nghiệm thu', tone: 'success' },
       { label: 'Hoàn tất', tone: 'success' },
+      { label: 'AI Agent · Xử lý phản hồi reopen', tone: 'orange' },
     ],
   },
 ];
@@ -199,7 +188,9 @@ export function BugReportWorkflowGuide() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <Text type="secondary">Mỗi loại yêu cầu có gate rõ ràng để bạn luôn biết ai đang làm gì.</Text>
+        <Text type="secondary">
+          Mỗi ticket chỉ có một người cần hành động tiếp; hoàn tất bước hiện tại sẽ tự bàn giao sang người kế tiếp.
+        </Text>
         <Text type="secondary" className="shrink-0 text-xs tabular-nums">
           Tiến độ tự cập nhật mỗi 15 giây
         </Text>
@@ -227,12 +218,12 @@ export function BugReportWorkflowGuide() {
         <div className="flex items-start gap-2">
           <AppIcon icon={ShieldCheck} size="sm" className="mt-0.5 shrink-0" />
           <Text>
-            <strong>Nguyên tắc an toàn:</strong> Agent không sửa hoặc triển khai trước khi yêu cầu đủ rõ và Danny đã
-            duyệt.
+            <strong>Nguyên tắc an toàn:</strong> Agent chỉ sửa sau khi yêu cầu đủ rõ và Danny đã duyệt. Admin chỉ đóng
+            ngoại lệ khi có bằng chứng hoặc lý do được lưu trong audit.
           </Text>
         </div>
         <Text type="secondary" className="shrink-0 tabular-nums">
-          Theo dõi trạng thái thật tại mục <strong>AI Agent</strong>
+          Theo dõi owner và hành động thật tại cột <strong>Bước tiếp theo</strong>
         </Text>
       </div>
     </div>
@@ -246,6 +237,24 @@ interface BugReportWorkflowModalProps {
 }
 
 export function BugReportWorkflowModal({ open, onClose, zIndex }: BugReportWorkflowModalProps) {
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, {
+        detail: { open },
+      })
+    );
+
+    return () => {
+      if (open) {
+        window.dispatchEvent(
+          new CustomEvent(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, {
+            detail: { open: false },
+          })
+        );
+      }
+    };
+  }, [open]);
+
   return (
     <AdaptiveModal
       intent="form"
