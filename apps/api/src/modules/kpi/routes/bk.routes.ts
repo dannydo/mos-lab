@@ -26,6 +26,11 @@ import {
 } from '../services/bk-salary.service.js';
 import { TeamService } from '../../teams/team.service.js';
 import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
+import {
+  bookingDetailsStatusCondition,
+  bookingMissedSqlCondition,
+  type BkBookingDetailsFilter,
+} from '../services/bk-booking.service.js';
 
 export async function registerBkRoutes(fastify: FastifyInstance) {
   // 1. Booking Leaderboard
@@ -46,15 +51,23 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       if (activeTelesalesIds.length === 0) {
         return reply.send({
           leaderboard: [],
-          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 },
+          summary: {
+            totalBookings: 0,
+            doneBookings: 0,
+            missedBookings: 0,
+            conversionRate: 0,
+            totalCalls: 0,
+            totalPickups: 0,
+          },
         });
       }
 
       const bkIdsStr = activeTelesalesIds.join(',');
 
+      const normalizedStoreId = String(storeId || 'ALL').toUpperCase();
       let storeFilter = '';
-      if (storeId && storeId !== 'ALL') {
-        storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
+      if (normalizedStoreId !== 'ALL') {
+        storeFilter = `AND o.client_store_id IN (SELECT id FROM client_store WHERE UPPER(client_store_key) = '${normalizedStoreId.replace(/[^A-Z0-9_-]/g, '')}')`;
       }
 
       const sql = `
@@ -62,18 +75,18 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           up.user_id as bookerId,
           up.full_name as displayName,
           up.avatar as avatar,
-          UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
+          UPPER(COALESCE(cs_staff.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT o.id) as totalCreatedBookings,
           COUNT(DISTINCT CASE WHEN o.order_state = 'Completed' THEN o.id END) as doneBookings,
-          COUNT(DISTINCT CASE WHEN o.order_state IN ('Cancelled', 'Missed') THEN o.id END) as missedBookings
+          COUNT(DISTINCT CASE WHEN ${bookingMissedSqlCondition('o')} THEN o.id END) as missedBookings
         FROM \`user_profile\` up
-        LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
+        LEFT JOIN \`client_store\` cs_staff ON cs_staff.id = up.client_store_id
         LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
           AND o.date_created >= '${startPart} 00:00:00' 
           AND o.date_created <= '${endPart} 23:59:59'
           ${storeFilter}
         WHERE up.user_id IN (${bkIdsStr})
-        GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
+        GROUP BY up.user_id, up.full_name, up.avatar, cs_staff.client_store_key
         ORDER BY totalCreatedBookings DESC, doneBookings DESC
       `;
 
@@ -88,6 +101,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       let rank = 1;
       let grandTotalBookings = 0;
       let grandDoneBookings = 0;
+      let grandMissedBookings = 0;
       let grandTotalCalls = 0;
       let grandTotalPickups = 0;
 
@@ -100,6 +114,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
         grandTotalBookings += totalCreatedBookings;
         grandDoneBookings += doneBookings;
+        grandMissedBookings += missedBookings;
         grandTotalCalls += callMetrics.callCount;
         grandTotalPickups += callMetrics.pickupCount;
 
@@ -130,6 +145,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         summary: {
           totalBookings: grandTotalBookings,
           doneBookings: grandDoneBookings,
+          missedBookings: grandMissedBookings,
           conversionRate: avgConversionRate,
           totalCalls: grandTotalCalls,
           totalPickups: grandTotalPickups,
@@ -143,11 +159,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
   // 1.2 Booking Details
   fastify.get('/kpi/bk/booking/details', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { bookerId, dateFrom, dateTo, storeId } = request.query as {
+    const { bookerId, dateFrom, dateTo, storeId, status } = request.query as {
       bookerId?: string;
       dateFrom?: string;
       dateTo?: string;
       storeId?: string;
+      status?: string;
     };
 
     const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
@@ -161,7 +178,14 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         return reply.send({
           data: [],
           total: 0,
-          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 },
+          summary: {
+            totalBookings: 0,
+            doneBookings: 0,
+            missedBookings: 0,
+            conversionRate: 0,
+            totalCalls: 0,
+            totalPickups: 0,
+          },
         });
       }
 
@@ -171,16 +195,44 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         return reply.send({
           data: [],
           total: 0,
-          summary: { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 },
+          summary: {
+            totalBookings: 0,
+            doneBookings: 0,
+            missedBookings: 0,
+            conversionRate: 0,
+            totalCalls: 0,
+            totalPickups: 0,
+          },
         });
       }
 
       const bookerFilter = `AND o.created_staff_id IN (${scopedBookerIds.join(',')})`;
 
+      const requestedStatus = String(status || 'ALL').toUpperCase();
+      const statusFilter: BkBookingDetailsFilter = ['ALL', 'COMPLETED', 'MISSED'].includes(requestedStatus)
+        ? (requestedStatus as BkBookingDetailsFilter)
+        : 'ALL';
+      const bookingStatusFilter = bookingDetailsStatusCondition(statusFilter, 'o');
+
+      const normalizedStoreId = String(storeId || 'ALL').toUpperCase();
       let storeFilter = '';
-      if (storeId && storeId !== 'ALL') {
-        storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
+      if (normalizedStoreId !== 'ALL') {
+        storeFilter = `AND UPPER(cs.client_store_key) = '${normalizedStoreId.replace(/[^A-Z0-9_-]/g, '')}'`;
       }
+
+      const summarySql = `
+        SELECT
+          COUNT(DISTINCT o.id) as totalBookings,
+          COUNT(DISTINCT CASE WHEN o.order_state = 'Completed' THEN o.id END) as doneBookings,
+          COUNT(DISTINCT CASE WHEN ${bookingMissedSqlCondition('o')} THEN o.id END) as missedBookings
+        FROM \`order\` o
+        LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        WHERE o.date_created >= '${startPart} 00:00:00'
+          AND o.date_created <= '${endPart} 23:59:59'
+          ${bookerFilter}
+          ${storeFilter}
+          AND ${bookingStatusFilter}
+      `;
 
       const sql = `
         SELECT 
@@ -213,23 +265,23 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           AND o.date_created <= '${endPart} 23:59:59'
           ${bookerFilter}
           ${storeFilter}
+          AND ${bookingStatusFilter}
         ORDER BY o.date_created DESC
         LIMIT 500
       `;
 
-      const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+      const [rows, summaryRows] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(summarySql),
+      ]);
       const callMetricsByBooker = await getBkCallMetricsByLegacyStaffIds(fastify, startPart, endPart, scopedBookerIds);
 
-      let totalBookings = 0;
-      let doneBookings = 0;
+      const totalBookings = Number(summaryRows[0]?.totalBookings || 0);
+      const doneBookings = Number(summaryRows[0]?.doneBookings || 0);
+      const missedBookings = Number(summaryRows[0]?.missedBookings || 0);
 
       const data: BkBookingRecord[] = rows.map((r) => {
         const orderState = String(r.orderState || 'New');
-        totalBookings++;
-        if (orderState === 'Completed') {
-          doneBookings++;
-        }
-
         return {
           orderId: Number(r.orderId),
           orderKey: String(r.orderKey || `#${r.orderId}`),
@@ -262,6 +314,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         summary: {
           totalBookings,
           doneBookings,
+          missedBookings,
           conversionRate,
           totalCalls: callMetrics.totalCalls,
           totalPickups: callMetrics.totalPickups,

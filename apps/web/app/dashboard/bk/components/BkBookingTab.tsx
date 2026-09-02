@@ -23,6 +23,7 @@ import {
 import {
   BkBookingLeaderboardEntry,
   BkBookingRecord,
+  type BkBookingDetailsFilter,
   removeVietnameseTones,
   type ReportComparisonMode,
 } from '@mos-lab/shared';
@@ -69,6 +70,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
   const [summary, setSummary] = useState({
     totalBookings: 0,
     doneBookings: 0,
+    missedBookings: 0,
     conversionRate: 0,
     totalCalls: 0,
     totalPickups: 0,
@@ -76,6 +78,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
   const [previousSummary, setPreviousSummary] = useState<{
     totalBookings: number;
     doneBookings: number;
+    missedBookings: number;
     conversionRate: number;
     totalCalls: number;
     totalPickups: number;
@@ -83,6 +86,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
   const [selectedBookerName, setSelectedBookerName] = useState<string | null>(null);
+  const [selectedDetailStatus, setSelectedDetailStatus] = useState<BkBookingDetailsFilter>('ALL');
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
   const [detailRecords, setDetailRecords] = useState<BkBookingRecord[]>([]);
@@ -102,7 +106,14 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
       ]);
       setLeaderboard(res.leaderboard || []);
       setSummary(
-        res.summary || { totalBookings: 0, doneBookings: 0, conversionRate: 0, totalCalls: 0, totalPickups: 0 }
+        res.summary || {
+          totalBookings: 0,
+          doneBookings: 0,
+          missedBookings: 0,
+          conversionRate: 0,
+          totalCalls: 0,
+          totalPickups: 0,
+        }
       );
       setPreviousSummary(previousRes?.summary || null);
     } catch (err) {
@@ -120,6 +131,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
         dateFrom: dateRange[0].format('YYYY-MM-DD'),
         dateTo: dateRange[1].format('YYYY-MM-DD'),
         storeId: selectedStore,
+        status: selectedDetailStatus,
       });
       const data = (res.data || []).map((item: SafeAny, idx: number) => ({
         ...item,
@@ -139,7 +151,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
 
   useEffect(() => {
     fetchDetails();
-  }, [dateRange, selectedStore, selectedBookerId]);
+  }, [dateRange, selectedStore, selectedBookerId, selectedDetailStatus]);
 
   // Instantly refresh BK Leaderboard & Details when calls/bookings are saved
   useEffect(() => {
@@ -157,16 +169,18 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
       window.removeEventListener('mos-customer-updated', handleDataChanged);
       window.removeEventListener('mos-booking-updated', handleDataChanged);
     };
-  }, [dateRange, selectedStore, selectedBookerId]);
+  }, [dateRange, selectedStore, selectedBookerId, selectedDetailStatus]);
 
-  const handleSelectBooker = (bookerId: string, bookerName?: string) => {
-    if (selectedBookerId === bookerId) {
+  const handleSelectBooker = (bookerId: string, bookerName?: string, detailStatus: BkBookingDetailsFilter = 'ALL') => {
+    if (selectedBookerId === bookerId && selectedDetailStatus === detailStatus) {
       setSelectedBookerId(null);
       setSelectedBookerName(null);
+      setSelectedDetailStatus('ALL');
     } else {
       setSelectedBookerId(bookerId);
       const found = leaderboard.find((item) => String(item.bookerId) === bookerId);
       setSelectedBookerName(bookerName || found?.displayName || `BK #${bookerId}`);
+      setSelectedDetailStatus(detailStatus);
     }
   };
 
@@ -293,7 +307,20 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
       dataIndex: 'missedBookings',
       key: 'missedBookings',
       align: 'center' as const,
-      render: (val: number) => <span className="tabular-nums font-medium text-xs text-slate-500">{val}</span>,
+      render: (val: number, record: BkBookingLeaderboardEntry) => (
+        <Button
+          type="text"
+          size="small"
+          className="tabular-nums h-6 px-1 font-semibold text-xs text-rose-500 hover:text-rose-400"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleSelectBooker(String(record.bookerId), record.displayName, 'MISSED');
+          }}
+          aria-label={`Xem ${val} booking bị hủy hoặc Missed của ${record.displayName}`}
+        >
+          {val}
+        </Button>
+      ),
     },
     {
       title: 'Tỷ Lệ Chuyển Đổi (Done/Book)',
@@ -482,6 +509,22 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6} xl={4}>
+          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl">
+            <Statistic
+              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Bị hủy / Missed</span>}
+              value={summary.missedBookings}
+              valueStyle={{ color: token.colorError, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+              prefix={<CloseCircleOutlined className="mr-2" />}
+            />
+            <PeriodComparison
+              comparison={previousPeriod?.comparison}
+              currentValue={summary.missedBookings}
+              previousValue={previousSummary?.missedBookings || 0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6} xl={4}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
@@ -578,6 +621,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
           { label: 'Cuộc gọi', value: record.callCount ?? 0, tone: 'accent' },
           { label: 'Pickup', value: `${record.pickupCount ?? 0} (${record.pickupRate ?? 0}%)`, tone: 'success' },
           { label: 'Done', value: record.doneBookings ?? 0, tone: 'success' },
+          { label: 'Missed', value: record.missedBookings ?? 0, tone: 'danger' },
           { label: 'Tỷ lệ', value: `${record.conversionRate ?? 0}%`, tone: 'warning' },
         ]}
         extraSummary={
@@ -606,16 +650,27 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
                   onClose={() => {
                     setSelectedBookerId(null);
                     setSelectedBookerName(null);
+                    setSelectedDetailStatus('ALL');
                   }}
                   className="font-semibold text-xs"
                 >
                   Đang lọc: {selectedBookerName}
                 </Tag>
               )}
+              {selectedDetailStatus === 'MISSED' && (
+                <Tag
+                  color="error"
+                  closable
+                  onClose={() => setSelectedDetailStatus('ALL')}
+                  className="font-semibold text-xs"
+                >
+                  Chỉ Missed / Đã hủy
+                </Tag>
+              )}
             </div>
             <Text type="secondary" className="text-xs">
               {selectedBookerName
-                ? `Hiển thị danh sách booking được tạo bởi Booker ${selectedBookerName}`
+                ? `Hiển thị ${selectedDetailStatus === 'MISSED' ? 'booking Missed / đã hủy của' : 'danh sách booking được tạo bởi'} Booker ${selectedBookerName}`
                 : 'Hiển thị tất cả danh sách booking của nhóm Telesales'}
             </Text>
           </div>

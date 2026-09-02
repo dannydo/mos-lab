@@ -110,6 +110,7 @@ import {
   DailySalesBonusQueryParams,
   DailySalesBonusTransactionsQueryParams,
   BkBookingLeaderboardResponse,
+  BkBookingDetailsParams,
   BkBookingResponse,
   BkDoneLeaderboardResponse,
   BkDoneDetailsParams,
@@ -1584,7 +1585,7 @@ export const apiClient = {
       const response = await api.get('/kpi/bk/booking/leaderboard', { params });
       return response.data;
     },
-    getBookingDetails: async (params?: Record<string, unknown>): Promise<BkBookingResponse> => {
+    getBookingDetails: async (params?: BkBookingDetailsParams): Promise<BkBookingResponse> => {
       const response = await api.get('/kpi/bk/booking/details', { params });
       return response.data;
     },

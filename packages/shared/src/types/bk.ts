@@ -41,10 +41,21 @@ export interface BkBookingLeaderboardResponse {
   summary: {
     totalBookings: number;
     doneBookings: number;
+    missedBookings: number;
     conversionRate: number;
     totalCalls: number;
     totalPickups: number;
   };
+}
+
+export type BkBookingDetailsFilter = 'ALL' | 'COMPLETED' | 'MISSED';
+
+export interface BkBookingDetailsParams {
+  bookerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  storeId?: string;
+  status?: BkBookingDetailsFilter;
 }
 
 export interface BkBookingResponse {
@@ -53,6 +64,7 @@ export interface BkBookingResponse {
   summary: {
     totalBookings: number;
     doneBookings: number;
+    missedBookings: number;
     conversionRate: number;
     totalCalls: number;
     totalPickups: number;
