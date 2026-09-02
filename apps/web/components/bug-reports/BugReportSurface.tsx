@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Alert, Badge, Button, Image, Input, Select, Tabs, Tooltip, Upload, message, notification, theme } from 'antd';
+import { Alert, Badge, Button, Image, Input, Select, Tabs, Upload, message, notification, theme } from 'antd';
 import { CircleHelp, ImagePlus, Inbox, Lightbulb, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type {
   BugReportClientError,
@@ -18,7 +17,7 @@ import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '
 import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } from '../../lib/bug-diagnostics';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
-import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, HeaderActionIndicator, IconText } from '../ui';
+import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, HeaderActionIndicator, IconButton, IconText } from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
 import { createRequestDrafts, emptyRequestDraft, updateRequestDraft, type RequestDraftView } from './bug-report-drafts';
@@ -543,25 +542,14 @@ export function BugReportSurface() {
           tabBarExtraContent={
             <div className="flex items-center gap-1">
               {canViewInbox ? (
-                <Tooltip title="Mở mOS Inbox">
-                  <Link
-                    href="/dashboard/bug-reports"
-                    aria-label="Mở mOS Inbox"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition-opacity hover:opacity-80"
-                    style={{ color: token.colorText }}
-                  >
-                    <AppIcon icon={Inbox} size="sm" />
-                  </Link>
-                </Tooltip>
+                <IconButton label="Mở mOS Inbox" icon={Inbox} tone="text" href="/dashboard/bug-reports" />
               ) : null}
-              <Tooltip title="Xem workflow xử lý yêu cầu">
-                <Button
-                  type="text"
-                  aria-label="Xem workflow xử lý yêu cầu"
-                  icon={<AppIcon icon={CircleHelp} size="sm" />}
-                  onClick={() => setWorkflowOpen(true)}
-                />
-              </Tooltip>
+              <IconButton
+                label="Xem workflow xử lý yêu cầu"
+                icon={CircleHelp}
+                tone="text"
+                onClick={() => setWorkflowOpen(true)}
+              />
             </div>
           }
         />
