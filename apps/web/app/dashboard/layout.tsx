@@ -20,7 +20,7 @@ import {
   BgColorsOutlined,
   ColumnHeightOutlined,
 } from '@ant-design/icons';
-import { CalendarPlus, Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRound } from 'lucide-react';
+import { BookOpenCheck, CalendarPlus, Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRound } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -49,6 +49,7 @@ const OmiCallProfileControl = dynamic(() => import('../../components/omicall-wid
 const BugReportProfileControl = dynamic(() => import('../../components/bug-reports/BugReportProfileControl'), {
   ssr: false,
 });
+const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBibleDrawer'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
@@ -87,6 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [deployedAt, setDeployedAt] = useState<string | null>(null);
+  const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
 
   const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
   const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
@@ -415,6 +417,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const mobileUtilityMenu = {
     items: [
+      {
+        key: 'mos-bible',
+        icon: <BookOpenCheck size={16} aria-hidden />,
+        label: 'Mở Kinh Thánh mOS',
+        onClick: () => setIsMosBibleOpen(true),
+      },
       ...(pendingAllocationCount > 0
         ? [
             {
@@ -743,6 +751,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
 
                 <HeaderIconButton
+                  action="mos-bible"
+                  className="dashboard-desktop-only"
+                  label="Mở Kinh Thánh mOS theo trang hiện tại"
+                  icon={BookOpenCheck}
+                  onClick={() => setIsMosBibleOpen(true)}
+                />
+
+                <HeaderIconButton
                   action="daily-calls"
                   label={dailyCallsCount > 0 ? `Cuộc gọi hôm nay, ${dailyCallsCount} cuộc` : 'Cuộc gọi hôm nay'}
                   icon={Phone}
@@ -856,6 +872,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClose={() => setIsBookingWizardOpen(false)}
             onSuccess={() => setIsBookingWizardOpen(false)}
           />
+
+          <MosBibleDrawer open={isMosBibleOpen} pathname={pathname} onClose={() => setIsMosBibleOpen(false)} />
 
           <style jsx global>{`
             /* Compact persistent nav rail, never used for mobile navigation. */

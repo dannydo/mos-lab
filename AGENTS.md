@@ -4,6 +4,13 @@ This guide outlines common commands, monorepo architecture, coding standards, an
 
 Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package map, source-of-truth routing, and fast/full verification workflow. Read only the business-rule sections relevant to the files being changed.
 
+## 📖 Kinh Thánh mOS — Human-readable Business Canon
+
+- Registry hiển thị cho nhân viên và AI nằm tại `packages/shared/src/business-rules/mos-bible.ts`; quy ước biên soạn nằm tại `docs/kinh-thanh-mos/README.md`.
+- Khi một business logic hoặc định nghĩa nghiệp vụ được thêm, sửa hay ngừng áp dụng, bắt buộc cập nhật Điều răn tương ứng trong cùng thay đổi: nội dung, phiên bản, ngày hiệu lực, `routeScopes` và nguồn kiểm chứng.
+- Code/service vẫn là nguồn thi hành duy nhất. Kinh Thánh mOS là lớp diễn giải có kiểm chứng; không sao chép công thức thành logic chạy trên frontend.
+- Không xóa Điều răn cũ âm thầm. Dùng trạng thái `REVISED` hoặc `RETIRED` để giữ lịch sử và dẫn người đọc đến quy tắc thay thế.
+
 ---
 
 ## 🛠️ Common Commands
