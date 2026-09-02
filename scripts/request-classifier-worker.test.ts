@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseCodexClassification, parseCodexConversation } from './request-classifier-worker.js';
+import {
+  parseCodexClassification,
+  parseCodexConversation,
+  parseCodexInboxFollowUp,
+} from './request-classifier-worker.js';
 
 test('accepts Codex structured JSON and rejects unsafe output', () => {
   assert.deepEqual(
@@ -15,6 +19,14 @@ test('accepts Codex structured JSON and rejects unsafe output', () => {
     }
   );
   assert.throws(() => parseCodexClassification('{"requestType":"SYSTEM","confidence":1}'));
+});
+
+test('accepts only safe inbox follow-up actions', () => {
+  assert.deepEqual(
+    parseCodexInboxFollowUp('{"action":"NO_OP","note":"Đã đủ thông tin, không cần hỏi lại.","question":null}'),
+    { action: 'NO_OP', note: 'Đã đủ thông tin, không cần hỏi lại.', question: null }
+  );
+  assert.throws(() => parseCodexInboxFollowUp('{"action":"ASK_REPORTER","note":"Thiếu chi tiết","question":null}'));
 });
 
 test('accepts one-question guided intake output', () => {

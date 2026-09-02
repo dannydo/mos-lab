@@ -242,6 +242,32 @@ export interface RequestConversationWorkerResult {
   readyToSubmit: boolean;
 }
 
+export const INBOX_FOLLOW_UP_JOB_STATUSES = ['PENDING', 'LEASED', 'COMPLETED', 'FAILED', 'EXPIRED'] as const;
+export type InboxFollowUpAction = 'PROGRESS_REVIEWED' | 'ASK_REPORTER' | 'NO_OP';
+export interface InboxFollowUpWorkerJob {
+  id: string;
+  ticketId: number;
+  ticketKey: string;
+  eventKind: 'CREATED' | 'REPORTER_COMMENT' | 'REPORTER_REOPENED';
+  context: {
+    requestType: BugReportRequestType;
+    title: string;
+    description: string;
+    status: BugReportStatus;
+    clarificationStatus: BugReportClarificationStatus;
+    clarificationSummary: string | null;
+    sourcePath: string;
+    reporterMessages: string[];
+  };
+  leaseToken: string;
+  attemptCount: number;
+}
+export interface InboxFollowUpWorkerResult {
+  action: InboxFollowUpAction;
+  note: string;
+  question: string | null;
+}
+
 export type CreateRequestConversationResponse = ActionResponse<RequestConversation>;
 export type ReplyRequestConversationResponse = ActionResponse<RequestConversation>;
 

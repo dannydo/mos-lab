@@ -9,7 +9,7 @@ export const RequestClassifierWorkerHub = {
   remove(socket: WebSocket) {
     peers.delete(socket);
   },
-  notify(type: 'classification_available' | 'conversation_available') {
+  notify(type: 'classification_available' | 'conversation_available' | 'inbox_follow_up_available') {
     const body = JSON.stringify({ type });
     for (const peer of peers) {
       if (peer.readyState === peer.OPEN) {

@@ -2267,6 +2267,7 @@ model CrmBugReport {
   resolution  CrmBugReportResolution?
   notifications CrmBugReportNotification[]
   comments CrmBugReportComment[]
+  inboxFollowUpJobs CrmInboxFollowUpJob[]
 
   @@index([statusSort, prioritySort, createdAt])
   @@index([requestType, statusSort, prioritySort, createdAt], map: "bug_request_type_status_idx")
@@ -2468,4 +2469,26 @@ model CrmRequestConversationAudit {
 
   @@index([conversationId, createdAt])
   @@map("crm_request_conversation_audits")
+}
+
+model CrmInboxFollowUpJob {
+  id String @id @db.VarChar(36)
+  reportId Int @map("report_id")
+  eventKind String @map("event_kind") @db.VarChar(32)
+  eventVersion String @map("event_version") @db.VarChar(80)
+  status String @default("PENDING") @db.VarChar(16)
+  attemptCount Int @default(0) @map("attempt_count")
+  leaseToken String? @map("lease_token") @db.VarChar(64)
+  leasedBy String? @map("leased_by") @db.VarChar(100)
+  leaseExpiresAt DateTime? @map("lease_expires_at") @db.DateTime(0)
+  resultAction String? @map("result_action") @db.VarChar(32)
+  fallbackReason String? @map("fallback_reason") @db.VarChar(400)
+  expiresAt DateTime @map("expires_at") @db.DateTime(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+  report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  @@unique([reportId, eventKind, eventVersion])
+  @@index([status, expiresAt])
+  @@index([leaseExpiresAt])
+  @@map("crm_inbox_follow_up_jobs")
 }
