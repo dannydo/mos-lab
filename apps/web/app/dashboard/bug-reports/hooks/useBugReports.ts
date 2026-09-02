@@ -6,6 +6,7 @@ import type {
   BugReportClarificationFilter,
   BugReportDetail,
   BugReportListSummary,
+  BugReportNextActor,
   BugReportRequestType,
   BugReportStatus,
   BugReportSummary,
@@ -17,8 +18,8 @@ import type {
 import { useDebounce } from '../../../../hooks/useDebounce';
 import { apiClient } from '../../../../lib/api-client';
 
-const STORAGE_KEY = 'mos_bug_inbox_state_v2';
-const LEGACY_STORAGE_KEY = 'mos_bug_inbox_state_v1';
+const STORAGE_KEY = 'mos_bug_inbox_state_v3';
+const LEGACY_STORAGE_KEYS = ['mos_bug_inbox_state_v2', 'mos_bug_inbox_state_v1'];
 
 export interface BugInboxFilters {
   search: string;
@@ -26,6 +27,7 @@ export interface BugInboxFilters {
   status: BugReportStatus | 'ALL';
   priority: BugPriority | 'ALL';
   clarification: BugReportClarificationFilter;
+  nextActor: BugReportNextActor | 'ALL';
 }
 
 export interface BugInboxPagination {
@@ -39,6 +41,7 @@ const DEFAULT_FILTERS: BugInboxFilters = {
   status: 'ALL',
   priority: 'ALL',
   clarification: 'ALL',
+  nextActor: 'ALL',
 };
 const DEFAULT_PAGINATION: BugInboxPagination = { page: 1, pageSize: 20 };
 const EMPTY_SUMMARY: BugReportListSummary = {
@@ -53,6 +56,14 @@ const EMPTY_SUMMARY: BugReportListSummary = {
   unclearCount: 0,
   pendingAgentCount: 0,
   waitingReporterCount: 0,
+  openCount: 0,
+  reporterActionCount: 0,
+  reporterClarificationCount: 0,
+  reporterReviewCount: 0,
+  dannyActionCount: 0,
+  agentActionCount: 0,
+  agentClarificationCount: 0,
+  agentDeliveryCount: 0,
 };
 
 function getErrorMessage(error: unknown): string {
@@ -65,7 +76,9 @@ function getErrorMessage(error: unknown): string {
 
 function readPersistedState(): { filters: BugInboxFilters; pagination: BugInboxPagination } | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY) || window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    const raw =
+      window.localStorage.getItem(STORAGE_KEY) ||
+      LEGACY_STORAGE_KEYS.map((key) => window.localStorage.getItem(key)).find(Boolean);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<{ filters: BugInboxFilters; pagination: BugInboxPagination }>;
     const pageSize = Number(parsed.pagination?.pageSize);
@@ -105,7 +118,11 @@ export function useBugReports() {
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ filters, pagination }));
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ filters, pagination }));
+    } catch {
+      // Private browsing or a full storage quota must not break the Inbox.
+    }
   }, [filters, hydrated, pagination]);
 
   const load = useCallback(
@@ -125,6 +142,7 @@ export function useBugReports() {
           status: filters.status,
           priority: filters.priority,
           clarification: filters.clarification,
+          nextActor: filters.nextActor,
         });
         if (requestVersion !== requestVersionRef.current) return;
         setData(result.data);
@@ -145,6 +163,7 @@ export function useBugReports() {
     [
       debouncedSearch,
       filters.clarification,
+      filters.nextActor,
       filters.priority,
       filters.requestType,
       filters.status,

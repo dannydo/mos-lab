@@ -28,6 +28,8 @@ import {
   type BugReportListQuery,
   type BugReportListResponse,
   type BugReportNotification,
+  type BugReportNextAction,
+  type BugReportNextActor,
   type BugReportRequestType,
   type BugReportResolution,
   type BugReportStatus,
@@ -49,12 +51,12 @@ const AGENT_READABLE_STATUSES = new Set<BugReportStatus>(['NEW', 'APPROVED', 'IN
 const AGENT_FIX_STATUSES = new Set<BugReportStatus>(['APPROVED', 'IN_PROGRESS', 'FIXED']);
 const STATUS_SORT: Record<BugReportStatus, number> = {
   NEW: 0,
-  APPROVED: 1,
-  IN_PROGRESS: 1,
-  FIXED: 1,
-  CLOSED: 1,
-  REJECTED: 1,
-  DUPLICATE: 1,
+  APPROVED: 0,
+  IN_PROGRESS: 0,
+  FIXED: 0,
+  CLOSED: 9,
+  REJECTED: 9,
+  DUPLICATE: 9,
 };
 const PRIORITY_SORT: Record<BugPriority, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 const ALLOWED_TRANSITIONS: Record<BugReportStatus, ReadonlySet<BugReportStatus>> = {
@@ -78,6 +80,38 @@ export function bugReportClarificationWhere(clarification: unknown): Prisma.CrmB
   ) {
     return { clarificationStatus: clarification };
   }
+  return {};
+}
+
+export function bugReportNextActorWhere(nextActor: unknown): Prisma.CrmBugReportWhereInput {
+  if (nextActor === 'REPORTER') {
+    return {
+      OR: [
+        { status: 'FIXED' },
+        {
+          status: { in: ['NEW', 'APPROVED', 'IN_PROGRESS'] },
+          clarificationStatus: 'WAITING_REPORTER',
+        },
+      ],
+    };
+  }
+  if (nextActor === 'DANNY') return { status: 'NEW', clarificationStatus: 'READY' };
+  if (nextActor === 'AGENT') {
+    return {
+      OR: [
+        {
+          status: { in: ['NEW', 'APPROVED', 'IN_PROGRESS'] },
+          clarificationStatus: 'PENDING_AGENT',
+        },
+        {
+          status: { in: ['APPROVED', 'IN_PROGRESS'] },
+          clarificationStatus: 'READY',
+          priority: { not: null },
+        },
+      ],
+    };
+  }
+  if (nextActor === 'NONE') return { status: { in: ['CLOSED', 'REJECTED', 'DUPLICATE'] } };
   return {};
 }
 
@@ -340,7 +374,12 @@ function latestAgentActivity(source: AgentProgressSource) {
     if (
       audit &&
       (audit.action.startsWith(AGENT_PROGRESS_AUDIT_PREFIX) ||
-        ['AGENT_ASKED_CLARIFICATION', 'AGENT_CONFIRMED_CLARITY', 'CLARIFICATION_ANSWERED'].includes(audit.action))
+        [
+          'AGENT_ASKED_CLARIFICATION',
+          'AGENT_CONFIRMED_CLARITY',
+          'CLARIFICATION_ANSWERED',
+          'REPORTER_REOPENED',
+        ].includes(audit.action))
     ) {
       return audit;
     }
@@ -391,10 +430,119 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
   if (source.status === 'NEW') return progressResult('READY_FOR_TRIAGE', source, latest, source.updatedAt);
   if (source.status === 'APPROVED') return progressResult('QUEUED_FOR_FIX', source, latest, source.approvedAt);
   if (source.status === 'IN_PROGRESS') {
+    if (latest?.action === 'REPORTER_REOPENED') {
+      return progressResult('REOPENED_BY_REPORTER', source, latest, source.updatedAt);
+    }
     const stage = latest?.action === 'AGENT_PROGRESS_VERIFYING' ? 'VERIFYING' : 'IMPLEMENTING';
     return progressResult(stage, source, latest, source.startedAt);
   }
   return progressResult('NOT_VIEWED', source, latest, source.createdAt);
+}
+
+function latestAuditAt(source: AgentProgressSource, actions: readonly string[]): Date | null {
+  for (let index = source.audits.length - 1; index >= 0; index -= 1) {
+    const audit = source.audits[index];
+    if (audit && actions.includes(audit.action)) return audit.createdAt;
+  }
+  return null;
+}
+
+function nextAction(
+  actor: BugReportNextActor,
+  type: BugReportNextAction['type'],
+  label: string,
+  detail: string,
+  waitingSince: Date
+): BugReportNextAction {
+  return { actor, type, label, detail, waitingSince: waitingSince.toISOString() };
+}
+
+/** Keep every consumer aligned on the single person or system responsible for moving a ticket forward. */
+export function bugReportNextAction(source: AgentProgressSource): BugReportNextAction {
+  if (['CLOSED', 'REJECTED', 'DUPLICATE'].includes(source.status)) {
+    return nextAction(
+      'NONE',
+      'NONE',
+      'Không còn',
+      'Ticket đã kết thúc và chỉ còn phục vụ tra cứu.',
+      source.closedAt ?? source.updatedAt
+    );
+  }
+
+  if (source.status === 'FIXED') {
+    return nextAction(
+      'REPORTER',
+      'REVIEW_RESULT',
+      'Nghiệm thu',
+      'Mở kết quả, xác nhận đã đúng hoặc mô tả điểm cần sửa lại.',
+      source.resolvedAt ?? source.updatedAt
+    );
+  }
+
+  if (source.clarificationStatus === 'WAITING_REPORTER') {
+    return nextAction(
+      'REPORTER',
+      'ANSWER_CLARIFICATION',
+      'Bổ sung thông tin',
+      'Trả lời câu hỏi làm rõ và đính kèm bằng chứng nếu có.',
+      latestAuditAt(source, ['AGENT_ASKED_CLARIFICATION']) ?? source.updatedAt
+    );
+  }
+
+  if (source.clarificationStatus === 'PENDING_AGENT') {
+    const latestAgentStep = latestAgentActivity(source);
+    return nextAction(
+      'AGENT',
+      'REVIEW_CLARIFICATION',
+      latestAgentStep?.action === 'CLARIFICATION_ANSWERED' ? 'Đọc phản hồi mới' : 'Làm rõ yêu cầu',
+      'Đối chiếu repository và hội thoại, rồi hỏi tiếp hoặc xác nhận ticket đã đủ rõ.',
+      latestAgentStep?.createdAt ?? source.updatedAt
+    );
+  }
+
+  if (source.status === 'NEW') {
+    return nextAction(
+      'DANNY',
+      'TRIAGE',
+      'Quyết định',
+      'Chốt priority, phạm vi và quyết định duyệt, từ chối hoặc đánh dấu trùng.',
+      source.updatedAt
+    );
+  }
+
+  if (source.status === 'APPROVED') {
+    return nextAction(
+      'AGENT',
+      'IMPLEMENT',
+      'Bắt đầu triển khai',
+      'Nhận bundle, cập nhật tiến độ, sửa theo phạm vi đã duyệt và kiểm thử.',
+      source.approvedAt ?? source.updatedAt
+    );
+  }
+
+  const reopenedAt = latestAuditAt(source, ['REPORTER_REOPENED']);
+  const latestProgressAt = latestAuditAt(source, [
+    'AGENT_PROGRESS_ANALYZING',
+    'AGENT_PROGRESS_CHECKING_BUSINESS_LOGIC',
+    'AGENT_PROGRESS_IMPLEMENTING',
+    'AGENT_PROGRESS_VERIFYING',
+  ]);
+  if (reopenedAt && (!latestProgressAt || reopenedAt > latestProgressAt)) {
+    return nextAction(
+      'AGENT',
+      'REWORK',
+      'Xử lý phản hồi reopen',
+      'Đọc điểm chưa đúng từ người báo, cập nhật bản sửa và kiểm thử hồi quy.',
+      reopenedAt
+    );
+  }
+  return nextAction(
+    'AGENT',
+    'CONTINUE_IMPLEMENTATION',
+    'Tiếp tục triển khai',
+    'Cập nhật tiến độ, hoàn tất kiểm thử và gửi kết quả cho người báo nghiệm thu.',
+    latestProgressAt ?? source.startedAt ?? source.updatedAt
+  );
 }
 
 export function assertAgentProgressUpdateAllowed(input: {
@@ -441,6 +589,7 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
       clarifiedAt: row.clarifiedAt?.toISOString() ?? null,
     },
     agentProgress: bugReportAgentProgress(row),
+    nextAction: bugReportNextAction(row),
     reporter: reporterDto(row.reporter),
     approvedAt: row.approvedAt?.toISOString() ?? null,
     timeline: {
@@ -750,6 +899,7 @@ function renderAgentMarkdown(report: BugReportDetail, similar: AgentBugKnowledge
     `- Với yêu cầu chức năng: phải làm rõ người dùng, vấn đề, phạm vi, acceptance criteria và tác động trước khi kết luận READY.\n` +
     `- Nếu chưa hiểu kết quả đúng: tuyệt đối không sửa code; gửi câu hỏi làm rõ bằng Agent Bridge rồi dừng.\n` +
     `- Chỉ được sửa/triển khai khi clarification = READY và Danny đã APPROVED. Backend sẽ từ chối nếu gate chưa đạt.\n\n` +
+    `## Bàn giao hiện tại\n\n- Người cần hành động: ${report.nextAction.actor}\n- Bước tiếp theo: ${report.nextAction.label}\n- Chi tiết: ${report.nextAction.detail}\n- Chờ từ: ${report.nextAction.waitingSince}\n\n` +
     `- Loại yêu cầu: ${requestKind}\n` +
     `- Priority: ${report.priority ?? 'UNSET'}\n- Status: ${report.status}\n- Reporter: ${report.reporter.displayName} (${report.reporter.role})\n- Route: ${route}\n- Overlay: ${report.context.overlays.join(' → ') || 'Không có'}\n- Web commit: ${report.context.webCommit || 'unknown'}\n- API commit: ${report.context.apiCommit || 'unknown'}\n- API deployed: ${report.context.apiDeployedAt || 'unknown'}\n- Captured: ${report.context.capturedAt}\n\n` +
     `## Clarification gate\n\n- Status: ${report.clarification.status}\n- Summary: ${report.clarification.summary || 'Chưa có.'}\n- Clarified at: ${report.clarification.clarifiedAt || 'Chưa có.'}\n\n` +
@@ -883,6 +1033,7 @@ export class BugReportService {
       ...(status ? { status } : {}),
       ...(priority ? { priority } : {}),
       ...bugReportClarificationWhere(query.clarification),
+      ...bugReportNextActorWhere(query.nextActor),
       ...(search ? { searchNormalized: { contains: search } } : {}),
     };
     const [
@@ -898,6 +1049,14 @@ export class BugReportService {
       closedCount,
       pendingAgentCount,
       waitingReporterCount,
+      openCount,
+      reporterActionCount,
+      reporterClarificationCount,
+      reporterReviewCount,
+      dannyActionCount,
+      agentActionCount,
+      agentClarificationCount,
+      agentDeliveryCount,
     ] = await fastify.prisma.crm.$transaction([
       fastify.prisma.crm.crmBugReport.count({ where }),
       fastify.prisma.crm.crmBugReport.findMany({
@@ -917,6 +1076,32 @@ export class BugReportService {
       fastify.prisma.crm.crmBugReport.count({ where: { status: 'CLOSED' } }),
       fastify.prisma.crm.crmBugReport.count({ where: { clarificationStatus: 'PENDING_AGENT' } }),
       fastify.prisma.crm.crmBugReport.count({ where: { clarificationStatus: 'WAITING_REPORTER' } }),
+      fastify.prisma.crm.crmBugReport.count({
+        where: { status: { in: ['NEW', 'APPROVED', 'IN_PROGRESS', 'FIXED'] } },
+      }),
+      fastify.prisma.crm.crmBugReport.count({ where: bugReportNextActorWhere('REPORTER') }),
+      fastify.prisma.crm.crmBugReport.count({
+        where: {
+          status: { in: ['NEW', 'APPROVED', 'IN_PROGRESS'] },
+          clarificationStatus: 'WAITING_REPORTER',
+        },
+      }),
+      fastify.prisma.crm.crmBugReport.count({ where: { status: 'FIXED' } }),
+      fastify.prisma.crm.crmBugReport.count({ where: bugReportNextActorWhere('DANNY') }),
+      fastify.prisma.crm.crmBugReport.count({ where: bugReportNextActorWhere('AGENT') }),
+      fastify.prisma.crm.crmBugReport.count({
+        where: {
+          status: { in: ['NEW', 'APPROVED', 'IN_PROGRESS'] },
+          clarificationStatus: 'PENDING_AGENT',
+        },
+      }),
+      fastify.prisma.crm.crmBugReport.count({
+        where: {
+          status: { in: ['APPROVED', 'IN_PROGRESS'] },
+          clarificationStatus: 'READY',
+          priority: { not: null },
+        },
+      }),
     ]);
     return {
       data: rows.map(summaryDto),
@@ -935,6 +1120,14 @@ export class BugReportService {
         unclearCount: pendingAgentCount + waitingReporterCount,
         pendingAgentCount,
         waitingReporterCount,
+        openCount,
+        reporterActionCount,
+        reporterClarificationCount,
+        reporterReviewCount,
+        dannyActionCount,
+        agentActionCount,
+        agentClarificationCount,
+        agentDeliveryCount,
       },
     };
   }
@@ -1227,48 +1420,38 @@ export class BugReportService {
   ) {
     const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
     if (!existing) throw new BugReportError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
-    const path = bugReportCompletionPath(existing.status as BugReportStatus);
-    const note = clipped(input?.note, 2000) || 'Danny xác nhận đã sửa đúng và đóng ticket.';
+    if (!['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(existing.status)) {
+      throw new BugReportError('Chỉ ticket đã duyệt, đang xử lý hoặc chờ nghiệm thu mới được đóng ngoại lệ.', 409);
+    }
+    const note = clipped(input?.note, 2000);
+    if (note.length < 10) {
+      throw new BugReportError('Đóng ngoại lệ cần ghi rõ bằng chứng hoặc lý do với ít nhất 10 ký tự.');
+    }
     const businessContext =
       input?.businessContext === undefined ? existing.businessContext : clipped(input.businessContext, 4000) || null;
     const now = new Date();
 
     const completed = await fastify.prisma.crm.$transaction(async (tx) => {
-      let current = existing;
-      for (const nextStatus of path) {
-        assertBugReportTransition({
+      const current = await tx.crmBugReport.update({
+        where: { id },
+        data: {
+          status: 'CLOSED',
+          statusSort: STATUS_SORT.CLOSED,
+          businessContext,
+          triageNote: note,
+          closedAt: now,
+        },
+      });
+      await tx.crmBugReportAudit.create({
+        data: {
           reportId: id,
-          previousStatus: current.status as BugReportStatus,
-          status: nextStatus,
-          priority: current.priority as BugPriority | null,
+          actorStaffId,
+          action: 'ADMIN_OVERRIDE_CLOSED',
           note,
-          duplicateOfId: current.duplicateOfId,
-          clarificationStatus: current.clarificationStatus as BugReportClarificationStatus,
-        });
-        const updated = await tx.crmBugReport.update({
-          where: { id },
-          data: {
-            status: nextStatus,
-            statusSort: STATUS_SORT[nextStatus],
-            businessContext,
-            triageNote: note,
-            startedAt: nextStatus === 'IN_PROGRESS' ? (current.startedAt ?? now) : current.startedAt,
-            resolvedAt: nextStatus === 'FIXED' ? now : nextStatus === 'CLOSED' ? (current.resolvedAt ?? now) : null,
-            closedAt: nextStatus === 'CLOSED' ? now : null,
-          },
-        });
-        await tx.crmBugReportAudit.create({
-          data: {
-            reportId: id,
-            actorStaffId,
-            action: `STATUS_${nextStatus}`,
-            note,
-            beforeJson: serialize(stateSnapshot(current)),
-            afterJson: serialize(stateSnapshot(updated)),
-          },
-        });
-        current = updated;
-      }
+          beforeJson: serialize(stateSnapshot(existing)),
+          afterJson: serialize(stateSnapshot(current)),
+        },
+      });
       await tx.crmBugReportNotification.updateMany({
         where: { reportId: id, readAt: null },
         data: { readAt: now },
@@ -1587,7 +1770,7 @@ export class BugReportService {
           { status: 'NEW', clarificationStatus: 'PENDING_AGENT' },
           { status: { in: ['APPROVED', 'IN_PROGRESS'] }, clarificationStatus: 'PENDING_AGENT' },
           {
-            status: { in: ['APPROVED', 'IN_PROGRESS', 'FIXED'] },
+            status: { in: ['APPROVED', 'IN_PROGRESS'] },
             clarificationStatus: 'READY',
             priority: { not: null },
           },
@@ -1611,6 +1794,7 @@ export class BugReportService {
         clarifiedAt: row.clarifiedAt?.toISOString() ?? null,
       },
       agentProgress: bugReportAgentProgress(row),
+      nextAction: bugReportNextAction(row),
       sourcePath: row.sourcePath,
       timeline: {
         reportedAt: row.createdAt.toISOString(),

@@ -39,6 +39,7 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
   'CHECKING_BUSINESS_LOGIC',
   'WAITING_REPORTER',
   'REPORTER_REPLIED',
+  'REOPENED_BY_REPORTER',
   'READY_FOR_TRIAGE',
   'QUEUED_FOR_FIX',
   'IMPLEMENTING',
@@ -48,6 +49,21 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
   'STOPPED',
 ] as const;
 export type BugReportAgentProgressStage = (typeof BUG_REPORT_AGENT_PROGRESS_STAGES)[number];
+
+export const BUG_REPORT_NEXT_ACTORS = ['REPORTER', 'DANNY', 'AGENT', 'NONE'] as const;
+export type BugReportNextActor = (typeof BUG_REPORT_NEXT_ACTORS)[number];
+
+export const BUG_REPORT_NEXT_ACTION_TYPES = [
+  'ANSWER_CLARIFICATION',
+  'REVIEW_CLARIFICATION',
+  'TRIAGE',
+  'IMPLEMENT',
+  'CONTINUE_IMPLEMENTATION',
+  'REWORK',
+  'REVIEW_RESULT',
+  'NONE',
+] as const;
+export type BugReportNextActionType = (typeof BUG_REPORT_NEXT_ACTION_TYPES)[number];
 
 export const BUG_REPORT_AGENT_UPDATE_STAGES = [
   'ANALYZING',
@@ -160,6 +176,15 @@ export interface BugReportAgentProgress {
   updatedAt: string;
 }
 
+/** Canonical handoff derived by the API from status, clarification and audit history. */
+export interface BugReportNextAction {
+  actor: BugReportNextActor;
+  type: BugReportNextActionType;
+  label: string;
+  detail: string;
+  waitingSince: string;
+}
+
 export interface BugReportComment {
   id: number;
   kind: BugReportCommentKind;
@@ -195,6 +220,7 @@ export interface BugReportSummary {
   commentCount: number;
   clarification: BugReportClarification;
   agentProgress: BugReportAgentProgress;
+  nextAction: BugReportNextAction;
   reporter: BugReportReporter;
   approvedAt: string | null;
   timeline: BugReportTimeline;
@@ -249,6 +275,7 @@ export interface BugReportListQuery extends PageQuery {
   status?: BugReportStatus | 'ALL';
   priority?: BugPriority | 'ALL';
   clarification?: BugReportClarificationFilter;
+  nextActor?: BugReportNextActor | 'ALL';
   search?: string;
 }
 
@@ -265,6 +292,14 @@ export interface BugReportListSummary {
   unclearCount: number;
   pendingAgentCount: number;
   waitingReporterCount: number;
+  openCount: number;
+  reporterActionCount: number;
+  reporterClarificationCount: number;
+  reporterReviewCount: number;
+  dannyActionCount: number;
+  agentActionCount: number;
+  agentClarificationCount: number;
+  agentDeliveryCount: number;
 }
 
 export interface TriageBugReportRequest {
@@ -354,6 +389,7 @@ export interface AgentBugQueueItem {
   workType: 'CLARIFY' | 'FIX';
   clarification: BugReportClarification;
   agentProgress: BugReportAgentProgress;
+  nextAction: BugReportNextAction;
   sourcePath: string;
   timeline: BugReportTimeline;
   updatedAt: string;

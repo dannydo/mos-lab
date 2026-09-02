@@ -4,7 +4,13 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { downloadBugBundle, listApprovedQueue, submitBugProgress, submitClarificationReview } from './bug-agent.js';
+import {
+  downloadBugBundle,
+  downloadNextBugBundle,
+  listApprovedQueue,
+  submitBugProgress,
+  submitClarificationReview,
+} from './bug-agent.js';
 
 const TOKEN = 'test-agent-token-that-is-longer-than-32-characters';
 
@@ -69,6 +75,9 @@ test('Agent CLI lists approved tickets and materializes deterministic bundle fil
     assert.match(await readFile(join(destination, 'report.md'), 'utf8'), /MOS-BUG-7/);
     assert.equal(JSON.parse(await readFile(join(destination, 'context.json'), 'utf8')).path, '/dashboard/customers');
     assert.equal(await readFile(join(destination, 'attachment-11-proof.png'), 'utf8'), 'png-data');
+    const next = await downloadNextBugBundle(destinationRoot);
+    assert.equal(next?.ticket.key, 'MOS-BUG-7');
+    assert.equal(next?.destination, destination);
   } finally {
     server.close();
     await rm(destinationRoot, { recursive: true, force: true });

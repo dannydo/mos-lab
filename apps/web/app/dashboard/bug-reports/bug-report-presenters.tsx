@@ -7,6 +7,8 @@ import type {
   BugReportAgentProgressStage,
   BugReportClarificationFilter,
   BugReportClarificationStatus,
+  BugReportNextAction,
+  BugReportNextActor,
   BugReportRequestType,
   BugReportStatus,
   BugReportSummary,
@@ -44,6 +46,7 @@ export const AGENT_PROGRESS_LABELS: Record<BugReportAgentProgressStage, string> 
   CHECKING_BUSINESS_LOGIC: 'Đối chiếu biz logic',
   WAITING_REPORTER: 'Chờ người báo',
   REPORTER_REPLIED: 'Người báo đã trả lời',
+  REOPENED_BY_REPORTER: 'Người báo yêu cầu sửa lại',
   READY_FOR_TRIAGE: 'Đã hiểu · chờ duyệt',
   QUEUED_FOR_FIX: 'Đã nhận · chờ sửa',
   IMPLEMENTING: 'Đang sửa',
@@ -59,6 +62,7 @@ const AGENT_PROGRESS_TONES: Record<BugReportAgentProgressStage, Parameters<typeo
   CHECKING_BUSINESS_LOGIC: 'orange',
   WAITING_REPORTER: 'purple',
   REPORTER_REPLIED: 'cyan',
+  REOPENED_BY_REPORTER: 'error',
   READY_FOR_TRIAGE: 'gold',
   QUEUED_FOR_FIX: 'processing',
   IMPLEMENTING: 'cyan',
@@ -183,6 +187,29 @@ export function ClarificationTag({
 
 export function AgentProgressTag({ progress }: { progress: BugReportAgentProgress }) {
   return <StatusTag status={AGENT_PROGRESS_TONES[progress.stage]} label={AGENT_PROGRESS_LABELS[progress.stage]} />;
+}
+
+export const NEXT_ACTOR_LABELS: Record<BugReportNextActor, string> = {
+  REPORTER: 'Người báo',
+  DANNY: 'Danny',
+  AGENT: 'AI Agent',
+  NONE: 'Hoàn tất',
+};
+
+const NEXT_ACTOR_TONES: Record<BugReportNextActor, Parameters<typeof StatusTag>[0]['status']> = {
+  REPORTER: 'purple',
+  DANNY: 'gold',
+  AGENT: 'cyan',
+  NONE: 'default',
+};
+
+export function NextActionTag({ action }: { action: BugReportNextAction }) {
+  return (
+    <StatusTag
+      status={NEXT_ACTOR_TONES[action.actor]}
+      label={action.actor === 'NONE' ? NEXT_ACTOR_LABELS.NONE : `${NEXT_ACTOR_LABELS[action.actor]} · ${action.label}`}
+    />
+  );
 }
 
 /** A reporter must act when the agent needs clarification or has a result ready for confirmation. */

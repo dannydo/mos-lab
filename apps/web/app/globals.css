@@ -3873,6 +3873,38 @@ body {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* mOS Inbox is an operational queue: keep its ownership lanes visible before
+   the ticket list on phones instead of spending six screens on summary cards. */
+@media (max-width: 639px) {
+  .bug-report-metric-grid.metric-grid[data-columns='6'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .bug-report-detail-drawer .ant-drawer-header {
+    display: block !important;
+  }
+
+  .bug-report-detail-drawer .ant-drawer-header-title {
+    display: flex;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .bug-report-detail-drawer .ant-drawer-title {
+    display: -webkit-box;
+    min-width: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .bug-report-detail-drawer .ant-drawer-extra {
+    margin: 10px 0 0 !important;
+    width: 100%;
+  }
+}
+
 .responsive-stat-card .responsive-stat-value {
   overflow-wrap: anywhere;
 }

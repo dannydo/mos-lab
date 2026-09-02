@@ -7,6 +7,8 @@ import {
   bugReportAgentProgress,
   bugReportClarificationWhere,
   bugReportCompletionPath,
+  bugReportNextAction,
+  bugReportNextActorWhere,
   isAgentReadableBugStatus,
   knowledgeTokens,
   normalizeAgentResolution,
@@ -77,6 +79,24 @@ test('projects every Agent milestone from canonical ticket state and audit activ
       })
     ).stage,
     'VERIFYING'
+  );
+  assert.equal(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        startedAt: agentAt,
+        audits: [
+          { action: 'AGENT_PROGRESS_VERIFYING', note: 'Đang chạy test.', createdAt: agentAt },
+          {
+            action: 'REPORTER_REOPENED',
+            note: 'Vẫn chưa đúng.',
+            createdAt: new Date('2026-08-31T01:10:00.000Z'),
+          },
+        ],
+      })
+    ).stage,
+    'REOPENED_BY_REPORTER'
   );
   assert.deepEqual(
     bugReportAgentProgress(
@@ -151,6 +171,47 @@ test('maps clarification tracking filters to canonical database states', () => {
   assert.deepEqual(bugReportClarificationWhere('PENDING_AGENT'), { clarificationStatus: 'PENDING_AGENT' });
   assert.deepEqual(bugReportClarificationWhere('WAITING_REPORTER'), { clarificationStatus: 'WAITING_REPORTER' });
   assert.deepEqual(bugReportClarificationWhere('READY'), { clarificationStatus: 'READY' });
+});
+
+test('derives one canonical next owner and action for every workflow gate', () => {
+  assert.equal(bugReportNextAction(progressSource()).actor, 'AGENT');
+  assert.equal(
+    bugReportNextAction(progressSource({ clarificationStatus: 'WAITING_REPORTER' })).type,
+    'ANSWER_CLARIFICATION'
+  );
+  assert.equal(bugReportNextAction(progressSource({ clarificationStatus: 'READY' })).actor, 'DANNY');
+  assert.equal(
+    bugReportNextAction(progressSource({ status: 'APPROVED', clarificationStatus: 'READY' })).type,
+    'IMPLEMENT'
+  );
+  assert.equal(
+    bugReportNextAction(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        audits: [
+          {
+            action: 'REPORTER_REOPENED',
+            note: 'Vẫn sai.',
+            createdAt: new Date('2026-08-31T01:10:00.000Z'),
+          },
+        ],
+      })
+    ).type,
+    'REWORK'
+  );
+  assert.equal(bugReportNextAction(progressSource({ status: 'FIXED' })).type, 'REVIEW_RESULT');
+  assert.equal(bugReportNextAction(progressSource({ status: 'CLOSED' })).actor, 'NONE');
+});
+
+test('maps next-owner filters to the same workflow gates used by projections', () => {
+  assert.deepEqual(bugReportNextActorWhere('DANNY'), { status: 'NEW', clarificationStatus: 'READY' });
+  assert.deepEqual(bugReportNextActorWhere('NONE'), {
+    status: { in: ['CLOSED', 'REJECTED', 'DUPLICATE'] },
+  });
+  assert.deepEqual(bugReportNextActorWhere('ALL'), {});
+  assert.ok('OR' in bugReportNextActorWhere('REPORTER'));
+  assert.ok('OR' in bugReportNextActorWhere('AGENT'));
 });
 
 test('sanitizes query values and never retains sensitive inputs', () => {

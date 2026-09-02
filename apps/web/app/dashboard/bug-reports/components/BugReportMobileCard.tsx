@@ -5,13 +5,12 @@ import type { BugReportSummary } from '@mos-lab/shared';
 import { Clock3 } from 'lucide-react';
 import { AppIcon } from '../../../../components/ui';
 import {
-  AgentProgressTag,
   BugStatusTag,
   ClarificationTag,
   formatElapsed,
-  formatProgressUpdated,
   initials,
   needsReporterAttention,
+  NextActionTag,
   PriorityTag,
   RequestTypeTag,
 } from '../bug-report-presenters';
@@ -46,12 +45,12 @@ export function BugReportMobileCard({ report, onOpen }: BugReportMobileCardProps
             <Tooltip title={reporterAttention ? 'Đang cần người báo phản hồi hoặc xác nhận' : undefined}>
               <Badge dot={reporterAttention}>
                 <span className="inline-flex">
-                  <AgentProgressTag progress={report.agentProgress} />
+                  <NextActionTag action={report.nextAction} />
                 </span>
               </Badge>
             </Tooltip>
             <Text type="secondary" className="tabular-nums text-xs">
-              {formatProgressUpdated(report.agentProgress.updatedAt)}
+              Chờ {formatElapsed(report.nextAction.waitingSince)}
             </Text>
           </div>
           <Text type="secondary">{report.reporter.displayName}</Text>

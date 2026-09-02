@@ -35,16 +35,17 @@ import type {
 import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import {
   CheckCircle2,
+  Bot,
   CircleHelp,
   Clipboard,
   ExternalLink,
+  Gavel,
   Inbox,
-  Lightbulb,
   LoaderCircle,
-  MessageCircleQuestion,
   MessageSquareWarning,
   RefreshCw,
   Send,
+  UserRound,
 } from 'lucide-react';
 import {
   AdaptiveDrawer,
@@ -57,6 +58,7 @@ import {
 import { safeStorage } from '../../../lib/safe-storage';
 import { BugReportConversation } from '../../../components/bug-reports/BugReportConversation';
 import { BugReportWorkflowModal } from '../../../components/bug-reports/BugReportWorkflowGuide';
+import { BugReportNextActorFilter } from './components/BugReportNextActorFilter';
 import { BugReportResolutionTracking } from './components/BugReportResolutionTracking';
 import { BugReportMobileCard } from './components/BugReportMobileCard';
 import { FeatureRequestDetails } from './components/FeatureRequestDetails';
@@ -67,9 +69,9 @@ import {
   ClarificationTag,
   formatDate,
   formatElapsed,
-  formatProgressUpdated,
   initials,
   needsReporterAttention,
+  NextActionTag,
   parseDuplicateKey,
   PriorityTag,
   ProtectedAttachment,
@@ -191,11 +193,15 @@ function DetailDrawer({
 
   const confirmResolvedAndClose = useCallback(async () => {
     if (!detail) return;
+    if (note.trim().length < 10) {
+      messageApi.error('Ghi ít nhất 10 ký tự về bằng chứng hoặc lý do đóng ngoại lệ.');
+      return;
+    }
     setSaving(true);
     try {
       const updated = await confirmClose(detail.id, {
         businessContext,
-        note: note.trim() || 'Danny xác nhận đã sửa đúng và đóng ticket.',
+        note: note.trim(),
       });
       hydrateForm(updated);
       messageApi.success('Đã xác nhận sửa đúng và đóng ticket.');
@@ -225,6 +231,7 @@ function DetailDrawer({
         open={Boolean(reportId)}
         onClose={onClose}
         intent="detail"
+        className="bug-report-detail-drawer"
         destroyOnHidden
         title={detail ? `${detail.key} · ${detail.title}` : 'Chi tiết yêu cầu'}
         extra={
@@ -253,18 +260,18 @@ function DetailDrawer({
               )}
               {canOverride && ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
                 <Popconfirm
-                  title="Admin override và đóng ticket?"
-                  description="Dùng khi Admin đã tự kiểm tra; mOS vẫn lưu đầy đủ audit cho người báo."
+                  title="Đóng ticket bằng ngoại lệ Admin?"
+                  description="Bắt buộc ghi bằng chứng/lý do ở ô Ghi chú xử lý. mOS không tạo trạng thái sửa giả."
                   okText="Override & đóng"
                   cancelText="Kiểm tra lại"
                   onConfirm={() => void confirmResolvedAndClose()}
                 >
-                  <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                    Admin override đóng
+                  <Button loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
+                    Đóng ngoại lệ
                   </Button>
                 </Popconfirm>
               )}
-              {['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
+              {detail.nextAction.actor === 'AGENT' && (
                 <Button icon={<AppIcon icon={Clipboard} size="sm" />} onClick={() => void copyAgentCommand()}>
                   Copy lệnh Agent
                 </Button>
@@ -319,6 +326,19 @@ function DetailDrawer({
                 Báo bởi {detail.reporter.displayName} · {detail.reporter.role}
               </Text>
             </section>
+
+            <SectionCard title="Bàn giao tiếp theo">
+              <div className="space-y-2">
+                <NextActionTag action={detail.nextAction} />
+                <div>
+                  <Text>{detail.nextAction.detail}</Text>
+                </div>
+                <Text type="secondary" className="tabular-nums">
+                  Đang chờ {formatElapsed(detail.nextAction.waitingSince)} · từ{' '}
+                  {formatDate(detail.nextAction.waitingSince)}
+                </Text>
+              </div>
+            </SectionCard>
 
             {detail.featureRequest ? <FeatureRequestDetails featureRequest={detail.featureRequest} /> : null}
 
@@ -486,7 +506,7 @@ function DetailDrawer({
                   <Input.TextArea
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
-                    placeholder="Bắt buộc khi Fixed, Rejected hoặc mở lại ticket đã đóng"
+                    placeholder="Bắt buộc khi Fixed, Rejected, mở lại hoặc dùng Đóng ngoại lệ"
                     maxLength={2000}
                     autoSize={{ minRows: 2, maxRows: 6 }}
                     showCount
@@ -619,9 +639,9 @@ export default function BugReportsPage() {
         render: (value: number) => <span className="tabular-nums">{value}</span>,
       },
       {
-        title: 'AI Agent',
+        title: 'Bước tiếp theo',
         key: 'agentProgress',
-        width: 250,
+        width: 290,
         render: (_, row) => {
           const reporterAttention = needsReporterAttention(row);
           return (
@@ -629,20 +649,18 @@ export default function BugReportsPage() {
               <Tooltip title={reporterAttention ? 'Đang cần người báo phản hồi hoặc xác nhận' : undefined}>
                 <Badge dot={reporterAttention}>
                   <span className="inline-flex">
-                    <AgentProgressTag progress={row.agentProgress} />
+                    <NextActionTag action={row.nextAction} />
                   </span>
                 </Badge>
               </Tooltip>
               <div>
                 <Text type="secondary" className="tabular-nums">
-                  {formatProgressUpdated(row.agentProgress.updatedAt)}
+                  Chờ {formatElapsed(row.nextAction.waitingSince)}
                 </Text>
               </div>
-              {row.agentProgress.note ? (
-                <Text type="secondary" ellipsis={{ tooltip: row.agentProgress.note }}>
-                  {row.agentProgress.note}
-                </Text>
-              ) : null}
+              <Text type="secondary" ellipsis={{ tooltip: row.nextAction.detail }}>
+                {row.nextAction.detail}
+              </Text>
             </div>
           );
         },
@@ -672,7 +690,8 @@ export default function BugReportsPage() {
     Number(inbox.filters.requestType !== 'ALL') +
     Number(inbox.filters.status !== 'ALL') +
     Number(inbox.filters.priority !== 'ALL') +
-    Number(inbox.filters.clarification !== 'ALL');
+    Number(inbox.filters.clarification !== 'ALL') +
+    Number(inbox.filters.nextActor !== 'ALL');
 
   return (
     <>
@@ -713,6 +732,10 @@ export default function BugReportsPage() {
                   { value: 'FEATURE', label: 'Yêu cầu chức năng' },
                   { value: 'BUG', label: 'Báo lỗi' },
                 ]}
+              />
+              <BugReportNextActorFilter
+                value={inbox.filters.nextActor}
+                onChange={(nextActor) => inbox.setFilters({ nextActor })}
               />
               <Select
                 value={inbox.filters.status}
@@ -757,52 +780,51 @@ export default function BugReportsPage() {
         }}
         metrics={{
           columns: 6,
+          className: 'bug-report-metric-grid',
           items: [
             {
-              key: 'feature',
-              title: 'Yêu cầu chức năng',
-              value: inbox.summary.featureCount,
+              key: 'open',
+              title: 'Đang mở',
+              value: inbox.summary.openCount,
               format: 'number',
               loading: inbox.loading,
-              subValue: `Báo lỗi ${inbox.summary.bugCount}`,
-              icon: <AppIcon icon={Lightbulb} size="md" />,
+              subValue: `Đang làm ${inbox.summary.inProgressCount} · Chờ nghiệm thu ${inbox.summary.fixedCount}`,
+              icon: <AppIcon icon={Inbox} size="md" />,
               iconBgColor: token.colorInfoBg,
             },
             {
-              key: 'unclear',
-              title: 'Chờ làm rõ',
-              value: inbox.summary.unclearCount,
+              key: 'reporter-action',
+              title: 'Người báo cần làm',
+              value: inbox.summary.reporterActionCount,
               format: 'number',
               loading: inbox.loading,
-              subValue: `Agent ${inbox.summary.pendingAgentCount} · Người báo ${inbox.summary.waitingReporterCount}`,
-              icon: <AppIcon icon={MessageCircleQuestion} size="md" />,
+              subValue: `Bổ sung ${inbox.summary.reporterClarificationCount} · Nghiệm thu ${inbox.summary.reporterReviewCount}`,
+              icon: <AppIcon icon={UserRound} size="md" />,
               iconBgColor: token.colorWarningBg,
             },
             {
-              key: 'new',
-              title: 'Chờ Danny duyệt',
-              value: inbox.summary.readyForDannyCount,
+              key: 'danny-action',
+              title: 'Danny cần quyết định',
+              value: inbox.summary.dannyActionCount,
               format: 'number',
               loading: inbox.loading,
-              subValue:
-                inbox.summary.newCount > inbox.summary.readyForDannyCount
-                  ? 'Chỉ ticket đã rõ yêu cầu quyết định'
-                  : undefined,
-              icon: <AppIcon icon={Inbox} size="md" />,
+              subValue: 'Ticket đã đủ rõ, chờ priority và quyết định',
+              icon: <AppIcon icon={Gavel} size="md" />,
               iconBgColor: token.colorWarningBg,
             },
             {
-              key: 'approved',
-              title: 'Agent queue',
-              value: inbox.summary.approvedCount,
+              key: 'agent-action',
+              title: 'Agent cần xử lý',
+              value: inbox.summary.agentActionCount,
               format: 'number',
               loading: inbox.loading,
-              icon: <AppIcon icon={Send} size="md" />,
+              subValue: `Làm rõ ${inbox.summary.agentClarificationCount} · Triển khai ${inbox.summary.agentDeliveryCount}`,
+              icon: <AppIcon icon={Bot} size="md" />,
               iconBgColor: token.colorInfoBg,
             },
             {
               key: 'in-progress',
-              title: 'Đang sửa',
+              title: 'Đang thực hiện',
               value: inbox.summary.inProgressCount,
               format: 'number',
               loading: inbox.loading,
@@ -810,9 +832,9 @@ export default function BugReportsPage() {
               iconBgColor: token.colorPrimaryBg,
             },
             {
-              key: 'fixed',
-              title: 'Chờ nghiệm thu',
-              value: inbox.summary.fixedCount,
+              key: 'closed',
+              title: 'Đã hoàn tất',
+              value: inbox.summary.closedCount,
               format: 'number',
               loading: inbox.loading,
               icon: <AppIcon icon={CheckCircle2} size="md" />,

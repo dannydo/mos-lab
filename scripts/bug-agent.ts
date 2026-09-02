@@ -148,6 +148,15 @@ export async function downloadBugBundle(
   return destination;
 }
 
+export async function downloadNextBugBundle(
+  destinationRoot = resolve('scratch/bug-reports')
+): Promise<{ ticket: AgentBugQueueItem; destination: string } | null> {
+  const queue = await listApprovedQueue();
+  const ticket = queue[0];
+  if (!ticket) return null;
+  return { ticket, destination: await downloadBugBundle(ticket.key, destinationRoot) };
+}
+
 export async function submitBugResolution(
   keyInput: string,
   resolutionFile?: string
@@ -196,7 +205,7 @@ async function main(): Promise<void> {
   const argument = process.argv[2];
   if (!argument || argument === '--help' || argument === '-h') {
     console.log(
-      'Dùng: pnpm bug:agent --list | pnpm bug:agent MOS-BUG-123|MOS-FEAT-123 | pnpm bug:agent --progress <mã> ANALYZING|CHECKING_BUSINESS_LOGIC|IMPLEMENTING|VERIFYING "Cập nhật" | pnpm bug:agent --ask <mã> "Câu hỏi" | pnpm bug:agent --ready <mã> "Kết luận biz logic" | pnpm bug:agent --fixed <mã> [resolution.json]'
+      'Dùng: pnpm bug:agent --list | pnpm bug:agent --next | pnpm bug:agent MOS-BUG-123|MOS-FEAT-123 | pnpm bug:agent --progress <mã> ANALYZING|CHECKING_BUSINESS_LOGIC|IMPLEMENTING|VERIFYING "Cập nhật" | pnpm bug:agent --ask <mã> "Câu hỏi" | pnpm bug:agent --ready <mã> "Kết luận biz logic" | pnpm bug:agent --fixed <mã> [resolution.json]'
     );
     return;
   }
@@ -207,9 +216,10 @@ async function main(): Promise<void> {
       return;
     }
     console.table(
-      queue.map(({ key, workType, priority, status, clarification, title, sourcePath, updatedAt }) => ({
+      queue.map(({ key, workType, priority, status, clarification, nextAction, title, sourcePath, updatedAt }) => ({
         key,
         workType,
+        next: nextAction?.label || 'Agent xử lý',
         priority: priority || '—',
         status,
         clarity: clarification.status,
@@ -218,6 +228,17 @@ async function main(): Promise<void> {
         updatedAt,
       }))
     );
+    return;
+  }
+  if (argument === '--next') {
+    const claimed = await downloadNextBugBundle();
+    if (!claimed) {
+      console.log('Agent queue đang trống.');
+      return;
+    }
+    console.log(`Đã nhận ${claimed.ticket.key}: ${claimed.ticket.nextAction?.label || claimed.ticket.workType}`);
+    console.log(`Bundle: ${claimed.destination}`);
+    console.log(`Mở ${resolve(claimed.destination, 'report.md')} để thực hiện đúng bước bàn giao hiện tại.`);
     return;
   }
   if (argument === '--ask' || argument === '--ready') {
