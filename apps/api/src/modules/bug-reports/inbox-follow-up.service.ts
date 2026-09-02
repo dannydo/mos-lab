@@ -130,7 +130,12 @@ export class InboxFollowUpService {
       attemptCount: job.attemptCount + 1,
     };
   }
-  static async complete(fastify: FastifyInstance, id: string, leaseToken: string, raw: unknown) {
+  static async complete(
+    fastify: FastifyInstance,
+    id: string,
+    leaseToken: string,
+    raw: unknown
+  ): Promise<number | null> {
     const result = normalizeInboxFollowUpResult(raw);
     const job = await fastify.prisma.crm.crmInboxFollowUpJob.findFirst({
       where: { id, status: 'LEASED', leaseToken, leaseExpiresAt: { gt: new Date() } },
@@ -142,9 +147,10 @@ export class InboxFollowUpService {
       result.action,
       report.clarificationStatus as BugReportClarificationStatus
     );
-    if (completion.confirmClarity) {
-      await BugReportService.markInboxFollowUpReviewed(fastify, formatBugReportKey(job.reportId), result.note);
-    } else if (result.action === 'PROGRESS_REVIEWED') {
+    const becameReady = completion.confirmClarity
+      ? await BugReportService.markInboxFollowUpReviewed(fastify, formatBugReportKey(job.reportId), result.note)
+      : false;
+    if (!completion.confirmClarity && result.action === 'PROGRESS_REVIEWED') {
       await BugReportService.updateAgentProgress(
         fastify,
         formatBugReportKey(job.reportId),
@@ -161,6 +167,7 @@ export class InboxFollowUpService {
       where: { id },
       data: { status: 'COMPLETED', resultAction: completion.resultAction, leaseToken: null, leaseExpiresAt: null },
     });
+    return becameReady ? job.reportId : null;
   }
   static async fail(fastify: FastifyInstance, id: string, leaseToken: string) {
     const job = await fastify.prisma.crm.crmInboxFollowUpJob.findFirst({ where: { id, status: 'LEASED', leaseToken } });

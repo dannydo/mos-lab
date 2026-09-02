@@ -5,9 +5,11 @@ import {
   buildCodexExecArgs,
   executeCodexCli,
   formatInboxFollowUpFailure,
+  formatInboxPlanFailure,
   parseCodexClassification,
   parseCodexConversation,
   parseCodexInboxFollowUp,
+  parseCodexInboxPlan,
   resolveCodexCliPath,
 } from './request-classifier-worker.js';
 
@@ -124,6 +126,31 @@ test('accepts only safe inbox follow-up actions', () => {
     { action: 'NO_OP', note: 'Đã đủ thông tin, không cần hỏi lại.', question: null }
   );
   assert.throws(() => parseCodexInboxFollowUp('{"action":"ASK_REPORTER","note":"Thiếu chi tiết","question":null}'));
+});
+
+test('accepts structured plan output and never logs ticket text on a plan failure', () => {
+  const result = parseCodexInboxPlan(
+    JSON.stringify({
+      action: 'POST_PLAN',
+      note: 'Plan needs Danny approval.',
+      plan: {
+        evidence: 'The event reached the ready gate.',
+        expectedOutcome: 'A native plan is visible.',
+        scope: 'Inbox plan worker only.',
+        steps: ['Claim the durable job.', 'Post one plan.'],
+        verification: 'Read the native ticket comment.',
+        risksAndRollback: 'No production change; stop the worker path if necessary.',
+        approvalRequest: 'Danny approves the plan before implementation.',
+      },
+    })
+  );
+  assert.equal(result.action, 'POST_PLAN');
+  assert.equal(result.plan?.steps.length, 2);
+  assert.throws(() => parseCodexInboxPlan('{"action":"POST_PLAN","note":"Missing plan","plan":null}'));
+  const sensitive = 'QA ticket body must never reach logs';
+  const line = formatInboxPlanFailure('codex_exec', new Error(`failure: ${sensitive}`));
+  assert.equal(line, 'Inbox plan class=inbox_plan phase=codex_exec code=UNEXPECTED_FAILURE');
+  assert.doesNotMatch(line, /QA ticket body|failure:/);
 });
 
 test('accepts one-question guided intake output', () => {

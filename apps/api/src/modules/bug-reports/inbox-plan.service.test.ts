@@ -1,0 +1,175 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {
+  InboxPlanService,
+  inboxPlanEventVersion,
+  isInboxPlanEligible,
+  isInboxPlanStale,
+  normalizeInboxPlanResult,
+} from './inbox-plan.service.js';
+
+const at = new Date('2026-09-02T18:00:00.000Z');
+
+function readyReport(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 14,
+    requestType: 'BUG',
+    title: 'QA Inbox plan event',
+    description: 'Controlled non-sensitive plan verification.',
+    status: 'NEW',
+    priority: null,
+    clarificationStatus: 'READY',
+    clarificationSummary: 'Ticket has enough context for Danny review.',
+    businessContext: 'Controlled QA only.',
+    triageNote: null,
+    sourcePath: '/dashboard',
+    updatedAt: at,
+    comments: [],
+    ...overrides,
+  };
+}
+
+const planResult = {
+  action: 'POST_PLAN' as const,
+  note: 'Plan is ready for Danny review.',
+  plan: {
+    evidence: 'The controlled event reached the ready gate.',
+    expectedOutcome: 'One reviewable plan appears without implementation.',
+    scope: 'Inbox plan worker and native ticket only.',
+    steps: ['Add durable job.', 'Run the outbound worker.', 'Verify the native plan.'],
+    verification: 'Check the ticket audit and plan comment.',
+    risksAndRollback: 'No runtime change beyond a ticket comment; disable the worker path if needed.',
+    approvalRequest: 'Danny approves or rejects this plan before any implementation.',
+  },
+};
+
+test('plans only tickets genuinely ready for review and versions each source event', () => {
+  assert.equal(isInboxPlanEligible(readyReport()), true);
+  assert.equal(isInboxPlanEligible(readyReport({ clarificationStatus: 'PENDING_AGENT' })), false);
+  assert.equal(isInboxPlanEligible(readyReport({ status: 'IN_PROGRESS' })), false);
+  assert.equal(isInboxPlanEligible(readyReport({ status: 'CLOSED' })), false);
+  const version = inboxPlanEventVersion(readyReport());
+  assert.match(version, /^v1:[a-f0-9]{64}$/);
+  assert.equal(isInboxPlanStale(version, readyReport()), false);
+  assert.equal(isInboxPlanStale(version, readyReport({ description: 'Reporter added a material update.' })), true);
+});
+
+test('normalizes only a complete actionable plan and distinguishes no-op outcomes', () => {
+  assert.deepEqual(normalizeInboxPlanResult(planResult), planResult);
+  assert.deepEqual(normalizeInboxPlanResult({ action: 'NO_OP', note: 'No new plan is useful.', plan: null }), {
+    action: 'NO_OP',
+    note: 'No new plan is useful.',
+    plan: null,
+  });
+  assert.throws(
+    () => normalizeInboxPlanResult({ action: 'POST_PLAN', note: 'Incomplete', plan: { steps: [] } }),
+    /Kế hoạch cần đủ/i
+  );
+  assert.throws(
+    () =>
+      normalizeInboxPlanResult({ action: 'INSUFFICIENT_INFORMATION', note: 'Need evidence.', plan: planResult.plan }),
+    /không được kèm/i
+  );
+});
+
+test('duplicate event delivery is idempotent at the durable enqueue boundary', async () => {
+  const report = readyReport();
+  let creates = 0;
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => report },
+        crmInboxPlanJob: {
+          create: async () => {
+            creates += 1;
+            if (creates > 1) throw Object.assign(new Error('unique event key'), { code: 'P2002' });
+          },
+        },
+      },
+    },
+  };
+  assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'CLARITY_READY'), true);
+  assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'TRIAGE_UPDATED'), false);
+  assert.equal(creates, 2);
+});
+
+test('a completed plan posts one visible native plan without changing implementation state', async () => {
+  const report = readyReport();
+  const eventVersion = inboxPlanEventVersion(report);
+  const comments: Array<Record<string, unknown>> = [];
+  const audits: Array<Record<string, unknown>> = [];
+  const reportUpdates: Array<Record<string, unknown>> = [];
+  const jobUpdates: Array<Record<string, unknown>> = [];
+  const transaction = {
+    crmBugReport: {
+      findUnique: async () => report,
+      update: async ({ data }: { data: Record<string, unknown> }) => {
+        reportUpdates.push(data);
+        return { ...report, ...data };
+      },
+    },
+    crmBugReportComment: { create: async ({ data }: { data: Record<string, unknown> }) => comments.push(data) },
+    crmBugReportAudit: { create: async ({ data }: { data: Record<string, unknown> }) => audits.push(data) },
+    crmInboxPlanJob: {
+      updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+        jobUpdates.push(data);
+        return { count: 1 };
+      },
+    },
+    $queryRaw: async () => [],
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxPlanJob: {
+          findFirst: async () => ({ id: 'job-1', reportId: 14, eventKind: 'CLARITY_READY', eventVersion }),
+        },
+        crmBugReport: { findUnique: async () => report },
+        $transaction: async (callback: (tx: typeof transaction) => Promise<string>) => callback(transaction),
+      },
+    },
+  };
+
+  await InboxPlanService.complete(fastify as never, 'job-1', 'lease-1', planResult);
+  assert.match(String(comments[0]?.body), /Phương án Agent đề xuất/);
+  assert.equal(comments[0]?.authorType, 'AGENT');
+  assert.equal(audits[0]?.action, 'AGENT_PLAN_POSTED');
+  assert.deepEqual(Object.keys(reportUpdates[0] || {}), ['updatedAt']);
+  assert.equal(jobUpdates[0]?.resultAction, 'POST_PLAN');
+  assert.equal(jobUpdates[0]?.status, 'COMPLETED');
+});
+
+test('a stale claimed result is completed without a duplicate native plan', async () => {
+  const current = readyReport({ description: 'Reporter submitted a newer material fact.' });
+  const staleEventVersion = inboxPlanEventVersion(readyReport());
+  const comments: Array<Record<string, unknown>> = [];
+  const jobUpdates: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxPlanJob: {
+          findFirst: async () => ({
+            id: 'job-1',
+            reportId: 14,
+            eventKind: 'CLARITY_READY',
+            eventVersion: staleEventVersion,
+          }),
+          updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+            jobUpdates.push(data);
+            return { count: 1 };
+          },
+        },
+        crmBugReport: { findUnique: async () => current },
+        $transaction: async () => {
+          throw new Error('stale work must not enter a write transaction');
+        },
+        crmBugReportComment: { create: async ({ data }: { data: Record<string, unknown> }) => comments.push(data) },
+      },
+    },
+  };
+
+  await InboxPlanService.complete(fastify as never, 'job-1', 'lease-1', planResult);
+  assert.equal(comments.length, 0);
+  assert.equal(jobUpdates[0]?.resultAction, 'STALE');
+  assert.equal(jobUpdates[0]?.status, 'COMPLETED');
+});

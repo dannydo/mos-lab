@@ -24,6 +24,7 @@ import { RequestClassificationError, RequestClassificationService } from './requ
 import { RequestConversationError, RequestConversationService } from './request-conversation.service.js';
 import { RequestClassifierWorkerHub } from './request-classifier-worker-hub.js';
 import { InboxFollowUpError, InboxFollowUpService } from './inbox-follow-up.service.js';
+import { InboxPlanError, InboxPlanService } from './inbox-plan.service.js';
 
 function numericParam(value: unknown, label: string): number {
   const parsed = Number(value);
@@ -108,7 +109,8 @@ function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown
     error instanceof BugReportError ||
     error instanceof RequestClassificationError ||
     error instanceof RequestConversationError ||
-    error instanceof InboxFollowUpError
+    error instanceof InboxFollowUpError ||
+    error instanceof InboxPlanError
   ) {
     return reply.status(error.statusCode).send({ error: error.code, message: error.message, code: error.code });
   }
@@ -211,6 +213,8 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       const data = await BugReportService.create(fastify, request.user.id, input);
       if (await InboxFollowUpService.enqueue(fastify, data.id, 'CREATED', String(data.id)))
         RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+      if (await InboxPlanService.enqueue(fastify, data.id, 'CREATED'))
+        RequestClassifierWorkerHub.notify('inbox_plan_available');
       return reply.status(201).send({
         success: true,
         data,
@@ -251,6 +255,8 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_REOPENED', data.updatedAt))
       )
         RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+      if (await InboxPlanService.enqueue(fastify, id, 'REPORTER_COMMENT'))
+        RequestClassifierWorkerHub.notify('inbox_plan_available');
       return reply.send({ success: true, data, message: 'Đã ghi nhận phản hồi bản sửa.' });
     } catch (error) {
       return sendError(fastify, reply, error, 'Review fixed bug report failed');
@@ -272,6 +278,8 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         );
         if (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_COMMENT', data.report.updatedAt))
           RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+        if (await InboxPlanService.enqueue(fastify, id, 'REPORTER_COMMENT'))
+          RequestClassifierWorkerHub.notify('inbox_plan_available');
         return reply.status(201).send({ success: true, data, message: 'Đã gửi bình luận.' });
       } catch (error) {
         return sendError(fastify, reply, error, 'Create bug report comment failed');
@@ -300,6 +308,8 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     try {
       const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
       const data = await BugReportService.triage(fastify, request.user.id, id, request.body as TriageBugReportRequest);
+      if (await InboxPlanService.enqueue(fastify, id, 'TRIAGE_UPDATED'))
+        RequestClassifierWorkerHub.notify('inbox_plan_available');
       return reply.send({ success: true, data, message: 'Đã cập nhật ticket.' });
     } catch (error) {
       return sendError(fastify, reply, error, 'Triage bug report failed');
@@ -368,6 +378,11 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         key,
         request.body as AgentReviewBugReportRequest
       );
+      if (
+        (request.body as AgentReviewBugReportRequest)?.decision === 'READY_FOR_TRIAGE' &&
+        (await InboxPlanService.enqueue(fastify, data.id, 'CLARITY_READY'))
+      )
+        RequestClassifierWorkerHub.notify('inbox_plan_available');
       return reply.send({ success: true, data, message: 'Đã cập nhật bước làm rõ ticket.' });
     } catch (error) {
       return sendError(fastify, reply, error, 'Review Agent bug clarification failed');
@@ -509,12 +524,15 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const body = request.body as { leaseToken?: string; result?: unknown };
-        await InboxFollowUpService.complete(
+        const readyReportId = await InboxFollowUpService.complete(
           fastify,
           String((request.params as { id: string }).id || ''),
           String(body.leaseToken || ''),
           body.result
         );
+        if (readyReportId && (await InboxPlanService.enqueue(fastify, readyReportId, 'CLARITY_READY'))) {
+          RequestClassifierWorkerHub.notify('inbox_plan_available');
+        }
         return reply.send({ success: true });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox follow-up complete failed');
@@ -535,6 +553,55 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox follow-up fail failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/request-classifier/inbox-plans/claim',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const workerId = String((request.body as { workerId?: string })?.workerId || '');
+        await RequestClassificationService.heartbeat(fastify, workerId);
+        return reply.send({ data: await InboxPlanService.claim(fastify, workerId) });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Inbox plan claim failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-plans/:id/complete',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as { leaseToken?: string; result?: unknown };
+        await InboxPlanService.complete(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body.leaseToken || ''),
+          body.result
+        );
+        return reply.send({ success: true });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Inbox plan complete failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-plans/:id/fail',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as { leaseToken?: string };
+        await InboxPlanService.fail(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body.leaseToken || '')
+        );
+        return reply.send({ success: true });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Inbox plan fail failed');
       }
     }
   );

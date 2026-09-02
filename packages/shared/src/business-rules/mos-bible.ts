@@ -542,6 +542,38 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'Visible review transition', reference: 'apps/api/src/modules/bug-reports/bug-report.service.ts' },
     ],
   },
+  {
+    id: 'UI-005',
+    book: 'SYSTEM',
+    title: 'Plan Inbox theo sự kiện phải hiển thị và chờ Danny duyệt',
+    summary:
+      'Khi ticket đã đủ rõ để lập phương án, worker outbound phải tạo đúng một plan native theo từng phiên bản sự kiện; plan không phải là quyền triển khai.',
+    commandments: [
+      'Chỉ ticket NEW hoặc APPROVED có clarification READY mới được enqueue plan; ticket mơ hồ, đang triển khai hoặc đã kết thúc không được lập plan tự động.',
+      'Mỗi plan job phải khóa theo eventVersion, lease và kiểm tra stale ngay trước khi ghi để retry hoặc event trùng không tạo plan thứ hai.',
+      'Plan hoàn tất phải hiển thị native comment gồm bằng chứng/giả thuyết, kết quả, phạm vi, bước làm, kiểm chứng, rủi ro/rollback và quyết định Danny cần duyệt.',
+      'Worker plan chỉ phân tích và ghi phương án; không được sửa code, dữ liệu, cấu hình, triage, priority hay deploy. Các cổng duyệt triển khai và deploy vẫn tách biệt.',
+      'NO_OP, thiếu thông tin và stale phải được ghi nhận trung thực; không được coi là plan hoàn tất hoặc che giấu tiến độ khỏi Inbox.',
+    ],
+    rationale:
+      'Phương án cần đến Danny ngay khi ticket rõ, nhưng quyền triển khai phải luôn đến từ một phê duyệt riêng, có thể kiểm tra và không bị suy diễn từ trạng thái lịch sử.',
+    examples: [
+      'Reporter trả lời đủ thông tin: event CLARITY_READY tạo một plan native và Inbox vẫn chờ Danny quyết định.',
+      'Reporter cập nhật ticket sau khi worker claim: kết quả cũ bị đánh dấu stale, không đăng plan cũ; phiên bản mới mới được xử lý.',
+    ],
+    tags: ['mOS Inbox', 'event-driven', 'plan', 'Danny approval', 'lease', 'idempotency', 'stale'],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-03',
+    sources: [
+      {
+        label: 'Durable plan job source of truth',
+        reference: 'apps/api/src/modules/bug-reports/inbox-plan.service.ts',
+      },
+      { label: 'Outbound worker contract', reference: 'scripts/request-classifier-worker.ts' },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

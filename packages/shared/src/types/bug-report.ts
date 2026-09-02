@@ -268,6 +268,50 @@ export interface InboxFollowUpWorkerResult {
   question: string | null;
 }
 
+/** Durable, outbound-only planning work for a ticket that has passed clarification. */
+export const INBOX_PLAN_JOB_STATUSES = ['PENDING', 'LEASED', 'COMPLETED', 'FAILED', 'EXPIRED'] as const;
+export type InboxPlanJobStatus = (typeof INBOX_PLAN_JOB_STATUSES)[number];
+export const INBOX_PLAN_EVENT_KINDS = ['CREATED', 'REPORTER_COMMENT', 'CLARITY_READY', 'TRIAGE_UPDATED'] as const;
+export type InboxPlanEventKind = (typeof INBOX_PLAN_EVENT_KINDS)[number];
+export const INBOX_PLAN_ACTIONS = ['POST_PLAN', 'NO_OP', 'INSUFFICIENT_INFORMATION'] as const;
+export type InboxPlanAction = (typeof INBOX_PLAN_ACTIONS)[number];
+
+export interface InboxPlanDraft {
+  evidence: string;
+  expectedOutcome: string;
+  scope: string;
+  steps: string[];
+  verification: string;
+  risksAndRollback: string;
+  approvalRequest: string;
+}
+
+export interface InboxPlanWorkerJob {
+  id: string;
+  ticketId: number;
+  ticketKey: string;
+  eventKind: InboxPlanEventKind;
+  eventVersion: string;
+  context: {
+    requestType: BugReportRequestType;
+    title: string;
+    description: string;
+    status: Extract<BugReportStatus, 'NEW' | 'APPROVED'>;
+    clarificationSummary: string | null;
+    businessContext: string | null;
+    sourcePath: string;
+    reporterMessages: string[];
+  };
+  leaseToken: string;
+  attemptCount: number;
+}
+
+export interface InboxPlanWorkerResult {
+  action: InboxPlanAction;
+  note: string;
+  plan: InboxPlanDraft | null;
+}
+
 export type CreateRequestConversationResponse = ActionResponse<RequestConversation>;
 export type ReplyRequestConversationResponse = ActionResponse<RequestConversation>;
 
