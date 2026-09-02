@@ -26,6 +26,21 @@ import {
   resolveFixedFinalPriceScope,
 } from '../customers/services/customer-service-filter-catalog.service.js';
 
+type CampaignReadOptions = {
+  /** Managers retain archived records for audit and restoration; staff do not. */
+  includeArchived?: boolean;
+};
+
+function campaignVisibilityWhere(
+  baseWhere: Record<string, unknown>,
+  options: CampaignReadOptions
+): Record<string, unknown> {
+  if (options.includeArchived) return baseWhere;
+  return {
+    AND: [baseWhere, { status: { not: 'ARCHIVED' } }],
+  };
+}
+
 function slugify(text: string): string {
   return text
     .toString()
@@ -179,7 +194,8 @@ export class CampaignService {
    */
   static async listCampaigns(
     fastify: FastifyInstance,
-    params: ListCampaignsParams = {}
+    params: ListCampaignsParams = {},
+    options: CampaignReadOptions = {}
   ): Promise<{
     items: Campaign[];
     total: number;
@@ -194,20 +210,21 @@ export class CampaignService {
     const limitNum = Number(pageSize) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {
+    const baseWhere: any = {
       deletedAt: null,
     };
     if (status) {
-      where.status = status;
+      baseWhere.status = status;
     }
     if (search && search.trim() !== '') {
       const trimmed = search.trim();
-      where.OR = [
+      baseWhere.OR = [
         { name: { contains: trimmed } },
         { slug: { contains: trimmed } },
         { description: { contains: trimmed } },
       ];
     }
+    const where = campaignVisibilityWhere(baseWhere, options);
 
     const [total, campaigns] = await Promise.all([
       fastify.prisma.crm.crmCustomCampaign.count({ where }),
@@ -272,9 +289,9 @@ export class CampaignService {
   /**
    * Get single campaign by ID.
    */
-  static async getCampaignById(fastify: FastifyInstance, id: number): Promise<any> {
-    const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
-      where: { id },
+  static async getCampaignById(fastify: FastifyInstance, id: number, options: CampaignReadOptions = {}): Promise<any> {
+    const campaign = await fastify.prisma.crm.crmCustomCampaign.findFirst({
+      where: campaignVisibilityWhere({ id }, options),
       include: {
         creator: { select: { id: true, displayName: true, username: true } },
         touchpoints: { orderBy: { sortOrder: 'asc' } },
@@ -299,23 +316,30 @@ export class CampaignService {
   /**
    * Get single campaign by Slug.
    */
-  static async getCampaignBySlug(fastify: FastifyInstance, slug: string): Promise<any> {
+  static async getCampaignBySlug(
+    fastify: FastifyInstance,
+    slug: string,
+    options: CampaignReadOptions = {}
+  ): Promise<any> {
     const raw = (slug || '').trim();
     const clean = slugify(raw);
     const bare = raw.replace(/^-+|-+$/g, '');
     const numericId = !isNaN(Number(raw)) ? parseInt(raw, 10) : null;
 
     let campaign = await fastify.prisma.crm.crmCustomCampaign.findFirst({
-      where: {
-        OR: [
-          { slug: raw },
-          { slug: clean },
-          { slug: bare },
-          { slug: `-${clean}` },
-          { slug: `-${bare}` },
-          ...(numericId !== null ? [{ id: numericId }] : []),
-        ],
-      },
+      where: campaignVisibilityWhere(
+        {
+          OR: [
+            { slug: raw },
+            { slug: clean },
+            { slug: bare },
+            { slug: `-${clean}` },
+            { slug: `-${bare}` },
+            ...(numericId !== null ? [{ id: numericId }] : []),
+          ],
+        },
+        options
+      ),
       include: {
         creator: { select: { id: true, displayName: true, username: true } },
         touchpoints: { orderBy: { sortOrder: 'asc' } },
@@ -332,9 +356,12 @@ export class CampaignService {
 
     if (!campaign && clean) {
       campaign = await fastify.prisma.crm.crmCustomCampaign.findFirst({
-        where: {
-          slug: { contains: clean },
-        },
+        where: campaignVisibilityWhere(
+          {
+            slug: { contains: clean },
+          },
+          options
+        ),
         include: {
           creator: { select: { id: true, displayName: true, username: true } },
           touchpoints: { orderBy: { sortOrder: 'asc' } },

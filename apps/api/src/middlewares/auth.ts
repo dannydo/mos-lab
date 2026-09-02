@@ -138,19 +138,27 @@ export async function requireCampaignAdmin(request: FastifyRequest, reply: Fasti
     return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
   }
 
-  const isAuthorized =
+  if (!canManageCampaign(user)) {
+    return reply.status(403).send({
+      error: 'Forbidden',
+      message: 'Chỉ có tài khoản Admin / Quản lý mới có quyền quản lý Chiến dịch',
+    });
+  }
+}
+
+/**
+ * Campaign managers retain access to archived records so they can audit,
+ * restore, or reopen them. All other authenticated staff receive the
+ * employee-facing campaign surface, where archived campaigns are hidden.
+ */
+export function canManageCampaign(user: Pick<JwtUserPayload, 'role' | 'username' | 'email'>): boolean {
+  return (
     isAdminOrSuperAdminRole(user.role) ||
     user.role === 'manager' ||
     user.role === 'oc' ||
     user.role === 'ls' ||
     user.username?.toLowerCase() === 'admin' ||
     user.username?.toLowerCase() === 'danhdo@gmail.com' ||
-    user.email?.toLowerCase() === 'danhdo@gmail.com';
-
-  if (!isAuthorized) {
-    return reply.status(403).send({
-      error: 'Forbidden',
-      message: 'Chỉ có tài khoản Admin / Quản lý mới có quyền quản lý Chiến dịch',
-    });
-  }
+    user.email?.toLowerCase() === 'danhdo@gmail.com'
+  );
 }

@@ -1,7 +1,7 @@
 // Campaign Routes
 /* eslint-disable @typescript-eslint/no-explicit-any -- Fastify request boundaries are validated by the campaign service. */
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { requireAuth, requireCampaignAdmin } from '../../middlewares/auth.js';
+import { canManageCampaign, requireAuth, requireCampaignAdmin } from '../../middlewares/auth.js';
 import { CampaignService } from './campaign.service.js';
 import { CustomerAccessService } from '../customers/services/customer-access.service.js';
 import {
@@ -21,7 +21,9 @@ export async function campaignRoutes(fastify: FastifyInstance) {
   fastify.get('/campaigns', { preHandler: [requireAuth] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const query = (request.query || {}) as ListCampaignsParams;
-      const result = await CampaignService.listCampaigns(fastify, query);
+      const result = await CampaignService.listCampaigns(fastify, query, {
+        includeArchived: canManageCampaign(request.user),
+      });
       return reply.send(result);
     } catch (err: any) {
       request.log.error('Failed to list campaigns:', err);
@@ -54,7 +56,9 @@ export async function campaignRoutes(fastify: FastifyInstance) {
       if (isNaN(id)) {
         return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
       }
-      const campaign = await CampaignService.getCampaignById(fastify, id);
+      const campaign = await CampaignService.getCampaignById(fastify, id, {
+        includeArchived: canManageCampaign(request.user),
+      });
       return reply.send(campaign);
     } catch (err: any) {
       request.log.error('Failed to get campaign by ID:', err);
@@ -69,7 +73,9 @@ export async function campaignRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const params = request.params as { slug: string };
-        const campaign = await CampaignService.getCampaignBySlug(fastify, params.slug);
+        const campaign = await CampaignService.getCampaignBySlug(fastify, params.slug, {
+          includeArchived: canManageCampaign(request.user),
+        });
         return reply.send(campaign);
       } catch (err: any) {
         request.log.error('Failed to get campaign by slug:', err);

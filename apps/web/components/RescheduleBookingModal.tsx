@@ -977,10 +977,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                       }
                     }
                   }}
-                  selectedCV={
-                    selectedCV ||
-                    (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'))
-                  }
+                  selectedCV={selectedCV}
                   staffList={staffList}
                   themeMode={themeMode}
                 />

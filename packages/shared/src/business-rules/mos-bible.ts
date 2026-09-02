@@ -131,6 +131,28 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'BK-003',
+    book: 'BOOKING',
+    title: 'Lịch không chọn KTV không mượn lịch nghỉ của KTV khác',
+    summary:
+      'Khi Booker dời hoặc tạo lịch không chỉ định KTV, ngày có thể chọn được xác định theo ngày hiện tại và công suất chi nhánh, không theo lịch nghỉ của một KTV mặc định.',
+    commandments: [
+      'Không gán fallback KTV vào date picker khi booking.assigned_staff_id là null.',
+      'Ngày quá khứ vẫn bị khóa; ngày nghỉ hoặc phép chỉ khóa khi chính KTV được chọn có lịch nghỉ hợp lệ.',
+      'Khung giờ còn chỗ được kiểm tra bằng roster và công suất của chi nhánh khi chưa chỉ định KTV.',
+    ],
+    rationale: 'Một KTV không được chọn không thể làm cho lịch của cả chi nhánh bị mờ hoặc bị khóa sai.',
+    tags: ['đặt lịch', 'dời lịch', 'KTV', 'công suất', 'ngày nghỉ'],
+    routeScopes: ['/dashboard/customers', '/dashboard/appointments', '/dashboard/schedule-calendar'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-02',
+    sources: [
+      { label: 'Ticket production', reference: 'MOS-BUG-11' },
+      { label: 'Date picker chuẩn', reference: 'apps/web/components/booking/CvDatePicker.tsx' },
+    ],
+  },
+  {
     id: 'OPS-001',
     book: 'SERVICE',
     title: 'Vòng đời đơn có chủ nhân rõ ràng',
@@ -465,6 +487,29 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     version: '1.0.0',
     effectiveFrom: '2026-09-02',
     sources: [{ label: 'Chuẩn lịch và bảng', reference: 'AGENTS.md · Rules #22, #24, #37' }],
+  },
+  {
+    id: 'UI-003',
+    book: 'SYSTEM',
+    title: 'Lưu trữ campaign là policy chung, không phải công tắc trình duyệt',
+    summary:
+      'Campaign ARCHIVED không hiển thị hoặc truy cập được bởi nhân viên; Admin và Quản lý vẫn thấy để audit, khôi phục hoặc mở lại.',
+    commandments: [
+      'API danh sách và tra cứu campaign phải lọc ARCHIVED cho người không có quyền quản lý campaign.',
+      'Không dùng localStorage hoặc sidebar client làm nguồn quyền hiển thị campaign.',
+      'Trạng thái PAUSED và COMPLETED không bị thay đổi bởi quy tắc ARCHIVED này.',
+    ],
+    rationale:
+      'Một thao tác lưu trữ phải có hiệu lực nhất quán ở mọi phiên nhân viên và vẫn giữ được khả năng quản trị.',
+    tags: ['campaign', 'ARCHIVED', 'phân quyền', 'sidebar', 'API'],
+    routeScopes: ['/dashboard/nyc', '/dashboard/nyc/campaigns'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-02',
+    sources: [
+      { label: 'Ticket production', reference: 'MOS-BUG-12' },
+      { label: 'Campaign visibility service', reference: 'apps/api/src/modules/campaigns/campaign.service.ts' },
+    ],
   },
 ];
 
