@@ -11,6 +11,13 @@
   </array>
   <key>WorkingDirectory</key>
   <string>/Users/dannydo/projects/mos-lab</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>MOS_CODEX_CLI_PATH</key>
+    <string>/Applications/ChatGPT.app/Contents/Resources/codex</string>
+    <key>PATH</key>
+    <string>/Applications/ChatGPT.app/Contents/Resources:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>

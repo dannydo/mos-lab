@@ -4,6 +4,7 @@ import {
   parseCodexClassification,
   parseCodexConversation,
   parseCodexInboxFollowUp,
+  resolveCodexCliPath,
 } from './request-classifier-worker.js';
 
 test('accepts Codex structured JSON and rejects unsafe output', () => {
@@ -19,6 +20,18 @@ test('accepts Codex structured JSON and rejects unsafe output', () => {
     }
   );
   assert.throws(() => parseCodexClassification('{"requestType":"SYSTEM","confidence":1}'));
+});
+
+test('resolves configured Codex CLI path before macOS discovery', () => {
+  assert.equal(
+    resolveCodexCliPath({ MOS_CODEX_CLI_PATH: '/custom/codex' }, (path) => path === '/custom/codex'),
+    '/custom/codex'
+  );
+  assert.equal(
+    resolveCodexCliPath({}, (path) => path === '/Applications/ChatGPT.app/Contents/Resources/codex'),
+    '/Applications/ChatGPT.app/Contents/Resources/codex'
+  );
+  assert.throws(() => resolveCodexCliPath({ MOS_CODEX_CLI_PATH: '/missing' }, () => false));
 });
 
 test('accepts only safe inbox follow-up actions', () => {

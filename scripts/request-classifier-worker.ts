@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
@@ -13,6 +13,34 @@ const execFileAsync = promisify(execFile);
 const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
 const POLL_INTERVAL_MS = 30_000;
 const CODEX_TIMEOUT_MS = 90_000;
+const MACOS_CODEX_CANDIDATES = [
+  '/Applications/ChatGPT.app/Contents/Resources/codex',
+  '/usr/local/bin/codex',
+  '/opt/homebrew/bin/codex',
+];
+
+function isExecutablePath(path: string): boolean {
+  try {
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function resolveCodexCliPath(
+  env: NodeJS.ProcessEnv = process.env,
+  isExecutable: (path: string) => boolean = isExecutablePath
+): string {
+  const configured = String(env.MOS_CODEX_CLI_PATH || '').trim();
+  if (configured) {
+    if (!isExecutable(configured)) throw new Error('Configured MOS_CODEX_CLI_PATH is not executable.');
+    return configured;
+  }
+  const discovered = MACOS_CODEX_CANDIDATES.find(isExecutable);
+  if (!discovered) throw new Error('Codex CLI was not found; set MOS_CODEX_CLI_PATH for the launchd worker.');
+  return discovered;
+}
 
 function loadLocalWorkerEnv(): void {
   for (const filePath of ['.env', 'apps/api/.env']) {
@@ -194,7 +222,7 @@ async function invokeCodex(
     `Attachments in the current directory: ${attachmentNames.join(', ') || '(none)'}`,
   ].join('\n\n');
   const result = await execFileAsync(
-    'codex',
+    resolveCodexCliPath(),
     ['exec', '--sandbox', 'read-only', '--output-schema', schemaPath, prompt],
     {
       cwd: workDir,
@@ -277,7 +305,7 @@ async function invokeConversation(
     `Conversation JSON: ${JSON.stringify(job.messages)}`,
   ].join('\n\n');
   const result = await execFileAsync(
-    'codex',
+    resolveCodexCliPath(),
     ['exec', '--sandbox', 'read-only', '--output-schema', schemaPath, prompt],
     { cwd: workDir, timeout: CODEX_TIMEOUT_MS, maxBuffer: 32 * 1024, windowsHide: true }
   );
@@ -356,7 +384,7 @@ async function processInboxFollowUpOne(): Promise<boolean> {
       JSON.stringify(job.context),
     ].join('\n\n');
     const result = await execFileAsync(
-      'codex',
+      resolveCodexCliPath(),
       ['exec', '--sandbox', 'read-only', '--output-schema', schemaPath, prompt],
       { cwd: workDir, timeout: CODEX_TIMEOUT_MS, maxBuffer: 32 * 1024 }
     );
