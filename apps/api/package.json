@@ -20,7 +20,7 @@
     "legacy:indexes:customers": "tsx src/scripts/apply-customer-query-perf-indexes.ts",
     "lint": "eslint src/ --max-warnings=-1",
     "typecheck": "pnpm prisma:generate && tsc --noEmit",
-    "test": "pnpm prisma:generate && tsx --test 'src/**/*.test.ts'",
+    "test": "pnpm prisma:generate && tsx --test $(find src -type f -name '*.test.ts' -print | sort)",
     "test:run": "pnpm test",
     "prisma:db:pull:legacy": "prisma db pull --schema=prisma/legacy.prisma"
   },
