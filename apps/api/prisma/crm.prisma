@@ -2425,6 +2425,55 @@ model CrmRequestClassificationWorkerHeartbeat {
   @@map("crm_request_classification_worker_heartbeats")
 }
 
+/// Server-authoritative operational state for the outbound Inbox worker.
+/// This intentionally stores only bounded runtime metadata, never ticket or
+/// intake content. The legacy heartbeat table above remains a compatibility
+/// touchpoint for the existing claim routes.
+model CrmRequestClassifierWorkerHealth {
+  workerId                  String    @id @map("worker_id") @db.VarChar(100)
+  workerVersion             String    @map("worker_version") @db.VarChar(100)
+  sessionId                 String    @map("session_id") @db.VarChar(64)
+  lastSequence              Int       @default(0) @map("last_sequence")
+  lastClientSentAt          DateTime  @map("last_client_sent_at") @db.DateTime(3)
+  lastHeartbeatAt           DateTime  @map("last_heartbeat_at") @db.DateTime(0)
+  connectionMode            String    @map("connection_mode") @db.VarChar(20)
+  activeJobKind             String?   @map("active_job_kind") @db.VarChar(32)
+  activeJobStartedAt        DateTime? @map("active_job_started_at") @db.DateTime(0)
+  lastOutcomeKind           String?   @map("last_outcome_kind") @db.VarChar(32)
+  lastOutcomeStatus         String?   @map("last_outcome_status") @db.VarChar(16)
+  lastOutcomeSeverity       String?   @map("last_outcome_severity") @db.VarChar(16)
+  lastOutcomeCode           String?   @map("last_outcome_code") @db.VarChar(100)
+  lastOutcomeClientAt       DateTime? @map("last_outcome_client_at") @db.DateTime(3)
+  lastOutcomeAt             DateTime? @map("last_outcome_at") @db.DateTime(0)
+  lastCompletedAt           DateTime? @map("last_completed_at") @db.DateTime(0)
+  lastFailedAt              DateTime? @map("last_failed_at") @db.DateTime(0)
+  consecutiveFailureCount   Int       @default(0) @map("consecutive_failure_count")
+  state                     String    @default("OFFLINE") @db.VarChar(16)
+  stateReason               String    @default("NO_HEARTBEAT") @map("state_reason") @db.VarChar(100)
+  stateChangedAt            DateTime  @map("state_changed_at") @db.DateTime(0)
+  updatedAt                 DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  transitions CrmRequestClassifierWorkerHealthTransition[]
+
+  @@index([lastHeartbeatAt], map: "request_classifier_worker_health_seen_idx")
+  @@index([state, lastHeartbeatAt], map: "request_classifier_worker_health_state_seen_idx")
+  @@map("crm_request_classifier_worker_health")
+}
+
+model CrmRequestClassifierWorkerHealthTransition {
+  id         Int      @id @default(autoincrement())
+  workerId   String   @map("worker_id") @db.VarChar(100)
+  fromState  String?  @map("from_state") @db.VarChar(16)
+  toState    String   @map("to_state") @db.VarChar(16)
+  reason     String   @db.VarChar(100)
+  occurredAt DateTime @map("occurred_at") @db.DateTime(0)
+
+  worker CrmRequestClassifierWorkerHealth @relation(fields: [workerId], references: [workerId], onDelete: Cascade)
+
+  @@index([workerId, occurredAt], map: "request_classifier_worker_transition_worker_time_idx")
+  @@map("crm_request_classifier_worker_health_transitions")
+}
+
 // Private, short-lived conversation state. Message text is only available to the
 // reporter and the authenticated outbound worker; audit rows store event metadata only.
 model CrmRequestConversation {

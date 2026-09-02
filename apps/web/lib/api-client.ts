@@ -55,6 +55,7 @@ import type {
   TriageBugReportRequest,
   TriageBugReportResponse,
   RequestClassificationJob,
+  RequestClassifierWorkerHealth,
   RequestConversation,
 } from '@mos-lab/shared';
 import {
@@ -636,6 +637,10 @@ export const apiClient = {
     list: async (params: BugReportListQuery): Promise<BugReportListResponse> => {
       const response = await api.get<BugReportListResponse>('/bug-reports', { params });
       return response.data;
+    },
+    workerHealth: async (): Promise<RequestClassifierWorkerHealth> => {
+      const response = await api.get<{ data: RequestClassifierWorkerHealth }>('/bug-reports/worker-health');
+      return response.data.data;
     },
     detail: async (id: number): Promise<BugReportDetail> => {
       const response = await api.get<{ data: BugReportDetail }>(`/bug-reports/${id}`);

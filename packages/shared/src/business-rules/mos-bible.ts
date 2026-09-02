@@ -574,6 +574,37 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'Outbound worker contract', reference: 'scripts/request-classifier-worker.ts' },
     ],
   },
+  {
+    id: 'UI-006',
+    book: 'SYSTEM',
+    title: 'Sức khỏe Inbox Worker là trạng thái do server chốt',
+    summary:
+      'Inbox chỉ hiển thị metadata vận hành đã được server xác nhận; heartbeat không được sửa ticket, plan, priority hoặc nội dung yêu cầu.',
+    commandments: [
+      'Worker outbound gửi identity ổn định, phiên chạy, sequence, phiên bản, trạng thái kết nối, job đang chạy và outcome đã được giới hạn mỗi 30 giây.',
+      'Server dùng giờ server và ngưỡng cấu hình để chốt Online ≤ 90 giây, Degraded trước 180 giây hoặc khi có lỗi nghiêm trọng/liên tiếp, Offline từ 180 giây.',
+      'Heartbeat cũ không được ghi đè heartbeat mới; state transition chỉ được lưu một lần cho mỗi lần đổi trạng thái.',
+      'Inbox Admin chỉ đọc snapshot an toàn, trạng thái tải/lỗi và transition thấy được; không hiển thị ticket ID, prompt, attachment, token hay output AI.',
+    ],
+    rationale:
+      'Vận hành cần biết worker có đang sống và xử lý được việc hay không, nhưng quan sát kỹ thuật không được trở thành một luồng thay đổi nghiệp vụ.',
+    examples: [
+      'Worker không gửi heartbeat 95 giây: Inbox hiển thị Degraded với lý do HEARTBEAT_STALE.',
+      'Worker gửi heartbeat mới sau Offline: server lưu transition Online và Inbox hiển thị tín hiệu phục hồi.',
+    ],
+    tags: ['mOS Inbox', 'worker health', 'heartbeat', 'server time', 'observability', 'safe metadata'],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-03',
+    sources: [
+      {
+        label: 'Server-authoritative health service',
+        reference: 'apps/api/src/modules/bug-reports/request-classifier-worker-health.service.ts',
+      },
+      { label: 'Outbound worker telemetry contract', reference: 'scripts/request-classifier-worker.ts' },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

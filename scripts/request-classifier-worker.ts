@@ -1,9 +1,16 @@
+import { randomUUID } from 'node:crypto';
 import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process';
 import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import type { RequestClassificationWorkerJob, RequestClassificationWorkerResult } from '@mos-lab/shared';
+import type {
+  RequestClassificationWorkerJob,
+  RequestClassificationWorkerResult,
+  RequestClassifierWorkerConnectionMode,
+  RequestClassifierWorkerHeartbeatRequest,
+  RequestClassifierWorkerJobKind,
+} from '@mos-lab/shared';
 import type { RequestConversationWorkerJob, RequestConversationWorkerResult } from '@mos-lab/shared';
 import type { InboxFollowUpWorkerJob, InboxFollowUpWorkerResult } from '@mos-lab/shared';
 import type { InboxPlanWorkerJob, InboxPlanWorkerResult } from '@mos-lab/shared';
@@ -11,6 +18,7 @@ import WebSocket from 'ws';
 
 const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
 const POLL_INTERVAL_MS = 30_000;
+const HEARTBEAT_INTERVAL_MS = 30_000;
 const CODEX_TIMEOUT_MS = 90_000;
 const MACOS_CODEX_CANDIDATES = [
   '/Applications/ChatGPT.app/Contents/Resources/codex',
@@ -165,7 +173,7 @@ function loadLocalWorkerEnv(): void {
     if (!existsSync(filePath)) continue;
     for (const line of readFileSync(filePath, 'utf8').split(/\r?\n/)) {
       const match = line.match(
-        /^\s*(MOS_REQUEST_CLASSIFIER_WORKER_TOKEN|MOS_REQUEST_CLASSIFIER_API_URL|MOS_REQUEST_CLASSIFIER_WORKER_ID)\s*=\s*(.*?)\s*$/
+        /^\s*(MOS_REQUEST_CLASSIFIER_WORKER_TOKEN|MOS_REQUEST_CLASSIFIER_API_URL|MOS_REQUEST_CLASSIFIER_WORKER_ID|MOS_REQUEST_CLASSIFIER_WORKER_VERSION)\s*=\s*(.*?)\s*$/
       );
       if (!match || process.env[match[1]]) continue;
       process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, '$2');
@@ -183,6 +191,9 @@ function configuration() {
     workerId: String(process.env.MOS_REQUEST_CLASSIFIER_WORKER_ID || `mac-${hostname()}`)
       .trim()
       .slice(0, 100),
+    workerVersion: String(process.env.MOS_REQUEST_CLASSIFIER_WORKER_VERSION || 'request-classifier-worker-v1')
+      .trim()
+      .slice(0, 100),
   };
 }
 
@@ -193,6 +204,7 @@ async function workerFetch(path: string, init?: RequestInit): Promise<Response> 
     headers: {
       Authorization: `Bearer ${config.token}`,
       Accept: 'application/json',
+      'X-Worker-Id': config.workerId,
       ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
       ...init?.headers,
     },
@@ -208,6 +220,80 @@ async function workerFetch(path: string, init?: RequestInit): Promise<Response> 
       } HTTP ${response.status}`
     );
   return response;
+}
+
+type ActiveWorkerJob = { kind: RequestClassifierWorkerJobKind; startedAt: string } | null;
+
+const workerSessionId = randomUUID();
+let heartbeatSequence = 0;
+let connectionMode: RequestClassifierWorkerConnectionMode = 'STARTING';
+let activeWorkerJob: ActiveWorkerJob = null;
+let latestWorkerOutcome: RequestClassifierWorkerHeartbeatRequest['latestOutcome'] = null;
+
+function safeBridgeFailureCode(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  if (/HTTP 401|HTTP 403/.test(message)) return 'BRIDGE_AUTH_FAILED';
+  if (/HTTP 429/.test(message)) return 'BRIDGE_RATE_LIMITED';
+  if (/HTTP 5\d\d/.test(message)) return 'BRIDGE_SERVER_ERROR';
+  return 'BRIDGE_REQUEST_FAILED';
+}
+
+function recordWorkerOutcome(
+  kind: RequestClassifierWorkerJobKind | 'BRIDGE',
+  status: 'SUCCEEDED' | 'FAILED',
+  severity: 'INFO' | 'WARNING' | 'ERROR',
+  code: string
+): void {
+  latestWorkerOutcome = { kind, status, severity, code, occurredAt: new Date().toISOString() };
+}
+
+function beginWorkerJob(kind: RequestClassifierWorkerJobKind): void {
+  activeWorkerJob = { kind, startedAt: new Date().toISOString() };
+  void sendWorkerHealthHeartbeat();
+}
+
+function finishWorkerJob(
+  kind: RequestClassifierWorkerJobKind,
+  status: 'SUCCEEDED' | 'FAILED',
+  severity: 'INFO' | 'WARNING',
+  code: string
+): void {
+  activeWorkerJob = null;
+  recordWorkerOutcome(kind, status, severity, code);
+  void sendWorkerHealthHeartbeat();
+}
+
+function updateConnectionMode(next: RequestClassifierWorkerConnectionMode): void {
+  connectionMode = next;
+  void sendWorkerHealthHeartbeat();
+}
+
+/**
+ * This is intentionally one-way operational telemetry. It contains no ticket
+ * identifiers, employee text, attachments, prompts, authorization data, or
+ * structured Codex output.
+ */
+async function sendWorkerHealthHeartbeat(): Promise<void> {
+  const config = configuration();
+  const payload: RequestClassifierWorkerHeartbeatRequest = {
+    workerId: config.workerId,
+    workerVersion: config.workerVersion || 'request-classifier-worker-v1',
+    sessionId: workerSessionId,
+    sequence: ++heartbeatSequence,
+    sentAt: new Date().toISOString(),
+    connectionMode,
+    activeJob: activeWorkerJob,
+    latestOutcome: latestWorkerOutcome,
+  };
+  try {
+    await workerFetch('/request-classifier/health/heartbeat', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Do not recursively report a failed health report, and never log secrets.
+    console.log('Worker health heartbeat unavailable.');
+  }
 }
 
 function schema(): string {
@@ -397,13 +483,13 @@ async function invokeCodex(
 
 async function processOne(): Promise<boolean> {
   const { workerId } = configuration();
-  await workerFetch('/request-classifier/heartbeat', { method: 'POST', body: JSON.stringify({ workerId }) });
   const claimResponse = await workerFetch('/request-classifier/claim', {
     method: 'POST',
     body: JSON.stringify({ workerId }),
   });
   const job = ((await claimResponse.json()) as { data: RequestClassificationWorkerJob | null }).data;
   if (!job) return false;
+  beginWorkerJob('CLASSIFICATION');
   const workDir = await mkdtemp(join(tmpdir(), 'mos-request-classifier-'));
   try {
     const result = await invokeCodex(job, workDir);
@@ -412,6 +498,7 @@ async function processOne(): Promise<boolean> {
       body: JSON.stringify({ leaseToken: job.leaseToken, result }),
     });
     console.log('Classification completed.');
+    finishWorkerJob('CLASSIFICATION', 'SUCCEEDED', 'INFO', 'COMPLETED');
   } catch {
     // Do not emit intake text, attachments, authorization data, or Codex output to logs.
     await workerFetch(`/request-classifier/jobs/${encodeURIComponent(job.id)}/fail`, {
@@ -422,7 +509,9 @@ async function processOne(): Promise<boolean> {
       }),
     }).catch(() => undefined);
     console.log('Classification retry policy applied.');
+    finishWorkerJob('CLASSIFICATION', 'FAILED', 'WARNING', 'CLASSIFICATION_FAILED');
   } finally {
+    activeWorkerJob = null;
     await rm(workDir, { recursive: true, force: true });
   }
   return true;
@@ -475,6 +564,7 @@ async function processConversationOne(): Promise<boolean> {
   });
   const job = ((await response.json()) as { data: RequestConversationWorkerJob | null }).data;
   if (!job) return false;
+  beginWorkerJob('CONVERSATION');
   const workDir = await mkdtemp(join(tmpdir(), 'mos-request-conversation-'));
   try {
     const result = await invokeConversation(job, workDir);
@@ -483,6 +573,7 @@ async function processConversationOne(): Promise<boolean> {
       body: JSON.stringify({ leaseToken: job.leaseToken, result }),
     });
     console.log('Guided intake advanced.');
+    finishWorkerJob('CONVERSATION', 'SUCCEEDED', 'INFO', 'COMPLETED');
   } catch {
     await workerFetch(`/request-classifier/conversations/${encodeURIComponent(job.id)}/fail`, {
       method: 'POST',
@@ -492,7 +583,9 @@ async function processConversationOne(): Promise<boolean> {
       }),
     }).catch(() => undefined);
     console.log('Guided intake retry policy applied.');
+    finishWorkerJob('CONVERSATION', 'FAILED', 'WARNING', 'CONVERSATION_FAILED');
   } finally {
+    activeWorkerJob = null;
     await rm(workDir, { recursive: true, force: true });
   }
   return true;
@@ -545,10 +638,13 @@ async function processInboxFollowUpOne(): Promise<boolean> {
     });
   } catch (error) {
     console.log(formatInboxFollowUpFailure(phase, error));
+    recordWorkerOutcome('BRIDGE', 'FAILED', 'ERROR', safeBridgeFailureCode(error));
+    void sendWorkerHealthHeartbeat();
     return false;
   }
   const job = ((await response.json()) as { data: InboxFollowUpWorkerJob | null }).data;
   if (!job) return false;
+  beginWorkerJob('INBOX_FOLLOW_UP');
   const workDir = await mkdtemp(join(tmpdir(), 'mos-inbox-follow-up-'));
   try {
     phase = 'codex_exec';
@@ -566,6 +662,7 @@ async function processInboxFollowUpOne(): Promise<boolean> {
       body: JSON.stringify({ leaseToken: job.leaseToken, result: parseCodexInboxFollowUp(output) }),
     });
     console.log('Inbox follow-up completed.');
+    finishWorkerJob('INBOX_FOLLOW_UP', 'SUCCEEDED', 'INFO', 'COMPLETED');
   } catch (error) {
     console.log(formatInboxFollowUpFailure(phase, error));
     phase = 'fail';
@@ -574,7 +671,9 @@ async function processInboxFollowUpOne(): Promise<boolean> {
       body: JSON.stringify({ leaseToken: job.leaseToken }),
     }).catch(() => undefined);
     console.log('Inbox follow-up retry policy applied.');
+    finishWorkerJob('INBOX_FOLLOW_UP', 'FAILED', 'WARNING', inboxFollowUpFailureCode(error));
   } finally {
+    activeWorkerJob = null;
     await rm(workDir, { recursive: true, force: true });
   }
   return true;
@@ -591,10 +690,13 @@ async function processInboxPlanOne(): Promise<boolean> {
     });
   } catch (error) {
     console.log(formatInboxPlanFailure(phase, error));
+    recordWorkerOutcome('BRIDGE', 'FAILED', 'ERROR', safeBridgeFailureCode(error));
+    void sendWorkerHealthHeartbeat();
     return false;
   }
   const job = ((await response.json()) as { data: InboxPlanWorkerJob | null }).data;
   if (!job) return false;
+  beginWorkerJob('INBOX_PLAN');
   const workDir = await mkdtemp(join(tmpdir(), 'mos-inbox-plan-'));
   try {
     phase = 'codex_exec';
@@ -614,6 +716,7 @@ async function processInboxPlanOne(): Promise<boolean> {
       body: JSON.stringify({ leaseToken: job.leaseToken, result: parseCodexInboxPlan(output) }),
     });
     console.log('Inbox plan completed.');
+    finishWorkerJob('INBOX_PLAN', 'SUCCEEDED', 'INFO', 'COMPLETED');
   } catch (error) {
     console.log(formatInboxPlanFailure(phase, error));
     phase = 'fail';
@@ -622,7 +725,9 @@ async function processInboxPlanOne(): Promise<boolean> {
       body: JSON.stringify({ leaseToken: job.leaseToken }),
     }).catch(() => undefined);
     console.log('Inbox plan retry policy applied.');
+    finishWorkerJob('INBOX_PLAN', 'FAILED', 'WARNING', inboxPlanFailureCode(error));
   } finally {
+    activeWorkerJob = null;
     await rm(workDir, { recursive: true, force: true });
   }
   return true;
@@ -641,6 +746,11 @@ async function drain(): Promise<void> {
     ) {
       /* one serial worker preserves leases */
     }
+  } catch (error) {
+    activeWorkerJob = null;
+    recordWorkerOutcome('BRIDGE', 'FAILED', 'ERROR', safeBridgeFailureCode(error));
+    void sendWorkerHealthHeartbeat();
+    console.log('Worker bridge request failed.');
   } finally {
     draining = false;
   }
@@ -657,11 +767,14 @@ function runRealtime(): void {
     });
     socket.on('open', () => {
       retryMs = 1_000;
+      recordWorkerOutcome('BRIDGE', 'SUCCEEDED', 'INFO', 'CONNECTED');
+      updateConnectionMode('WEBSOCKET');
       void drain();
     });
     socket.on('message', () => void drain());
     socket.on('error', () => undefined);
     socket.on('close', () => {
+      updateConnectionMode('RECONNECTING');
       const delay = retryMs + Math.floor(Math.random() * 250);
       retryMs = Math.min(30_000, retryMs * 2);
       setTimeout(connect, delay).unref();
@@ -673,12 +786,18 @@ function runRealtime(): void {
 async function main(): Promise<void> {
   const once = process.argv.includes('--once');
   if (once) {
+    await sendWorkerHealthHeartbeat();
     await drain();
     return;
   }
+  await sendWorkerHealthHeartbeat();
   runRealtime();
   // Safe fallback while the outbound channel reconnects or a proxy drops it.
-  setInterval(() => void drain(), POLL_INTERVAL_MS).unref();
+  setInterval(() => {
+    if (connectionMode !== 'WEBSOCKET') updateConnectionMode('POLLING');
+    void drain();
+  }, POLL_INTERVAL_MS).unref();
+  setInterval(() => void sendWorkerHealthHeartbeat(), HEARTBEAT_INTERVAL_MS).unref();
 }
 
 if (process.argv[1]?.endsWith('request-classifier-worker.ts')) {

@@ -40,6 +40,7 @@ import { bugReportRoutes } from './modules/bug-reports/routes.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { RequestClassificationService } from './modules/bug-reports/request-classification.service.js';
 import { RequestConversationService } from './modules/bug-reports/request-conversation.service.js';
+import { startRequestClassifierWorkerHealthMonitor } from './modules/bug-reports/request-classifier-worker-health.service.js';
 import { startPancakeAcademySync } from './modules/academy-sales/pancake-sync.service.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
@@ -291,6 +292,7 @@ const start = async () => {
     // Start background analyzer polling for AI laugh detection
     startRecordingAnalyzer(server);
     startBugReportCleanup(server);
+    startRequestClassifierWorkerHealthMonitor(server);
     const cleanupClassifications = () =>
       RequestClassificationService.cleanupExpired(server).catch((error) =>
         server.log.warn({ error }, 'Request classification cleanup failed')

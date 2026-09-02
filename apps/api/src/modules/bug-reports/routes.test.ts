@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { canManageBugInbox, canReadBugInbox, isValidAgentAuthorization } from './routes.js';
+import {
+  canManageBugInbox,
+  canReadBugInbox,
+  consumeClassifierWorkerRateLimit,
+  isValidAgentAuthorization,
+} from './routes.js';
 
 test('only Danny canonical Super Admin can manage Bug Inbox', () => {
   assert.equal(canManageBugInbox({ role: 'super_admin', username: 'danhdo@gmail.com' }), true);
@@ -22,4 +27,11 @@ test('Agent bridge requires an exact independent bearer token', () => {
   assert.equal(isValidAgentAuthorization('Bearer wrong-token', token), false);
   assert.equal(isValidAgentAuthorization(`Basic ${token}`, token), false);
   assert.equal(isValidAgentAuthorization(`Bearer ${token}`, 'short'), false);
+});
+
+test('classifier worker bridge has a bounded request rate and recovers in the next window', () => {
+  const key = `worker-rate-test-${Date.now()}`;
+  for (let index = 0; index < 180; index += 1) assert.equal(consumeClassifierWorkerRateLimit(key, 1_000), true);
+  assert.equal(consumeClassifierWorkerRateLimit(key, 1_000), false);
+  assert.equal(consumeClassifierWorkerRateLimit(key, 61_000), true);
 });

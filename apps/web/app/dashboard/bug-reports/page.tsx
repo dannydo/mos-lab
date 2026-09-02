@@ -64,6 +64,7 @@ import {
 import { BugReportResolutionTracking } from './components/BugReportResolutionTracking';
 import { BugReportMobileCard } from './components/BugReportMobileCard';
 import { FeatureRequestDetails } from './components/FeatureRequestDetails';
+import { RequestClassifierWorkerHealthCard } from './components/RequestClassifierWorkerHealthCard';
 import { useBugReportInboxColumns } from './components/useBugReportInboxColumns';
 import {
   AgentProgressTag,
@@ -82,6 +83,7 @@ import {
   TRANSITIONS,
 } from './bug-report-presenters';
 import { useBugReports } from './hooks/useBugReports';
+import { useRequestClassifierWorkerHealth } from './hooks/useRequestClassifierWorkerHealth';
 const { Text, Paragraph, Title } = Typography;
 
 interface DetailDrawerProps {
@@ -554,6 +556,7 @@ function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose, comm
 export default function BugReportsPage() {
   const { token } = theme.useToken();
   const inbox = useBugReports();
+  const workerHealth = useRequestClassifierWorkerHealth();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [canTriage, setCanTriage] = useState(false);
@@ -777,7 +780,14 @@ export default function BugReportsPage() {
           mobileRenderer: (row) => <BugReportMobileCard report={row} onOpen={setSelectedId} />,
           locale: { emptyText: emptyInboxMessage },
         }}
-      />
+      >
+        <RequestClassifierWorkerHealthCard
+          health={workerHealth.health}
+          loading={workerHealth.loading}
+          error={workerHealth.error}
+          onRefresh={() => void workerHealth.refresh()}
+        />
+      </ResourceListPage>
       <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} />
       <DetailDrawer
         reportId={selectedId}

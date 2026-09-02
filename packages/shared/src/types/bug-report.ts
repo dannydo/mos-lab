@@ -167,6 +167,95 @@ export interface RequestClassificationWorkerJob {
 
 export type RequestClassificationWorkerResult = RequestClassificationRecommendation;
 
+/**
+ * The outbound Mac worker reports only operational metadata. It never sends
+ * intake text, ticket IDs, attachment names, prompts, or model output here.
+ */
+export const REQUEST_CLASSIFIER_WORKER_CONNECTION_MODES = ['STARTING', 'WEBSOCKET', 'POLLING', 'RECONNECTING'] as const;
+export type RequestClassifierWorkerConnectionMode = (typeof REQUEST_CLASSIFIER_WORKER_CONNECTION_MODES)[number];
+
+export const REQUEST_CLASSIFIER_WORKER_JOB_KINDS = [
+  'CLASSIFICATION',
+  'CONVERSATION',
+  'INBOX_FOLLOW_UP',
+  'INBOX_PLAN',
+] as const;
+export type RequestClassifierWorkerJobKind = (typeof REQUEST_CLASSIFIER_WORKER_JOB_KINDS)[number];
+
+export const REQUEST_CLASSIFIER_WORKER_OUTCOME_STATUSES = ['SUCCEEDED', 'FAILED'] as const;
+export type RequestClassifierWorkerOutcomeStatus = (typeof REQUEST_CLASSIFIER_WORKER_OUTCOME_STATUSES)[number];
+
+export const REQUEST_CLASSIFIER_WORKER_OUTCOME_SEVERITIES = ['INFO', 'WARNING', 'ERROR'] as const;
+export type RequestClassifierWorkerOutcomeSeverity = (typeof REQUEST_CLASSIFIER_WORKER_OUTCOME_SEVERITIES)[number];
+
+export const REQUEST_CLASSIFIER_WORKER_HEALTH_STATES = ['ONLINE', 'DEGRADED', 'OFFLINE'] as const;
+export type RequestClassifierWorkerHealthState = (typeof REQUEST_CLASSIFIER_WORKER_HEALTH_STATES)[number];
+
+export interface RequestClassifierWorkerHeartbeatRequest {
+  workerId: string;
+  workerVersion: string;
+  sessionId: string;
+  sequence: number;
+  sentAt: string;
+  connectionMode: RequestClassifierWorkerConnectionMode;
+  activeJob: {
+    kind: RequestClassifierWorkerJobKind;
+    startedAt: string;
+  } | null;
+  latestOutcome: {
+    kind: RequestClassifierWorkerJobKind | 'BRIDGE';
+    status: RequestClassifierWorkerOutcomeStatus;
+    severity: RequestClassifierWorkerOutcomeSeverity;
+    code: string;
+    occurredAt: string;
+  } | null;
+}
+
+export interface RequestClassifierWorkerHealthThresholds {
+  onlineWithinSeconds: number;
+  offlineAfterSeconds: number;
+  sustainedFailureCount: number;
+  seriousFailureWindowSeconds: number;
+}
+
+export interface RequestClassifierWorkerHealthTransition {
+  id: number | null;
+  fromState: RequestClassifierWorkerHealthState | null;
+  toState: RequestClassifierWorkerHealthState;
+  reason: string;
+  occurredAt: string;
+}
+
+export interface RequestClassifierWorkerHealth {
+  workerId: string | null;
+  workerVersion: string | null;
+  state: RequestClassifierWorkerHealthState;
+  stateReason: string;
+  stateChangedAt: string | null;
+  serverTime: string;
+  lastHeartbeatAt: string | null;
+  secondsSinceHeartbeat: number | null;
+  connectionMode: RequestClassifierWorkerConnectionMode | null;
+  activeJob: {
+    kind: RequestClassifierWorkerJobKind;
+    startedAt: string | null;
+  } | null;
+  latestOutcome: {
+    kind: RequestClassifierWorkerJobKind | 'BRIDGE';
+    status: RequestClassifierWorkerOutcomeStatus;
+    severity: RequestClassifierWorkerOutcomeSeverity;
+    code: string;
+    occurredAt: string | null;
+  } | null;
+  lastCompletedAt: string | null;
+  lastFailedAt: string | null;
+  consecutiveFailureCount: number;
+  latestTransition: RequestClassifierWorkerHealthTransition | null;
+  thresholds: RequestClassifierWorkerHealthThresholds;
+}
+
+export type RequestClassifierWorkerHealthResponse = { data: RequestClassifierWorkerHealth };
+
 export type CreateRequestClassificationJobResponse = ActionResponse<RequestClassificationJob>;
 
 export const REQUEST_CONVERSATION_STATUSES = [

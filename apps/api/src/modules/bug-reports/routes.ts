@@ -25,6 +25,14 @@ import { RequestConversationError, RequestConversationService } from './request-
 import { RequestClassifierWorkerHub } from './request-classifier-worker-hub.js';
 import { InboxFollowUpError, InboxFollowUpService } from './inbox-follow-up.service.js';
 import { InboxPlanError, InboxPlanService } from './inbox-plan.service.js';
+import {
+  RequestClassifierWorkerHealthError,
+  RequestClassifierWorkerHealthService,
+} from './request-classifier-worker-health.service.js';
+
+const WORKER_RATE_LIMIT_WINDOW_MS = 60_000;
+const WORKER_RATE_LIMIT_MAX_REQUESTS = 180;
+const classifierWorkerRateBuckets = new Map<string, { startedAt: number; count: number }>();
 
 function numericParam(value: unknown, label: string): number {
   const parsed = Number(value);
@@ -79,6 +87,36 @@ export function isValidAgentAuthorization(header: string, expected: string): boo
   return Boolean(actual && secureTokenEqual(actual, expected.trim()));
 }
 
+/** A small process-local guard for the single outbound worker bridge. */
+export function consumeClassifierWorkerRateLimit(clientKey: string, now = Date.now()): boolean {
+  const key = clippedRateLimitKey(clientKey);
+  const current = classifierWorkerRateBuckets.get(key);
+  if (!current || now - current.startedAt >= WORKER_RATE_LIMIT_WINDOW_MS) {
+    classifierWorkerRateBuckets.set(key, { startedAt: now, count: 1 });
+    if (classifierWorkerRateBuckets.size > 500) {
+      for (const [candidate, bucket] of classifierWorkerRateBuckets) {
+        if (now - bucket.startedAt >= WORKER_RATE_LIMIT_WINDOW_MS) classifierWorkerRateBuckets.delete(candidate);
+      }
+    }
+    return true;
+  }
+  if (current.count >= WORKER_RATE_LIMIT_MAX_REQUESTS) return false;
+  current.count += 1;
+  return true;
+}
+
+function clippedRateLimitKey(value: unknown): string {
+  return (
+    String(value || 'unknown')
+      .trim()
+      .slice(0, 160) || 'unknown'
+  );
+}
+
+function workerClientKey(request: FastifyRequest): string {
+  return `${request.ip || 'unknown'}:${String(request.headers['x-worker-id'] || 'worker').slice(0, 100)}`;
+}
+
 async function requireAgent(request: FastifyRequest, reply: FastifyReply) {
   const expected = agentToken();
   if (expected.length < 32) {
@@ -102,6 +140,9 @@ async function requireClassifierWorker(request: FastifyRequest, reply: FastifyRe
   if (!isValidAgentAuthorization(String(request.headers.authorization || ''), expected)) {
     return reply.status(401).send({ error: 'Unauthorized', message: 'Worker token không hợp lệ.' });
   }
+  if (!consumeClassifierWorkerRateLimit(workerClientKey(request))) {
+    return reply.status(429).send({ error: 'Too Many Requests', message: 'Worker bridge đang gửi quá nhiều yêu cầu.' });
+  }
 }
 
 function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown, context: string) {
@@ -110,7 +151,8 @@ function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown
     error instanceof RequestClassificationError ||
     error instanceof RequestConversationError ||
     error instanceof InboxFollowUpError ||
-    error instanceof InboxPlanError
+    error instanceof InboxPlanError ||
+    error instanceof RequestClassifierWorkerHealthError
   ) {
     return reply.status(error.statusCode).send({ error: error.code, message: error.message, code: error.code });
   }
@@ -132,6 +174,10 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
   fastify.get('/request-classifier/stream', { websocket: true }, (socket, request) => {
     if (!isValidAgentAuthorization(String(request.headers.authorization || ''), classifierWorkerToken())) {
       socket.close(1008, 'Unauthorized');
+      return;
+    }
+    if (!consumeClassifierWorkerRateLimit(workerClientKey(request))) {
+      socket.close(1013, 'Rate limited');
       return;
     }
     RequestClassifierWorkerHub.add(socket);
@@ -295,6 +341,18 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.get(
+    '/bug-reports/worker-health',
+    { preHandler: [requireAuth, requireBugInboxRead] },
+    async (_request, reply) => {
+      try {
+        return reply.send({ data: await RequestClassifierWorkerHealthService.read(fastify) });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Read request classifier worker health failed');
+      }
+    }
+  );
+
   fastify.get('/bug-reports/:id', { preHandler: [requireAuth, requireBugInboxRead] }, async (request, reply) => {
     try {
       const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
@@ -442,6 +500,19 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       return sendError(fastify, reply, error, 'Request classifier heartbeat failed');
     }
   });
+
+  fastify.post(
+    '/request-classifier/health/heartbeat',
+    { bodyLimit: 8 * 1024, preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const result = await RequestClassifierWorkerHealthService.heartbeat(fastify, request.body);
+        return reply.send({ success: true, accepted: result.accepted, data: result.health });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Request classifier worker health heartbeat failed');
+      }
+    }
+  );
 
   fastify.post('/request-classifier/claim', { preHandler: [requireClassifierWorker] }, async (request, reply) => {
     try {
