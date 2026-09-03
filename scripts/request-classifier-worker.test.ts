@@ -53,12 +53,10 @@ test('builds a noninteractive Codex invocation with private structured output', 
 
 test('builds a write-enabled but noninteractive implementation command for an isolated worktree', () => {
   const args = buildCodexImplementationArgs('/tmp/schema.json', '/tmp/final.json', 'safe scope');
-  assert.deepEqual(args.slice(0, 9), [
+  assert.deepEqual(args.slice(0, 7), [
     'exec',
     '--ephemeral',
     '--ignore-user-config',
-    '--sandbox',
-    'workspace-write',
     '--approve-for-me',
     '--color',
     'never',

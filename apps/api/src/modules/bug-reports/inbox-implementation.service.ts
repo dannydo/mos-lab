@@ -97,15 +97,38 @@ export function isInboxImplementationEligible(source: GateSource): {
   };
 }
 
-function isCurrentExecution(source: GateSource, sourceVersion: string, planVersion: string): boolean {
+/**
+ * A retry of a job that already reached `start` keeps the ticket IN_PROGRESS.
+ * It still requires the exact recorded approval and native plan, but must not
+ * be mistaken for a new approval gate.
+ */
+export function isInboxImplementationExecutionEligible(source: GateSource): {
+  sourceVersion: string;
+  plan: CurrentPlan | null;
+  approved: boolean;
+  eligible: boolean;
+} {
+  const sourceVersion = inboxImplementationSourceVersion(source);
   const plan = inboxImplementationCurrentPlan(source, sourceVersion);
-  return (
-    ['APPROVED', 'IN_PROGRESS'].includes(source.status) &&
-    source.clarificationStatus === 'READY' &&
-    Boolean(source.priority) &&
-    source.implementationApprovalSourceVersion === sourceVersion &&
-    plan?.planVersion === planVersion
+  const approved = Boolean(
+    source.implementationApprovedAt && source.implementationApprovalSourceVersion === sourceVersion
   );
+  return {
+    sourceVersion,
+    plan,
+    approved,
+    eligible:
+      ['APPROVED', 'IN_PROGRESS'].includes(source.status) &&
+      source.clarificationStatus === 'READY' &&
+      Boolean(source.priority) &&
+      approved &&
+      Boolean(plan),
+  };
+}
+
+function isCurrentExecution(source: GateSource, sourceVersion: string, planVersion: string): boolean {
+  const gate = isInboxImplementationExecutionEligible(source);
+  return gate.eligible && gate.sourceVersion === sourceVersion && gate.plan?.planVersion === planVersion;
 }
 
 function safeBranchName(ticketKey: string, id: string): string {
@@ -369,6 +392,62 @@ export class InboxImplementationService {
     return queued;
   }
 
+  /**
+   * Repair only a retryable job that was incorrectly marked stale after its
+   * own `start` moved the report to IN_PROGRESS. This is an outbox recovery
+   * for the exact existing source/plan/job; it neither records approval nor
+   * creates a second worktree or job.
+   */
+  static async recoverInterruptedImplementationJobs(fastify: FastifyInstance): Promise<number> {
+    const reports = await fastify.prisma.crm.crmBugReport.findMany({
+      where: {
+        status: 'IN_PROGRESS',
+        priority: { not: null },
+        clarificationStatus: 'READY',
+        implementationApprovedAt: { not: null },
+        implementationActiveJobId: null,
+      },
+      include: implementationReportInclude(),
+      orderBy: { startedAt: 'asc' },
+      take: 20,
+    });
+    let restored = 0;
+    for (const report of reports) {
+      const gate = isInboxImplementationExecutionEligible(report);
+      if (!gate.eligible || !gate.plan) continue;
+      const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: {
+          reportId: report.id,
+          sourceVersion: gate.sourceVersion,
+          planVersion: gate.plan.planVersion,
+          status: 'STALE',
+          failureCode: 'STALE_APPROVAL_OR_PLAN',
+          attemptCount: { lt: RETRY_LIMIT },
+        },
+      });
+      if (!job) continue;
+      const recovered = await fastify.prisma.crm.$transaction(async (tx) => {
+        const reset = await tx.crmInboxImplementationJob.updateMany({
+          where: { id: job.id, status: 'STALE', failureCode: 'STALE_APPROVAL_OR_PLAN' },
+          data: { status: 'PENDING', failureCode: null, leaseToken: null, leasedBy: null, leaseExpiresAt: null },
+        });
+        if (!reset.count) return false;
+        const attached = await tx.crmBugReport.updateMany({
+          where: { id: report.id, implementationActiveJobId: null },
+          data: { implementationActiveJobId: job.id },
+        });
+        if (attached.count) return true;
+        await tx.crmInboxImplementationJob.updateMany({
+          where: { id: job.id, status: 'PENDING' },
+          data: { status: 'STALE', failureCode: 'ACTIVE_JOB_RACE' },
+        });
+        return false;
+      });
+      if (recovered) restored += 1;
+    }
+    return restored;
+  }
+
   static async claim(fastify: FastifyInstance, workerId: string): Promise<InboxImplementationWorkerJob | null> {
     const worker = safeWorkerId(workerId);
     const now = new Date();
@@ -396,7 +475,7 @@ export class InboxImplementationService {
       orderBy: { createdAt: 'asc' },
     });
     if (!job) return null;
-    const gate = isInboxImplementationEligible(job.report);
+    const gate = isInboxImplementationExecutionEligible(job.report);
     if (
       !gate.eligible ||
       !gate.plan ||

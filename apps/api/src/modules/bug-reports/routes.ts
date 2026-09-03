@@ -726,6 +726,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         if (await InboxImplementationService.recoverApprovedPlanEvents(fastify)) {
           RequestClassifierWorkerHub.notify('inbox_plan_available');
         }
+        await InboxImplementationService.recoverInterruptedImplementationJobs(fastify);
         return reply.send({ data: await InboxImplementationService.claim(fastify, workerId) });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox implementation claim failed');

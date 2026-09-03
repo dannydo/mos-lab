@@ -96,8 +96,8 @@ export function buildCodexImplementationArgs(schemaPath: string, outputPath: str
     'exec',
     '--ephemeral',
     '--ignore-user-config',
-    '--sandbox',
-    'workspace-write',
+    // `--approve-for-me` selects the workspace-write execution policy in the
+    // current CLI. Supplying both flags is rejected before Codex can start.
     '--approve-for-me',
     '--color',
     'never',

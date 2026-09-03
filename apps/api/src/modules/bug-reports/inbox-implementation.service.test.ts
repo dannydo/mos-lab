@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   InboxImplementationService,
   inboxImplementationCurrentPlan,
+  isInboxImplementationExecutionEligible,
   isInboxImplementationEligible,
   normalizeInboxImplementationResult,
 } from './inbox-implementation.service.js';
@@ -63,6 +64,10 @@ test('implementation requires a distinct approval and a native plan for the exac
   });
   assert.equal(isInboxImplementationEligible(changed).approved, false);
   assert.equal(isInboxImplementationEligible(changed).eligible, false);
+
+  const retrying = source({ status: 'IN_PROGRESS', inboxPlanJobs: ready.inboxPlanJobs });
+  assert.equal(isInboxImplementationEligible(retrying).eligible, false);
+  assert.equal(isInboxImplementationExecutionEligible(retrying).eligible, true);
 });
 
 test('implementation outcome stores only bounded structured review metadata', () => {
@@ -204,4 +209,53 @@ test('a database permit enforces global implementation concurrency and stale job
     },
   };
   assert.equal(await InboxImplementationService.claim(staleFastify as never, 'mac-worker'), null);
+});
+
+test('recovery reattaches only the exact stale in-progress job without a new approval or job', async () => {
+  const draft = source();
+  const sourceVersion = inboxImplementationSourceVersion(draft);
+  const report = source({
+    status: 'IN_PROGRESS',
+    implementationActiveJobId: null,
+    inboxPlanJobs: [
+      { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
+    ],
+  });
+  const job = {
+    id: 'job-1',
+    status: 'STALE',
+    failureCode: 'STALE_APPROVAL_OR_PLAN',
+    sourceVersion,
+    planVersion: 'v1:plan',
+  };
+  const tx = {
+    crmInboxImplementationJob: {
+      updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+        if (where.status === 'STALE' && job.status === 'STALE') {
+          job.status = String(data.status);
+          return { count: 1 };
+        }
+        return { count: 0 };
+      },
+    },
+    crmBugReport: {
+      updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+        Object.assign(report, data);
+        return { count: 1 };
+      },
+    },
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findMany: async () => [report] },
+        crmInboxImplementationJob: { findFirst: async () => ({ ...job, attemptCount: 2 }) },
+        $transaction: async (callback: (value: typeof tx) => Promise<boolean>) => callback(tx),
+      },
+    },
+  };
+
+  assert.equal(await InboxImplementationService.recoverInterruptedImplementationJobs(fastify as never), 1);
+  assert.equal(job.status, 'PENDING');
+  assert.equal(report.implementationActiveJobId, 'job-1');
 });
