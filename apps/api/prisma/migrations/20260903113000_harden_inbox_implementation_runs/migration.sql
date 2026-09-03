@@ -1,5 +1,5 @@
 ALTER TABLE `crm_inbox_implementation_jobs`
-  DROP INDEX `crm_inbox_implementation_jobs_report_source_plan_key`,
+  DROP INDEX `crm_inbox_implementation_jobs_report_id_source_version_plan__key`,
   ADD COLUMN `retry_of_job_id` VARCHAR(36) NULL AFTER `plan_version`,
   ADD COLUMN `retry_sequence` INTEGER NOT NULL DEFAULT 0 AFTER `retry_of_job_id`,
   ADD COLUMN `lease_heartbeat_at` DATETIME(0) NULL AFTER `lease_expires_at`,
