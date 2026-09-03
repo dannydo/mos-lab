@@ -9,6 +9,7 @@ import {
   type AgentUpdateBugProgressRequest,
   type ApproveBugReportImplementationRequest,
   type ApproveBugReportImplementationCommitRequest,
+  type ApproveBugReportImplementationDeployRequest,
   type ReleaseBugReportImplementationRequest,
   type ReviewBugReportImplementationAcceptanceRequest,
   type RetryBugReportImplementationRequest,
@@ -459,6 +460,31 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Approve inbox implementation commit failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/implementation-deploy-approval',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const body = request.body as ApproveBugReportImplementationDeployRequest;
+        if (body?.acknowledged !== true) {
+          throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi duyệt deploy.', 422);
+        }
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const deploymentQueued = await InboxImplementationService.approveDeploy(fastify, id, request.user.id);
+        if (deploymentQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
+        return reply.send({
+          success: true,
+          data: { reportId: id, deploymentQueued },
+          message: deploymentQueued
+            ? 'Đã ghi nhận duyệt deploy; worker Mac sẽ merge, push và chạy pipeline production cho đúng commit đã duyệt.'
+            : 'Duyệt deploy không được ghi nhận vì checkpoint đã thay đổi.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Approve inbox implementation deploy failed');
       }
     }
   );
@@ -939,6 +965,23 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true });
       } catch (error) {
         return sendError(fastify, reply, error, 'Complete inbox implementation commit failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-implementations/:id/deploy-complete',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as { leaseToken?: string };
+        await InboxImplementationService.completeDeployment(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || '')
+        );
+        return reply.send({ success: true });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Complete inbox implementation deploy failed');
       }
     }
   );

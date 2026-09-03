@@ -615,6 +615,63 @@ export class InboxImplementationService {
     return queued;
   }
 
+  /** Danny may authorize deployment only for the exact commit produced by the prior commit gate. */
+  static async approveDeploy(fastify: FastifyInstance, reportId: number, actorStaffId: number): Promise<boolean> {
+    const report = await fastify.prisma.crm.crmBugReport.findUnique({
+      where: { id: reportId },
+      include: implementationReportInclude(),
+    });
+    if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    const gate = isInboxImplementationExecutionEligible(report);
+    if (!gate.eligible || !gate.plan || !report.implementationActiveJobId) {
+      throw new InboxImplementationError(
+        'Ticket không còn ở checkpoint duyệt deploy hợp lệ.',
+        409,
+        'DEPLOY_NOT_ELIGIBLE'
+      );
+    }
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: {
+        id: report.implementationActiveJobId,
+        reportId,
+        status: 'AWAITING_DEPLOY_REVIEW',
+        sourceVersion: gate.sourceVersion,
+        planVersion: gate.plan.planVersion,
+      },
+    });
+    if (!job?.commitSha) {
+      throw new InboxImplementationError('Không có commit đã duyệt để deploy.', 409, 'DEPLOY_COMMIT_MISSING');
+    }
+    const now = new Date();
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      const updated = await tx.crmInboxImplementationJob.updateMany({
+        where: { id: job.id, status: 'AWAITING_DEPLOY_REVIEW', updatedAt: job.updatedAt },
+        data: {
+          status: 'PENDING',
+          executionPhase: 'DEPLOY_APPROVED',
+          failureCode: null,
+          leaseToken: null,
+          leasedBy: null,
+          leaseExpiresAt: null,
+          processPid: null,
+          updatedAt: now,
+        },
+      });
+      if (!updated.count) return false;
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'DANNY_DEPLOY_APPROVED',
+          note: 'Danny đã duyệt deploy. Worker Mac chỉ được merge commit đã ghi nhận, push main, chạy pipeline production và xác minh release marker.',
+          beforeJson: snapshot(report),
+          afterJson: snapshot({ ...report, comments: report.comments, inboxPlanJobs: report.inboxPlanJobs }),
+        },
+      });
+      return true;
+    });
+  }
+
   /**
    * Durable outbox recovery for a previously recorded Danny approval. This is
    * invoked by the existing worker claim/fallback path only; it never approves
@@ -852,6 +909,7 @@ export class InboxImplementationService {
           // attempt was the completed code/test run. It is still exactly one
           // separate fixed operation, not a retry of Codex execution.
           { executionPhase: 'COMMIT_APPROVED' },
+          { executionPhase: 'DEPLOY_APPROVED' },
           { attemptCount: { lt: 1 } },
           {
             retryOfJobId: null,
@@ -870,7 +928,12 @@ export class InboxImplementationService {
     });
     if (!job) return null;
     const gate = isInboxImplementationExecutionEligible(job.report);
-    const commitOperation = job.executionPhase === 'COMMIT_APPROVED';
+    const operation =
+      job.executionPhase === 'COMMIT_APPROVED'
+        ? 'COMMIT'
+        : job.executionPhase === 'DEPLOY_APPROVED'
+          ? 'DEPLOY'
+          : 'CODE_TEST';
     if (
       !gate.eligible ||
       !gate.plan ||
@@ -886,12 +949,15 @@ export class InboxImplementationService {
       return null;
     }
     const reviewedFiles = safeFileList(safeJsonValue(job.changedFilesJson));
-    if (commitOperation && (!reviewedFiles.length || !job.worktreePath)) {
+    if (
+      operation !== 'CODE_TEST' &&
+      (!reviewedFiles.length || !job.worktreePath || (operation === 'DEPLOY' && !job.commitSha))
+    ) {
       await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
-        where: { id: job.id, status: 'PENDING', executionPhase: 'COMMIT_APPROVED' },
+        where: { id: job.id, status: 'PENDING', executionPhase: { in: ['COMMIT_APPROVED', 'DEPLOY_APPROVED'] } },
         data: {
-          status: 'AWAITING_COMMIT_REVIEW',
-          executionPhase: 'AWAITING_COMMIT_REVIEW',
+          status: operation === 'DEPLOY' ? 'AWAITING_DEPLOY_REVIEW' : 'AWAITING_COMMIT_REVIEW',
+          executionPhase: operation === 'DEPLOY' ? 'AWAITING_DEPLOY_REVIEW' : 'AWAITING_COMMIT_REVIEW',
           failureCode: 'COMMIT_REVIEW_ARTIFACT_MISSING',
         },
       });
@@ -930,7 +996,7 @@ export class InboxImplementationService {
       sourceVersion: job.sourceVersion,
       planVersion: job.planVersion,
       branchName: job.branchName,
-      operation: commitOperation ? 'COMMIT' : 'CODE_TEST',
+      operation,
       reviewedFiles,
       retryOfJobId: job.retryOfJobId,
       context: {
@@ -1001,11 +1067,18 @@ export class InboxImplementationService {
           leaseExpiresAt: new Date(now.getTime() + LEASE_MS),
           leaseHeartbeatAt: now,
           processPid: pid,
-          executionPhase: job.executionPhase === 'COMMIT_APPROVED' ? 'COMMITTING' : 'CODEX_RUNNING',
+          executionPhase:
+            job.executionPhase === 'COMMIT_APPROVED'
+              ? 'COMMITTING'
+              : job.executionPhase === 'DEPLOY_APPROVED'
+                ? 'DEPLOYING'
+                : 'CODEX_RUNNING',
           progressLabel:
             job.executionPhase === 'COMMIT_APPROVED'
               ? 'Worker Mac đang tạo commit từ bản diff đã duyệt.'
-              : IMPLEMENTATION_PROGRESS_LABELS.CODEX_STARTED,
+              : job.executionPhase === 'DEPLOY_APPROVED'
+                ? 'Worker Mac đang merge và triển khai commit đã duyệt.'
+                : IMPLEMENTATION_PROGRESS_LABELS.CODEX_STARTED,
           lastProgressAt: now,
           progressCount: { increment: 1 },
         },
@@ -1337,6 +1410,54 @@ export class InboxImplementationService {
     await clearGlobalPermit(fastify, id);
   }
 
+  /** The worker may finish deploy only after production has been restarted with the merged main commit. */
+  static async completeDeployment(fastify: FastifyInstance, id: string, leaseToken: string): Promise<void> {
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: { id, status: 'RUNNING', executionPhase: 'DEPLOYING', leaseToken, leaseExpiresAt: { gt: new Date() } },
+      include: { report: { include: implementationReportInclude() } },
+    });
+    if (!job?.commitSha)
+      throw new InboxImplementationError('Lease deploy đã hết hạn hoặc thiếu commit đã duyệt.', 409, 'LEASE_EXPIRED');
+    if (!isCurrentExecution(job.report, job.sourceVersion, job.planVersion)) {
+      throw new InboxImplementationError(
+        'Approval hoặc plan không còn hiện hành khi deploy.',
+        409,
+        'STALE_BEFORE_RESULT'
+      );
+    }
+    const now = new Date();
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmInboxImplementationJob.update({
+        where: { id },
+        data: {
+          status: 'AWAITING_DEPLOY_REVIEW',
+          executionPhase: 'AWAITING_DEPLOY_REVIEW',
+          leaseToken: null,
+          leasedBy: null,
+          leaseExpiresAt: null,
+          processPid: null,
+          leaseHeartbeatAt: now,
+          completedAt: now,
+          failureCode: null,
+        },
+      });
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId: job.reportId,
+          action: 'AGENT_IMPLEMENTATION_DEPLOYED',
+          note: 'Worker đã hoàn tất pipeline deploy; server đang đối chiếu commit đã duyệt với release marker production trước khi bàn giao nghiệm thu.',
+          beforeJson: snapshot(job.report),
+          afterJson: snapshot(job.report),
+        },
+      });
+    });
+    await clearGlobalPermit(fastify, id);
+    await this.recordReleasedForReporterAcceptance(fastify, job.reportId, null, {
+      acknowledged: true,
+      commitSha: job.commitSha,
+    });
+  }
+
   /**
    * A deploy is a separate, Danny-controlled transition. The worker never calls
    * this method: it only moves a reviewed patch to reporter acceptance once the
@@ -1346,7 +1467,7 @@ export class InboxImplementationService {
   static async recordReleasedForReporterAcceptance(
     fastify: FastifyInstance,
     reportId: number,
-    actorStaffId: number,
+    actorStaffId: number | null,
     input: ReleaseBugReportImplementationRequest
   ): Promise<void> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
@@ -1442,9 +1563,11 @@ export class InboxImplementationService {
       await tx.crmBugReportAudit.create({
         data: {
           reportId,
-          actorStaffId,
+          ...(actorStaffId ? { actorStaffId } : {}),
           action: 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
-          note: `Danny đã xác nhận commit ${reviewedCommitSha.slice(0, 12)} đã có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
+          note: actorStaffId
+            ? `Danny đã xác nhận commit ${reviewedCommitSha.slice(0, 12)} đã có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`
+            : `Worker đã xác minh commit ${reviewedCommitSha.slice(0, 12)} có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
           beforeJson: snapshot(report),
           afterJson: snapshot({
             ...report,
@@ -1589,31 +1712,43 @@ export class InboxImplementationService {
     const code = clean(failureCode, 100) || 'IMPLEMENTATION_FAILED';
     const now = new Date();
     const commitFailure = job.executionPhase === 'COMMITTING';
+    const deployFailure = job.executionPhase === 'DEPLOYING';
     await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.update({
         where: { id },
         data: {
-          status: commitFailure ? 'AWAITING_COMMIT_REVIEW' : 'FAILED',
+          status: deployFailure ? 'AWAITING_DEPLOY_REVIEW' : commitFailure ? 'AWAITING_COMMIT_REVIEW' : 'FAILED',
           failureCode: code,
           leaseToken: null,
           leasedBy: null,
           leaseExpiresAt: null,
           processPid: null,
-          executionPhase: commitFailure ? 'AWAITING_COMMIT_REVIEW' : 'FAILED',
+          executionPhase: deployFailure
+            ? 'AWAITING_DEPLOY_REVIEW'
+            : commitFailure
+              ? 'AWAITING_COMMIT_REVIEW'
+              : 'FAILED',
           retainUntil: new Date(now.getTime() + FAILURE_RETENTION_MS),
         },
       });
       const updated = await tx.crmBugReport.update({
         where: { id: job.reportId },
-        data: commitFailure ? { updatedAt: now } : { status: 'APPROVED', statusSort: 0, updatedAt: now },
+        data:
+          commitFailure || deployFailure ? { updatedAt: now } : { status: 'APPROVED', statusSort: 0, updatedAt: now },
       });
       await tx.crmBugReportAudit.create({
         data: {
           reportId: job.reportId,
-          action: commitFailure ? 'AGENT_IMPLEMENTATION_COMMIT_FAILED' : 'AGENT_IMPLEMENTATION_FAILED',
-          note: commitFailure
-            ? 'Worker không thể commit an toàn. Bản review được giữ nguyên và ticket quay lại checkpoint duyệt commit.'
-            : 'Implementation worker đã dừng an toàn; giữ worktree để Danny rà soát và quyết định một retry liên kết nếu cần.',
+          action: deployFailure
+            ? 'AGENT_IMPLEMENTATION_DEPLOY_FAILED'
+            : commitFailure
+              ? 'AGENT_IMPLEMENTATION_COMMIT_FAILED'
+              : 'AGENT_IMPLEMENTATION_FAILED',
+          note: deployFailure
+            ? 'Worker không thể deploy an toàn. Commit đã duyệt được giữ nguyên và ticket quay lại checkpoint duyệt deploy.'
+            : commitFailure
+              ? 'Worker không thể commit an toàn. Bản review được giữ nguyên và ticket quay lại checkpoint duyệt commit.'
+              : 'Implementation worker đã dừng an toàn; giữ worktree để Danny rà soát và quyết định một retry liên kết nếu cần.',
           beforeJson: snapshot(job.report),
           afterJson: snapshot({
             ...job.report,

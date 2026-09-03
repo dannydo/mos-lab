@@ -46,8 +46,10 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
   'AWAITING_DANNY_IMPLEMENTATION_APPROVAL',
   'QUEUED_FOR_FIX',
   'QUEUED_FOR_COMMIT',
+  'QUEUED_FOR_DEPLOY',
   'IMPLEMENTING',
   'COMMITTING',
+  'DEPLOYING',
   'VERIFYING',
   'AWAITING_DANNY_COMMIT_REVIEW',
   'AWAITING_DANNY_DEPLOY_APPROVAL',
@@ -528,7 +530,7 @@ export interface InboxImplementationWorkerJob {
   sourceVersion: string;
   planVersion: string;
   branchName: string;
-  operation: 'CODE_TEST' | 'COMMIT';
+  operation: 'CODE_TEST' | 'COMMIT' | 'DEPLOY';
   reviewedFiles: string[];
   retryOfJobId: string | null;
   context: {
@@ -765,6 +767,11 @@ export interface ApproveBugReportImplementationCommitRequest {
   acknowledged: true;
 }
 
+/** Explicit Danny authorization to merge and deploy the recorded implementation commit. */
+export interface ApproveBugReportImplementationDeployRequest {
+  acknowledged: true;
+}
+
 /** A separate, bounded Danny authorization to create one linked retry after a terminal failure. */
 export interface RetryBugReportImplementationRequest {
   acknowledged: true;
@@ -796,6 +803,11 @@ export interface ApproveBugReportImplementationResult {
 export interface ApproveBugReportImplementationCommitResult {
   reportId: number;
   commitQueued: boolean;
+}
+
+export interface ApproveBugReportImplementationDeployResult {
+  reportId: number;
+  deploymentQueued: boolean;
 }
 
 export interface ConfirmCloseBugReportRequest {
@@ -862,6 +874,7 @@ export type CreateBugReportResponse = ActionResponse<BugReportCreateResult>;
 export type TriageBugReportResponse = ActionResponse<BugReportDetail>;
 export type ApproveBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ApproveBugReportImplementationCommitResponse = ActionResponse<ApproveBugReportImplementationCommitResult>;
+export type ApproveBugReportImplementationDeployResponse = ActionResponse<ApproveBugReportImplementationDeployResult>;
 export type RetryBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ReleaseBugReportImplementationResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportImplementationAcceptanceResponse = ActionResponse<BugReportDetail>;

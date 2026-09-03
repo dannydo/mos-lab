@@ -23,6 +23,7 @@ import type {
   BugReportClarificationFilter,
   BugReportDetail,
   ApproveBugReportImplementationResult,
+  ApproveBugReportImplementationDeployResult,
   BugReportCommentCreateResult,
   BugReportRequestType,
   BugReportStatus,
@@ -94,8 +95,8 @@ interface DetailDrawerProps {
   triage: (id: number, request: TriageBugReportRequest) => Promise<BugReportDetail>;
   approveImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
   approveImplementationCommit: (id: number) => Promise<{ reportId: number; commitQueued: boolean }>;
+  approveImplementationDeploy: (id: number) => Promise<ApproveBugReportImplementationDeployResult>;
   retryImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
-  releaseImplementation: (id: number) => Promise<BugReportDetail>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -108,8 +109,8 @@ function DetailDrawer({
   triage,
   approveImplementation,
   approveImplementationCommit,
+  approveImplementationDeploy,
   retryImplementation,
-  releaseImplementation,
   confirmClose,
   comment,
   canTriage,
@@ -294,23 +295,28 @@ function DetailDrawer({
     }
   }, [approveImplementationCommit, detail, getDetail, hydrateForm, messageApi]);
 
-  const handOffReleasedImplementation = useCallback(async () => {
+  const approveDeploy = useCallback(async () => {
     if (!detail) return;
     setSaving(true);
     try {
-      const released = await releaseImplementation(detail.id);
-      hydrateForm(released);
-      messageApi.success('Đã xác minh commit đang chạy; ticket đang chờ người báo nghiệm thu.');
+      const outcome = await approveImplementationDeploy(detail.id);
+      if (!outcome.deploymentQueued) throw new Error('Checkpoint deploy đã thay đổi. Vui lòng tải lại ticket.');
+      void getDetail(outcome.reportId)
+        .then(hydrateForm)
+        .catch(() => undefined);
+      messageApi.success(
+        'Đã duyệt deploy. Worker Mac sẽ merge, push, chạy pipeline production và tự xác minh release.'
+      );
     } catch (error) {
       const responseMessage =
         error && typeof error === 'object' && 'response' in error
           ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể ghi nhận release.'));
+      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt deploy.'));
     } finally {
       setSaving(false);
     }
-  }, [detail, hydrateForm, messageApi, releaseImplementation]);
+  }, [approveImplementationDeploy, detail, getDetail, hydrateForm, messageApi]);
 
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
@@ -401,14 +407,14 @@ function DetailDrawer({
               )}
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL' && (
                 <Popconfirm
-                  title="Xác nhận bản commit đã merge và deploy?"
-                  description="Inbox sẽ tự dùng commit worker đã ghi nhận và đối chiếu với release production. Ticket không tự đóng."
-                  okText="Xác minh & bàn giao"
-                  cancelText="Chưa xác nhận"
-                  onConfirm={() => void handOffReleasedImplementation()}
+                  title="Duyệt deploy commit đã review?"
+                  description="Worker Mac sẽ merge đúng commit vào main, push, chạy pipeline production và chỉ bàn giao khi release marker khớp."
+                  okText="Duyệt deploy"
+                  cancelText="Chưa duyệt"
+                  onConfirm={() => void approveDeploy()}
                 >
                   <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                    Xác nhận đã deploy
+                    Duyệt deploy
                   </Button>
                 </Popconfirm>
               )}
@@ -978,8 +984,8 @@ export default function BugReportsPage() {
         triage={inbox.triage}
         approveImplementation={inbox.approveImplementation}
         approveImplementationCommit={inbox.approveImplementationCommit}
+        approveImplementationDeploy={inbox.approveImplementationDeploy}
         retryImplementation={inbox.retryImplementation}
-        releaseImplementation={inbox.releaseImplementation}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}

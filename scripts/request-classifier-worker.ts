@@ -77,6 +77,9 @@ export type CodexCliFailureCode =
   | 'LEASE_RENEW_FAILED'
   | 'CODEX_OUTPUT_MISSING'
   | 'FORBIDDEN_GIT_MUTATION'
+  | 'DEPLOY_MERGE_CONFLICT'
+  | 'DEPLOY_PUSH_FAILED'
+  | 'DEPLOY_PIPELINE_FAILED'
   | `CODEX_EXEC_EXIT_${number}`;
 
 class CodexCliError extends Error {
@@ -140,6 +143,10 @@ export function implementationWorktreeRoot(workspace: string): string {
   return resolve(workspace, '..', '.mos-inbox-worktrees');
 }
 
+function implementationDeploymentWorktreeRoot(workspace: string): string {
+  return resolve(workspace, '..', '.mos-inbox-deployments');
+}
+
 function configuredWorkspace(): string {
   // Resolve from this trusted repository script, not launchd's cwd or ticket data.
   return resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -182,6 +189,51 @@ async function createOrReuseImplementationWorktree(job: InboxImplementationWorke
   await runTrustedGit(['worktree', 'add', '-b', job.branchName, worktreePath, 'HEAD'], workspace);
   await installWorktreeDependencies(worktreePath);
   return worktreePath;
+}
+
+async function createOrReuseDeploymentWorktree(job: InboxImplementationWorkerJob): Promise<string> {
+  const workspace = await realpath(configuredWorkspace());
+  const gitRoot = await realpath(await runTrustedGit(['rev-parse', '--show-toplevel'], workspace));
+  if (gitRoot !== workspace) throw new Error('TRUSTED_WORKSPACE_INVALID');
+  const root = implementationDeploymentWorktreeRoot(workspace);
+  const worktreePath = join(root, job.id);
+  const branchName = `codex/inbox-deploy-${job.id.slice(0, 8)}`;
+  await mkdir(root, { recursive: true, mode: 0o700 });
+  try {
+    await stat(worktreePath);
+    const existingRoot = await realpath(await runTrustedGit(['rev-parse', '--show-toplevel'], worktreePath));
+    const existingBranch = await runTrustedGit(['branch', '--show-current'], worktreePath);
+    if (existingRoot !== (await realpath(worktreePath)) || existingBranch !== branchName) {
+      throw new Error('WORKTREE_IDENTITY_MISMATCH');
+    }
+    return worktreePath;
+  } catch (error) {
+    if (!(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'ENOENT')) {
+      if (error instanceof Error && ['WORKTREE_IDENTITY_MISMATCH', 'TRUSTED_WORKSPACE_INVALID'].includes(error.message))
+        throw error;
+      if (existsSync(worktreePath)) throw new Error('WORKTREE_REUSE_FAILED');
+    }
+  }
+  await runTrustedGit(['fetch', 'origin', 'main'], workspace);
+  await runTrustedGit(['worktree', 'add', '-b', branchName, worktreePath, 'origin/main'], workspace);
+  return worktreePath;
+}
+
+async function runTrustedProductionDeploy(worktreePath: string): Promise<void> {
+  try {
+    await execFileAsync(
+      '/usr/bin/ssh',
+      ['-o', 'BatchMode=yes', 'live-wings', 'bash /home/web/mos-lab/scripts/deploy-production.sh'],
+      {
+        cwd: worktreePath,
+        encoding: 'utf8',
+        timeout: 12 * 60 * 1000,
+        maxBuffer: 64 * 1024,
+      }
+    );
+  } catch {
+    throw new CodexCliError('DEPLOY_PIPELINE_FAILED');
+  }
 }
 
 /**
@@ -1137,7 +1189,67 @@ async function processInboxImplementationOne(): Promise<boolean> {
   const outputPath = () => join(worktreePath, '.mos-inbox-implementation-output.json');
   try {
     phase = 'worktree';
-    worktreePath = await createOrReuseImplementationWorktree(job);
+    worktreePath =
+      job.operation === 'DEPLOY'
+        ? await createOrReuseDeploymentWorktree(job)
+        : await createOrReuseImplementationWorktree(job);
+    if (job.operation === 'DEPLOY') {
+      phase = 'deploy_start';
+      activeProcessId = process.pid;
+      const startedResponse = await workerFetch(`/request-classifier/inbox-implementations/${job.id}/start`, {
+        method: 'POST',
+        body: JSON.stringify({
+          leaseToken: job.leaseToken,
+          workerId,
+          worktreePath,
+          processId: activeProcessId,
+        }),
+      });
+      if (!((await startedResponse.json()) as { data?: { started?: boolean } }).data?.started) {
+        throw new CodexCliError('LEASE_START_FAILED');
+      }
+      started = true;
+      beginWorkerJob('INBOX_IMPLEMENTATION');
+      if ((await runTrustedGit(['rev-parse', job.branchName], worktreePath)) !== job.commitSha) {
+        throw new CodexCliError('FORBIDDEN_GIT_MUTATION');
+      }
+      phase = 'deploy_merge';
+      try {
+        await runTrustedGit(['merge', '--no-ff', '--no-commit', job.branchName], worktreePath);
+      } catch {
+        await runTrustedGit(['merge', '--abort'], worktreePath).catch(() => undefined);
+        throw new CodexCliError('DEPLOY_MERGE_CONFLICT');
+      }
+      await runTrustedGit(['diff', '--check'], worktreePath);
+      await runTrustedGit(
+        [
+          '-c',
+          'user.name=mOS Inbox Deploy Worker',
+          '-c',
+          'user.email=mos-inbox-deploy@localhost',
+          'commit',
+          '-m',
+          `deploy(inbox): ${job.ticketKey}`,
+        ],
+        worktreePath
+      );
+      phase = 'deploy_push';
+      try {
+        await runTrustedGit(['push', 'origin', 'HEAD:main'], worktreePath);
+      } catch {
+        throw new CodexCliError('DEPLOY_PUSH_FAILED');
+      }
+      phase = 'deploy_pipeline';
+      await runTrustedProductionDeploy(worktreePath);
+      phase = 'deploy_complete';
+      await workerFetch(`/request-classifier/inbox-implementations/${job.id}/deploy-complete`, {
+        method: 'POST',
+        body: JSON.stringify({ leaseToken: job.leaseToken }),
+      });
+      console.log('Inbox implementation deployed and verified; awaiting reporter acceptance.');
+      finishWorkerJob('INBOX_IMPLEMENTATION', 'SUCCEEDED', 'INFO', 'AWAITING_REPORTER_ACCEPTANCE');
+      return true;
+    }
     if (job.operation === 'COMMIT') {
       phase = 'commit_start';
       activeProcessId = process.pid;

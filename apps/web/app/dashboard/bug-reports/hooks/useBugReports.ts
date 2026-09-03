@@ -7,6 +7,7 @@ import type {
   BugReportDetail,
   ApproveBugReportImplementationResult,
   ApproveBugReportImplementationCommitResult,
+  ApproveBugReportImplementationDeployResult,
   BugReportListSummary,
   BugReportNextActor,
   BugReportRequestType,
@@ -247,6 +248,17 @@ export function useBugReports() {
     [load]
   );
 
+  const approveImplementationDeploy = useCallback(
+    async (id: number): Promise<ApproveBugReportImplementationDeployResult> => {
+      const response = await apiClient.bugReports.approveImplementationDeploy(id, { acknowledged: true });
+      if (!response.data) throw new Error('Máy chủ không trả về trạng thái duyệt deploy.');
+      void load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
+      return response.data;
+    },
+    [load]
+  );
+
   const releaseImplementation = useCallback(
     async (id: number): Promise<BugReportDetail> => {
       const response = await apiClient.bugReports.releaseImplementation(id, { acknowledged: true });
@@ -294,6 +306,7 @@ export function useBugReports() {
     triage,
     approveImplementation,
     approveImplementationCommit,
+    approveImplementationDeploy,
     retryImplementation,
     releaseImplementation,
     confirmClose,
