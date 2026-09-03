@@ -40,7 +40,19 @@ export const MENU_ACCESS_CATEGORY_DEFINITIONS: readonly MenuAccessCategoryDefini
     key: 'operations',
     label: 'Vận hành cuộc gọi',
     menuGroupKeys: ['operations'],
-    description: 'Kế hoạch gọi, OmiCall, QA/QC và FAL.',
+    description: 'Kế hoạch gọi, lịch sử gọi và OmiCall.',
+  },
+  {
+    key: 'quality',
+    label: 'QA / QC',
+    menuGroupKeys: ['quality'],
+    description: 'Kiểm tra chất lượng shop, chuyên viên và trải nghiệm khách hàng.',
+  },
+  {
+    key: 'schedule',
+    label: 'Nhân sự & lịch làm việc',
+    menuGroupKeys: ['schedule'],
+    description: 'Lịch nghỉ lễ và các lịch vận hành nhân sự.',
   },
   { key: 'reports', label: 'Báo cáo & KPI', menuGroupKeys: ['reports'], description: 'KPI, Báo cáo CC, CV và BK.' },
   {
@@ -214,16 +226,23 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
   {
     key: 'qa-shop',
     label: 'QA & QC Shop',
-    groupKey: 'operations',
-    groupLabel: 'Vận hành cuộc gọi',
+    groupKey: 'quality',
+    groupLabel: 'QA / QC',
     path: '/dashboard/qa-shop',
   },
   {
     key: 'fal-control-tower',
     label: 'FAL Control Tower',
-    groupKey: 'operations',
-    groupLabel: 'Vận hành cuộc gọi',
+    groupKey: 'quality',
+    groupLabel: 'QA / QC',
     path: '/dashboard/fal',
+  },
+  {
+    key: 'holiday-work',
+    label: 'Lịch nghỉ lễ',
+    groupKey: 'schedule',
+    groupLabel: 'Nhân sự & lịch làm việc',
+    path: '/dashboard/holiday-work',
   },
 
   { key: 'kpi', label: 'KPI hiệu suất', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/kpi' },

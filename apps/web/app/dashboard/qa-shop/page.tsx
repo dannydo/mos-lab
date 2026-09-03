@@ -179,56 +179,17 @@ export default function QaShopPage() {
     >
   >({});
 
-  // Helper to read logged-in user profile from localStorage
-  const getLoggedInUser = useCallback(() => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const mosUser = localStorage.getItem('mos_user');
-      if (mosUser) return JSON.parse(mosUser);
-      const u = localStorage.getItem('user');
-      if (u) return JSON.parse(u);
-    } catch (_) {}
-    return null;
-  }, []);
-
-  // Fetch REAL QA & QC Staff List from MOS system DB and auto-select logged-in user
+  // The auditor list follows the QA/QC Shop roster, rather than broad CRM role
+  // matching. This prevents an unrelated manager or staff member from being
+  // recorded as the QA auditor.
   const fetchQaStaffList = useCallback(async () => {
     try {
-      const allStaff = await apiClient.staff.list();
-      const loggedUser = getLoggedInUser();
-      const loggedUserName = loggedUser?.displayName || loggedUser?.name || loggedUser?.username || '';
-
-      // Filter active staff members from MOS database
-      let activeStaff = Array.isArray(allStaff)
-        ? allStaff.filter((s: SafeAny) => s.isActive !== false && s.isActive !== 0)
-        : [];
-
-      // Filter staff with role QA, QC, QA_QC, Admin, Manager
-      const qaRoles = ['qa', 'qc', 'qa_qc', 'admin', 'manager'];
-      let targetStaff = activeStaff.filter((s: SafeAny) => {
-        const r = (s.role || '').toLowerCase();
-        return qaRoles.some((qr) => r.includes(qr));
-      });
-
-      // If no QA/QC role filter match, use all active system staff
-      if (targetStaff.length === 0) {
-        targetStaff = activeStaff;
-      }
-
-      const realList = targetStaff.map((s: SafeAny) => ({
-        id: String(s.id || s.username),
-        displayName: s.displayName || s.name || s.username,
-        role: s.role || 'staff',
+      const detail = await apiClient.teams.getByCode('QA_QC_SHOP');
+      const realList = detail.members.map((member) => ({
+        id: String(member.crmStaffId || member.staffId),
+        displayName: member.displayName,
+        role: member.role || 'qa_qc',
       }));
-
-      // Ensure logged-in user is at top of list if present
-      if (loggedUserName && !realList.some((c) => c.displayName.toLowerCase() === loggedUserName.toLowerCase())) {
-        realList.unshift({
-          id: String(loggedUser?.id || 'logged-user'),
-          displayName: loggedUserName,
-          role: loggedUser?.role || 'admin',
-        });
-      }
 
       // Deduplicate by displayName per Rule #20
       const seen = new Set<string>();
@@ -241,17 +202,17 @@ export default function QaShopPage() {
 
       setQaStaffList(deduplicated);
 
-      // Auto-select logged-in user if available, else first real staff
-      if (loggedUserName && deduplicated.some((d) => d.displayName.toLowerCase() === loggedUserName.toLowerCase())) {
-        const matched = deduplicated.find((d) => d.displayName.toLowerCase() === loggedUserName.toLowerCase());
-        if (matched) setAuditorName(matched.displayName);
-      } else if (deduplicated.length > 0) {
+      if (deduplicated.length > 0) {
         setAuditorName(deduplicated[0].displayName);
+      } else {
+        setAuditorName('');
       }
     } catch (err) {
       console.error('Fetch QA staff error:', err);
+      setQaStaffList([]);
+      setAuditorName('');
     }
-  }, [getLoggedInUser]);
+  }, []);
 
   useEffect(() => {
     fetchQaStaffList();

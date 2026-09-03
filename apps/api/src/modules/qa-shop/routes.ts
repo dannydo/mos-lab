@@ -2,8 +2,11 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
 import { qaShopService } from './qa-shop.service.js';
 import { QaChecklistSection, QaShopBranchCode, QaImportSheetInput, QaSaveAuditInput } from '@mos-lab/shared';
+import { requireQaShopAccess } from './qa-shop-access.js';
 
 export async function qaShopRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', requireQaShopAccess);
+
   // 1. Get Templates List
   fastify.get(
     '/qa-shop/templates',

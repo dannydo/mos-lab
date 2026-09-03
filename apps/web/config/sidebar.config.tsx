@@ -187,6 +187,7 @@ export function getSidebarGroups(
     path: '/dashboard/cs',
   });
 
+  // This is customer booking work, not internal staff scheduling.
   crmGroupItems.push({
     key: 'my-appointments',
     label: 'Lịch hẹn của tôi',
@@ -283,6 +284,8 @@ export function getSidebarGroups(
     items: academyItems,
   };
 
+  // Keep call work separate from quality governance and staff scheduling so
+  // each sidebar group answers one operating question.
   // Group 4: VẬN HÀNH CUỘC GỌI
   const operationsItems: SidebarItemConfig[] = [
     {
@@ -303,6 +306,17 @@ export function getSidebarGroups(
       icon: <AudioOutlined />,
       path: '/dashboard/omicall',
     },
+  ];
+
+  const operationsGroup: SidebarGroupConfig = {
+    groupKey: 'grp-operations',
+    groupTitle: 'VẬN HÀNH CUỘC GỌI',
+    items: operationsItems,
+  };
+
+  // Group 5: QA/QC. New assessment surfaces for staff and lash technicians
+  // belong here as they are introduced; this remains distinct from call work.
+  const qualityItems: SidebarItemConfig[] = [
     {
       key: 'qa-shop',
       label: 'QA & QC Shop',
@@ -312,7 +326,7 @@ export function getSidebarGroups(
   ];
 
   if (['admin', 'manager', 'oc', 'cc'].includes(normalizedRole)) {
-    operationsItems.push({
+    qualityItems.push({
       key: 'fal-control-tower',
       label: 'FAL Control Tower',
       icon: <SafetyCertificateOutlined />,
@@ -320,20 +334,27 @@ export function getSidebarGroups(
     });
   }
 
-  operationsItems.push({
-    key: 'holiday-work',
-    label: 'Lịch nghỉ lễ',
-    icon: <AppIcon icon={CalendarClock} size="sm" />,
-    path: '/dashboard/holiday-work',
-  });
-
-  const operationsGroup: SidebarGroupConfig = {
-    groupKey: 'grp-operations',
-    groupTitle: 'VẬN HÀNH CUỘC GỌI',
-    items: operationsItems,
+  const qualityGroup: SidebarGroupConfig = {
+    groupKey: 'grp-quality',
+    groupTitle: 'QA / QC',
+    items: qualityItems,
   };
 
-  // Group 5: BÁO CÁO & KPI
+  // Group 6: NHÂN SỰ & LỊCH LÀM VIỆC
+  const scheduleGroup: SidebarGroupConfig = {
+    groupKey: 'grp-schedule',
+    groupTitle: 'NHÂN SỰ & LỊCH LÀM VIỆC',
+    items: [
+      {
+        key: 'holiday-work',
+        label: 'Lịch nghỉ lễ',
+        icon: <AppIcon icon={CalendarClock} size="sm" />,
+        path: '/dashboard/holiday-work',
+      },
+    ],
+  };
+
+  // Group 7: BÁO CÁO & KPI
   const reportsGroup: SidebarGroupConfig = {
     groupKey: 'grp-reports',
     groupTitle: 'BÁO CÁO & KPI',
@@ -365,7 +386,7 @@ export function getSidebarGroups(
     ],
   };
 
-  // Group 6: QUẢN TRỊ HỆ THỐNG (Only for Admin)
+  // Group 8: QUẢN TRỊ HỆ THỐNG (Only for Admin)
   const systemGroupItems: SidebarItemConfig[] = [];
   if (isAdmin) {
     const staffChildren: SidebarItemConfig[] = [
@@ -437,7 +458,7 @@ export function getSidebarGroups(
   if (academyItems.length > 0) {
     groups.push(academyGroup);
   }
-  groups.push(operationsGroup, reportsGroup);
+  groups.push(operationsGroup, qualityGroup, scheduleGroup, reportsGroup);
   if (systemGroupItems.length > 0) {
     groups.push(systemGroup);
   }
