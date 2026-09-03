@@ -48,10 +48,17 @@ test('plans only tickets genuinely ready for review and versions each source eve
   assert.equal(isInboxPlanEligible(readyReport({ clarificationStatus: 'PENDING_AGENT' })), false);
   assert.equal(isInboxPlanEligible(readyReport({ status: 'IN_PROGRESS' })), false);
   assert.equal(isInboxPlanEligible(readyReport({ status: 'CLOSED' })), false);
-  const version = inboxPlanEventVersion(readyReport());
+  const version = inboxPlanEventVersion(readyReport(), 'CLARITY_READY');
   assert.match(version, /^v1:[a-f0-9]{64}$/);
-  assert.equal(isInboxPlanStale(version, readyReport()), false);
-  assert.equal(isInboxPlanStale(version, readyReport({ description: 'Reporter added a material update.' })), true);
+  assert.equal(isInboxPlanStale(version, readyReport(), 'CLARITY_READY'), false);
+  assert.equal(
+    isInboxPlanStale(version, readyReport({ description: 'Reporter added a material update.' }), 'CLARITY_READY'),
+    true
+  );
+  assert.notEqual(
+    inboxPlanEventVersion(readyReport(), 'CLARITY_READY'),
+    inboxPlanEventVersion(readyReport(), 'IMPLEMENTATION_APPROVAL')
+  );
 });
 
 test('normalizes only a complete actionable plan and distinguishes no-op outcomes', () => {
@@ -74,28 +81,29 @@ test('normalizes only a complete actionable plan and distinguishes no-op outcome
 
 test('duplicate event delivery is idempotent at the durable enqueue boundary', async () => {
   const report = readyReport();
-  let creates = 0;
+  const delivered = new Set<string>();
   const fastify = {
     prisma: {
       crm: {
         crmBugReport: { findUnique: async () => report },
         crmInboxPlanJob: {
-          create: async () => {
-            creates += 1;
-            if (creates > 1) throw Object.assign(new Error('unique event key'), { code: 'P2002' });
+          create: async ({ data }: { data: { eventVersion: string } }) => {
+            if (delivered.has(data.eventVersion)) throw Object.assign(new Error('unique event key'), { code: 'P2002' });
+            delivered.add(data.eventVersion);
           },
         },
       },
     },
   };
   assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'CLARITY_READY'), true);
-  assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'TRIAGE_UPDATED'), false);
-  assert.equal(creates, 2);
+  assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'CLARITY_READY'), false);
+  assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'TRIAGE_UPDATED'), true);
+  assert.equal(delivered.size, 2);
 });
 
 test('a completed plan posts one visible native plan without changing implementation state', async () => {
   const report = readyReport();
-  const eventVersion = inboxPlanEventVersion(report);
+  const eventVersion = inboxPlanEventVersion(report, 'CLARITY_READY');
   const comments: Array<Record<string, unknown>> = [];
   const audits: Array<Record<string, unknown>> = [];
   const reportUpdates: Array<Record<string, unknown>> = [];
@@ -147,7 +155,7 @@ test('a completed plan posts one visible native plan without changing implementa
 
 test('a stale claimed result is completed without a duplicate native plan', async () => {
   const current = readyReport({ description: 'Reporter submitted a newer material fact.' });
-  const staleEventVersion = inboxPlanEventVersion(readyReport());
+  const staleEventVersion = inboxPlanEventVersion(readyReport(), 'CLARITY_READY');
   const comments: Array<Record<string, unknown>> = [];
   const jobUpdates: Array<Record<string, unknown>> = [];
   const fastify = {

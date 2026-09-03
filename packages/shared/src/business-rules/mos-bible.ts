@@ -613,6 +613,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Codex CLI chỉ được chạy code/test sau phê duyệt implementation riêng của Danny, trong worktree tách biệt và theo đúng source/plan version; kết quả luôn dừng tại review commit.',
     commandments: [
       'APPROVED triage không tự là quyền chạy code: Danny phải thực hiện hành động Duyệt code/test riêng, ticket phải READY, có priority và có native plan khớp source version.',
+      'Approval event được lưu bền và idempotent theo source + event kind; worker fallback chỉ phục hồi delivery của approval đã có, không tạo quyền duyệt hoặc ticket scheduler mới.',
       'Mỗi implementation job có lease, idempotency theo source/plan version, một active job mỗi ticket và một permit build toàn cục mặc định cho Mac worker.',
       'Worker chỉ dùng worktree/branch riêng từ workspace tin cậy; không sửa primary checkout, không commit, push, merge, deploy, migration hay sửa production.',
       'Chỉ khi CLI thật sự bắt đầu ticket mới chuyển sang IMPLEMENTING. Kết quả thành công phải ghi native review gồm diff/file/test/risk đã lọc và chuyển sang chờ Danny duyệt commit.',
@@ -627,12 +628,16 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.0.0',
+    version: '1.1.0',
     effectiveFrom: '2026-09-03',
     sources: [
       {
         label: 'Implementation gate and durable job',
         reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
+      },
+      {
+        label: 'Versioned native-plan event and outbox retry',
+        reference: 'apps/api/src/modules/bug-reports/inbox-plan.service.ts',
       },
       { label: 'Outbound isolated-worktree worker', reference: 'scripts/request-classifier-worker.ts' },
     ],

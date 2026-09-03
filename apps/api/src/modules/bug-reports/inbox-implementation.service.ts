@@ -7,6 +7,7 @@ import {
   type InboxImplementationWorkerResult,
 } from '@mos-lab/shared';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
+import { InboxPlanService } from './inbox-plan.service.js';
 
 const LEASE_MS = 12 * 60 * 1000;
 const RETRY_LIMIT = 3;
@@ -338,6 +339,34 @@ export class InboxImplementationService {
       if (error && typeof error === 'object' && (error as { code?: string }).code === 'P2002') return false;
       throw error;
     }
+  }
+
+  /**
+   * Durable outbox recovery for a previously recorded Danny approval. This is
+   * invoked by the existing worker claim/fallback path only; it never approves
+   * a ticket or starts code, and it is idempotent per source + event kind.
+   */
+  static async recoverApprovedPlanEvents(fastify: FastifyInstance): Promise<number> {
+    const reports = await fastify.prisma.crm.crmBugReport.findMany({
+      where: {
+        status: 'APPROVED',
+        priority: { not: null },
+        clarificationStatus: 'READY',
+        implementationApprovedAt: { not: null },
+        implementationActiveJobId: null,
+      },
+      include: implementationReportInclude(),
+      orderBy: { implementationApprovedAt: 'asc' },
+      take: 20,
+    });
+    let queued = 0;
+    for (const report of reports) {
+      const sourceVersion = inboxImplementationSourceVersion(report);
+      if (report.implementationApprovalSourceVersion !== sourceVersion) continue;
+      if (inboxImplementationCurrentPlan(report, sourceVersion)) continue;
+      if (await InboxPlanService.enqueue(fastify, report.id, 'IMPLEMENTATION_APPROVAL')) queued += 1;
+    }
+    return queued;
   }
 
   static async claim(fastify: FastifyInstance, workerId: string): Promise<InboxImplementationWorkerJob | null> {

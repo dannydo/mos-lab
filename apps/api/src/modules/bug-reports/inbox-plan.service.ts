@@ -58,10 +58,11 @@ export function isInboxPlanEligible(source: PlanningSource): boolean {
   return source.clarificationStatus === 'READY' && ['NEW', 'APPROVED'].includes(source.status);
 }
 
-export function inboxPlanEventVersion(source: EventVersionSource): string {
+export function inboxPlanEventVersion(source: EventVersionSource, eventKind?: InboxPlanEventKind): string {
   // Deliberately exclude operational audit/progress timestamps: they should not
   // invalidate a plan whose material ticket context is unchanged.
   const content = JSON.stringify({
+    eventKind: eventKind ?? null,
     requestType: source.requestType,
     title: source.title,
     description: source.description,
@@ -77,8 +78,12 @@ export function inboxPlanEventVersion(source: EventVersionSource): string {
   return `v1:${createHash('sha256').update(content).digest('hex')}`;
 }
 
-export function isInboxPlanStale(expectedEventVersion: string, current: EventVersionSource): boolean {
-  return expectedEventVersion !== inboxPlanEventVersion(current);
+export function isInboxPlanStale(
+  expectedEventVersion: string,
+  current: EventVersionSource,
+  eventKind?: InboxPlanEventKind
+): boolean {
+  return expectedEventVersion !== inboxPlanEventVersion(current, eventKind);
 }
 
 function normalizeDraft(value: unknown): InboxPlanDraft {
@@ -193,7 +198,7 @@ export class InboxPlanService {
   static async enqueue(fastify: FastifyInstance, reportId: number, eventKind: InboxPlanEventKind): Promise<boolean> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
-      include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 3 } },
+      include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 8 } },
     });
     if (!report || !isInboxPlanEligible(report)) return false;
     try {
@@ -202,7 +207,7 @@ export class InboxPlanService {
           id: randomUUID(),
           reportId,
           eventKind,
-          eventVersion: inboxPlanEventVersion(report),
+          eventVersion: inboxPlanEventVersion(report, eventKind),
           expiresAt: new Date(Date.now() + TTL),
         },
       });
@@ -232,14 +237,17 @@ export class InboxPlanService {
         include: {
           report: {
             include: {
-              comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 3 },
+              comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 8 },
             },
           },
         },
         orderBy: { createdAt: 'asc' },
       });
       if (!job) return null;
-      if (!isInboxPlanEligible(job.report) || isInboxPlanStale(job.eventVersion, job.report)) {
+      if (
+        !isInboxPlanEligible(job.report) ||
+        isInboxPlanStale(job.eventVersion, job.report, job.eventKind as InboxPlanEventKind)
+      ) {
         await fastify.prisma.crm.crmInboxPlanJob.updateMany({
           where: { id: job.id, status: 'PENDING', updatedAt: job.updatedAt },
           data: {
@@ -299,7 +307,7 @@ export class InboxPlanService {
     if (!job) throw new InboxPlanError('Lease đã hết hạn.', 409);
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: job.reportId },
-      include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 3 } },
+      include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 8 } },
     });
     if (!report) throw new InboxPlanError('Ticket không còn tồn tại.', 404, 'BUG_NOT_FOUND');
     const completeAsStale = async () => {
@@ -316,7 +324,10 @@ export class InboxPlanService {
       });
       if (!stale.count) throw new InboxPlanError('Lease đã hết hạn.', 409);
     };
-    if (!isInboxPlanEligible(report) || isInboxPlanStale(job.eventVersion, report)) {
+    if (
+      !isInboxPlanEligible(report) ||
+      isInboxPlanStale(job.eventVersion, report, job.eventKind as InboxPlanEventKind)
+    ) {
       await completeAsStale();
       return null;
     }
@@ -344,9 +355,13 @@ export class InboxPlanService {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${report.id} FOR UPDATE`);
       const current = await tx.crmBugReport.findUnique({
         where: { id: report.id },
-        include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 3 } },
+        include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 8 } },
       });
-      if (!current || !isInboxPlanEligible(current) || isInboxPlanStale(job.eventVersion, current)) {
+      if (
+        !current ||
+        !isInboxPlanEligible(current) ||
+        isInboxPlanStale(job.eventVersion, current, job.eventKind as InboxPlanEventKind)
+      ) {
         const stale = await tx.crmInboxPlanJob.updateMany({
           where: { id, status: 'LEASED', leaseToken, leaseExpiresAt: { gt: now } },
           data: {
