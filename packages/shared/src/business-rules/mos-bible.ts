@@ -623,6 +623,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Worker chỉ dùng worktree/branch riêng từ workspace tin cậy; không sửa primary checkout, không commit, push, merge, deploy, migration hay sửa production.',
       'Chỉ khi CLI thật sự bắt đầu ticket mới chuyển sang IMPLEMENTING. Kết quả thành công phải ghi native review gồm diff/file/test/risk đã lọc và chuyển sang chờ Danny duyệt commit.',
       'Từ pha code/test trở đi, Inbox phải suy ra tiến độ và bước tiếp theo từ implementation job bền vững do server trả về. Job FAILED, STALE hoặc EXPIRED phải hiện rõ worker đã dừng an toàn và cần Danny quyết định retry; AWAITING_COMMIT_REVIEW phải hiện rõ chờ Danny duyệt commit. Không dùng nhãn ticket chung để che outcome job.',
+      'Worker chỉ lưu bằng chứng vận hành đã lọc (pha, thời điểm tiến triển, số checkpoint), không lưu prompt, nội dung ticket hay stdout/stderr Codex. Sau 10 phút không có bằng chứng mới phải hiện cảnh báo; sau 20 phút không có bằng chứng mới phải dừng an toàn và giữ worktree.',
+      'Một phiên code/test mặc định tối đa 45 phút. Khi còn có bằng chứng tiến triển, worker được tự tiếp tục đúng một chặng checkpoint trong cùng worktree và cùng approval; sau đó phải dừng an toàn để Danny quyết định. Không checkpoint nào cho phép commit, push, merge hoặc deploy tự động.',
       'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Retry sau terminal failure chỉ có thể do Danny xác nhận riêng một lần: tạo job/branch/worktree mới liên kết immutable với job cũ, recheck approval/source/plan trước worktree, prelaunch và result, rồi dừng sau retry đó. Restart chỉ reclaim lease stale khi không còn Codex PID đã đăng ký sống; worker preflight CLI thật trong môi trường launchd, quản lý process group và terminate group khi timeout/lease failure để không bỏ orphan. Recovery chỉ giữ nguyên active-job pointer khi nó trỏ đúng cùng job; pointer khác là hard stop. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
     ],
     rationale:
@@ -634,7 +636,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.7.0',
+    version: '1.8.0',
     effectiveFrom: '2026-09-03',
     sources: [
       {

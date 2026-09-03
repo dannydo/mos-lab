@@ -2593,6 +2593,10 @@ model CrmInboxImplementationJob {
   leaseHeartbeatAt DateTime? @map("lease_heartbeat_at") @db.DateTime(0)
   processPid Int? @map("process_pid")
   executionPhase String @default("QUEUED") @map("execution_phase") @db.VarChar(32)
+  progressLabel String? @map("progress_label") @db.VarChar(160)
+  lastProgressAt DateTime? @map("last_progress_at") @db.DateTime(0)
+  progressCount Int @default(0) @map("progress_count")
+  checkpointCount Int @default(0) @map("checkpoint_count")
   branchName String @map("branch_name") @db.VarChar(160)
   worktreePath String? @map("worktree_path") @db.VarChar(500)
   summary String? @db.Text

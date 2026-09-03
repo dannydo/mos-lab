@@ -260,7 +260,7 @@ test('lease renewal accepts only the same active worker, token, and Codex proces
     },
   };
   assert.equal(await InboxImplementationService.renew(fastify as never, 'job-1', 'lease-1', 'worker-a', 4242), true);
-  assert.equal(renewals[0]?.executionPhase, 'CODEX_RUNNING');
+  assert.equal(renewals[0]?.executionPhase, undefined);
   assert.ok(renewals[0]?.leaseHeartbeatAt instanceof Date);
   assert.ok(renewals[0]?.leaseExpiresAt instanceof Date);
 });
@@ -269,7 +269,17 @@ test('generated Prisma client includes every implementation lease and retry fiel
   const model = Prisma.dmmf.datamodel.models.find((candidate) => candidate.name === 'CrmInboxImplementationJob');
   assert.ok(model);
   const fields = new Set(model.fields.map((field) => field.name));
-  for (const field of ['retryOfJobId', 'retrySequence', 'leaseHeartbeatAt', 'processPid', 'executionPhase']) {
+  for (const field of [
+    'retryOfJobId',
+    'retrySequence',
+    'leaseHeartbeatAt',
+    'processPid',
+    'executionPhase',
+    'progressLabel',
+    'lastProgressAt',
+    'progressCount',
+    'checkpointCount',
+  ]) {
     assert.equal(fields.has(field), true, `generated Prisma client is missing ${field}`);
   }
 });

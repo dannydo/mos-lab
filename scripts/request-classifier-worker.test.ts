@@ -48,20 +48,21 @@ test('builds a noninteractive Codex invocation with private structured output', 
     {
       command: '/custom/codex',
       args,
-      options: { cwd: '/tmp', stdio: 'ignore', windowsHide: true, detached: true },
+      options: { cwd: '/tmp', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, detached: true },
     },
   ]);
 });
 
 test('builds a write-enabled but noninteractive implementation command for an isolated worktree', () => {
   const args = buildCodexImplementationArgs('/tmp/schema.json', '/tmp/final.json', 'safe scope');
-  assert.deepEqual(args.slice(0, 7), [
+  assert.deepEqual(args.slice(0, 8), [
     'exec',
     '--ephemeral',
     '--ignore-user-config',
     '--approve-for-me',
     '--color',
     'never',
+    '--json',
     '--output-schema',
   ]);
   assert.deepEqual(args.slice(-3), ['--output-last-message', '/tmp/final.json', 'safe scope']);

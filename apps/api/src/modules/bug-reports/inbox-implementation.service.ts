@@ -18,6 +18,17 @@ const CLI_PROCESS_RECOVERY_ATTEMPT = 'CLI_PROCESS_RECOVERED';
 const JOB_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const REVIEW_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const FAILURE_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
+const IMPLEMENTATION_CHECKPOINT_LIMIT = 1;
+
+const IMPLEMENTATION_PROGRESS_LABELS = {
+  CODEX_STARTED: 'Codex đang phân tích và triển khai trong worktree riêng.',
+  CODEX_EVENT: 'Codex đang tiếp tục xử lý code/test.',
+  FILES_CHANGED: 'Đã có thay đổi mã nguồn trong worktree; Codex đang tiếp tục.',
+  NO_PROGRESS_WARNING: 'Chưa có bằng chứng tiến triển mới trong 10 phút.',
+  CHECKPOINT_CONTINUING: 'Đã lưu checkpoint an toàn; Codex tiếp tục chặng kế tiếp.',
+} as const;
+
+type ImplementationProgressPhase = keyof typeof IMPLEMENTATION_PROGRESS_LABELS;
 
 const clean = (value: unknown, limit: number) =>
   Array.from(String(value ?? ''))
@@ -63,6 +74,14 @@ export class InboxImplementationError extends Error {
   ) {
     super(message);
   }
+}
+
+function implementationProgressPhase(value: unknown): ImplementationProgressPhase {
+  const phase = clean(value, 32) as ImplementationProgressPhase;
+  if (!(phase in IMPLEMENTATION_PROGRESS_LABELS)) {
+    throw new InboxImplementationError('Pha tiến triển implementation không hợp lệ.', 422, 'INVALID_PROGRESS_PHASE');
+  }
+  return phase;
 }
 
 export function isInboxImplementationBaseEligible(
@@ -860,6 +879,9 @@ export class InboxImplementationService {
           leaseHeartbeatAt: now,
           processPid: pid,
           executionPhase: 'CODEX_RUNNING',
+          progressLabel: IMPLEMENTATION_PROGRESS_LABELS.CODEX_STARTED,
+          lastProgressAt: now,
+          progressCount: { increment: 1 },
         },
       });
       await tx.crmBugReportAudit.create({
@@ -927,7 +949,6 @@ export class InboxImplementationService {
       data: {
         leaseHeartbeatAt: now,
         leaseExpiresAt: new Date(now.getTime() + LEASE_MS),
-        executionPhase: 'CODEX_RUNNING',
       },
     });
     if (!renewed.count)
@@ -936,6 +957,95 @@ export class InboxImplementationService {
         409,
         'LEASE_RENEW_REJECTED'
       );
+    return true;
+  }
+
+  /** Records only bounded operational evidence; it never stores Codex output or ticket text. */
+  static async progress(
+    fastify: FastifyInstance,
+    id: string,
+    leaseToken: string,
+    workerId: unknown,
+    processId: unknown,
+    rawPhase: unknown,
+    hasEvidence: unknown
+  ): Promise<boolean> {
+    const worker = safeWorkerId(workerId);
+    const pid = safeProcessId(processId);
+    const phase = implementationProgressPhase(rawPhase);
+    const now = new Date();
+    const progressed = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
+      where: {
+        id,
+        status: 'RUNNING',
+        leaseToken,
+        leasedBy: worker,
+        processPid: pid,
+        leaseExpiresAt: { gt: now },
+      },
+      data: {
+        executionPhase: phase,
+        progressLabel: IMPLEMENTATION_PROGRESS_LABELS[phase],
+        ...(hasEvidence === true ? { lastProgressAt: now } : {}),
+        progressCount: { increment: 1 },
+      },
+    });
+    if (!progressed.count) {
+      throw new InboxImplementationError('Không thể ghi tiến triển cho lease hiện hành.', 409, 'LEASE_RENEW_REJECTED');
+    }
+    return true;
+  }
+
+  /** Starts the one permitted follow-up slice without reopening Danny's approval gate. */
+  static async continueAfterCheckpoint(
+    fastify: FastifyInstance,
+    id: string,
+    leaseToken: string,
+    workerId: unknown,
+    worktreePath: unknown,
+    processId: unknown
+  ): Promise<boolean> {
+    const worker = safeWorkerId(workerId);
+    const path = safeWorktreePath(worktreePath);
+    const pid = safeProcessId(processId);
+    const now = new Date();
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: { id, status: 'RUNNING', leaseToken, leasedBy: worker, leaseExpiresAt: { gt: now } },
+      include: { report: { include: implementationReportInclude() } },
+    });
+    if (!job || job.checkpointCount >= IMPLEMENTATION_CHECKPOINT_LIMIT) {
+      throw new InboxImplementationError('Checkpoint implementation không còn hợp lệ.', 409, 'CHECKPOINT_REJECTED');
+    }
+    if (!isCurrentExecution(job.report, job.sourceVersion, job.planVersion)) {
+      throw new InboxImplementationError(
+        'Approval hoặc plan implementation không còn hiện hành.',
+        409,
+        'STALE_BEFORE_RENEW'
+      );
+    }
+    const continued = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
+      where: {
+        id,
+        status: 'RUNNING',
+        leaseToken,
+        leasedBy: worker,
+        leaseExpiresAt: { gt: now },
+        checkpointCount: { lt: IMPLEMENTATION_CHECKPOINT_LIMIT },
+      },
+      data: {
+        worktreePath: path,
+        processPid: pid,
+        executionPhase: 'CHECKPOINT_CONTINUING',
+        progressLabel: IMPLEMENTATION_PROGRESS_LABELS.CHECKPOINT_CONTINUING,
+        lastProgressAt: now,
+        progressCount: { increment: 1 },
+        checkpointCount: { increment: 1 },
+        leaseHeartbeatAt: now,
+        leaseExpiresAt: new Date(now.getTime() + LEASE_MS),
+      },
+    });
+    if (!continued.count)
+      throw new InboxImplementationError('Không thể tiếp tục checkpoint an toàn.', 409, 'CHECKPOINT_REJECTED');
     return true;
   }
 

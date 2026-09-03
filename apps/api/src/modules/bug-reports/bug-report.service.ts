@@ -139,6 +139,10 @@ const reportInclude = {
     select: {
       status: true,
       executionPhase: true,
+      progressLabel: true,
+      lastProgressAt: true,
+      progressCount: true,
+      checkpointCount: true,
       failureCode: true,
       retainUntil: true,
       startedAt: true,
@@ -369,6 +373,10 @@ function resolutionDto(value: ReportWithRelations['resolution']): BugReportResol
 type ImplementationProgressSnapshot = {
   status: string;
   executionPhase: string;
+  progressLabel: string | null;
+  lastProgressAt: Date | null;
+  progressCount: number;
+  checkpointCount: number;
   failureCode: string | null;
   retainUntil: Date | null;
   startedAt: Date | null;
@@ -440,6 +448,10 @@ function implementationStateDto(
   return {
     status,
     phase: clipped(value.executionPhase, 32) || 'QUEUED',
+    progressLabel: clipped(value.progressLabel, 160) || null,
+    lastProgressAt: value.lastProgressAt?.toISOString() ?? null,
+    progressCount: value.progressCount,
+    checkpointCount: value.checkpointCount,
     failureCode: clipped(value.failureCode, 100) || null,
     hasRetainedDraft: Boolean(value.retainUntil),
     startedAt: value.startedAt?.toISOString() ?? null,
@@ -459,6 +471,13 @@ function implementationFailureNote(value: ImplementationProgressSnapshot): strin
     return 'Yêu cầu hoặc phương án đã thay đổi trong lúc xử lý; kết quả cũ không được dùng.';
   }
   return 'Worker đã dừng an toàn. Danny có thể rà soát bản nháp và quyết định retry một lần khi cần.';
+}
+
+function implementationProgressNote(value: ImplementationProgressSnapshot, fallback: string): string {
+  const label = clipped(value.progressLabel, 160) || fallback;
+  return value.executionPhase === 'NO_PROGRESS_WARNING'
+    ? `${label} Chưa có bằng chứng mới trong 10 phút; worker vẫn theo dõi trước khi dừng an toàn.`
+    : label;
 }
 
 function implementationStage(source: AgentProgressSource, fallbackAt: Date | null): BugReportAgentProgress | null {
@@ -488,11 +507,13 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
   if (implementation.status === 'RUNNING') {
     return {
       stage: implementation.executionPhase === 'VERIFYING' ? 'VERIFYING' : 'IMPLEMENTING',
-      note:
+      note: implementationProgressNote(
+        implementation,
         implementation.executionPhase === 'VERIFYING'
           ? 'Agent đang kiểm thử thay đổi.'
-          : 'Agent đang chạy code/test trong worktree riêng.',
-      updatedAt: implementation.updatedAt.toISOString(),
+          : 'Agent đang chạy code/test trong worktree riêng.'
+      ),
+      updatedAt: (implementation.lastProgressAt ?? implementation.updatedAt).toISOString(),
     };
   }
   return fallbackAt ? progressResult('IMPLEMENTING', source, null, fallbackAt) : null;
@@ -642,7 +663,9 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
       'RETRY_IMPLEMENTATION',
       'Quyết định retry',
       implementationFailureNote(implementation),
-      implementation.updatedAt
+      implementation.status === 'RUNNING'
+        ? (implementation.lastProgressAt ?? implementation.updatedAt)
+        : implementation.updatedAt
     );
   }
   if (implementation?.status === 'AWAITING_COMMIT_REVIEW') {
@@ -662,7 +685,7 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
         : 'CONTINUE_IMPLEMENTATION',
       implementation.status === 'RUNNING' ? 'Đang code/test' : 'Chờ worker nhận',
       implementation.status === 'RUNNING'
-        ? 'Worker đang xử lý trong worktree riêng.'
+        ? implementationProgressNote(implementation, 'Worker đang xử lý trong worktree riêng.')
         : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',
       implementation.updatedAt
     );

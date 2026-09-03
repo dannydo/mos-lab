@@ -82,6 +82,10 @@ test('projects every Agent milestone from canonical ticket state and audit activ
         implementation: {
           status: 'FAILED',
           executionPhase: 'FAILED',
+          progressLabel: null,
+          lastProgressAt: null,
+          progressCount: 0,
+          checkpointCount: 0,
           failureCode: 'CODEX_EXEC_TIMEOUT',
           retainUntil: new Date('2026-09-30T01:00:00.000Z'),
           startedAt: agentAt,
@@ -126,6 +130,10 @@ test('projects every Agent milestone from canonical ticket state and audit activ
         implementation: {
           status: 'AWAITING_COMMIT_REVIEW',
           executionPhase: 'AWAITING_COMMIT_REVIEW',
+          progressLabel: null,
+          lastProgressAt: null,
+          progressCount: 0,
+          checkpointCount: 0,
           failureCode: null,
           retainUntil: null,
           startedAt: agentAt,
@@ -306,6 +314,10 @@ test('derives one canonical next owner and action for every workflow gate', () =
         implementation: {
           status: 'FAILED',
           executionPhase: 'FAILED',
+          progressLabel: null,
+          lastProgressAt: null,
+          progressCount: 0,
+          checkpointCount: 0,
           failureCode: 'CODEX_EXEC_TIMEOUT',
           retainUntil: new Date('2026-09-30T01:00:00.000Z'),
           startedAt: null,
@@ -324,6 +336,10 @@ test('derives one canonical next owner and action for every workflow gate', () =
         implementation: {
           status: 'AWAITING_COMMIT_REVIEW',
           executionPhase: 'AWAITING_COMMIT_REVIEW',
+          progressLabel: null,
+          lastProgressAt: null,
+          progressCount: 0,
+          checkpointCount: 0,
           failureCode: null,
           retainUntil: null,
           startedAt: null,

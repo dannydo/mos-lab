@@ -462,6 +462,10 @@ export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STAT
 export interface BugReportImplementationState {
   status: InboxImplementationJobStatus;
   phase: string;
+  progressLabel: string | null;
+  lastProgressAt: string | null;
+  progressCount: number;
+  checkpointCount: number;
   failureCode: string | null;
   hasRetainedDraft: boolean;
   startedAt: string | null;

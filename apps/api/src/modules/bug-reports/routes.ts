@@ -875,6 +875,66 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   );
   fastify.post(
+    '/request-classifier/inbox-implementations/:id/progress',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as {
+          leaseToken?: string;
+          workerId?: string;
+          processId?: number;
+          phase?: string;
+          hasEvidence?: boolean;
+        };
+        const workerId = String(request.headers['x-worker-id'] || '');
+        if (String(body?.workerId || '') !== workerId) {
+          throw new InboxImplementationError('Worker progress identity không khớp.', 409, 'LEASE_RENEW_REJECTED');
+        }
+        const progressed = await InboxImplementationService.progress(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || ''),
+          workerId,
+          body?.processId,
+          body?.phase,
+          body?.hasEvidence
+        );
+        return reply.send({ success: true, data: { progressed } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Record inbox implementation progress failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-implementations/:id/continue',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as {
+          leaseToken?: string;
+          workerId?: string;
+          worktreePath?: string;
+          processId?: number;
+        };
+        const workerId = String(request.headers['x-worker-id'] || '');
+        if (String(body?.workerId || '') !== workerId) {
+          throw new InboxImplementationError('Worker checkpoint identity không khớp.', 409, 'CHECKPOINT_REJECTED');
+        }
+        const continued = await InboxImplementationService.continueAfterCheckpoint(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || ''),
+          workerId,
+          body?.worktreePath,
+          body?.processId
+        );
+        return reply.send({ success: true, data: { continued } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Continue inbox implementation checkpoint failed');
+      }
+    }
+  );
+  fastify.post(
     '/request-classifier/inbox-implementations/:id/fail',
     { preHandler: [requireClassifierWorker] },
     async (request, reply) => {

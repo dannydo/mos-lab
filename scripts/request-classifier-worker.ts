@@ -25,7 +25,11 @@ const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
 const POLL_INTERVAL_MS = 30_000;
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const CODEX_TIMEOUT_MS = 90_000;
-const CODEX_IMPLEMENTATION_TIMEOUT_MS = 8 * 60 * 1000;
+const CODEX_IMPLEMENTATION_SLICE_TIMEOUT_MS = 45 * 60 * 1000;
+const IMPLEMENTATION_NO_PROGRESS_WARNING_MS = 10 * 60 * 1000;
+const IMPLEMENTATION_NO_PROGRESS_STOP_MS = 20 * 60 * 1000;
+const IMPLEMENTATION_PROGRESS_POLL_MS = 30_000;
+const IMPLEMENTATION_MAX_SLICES = 2;
 const CODEX_STOP_GRACE_MS = 5_000;
 const IMPLEMENTATION_LEASE_RENEWAL_MS = 60_000;
 const IMPLEMENTATION_PREFLIGHT_CACHE_MS = 5 * 60 * 1000;
@@ -63,6 +67,9 @@ export function resolveCodexCliPath(
 
 export type CodexCliFailureCode =
   | 'CODEX_EXEC_TIMEOUT'
+  | 'CODEX_EXEC_STALLED'
+  | 'CODEX_EXEC_CHECKPOINT_REQUIRED'
+  | 'CODEX_EXEC_MAX_RUNTIME'
   | 'CODEX_EXEC_FAILED'
   | 'CODEX_EXEC_SIGNAL'
   | 'CODEX_PREFLIGHT_FAILED'
@@ -85,7 +92,10 @@ export type CodexCliRuntime = {
   terminate: (code: CodexCliFailureCode) => void;
 };
 
-type CodexCliLifecycle = { onStarted?: (runtime: CodexCliRuntime) => Promise<void> | void };
+type CodexCliLifecycle = {
+  onStarted?: (runtime: CodexCliRuntime) => Promise<void> | void;
+  onActivity?: () => void;
+};
 
 export function buildCodexExecArgs(schemaPath: string, outputPath: string, prompt: string): string[] {
   return [
@@ -116,6 +126,8 @@ export function buildCodexImplementationArgs(schemaPath: string, outputPath: str
     '--approve-for-me',
     '--color',
     'never',
+    // JSONL is read only as a liveness signal. It is never retained or logged.
+    '--json',
     '--output-schema',
     schemaPath,
     '--output-last-message',
@@ -356,7 +368,8 @@ export async function executeCodexCli(
   timeoutMs = CODEX_TIMEOUT_MS,
   spawnProcess: SpawnProcess = spawn,
   environment?: NodeJS.ProcessEnv,
-  lifecycle?: CodexCliLifecycle
+  lifecycle?: CodexCliLifecycle,
+  timeoutCode: CodexCliFailureCode = 'CODEX_EXEC_TIMEOUT'
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     let finished = false;
@@ -380,7 +393,7 @@ export async function executeCodexCli(
       cwd,
       // Codex otherwise waits for EOF and treats an inherited pipe as extra prompt input.
       // Final structured output is written exclusively to --output-last-message.
-      stdio: 'ignore',
+      stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
       detached: process.platform !== 'win32',
       ...(environment ? { env: environment } : {}),
@@ -402,8 +415,11 @@ export async function executeCodexCli(
       },
     };
     timeout = setTimeout(() => {
-      runtime.terminate('CODEX_EXEC_TIMEOUT');
+      runtime.terminate(timeoutCode);
     }, timeoutMs);
+    const markActivity = () => lifecycle?.onActivity?.();
+    child.stdout?.on('data', markActivity);
+    child.stderr?.on('data', markActivity);
     child.once('error', () => {
       // An error before spawn never had a server-side lease.  After spawn, do
       // not let the caller's fail path race a still-running `onStarted` call:
@@ -1096,49 +1112,143 @@ async function processInboxImplementationOne(): Promise<boolean> {
         scope: job.context,
       }),
     ].join('\n\n');
-    await executeCodexCli(
-      resolveCodexCliPath(),
-      buildCodexImplementationArgs(schemaPath(), outputPath(), prompt),
-      worktreePath,
-      CODEX_IMPLEMENTATION_TIMEOUT_MS,
-      spawn,
-      gitEnvironment,
-      {
-        onStarted: async (runtime) => {
-          if (!runtime.processId) throw new CodexCliError('LEASE_START_FAILED');
-          activeProcessId = runtime.processId;
-          await registerImplementationProcess(job.id, runtime.processId);
-          phase = 'start';
-          const startedResponse = await workerFetch(`/request-classifier/inbox-implementations/${job.id}/start`, {
-            method: 'POST',
-            body: JSON.stringify({ leaseToken: job.leaseToken, worktreePath, processId: runtime.processId }),
-          });
-          const didStart = ((await startedResponse.json()) as { data?: { started?: boolean } }).data?.started;
-          if (!didStart) throw new CodexCliError('LEASE_START_FAILED');
-          started = true;
-          beginWorkerJob('INBOX_IMPLEMENTATION');
-          let renewing = false;
-          const renew = async () => {
-            if (renewing) return;
-            renewing = true;
-            try {
-              const renewedResponse = await workerFetch(`/request-classifier/inbox-implementations/${job.id}/renew`, {
-                method: 'POST',
-                body: JSON.stringify({ leaseToken: job.leaseToken, workerId, processId: runtime.processId }),
-              });
-              const renewed = ((await renewedResponse.json()) as { data?: { renewed?: boolean } }).data?.renewed;
-              if (!renewed) throw new CodexCliError('LEASE_RENEW_FAILED');
-            } catch {
-              runtime.terminate('LEASE_RENEW_FAILED');
-            } finally {
-              renewing = false;
-            }
-          };
-          const renewalTimer = setInterval(() => void renew(), IMPLEMENTATION_LEASE_RENEWAL_MS);
-          stopLeaseRenewal = () => clearInterval(renewalTimer);
-        },
+    for (let slice = 0; slice < IMPLEMENTATION_MAX_SLICES; slice += 1) {
+      let stopProgressMonitor: (() => void) | null = null;
+      let markCliActivity: (() => void) | null = null;
+      try {
+        await executeCodexCli(
+          resolveCodexCliPath(),
+          buildCodexImplementationArgs(
+            schemaPath(),
+            outputPath(),
+            `${prompt}\n\nThis is execution slice ${slice + 1}. Resume any existing uncommitted work in this worktree safely.`
+          ),
+          worktreePath,
+          CODEX_IMPLEMENTATION_SLICE_TIMEOUT_MS,
+          spawn,
+          gitEnvironment,
+          {
+            onStarted: async (runtime) => {
+              if (!runtime.processId) throw new CodexCliError('LEASE_START_FAILED');
+              activeProcessId = runtime.processId;
+              await registerImplementationProcess(job.id, runtime.processId);
+              phase = slice === 0 ? 'start' : 'continue';
+              const endpoint = slice === 0 ? 'start' : 'continue';
+              const lifecycleResponse = await workerFetch(
+                `/request-classifier/inbox-implementations/${job.id}/${endpoint}`,
+                {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    leaseToken: job.leaseToken,
+                    workerId,
+                    worktreePath,
+                    processId: runtime.processId,
+                  }),
+                }
+              );
+              const lifecycle = (await lifecycleResponse.json()) as {
+                data?: { started?: boolean; continued?: boolean };
+              };
+              if (!(slice === 0 ? lifecycle.data?.started : lifecycle.data?.continued)) {
+                throw new CodexCliError('LEASE_START_FAILED');
+              }
+              if (!started) {
+                started = true;
+                beginWorkerJob('INBOX_IMPLEMENTATION');
+                let renewing = false;
+                const renew = async () => {
+                  if (renewing || !activeProcessId) return;
+                  renewing = true;
+                  try {
+                    const renewedResponse = await workerFetch(
+                      `/request-classifier/inbox-implementations/${job.id}/renew`,
+                      {
+                        method: 'POST',
+                        body: JSON.stringify({ leaseToken: job.leaseToken, workerId, processId: activeProcessId }),
+                      }
+                    );
+                    if (!((await renewedResponse.json()) as { data?: { renewed?: boolean } }).data?.renewed) {
+                      throw new CodexCliError('LEASE_RENEW_FAILED');
+                    }
+                  } catch {
+                    runtime.terminate('LEASE_RENEW_FAILED');
+                  } finally {
+                    renewing = false;
+                  }
+                };
+                const renewalTimer = setInterval(() => void renew(), IMPLEMENTATION_LEASE_RENEWAL_MS);
+                stopLeaseRenewal = () => clearInterval(renewalTimer);
+              }
+              let lastEvidenceAt = Date.now();
+              let warned = false;
+              let lastFingerprint = '';
+              let reporting = false;
+              let lastReportAt = 0;
+              const reportProgress = (progressPhase: string, hasEvidence: boolean) => {
+                if (hasEvidence) {
+                  lastEvidenceAt = Date.now();
+                  warned = false;
+                }
+                if (reporting || !activeProcessId || Date.now() - lastReportAt < 15_000) return;
+                reporting = true;
+                lastReportAt = Date.now();
+                void workerFetch(`/request-classifier/inbox-implementations/${job.id}/progress`, {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    leaseToken: job.leaseToken,
+                    workerId,
+                    processId: activeProcessId,
+                    phase: progressPhase,
+                    hasEvidence,
+                  }),
+                })
+                  .catch(() => undefined)
+                  .finally(() => {
+                    reporting = false;
+                  });
+              };
+              markCliActivity = () => reportProgress('CODEX_EVENT', true);
+              const evidenceTimer = setInterval(() => {
+                void runTrustedGit(['status', '--porcelain'], worktreePath)
+                  .then((fingerprint) => {
+                    if (fingerprint !== lastFingerprint) {
+                      lastFingerprint = fingerprint;
+                      reportProgress('FILES_CHANGED', true);
+                    }
+                  })
+                  .catch(() => undefined);
+                const idleMs = Date.now() - lastEvidenceAt;
+                if (!warned && idleMs >= IMPLEMENTATION_NO_PROGRESS_WARNING_MS) {
+                  warned = true;
+                  reportProgress('NO_PROGRESS_WARNING', false);
+                }
+                if (idleMs >= IMPLEMENTATION_NO_PROGRESS_STOP_MS) runtime.terminate('CODEX_EXEC_STALLED');
+              }, IMPLEMENTATION_PROGRESS_POLL_MS);
+              stopProgressMonitor = () => clearInterval(evidenceTimer);
+              reportProgress(slice === 0 ? 'CODEX_STARTED' : 'CHECKPOINT_CONTINUING', true);
+              runtime.terminate = ((terminate) => (code: CodexCliFailureCode) => {
+                stopProgressMonitor?.();
+                terminate(code);
+              })(runtime.terminate);
+            },
+            onActivity: () => {
+              // Do not persist stdout/stderr. Its existence is only a liveness proof.
+              // The monitor sees it through the bounded server phase above.
+              markCliActivity?.();
+            },
+          },
+          slice === IMPLEMENTATION_MAX_SLICES - 1 ? 'CODEX_EXEC_MAX_RUNTIME' : 'CODEX_EXEC_CHECKPOINT_REQUIRED'
+        );
+        stopProgressMonitor?.();
+        break;
+      } catch (error) {
+        stopProgressMonitor?.();
+        if (error instanceof CodexCliError && error.code === 'CODEX_EXEC_CHECKPOINT_REQUIRED' && slice === 0) {
+          continue;
+        }
+        throw error;
       }
-    );
+    }
     if ((await runTrustedGit(['rev-parse', 'HEAD'], worktreePath)) !== baseCommit) {
       throw new CodexCliError('FORBIDDEN_GIT_MUTATION');
     }
