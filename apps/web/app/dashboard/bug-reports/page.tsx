@@ -235,7 +235,15 @@ function DetailDrawer({
     setSaving(true);
     try {
       const outcome = await approveImplementation(detail.id);
-      hydrateForm(outcome.report);
+      if (outcome.implementationQueued) {
+        setStatus('IN_PROGRESS');
+        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
+      }
+      // The rich ticket refresh is non-blocking. The durable receipt above is
+      // enough to stop the button spinner even if a later read is slow.
+      void getDetail(outcome.reportId)
+        .then(hydrateForm)
+        .catch(() => undefined);
       messageApi.success(
         outcome.implementationQueued
           ? 'Đã tạo job code/test trong worktree riêng.'
@@ -252,14 +260,20 @@ function DetailDrawer({
     } finally {
       setSaving(false);
     }
-  }, [approveImplementation, detail, hydrateForm, messageApi]);
+  }, [approveImplementation, detail, getDetail, hydrateForm, messageApi]);
 
   const retryCodeExecution = useCallback(async () => {
     if (!detail) return;
     setSaving(true);
     try {
       const outcome = await retryImplementation(detail.id);
-      hydrateForm(outcome.report);
+      if (outcome.implementationQueued) {
+        setStatus('IN_PROGRESS');
+        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
+      }
+      void getDetail(outcome.reportId)
+        .then(hydrateForm)
+        .catch(() => undefined);
       messageApi.success('Đã tạo đúng một retry liên kết trong worktree mới.');
     } catch (error) {
       const responseMessage =
@@ -270,7 +284,7 @@ function DetailDrawer({
     } finally {
       setSaving(false);
     }
-  }, [detail, hydrateForm, messageApi, retryImplementation]);
+  }, [detail, getDetail, hydrateForm, messageApi, retryImplementation]);
 
   const handOffReleasedImplementation = useCallback(async () => {
     if (!detail) return;

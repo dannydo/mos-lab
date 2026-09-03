@@ -664,7 +664,8 @@ export const apiClient = {
     ): Promise<ApproveBugReportImplementationResponse> => {
       const response = await api.post<ApproveBugReportImplementationResponse>(
         `/bug-reports/${id}/implementation-approval`,
-        data
+        data,
+        { timeout: 12_000 }
       );
       return response.data;
     },
@@ -674,7 +675,8 @@ export const apiClient = {
     ): Promise<RetryBugReportImplementationResponse> => {
       const response = await api.post<RetryBugReportImplementationResponse>(
         `/bug-reports/${id}/implementation-retry`,
-        data
+        data,
+        { timeout: 12_000 }
       );
       return response.data;
     },

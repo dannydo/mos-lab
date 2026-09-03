@@ -703,7 +703,8 @@ export interface ReviewBugReportImplementationAcceptanceRequest {
 }
 
 export interface ApproveBugReportImplementationResult {
-  report: BugReportDetail;
+  /** Receipt returned immediately after the durable approval/job write. */
+  reportId: number;
   implementationQueued: boolean;
   planRequested: boolean;
 }

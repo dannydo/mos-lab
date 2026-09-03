@@ -215,7 +215,9 @@ export function useBugReports() {
     async (id: number): Promise<ApproveBugReportImplementationResult> => {
       const response = await apiClient.bugReports.approveImplementation(id, { acknowledged: true });
       if (!response.data) throw new Error('Máy chủ không trả về trạng thái duyệt implementation.');
-      await load();
+      // Approval has already been recorded. Refresh the list in the background
+      // so a slow list request can never keep the confirmation button spinning.
+      void load();
       window.dispatchEvent(new Event('mos-bug-inbox-updated'));
       return response.data;
     },
@@ -226,7 +228,7 @@ export function useBugReports() {
     async (id: number): Promise<ApproveBugReportImplementationResult> => {
       const response = await apiClient.bugReports.retryImplementation(id, { acknowledged: true });
       if (!response.data) throw new Error('Máy chủ không trả về trạng thái retry implementation.');
-      await load();
+      void load();
       window.dispatchEvent(new Event('mos-bug-inbox-updated'));
       return response.data;
     },

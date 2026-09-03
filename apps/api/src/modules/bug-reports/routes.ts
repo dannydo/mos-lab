@@ -396,7 +396,10 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         if (outcome.implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
         return reply.send({
           success: true,
-          data: { report: await BugReportService.detail(fastify, id), ...outcome },
+          // Return the durable receipt immediately. Reloading the rich ticket
+          // payload here can hold the approval request open while the worker
+          // has already started, leaving the UI spinner stuck.
+          data: { reportId: id, ...outcome },
           message: outcome.implementationQueued
             ? 'Đã tạo implementation job trong hàng đợi worker.'
             : outcome.planRequested
@@ -423,7 +426,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         if (implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
         return reply.send({
           success: true,
-          data: { report: await BugReportService.detail(fastify, id), implementationQueued, planRequested: false },
+          data: { reportId: id, implementationQueued, planRequested: false },
           message: implementationQueued
             ? 'Đã tạo đúng một retry implementation liên kết job terminal cũ.'
             : 'Retry implementation không được tạo.',
