@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildCodexExecArgs,
   buildCodexImplementationArgs,
+  buildInboxFollowUpPrompt,
   executeCodexCli,
   implementationWorktreeRoot,
   isCodexImplementationHelpCompatible,
@@ -303,11 +304,63 @@ test('uses bounded safe local names for leased original reopen evidence', () => 
         auditId: 42,
         reason: 'The original screenshot still shows the defect.',
         reopenedAt: '2026-09-03T08:00:00.000Z',
+        intent: 'UNCHANGED',
         originalEvidence: [{ id: 7, fileName: '../../still broken?.png', mimeType: 'image/png', sizeBytes: 42 }],
+        knownContext: {
+          sourcePath: '/dashboard',
+          browser: 'Chrome 151.0.0.0',
+          viewport: { width: 3027, height: 1638, devicePixelRatio: 1.25 },
+          themeMode: 'light',
+          priorResolution: {
+            solutionSummary: 'Use the full-width container.',
+            verificationSummary: 'Browser proof completed.',
+          },
+        },
       },
     },
   });
   assert.deepEqual(files, ['7-still-broken-.png']);
+});
+
+test('tells a reopen Agent not to repeat facts already captured by mOS', () => {
+  const prompt = buildInboxFollowUpPrompt(
+    {
+      id: 'follow-up-2',
+      ticketId: 17,
+      ticketKey: 'MOS-BUG-17',
+      eventKind: 'REPORTER_REOPENED',
+      leaseToken: 'lease-2',
+      attemptCount: 1,
+      context: {
+        requestType: 'BUG',
+        title: 'Container width regression',
+        description: 'The right side is still clipped.',
+        status: 'NEW',
+        clarificationStatus: 'PENDING_AGENT',
+        clarificationSummary: null,
+        sourcePath: '/dashboard',
+        reporterMessages: ['Vẫn còn lỗi như hai hình đã gửi từ đầu.'],
+        reopen: {
+          auditId: 42,
+          reason: 'Vẫn chưa được giải quyết; biểu hiện vẫn giống bằng chứng ban đầu.',
+          reopenedAt: '2026-09-03T08:00:00.000Z',
+          intent: 'UNCHANGED',
+          originalEvidence: [],
+          knownContext: {
+            sourcePath: '/dashboard',
+            browser: 'Chrome 151.0.0.0',
+            viewport: { width: 3027, height: 1638, devicePixelRatio: 1.25 },
+            themeMode: 'light',
+            priorResolution: null,
+          },
+        },
+      },
+    },
+    ['17-original.png']
+  );
+  assert.match(prompt, /never ask for a non-empty browser, browser version, viewport/i);
+  assert.match(prompt, /intent is UNCHANGED/i);
+  assert.match(prompt, /Chrome 151\.0\.0\.0/);
 });
 
 test('turns unavailable original reopen evidence into one Agent clarification', () => {

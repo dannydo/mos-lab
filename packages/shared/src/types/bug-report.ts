@@ -384,8 +384,25 @@ export interface BugReportReopenContext {
   auditId: number;
   reason: string;
   reopenedAt: string;
+  /** Whether the reporter says the prior symptom is unchanged or supplied new details. */
+  intent?: 'UNCHANGED' | 'DETAILS';
   /** Original ticket images the leased Agent must inspect before re-analysis. */
   originalEvidence: BugReportOriginalEvidenceRef[];
+  /**
+   * Bounded facts mOS captured before the reopen. They are evidence, not a
+   * substitute for a new reporter question; Agents must not ask for these
+   * facts again.
+   */
+  knownContext?: {
+    sourcePath: string;
+    browser: string;
+    viewport: { width: number; height: number; devicePixelRatio: number };
+    themeMode: 'light' | 'dark' | 'unknown';
+    priorResolution: {
+      solutionSummary: string;
+      verificationSummary: string;
+    } | null;
+  };
 }
 export interface InboxFollowUpWorkerJob {
   id: string;
@@ -665,6 +682,8 @@ export interface MyBugReportItem extends BugReportSummary {
   comments: BugReportComment[];
   reviewUrl: string;
   canReview: boolean;
+  /** The reporter can resume a reopen without retyping evidence mOS already has. */
+  canReopenUnchanged: boolean;
 }
 
 export interface BugReportNotification {
@@ -767,6 +786,8 @@ export interface ConfirmCloseBugReportRequest {
 export interface ReviewBugReportRequest {
   decision: 'APPROVE' | 'REOPEN';
   note?: string | null;
+  /** One-tap reporter feedback: the defect remains as originally reported. */
+  reopenIntent?: 'UNCHANGED';
 }
 
 export interface CreateBugReportCommentRequest {

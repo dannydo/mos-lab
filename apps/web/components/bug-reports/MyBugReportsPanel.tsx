@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Descriptions, Input, List, Timeline, Typography, message, theme } from 'antd';
+import { Alert, Button, Descriptions, List, Timeline, Typography, message, theme } from 'antd';
 import type {
   BugReportCommentCreateResult,
   BugReportNotification,
@@ -185,31 +185,21 @@ export function MyBugReportsPanel({
 }: MyBugReportsPanelProps) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
-  const [reviewNote, setReviewNote] = React.useState('');
   const [saving, setSaving] = React.useState(false);
-  const reviewNoteRef = React.useRef<HTMLTextAreaElement>(null);
   const selected = reports.find((item) => item.key === selectedKey) ?? reports[0] ?? null;
 
-  React.useEffect(() => setReviewNote(''), [selected?.id]);
-
-  const submitReview = async (decision: ReviewBugReportRequest['decision']) => {
+  const submitReview = async (decision: ReviewBugReportRequest['decision'], reopenIntent?: 'UNCHANGED') => {
     if (!selected) return;
-    if (decision === 'REOPEN' && !reviewNote.trim()) {
-      reviewNoteRef.current?.focus();
-      messageApi.warning('Ghi ngắn gọn điểm chưa đúng ở ô bên trên, rồi gửi lại cho Agent.');
-      return;
-    }
     setSaving(true);
     try {
-      await onReview(selected.id, { decision, note: reviewNote.trim() || null });
+      await onReview(selected.id, reopenIntent ? { decision, reopenIntent } : { decision });
       messageApi.success(
         decision === 'APPROVE'
           ? selected.requestType === 'FEATURE'
             ? 'Cảm ơn bạn đã nghiệm thu. Yêu cầu đã hoàn tất.'
             : 'Cảm ơn bạn đã duyệt. Ticket đã đóng.'
-          : 'Đã gửi lại cho Agent xử lý.'
+          : 'Đã chuyển lại cho Agent tái phân tích từ bằng chứng sẵn có.'
       );
-      setReviewNote('');
     } catch (caught) {
       const responseMessage =
         caught && typeof caught === 'object' && 'response' in caught
@@ -383,45 +373,38 @@ export function MyBugReportsPanel({
               </SectionCard>
             ) : null}
 
-            {selected.canReview ? (
+            {selected.canReview || selected.canReopenUnchanged ? (
               <SectionCard
-                title={selected.requestType === 'FEATURE' ? 'Bạn nghiệm thu giúp mOS' : 'Bạn xác nhận giúp mOS'}
+                title={
+                  selected.canReview
+                    ? selected.requestType === 'FEATURE'
+                      ? 'Bạn nghiệm thu giúp mOS'
+                      : 'Bạn xác nhận giúp mOS'
+                    : 'mOS đã có đủ thông tin trước đó'
+                }
               >
-                <Input.TextArea
-                  ref={reviewNoteRef}
-                  value={reviewNote}
-                  onChange={(event) => setReviewNote(event.target.value)}
-                  status={reviewNote.trim() ? undefined : 'warning'}
-                  placeholder={
-                    selected.requestType === 'FEATURE'
-                      ? 'Nếu chưa đúng nhu cầu, hãy ghi ngắn gọn điểm cần điều chỉnh…'
-                      : 'Nếu chưa đúng, hãy ghi ngắn gọn điểm còn lỗi…'
-                  }
-                  maxLength={2000}
-                  autoSize={{ minRows: 2, maxRows: 6 }}
-                  showCount
-                />
-                {!reviewNote.trim() ? (
-                  <Text type="secondary" className="mt-2 block">
-                    Cần ghi ít nhất một điểm chưa đúng trước khi gửi yêu cầu sửa tiếp.
-                  </Text>
-                ) : null}
+                <Text type="secondary" className="block">
+                  Bấm một lần để mOS dùng lại mô tả, ảnh và thông tin kỹ thuật đã có; Agent sẽ tái phân tích mà không
+                  hỏi lại các dữ kiện đó.
+                </Text>
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
                   <Button
                     loading={saving}
                     icon={<AppIcon icon={RotateCcw} size="sm" />}
-                    onClick={() => void submitReview('REOPEN')}
+                    onClick={() => void submitReview('REOPEN', 'UNCHANGED')}
                   >
-                    {selected.requestType === 'FEATURE' ? 'Chưa đúng, điều chỉnh tiếp' : 'Chưa đúng, sửa tiếp'}
+                    Vẫn chưa được giải quyết — giống như trước
                   </Button>
-                  <Button
-                    type="primary"
-                    loading={saving}
-                    icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                    onClick={() => void submitReview('APPROVE')}
-                  >
-                    {selected.requestType === 'FEATURE' ? 'Đạt yêu cầu, hoàn tất' : 'Đã đúng, đóng ticket'}
-                  </Button>
+                  {selected.canReview ? (
+                    <Button
+                      type="primary"
+                      loading={saving}
+                      icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                      onClick={() => void submitReview('APPROVE')}
+                    >
+                      {selected.requestType === 'FEATURE' ? 'Đạt yêu cầu, hoàn tất' : 'Đã đúng, đóng ticket'}
+                    </Button>
+                  ) : null}
                 </div>
               </SectionCard>
             ) : null}

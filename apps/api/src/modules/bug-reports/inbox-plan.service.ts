@@ -117,9 +117,20 @@ function safeReopenContext(value: unknown): BugReportReopenContext | null {
     const auditId = Number(candidate?.auditId);
     const reason = clean(candidate?.reason, 2_000);
     const reopenedAt = new Date(String(candidate?.reopenedAt || '')).toISOString();
-    return Number.isInteger(auditId) && auditId > 0 && reason
-      ? { auditId, reason, reopenedAt, originalEvidence: safeOriginalEvidence(candidate?.originalEvidence) }
-      : null;
+    if (!Number.isInteger(auditId) || auditId <= 0 || !reason) return null;
+    const reopen: BugReportReopenContext = {
+      auditId,
+      reason,
+      reopenedAt,
+      originalEvidence: safeOriginalEvidence(candidate?.originalEvidence),
+    };
+    // Old jobs intentionally remain byte-for-byte equivalent for plan versioning.
+    // New reopen jobs already received this bounded snapshot from the follow-up service.
+    if (candidate?.intent === 'UNCHANGED' || candidate?.intent === 'DETAILS') reopen.intent = candidate.intent;
+    if (candidate?.knownContext && typeof candidate.knownContext === 'object') {
+      reopen.knownContext = candidate.knownContext as BugReportReopenContext['knownContext'];
+    }
+    return reopen;
   } catch {
     return null;
   }

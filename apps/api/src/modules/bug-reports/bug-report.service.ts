@@ -820,6 +820,10 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
           auditId: reopened.id,
           reason: reopened.note!.trim(),
           reopenedAt: reopened.createdAt.toISOString(),
+          intent:
+            safeJsonParse<Record<string, unknown>>(reopened.afterJson, {}).reopenIntent === 'UNCHANGED'
+              ? 'UNCHANGED'
+              : 'DETAILS',
           originalEvidence: row.attachments
             .filter((attachment) => attachment.commentId === null && !attachment.deletedAt)
             .slice(0, 3)
@@ -829,6 +833,18 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
               mimeType: attachment.mimeType,
               sizeBytes: attachment.sizeBytes,
             })),
+          knownContext: {
+            sourcePath: row.sourcePath,
+            browser: context.userAgent,
+            viewport: context.viewport,
+            themeMode: context.themeMode,
+            priorResolution: row.resolution
+              ? {
+                  solutionSummary: row.resolution.solutionSummary,
+                  verificationSummary: row.resolution.verificationSummary,
+                }
+              : null,
+          },
         }
       : null,
     agentProgress: bugReportAgentProgress(progressSource),
@@ -888,6 +904,11 @@ function myReportDto(row: ReportWithRelations): MyBugReportItem {
     comments: row.comments.map(commentDto),
     reviewUrl: reviewUrl(row.id, storedRequestType(row.requestType)),
     canReview: row.status === 'FIXED',
+    canReopenUnchanged:
+      row.status === 'FIXED' ||
+      (row.status === 'NEW' &&
+        row.clarificationStatus === 'WAITING_REPORTER' &&
+        row.audits.some((audit) => audit.action === 'REPORTER_REOPENED' && Boolean(audit.note?.trim()))),
   };
 }
 
@@ -1584,16 +1605,28 @@ export class BugReportService {
   ): Promise<BugReportDetail> {
     const existing = await fastify.prisma.crm.crmBugReport.findFirst({ where: { id, reporterStaffId } });
     if (!existing) throw new BugReportError('Không tìm thấy ticket của bạn.', 404, 'BUG_NOT_FOUND');
-    if (existing.status !== 'FIXED') {
+    const decision = input?.decision;
+    if (decision !== 'APPROVE' && decision !== 'REOPEN') throw new BugReportError('Quyết định duyệt không hợp lệ.');
+    const reopenUnchanged = decision === 'REOPEN' && input?.reopenIntent === 'UNCHANGED';
+    const couldResumeKnownReopen =
+      reopenUnchanged && existing.status === 'NEW' && existing.clarificationStatus === 'WAITING_REPORTER';
+    const previousReopen = couldResumeKnownReopen
+      ? await fastify.prisma.crm.crmBugReportAudit.findFirst({
+          where: { reportId: id, action: 'REPORTER_REOPENED', note: { not: null } },
+          select: { id: true },
+        })
+      : null;
+    const canResumeKnownReopen = Boolean(previousReopen);
+    if (existing.status !== 'FIXED' && !canResumeKnownReopen) {
       throw new BugReportError('Chỉ bản sửa đang chờ xác nhận mới có thể duyệt.', 409, 'BUG_NOT_AWAITING_REVIEW');
     }
     const pendingReporterAcceptance = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
       where: { reportId: id, status: 'RELEASED', executionPhase: 'AWAITING_REPORTER_ACCEPTANCE' },
       select: { id: true },
     });
-    const decision = input?.decision;
-    if (decision !== 'APPROVE' && decision !== 'REOPEN') throw new BugReportError('Quyết định duyệt không hợp lệ.');
-    const note = clipped(input?.note, 2000) || null;
+    const note = reopenUnchanged
+      ? 'Vẫn chưa được giải quyết; biểu hiện vẫn giống bằng chứng ban đầu.'
+      : clipped(input?.note, 2000) || null;
     if (decision === 'REOPEN' && !note)
       throw new BugReportError('Vui lòng mô tả điểm vẫn chưa đúng để Agent sửa tiếp.');
     const now = new Date();
@@ -1643,7 +1676,11 @@ export class BugReportService {
           action: decision === 'APPROVE' ? 'REPORTER_APPROVED' : 'REPORTER_REOPENED',
           note: note ?? 'Người báo xác nhận bản sửa đúng.',
           beforeJson: serialize(stateSnapshot(existing)),
-          afterJson: serialize(stateSnapshot(row)),
+          afterJson: serialize(
+            decision === 'REOPEN'
+              ? { ...stateSnapshot(row), reopenIntent: reopenUnchanged ? 'UNCHANGED' : 'DETAILS' }
+              : stateSnapshot(row)
+          ),
         },
       });
       await tx.crmBugReportNotification.updateMany({

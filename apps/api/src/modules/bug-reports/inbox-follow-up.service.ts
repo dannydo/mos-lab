@@ -24,6 +24,15 @@ const clean = (value: unknown, limit: number) =>
     .trim()
     .slice(0, limit);
 
+function safeJsonValue(value: unknown, key: string): unknown {
+  try {
+    const parsed = JSON.parse(String(value || '{}'));
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>)[key] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function safeOriginalEvidence(value: unknown): BugReportOriginalEvidenceRef[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -63,6 +72,35 @@ function originalEvidenceFromAttachments(
     .slice(0, 3);
 }
 
+function safeKnownReopenContext(value: unknown) {
+  const candidate = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const rawViewport =
+    candidate.viewport && typeof candidate.viewport === 'object' ? (candidate.viewport as Record<string, unknown>) : {};
+  const priorResolution =
+    candidate.priorResolution && typeof candidate.priorResolution === 'object'
+      ? (candidate.priorResolution as Record<string, unknown>)
+      : null;
+  const themeMode = candidate.themeMode;
+  const safeThemeMode: 'light' | 'dark' | 'unknown' =
+    themeMode === 'light' || themeMode === 'dark' ? themeMode : 'unknown';
+  return {
+    sourcePath: clean(candidate.sourcePath, 500) || '/',
+    browser: clean(candidate.browser, 500),
+    viewport: {
+      width: Math.max(0, Math.min(20_000, Math.round(Number(rawViewport.width) || 0))),
+      height: Math.max(0, Math.min(20_000, Math.round(Number(rawViewport.height) || 0))),
+      devicePixelRatio: Math.max(0.5, Math.min(10, Number(rawViewport.devicePixelRatio) || 1)),
+    },
+    themeMode: safeThemeMode,
+    priorResolution: priorResolution
+      ? {
+          solutionSummary: clean(priorResolution.solutionSummary, 1_200),
+          verificationSummary: clean(priorResolution.verificationSummary, 1_200),
+        }
+      : null,
+  };
+}
+
 function safeReopenContext(value: unknown): BugReportReopenContext | null {
   try {
     const candidate = JSON.parse(String(value || '{}'))?.reopen as Partial<BugReportReopenContext> | undefined;
@@ -70,7 +108,14 @@ function safeReopenContext(value: unknown): BugReportReopenContext | null {
     const reason = clean(candidate?.reason, 2_000);
     const reopenedAt = new Date(String(candidate?.reopenedAt || '')).toISOString();
     return Number.isInteger(auditId) && auditId > 0 && reason
-      ? { auditId, reason, reopenedAt, originalEvidence: safeOriginalEvidence(candidate?.originalEvidence) }
+      ? {
+          auditId,
+          reason,
+          reopenedAt,
+          intent: candidate?.intent === 'UNCHANGED' ? 'UNCHANGED' : 'DETAILS',
+          originalEvidence: safeOriginalEvidence(candidate?.originalEvidence),
+          knownContext: safeKnownReopenContext(candidate?.knownContext),
+        }
       : null;
   } catch {
     return null;
@@ -179,6 +224,7 @@ export class InboxFollowUpService {
       include: {
         audits: { where: { action: 'CONVERSATION_APPLIED' }, take: 1 },
         attachments: { orderBy: { createdAt: 'asc' } },
+        resolution: true,
       },
     });
     if (!report || ['CLOSED', 'REJECTED', 'DUPLICATE'].includes(report.status)) return false;
@@ -196,7 +242,20 @@ export class InboxFollowUpService {
           auditId: reopenAudit.id,
           reason: clean(reopenAudit.note, 2_000),
           reopenedAt: reopenAudit.createdAt.toISOString(),
+          intent: safeJsonValue(reopenAudit.afterJson, 'reopenIntent') === 'UNCHANGED' ? 'UNCHANGED' : 'DETAILS',
           originalEvidence: originalEvidenceFromAttachments(report.attachments),
+          knownContext: safeKnownReopenContext({
+            sourcePath: report.sourcePath,
+            browser: safeJsonValue(report.contextJson, 'userAgent'),
+            viewport: safeJsonValue(report.contextJson, 'viewport'),
+            themeMode: safeJsonValue(report.contextJson, 'themeMode'),
+            priorResolution: report.resolution
+              ? {
+                  solutionSummary: report.resolution.solutionSummary,
+                  verificationSummary: report.resolution.verificationSummary,
+                }
+              : null,
+          }),
         }
       : null;
     try {

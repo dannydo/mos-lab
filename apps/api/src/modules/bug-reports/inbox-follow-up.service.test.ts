@@ -32,7 +32,15 @@ test('a claimed reopen carries its immutable reporter reason to the worker', asy
     auditId: 99,
     reason: 'Nút lưu vẫn không lưu dữ liệu.',
     reopenedAt: '2026-09-03T08:00:00.000Z',
+    intent: 'UNCHANGED' as const,
     originalEvidence: [{ id: 701, fileName: 'save-still-fails.png', mimeType: 'image/png', sizeBytes: 128 }],
+    knownContext: {
+      sourcePath: '/dashboard',
+      browser: 'Chrome 151',
+      viewport: { width: 3027, height: 1638, devicePixelRatio: 1.25 },
+      themeMode: 'light' as const,
+      priorResolution: null,
+    },
   };
   const job = {
     id: 'follow-up-1',
@@ -75,6 +83,16 @@ test('a reopen snapshots only original report evidence in its durable follow-up 
           findUnique: async () => ({
             id: 17,
             status: 'NEW',
+            sourcePath: '/dashboard/inbox',
+            contextJson: JSON.stringify({
+              userAgent: 'Mozilla/5.0 Chrome/151.0.0.0',
+              viewport: { width: 3027, height: 1638, devicePixelRatio: 1.25 },
+              themeMode: 'light',
+            }),
+            resolution: {
+              solutionSummary: 'Đã dùng container full width.',
+              verificationSummary: 'Đã kiểm tra tại zoom 125% và 150%.',
+            },
             audits: [],
             attachments: [
               {
@@ -120,6 +138,16 @@ test('a reopen snapshots only original report evidence in its durable follow-up 
   assert.deepEqual(JSON.parse(String(capture.value.eventContextJson)).reopen.originalEvidence, [
     { id: 701, fileName: 'original.png', mimeType: 'image/png', sizeBytes: 128 },
   ]);
+  assert.deepEqual(JSON.parse(String(capture.value.eventContextJson)).reopen.knownContext, {
+    sourcePath: '/dashboard/inbox',
+    browser: 'Mozilla/5.0 Chrome/151.0.0.0',
+    viewport: { width: 3027, height: 1638, devicePixelRatio: 1.25 },
+    themeMode: 'light',
+    priorResolution: {
+      solutionSummary: 'Đã dùng container full width.',
+      verificationSummary: 'Đã kiểm tra tại zoom 125% và 150%.',
+    },
+  });
   assert.equal(capture.value.eventVersion, 'reopen:99');
 });
 
@@ -185,9 +213,17 @@ test('a leased reopen attachment is constrained to the immutable original-eviden
                 auditId: 99,
                 reason: 'Nút lưu vẫn không lưu dữ liệu.',
                 reopenedAt: '2026-09-03T08:00:00.000Z',
+                intent: 'DETAILS',
                 originalEvidence: [
                   { id: 701, fileName: 'save-still-fails.png', mimeType: 'image/png', sizeBytes: 128 },
                 ],
+                knownContext: {
+                  sourcePath: '/dashboard',
+                  browser: '',
+                  viewport: { width: 0, height: 0, devicePixelRatio: 1 },
+                  themeMode: 'unknown',
+                  priorResolution: null,
+                },
               },
             }),
           }),
