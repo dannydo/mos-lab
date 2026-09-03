@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BugReportService } from './bug-report.service.js';
-import { InboxFollowUpService, resolveInboxFollowUpCompletion } from './inbox-follow-up.service.js';
+import {
+  enforceUnchangedReopenOutcome,
+  InboxFollowUpService,
+  resolveInboxFollowUpCompletion,
+} from './inbox-follow-up.service.js';
 
 test('a reopen requires a deliberate re-analysis; NO_OP cannot auto-ready it', () => {
   assert.throws(() => resolveInboxFollowUpCompletion('NO_OP', 'PENDING_AGENT', 'REPORTER_REOPENED'), /re-analysis/i);
@@ -25,6 +29,26 @@ test('a reopen requires a deliberate re-analysis; NO_OP cannot auto-ready it', (
     resultAction: 'ASK_REPORTER',
     confirmClarity: false,
   });
+});
+
+test('an unchanged reopen cannot be sent back for a repeated clarification', () => {
+  assert.deepEqual(
+    enforceUnchangedReopenOutcome(
+      { action: 'ASK_REPORTER', note: 'Cần biết thêm khu vực bị cắt.', question: 'Bạn bị cắt ở đâu?' },
+      {
+        auditId: 99,
+        reason: 'Vẫn giống như trước.',
+        reopenedAt: '2026-09-03T08:00:00.000Z',
+        intent: 'UNCHANGED',
+        originalEvidence: [],
+      }
+    ),
+    {
+      action: 'REANALYSIS_CONFIRMED',
+      note: 'Người báo đã xác nhận lỗi vẫn giống bằng chứng ban đầu; mOS chuyển thẳng sang tái phân tích.',
+      question: null,
+    }
+  );
 });
 
 test('a claimed reopen carries its immutable reporter reason to the worker', async () => {
@@ -159,7 +183,19 @@ test('a legacy reopen completed as NO_OP is automatically requeued once for stri
       crm: {
         crmInboxFollowUpJob: {
           findFirst: async ({ where }: { where: { status?: string } }) =>
-            where.status === 'COMPLETED' ? { reportId: 17 } : null,
+            where.status === 'COMPLETED'
+              ? {
+                  reportId: 17,
+                  eventContextJson: JSON.stringify({
+                    reopen: {
+                      auditId: 99,
+                      reason: 'Hai ảnh gốc vẫn cho thấy lỗi.',
+                      reopenedAt: '2026-09-03T08:00:00.000Z',
+                      originalEvidence: [{ id: 701, fileName: 'original.png', mimeType: 'image/png', sizeBytes: 128 }],
+                    },
+                  }),
+                }
+              : null,
           updateMany: async () => ({ count: 0 }),
           create: async ({ data }: { data: Record<string, unknown> }) => created.push(data),
         },

@@ -150,6 +150,26 @@ export function normalizeInboxFollowUpResult(value: unknown): InboxFollowUpWorke
   return { action, note, question } as InboxFollowUpWorkerResult;
 }
 
+/**
+ * A one-tap "unchanged" reopen is an affirmative reporter decision: mOS must
+ * re-analyse the existing evidence, not send the reporter back through a
+ * clarification loop. The one exception is an explicit image-read failure,
+ * which the worker handles before it can inspect the original evidence.
+ */
+export function enforceUnchangedReopenOutcome(
+  result: InboxFollowUpWorkerResult,
+  reopen: BugReportReopenContext | null
+): InboxFollowUpWorkerResult {
+  const isExplicitEvidenceFailure =
+    result.action === 'ASK_REPORTER' && /ảnh gốc/i.test(result.question || '') && /không thể mở/i.test(result.note);
+  if (reopen?.intent !== 'UNCHANGED' || result.action !== 'ASK_REPORTER' || isExplicitEvidenceFailure) return result;
+  return {
+    action: 'REANALYSIS_CONFIRMED',
+    note: 'Người báo đã xác nhận lỗi vẫn giống bằng chứng ban đầu; mOS chuyển thẳng sang tái phân tích.',
+    question: null,
+  };
+}
+
 export function resolveInboxFollowUpCompletion(
   action: InboxFollowUpWorkerResult['action'],
   clarificationStatus: BugReportClarificationStatus,
@@ -194,20 +214,74 @@ export class InboxFollowUpService {
         },
       },
       orderBy: { updatedAt: 'asc' },
-      select: { reportId: true },
+      select: { reportId: true, eventContextJson: true },
     });
     if (!legacy) return;
-
-    const requeued = await this.enqueue(fastify, legacy.reportId, 'REPORTER_REOPENED', 'legacy', {
-      reopenEventPrefix: 'reopen-reanalysis',
-    });
-    if (!requeued) return;
+    const reopen = safeReopenContext(legacy.eventContextJson);
+    if (!reopen) return;
+    try {
+      await fastify.prisma.crm.crmInboxFollowUpJob.create({
+        data: {
+          id: randomUUID(),
+          reportId: legacy.reportId,
+          eventKind: 'REPORTER_REOPENED',
+          eventVersion: `reopen-reanalysis:${reopen.auditId}`,
+          eventContextJson: JSON.stringify({ reopen }),
+          expiresAt: new Date(Date.now() + TTL),
+        },
+      });
+    } catch {
+      return; // immutable version means the exact legacy event was already recovered.
+    }
 
     await fastify.prisma.crm.crmBugReportAudit.create({
       data: {
         reportId: legacy.reportId,
         action: 'SYSTEM_REOPEN_REANALYSIS_REQUEUED',
         note: 'Đã tự động phát lại re-analysis cho reopen cũ từng bị kết thúc NO_OP.',
+      },
+    });
+  }
+
+  /** Recover one historical unchanged reopen that was incorrectly sent back to the reporter. */
+  private static async recoverOneUnchangedReopenQuestion(fastify: FastifyInstance): Promise<void> {
+    const staleQuestion = await fastify.prisma.crm.crmInboxFollowUpJob.findFirst({
+      where: {
+        eventKind: 'REPORTER_REOPENED',
+        status: 'COMPLETED',
+        resultAction: 'ASK_REPORTER',
+        eventVersion: { startsWith: 'reopen:' },
+        report: { is: { status: 'NEW', clarificationStatus: 'WAITING_REPORTER' } },
+      },
+      orderBy: { updatedAt: 'asc' },
+      select: { reportId: true, eventContextJson: true },
+    });
+    if (!staleQuestion) return;
+    const reopen = safeReopenContext(staleQuestion.eventContextJson);
+    if (reopen?.intent !== 'UNCHANGED') return;
+    try {
+      await fastify.prisma.crm.crmInboxFollowUpJob.create({
+        data: {
+          id: randomUUID(),
+          reportId: staleQuestion.reportId,
+          eventKind: 'REPORTER_REOPENED',
+          eventVersion: `reopen-unchanged-reanalysis:${reopen.auditId}`,
+          eventContextJson: JSON.stringify({ reopen }),
+          expiresAt: new Date(Date.now() + TTL),
+        },
+      });
+    } catch {
+      return; // the one-shot recovery was already queued.
+    }
+    await fastify.prisma.crm.crmBugReport.update({
+      where: { id: staleQuestion.reportId },
+      data: { clarificationStatus: 'PENDING_AGENT', clarificationSummary: null, clarifiedAt: null },
+    });
+    await fastify.prisma.crm.crmBugReportAudit.create({
+      data: {
+        reportId: staleQuestion.reportId,
+        action: 'SYSTEM_REOPEN_UNCHANGED_REQUEUED',
+        note: 'Đã tự động tái phân tích reopen “giống như trước”; không yêu cầu người báo lặp lại thông tin đã có.',
       },
     });
   }
@@ -282,6 +356,7 @@ export class InboxFollowUpService {
     const safeWorker = clean(workerId, 100);
     if (!safeWorker) throw new InboxFollowUpError('Worker ID không hợp lệ.');
     await this.recoverOneLegacyReopen(fastify).catch(() => undefined);
+    await this.recoverOneUnchangedReopenQuestion(fastify).catch(() => undefined);
     await fastify.prisma.crm.crmInboxFollowUpJob.updateMany({
       where: { status: 'LEASED', leaseExpiresAt: { lte: now }, expiresAt: { gt: now } },
       data: { status: 'PENDING', leaseToken: null, leasedBy: null, leaseExpiresAt: null },
@@ -334,11 +409,13 @@ export class InboxFollowUpService {
     leaseToken: string,
     raw: unknown
   ): Promise<FollowUpCompletion | null> {
-    const result = normalizeInboxFollowUpResult(raw);
+    const submittedResult = normalizeInboxFollowUpResult(raw);
     const job = await fastify.prisma.crm.crmInboxFollowUpJob.findFirst({
       where: { id, status: 'LEASED', leaseToken, leaseExpiresAt: { gt: new Date() } },
     });
     if (!job) throw new InboxFollowUpError('Lease đã hết hạn.', 409);
+    const reopen = safeReopenContext(job.eventContextJson);
+    const result = enforceUnchangedReopenOutcome(submittedResult, reopen);
     const report = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id: job.reportId } });
     if (!report) throw new InboxFollowUpError('Ticket không còn tồn tại.', 404, 'BUG_NOT_FOUND');
     const completion = resolveInboxFollowUpCompletion(
@@ -370,7 +447,7 @@ export class InboxFollowUpService {
       ? {
           reportId: job.reportId,
           eventKind: job.eventKind as InboxFollowUpWorkerJob['eventKind'],
-          reopen: safeReopenContext(job.eventContextJson),
+          reopen,
         }
       : null;
   }
