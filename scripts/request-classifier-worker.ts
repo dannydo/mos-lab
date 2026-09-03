@@ -1073,7 +1073,10 @@ function runRealtime(): void {
       updateConnectionMode('RECONNECTING');
       const delay = retryMs + Math.floor(Math.random() * 250);
       retryMs = Math.min(30_000, retryMs * 2);
-      setTimeout(connect, delay).unref();
+      // Keep launchd's worker alive while the WebSocket is reconnecting.  An
+      // unreferenced timer lets Node exit cleanly before the fallback poll can
+      // run, which strands a leased implementation job without a live runner.
+      setTimeout(connect, delay);
     });
   };
   connect();
@@ -1092,8 +1095,8 @@ async function main(): Promise<void> {
   setInterval(() => {
     if (connectionMode !== 'WEBSOCKET') updateConnectionMode('POLLING');
     void drain();
-  }, POLL_INTERVAL_MS).unref();
-  setInterval(() => void sendWorkerHealthHeartbeat(), HEARTBEAT_INTERVAL_MS).unref();
+  }, POLL_INTERVAL_MS);
+  setInterval(() => void sendWorkerHealthHeartbeat(), HEARTBEAT_INTERVAL_MS);
 }
 
 if (process.argv[1]?.endsWith('request-classifier-worker.ts')) {
