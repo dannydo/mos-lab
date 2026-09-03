@@ -95,17 +95,17 @@ describe('getBugReportWorkflowStage', () => {
     });
   });
 
-  it('never paints a NEW Agent-clarification ticket as implementation from stale progress', () => {
-    const staleImplementation = {
+  it('renders the exact server workflow snapshot without a client-side transition', () => {
+    const serverSnapshot = {
       ...baseReport,
       status: 'NEW' as const,
       clarification: { status: 'PENDING_AGENT' as const, summary: null, clarifiedAt: null },
-      agentProgress: { ...baseReport.agentProgress, stage: 'IMPLEMENTING' as const },
+      agentProgress: { ...baseReport.agentProgress, stage: 'REOPENED_BY_REPORTER' as const },
     };
-    expect(effectiveBugReportAgentProgress(staleImplementation)).toMatchObject({ stage: 'ANALYZING' });
-    expect(getBugReportWorkflowStage(staleImplementation)).toMatchObject({
+    expect(effectiveBugReportAgentProgress(serverSnapshot)).toBe(serverSnapshot.agentProgress);
+    expect(getBugReportWorkflowStage(serverSnapshot)).toMatchObject({
       position: 1,
-      label: 'Đang phân tích',
+      label: 'Agent tái phân tích reopen',
     });
   });
 

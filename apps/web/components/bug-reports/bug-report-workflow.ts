@@ -104,32 +104,13 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
 };
 
 /**
- * The server owns status, clarification, durable progress, and next action.
- * This defensive presentation projection refuses an impossible local/stale
- * combination from suggesting code/test while the server says Agent clarity is
- * still pending. It does not create a client-side workflow transition.
+ * The server owns the workflow snapshot.  This compatibility helper remains
+ * so existing Inbox surfaces all read the same API field; it must never invent
+ * a client-side transition from status or clarification fields.
  */
 export function effectiveBugReportAgentProgress(
   report: Pick<BugReportSummary, 'status' | 'clarification' | 'agentProgress'>
 ): BugReportAgentProgress {
-  if (report.status === 'NEW' && report.clarification.status === 'PENDING_AGENT') {
-    const stage = report.agentProgress.stage;
-    const isClarificationStage = [
-      'NOT_VIEWED',
-      'ANALYZING',
-      'CHECKING_BUSINESS_LOGIC',
-      'REPORTER_REPLIED',
-      'REOPENED_BY_REPORTER',
-      'REOPENED_BY_DANNY',
-    ].includes(stage);
-    if (!isClarificationStage) {
-      return {
-        stage: 'ANALYZING',
-        note: 'Agent đang làm rõ theo trạng thái server; chưa có quyền sửa hoặc kiểm thử.',
-        updatedAt: report.agentProgress.updatedAt,
-      };
-    }
-  }
   return report.agentProgress;
 }
 

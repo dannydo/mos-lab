@@ -551,7 +551,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Khi ticket đã đủ rõ để lập phương án, worker outbound phải tạo đúng một plan native theo từng phiên bản sự kiện; plan không phải là quyền triển khai.',
     commandments: [
       'Chỉ ticket NEW hoặc APPROVED có clarification READY mới được enqueue plan; ticket mơ hồ, đang triển khai hoặc đã kết thúc không được lập plan tự động.',
-      'Mỗi plan job phải khóa theo eventVersion, lease và kiểm tra stale ngay trước khi ghi để retry hoặc event trùng không tạo plan thứ hai.',
+      'Mỗi plan job phải khóa theo eventVersion của nội dung cần phân tích, lease và kiểm tra stale ngay trước khi ghi để retry hoặc event trùng không tạo plan thứ hai. Triage status/priority và audit vận hành không phải nội dung plan, nên không được làm plan đang chạy trở thành stale.',
       'Plan hoàn tất phải hiển thị native comment gồm bằng chứng/giả thuyết, kết quả, phạm vi, bước làm, kiểm chứng, rủi ro/rollback và quyết định Danny cần duyệt.',
       'Plan sau REPORTER_REOPENED phải mang event REOPEN_REANALYZED, nhãn reopen, lý do immutable của người báo, metadata ảnh gốc đã đối chiếu và audit riêng; priority, Danny approval và implementation approval cũ bị hủy.',
       'Worker plan chỉ phân tích và ghi phương án; không được sửa code, dữ liệu, cấu hình, triage, priority hay deploy. Các cổng duyệt triển khai và deploy vẫn tách biệt.',
@@ -566,8 +566,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'event-driven', 'plan', 'Danny approval', 'lease', 'idempotency', 'stale'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.2.0',
-    effectiveFrom: '2026-09-03',
+    version: '1.3.0',
+    effectiveFrom: '2026-09-04',
     sources: [
       {
         label: 'Durable plan job source of truth',
@@ -628,6 +628,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Sau khi release được xác minh, người báo/yêu cầu ticket là người nghiệm thu mặc định; Danny chỉ nghiệm thu khi chính Danny là người báo. Người báo có thể đạt hoặc yêu cầu sửa thêm; cả hai quyết định phải cập nhật job, ticket, audit và notification trong cùng giao dịch.',
       'Người báo chọn yêu cầu sửa thêm là phản hồi mới, không phải quyền chạy code: ticket phải quay về Agent phân tích, giữ nguyên bằng chứng cũ, xoá xác nhận làm rõ cũ và chỉ được tạo implementation job mới sau khi requirement/tiêu chí nghiệm thu được xác nhận lại và Danny duyệt riêng.',
       'Từ pha code/test trở đi, Inbox phải suy ra tiến độ và bước tiếp theo từ implementation job bền vững do server trả về. Job FAILED, STALE hoặc EXPIRED phải hiện rõ worker đã dừng an toàn và cần Danny quyết định retry; AWAITING_COMMIT_REVIEW phải hiện rõ chờ Danny duyệt commit. Không dùng nhãn ticket chung để che outcome job.',
+      'Inbox serialise progress và chủ nhân bước tiếp theo trong cùng một server workflow projection. Frontend chỉ render projection này; không được tự đổi chặng từ status, clarification hoặc cache cục bộ.',
       'Worker chỉ lưu bằng chứng vận hành đã lọc (pha, thời điểm tiến triển, số checkpoint), không lưu prompt, nội dung ticket hay stdout/stderr Codex. Sau 10 phút không có bằng chứng mới phải hiện cảnh báo; sau 20 phút không có bằng chứng mới phải dừng an toàn và giữ worktree.',
       'Một phiên code/test mặc định tối đa 45 phút. Khi còn có bằng chứng tiến triển, worker được tự tiếp tục đúng một chặng checkpoint trong cùng worktree và cùng approval; sau đó phải dừng an toàn để Danny quyết định. Không checkpoint nào cho phép commit, push, merge hoặc deploy tự động.',
       'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Retry sau terminal failure chỉ có thể do Danny xác nhận riêng, tối đa hai retry cho cùng source/plan: mỗi retry tạo job/branch/worktree mới liên kết immutable với job terminal ngay trước đó, recheck approval/source/plan trước worktree, prelaunch và result, rồi dừng trước commit. Restart chỉ reclaim lease stale khi không còn Codex PID đã đăng ký sống; worker preflight CLI thật trong môi trường launchd, quản lý process group và terminate group khi timeout/lease failure để không bỏ orphan. Recovery chỉ giữ nguyên active-job pointer khi nó trỏ đúng cùng job; pointer khác là hard stop. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
@@ -641,8 +642,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.11.0',
-    effectiveFrom: '2026-09-03',
+    version: '1.12.0',
+    effectiveFrom: '2026-09-04',
     sources: [
       {
         label: 'Implementation gate and durable job',

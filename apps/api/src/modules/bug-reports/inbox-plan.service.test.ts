@@ -55,6 +55,9 @@ test('plans only tickets genuinely ready for review and versions each source eve
     isInboxPlanStale(version, readyReport({ description: 'Reporter added a material update.' }), 'CLARITY_READY'),
     true
   );
+  // Triage is not plan content. Danny can set priority/approve while a
+  // review-only plan is leased without making the Agent result stale.
+  assert.equal(isInboxPlanStale(version, readyReport({ status: 'APPROVED', priority: 'P1' }), 'CLARITY_READY'), false);
   assert.notEqual(
     inboxPlanEventVersion(readyReport(), 'CLARITY_READY'),
     inboxPlanEventVersion(readyReport(), 'IMPLEMENTATION_APPROVAL')
@@ -134,7 +137,7 @@ test('a reopen plan carries the exact evidence snapshot that re-analysis conside
   assert.deepEqual(JSON.parse(String(capture.value.eventContextJson)).reopen.originalEvidence, reopen.originalEvidence);
 });
 
-test('a stale reopen plan is automatically requeued with its immutable reporter context', async () => {
+test('a legacy stale reopen plan is automatically requeued with its immutable reporter context', async () => {
   const reopen = {
     auditId: 88,
     reason: 'The two original screenshots still reproduce the defect.',

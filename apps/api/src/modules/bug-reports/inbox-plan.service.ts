@@ -35,8 +35,6 @@ type EventVersionSource = {
   requestType: string;
   title: string;
   description: string;
-  status: string;
-  priority: string | null;
   clarificationStatus: string;
   clarificationSummary: string | null;
   businessContext: string | null;
@@ -65,15 +63,18 @@ export function inboxPlanEventVersion(
   eventKind?: InboxPlanEventKind,
   reopen: BugReportReopenContext | null = null
 ): string {
-  // Deliberately exclude operational audit/progress timestamps: they should not
-  // invalidate a plan whose material ticket context is unchanged.
+  // This is a *planning-content* version, not the ticket lifecycle version.
+  // A triage decision (status/priority) may happen while the Agent is writing
+  // a review-only plan. It must not strand that plan. Execution authority has
+  // its own source version in inbox-implementation-version.ts and rechecks
+  // priority plus Danny's separate approval before code/test can start.
+  // Deliberately exclude operational audit/progress timestamps for the same
+  // reason: they do not change what the Agent was asked to analyse.
   const content = JSON.stringify({
     eventKind: eventKind ?? null,
     requestType: source.requestType,
     title: source.title,
     description: source.description,
-    status: source.status,
-    priority: source.priority,
     clarificationStatus: source.clarificationStatus,
     clarificationSummary: source.clarificationSummary,
     businessContext: source.businessContext,

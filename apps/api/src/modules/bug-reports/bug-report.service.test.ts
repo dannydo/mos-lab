@@ -7,6 +7,7 @@ import {
   bugReportAgentProgress,
   bugReportClarificationWhere,
   bugReportCompletionPath,
+  bugReportWorkflowProjection,
   bugReportNextAction,
   bugReportNextActorWhere,
   isAgentReadableBugStatus,
@@ -228,6 +229,34 @@ test('projects every Agent milestone from canonical ticket state and audit activ
     'REOPENED_BY_REPORTER'
   );
   assert.equal(bugReportAgentProgress(progressSource({ status: 'CLOSED', closedAt: agentAt })).stage, 'COMPLETED');
+});
+
+test('serializes progress and next owner from one server-owned workflow projection', () => {
+  const agentAt = new Date('2026-08-31T01:05:00.000Z');
+  assert.deepEqual(
+    bugReportWorkflowProjection(
+      progressSource({
+        status: 'APPROVED',
+        clarificationStatus: 'READY',
+        approvedAt: agentAt,
+      })
+    ),
+    {
+      agentProgress: {
+        stage: 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL',
+        note: null,
+        updatedAt: agentAt.toISOString(),
+      },
+      nextAction: {
+        actor: 'DANNY',
+        type: 'IMPLEMENT',
+        label: 'Duyệt code/test',
+        detail:
+          'Plan đã có, nhưng Agent chỉ được bắt đầu sau khi Danny duyệt code/test. Khi job bền vững được tạo, UI mới hiển thị Agent triển khai.',
+        waitingSince: agentAt.toISOString(),
+      },
+    }
+  );
 });
 
 test('allows fix progress only after clarity, approval, and priority are present', () => {

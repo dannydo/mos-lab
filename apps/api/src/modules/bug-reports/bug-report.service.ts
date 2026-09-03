@@ -779,6 +779,24 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
   );
 }
 
+/**
+ * The only server-side projection used when serialising an Inbox ticket.
+ *
+ * Status, clarification, audit history and the durable implementation job are
+ * intentionally resolved together at this boundary.  Browser code receives
+ * the already-decided progress and owner; it must not infer a lifecycle step
+ * from a ticket status on its own.
+ */
+export function bugReportWorkflowProjection(source: AgentProgressSource): {
+  agentProgress: BugReportAgentProgress;
+  nextAction: BugReportNextAction;
+} {
+  return {
+    agentProgress: bugReportAgentProgress(source),
+    nextAction: bugReportNextAction(source),
+  };
+}
+
 export function assertAgentProgressUpdateAllowed(input: {
   stage: unknown;
   status: BugReportStatus;
@@ -808,6 +826,7 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
   const requestType = storedRequestType(row.requestType);
   const implementation = implementationStateDto(row.inboxImplementationJobs[0]);
   const progressSource = { ...row, implementation: row.inboxImplementationJobs[0] ?? null };
+  const workflow = bugReportWorkflowProjection(progressSource);
   const reopened = [...row.audits]
     .reverse()
     .find((audit) => audit.action === 'REPORTER_REOPENED' && Boolean(audit.note?.trim()));
@@ -861,9 +880,9 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
           },
         }
       : null,
-    agentProgress: bugReportAgentProgress(progressSource),
+    agentProgress: workflow.agentProgress,
     implementation,
-    nextAction: bugReportNextAction(progressSource),
+    nextAction: workflow.nextAction,
     reporter: reporterDto(row.reporter),
     approvedAt: row.approvedAt?.toISOString() ?? null,
     timeline: {
