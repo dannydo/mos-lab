@@ -1,5 +1,6 @@
 node_modules
 apps/api
+apps/.venv-ads-portal
 .git
 .turbo
 *.log
