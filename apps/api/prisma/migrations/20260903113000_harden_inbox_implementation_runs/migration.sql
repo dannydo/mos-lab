@@ -5,5 +5,5 @@ ALTER TABLE `crm_inbox_implementation_jobs`
   ADD COLUMN `lease_heartbeat_at` DATETIME(0) NULL AFTER `lease_expires_at`,
   ADD COLUMN `process_pid` INTEGER NULL AFTER `lease_heartbeat_at`,
   ADD COLUMN `execution_phase` VARCHAR(32) NOT NULL DEFAULT 'QUEUED' AFTER `process_pid`,
-  ADD UNIQUE INDEX `crm_inbox_implementation_jobs_report_source_plan_retry_key` (`report_id`, `source_version`, `plan_version`, `retry_sequence`),
-  ADD INDEX `crm_inbox_implementation_jobs_retry_of_idx` (`retry_of_job_id`);
+  ADD UNIQUE INDEX `crm_inbox_implementation_jobs_report_id_source_version_plan__key` (`report_id`, `source_version`, `plan_version`, `retry_sequence`),
+  ADD INDEX `crm_inbox_implementation_jobs_retry_of_job_id_idx` (`retry_of_job_id`);
