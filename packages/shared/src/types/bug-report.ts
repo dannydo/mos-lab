@@ -455,6 +455,20 @@ export const INBOX_IMPLEMENTATION_JOB_STATUSES = [
 ] as const;
 export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STATUSES)[number];
 
+/**
+ * Safe, server-derived execution metadata for Inbox. It deliberately excludes
+ * branch/worktree paths, prompts, source content and worker credentials.
+ */
+export interface BugReportImplementationState {
+  status: InboxImplementationJobStatus;
+  phase: string;
+  failureCode: string | null;
+  hasRetainedDraft: boolean;
+  startedAt: string | null;
+  completedAt: string | null;
+  updatedAt: string;
+}
+
 export interface InboxImplementationWorkerJob {
   id: string;
   ticketId: number;
@@ -591,6 +605,8 @@ export interface BugReportSummary {
   commentCount: number;
   clarification: BugReportClarification;
   agentProgress: BugReportAgentProgress;
+  /** The latest durable implementation job, when the ticket has entered code/test. */
+  implementation: BugReportImplementationState | null;
   nextAction: BugReportNextAction;
   reporter: BugReportReporter;
   approvedAt: string | null;

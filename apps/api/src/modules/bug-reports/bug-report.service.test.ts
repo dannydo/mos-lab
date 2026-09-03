@@ -74,6 +74,28 @@ test('projects every Agent milestone from canonical ticket state and audit activ
     ).stage,
     'IMPLEMENTATION_FAILED'
   );
+  assert.deepEqual(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'APPROVED',
+        clarificationStatus: 'READY',
+        implementation: {
+          status: 'FAILED',
+          executionPhase: 'FAILED',
+          failureCode: 'CODEX_EXEC_TIMEOUT',
+          retainUntil: new Date('2026-09-30T01:00:00.000Z'),
+          startedAt: agentAt,
+          completedAt: null,
+          updatedAt: new Date('2026-08-31T01:10:00.000Z'),
+        },
+      })
+    ),
+    {
+      stage: 'IMPLEMENTATION_FAILED',
+      note: 'Codex vượt thời lượng chạy cho phép; worker đã dừng an toàn. Bản nháp được giữ, chưa commit hoặc deploy.',
+      updatedAt: '2026-08-31T01:10:00.000Z',
+    }
+  );
   assert.equal(
     bugReportAgentProgress(progressSource({ status: 'IN_PROGRESS', clarificationStatus: 'READY', startedAt: agentAt }))
       .stage,
@@ -92,6 +114,24 @@ test('projects every Agent milestone from canonical ticket state and audit activ
             createdAt: agentAt,
           },
         ],
+      })
+    ).stage,
+    'AWAITING_DANNY_COMMIT_REVIEW'
+  );
+  assert.equal(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        implementation: {
+          status: 'AWAITING_COMMIT_REVIEW',
+          executionPhase: 'AWAITING_COMMIT_REVIEW',
+          failureCode: null,
+          retainUntil: null,
+          startedAt: agentAt,
+          completedAt: agentAt,
+          updatedAt: agentAt,
+        },
       })
     ).stage,
     'AWAITING_DANNY_COMMIT_REVIEW'
@@ -257,6 +297,42 @@ test('derives one canonical next owner and action for every workflow gate', () =
       })
     ).type,
     'RETRY_IMPLEMENTATION'
+  );
+  assert.equal(
+    bugReportNextAction(
+      progressSource({
+        status: 'APPROVED',
+        clarificationStatus: 'READY',
+        implementation: {
+          status: 'FAILED',
+          executionPhase: 'FAILED',
+          failureCode: 'CODEX_EXEC_TIMEOUT',
+          retainUntil: new Date('2026-09-30T01:00:00.000Z'),
+          startedAt: null,
+          completedAt: null,
+          updatedAt: new Date('2026-08-31T01:10:00.000Z'),
+        },
+      })
+    ).type,
+    'RETRY_IMPLEMENTATION'
+  );
+  assert.equal(
+    bugReportNextAction(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        implementation: {
+          status: 'AWAITING_COMMIT_REVIEW',
+          executionPhase: 'AWAITING_COMMIT_REVIEW',
+          failureCode: null,
+          retainUntil: null,
+          startedAt: null,
+          completedAt: null,
+          updatedAt: new Date('2026-08-31T01:10:00.000Z'),
+        },
+      })
+    ).type,
+    'REVIEW_COMMIT'
   );
   assert.equal(
     bugReportNextAction(

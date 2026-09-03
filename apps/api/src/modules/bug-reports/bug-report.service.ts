@@ -25,6 +25,7 @@ import {
   type BugReportClarificationStatus,
   type BugReportContext,
   type BugReportDetail,
+  type BugReportImplementationState,
   type BugReportListQuery,
   type BugReportListResponse,
   type BugReportNotification,
@@ -131,6 +132,19 @@ const reportInclude = {
   audits: {
     orderBy: { createdAt: 'asc' as const },
     include: { actor: { select: { id: true, displayName: true, role: true, avatarUrl: true } } },
+  },
+  inboxImplementationJobs: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+    select: {
+      status: true,
+      executionPhase: true,
+      failureCode: true,
+      retainUntil: true,
+      startedAt: true,
+      completedAt: true,
+      updatedAt: true,
+    },
   },
 } satisfies Prisma.CrmBugReportInclude;
 
@@ -352,11 +366,22 @@ function resolutionDto(value: ReportWithRelations['resolution']): BugReportResol
   };
 }
 
+type ImplementationProgressSnapshot = {
+  status: string;
+  executionPhase: string;
+  failureCode: string | null;
+  retainUntil: Date | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  updatedAt: Date;
+};
+
 type AgentProgressSource = Pick<
   CrmBugReport,
   'status' | 'clarificationStatus' | 'createdAt' | 'approvedAt' | 'startedAt' | 'resolvedAt' | 'closedAt' | 'updatedAt'
 > & {
   audits: Array<{ action: string; note: string | null; createdAt: Date }>;
+  implementation?: ImplementationProgressSnapshot | null;
 };
 
 const AGENT_PROGRESS_AUDIT_PREFIX = 'AGENT_PROGRESS_';
@@ -407,6 +432,72 @@ function progressResult(
   };
 }
 
+function implementationStateDto(
+  value: ImplementationProgressSnapshot | null | undefined
+): BugReportImplementationState | null {
+  if (!value) return null;
+  const status = value.status as BugReportImplementationState['status'];
+  return {
+    status,
+    phase: clipped(value.executionPhase, 32) || 'QUEUED',
+    failureCode: clipped(value.failureCode, 100) || null,
+    hasRetainedDraft: Boolean(value.retainUntil),
+    startedAt: value.startedAt?.toISOString() ?? null,
+    completedAt: value.completedAt?.toISOString() ?? null,
+    updatedAt: value.updatedAt.toISOString(),
+  };
+}
+
+function implementationFailureNote(value: ImplementationProgressSnapshot): string {
+  if (value.failureCode === 'CODEX_EXEC_TIMEOUT') {
+    return 'Codex vượt thời lượng chạy cho phép; worker đã dừng an toàn. Bản nháp được giữ, chưa commit hoặc deploy.';
+  }
+  if (value.failureCode === 'LEASE_EXPIRED') {
+    return 'Lease worker đã hết hạn; worker đã dừng an toàn. Bản nháp được giữ để rà soát trước khi retry.';
+  }
+  if (value.failureCode === 'STALE_APPROVAL_OR_PLAN' || value.failureCode === 'STALE_BEFORE_RESULT') {
+    return 'Yêu cầu hoặc phương án đã thay đổi trong lúc xử lý; kết quả cũ không được dùng.';
+  }
+  return 'Worker đã dừng an toàn. Danny có thể rà soát bản nháp và quyết định retry một lần khi cần.';
+}
+
+function implementationStage(source: AgentProgressSource, fallbackAt: Date | null): BugReportAgentProgress | null {
+  const implementation = source.implementation;
+  if (!implementation) return null;
+  if (['FAILED', 'STALE', 'EXPIRED'].includes(implementation.status)) {
+    return {
+      stage: 'IMPLEMENTATION_FAILED',
+      note: implementationFailureNote(implementation),
+      updatedAt: implementation.updatedAt.toISOString(),
+    };
+  }
+  if (implementation.status === 'AWAITING_COMMIT_REVIEW') {
+    return {
+      stage: 'AWAITING_DANNY_COMMIT_REVIEW',
+      note: 'Code và kiểm thử đã dừng ở worktree review; chưa commit, push hoặc deploy.',
+      updatedAt: implementation.updatedAt.toISOString(),
+    };
+  }
+  if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
+    return {
+      stage: 'QUEUED_FOR_FIX',
+      note: 'Job code/test đã được ghi nhận và đang chờ worker nhận.',
+      updatedAt: implementation.updatedAt.toISOString(),
+    };
+  }
+  if (implementation.status === 'RUNNING') {
+    return {
+      stage: implementation.executionPhase === 'VERIFYING' ? 'VERIFYING' : 'IMPLEMENTING',
+      note:
+        implementation.executionPhase === 'VERIFYING'
+          ? 'Agent đang kiểm thử thay đổi.'
+          : 'Agent đang chạy code/test trong worktree riêng.',
+      updatedAt: implementation.updatedAt.toISOString(),
+    };
+  }
+  return fallbackAt ? progressResult('IMPLEMENTING', source, null, fallbackAt) : null;
+}
+
 export function bugReportAgentProgress(source: AgentProgressSource): BugReportAgentProgress {
   const latest = latestAgentActivity(source);
   if (source.status === 'CLOSED') return progressResult('COMPLETED', source, null, source.closedAt);
@@ -438,6 +529,8 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('NOT_VIEWED', source, null, source.createdAt);
   }
   if (source.status === 'NEW') return progressResult('READY_FOR_TRIAGE', source, latest, source.updatedAt);
+  const durableImplementationStage = implementationStage(source, source.startedAt);
+  if (durableImplementationStage) return durableImplementationStage;
   if (latest?.action === 'AGENT_IMPLEMENTATION_FAILED') {
     return progressResult('IMPLEMENTATION_FAILED', source, latest, source.updatedAt);
   }
@@ -542,6 +635,39 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
     );
   }
 
+  const implementation = source.implementation;
+  if (implementation && ['FAILED', 'STALE', 'EXPIRED'].includes(implementation.status)) {
+    return nextAction(
+      'DANNY',
+      'RETRY_IMPLEMENTATION',
+      'Quyết định retry',
+      implementationFailureNote(implementation),
+      implementation.updatedAt
+    );
+  }
+  if (implementation?.status === 'AWAITING_COMMIT_REVIEW') {
+    return nextAction(
+      'DANNY',
+      'REVIEW_COMMIT',
+      'Duyệt commit',
+      'Code và kiểm thử đã dừng ở worktree review. Commit, push và deploy vẫn cần duyệt tách biệt.',
+      implementation.updatedAt
+    );
+  }
+  if (implementation && ['PENDING', 'LEASED', 'RUNNING'].includes(implementation.status)) {
+    return nextAction(
+      'AGENT',
+      implementation.status === 'PENDING' || implementation.status === 'LEASED'
+        ? 'IMPLEMENT'
+        : 'CONTINUE_IMPLEMENTATION',
+      implementation.status === 'RUNNING' ? 'Đang code/test' : 'Chờ worker nhận',
+      implementation.status === 'RUNNING'
+        ? 'Worker đang xử lý trong worktree riêng.'
+        : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',
+      implementation.updatedAt
+    );
+  }
+
   const latestActivity = latestAgentActivity(source);
   if (latestActivity?.action === 'DANNY_IMPLEMENTATION_REOPENED') {
     return nextAction(
@@ -634,6 +760,8 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
   // Normalize after parsing so one incomplete ticket cannot break the whole Inbox.
   const context = sanitizeBugReportContext(safeJsonParse<unknown>(row.contextJson, {}));
   const requestType = storedRequestType(row.requestType);
+  const implementation = implementationStateDto(row.inboxImplementationJobs[0]);
+  const progressSource = { ...row, implementation: row.inboxImplementationJobs[0] ?? null };
   return {
     id: row.id,
     key: formatBugReportKey(row.id, requestType),
@@ -652,8 +780,9 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
       summary: row.clarificationSummary,
       clarifiedAt: row.clarifiedAt?.toISOString() ?? null,
     },
-    agentProgress: bugReportAgentProgress(row),
-    nextAction: bugReportNextAction(row),
+    agentProgress: bugReportAgentProgress(progressSource),
+    implementation,
+    nextAction: bugReportNextAction(progressSource),
     reporter: reporterDto(row.reporter),
     approvedAt: row.approvedAt?.toISOString() ?? null,
     timeline: {

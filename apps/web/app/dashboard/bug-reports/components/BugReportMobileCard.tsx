@@ -39,7 +39,11 @@ export function BugReportMobileCard({ report, onOpen }: BugReportMobileCardProps
             <div className="flex items-center gap-2">
               <RequestTypeTag requestType={report.requestType} />
               <PriorityTag priority={report.priority} />
-              <BugStatusTag status={report.status} reporterName={report.reporter.displayName} />
+              <BugStatusTag
+                status={report.status}
+                reporterName={report.reporter.displayName}
+                agentProgress={report.agentProgress.stage}
+              />
             </div>
           </div>
           <ClarificationTag status={report.clarification.status} reporterName={report.reporter.displayName} />

@@ -186,12 +186,28 @@ export function BugStatusTag({
   agentProgress?: BugReportAgentProgressStage;
 }) {
   const label =
-    status === 'FIXED' && agentProgress === 'AWAITING_DANNY_ACCEPTANCE'
-      ? 'Chờ Danny nghiệm thu'
-      : status === 'FIXED'
-        ? `${reporterWaitingLabel(reporterName)} duyệt`
-        : STATUS_LABELS[status];
-  return <StatusTag status={STATUS_TONES[status]} label={label} />;
+    agentProgress === 'AWAITING_DANNY_COMMIT_REVIEW'
+      ? 'Chờ Danny duyệt commit'
+      : agentProgress === 'IMPLEMENTATION_FAILED'
+        ? 'Agent dừng an toàn'
+        : agentProgress === 'QUEUED_FOR_FIX'
+          ? 'Đã duyệt · chờ worker'
+          : agentProgress === 'IMPLEMENTING' || agentProgress === 'VERIFYING'
+            ? 'Đang code/test'
+            : status === 'FIXED' && agentProgress === 'AWAITING_DANNY_ACCEPTANCE'
+              ? 'Chờ Danny nghiệm thu'
+              : status === 'FIXED'
+                ? `${reporterWaitingLabel(reporterName)} duyệt`
+                : STATUS_LABELS[status];
+  const tone =
+    agentProgress === 'IMPLEMENTATION_FAILED'
+      ? 'error'
+      : agentProgress === 'AWAITING_DANNY_COMMIT_REVIEW'
+        ? 'warning'
+        : agentProgress === 'IMPLEMENTING' || agentProgress === 'VERIFYING' || agentProgress === 'QUEUED_FOR_FIX'
+          ? 'processing'
+          : STATUS_TONES[status];
+  return <StatusTag status={tone} label={label} />;
 }
 
 export function RequestTypeTag({ requestType }: { requestType: BugReportRequestType }) {
