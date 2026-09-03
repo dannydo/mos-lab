@@ -12,6 +12,7 @@ import { InboxPlanService } from './inbox-plan.service.js';
 const LEASE_MS = 12 * 60 * 1000;
 const RETRY_LIMIT = 3;
 const CLI_ARGUMENTS_RECOVERY_ATTEMPT = 'CLI_ARGUMENTS_RECOVERED';
+const CLI_PROCESS_RECOVERY_ATTEMPT = 'CLI_PROCESS_RECOVERED';
 const JOB_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const REVIEW_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const FAILURE_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
@@ -433,6 +434,14 @@ export class InboxImplementationService {
               failureCode: 'CODEX_EXEC_EXIT_2',
               attemptCount: RETRY_LIMIT,
             },
+            // A process that exited without a lifecycle notification can leave
+            // a RUNNING lease to expire. Once the worker gains close-event
+            // handling, allow exactly one marked recovery of that same job.
+            {
+              status: 'PENDING',
+              failureCode: 'LEASE_EXPIRED',
+              attemptCount: RETRY_LIMIT + 1,
+            },
           ],
         },
       });
@@ -441,17 +450,28 @@ export class InboxImplementationService {
       // recoverable job. A different pointer is a hard stop: never replace a
       // possible concurrent execution.
       if (report.implementationActiveJobId && report.implementationActiveJobId !== job.id) continue;
-      const recoveredCliArguments = job.status === 'FAILED';
+      const recoveryKind =
+        job.status === 'FAILED' ? 'CLI_ARGUMENTS' : job.failureCode === 'LEASE_EXPIRED' ? 'CLI_PROCESS' : 'STALE';
       const recovered = await fastify.prisma.crm.$transaction(async (tx) => {
         const reset = await tx.crmInboxImplementationJob.updateMany({
           where: {
             id: job.id,
             status: job.status,
-            failureCode: recoveredCliArguments ? 'CODEX_EXEC_EXIT_2' : 'STALE_APPROVAL_OR_PLAN',
+            failureCode:
+              recoveryKind === 'CLI_ARGUMENTS'
+                ? 'CODEX_EXEC_EXIT_2'
+                : recoveryKind === 'CLI_PROCESS'
+                  ? 'LEASE_EXPIRED'
+                  : 'STALE_APPROVAL_OR_PLAN',
           },
           data: {
             status: 'PENDING',
-            failureCode: recoveredCliArguments ? CLI_ARGUMENTS_RECOVERY_ATTEMPT : null,
+            failureCode:
+              recoveryKind === 'CLI_ARGUMENTS'
+                ? CLI_ARGUMENTS_RECOVERY_ATTEMPT
+                : recoveryKind === 'CLI_PROCESS'
+                  ? CLI_PROCESS_RECOVERY_ATTEMPT
+                  : null,
             leaseToken: null,
             leasedBy: null,
             leaseExpiresAt: null,
@@ -503,6 +523,7 @@ export class InboxImplementationService {
         OR: [
           { attemptCount: { lt: RETRY_LIMIT } },
           { attemptCount: RETRY_LIMIT, failureCode: CLI_ARGUMENTS_RECOVERY_ATTEMPT },
+          { attemptCount: RETRY_LIMIT + 1, failureCode: CLI_PROCESS_RECOVERY_ATTEMPT },
         ],
       },
       include: { report: { include: implementationReportInclude() } },

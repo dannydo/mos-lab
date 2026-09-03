@@ -115,6 +115,14 @@ test('reports a numeric Codex exit code without child output', async () => {
   );
 });
 
+test('treats the final child close event as a Codex completion', async () => {
+  const child = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  await executeCodexCli('/custom/codex', ['exec'], '/tmp', 1_000, (() => {
+    queueMicrotask(() => child.emit('close', 0, null));
+    return child;
+  }) as never);
+});
+
 test('accepts Codex structured JSON and rejects unsafe output', () => {
   assert.deepEqual(
     parseCodexClassification(

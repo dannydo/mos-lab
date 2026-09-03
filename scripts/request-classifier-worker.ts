@@ -243,11 +243,16 @@ export async function executeCodexCli(
       finish(() => reject(new CodexCliError('CODEX_EXEC_TIMEOUT')));
     }, timeoutMs);
     child.once('error', () => finish(() => reject(new CodexCliError('CODEX_EXEC_FAILED'))));
-    child.once('exit', (code, signal) => {
+    const handleTermination = (code: number | null, signal: NodeJS.Signals | null) => {
       if (code === 0) finish(resolve);
       else if (signal) finish(() => reject(new CodexCliError('CODEX_EXEC_SIGNAL')));
       else finish(() => reject(new CodexCliError(`CODEX_EXEC_EXIT_${Number.isInteger(code) ? code : -1}`)));
-    });
+    };
+    // Some CLI wrapper processes can miss `exit` while their stdio is ignored;
+    // `close` is the final child-process lifecycle event and guarantees the
+    // isolated job returns to its lease/fail-safe path.
+    child.once('exit', handleTermination);
+    child.once('close', handleTermination);
   });
 }
 

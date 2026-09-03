@@ -307,3 +307,44 @@ test('recovery grants only one extra claim for the known pre-fix CLI argument fa
   assert.equal(job.failureCode, 'CLI_ARGUMENTS_RECOVERED');
   assert.equal(report.implementationActiveJobId, 'job-1');
 });
+
+test('recovery marks one final close-event repair after a lease-expired process', async () => {
+  const draft = source();
+  const sourceVersion = inboxImplementationSourceVersion(draft);
+  const report = source({
+    status: 'IN_PROGRESS',
+    implementationActiveJobId: 'job-1',
+    inboxPlanJobs: [
+      { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
+    ],
+  });
+  const job = {
+    id: 'job-1',
+    status: 'PENDING',
+    failureCode: 'LEASE_EXPIRED',
+    sourceVersion,
+    planVersion: 'v1:plan',
+  };
+  const tx = {
+    crmInboxImplementationJob: {
+      updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+        job.status = String(data.status);
+        job.failureCode = String(data.failureCode);
+        return { count: 1 };
+      },
+    },
+    crmBugReport: { updateMany: async () => ({ count: 1 }) },
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findMany: async () => [report] },
+        crmInboxImplementationJob: { findFirst: async () => ({ ...job, attemptCount: 4 }) },
+        $transaction: async (callback: (value: typeof tx) => Promise<boolean>) => callback(tx),
+      },
+    },
+  };
+
+  assert.equal(await InboxImplementationService.recoverInterruptedImplementationJobs(fastify as never), 1);
+  assert.equal(job.failureCode, 'CLI_PROCESS_RECOVERED');
+});
