@@ -1,5 +1,7 @@
 node_modules
 apps/api
 .git
+.turbo
 *.log
 apps/web/.next
+apps/web/.next-qa
