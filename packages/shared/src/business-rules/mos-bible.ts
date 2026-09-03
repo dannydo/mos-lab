@@ -647,6 +647,45 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'Outbound isolated-worktree worker', reference: 'scripts/request-classifier-worker.ts' },
     ],
   },
+  {
+    id: 'UI-008',
+    book: 'SYSTEM',
+    title: 'Thời gian Agent phải tách khỏi thời gian chờ của con người',
+    summary:
+      'Mỗi ticket Inbox phải cho thấy rõ Agent thực sự làm việc bao lâu; thời gian chờ người báo, Danny hoặc hàng đợi hệ thống không được gộp vào AI execution time.',
+    commandments: [
+      'AI execution time chỉ là tổng các đoạn Agent đang active: phân tích/plan, code và test, retry/sửa lỗi, deploy, và xác minh sau deploy tới khi sẵn sàng nghiệm thu.',
+      'WAITING_REPORTER, WAITING_DANNY, SYSTEM_QUEUE và BLOCKED được lưu, hiển thị và tính riêng; không được làm số giờ Agent bị phình lên.',
+      'Mỗi đoạn thời gian phải có giờ server bắt đầu/kết thúc, loại giai đoạn và outcome; job thiếu mốc kết thúc phải được đánh dấu đang chạy hoặc không đủ dữ liệu, không được suy diễn là Agent làm liên tục.',
+      'Timeline ticket và dashboard tuần/tháng phải dùng cùng dữ liệu server-authoritative; dashboard nêu rõ ticket nào tốn thời gian Agent nhiều nhất, cùng median và p95 theo loại/giai đoạn.',
+      'Telemetry thời gian chỉ chứa metadata vận hành; không lưu prompt, nội dung ticket, ảnh đính kèm, token hoặc bí mật môi trường.',
+    ],
+    rationale:
+      'Danny cần biết chính xác nút thắt nằm ở Agent, ở thời gian chờ quyết định hay ở hạ tầng để cải thiện workflow bằng bằng chứng thay vì cảm giác.',
+    examples: [
+      'Agent code/test 18 phút, chờ Danny duyệt commit 2 giờ và deploy/xác minh 7 phút: AI execution time là 25 phút; Danny wait là 2 giờ.',
+      'Job nằm trong hàng đợi 6 phút trước khi worker bắt đầu: 6 phút đó thuộc System wait, không phải Agent active time.',
+    ],
+    exceptions: [
+      'Dữ liệu lịch sử không có mốc đáng tin phải hiển thị là ước tính hoặc không có dữ liệu; không được tạo độ chính xác giả.',
+    ],
+    tags: ['mOS Inbox', 'AI execution time', 'thời gian Agent', 'queue', 'approval', 'deploy', 'observability'],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-03',
+    sources: [
+      { label: 'Backlog được Danny chốt', reference: 'MOS-FEAT-23' },
+      {
+        label: 'Vòng đời implementation job hiện có',
+        reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
+      },
+      {
+        label: 'Health và thời gian job do server chốt',
+        reference: 'apps/api/src/modules/bug-reports/request-classifier-worker-health.service.ts',
+      },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {
