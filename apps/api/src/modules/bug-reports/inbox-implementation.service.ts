@@ -11,6 +11,7 @@ import { InboxPlanService } from './inbox-plan.service.js';
 
 const LEASE_MS = 12 * 60 * 1000;
 const RETRY_LIMIT = 3;
+const CLI_ARGUMENTS_RECOVERY_ATTEMPT = 'CLI_ARGUMENTS_RECOVERED';
 const JOB_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const REVIEW_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const FAILURE_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
@@ -420,16 +421,39 @@ export class InboxImplementationService {
           reportId: report.id,
           sourceVersion: gate.sourceVersion,
           planVersion: gate.plan.planVersion,
-          status: 'STALE',
-          failureCode: 'STALE_APPROVAL_OR_PLAN',
-          attemptCount: { lt: RETRY_LIMIT },
+          OR: [
+            {
+              status: 'STALE',
+              failureCode: 'STALE_APPROVAL_OR_PLAN',
+              attemptCount: { lt: RETRY_LIMIT },
+            },
+            // One bounded repair for a worker that ran the pre-fix conflicting
+            // CLI flags while the API was rolling forward. The marker lets
+            // claim grant exactly one fourth invocation, never a retry loop.
+            {
+              status: 'FAILED',
+              failureCode: 'CODEX_EXEC_EXIT_2',
+              attemptCount: RETRY_LIMIT,
+            },
+          ],
         },
       });
       if (!job) continue;
+      const recoveredCliArguments = job.status === 'FAILED';
       const recovered = await fastify.prisma.crm.$transaction(async (tx) => {
         const reset = await tx.crmInboxImplementationJob.updateMany({
-          where: { id: job.id, status: 'STALE', failureCode: 'STALE_APPROVAL_OR_PLAN' },
-          data: { status: 'PENDING', failureCode: null, leaseToken: null, leasedBy: null, leaseExpiresAt: null },
+          where: {
+            id: job.id,
+            status: job.status,
+            failureCode: recoveredCliArguments ? 'CODEX_EXEC_EXIT_2' : 'STALE_APPROVAL_OR_PLAN',
+          },
+          data: {
+            status: 'PENDING',
+            failureCode: recoveredCliArguments ? CLI_ARGUMENTS_RECOVERY_ATTEMPT : null,
+            leaseToken: null,
+            leasedBy: null,
+            leaseExpiresAt: null,
+          },
         });
         if (!reset.count) return false;
         const attached = await tx.crmBugReport.updateMany({
@@ -470,7 +494,14 @@ export class InboxImplementationService {
     }
 
     const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
-      where: { status: 'PENDING', expiresAt: { gt: now }, attemptCount: { lt: RETRY_LIMIT } },
+      where: {
+        status: 'PENDING',
+        expiresAt: { gt: now },
+        OR: [
+          { attemptCount: { lt: RETRY_LIMIT } },
+          { attemptCount: RETRY_LIMIT, failureCode: CLI_ARGUMENTS_RECOVERY_ATTEMPT },
+        ],
+      },
       include: { report: { include: implementationReportInclude() } },
       orderBy: { createdAt: 'asc' },
     });
