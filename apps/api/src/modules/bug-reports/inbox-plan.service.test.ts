@@ -134,6 +134,42 @@ test('a reopen plan carries the exact evidence snapshot that re-analysis conside
   assert.deepEqual(JSON.parse(String(capture.value.eventContextJson)).reopen.originalEvidence, reopen.originalEvidence);
 });
 
+test('a stale reopen plan is automatically requeued with its immutable reporter context', async () => {
+  const reopen = {
+    auditId: 88,
+    reason: 'The two original screenshots still reproduce the defect.',
+    reopenedAt: '2026-09-03T08:00:00.000Z',
+    intent: 'UNCHANGED' as const,
+    originalEvidence: [{ id: 12, fileName: 'original-before.png', mimeType: 'image/png', sizeBytes: 120 }],
+  };
+  const report = readyReport({ status: 'APPROVED', priority: 'P1' });
+  const created: Array<Record<string, unknown>> = [];
+  const audits: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxPlanJob: {
+          findMany: async () => [
+            {
+              reportId: 14,
+              eventContextJson: JSON.stringify({ reopen }),
+              report,
+            },
+          ],
+          create: async ({ data }: { data: Record<string, unknown> }) => created.push(data),
+        },
+        crmBugReport: { findUnique: async () => report },
+        crmBugReportAudit: { create: async ({ data }: { data: Record<string, unknown> }) => audits.push(data) },
+      },
+    },
+  };
+
+  assert.equal(await InboxPlanService.recoverStaleReopenPlanEvents(fastify as never), 1);
+  assert.equal(created[0]?.eventKind, 'REOPEN_REANALYZED');
+  assert.deepEqual(JSON.parse(String(created[0]?.eventContextJson)).reopen, reopen);
+  assert.equal(audits[0]?.action, 'SYSTEM_REOPEN_PLAN_REQUEUED');
+});
+
 test('a completed plan posts one visible native plan without changing implementation state', async () => {
   const report = readyReport();
   const eventVersion = inboxPlanEventVersion(report, 'CLARITY_READY');

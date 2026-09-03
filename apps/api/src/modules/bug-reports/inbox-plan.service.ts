@@ -265,6 +265,49 @@ function snapshot(source: { status: string; clarificationStatus: string; priorit
 }
 
 export class InboxPlanService {
+  /**
+   * Re-delivers a reopen plan only when the original worker correctly stopped
+   * because Danny's review changed the ticket between claim and completion.
+   *
+   * The original job remains immutable audit evidence.  The replacement gets
+   * a fresh event version from the current ticket, but keeps the exact reopen
+   * snapshot (reason and original evidence) that the reporter supplied.  This
+   * keeps a valid reopen from being stranded merely because Danny approved the
+   * ticket while its re-analysis plan was in flight.
+   */
+  static async recoverStaleReopenPlanEvents(fastify: FastifyInstance): Promise<number> {
+    const staleJobs = await fastify.prisma.crm.crmInboxPlanJob.findMany({
+      where: {
+        eventKind: 'REOPEN_REANALYZED',
+        status: 'COMPLETED',
+        resultAction: 'STALE',
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        report: {
+          include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 8 } },
+        },
+      },
+      orderBy: { updatedAt: 'asc' },
+      take: 20,
+    });
+    let queued = 0;
+    for (const staleJob of staleJobs) {
+      const reopen = safeReopenContext(staleJob.eventContextJson);
+      if (!reopen || !isInboxPlanEligible(staleJob.report)) continue;
+      if (!(await this.enqueue(fastify, staleJob.reportId, 'REOPEN_REANALYZED', reopen))) continue;
+      await fastify.prisma.crm.crmBugReportAudit.create({
+        data: {
+          reportId: staleJob.reportId,
+          action: 'SYSTEM_REOPEN_PLAN_REQUEUED',
+          note: 'Đã tự động xếp lại phương án reopen sau khi trạng thái duyệt làm plan trước đó trở nên cũ.',
+        },
+      });
+      queued += 1;
+    }
+    return queued;
+  }
+
   static async enqueue(
     fastify: FastifyInstance,
     reportId: number,
@@ -303,6 +346,7 @@ export class InboxPlanService {
     const now = new Date();
     const safeWorker = clean(workerId, 100);
     if (!safeWorker) throw new InboxPlanError('Worker ID không hợp lệ.');
+    await this.recoverStaleReopenPlanEvents(fastify);
     await fastify.prisma.crm.crmInboxPlanJob.updateMany({
       where: { status: 'LEASED', leaseExpiresAt: { lte: now }, expiresAt: { gt: now } },
       data: { status: 'PENDING', leaseToken: null, leasedBy: null, leaseExpiresAt: null },
