@@ -2250,6 +2250,10 @@ model CrmBugReport {
   duplicateOfId     Int?      @map("duplicate_of_id")
   approvedByStaffId Int?      @map("approved_by_staff_id")
   approvedAt        DateTime? @map("approved_at") @db.DateTime(0)
+  implementationApprovedByStaffId Int? @map("implementation_approved_by_staff_id")
+  implementationApprovedAt DateTime? @map("implementation_approved_at") @db.DateTime(0)
+  implementationApprovalSourceVersion String? @map("implementation_approval_source_version") @db.VarChar(80)
+  implementationActiveJobId String? @unique @map("implementation_active_job_id") @db.VarChar(36)
   startedAt         DateTime? @map("started_at") @db.DateTime(0)
   resolvedAt        DateTime? @map("resolved_at") @db.DateTime(0)
   closedAt          DateTime? @map("closed_at") @db.DateTime(0)
@@ -2269,6 +2273,7 @@ model CrmBugReport {
   comments CrmBugReportComment[]
   inboxFollowUpJobs CrmInboxFollowUpJob[]
   inboxPlanJobs CrmInboxPlanJob[]
+  inboxImplementationJobs CrmInboxImplementationJob[]
 
   @@index([statusSort, prioritySort, createdAt])
   @@index([requestType, statusSort, prioritySort, createdAt], map: "bug_request_type_status_idx")
@@ -2556,6 +2561,9 @@ model CrmInboxPlanJob {
   leasedBy String? @map("leased_by") @db.VarChar(100)
   leaseExpiresAt DateTime? @map("lease_expires_at") @db.DateTime(0)
   resultAction String? @map("result_action") @db.VarChar(32)
+  sourceVersion String? @map("source_version") @db.VarChar(80)
+  planVersion String? @map("plan_version") @db.VarChar(80)
+  reviewCommentId Int? @map("review_comment_id")
   fallbackReason String? @map("fallback_reason") @db.VarChar(400)
   expiresAt DateTime @map("expires_at") @db.DateTime(0)
   createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
@@ -2566,4 +2574,48 @@ model CrmInboxPlanJob {
   @@index([status, expiresAt])
   @@index([leaseExpiresAt])
   @@map("crm_inbox_plan_jobs")
+}
+
+/// A durable, single-concurrency implementation lease. Worktrees are retained
+/// for Danny's review and no row implies permission to commit or deploy.
+model CrmInboxImplementationJob {
+  id String @id @db.VarChar(36)
+  reportId Int @map("report_id")
+  sourceVersion String @map("source_version") @db.VarChar(80)
+  planVersion String @map("plan_version") @db.VarChar(80)
+  status String @default("PENDING") @db.VarChar(32)
+  attemptCount Int @default(0) @map("attempt_count")
+  leaseToken String? @map("lease_token") @db.VarChar(64)
+  leasedBy String? @map("leased_by") @db.VarChar(100)
+  leaseExpiresAt DateTime? @map("lease_expires_at") @db.DateTime(0)
+  branchName String @map("branch_name") @db.VarChar(160)
+  worktreePath String? @map("worktree_path") @db.VarChar(500)
+  summary String? @db.Text
+  changedFilesJson String? @map("changed_files_json") @db.LongText
+  testsJson String? @map("tests_json") @db.LongText
+  diffStat String? @map("diff_stat") @db.Text
+  risksAndRollback String? @map("risks_and_rollback") @db.Text
+  failureCode String? @map("failure_code") @db.VarChar(100)
+  retainUntil DateTime? @map("retain_until") @db.DateTime(0)
+  startedAt DateTime? @map("started_at") @db.DateTime(0)
+  completedAt DateTime? @map("completed_at") @db.DateTime(0)
+  expiresAt DateTime @map("expires_at") @db.DateTime(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, sourceVersion, planVersion])
+  @@index([status, expiresAt])
+  @@index([leaseExpiresAt])
+  @@map("crm_inbox_implementation_jobs")
+}
+
+/// Fixed singleton row used as a database-backed global build permit.
+model CrmInboxImplementationWorkerLock {
+  id Int @id @default(1)
+  activeJobId String? @map("active_job_id") @db.VarChar(36)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@map("crm_inbox_implementation_worker_lock")
 }

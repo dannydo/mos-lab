@@ -3,13 +3,17 @@ import { EventEmitter } from 'node:events';
 import test from 'node:test';
 import {
   buildCodexExecArgs,
+  buildCodexImplementationArgs,
   executeCodexCli,
+  implementationWorktreeRoot,
+  formatInboxImplementationFailure,
   formatInboxFollowUpFailure,
   formatInboxPlanFailure,
   parseCodexClassification,
   parseCodexConversation,
   parseCodexInboxFollowUp,
   parseCodexInboxPlan,
+  parseCodexInboxImplementation,
   resolveCodexCliPath,
 } from './request-classifier-worker.js';
 
@@ -45,6 +49,26 @@ test('builds a noninteractive Codex invocation with private structured output', 
       options: { cwd: '/tmp', stdio: 'ignore', windowsHide: true },
     },
   ]);
+});
+
+test('builds a write-enabled but noninteractive implementation command for an isolated worktree', () => {
+  const args = buildCodexImplementationArgs('/tmp/schema.json', '/tmp/final.json', 'safe scope');
+  assert.deepEqual(args.slice(0, 9), [
+    'exec',
+    '--ephemeral',
+    '--ignore-user-config',
+    '--sandbox',
+    'workspace-write',
+    '--approve-for-me',
+    '--color',
+    'never',
+    '--output-schema',
+  ]);
+  assert.deepEqual(args.slice(-3), ['--output-last-message', '/tmp/final.json', 'safe scope']);
+  assert.equal(
+    implementationWorktreeRoot('/Users/dannydo/projects/mos-lab'),
+    '/Users/dannydo/projects/.mos-inbox-worktrees'
+  );
 });
 
 test('never includes child-process content in Inbox failure telemetry', () => {
@@ -151,6 +175,28 @@ test('accepts structured plan output and never logs ticket text on a plan failur
   const line = formatInboxPlanFailure('codex_exec', new Error(`failure: ${sensitive}`));
   assert.equal(line, 'Inbox plan class=inbox_plan phase=codex_exec code=UNEXPECTED_FAILURE');
   assert.doesNotMatch(line, /QA ticket body|failure:/);
+});
+
+test('accepts a bounded implementation review result and never exposes child output on failure', () => {
+  assert.deepEqual(
+    parseCodexInboxImplementation(
+      JSON.stringify({
+        summary: 'Updated the presentation-only health card.',
+        tests: [{ command: 'pnpm --filter @mos-lab/web test:run', status: 'PASSED' }],
+        risksAndRollback: 'Revert the isolated worktree diff if Danny declines review.',
+      })
+    ),
+    {
+      summary: 'Updated the presentation-only health card.',
+      tests: [{ command: 'pnpm --filter @mos-lab/web test:run', status: 'PASSED' }],
+      risksAndRollback: 'Revert the isolated worktree diff if Danny declines review.',
+    }
+  );
+  assert.throws(() => parseCodexInboxImplementation('{"summary":"missing required structured fields"}'));
+  const sensitive = 'ticket body secret must never reach worker logs';
+  const line = formatInboxImplementationFailure('codex_exec', new Error(`failed: ${sensitive}`));
+  assert.equal(line, 'Inbox implementation class=inbox_implementation phase=codex_exec code=UNEXPECTED_FAILURE');
+  assert.doesNotMatch(line, /ticket body|secret|failed:/);
 });
 
 test('accepts one-question guided intake output', () => {

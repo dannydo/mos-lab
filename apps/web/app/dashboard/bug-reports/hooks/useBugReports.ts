@@ -5,6 +5,7 @@ import type {
   BugPriority,
   BugReportClarificationFilter,
   BugReportDetail,
+  ApproveBugReportImplementationResult,
   BugReportListSummary,
   BugReportNextActor,
   BugReportRequestType,
@@ -210,6 +211,17 @@ export function useBugReports() {
     [load]
   );
 
+  const approveImplementation = useCallback(
+    async (id: number): Promise<ApproveBugReportImplementationResult> => {
+      const response = await apiClient.bugReports.approveImplementation(id, { acknowledged: true });
+      if (!response.data) throw new Error('Máy chủ không trả về trạng thái duyệt implementation.');
+      await load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
+      return response.data;
+    },
+    [load]
+  );
+
   const confirmClose = useCallback(
     async (id: number, request: ConfirmCloseBugReportRequest): Promise<BugReportDetail> => {
       const response = await apiClient.bugReports.confirmClose(id, request);
@@ -244,6 +256,7 @@ export function useBugReports() {
     refresh: load,
     getDetail,
     triage,
+    approveImplementation,
     confirmClose,
     comment,
   };

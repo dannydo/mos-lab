@@ -8,6 +8,7 @@ import {
   type InboxPlanWorkerJob,
   type InboxPlanWorkerResult,
 } from '@mos-lab/shared';
+import { inboxImplementationPlanVersion, inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 
 const TTL = 24 * 60 * 60 * 1000;
 const LEASE = 2 * 60 * 1000;
@@ -130,7 +131,11 @@ export function normalizeInboxPlanResult(value: unknown): InboxPlanWorkerResult 
   return { action: validatedAction, note, plan: null };
 }
 
-function visiblePlanBody(eventKind: string, result: InboxPlanWorkerResult): string {
+function visiblePlanBody(
+  eventKind: string,
+  result: InboxPlanWorkerResult,
+  planMetadata: { sourceVersion: string; planVersion: string } | null
+): string {
   if (result.action !== 'POST_PLAN' || !result.plan) {
     const label = result.action === 'NO_OP' ? 'Không cần phương án mới' : 'Chưa đủ cơ sở để lập phương án';
     return [
@@ -171,6 +176,7 @@ function visiblePlanBody(eventKind: string, result: InboxPlanWorkerResult): stri
     plan.approvalRequest,
     '',
     'Đây chỉ là phương án. Agent chưa sửa code, thay đổi dữ liệu, đổi triage/priority hay triển khai production.',
+    planMetadata ? `<!-- mos-inbox-plan source=${planMetadata.sourceVersion} plan=${planMetadata.planVersion} -->` : '',
   ].join('\n');
 }
 
@@ -280,7 +286,12 @@ export class InboxPlanService {
     return null;
   }
 
-  static async complete(fastify: FastifyInstance, id: string, leaseToken: string, raw: unknown): Promise<void> {
+  static async complete(
+    fastify: FastifyInstance,
+    id: string,
+    leaseToken: string,
+    raw: unknown
+  ): Promise<number | null> {
     const result = normalizeInboxPlanResult(raw);
     const job = await fastify.prisma.crm.crmInboxPlanJob.findFirst({
       where: { id, status: 'LEASED', leaseToken, leaseExpiresAt: { gt: new Date() } },
@@ -307,11 +318,19 @@ export class InboxPlanService {
     };
     if (!isInboxPlanEligible(report) || isInboxPlanStale(job.eventVersion, report)) {
       await completeAsStale();
-      return;
+      return null;
     }
 
     const now = new Date();
-    const body = visiblePlanBody(job.eventKind, result);
+    const sourceVersion =
+      result.action === 'POST_PLAN' && result.plan ? inboxImplementationSourceVersion(report) : null;
+    const planVersion =
+      sourceVersion && result.plan ? inboxImplementationPlanVersion(sourceVersion, result.plan) : null;
+    const body = visiblePlanBody(
+      job.eventKind,
+      result,
+      sourceVersion && planVersion ? { sourceVersion, planVersion } : null
+    );
     const auditAction =
       result.action === 'POST_PLAN'
         ? 'AGENT_PLAN_POSTED'
@@ -346,6 +365,8 @@ export class InboxPlanService {
         data: {
           status: 'COMPLETED',
           resultAction: result.action,
+          sourceVersion,
+          planVersion,
           fallbackReason: null,
           leaseToken: null,
           leasedBy: null,
@@ -354,9 +375,12 @@ export class InboxPlanService {
       });
       if (!completion.count) return 'LEASE_EXPIRED';
       const updated = await tx.crmBugReport.update({ where: { id: current.id }, data: { updatedAt: now } });
-      await tx.crmBugReportComment.create({
+      const comment = await tx.crmBugReportComment.create({
         data: { reportId: current.id, authorType: 'AGENT', kind: 'COMMENT', body },
       });
+      if (result.action === 'POST_PLAN') {
+        await tx.crmInboxPlanJob.update({ where: { id: job.id }, data: { reviewCommentId: comment.id } });
+      }
       await tx.crmBugReportAudit.create({
         data: {
           reportId: current.id,
@@ -366,9 +390,10 @@ export class InboxPlanService {
           afterJson: snapshot(updated),
         },
       });
-      return 'POSTED';
+      return { state: 'POSTED' as const, reportId: current.id };
     });
-    if (outcome === 'POSTED' || outcome === 'STALE') return;
+    if (outcome === 'STALE') return null;
+    if (typeof outcome === 'object') return result.action === 'POST_PLAN' ? outcome.reportId : null;
     throw new InboxPlanError('Lease đã hết hạn.', 409);
   }
 

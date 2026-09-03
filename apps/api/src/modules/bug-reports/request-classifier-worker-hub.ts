@@ -33,7 +33,12 @@ export const RequestClassifierWorkerHub = {
     return false;
   },
   notify(
-    type: 'classification_available' | 'conversation_available' | 'inbox_follow_up_available' | 'inbox_plan_available'
+    type:
+      | 'classification_available'
+      | 'conversation_available'
+      | 'inbox_follow_up_available'
+      | 'inbox_plan_available'
+      | 'inbox_implementation_available'
   ) {
     const body = JSON.stringify({ type });
     for (const peer of peers) {

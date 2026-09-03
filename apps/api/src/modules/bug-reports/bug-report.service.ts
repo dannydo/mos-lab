@@ -377,6 +377,9 @@ function latestAgentActivity(source: AgentProgressSource) {
         [
           'AGENT_ASKED_CLARIFICATION',
           'AGENT_CONFIRMED_CLARITY',
+          'AGENT_IMPLEMENTATION_REVIEW_READY',
+          'AGENT_IMPLEMENTATION_FAILED',
+          'AGENT_IMPLEMENTATION_RETRY_SCHEDULED',
           'CLARIFICATION_ANSWERED',
           'REPORTER_REOPENED',
         ].includes(audit.action))
@@ -433,7 +436,14 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     if (latest?.action === 'REPORTER_REOPENED') {
       return progressResult('REOPENED_BY_REPORTER', source, latest, source.updatedAt);
     }
-    const stage = latest?.action === 'AGENT_PROGRESS_VERIFYING' ? 'VERIFYING' : 'IMPLEMENTING';
+    const stage =
+      latest?.action === 'AGENT_IMPLEMENTATION_REVIEW_READY'
+        ? 'AWAITING_DANNY_COMMIT_REVIEW'
+        : latest?.action === 'AGENT_IMPLEMENTATION_FAILED'
+          ? 'IMPLEMENTATION_FAILED'
+          : latest?.action === 'AGENT_PROGRESS_VERIFYING'
+            ? 'VERIFYING'
+            : 'IMPLEMENTING';
     return progressResult(stage, source, latest, source.startedAt);
   }
   return progressResult('NOT_VIEWED', source, latest, source.createdAt);
@@ -517,6 +527,16 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
       'Bắt đầu triển khai',
       'Nhận bundle, cập nhật tiến độ, sửa theo phạm vi đã duyệt và kiểm thử.',
       source.approvedAt ?? source.updatedAt
+    );
+  }
+
+  if (latestAgentActivity(source)?.action === 'AGENT_IMPLEMENTATION_REVIEW_READY') {
+    return nextAction(
+      'DANNY',
+      'REVIEW_COMMIT',
+      'Duyệt commit',
+      'Rà soát worktree, diff và kiểm thử. Commit, push và deploy vẫn cần phê duyệt tách biệt.',
+      latestAgentActivity(source)?.createdAt ?? source.updatedAt
     );
   }
 
@@ -1899,8 +1919,6 @@ export class BugReportService {
     }
     if (report.clarification.status === 'PENDING_AGENT') {
       report = await this.updateAgentProgress(fastify, key, { stage: 'ANALYZING' }, { dedupeSameStage: true });
-    } else if (report.clarification.status === 'READY' && report.status === 'APPROVED') {
-      report = await this.updateAgentProgress(fastify, key, { stage: 'IMPLEMENTING' }, { dedupeSameStage: true });
     }
     const similarResolutions = await this.similarResolutions(fastify, report);
     return {

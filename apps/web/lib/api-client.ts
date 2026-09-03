@@ -33,6 +33,8 @@ import type {
   UiExperienceResolveParams,
   UiExperienceResolveResponse,
   BugReportDetail,
+  ApproveBugReportImplementationRequest,
+  ApproveBugReportImplementationResponse,
   BugReportListQuery,
   BugReportListResponse,
   ConfirmCloseBugReportRequest,
@@ -648,6 +650,16 @@ export const apiClient = {
     },
     triage: async (id: number, data: TriageBugReportRequest): Promise<TriageBugReportResponse> => {
       const response = await api.patch<TriageBugReportResponse>(`/bug-reports/${id}/triage`, data);
+      return response.data;
+    },
+    approveImplementation: async (
+      id: number,
+      data: ApproveBugReportImplementationRequest
+    ): Promise<ApproveBugReportImplementationResponse> => {
+      const response = await api.post<ApproveBugReportImplementationResponse>(
+        `/bug-reports/${id}/implementation-approval`,
+        data
+      );
       return response.data;
     },
     confirmClose: async (id: number, data: ConfirmCloseBugReportRequest): Promise<ConfirmCloseBugReportResponse> => {

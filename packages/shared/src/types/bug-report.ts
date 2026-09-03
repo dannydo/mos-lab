@@ -44,6 +44,8 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
   'QUEUED_FOR_FIX',
   'IMPLEMENTING',
   'VERIFYING',
+  'AWAITING_DANNY_COMMIT_REVIEW',
+  'IMPLEMENTATION_FAILED',
   'AWAITING_REPORTER_REVIEW',
   'COMPLETED',
   'STOPPED',
@@ -58,6 +60,7 @@ export const BUG_REPORT_NEXT_ACTION_TYPES = [
   'REVIEW_CLARIFICATION',
   'TRIAGE',
   'IMPLEMENT',
+  'REVIEW_COMMIT',
   'CONTINUE_IMPLEMENTATION',
   'REWORK',
   'REVIEW_RESULT',
@@ -188,6 +191,7 @@ export const REQUEST_CLASSIFIER_WORKER_JOB_KINDS = [
   'CONVERSATION',
   'INBOX_FOLLOW_UP',
   'INBOX_PLAN',
+  'INBOX_IMPLEMENTATION',
 ] as const;
 export type RequestClassifierWorkerJobKind = (typeof REQUEST_CLASSIFIER_WORKER_JOB_KINDS)[number];
 
@@ -370,7 +374,13 @@ export interface InboxFollowUpWorkerResult {
 /** Durable, outbound-only planning work for a ticket that has passed clarification. */
 export const INBOX_PLAN_JOB_STATUSES = ['PENDING', 'LEASED', 'COMPLETED', 'FAILED', 'EXPIRED'] as const;
 export type InboxPlanJobStatus = (typeof INBOX_PLAN_JOB_STATUSES)[number];
-export const INBOX_PLAN_EVENT_KINDS = ['CREATED', 'REPORTER_COMMENT', 'CLARITY_READY', 'TRIAGE_UPDATED'] as const;
+export const INBOX_PLAN_EVENT_KINDS = [
+  'CREATED',
+  'REPORTER_COMMENT',
+  'CLARITY_READY',
+  'TRIAGE_UPDATED',
+  'IMPLEMENTATION_APPROVAL',
+] as const;
 export type InboxPlanEventKind = (typeof INBOX_PLAN_EVENT_KINDS)[number];
 export const INBOX_PLAN_ACTIONS = ['POST_PLAN', 'NO_OP', 'INSUFFICIENT_INFORMATION'] as const;
 export type InboxPlanAction = (typeof INBOX_PLAN_ACTIONS)[number];
@@ -409,6 +419,49 @@ export interface InboxPlanWorkerResult {
   action: InboxPlanAction;
   note: string;
   plan: InboxPlanDraft | null;
+}
+
+/** Durable implementation work starts only after a separate, explicit Danny approval. */
+export const INBOX_IMPLEMENTATION_JOB_STATUSES = [
+  'PENDING',
+  'LEASED',
+  'RUNNING',
+  'AWAITING_COMMIT_REVIEW',
+  'FAILED',
+  'STALE',
+  'EXPIRED',
+] as const;
+export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STATUSES)[number];
+
+export interface InboxImplementationWorkerJob {
+  id: string;
+  ticketId: number;
+  ticketKey: string;
+  sourceVersion: string;
+  planVersion: string;
+  branchName: string;
+  context: {
+    requestType: BugReportRequestType;
+    title: string;
+    description: string;
+    priority: BugPriority;
+    clarificationSummary: string | null;
+    businessContext: string | null;
+    sourcePath: string;
+  };
+  leaseToken: string;
+  attemptCount: number;
+}
+
+export interface InboxImplementationTestResult {
+  command: string;
+  status: 'PASSED' | 'FAILED' | 'NOT_RUN';
+}
+
+export interface InboxImplementationWorkerResult {
+  summary: string;
+  tests: InboxImplementationTestResult[];
+  risksAndRollback: string;
 }
 
 export type CreateRequestConversationResponse = ActionResponse<RequestConversation>;
@@ -598,6 +651,17 @@ export interface TriageBugReportRequest {
   duplicateOfId?: number | null;
 }
 
+/** A separate affirmative action; APPROVED triage alone is never implementation authority. */
+export interface ApproveBugReportImplementationRequest {
+  acknowledged: true;
+}
+
+export interface ApproveBugReportImplementationResult {
+  report: BugReportDetail;
+  implementationQueued: boolean;
+  planRequested: boolean;
+}
+
 export interface ConfirmCloseBugReportRequest {
   businessContext?: string | null;
   note?: string | null;
@@ -658,6 +722,7 @@ export interface BugReportCommentCreateResult {
 
 export type CreateBugReportResponse = ActionResponse<BugReportCreateResult>;
 export type TriageBugReportResponse = ActionResponse<BugReportDetail>;
+export type ApproveBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportResponse = ActionResponse<BugReportDetail>;
 export type CreateBugReportCommentResponse = ActionResponse<BugReportCommentCreateResult>;

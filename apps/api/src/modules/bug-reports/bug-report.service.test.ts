@@ -75,6 +75,23 @@ test('projects every Agent milestone from canonical ticket state and audit activ
         status: 'IN_PROGRESS',
         clarificationStatus: 'READY',
         startedAt: agentAt,
+        audits: [
+          {
+            action: 'AGENT_IMPLEMENTATION_REVIEW_READY',
+            note: 'Code and tests are ready for Danny.',
+            createdAt: agentAt,
+          },
+        ],
+      })
+    ).stage,
+    'AWAITING_DANNY_COMMIT_REVIEW'
+  );
+  assert.equal(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        startedAt: agentAt,
         audits: [{ action: 'AGENT_PROGRESS_VERIFYING', note: 'Đang chạy test.', createdAt: agentAt }],
       })
     ).stage,

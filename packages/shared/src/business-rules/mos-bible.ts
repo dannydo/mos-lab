@@ -605,6 +605,38 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'Outbound worker telemetry contract', reference: 'scripts/request-classifier-worker.ts' },
     ],
   },
+  {
+    id: 'UI-007',
+    book: 'SYSTEM',
+    title: 'Inbox implementation phải dừng trước commit và deploy',
+    summary:
+      'Codex CLI chỉ được chạy code/test sau phê duyệt implementation riêng của Danny, trong worktree tách biệt và theo đúng source/plan version; kết quả luôn dừng tại review commit.',
+    commandments: [
+      'APPROVED triage không tự là quyền chạy code: Danny phải thực hiện hành động Duyệt code/test riêng, ticket phải READY, có priority và có native plan khớp source version.',
+      'Mỗi implementation job có lease, idempotency theo source/plan version, một active job mỗi ticket và một permit build toàn cục mặc định cho Mac worker.',
+      'Worker chỉ dùng worktree/branch riêng từ workspace tin cậy; không sửa primary checkout, không commit, push, merge, deploy, migration hay sửa production.',
+      'Chỉ khi CLI thật sự bắt đầu ticket mới chuyển sang IMPLEMENTING. Kết quả thành công phải ghi native review gồm diff/file/test/risk đã lọc và chuyển sang chờ Danny duyệt commit.',
+      'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
+    ],
+    rationale:
+      'Tự động hóa phải giảm thao tác lặp lại nhưng không được vượt qua cổng quyết định của Danny hay làm mất bằng chứng review trước commit/deploy.',
+    examples: [
+      'MOS-BUG-16 có plan/source khớp và Danny bấm Duyệt code/test: worker tạo một worktree, chạy CLI, đăng diff/test an toàn rồi chờ duyệt commit.',
+      'Người báo đổi scope sau duyệt: source version không khớp, job cũ STALE và không được chạy hoặc đăng kết quả cũ.',
+    ],
+    tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-03',
+    sources: [
+      {
+        label: 'Implementation gate and durable job',
+        reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
+      },
+      { label: 'Outbound isolated-worktree worker', reference: 'scripts/request-classifier-worker.ts' },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

@@ -108,13 +108,19 @@ test('a completed plan posts one visible native plan without changing implementa
         return { ...report, ...data };
       },
     },
-    crmBugReportComment: { create: async ({ data }: { data: Record<string, unknown> }) => comments.push(data) },
+    crmBugReportComment: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        comments.push(data);
+        return { id: 101 };
+      },
+    },
     crmBugReportAudit: { create: async ({ data }: { data: Record<string, unknown> }) => audits.push(data) },
     crmInboxPlanJob: {
       updateMany: async ({ data }: { data: Record<string, unknown> }) => {
         jobUpdates.push(data);
         return { count: 1 };
       },
+      update: async () => ({ id: 'job-1' }),
     },
     $queryRaw: async () => [],
   };

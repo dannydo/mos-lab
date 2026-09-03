@@ -22,6 +22,7 @@ import type {
   BugPriority,
   BugReportClarificationFilter,
   BugReportDetail,
+  ApproveBugReportImplementationResult,
   BugReportCommentCreateResult,
   BugReportRequestType,
   BugReportStatus,
@@ -91,12 +92,22 @@ interface DetailDrawerProps {
   onClose: () => void;
   getDetail: (id: number) => Promise<BugReportDetail>;
   triage: (id: number, request: TriageBugReportRequest) => Promise<BugReportDetail>;
+  approveImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
 }
 
-function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose, comment, canTriage }: DetailDrawerProps) {
+function DetailDrawer({
+  reportId,
+  onClose,
+  getDetail,
+  triage,
+  approveImplementation,
+  confirmClose,
+  comment,
+  canTriage,
+}: DetailDrawerProps) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
   const [detail, setDetail] = useState<BugReportDetail | null>(null);
@@ -210,6 +221,30 @@ function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose, comm
     }
   }, [businessContext, confirmClose, detail, hydrateForm, messageApi, note]);
 
+  const approveCodeExecution = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const outcome = await approveImplementation(detail.id);
+      hydrateForm(outcome.report);
+      messageApi.success(
+        outcome.implementationQueued
+          ? 'Đã tạo job code/test trong worktree riêng.'
+          : outcome.planRequested
+            ? 'Đã lưu duyệt; worker đang làm mới plan native trước khi chạy code.'
+            : 'Đã lưu duyệt implementation.'
+      );
+    } catch (error) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt implementation.'));
+    } finally {
+      setSaving(false);
+    }
+  }, [approveImplementation, detail, hydrateForm, messageApi]);
+
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
     label: detail?.requestType === 'FEATURE' ? `Duyệt triển khai ${item}` : `Approve ${item}`,
@@ -252,6 +287,22 @@ function DetailDrawer({ reportId, onClose, getDetail, triage, confirmClose, comm
                   </Button>
                 </Dropdown>
               )}
+              {canTriage &&
+                detail.status === 'APPROVED' &&
+                detail.priority &&
+                detail.clarification.status === 'READY' && (
+                  <Popconfirm
+                    title="Duyệt AI chạy code/test?"
+                    description="AI chỉ làm trong worktree riêng. Không commit, push, merge, deploy hay chạy migration. Sau đó ticket sẽ chờ Danny duyệt commit."
+                    okText="Duyệt code/test"
+                    cancelText="Chưa duyệt"
+                    onConfirm={() => void approveCodeExecution()}
+                  >
+                    <Button type="primary" loading={saving} icon={<AppIcon icon={Gavel} size="sm" />}>
+                      Duyệt code/test
+                    </Button>
+                  </Popconfirm>
+                )}
               {canTriage && ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
                 <Popconfirm
                   title="Đóng ticket bằng ngoại lệ Admin?"
@@ -794,6 +845,7 @@ export default function BugReportsPage() {
         onClose={() => setSelectedId(null)}
         getDetail={inbox.getDetail}
         triage={inbox.triage}
+        approveImplementation={inbox.approveImplementation}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}

@@ -7,6 +7,7 @@ import {
   type AgentMarkBugFixedRequest,
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
+  type ApproveBugReportImplementationRequest,
   type BugReportListQuery,
   type ConfirmCloseBugReportRequest,
   type CreateBugReportCommentRequest,
@@ -25,6 +26,7 @@ import { RequestConversationError, RequestConversationService } from './request-
 import { RequestClassifierWorkerHub } from './request-classifier-worker-hub.js';
 import { InboxFollowUpError, InboxFollowUpService } from './inbox-follow-up.service.js';
 import { InboxPlanError, InboxPlanService } from './inbox-plan.service.js';
+import { InboxImplementationError, InboxImplementationService } from './inbox-implementation.service.js';
 import {
   RequestClassifierWorkerHealthError,
   RequestClassifierWorkerHealthService,
@@ -152,6 +154,7 @@ function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown
     error instanceof RequestConversationError ||
     error instanceof InboxFollowUpError ||
     error instanceof InboxPlanError ||
+    error instanceof InboxImplementationError ||
     error instanceof RequestClassifierWorkerHealthError
   ) {
     return reply.status(error.statusCode).send({ error: error.code, message: error.message, code: error.code });
@@ -373,6 +376,36 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       return sendError(fastify, reply, error, 'Triage bug report failed');
     }
   });
+
+  fastify.post(
+    '/bug-reports/:id/implementation-approval',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const body = request.body as ApproveBugReportImplementationRequest;
+        if (body?.acknowledged !== true) {
+          throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi duyệt implementation.', 422);
+        }
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const outcome = await InboxImplementationService.approve(fastify, id, request.user.id);
+        if (outcome.planRequested && (await InboxPlanService.enqueue(fastify, id, 'IMPLEMENTATION_APPROVAL'))) {
+          RequestClassifierWorkerHub.notify('inbox_plan_available');
+        }
+        if (outcome.implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
+        return reply.send({
+          success: true,
+          data: { report: await BugReportService.detail(fastify, id), ...outcome },
+          message: outcome.implementationQueued
+            ? 'Đã tạo implementation job trong hàng đợi worker.'
+            : outcome.planRequested
+              ? 'Đã lưu duyệt triển khai; worker đang tạo plan native khớp source hiện hành.'
+              : 'Đã lưu duyệt triển khai.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Approve inbox implementation failed');
+      }
+    }
+  );
 
   fastify.patch(
     '/bug-reports/:id/confirm-close',
@@ -647,12 +680,18 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const body = request.body as { leaseToken?: string; result?: unknown };
-        await InboxPlanService.complete(
+        const readyImplementationReportId = await InboxPlanService.complete(
           fastify,
           String((request.params as { id: string }).id || ''),
           String(body.leaseToken || ''),
           body.result
         );
+        if (
+          readyImplementationReportId &&
+          (await InboxImplementationService.enqueueApproved(fastify, readyImplementationReportId))
+        ) {
+          RequestClassifierWorkerHub.notify('inbox_implementation_available');
+        }
         return reply.send({ success: true });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox plan complete failed');
@@ -673,6 +712,80 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox plan fail failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/request-classifier/inbox-implementations/claim',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const workerId = String((request.body as { workerId?: string })?.workerId || '');
+        await RequestClassificationService.heartbeat(fastify, workerId);
+        return reply.send({ data: await InboxImplementationService.claim(fastify, workerId) });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Inbox implementation claim failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-implementations/:id/start',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as { leaseToken?: string; worktreePath?: string };
+        const started = await InboxImplementationService.start(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || ''),
+          body?.worktreePath
+        );
+        return reply.send({ success: true, data: { started } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Start inbox implementation failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-implementations/:id/complete',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as {
+          leaseToken?: string;
+          result?: unknown;
+          changedFiles?: unknown;
+          diffStat?: unknown;
+        };
+        await InboxImplementationService.complete(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || ''),
+          body?.result,
+          { changedFiles: body?.changedFiles, diffStat: body?.diffStat }
+        );
+        return reply.send({ success: true });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Complete inbox implementation failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-implementations/:id/fail',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as { leaseToken?: string; code?: string };
+        await InboxImplementationService.fail(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || ''),
+          body?.code
+        );
+        return reply.send({ success: true });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Fail inbox implementation failed');
       }
     }
   );
