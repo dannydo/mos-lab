@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import type { FastifyInstance } from 'fastify';
 import {
   formatBugReportKey,
@@ -23,6 +25,7 @@ const IMPLEMENTATION_CHECKPOINT_LIMIT = 1;
 // A separate, explicit Danny action is required for every retry. The cap keeps
 // terminal failures reviewable without turning the worker into an auto-loop.
 const MAX_DANNY_RETRY_SEQUENCE = 2;
+const execFileAsync = promisify(execFile);
 
 const IMPLEMENTATION_PROGRESS_LABELS = {
   CODEX_STARTED: 'Codex đang phân tích và triển khai trong worktree riêng.',
@@ -261,7 +264,9 @@ function releaseCommitSha(): string {
 }
 
 /** A release marker proves the version currently live, not a ticket by itself. */
-function verifiedReleasedCommit(input: ReleaseBugReportImplementationRequest): string {
+async function verifiedReleasedCommit(
+  input: ReleaseBugReportImplementationRequest
+): Promise<{ reviewedCommitSha: string; deployedCommitSha: string }> {
   const reviewedCommitSha = clean(input?.commitSha, 64);
   if (!/^[a-f0-9]{7,64}$/i.test(reviewedCommitSha)) {
     throw new InboxImplementationError(
@@ -271,14 +276,22 @@ function verifiedReleasedCommit(input: ReleaseBugReportImplementationRequest): s
     );
   }
   const deployedCommitSha = releaseCommitSha();
-  if (!deployedCommitSha.startsWith(reviewedCommitSha) && !reviewedCommitSha.startsWith(deployedCommitSha)) {
+  if (deployedCommitSha.startsWith(reviewedCommitSha) || reviewedCommitSha.startsWith(deployedCommitSha)) {
+    return { reviewedCommitSha, deployedCommitSha };
+  }
+  try {
+    await execFileAsync('git', ['merge-base', '--is-ancestor', reviewedCommitSha, deployedCommitSha], {
+      cwd: process.cwd(),
+      timeout: 5_000,
+    });
+  } catch {
     throw new InboxImplementationError(
       'Commit đã duyệt chưa khớp release đang chạy trên production. Hãy deploy đúng commit đó trước.',
       409,
       'RELEASE_COMMIT_MISMATCH'
     );
   }
-  return deployedCommitSha;
+  return { reviewedCommitSha, deployedCommitSha };
 }
 
 function safeWorktreePath(value: unknown): string {
@@ -1209,7 +1222,7 @@ export class InboxImplementationService {
       throw new InboxImplementationError('Không tìm thấy worktree đang chờ Danny duyệt commit.', 409);
     }
 
-    const commitSha = verifiedReleasedCommit(input);
+    const { reviewedCommitSha, deployedCommitSha } = await verifiedReleasedCommit(input);
     const changedFiles = safeFileList(safeJsonValue(job.changedFilesJson));
     const tests = normalizeTests(safeJsonValue(job.testsJson));
     const now = new Date();
@@ -1261,7 +1274,7 @@ export class InboxImplementationService {
           solutionSummary: 'Đã deploy bản thay đổi đã duyệt; mOS chờ người báo nghiệm thu.',
           verificationSummary,
           changedFilesJson: JSON.stringify(changedFiles),
-          commitSha,
+          commitSha: reviewedCommitSha,
           releaseUrl,
           searchNormalized: resolutionSearch,
         },
@@ -1271,7 +1284,7 @@ export class InboxImplementationService {
           solutionSummary: 'Đã deploy bản thay đổi đã duyệt; mOS chờ người báo nghiệm thu.',
           verificationSummary,
           changedFilesJson: JSON.stringify(changedFiles),
-          commitSha,
+          commitSha: reviewedCommitSha,
           releaseUrl,
           searchNormalized: resolutionSearch,
         },
@@ -1281,7 +1294,7 @@ export class InboxImplementationService {
           reportId,
           actorStaffId,
           action: 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
-          note: `Danny đã xác nhận commit/deploy ${commitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
+          note: `Danny đã xác nhận commit ${reviewedCommitSha.slice(0, 12)} đã có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
           beforeJson: snapshot(report),
           afterJson: snapshot({
             ...report,
@@ -1298,7 +1311,8 @@ export class InboxImplementationService {
           body: [
             '## Đã phát hành — chờ người báo nghiệm thu',
             '',
-            `- Release: ${commitSha}`,
+            `- Commit đã duyệt: ${reviewedCommitSha}`,
+            `- Release đang chạy: ${deployedCommitSha}`,
             `- Ticket: ${key}`,
             '- Bản sửa đã được deploy. Người báo nghiệm thu đạt hoặc yêu cầu chỉnh lại.',
           ].join('\n'),
