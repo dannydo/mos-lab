@@ -3204,6 +3204,28 @@ body {
   font-weight: 600;
 }
 
+/* The Inbox carries five operational filters plus search and refresh. At
+   browser zoom, their intrinsic widths can exceed the dashboard canvas while
+   the viewport still reports a desktop tier. Stack the two toolbar lanes until
+   there is genuinely enough room, so the page never grows past its right edge. */
+@media (min-width: 768px) and (max-width: 1919px) {
+  .mos-inbox-toolbar .responsive-toolbar-layout {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mos-inbox-toolbar .responsive-toolbar-actions,
+  .mos-inbox-toolbar .responsive-toolbar-actions > .ant-space {
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .mos-inbox-toolbar .responsive-toolbar-actions > .ant-space {
+    justify-content: flex-start;
+  }
+}
+
 .responsive-toolbar .ant-radio-group {
   align-items: stretch;
   display: inline-flex;

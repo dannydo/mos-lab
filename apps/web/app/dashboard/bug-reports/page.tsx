@@ -790,6 +790,7 @@ export default function BugReportsPage() {
           </Tooltip>
         }
         toolbar={{
+          className: 'mos-inbox-toolbar',
           primary: (
             <SearchField
               behavior="filter"
