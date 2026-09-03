@@ -196,8 +196,12 @@ async function createOrReuseDeploymentWorktree(job: InboxImplementationWorkerJob
   const gitRoot = await realpath(await runTrustedGit(['rev-parse', '--show-toplevel'], workspace));
   if (gitRoot !== workspace) throw new Error('TRUSTED_WORKSPACE_INVALID');
   const root = implementationDeploymentWorktreeRoot(workspace);
-  const worktreePath = join(root, job.id);
-  const branchName = `codex/inbox-deploy-${job.id.slice(0, 8)}`;
+  // A failed push can leave a local merge commit in the prior deploy worktree.
+  // Never reset that reviewable evidence in place: every claimed deploy attempt
+  // gets a fresh branch from the then-current origin/main instead.
+  const attempt = String(job.attemptCount);
+  const worktreePath = join(root, `${job.id}-${attempt}`);
+  const branchName = `codex/inbox-deploy-${job.id.slice(0, 8)}-${attempt}`;
   await mkdir(root, { recursive: true, mode: 0o700 });
   try {
     await stat(worktreePath);
