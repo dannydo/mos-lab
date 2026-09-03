@@ -630,7 +630,9 @@ export function assertAgentProgressUpdateAllowed(input: {
 }
 
 function summaryDto(row: ReportWithRelations): BugReportSummary {
-  const context = safeJsonParse<BugReportContext>(row.contextJson, sanitizeBugReportContext({}));
+  // Older/manual records can contain valid JSON that is only a partial context.
+  // Normalize after parsing so one incomplete ticket cannot break the whole Inbox.
+  const context = sanitizeBugReportContext(safeJsonParse<unknown>(row.contextJson, {}));
   const requestType = storedRequestType(row.requestType);
   return {
     id: row.id,
@@ -679,7 +681,7 @@ function detailDto(row: ReportWithRelations): BugReportDetail {
     approvedBy: row.approver ? reporterDto(row.approver) : null,
     resolvedAt: row.resolvedAt?.toISOString() ?? null,
     closedAt: row.closedAt?.toISOString() ?? null,
-    context: safeJsonParse<BugReportContext>(row.contextJson, sanitizeBugReportContext({})),
+    context: sanitizeBugReportContext(safeJsonParse<unknown>(row.contextJson, {})),
     resolution: resolutionDto(row.resolution),
     attachments: row.attachments.map(attachmentDto),
     comments: row.comments.map(commentDto),
