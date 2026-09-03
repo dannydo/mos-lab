@@ -584,6 +584,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Worker outbound gửi identity ổn định, phiên chạy, sequence, phiên bản, trạng thái kết nối, job đang chạy và outcome đã được giới hạn mỗi 30 giây.',
       'Server dùng giờ server và ngưỡng cấu hình để chốt Online ≤ 90 giây, Degraded trước 180 giây hoặc khi có lỗi nghiêm trọng/liên tiếp, Offline từ 180 giây.',
       'Heartbeat cũ không được ghi đè heartbeat mới; state transition chỉ được lưu một lần cho mỗi lần đổi trạng thái.',
+      'Circuit breaker giai đoạn đầu chỉ là ADVISORY: server tính thời lượng job theo giờ server, cảnh báo review/chẩn đoán từ 10/20 phút và code/test từ 15/45 phút. Nó không tự kill, pause, retry hay đổi ticket; ngưỡng pause chỉ là đề nghị kiểm tra thủ công cho tới khi runner có checkpoint/resume an toàn.',
       'Inbox Admin chỉ đọc snapshot an toàn, trạng thái tải/lỗi và transition thấy được; không hiển thị ticket ID, prompt, attachment, token hay output AI.',
     ],
     rationale:
@@ -595,7 +596,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'worker health', 'heartbeat', 'server time', 'observability', 'safe metadata'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.0.0',
+    version: '1.1.0',
     effectiveFrom: '2026-09-03',
     sources: [
       {
@@ -603,6 +604,10 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
         reference: 'apps/api/src/modules/bug-reports/request-classifier-worker-health.service.ts',
       },
       { label: 'Outbound worker telemetry contract', reference: 'scripts/request-classifier-worker.ts' },
+      {
+        label: 'Inbox worker health card',
+        reference: 'apps/web/app/dashboard/bug-reports/components/RequestClassifierWorkerHealthCard.tsx',
+      },
     ],
   },
   {

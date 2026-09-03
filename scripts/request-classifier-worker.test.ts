@@ -149,6 +149,78 @@ test('maps raw Codex process errors and timeouts to safe failure codes', async (
   assert.equal(killed, true);
 });
 
+test('waits for a spawned lease start before settling a child-process error', async () => {
+  const child = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  Object.assign(child, { pid: 4242 });
+  let releaseStart: (() => void) | undefined;
+  const startGate = new Promise<void>((resolve) => {
+    releaseStart = resolve;
+  });
+  let startRecorded = false;
+  child.kill = () => {
+    queueMicrotask(() => child.emit('close', null, 'SIGTERM'));
+    return true;
+  };
+
+  const execution = executeCodexCli(
+    '/custom/codex',
+    ['exec'],
+    '/tmp',
+    1_000,
+    (() => {
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('error', new Error('do not expose child details'));
+      });
+      return child;
+    }) as never,
+    undefined,
+    {
+      onStarted: async () => {
+        startRecorded = true;
+        await startGate;
+      },
+    }
+  );
+
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(startRecorded, true);
+  releaseStart?.();
+  await assert.rejects(execution, (error) =>
+    formatInboxImplementationFailure('codex_exec', error).endsWith('CODEX_EXEC_FAILED')
+  );
+});
+
+test('times out a spawned process only after its lease lifecycle has started', async () => {
+  const child = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  Object.assign(child, { pid: 4242 });
+  let lifecycleStarted = false;
+  let killed = false;
+  child.kill = () => {
+    killed = true;
+    queueMicrotask(() => child.emit('close', null, 'SIGTERM'));
+    return true;
+  };
+
+  await assert.rejects(
+    executeCodexCli(
+      '/custom/codex',
+      ['exec'],
+      '/tmp',
+      1,
+      (() => {
+        queueMicrotask(() => child.emit('spawn'));
+        return child;
+      }) as never,
+      undefined,
+      { onStarted: () => void (lifecycleStarted = true) }
+    ),
+    (error) => formatInboxImplementationFailure('codex_exec', error).endsWith('CODEX_EXEC_TIMEOUT')
+  );
+  assert.equal(lifecycleStarted, true);
+  assert.equal(killed, true);
+});
+
 test('reports a numeric Codex exit code without child output', async () => {
   const child = new EventEmitter() as never as import('node:child_process').ChildProcess;
   await assert.rejects(

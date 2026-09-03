@@ -205,6 +205,15 @@ export type RequestClassifierWorkerOutcomeSeverity = (typeof REQUEST_CLASSIFIER_
 export const REQUEST_CLASSIFIER_WORKER_HEALTH_STATES = ['ONLINE', 'DEGRADED', 'OFFLINE'] as const;
 export type RequestClassifierWorkerHealthState = (typeof REQUEST_CLASSIFIER_WORKER_HEALTH_STATES)[number];
 
+/**
+ * The first circuit-breaker rollout is deliberately informational. A worker
+ * cannot safely checkpoint an arbitrary Codex CLI process, so this signal
+ * never stops a job or changes a ticket by itself.
+ */
+export const REQUEST_CLASSIFIER_WORKER_CIRCUIT_BREAKER_STATES = ['NORMAL', 'WARNING', 'PAUSE_RECOMMENDED'] as const;
+export type RequestClassifierWorkerCircuitBreakerState =
+  (typeof REQUEST_CLASSIFIER_WORKER_CIRCUIT_BREAKER_STATES)[number];
+
 export interface RequestClassifierWorkerHeartbeatRequest {
   workerId: string;
   workerVersion: string;
@@ -265,6 +274,15 @@ export interface RequestClassifierWorkerHealth {
   lastCompletedAt: string | null;
   lastFailedAt: string | null;
   consecutiveFailureCount: number;
+  circuitBreaker: {
+    mode: 'ADVISORY';
+    state: RequestClassifierWorkerCircuitBreakerState;
+    activeJobKind: RequestClassifierWorkerJobKind | null;
+    activeForSeconds: number | null;
+    warningAfterSeconds: number | null;
+    pauseAfterSeconds: number | null;
+    reason: string;
+  };
   latestTransition: RequestClassifierWorkerHealthTransition | null;
   thresholds: RequestClassifierWorkerHealthThresholds;
 }

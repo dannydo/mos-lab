@@ -26,6 +26,12 @@ const CONNECTION_LABELS = {
   UNAVAILABLE: 'Không khả dụng',
 } as const;
 
+const CIRCUIT_BREAKER_LABELS = {
+  NORMAL: 'Trong ngưỡng',
+  WARNING: 'Cần theo dõi',
+  PAUSE_RECOMMENDED: 'Nên tạm dừng để kiểm tra',
+} as const;
+
 function formatDate(value: string | null): string {
   if (!value) return 'Chưa có';
   const date = new Date(value);
@@ -38,6 +44,12 @@ function elapsed(seconds: number | null): string {
   if (seconds < 60) return `${seconds}s trước`;
   const minutes = Math.floor(seconds / 60);
   return `${minutes}m ${seconds % 60}s trước`;
+}
+
+function duration(seconds: number | null): string {
+  if (seconds === null) return '—';
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
 
 function transitionMessage(health: RequestClassifierWorkerHealth): string {
@@ -63,6 +75,7 @@ export function RequestClassifierWorkerHealthCard({
 }) {
   const state = health?.state ?? 'OFFLINE';
   const alertType = state === 'ONLINE' ? 'success' : state === 'DEGRADED' ? 'warning' : 'error';
+  const circuitBreaker = health?.circuitBreaker ?? null;
 
   return (
     <SectionCard
@@ -111,6 +124,18 @@ export function RequestClassifierWorkerHealthCard({
             }
             description={transitionMessage(health)}
           />
+          {circuitBreaker && circuitBreaker.state !== 'NORMAL' ? (
+            <Alert
+              type={circuitBreaker.state === 'PAUSE_RECOMMENDED' ? 'warning' : 'info'}
+              showIcon
+              message={CIRCUIT_BREAKER_LABELS[circuitBreaker.state]}
+              description={
+                circuitBreaker.state === 'PAUSE_RECOMMENDED'
+                  ? `Job ${circuitBreaker.activeJobKind} đã chạy ${duration(circuitBreaker.activeForSeconds)}. Đây là đề nghị kiểm tra/tạm dừng thủ công; hệ thống không tự dừng tiến trình hay đổi ticket.`
+                  : `Job ${circuitBreaker.activeJobKind} đã chạy ${duration(circuitBreaker.activeForSeconds)} và qua ngưỡng theo dõi. Hệ thống chỉ cảnh báo, không tự dừng.`
+              }
+            />
+          ) : null}
           <Descriptions column={{ xs: 1, sm: 2, md: 3 }} size="small" bordered>
             <Descriptions.Item label="Worker">{health.workerId || 'Chưa ghi nhận'}</Descriptions.Item>
             <Descriptions.Item label="Phiên bản">{health.workerVersion || '—'}</Descriptions.Item>
@@ -128,6 +153,15 @@ export function RequestClassifierWorkerHealthCard({
                 </span>
               ) : (
                 'Không có'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Guardrail job">
+              {circuitBreaker ? (
+                <span className="tabular-nums">
+                  {CIRCUIT_BREAKER_LABELS[circuitBreaker.state]} · {duration(circuitBreaker.activeForSeconds)}
+                </span>
+              ) : (
+                'Chờ server cập nhật'
               )}
             </Descriptions.Item>
             <Descriptions.Item label="Kết quả gần nhất" span={{ xs: 1, sm: 2, md: 2 }}>

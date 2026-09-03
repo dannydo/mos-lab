@@ -29,6 +29,7 @@ const CODEX_IMPLEMENTATION_TIMEOUT_MS = 8 * 60 * 1000;
 const CODEX_STOP_GRACE_MS = 5_000;
 const IMPLEMENTATION_LEASE_RENEWAL_MS = 60_000;
 const IMPLEMENTATION_PREFLIGHT_CACHE_MS = 5 * 60 * 1000;
+const WORKER_FETCH_TIMEOUT_MS = 20_000;
 const PNPM_EXECUTABLE = '/opt/homebrew/bin/pnpm';
 const execFileAsync = promisify(execFile);
 const MACOS_CODEX_CANDIDATES = [
@@ -228,7 +229,7 @@ async function implementationDiffArtifacts(
   return { changedFiles, diffStat };
 }
 
-function terminateCodexProcessGroup(processId: number | null, child: ChildProcess): void {
+function terminateCodexProcessGroup(processId: number | null, child: ChildProcess): () => void {
   if (processId && process.platform !== 'win32') {
     try {
       process.kill(-processId, 'SIGTERM');
@@ -243,9 +244,10 @@ function terminateCodexProcessGroup(processId: number | null, child: ChildProces
       }
     }, CODEX_STOP_GRACE_MS);
     escalation.unref();
-    return;
+    return () => clearTimeout(escalation);
   }
   child.kill('SIGTERM');
+  return () => undefined;
 }
 
 export function isCodexImplementationHelpCompatible(help: string): boolean {
@@ -358,15 +360,20 @@ export async function executeCodexCli(
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     let finished = false;
+    let spawned = false;
     let lifecycleReady = !lifecycle?.onStarted;
     let pendingTermination: { code: number | null; signal: NodeJS.Signals | null } | null = null;
     let forcedFailure: CodexCliError | null = null;
     let forceTimer: NodeJS.Timeout | null = null;
+    let terminationGraceExpired = false;
+    let cancelTermination: (() => void) | null = null;
+    let timeout: NodeJS.Timeout | null = null;
     const finish = (callback: () => void) => {
       if (finished) return;
       finished = true;
-      clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
       if (forceTimer) clearTimeout(forceTimer);
+      cancelTermination?.();
       callback();
     };
     const child = spawnProcess(command, args, {
@@ -383,14 +390,31 @@ export async function executeCodexCli(
       terminate: (code) => {
         if (finished || forcedFailure) return;
         forcedFailure = new CodexCliError(code);
-        terminateCodexProcessGroup(runtime.processId, child);
-        forceTimer = setTimeout(() => finish(() => reject(forcedFailure as CodexCliError)), CODEX_STOP_GRACE_MS);
+        cancelTermination = terminateCodexProcessGroup(runtime.processId, child);
+        forceTimer = setTimeout(() => {
+          // `onStarted` durably records the lease.  Do not return control to
+          // the caller while it can still succeed in the background, because
+          // that would let fail race start and strand a RUNNING job. Real
+          // bridge calls are independently bounded by workerFetch.
+          terminationGraceExpired = true;
+          if (lifecycleReady) finish(() => reject(forcedFailure as CodexCliError));
+        }, CODEX_STOP_GRACE_MS);
       },
     };
-    const timeout = setTimeout(() => {
+    timeout = setTimeout(() => {
       runtime.terminate('CODEX_EXEC_TIMEOUT');
     }, timeoutMs);
-    child.once('error', () => finish(() => reject(new CodexCliError('CODEX_EXEC_FAILED'))));
+    child.once('error', () => {
+      // An error before spawn never had a server-side lease.  After spawn, do
+      // not let the caller's fail path race a still-running `onStarted` call:
+      // terminate, then settle after the start callback has either completed
+      // or the grace timer expires.
+      if (!spawned) {
+        finish(() => reject(new CodexCliError('CODEX_EXEC_FAILED')));
+        return;
+      }
+      runtime.terminate('CODEX_EXEC_FAILED');
+    });
     const handleTermination = (code: number | null, signal: NodeJS.Signals | null) => {
       if (!lifecycleReady) {
         pendingTermination = { code, signal };
@@ -404,14 +428,23 @@ export async function executeCodexCli(
       else if (signal) finish(() => reject(new CodexCliError('CODEX_EXEC_SIGNAL')));
       else finish(() => reject(new CodexCliError(`CODEX_EXEC_EXIT_${Number.isInteger(code) ? code : -1}`)));
     };
+    const completeLifecycle = () => {
+      lifecycleReady = true;
+      if (pendingTermination) {
+        handleTermination(pendingTermination.code, pendingTermination.signal);
+        return;
+      }
+      if (forcedFailure && terminationGraceExpired) finish(() => reject(forcedFailure as CodexCliError));
+    };
     child.once('spawn', () => {
+      spawned = true;
       if (!lifecycle?.onStarted) return;
       Promise.resolve(lifecycle.onStarted(runtime))
-        .then(() => {
-          lifecycleReady = true;
-          if (pendingTermination) handleTermination(pendingTermination.code, pendingTermination.signal);
-        })
-        .catch(() => runtime.terminate('LEASE_START_FAILED'));
+        .then(completeLifecycle)
+        .catch(() => {
+          runtime.terminate('LEASE_START_FAILED');
+          completeLifecycle();
+        });
     });
     // Some CLI wrapper processes can miss `exit` while their stdio is ignored;
     // `close` is the final child-process lifecycle event and guarantees the
@@ -524,16 +557,27 @@ function configuration() {
 
 async function workerFetch(path: string, init?: RequestInit): Promise<Response> {
   const config = configuration();
-  const response = await fetch(`${config.apiUrl}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${config.token}`,
-      Accept: 'application/json',
-      'X-Worker-Id': config.workerId,
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-      ...init?.headers,
-    },
-  });
+  const timeoutSignal = AbortSignal.timeout(WORKER_FETCH_TIMEOUT_MS);
+  const signal = init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
+  let response: Response;
+  try {
+    response = await fetch(`${config.apiUrl}${path}`, {
+      ...init,
+      signal,
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        Accept: 'application/json',
+        'X-Worker-Id': config.workerId,
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...init?.headers,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      throw new Error('Worker bridge request timed out.');
+    }
+    throw error;
+  }
   if (!response.ok)
     throw new Error(
       `Worker bridge ${

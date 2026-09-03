@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { Prisma } from '../../generated/crm-client/index.js';
 import {
   InboxImplementationService,
   inboxImplementationCurrentPlan,
@@ -238,6 +239,62 @@ test('lease renewal accepts only the same active worker, token, and Codex proces
   assert.equal(renewals[0]?.executionPhase, 'CODEX_RUNNING');
   assert.ok(renewals[0]?.leaseHeartbeatAt instanceof Date);
   assert.ok(renewals[0]?.leaseExpiresAt instanceof Date);
+});
+
+test('generated Prisma client includes every implementation lease and retry field', () => {
+  const model = Prisma.dmmf.datamodel.models.find((candidate) => candidate.name === 'CrmInboxImplementationJob');
+  assert.ok(model);
+  const fields = new Set(model.fields.map((field) => field.name));
+  for (const field of ['retryOfJobId', 'retrySequence', 'leaseHeartbeatAt', 'processPid', 'executionPhase']) {
+    assert.equal(fields.has(field), true, `generated Prisma client is missing ${field}`);
+  }
+});
+
+test('a worker restart terminalizes an expired lease before another job can be claimed', async () => {
+  const expiredJob = {
+    id: 'expired-job',
+    reportId: 16,
+    status: 'RUNNING',
+    leaseExpiresAt: new Date('2026-09-03T03:00:00.000Z'),
+  };
+  const updates: Array<Record<string, unknown>> = [];
+  let permitCleared = false;
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findMany: async () => [expiredJob],
+          updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+            updates.push(data);
+            return { count: 1 };
+          },
+          findFirst: async () => null,
+        },
+        crmBugReport: { updateMany: async () => ({ count: 1 }) },
+        crmBugReportAudit: { create: async () => ({}) },
+        crmInboxImplementationWorkerLock: {
+          updateMany: async () => {
+            permitCleared = true;
+            return { count: 1 };
+          },
+        },
+      },
+    },
+  };
+
+  assert.equal(await InboxImplementationService.claim(fastify as never, 'restarted-worker'), null);
+  assert.deepEqual(updates[0], {
+    status: 'FAILED',
+    leaseToken: null,
+    leasedBy: null,
+    leaseExpiresAt: null,
+    processPid: null,
+    executionPhase: 'FAILED',
+    failureCode: 'LEASE_EXPIRED',
+    retainUntil: updates[0]?.retainUntil,
+  });
+  assert.ok(updates[0]?.retainUntil instanceof Date);
+  assert.equal(permitCleared, true);
 });
 
 test('a database permit enforces global implementation concurrency and stale jobs never claim', async () => {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   deriveRequestClassifierWorkerConnectionState,
+  deriveRequestClassifierWorkerCircuitBreaker,
   deriveRequestClassifierWorkerHealthState,
   isStaleRequestClassifierWorkerHeartbeat,
   normalizeRequestClassifierWorkerHeartbeat,
@@ -64,6 +65,33 @@ test('current serious errors and sustained failures degrade a fresh heartbeat', 
     ).reason,
     'SUSTAINED_FAILURES'
   );
+});
+
+test('circuit breaker is advisory and uses distinct diagnosis and code/test budgets', () => {
+  const startedAt = new Date(serverNow.getTime() - 10 * 60 * 1000);
+  const diagnosis = deriveRequestClassifierWorkerCircuitBreaker(
+    { activeJobKind: 'INBOX_PLAN', activeJobStartedAt: startedAt },
+    serverNow
+  );
+  assert.equal(diagnosis.mode, 'ADVISORY');
+  assert.equal(diagnosis.state, 'WARNING');
+  assert.equal(diagnosis.warningAfterSeconds, 10 * 60);
+  assert.equal(diagnosis.pauseAfterSeconds, 20 * 60);
+
+  const implementation = deriveRequestClassifierWorkerCircuitBreaker(
+    { activeJobKind: 'INBOX_IMPLEMENTATION', activeJobStartedAt: startedAt },
+    serverNow
+  );
+  assert.equal(implementation.state, 'NORMAL');
+  assert.equal(implementation.warningAfterSeconds, 15 * 60);
+  assert.equal(implementation.pauseAfterSeconds, 45 * 60);
+
+  const overdue = deriveRequestClassifierWorkerCircuitBreaker(
+    { activeJobKind: 'INBOX_IMPLEMENTATION', activeJobStartedAt: new Date(serverNow.getTime() - 45 * 60 * 1000) },
+    serverNow
+  );
+  assert.equal(overdue.state, 'PAUSE_RECOMMENDED');
+  assert.equal(overdue.reason, 'PAUSE_RECOMMENDED_NO_AUTOMATIC_STOP');
 });
 
 test('connection display is derived from the current server WebSocket handshake, never raw STARTING telemetry', () => {

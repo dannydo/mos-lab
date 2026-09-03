@@ -7,6 +7,7 @@ import {
   REQUEST_CLASSIFIER_WORKER_OUTCOME_STATUSES,
   type RequestClassifierWorkerConnectionMode,
   type RequestClassifierWorkerConnectionState,
+  type RequestClassifierWorkerCircuitBreakerState,
   type RequestClassifierWorkerHealth,
   type RequestClassifierWorkerHealthState,
   type RequestClassifierWorkerHealthThresholds,
@@ -75,6 +76,64 @@ type DerivedState = {
   reason: string;
   secondsSinceHeartbeat: number;
 };
+
+type CircuitBreakerPolicy = {
+  warningAfterSeconds: number;
+  pauseAfterSeconds: number;
+};
+
+function circuitBreakerPolicy(kind: RequestClassifierWorkerJobKind): CircuitBreakerPolicy {
+  // Implementation is the only worker job that runs an isolated coding/test
+  // process. The other jobs are bounded review/diagnosis calls.
+  return kind === 'INBOX_IMPLEMENTATION'
+    ? { warningAfterSeconds: 15 * 60, pauseAfterSeconds: 45 * 60 }
+    : { warningAfterSeconds: 10 * 60, pauseAfterSeconds: 20 * 60 };
+}
+
+/**
+ * A server-derived, advisory-only guardrail. It deliberately does not make a
+ * mutation: a running Codex process cannot yet be checkpointed and resumed
+ * safely, so an automatic pause here would be indistinguishable from a kill.
+ */
+export function deriveRequestClassifierWorkerCircuitBreaker(
+  row: Pick<HealthRow, 'activeJobKind' | 'activeJobStartedAt'>,
+  now: Date
+): RequestClassifierWorkerHealth['circuitBreaker'] {
+  const activeJobKind = toJobKind(row.activeJobKind);
+  if (!activeJobKind || !row.activeJobStartedAt) {
+    return {
+      mode: 'ADVISORY',
+      state: 'NORMAL',
+      activeJobKind: null,
+      activeForSeconds: null,
+      warningAfterSeconds: null,
+      pauseAfterSeconds: null,
+      reason: 'NO_ACTIVE_JOB',
+    };
+  }
+  const policy = circuitBreakerPolicy(activeJobKind);
+  const activeForSeconds = Math.max(0, Math.floor((now.getTime() - row.activeJobStartedAt.getTime()) / 1000));
+  const state: RequestClassifierWorkerCircuitBreakerState =
+    activeForSeconds >= policy.pauseAfterSeconds
+      ? 'PAUSE_RECOMMENDED'
+      : activeForSeconds >= policy.warningAfterSeconds
+        ? 'WARNING'
+        : 'NORMAL';
+  return {
+    mode: 'ADVISORY',
+    state,
+    activeJobKind,
+    activeForSeconds,
+    warningAfterSeconds: policy.warningAfterSeconds,
+    pauseAfterSeconds: policy.pauseAfterSeconds,
+    reason:
+      state === 'PAUSE_RECOMMENDED'
+        ? 'PAUSE_RECOMMENDED_NO_AUTOMATIC_STOP'
+        : state === 'WARNING'
+          ? 'WARNING_THRESHOLD_REACHED'
+          : 'WITHIN_TIME_BUDGET',
+  };
+}
 
 function clipped(value: unknown, maxLength: number): string {
   return Array.from(String(value ?? ''))
@@ -280,6 +339,15 @@ function healthDto(
       lastCompletedAt: null,
       lastFailedAt: null,
       consecutiveFailureCount: 0,
+      circuitBreaker: {
+        mode: 'ADVISORY',
+        state: 'NORMAL',
+        activeJobKind: null,
+        activeForSeconds: null,
+        warningAfterSeconds: null,
+        pauseAfterSeconds: null,
+        reason: 'NO_ACTIVE_JOB',
+      },
       latestTransition: null,
       thresholds,
     };
@@ -318,6 +386,7 @@ function healthDto(
     lastCompletedAt: row.lastCompletedAt?.toISOString() ?? null,
     lastFailedAt: row.lastFailedAt?.toISOString() ?? null,
     consecutiveFailureCount: row.consecutiveFailureCount,
+    circuitBreaker: deriveRequestClassifierWorkerCircuitBreaker(row, now),
     latestTransition: transitionDto(latestTransition),
     thresholds,
   };
