@@ -614,10 +614,10 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     commandments: [
       'APPROVED triage không tự là quyền chạy code: Danny phải thực hiện hành động Duyệt code/test riêng, ticket phải READY, có priority và có native plan khớp source version.',
       'Approval event được lưu bền và idempotent theo source + event kind; worker fallback chỉ phục hồi delivery của approval đã có, không tạo quyền duyệt hoặc ticket scheduler mới.',
-      'Mỗi implementation job có lease, idempotency theo source/plan version, một active job mỗi ticket và một permit build toàn cục mặc định cho Mac worker.',
+      'Mỗi implementation job có lease token/worker identity/PID, heartbeat server-time chỉ khi Codex process thật sự còn sống, idempotency theo source/plan version, một active job mỗi ticket và một permit build toàn cục mặc định cho Mac worker.',
       'Worker chỉ dùng worktree/branch riêng từ workspace tin cậy; không sửa primary checkout, không commit, push, merge, deploy, migration hay sửa production.',
       'Chỉ khi CLI thật sự bắt đầu ticket mới chuyển sang IMPLEMENTING. Kết quả thành công phải ghi native review gồm diff/file/test/risk đã lọc và chuyển sang chờ Danny duyệt commit.',
-      'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Retry sau khi ticket đã IN_PROGRESS vẫn bắt buộc khớp approval/source/plan cũ; chỉ worker claim mới được phục hồi job bị đánh dấu stale do gián đoạn, không tạo approval hoặc job mới. Recovery chỉ giữ nguyên active-job pointer khi nó trỏ đúng cùng job; pointer khác là hard stop. Khi phát hiện đúng lỗi tham số CLI của phiên bản worker cũ trong rollout, hoặc process CLI cũ thoát mà bỏ lỡ lifecycle event, chỉ cho phép đúng một recovery attempt có marker riêng cho từng lỗi để tránh loop. Nếu lease của lượt recovery đó vẫn hết hạn, cùng job phải chuyển FAILED kèm audit an toàn thay vì kẹt PENDING/IN_PROGRESS. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
+      'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Retry sau terminal failure chỉ có thể do Danny xác nhận riêng một lần: tạo job/branch/worktree mới liên kết immutable với job cũ, recheck approval/source/plan trước worktree, prelaunch và result, rồi dừng sau retry đó. Restart chỉ reclaim lease stale khi không còn Codex PID đã đăng ký sống; worker preflight CLI thật trong môi trường launchd, quản lý process group và terminate group khi timeout/lease failure để không bỏ orphan. Recovery chỉ giữ nguyên active-job pointer khi nó trỏ đúng cùng job; pointer khác là hard stop. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
     ],
     rationale:
       'Tự động hóa phải giảm thao tác lặp lại nhưng không được vượt qua cổng quyết định của Danny hay làm mất bằng chứng review trước commit/deploy.',
@@ -628,7 +628,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.6.0',
+    version: '1.7.0',
     effectiveFrom: '2026-09-03',
     sources: [
       {

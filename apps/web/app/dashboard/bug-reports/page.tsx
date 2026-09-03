@@ -93,6 +93,7 @@ interface DetailDrawerProps {
   getDetail: (id: number) => Promise<BugReportDetail>;
   triage: (id: number, request: TriageBugReportRequest) => Promise<BugReportDetail>;
   approveImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
+  retryImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -104,6 +105,7 @@ function DetailDrawer({
   getDetail,
   triage,
   approveImplementation,
+  retryImplementation,
   confirmClose,
   comment,
   canTriage,
@@ -245,6 +247,24 @@ function DetailDrawer({
     }
   }, [approveImplementation, detail, hydrateForm, messageApi]);
 
+  const retryCodeExecution = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const outcome = await retryImplementation(detail.id);
+      hydrateForm(outcome.report);
+      messageApi.success('Đã tạo đúng một retry liên kết trong worktree mới.');
+    } catch (error) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể retry implementation.'));
+    } finally {
+      setSaving(false);
+    }
+  }, [detail, hydrateForm, messageApi, retryImplementation]);
+
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
     label: detail?.requestType === 'FEATURE' ? `Duyệt triển khai ${item}` : `Approve ${item}`,
@@ -300,6 +320,22 @@ function DetailDrawer({
                   >
                     <Button type="primary" loading={saving} icon={<AppIcon icon={Gavel} size="sm" />}>
                       Duyệt code/test
+                    </Button>
+                  </Popconfirm>
+                )}
+              {canTriage &&
+                detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&
+                detail.priority &&
+                detail.clarification.status === 'READY' && (
+                  <Popconfirm
+                    title="Tạo đúng một retry sạch?"
+                    description="Lượt cũ được giữ nguyên để review. Retry tạo job và worktree mới, chỉ chạy code/test rồi dừng trước commit, push, merge, deploy và migration."
+                    okText="Tạo retry"
+                    cancelText="Chưa retry"
+                    onConfirm={() => void retryCodeExecution()}
+                  >
+                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
+                      Tạo retry sạch
                     </Button>
                   </Popconfirm>
                 )}
@@ -846,6 +882,7 @@ export default function BugReportsPage() {
         getDetail={inbox.getDetail}
         triage={inbox.triage}
         approveImplementation={inbox.approveImplementation}
+        retryImplementation={inbox.retryImplementation}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}

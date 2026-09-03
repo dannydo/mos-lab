@@ -2583,11 +2583,16 @@ model CrmInboxImplementationJob {
   reportId Int @map("report_id")
   sourceVersion String @map("source_version") @db.VarChar(80)
   planVersion String @map("plan_version") @db.VarChar(80)
+  retryOfJobId String? @map("retry_of_job_id") @db.VarChar(36)
+  retrySequence Int @default(0) @map("retry_sequence")
   status String @default("PENDING") @db.VarChar(32)
   attemptCount Int @default(0) @map("attempt_count")
   leaseToken String? @map("lease_token") @db.VarChar(64)
   leasedBy String? @map("leased_by") @db.VarChar(100)
   leaseExpiresAt DateTime? @map("lease_expires_at") @db.DateTime(0)
+  leaseHeartbeatAt DateTime? @map("lease_heartbeat_at") @db.DateTime(0)
+  processPid Int? @map("process_pid")
+  executionPhase String @default("QUEUED") @map("execution_phase") @db.VarChar(32)
   branchName String @map("branch_name") @db.VarChar(160)
   worktreePath String? @map("worktree_path") @db.VarChar(500)
   summary String? @db.Text
@@ -2605,9 +2610,10 @@ model CrmInboxImplementationJob {
 
   report CrmBugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
-  @@unique([reportId, sourceVersion, planVersion])
+  @@unique([reportId, sourceVersion, planVersion, retrySequence])
   @@index([status, expiresAt])
   @@index([leaseExpiresAt])
+  @@index([retryOfJobId])
   @@map("crm_inbox_implementation_jobs")
 }
 

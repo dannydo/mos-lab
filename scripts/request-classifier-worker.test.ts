@@ -6,6 +6,7 @@ import {
   buildCodexImplementationArgs,
   executeCodexCli,
   implementationWorktreeRoot,
+  isCodexImplementationHelpCompatible,
   formatInboxImplementationFailure,
   formatInboxFollowUpFailure,
   formatInboxPlanFailure,
@@ -15,6 +16,7 @@ import {
   parseCodexInboxPlan,
   parseCodexInboxImplementation,
   resolveCodexCliPath,
+  safeBridgeFailureCode,
 } from './request-classifier-worker.js';
 
 test('builds a noninteractive Codex invocation with private structured output', async () => {
@@ -46,7 +48,7 @@ test('builds a noninteractive Codex invocation with private structured output', 
     {
       command: '/custom/codex',
       args,
-      options: { cwd: '/tmp', stdio: 'ignore', windowsHide: true },
+      options: { cwd: '/tmp', stdio: 'ignore', windowsHide: true, detached: true },
     },
   ]);
 });
@@ -67,6 +69,48 @@ test('builds a write-enabled but noninteractive implementation command for an is
     implementationWorktreeRoot('/Users/dannydo/projects/mos-lab'),
     '/Users/dannydo/projects/.mos-inbox-worktrees'
   );
+});
+
+test('requires the exact supported bundled Codex flags before implementation can claim work', () => {
+  assert.equal(
+    isCodexImplementationHelpCompatible('--ephemeral --approve-for-me --output-schema --output-last-message'),
+    true
+  );
+  assert.equal(isCodexImplementationHelpCompatible('--ephemeral --output-schema --output-last-message'), false);
+});
+
+test('starts the lease lifecycle only after the child process is genuinely spawned', async () => {
+  const child = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  Object.assign(child, { pid: 4242 });
+  let lifecyclePid: number | null = null;
+  await executeCodexCli(
+    '/custom/codex',
+    ['exec'],
+    '/tmp',
+    1_000,
+    (() => {
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('close', 0, null);
+      });
+      return child;
+    }) as never,
+    undefined,
+    {
+      onStarted: async (runtime) => {
+        lifecyclePid = runtime.processId;
+      },
+    }
+  );
+  assert.equal(lifecyclePid, 4242);
+});
+
+test('normalizes isolated bridge protocol failures without exposing request content', () => {
+  assert.equal(
+    safeBridgeFailureCode(new Error('Worker bridge inbox-implementation HTTP 404')),
+    'BRIDGE_PROTOCOL_MISMATCH'
+  );
+  assert.equal(safeBridgeFailureCode(new Error('Worker bridge classifier HTTP 503')), 'BRIDGE_SERVER_ERROR');
 });
 
 test('never includes child-process content in Inbox failure telemetry', () => {
@@ -96,6 +140,7 @@ test('maps raw Codex process errors and timeouts to safe failure codes', async (
   let killed = false;
   timeoutChild.kill = () => {
     killed = true;
+    queueMicrotask(() => timeoutChild.emit('close', null, 'SIGTERM'));
     return true;
   };
   await assert.rejects(executeCodexCli('/custom/codex', ['exec'], '/tmp', 1, (() => timeoutChild) as never), (error) =>

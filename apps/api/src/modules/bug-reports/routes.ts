@@ -8,6 +8,8 @@ import {
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
   type ApproveBugReportImplementationRequest,
+  type RetryBugReportImplementationRequest,
+  type RenewInboxImplementationLeaseRequest,
   type BugReportListQuery,
   type ConfirmCloseBugReportRequest,
   type CreateBugReportCommentRequest,
@@ -407,6 +409,31 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   );
 
+  fastify.post(
+    '/bug-reports/:id/implementation-retry',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const body = request.body as RetryBugReportImplementationRequest;
+        if (body?.acknowledged !== true) {
+          throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi retry implementation.', 422);
+        }
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const implementationQueued = await InboxImplementationService.retryFailed(fastify, id, request.user.id);
+        if (implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
+        return reply.send({
+          success: true,
+          data: { report: await BugReportService.detail(fastify, id), implementationQueued, planRequested: false },
+          message: implementationQueued
+            ? 'Đã tạo đúng một retry implementation liên kết job terminal cũ.'
+            : 'Retry implementation không được tạo.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Retry inbox implementation failed');
+      }
+    }
+  );
+
   fastify.patch(
     '/bug-reports/:id/confirm-close',
     { preHandler: [requireAuth, requireDanny] },
@@ -738,16 +765,41 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     { preHandler: [requireClassifierWorker] },
     async (request, reply) => {
       try {
-        const body = request.body as { leaseToken?: string; worktreePath?: string };
+        const body = request.body as { leaseToken?: string; worktreePath?: string; processId?: number };
         const started = await InboxImplementationService.start(
           fastify,
           String((request.params as { id: string }).id || ''),
           String(body?.leaseToken || ''),
-          body?.worktreePath
+          String(request.headers['x-worker-id'] || ''),
+          body?.worktreePath,
+          body?.processId
         );
         return reply.send({ success: true, data: { started } });
       } catch (error) {
         return sendError(fastify, reply, error, 'Start inbox implementation failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-implementations/:id/renew',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as Partial<RenewInboxImplementationLeaseRequest>;
+        const workerId = String(request.headers['x-worker-id'] || '');
+        if (String(body?.workerId || '') !== workerId) {
+          throw new InboxImplementationError('Worker renewal identity không khớp.', 409, 'LEASE_RENEW_REJECTED');
+        }
+        const renewed = await InboxImplementationService.renew(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || ''),
+          workerId,
+          body?.processId
+        );
+        return reply.send({ success: true, data: { renewed } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Renew inbox implementation lease failed');
       }
     }
   );

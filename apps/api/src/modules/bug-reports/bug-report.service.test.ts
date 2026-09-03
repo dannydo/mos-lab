@@ -65,6 +65,16 @@ test('projects every Agent milestone from canonical ticket state and audit activ
     'QUEUED_FOR_FIX'
   );
   assert.equal(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'APPROVED',
+        clarificationStatus: 'READY',
+        audits: [{ action: 'AGENT_IMPLEMENTATION_FAILED', note: 'Lease ended safely.', createdAt: agentAt }],
+      })
+    ).stage,
+    'IMPLEMENTATION_FAILED'
+  );
+  assert.equal(
     bugReportAgentProgress(progressSource({ status: 'IN_PROGRESS', clarificationStatus: 'READY', startedAt: agentAt }))
       .stage,
     'IMPLEMENTING'
@@ -200,6 +210,22 @@ test('derives one canonical next owner and action for every workflow gate', () =
   assert.equal(
     bugReportNextAction(progressSource({ status: 'APPROVED', clarificationStatus: 'READY' })).type,
     'IMPLEMENT'
+  );
+  assert.deepEqual(
+    bugReportNextAction(
+      progressSource({
+        status: 'APPROVED',
+        clarificationStatus: 'READY',
+        audits: [
+          {
+            action: 'AGENT_IMPLEMENTATION_FAILED',
+            note: 'Lease ended safely.',
+            createdAt: new Date('2026-08-31T01:10:00.000Z'),
+          },
+        ],
+      })
+    ).type,
+    'RETRY_IMPLEMENTATION'
   );
   assert.equal(
     bugReportNextAction(

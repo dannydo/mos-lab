@@ -3,6 +3,7 @@ import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process'
 import { execFile } from 'node:child_process';
 import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
 import { chmod, lstat, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +26,9 @@ const POLL_INTERVAL_MS = 30_000;
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const CODEX_TIMEOUT_MS = 90_000;
 const CODEX_IMPLEMENTATION_TIMEOUT_MS = 8 * 60 * 1000;
+const CODEX_STOP_GRACE_MS = 5_000;
+const IMPLEMENTATION_LEASE_RENEWAL_MS = 60_000;
+const IMPLEMENTATION_PREFLIGHT_CACHE_MS = 5 * 60 * 1000;
 const PNPM_EXECUTABLE = '/opt/homebrew/bin/pnpm';
 const execFileAsync = promisify(execFile);
 const MACOS_CODEX_CANDIDATES = [
@@ -60,6 +64,9 @@ export type CodexCliFailureCode =
   | 'CODEX_EXEC_TIMEOUT'
   | 'CODEX_EXEC_FAILED'
   | 'CODEX_EXEC_SIGNAL'
+  | 'CODEX_PREFLIGHT_FAILED'
+  | 'LEASE_START_FAILED'
+  | 'LEASE_RENEW_FAILED'
   | 'CODEX_OUTPUT_MISSING'
   | 'FORBIDDEN_GIT_MUTATION'
   | `CODEX_EXEC_EXIT_${number}`;
@@ -71,6 +78,13 @@ class CodexCliError extends Error {
 }
 
 type SpawnProcess = (command: string, args: readonly string[], options: SpawnOptions) => ChildProcess;
+
+export type CodexCliRuntime = {
+  processId: number | null;
+  terminate: (code: CodexCliFailureCode) => void;
+};
+
+type CodexCliLifecycle = { onStarted?: (runtime: CodexCliRuntime) => Promise<void> | void };
 
 export function buildCodexExecArgs(schemaPath: string, outputPath: string, prompt: string): string[] {
   return [
@@ -214,20 +228,145 @@ async function implementationDiffArtifacts(
   return { changedFiles, diffStat };
 }
 
+function terminateCodexProcessGroup(processId: number | null, child: ChildProcess): void {
+  if (processId && process.platform !== 'win32') {
+    try {
+      process.kill(-processId, 'SIGTERM');
+    } catch {
+      child.kill('SIGTERM');
+    }
+    const escalation = setTimeout(() => {
+      try {
+        process.kill(-processId, 'SIGKILL');
+      } catch {
+        child.kill('SIGKILL');
+      }
+    }, CODEX_STOP_GRACE_MS);
+    escalation.unref();
+    return;
+  }
+  child.kill('SIGTERM');
+}
+
+export function isCodexImplementationHelpCompatible(help: string): boolean {
+  return ['--ephemeral', '--approve-for-me', '--output-schema', '--output-last-message'].every((flag) =>
+    help.includes(flag)
+  );
+}
+
+let lastImplementationPreflightAt = 0;
+async function ensureCodexImplementationPreflight(): Promise<void> {
+  if (Date.now() - lastImplementationPreflightAt < IMPLEMENTATION_PREFLIGHT_CACHE_MS) return;
+  try {
+    const { stdout } = await execFileAsync(resolveCodexCliPath(), ['exec', '--help'], {
+      encoding: 'utf8',
+      timeout: 15_000,
+      maxBuffer: 64 * 1024,
+      windowsHide: true,
+    });
+    if (!isCodexImplementationHelpCompatible(String(stdout || ''))) throw new Error('CLI flags unavailable');
+    lastImplementationPreflightAt = Date.now();
+  } catch {
+    throw new CodexCliError('CODEX_PREFLIGHT_FAILED');
+  }
+}
+
+function implementationRunRegistryPath(jobId: string): string {
+  return join(implementationWorktreeRoot(configuredWorkspace()), `.mos-inbox-run-${jobId}.json`);
+}
+
+async function registeredCodexProcessAlive(processId: number): Promise<boolean> {
+  if (!Number.isSafeInteger(processId) || processId <= 0) return false;
+  try {
+    const { stdout } = await execFileAsync('/bin/ps', ['-o', 'comm=', '-p', String(processId)], {
+      encoding: 'utf8',
+      timeout: 5_000,
+      maxBuffer: 1_024,
+    });
+    return /codex/i.test(String(stdout || ''));
+  } catch {
+    return false;
+  }
+}
+
+async function registerImplementationProcess(jobId: string, processId: number): Promise<void> {
+  const root = implementationWorktreeRoot(configuredWorkspace());
+  await mkdir(root, { recursive: true, mode: 0o700 });
+  await writeFile(
+    implementationRunRegistryPath(jobId),
+    JSON.stringify({ jobId, processId, startedAt: new Date().toISOString() }),
+    { mode: 0o600 }
+  );
+}
+
+async function clearImplementationProcessRegistration(jobId: string, processId: number | null): Promise<void> {
+  if (processId && (await registeredCodexProcessAlive(processId))) return;
+  await rm(implementationRunRegistryPath(jobId), { force: true }).catch(() => undefined);
+}
+
+/** Never reclaim an expired lease while its recorded Codex process might still be working. */
+async function containOrphanedImplementationProcesses(): Promise<boolean> {
+  const root = implementationWorktreeRoot(configuredWorkspace());
+  let entries: string[];
+  try {
+    entries = await readdir(root);
+  } catch {
+    return true;
+  }
+  for (const entry of entries.filter((name) => /^\.mos-inbox-run-[a-f0-9-]{36}\.json$/i.test(name))) {
+    const path = join(root, entry);
+    try {
+      const value = JSON.parse(await readFile(path, 'utf8')) as { processId?: unknown };
+      const processId = Number(value.processId);
+      if (!(await registeredCodexProcessAlive(processId))) {
+        await rm(path, { force: true });
+        continue;
+      }
+      try {
+        process.kill(-processId, 'SIGTERM');
+      } catch {
+        return false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (await registeredCodexProcessAlive(processId)) {
+        try {
+          process.kill(-processId, 'SIGKILL');
+        } catch {
+          return false;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      if (await registeredCodexProcessAlive(processId)) return false;
+      await rm(path, { force: true });
+    } catch {
+      // A malformed private registry is never treated as ownership; delete only
+      // the registry file and never infer a PID from it.
+      await rm(path, { force: true }).catch(() => undefined);
+    }
+  }
+  return true;
+}
+
 export async function executeCodexCli(
   command: string,
   args: readonly string[],
   cwd: string,
   timeoutMs = CODEX_TIMEOUT_MS,
   spawnProcess: SpawnProcess = spawn,
-  environment?: NodeJS.ProcessEnv
+  environment?: NodeJS.ProcessEnv,
+  lifecycle?: CodexCliLifecycle
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     let finished = false;
+    let lifecycleReady = !lifecycle?.onStarted;
+    let pendingTermination: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+    let forcedFailure: CodexCliError | null = null;
+    let forceTimer: NodeJS.Timeout | null = null;
     const finish = (callback: () => void) => {
       if (finished) return;
       finished = true;
       clearTimeout(timeout);
+      if (forceTimer) clearTimeout(forceTimer);
       callback();
     };
     const child = spawnProcess(command, args, {
@@ -236,18 +375,44 @@ export async function executeCodexCli(
       // Final structured output is written exclusively to --output-last-message.
       stdio: 'ignore',
       windowsHide: true,
+      detached: process.platform !== 'win32',
       ...(environment ? { env: environment } : {}),
     });
+    const runtime: CodexCliRuntime = {
+      processId: typeof child.pid === 'number' && child.pid > 0 ? child.pid : null,
+      terminate: (code) => {
+        if (finished || forcedFailure) return;
+        forcedFailure = new CodexCliError(code);
+        terminateCodexProcessGroup(runtime.processId, child);
+        forceTimer = setTimeout(() => finish(() => reject(forcedFailure as CodexCliError)), CODEX_STOP_GRACE_MS);
+      },
+    };
     const timeout = setTimeout(() => {
-      child.kill('SIGTERM');
-      finish(() => reject(new CodexCliError('CODEX_EXEC_TIMEOUT')));
+      runtime.terminate('CODEX_EXEC_TIMEOUT');
     }, timeoutMs);
     child.once('error', () => finish(() => reject(new CodexCliError('CODEX_EXEC_FAILED'))));
     const handleTermination = (code: number | null, signal: NodeJS.Signals | null) => {
+      if (!lifecycleReady) {
+        pendingTermination = { code, signal };
+        return;
+      }
+      if (forcedFailure) {
+        finish(() => reject(forcedFailure as CodexCliError));
+        return;
+      }
       if (code === 0) finish(resolve);
       else if (signal) finish(() => reject(new CodexCliError('CODEX_EXEC_SIGNAL')));
       else finish(() => reject(new CodexCliError(`CODEX_EXEC_EXIT_${Number.isInteger(code) ? code : -1}`)));
     };
+    child.once('spawn', () => {
+      if (!lifecycle?.onStarted) return;
+      Promise.resolve(lifecycle.onStarted(runtime))
+        .then(() => {
+          lifecycleReady = true;
+          if (pendingTermination) handleTermination(pendingTermination.code, pendingTermination.signal);
+        })
+        .catch(() => runtime.terminate('LEASE_START_FAILED'));
+    });
     // Some CLI wrapper processes can miss `exit` while their stdio is ignored;
     // `close` is the final child-process lifecycle event and guarantees the
     // isolated job returns to its lease/fail-safe path.
@@ -392,9 +557,10 @@ let connectionMode: RequestClassifierWorkerConnectionMode = 'STARTING';
 let activeWorkerJob: ActiveWorkerJob = null;
 let latestWorkerOutcome: RequestClassifierWorkerHeartbeatRequest['latestOutcome'] = null;
 
-function safeBridgeFailureCode(error: unknown): string {
+export function safeBridgeFailureCode(error: unknown): string {
   const message = error instanceof Error ? error.message : '';
   if (/HTTP 401|HTTP 403/.test(message)) return 'BRIDGE_AUTH_FAILED';
+  if (/HTTP 404/.test(message)) return 'BRIDGE_PROTOCOL_MISMATCH';
   if (/HTTP 429/.test(message)) return 'BRIDGE_RATE_LIMITED';
   if (/HTTP 5\d\d/.test(message)) return 'BRIDGE_SERVER_ERROR';
   return 'BRIDGE_REQUEST_FAILED';
@@ -839,9 +1005,16 @@ export function parseCodexInboxImplementation(stdout: string): InboxImplementati
 
 async function processInboxImplementationOne(): Promise<boolean> {
   const { workerId } = configuration();
-  let phase = 'claim';
+  let phase = 'preflight';
   let response: Response;
   try {
+    await ensureCodexImplementationPreflight();
+    if (!(await containOrphanedImplementationProcesses())) {
+      recordWorkerOutcome('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', 'ORPHAN_PROCESS_CONTAINMENT');
+      void sendWorkerHealthHeartbeat();
+      return false;
+    }
+    phase = 'claim';
     response = await workerFetch('/request-classifier/inbox-implementations/claim', {
       method: 'POST',
       body: JSON.stringify({ workerId }),
@@ -854,24 +1027,16 @@ async function processInboxImplementationOne(): Promise<boolean> {
   }
   const job = ((await response.json()) as { data: InboxImplementationWorkerJob | null }).data;
   if (!job) return false;
-  beginWorkerJob('INBOX_IMPLEMENTATION');
   let worktreePath = '';
+  let activeProcessId: number | null = null;
+  let stopLeaseRenewal: (() => void) | null = null;
+  let started = false;
   const schemaPath = () => join(worktreePath, '.mos-inbox-implementation-schema.json');
   const outputPath = () => join(worktreePath, '.mos-inbox-implementation-output.json');
   try {
     phase = 'worktree';
     worktreePath = await createOrReuseImplementationWorktree(job);
     await writeFile(schemaPath(), inboxImplementationSchema(), { mode: 0o600 });
-    phase = 'start';
-    const startedResponse = await workerFetch(`/request-classifier/inbox-implementations/${job.id}/start`, {
-      method: 'POST',
-      body: JSON.stringify({ leaseToken: job.leaseToken, worktreePath }),
-    });
-    const started = ((await startedResponse.json()) as { data?: { started?: boolean } }).data?.started;
-    if (!started) {
-      finishWorkerJob('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', 'STALE_BEFORE_START');
-      return true;
-    }
     phase = 'codex_exec';
     const baseCommit = await runTrustedGit(['rev-parse', 'HEAD'], worktreePath);
     const gitEnvironment = await implementationGitEnvironment(worktreePath);
@@ -893,7 +1058,42 @@ async function processInboxImplementationOne(): Promise<boolean> {
       worktreePath,
       CODEX_IMPLEMENTATION_TIMEOUT_MS,
       spawn,
-      gitEnvironment
+      gitEnvironment,
+      {
+        onStarted: async (runtime) => {
+          if (!runtime.processId) throw new CodexCliError('LEASE_START_FAILED');
+          activeProcessId = runtime.processId;
+          await registerImplementationProcess(job.id, runtime.processId);
+          phase = 'start';
+          const startedResponse = await workerFetch(`/request-classifier/inbox-implementations/${job.id}/start`, {
+            method: 'POST',
+            body: JSON.stringify({ leaseToken: job.leaseToken, worktreePath, processId: runtime.processId }),
+          });
+          const didStart = ((await startedResponse.json()) as { data?: { started?: boolean } }).data?.started;
+          if (!didStart) throw new CodexCliError('LEASE_START_FAILED');
+          started = true;
+          beginWorkerJob('INBOX_IMPLEMENTATION');
+          let renewing = false;
+          const renew = async () => {
+            if (renewing) return;
+            renewing = true;
+            try {
+              const renewedResponse = await workerFetch(`/request-classifier/inbox-implementations/${job.id}/renew`, {
+                method: 'POST',
+                body: JSON.stringify({ leaseToken: job.leaseToken, workerId, processId: runtime.processId }),
+              });
+              const renewed = ((await renewedResponse.json()) as { data?: { renewed?: boolean } }).data?.renewed;
+              if (!renewed) throw new CodexCliError('LEASE_RENEW_FAILED');
+            } catch {
+              runtime.terminate('LEASE_RENEW_FAILED');
+            } finally {
+              renewing = false;
+            }
+          };
+          const renewalTimer = setInterval(() => void renew(), IMPLEMENTATION_LEASE_RENEWAL_MS);
+          stopLeaseRenewal = () => clearInterval(renewalTimer);
+        },
+      }
     );
     if ((await runTrustedGit(['rev-parse', 'HEAD'], worktreePath)) !== baseCommit) {
       throw new CodexCliError('FORBIDDEN_GIT_MUTATION');
@@ -916,9 +1116,12 @@ async function processInboxImplementationOne(): Promise<boolean> {
       method: 'POST',
       body: JSON.stringify({ leaseToken: job.leaseToken, code: inboxImplementationFailureCode(error) }),
     }).catch(() => undefined);
-    finishWorkerJob('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));
+    if (started) finishWorkerJob('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));
+    else recordWorkerOutcome('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));
   } finally {
+    stopLeaseRenewal?.();
     activeWorkerJob = null;
+    await clearImplementationProcessRegistration(job.id, activeProcessId);
     if (worktreePath) {
       await rm(schemaPath(), { force: true }).catch(() => undefined);
       await rm(outputPath(), { force: true }).catch(() => undefined);
@@ -1034,16 +1237,28 @@ async function processInboxPlanOne(): Promise<boolean> {
 }
 
 let draining = false;
+async function runWorkerStep(kind: RequestClassifierWorkerJobKind, run: () => Promise<boolean>): Promise<boolean> {
+  try {
+    return await run();
+  } catch (error) {
+    activeWorkerJob = null;
+    recordWorkerOutcome(kind, 'FAILED', 'ERROR', safeBridgeFailureCode(error));
+    void sendWorkerHealthHeartbeat();
+    console.log(`Worker task class=${kind.toLowerCase()} phase=isolated code=${safeBridgeFailureCode(error)}`);
+    return false;
+  }
+}
+
 async function drain(): Promise<void> {
   if (draining) return;
   draining = true;
   try {
     while (
-      (await processOne()) ||
-      (await processConversationOne()) ||
-      (await processInboxFollowUpOne()) ||
-      (await processInboxPlanOne()) ||
-      (await processInboxImplementationOne())
+      (await runWorkerStep('CLASSIFICATION', processOne)) ||
+      (await runWorkerStep('CONVERSATION', processConversationOne)) ||
+      (await runWorkerStep('INBOX_FOLLOW_UP', processInboxFollowUpOne)) ||
+      (await runWorkerStep('INBOX_PLAN', processInboxPlanOne)) ||
+      (await runWorkerStep('INBOX_IMPLEMENTATION', processInboxImplementationOne))
     ) {
       /* one serial worker preserves leases */
     }

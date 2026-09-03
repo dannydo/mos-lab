@@ -222,6 +222,14 @@ function safeWorkerId(value: unknown): string {
   return workerId;
 }
 
+function safeProcessId(value: unknown): number {
+  const processId = Number(value);
+  if (!Number.isSafeInteger(processId) || processId <= 0 || processId > 4_294_967_295) {
+    throw new InboxImplementationError('PID Codex không hợp lệ.', 422, 'INVALID_PROCESS_ID');
+  }
+  return processId;
+}
+
 function clearGlobalPermit(fastify: FastifyInstance, jobId: string) {
   return fastify.prisma.crm.crmInboxImplementationWorkerLock.updateMany({
     where: { id: 1, activeJobId: jobId },
@@ -300,34 +308,18 @@ export class InboxImplementationService {
     if (activeId) {
       const active = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({ where: { id: activeId } });
       if (active && ['PENDING', 'LEASED', 'RUNNING', 'AWAITING_COMMIT_REVIEW'].includes(active.status)) return false;
-      if (active && active.sourceVersion === gate.sourceVersion && active.planVersion === gate.plan.planVersion) {
-        if (active.status === 'FAILED') {
-          await fastify.prisma.crm.crmInboxImplementationJob.update({
-            where: { id: active.id },
-            data: {
-              status: 'PENDING',
-              attemptCount: 0,
-              failureCode: null,
-              leaseToken: null,
-              leasedBy: null,
-              leaseExpiresAt: null,
-            },
-          });
-          return true;
-        }
+      if (active && active.sourceVersion === gate.sourceVersion && active.planVersion === gate.plan.planVersion)
         return false;
-      }
       await clearTicketActiveJob(fastify, report.id, activeId);
     }
 
-    const existing = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({
+    const existing = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
       where: {
-        reportId_sourceVersion_planVersion: {
-          reportId,
-          sourceVersion: gate.sourceVersion,
-          planVersion: gate.plan.planVersion,
-        },
+        reportId,
+        sourceVersion: gate.sourceVersion,
+        planVersion: gate.plan.planVersion,
       },
+      orderBy: { retrySequence: 'desc' },
     });
     if (existing) {
       await fastify.prisma.crm.crmBugReport.updateMany({
@@ -337,6 +329,7 @@ export class InboxImplementationService {
       return false;
     }
 
+    const planVersion = gate.plan.planVersion;
     const id = randomUUID();
     const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
     try {
@@ -345,7 +338,7 @@ export class InboxImplementationService {
           id,
           reportId,
           sourceVersion: gate.sourceVersion,
-          planVersion: gate.plan.planVersion,
+          planVersion,
           branchName: safeBranchName(ticketKey, id),
           expiresAt: new Date(Date.now() + JOB_TTL_MS),
         },
@@ -364,6 +357,110 @@ export class InboxImplementationService {
       if (error && typeof error === 'object' && (error as { code?: string }).code === 'P2002') return false;
       throw error;
     }
+  }
+
+  /**
+   * Danny's explicit retry authority creates a new, linked execution record.
+   * Terminal evidence remains immutable; only the new row can ever be leased.
+   */
+  static async retryFailed(fastify: FastifyInstance, reportId: number, actorStaffId: number): Promise<boolean> {
+    const report = await fastify.prisma.crm.crmBugReport.findUnique({
+      where: { id: reportId },
+      include: implementationReportInclude(),
+    });
+    if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    const gate = isInboxImplementationExecutionEligible(report);
+    if (!gate.eligible || !gate.plan || !report.implementationActiveJobId) {
+      throw new InboxImplementationError(
+        'Ticket không còn đủ điều kiện để retry implementation.',
+        409,
+        'RETRY_NOT_ELIGIBLE'
+      );
+    }
+    const failed = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({
+      where: { id: report.implementationActiveJobId },
+    });
+    if (
+      !failed ||
+      failed.status !== 'FAILED' ||
+      failed.retryOfJobId ||
+      failed.sourceVersion !== gate.sourceVersion ||
+      failed.planVersion !== gate.plan.planVersion
+    ) {
+      throw new InboxImplementationError(
+        'Retry chỉ áp dụng một lần cho job terminal đang khớp approval và plan.',
+        409,
+        'RETRY_NOT_ALLOWED'
+      );
+    }
+    const alreadyRetried = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: { retryOfJobId: failed.id },
+      select: { id: true },
+    });
+    if (alreadyRetried) {
+      throw new InboxImplementationError(
+        'Job này đã có retry liên kết; không tạo thêm lần chạy.',
+        409,
+        'RETRY_ALREADY_CREATED'
+      );
+    }
+
+    const planVersion = gate.plan.planVersion;
+    const id = randomUUID();
+    const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const now = new Date();
+    const queued = await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmInboxImplementationJob.create({
+        data: {
+          id,
+          reportId,
+          sourceVersion: gate.sourceVersion,
+          planVersion,
+          retryOfJobId: failed.id,
+          retrySequence: failed.retrySequence + 1,
+          branchName: safeBranchName(ticketKey, id),
+          executionPhase: 'QUEUED',
+          expiresAt: new Date(now.getTime() + JOB_TTL_MS),
+        },
+      });
+      const attached = await tx.crmBugReport.updateMany({
+        where: { id: reportId, implementationActiveJobId: failed.id },
+        data: {
+          status: 'APPROVED',
+          statusSort: 0,
+          startedAt: null,
+          resolvedAt: null,
+          closedAt: null,
+          implementationActiveJobId: id,
+          updatedAt: now,
+        },
+      });
+      if (!attached.count) {
+        await tx.crmInboxImplementationJob.update({
+          where: { id },
+          data: { status: 'STALE', failureCode: 'ACTIVE_JOB_RACE', executionPhase: 'STALE' },
+        });
+        return false;
+      }
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'AGENT_IMPLEMENTATION_RETRY_QUEUED',
+          note: 'Danny đã cho phép đúng một retry sạch; job mới liên kết job terminal cũ và vẫn dừng trước commit.',
+          beforeJson: snapshot(report),
+          afterJson: snapshot({
+            ...report,
+            status: 'APPROVED',
+            implementationActiveJobId: id,
+            comments: report.comments,
+            inboxPlanJobs: report.inboxPlanJobs,
+          }),
+        },
+      });
+      return true;
+    });
+    return queued;
   }
 
   /**
@@ -417,6 +514,7 @@ export class InboxImplementationService {
       if (!gate.eligible || !gate.plan) continue;
       const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: {
+          id: report.implementationActiveJobId || undefined,
           reportId: report.id,
           sourceVersion: gate.sourceVersion,
           planVersion: gate.plan.planVersion,
@@ -477,12 +575,17 @@ export class InboxImplementationService {
               leaseToken: null,
               leasedBy: null,
               leaseExpiresAt: null,
+              processPid: null,
+              executionPhase: 'FAILED',
               completedAt: now,
               retainUntil: new Date(now.getTime() + FAILURE_RETENTION_MS),
             },
           });
           if (!terminalized.count) return false;
-          const updated = await tx.crmBugReport.update({ where: { id: report.id }, data: { updatedAt: now } });
+          const updated = await tx.crmBugReport.update({
+            where: { id: report.id },
+            data: { status: 'APPROVED', statusSort: 0, updatedAt: now },
+          });
           await tx.crmBugReportAudit.create({
             data: {
               reportId: report.id,
@@ -558,14 +661,31 @@ export class InboxImplementationService {
       take: 20,
     });
     for (const job of expired) {
-      await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
+      const expiredLease = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
         where: { id: job.id, status: { in: ['LEASED', 'RUNNING'] }, leaseExpiresAt: { lte: now } },
         data: {
-          status: 'PENDING',
+          status: 'FAILED',
           leaseToken: null,
           leasedBy: null,
           leaseExpiresAt: null,
+          processPid: null,
+          executionPhase: 'FAILED',
           failureCode: 'LEASE_EXPIRED',
+          retainUntil: new Date(now.getTime() + FAILURE_RETENTION_MS),
+        },
+      });
+      if (!expiredLease.count) continue;
+      await fastify.prisma.crm.crmBugReport.updateMany({
+        where: { id: job.reportId, implementationActiveJobId: job.id, status: 'IN_PROGRESS' },
+        data: { status: 'APPROVED', statusSort: 0 },
+      });
+      await fastify.prisma.crm.crmBugReportAudit.create({
+        data: {
+          reportId: job.reportId,
+          action: 'AGENT_IMPLEMENTATION_FAILED',
+          note: 'Lease implementation đã hết hạn; worker dừng an toàn, giữ worktree và chờ Danny quyết định retry liên kết.',
+          beforeJson: '{}',
+          afterJson: '{}',
         },
       });
       await clearGlobalPermit(fastify, job.id);
@@ -576,9 +696,17 @@ export class InboxImplementationService {
         status: 'PENDING',
         expiresAt: { gt: now },
         OR: [
-          { attemptCount: { lt: RETRY_LIMIT } },
-          { attemptCount: RETRY_LIMIT, failureCode: CLI_ARGUMENTS_RECOVERY_ATTEMPT },
-          { attemptCount: RETRY_LIMIT + 1, failureCode: CLI_PROCESS_RECOVERY_ATTEMPT },
+          { attemptCount: { lt: 1 } },
+          {
+            retryOfJobId: null,
+            attemptCount: RETRY_LIMIT,
+            failureCode: CLI_ARGUMENTS_RECOVERY_ATTEMPT,
+          },
+          {
+            retryOfJobId: null,
+            attemptCount: RETRY_LIMIT + 1,
+            failureCode: CLI_PROCESS_RECOVERY_ATTEMPT,
+          },
         ],
       },
       include: { report: { include: implementationReportInclude() } },
@@ -633,6 +761,7 @@ export class InboxImplementationService {
       sourceVersion: job.sourceVersion,
       planVersion: job.planVersion,
       branchName: job.branchName,
+      retryOfJobId: job.retryOfJobId,
       context: {
         requestType: job.report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG',
         title: clean(job.report.title, 180),
@@ -651,11 +780,15 @@ export class InboxImplementationService {
     fastify: FastifyInstance,
     id: string,
     leaseToken: string,
-    worktreePath: unknown
+    workerId: unknown,
+    worktreePath: unknown,
+    processId: unknown
   ): Promise<boolean> {
     const path = safeWorktreePath(worktreePath);
+    const worker = safeWorkerId(workerId);
+    const pid = safeProcessId(processId);
     const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
-      where: { id, status: 'LEASED', leaseToken, leaseExpiresAt: { gt: new Date() } },
+      where: { id, status: 'LEASED', leaseToken, leasedBy: worker, leaseExpiresAt: { gt: new Date() } },
       include: { report: { include: implementationReportInclude() } },
     });
     if (!job) throw new InboxImplementationError('Lease implementation đã hết hạn.', 409, 'LEASE_EXPIRED');
@@ -668,6 +801,8 @@ export class InboxImplementationService {
           leaseToken: null,
           leasedBy: null,
           leaseExpiresAt: null,
+          processPid: null,
+          executionPhase: 'STALE',
         },
       });
       await clearGlobalPermit(fastify, id);
@@ -693,6 +828,9 @@ export class InboxImplementationService {
           worktreePath: path,
           startedAt: now,
           leaseExpiresAt: new Date(now.getTime() + LEASE_MS),
+          leaseHeartbeatAt: now,
+          processPid: pid,
+          executionPhase: 'CODEX_RUNNING',
         },
       });
       await tx.crmBugReportAudit.create({
@@ -710,6 +848,65 @@ export class InboxImplementationService {
         },
       });
     });
+    return true;
+  }
+
+  /** Renews only the current process epoch; server time owns lease duration. */
+  static async renew(
+    fastify: FastifyInstance,
+    id: string,
+    leaseToken: string,
+    workerId: unknown,
+    processId: unknown
+  ): Promise<boolean> {
+    const worker = safeWorkerId(workerId);
+    const pid = safeProcessId(processId);
+    const now = new Date();
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: {
+        id,
+        status: 'RUNNING',
+        leaseToken,
+        leasedBy: worker,
+        processPid: pid,
+        leaseExpiresAt: { gt: now },
+      },
+      include: { report: { include: implementationReportInclude() } },
+    });
+    if (!job)
+      throw new InboxImplementationError(
+        'Lease implementation đã hết hạn hoặc không còn thuộc worker này.',
+        409,
+        'LEASE_RENEW_REJECTED'
+      );
+    if (!isCurrentExecution(job.report, job.sourceVersion, job.planVersion)) {
+      throw new InboxImplementationError(
+        'Approval hoặc plan implementation không còn hiện hành.',
+        409,
+        'STALE_BEFORE_RENEW'
+      );
+    }
+    const renewed = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
+      where: {
+        id,
+        status: 'RUNNING',
+        leaseToken,
+        leasedBy: worker,
+        processPid: pid,
+        leaseExpiresAt: { gt: now },
+      },
+      data: {
+        leaseHeartbeatAt: now,
+        leaseExpiresAt: new Date(now.getTime() + LEASE_MS),
+        executionPhase: 'CODEX_RUNNING',
+      },
+    });
+    if (!renewed.count)
+      throw new InboxImplementationError(
+        'Lease implementation không thể gia hạn an toàn.',
+        409,
+        'LEASE_RENEW_REJECTED'
+      );
     return true;
   }
 
@@ -735,6 +932,8 @@ export class InboxImplementationService {
           leaseToken: null,
           leasedBy: null,
           leaseExpiresAt: null,
+          processPid: null,
+          executionPhase: 'STALE',
         },
       });
       await clearGlobalPermit(fastify, id);
@@ -792,6 +991,9 @@ export class InboxImplementationService {
           leaseToken: null,
           leasedBy: null,
           leaseExpiresAt: null,
+          leaseHeartbeatAt: now,
+          processPid: null,
+          executionPhase: 'AWAITING_COMMIT_REVIEW',
         },
       });
       const updated = await tx.crmBugReport.update({ where: { id: job.reportId }, data: { updatedAt: now } });
@@ -823,30 +1025,30 @@ export class InboxImplementationService {
     });
     if (!job) return;
     const code = clean(failureCode, 100) || 'IMPLEMENTATION_FAILED';
-    const retry = job.attemptCount < RETRY_LIMIT;
     const now = new Date();
     await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.update({
         where: { id },
-        data: retry
-          ? { status: 'PENDING', failureCode: code, leaseToken: null, leasedBy: null, leaseExpiresAt: null }
-          : {
-              status: 'FAILED',
-              failureCode: code,
-              leaseToken: null,
-              leasedBy: null,
-              leaseExpiresAt: null,
-              retainUntil: new Date(now.getTime() + FAILURE_RETENTION_MS),
-            },
+        data: {
+          status: 'FAILED',
+          failureCode: code,
+          leaseToken: null,
+          leasedBy: null,
+          leaseExpiresAt: null,
+          processPid: null,
+          executionPhase: 'FAILED',
+          retainUntil: new Date(now.getTime() + FAILURE_RETENTION_MS),
+        },
       });
-      const updated = await tx.crmBugReport.update({ where: { id: job.reportId }, data: { updatedAt: now } });
+      const updated = await tx.crmBugReport.update({
+        where: { id: job.reportId },
+        data: { status: 'APPROVED', statusSort: 0, updatedAt: now },
+      });
       await tx.crmBugReportAudit.create({
         data: {
           reportId: job.reportId,
-          action: retry ? 'AGENT_IMPLEMENTATION_RETRY_SCHEDULED' : 'AGENT_IMPLEMENTATION_FAILED',
-          note: retry
-            ? 'Implementation worker đã dừng an toàn; sẽ thử lại cùng worktree, không tạo patch trùng.'
-            : 'Implementation worker đã dừng sau số lần thử an toàn; giữ worktree để Danny rà soát.',
+          action: 'AGENT_IMPLEMENTATION_FAILED',
+          note: 'Implementation worker đã dừng an toàn; giữ worktree để Danny rà soát và quyết định một retry liên kết nếu cần.',
           beforeJson: snapshot(job.report),
           afterJson: snapshot({
             ...job.report,

@@ -379,6 +379,7 @@ function latestAgentActivity(source: AgentProgressSource) {
           'AGENT_CONFIRMED_CLARITY',
           'AGENT_IMPLEMENTATION_REVIEW_READY',
           'AGENT_IMPLEMENTATION_FAILED',
+          'AGENT_IMPLEMENTATION_RETRY_QUEUED',
           'AGENT_IMPLEMENTATION_RETRY_SCHEDULED',
           'CLARIFICATION_ANSWERED',
           'REPORTER_REOPENED',
@@ -431,6 +432,9 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('NOT_VIEWED', source, null, source.createdAt);
   }
   if (source.status === 'NEW') return progressResult('READY_FOR_TRIAGE', source, latest, source.updatedAt);
+  if (latest?.action === 'AGENT_IMPLEMENTATION_FAILED') {
+    return progressResult('IMPLEMENTATION_FAILED', source, latest, source.updatedAt);
+  }
   if (source.status === 'APPROVED') return progressResult('QUEUED_FOR_FIX', source, latest, source.approvedAt);
   if (source.status === 'IN_PROGRESS') {
     if (latest?.action === 'REPORTER_REOPENED') {
@@ -517,6 +521,17 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
       'Quyết định',
       'Chốt priority, phạm vi và quyết định duyệt, từ chối hoặc đánh dấu trùng.',
       source.updatedAt
+    );
+  }
+
+  const latestActivity = latestAgentActivity(source);
+  if (latestActivity?.action === 'AGENT_IMPLEMENTATION_FAILED') {
+    return nextAction(
+      'DANNY',
+      'RETRY_IMPLEMENTATION',
+      'Quyết định retry',
+      'Lượt implementation trước đã dừng an toàn. Danny có thể tạo đúng một retry liên kết sau khi rà soát lỗi và worktree cũ.',
+      latestActivity.createdAt
     );
   }
 

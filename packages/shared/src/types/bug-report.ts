@@ -61,6 +61,7 @@ export const BUG_REPORT_NEXT_ACTION_TYPES = [
   'TRIAGE',
   'IMPLEMENT',
   'REVIEW_COMMIT',
+  'RETRY_IMPLEMENTATION',
   'CONTINUE_IMPLEMENTATION',
   'REWORK',
   'REVIEW_RESULT',
@@ -440,6 +441,7 @@ export interface InboxImplementationWorkerJob {
   sourceVersion: string;
   planVersion: string;
   branchName: string;
+  retryOfJobId: string | null;
   context: {
     requestType: BugReportRequestType;
     title: string;
@@ -451,6 +453,13 @@ export interface InboxImplementationWorkerJob {
   };
   leaseToken: string;
   attemptCount: number;
+}
+
+/** Lease renewal is operational metadata only; the server remains the time authority. */
+export interface RenewInboxImplementationLeaseRequest {
+  leaseToken: string;
+  workerId: string;
+  processId: number;
 }
 
 export interface InboxImplementationTestResult {
@@ -656,6 +665,11 @@ export interface ApproveBugReportImplementationRequest {
   acknowledged: true;
 }
 
+/** A separate, bounded Danny authorization to create one linked retry after a terminal failure. */
+export interface RetryBugReportImplementationRequest {
+  acknowledged: true;
+}
+
 export interface ApproveBugReportImplementationResult {
   report: BugReportDetail;
   implementationQueued: boolean;
@@ -723,6 +737,7 @@ export interface BugReportCommentCreateResult {
 export type CreateBugReportResponse = ActionResponse<BugReportCreateResult>;
 export type TriageBugReportResponse = ActionResponse<BugReportDetail>;
 export type ApproveBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
+export type RetryBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportResponse = ActionResponse<BugReportDetail>;
 export type CreateBugReportCommentResponse = ActionResponse<BugReportCommentCreateResult>;

@@ -127,6 +127,7 @@ test('duplicate approval delivery creates one durable implementation job for the
             if (composite) return [...jobs.values()].find((job) => job.reportId === composite.reportId) ?? null;
             return report.implementationActiveJobId ? (jobs.get(report.implementationActiveJobId) ?? null) : null;
           },
+          findFirst: async () => null,
           create: async ({ data }: { data: Record<string, unknown> }) => {
             creates += 1;
             jobs.set(String(data.id), data);
@@ -140,6 +141,103 @@ test('duplicate approval delivery creates one durable implementation job for the
   assert.equal(await InboxImplementationService.enqueueApproved(fastify as never, 16), true);
   assert.equal(await InboxImplementationService.enqueueApproved(fastify as never, 16), false);
   assert.equal(creates, 1);
+});
+
+test('Danny retry creates one new linked row and leaves the terminal row unchanged', async () => {
+  const draft = source();
+  const sourceVersion = inboxImplementationSourceVersion(draft);
+  const report = source({
+    implementationActiveJobId: 'terminal-job',
+    inboxPlanJobs: [
+      { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
+    ],
+  });
+  const terminal = {
+    id: 'terminal-job',
+    status: 'FAILED',
+    retryOfJobId: null,
+    retrySequence: 0,
+    sourceVersion,
+    planVersion: 'v1:plan',
+    failureCode: 'LEASE_EXPIRED',
+  };
+  const createdRows: Record<string, unknown>[] = [];
+  let auditAction = '';
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => report },
+        crmInboxImplementationJob: {
+          findUnique: async () => terminal,
+          findFirst: async () => null,
+        },
+        $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
+          callback({
+            crmInboxImplementationJob: {
+              create: async ({ data }: { data: Record<string, unknown> }) => {
+                createdRows.push(data);
+                return data;
+              },
+              update: async () => ({}),
+            },
+            crmBugReport: {
+              updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                Object.assign(report, data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: {
+              create: async ({ data }: { data: { action: string } }) => {
+                auditAction = data.action;
+                return {};
+              },
+            },
+          }),
+      },
+    },
+  };
+
+  assert.equal(await InboxImplementationService.retryFailed(fastify as never, 16, 1), true);
+  assert.equal(createdRows[0]?.retryOfJobId, 'terminal-job');
+  assert.equal(createdRows[0]?.retrySequence, 1);
+  assert.equal(terminal.status, 'FAILED');
+  assert.equal(report.status, 'APPROVED');
+  assert.equal(auditAction, 'AGENT_IMPLEMENTATION_RETRY_QUEUED');
+});
+
+test('lease renewal accepts only the same active worker, token, and Codex process epoch', async () => {
+  const draft = source();
+  const sourceVersion = inboxImplementationSourceVersion(draft);
+  const report = source({
+    status: 'IN_PROGRESS',
+    implementationActiveJobId: 'job-1',
+    inboxPlanJobs: [
+      { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
+    ],
+  });
+  const renewals: Record<string, unknown>[] = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findFirst: async () => ({
+            id: 'job-1',
+            sourceVersion,
+            planVersion: 'v1:plan',
+            report,
+          }),
+          updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+            renewals.push(data);
+            return { count: 1 };
+          },
+        },
+      },
+    },
+  };
+  assert.equal(await InboxImplementationService.renew(fastify as never, 'job-1', 'lease-1', 'worker-a', 4242), true);
+  assert.equal(renewals[0]?.executionPhase, 'CODEX_RUNNING');
+  assert.ok(renewals[0]?.leaseHeartbeatAt instanceof Date);
+  assert.ok(renewals[0]?.leaseExpiresAt instanceof Date);
 });
 
 test('a database permit enforces global implementation concurrency and stale jobs never claim', async () => {
