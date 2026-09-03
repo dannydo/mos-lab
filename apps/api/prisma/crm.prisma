@@ -2253,7 +2253,7 @@ model CrmBugReport {
   implementationApprovedByStaffId Int? @map("implementation_approved_by_staff_id")
   implementationApprovedAt DateTime? @map("implementation_approved_at") @db.DateTime(0)
   implementationApprovalSourceVersion String? @map("implementation_approval_source_version") @db.VarChar(80)
-  implementationActiveJobId String? @unique @map("implementation_active_job_id") @db.VarChar(36)
+  implementationActiveJobId String? @map("implementation_active_job_id") @db.VarChar(36)
   startedAt         DateTime? @map("started_at") @db.DateTime(0)
   resolvedAt        DateTime? @map("resolved_at") @db.DateTime(0)
   closedAt          DateTime? @map("closed_at") @db.DateTime(0)

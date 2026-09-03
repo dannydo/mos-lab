@@ -2,8 +2,7 @@ ALTER TABLE `crm_bug_reports`
   ADD COLUMN `implementation_approved_by_staff_id` INTEGER NULL AFTER `approved_at`,
   ADD COLUMN `implementation_approved_at` DATETIME(0) NULL AFTER `implementation_approved_by_staff_id`,
   ADD COLUMN `implementation_approval_source_version` VARCHAR(80) NULL AFTER `implementation_approved_at`,
-  ADD COLUMN `implementation_active_job_id` VARCHAR(36) NULL AFTER `implementation_approval_source_version`,
-  ADD UNIQUE INDEX `crm_bug_reports_implementation_active_job_id_key` (`implementation_active_job_id`);
+  ADD COLUMN `implementation_active_job_id` VARCHAR(36) NULL AFTER `implementation_approval_source_version`;
 
 ALTER TABLE `crm_inbox_plan_jobs`
   ADD COLUMN `source_version` VARCHAR(80) NULL AFTER `result_action`,
