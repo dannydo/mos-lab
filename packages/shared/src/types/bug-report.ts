@@ -446,6 +446,7 @@ export const INBOX_IMPLEMENTATION_JOB_STATUSES = [
   'LEASED',
   'RUNNING',
   'AWAITING_COMMIT_REVIEW',
+  'RELEASED',
   'FAILED',
   'STALE',
   'EXPIRED',
@@ -688,6 +689,11 @@ export interface RetryBugReportImplementationRequest {
   acknowledged: true;
 }
 
+/** Records a separately approved production release and hands the ticket to reporter acceptance. */
+export interface ReleaseBugReportImplementationRequest {
+  acknowledged: true;
+}
+
 export interface ApproveBugReportImplementationResult {
   report: BugReportDetail;
   implementationQueued: boolean;
@@ -756,6 +762,7 @@ export type CreateBugReportResponse = ActionResponse<BugReportCreateResult>;
 export type TriageBugReportResponse = ActionResponse<BugReportDetail>;
 export type ApproveBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type RetryBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
+export type ReleaseBugReportImplementationResponse = ActionResponse<BugReportDetail>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportResponse = ActionResponse<BugReportDetail>;
 export type CreateBugReportCommentResponse = ActionResponse<BugReportCommentCreateResult>;

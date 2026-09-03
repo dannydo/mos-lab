@@ -35,6 +35,8 @@ import type {
   BugReportDetail,
   ApproveBugReportImplementationRequest,
   ApproveBugReportImplementationResponse,
+  ReleaseBugReportImplementationRequest,
+  ReleaseBugReportImplementationResponse,
   RetryBugReportImplementationRequest,
   RetryBugReportImplementationResponse,
   BugReportListQuery,
@@ -670,6 +672,16 @@ export const apiClient = {
     ): Promise<RetryBugReportImplementationResponse> => {
       const response = await api.post<RetryBugReportImplementationResponse>(
         `/bug-reports/${id}/implementation-retry`,
+        data
+      );
+      return response.data;
+    },
+    releaseImplementation: async (
+      id: number,
+      data: ReleaseBugReportImplementationRequest
+    ): Promise<ReleaseBugReportImplementationResponse> => {
+      const response = await api.post<ReleaseBugReportImplementationResponse>(
+        `/bug-reports/${id}/implementation-release`,
         data
       );
       return response.data;

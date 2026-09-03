@@ -566,3 +566,70 @@ test('a lease that expires after its one process recovery becomes a terminal fai
   assert.equal(auditAction, 'AGENT_IMPLEMENTATION_FAILED');
   assert.equal(permitCleared, true);
 });
+
+test('a verified release hands a reviewed implementation to reporter acceptance exactly once', async () => {
+  const report = {
+    ...source({ status: 'IN_PROGRESS', implementationActiveJobId: 'review-job' }),
+    reporterStaffId: 7,
+  };
+  const job = {
+    id: 'review-job',
+    reportId: 16,
+    status: 'AWAITING_COMMIT_REVIEW',
+    changedFilesJson: JSON.stringify(['apps/web/app/dashboard/bug-reports/page.tsx']),
+    testsJson: JSON.stringify([{ command: 'pnpm --filter @mos-lab/web typecheck', status: 'PASSED' }]),
+  };
+  const jobUpdates: Array<Record<string, unknown>> = [];
+  const reportUpdates: Array<Record<string, unknown>> = [];
+  const audits: Array<Record<string, unknown>> = [];
+  const comments: Array<Record<string, unknown>> = [];
+  const notifications: Array<Record<string, unknown>> = [];
+  const resolutions: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => report },
+        crmInboxImplementationJob: { findFirst: async () => job },
+        $transaction: async (callback: (tx: unknown) => Promise<void>) =>
+          callback({
+            crmInboxImplementationJob: {
+              updateMany: async (input: { data: Record<string, unknown> }) => {
+                jobUpdates.push(input.data);
+                return { count: 1 };
+              },
+            },
+            crmBugReport: {
+              updateMany: async (input: { data: Record<string, unknown> }) => {
+                reportUpdates.push(input.data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportResolution: { upsert: async (input: Record<string, unknown>) => resolutions.push(input) },
+            crmBugReportAudit: { create: async (input: Record<string, unknown>) => audits.push(input) },
+            crmBugReportComment: { create: async (input: Record<string, unknown>) => comments.push(input) },
+            crmBugReportNotification: { create: async (input: Record<string, unknown>) => notifications.push(input) },
+          }),
+      },
+    },
+  };
+  const originalCommit = process.env.DEPLOY_COMMIT;
+  process.env.DEPLOY_COMMIT = '5e682f81c472d5d10364a7a5131e6f2d2ad04e7c';
+  try {
+    await InboxImplementationService.recordReleasedForAcceptance(fastify as never, 16, 1);
+  } finally {
+    if (originalCommit === undefined) delete process.env.DEPLOY_COMMIT;
+    else process.env.DEPLOY_COMMIT = originalCommit;
+  }
+
+  assert.deepEqual(jobUpdates[0], {
+    status: 'RELEASED',
+    executionPhase: 'AWAITING_REPORTER_REVIEW',
+    retainUntil: jobUpdates[0]?.retainUntil,
+  });
+  assert.equal(reportUpdates[0]?.status, 'FIXED');
+  assert.equal(reportUpdates[0]?.implementationActiveJobId, null);
+  assert.equal(resolutions.length, 1);
+  assert.equal(audits[0]?.data && (audits[0].data as { action?: string }).action, 'DANNY_IMPLEMENTATION_RELEASED');
+  assert.equal(comments.length, 1);
+  assert.equal(notifications[0]?.data && (notifications[0].data as { recipientStaffId?: number }).recipientStaffId, 7);
+});

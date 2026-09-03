@@ -8,6 +8,7 @@ import {
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
   type ApproveBugReportImplementationRequest,
+  type ReleaseBugReportImplementationRequest,
   type RetryBugReportImplementationRequest,
   type RenewInboxImplementationLeaseRequest,
   type BugReportListQuery,
@@ -430,6 +431,28 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Retry inbox implementation failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/implementation-release',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const body = request.body as ReleaseBugReportImplementationRequest;
+        if (body?.acknowledged !== true) {
+          throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi bàn giao ticket nghiệm thu.', 422);
+        }
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        await InboxImplementationService.recordReleasedForAcceptance(fastify, id, request.user.id);
+        return reply.send({
+          success: true,
+          data: await BugReportService.detail(fastify, id),
+          message: 'Đã ghi nhận release production và gửi ticket sang bước nghiệm thu.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Release inbox implementation failed');
       }
     }
   );

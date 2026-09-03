@@ -94,6 +94,7 @@ interface DetailDrawerProps {
   triage: (id: number, request: TriageBugReportRequest) => Promise<BugReportDetail>;
   approveImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
   retryImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
+  releaseImplementation: (id: number) => Promise<BugReportDetail>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -106,6 +107,7 @@ function DetailDrawer({
   triage,
   approveImplementation,
   retryImplementation,
+  releaseImplementation,
   confirmClose,
   comment,
   canTriage,
@@ -265,6 +267,24 @@ function DetailDrawer({
     }
   }, [detail, hydrateForm, messageApi, retryImplementation]);
 
+  const handOffReleasedImplementation = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const released = await releaseImplementation(detail.id);
+      hydrateForm(released);
+      messageApi.success('Đã ghi nhận release và gửi ticket sang bước người báo nghiệm thu.');
+    } catch (error) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể ghi nhận release.'));
+    } finally {
+      setSaving(false);
+    }
+  }, [detail, hydrateForm, messageApi, releaseImplementation]);
+
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
     label: detail?.requestType === 'FEATURE' ? `Duyệt triển khai ${item}` : `Approve ${item}`,
@@ -339,6 +359,19 @@ function DetailDrawer({
                     </Button>
                   </Popconfirm>
                 )}
+              {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' && (
+                <Popconfirm
+                  title="Ghi nhận bản đã deploy?"
+                  description="mOS sẽ kiểm tra release marker production, lưu audit/bằng chứng release và chuyển ticket sang bước người báo nghiệm thu. Ticket không tự đóng."
+                  okText="Gửi nghiệm thu"
+                  cancelText="Chưa ghi nhận"
+                  onConfirm={() => void handOffReleasedImplementation()}
+                >
+                  <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
+                    Gửi nghiệm thu
+                  </Button>
+                </Popconfirm>
+              )}
               {canTriage && ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
                 <Popconfirm
                   title="Đóng ticket bằng ngoại lệ Admin?"
@@ -883,6 +916,7 @@ export default function BugReportsPage() {
         triage={inbox.triage}
         approveImplementation={inbox.approveImplementation}
         retryImplementation={inbox.retryImplementation}
+        releaseImplementation={inbox.releaseImplementation}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}

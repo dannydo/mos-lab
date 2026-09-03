@@ -233,6 +233,17 @@ export function useBugReports() {
     [load]
   );
 
+  const releaseImplementation = useCallback(
+    async (id: number): Promise<BugReportDetail> => {
+      const response = await apiClient.bugReports.releaseImplementation(id, { acknowledged: true });
+      if (!response.data) throw new Error('Máy chủ không trả về ticket sau khi ghi nhận release.');
+      await load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
+      return response.data;
+    },
+    [load]
+  );
+
   const confirmClose = useCallback(
     async (id: number, request: ConfirmCloseBugReportRequest): Promise<BugReportDetail> => {
       const response = await apiClient.bugReports.confirmClose(id, request);
@@ -269,6 +280,7 @@ export function useBugReports() {
     triage,
     approveImplementation,
     retryImplementation,
+    releaseImplementation,
     confirmClose,
     comment,
   };
