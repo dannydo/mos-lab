@@ -56,6 +56,12 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
     detail: 'Sẵn sàng quyết định',
     tone: 'primary',
   },
+  AWAITING_DANNY_IMPLEMENTATION_APPROVAL: {
+    position: 2,
+    label: 'Plan sẵn sàng · chờ Danny duyệt code/test',
+    detail: 'Agent chưa được phép sửa hoặc kiểm thử',
+    tone: 'primary',
+  },
   QUEUED_FOR_FIX: {
     position: 3,
     label: 'Đã duyệt · chờ xử lý',

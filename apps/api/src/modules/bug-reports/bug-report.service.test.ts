@@ -26,6 +26,8 @@ function progressSource(
     clarificationStatus: 'PENDING_AGENT',
     createdAt,
     approvedAt: null,
+    implementationApprovedAt: null,
+    implementationActiveJobId: null,
     startedAt: null,
     resolvedAt: null,
     closedAt: null,
@@ -62,7 +64,7 @@ test('projects every Agent milestone from canonical ticket state and audit activ
   assert.equal(
     bugReportAgentProgress(progressSource({ status: 'APPROVED', clarificationStatus: 'READY', approvedAt: agentAt }))
       .stage,
-    'QUEUED_FOR_FIX'
+    'AWAITING_DANNY_IMPLEMENTATION_APPROVAL'
   );
   assert.equal(
     bugReportAgentProgress(
@@ -289,6 +291,10 @@ test('derives one canonical next owner and action for every workflow gate', () =
   assert.equal(
     bugReportNextAction(progressSource({ status: 'APPROVED', clarificationStatus: 'READY' })).type,
     'IMPLEMENT'
+  );
+  assert.equal(
+    bugReportNextAction(progressSource({ status: 'APPROVED', clarificationStatus: 'READY' })).actor,
+    'DANNY'
   );
   assert.deepEqual(
     bugReportNextAction(

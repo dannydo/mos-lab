@@ -57,6 +57,7 @@ export const AGENT_PROGRESS_LABELS: Record<BugReportAgentProgressStage, string> 
   REOPENED_BY_DANNY: 'Danny yêu cầu sửa thêm',
   REOPENED_BY_REPORTER: 'Agent tái phân tích reopen',
   READY_FOR_TRIAGE: 'Đã hiểu · chờ duyệt',
+  AWAITING_DANNY_IMPLEMENTATION_APPROVAL: 'Chờ Danny duyệt code/test',
   QUEUED_FOR_FIX: 'Đã nhận · chờ sửa',
   IMPLEMENTING: 'Đang sửa',
   VERIFYING: 'Đang kiểm thử',
@@ -77,6 +78,7 @@ const AGENT_PROGRESS_TONES: Record<BugReportAgentProgressStage, Parameters<typeo
   REOPENED_BY_DANNY: 'error',
   REOPENED_BY_REPORTER: 'error',
   READY_FOR_TRIAGE: 'gold',
+  AWAITING_DANNY_IMPLEMENTATION_APPROVAL: 'gold',
   QUEUED_FOR_FIX: 'processing',
   IMPLEMENTING: 'cyan',
   VERIFYING: 'orange',
@@ -189,25 +191,29 @@ export function BugStatusTag({
   const label =
     agentProgress === 'AWAITING_DANNY_COMMIT_REVIEW'
       ? 'Chờ Danny duyệt commit'
-      : agentProgress === 'IMPLEMENTATION_FAILED'
-        ? 'Agent dừng an toàn'
-        : agentProgress === 'QUEUED_FOR_FIX'
-          ? 'Đã duyệt · chờ worker'
-          : agentProgress === 'IMPLEMENTING' || agentProgress === 'VERIFYING'
-            ? 'Đang code/test'
-            : status === 'FIXED' && agentProgress === 'AWAITING_REPORTER_ACCEPTANCE'
-              ? `${reporterWaitingLabel(reporterName)} nghiệm thu`
-              : status === 'FIXED'
-                ? `${reporterWaitingLabel(reporterName)} duyệt`
-                : STATUS_LABELS[status];
+      : agentProgress === 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL'
+        ? 'Chờ Danny duyệt code/test'
+        : agentProgress === 'IMPLEMENTATION_FAILED'
+          ? 'Agent dừng an toàn'
+          : agentProgress === 'QUEUED_FOR_FIX'
+            ? 'Đã duyệt · chờ worker'
+            : agentProgress === 'IMPLEMENTING' || agentProgress === 'VERIFYING'
+              ? 'Đang code/test'
+              : status === 'FIXED' && agentProgress === 'AWAITING_REPORTER_ACCEPTANCE'
+                ? `${reporterWaitingLabel(reporterName)} nghiệm thu`
+                : status === 'FIXED'
+                  ? `${reporterWaitingLabel(reporterName)} duyệt`
+                  : STATUS_LABELS[status];
   const tone =
     agentProgress === 'IMPLEMENTATION_FAILED'
       ? 'error'
       : agentProgress === 'AWAITING_DANNY_COMMIT_REVIEW'
         ? 'warning'
-        : agentProgress === 'IMPLEMENTING' || agentProgress === 'VERIFYING' || agentProgress === 'QUEUED_FOR_FIX'
-          ? 'processing'
-          : STATUS_TONES[status];
+        : agentProgress === 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL'
+          ? 'warning'
+          : agentProgress === 'IMPLEMENTING' || agentProgress === 'VERIFYING' || agentProgress === 'QUEUED_FOR_FIX'
+            ? 'processing'
+            : STATUS_TONES[status];
   return <StatusTag status={tone} label={label} />;
 }
 

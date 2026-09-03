@@ -51,6 +51,14 @@ describe('getBugReportWorkflowStage', () => {
         agentProgress: { ...baseReport.agentProgress, stage: 'READY_FOR_TRIAGE' },
       })
     ).toMatchObject({ position: 2, label: 'Đủ rõ · chờ Danny duyệt' });
+    expect(
+      getBugReportWorkflowStage({
+        ...baseReport,
+        status: 'APPROVED',
+        clarification: { status: 'READY', summary: 'Plan reopen đã sẵn sàng.', clarifiedAt: null },
+        agentProgress: { ...baseReport.agentProgress, stage: 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL' },
+      })
+    ).toMatchObject({ position: 2, label: 'Plan sẵn sàng · chờ Danny duyệt code/test' });
     expect(getBugReportWorkflowStage(baseReport)).toMatchObject({ position: 3, label: 'Đang xử lý' });
     expect(
       getBugReportWorkflowStage({

@@ -42,6 +42,8 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
   'REOPENED_BY_DANNY',
   'REOPENED_BY_REPORTER',
   'READY_FOR_TRIAGE',
+  /** A current plan exists, but Danny has not yet authorized code/test. */
+  'AWAITING_DANNY_IMPLEMENTATION_APPROVAL',
   'QUEUED_FOR_FIX',
   'IMPLEMENTING',
   'VERIFYING',

@@ -386,7 +386,16 @@ type ImplementationProgressSnapshot = {
 
 type AgentProgressSource = Pick<
   CrmBugReport,
-  'status' | 'clarificationStatus' | 'createdAt' | 'approvedAt' | 'startedAt' | 'resolvedAt' | 'closedAt' | 'updatedAt'
+  | 'status'
+  | 'clarificationStatus'
+  | 'createdAt'
+  | 'approvedAt'
+  | 'implementationApprovedAt'
+  | 'implementationActiveJobId'
+  | 'startedAt'
+  | 'resolvedAt'
+  | 'closedAt'
+  | 'updatedAt'
 > & {
   audits: Array<{ action: string; note: string | null; createdAt: Date }>;
   implementation?: ImplementationProgressSnapshot | null;
@@ -558,7 +567,12 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
   if (latest?.action === 'AGENT_IMPLEMENTATION_FAILED') {
     return progressResult('IMPLEMENTATION_FAILED', source, latest, source.updatedAt);
   }
-  if (source.status === 'APPROVED') return progressResult('QUEUED_FOR_FIX', source, latest, source.approvedAt);
+  if (source.status === 'APPROVED') {
+    // An APPROVED triage is deliberately not enough to say that Agent has
+    // started. Only a durable implementation job may use QUEUED_FOR_FIX or a
+    // later execution stage; otherwise the visible owner is still Danny.
+    return progressResult('AWAITING_DANNY_IMPLEMENTATION_APPROVAL', source, latest, source.approvedAt);
+  }
   if (source.status === 'IN_PROGRESS') {
     if (latest?.action === 'REPORTER_IMPLEMENTATION_REOPENED' || latest?.action === 'REPORTER_REOPENED') {
       return progressResult('REOPENED_BY_REPORTER', source, latest, source.updatedAt);
@@ -722,10 +736,10 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
 
   if (source.status === 'APPROVED') {
     return nextAction(
-      'AGENT',
+      'DANNY',
       'IMPLEMENT',
-      'Bắt đầu triển khai',
-      'Nhận bundle, cập nhật tiến độ, sửa theo phạm vi đã duyệt và kiểm thử.',
+      'Duyệt code/test',
+      'Plan đã có, nhưng Agent chỉ được bắt đầu sau khi Danny duyệt code/test. Khi job bền vững được tạo, UI mới hiển thị Agent triển khai.',
       source.approvedAt ?? source.updatedAt
     );
   }
