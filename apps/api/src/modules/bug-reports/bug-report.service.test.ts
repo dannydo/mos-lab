@@ -202,16 +202,16 @@ test('projects every Agent milestone from canonical ticket state and audit activ
         resolvedAt: agentAt,
         audits: [
           {
-            action: 'DANNY_RELEASED_FOR_ACCEPTANCE',
-            note: 'Đã deploy; chờ Danny nghiệm thu.',
+            action: 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
+            note: 'Đã deploy; chờ người báo nghiệm thu.',
             createdAt: agentAt,
           },
         ],
       })
     ),
     {
-      stage: 'AWAITING_DANNY_ACCEPTANCE',
-      note: 'Đã deploy; chờ Danny nghiệm thu.',
+      stage: 'AWAITING_REPORTER_ACCEPTANCE',
+      note: 'Đã deploy; chờ người báo nghiệm thu.',
       updatedAt: agentAt.toISOString(),
     }
   );
@@ -220,10 +220,10 @@ test('projects every Agent milestone from canonical ticket state and audit activ
       progressSource({
         status: 'IN_PROGRESS',
         clarificationStatus: 'READY',
-        audits: [{ action: 'DANNY_IMPLEMENTATION_REOPENED', note: 'Nút vẫn sai.', createdAt: agentAt }],
+        audits: [{ action: 'REPORTER_IMPLEMENTATION_REOPENED', note: 'Nút vẫn sai.', createdAt: agentAt }],
       })
     ).stage,
-    'REOPENED_BY_DANNY'
+    'REOPENED_BY_REPORTER'
   );
   assert.equal(bugReportAgentProgress(progressSource({ status: 'CLOSED', closedAt: agentAt })).stage, 'COMPLETED');
 });

@@ -60,7 +60,7 @@ export const AGENT_PROGRESS_LABELS: Record<BugReportAgentProgressStage, string> 
   IMPLEMENTING: 'Đang sửa',
   VERIFYING: 'Đang kiểm thử',
   AWAITING_DANNY_COMMIT_REVIEW: 'Chờ Danny duyệt commit',
-  AWAITING_DANNY_ACCEPTANCE: 'Chờ Danny nghiệm thu',
+  AWAITING_REPORTER_ACCEPTANCE: 'Chờ người báo nghiệm thu',
   IMPLEMENTATION_FAILED: 'Implementation cần Danny xử lý',
   AWAITING_REPORTER_REVIEW: 'Đã sửa · chờ xác nhận',
   COMPLETED: 'Hoàn tất',
@@ -80,7 +80,7 @@ const AGENT_PROGRESS_TONES: Record<BugReportAgentProgressStage, Parameters<typeo
   IMPLEMENTING: 'cyan',
   VERIFYING: 'orange',
   AWAITING_DANNY_COMMIT_REVIEW: 'gold',
-  AWAITING_DANNY_ACCEPTANCE: 'success',
+  AWAITING_REPORTER_ACCEPTANCE: 'success',
   IMPLEMENTATION_FAILED: 'error',
   AWAITING_REPORTER_REVIEW: 'success',
   COMPLETED: 'success',
@@ -194,8 +194,8 @@ export function BugStatusTag({
           ? 'Đã duyệt · chờ worker'
           : agentProgress === 'IMPLEMENTING' || agentProgress === 'VERIFYING'
             ? 'Đang code/test'
-            : status === 'FIXED' && agentProgress === 'AWAITING_DANNY_ACCEPTANCE'
-              ? 'Chờ Danny nghiệm thu'
+            : status === 'FIXED' && agentProgress === 'AWAITING_REPORTER_ACCEPTANCE'
+              ? `${reporterWaitingLabel(reporterName)} nghiệm thu`
               : status === 'FIXED'
                 ? `${reporterWaitingLabel(reporterName)} duyệt`
                 : STATUS_LABELS[status];

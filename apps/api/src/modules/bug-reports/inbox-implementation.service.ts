@@ -5,6 +5,7 @@ import {
   type InboxImplementationTestResult,
   type InboxImplementationWorkerJob,
   type InboxImplementationWorkerResult,
+  type ReleaseBugReportImplementationRequest,
   type ReviewBugReportImplementationAcceptanceRequest,
   removeVietnameseTones,
 } from '@mos-lab/shared';
@@ -257,6 +258,27 @@ function releaseCommitSha(): string {
     );
   }
   return commitSha;
+}
+
+/** A release marker proves the version currently live, not a ticket by itself. */
+function verifiedReleasedCommit(input: ReleaseBugReportImplementationRequest): string {
+  const reviewedCommitSha = clean(input?.commitSha, 64);
+  if (!/^[a-f0-9]{7,64}$/i.test(reviewedCommitSha)) {
+    throw new InboxImplementationError(
+      'Cần nhập commit đã được duyệt trước khi xác nhận deploy.',
+      422,
+      'REVIEWED_COMMIT_REQUIRED'
+    );
+  }
+  const deployedCommitSha = releaseCommitSha();
+  if (!deployedCommitSha.startsWith(reviewedCommitSha) && !reviewedCommitSha.startsWith(deployedCommitSha)) {
+    throw new InboxImplementationError(
+      'Commit đã duyệt chưa khớp release đang chạy trên production. Hãy deploy đúng commit đó trước.',
+      409,
+      'RELEASE_COMMIT_MISMATCH'
+    );
+  }
+  return deployedCommitSha;
 }
 
 function safeWorktreePath(value: unknown): string {
@@ -1158,13 +1180,14 @@ export class InboxImplementationService {
   /**
    * A deploy is a separate, Danny-controlled transition. The worker never calls
    * this method: it only moves a reviewed patch to reporter acceptance once the
-   * server can prove which production release is currently active. It then
-   * stops at Danny's acceptance gate; it never notifies or closes the ticket.
+   * server can prove the explicitly-recorded reviewed commit is currently live.
+   * It then stops at the reporter's acceptance gate; it never closes the ticket.
    */
-  static async recordReleasedForDannyAcceptance(
+  static async recordReleasedForReporterAcceptance(
     fastify: FastifyInstance,
     reportId: number,
-    actorStaffId: number
+    actorStaffId: number,
+    input: ReleaseBugReportImplementationRequest
   ): Promise<void> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
@@ -1186,12 +1209,12 @@ export class InboxImplementationService {
       throw new InboxImplementationError('Không tìm thấy worktree đang chờ Danny duyệt commit.', 409);
     }
 
-    const commitSha = releaseCommitSha();
+    const commitSha = verifiedReleasedCommit(input);
     const changedFiles = safeFileList(safeJsonValue(job.changedFilesJson));
     const tests = normalizeTests(safeJsonValue(job.testsJson));
     const now = new Date();
     const key = formatBugReportKey(reportId, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
-    const problemSummary = 'Bản sửa đã được phát hành và đang chờ Danny nghiệm thu.';
+    const problemSummary = 'Bản sửa đã được phát hành và đang chờ người báo nghiệm thu.';
     const verificationSummary = tests.length
       ? tests.map((test) => `${test.status}: ${test.command}`).join('\n')
       : 'Đã đối chiếu release marker production; không có lệnh kiểm thử được worker ghi nhận.';
@@ -1205,7 +1228,7 @@ export class InboxImplementationService {
         where: { id: job.id, reportId, status: 'AWAITING_COMMIT_REVIEW' },
         data: {
           status: 'RELEASED',
-          executionPhase: 'AWAITING_DANNY_ACCEPTANCE',
+          executionPhase: 'AWAITING_REPORTER_ACCEPTANCE',
           retainUntil: new Date(now.getTime() + REVIEW_RETENTION_MS),
         },
       });
@@ -1234,8 +1257,8 @@ export class InboxImplementationService {
         create: {
           reportId,
           problemSummary,
-          rootCause: 'Bản vá đã hoàn tất checkpoint review và được Danny cho phép phát hành.',
-          solutionSummary: 'Đã commit và deploy bản thay đổi đã duyệt; mOS chờ Danny nghiệm thu.',
+          rootCause: 'Bản vá đã hoàn tất checkpoint review, commit đã được Danny ghi nhận và khớp release production.',
+          solutionSummary: 'Đã deploy bản thay đổi đã duyệt; mOS chờ người báo nghiệm thu.',
           verificationSummary,
           changedFilesJson: JSON.stringify(changedFiles),
           commitSha,
@@ -1244,8 +1267,8 @@ export class InboxImplementationService {
         },
         update: {
           problemSummary,
-          rootCause: 'Bản vá đã hoàn tất checkpoint review và được Danny cho phép phát hành.',
-          solutionSummary: 'Đã commit và deploy bản thay đổi đã duyệt; mOS chờ Danny nghiệm thu.',
+          rootCause: 'Bản vá đã hoàn tất checkpoint review, commit đã được Danny ghi nhận và khớp release production.',
+          solutionSummary: 'Đã deploy bản thay đổi đã duyệt; mOS chờ người báo nghiệm thu.',
           verificationSummary,
           changedFilesJson: JSON.stringify(changedFiles),
           commitSha,
@@ -1257,8 +1280,8 @@ export class InboxImplementationService {
         data: {
           reportId,
           actorStaffId,
-          action: 'DANNY_RELEASED_FOR_ACCEPTANCE',
-          note: `Danny đã duyệt commit/deploy ${commitSha.slice(0, 12)}; ticket chuyển sang chờ Danny nghiệm thu.`,
+          action: 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
+          note: `Danny đã xác nhận commit/deploy ${commitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
           beforeJson: snapshot(report),
           afterJson: snapshot({
             ...report,
@@ -1273,22 +1296,32 @@ export class InboxImplementationService {
           authorType: 'AGENT',
           kind: 'COMMENT',
           body: [
-            '## Đã phát hành — chờ Danny nghiệm thu',
+            '## Đã phát hành — chờ người báo nghiệm thu',
             '',
             `- Release: ${commitSha}`,
             `- Ticket: ${key}`,
-            '- Bản sửa đã được deploy. Danny nghiệm thu đạt hoặc yêu cầu chỉnh lại.',
+            '- Bản sửa đã được deploy. Người báo nghiệm thu đạt hoặc yêu cầu chỉnh lại.',
           ].join('\n'),
+        },
+      });
+      await tx.crmBugReportNotification.create({
+        data: {
+          reportId,
+          recipientStaffId: report.reporterStaffId,
+          type: report.requestType === 'FEATURE' ? 'FEATURE_IMPLEMENTED_REVIEW' : 'BUG_FIXED_REVIEW',
+          title: `${key} đã deploy — mời bạn nghiệm thu`,
+          message: 'Bản thay đổi đã lên production. Hãy xác nhận đạt hoặc mô tả điểm cần sửa thêm.',
+          actionUrl: `/dashboard?bugReview=${encodeURIComponent(key)}`,
         },
       });
     });
   }
 
   /**
-   * The final business decision belongs to Danny, after the release is visible
+   * The final business decision belongs to the reporter, after the release is visible
    * in production. Reopening never creates another implementation or deploy.
    */
-  static async reviewDannyAcceptance(
+  static async reviewReporterAcceptance(
     fastify: FastifyInstance,
     reportId: number,
     actorStaffId: number,
@@ -1309,26 +1342,33 @@ export class InboxImplementationService {
     });
     if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
     if (report.status !== 'FIXED') {
-      throw new InboxImplementationError('Ticket chưa ở bước Danny nghiệm thu.', 409);
+      throw new InboxImplementationError('Ticket chưa ở bước người báo nghiệm thu.', 409);
+    }
+    if (report.reporterStaffId !== actorStaffId) {
+      throw new InboxImplementationError(
+        'Chỉ người báo ticket mới có thể nghiệm thu bản deploy.',
+        403,
+        'REPORTER_ACCEPTANCE_REQUIRED'
+      );
     }
     const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
       where: {
         reportId,
         status: 'RELEASED',
-        executionPhase: 'AWAITING_DANNY_ACCEPTANCE',
+        executionPhase: 'AWAITING_REPORTER_ACCEPTANCE',
       },
       orderBy: { updatedAt: 'desc' },
     });
     if (!job) {
-      throw new InboxImplementationError('Không tìm thấy release đang chờ Danny nghiệm thu.', 409);
+      throw new InboxImplementationError('Không tìm thấy release đang chờ người báo nghiệm thu.', 409);
     }
 
     const now = new Date();
     const accepted = decision === 'APPROVE';
     await fastify.prisma.crm.$transaction(async (tx) => {
       const reviewedJob = await tx.crmInboxImplementationJob.updateMany({
-        where: { id: job.id, reportId, status: 'RELEASED', executionPhase: 'AWAITING_DANNY_ACCEPTANCE' },
-        data: { executionPhase: accepted ? 'ACCEPTED' : 'REOPENED_BY_DANNY' },
+        where: { id: job.id, reportId, status: 'RELEASED', executionPhase: 'AWAITING_REPORTER_ACCEPTANCE' },
+        data: { executionPhase: accepted ? 'ACCEPTED' : 'REOPENED_BY_REPORTER' },
       });
       if (!reviewedJob.count) {
         throw new InboxImplementationError('Bước nghiệm thu đã thay đổi. Vui lòng tải lại ticket.', 409);
@@ -1352,8 +1392,8 @@ export class InboxImplementationService {
         data: {
           reportId,
           actorStaffId,
-          action: accepted ? 'DANNY_IMPLEMENTATION_ACCEPTED' : 'DANNY_IMPLEMENTATION_REOPENED',
-          note: note ?? (accepted ? 'Danny đã nghiệm thu bản sửa trên production.' : 'Danny yêu cầu sửa thêm.'),
+          action: accepted ? 'REPORTER_IMPLEMENTATION_ACCEPTED' : 'REPORTER_IMPLEMENTATION_REOPENED',
+          note: note ?? (accepted ? 'Người báo đã nghiệm thu bản sửa trên production.' : 'Người báo yêu cầu sửa thêm.'),
           beforeJson: snapshot(report),
           afterJson: snapshot({
             ...report,
@@ -1369,8 +1409,8 @@ export class InboxImplementationService {
           authorType: 'AGENT',
           kind: 'COMMENT',
           body: accepted
-            ? '## Danny đã nghiệm thu\n\n- Bản sửa production đạt yêu cầu; ticket đã hoàn tất.'
-            : `## Danny yêu cầu sửa thêm\n\n${note}`,
+            ? '## Người báo đã nghiệm thu\n\n- Bản sửa production đạt yêu cầu; ticket đã hoàn tất.'
+            : `## Người báo yêu cầu sửa thêm\n\n${note}`,
         },
       });
     });

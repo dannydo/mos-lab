@@ -236,20 +236,9 @@ export function useBugReports() {
   );
 
   const releaseImplementation = useCallback(
-    async (id: number): Promise<BugReportDetail> => {
-      const response = await apiClient.bugReports.releaseImplementation(id, { acknowledged: true });
+    async (id: number, commitSha: string): Promise<BugReportDetail> => {
+      const response = await apiClient.bugReports.releaseImplementation(id, { acknowledged: true, commitSha });
       if (!response.data) throw new Error('Máy chủ không trả về ticket sau khi ghi nhận release.');
-      await load();
-      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
-      return response.data;
-    },
-    [load]
-  );
-
-  const reviewImplementationAcceptance = useCallback(
-    async (id: number, request: { decision: 'APPROVE' | 'REOPEN'; note?: string | null }): Promise<BugReportDetail> => {
-      const response = await apiClient.bugReports.reviewImplementationAcceptance(id, request);
-      if (!response.data) throw new Error('Máy chủ không trả về ticket sau khi nghiệm thu.');
       await load();
       window.dispatchEvent(new Event('mos-bug-inbox-updated'));
       return response.data;
@@ -294,7 +283,6 @@ export function useBugReports() {
     approveImplementation,
     retryImplementation,
     releaseImplementation,
-    reviewImplementationAcceptance,
     confirmClose,
     comment,
   };

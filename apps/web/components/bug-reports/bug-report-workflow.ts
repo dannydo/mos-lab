@@ -75,10 +75,10 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
     detail: 'Code và kiểm thử đã dừng ở worktree review',
     tone: 'primary',
   },
-  AWAITING_DANNY_ACCEPTANCE: {
+  AWAITING_REPORTER_ACCEPTANCE: {
     position: 4,
-    label: 'Chờ Danny nghiệm thu',
-    detail: 'Bản deploy đang chờ quyết định cuối',
+    label: 'Chờ người báo nghiệm thu',
+    detail: 'Bản deploy đang chờ người báo xác nhận',
     tone: 'success',
   },
   IMPLEMENTATION_FAILED: {

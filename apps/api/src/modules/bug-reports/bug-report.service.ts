@@ -414,9 +414,9 @@ function latestAgentActivity(source: AgentProgressSource) {
           'AGENT_IMPLEMENTATION_FAILED',
           'AGENT_IMPLEMENTATION_RETRY_QUEUED',
           'AGENT_IMPLEMENTATION_RETRY_SCHEDULED',
-          'DANNY_RELEASED_FOR_ACCEPTANCE',
-          'DANNY_IMPLEMENTATION_ACCEPTED',
-          'DANNY_IMPLEMENTATION_REOPENED',
+          'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
+          'REPORTER_IMPLEMENTATION_ACCEPTED',
+          'REPORTER_IMPLEMENTATION_REOPENED',
           'CLARIFICATION_ANSWERED',
           'REPORTER_REOPENED',
         ].includes(audit.action))
@@ -526,8 +526,8 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('STOPPED', source, null, source.closedAt);
   }
   if (source.status === 'FIXED') {
-    if (latest?.action === 'DANNY_RELEASED_FOR_ACCEPTANCE') {
-      return progressResult('AWAITING_DANNY_ACCEPTANCE', source, latest, source.resolvedAt);
+    if (latest?.action === 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE') {
+      return progressResult('AWAITING_REPORTER_ACCEPTANCE', source, latest, source.resolvedAt);
     }
     return {
       ...progressResult('AWAITING_REPORTER_REVIEW', source, null, source.resolvedAt),
@@ -557,10 +557,7 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
   }
   if (source.status === 'APPROVED') return progressResult('QUEUED_FOR_FIX', source, latest, source.approvedAt);
   if (source.status === 'IN_PROGRESS') {
-    if (latest?.action === 'DANNY_IMPLEMENTATION_REOPENED') {
-      return progressResult('REOPENED_BY_DANNY', source, latest, source.updatedAt);
-    }
-    if (latest?.action === 'REPORTER_REOPENED') {
+    if (latest?.action === 'REPORTER_IMPLEMENTATION_REOPENED' || latest?.action === 'REPORTER_REOPENED') {
       return progressResult('REOPENED_BY_REPORTER', source, latest, source.updatedAt);
     }
     const stage =
@@ -607,12 +604,12 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
   }
 
   if (source.status === 'FIXED') {
-    if (latestAgentActivity(source)?.action === 'DANNY_RELEASED_FOR_ACCEPTANCE') {
+    if (latestAgentActivity(source)?.action === 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE') {
       return nextAction(
-        'DANNY',
-        'REVIEW_COMMIT',
+        'REPORTER',
+        'REVIEW_RESULT',
         'Nghiệm thu bản deploy',
-        'Kiểm tra thay đổi trên production, rồi chọn đạt hoặc yêu cầu sửa thêm.',
+        'Người báo kiểm tra thay đổi trên production, rồi xác nhận đạt hoặc yêu cầu sửa thêm.',
         latestAgentActivity(source)?.createdAt ?? source.resolvedAt ?? source.updatedAt
       );
     }
@@ -692,12 +689,12 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
   }
 
   const latestActivity = latestAgentActivity(source);
-  if (latestActivity?.action === 'DANNY_IMPLEMENTATION_REOPENED') {
+  if (latestActivity?.action === 'REPORTER_IMPLEMENTATION_REOPENED') {
     return nextAction(
       'AGENT',
       'REWORK',
       'Rà soát yêu cầu sửa thêm',
-      'Danny đã mở lại ticket sau nghiệm thu. Không có implementation hoặc deploy tự động được tạo.',
+      'Người báo đã mở lại ticket sau nghiệm thu. Không có implementation hoặc deploy tự động được tạo.',
       latestActivity.createdAt
     );
   }
@@ -1559,13 +1556,10 @@ export class BugReportService {
     if (existing.status !== 'FIXED') {
       throw new BugReportError('Chỉ bản sửa đang chờ xác nhận mới có thể duyệt.', 409, 'BUG_NOT_AWAITING_REVIEW');
     }
-    const pendingDannyAcceptance = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
-      where: { reportId: id, status: 'RELEASED', executionPhase: 'AWAITING_DANNY_ACCEPTANCE' },
+    const pendingReporterAcceptance = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: { reportId: id, status: 'RELEASED', executionPhase: 'AWAITING_REPORTER_ACCEPTANCE' },
       select: { id: true },
     });
-    if (pendingDannyAcceptance) {
-      throw new BugReportError('Bản deploy đang chờ Danny nghiệm thu.', 409, 'BUG_AWAITING_DANNY_ACCEPTANCE');
-    }
     const decision = input?.decision;
     if (decision !== 'APPROVE' && decision !== 'REOPEN') throw new BugReportError('Quyết định duyệt không hợp lệ.');
     const note = clipped(input?.note, 2000) || null;
@@ -1585,6 +1579,16 @@ export class BugReportService {
           triageNote: note ?? existing.triageNote,
         },
       });
+      if (pendingReporterAcceptance) {
+        await tx.crmInboxImplementationJob.updateMany({
+          where: {
+            id: pendingReporterAcceptance.id,
+            status: 'RELEASED',
+            executionPhase: 'AWAITING_REPORTER_ACCEPTANCE',
+          },
+          data: { executionPhase: decision === 'APPROVE' ? 'ACCEPTED' : 'REOPENED_BY_REPORTER' },
+        });
+      }
       await tx.crmBugReportAudit.create({
         data: {
           reportId: id,
