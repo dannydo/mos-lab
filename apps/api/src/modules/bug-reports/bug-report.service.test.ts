@@ -146,6 +146,37 @@ test('projects every Agent milestone from canonical ticket state and audit activ
       updatedAt: agentAt.toISOString(),
     }
   );
+  assert.deepEqual(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'FIXED',
+        clarificationStatus: 'READY',
+        resolvedAt: agentAt,
+        audits: [
+          {
+            action: 'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE',
+            note: 'Đã deploy; chờ Danny nghiệm thu.',
+            createdAt: agentAt,
+          },
+        ],
+      })
+    ),
+    {
+      stage: 'AWAITING_DANNY_ACCEPTANCE',
+      note: 'Đã deploy; chờ Danny nghiệm thu.',
+      updatedAt: agentAt.toISOString(),
+    }
+  );
+  assert.equal(
+    bugReportAgentProgress(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        audits: [{ action: 'DANNY_IMPLEMENTATION_REOPENED', note: 'Nút vẫn sai.', createdAt: agentAt }],
+      })
+    ).stage,
+    'REOPENED_BY_DANNY'
+  );
   assert.equal(bugReportAgentProgress(progressSource({ status: 'CLOSED', closedAt: agentAt })).stage, 'COMPLETED');
 });
 

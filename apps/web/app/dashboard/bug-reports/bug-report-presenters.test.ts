@@ -59,6 +59,13 @@ describe('getBugReportWorkflowStage', () => {
     expect(
       getBugReportWorkflowStage({
         ...baseReport,
+        status: 'FIXED',
+        agentProgress: { ...baseReport.agentProgress, stage: 'AWAITING_DANNY_ACCEPTANCE' },
+      })
+    ).toMatchObject({ position: 4, label: 'Chờ Danny nghiệm thu' });
+    expect(
+      getBugReportWorkflowStage({
+        ...baseReport,
         status: 'CLOSED',
         agentProgress: { ...baseReport.agentProgress, stage: 'COMPLETED' },
       })

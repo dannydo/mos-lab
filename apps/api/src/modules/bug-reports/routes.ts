@@ -9,6 +9,7 @@ import {
   type AgentUpdateBugProgressRequest,
   type ApproveBugReportImplementationRequest,
   type ReleaseBugReportImplementationRequest,
+  type ReviewBugReportImplementationAcceptanceRequest,
   type RetryBugReportImplementationRequest,
   type RenewInboxImplementationLeaseRequest,
   type BugReportListQuery,
@@ -445,14 +446,36 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi bàn giao ticket nghiệm thu.', 422);
         }
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-        await InboxImplementationService.recordReleasedForAcceptance(fastify, id, request.user.id);
+        await InboxImplementationService.recordReleasedForDannyAcceptance(fastify, id, request.user.id);
         return reply.send({
           success: true,
           data: await BugReportService.detail(fastify, id),
-          message: 'Đã ghi nhận release production và gửi ticket sang bước nghiệm thu.',
+          message: 'Đã ghi nhận release production; ticket chuyển sang chờ Danny nghiệm thu.',
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Release inbox implementation failed');
+      }
+    }
+  );
+
+  fastify.patch(
+    '/bug-reports/:id/implementation-acceptance',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const body = request.body as ReviewBugReportImplementationAcceptanceRequest;
+        await InboxImplementationService.reviewDannyAcceptance(fastify, id, request.user.id, body);
+        return reply.send({
+          success: true,
+          data: await BugReportService.detail(fastify, id),
+          message:
+            body?.decision === 'APPROVE'
+              ? 'Đã nghiệm thu bản sửa và hoàn tất ticket.'
+              : 'Đã mở lại ticket theo yêu cầu Danny.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Review Danny implementation acceptance failed');
       }
     }
   );

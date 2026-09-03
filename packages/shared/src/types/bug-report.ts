@@ -39,12 +39,14 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
   'CHECKING_BUSINESS_LOGIC',
   'WAITING_REPORTER',
   'REPORTER_REPLIED',
+  'REOPENED_BY_DANNY',
   'REOPENED_BY_REPORTER',
   'READY_FOR_TRIAGE',
   'QUEUED_FOR_FIX',
   'IMPLEMENTING',
   'VERIFYING',
   'AWAITING_DANNY_COMMIT_REVIEW',
+  'AWAITING_DANNY_ACCEPTANCE',
   'IMPLEMENTATION_FAILED',
   'AWAITING_REPORTER_REVIEW',
   'COMPLETED',
@@ -689,9 +691,15 @@ export interface RetryBugReportImplementationRequest {
   acknowledged: true;
 }
 
-/** Records a separately approved production release and hands the ticket to reporter acceptance. */
+/** Records a separately approved production release and hands the ticket to Danny for acceptance. */
 export interface ReleaseBugReportImplementationRequest {
   acknowledged: true;
+}
+
+/** Danny's final decision after checking the deployed implementation. */
+export interface ReviewBugReportImplementationAcceptanceRequest {
+  decision: 'APPROVE' | 'REOPEN';
+  note?: string | null;
 }
 
 export interface ApproveBugReportImplementationResult {
@@ -763,6 +771,7 @@ export type TriageBugReportResponse = ActionResponse<BugReportDetail>;
 export type ApproveBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type RetryBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ReleaseBugReportImplementationResponse = ActionResponse<BugReportDetail>;
+export type ReviewBugReportImplementationAcceptanceResponse = ActionResponse<BugReportDetail>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportResponse = ActionResponse<BugReportDetail>;
 export type CreateBugReportCommentResponse = ActionResponse<BugReportCommentCreateResult>;

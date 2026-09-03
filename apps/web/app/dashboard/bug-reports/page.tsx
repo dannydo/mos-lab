@@ -95,6 +95,10 @@ interface DetailDrawerProps {
   approveImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
   retryImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
   releaseImplementation: (id: number) => Promise<BugReportDetail>;
+  reviewImplementationAcceptance: (
+    id: number,
+    request: { decision: 'APPROVE' | 'REOPEN'; note?: string | null }
+  ) => Promise<BugReportDetail>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -108,6 +112,7 @@ function DetailDrawer({
   approveImplementation,
   retryImplementation,
   releaseImplementation,
+  reviewImplementationAcceptance,
   confirmClose,
   comment,
   canTriage,
@@ -273,7 +278,7 @@ function DetailDrawer({
     try {
       const released = await releaseImplementation(detail.id);
       hydrateForm(released);
-      messageApi.success('Đã ghi nhận release và gửi ticket sang bước người báo nghiệm thu.');
+      messageApi.success('Đã ghi nhận release; ticket đang chờ Danny nghiệm thu.');
     } catch (error) {
       const responseMessage =
         error && typeof error === 'object' && 'response' in error
@@ -284,6 +289,36 @@ function DetailDrawer({
       setSaving(false);
     }
   }, [detail, hydrateForm, messageApi, releaseImplementation]);
+
+  const reviewReleasedImplementation = useCallback(
+    async (decision: 'APPROVE' | 'REOPEN') => {
+      if (!detail) return;
+      const acceptanceNote = note.trim() || null;
+      if (decision === 'REOPEN' && !acceptanceNote) {
+        messageApi.error('Nhập ghi chú xử lý để mô tả điểm vẫn cần sửa.');
+        return;
+      }
+      setSaving(true);
+      try {
+        const reviewed = await reviewImplementationAcceptance(detail.id, { decision, note: acceptanceNote });
+        hydrateForm(reviewed);
+        messageApi.success(
+          decision === 'APPROVE'
+            ? 'Đã nghiệm thu bản sửa và hoàn tất ticket.'
+            : 'Đã mở lại ticket; hệ thống không tự chạy lại implementation.'
+        );
+      } catch (error) {
+        const responseMessage =
+          error && typeof error === 'object' && 'response' in error
+            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+            : null;
+        messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể lưu nghiệm thu.'));
+      } finally {
+        setSaving(false);
+      }
+    },
+    [detail, hydrateForm, messageApi, note, reviewImplementationAcceptance]
+  );
 
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
@@ -362,29 +397,57 @@ function DetailDrawer({
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' && (
                 <Popconfirm
                   title="Ghi nhận bản đã deploy?"
-                  description="mOS sẽ kiểm tra release marker production, lưu audit/bằng chứng release và chuyển ticket sang bước người báo nghiệm thu. Ticket không tự đóng."
-                  okText="Gửi nghiệm thu"
+                  description="mOS sẽ kiểm tra release marker production, lưu audit/bằng chứng release và chuyển ticket sang bước Danny nghiệm thu. Ticket không tự đóng."
+                  okText="Xác nhận release"
                   cancelText="Chưa ghi nhận"
                   onConfirm={() => void handOffReleasedImplementation()}
                 >
                   <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                    Gửi nghiệm thu
+                    Xác nhận đã deploy
                   </Button>
                 </Popconfirm>
               )}
-              {canTriage && ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) && (
-                <Popconfirm
-                  title="Đóng ticket bằng ngoại lệ Admin?"
-                  description="Bắt buộc ghi bằng chứng/lý do ở ô Ghi chú xử lý. mOS không tạo trạng thái sửa giả."
-                  okText="Override & đóng"
-                  cancelText="Kiểm tra lại"
-                  onConfirm={() => void confirmResolvedAndClose()}
-                >
-                  <Button loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                    Đóng ngoại lệ
-                  </Button>
-                </Popconfirm>
+              {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_ACCEPTANCE' && (
+                <>
+                  <Popconfirm
+                    title="Nghiệm thu đạt và hoàn tất ticket?"
+                    description="Xác nhận bản deploy đạt yêu cầu. Ticket sẽ được đóng; không có thay đổi code hay deploy mới."
+                    okText="Nghiệm thu đạt"
+                    cancelText="Kiểm tra lại"
+                    onConfirm={() => void reviewReleasedImplementation('APPROVE')}
+                  >
+                    <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
+                      Nghiệm thu đạt
+                    </Button>
+                  </Popconfirm>
+                  <Popconfirm
+                    title="Mở lại ticket để sửa thêm?"
+                    description="Nhập điểm cần sửa ở ô Ghi chú xử lý bên dưới. Ticket chỉ được mở lại, không tự tạo implementation hay deploy mới."
+                    okText="Yêu cầu sửa thêm"
+                    cancelText="Chưa mở lại"
+                    onConfirm={() => void reviewReleasedImplementation('REOPEN')}
+                  >
+                    <Button danger loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
+                      Cần sửa thêm
+                    </Button>
+                  </Popconfirm>
+                </>
               )}
+              {canTriage &&
+                ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) &&
+                detail.agentProgress.stage !== 'AWAITING_DANNY_ACCEPTANCE' && (
+                  <Popconfirm
+                    title="Đóng ticket bằng ngoại lệ Admin?"
+                    description="Bắt buộc ghi bằng chứng/lý do ở ô Ghi chú xử lý. mOS không tạo trạng thái sửa giả."
+                    okText="Override & đóng"
+                    cancelText="Kiểm tra lại"
+                    onConfirm={() => void confirmResolvedAndClose()}
+                  >
+                    <Button loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
+                      Đóng ngoại lệ
+                    </Button>
+                  </Popconfirm>
+                )}
               {detail.nextAction.actor === 'AGENT' && (
                 <Button icon={<AppIcon icon={Clipboard} size="sm" />} onClick={() => void copyAgentCommand()}>
                   Copy lệnh Agent
@@ -423,7 +486,11 @@ function DetailDrawer({
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <BugStatusTag status={detail.status} reporterName={detail.reporter.displayName} />
+                  <BugStatusTag
+                    status={detail.status}
+                    reporterName={detail.reporter.displayName}
+                    agentProgress={detail.agentProgress.stage}
+                  />
                   <RequestTypeTag requestType={detail.requestType} />
                   <PriorityTag priority={detail.priority} />
                   <ClarificationTag status={detail.clarification.status} reporterName={detail.reporter.displayName} />
@@ -917,6 +984,7 @@ export default function BugReportsPage() {
         approveImplementation={inbox.approveImplementation}
         retryImplementation={inbox.retryImplementation}
         releaseImplementation={inbox.releaseImplementation}
+        reviewImplementationAcceptance={inbox.reviewImplementationAcceptance}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}

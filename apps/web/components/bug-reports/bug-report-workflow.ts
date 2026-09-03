@@ -38,6 +38,12 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
     detail: 'AI đang kiểm tra lại',
     tone: 'primary',
   },
+  REOPENED_BY_DANNY: {
+    position: 3,
+    label: 'Danny yêu cầu sửa thêm',
+    detail: 'Không có implementation tự động được tạo',
+    tone: 'warning',
+  },
   REOPENED_BY_REPORTER: {
     position: 3,
     label: 'Đang sửa lại',
@@ -68,6 +74,12 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
     label: 'Chờ Danny duyệt commit',
     detail: 'Code và kiểm thử đã dừng ở worktree review',
     tone: 'primary',
+  },
+  AWAITING_DANNY_ACCEPTANCE: {
+    position: 4,
+    label: 'Chờ Danny nghiệm thu',
+    detail: 'Bản deploy đang chờ quyết định cuối',
+    tone: 'success',
   },
   IMPLEMENTATION_FAILED: {
     position: 3,

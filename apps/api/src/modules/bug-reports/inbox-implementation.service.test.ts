@@ -567,7 +567,7 @@ test('a lease that expires after its one process recovery becomes a terminal fai
   assert.equal(permitCleared, true);
 });
 
-test('a verified release hands a reviewed implementation to reporter acceptance exactly once', async () => {
+test('a verified release hands a reviewed implementation to Danny acceptance exactly once', async () => {
   const report = {
     ...source({ status: 'IN_PROGRESS', implementationActiveJobId: 'review-job' }),
     reporterStaffId: 7,
@@ -615,7 +615,7 @@ test('a verified release hands a reviewed implementation to reporter acceptance 
   const originalCommit = process.env.DEPLOY_COMMIT;
   process.env.DEPLOY_COMMIT = '5e682f81c472d5d10364a7a5131e6f2d2ad04e7c';
   try {
-    await InboxImplementationService.recordReleasedForAcceptance(fastify as never, 16, 1);
+    await InboxImplementationService.recordReleasedForDannyAcceptance(fastify as never, 16, 1);
   } finally {
     if (originalCommit === undefined) delete process.env.DEPLOY_COMMIT;
     else process.env.DEPLOY_COMMIT = originalCommit;
@@ -623,13 +623,73 @@ test('a verified release hands a reviewed implementation to reporter acceptance 
 
   assert.deepEqual(jobUpdates[0], {
     status: 'RELEASED',
-    executionPhase: 'AWAITING_REPORTER_REVIEW',
+    executionPhase: 'AWAITING_DANNY_ACCEPTANCE',
     retainUntil: jobUpdates[0]?.retainUntil,
   });
   assert.equal(reportUpdates[0]?.status, 'FIXED');
   assert.equal(reportUpdates[0]?.implementationActiveJobId, null);
   assert.equal(resolutions.length, 1);
-  assert.equal(audits[0]?.data && (audits[0].data as { action?: string }).action, 'DANNY_IMPLEMENTATION_RELEASED');
+  assert.equal(
+    audits[0]?.data && (audits[0].data as { action?: string }).action,
+    'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE'
+  );
   assert.equal(comments.length, 1);
-  assert.equal(notifications[0]?.data && (notifications[0].data as { recipientStaffId?: number }).recipientStaffId, 7);
+  assert.equal(notifications.length, 0);
+});
+
+test('Danny acceptance closes a released ticket without queuing more implementation', async () => {
+  const report = {
+    ...source({ status: 'FIXED', implementationActiveJobId: null }),
+    startedAt: null,
+    resolvedAt: new Date(),
+  };
+  const job = {
+    id: 'released-job',
+    reportId: 16,
+    status: 'RELEASED',
+    executionPhase: 'AWAITING_DANNY_ACCEPTANCE',
+  };
+  const jobUpdates: Array<Record<string, unknown>> = [];
+  const reportUpdates: Array<Record<string, unknown>> = [];
+  const audits: Array<Record<string, unknown>> = [];
+  const comments: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => report },
+        crmInboxImplementationJob: { findFirst: async () => job },
+        $transaction: async (callback: (tx: unknown) => Promise<void>) =>
+          callback({
+            crmInboxImplementationJob: {
+              updateMany: async (input: { data: Record<string, unknown> }) => {
+                jobUpdates.push(input.data);
+                return { count: 1 };
+              },
+            },
+            crmBugReport: {
+              updateMany: async (input: { data: Record<string, unknown> }) => {
+                reportUpdates.push(input.data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: { create: async (input: Record<string, unknown>) => audits.push(input) },
+            crmBugReportComment: { create: async (input: Record<string, unknown>) => comments.push(input) },
+          }),
+      },
+    },
+  };
+
+  await InboxImplementationService.reviewDannyAcceptance(fastify as never, 16, 1, { decision: 'APPROVE' });
+
+  assert.deepEqual(jobUpdates[0], { executionPhase: 'ACCEPTED' });
+  assert.equal(reportUpdates[0]?.status, 'CLOSED');
+  assert.equal(audits[0]?.data && (audits[0].data as { action?: string }).action, 'DANNY_IMPLEMENTATION_ACCEPTED');
+  assert.equal(comments.length, 1);
+});
+
+test('Danny reopen requires a note and does not create an implementation job', async () => {
+  await assert.rejects(
+    () => InboxImplementationService.reviewDannyAcceptance({} as never, 16, 1, { decision: 'REOPEN' }),
+    /cần mô tả/i
+  );
 });

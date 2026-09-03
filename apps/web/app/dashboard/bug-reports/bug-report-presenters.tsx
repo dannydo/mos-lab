@@ -53,12 +53,14 @@ export const AGENT_PROGRESS_LABELS: Record<BugReportAgentProgressStage, string> 
   CHECKING_BUSINESS_LOGIC: 'Đối chiếu biz logic',
   WAITING_REPORTER: 'Chờ người báo',
   REPORTER_REPLIED: 'Người báo đã trả lời',
+  REOPENED_BY_DANNY: 'Danny yêu cầu sửa thêm',
   REOPENED_BY_REPORTER: 'Người báo yêu cầu sửa lại',
   READY_FOR_TRIAGE: 'Đã hiểu · chờ duyệt',
   QUEUED_FOR_FIX: 'Đã nhận · chờ sửa',
   IMPLEMENTING: 'Đang sửa',
   VERIFYING: 'Đang kiểm thử',
   AWAITING_DANNY_COMMIT_REVIEW: 'Chờ Danny duyệt commit',
+  AWAITING_DANNY_ACCEPTANCE: 'Chờ Danny nghiệm thu',
   IMPLEMENTATION_FAILED: 'Implementation cần Danny xử lý',
   AWAITING_REPORTER_REVIEW: 'Đã sửa · chờ xác nhận',
   COMPLETED: 'Hoàn tất',
@@ -71,12 +73,14 @@ const AGENT_PROGRESS_TONES: Record<BugReportAgentProgressStage, Parameters<typeo
   CHECKING_BUSINESS_LOGIC: 'orange',
   WAITING_REPORTER: 'purple',
   REPORTER_REPLIED: 'cyan',
+  REOPENED_BY_DANNY: 'error',
   REOPENED_BY_REPORTER: 'error',
   READY_FOR_TRIAGE: 'gold',
   QUEUED_FOR_FIX: 'processing',
   IMPLEMENTING: 'cyan',
   VERIFYING: 'orange',
   AWAITING_DANNY_COMMIT_REVIEW: 'gold',
+  AWAITING_DANNY_ACCEPTANCE: 'success',
   IMPLEMENTATION_FAILED: 'error',
   AWAITING_REPORTER_REVIEW: 'success',
   COMPLETED: 'success',
@@ -172,8 +176,21 @@ function reporterActorLabel(reporterName?: string | null): string {
   return shortBugReportReporterName(reporterName) || NEXT_ACTOR_LABELS.REPORTER;
 }
 
-export function BugStatusTag({ status, reporterName }: { status: BugReportStatus; reporterName?: string | null }) {
-  const label = status === 'FIXED' ? `${reporterWaitingLabel(reporterName)} duyệt` : STATUS_LABELS[status];
+export function BugStatusTag({
+  status,
+  reporterName,
+  agentProgress,
+}: {
+  status: BugReportStatus;
+  reporterName?: string | null;
+  agentProgress?: BugReportAgentProgressStage;
+}) {
+  const label =
+    status === 'FIXED' && agentProgress === 'AWAITING_DANNY_ACCEPTANCE'
+      ? 'Chờ Danny nghiệm thu'
+      : status === 'FIXED'
+        ? `${reporterWaitingLabel(reporterName)} duyệt`
+        : STATUS_LABELS[status];
   return <StatusTag status={STATUS_TONES[status]} label={label} />;
 }
 

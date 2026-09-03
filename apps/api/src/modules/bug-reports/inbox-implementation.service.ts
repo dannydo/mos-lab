@@ -5,6 +5,7 @@ import {
   type InboxImplementationTestResult,
   type InboxImplementationWorkerJob,
   type InboxImplementationWorkerResult,
+  type ReviewBugReportImplementationAcceptanceRequest,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
@@ -1043,9 +1044,10 @@ export class InboxImplementationService {
   /**
    * A deploy is a separate, Danny-controlled transition. The worker never calls
    * this method: it only moves a reviewed patch to reporter acceptance once the
-   * server can prove which production release is currently active.
+   * server can prove which production release is currently active. It then
+   * stops at Danny's acceptance gate; it never notifies or closes the ticket.
    */
-  static async recordReleasedForAcceptance(
+  static async recordReleasedForDannyAcceptance(
     fastify: FastifyInstance,
     reportId: number,
     actorStaffId: number
@@ -1075,7 +1077,7 @@ export class InboxImplementationService {
     const tests = normalizeTests(safeJsonValue(job.testsJson));
     const now = new Date();
     const key = formatBugReportKey(reportId, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
-    const problemSummary = 'Bản sửa đã được phát hành và đang chờ người báo nghiệm thu.';
+    const problemSummary = 'Bản sửa đã được phát hành và đang chờ Danny nghiệm thu.';
     const verificationSummary = tests.length
       ? tests.map((test) => `${test.status}: ${test.command}`).join('\n')
       : 'Đã đối chiếu release marker production; không có lệnh kiểm thử được worker ghi nhận.';
@@ -1089,7 +1091,7 @@ export class InboxImplementationService {
         where: { id: job.id, reportId, status: 'AWAITING_COMMIT_REVIEW' },
         data: {
           status: 'RELEASED',
-          executionPhase: 'AWAITING_REPORTER_REVIEW',
+          executionPhase: 'AWAITING_DANNY_ACCEPTANCE',
           retainUntil: new Date(now.getTime() + REVIEW_RETENTION_MS),
         },
       });
@@ -1119,7 +1121,7 @@ export class InboxImplementationService {
           reportId,
           problemSummary,
           rootCause: 'Bản vá đã hoàn tất checkpoint review và được Danny cho phép phát hành.',
-          solutionSummary: 'Đã commit và deploy bản thay đổi đã duyệt; mOS chuyển ticket sang bước nghiệm thu.',
+          solutionSummary: 'Đã commit và deploy bản thay đổi đã duyệt; mOS chờ Danny nghiệm thu.',
           verificationSummary,
           changedFilesJson: JSON.stringify(changedFiles),
           commitSha,
@@ -1129,7 +1131,7 @@ export class InboxImplementationService {
         update: {
           problemSummary,
           rootCause: 'Bản vá đã hoàn tất checkpoint review và được Danny cho phép phát hành.',
-          solutionSummary: 'Đã commit và deploy bản thay đổi đã duyệt; mOS chuyển ticket sang bước nghiệm thu.',
+          solutionSummary: 'Đã commit và deploy bản thay đổi đã duyệt; mOS chờ Danny nghiệm thu.',
           verificationSummary,
           changedFilesJson: JSON.stringify(changedFiles),
           commitSha,
@@ -1141,8 +1143,8 @@ export class InboxImplementationService {
         data: {
           reportId,
           actorStaffId,
-          action: 'DANNY_IMPLEMENTATION_RELEASED',
-          note: `Danny đã duyệt commit/deploy ${commitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
+          action: 'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE',
+          note: `Danny đã duyệt commit/deploy ${commitSha.slice(0, 12)}; ticket chuyển sang chờ Danny nghiệm thu.`,
           beforeJson: snapshot(report),
           afterJson: snapshot({
             ...report,
@@ -1157,22 +1159,104 @@ export class InboxImplementationService {
           authorType: 'AGENT',
           kind: 'COMMENT',
           body: [
-            '## Đã phát hành — chờ nghiệm thu',
+            '## Đã phát hành — chờ Danny nghiệm thu',
             '',
             `- Release: ${commitSha}`,
             `- Ticket: ${key}`,
-            '- Bản sửa đã được deploy. Người báo hãy nghiệm thu hoặc yêu cầu chỉnh lại.',
+            '- Bản sửa đã được deploy. Danny nghiệm thu đạt hoặc yêu cầu chỉnh lại.',
           ].join('\n'),
         },
       });
-      await tx.crmBugReportNotification.create({
+    });
+  }
+
+  /**
+   * The final business decision belongs to Danny, after the release is visible
+   * in production. Reopening never creates another implementation or deploy.
+   */
+  static async reviewDannyAcceptance(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number,
+    input: ReviewBugReportImplementationAcceptanceRequest
+  ): Promise<void> {
+    const decision = input?.decision;
+    if (decision !== 'APPROVE' && decision !== 'REOPEN') {
+      throw new InboxImplementationError('Quyết định nghiệm thu không hợp lệ.', 422);
+    }
+    const note = clean(input?.note, 2_000) || null;
+    if (decision === 'REOPEN' && !note) {
+      throw new InboxImplementationError('Cần mô tả điểm vẫn chưa đúng trước khi mở lại ticket.', 422);
+    }
+
+    const report = await fastify.prisma.crm.crmBugReport.findUnique({
+      where: { id: reportId },
+      include: implementationReportInclude(),
+    });
+    if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    if (report.status !== 'FIXED') {
+      throw new InboxImplementationError('Ticket chưa ở bước Danny nghiệm thu.', 409);
+    }
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: {
+        reportId,
+        status: 'RELEASED',
+        executionPhase: 'AWAITING_DANNY_ACCEPTANCE',
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (!job) {
+      throw new InboxImplementationError('Không tìm thấy release đang chờ Danny nghiệm thu.', 409);
+    }
+
+    const now = new Date();
+    const accepted = decision === 'APPROVE';
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      const reviewedJob = await tx.crmInboxImplementationJob.updateMany({
+        where: { id: job.id, reportId, status: 'RELEASED', executionPhase: 'AWAITING_DANNY_ACCEPTANCE' },
+        data: { executionPhase: accepted ? 'ACCEPTED' : 'REOPENED_BY_DANNY' },
+      });
+      if (!reviewedJob.count) {
+        throw new InboxImplementationError('Bước nghiệm thu đã thay đổi. Vui lòng tải lại ticket.', 409);
+      }
+      const reviewedReport = await tx.crmBugReport.updateMany({
+        where: { id: reportId, status: 'FIXED' },
+        data: {
+          status: accepted ? 'CLOSED' : 'IN_PROGRESS',
+          statusSort: accepted ? 9 : 0,
+          startedAt: report.startedAt ?? now,
+          resolvedAt: accepted ? (report.resolvedAt ?? now) : null,
+          closedAt: accepted ? now : null,
+          triageNote: note ?? report.triageNote,
+          updatedAt: now,
+        },
+      });
+      if (!reviewedReport.count) {
+        throw new InboxImplementationError('Ticket đã thay đổi trước khi lưu nghiệm thu. Vui lòng tải lại.', 409);
+      }
+      await tx.crmBugReportAudit.create({
         data: {
           reportId,
-          recipientStaffId: report.reporterStaffId,
-          type: report.requestType === 'FEATURE' ? 'FEATURE_IMPLEMENTED_REVIEW' : 'BUG_FIXED_REVIEW',
-          title: `${key} đã triển khai — mời bạn nghiệm thu`,
-          message: problemSummary,
-          actionUrl: `/dashboard/bug-reports?ticket=${encodeURIComponent(key)}`,
+          actorStaffId,
+          action: accepted ? 'DANNY_IMPLEMENTATION_ACCEPTED' : 'DANNY_IMPLEMENTATION_REOPENED',
+          note: note ?? (accepted ? 'Danny đã nghiệm thu bản sửa trên production.' : 'Danny yêu cầu sửa thêm.'),
+          beforeJson: snapshot(report),
+          afterJson: snapshot({
+            ...report,
+            status: accepted ? 'CLOSED' : 'IN_PROGRESS',
+            comments: report.comments,
+            inboxPlanJobs: report.inboxPlanJobs,
+          }),
+        },
+      });
+      await tx.crmBugReportComment.create({
+        data: {
+          reportId,
+          authorType: 'AGENT',
+          kind: 'COMMENT',
+          body: accepted
+            ? '## Danny đã nghiệm thu\n\n- Bản sửa production đạt yêu cầu; ticket đã hoàn tất.'
+            : `## Danny yêu cầu sửa thêm\n\n${note}`,
         },
       });
     });
