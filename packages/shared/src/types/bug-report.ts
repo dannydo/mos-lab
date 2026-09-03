@@ -530,6 +530,8 @@ export interface InboxImplementationWorkerJob {
   sourceVersion: string;
   planVersion: string;
   branchName: string;
+  /** Present only for the server-authorized DEPLOY operation. */
+  commitSha: string | null;
   operation: 'CODE_TEST' | 'COMMIT' | 'DEPLOY';
   reviewedFiles: string[];
   retryOfJobId: string | null;

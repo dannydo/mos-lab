@@ -996,6 +996,7 @@ export class InboxImplementationService {
       sourceVersion: job.sourceVersion,
       planVersion: job.planVersion,
       branchName: job.branchName,
+      commitSha: job.commitSha,
       operation,
       reviewedFiles,
       retryOfJobId: job.retryOfJobId,

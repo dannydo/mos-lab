@@ -367,7 +367,11 @@ test('a database permit enforces global implementation concurrency and stale job
     sourceVersion,
     planVersion: 'v1:plan',
     branchName: 'codex/inbox/mos-bug-16-job-1',
-    attemptCount: 0,
+    commitSha: 'fb757616e4a48f1fdb2f4b236b20bee68ae65716',
+    changedFilesJson: JSON.stringify(['apps/web/app/dashboard/bug-reports/page.tsx']),
+    worktreePath: '/Users/dannydo/projects/.mos-inbox-worktrees/job-1',
+    executionPhase: 'DEPLOY_APPROVED',
+    attemptCount: 1,
     updatedAt: new Date('2026-09-03T03:00:00.000Z'),
     report,
   };
@@ -395,6 +399,8 @@ test('a database permit enforces global implementation concurrency and stale job
   const first = await InboxImplementationService.claim(fastify as never, 'mac-worker');
   const second = await InboxImplementationService.claim(fastify as never, 'mac-worker-duplicate');
   assert.equal(first?.id, 'job-1');
+  assert.equal(first?.operation, 'DEPLOY');
+  assert.equal(first?.commitSha, 'fb757616e4a48f1fdb2f4b236b20bee68ae65716');
   assert.equal(second, null);
 
   const staleReport = source({
