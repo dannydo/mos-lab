@@ -538,6 +538,9 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('WAITING_REPORTER', source, latest, source.updatedAt);
   }
   if (source.clarificationStatus === 'PENDING_AGENT') {
+    if (latest?.action === 'REPORTER_REOPENED') {
+      return progressResult('REOPENED_BY_REPORTER', source, latest, source.updatedAt);
+    }
     if (latest?.action === 'CLARIFICATION_ANSWERED') {
       return progressResult('REPORTER_REPLIED', source, latest, source.updatedAt);
     }
@@ -1566,17 +1569,23 @@ export class BugReportService {
     if (decision === 'REOPEN' && !note)
       throw new BugReportError('Vui lòng mô tả điểm vẫn chưa đúng để Agent sửa tiếp.');
     const now = new Date();
-    const nextStatus: BugReportStatus = decision === 'APPROVE' ? 'CLOSED' : 'IN_PROGRESS';
+    // A reporter's rejection is new evidence, not an implementation lease. Return
+    // the ticket to Agent analysis so the UI never claims code/test is running
+    // before a fresh, explicitly approved implementation job exists.
+    const nextStatus: BugReportStatus = decision === 'APPROVE' ? 'CLOSED' : 'NEW';
     const completed = await fastify.prisma.crm.$transaction(async (tx) => {
       const row = await tx.crmBugReport.update({
         where: { id },
         data: {
           status: nextStatus,
           statusSort: STATUS_SORT[nextStatus],
-          startedAt: existing.startedAt ?? now,
+          startedAt: decision === 'APPROVE' ? (existing.startedAt ?? now) : null,
           resolvedAt: decision === 'APPROVE' ? existing.resolvedAt : null,
           closedAt: decision === 'APPROVE' ? now : null,
           triageNote: note ?? existing.triageNote,
+          clarificationStatus: decision === 'REOPEN' ? 'PENDING_AGENT' : existing.clarificationStatus,
+          clarificationSummary: decision === 'REOPEN' ? null : existing.clarificationSummary,
+          clarifiedAt: decision === 'REOPEN' ? null : existing.clarifiedAt,
         },
       });
       if (pendingReporterAcceptance) {

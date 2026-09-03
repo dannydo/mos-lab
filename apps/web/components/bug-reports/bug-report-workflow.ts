@@ -45,10 +45,10 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
     tone: 'warning',
   },
   REOPENED_BY_REPORTER: {
-    position: 3,
-    label: 'Đang sửa lại',
-    detail: 'Quay lại chặng xử lý',
-    tone: 'info',
+    position: 1,
+    label: 'Người báo yêu cầu xem lại',
+    detail: 'AI đang phân tích phản hồi trước khi tạo job mới',
+    tone: 'warning',
   },
   READY_FOR_TRIAGE: {
     position: 2,
