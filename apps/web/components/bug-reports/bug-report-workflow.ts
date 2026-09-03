@@ -68,7 +68,19 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
     detail: 'Sắp bắt đầu thực hiện',
     tone: 'info',
   },
+  QUEUED_FOR_COMMIT: {
+    position: 3,
+    label: 'Đã duyệt commit · chờ worker',
+    detail: 'Worker Mac sẽ chỉ tạo commit từ bản diff đã review',
+    tone: 'info',
+  },
   IMPLEMENTING: { position: 3, label: 'Đang xử lý', detail: 'Đang thực hiện thay đổi', tone: 'info' },
+  COMMITTING: {
+    position: 3,
+    label: 'Đang tạo commit',
+    detail: 'Worker Mac đang commit bản diff đã review vào branch riêng',
+    tone: 'info',
+  },
   VERIFYING: {
     position: 4,
     label: 'Đang kiểm thử',

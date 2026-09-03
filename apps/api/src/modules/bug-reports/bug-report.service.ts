@@ -515,19 +515,29 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
   }
   if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
     return {
-      stage: 'QUEUED_FOR_FIX',
-      note: 'Job code/test đã được ghi nhận và đang chờ worker nhận.',
+      stage: implementation.executionPhase === 'COMMIT_APPROVED' ? 'QUEUED_FOR_COMMIT' : 'QUEUED_FOR_FIX',
+      note:
+        implementation.executionPhase === 'COMMIT_APPROVED'
+          ? 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.'
+          : 'Job code/test đã được ghi nhận và đang chờ worker nhận.',
       updatedAt: implementation.updatedAt.toISOString(),
     };
   }
   if (implementation.status === 'RUNNING') {
     return {
-      stage: implementation.executionPhase === 'VERIFYING' ? 'VERIFYING' : 'IMPLEMENTING',
+      stage:
+        implementation.executionPhase === 'COMMITTING'
+          ? 'COMMITTING'
+          : implementation.executionPhase === 'VERIFYING'
+            ? 'VERIFYING'
+            : 'IMPLEMENTING',
       note: implementationProgressNote(
         implementation,
-        implementation.executionPhase === 'VERIFYING'
-          ? 'Agent đang kiểm thử thay đổi.'
-          : 'Agent đang chạy code/test trong worktree riêng.'
+        implementation.executionPhase === 'COMMITTING'
+          ? 'Worker Mac đang tạo commit từ bản diff đã review.'
+          : implementation.executionPhase === 'VERIFYING'
+            ? 'Agent đang kiểm thử thay đổi.'
+            : 'Agent đang chạy code/test trong worktree riêng.'
       ),
       updatedAt: (implementation.lastProgressAt ?? implementation.updatedAt).toISOString(),
     };
@@ -722,7 +732,13 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
       implementation.status === 'PENDING' || implementation.status === 'LEASED'
         ? 'IMPLEMENT'
         : 'CONTINUE_IMPLEMENTATION',
-      implementation.status === 'RUNNING' ? 'Đang code/test' : 'Chờ worker nhận',
+      implementation.executionPhase === 'COMMIT_APPROVED'
+        ? 'Chờ worker tạo commit'
+        : implementation.executionPhase === 'COMMITTING'
+          ? 'Đang tạo commit'
+          : implementation.status === 'RUNNING'
+            ? 'Đang code/test'
+            : 'Chờ worker nhận',
       implementation.status === 'RUNNING'
         ? implementationProgressNote(implementation, 'Worker đang xử lý trong worktree riêng.')
         : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',
