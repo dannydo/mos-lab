@@ -123,6 +123,56 @@ test('a reopen snapshots only original report evidence in its durable follow-up 
   assert.equal(capture.value.eventVersion, 'reopen:99');
 });
 
+test('a legacy reopen completed as NO_OP is automatically requeued once for strict re-analysis', async () => {
+  const created: Array<Record<string, unknown>> = [];
+  const audits: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxFollowUpJob: {
+          findFirst: async ({ where }: { where: { status?: string } }) =>
+            where.status === 'COMPLETED' ? { reportId: 17 } : null,
+          updateMany: async () => ({ count: 0 }),
+          create: async ({ data }: { data: Record<string, unknown> }) => created.push(data),
+        },
+        crmBugReport: {
+          findUnique: async () => ({
+            id: 17,
+            status: 'NEW',
+            audits: [],
+            attachments: [
+              {
+                id: 701,
+                commentId: null,
+                originalName: 'original.png',
+                mimeType: 'image/png',
+                sizeBytes: 128,
+                deletedAt: null,
+              },
+            ],
+          }),
+        },
+        crmBugReportAudit: {
+          findFirst: async () => ({
+            id: 99,
+            note: 'Hai ảnh gốc vẫn cho thấy lỗi.',
+            createdAt: new Date('2026-09-03T08:00:00.000Z'),
+          }),
+          create: async ({ data }: { data: Record<string, unknown> }) => audits.push(data),
+        },
+      },
+    },
+  };
+
+  assert.equal(await InboxFollowUpService.claim(fastify as never, 'test-worker'), null);
+  assert.equal(created.length, 1);
+  assert.equal(created[0]?.eventVersion, 'reopen-reanalysis:99');
+  assert.deepEqual(JSON.parse(String(created[0]?.eventContextJson)).reopen.originalEvidence, [
+    { id: 701, fileName: 'original.png', mimeType: 'image/png', sizeBytes: 128 },
+  ]);
+  assert.equal(audits[0]?.action, 'SYSTEM_REOPEN_REANALYSIS_REQUEUED');
+});
+
 test('a leased reopen attachment is constrained to the immutable original-evidence snapshot', async () => {
   const fastify = {
     prisma: {

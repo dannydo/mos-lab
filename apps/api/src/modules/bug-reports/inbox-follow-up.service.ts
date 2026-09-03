@@ -128,11 +128,51 @@ export function resolveInboxFollowUpCompletion(
 }
 
 export class InboxFollowUpService {
+  /**
+   * Before the reopen contract existed, a worker could complete a reopen with
+   * NO_OP and leave the report at PENDING_AGENT forever. Recover one such
+   * legacy event per claim cycle. The new job has a distinct immutable version,
+   * so concurrent workers can create it at most once and must use the strict
+   * re-analysis completion rules.
+   */
+  private static async recoverOneLegacyReopen(fastify: FastifyInstance): Promise<void> {
+    const legacy = await fastify.prisma.crm.crmInboxFollowUpJob.findFirst({
+      where: {
+        eventKind: 'REPORTER_REOPENED',
+        status: 'COMPLETED',
+        resultAction: 'NO_OP',
+        report: {
+          is: {
+            clarificationStatus: 'PENDING_AGENT',
+            status: { notIn: ['CLOSED', 'REJECTED', 'DUPLICATE'] },
+          },
+        },
+      },
+      orderBy: { updatedAt: 'asc' },
+      select: { reportId: true },
+    });
+    if (!legacy) return;
+
+    const requeued = await this.enqueue(fastify, legacy.reportId, 'REPORTER_REOPENED', 'legacy', {
+      reopenEventPrefix: 'reopen-reanalysis',
+    });
+    if (!requeued) return;
+
+    await fastify.prisma.crm.crmBugReportAudit.create({
+      data: {
+        reportId: legacy.reportId,
+        action: 'SYSTEM_REOPEN_REANALYSIS_REQUEUED',
+        note: 'Đã tự động phát lại re-analysis cho reopen cũ từng bị kết thúc NO_OP.',
+      },
+    });
+  }
+
   static async enqueue(
     fastify: FastifyInstance,
     reportId: number,
     eventKind: 'CREATED' | 'REPORTER_COMMENT' | 'REPORTER_REOPENED',
-    eventVersion: string
+    eventVersion: string,
+    options: { reopenEventPrefix?: string } = {}
   ) {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
@@ -166,7 +206,9 @@ export class InboxFollowUpService {
           reportId,
           eventKind,
           // The immutable audit identity, not report.updatedAt, makes retries and rapid comments unambiguous.
-          eventVersion: reopen ? `reopen:${reopen.auditId}` : clean(eventVersion, 80),
+          eventVersion: reopen
+            ? `${clean(options.reopenEventPrefix || 'reopen', 64)}:${reopen.auditId}`
+            : clean(eventVersion, 80),
           eventContextJson: reopen ? JSON.stringify({ reopen }) : null,
           expiresAt: new Date(Date.now() + TTL),
         },
@@ -180,6 +222,7 @@ export class InboxFollowUpService {
     const now = new Date();
     const safeWorker = clean(workerId, 100);
     if (!safeWorker) throw new InboxFollowUpError('Worker ID không hợp lệ.');
+    await this.recoverOneLegacyReopen(fastify).catch(() => undefined);
     await fastify.prisma.crm.crmInboxFollowUpJob.updateMany({
       where: { status: 'LEASED', leaseExpiresAt: { lte: now }, expiresAt: { gt: now } },
       data: { status: 'PENDING', leaseToken: null, leasedBy: null, leaseExpiresAt: null },
