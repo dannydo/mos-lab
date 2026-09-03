@@ -848,6 +848,10 @@ export class InboxImplementationService {
         status: 'PENDING',
         expiresAt: { gt: now },
         OR: [
+          // Commit approval deliberately reuses the reviewed job, whose first
+          // attempt was the completed code/test run. It is still exactly one
+          // separate fixed operation, not a retry of Codex execution.
+          { executionPhase: 'COMMIT_APPROVED' },
           { attemptCount: { lt: 1 } },
           {
             retryOfJobId: null,
