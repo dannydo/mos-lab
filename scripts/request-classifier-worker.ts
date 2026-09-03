@@ -672,6 +672,24 @@ async function workerFetch(path: string, init?: RequestInit): Promise<Response> 
   return response;
 }
 
+/**
+ * The trusted production deploy intentionally restarts the API.  Its final
+ * callback is safe to retry because it carries the same lease token and the
+ * server remains the sole authority for the state transition.
+ */
+async function workerFetchAfterProductionRestart(path: string, init: RequestInit): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return await workerFetch(path, init);
+    } catch (error) {
+      lastError = error;
+      if (attempt < 4) await new Promise((resolve) => setTimeout(resolve, 1_000 * 2 ** attempt));
+    }
+  }
+  throw lastError;
+}
+
 type ActiveWorkerJob = { kind: RequestClassifierWorkerJobKind; startedAt: string } | null;
 
 const workerSessionId = randomUUID();
@@ -1246,7 +1264,7 @@ async function processInboxImplementationOne(): Promise<boolean> {
       phase = 'deploy_pipeline';
       await runTrustedProductionDeploy(worktreePath);
       phase = 'deploy_complete';
-      await workerFetch(`/request-classifier/inbox-implementations/${job.id}/deploy-complete`, {
+      await workerFetchAfterProductionRestart(`/request-classifier/inbox-implementations/${job.id}/deploy-complete`, {
         method: 'POST',
         body: JSON.stringify({ leaseToken: job.leaseToken }),
       });
