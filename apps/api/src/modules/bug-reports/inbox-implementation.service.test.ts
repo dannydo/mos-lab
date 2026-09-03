@@ -265,7 +265,7 @@ test('recovery grants only one extra claim for the known pre-fix CLI argument fa
   const sourceVersion = inboxImplementationSourceVersion(draft);
   const report = source({
     status: 'IN_PROGRESS',
-    implementationActiveJobId: null,
+    implementationActiveJobId: 'job-1',
     inboxPlanJobs: [
       { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
     ],

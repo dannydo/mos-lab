@@ -377,7 +377,6 @@ export class InboxImplementationService {
         priority: { not: null },
         clarificationStatus: 'READY',
         implementationApprovedAt: { not: null },
-        implementationActiveJobId: null,
       },
       include: implementationReportInclude(),
       orderBy: { implementationApprovedAt: 'asc' },
@@ -406,7 +405,6 @@ export class InboxImplementationService {
         priority: { not: null },
         clarificationStatus: 'READY',
         implementationApprovedAt: { not: null },
-        implementationActiveJobId: null,
       },
       include: implementationReportInclude(),
       orderBy: { startedAt: 'asc' },
@@ -439,6 +437,10 @@ export class InboxImplementationService {
         },
       });
       if (!job) continue;
+      // Keep the original active-job pointer when it already names this exact
+      // recoverable job. A different pointer is a hard stop: never replace a
+      // possible concurrent execution.
+      if (report.implementationActiveJobId && report.implementationActiveJobId !== job.id) continue;
       const recoveredCliArguments = job.status === 'FAILED';
       const recovered = await fastify.prisma.crm.$transaction(async (tx) => {
         const reset = await tx.crmInboxImplementationJob.updateMany({
@@ -456,6 +458,7 @@ export class InboxImplementationService {
           },
         });
         if (!reset.count) return false;
+        if (report.implementationActiveJobId === job.id) return true;
         const attached = await tx.crmBugReport.updateMany({
           where: { id: report.id, implementationActiveJobId: null },
           data: { implementationActiveJobId: job.id },
