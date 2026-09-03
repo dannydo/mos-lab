@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  AcademyWorkshopService,
   academyWorkshopTalentSnapshotFromAssessment,
   calculateAcademyWorkshopEndsAtFromAgenda,
   resolveAcademyWorkshopPublicOrigin,
@@ -63,6 +64,22 @@ test('Workshop talent snapshot falls back for legacy assessments without a quote
 
   assert.equal(talent.scholarshipPercent, 10);
   assert.equal(talent.rankLabel, 'Vượt Trội (Học bổng 10%)');
+});
+
+test('only Admin and Super Admin can change the workshop tuition ledger', async () => {
+  const manager = { id: 12, role: 'manager' };
+  await assert.rejects(
+    () =>
+      AcademyWorkshopService.recordFee({} as never, manager, 1, 1, {
+        amountVnd: 100_000,
+        method: 'CASH',
+      }),
+    /Chỉ Admin hoặc Super Admin được ghi nhận học phí workshop/
+  );
+  await assert.rejects(
+    () => AcademyWorkshopService.waiveFee({} as never, manager, 1, 1, true, 'Không thu phí'),
+    /Chỉ Admin hoặc Super Admin được miễn học phí workshop/
+  );
 });
 
 test('Workshop QR prefers its configured public origin', () => {

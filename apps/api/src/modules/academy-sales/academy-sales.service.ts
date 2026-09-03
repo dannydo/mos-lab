@@ -43,7 +43,6 @@ const TEAM_LEADER_ROLE = 'ls';
 const ACADEMY_ROLES = new Set(['admin', 'super_admin', 'manager', 'ls', 'telesales']);
 export const ACADEMY_TEAM_CODE = 'ACADEMY';
 export const ACADEMY_DEPARTMENT_CODE = 'ACADEMY';
-export const ACADEMY_MARKETING_SALES_TEAM_CODE = 'MARKETING_SALES';
 export const ACADEMY_TEAM_FALLBACK_CONFIG_KEY = 'ACTIVE_ACADEMY_STAFF_CONFIG';
 const ICT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 const HOT_WINDOW_HOURS = 72;
@@ -80,12 +79,21 @@ export function canAccessAcademySales(actor: AcademyActor) {
   return actor.academyAccess === true || ACADEMY_ROLES.has(actor.role);
 }
 
-/** Full Academy CRUD is explicitly granted to Admins, Managers, and Marketing & Sales. */
+/** The workspace gate stamps this permission for active Academy members. */
 export function canManageAcademySales(actor: AcademyActor) {
   const role = String(actor.role || '')
     .trim()
     .toLowerCase();
   return isAdminOrSuperAdminRole(role) || MANAGER_ROLES.has(role) || actor.academyCrudAccess === true;
+}
+
+/** Tuition and instructor configuration remain exclusively controlled by Admins. */
+export function canManageAcademyRestricted(actor: AcademyActor) {
+  return isAdminOrSuperAdminRole(
+    String(actor.role || '')
+      .trim()
+      .toLowerCase()
+  );
 }
 
 /**
@@ -95,19 +103,16 @@ export function canManageAcademySales(actor: AcademyActor) {
  */
 export async function getAcademyWorkspaceAccess(fastify: FastifyInstance, actor: AcademyActor) {
   if (isAdminOrSuperAdminRole(actor.role)) {
-    return { canAccess: true, canManage: true, scope: 'ADMIN' as const };
+    return { canAccess: true, canManage: true, canManageRestricted: true, scope: 'ADMIN' as const };
   }
 
   const isAcademyTeamMember =
     (await TeamService.isActiveCrmStaffMemberInDepartment(fastify, ACADEMY_DEPARTMENT_CODE, actor.id)) ||
     (await TeamService.isActiveCrmStaffMember(fastify, ACADEMY_TEAM_CODE, actor.id, ACADEMY_TEAM_FALLBACK_CONFIG_KEY));
-  const isMarketingSalesMember =
-    isAcademyTeamMember &&
-    (await TeamService.isActiveCrmStaffMember(fastify, ACADEMY_MARKETING_SALES_TEAM_CODE, actor.id, ''));
-  const canManage = isAcademyTeamMember && (canManageAcademySales(actor) || isMarketingSalesMember);
   return {
     canAccess: isAcademyTeamMember,
-    canManage,
+    canManage: isAcademyTeamMember,
+    canManageRestricted: false,
     scope: isAcademyTeamMember ? ('ACADEMY_TEAM' as const) : null,
   };
 }

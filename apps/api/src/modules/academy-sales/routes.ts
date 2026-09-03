@@ -32,6 +32,7 @@ import {
   AcademySalesError,
   AcademySalesService,
   canAccessAcademySales,
+  canManageAcademyRestricted,
   canManageAcademySales,
   getAcademyWorkspaceAccess,
   type AcademyActor,
@@ -106,21 +107,18 @@ function requireAcademyAdmin(actor: AcademyActor) {
   }
 }
 
-/** Ladder rewards alter future tuition quotes, so this is limited to Academy workspace managers. */
-function requireAcademyLadderAdmin(actor: AcademyActor) {
-  if (!canManageAcademySales(actor)) {
+function requireAcademyRestrictedSettings(actor: AcademyActor) {
+  if (!canManageAcademyRestricted(actor)) {
     throw new AcademySalesError(
-      'Chỉ Admin, Quản lý hoặc Marketing & Sales được cập nhật bậc thang học bổng Academy.',
+      'Chỉ Admin hoặc Super Admin được thay đổi học phí và cấu hình giảng viên Academy.',
       403
     );
   }
 }
 
-/** Bank-transfer confirmations are limited to Academy workspace managers. */
+/** Bank-transfer confirmations change the tuition ledger and are Admin-only. */
 function requireAcademyPaymentConfirmation(actor: AcademyActor) {
-  if (!canManageAcademySales(actor)) {
-    throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được xác nhận tiền Academy đã nhận.', 403);
-  }
+  requireAcademyRestrictedSettings(actor);
 }
 
 export async function academySalesRoutes(fastify: FastifyInstance) {
@@ -402,7 +400,7 @@ export async function academySalesRoutes(fastify: FastifyInstance) {
   // The workshop needs the active list before an operator picks a course.
   fastify.get('/academy-sales/talent-instructors/manage', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      requireAcademyAdmin(actorFrom(request));
+      requireAcademyRestrictedSettings(actorFrom(request));
       return reply.send(await AcademyTalentAssessmentService.listInstructorConfigurations(fastify));
     } catch (error) {
       return sendError(fastify, reply, error, 'List Academy instructor configurations error');
@@ -411,7 +409,7 @@ export async function academySalesRoutes(fastify: FastifyInstance) {
 
   fastify.post('/academy-sales/talent-instructors', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      requireAcademyAdmin(actorFrom(request));
+      requireAcademyRestrictedSettings(actorFrom(request));
       return reply
         .status(201)
         .send(
@@ -427,7 +425,7 @@ export async function academySalesRoutes(fastify: FastifyInstance) {
 
   fastify.put('/academy-sales/talent-instructors/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      requireAcademyAdmin(actorFrom(request));
+      requireAcademyRestrictedSettings(actorFrom(request));
       const { id } = request.params as { id: string };
       return reply.send(
         await AcademyTalentAssessmentService.updateInstructor(
@@ -464,7 +462,7 @@ export async function academySalesRoutes(fastify: FastifyInstance) {
   fastify.put('/academy-sales/talent-ladder', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const actor = actorFrom(request);
-      requireAcademyLadderAdmin(actor);
+      requireAcademyRestrictedSettings(actor);
       const data = await AcademyTalentLadderConfigurationService.update(
         fastify,
         actor,

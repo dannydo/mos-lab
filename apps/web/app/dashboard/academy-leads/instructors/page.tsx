@@ -4,14 +4,14 @@ import React from 'react';
 import { Button, Form, Input, InputNumber, Select, Space, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Pencil, Plus, RefreshCw, UserRoundCog } from 'lucide-react';
-import { isAdminOrSuperAdminRole, removeVietnameseTones } from '@mos-lab/shared';
+import { removeVietnameseTones } from '@mos-lab/shared';
 import type {
   AcademyStaffOption,
   AcademyTalentInstructor,
-  SafeAny,
   UpsertAcademyTalentInstructorRequest,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { useAcademyAccess } from '../components/AcademyAccessGate';
 import {
   AppIcon,
   DataSection,
@@ -34,15 +34,6 @@ const PAGE_SIZE_STORAGE_KEY = 'academy-instructor-config:page-size';
 
 type InstructorFormValues = UpsertAcademyTalentInstructorRequest;
 
-function currentRole() {
-  if (typeof window === 'undefined') return '';
-  try {
-    return String((JSON.parse(window.localStorage.getItem('mos_user') || '{}') as SafeAny).role || '');
-  } catch {
-    return '';
-  }
-}
-
 function persistedNumber(key: string, fallback: number, accepted?: number[]) {
   if (typeof window === 'undefined') return fallback;
   const value = Number(window.localStorage.getItem(key));
@@ -61,7 +52,7 @@ function rateLabel(value: number) {
 }
 
 export default function AcademyInstructorConfigurationPage() {
-  const [role, setRole] = React.useState('');
+  const { canAccess: academyAllowed, canManageRestricted } = useAcademyAccess();
   const [instructors, setInstructors] = React.useState<AcademyTalentInstructor[]>([]);
   const [staff, setStaff] = React.useState<AcademyStaffOption[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -75,15 +66,14 @@ export default function AcademyInstructorConfigurationPage() {
   const [saving, setSaving] = React.useState(false);
   const [form] = Form.useForm<InstructorFormValues>();
 
-  React.useEffect(() => setRole(currentRole()), []);
-  const canManage = isAdminOrSuperAdminRole(role) || role === 'manager';
-
   const load = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [instructorResponse, staffOptions] = await Promise.all([
-        apiClient.academySales.listTalentInstructorConfigurations(),
+        canManageRestricted
+          ? apiClient.academySales.listTalentInstructorConfigurations()
+          : apiClient.academySales.listTalentInstructors(),
         apiClient.academySales.listStaff(),
       ]);
       setInstructors(instructorResponse.data);
@@ -93,11 +83,11 @@ export default function AcademyInstructorConfigurationPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canManageRestricted]);
 
   React.useEffect(() => {
-    if (canManage) void load();
-  }, [canManage, load]);
+    if (academyAllowed) void load();
+  }, [academyAllowed, load]);
 
   React.useEffect(() => {
     window.localStorage.setItem(PAGE_STORAGE_KEY, String(page));
@@ -181,8 +171,8 @@ export default function AcademyInstructorConfigurationPage() {
     [closeEditor, editingInstructor, load]
   );
 
-  const columns = React.useMemo<ColumnsType<AcademyTalentInstructor>>(
-    () => [
+  const columns = React.useMemo<ColumnsType<AcademyTalentInstructor>>(() => {
+    const nextColumns: ColumnsType<AcademyTalentInstructor> = [
       {
         key: 'stt',
         title: <TableIndexHeader />,
@@ -247,7 +237,9 @@ export default function AcademyInstructorConfigurationPage() {
         align: 'center',
         render: (_value, instructor) => <span className="tabular-nums">{instructor.sortOrder}</span>,
       },
-      {
+    ];
+    if (canManageRestricted) {
+      nextColumns.push({
         key: 'action',
         title: 'Thao tác',
         width: 105,
@@ -256,18 +248,17 @@ export default function AcademyInstructorConfigurationPage() {
             Sửa
           </Button>
         ),
-      },
-    ],
-    [openEditor, page, pageSize, staffById]
-  );
+      });
+    }
+    return nextColumns;
+  }, [canManageRestricted, openEditor, page, pageSize, staffById]);
 
-  if (!role) return <StatePanel kind="loading" title="Đang xác thực quyền cấu hình giảng viên…" />;
-  if (!canManage) {
+  if (!academyAllowed) {
     return (
       <StatePanel
         kind="error"
-        title="Bạn không có quyền cấu hình giảng viên"
-        description="Chỉ Admin hoặc Manager được thay đổi phụ phí Tố Chất."
+        title="Bạn không có quyền truy cập giảng viên Academy"
+        description="Khu vực này chỉ dành cho thành viên đang hoạt động của Department Academy."
       />
     );
   }
@@ -275,7 +266,11 @@ export default function AcademyInstructorConfigurationPage() {
   return (
     <FeaturePage
       title="Giảng viên Academy"
-      subtitle="Thiết lập phụ phí chỉ định giảng viên. Phụ phí chỉ áp dụng trên học phí sau học bổng; phiếu đã in giữ nguyên snapshot cũ."
+      subtitle={
+        canManageRestricted
+          ? 'Thiết lập phụ phí chỉ định giảng viên. Phụ phí chỉ áp dụng trên học phí sau học bổng; phiếu đã in giữ nguyên snapshot cũ.'
+          : 'Danh sách giảng viên đang hoạt động. Chỉ Admin hoặc Super Admin có thể thay đổi cấu hình và phụ phí.'
+      }
       icon={<AppIcon icon={UserRoundCog} size="md" />}
       tag={<StatusTag status="purple" label="Academy" />}
       headerActions={
@@ -286,7 +281,13 @@ export default function AcademyInstructorConfigurationPage() {
             loading={loading}
             onClick={() => void load()}
           />
-          <PagePrimaryIconAction title="Thêm giảng viên" icon={<AppIcon icon={Plus} />} onClick={() => openEditor()} />
+          {canManageRestricted && (
+            <PagePrimaryIconAction
+              title="Thêm giảng viên"
+              icon={<AppIcon icon={Plus} />}
+              onClick={() => openEditor()}
+            />
+          )}
         </Space>
       }
       toolbar={{
@@ -330,24 +331,33 @@ export default function AcademyInstructorConfigurationPage() {
             sortOrder: 'tertiary',
             action: 'primary',
           }}
-          mobileRenderer={(instructor) => (
-            <button
-              type="button"
-              className="grid w-full min-w-0 gap-2 border-0 bg-transparent p-0 text-left"
-              onClick={() => openEditor(instructor)}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <strong>{instructor.displayName}</strong>
-                <StatusTag
-                  status={instructor.surchargePercent > 0 ? 'warning' : 'success'}
-                  label={rateLabel(instructor.surchargePercent)}
-                />
-              </div>
-              <div className="text-xs opacity-70">
-                {instructor.description || 'Chưa có mô tả'} · {instructor.isActive ? 'Đang dùng' : 'Đã ẩn'}
-              </div>
-            </button>
-          )}
+          mobileRenderer={(instructor) => {
+            const content = (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <strong>{instructor.displayName}</strong>
+                  <StatusTag
+                    status={instructor.surchargePercent > 0 ? 'warning' : 'success'}
+                    label={rateLabel(instructor.surchargePercent)}
+                  />
+                </div>
+                <div className="text-xs opacity-70">
+                  {instructor.description || 'Chưa có mô tả'} · {instructor.isActive ? 'Đang dùng' : 'Đã ẩn'}
+                </div>
+              </>
+            );
+            return canManageRestricted ? (
+              <button
+                type="button"
+                className="grid w-full min-w-0 gap-2 border-0 bg-transparent p-0 text-left"
+                onClick={() => openEditor(instructor)}
+              >
+                {content}
+              </button>
+            ) : (
+              <div className="grid w-full min-w-0 gap-2 text-left">{content}</div>
+            );
+          }}
           pagination={{
             current: page,
             pageSize,
@@ -363,97 +373,99 @@ export default function AcademyInstructorConfigurationPage() {
         />
       </DataSection>
 
-      <EntityFormDrawer
-        open={editingInstructor !== undefined}
-        onClose={closeEditor}
-        title={`${editingInstructor ? 'Sửa' : 'Thêm'} giảng viên Academy`}
-        width={640}
-        footer={
-          <Space>
-            <Button onClick={closeEditor}>Hủy</Button>
-            <Button type="primary" loading={saving} onClick={() => form.submit()}>
-              Lưu cấu hình
-            </Button>
-          </Space>
-        }
-      >
-        <EntityForm form={form} onFinish={save} columns={2}>
-          <EntityFormField
-            label="Tên hiển thị"
-            name="displayName"
-            rules={[{ required: true, message: 'Nhập tên giảng viên' }]}
-          >
-            <Input
-              placeholder="Giảng viên Giang Trần"
-              onBlur={(event) => {
-                if (!form.getFieldValue('code')) form.setFieldValue('code', defaultCode(event.target.value));
-              }}
-            />
-          </EntityFormField>
-          <EntityFormField
-            label="Mã cấu hình"
-            name="code"
-            rules={[{ required: true, message: 'Nhập mã cấu hình' }]}
-            extra="Dùng chữ, số và dấu gạch dưới."
-          >
-            <Input disabled={editingInstructor?.code === 'auto'} placeholder="giang_tran" />
-          </EntityFormField>
-          <EntityFormField
-            label="Phụ phí trên học phí sau học bổng"
-            name="surchargePercent"
-            rules={[{ required: true, message: 'Nhập phụ phí' }]}
-          >
-            <InputNumber
-              className="w-full"
-              min={0}
-              max={100}
-              precision={0}
-              addonAfter="%"
-              disabled={editingInstructor?.code === 'auto'}
-            />
-          </EntityFormField>
-          <EntityFormField label="Thứ tự hiển thị" name="sortOrder" rules={[{ required: true }]}>
-            <InputNumber className="w-full" min={0} precision={0} />
-          </EntityFormField>
-          <EntityFormField
-            fullWidth
-            label="Liên kết hồ sơ nhân sự"
-            name="staffId"
-            extra="Tùy chọn. Một nhân sự chỉ có một hồ sơ giảng viên Academy."
-          >
-            <Select
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              filterOption={(input, option) =>
-                removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))
-              }
-              options={staff.map((option) => ({ value: option.id, label: option.displayName }))}
-              placeholder="Chọn nhân sự nếu đã có hồ sơ trong mOS"
-            />
-          </EntityFormField>
-          <EntityFormField fullWidth label="Mô tả" name="description">
-            <Input.TextArea rows={2} placeholder="Ví dụ: Chỉ định giảng viên chính" />
-          </EntityFormField>
-          <EntityFormField
-            fullWidth
-            label="Link ảnh đại diện"
-            name="avatarUrl"
-            rules={[{ type: 'url', message: 'Link ảnh chưa hợp lệ' }]}
-          >
-            <Input placeholder="https://…" />
-          </EntityFormField>
-          <EntityFormField label="Trạng thái" name="isActive" rules={[{ required: true }]}>
-            <Select
-              disabled={editingInstructor?.code === 'auto'}
-              options={[
-                { value: true, label: 'Đang dùng' },
-                { value: false, label: 'Đã ẩn' },
-              ]}
-            />
-          </EntityFormField>
-        </EntityForm>
-      </EntityFormDrawer>
+      {canManageRestricted && (
+        <EntityFormDrawer
+          open={editingInstructor !== undefined}
+          onClose={closeEditor}
+          title={`${editingInstructor ? 'Sửa' : 'Thêm'} giảng viên Academy`}
+          width={640}
+          footer={
+            <Space>
+              <Button onClick={closeEditor}>Hủy</Button>
+              <Button type="primary" loading={saving} onClick={() => form.submit()}>
+                Lưu cấu hình
+              </Button>
+            </Space>
+          }
+        >
+          <EntityForm form={form} onFinish={save} columns={2}>
+            <EntityFormField
+              label="Tên hiển thị"
+              name="displayName"
+              rules={[{ required: true, message: 'Nhập tên giảng viên' }]}
+            >
+              <Input
+                placeholder="Giảng viên Giang Trần"
+                onBlur={(event) => {
+                  if (!form.getFieldValue('code')) form.setFieldValue('code', defaultCode(event.target.value));
+                }}
+              />
+            </EntityFormField>
+            <EntityFormField
+              label="Mã cấu hình"
+              name="code"
+              rules={[{ required: true, message: 'Nhập mã cấu hình' }]}
+              extra="Dùng chữ, số và dấu gạch dưới."
+            >
+              <Input disabled={editingInstructor?.code === 'auto'} placeholder="giang_tran" />
+            </EntityFormField>
+            <EntityFormField
+              label="Phụ phí trên học phí sau học bổng"
+              name="surchargePercent"
+              rules={[{ required: true, message: 'Nhập phụ phí' }]}
+            >
+              <InputNumber
+                className="w-full"
+                min={0}
+                max={100}
+                precision={0}
+                addonAfter="%"
+                disabled={editingInstructor?.code === 'auto'}
+              />
+            </EntityFormField>
+            <EntityFormField label="Thứ tự hiển thị" name="sortOrder" rules={[{ required: true }]}>
+              <InputNumber className="w-full" min={0} precision={0} />
+            </EntityFormField>
+            <EntityFormField
+              fullWidth
+              label="Liên kết hồ sơ nhân sự"
+              name="staffId"
+              extra="Tùy chọn. Một nhân sự chỉ có một hồ sơ giảng viên Academy."
+            >
+              <Select
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                filterOption={(input, option) =>
+                  removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))
+                }
+                options={staff.map((option) => ({ value: option.id, label: option.displayName }))}
+                placeholder="Chọn nhân sự nếu đã có hồ sơ trong mOS"
+              />
+            </EntityFormField>
+            <EntityFormField fullWidth label="Mô tả" name="description">
+              <Input.TextArea rows={2} placeholder="Ví dụ: Chỉ định giảng viên chính" />
+            </EntityFormField>
+            <EntityFormField
+              fullWidth
+              label="Link ảnh đại diện"
+              name="avatarUrl"
+              rules={[{ type: 'url', message: 'Link ảnh chưa hợp lệ' }]}
+            >
+              <Input placeholder="https://…" />
+            </EntityFormField>
+            <EntityFormField label="Trạng thái" name="isActive" rules={[{ required: true }]}>
+              <Select
+                disabled={editingInstructor?.code === 'auto'}
+                options={[
+                  { value: true, label: 'Đang dùng' },
+                  { value: false, label: 'Đã ẩn' },
+                ]}
+              />
+            </EntityFormField>
+          </EntityForm>
+        </EntityFormDrawer>
+      )}
     </FeaturePage>
   );
 }

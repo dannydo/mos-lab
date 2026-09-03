@@ -53,6 +53,7 @@ interface AcademyWorkshopParticipantOverlaysProps {
   resources: AcademyWorkshopResourcesResponse;
   busy: boolean;
   talentLoading: boolean;
+  canManageRestricted: boolean;
   careDrawerOpen: boolean;
   qrDataUrl: string;
   qrTargetUrl: string;
@@ -95,6 +96,7 @@ export default function AcademyWorkshopParticipantOverlays({
   resources,
   busy,
   talentLoading,
+  canManageRestricted,
   careDrawerOpen,
   qrDataUrl,
   qrTargetUrl,
@@ -194,9 +196,11 @@ export default function AcademyWorkshopParticipantOverlays({
                 >
                   {selected.checkedInAt ? 'Hoàn tác check-in' : 'Check-in'}
                 </Button>
-                <Button icon={<AppIcon icon={CircleDollarSign} />} onClick={onOpenFee}>
-                  Thu phí
-                </Button>
+                {canManageRestricted && (
+                  <Button icon={<AppIcon icon={CircleDollarSign} />} onClick={onOpenFee}>
+                    Thu phí
+                  </Button>
+                )}
                 <Select
                   allowClear
                   placeholder="Phân giáo viên chính"
@@ -383,56 +387,58 @@ export default function AcademyWorkshopParticipantOverlays({
         </EntityForm>
       </AdaptiveModal>
 
-      <AdaptiveModal
-        open={feeOpen}
-        title={`${workshop.feeVnd === 0 ? 'Phí workshop' : 'Thu phí'} · ${selected?.lead.name || ''}`}
-        okText="Ghi bút toán"
-        confirmLoading={busy}
-        footer={
-          workshop.feeVnd === 0 ? (
-            <Button type="primary" onClick={onCloseFee}>
-              Đóng
-            </Button>
-          ) : undefined
-        }
-        onOk={() => feeForm.submit()}
-        onCancel={onCloseFee}
-        destroyOnHidden
-      >
-        {workshop.feeVnd === 0 ? (
-          <div className="rounded-xl border border-inherit p-4 text-center">
-            <StatusTag status="success" label="Miễn phí" />
-            <div className="mt-3 font-semibold">Workshop đang được cấu hình phí 0đ</div>
-            <div className="mt-1 text-sm opacity-60">Học viên không cần đóng phí workshop.</div>
-          </div>
-        ) : (
-          <Form form={feeForm} layout="vertical" onFinish={onSaveFee} initialValues={{ method: 'BANK_TRANSFER' }}>
-            <Form.Item name="amountVnd" label="Số tiền" rules={[{ required: true }]}>
-              <InputNumber
-                min={1}
-                precision={0}
-                step={100000}
-                className="w-full"
-                formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
-              />
-            </Form.Item>
-            <Form.Item name="method" label="Phương thức">
-              <Select
-                options={[
-                  { value: 'BANK_TRANSFER', label: 'Chuyển khoản' },
-                  { value: 'CASH', label: 'Tiền mặt' },
-                ]}
-              />
-            </Form.Item>
-            <Form.Item name="reference" label="Mã tham chiếu">
-              <Input />
-            </Form.Item>
-            <Form.Item name="note" label="Ghi chú">
-              <Input.TextArea rows={2} />
-            </Form.Item>
-          </Form>
-        )}
-      </AdaptiveModal>
+      {canManageRestricted && (
+        <AdaptiveModal
+          open={feeOpen}
+          title={`${workshop.feeVnd === 0 ? 'Phí workshop' : 'Thu phí'} · ${selected?.lead.name || ''}`}
+          okText="Ghi bút toán"
+          confirmLoading={busy}
+          footer={
+            workshop.feeVnd === 0 ? (
+              <Button type="primary" onClick={onCloseFee}>
+                Đóng
+              </Button>
+            ) : undefined
+          }
+          onOk={() => feeForm.submit()}
+          onCancel={onCloseFee}
+          destroyOnHidden
+        >
+          {workshop.feeVnd === 0 ? (
+            <div className="rounded-xl border border-inherit p-4 text-center">
+              <StatusTag status="success" label="Miễn phí" />
+              <div className="mt-3 font-semibold">Workshop đang được cấu hình phí 0đ</div>
+              <div className="mt-1 text-sm opacity-60">Học viên không cần đóng phí workshop.</div>
+            </div>
+          ) : (
+            <Form form={feeForm} layout="vertical" onFinish={onSaveFee} initialValues={{ method: 'BANK_TRANSFER' }}>
+              <Form.Item name="amountVnd" label="Số tiền" rules={[{ required: true }]}>
+                <InputNumber
+                  min={1}
+                  precision={0}
+                  step={100000}
+                  className="w-full"
+                  formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+                />
+              </Form.Item>
+              <Form.Item name="method" label="Phương thức">
+                <Select
+                  options={[
+                    { value: 'BANK_TRANSFER', label: 'Chuyển khoản' },
+                    { value: 'CASH', label: 'Tiền mặt' },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item name="reference" label="Mã tham chiếu">
+                <Input />
+              </Form.Item>
+              <Form.Item name="note" label="Ghi chú">
+                <Input.TextArea rows={2} />
+              </Form.Item>
+            </Form>
+          )}
+        </AdaptiveModal>
+      )}
     </>
   );
 }

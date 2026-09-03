@@ -32,7 +32,6 @@ import AcademyTalentFollowUpPaymentSlip, {
 } from '../components/AcademyTalentFollowUpPaymentSlip';
 import styles from '../components/AcademyTalentWorkshop.module.css';
 import {
-  currentRole,
   dateLabel,
   DEPOSIT_PRESET_VND,
   mobilePaymentCard,
@@ -53,8 +52,7 @@ import {
 } from './payment-management.helpers';
 
 export default function AcademyPaymentManagementPage() {
-  const { canAccess: academyAllowed, canManage } = useAcademyAccess();
-  const [role, setRole] = React.useState('');
+  const { canAccess: academyAllowed, canManageRestricted } = useAcademyAccess();
   const [month, setMonth] = React.useState<Dayjs>(persistedMonth);
   const [status, setStatus] = React.useState<AcademyTalentPaymentManagementStatus>(persistedStatus);
   const [search, setSearch] = React.useState('');
@@ -79,8 +77,6 @@ export default function AcademyPaymentManagementPage() {
   const [savingCollection, setSavingCollection] = React.useState(false);
   const requestVersionRef = React.useRef(0);
   const traceRequestVersionRef = React.useRef(0);
-
-  React.useEffect(() => setRole(currentRole()), []);
 
   React.useEffect(() => {
     window.localStorage.setItem(PAGE_STORAGE_KEY, String(page));
@@ -332,11 +328,11 @@ export default function AcademyPaymentManagementPage() {
       },
       {
         key: 'actions',
-        title: canManage ? 'Thu tiền' : 'Chi tiết',
+        title: canManageRestricted ? 'Thu tiền' : 'Chi tiết',
         width: 164,
         render: (_value, row) => (
           <Space size={2}>
-            {canManage && row.paymentStatus !== 'PAID' && (
+            {canManageRestricted && row.paymentStatus !== 'PAID' && (
               <Button type="primary" size="small" onClick={() => openCollection(row)}>
                 Thu tiền
               </Button>
@@ -348,10 +344,9 @@ export default function AcademyPaymentManagementPage() {
         ),
       },
     ],
-    [canManage, openCollection, page, pageSize]
+    [canManageRestricted, openCollection, page, pageSize]
   );
 
-  if (!role) return <StatePanel kind="loading" title="Đang xác thực quyền thu học phí Academy…" />;
   if (!academyAllowed)
     return (
       <StatePanel

@@ -8,12 +8,14 @@ import { StatePanel } from '../../../../components/ui';
 type AcademyAccessContextValue = {
   canAccess: boolean;
   canManage: boolean;
+  canManageRestricted: boolean;
   scope: 'ADMIN' | 'ACADEMY_TEAM' | null;
 };
 
 const AcademyAccessContext = React.createContext<AcademyAccessContextValue>({
   canAccess: false,
   canManage: false,
+  canManageRestricted: false,
   scope: null,
 });
 

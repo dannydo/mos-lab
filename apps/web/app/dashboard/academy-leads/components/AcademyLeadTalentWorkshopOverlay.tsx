@@ -10,18 +10,20 @@ export interface AcademyLeadTalentWorkshopOverlayProps extends Omit<
   'canEditLadder' | 'canManageCourses' | 'canConfirmPayment'
 > {
   canManage: boolean;
+  canManageRestricted: boolean;
 }
 
 export default function AcademyLeadTalentWorkshopOverlay({
   canManage,
+  canManageRestricted,
   ...props
 }: AcademyLeadTalentWorkshopOverlayProps) {
   return (
     <AcademyTalentWorkshopDrawer
       {...props}
-      canEditLadder={canManage}
+      canEditLadder={canManageRestricted}
       canManageCourses={canManage}
-      canConfirmPayment={canManage}
+      canConfirmPayment={canManageRestricted}
     />
   );
 }

@@ -75,7 +75,7 @@ import styles from './AcademyCampaignDetailPage.module.css';
 import { useCampaignLeadColumns } from './useCampaignLeadColumns';
 
 export default function AcademyCampaignDetailPage() {
-  const { canAccess: academyAllowed, canManage } = useAcademyAccess();
+  const { canAccess: academyAllowed, canManage, canManageRestricted } = useAcademyAccess();
   const router = useRouter();
   const routeParams = useParams<{ slug?: string | string[] }>();
   const slug = Array.isArray(routeParams.slug) ? routeParams.slug[0] || '' : routeParams.slug || '';
@@ -778,9 +778,9 @@ export default function AcademyCampaignDetailPage() {
         courseSelectionRules={talentCourseRules}
         instructors={talentInstructors}
         ladderConfiguration={talentLadder.configuration}
-        canEditLadder={canManage}
+        canEditLadder={canManageRestricted}
         canManageCourses={canManage}
-        canConfirmPayment={canManage}
+        canConfirmPayment={canManageRestricted}
         onClose={closeTalentWorkshop}
         onPreviewQuote={previewTalentQuote}
         onSaveDraft={saveTalentDraft}

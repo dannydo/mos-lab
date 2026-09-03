@@ -97,7 +97,7 @@ test('Tố Chất routes reject malformed IDs before any persistence work', asyn
   await app.close();
 });
 
-test('Tố Chất instructor configuration is limited to Admin and Manager', async () => {
+test('Tố Chất instructor configuration is limited to Admin and Super Admin', async () => {
   const telesalesApp = createTalentRouteApp(null);
   await telesalesApp.register(academySalesRoutes);
   const denied = await telesalesApp.inject({ method: 'GET', url: '/academy-sales/talent-instructors/manage' });
@@ -106,14 +106,20 @@ test('Tố Chất instructor configuration is limited to Admin and Manager', asy
 
   const managerApp = createTalentRouteApp(null, 'manager');
   await managerApp.register(academySalesRoutes);
-  const granted = await managerApp.inject({ method: 'GET', url: '/academy-sales/talent-instructors/manage' });
+  const managerDenied = await managerApp.inject({ method: 'GET', url: '/academy-sales/talent-instructors/manage' });
+  assert.equal(managerDenied.statusCode, 403);
+  await managerApp.close();
+
+  const adminApp = createTalentRouteApp(null, 'admin');
+  await adminApp.register(academySalesRoutes);
+  const granted = await adminApp.inject({ method: 'GET', url: '/academy-sales/talent-instructors/manage' });
   assert.equal(granted.statusCode, 200);
   assert.equal(granted.json().data[0].code, 'auto');
-  await managerApp.close();
+  await adminApp.close();
 });
 
-test('Academy managers can persist global ladder bubbles and the configured reward drives new previews', async () => {
-  const app = createTalentRouteApp({ id: 41, ownerStaffId: 82 }, 'manager');
+test('only Academy admins can persist global ladder bubbles and the configured reward drives new previews', async () => {
+  const app = createTalentRouteApp({ id: 41, ownerStaffId: 82 }, 'admin');
   await app.register(academySalesRoutes);
   const defaults = await app.inject({ method: 'GET', url: '/academy-sales/talent-ladder' });
   assert.equal(defaults.statusCode, 200);

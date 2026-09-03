@@ -4,6 +4,7 @@ import {
   AcademySalesService,
   buildAcademyLeadSearchText,
   canAccessAcademySales,
+  canManageAcademyRestricted,
   canManageAcademySales,
   getAcademyWorkspaceAccess,
   getAcademyIctDayBounds,
@@ -16,11 +17,11 @@ import {
   sanitizeAcademyCourseRichText,
 } from './academy-sales.service.js';
 
-test('grants Academy CRUD only to admins, managers, or active Marketing & Sales members', async () => {
+test('grants Academy operations to every active Academy member while reserving sensitive settings for admins', async () => {
   const adminAccess = await getAcademyWorkspaceAccess({} as never, { id: 1, role: 'admin' });
-  assert.deepEqual(adminAccess, { canAccess: true, canManage: true, scope: 'ADMIN' });
+  assert.deepEqual(adminAccess, { canAccess: true, canManage: true, canManageRestricted: true, scope: 'ADMIN' });
   const superAdminAccess = await getAcademyWorkspaceAccess({} as never, { id: 2, role: 'super_admin' });
-  assert.deepEqual(superAdminAccess, { canAccess: true, canManage: true, scope: 'ADMIN' });
+  assert.deepEqual(superAdminAccess, { canAccess: true, canManage: true, canManageRestricted: true, scope: 'ADMIN' });
 
   const teamMemberFastify = {
     prisma: {
@@ -37,7 +38,12 @@ test('grants Academy CRUD only to admins, managers, or active Marketing & Sales 
     log: { error: () => undefined },
   };
   const teamMemberAccess = await getAcademyWorkspaceAccess(teamMemberFastify as never, { id: 12, role: 'telesales' });
-  assert.deepEqual(teamMemberAccess, { canAccess: true, canManage: false, scope: 'ACADEMY_TEAM' });
+  assert.deepEqual(teamMemberAccess, {
+    canAccess: true,
+    canManage: true,
+    canManageRestricted: false,
+    scope: 'ACADEMY_TEAM',
+  });
 
   const marketingSalesMemberFastify = {
     prisma: {
@@ -59,7 +65,12 @@ test('grants Academy CRUD only to admins, managers, or active Marketing & Sales 
     id: 14,
     role: 'telesales',
   });
-  assert.deepEqual(marketingSalesAccess, { canAccess: true, canManage: true, scope: 'ACADEMY_TEAM' });
+  assert.deepEqual(marketingSalesAccess, {
+    canAccess: true,
+    canManage: true,
+    canManageRestricted: false,
+    scope: 'ACADEMY_TEAM',
+  });
 
   const nonMemberFastify = {
     prisma: {
@@ -75,9 +86,11 @@ test('grants Academy CRUD only to admins, managers, or active Marketing & Sales 
     log: { error: () => undefined },
   };
   const nonMemberAccess = await getAcademyWorkspaceAccess(nonMemberFastify as never, { id: 13, role: 'manager' });
-  assert.deepEqual(nonMemberAccess, { canAccess: false, canManage: false, scope: null });
+  assert.deepEqual(nonMemberAccess, { canAccess: false, canManage: false, canManageRestricted: false, scope: null });
   assert.equal(canAccessAcademySales({ id: 12, role: 'telesales', academyAccess: true }), true);
   assert.equal(canManageAcademySales({ id: 14, role: 'telesales', academyCrudAccess: true }), true);
+  assert.equal(canManageAcademyRestricted({ id: 1, role: 'admin' }), true);
+  assert.equal(canManageAcademyRestricted({ id: 1, role: 'manager' }), false);
   assert.equal(canAccessAcademySales({ id: 12, role: 'cc' }), false);
 });
 

@@ -112,6 +112,7 @@ export interface AcademyWorkshopRosterProps {
   busyParticipantId: number | null;
   talentLoading: boolean;
   talentParticipantId: number | null;
+  canManageRestricted: boolean;
   onPageChange: (page: number, pageSize: number) => void;
   onOpenParticipant: (participant: AcademyWorkshopParticipant) => void;
   onOpenFee: (participant: AcademyWorkshopParticipant) => void;
@@ -134,6 +135,7 @@ export default function AcademyWorkshopRoster({
   busyParticipantId,
   talentLoading,
   talentParticipantId,
+  canManageRestricted,
   onPageChange,
   onOpenParticipant,
   onOpenFee,
@@ -220,22 +222,31 @@ export default function AcademyWorkshopRoster({
         key: 'fee',
         title: 'Phí workshop',
         width: 155,
-        render: (_value, row) => (
-          <div className="tabular-nums">
-            <button
-              type="button"
-              className={QUICK_ACTION_CLASS}
-              disabled={busyParticipantId === row.id}
-              onClick={() => onOpenFee(row)}
-            >
-              <StatusTag
-                status={['FREE', 'PAID', 'WAIVED'].includes(row.feeStatus) ? 'success' : 'warning'}
-                label={WORKSHOP_FEE_LABELS[row.feeStatus]}
-              />
-            </button>
-            {row.feePaidVnd > 0 && <div className="mt-1 text-xs">{row.feePaidVnd.toLocaleString('vi-VN')} đ</div>}
-          </div>
-        ),
+        render: (_value, row) => {
+          const feeStatus = (
+            <StatusTag
+              status={['FREE', 'PAID', 'WAIVED'].includes(row.feeStatus) ? 'success' : 'warning'}
+              label={WORKSHOP_FEE_LABELS[row.feeStatus]}
+            />
+          );
+          return (
+            <div className="tabular-nums">
+              {canManageRestricted ? (
+                <button
+                  type="button"
+                  className={QUICK_ACTION_CLASS}
+                  disabled={busyParticipantId === row.id}
+                  onClick={() => onOpenFee(row)}
+                >
+                  {feeStatus}
+                </button>
+              ) : (
+                feeStatus
+              )}
+              {row.feePaidVnd > 0 && <div className="mt-1 text-xs">{row.feePaidVnd.toLocaleString('vi-VN')} đ</div>}
+            </div>
+          );
+        },
       },
       {
         key: 'menu',
@@ -378,6 +389,7 @@ export default function AcademyWorkshopRoster({
     ],
     [
       busyParticipantId,
+      canManageRestricted,
       onAssignInstructor,
       onCheckIn,
       onOpenFee,

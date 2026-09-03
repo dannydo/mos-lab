@@ -249,14 +249,12 @@ export function getSidebarGroups(
       path: '/dashboard/academy-leads/payments',
     });
 
-    if (isAdmin || normalizedRole === 'manager') {
-      academyChildren.push({
-        key: 'academy-instructors',
-        label: 'Giảng viên',
-        icon: <AppIcon icon={UserRoundCog} size="sm" />,
-        path: '/dashboard/academy-leads/instructors',
-      });
-    }
+    academyChildren.push({
+      key: 'academy-instructors',
+      label: 'Giảng viên',
+      icon: <AppIcon icon={UserRoundCog} size="sm" />,
+      path: '/dashboard/academy-leads/instructors',
+    });
 
     academyItems.push({
       key: 'academy',

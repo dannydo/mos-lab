@@ -2458,7 +2458,7 @@ export function AcademyTalentWorkshopDrawer({
                       type="warning"
                       showIcon
                       message="Chờ quản lý xác nhận giao dịch"
-                      description="Bạn có thể lập phiếu chuyển khoản hoặc tiền mặt ở trên. Chỉ admin hoặc quản lý mới xác nhận khoản thu sau khi đối soát."
+                      description="Bạn có thể lập phiếu chuyển khoản hoặc tiền mặt ở trên. Chỉ Admin hoặc Super Admin mới xác nhận khoản thu sau khi đối soát."
                     />
                   )}
                   {canConfirmPayment && (

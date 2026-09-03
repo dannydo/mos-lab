@@ -49,6 +49,7 @@ import {
   AcademySalesError,
   AcademySalesService,
   buildAcademyLeadSearchText,
+  canManageAcademyRestricted,
   canManageAcademySales,
   normalizeAcademyPhone,
   type AcademyActor,
@@ -1936,6 +1937,9 @@ export class AcademyWorkshopService {
     participantId: number,
     input: { amountVnd: number; method: string; reference?: string | null; note?: string | null; receivedAt?: string }
   ) {
+    if (!canManageAcademyRestricted(actor)) {
+      throw new AcademySalesError('Chỉ Admin hoặc Super Admin được ghi nhận học phí workshop.', 403);
+    }
     await this.participantRow(fastify, actor, workshopId, participantId);
     const amountVnd = Math.round(Number(input.amountVnd));
     if (!Number.isInteger(amountVnd) || amountVnd === 0)
@@ -1943,8 +1947,6 @@ export class AcademyWorkshopService {
     if (!['BANK_TRANSFER', 'CASH', 'ADJUSTMENT'].includes(input.method))
       throw new AcademySalesError('Phương thức thu phí không hợp lệ.');
     if (input.method !== 'ADJUSTMENT' && amountVnd < 0) throw new AcademySalesError('Số tiền thu không thể âm.');
-    if (input.method === 'ADJUSTMENT' && !canManage(actor))
-      throw new AcademySalesError('Chỉ quản lý được ghi bút toán điều chỉnh.', 403);
     await fastify.prisma.crm.crmAcademyWorkshopFeePayment.create({
       data: {
         participantId,
@@ -1970,8 +1972,9 @@ export class AcademyWorkshopService {
     waived: boolean,
     reason: string
   ) {
-    if (!canManage(actor))
-      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc Marketing & Sales được miễn phí workshop.', 403);
+    if (!canManageAcademyRestricted(actor)) {
+      throw new AcademySalesError('Chỉ Admin hoặc Super Admin được miễn học phí workshop.', 403);
+    }
     await this.participantRow(fastify, actor, workshopId, participantId);
     const cleanReason = String(reason || '').trim();
     if (waived && !cleanReason) throw new AcademySalesError('Cần nhập lý do miễn phí.');

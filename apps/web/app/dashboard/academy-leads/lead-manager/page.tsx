@@ -66,7 +66,7 @@ import {
   userRole,
 } from './lead-manager.helpers';
 export default function AcademyLeadManagerPage() {
-  const { canAccess: academyAllowed, canManage } = useAcademyAccess();
+  const { canAccess: academyAllowed, canManage, canManageRestricted } = useAcademyAccess();
   const workspace = useAcademySalesWorkspace('lead-manager');
   const searchParams = useSearchParams();
   const [role, setRole] = React.useState('');
@@ -868,6 +868,7 @@ export default function AcademyLeadManagerPage() {
 
       <AcademyLeadTalentWorkshopOverlay
         canManage={canManage}
+        canManageRestricted={canManageRestricted}
         open={talentOpen}
         lead={talentLead}
         courses={courses}

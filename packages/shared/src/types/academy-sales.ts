@@ -32,8 +32,10 @@ export interface AcademyStaffOption {
 /** Access is granted only to an Admin or an active member of the Academy Department. */
 export interface AcademyWorkspaceAccess {
   canAccess: boolean;
-  /** Admins, Managers, and Marketing & Sales can manage Academy records. */
+  /** Every active Academy member can manage day-to-day Academy operations. */
   canManage: boolean;
+  /** Only Admin and Super Admin may change tuition or instructor configuration. */
+  canManageRestricted: boolean;
   scope: 'ADMIN' | 'ACADEMY_TEAM' | null;
 }
 

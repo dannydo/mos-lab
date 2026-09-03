@@ -65,7 +65,7 @@ type WorkshopWorkspaceThemeStyle = React.CSSProperties & Record<`--academy-works
 
 export default function AcademyWorkshopWorkspacePage() {
   const { token } = theme.useToken();
-  const { canAccess, canManage } = useAcademyAccess();
+  const { canAccess, canManage, canManageRestricted } = useAcademyAccess();
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -233,17 +233,14 @@ export default function AcademyWorkshopWorkspacePage() {
     setSelected(participant);
     setCareDrawerOpen(true);
   }, []);
-
-  const openFeeForParticipant = React.useCallback(
-    (participant: AcademyWorkshopParticipant) => {
-      setSelected(participant);
-      feeForm.resetFields();
-      feeForm.setFieldValue('method', 'BANK_TRANSFER');
-      if (participant.feeRemainingVnd > 0) feeForm.setFieldValue('amountVnd', participant.feeRemainingVnd);
-      setFeeOpen(true);
-    },
-    [feeForm]
-  );
+  const openFeeForParticipant = (participant: AcademyWorkshopParticipant) => {
+    if (!canManageRestricted) return;
+    setSelected(participant);
+    feeForm.resetFields();
+    feeForm.setFieldValue('method', 'BANK_TRANSFER');
+    if (participant.feeRemainingVnd > 0) feeForm.setFieldValue('amountVnd', participant.feeRemainingVnd);
+    setFeeOpen(true);
+  };
 
   const closeFeeModal = React.useCallback(() => {
     setFeeOpen(false);
@@ -656,6 +653,7 @@ export default function AcademyWorkshopWorkspacePage() {
                   busyParticipantId={busyParticipantId}
                   talentLoading={talentLoading}
                   talentParticipantId={talentParticipantId}
+                  canManageRestricted={canManageRestricted}
                   onPageChange={(nextPage, nextSize) => {
                     setPage(nextPage);
                     setPageSize(nextSize);
@@ -779,9 +777,9 @@ export default function AcademyWorkshopWorkspacePage() {
         courseSelectionRules={talentCourseRules}
         instructors={talentInstructors}
         ladderConfiguration={talentLadder.configuration}
-        canEditLadder={canManage}
+        canEditLadder={canManageRestricted}
         canManageCourses={canManage}
-        canConfirmPayment={canManage}
+        canConfirmPayment={canManageRestricted}
         onClose={closeTalentAssessment}
         onPreviewQuote={previewTalentQuote}
         onSaveDraft={saveTalentDraft}
@@ -802,6 +800,7 @@ export default function AcademyWorkshopWorkspacePage() {
         resources={resources}
         busy={busy}
         talentLoading={talentLoading}
+        canManageRestricted={canManageRestricted}
         careDrawerOpen={careDrawerOpen}
         qrDataUrl={qrDataUrl}
         qrTargetUrl={qrTargetUrl}
@@ -840,7 +839,9 @@ export default function AcademyWorkshopWorkspacePage() {
             selected.id
           );
         }}
-        onOpenFee={() => setFeeOpen(true)}
+        onOpenFee={() => {
+          if (canManageRestricted) setFeeOpen(true);
+        }}
         onAssignInstructor={(instructorId) => {
           if (!selected) return;
           void mutateParticipant(
