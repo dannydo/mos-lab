@@ -187,6 +187,7 @@ export function MyBugReportsPanel({
   const [messageApi, messageContext] = message.useMessage();
   const [reviewNote, setReviewNote] = React.useState('');
   const [saving, setSaving] = React.useState(false);
+  const reviewNoteRef = React.useRef<HTMLTextAreaElement>(null);
   const selected = reports.find((item) => item.key === selectedKey) ?? reports[0] ?? null;
 
   React.useEffect(() => setReviewNote(''), [selected?.id]);
@@ -194,7 +195,8 @@ export function MyBugReportsPanel({
   const submitReview = async (decision: ReviewBugReportRequest['decision']) => {
     if (!selected) return;
     if (decision === 'REOPEN' && !reviewNote.trim()) {
-      messageApi.error('Hãy mô tả điểm chưa đúng để Agent biết cần sửa gì.');
+      reviewNoteRef.current?.focus();
+      messageApi.warning('Ghi ngắn gọn điểm chưa đúng ở ô bên trên, rồi gửi lại cho Agent.');
       return;
     }
     setSaving(true);
@@ -386,8 +388,10 @@ export function MyBugReportsPanel({
                 title={selected.requestType === 'FEATURE' ? 'Bạn nghiệm thu giúp mOS' : 'Bạn xác nhận giúp mOS'}
               >
                 <Input.TextArea
+                  ref={reviewNoteRef}
                   value={reviewNote}
                   onChange={(event) => setReviewNote(event.target.value)}
+                  status={reviewNote.trim() ? undefined : 'warning'}
                   placeholder={
                     selected.requestType === 'FEATURE'
                       ? 'Nếu chưa đúng nhu cầu, hãy ghi ngắn gọn điểm cần điều chỉnh…'
@@ -397,6 +401,11 @@ export function MyBugReportsPanel({
                   autoSize={{ minRows: 2, maxRows: 6 }}
                   showCount
                 />
+                {!reviewNote.trim() ? (
+                  <Text type="secondary" className="mt-2 block">
+                    Cần ghi ít nhất một điểm chưa đúng trước khi gửi yêu cầu sửa tiếp.
+                  </Text>
+                ) : null}
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
                   <Button
                     loading={saving}
