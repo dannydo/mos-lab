@@ -381,7 +381,7 @@ function latestAgentActivity(source: AgentProgressSource) {
           'AGENT_IMPLEMENTATION_FAILED',
           'AGENT_IMPLEMENTATION_RETRY_QUEUED',
           'AGENT_IMPLEMENTATION_RETRY_SCHEDULED',
-          'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE',
+          'DANNY_RELEASED_FOR_ACCEPTANCE',
           'DANNY_IMPLEMENTATION_ACCEPTED',
           'DANNY_IMPLEMENTATION_REOPENED',
           'CLARIFICATION_ANSWERED',
@@ -414,7 +414,7 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('STOPPED', source, null, source.closedAt);
   }
   if (source.status === 'FIXED') {
-    if (latest?.action === 'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE') {
+    if (latest?.action === 'DANNY_RELEASED_FOR_ACCEPTANCE') {
       return progressResult('AWAITING_DANNY_ACCEPTANCE', source, latest, source.resolvedAt);
     }
     return {
@@ -493,7 +493,7 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
   }
 
   if (source.status === 'FIXED') {
-    if (latestAgentActivity(source)?.action === 'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE') {
+    if (latestAgentActivity(source)?.action === 'DANNY_RELEASED_FOR_ACCEPTANCE') {
       return nextAction(
         'DANNY',
         'REVIEW_COMMIT',

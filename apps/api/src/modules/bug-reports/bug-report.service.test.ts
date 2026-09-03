@@ -154,7 +154,7 @@ test('projects every Agent milestone from canonical ticket state and audit activ
         resolvedAt: agentAt,
         audits: [
           {
-            action: 'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE',
+            action: 'DANNY_RELEASED_FOR_ACCEPTANCE',
             note: 'Đã deploy; chờ Danny nghiệm thu.',
             createdAt: agentAt,
           },

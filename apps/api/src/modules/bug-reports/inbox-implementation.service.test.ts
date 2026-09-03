@@ -629,10 +629,7 @@ test('a verified release hands a reviewed implementation to Danny acceptance exa
   assert.equal(reportUpdates[0]?.status, 'FIXED');
   assert.equal(reportUpdates[0]?.implementationActiveJobId, null);
   assert.equal(resolutions.length, 1);
-  assert.equal(
-    audits[0]?.data && (audits[0].data as { action?: string }).action,
-    'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE'
-  );
+  assert.equal(audits[0]?.data && (audits[0].data as { action?: string }).action, 'DANNY_RELEASED_FOR_ACCEPTANCE');
   assert.equal(comments.length, 1);
   assert.equal(notifications.length, 0);
 });

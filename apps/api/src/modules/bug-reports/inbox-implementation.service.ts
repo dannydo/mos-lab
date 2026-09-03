@@ -1143,7 +1143,7 @@ export class InboxImplementationService {
         data: {
           reportId,
           actorStaffId,
-          action: 'DANNY_IMPLEMENTATION_RELEASED_FOR_ACCEPTANCE',
+          action: 'DANNY_RELEASED_FOR_ACCEPTANCE',
           note: `Danny đã duyệt commit/deploy ${commitSha.slice(0, 12)}; ticket chuyển sang chờ Danny nghiệm thu.`,
           beforeJson: snapshot(report),
           afterJson: snapshot({
