@@ -168,7 +168,7 @@ test('duplicate approval delivery creates one durable implementation job for the
   assert.equal(creates, 1);
 });
 
-test('Danny retry creates one new linked row and leaves the terminal row unchanged', async () => {
+test('Danny retry creates a bounded linked chain and leaves terminal evidence unchanged', async () => {
   const draft = source();
   const sourceVersion = inboxImplementationSourceVersion(draft);
   const report = source({
@@ -180,8 +180,8 @@ test('Danny retry creates one new linked row and leaves the terminal row unchang
   const terminal = {
     id: 'terminal-job',
     status: 'FAILED',
-    retryOfJobId: null,
-    retrySequence: 0,
+    retryOfJobId: 'prior-terminal-job',
+    retrySequence: 1,
     sourceVersion,
     planVersion: 'v1:plan',
     failureCode: 'LEASE_EXPIRED',
@@ -224,7 +224,7 @@ test('Danny retry creates one new linked row and leaves the terminal row unchang
 
   assert.equal(await InboxImplementationService.retryFailed(fastify as never, 16, 1), true);
   assert.equal(createdRows[0]?.retryOfJobId, 'terminal-job');
-  assert.equal(createdRows[0]?.retrySequence, 1);
+  assert.equal(createdRows[0]?.retrySequence, 2);
   assert.equal(terminal.status, 'FAILED');
   assert.equal(report.status, 'APPROVED');
   assert.equal(auditAction, 'AGENT_IMPLEMENTATION_RETRY_QUEUED');

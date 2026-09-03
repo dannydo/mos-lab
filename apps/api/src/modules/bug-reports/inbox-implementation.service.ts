@@ -19,6 +19,9 @@ const JOB_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const REVIEW_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const FAILURE_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
 const IMPLEMENTATION_CHECKPOINT_LIMIT = 1;
+// A separate, explicit Danny action is required for every retry. The cap keeps
+// terminal failures reviewable without turning the worker into an auto-loop.
+const MAX_DANNY_RETRY_SEQUENCE = 2;
 
 const IMPLEMENTATION_PROGRESS_LABELS = {
   CODEX_STARTED: 'Codex đang phân tích và triển khai trong worktree riêng.',
@@ -431,25 +434,20 @@ export class InboxImplementationService {
     if (
       !failed ||
       failed.status !== 'FAILED' ||
-      failed.retryOfJobId ||
       failed.sourceVersion !== gate.sourceVersion ||
       failed.planVersion !== gate.plan.planVersion
     ) {
       throw new InboxImplementationError(
-        'Retry chỉ áp dụng một lần cho job terminal đang khớp approval và plan.',
+        'Retry chỉ áp dụng cho job terminal đang khớp approval và plan.',
         409,
         'RETRY_NOT_ALLOWED'
       );
     }
-    const alreadyRetried = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
-      where: { retryOfJobId: failed.id },
-      select: { id: true },
-    });
-    if (alreadyRetried) {
+    if (failed.retrySequence >= MAX_DANNY_RETRY_SEQUENCE) {
       throw new InboxImplementationError(
-        'Job này đã có retry liên kết; không tạo thêm lần chạy.',
+        'Ticket đã dùng hết hai retry có xác nhận riêng; cần rà soát scope hoặc worktree trước khi tạo authorization mới.',
         409,
-        'RETRY_ALREADY_CREATED'
+        'RETRY_LIMIT_REACHED'
       );
     }
 
@@ -495,7 +493,7 @@ export class InboxImplementationService {
           reportId,
           actorStaffId,
           action: 'AGENT_IMPLEMENTATION_RETRY_QUEUED',
-          note: 'Danny đã cho phép đúng một retry sạch; job mới liên kết job terminal cũ và vẫn dừng trước commit.',
+          note: 'Danny đã xác nhận retry sạch; job mới liên kết job terminal cũ và vẫn dừng trước commit.',
           beforeJson: snapshot(report),
           afterJson: snapshot({
             ...report,
