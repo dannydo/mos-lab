@@ -72,14 +72,20 @@ export function isInboxImplementationBaseEligible(
 }
 
 export function inboxImplementationCurrentPlan(source: GateSource, sourceVersion: string): CurrentPlan | null {
+  // A priority controls queue order, not the code/test scope. Reuse the native
+  // plan created while the requirement was clarified, rather than making a
+  // duplicate plan after Danny assigns a priority.
+  const priorityNeutralSourceVersion = inboxImplementationSourceVersion({ ...source, priority: null });
   const candidate = source.inboxPlanJobs.find(
     (job) =>
       job.status === 'COMPLETED' &&
       job.resultAction === 'POST_PLAN' &&
-      job.sourceVersion === sourceVersion &&
+      (job.sourceVersion === sourceVersion || job.sourceVersion === priorityNeutralSourceVersion) &&
       Boolean(job.planVersion)
   );
-  return candidate?.planVersion ? { id: candidate.id, sourceVersion, planVersion: candidate.planVersion } : null;
+  return candidate?.planVersion && candidate.sourceVersion
+    ? { id: candidate.id, sourceVersion: candidate.sourceVersion, planVersion: candidate.planVersion }
+    : null;
 }
 
 export function isInboxImplementationEligible(source: GateSource): {

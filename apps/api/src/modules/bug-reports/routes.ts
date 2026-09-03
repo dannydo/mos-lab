@@ -373,8 +373,6 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     try {
       const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
       const data = await BugReportService.triage(fastify, request.user.id, id, request.body as TriageBugReportRequest);
-      if (await InboxPlanService.enqueue(fastify, id, 'TRIAGE_UPDATED'))
-        RequestClassifierWorkerHub.notify('inbox_plan_available');
       return reply.send({ success: true, data, message: 'Đã cập nhật ticket.' });
     } catch (error) {
       return sendError(fastify, reply, error, 'Triage bug report failed');

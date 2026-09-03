@@ -71,6 +71,30 @@ test('implementation requires a distinct approval and a native plan for the exac
   assert.equal(isInboxImplementationExecutionEligible(retrying).eligible, true);
 });
 
+test('implementation reuses the clarified plan when Danny only assigns priority', () => {
+  const clarified = source({ priority: null });
+  const clarifiedPlanSourceVersion = inboxImplementationSourceVersion(clarified);
+  const approved = source({
+    priority: 'P1',
+    inboxPlanJobs: [
+      {
+        id: 'clarified-plan',
+        status: 'COMPLETED',
+        resultAction: 'POST_PLAN',
+        sourceVersion: clarifiedPlanSourceVersion,
+        planVersion: 'v1:clarified-plan',
+      },
+    ],
+  });
+
+  assert.deepEqual(inboxImplementationCurrentPlan(approved, inboxImplementationSourceVersion(approved)), {
+    id: 'clarified-plan',
+    sourceVersion: clarifiedPlanSourceVersion,
+    planVersion: 'v1:clarified-plan',
+  });
+  assert.equal(isInboxImplementationEligible(approved).eligible, true);
+});
+
 test('implementation outcome stores only bounded structured review metadata', () => {
   assert.deepEqual(
     normalizeInboxImplementationResult({
