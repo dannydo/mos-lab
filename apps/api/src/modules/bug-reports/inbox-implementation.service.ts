@@ -442,6 +442,15 @@ export class InboxImplementationService {
               failureCode: 'LEASE_EXPIRED',
               attemptCount: RETRY_LIMIT + 1,
             },
+            // The one process-lifecycle recovery was already consumed and its
+            // replacement lease expired. Keep this exact job visible as a
+            // terminal failure instead of leaving the ticket indefinitely
+            // IN_PROGRESS with an unclaimable PENDING row.
+            {
+              status: 'PENDING',
+              failureCode: 'LEASE_EXPIRED',
+              attemptCount: { gte: RETRY_LIMIT + 2 },
+            },
           ],
         },
       });
@@ -450,6 +459,52 @@ export class InboxImplementationService {
       // recoverable job. A different pointer is a hard stop: never replace a
       // possible concurrent execution.
       if (report.implementationActiveJobId && report.implementationActiveJobId !== job.id) continue;
+      const exhaustedLeaseRecovery =
+        job.status === 'PENDING' && job.failureCode === 'LEASE_EXPIRED' && job.attemptCount >= RETRY_LIMIT + 2;
+      if (exhaustedLeaseRecovery) {
+        const now = new Date();
+        const failed = await fastify.prisma.crm.$transaction(async (tx) => {
+          const terminalized = await tx.crmInboxImplementationJob.updateMany({
+            where: {
+              id: job.id,
+              status: 'PENDING',
+              failureCode: 'LEASE_EXPIRED',
+              attemptCount: { gte: RETRY_LIMIT + 2 },
+            },
+            data: {
+              status: 'FAILED',
+              failureCode: 'LEASE_EXPIRED',
+              leaseToken: null,
+              leasedBy: null,
+              leaseExpiresAt: null,
+              completedAt: now,
+              retainUntil: new Date(now.getTime() + FAILURE_RETENTION_MS),
+            },
+          });
+          if (!terminalized.count) return false;
+          const updated = await tx.crmBugReport.update({ where: { id: report.id }, data: { updatedAt: now } });
+          await tx.crmBugReportAudit.create({
+            data: {
+              reportId: report.id,
+              action: 'AGENT_IMPLEMENTATION_FAILED',
+              note: 'Implementation worker đã dừng sau số lần thử an toàn; giữ worktree để Danny rà soát.',
+              beforeJson: snapshot(report),
+              afterJson: snapshot({
+                ...report,
+                ...updated,
+                comments: report.comments,
+                inboxPlanJobs: report.inboxPlanJobs,
+              }),
+            },
+          });
+          return true;
+        });
+        if (failed) {
+          await clearGlobalPermit(fastify, job.id);
+          restored += 1;
+        }
+        continue;
+      }
       const recoveryKind =
         job.status === 'FAILED' ? 'CLI_ARGUMENTS' : job.failureCode === 'LEASE_EXPIRED' ? 'CLI_PROCESS' : 'STALE';
       const recovered = await fastify.prisma.crm.$transaction(async (tx) => {

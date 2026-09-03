@@ -348,3 +348,66 @@ test('recovery marks one final close-event repair after a lease-expired process'
   assert.equal(await InboxImplementationService.recoverInterruptedImplementationJobs(fastify as never), 1);
   assert.equal(job.failureCode, 'CLI_PROCESS_RECOVERED');
 });
+
+test('a lease that expires after its one process recovery becomes a terminal failure', async () => {
+  const draft = source();
+  const sourceVersion = inboxImplementationSourceVersion(draft);
+  const report = source({
+    status: 'IN_PROGRESS',
+    implementationActiveJobId: 'job-1',
+    inboxPlanJobs: [
+      { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
+    ],
+  });
+  const job = {
+    id: 'job-1',
+    reportId: 16,
+    status: 'PENDING',
+    failureCode: 'LEASE_EXPIRED',
+    sourceVersion,
+    planVersion: 'v1:plan',
+    attemptCount: 5,
+  };
+  let auditAction = '';
+  let permitCleared = false;
+  const tx = {
+    crmInboxImplementationJob: {
+      updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+        assert.equal(where.status, 'PENDING');
+        assert.equal(where.failureCode, 'LEASE_EXPIRED');
+        assert.deepEqual(where.attemptCount, { gte: 5 });
+        job.status = String(data.status);
+        job.failureCode = String(data.failureCode);
+        return { count: 1 };
+      },
+    },
+    crmBugReport: { update: async () => ({ ...report, updatedAt: new Date() }) },
+    crmBugReportAudit: {
+      create: async ({ data }: { data: { action: string } }) => {
+        auditAction = data.action;
+        return {};
+      },
+    },
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findMany: async () => [report] },
+        crmInboxImplementationJob: { findFirst: async () => ({ ...job }) },
+        crmInboxImplementationWorkerLock: {
+          updateMany: async () => {
+            permitCleared = true;
+            return { count: 1 };
+          },
+        },
+        $transaction: async (callback: (value: typeof tx) => Promise<boolean>) => callback(tx),
+      },
+    },
+  };
+
+  assert.equal(await InboxImplementationService.recoverInterruptedImplementationJobs(fastify as never), 1);
+  assert.equal(job.status, 'FAILED');
+  assert.equal(job.failureCode, 'LEASE_EXPIRED');
+  assert.equal(auditAction, 'AGENT_IMPLEMENTATION_FAILED');
+  assert.equal(permitCleared, true);
+});
