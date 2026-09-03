@@ -8,6 +8,7 @@ import {
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
   type ApproveBugReportImplementationRequest,
+  type ApproveBugReportImplementationCommitRequest,
   type ReleaseBugReportImplementationRequest,
   type ReviewBugReportImplementationAcceptanceRequest,
   type RetryBugReportImplementationRequest,
@@ -433,6 +434,31 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Retry inbox implementation failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/implementation-commit-approval',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const body = request.body as ApproveBugReportImplementationCommitRequest;
+        if (body?.acknowledged !== true) {
+          throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi duyệt commit.', 422);
+        }
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const commitQueued = await InboxImplementationService.approveCommit(fastify, id, request.user.id);
+        if (commitQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
+        return reply.send({
+          success: true,
+          data: { reportId: id, commitQueued },
+          message: commitQueued
+            ? 'Đã ghi nhận duyệt commit; worker Mac chỉ commit bản diff đã review vào branch riêng.'
+            : 'Duyệt commit không được ghi nhận vì checkpoint đã thay đổi.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Approve inbox implementation commit failed');
       }
     }
   );
@@ -895,6 +921,24 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true });
       } catch (error) {
         return sendError(fastify, reply, error, 'Complete inbox implementation failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-implementations/:id/commit-complete',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const body = request.body as { leaseToken?: string; commitSha?: string };
+        await InboxImplementationService.completeCommit(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          String(body?.leaseToken || ''),
+          body?.commitSha
+        );
+        return reply.send({ success: true });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Complete inbox implementation commit failed');
       }
     }
   );

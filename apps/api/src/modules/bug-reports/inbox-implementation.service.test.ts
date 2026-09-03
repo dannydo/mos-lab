@@ -695,6 +695,56 @@ test('a verified release hands a reviewed implementation to reporter acceptance 
   assert.equal(notifications.length, 1);
 });
 
+test('commit approval requeues only the retained reviewed patch for the Mac worker', async () => {
+  const readySource = source({
+    status: 'IN_PROGRESS',
+    implementationActiveJobId: 'review-job',
+    inboxPlanJobs: [
+      {
+        id: 'plan-1',
+        status: 'COMPLETED',
+        resultAction: 'POST_PLAN',
+        sourceVersion: inboxImplementationSourceVersion(source()),
+        planVersion: 'v1:plan',
+      },
+    ],
+  });
+  const job = {
+    id: 'review-job',
+    reportId: 16,
+    status: 'AWAITING_COMMIT_REVIEW',
+    sourceVersion: inboxImplementationSourceVersion(readySource),
+    planVersion: 'v1:plan',
+    changedFilesJson: JSON.stringify(['apps/web/app/dashboard/bug-reports/page.tsx']),
+    updatedAt: new Date('2026-09-04T00:00:00.000Z'),
+  };
+  const updates: Array<Record<string, unknown>> = [];
+  const audits: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => readySource },
+        crmInboxImplementationJob: { findFirst: async () => job },
+        $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
+          callback({
+            crmInboxImplementationJob: {
+              updateMany: async (input: { data: Record<string, unknown> }) => {
+                updates.push(input.data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: { create: async (input: Record<string, unknown>) => audits.push(input) },
+          }),
+      },
+    },
+  };
+
+  assert.equal(await InboxImplementationService.approveCommit(fastify as never, 16, 1), true);
+  assert.equal(updates[0]?.status, 'PENDING');
+  assert.equal(updates[0]?.executionPhase, 'COMMIT_APPROVED');
+  assert.equal((audits[0]?.data as { action?: string }).action, 'DANNY_COMMIT_APPROVED');
+});
+
 test('reporter acceptance closes a released ticket without queuing more implementation', async () => {
   const report = {
     ...source({ status: 'FIXED', implementationActiveJobId: null }),

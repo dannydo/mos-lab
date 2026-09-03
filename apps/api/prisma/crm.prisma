@@ -2606,6 +2606,7 @@ model CrmInboxImplementationJob {
   testsJson String? @map("tests_json") @db.LongText
   diffStat String? @map("diff_stat") @db.Text
   risksAndRollback String? @map("risks_and_rollback") @db.Text
+  commitSha String? @map("commit_sha") @db.VarChar(64)
   failureCode String? @map("failure_code") @db.VarChar(100)
   retainUntil DateTime? @map("retain_until") @db.DateTime(0)
   startedAt DateTime? @map("started_at") @db.DateTime(0)

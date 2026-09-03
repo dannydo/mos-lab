@@ -48,6 +48,7 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
   'IMPLEMENTING',
   'VERIFYING',
   'AWAITING_DANNY_COMMIT_REVIEW',
+  'AWAITING_DANNY_DEPLOY_APPROVAL',
   /** Production is live; the reporter who requested the work owns acceptance. */
   'AWAITING_REPORTER_ACCEPTANCE',
   'IMPLEMENTATION_FAILED',
@@ -66,6 +67,7 @@ export const BUG_REPORT_NEXT_ACTION_TYPES = [
   'TRIAGE',
   'IMPLEMENT',
   'REVIEW_COMMIT',
+  'REVIEW_DEPLOY',
   'RETRY_IMPLEMENTATION',
   'CONTINUE_IMPLEMENTATION',
   'REWORK',
@@ -491,6 +493,7 @@ export const INBOX_IMPLEMENTATION_JOB_STATUSES = [
   'LEASED',
   'RUNNING',
   'AWAITING_COMMIT_REVIEW',
+  'AWAITING_DEPLOY_REVIEW',
   'RELEASED',
   'FAILED',
   'STALE',
@@ -523,6 +526,8 @@ export interface InboxImplementationWorkerJob {
   sourceVersion: string;
   planVersion: string;
   branchName: string;
+  operation: 'CODE_TEST' | 'COMMIT';
+  reviewedFiles: string[];
   retryOfJobId: string | null;
   context: {
     requestType: BugReportRequestType;
@@ -753,6 +758,11 @@ export interface ApproveBugReportImplementationRequest {
   acknowledged: true;
 }
 
+/** Explicit Danny authorization for the retained review patch to be committed by the trusted Mac worker. */
+export interface ApproveBugReportImplementationCommitRequest {
+  acknowledged: true;
+}
+
 /** A separate, bounded Danny authorization to create one linked retry after a terminal failure. */
 export interface RetryBugReportImplementationRequest {
   acknowledged: true;
@@ -764,7 +774,8 @@ export interface RetryBugReportImplementationRequest {
  */
 export interface ReleaseBugReportImplementationRequest {
   acknowledged: true;
-  commitSha: string;
+  /** Omitted by the Inbox UI once the trusted worker has recorded the approved commit. */
+  commitSha?: string;
 }
 
 /** The reporter's final decision after checking the deployed implementation. */
@@ -778,6 +789,11 @@ export interface ApproveBugReportImplementationResult {
   reportId: number;
   implementationQueued: boolean;
   planRequested: boolean;
+}
+
+export interface ApproveBugReportImplementationCommitResult {
+  reportId: number;
+  commitQueued: boolean;
 }
 
 export interface ConfirmCloseBugReportRequest {
@@ -843,6 +859,7 @@ export interface BugReportCommentCreateResult {
 export type CreateBugReportResponse = ActionResponse<BugReportCreateResult>;
 export type TriageBugReportResponse = ActionResponse<BugReportDetail>;
 export type ApproveBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
+export type ApproveBugReportImplementationCommitResponse = ActionResponse<ApproveBugReportImplementationCommitResult>;
 export type RetryBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ReleaseBugReportImplementationResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportImplementationAcceptanceResponse = ActionResponse<BugReportDetail>;

@@ -93,8 +93,9 @@ interface DetailDrawerProps {
   getDetail: (id: number) => Promise<BugReportDetail>;
   triage: (id: number, request: TriageBugReportRequest) => Promise<BugReportDetail>;
   approveImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
+  approveImplementationCommit: (id: number) => Promise<{ reportId: number; commitQueued: boolean }>;
   retryImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
-  releaseImplementation: (id: number, commitSha: string) => Promise<BugReportDetail>;
+  releaseImplementation: (id: number) => Promise<BugReportDetail>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -106,6 +107,7 @@ function DetailDrawer({
   getDetail,
   triage,
   approveImplementation,
+  approveImplementationCommit,
   retryImplementation,
   releaseImplementation,
   confirmClose,
@@ -123,7 +125,6 @@ function DetailDrawer({
   const [businessContext, setBusinessContext] = useState('');
   const [note, setNote] = useState('');
   const [duplicateKey, setDuplicateKey] = useState('');
-  const [releaseCommitSha, setReleaseCommitSha] = useState('');
 
   const hydrateForm = useCallback((report: BugReportDetail) => {
     setDetail(report);
@@ -272,18 +273,33 @@ function DetailDrawer({
     }
   }, [detail, getDetail, hydrateForm, messageApi, retryImplementation]);
 
-  const handOffReleasedImplementation = useCallback(async () => {
+  const approveCommit = useCallback(async () => {
     if (!detail) return;
-    const commitSha = releaseCommitSha.trim();
-    if (!/^[a-f0-9]{7,64}$/i.test(commitSha)) {
-      messageApi.error('Nhập commit đã được merge trước khi xác nhận deploy.');
-      return;
-    }
     setSaving(true);
     try {
-      const released = await releaseImplementation(detail.id, commitSha);
+      const outcome = await approveImplementationCommit(detail.id);
+      if (!outcome.commitQueued) throw new Error('Checkpoint commit đã thay đổi. Vui lòng tải lại ticket.');
+      void getDetail(outcome.reportId)
+        .then(hydrateForm)
+        .catch(() => undefined);
+      messageApi.success('Đã duyệt commit. Worker Mac chỉ commit bản diff đã review, rồi dừng chờ deploy.');
+    } catch (error) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt commit.'));
+    } finally {
+      setSaving(false);
+    }
+  }, [approveImplementationCommit, detail, getDetail, hydrateForm, messageApi]);
+
+  const handOffReleasedImplementation = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const released = await releaseImplementation(detail.id);
       hydrateForm(released);
-      setReleaseCommitSha('');
       messageApi.success('Đã xác minh commit đang chạy; ticket đang chờ người báo nghiệm thu.');
     } catch (error) {
       const responseMessage =
@@ -294,7 +310,7 @@ function DetailDrawer({
     } finally {
       setSaving(false);
     }
-  }, [detail, hydrateForm, messageApi, releaseCommitSha, releaseImplementation]);
+  }, [detail, hydrateForm, messageApi, releaseImplementation]);
 
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
@@ -371,26 +387,30 @@ function DetailDrawer({
                   </Popconfirm>
                 )}
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' && (
-                <Space.Compact>
-                  <Input
-                    aria-label="Commit đã merge và deploy"
-                    value={releaseCommitSha}
-                    onChange={(event) => setReleaseCommitSha(event.target.value.trim())}
-                    placeholder="Commit đã merge (7–64 ký tự)"
-                    style={{ width: 250, fontVariantNumeric: 'tabular-nums' }}
-                  />
-                  <Popconfirm
-                    title="Xác nhận commit và deploy?"
-                    description="mOS chỉ bàn giao nghiệm thu khi commit đã nhập khớp đúng release hiện đang chạy trên production. Ticket không tự đóng."
-                    okText="Xác minh & bàn giao"
-                    cancelText="Chưa xác nhận"
-                    onConfirm={() => void handOffReleasedImplementation()}
-                  >
-                    <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                      Xác nhận đã deploy
-                    </Button>
-                  </Popconfirm>
-                </Space.Compact>
+                <Popconfirm
+                  title="Duyệt commit bản đã review?"
+                  description="Worker Mac chỉ stage đúng các tệp đã ghi trong review, commit vào branch riêng rồi dừng. Không push, merge hay deploy."
+                  okText="Duyệt commit"
+                  cancelText="Chưa duyệt"
+                  onConfirm={() => void approveCommit()}
+                >
+                  <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
+                    Duyệt commit
+                  </Button>
+                </Popconfirm>
+              )}
+              {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL' && (
+                <Popconfirm
+                  title="Xác nhận bản commit đã merge và deploy?"
+                  description="Inbox sẽ tự dùng commit worker đã ghi nhận và đối chiếu với release production. Ticket không tự đóng."
+                  okText="Xác minh & bàn giao"
+                  cancelText="Chưa xác nhận"
+                  onConfirm={() => void handOffReleasedImplementation()}
+                >
+                  <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
+                    Xác nhận đã deploy
+                  </Button>
+                </Popconfirm>
               )}
               {canTriage &&
                 ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) &&
@@ -957,6 +977,7 @@ export default function BugReportsPage() {
         getDetail={inbox.getDetail}
         triage={inbox.triage}
         approveImplementation={inbox.approveImplementation}
+        approveImplementationCommit={inbox.approveImplementationCommit}
         retryImplementation={inbox.retryImplementation}
         releaseImplementation={inbox.releaseImplementation}
         confirmClose={inbox.confirmClose}

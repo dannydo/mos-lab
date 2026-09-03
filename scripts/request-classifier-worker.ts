@@ -241,6 +241,13 @@ async function implementationDiffArtifacts(
   return { changedFiles, diffStat };
 }
 
+function sameReviewedFiles(actual: string[], reviewed: string[]): boolean {
+  const normalize = (files: string[]) => [...new Set(files.map((file) => file.trim()).filter(Boolean))].sort();
+  const left = normalize(actual);
+  const right = normalize(reviewed);
+  return left.length === right.length && left.every((file, index) => file === right[index]);
+}
+
 function terminateCodexProcessGroup(processId: number | null, child: ChildProcess): () => void {
   if (processId && process.platform !== 'win32') {
     try {
@@ -1131,6 +1138,56 @@ async function processInboxImplementationOne(): Promise<boolean> {
   try {
     phase = 'worktree';
     worktreePath = await createOrReuseImplementationWorktree(job);
+    if (job.operation === 'COMMIT') {
+      phase = 'commit_start';
+      activeProcessId = process.pid;
+      const startedResponse = await workerFetch(`/request-classifier/inbox-implementations/${job.id}/start`, {
+        method: 'POST',
+        body: JSON.stringify({
+          leaseToken: job.leaseToken,
+          workerId,
+          worktreePath,
+          processId: activeProcessId,
+        }),
+      });
+      if (!((await startedResponse.json()) as { data?: { started?: boolean } }).data?.started) {
+        throw new CodexCliError('LEASE_START_FAILED');
+      }
+      started = true;
+      beginWorkerJob('INBOX_IMPLEMENTATION');
+      phase = 'commit_verify';
+      await runTrustedGit(['diff', '--check'], worktreePath);
+      const actualFiles = (await runTrustedGit(['diff', '--name-only', 'HEAD'], worktreePath))
+        .split(/\r?\n/)
+        .map((file) => file.trim())
+        .filter(Boolean);
+      if (!sameReviewedFiles(actualFiles, job.reviewedFiles)) throw new CodexCliError('FORBIDDEN_GIT_MUTATION');
+      phase = 'commit_stage';
+      await runTrustedGit(['add', '--', ...job.reviewedFiles], worktreePath);
+      await runTrustedGit(['diff', '--cached', '--check'], worktreePath);
+      phase = 'commit';
+      await runTrustedGit(
+        [
+          '-c',
+          'user.name=mOS Inbox Worker',
+          '-c',
+          'user.email=mos-inbox-worker@localhost',
+          'commit',
+          '-m',
+          `fix(inbox): ${job.ticketKey}`,
+        ],
+        worktreePath
+      );
+      const commitSha = await runTrustedGit(['rev-parse', 'HEAD'], worktreePath);
+      phase = 'commit_complete';
+      await workerFetch(`/request-classifier/inbox-implementations/${job.id}/commit-complete`, {
+        method: 'POST',
+        body: JSON.stringify({ leaseToken: job.leaseToken, commitSha }),
+      });
+      console.log('Inbox implementation committed on its isolated branch; awaiting deploy review.');
+      finishWorkerJob('INBOX_IMPLEMENTATION', 'SUCCEEDED', 'INFO', 'AWAITING_DEPLOY_REVIEW');
+      return true;
+    }
     await writeFile(schemaPath(), inboxImplementationSchema(), { mode: 0o600 });
     phase = 'codex_exec';
     const baseCommit = await runTrustedGit(['rev-parse', 'HEAD'], worktreePath);

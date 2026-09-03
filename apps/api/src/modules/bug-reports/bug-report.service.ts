@@ -506,6 +506,13 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
       updatedAt: implementation.updatedAt.toISOString(),
     };
   }
+  if (implementation.status === 'AWAITING_DEPLOY_REVIEW') {
+    return {
+      stage: 'AWAITING_DANNY_DEPLOY_APPROVAL',
+      note: 'Commit đã được tạo trong branch riêng; chưa push, merge hoặc deploy.',
+      updatedAt: implementation.updatedAt.toISOString(),
+    };
+  }
   if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
     return {
       stage: 'QUEUED_FOR_FIX',
@@ -697,6 +704,15 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
       'REVIEW_COMMIT',
       'Duyệt commit',
       'Code và kiểm thử đã dừng ở worktree review. Commit, push và deploy vẫn cần duyệt tách biệt.',
+      implementation.updatedAt
+    );
+  }
+  if (implementation?.status === 'AWAITING_DEPLOY_REVIEW') {
+    return nextAction(
+      'DANNY',
+      'REVIEW_DEPLOY',
+      'Xác nhận deploy',
+      'Commit đã nằm ở branch riêng. Sau khi branch được merge và release live, Inbox tự đối chiếu release marker trước khi bàn giao nghiệm thu.',
       implementation.updatedAt
     );
   }

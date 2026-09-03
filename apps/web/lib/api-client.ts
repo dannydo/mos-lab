@@ -34,6 +34,8 @@ import type {
   UiExperienceResolveResponse,
   BugReportDetail,
   ApproveBugReportImplementationRequest,
+  ApproveBugReportImplementationCommitRequest,
+  ApproveBugReportImplementationCommitResponse,
   ApproveBugReportImplementationResponse,
   ReleaseBugReportImplementationRequest,
   ReleaseBugReportImplementationResponse,
@@ -664,6 +666,17 @@ export const apiClient = {
     ): Promise<ApproveBugReportImplementationResponse> => {
       const response = await api.post<ApproveBugReportImplementationResponse>(
         `/bug-reports/${id}/implementation-approval`,
+        data,
+        { timeout: 12_000 }
+      );
+      return response.data;
+    },
+    approveImplementationCommit: async (
+      id: number,
+      data: ApproveBugReportImplementationCommitRequest
+    ): Promise<ApproveBugReportImplementationCommitResponse> => {
+      const response = await api.post<ApproveBugReportImplementationCommitResponse>(
+        `/bug-reports/${id}/implementation-commit-approval`,
         data,
         { timeout: 12_000 }
       );
