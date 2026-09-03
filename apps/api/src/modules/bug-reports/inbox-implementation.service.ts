@@ -57,6 +57,7 @@ type GateSource = {
   clarificationStatus: string;
   clarificationSummary: string | null;
   businessContext: string | null;
+  triageNote: string | null;
   sourcePath: string;
   implementationApprovedAt: Date | null;
   implementationApprovalSourceVersion: string | null;

@@ -13,6 +13,8 @@ import {
   parseCodexClassification,
   parseCodexConversation,
   parseCodexInboxFollowUp,
+  inboxFollowUpOriginalEvidenceFiles,
+  missingOriginalEvidenceFollowUpResult,
   parseCodexInboxPlan,
   parseCodexInboxImplementation,
   resolveCodexCliPath,
@@ -273,7 +275,48 @@ test('accepts only safe inbox follow-up actions', () => {
     parseCodexInboxFollowUp('{"action":"NO_OP","note":"Đã đủ thông tin, không cần hỏi lại.","question":null}'),
     { action: 'NO_OP', note: 'Đã đủ thông tin, không cần hỏi lại.', question: null }
   );
+  assert.deepEqual(
+    parseCodexInboxFollowUp('{"action":"REANALYSIS_CONFIRMED","note":"Đã đủ cơ sở tái phân tích.","question":null}'),
+    { action: 'REANALYSIS_CONFIRMED', note: 'Đã đủ cơ sở tái phân tích.', question: null }
+  );
   assert.throws(() => parseCodexInboxFollowUp('{"action":"ASK_REPORTER","note":"Thiếu chi tiết","question":null}'));
+});
+
+test('uses bounded safe local names for leased original reopen evidence', () => {
+  const files = inboxFollowUpOriginalEvidenceFiles({
+    id: 'follow-up-1',
+    ticketId: 17,
+    ticketKey: 'MOS-BUG-17',
+    eventKind: 'REPORTER_REOPENED',
+    leaseToken: 'lease-1',
+    attemptCount: 1,
+    context: {
+      requestType: 'BUG',
+      title: 'Controlled reopen',
+      description: 'Controlled test only.',
+      status: 'NEW',
+      clarificationStatus: 'PENDING_AGENT',
+      clarificationSummary: null,
+      sourcePath: '/dashboard',
+      reporterMessages: [],
+      reopen: {
+        auditId: 42,
+        reason: 'The original screenshot still shows the defect.',
+        reopenedAt: '2026-09-03T08:00:00.000Z',
+        originalEvidence: [{ id: 7, fileName: '../../still broken?.png', mimeType: 'image/png', sizeBytes: 42 }],
+      },
+    },
+  });
+  assert.deepEqual(files, ['7-still-broken-.png']);
+});
+
+test('turns unavailable original reopen evidence into one Agent clarification', () => {
+  assert.deepEqual(missingOriginalEvidenceFollowUpResult(), {
+    action: 'ASK_REPORTER',
+    note: 'Agent không thể mở một hoặc nhiều ảnh gốc đã được lưu cùng ticket reopen.',
+    question:
+      'Agent không mở được ảnh gốc của ticket. Bạn vui lòng bổ sung lại ảnh hoặc mô tả phần vẫn còn lỗi để Agent tiếp tục làm rõ.',
+  });
 });
 
 test('accepts structured plan output and never logs ticket text on a plan failure', () => {

@@ -59,6 +59,15 @@ test('plans only tickets genuinely ready for review and versions each source eve
     inboxPlanEventVersion(readyReport(), 'CLARITY_READY'),
     inboxPlanEventVersion(readyReport(), 'IMPLEMENTATION_APPROVAL')
   );
+  assert.notEqual(
+    inboxPlanEventVersion(readyReport(), 'REOPEN_REANALYZED', {
+      auditId: 44,
+      reason: 'Reporter found the old behavior still present.',
+      reopenedAt: '2026-09-03T08:00:00.000Z',
+      originalEvidence: [{ id: 12, fileName: 'original.png', mimeType: 'image/png', sizeBytes: 120 }],
+    }),
+    inboxPlanEventVersion(readyReport(), 'CLARITY_READY')
+  );
 });
 
 test('normalizes only a complete actionable plan and distinguishes no-op outcomes', () => {
@@ -99,6 +108,30 @@ test('duplicate event delivery is idempotent at the durable enqueue boundary', a
   assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'CLARITY_READY'), false);
   assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'TRIAGE_UPDATED'), true);
   assert.equal(delivered.size, 2);
+});
+
+test('a reopen plan carries the exact evidence snapshot that re-analysis considered', async () => {
+  const capture: { value: Record<string, unknown> | null } = { value: null };
+  const reopen = {
+    auditId: 88,
+    reason: 'The two original screenshots still reproduce the defect.',
+    reopenedAt: '2026-09-03T08:00:00.000Z',
+    originalEvidence: [
+      { id: 12, fileName: 'original-before.png', mimeType: 'image/png', sizeBytes: 120 },
+      { id: 13, fileName: 'original-after.png', mimeType: 'image/png', sizeBytes: 121 },
+    ],
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => readyReport() },
+        crmInboxPlanJob: { create: async ({ data }: { data: Record<string, unknown> }) => (capture.value = data) },
+      },
+    },
+  };
+  assert.equal(await InboxPlanService.enqueue(fastify as never, 14, 'REOPEN_REANALYZED', reopen), true);
+  assert.ok(capture.value);
+  assert.deepEqual(JSON.parse(String(capture.value.eventContextJson)).reopen.originalEvidence, reopen.originalEvidence);
 });
 
 test('a completed plan posts one visible native plan without changing implementation state', async () => {
@@ -151,6 +184,56 @@ test('a completed plan posts one visible native plan without changing implementa
   assert.deepEqual(Object.keys(reportUpdates[0] || {}), ['updatedAt']);
   assert.equal(jobUpdates[0]?.resultAction, 'POST_PLAN');
   assert.equal(jobUpdates[0]?.status, 'COMPLETED');
+});
+
+test('a valid re-analysis posts a reopen-specific native plan with the reporter reason', async () => {
+  const report = readyReport({ triageNote: 'Old deployment still does not persist.', priority: null });
+  const reopen = {
+    auditId: 88,
+    reason: 'Old deployment still does not persist.',
+    reopenedAt: '2026-09-03T08:00:00.000Z',
+    originalEvidence: [{ id: 12, fileName: 'original-save.png', mimeType: 'image/png', sizeBytes: 120 }],
+  };
+  const eventVersion = inboxPlanEventVersion(report, 'REOPEN_REANALYZED', reopen);
+  const comments: Array<Record<string, unknown>> = [];
+  const audits: Array<Record<string, unknown>> = [];
+  const transaction = {
+    crmBugReport: {
+      findUnique: async () => report,
+      update: async ({ data }: { data: Record<string, unknown> }) => ({ ...report, ...data }),
+    },
+    crmBugReportComment: {
+      create: async ({ data }: { data: Record<string, unknown> }) => (comments.push(data), { id: 102 }),
+    },
+    crmBugReportAudit: { create: async ({ data }: { data: Record<string, unknown> }) => audits.push(data) },
+    crmInboxPlanJob: {
+      updateMany: async () => ({ count: 1 }),
+      update: async () => ({ id: 'reopen-plan-1' }),
+    },
+    $queryRaw: async () => [],
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxPlanJob: {
+          findFirst: async () => ({
+            id: 'reopen-plan-1',
+            reportId: 14,
+            eventKind: 'REOPEN_REANALYZED',
+            eventVersion,
+            eventContextJson: JSON.stringify({ reopen }),
+          }),
+        },
+        crmBugReport: { findUnique: async () => report },
+        $transaction: async (callback: (tx: typeof transaction) => Promise<unknown>) => callback(transaction),
+      },
+    },
+  };
+  await InboxPlanService.complete(fastify as never, 'reopen-plan-1', 'lease-1', planResult);
+  assert.match(String(comments[0]?.body), /sau reopen/i);
+  assert.match(String(comments[0]?.body), /Old deployment still does not persist/);
+  assert.match(String(comments[0]?.body), /original-save\.png/);
+  assert.equal(audits[0]?.action, 'AGENT_REOPEN_PLAN_POSTED');
 });
 
 test('a stale claimed result is completed without a duplicate native plan', async () => {

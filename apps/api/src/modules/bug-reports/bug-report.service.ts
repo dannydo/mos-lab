@@ -637,6 +637,15 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
 
   if (source.clarificationStatus === 'PENDING_AGENT') {
     const latestAgentStep = latestAgentActivity(source);
+    if (latestAgentStep?.action === 'REPORTER_REOPENED') {
+      return nextAction(
+        'AGENT',
+        'REVIEW_CLARIFICATION',
+        'Tái phân tích reopen',
+        'Đọc lý do reopen của người báo, hỏi thêm hoặc xác nhận re-analysis. Plan, Danny approval và priority cũ không được dùng lại.',
+        latestAgentStep.createdAt
+      );
+    }
     return nextAction(
       'AGENT',
       'REVIEW_CLARIFICATION',
@@ -785,6 +794,9 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
   const requestType = storedRequestType(row.requestType);
   const implementation = implementationStateDto(row.inboxImplementationJobs[0]);
   const progressSource = { ...row, implementation: row.inboxImplementationJobs[0] ?? null };
+  const reopened = [...row.audits]
+    .reverse()
+    .find((audit) => audit.action === 'REPORTER_REOPENED' && Boolean(audit.note?.trim()));
   return {
     id: row.id,
     key: formatBugReportKey(row.id, requestType),
@@ -803,6 +815,22 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
       summary: row.clarificationSummary,
       clarifiedAt: row.clarifiedAt?.toISOString() ?? null,
     },
+    reopen: reopened
+      ? {
+          auditId: reopened.id,
+          reason: reopened.note!.trim(),
+          reopenedAt: reopened.createdAt.toISOString(),
+          originalEvidence: row.attachments
+            .filter((attachment) => attachment.commentId === null && !attachment.deletedAt)
+            .slice(0, 3)
+            .map((attachment) => ({
+              id: attachment.id,
+              fileName: attachment.originalName,
+              mimeType: attachment.mimeType,
+              sizeBytes: attachment.sizeBytes,
+            })),
+        }
+      : null,
     agentProgress: bugReportAgentProgress(progressSource),
     implementation,
     nextAction: bugReportNextAction(progressSource),
@@ -1579,6 +1607,16 @@ export class BugReportService {
         data: {
           status: nextStatus,
           statusSort: STATUS_SORT[nextStatus],
+          priority: decision === 'REOPEN' ? null : existing.priority,
+          prioritySort:
+            decision === 'REOPEN' ? 4 : existing.priority ? PRIORITY_SORT[existing.priority as BugPriority] : 4,
+          approvedByStaffId: decision === 'REOPEN' ? null : existing.approvedByStaffId,
+          approvedAt: decision === 'REOPEN' ? null : existing.approvedAt,
+          implementationApprovedByStaffId: decision === 'REOPEN' ? null : existing.implementationApprovedByStaffId,
+          implementationApprovedAt: decision === 'REOPEN' ? null : existing.implementationApprovedAt,
+          implementationApprovalSourceVersion:
+            decision === 'REOPEN' ? null : existing.implementationApprovalSourceVersion,
+          implementationActiveJobId: decision === 'REOPEN' ? null : existing.implementationActiveJobId,
           startedAt: decision === 'APPROVE' ? (existing.startedAt ?? now) : null,
           resolvedAt: decision === 'APPROVE' ? existing.resolvedAt : null,
           closedAt: decision === 'APPROVE' ? now : null,

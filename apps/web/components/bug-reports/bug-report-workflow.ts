@@ -1,4 +1,4 @@
-import type { BugReportAgentProgressStage, BugReportSummary } from '@mos-lab/shared';
+import type { BugReportAgentProgress, BugReportAgentProgressStage, BugReportSummary } from '@mos-lab/shared';
 
 export const BUG_REPORT_WORKFLOW_STEPS = ['Tiếp nhận', 'Duyệt', 'Xử lý', 'Nghiệm thu', 'Hoàn tất'] as const;
 
@@ -39,15 +39,15 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
     tone: 'primary',
   },
   REOPENED_BY_DANNY: {
-    position: 3,
-    label: 'Danny yêu cầu sửa thêm',
-    detail: 'Không có implementation tự động được tạo',
+    position: 1,
+    label: 'Agent tái phân tích yêu cầu chỉnh',
+    detail: 'Agent kiểm tra lại trước khi một plan mới có thể được Danny duyệt',
     tone: 'warning',
   },
   REOPENED_BY_REPORTER: {
     position: 1,
-    label: 'Người báo yêu cầu xem lại',
-    detail: 'AI đang phân tích phản hồi trước khi tạo job mới',
+    label: 'Agent tái phân tích reopen',
+    detail: 'Agent đang phân tích phản hồi; chưa có quyền sửa hoặc kiểm thử',
     tone: 'warning',
   },
   READY_FOR_TRIAGE: {
@@ -98,11 +98,41 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
 };
 
 /**
+ * The server owns status, clarification, durable progress, and next action.
+ * This defensive presentation projection refuses an impossible local/stale
+ * combination from suggesting code/test while the server says Agent clarity is
+ * still pending. It does not create a client-side workflow transition.
+ */
+export function effectiveBugReportAgentProgress(
+  report: Pick<BugReportSummary, 'status' | 'clarification' | 'agentProgress'>
+): BugReportAgentProgress {
+  if (report.status === 'NEW' && report.clarification.status === 'PENDING_AGENT') {
+    const stage = report.agentProgress.stage;
+    const isClarificationStage = [
+      'NOT_VIEWED',
+      'ANALYZING',
+      'CHECKING_BUSINESS_LOGIC',
+      'REPORTER_REPLIED',
+      'REOPENED_BY_REPORTER',
+      'REOPENED_BY_DANNY',
+    ].includes(stage);
+    if (!isClarificationStage) {
+      return {
+        stage: 'ANALYZING',
+        note: 'Agent đang làm rõ theo trạng thái server; chưa có quyền sửa hoặc kiểm thử.',
+        updatedAt: report.agentProgress.updatedAt,
+      };
+    }
+  }
+  return report.agentProgress;
+}
+
+/**
  * Condenses the API-owned agent workflow into a five-stage visual route.
  * A stage indicates the current handoff, never an estimated completion percentage.
  */
 export function getBugReportWorkflowStage(
-  report: Pick<BugReportSummary, 'status' | 'agentProgress'> & {
+  report: Pick<BugReportSummary, 'status' | 'clarification' | 'agentProgress'> & {
     reporter?: Pick<BugReportSummary['reporter'], 'displayName'> | null;
   }
 ): BugReportWorkflowStage {
@@ -112,13 +142,21 @@ export function getBugReportWorkflowStage(
   if (report.status === 'DUPLICATE') {
     return { position: null, label: 'Trùng lặp', detail: 'Theo dõi ticket gốc', tone: 'muted' };
   }
-  const workflow = WORKFLOW_STAGE_BY_AGENT_PROGRESS[report.agentProgress.stage];
+  const agentProgress = effectiveBugReportAgentProgress(report);
+  if (
+    report.status === 'NEW' &&
+    report.clarification.status === 'PENDING_AGENT' &&
+    ['REOPENED_BY_DANNY', 'REOPENED_BY_REPORTER'].includes(agentProgress.stage)
+  ) {
+    return WORKFLOW_STAGE_BY_AGENT_PROGRESS[agentProgress.stage];
+  }
+  const workflow = WORKFLOW_STAGE_BY_AGENT_PROGRESS[agentProgress.stage];
   const reporterName = shortBugReportReporterName(report.reporter?.displayName);
   if (!reporterName) return workflow;
-  if (report.agentProgress.stage === 'WAITING_REPORTER') {
+  if (agentProgress.stage === 'WAITING_REPORTER') {
     return { ...workflow, label: `Chờ ${reporterName} làm rõ` };
   }
-  if (report.agentProgress.stage === 'AWAITING_REPORTER_REVIEW') {
+  if (agentProgress.stage === 'AWAITING_REPORTER_REVIEW') {
     return { ...workflow, label: `Chờ ${reporterName} nghiệm thu` };
   }
   return workflow;

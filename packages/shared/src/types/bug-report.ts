@@ -368,7 +368,25 @@ export interface RequestConversationWorkerResult {
 }
 
 export const INBOX_FOLLOW_UP_JOB_STATUSES = ['PENDING', 'LEASED', 'COMPLETED', 'FAILED', 'EXPIRED'] as const;
-export type InboxFollowUpAction = 'PROGRESS_REVIEWED' | 'ASK_REPORTER' | 'NO_OP';
+export type InboxFollowUpAction = 'PROGRESS_REVIEWED' | 'REANALYSIS_CONFIRMED' | 'ASK_REPORTER' | 'NO_OP';
+/**
+ * Bounded, lease-authorized metadata for original ticket evidence. The blob
+ * remains in private report storage and is never represented by a URL here.
+ */
+export interface BugReportOriginalEvidenceRef {
+  id: number;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+/** Immutable reporter evidence captured when a previously fixed ticket is reopened. */
+export interface BugReportReopenContext {
+  auditId: number;
+  reason: string;
+  reopenedAt: string;
+  /** Original ticket images the leased Agent must inspect before re-analysis. */
+  originalEvidence: BugReportOriginalEvidenceRef[];
+}
 export interface InboxFollowUpWorkerJob {
   id: string;
   ticketId: number;
@@ -383,6 +401,8 @@ export interface InboxFollowUpWorkerJob {
     clarificationSummary: string | null;
     sourcePath: string;
     reporterMessages: string[];
+    /** Present only for REPORTER_REOPENED; never infer this from a later comment. */
+    reopen: BugReportReopenContext | null;
   };
   leaseToken: string;
   attemptCount: number;
@@ -402,6 +422,7 @@ export const INBOX_PLAN_EVENT_KINDS = [
   'CLARITY_READY',
   'TRIAGE_UPDATED',
   'IMPLEMENTATION_APPROVAL',
+  'REOPEN_REANALYZED',
 ] as const;
 export type InboxPlanEventKind = (typeof INBOX_PLAN_EVENT_KINDS)[number];
 export const INBOX_PLAN_ACTIONS = ['POST_PLAN', 'NO_OP', 'INSUFFICIENT_INFORMATION'] as const;
@@ -432,6 +453,8 @@ export interface InboxPlanWorkerJob {
     businessContext: string | null;
     sourcePath: string;
     reporterMessages: string[];
+    /** The reporter's immutable reason retained from the reopen event, when applicable. */
+    reopen: BugReportReopenContext | null;
   };
   leaseToken: string;
   attemptCount: number;
@@ -609,6 +632,8 @@ export interface BugReportSummary {
   attachmentCount: number;
   commentCount: number;
   clarification: BugReportClarification;
+  /** Latest reporter reopen evidence, shown so the current owner can act on the actual reason. */
+  reopen: BugReportReopenContext | null;
   agentProgress: BugReportAgentProgress;
   /** The latest durable implementation job, when the ticket has entered code/test. */
   implementation: BugReportImplementationState | null;

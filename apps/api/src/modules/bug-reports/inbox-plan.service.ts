@@ -3,6 +3,8 @@ import type { FastifyInstance } from 'fastify';
 import { Prisma } from '../../generated/crm-client/index.js';
 import {
   formatBugReportKey,
+  type BugReportOriginalEvidenceRef,
+  type BugReportReopenContext,
   type InboxPlanDraft,
   type InboxPlanEventKind,
   type InboxPlanWorkerJob,
@@ -58,7 +60,11 @@ export function isInboxPlanEligible(source: PlanningSource): boolean {
   return source.clarificationStatus === 'READY' && ['NEW', 'APPROVED'].includes(source.status);
 }
 
-export function inboxPlanEventVersion(source: EventVersionSource, eventKind?: InboxPlanEventKind): string {
+export function inboxPlanEventVersion(
+  source: EventVersionSource,
+  eventKind?: InboxPlanEventKind,
+  reopen: BugReportReopenContext | null = null
+): string {
   // Deliberately exclude operational audit/progress timestamps: they should not
   // invalidate a plan whose material ticket context is unchanged.
   const content = JSON.stringify({
@@ -74,6 +80,7 @@ export function inboxPlanEventVersion(source: EventVersionSource, eventKind?: In
     triageNote: source.triageNote,
     sourcePath: source.sourcePath,
     reporterMessages: source.comments.map((comment) => ({ id: comment.id, body: comment.body })),
+    reopen,
   });
   return `v1:${createHash('sha256').update(content).digest('hex')}`;
 }
@@ -81,9 +88,41 @@ export function inboxPlanEventVersion(source: EventVersionSource, eventKind?: In
 export function isInboxPlanStale(
   expectedEventVersion: string,
   current: EventVersionSource,
-  eventKind?: InboxPlanEventKind
+  eventKind?: InboxPlanEventKind,
+  reopen: BugReportReopenContext | null = null
 ): boolean {
-  return expectedEventVersion !== inboxPlanEventVersion(current, eventKind);
+  return expectedEventVersion !== inboxPlanEventVersion(current, eventKind, reopen);
+}
+
+function safeOriginalEvidence(value: unknown): BugReportOriginalEvidenceRef[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const candidate = item && typeof item === 'object' ? (item as Partial<BugReportOriginalEvidenceRef>) : {};
+      const id = Number(candidate.id);
+      const fileName = clean(candidate.fileName, 255);
+      const mimeType = clean(candidate.mimeType, 50);
+      const sizeBytes = Number(candidate.sizeBytes);
+      return Number.isInteger(id) && id > 0 && fileName && mimeType && Number.isInteger(sizeBytes) && sizeBytes > 0
+        ? { id, fileName, mimeType, sizeBytes }
+        : null;
+    })
+    .filter((item): item is BugReportOriginalEvidenceRef => Boolean(item))
+    .slice(0, 3);
+}
+
+function safeReopenContext(value: unknown): BugReportReopenContext | null {
+  try {
+    const candidate = JSON.parse(String(value || '{}'))?.reopen as Partial<BugReportReopenContext> | undefined;
+    const auditId = Number(candidate?.auditId);
+    const reason = clean(candidate?.reason, 2_000);
+    const reopenedAt = new Date(String(candidate?.reopenedAt || '')).toISOString();
+    return Number.isInteger(auditId) && auditId > 0 && reason
+      ? { auditId, reason, reopenedAt, originalEvidence: safeOriginalEvidence(candidate?.originalEvidence) }
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeDraft(value: unknown): InboxPlanDraft {
@@ -139,7 +178,8 @@ export function normalizeInboxPlanResult(value: unknown): InboxPlanWorkerResult 
 function visiblePlanBody(
   eventKind: string,
   result: InboxPlanWorkerResult,
-  planMetadata: { sourceVersion: string; planVersion: string } | null
+  planMetadata: { sourceVersion: string; planVersion: string } | null,
+  reopen: BugReportReopenContext | null
 ): string {
   if (result.action !== 'POST_PLAN' || !result.plan) {
     const label = result.action === 'NO_OP' ? 'Không cần phương án mới' : 'Chưa đủ cơ sở để lập phương án';
@@ -154,9 +194,28 @@ function visiblePlanBody(
   }
   const plan = result.plan;
   return [
-    '## Phương án Agent đề xuất — chờ Danny duyệt',
+    eventKind === 'REOPEN_REANALYZED'
+      ? '## Phương án Agent sau reopen — chờ Danny duyệt lại'
+      : '## Phương án Agent đề xuất — chờ Danny duyệt',
     '',
     `- Sự kiện: ${eventKind}.`,
+    ...(reopen
+      ? [
+          `- Lý do reopen của người báo: ${reopen.reason}`,
+          `- Audit reopen: #${reopen.auditId} lúc ${reopen.reopenedAt}.`,
+        ]
+      : []),
+    ...(reopen
+      ? [
+          `- Ảnh gốc Agent đã đối chiếu: ${
+            reopen.originalEvidence.length
+              ? reopen.originalEvidence
+                  .map((item) => `#${item.id} (${item.fileName}, ${item.mimeType}, ${item.sizeBytes} B)`)
+                  .join('; ')
+              : 'Không có ảnh gốc được lưu cùng ticket.'
+          }.`,
+        ]
+      : []),
     `- Tóm tắt: ${result.note}`,
     '',
     '### Bằng chứng / giả thuyết',
@@ -195,19 +254,26 @@ function snapshot(source: { status: string; clarificationStatus: string; priorit
 }
 
 export class InboxPlanService {
-  static async enqueue(fastify: FastifyInstance, reportId: number, eventKind: InboxPlanEventKind): Promise<boolean> {
+  static async enqueue(
+    fastify: FastifyInstance,
+    reportId: number,
+    eventKind: InboxPlanEventKind,
+    reopen: BugReportReopenContext | null = null
+  ): Promise<boolean> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
       include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 8 } },
     });
     if (!report || !isInboxPlanEligible(report)) return false;
+    if (eventKind === 'REOPEN_REANALYZED' && !reopen) return false;
     try {
       await fastify.prisma.crm.crmInboxPlanJob.create({
         data: {
           id: randomUUID(),
           reportId,
           eventKind,
-          eventVersion: inboxPlanEventVersion(report, eventKind),
+          eventVersion: inboxPlanEventVersion(report, eventKind, reopen),
+          eventContextJson: reopen ? JSON.stringify({ reopen }) : null,
           expiresAt: new Date(Date.now() + TTL),
         },
       });
@@ -246,7 +312,12 @@ export class InboxPlanService {
       if (!job) return null;
       if (
         !isInboxPlanEligible(job.report) ||
-        isInboxPlanStale(job.eventVersion, job.report, job.eventKind as InboxPlanEventKind)
+        isInboxPlanStale(
+          job.eventVersion,
+          job.report,
+          job.eventKind as InboxPlanEventKind,
+          safeReopenContext(job.eventContextJson)
+        )
       ) {
         await fastify.prisma.crm.crmInboxPlanJob.updateMany({
           where: { id: job.id, status: 'PENDING', updatedAt: job.updatedAt },
@@ -271,6 +342,7 @@ export class InboxPlanService {
       });
       if (!lock.count) continue;
       const report = job.report;
+      const reopen = safeReopenContext(job.eventContextJson);
       return {
         id: job.id,
         ticketId: report.id,
@@ -286,6 +358,7 @@ export class InboxPlanService {
           businessContext: report.businessContext ? clean(report.businessContext, 2_000) : null,
           sourcePath: clean(report.sourcePath, 500),
           reporterMessages: report.comments.map((comment) => clean(comment.body, 1_200)),
+          reopen,
         },
         leaseToken,
         attemptCount: job.attemptCount + 1,
@@ -326,7 +399,12 @@ export class InboxPlanService {
     };
     if (
       !isInboxPlanEligible(report) ||
-      isInboxPlanStale(job.eventVersion, report, job.eventKind as InboxPlanEventKind)
+      isInboxPlanStale(
+        job.eventVersion,
+        report,
+        job.eventKind as InboxPlanEventKind,
+        safeReopenContext(job.eventContextJson)
+      )
     ) {
       await completeAsStale();
       return null;
@@ -340,11 +418,14 @@ export class InboxPlanService {
     const body = visiblePlanBody(
       job.eventKind,
       result,
-      sourceVersion && planVersion ? { sourceVersion, planVersion } : null
+      sourceVersion && planVersion ? { sourceVersion, planVersion } : null,
+      safeReopenContext(job.eventContextJson)
     );
     const auditAction =
       result.action === 'POST_PLAN'
-        ? 'AGENT_PLAN_POSTED'
+        ? job.eventKind === 'REOPEN_REANALYZED'
+          ? 'AGENT_REOPEN_PLAN_POSTED'
+          : 'AGENT_PLAN_POSTED'
         : result.action === 'NO_OP'
           ? 'AGENT_PLAN_NO_OP'
           : 'AGENT_PLAN_INSUFFICIENT_INFORMATION';
@@ -360,7 +441,12 @@ export class InboxPlanService {
       if (
         !current ||
         !isInboxPlanEligible(current) ||
-        isInboxPlanStale(job.eventVersion, current, job.eventKind as InboxPlanEventKind)
+        isInboxPlanStale(
+          job.eventVersion,
+          current,
+          job.eventKind as InboxPlanEventKind,
+          safeReopenContext(job.eventContextJson)
+        )
       ) {
         const stale = await tx.crmInboxPlanJob.updateMany({
           where: { id, status: 'LEASED', leaseToken, leaseExpiresAt: { gt: now } },

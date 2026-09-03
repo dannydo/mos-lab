@@ -368,6 +368,16 @@ test('derives one canonical next owner and action for every workflow gate', () =
   );
   assert.equal(bugReportNextAction(progressSource({ status: 'FIXED' })).type, 'REVIEW_RESULT');
   assert.equal(bugReportNextAction(progressSource({ status: 'CLOSED' })).actor, 'NONE');
+  const reopenAction = bugReportNextAction(
+    progressSource({
+      status: 'NEW',
+      clarificationStatus: 'PENDING_AGENT',
+      audits: [{ action: 'REPORTER_REOPENED', note: 'Vẫn sai.', createdAt: new Date('2026-08-31T01:10:00.000Z') }],
+    })
+  );
+  assert.equal(reopenAction.actor, 'AGENT');
+  assert.equal(reopenAction.label, 'Tái phân tích reopen');
+  assert.match(reopenAction.detail, /Plan, Danny approval và priority cũ không được dùng lại/);
 });
 
 test('maps next-owner filters to the same workflow gates used by projections', () => {

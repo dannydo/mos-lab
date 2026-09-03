@@ -8,6 +8,7 @@ import { BugReportWorkflowProgress } from '../../../../components/bug-reports/Bu
 import {
   BugStatusTag,
   ClarificationTag,
+  effectiveBugReportAgentProgress,
   formatElapsed,
   initials,
   needsReporterAttention,
@@ -42,7 +43,7 @@ export function BugReportMobileCard({ report, onOpen }: BugReportMobileCardProps
               <BugStatusTag
                 status={report.status}
                 reporterName={report.reporter.displayName}
-                agentProgress={report.agentProgress.stage}
+                agentProgress={effectiveBugReportAgentProgress(report).stage}
               />
             </div>
           </div>

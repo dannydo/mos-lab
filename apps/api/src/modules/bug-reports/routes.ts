@@ -698,18 +698,46 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const body = request.body as { leaseToken?: string; result?: unknown };
-        const readyReportId = await InboxFollowUpService.complete(
+        const readyEvent = await InboxFollowUpService.complete(
           fastify,
           String((request.params as { id: string }).id || ''),
           String(body.leaseToken || ''),
           body.result
         );
-        if (readyReportId && (await InboxPlanService.enqueue(fastify, readyReportId, 'CLARITY_READY'))) {
+        if (
+          readyEvent &&
+          (await InboxPlanService.enqueue(
+            fastify,
+            readyEvent.reportId,
+            readyEvent.eventKind === 'REPORTER_REOPENED' ? 'REOPEN_REANALYZED' : 'CLARITY_READY',
+            readyEvent.reopen
+          ))
+        ) {
           RequestClassifierWorkerHub.notify('inbox_plan_available');
         }
         return reply.send({ success: true });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox follow-up complete failed');
+      }
+    }
+  );
+  fastify.get(
+    '/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const params = request.params as { id: string; attachmentId: string };
+        return sendAttachment(
+          reply,
+          await InboxFollowUpService.originalEvidenceAttachment(
+            fastify,
+            String(params.id || ''),
+            String(request.headers['x-inbox-follow-up-lease'] || ''),
+            numericParam(params.attachmentId, 'Attachment ID')
+          )
+        );
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Read reopen evidence failed');
       }
     }
   );

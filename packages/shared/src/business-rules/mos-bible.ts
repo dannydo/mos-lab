@@ -518,10 +518,11 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     summary:
       'Một phản hồi AI theo sự kiện chỉ được xem là hoàn tất khi Inbox hiển thị bước tiếp theo rõ ràng: hỏi đúng một câu hoặc xác nhận ticket đã đủ rõ để Danny duyệt.',
     commandments: [
-      'Ticket PENDING_AGENT nhận kết quả không cần hỏi thêm phải chuyển thành READY, lưu tóm tắt an toàn và audit CHECKING_BUSINESS_LOGIC.',
+      'Ticket PENDING_AGENT chỉ chuyển READY khi Agent xác nhận rõ ràng; REVIEW thường dùng PROGRESS_REVIEWED, còn REPORTER_REOPENED bắt buộc dùng REANALYSIS_CONFIRMED.',
       'Nếu còn thiếu dữ kiện trọng yếu, AI chỉ tạo đúng một câu hỏi và chuyển ticket sang WAITING_REPORTER.',
-      'NO_OP chỉ dùng cho ticket đã qua bước Agent-needed hoặc sự kiện đã lỗi thời; không được đóng job mà UI vẫn ghi Agent cần làm rõ.',
-      'Job follow-up hoàn tất phải phản ánh resultAction thực tế: PROGRESS_REVIEWED, ASK_REPORTER hoặc NO_OP.',
+      'NO_OP chỉ dùng cho ticket đã qua bước Agent-needed hoặc sự kiện đã lỗi thời; REPORTER_REOPENED phải từ chối NO_OP để không tự READY hoặc mất lý do người báo.',
+      'Reopen phải khóa snapshot audit gồm lý do, audit ID, thời điểm và metadata giới hạn của ảnh gốc vào follow-up/plan job; blob/URL không đi trong job. Worker chỉ đọc ảnh qua lease còn hạn.',
+      'Nếu một ảnh gốc đã snapshot không còn đọc được, Agent phải tạo đúng một clarification thay vì suy đoán rằng đã có bằng chứng.',
     ],
     rationale:
       'Người báo và Danny phải nhìn thấy cùng một chủ nhân bước tiếp theo; completed trong background không thể thay cho tiến độ vận hành trên Inbox.',
@@ -532,7 +533,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Agent cần làm rõ', 'READY', 'ASK_REPORTER', 'follow-up', 'AI review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.0.0',
+    version: '1.2.0',
     effectiveFrom: '2026-09-03',
     sources: [
       {
@@ -552,6 +553,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Chỉ ticket NEW hoặc APPROVED có clarification READY mới được enqueue plan; ticket mơ hồ, đang triển khai hoặc đã kết thúc không được lập plan tự động.',
       'Mỗi plan job phải khóa theo eventVersion, lease và kiểm tra stale ngay trước khi ghi để retry hoặc event trùng không tạo plan thứ hai.',
       'Plan hoàn tất phải hiển thị native comment gồm bằng chứng/giả thuyết, kết quả, phạm vi, bước làm, kiểm chứng, rủi ro/rollback và quyết định Danny cần duyệt.',
+      'Plan sau REPORTER_REOPENED phải mang event REOPEN_REANALYZED, nhãn reopen, lý do immutable của người báo, metadata ảnh gốc đã đối chiếu và audit riêng; priority, Danny approval và implementation approval cũ bị hủy.',
       'Worker plan chỉ phân tích và ghi phương án; không được sửa code, dữ liệu, cấu hình, triage, priority hay deploy. Các cổng duyệt triển khai và deploy vẫn tách biệt.',
       'NO_OP, thiếu thông tin và stale phải được ghi nhận trung thực; không được coi là plan hoàn tất hoặc che giấu tiến độ khỏi Inbox.',
     ],
@@ -564,7 +566,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'event-driven', 'plan', 'Danny approval', 'lease', 'idempotency', 'stale'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.0.0',
+    version: '1.2.0',
     effectiveFrom: '2026-09-03',
     sources: [
       {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { BugReportSummary } from '@mos-lab/shared';
-import { getBugReportWorkflowStage, needsReporterAttention } from './bug-report-presenters';
+import {
+  effectiveBugReportAgentProgress,
+  getBugReportWorkflowStage,
+  needsReporterAttention,
+} from './bug-report-presenters';
 
 const baseReport = {
   status: 'IN_PROGRESS',
@@ -81,5 +85,30 @@ describe('getBugReportWorkflowStage', () => {
       position: null,
       label: 'Trùng lặp',
     });
+  });
+
+  it('never paints a NEW Agent-clarification ticket as implementation from stale progress', () => {
+    const staleImplementation = {
+      ...baseReport,
+      status: 'NEW' as const,
+      clarification: { status: 'PENDING_AGENT' as const, summary: null, clarifiedAt: null },
+      agentProgress: { ...baseReport.agentProgress, stage: 'IMPLEMENTING' as const },
+    };
+    expect(effectiveBugReportAgentProgress(staleImplementation)).toMatchObject({ stage: 'ANALYZING' });
+    expect(getBugReportWorkflowStage(staleImplementation)).toMatchObject({
+      position: 1,
+      label: 'Đang phân tích',
+    });
+  });
+
+  it('keeps a reopened NEW ticket in Agent-owned re-analysis, never a later fix step', () => {
+    expect(
+      getBugReportWorkflowStage({
+        ...baseReport,
+        status: 'NEW',
+        clarification: { status: 'PENDING_AGENT', summary: null, clarifiedAt: null },
+        agentProgress: { ...baseReport.agentProgress, stage: 'REOPENED_BY_REPORTER' },
+      })
+    ).toMatchObject({ position: 1, label: 'Agent tái phân tích reopen' });
   });
 });

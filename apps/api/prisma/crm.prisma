@@ -2531,6 +2531,7 @@ model CrmInboxFollowUpJob {
   reportId Int @map("report_id")
   eventKind String @map("event_kind") @db.VarChar(32)
   eventVersion String @map("event_version") @db.VarChar(80)
+  eventContextJson String? @map("event_context_json") @db.LongText
   status String @default("PENDING") @db.VarChar(16)
   attemptCount Int @default(0) @map("attempt_count")
   leaseToken String? @map("lease_token") @db.VarChar(64)
@@ -2555,6 +2556,7 @@ model CrmInboxPlanJob {
   reportId Int @map("report_id")
   eventKind String @map("event_kind") @db.VarChar(32)
   eventVersion String @map("event_version") @db.VarChar(80)
+  eventContextJson String? @map("event_context_json") @db.LongText
   status String @default("PENDING") @db.VarChar(16)
   attemptCount Int @default(0) @map("attempt_count")
   leaseToken String? @map("lease_token") @db.VarChar(64)

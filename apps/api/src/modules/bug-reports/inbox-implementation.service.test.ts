@@ -23,6 +23,7 @@ function source(overrides: Partial<Source> = {}): Source {
     clarificationStatus: 'READY',
     clarificationSummary: 'The ticket scope is presentation-only.',
     businessContext: 'Do not alter health telemetry or production behavior.',
+    triageNote: null,
     sourcePath: '/dashboard/bug-reports',
     implementationApprovedAt: new Date('2026-09-03T02:45:00.000Z'),
     implementationApprovalSourceVersion: null,
@@ -69,6 +70,26 @@ test('implementation requires a distinct approval and a native plan for the exac
   const retrying = source({ status: 'IN_PROGRESS', inboxPlanJobs: ready.inboxPlanJobs });
   assert.equal(isInboxImplementationEligible(retrying).eligible, false);
   assert.equal(isInboxImplementationExecutionEligible(retrying).eligible, true);
+
+  const reopened = source({
+    status: 'NEW',
+    priority: null,
+    clarificationStatus: 'PENDING_AGENT',
+    clarificationSummary: null,
+    implementationApprovedAt: null,
+    implementationApprovalSourceVersion: null,
+    inboxPlanJobs: ready.inboxPlanJobs,
+  });
+  assert.equal(isInboxImplementationEligible(reopened).approved, false);
+  assert.equal(isInboxImplementationEligible(reopened).eligible, false);
+
+  const reanalyzed = source({
+    triageNote: 'Reporter reopened because the persistence regression remains.',
+    inboxPlanJobs: ready.inboxPlanJobs,
+    implementationApprovalSourceVersion: sourceVersion,
+  });
+  assert.equal(inboxImplementationCurrentPlan(reanalyzed, inboxImplementationSourceVersion(reanalyzed)), null);
+  assert.equal(isInboxImplementationEligible(reanalyzed).approved, false);
 });
 
 test('implementation reuses the clarified plan when Danny only assigns priority', () => {

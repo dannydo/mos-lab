@@ -18,6 +18,7 @@ import { StatusTag } from '../../../components/ui';
 import { shortBugReportReporterName } from '../../../components/bug-reports/bug-report-workflow';
 export {
   BUG_REPORT_WORKFLOW_STEPS,
+  effectiveBugReportAgentProgress,
   getBugReportWorkflowStage,
   type BugReportWorkflowStage,
 } from '../../../components/bug-reports/bug-report-workflow';
@@ -54,7 +55,7 @@ export const AGENT_PROGRESS_LABELS: Record<BugReportAgentProgressStage, string> 
   WAITING_REPORTER: 'Chờ người báo',
   REPORTER_REPLIED: 'Người báo đã trả lời',
   REOPENED_BY_DANNY: 'Danny yêu cầu sửa thêm',
-  REOPENED_BY_REPORTER: 'Người báo yêu cầu sửa lại',
+  REOPENED_BY_REPORTER: 'Agent tái phân tích reopen',
   READY_FOR_TRIAGE: 'Đã hiểu · chờ duyệt',
   QUEUED_FOR_FIX: 'Đã nhận · chờ sửa',
   IMPLEMENTING: 'Đang sửa',
@@ -259,7 +260,7 @@ export function AgentProgressTag({
       : progress.stage === 'REPORTER_REPLIED'
         ? `${reporterLabel} đã trả lời`
         : progress.stage === 'REOPENED_BY_REPORTER'
-          ? `${reporterLabel} yêu cầu sửa lại`
+          ? `Agent tái phân tích yêu cầu từ ${reporterLabel}`
           : AGENT_PROGRESS_LABELS[progress.stage];
   return <StatusTag status={AGENT_PROGRESS_TONES[progress.stage]} label={label} />;
 }

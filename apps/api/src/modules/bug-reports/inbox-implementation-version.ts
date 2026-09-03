@@ -8,6 +8,7 @@ type ImplementationSource = {
   clarificationStatus: string;
   clarificationSummary: string | null;
   businessContext: string | null;
+  triageNote: string | null;
   sourcePath: string;
   comments: Array<{ id: number; body: string }>;
 };
@@ -40,6 +41,9 @@ export function inboxImplementationSourceVersion(source: ImplementationSource): 
     clarificationStatus: source.clarificationStatus,
     clarificationSummary: source.clarificationSummary ? clean(source.clarificationSummary, 1_200) : null,
     businessContext: source.businessContext ? clean(source.businessContext, 4_000) : null,
+    // A reporter reopen is durable, material evidence held in triageNote. Include
+    // it so an old plan/approval can never regain authority after re-analysis.
+    triageNote: source.triageNote ? clean(source.triageNote, 2_000) : null,
     sourcePath: clean(source.sourcePath, 500),
     reporterMessages: source.comments.map((comment) => ({ id: comment.id, body: clean(comment.body, 1_200) })),
   });

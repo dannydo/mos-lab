@@ -3,18 +3,23 @@
 import type { CSSProperties } from 'react';
 import { Tooltip, theme } from 'antd';
 import type { BugReportSummary } from '@mos-lab/shared';
-import { BUG_REPORT_WORKFLOW_STEPS, getBugReportWorkflowStage } from './bug-report-workflow';
+import {
+  BUG_REPORT_WORKFLOW_STEPS,
+  effectiveBugReportAgentProgress,
+  getBugReportWorkflowStage,
+} from './bug-report-workflow';
 import styles from './BugReportWorkflowProgress.module.css';
 
 interface BugReportWorkflowProgressProps {
-  report: Pick<BugReportSummary, 'key' | 'status' | 'agentProgress'>;
+  report: Pick<BugReportSummary, 'key' | 'status' | 'clarification' | 'agentProgress'>;
   compact?: boolean;
 }
 
 /** Shared status route for the Inbox, mobile queue, and reporter feedback panel. */
 export function BugReportWorkflowProgress({ report, compact = false }: BugReportWorkflowProgressProps) {
   const { token } = theme.useToken();
-  const workflow = getBugReportWorkflowStage(report);
+  const agentProgress = effectiveBugReportAgentProgress(report);
+  const workflow = getBugReportWorkflowStage({ ...report, agentProgress });
   const colorByTone = {
     warning: token.colorWarning,
     primary: token.colorPrimary,

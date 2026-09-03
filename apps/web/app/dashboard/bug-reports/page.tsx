@@ -36,7 +36,6 @@ import {
   CheckCircle2,
   Bot,
   CircleHelp,
-  Clipboard,
   Gavel,
   Inbox,
   LoaderCircle,
@@ -72,6 +71,7 @@ import {
   BugStatusTag,
   CLARIFICATION_FILTER_LABELS,
   ClarificationTag,
+  effectiveBugReportAgentProgress,
   formatDate,
   formatElapsed,
   initials,
@@ -190,16 +190,6 @@ function DetailDrawer({
     },
     [businessContext, detail, duplicateKey, hydrateForm, messageApi, note, priority, status, triage]
   );
-
-  const copyAgentCommand = useCallback(async () => {
-    if (!detail) return;
-    try {
-      await navigator.clipboard.writeText(`pnpm bug:agent ${detail.key}`);
-      messageApi.success('Đã copy lệnh Agent.');
-    } catch {
-      messageApi.error('Không thể copy tự động.');
-    }
-  }, [detail, messageApi]);
 
   const confirmResolvedAndClose = useCallback(async () => {
     if (!detail) return;
@@ -417,11 +407,6 @@ function DetailDrawer({
                     </Button>
                   </Popconfirm>
                 )}
-              {detail.nextAction.actor === 'AGENT' && (
-                <Button icon={<AppIcon icon={Clipboard} size="sm" />} onClick={() => void copyAgentCommand()}>
-                  Copy lệnh Agent
-                </Button>
-              )}
             </Space>
           ) : undefined
         }
@@ -458,12 +443,15 @@ function DetailDrawer({
                   <BugStatusTag
                     status={detail.status}
                     reporterName={detail.reporter.displayName}
-                    agentProgress={detail.agentProgress.stage}
+                    agentProgress={effectiveBugReportAgentProgress(detail).stage}
                   />
                   <RequestTypeTag requestType={detail.requestType} />
                   <PriorityTag priority={detail.priority} />
                   <ClarificationTag status={detail.clarification.status} reporterName={detail.reporter.displayName} />
-                  <AgentProgressTag progress={detail.agentProgress} reporterName={detail.reporter.displayName} />
+                  <AgentProgressTag
+                    progress={effectiveBugReportAgentProgress(detail)}
+                    reporterName={detail.reporter.displayName}
+                  />
                   <Text type="secondary" className="tabular-nums">
                     Đã báo {formatElapsed(detail.createdAt)}
                   </Text>
@@ -489,6 +477,24 @@ function DetailDrawer({
                 </Text>
               </div>
             </SectionCard>
+
+            {detail.reopen ? (
+              <SectionCard title="Phản hồi reopen hiện tại">
+                <div className="space-y-1">
+                  <Text>{detail.reopen.reason}</Text>
+                  <Text type="secondary" className="tabular-nums">
+                    Agent đang tái phân tích từ audit #{detail.reopen.auditId} · {formatDate(detail.reopen.reopenedAt)}.
+                    Bản plan/approval cũ không còn hiệu lực; cần plan mới, Danny duyệt lại và đặt priority trước khi
+                    sửa.
+                  </Text>
+                  <Text type="secondary">
+                    {detail.reopen.originalEvidence.length
+                      ? `Agent có thể đối chiếu ${detail.reopen.originalEvidence.length} ảnh gốc của ticket; người báo không cần gửi lại.`
+                      : 'Ticket không có ảnh gốc được lưu; Agent sẽ làm rõ nếu cần thêm bằng chứng.'}
+                  </Text>
+                </div>
+              </SectionCard>
+            ) : null}
 
             {detail.featureRequest ? <FeatureRequestDetails featureRequest={detail.featureRequest} /> : null}
 
