@@ -36,6 +36,8 @@ import { academyWorkshopRoutes } from './modules/academy-workshops/routes.js';
 import { academyWorkshopPublicRoutes } from './modules/academy-workshops/public.routes.js';
 import { holidayWorkRoutes } from './modules/holiday-work/routes.js';
 import { uiExperienceRoutes } from './modules/ui-experiences/routes.js';
+import { experienceJournalRoutes } from './modules/experience-journal/routes.js';
+import { ExperienceJournalService } from './modules/experience-journal/experience-journal.service.js';
 import { bugReportRoutes } from './modules/bug-reports/routes.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { RequestClassificationService } from './modules/bug-reports/request-classification.service.js';
@@ -285,6 +287,7 @@ const start = async () => {
     await server.register(academyWorkshopPublicRoutes, { prefix: '/api' });
     await server.register(holidayWorkRoutes, { prefix: '/api' });
     await server.register(uiExperienceRoutes, { prefix: '/api' });
+    await server.register(experienceJournalRoutes, { prefix: '/api' });
     await server.register(bugReportRoutes, { prefix: '/api' });
 
     startPancakeAcademySync(server);
@@ -293,6 +296,14 @@ const start = async () => {
     startRecordingAnalyzer(server);
     startBugReportCleanup(server);
     startRequestClassifierWorkerHealthMonitor(server);
+    const cleanupExperienceJournal = () =>
+      ExperienceJournalService.cleanupExpired(server).catch((error) =>
+        server.log.warn({ error }, 'Experience Journal retention cleanup failed')
+      );
+    const experienceJournalCleanupInitial = setTimeout(cleanupExperienceJournal, 60_000);
+    experienceJournalCleanupInitial.unref();
+    const experienceJournalCleanupInterval = setInterval(cleanupExperienceJournal, 24 * 60 * 60 * 1000);
+    experienceJournalCleanupInterval.unref();
     const cleanupClassifications = () =>
       RequestClassificationService.cleanupExpired(server).catch((error) =>
         server.log.warn({ error }, 'Request classification cleanup failed')

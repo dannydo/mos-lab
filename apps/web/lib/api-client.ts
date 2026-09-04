@@ -32,6 +32,10 @@ import type {
   UiExperiencePreviewTokenResponse,
   UiExperienceResolveParams,
   UiExperienceResolveResponse,
+  ExperienceJournalListQuery,
+  ExperienceJournalListResponse,
+  ExperienceJournalFingerprint,
+  TriageExperienceJournalFingerprintRequest,
   BugReportDetail,
   ApproveBugReportImplementationRequest,
   ApproveBugReportImplementationCommitRequest,
@@ -527,6 +531,22 @@ export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<
 
 // API Client SDK for mos-lab
 export const apiClient = {
+  experienceJournal: {
+    list: async (params?: ExperienceJournalListQuery): Promise<ExperienceJournalListResponse> => {
+      const response = await api.get<ExperienceJournalListResponse>('/experience-journal', { params });
+      return response.data;
+    },
+    triage: async (
+      fingerprint: string,
+      payload: TriageExperienceJournalFingerprintRequest
+    ): Promise<ExperienceJournalFingerprint> => {
+      const response = await api.patch<{ data: ExperienceJournalFingerprint }>(
+        `/experience-journal/${encodeURIComponent(fingerprint)}`,
+        payload
+      );
+      return response.data.data;
+    },
+  },
   uiExperiences: {
     resolve: async (params: UiExperienceResolveParams): Promise<UiExperienceResolveResponse> => {
       const response = await api.get<UiExperienceResolveResponse>('/ui-experiences/resolve', { params });

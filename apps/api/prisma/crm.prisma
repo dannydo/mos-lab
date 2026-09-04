@@ -2632,3 +2632,47 @@ model CrmInboxImplementationWorkerLock {
 
   @@map("crm_inbox_implementation_worker_lock")
 }
+
+/// Append-only safe event records for internal UX/reliability triage. Raw logs stay local.
+model CrmExperienceJournalEvent {
+  id Int @id @default(autoincrement())
+  fingerprint String @db.Char(64)
+  category String @db.VarChar(12)
+  severity String @db.VarChar(12)
+  component String @db.VarChar(80)
+  code String @db.VarChar(100)
+  summary String @db.Text
+  reportId Int? @map("report_id")
+  jobId String? @map("job_id") @db.VarChar(36)
+  releaseCommit String? @map("release_commit") @db.VarChar(64)
+  metadataJson String? @map("metadata_json") @db.Text
+  retentionExpiresAt DateTime @map("retention_expires_at") @db.DateTime(0)
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.DateTime(0)
+
+  @@index([fingerprint, occurredAt])
+  @@index([category, severity, occurredAt])
+  @@index([reportId, occurredAt])
+  @@index([retentionExpiresAt])
+  @@map("crm_experience_journal_events")
+}
+
+/// Mutable operational state is deliberately separate from the append-only event stream.
+model CrmExperienceJournalFingerprint {
+  fingerprint String @id @db.Char(64)
+  category String @db.VarChar(12)
+  severity String @db.VarChar(12)
+  component String @db.VarChar(80)
+  code String @db.VarChar(100)
+  summary String @db.Text
+  occurrenceCount Int @default(0) @map("occurrence_count")
+  firstOccurredAt DateTime @map("first_occurred_at") @db.DateTime(0)
+  lastOccurredAt DateTime @map("last_occurred_at") @db.DateTime(0)
+  triageStatus String @default("OPEN") @map("triage_status") @db.VarChar(16)
+  triageNote String? @map("triage_note") @db.Text
+  triagedByStaffId Int? @map("triaged_by_staff_id")
+  triagedAt DateTime? @map("triaged_at") @db.DateTime(0)
+
+  @@index([triageStatus, lastOccurredAt])
+  @@index([category, severity, lastOccurredAt])
+  @@map("crm_experience_journal_fingerprints")
+}

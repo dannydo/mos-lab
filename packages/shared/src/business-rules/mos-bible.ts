@@ -665,6 +665,36 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'UI-009',
+    book: 'SYSTEM',
+    title: 'Nhật ký Experience & Reliability phải tách khỏi luồng người báo',
+    summary:
+      'Sự cố trải nghiệm và hạ tầng được ghi append-only để vận hành cải thiện dần, nhưng người báo chỉ thấy trạng thái và hành động tiếp theo đơn giản.',
+    commandments: [
+      'Journal chỉ nhận metadata đã lọc: nhóm UX/INFRA, mức độ, component, mã, fingerprint, tham chiếu ticket/job/release và tóm tắt an toàn. Không ghi prompt, attachment, stdout/stderr thô, token, mật khẩu hoặc đường dẫn máy nội bộ.',
+      'Mỗi occurrence là bản ghi append-only có retention hữu hạn; fingerprint là bản tổng hợp riêng để gộp tần suất và triage. Triage không được sửa, xóa hoặc làm mất event gốc.',
+      'Chỉ Admin được đọc hoặc triage Journal. Reporter-facing Inbox không hiển thị retry, log hoặc nguyên nhân hạ tầng; nó chỉ nói trạng thái có nghĩa và hành động kế tiếp.',
+      'Nếu không thể lọc hoặc xác minh dữ liệu event, bỏ metadata nghi ngờ và giữ tóm tắt an toàn thay vì lưu log thô.',
+    ],
+    rationale:
+      'Độ mượt của hệ thống cần dữ liệu tích lũy để ưu tiên sửa lỗi, nhưng quan sát nội bộ không được làm lộ dữ liệu hoặc biến thành gánh nặng cho người báo.',
+    examples: [
+      'Một deploy timeout tạo occurrence INFRA đã lọc, gộp theo fingerprint để vận hành triage; người báo chỉ nhận được cập nhật mOS đang xử lý.',
+    ],
+    tags: ['mOS Inbox', 'reliability', 'observability', 'retention', 'privacy'],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-04',
+    sources: [
+      {
+        label: 'Experience & Reliability Journal service',
+        reference: 'apps/api/src/modules/experience-journal/experience-journal.service.ts',
+      },
+      { label: 'Internal Journal routes', reference: 'apps/api/src/modules/experience-journal/routes.ts' },
+    ],
+  },
+  {
     id: 'UI-008',
     book: 'SYSTEM',
     title: 'Thời gian Agent phải tách khỏi thời gian chờ của con người',

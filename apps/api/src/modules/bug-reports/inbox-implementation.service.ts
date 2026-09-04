@@ -13,6 +13,7 @@ import {
 } from '@mos-lab/shared';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 import { InboxPlanService } from './inbox-plan.service.js';
+import { ExperienceJournalService } from '../experience-journal/experience-journal.service.js';
 
 const LEASE_MS = 12 * 60 * 1000;
 const RETRY_LIMIT = 3;
@@ -2476,6 +2477,22 @@ export class InboxImplementationService {
         },
       });
     });
+    // Journal failures must never alter the worker's terminal state. The journal
+    // groups by a stable operational cause while the sanitized detail remains
+    // available only to internal triage.
+    await ExperienceJournalService.record(fastify, {
+      category: 'INFRA',
+      severity: 'ERROR',
+      component: 'INBOX_IMPLEMENTATION_WORKER',
+      code,
+      summary: `Implementation worker stopped safely during ${job.executionPhase}.`,
+      reportId: job.reportId,
+      jobId: job.id,
+      metadata: {
+        executionPhase: job.executionPhase,
+        failureDetail: clean(failureSummary, 160) || 'No structured failure detail was provided.',
+      },
+    }).catch(() => undefined);
     await clearGlobalPermit(fastify, id);
   }
 }

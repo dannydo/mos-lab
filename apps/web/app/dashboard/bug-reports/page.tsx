@@ -43,6 +43,7 @@ import {
   MessageSquareWarning,
   RefreshCw,
   Send,
+  ShieldAlert,
   UserRound,
 } from 'lucide-react';
 import {
@@ -86,6 +87,8 @@ import {
 } from './bug-report-presenters';
 import { useBugReports } from './hooks/useBugReports';
 import { useRequestClassifierWorkerHealth } from './hooks/useRequestClassifierWorkerHealth';
+import { ExperienceJournalDrawer } from './components/ExperienceJournalDrawer';
+import { apiClient } from '../../../lib/api-client';
 const { Text, Paragraph, Title } = Typography;
 
 interface DetailDrawerProps {
@@ -947,6 +950,7 @@ export default function BugReportsPage() {
   const workerHealth = useRequestClassifierWorkerHealth();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [workflowOpen, setWorkflowOpen] = useState(false);
+  const [journalOpen, setJournalOpen] = useState(false);
   const [canTriage, setCanTriage] = useState(false);
 
   useEffect(() => {
@@ -980,14 +984,26 @@ export default function BugReportsPage() {
         subtitle="AI làm rõ với người yêu cầu; Danny quyết định cuối cùng trước khi lỗi hoặc chức năng được đưa vào hàng triển khai."
         icon={<AppIcon icon={MessageSquareWarning} size="lg" />}
         headerActions={
-          <Tooltip title="Xem workflow xử lý yêu cầu">
-            <Button
-              type="text"
-              aria-label="Xem workflow xử lý yêu cầu"
-              icon={<AppIcon icon={CircleHelp} size="sm" />}
-              onClick={() => setWorkflowOpen(true)}
-            />
-          </Tooltip>
+          <Space size={4}>
+            {canTriage ? (
+              <Tooltip title="Nhật ký Experience & Reliability (nội bộ)">
+                <Button
+                  type="text"
+                  aria-label="Mở Nhật ký Experience & Reliability"
+                  icon={<AppIcon icon={ShieldAlert} size="sm" />}
+                  onClick={() => setJournalOpen(true)}
+                />
+              </Tooltip>
+            ) : null}
+            <Tooltip title="Xem workflow xử lý yêu cầu">
+              <Button
+                type="text"
+                aria-label="Xem workflow xử lý yêu cầu"
+                icon={<AppIcon icon={CircleHelp} size="sm" />}
+                onClick={() => setWorkflowOpen(true)}
+              />
+            </Tooltip>
+          </Space>
         }
         toolbar={{
           className: 'mos-inbox-toolbar',
@@ -1182,6 +1198,14 @@ export default function BugReportsPage() {
         />
       </ResourceListPage>
       <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} />
+      {canTriage ? (
+        <ExperienceJournalDrawer
+          open={journalOpen}
+          onClose={() => setJournalOpen(false)}
+          list={() => apiClient.experienceJournal.list()}
+          triage={(fingerprint, triageStatus) => apiClient.experienceJournal.triage(fingerprint, { triageStatus })}
+        />
+      ) : null}
       <DetailDrawer
         reportId={selectedId}
         onClose={() => setSelectedId(null)}
