@@ -194,19 +194,19 @@ export function bugReportWorkerActivity(
   if (implementation.status === 'RUNNING') {
     const headline =
       implementation.phase === 'COMMITTING'
-        ? 'Worker đang tạo commit'
+        ? 'Worker Mac đang tạo commit'
         : implementation.phase === 'DEPLOYING'
-          ? 'Worker đang deploy'
-          : 'Worker đang code/test';
+          ? 'Worker Mac đang deploy'
+          : 'Worker Mac đang code/test';
     return { headline, elapsed: elapsed ? `Đã chạy ${elapsed}` : 'Đang bắt đầu', evidence, active: true };
   }
   if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
     const headline =
       implementation.phase === 'COMMIT_APPROVED'
-        ? 'Chờ worker tạo commit'
+        ? 'Chờ Worker Mac tạo commit'
         : implementation.phase === 'DEPLOY_APPROVED'
-          ? 'Chờ worker deploy'
-          : 'Chờ worker nhận code/test';
+          ? 'Chờ Worker Mac deploy'
+          : 'Chờ Worker Mac nhận code/test';
     return { headline, elapsed: null, evidence, active: true };
   }
   if (implementation.status === 'AWAITING_COMMIT_REVIEW') {

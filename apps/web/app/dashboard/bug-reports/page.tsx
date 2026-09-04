@@ -65,9 +65,8 @@ import {
 import { BugReportResolutionTracking } from './components/BugReportResolutionTracking';
 import { BugReportMobileCard } from './components/BugReportMobileCard';
 import { FeatureRequestDetails } from './components/FeatureRequestDetails';
-import { RequestClassifierWorkerHealthCard } from './components/RequestClassifierWorkerHealthCard';
 import { useBugReportInboxColumns } from './components/useBugReportInboxColumns';
-import { ActiveBugReportWorkCard } from './components/BugReportWorkerActivity';
+import { InboxWorkerLiveBar } from './components/BugReportWorkerActivity';
 import {
   AgentProgressTag,
   BugStatusTag,
@@ -972,8 +971,10 @@ export default function BugReportsPage() {
           locale: { emptyText: emptyInboxMessage },
         }}
       >
-        <ActiveBugReportWorkCard reports={inbox.data} onOpen={setSelectedId} />
-        <RequestClassifierWorkerHealthCard
+        <InboxWorkerLiveBar
+          reports={inbox.data}
+          liveWorker={inbox.summary.liveWorker}
+          onOpen={setSelectedId}
           health={workerHealth.health}
           loading={workerHealth.loading}
           error={workerHealth.error}

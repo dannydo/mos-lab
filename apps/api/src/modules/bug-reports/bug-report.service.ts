@@ -1436,6 +1436,7 @@ export class BugReportService {
       ...bugReportNextActorWhere(query.nextActor),
       ...(search ? { searchNormalized: { contains: search } } : {}),
     };
+    const now = new Date();
     const [
       total,
       rows,
@@ -1457,6 +1458,7 @@ export class BugReportService {
       agentActionCount,
       agentClarificationCount,
       agentDeliveryCount,
+      liveWorkerJob,
     ] = await fastify.prisma.crm.$transaction([
       fastify.prisma.crm.crmBugReport.count({ where }),
       fastify.prisma.crm.crmBugReport.findMany({
@@ -1502,6 +1504,18 @@ export class BugReportService {
           priority: { not: null },
         },
       }),
+      fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { status: 'RUNNING', leaseExpiresAt: { gt: now } },
+        orderBy: [{ lastProgressAt: 'desc' }, { startedAt: 'asc' }],
+        select: {
+          reportId: true,
+          leasedBy: true,
+          executionPhase: true,
+          startedAt: true,
+          lastProgressAt: true,
+          report: { select: { requestType: true } },
+        },
+      }),
     ]);
     return {
       data: rows.map(summaryDto),
@@ -1528,6 +1542,19 @@ export class BugReportService {
         agentActionCount,
         agentClarificationCount,
         agentDeliveryCount,
+        liveWorker: liveWorkerJob
+          ? {
+              ticketId: liveWorkerJob.reportId,
+              ticketKey: formatBugReportKey(
+                liveWorkerJob.reportId,
+                liveWorkerJob.report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG'
+              ),
+              workerId: clipped(liveWorkerJob.leasedBy, 100) || null,
+              phase: clipped(liveWorkerJob.executionPhase, 32) || 'CODEX_RUNNING',
+              startedAt: liveWorkerJob.startedAt?.toISOString() ?? null,
+              lastProgressAt: liveWorkerJob.lastProgressAt?.toISOString() ?? null,
+            }
+          : null,
       },
     };
   }

@@ -588,6 +588,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Heartbeat cũ không được ghi đè heartbeat mới; state transition chỉ được lưu một lần cho mỗi lần đổi trạng thái.',
       'Circuit breaker giai đoạn đầu chỉ là ADVISORY: server tính thời lượng job theo giờ server, cảnh báo review/chẩn đoán từ 10/20 phút và code/test từ 15/45 phút. Nó không tự kill, pause, retry hay đổi ticket; ngưỡng pause chỉ là đề nghị kiểm tra thủ công cho tới khi runner có checkpoint/resume an toàn.',
       'Inbox Admin chỉ đọc snapshot an toàn, trạng thái tải/lỗi và transition thấy được; không hiển thị ticket ID, prompt, attachment, token hay output AI.',
+      'Thanh Live trên Inbox chỉ đại diện một Worker Mac và một job RUNNING có lease còn hiệu lực do server chọn; bảng chỉ trình bày lại cùng trạng thái đó theo từng ticket, không đếm job như thể có nhiều worker.',
     ],
     rationale:
       'Vận hành cần biết worker có đang sống và xử lý được việc hay không, nhưng quan sát kỹ thuật không được trở thành một luồng thay đổi nghiệp vụ.',
@@ -598,8 +599,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'worker health', 'heartbeat', 'server time', 'observability', 'safe metadata'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-09-03',
+    version: '1.2.0',
+    effectiveFrom: '2026-09-04',
     sources: [
       {
         label: 'Server-authoritative health service',
@@ -607,8 +608,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       },
       { label: 'Outbound worker telemetry contract', reference: 'scripts/request-classifier-worker.ts' },
       {
-        label: 'Inbox worker health card',
-        reference: 'apps/web/app/dashboard/bug-reports/components/RequestClassifierWorkerHealthCard.tsx',
+        label: 'Inbox compact live-worker presentation',
+        reference: 'apps/web/app/dashboard/bug-reports/components/BugReportWorkerActivity.tsx',
       },
     ],
   },

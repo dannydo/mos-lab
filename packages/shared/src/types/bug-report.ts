@@ -749,6 +749,18 @@ export interface BugReportListSummary {
   agentActionCount: number;
   agentClarificationCount: number;
   agentDeliveryCount: number;
+  /** The one durable implementation job the Mac worker is actively executing, independent of table filters. */
+  liveWorker: BugReportLiveWorkerActivity | null;
+}
+
+/** Safe, server-derived context for the single live Inbox worker banner. */
+export interface BugReportLiveWorkerActivity {
+  ticketId: number;
+  ticketKey: string;
+  workerId: string | null;
+  phase: string;
+  startedAt: string | null;
+  lastProgressAt: string | null;
 }
 
 export interface TriageBugReportRequest {

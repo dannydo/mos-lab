@@ -54,7 +54,7 @@ describe('bugReportWorkerActivity', () => {
       },
     });
     expect(running).toMatchObject({
-      headline: 'Worker đang code/test',
+      headline: 'Worker Mac đang code/test',
       elapsed: expect.stringMatching(/^Đã chạy /),
       active: true,
     });

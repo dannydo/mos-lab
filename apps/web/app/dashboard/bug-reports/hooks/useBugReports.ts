@@ -67,6 +67,7 @@ const EMPTY_SUMMARY: BugReportListSummary = {
   agentActionCount: 0,
   agentClarificationCount: 0,
   agentDeliveryCount: 0,
+  liveWorker: null,
 };
 
 function getErrorMessage(error: unknown): string {
