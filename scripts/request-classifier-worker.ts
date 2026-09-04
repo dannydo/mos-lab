@@ -33,6 +33,8 @@ const IMPLEMENTATION_PROGRESS_POLL_MS = 30_000;
 const IMPLEMENTATION_MAX_SLICES = 2;
 const CODEX_STOP_GRACE_MS = 5_000;
 const IMPLEMENTATION_LEASE_RENEWAL_MS = 60_000;
+const IMPLEMENTATION_LEASE_RENEWAL_ATTEMPTS = 3;
+const IMPLEMENTATION_LEASE_RENEWAL_BACKOFF_MS = 2_000;
 const IMPLEMENTATION_PREFLIGHT_CACHE_MS = 5 * 60 * 1000;
 const WORKER_FETCH_TIMEOUT_MS = 20_000;
 const PNPM_EXECUTABLE = '/opt/homebrew/bin/pnpm';
@@ -798,6 +800,30 @@ async function workerFetchAfterProductionRestart(path: string, init: RequestInit
   throw lastError;
 }
 
+/**
+ * A running implementation has a twelve-minute server lease. A single
+ * transient bridge failure must not terminate Codex immediately and turn into
+ * a reporter-visible retry. Retry the bounded renewal call inside that lease;
+ * the caller still terminates safely if every attempt fails.
+ */
+export async function renewImplementationLeaseWithRetry(
+  renew: () => Promise<void>,
+  wait: (milliseconds: number) => Promise<void> = (milliseconds) =>
+    new Promise((resolve) => setTimeout(resolve, milliseconds))
+): Promise<boolean> {
+  for (let attempt = 0; attempt < IMPLEMENTATION_LEASE_RENEWAL_ATTEMPTS; attempt += 1) {
+    try {
+      await renew();
+      return true;
+    } catch {
+      if (attempt < IMPLEMENTATION_LEASE_RENEWAL_ATTEMPTS - 1) {
+        await wait(IMPLEMENTATION_LEASE_RENEWAL_BACKOFF_MS * 2 ** attempt);
+      }
+    }
+  }
+  return false;
+}
+
 type ActiveWorkerJob = { kind: RequestClassifierWorkerJobKind; startedAt: string } | null;
 
 const workerSessionId = randomUUID();
@@ -1515,18 +1541,19 @@ async function processInboxImplementationOne(): Promise<boolean> {
                   if (renewing || !activeProcessId) return;
                   renewing = true;
                   try {
-                    const renewedResponse = await workerFetch(
-                      `/request-classifier/inbox-implementations/${job.id}/renew`,
-                      {
-                        method: 'POST',
-                        body: JSON.stringify({ leaseToken: job.leaseToken, workerId, processId: activeProcessId }),
+                    const renewed = await renewImplementationLeaseWithRetry(async () => {
+                      const renewedResponse = await workerFetch(
+                        `/request-classifier/inbox-implementations/${job.id}/renew`,
+                        {
+                          method: 'POST',
+                          body: JSON.stringify({ leaseToken: job.leaseToken, workerId, processId: activeProcessId }),
+                        }
+                      );
+                      if (!((await renewedResponse.json()) as { data?: { renewed?: boolean } }).data?.renewed) {
+                        throw new CodexCliError('LEASE_RENEW_FAILED');
                       }
-                    );
-                    if (!((await renewedResponse.json()) as { data?: { renewed?: boolean } }).data?.renewed) {
-                      throw new CodexCliError('LEASE_RENEW_FAILED');
-                    }
-                  } catch {
-                    runtime.terminate('LEASE_RENEW_FAILED');
+                    });
+                    if (!renewed) runtime.terminate('LEASE_RENEW_FAILED');
                   } finally {
                     renewing = false;
                   }

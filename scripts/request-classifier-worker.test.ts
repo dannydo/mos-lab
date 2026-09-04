@@ -25,6 +25,7 @@ import {
   safeCodexCliJsonFailureSummary,
   inboxImplementationFailureSummary,
   inboxImplementationSchema,
+  renewImplementationLeaseWithRetry,
 } from './request-classifier-worker.js';
 
 test('builds a noninteractive Codex invocation with private structured output', async () => {
@@ -138,6 +139,38 @@ test('normalizes isolated bridge protocol failures without exposing request cont
     'BRIDGE_PROTOCOL_MISMATCH'
   );
   assert.equal(safeBridgeFailureCode(new Error('Worker bridge classifier HTTP 503')), 'BRIDGE_SERVER_ERROR');
+});
+
+test('retries a transient implementation lease renewal without ending the job', async () => {
+  let attempts = 0;
+  const waits: number[] = [];
+  const renewed = await renewImplementationLeaseWithRetry(
+    async () => {
+      attempts += 1;
+      if (attempts < 3) throw new Error('temporary bridge interruption');
+    },
+    async (milliseconds) => {
+      waits.push(milliseconds);
+    }
+  );
+
+  assert.equal(renewed, true);
+  assert.equal(attempts, 3);
+  assert.deepEqual(waits, [2_000, 4_000]);
+});
+
+test('stops an implementation lease renewal only after its bounded retry budget', async () => {
+  let attempts = 0;
+  const renewed = await renewImplementationLeaseWithRetry(
+    async () => {
+      attempts += 1;
+      throw new Error('bridge remains unavailable');
+    },
+    async () => undefined
+  );
+
+  assert.equal(renewed, false);
+  assert.equal(attempts, 3);
 });
 
 test('never includes child-process content in Inbox failure telemetry', () => {
