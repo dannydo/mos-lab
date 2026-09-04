@@ -76,7 +76,7 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
 ] as const;
 export type BugReportAgentProgressStage = (typeof BUG_REPORT_AGENT_PROGRESS_STAGES)[number];
 
-export const BUG_REPORT_NEXT_ACTORS = ['REPORTER', 'DANNY', 'AGENT', 'NONE'] as const;
+export const BUG_REPORT_NEXT_ACTORS = ['REPORTER', 'DANNY', 'AGENT', 'SYSTEM', 'NONE'] as const;
 export type BugReportNextActor = (typeof BUG_REPORT_NEXT_ACTORS)[number];
 
 export const BUG_REPORT_NEXT_ACTION_TYPES = [

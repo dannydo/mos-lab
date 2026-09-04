@@ -350,6 +350,7 @@ export const NEXT_ACTOR_LABELS: Record<BugReportNextActor, string> = {
   REPORTER: 'Người báo',
   DANNY: 'Danny',
   AGENT: 'AI Agent',
+  SYSTEM: 'Hệ thống',
   NONE: 'Hoàn tất',
 };
 
@@ -357,6 +358,7 @@ const NEXT_ACTOR_TONES: Record<BugReportNextActor, Parameters<typeof StatusTag>[
   REPORTER: 'purple',
   DANNY: 'gold',
   AGENT: 'cyan',
+  SYSTEM: 'orange',
   NONE: 'default',
 };
 

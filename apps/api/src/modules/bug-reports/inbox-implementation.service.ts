@@ -31,6 +31,10 @@ const SCHEMA_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_READONLY_DIAGNOSTIC_PASSED';
 const SCHEMA_RECOVERY_ROOT_CAUSE = 'STRICT_RESPONSE_SCHEMA_REQUIRED_FIELDS';
 const execFileAsync = promisify(execFile);
 
+export function canRetryInboxImplementation(source: { status: string; retrySequence: number }): boolean {
+  return source.status === 'FAILED' && source.retrySequence < MAX_DANNY_RETRY_SEQUENCE;
+}
+
 const IMPLEMENTATION_PROGRESS_LABELS = {
   CODEX_STARTED: 'Codex đang phân tích và triển khai trong worktree riêng.',
   CODEX_EVENT: 'Codex đang tiếp tục xử lý code/test.',

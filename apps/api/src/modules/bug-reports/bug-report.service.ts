@@ -51,7 +51,11 @@ import {
   type TriageBugReportRequest,
 } from '@mos-lab/shared';
 import { BugReportStorage } from './bug-report.storage.js';
-import { canAuthorizeSchemaRecoveryRetry, canAuthorizeWorkerRecoveryRetry } from './inbox-implementation.service.js';
+import {
+  canAuthorizeSchemaRecoveryRetry,
+  canAuthorizeWorkerRecoveryRetry,
+  canRetryInboxImplementation,
+} from './inbox-implementation.service.js';
 
 const AGENT_READABLE_STATUSES = new Set<BugReportStatus>(['NEW', 'APPROVED', 'IN_PROGRESS', 'FIXED']);
 const AGENT_FIX_STATUSES = new Set<BugReportStatus>(['APPROVED', 'IN_PROGRESS', 'FIXED']);
@@ -403,6 +407,7 @@ function resolutionDto(value: ReportWithRelations['resolution']): BugReportResol
 }
 
 type ImplementationProgressSnapshot = {
+  id?: string;
   status: string;
   retrySequence?: number;
   executionPhase: string;
@@ -431,7 +436,7 @@ type AgentProgressSource = Pick<
   | 'closedAt'
   | 'updatedAt'
 > & {
-  audits: Array<{ action: string; note: string | null; createdAt: Date }>;
+  audits: Array<{ action: string; note: string | null; createdAt: Date; afterJson?: string | null }>;
   implementation?: ImplementationProgressSnapshot | null;
 };
 
@@ -498,7 +503,10 @@ function implementationStateDto(
     checkpointCount: value.checkpointCount,
     failureCode: clipped(value.failureCode, 100) || null,
     retrySequence: value.retrySequence ?? 0,
-    canRetryImplementation: value.status === 'FAILED' && (value.retrySequence ?? 0) < 2,
+    canRetryImplementation: canRetryInboxImplementation({
+      status: value.status,
+      retrySequence: value.retrySequence ?? 0,
+    }),
     canAuthorizeWorkerRecoveryRetry: canAuthorizeWorkerRecoveryRetry({
       ...value,
       retrySequence: value.retrySequence ?? -1,
@@ -784,6 +792,54 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
 
   const implementation = source.implementation;
   if (implementation && ['FAILED', 'STALE', 'EXPIRED'].includes(implementation.status)) {
+    const retrySequence = implementation.retrySequence ?? 0;
+    if (!canRetryInboxImplementation({ status: implementation.status, retrySequence })) {
+      const canRecoverWorker = canAuthorizeWorkerRecoveryRetry({
+        status: implementation.status,
+        retrySequence,
+        failureCode: implementation.failureCode,
+      });
+      if (canRecoverWorker) {
+        return nextAction(
+          'DANNY',
+          'RETRY_IMPLEMENTATION',
+          'Cho phép retry sau khi sửa Worker',
+          'Worker đã được sửa cho đúng lỗi hạ tầng này. Danny có thể cấp một lượt code/test khôi phục có audit.',
+          implementation.updatedAt
+        );
+      }
+      const diagnosticAudit = [...source.audits]
+        .reverse()
+        .find((audit) => audit.action === 'WORKER_READONLY_DIAGNOSTIC_PASSED');
+      const diagnostic = diagnosticAudit
+        ? { action: diagnosticAudit.action, afterJson: diagnosticAudit.afterJson ?? null }
+        : null;
+      const canRecoverSchema = canAuthorizeSchemaRecoveryRetry(
+        {
+          id: implementation.id || '',
+          status: implementation.status,
+          retrySequence,
+          failureCode: implementation.failureCode,
+        },
+        diagnostic
+      );
+      if (canRecoverSchema) {
+        return nextAction(
+          'DANNY',
+          'RETRY_IMPLEMENTATION',
+          'Cho phép retry sau khi sửa schema',
+          'Chẩn đoán chỉ-đọc đã xác minh schema Worker được sửa. Danny có thể cấp đúng một lượt code/test có audit.',
+          implementation.updatedAt
+        );
+      }
+      return nextAction(
+        'SYSTEM',
+        'NONE',
+        'Đang chờ khắc phục cổng kiểm thử',
+        'Các lượt retry hợp lệ đã dùng hết. Hệ thống phải xử lý lỗi build đã được ghi nhận trước khi có thể tạo lượt chạy mới.',
+        implementation.updatedAt
+      );
+    }
     return nextAction(
       'DANNY',
       'RETRY_IMPLEMENTATION',
