@@ -17,6 +17,26 @@ export interface DeploymentLaneDecision {
   rollback: string;
 }
 
+export const DEPLOYMENT_MEASUREMENT_METRICS = [
+  'TOTAL_LEAD_TIME_SECONDS',
+  'VERIFICATION_SECONDS',
+  'VERCEL_BUILD_PUBLISH_SECONDS',
+  'VPS_DEPLOY_RESTART_SECONDS',
+  'HEALTH_CHECK_SECONDS',
+  'SUCCESS_RATE',
+  'ROLLBACK_SECONDS',
+] as const;
+export type DeploymentMeasurementMetric = (typeof DEPLOYMENT_MEASUREMENT_METRICS)[number];
+
+export interface DeploymentLaneMeasurementPlan {
+  lane: DeploymentLane;
+  baselineLane: 'FULL_DEPLOY';
+  sampleSizePerLane: number;
+  metrics: DeploymentMeasurementMetric[];
+  comparisonRule: string;
+  safetyRule: string;
+}
+
 const WEB_PREFIX = 'apps/web/';
 const API_PREFIX = 'apps/api/';
 const WORKER_FILE = 'scripts/request-classifier-worker.ts';
@@ -71,4 +91,28 @@ export function classifyDeploymentLane(files: readonly string[]): DeploymentLane
   }
 
   return full('Thay đổi chạm shared, cấu hình, dependency, schema hoặc nhiều runtime; cần Full deploy để an toàn.');
+}
+
+/**
+ * Defines the before/after evidence required before a shadow lane may become an
+ * active release path. It deliberately contains no deployment side effects.
+ */
+export function buildDeploymentLaneMeasurementPlan(
+  decision: DeploymentLaneDecision,
+  sampleSizePerLane = 10
+): DeploymentLaneMeasurementPlan {
+  if (!Number.isInteger(sampleSizePerLane) || sampleSizePerLane < 1) {
+    throw new RangeError('sampleSizePerLane must be a positive integer.');
+  }
+
+  return {
+    lane: decision.lane,
+    baselineLane: 'FULL_DEPLOY',
+    sampleSizePerLane,
+    metrics: [...DEPLOYMENT_MEASUREMENT_METRICS],
+    comparisonRule:
+      'Compare median and p95 total lead time against equivalent FULL_DEPLOY releases, using the same start and healthy-release timestamps.',
+    safetyRule:
+      'Do not activate a fast lane unless success rate is no worse than baseline and rollback has been rehearsed with a recorded duration.',
+  };
 }
