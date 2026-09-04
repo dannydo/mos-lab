@@ -618,6 +618,7 @@ export function BugReportSurface() {
 
       <AdaptiveModal
         intent={activeView === 'history' ? 'data' : 'form'}
+        width={activeView === 'history' ? 'min(1200px, calc(100vw - 48px))' : undefined}
         title="Phản hồi mOS"
         open={open}
         onCancel={closeReporter}
@@ -700,6 +701,7 @@ export function BugReportSurface() {
             selectedKey={selectedReportKey}
             loading={myBugs.loading}
             error={myBugs.error}
+            canViewTechnicalHistory={canViewInbox}
             onSelect={setSelectedReportKey}
             onRefresh={myBugs.refresh}
             onReview={myBugs.review}

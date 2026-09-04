@@ -12,11 +12,15 @@ import type {
 } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import {
-  Check,
   CheckCircle2,
   ChevronRight,
   CircleDotDashed,
+  Clock3,
   ExternalLink,
+  FileText,
+  ImageIcon,
+  ListTree,
+  MessageCircleQuestion,
   RotateCcw,
   Search,
   Sparkles,
@@ -24,8 +28,11 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { AppIcon, StatePanel, StatusTag } from '../ui';
 import { BugReportConversation } from './BugReportConversation';
+import { BugReportAttachmentPreview } from './BugReportAttachmentPreview';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
+
+type ReporterTone = 'attention' | 'working' | 'done' | 'quiet';
 
 const REPORTER_STATE_TONES: Record<BugReportReporterState, Parameters<typeof StatusTag>[0]['status']> = {
   RECEIVED: 'processing',
@@ -33,7 +40,7 @@ const REPORTER_STATE_TONES: Record<BugReportReporterState, Parameters<typeof Sta
   IN_PROGRESS: 'cyan',
   WAITING_REPORTER: 'warning',
   READY_FOR_REVIEW: 'success',
-  COMPLETED: 'default',
+  COMPLETED: 'success',
   NOT_PROCEEDING: 'default',
 };
 
@@ -41,40 +48,59 @@ const REPORTER_STATE_ICONS: Record<BugReportReporterState, LucideIcon> = {
   RECEIVED: CircleDotDashed,
   REVIEWING: CircleDotDashed,
   IN_PROGRESS: Sparkles,
-  WAITING_REPORTER: CircleDotDashed,
+  WAITING_REPORTER: MessageCircleQuestion,
   READY_FOR_REVIEW: CheckCircle2,
   COMPLETED: CheckCircle2,
   NOT_PROCEEDING: CircleDotDashed,
 };
 
-const PROGRESS_LABELS = ['Đã nhận', 'Đang xử lý', 'Mời bạn kiểm tra'];
-
-const REPORTER_GROUPS: Array<{ id: string; label: string; states: BugReportReporterState[] }> = [
-  { id: 'needs-reply', label: 'Cần bạn trả lời', states: ['WAITING_REPORTER'] },
-  { id: 'ready-for-review', label: 'Mời bạn kiểm tra', states: ['READY_FOR_REVIEW'] },
-  { id: 'in-flight', label: 'Đang xử lý', states: ['RECEIVED', 'REVIEWING', 'IN_PROGRESS'] },
-  { id: 'completed', label: 'Đã hoàn tất', states: ['COMPLETED', 'NOT_PROCEEDING'] },
+const REPORTER_GROUPS: Array<{
+  id: string;
+  label: string;
+  helper: string;
+  tone: ReporterTone;
+  states: BugReportReporterState[];
+}> = [
+  {
+    id: 'needs-attention',
+    label: 'Cần bạn chú ý',
+    helper: 'Có việc cần bạn quyết định hoặc trả lời',
+    tone: 'attention',
+    states: ['WAITING_REPORTER', 'READY_FOR_REVIEW'],
+  },
+  {
+    id: 'in-progress',
+    label: 'mOS đang xử lý',
+    helper: 'Bạn chưa cần làm gì lúc này',
+    tone: 'working',
+    states: ['RECEIVED', 'REVIEWING', 'IN_PROGRESS'],
+  },
+  {
+    id: 'completed',
+    label: 'Đã hoàn tất',
+    helper: 'Những yêu cầu đã có kết quả',
+    tone: 'done',
+    states: ['COMPLETED', 'NOT_PROCEEDING'],
+  },
 ];
 
 function elapsedSince(value: string): string {
   const minutes = Math.max(0, dayjs().diff(dayjs(value), 'minute'));
-  if (minutes < 1) return 'vừa xong';
+  if (minutes < 1) return 'vừa cập nhật';
   if (minutes < 60) return `${minutes} phút trước`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} giờ trước`;
   return `${Math.floor(hours / 24)} ngày trước`;
 }
 
-function progressStep(report: MyBugReportItem, index: number): 'finish' | 'process' | 'wait' {
-  const state = report.reporterExperience.state;
-  if (index === 0) return 'finish';
-  if (index === 1) {
-    if (['IN_PROGRESS', 'READY_FOR_REVIEW', 'COMPLETED'].includes(state)) return 'finish';
-    if (['REVIEWING', 'WAITING_REPORTER'].includes(state)) return 'process';
-    return 'wait';
-  }
-  if (['READY_FOR_REVIEW', 'COMPLETED'].includes(state)) return 'finish';
-  return state === 'WAITING_REPORTER' ? 'process' : 'wait';
+function toneForState(state: BugReportReporterState): ReporterTone {
+  if (['WAITING_REPORTER', 'READY_FOR_REVIEW'].includes(state)) return 'attention';
+  if (['COMPLETED', 'NOT_PROCEEDING'].includes(state)) return 'done';
+  return 'working';
+}
+
+function requestTypeLabel(report: MyBugReportItem): string {
+  return report.requestType === 'FEATURE' ? 'Cải thiện' : 'Báo lỗi';
 }
 
 interface MyBugReportsPanelProps {
@@ -83,6 +109,7 @@ interface MyBugReportsPanelProps {
   selectedKey: string | null;
   loading: boolean;
   error: string | null;
+  canViewTechnicalHistory?: boolean;
   onSelect: (key: string) => void;
   onRefresh: () => Promise<void>;
   onReview: (id: number, request: ReviewBugReportRequest) => Promise<unknown>;
@@ -95,6 +122,7 @@ export function MyBugReportsPanel({
   selectedKey,
   loading,
   error,
+  canViewTechnicalHistory = false,
   onSelect,
   onRefresh,
   onReview,
@@ -104,9 +132,27 @@ export function MyBugReportsPanel({
   const [messageApi, messageContext] = message.useMessage();
   const [saving, setSaving] = React.useState(false);
   const [search, setSearch] = React.useState('');
-  let selected = reports.find((item) => item.key === selectedKey) ?? reports[0] ?? null;
+  const [technicalHistoryOpen, setTechnicalHistoryOpen] = React.useState(false);
+
+  const visualForTone = React.useCallback(
+    (tone: ReporterTone) => {
+      if (tone === 'attention')
+        return { accent: token.colorWarning, border: token.colorWarningBorder, background: token.colorWarningBg };
+      if (tone === 'done')
+        return { accent: token.colorSuccess, border: token.colorSuccessBorder, background: token.colorSuccessBg };
+      if (tone === 'quiet')
+        return {
+          accent: token.colorTextTertiary,
+          border: token.colorBorderSecondary,
+          background: token.colorFillQuaternary,
+        };
+      return { accent: token.colorInfo, border: token.colorInfoBorder, background: token.colorInfoBg };
+    },
+    [token]
+  );
 
   const submitReview = async (decision: ReviewBugReportRequest['decision'], reopenIntent?: 'UNCHANGED') => {
+    const selected = reports.find((item) => item.key === selectedKey) ?? reports[0];
     if (!selected) return;
     setSaving(true);
     try {
@@ -140,7 +186,7 @@ export function MyBugReportsPanel({
       <StatePanel
         kind="empty"
         title="Bạn chưa gửi yêu cầu nào"
-        description="Yêu cầu bạn gửi sẽ xuất hiện ở đây cùng tình trạng dễ theo dõi."
+        description="Yêu cầu bạn gửi sẽ xuất hiện ở đây cùng tình trạng và việc cần làm tiếp theo."
       />
     );
 
@@ -148,43 +194,31 @@ export function MyBugReportsPanel({
   const hasResult = notifications.some(
     (item) => !item.readAt && ['BUG_FIXED_REVIEW', 'FEATURE_IMPLEMENTED_REVIEW'].includes(item.type)
   );
-  const panelStyle = { borderColor: token.colorBorderSecondary, background: token.colorBgContainer };
-  const stateVisual = (state: BugReportReporterState) => {
-    if (state === 'WAITING_REPORTER')
-      return { accent: token.colorWarning, border: token.colorWarningBorder, background: token.colorWarningBg };
-    if (state === 'READY_FOR_REVIEW' || state === 'COMPLETED')
-      return { accent: token.colorSuccess, border: token.colorSuccessBorder, background: token.colorSuccessBg };
-    if (state === 'IN_PROGRESS')
-      return { accent: token.colorInfo, border: token.colorInfoBorder, background: token.colorInfoBg };
-    if (state === 'NOT_PROCEEDING')
-      return {
-        accent: token.colorTextTertiary,
-        border: token.colorBorderSecondary,
-        background: token.colorFillQuaternary,
-      };
-    return { accent: token.colorPrimary, border: token.colorPrimaryBorder, background: token.colorPrimaryBg };
-  };
   const normalizedSearch = search.trim().toLocaleLowerCase('vi');
   const matchingReports = normalizedSearch
     ? reports.filter((report) =>
         `${report.key} ${report.title} ${report.description}`.toLocaleLowerCase('vi').includes(normalizedSearch)
       )
     : reports;
+  const selected =
+    matchingReports.find((report) => report.key === selectedKey) ?? matchingReports[0] ?? reports[0] ?? null;
+  const selectedVisual = visualForTone(selected ? toneForState(selected.reporterExperience.state) : 'quiet');
   const groupedReports = REPORTER_GROUPS.map((group) => ({
     ...group,
     reports: matchingReports.filter((report) => group.states.includes(report.reporterExperience.state)),
   }));
-  selected = matchingReports.find((report) => report.key === selectedKey) ?? matchingReports[0] ?? selected;
+  const recentUpdates = selected?.reporterExperience.updates.slice(0, 2) ?? [];
+  const selectedEvidence = selected?.evidenceAttachments ?? [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {messageContext}
       {needsReply ? (
         <Alert
           type="warning"
           showIcon
-          message="Có một yêu cầu cần bạn trả lời"
-          description="Mở yêu cầu để xem câu hỏi ngắn mà mOS đang cần."
+          message="Có yêu cầu đang cần bạn trả lời"
+          description="mOS chỉ hỏi một điều cần thiết để tiếp tục xử lý."
         />
       ) : null}
       {!needsReply && hasResult ? (
@@ -196,23 +230,32 @@ export function MyBugReportsPanel({
         />
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(238px,0.7fr)_minmax(0,1.3fr)]">
+      <div
+        className="reporter-request-layout grid grid-cols-1 overflow-hidden rounded-2xl border"
+        style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
+      >
         <section
-          className="overflow-hidden rounded-2xl border"
-          style={panelStyle}
+          className="reporter-request-list border-b"
+          style={{ borderColor: token.colorBorderSecondary }}
           aria-label="Danh sách yêu cầu của tôi"
         >
-          <div className="flex items-center justify-between px-4 py-3">
-            <div>
-              <Text strong className="text-base">
-                Yêu cầu của tôi
-              </Text>
-              <Text type="secondary" className="ml-2 text-xs">
-                {reports.length} yêu cầu
-              </Text>
+          <div className="px-5 pb-3 pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <Text strong className="text-lg">
+                  Yêu cầu của tôi
+                </Text>
+                <Text type="secondary" className="mt-0.5 block text-sm">
+                  Chỉ cần nói mOS cần giúp gì
+                </Text>
+              </div>
+              <span
+                className="rounded-full px-2 py-0.5 text-xs"
+                style={{ background: token.colorFillQuaternary, color: token.colorTextSecondary }}
+              >
+                {reports.length}
+              </span>
             </div>
-          </div>
-          <div className="px-3 pb-2">
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -220,77 +263,98 @@ export function MyBugReportsPanel({
               prefix={<AppIcon icon={Search} size="sm" />}
               placeholder="Tìm yêu cầu"
               aria-label="Tìm yêu cầu"
+              className="mt-4"
             />
           </div>
-          <div className="max-h-[430px] space-y-3 overflow-y-auto px-2 pb-3 pr-2" aria-label="Các nhóm yêu cầu">
+
+          <div className="max-h-[612px] space-y-5 overflow-y-auto px-3 pb-5" aria-label="Các nhóm yêu cầu">
             {groupedReports
               .filter((group) => group.reports.length > 0)
-              .map((group) => (
-                <div key={group.id}>
-                  <div className="flex items-center justify-between px-2 pb-1.5">
-                    <Text strong className="text-xs">
-                      {group.label}
-                    </Text>
-                    <span
-                      className="rounded-full px-1.5 py-0.5 text-[11px]"
-                      style={{ background: token.colorFillQuaternary, color: token.colorTextSecondary }}
-                    >
-                      {group.reports.length}
-                    </span>
-                  </div>
-                  {group.reports.length ? (
-                    <div className="space-y-1">
+              .map((group) => {
+                const groupVisual = visualForTone(group.tone);
+                return (
+                  <div key={group.id}>
+                    <div className="mb-2 flex items-start justify-between gap-2 px-2">
+                      <div>
+                        <Text strong className="text-sm" style={{ color: groupVisual.accent }}>
+                          {group.label}
+                        </Text>
+                        <Text type="secondary" className="mt-0.5 block text-xs">
+                          {group.helper}
+                        </Text>
+                      </div>
+                      <span
+                        className="rounded-full px-1.5 py-0.5 text-[11px]"
+                        style={{ background: groupVisual.background, color: groupVisual.accent }}
+                      >
+                        {group.reports.length}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
                       {group.reports.map((report) => {
                         const active = selected?.id === report.id;
-                        const visual = stateVisual(report.reporterExperience.state);
+                        const visual = visualForTone(toneForState(report.reporterExperience.state));
                         return (
                           <button
                             key={report.id}
                             type="button"
                             aria-current={active ? 'true' : undefined}
-                            className="group relative w-full rounded-xl px-3 py-2.5 text-left transition-all"
+                            className="group w-full rounded-xl border px-3 py-2.5 text-left transition-all hover:-translate-y-px"
                             style={{
-                              background: active ? visual.background : 'transparent',
+                              borderColor: active ? visual.border : 'transparent',
+                              background: active ? visual.background : token.colorFillQuaternary,
                               boxShadow: active ? `inset 3px 0 0 ${visual.accent}` : undefined,
                             }}
                             onClick={() => onSelect(report.key)}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <Text strong className="truncate">
-                                {report.key}
+                              <span className="inline-flex min-w-0 items-center gap-1.5">
+                                <span
+                                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                                  style={{ background: visual.accent }}
+                                />
+                                <Text strong className="truncate text-xs">
+                                  {report.key}
+                                </Text>
+                              </span>
+                              <Text type="secondary" className="shrink-0 text-[11px]">
+                                {elapsedSince(report.updatedAt)}
                               </Text>
-                              <StatusTag
-                                status={REPORTER_STATE_TONES[report.reporterExperience.state]}
-                                icon={
-                                  <AppIcon icon={REPORTER_STATE_ICONS[report.reporterExperience.state]} size="sm" />
-                                }
-                                label={report.reporterExperience.label}
-                                className="shrink-0"
-                              />
                             </div>
-                            <Text
-                              ellipsis={{ tooltip: report.description }}
-                              type="secondary"
-                              className="mt-1 block min-w-0 text-xs"
-                            >
-                              {report.description.replace(/\s+/g, ' ').trim()}
+                            <Text ellipsis={{ tooltip: report.title }} className="mt-1 block text-sm font-medium">
+                              {report.title}
                             </Text>
-                            <div
-                              className="mt-1.5 flex items-center justify-between text-xs"
-                              style={{ color: token.colorTextTertiary }}
-                            >
-                              <span>{elapsedSince(report.updatedAt)}</span>
-                              <AppIcon icon={ChevronRight} size="sm" />
+                            <div className="mt-1 flex items-center justify-between gap-2">
+                              <Text
+                                type="secondary"
+                                ellipsis={{ tooltip: report.reporterExperience.summary }}
+                                className="min-w-0 text-xs"
+                              >
+                                {report.reporterExperience.summary}
+                              </Text>
+                              <span className="flex shrink-0 items-center gap-1">
+                                {report.evidenceAttachments.length ? (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 text-[11px]"
+                                    style={{ color: token.colorTextTertiary }}
+                                    title={`${report.evidenceAttachments.length} ảnh bạn đã gửi`}
+                                  >
+                                    <AppIcon icon={ImageIcon} size={12} />
+                                    {report.evidenceAttachments.length}
+                                  </span>
+                                ) : null}
+                                <AppIcon icon={ChevronRight} size="sm" style={{ color: token.colorTextTertiary }} />
+                              </span>
                             </div>
                           </button>
                         );
                       })}
                     </div>
-                  ) : null}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             {!matchingReports.length ? (
-              <Text type="secondary" className="block px-2 py-4 text-center text-sm">
+              <Text type="secondary" className="block px-2 py-8 text-center text-sm">
                 Không tìm thấy yêu cầu phù hợp.
               </Text>
             ) : null}
@@ -298,158 +362,144 @@ export function MyBugReportsPanel({
         </section>
 
         {selected ? (
-          <section
-            className="overflow-hidden rounded-2xl border"
-            style={{
-              ...panelStyle,
-              borderColor: stateVisual(selected.reporterExperience.state).border,
-              boxShadow: `0 14px 36px ${token.colorFillQuaternary}`,
-            }}
-            aria-label={`Chi tiết ${selected.key}`}
-          >
-            <div
-              className="border-b px-4 py-4 sm:px-5"
-              style={{
-                borderColor: stateVisual(selected.reporterExperience.state).border,
-                background: stateVisual(selected.reporterExperience.state).background,
-              }}
+          <section className="min-w-0" aria-label={`Chi tiết ${selected.key}`}>
+            <header
+              className="border-b px-5 py-5 sm:px-7"
+              style={{ borderColor: selectedVisual.border, background: selectedVisual.background }}
             >
               <div className="flex items-start gap-3">
                 <div
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                  style={{
-                    background: token.colorBgContainer,
-                    color: stateVisual(selected.reporterExperience.state).accent,
-                  }}
+                  style={{ background: token.colorBgContainer, color: selectedVisual.accent }}
                 >
                   <AppIcon icon={REPORTER_STATE_ICONS[selected.reporterExperience.state]} size="md" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <Text strong className="text-base">
-                      {selected.key}
-                    </Text>
+                    <span className="inline-flex items-center gap-2">
+                      <Text strong>{selected.key}</Text>
+                      <Text type="secondary" className="text-xs">
+                        {requestTypeLabel(selected)}
+                      </Text>
+                    </span>
                     <StatusTag
                       status={REPORTER_STATE_TONES[selected.reporterExperience.state]}
                       icon={<AppIcon icon={REPORTER_STATE_ICONS[selected.reporterExperience.state]} size="sm" />}
                       label={selected.reporterExperience.label}
                     />
                   </div>
-                  <Text type="secondary" className="mt-1 block">
-                    {selected.description}
+                  <Text strong className="mt-1.5 block text-lg leading-snug">
+                    {selected.title}
+                  </Text>
+                  <Text type="secondary" className="mt-1 block text-sm">
+                    Cập nhật {elapsedSince(selected.updatedAt)}
                   </Text>
                 </div>
               </div>
-            </div>
+            </header>
 
-            <div className="space-y-4 px-4 py-4 sm:px-5 sm:py-5">
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(230px,0.75fr)]">
-                <div>
-                  <Text type="secondary" className="text-xs font-medium uppercase tracking-wide">
-                    mOS đang làm gì
+            <div className="space-y-3 px-5 py-5 sm:px-7">
+              <InfoBlock
+                icon={FileText}
+                title={selected.requestType === 'FEATURE' ? 'Điều bạn muốn' : 'Điều bạn đã báo'}
+              >
+                {selected.description}
+              </InfoBlock>
+              {selectedEvidence.length ? (
+                <InfoBlock icon={ImageIcon} title="Ảnh bạn đã gửi">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selectedEvidence.slice(0, 3).map((attachment) => (
+                      <BugReportAttachmentPreview
+                        key={attachment.id}
+                        reportId={selected.id}
+                        attachment={attachment}
+                        thumbnail
+                      />
+                    ))}
+                    {selectedEvidence.length > 3 ? (
+                      <span
+                        className="inline-flex h-[72px] min-w-[72px] items-center justify-center rounded-lg px-2 text-sm font-semibold"
+                        style={{ background: token.colorFillQuaternary, color: token.colorTextSecondary }}
+                      >
+                        +{selectedEvidence.length - 3}
+                      </span>
+                    ) : null}
+                  </div>
+                  <Text type="secondary" className="mt-2 block text-xs">
+                    Bấm vào ảnh để xem rõ hơn.
                   </Text>
-                  <Paragraph className="mb-0 mt-1">{selected.reporterExperience.summary}</Paragraph>
-                </div>
-                <div
-                  className="rounded-xl border px-3 py-2.5"
-                  style={{
-                    borderColor: stateVisual(selected.reporterExperience.state).border,
-                    background: stateVisual(selected.reporterExperience.state).background,
-                  }}
-                >
-                  <Text type="secondary" className="text-xs font-medium uppercase tracking-wide">
-                    Việc tiếp theo
-                  </Text>
-                  <Text strong className="mt-0.5 block">
-                    {selected.reporterExperience.nextAction.label}
-                  </Text>
-                  <Text type="secondary" className="mt-0.5 block text-xs">
-                    {selected.reporterExperience.nextAction.detail}
-                  </Text>
-                </div>
-              </div>
-
-              <div className="flex items-start" aria-label="Tiến trình yêu cầu">
-                {PROGRESS_LABELS.map((label, index) => {
-                  const step = progressStep(selected, index);
-                  return (
-                    <React.Fragment key={label}>
-                      <div className="flex min-w-0 flex-1 flex-col items-center text-center">
-                        <span
-                          className="flex h-7 w-7 items-center justify-center rounded-full border"
-                          style={{
-                            borderColor:
-                              step === 'wait'
-                                ? token.colorBorder
-                                : step === 'process'
-                                  ? stateVisual(selected.reporterExperience.state).border
-                                  : token.colorSuccessBorder,
-                            background:
-                              step === 'process'
-                                ? stateVisual(selected.reporterExperience.state).background
-                                : step === 'finish'
-                                  ? token.colorSuccessBg
-                                  : token.colorFillQuaternary,
-                            color:
-                              step === 'process'
-                                ? stateVisual(selected.reporterExperience.state).accent
-                                : step === 'finish'
-                                  ? token.colorSuccess
-                                  : token.colorTextTertiary,
-                          }}
-                        >
-                          {step === 'finish' ? (
-                            <AppIcon icon={Check} size="sm" />
-                          ) : (
-                            <AppIcon icon={CircleDotDashed} size="sm" />
-                          )}
+                </InfoBlock>
+              ) : null}
+              <InfoBlock
+                icon={Sparkles}
+                title={
+                  ['COMPLETED', 'NOT_PROCEEDING'].includes(selected.reporterExperience.state)
+                    ? 'mOS đã làm'
+                    : 'mOS đang làm gì'
+                }
+                accent={selectedVisual.accent}
+                background={selectedVisual.background}
+              >
+                {selected.reporterExperience.summary}
+                {recentUpdates.length ? (
+                  <div className="mt-3 space-y-1.5 border-t pt-3" style={{ borderColor: selectedVisual.border }}>
+                    {recentUpdates.map((update) => (
+                      <div
+                        key={`${update.label}-${update.occurredAt}`}
+                        className="flex items-start justify-between gap-3 text-xs"
+                      >
+                        <span>{update.label}</span>
+                        <span className="shrink-0" style={{ color: token.colorTextTertiary }}>
+                          {elapsedSince(update.occurredAt)}
                         </span>
-                        <Text
-                          className="mt-1.5 text-xs"
-                          style={{ color: step === 'wait' ? token.colorTextTertiary : token.colorText }}
-                        >
-                          {label}
-                        </Text>
                       </div>
-                      {index < PROGRESS_LABELS.length - 1 ? (
-                        <div
-                          className="mt-3 h-px flex-1"
-                          style={{
-                            background:
-                              progressStep(selected, index + 1) === 'wait'
-                                ? token.colorBorderSecondary
-                                : stateVisual(selected.reporterExperience.state).border,
-                          }}
-                        />
-                      ) : null}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-start gap-3 border-t pt-3" style={{ borderColor: token.colorBorderSecondary }}>
-                <Text strong className="shrink-0">
-                  Cập nhật mới
-                </Text>
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  {selected.reporterExperience.updates.map((update) => (
-                    <div
-                      key={`${update.label}-${update.occurredAt}`}
-                      className="flex items-center justify-between gap-3 text-sm"
+                    ))}
+                  </div>
+                ) : null}
+              </InfoBlock>
+              {selected.resolution ? (
+                <InfoBlock
+                  icon={CheckCircle2}
+                  title="Kết quả"
+                  accent={token.colorSuccess}
+                  background={token.colorSuccessBg}
+                >
+                  {selected.resolution.solutionSummary}
+                  {selected.resolution.releaseUrl ? (
+                    <Button
+                      className="mt-3"
+                      href={selected.resolution.releaseUrl}
+                      target="_blank"
+                      icon={<AppIcon icon={ExternalLink} size="sm" />}
                     >
-                      <Text>{update.label}</Text>
-                      <Text type="secondary" className="shrink-0 text-xs">
-                        {elapsedSince(update.occurredAt)}
-                      </Text>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                      Mở kết quả
+                    </Button>
+                  ) : null}
+                </InfoBlock>
+              ) : null}
 
-              {selected.clarification.status === 'WAITING_REPORTER' ? (
-                <div className="border-t pt-5" style={{ borderColor: token.colorBorderSecondary }}>
-                  <Text strong>mOS cần bạn trả lời</Text>
-                  <div className="mt-3">
+              <section
+                className="rounded-xl border p-4"
+                style={{ borderColor: selectedVisual.border, background: selectedVisual.background }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5" style={{ color: selectedVisual.accent }}>
+                    <AppIcon icon={Clock3} size="sm" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Text type="secondary" className="text-xs font-semibold uppercase tracking-wide">
+                      Việc tiếp theo
+                    </Text>
+                    <Text strong className="mt-0.5 block">
+                      {selected.reporterExperience.nextAction.label}
+                    </Text>
+                    <Text type="secondary" className="mt-0.5 block text-sm">
+                      {selected.reporterExperience.nextAction.detail}
+                    </Text>
+                  </div>
+                </div>
+                {selected.clarification.status === 'WAITING_REPORTER' ? (
+                  <div className="mt-4 border-t pt-4" style={{ borderColor: selectedVisual.border }}>
                     <BugReportConversation
                       reportId={selected.id}
                       requestType={selected.requestType}
@@ -460,59 +510,113 @@ export function MyBugReportsPanel({
                       onSubmit={(request) => onComment(selected.id, request)}
                     />
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+                {selected.canReview || selected.canReopenUnchanged ? (
+                  <div
+                    className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4"
+                    style={{ borderColor: selectedVisual.border }}
+                  >
+                    <Text type="secondary" className="max-w-md text-xs">
+                      Nếu vẫn chưa đúng, mOS sẽ dùng lại thông tin bạn đã gửi trước đó.
+                    </Text>
+                    <div className="flex flex-wrap gap-2">
+                      {selected.canReopenUnchanged ? (
+                        <Button
+                          loading={saving}
+                          icon={<AppIcon icon={RotateCcw} size="sm" />}
+                          onClick={() => void submitReview('REOPEN', 'UNCHANGED')}
+                        >
+                          Vẫn như cũ
+                        </Button>
+                      ) : null}
+                      {selected.canReview ? (
+                        <Button
+                          type="primary"
+                          loading={saving}
+                          icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                          onClick={() => void submitReview('APPROVE')}
+                        >
+                          Đã đúng
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </section>
 
-              {selected.resolution ? (
-                <div className="border-t pt-5" style={{ borderColor: token.colorBorderSecondary }}>
-                  <Text strong>Kết quả để bạn kiểm tra</Text>
-                  <Paragraph className="mb-3 mt-2">{selected.resolution.solutionSummary}</Paragraph>
-                  {selected.resolution.releaseUrl ? (
-                    <Button
-                      href={selected.resolution.releaseUrl}
-                      target="_blank"
-                      icon={<AppIcon icon={ExternalLink} size="sm" />}
-                    >
-                      Mở kết quả
-                    </Button>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {selected.canReview || selected.canReopenUnchanged ? (
-                <div
-                  className="flex flex-wrap items-center justify-between gap-3 border-t pt-5"
+              {canViewTechnicalHistory ? (
+                <details
+                  open={technicalHistoryOpen}
+                  onToggle={(event) => setTechnicalHistoryOpen(event.currentTarget.open)}
+                  className="rounded-xl border"
                   style={{ borderColor: token.colorBorderSecondary }}
                 >
-                  <Text type="secondary" className="max-w-md">
-                    Nếu vẫn chưa đúng, mOS sẽ dùng lại thông tin bạn đã gửi trước đó. Bạn không cần kể lại vấn đề.
-                  </Text>
-                  <div className="flex flex-wrap gap-2">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                    <span className="inline-flex items-center gap-2">
+                      <AppIcon icon={ListTree} size="sm" />
+                      <Text strong className="text-sm">
+                        Xem lịch sử xử lý
+                      </Text>
+                    </span>
+                    <Text type="secondary" className="text-xs">
+                      Dành cho dev / AI Agent
+                    </Text>
+                  </summary>
+                  <div className="border-t px-4 py-3" style={{ borderColor: token.colorBorderSecondary }}>
+                    <Text type="secondary" className="block text-sm">
+                      Lịch sử kỹ thuật, audit và workflow nội bộ được xem trong mOS Inbox để không làm rối màn hình
+                      người báo.
+                    </Text>
                     <Button
-                      loading={saving}
-                      icon={<AppIcon icon={RotateCcw} size="sm" />}
-                      onClick={() => void submitReview('REOPEN', 'UNCHANGED')}
+                      className="mt-3"
+                      size="small"
+                      href={`/dashboard/bug-reports?selected=${encodeURIComponent(selected.key)}`}
+                      icon={<AppIcon icon={ExternalLink} size="sm" />}
                     >
-                      Vẫn như cũ
+                      Mở chi tiết xử lý
                     </Button>
-                    {selected.canReview ? (
-                      <Button
-                        type="primary"
-                        loading={saving}
-                        icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                        onClick={() => void submitReview('APPROVE')}
-                      >
-                        Đã đúng
-                      </Button>
-                    ) : null}
                   </div>
-                </div>
+                </details>
               ) : null}
             </div>
           </section>
         ) : null}
       </div>
     </div>
+  );
+}
+
+function InfoBlock({
+  icon,
+  title,
+  accent,
+  background,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  accent?: string;
+  background?: string;
+  children: React.ReactNode;
+}) {
+  const { token } = theme.useToken();
+  return (
+    <section
+      className="rounded-xl border p-4"
+      style={{ borderColor: accent ? undefined : token.colorBorderSecondary, background }}
+    >
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5" style={{ color: accent ?? token.colorTextTertiary }}>
+          <AppIcon icon={icon} size="sm" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <Text type="secondary" className="text-xs font-semibold uppercase tracking-wide">
+            {title}
+          </Text>
+          <div className="mt-1 whitespace-pre-wrap text-sm leading-6">{children}</div>
+        </div>
+      </div>
+    </section>
   );
 }
 

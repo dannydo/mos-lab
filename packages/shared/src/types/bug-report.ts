@@ -743,6 +743,8 @@ export interface BugReportDetail extends BugReportSummary {
 
 export interface MyBugReportItem extends BugReportSummary {
   resolution: BugReportResolution | null;
+  /** Original image evidence supplied with the request, safe for the reporter's request view. */
+  evidenceAttachments: BugReportAttachment[];
   comments: BugReportComment[];
   reviewUrl: string;
   canReview: boolean;

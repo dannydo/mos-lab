@@ -632,6 +632,20 @@ body {
   overflow-x: hidden;
 }
 
+/* Reporter history is a decision surface. At Laptop Large and above, retain
+   its list-and-detail relationship instead of stacking the detail below the
+   list. The component still collapses naturally on smaller screens. */
+@media (min-width: 1024px) {
+  .reporter-request-layout {
+    grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1.55fr) !important;
+  }
+
+  .reporter-request-list {
+    border-right-width: 1px;
+    border-bottom-width: 0;
+  }
+}
+
 .light-theme {
   color-scheme: light;
   --background: #f5f7fa;

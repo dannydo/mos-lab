@@ -158,10 +158,23 @@ export async function authRoutes(fastify: FastifyInstance) {
           picture = identity.avatarUrl;
         }
 
+        // A production database refresh can contain Danny's canonical account under
+        // the historical `danhdo@gmail.com` username without the newer Wings Lashes
+        // email. Resolve this BEFORE the generic lookup: an earlier local mock may
+        // have created a second `danny.do@…` staff row with no reporter history.
+        let staff =
+          isMock && process.env.NODE_ENV !== 'production' && isCanonicalSuperAdminIdentity({ email })
+            ? await fastify.prisma.crm.crmStaff.findFirst({
+                where: { OR: [{ username: 'danhdo@gmail.com' }, { email: 'danhdo@gmail.com' }] },
+              })
+            : null;
+
         // Find staff in CRM DB
-        let staff = await fastify.prisma.crm.crmStaff.findUnique({
-          where: { username: email },
-        });
+        if (!staff) {
+          staff = await fastify.prisma.crm.crmStaff.findUnique({
+            where: { username: email },
+          });
+        }
 
         if (!staff) {
           // Try to match email prefix (e.g., "bichphuong" from "bichphuong@gmail.com")

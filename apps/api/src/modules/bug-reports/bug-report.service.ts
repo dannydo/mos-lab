@@ -1097,6 +1097,11 @@ function myReportDto(row: ReportWithRelations): MyBugReportItem {
   return {
     ...summaryDto(row),
     resolution: resolutionDto(row.resolution),
+    // Keep the reporter view focused on the original evidence they supplied.
+    // Conversation and Agent attachments remain in their respective, permissioned views.
+    evidenceAttachments: row.attachments
+      .filter((attachment) => !attachment.deletedAt && attachment.mimeType.startsWith('image/'))
+      .map(attachmentDto),
     comments: row.comments.map(commentDto),
     reviewUrl: reviewUrl(row.id, storedRequestType(row.requestType)),
     canReview: row.status === 'FIXED',
@@ -2391,7 +2396,14 @@ export class BugReportService {
       where: { id: attachmentId, reportId, deletedAt: null },
     });
     if (!attachment) throw new BugReportError('Không tìm thấy ảnh.', 404, 'ATTACHMENT_NOT_FOUND');
-    return { attachment, buffer: await BugReportStorage.read(attachment.storagePath) };
+    try {
+      return { attachment, buffer: await BugReportStorage.read(attachment.storagePath) };
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+        throw new BugReportError('Ảnh này chưa có trong bản dữ liệu hiện tại.', 404, 'ATTACHMENT_FILE_MISSING');
+      }
+      throw error;
+    }
   }
 
   static async agentQueue(fastify: FastifyInstance): Promise<AgentBugQueueItem[]> {
