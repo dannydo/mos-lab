@@ -12,6 +12,7 @@ import {
   isInboxImplementationExecutionEligible,
   isInboxImplementationEligible,
   normalizeInboxImplementationResult,
+  qualityTestsForCheckpointApproval,
   testsAfterOperationalCheckpointFailure,
 } from './inbox-implementation.service.js';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
@@ -62,6 +63,27 @@ test('records a code/test worker failure as failed quality evidence', () => {
       failureCode: 'CODEX_EXEC_EXIT_1',
       failureSummary: 'Executor exited.',
     },
+  ]);
+});
+
+test('removes only legacy operational checkpoint evidence before re-approving deploy', () => {
+  const tests = qualityTestsForCheckpointApproval(
+    JSON.stringify([
+      { command: 'pnpm --filter @mos-lab/shared build', status: 'PASSED' },
+      {
+        command: 'Codex executor',
+        status: 'FAILED',
+        failureCode: 'DEPLOY_INTERRUPTED',
+        failureSummary: 'Worker restart.',
+      },
+      { command: 'git diff --check', status: 'PASSED' },
+    ]),
+    'DEPLOY_INTERRUPTED'
+  );
+
+  assert.deepEqual(tests, [
+    { command: 'pnpm --filter @mos-lab/shared build', status: 'PASSED' },
+    { command: 'git diff --check', status: 'PASSED' },
   ]);
 });
 

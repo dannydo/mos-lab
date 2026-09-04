@@ -342,6 +342,19 @@ export function testsAfterOperationalCheckpointFailure(
   ]);
 }
 
+/** Repairs the legacy shape where a deploy/commit interruption was appended as a failed code test. */
+export function qualityTestsForCheckpointApproval(
+  existingTestsJson: string | null,
+  checkpointFailureCode: string | null
+): InboxImplementationTestResult[] {
+  const tests = normalizeTests(safeJsonValue(existingTestsJson));
+  if (!checkpointFailureCode) return tests;
+  return tests.filter(
+    (test) =>
+      !(test.command === 'Codex executor' && test.status === 'FAILED' && test.failureCode === checkpointFailureCode)
+  );
+}
+
 /** Keeps a useful diagnosis without retaining raw worker logs or secrets. */
 function redactFailureSummary(value: unknown): string | null {
   const summary = clean(value, 420);
@@ -1252,9 +1265,10 @@ export class InboxImplementationService {
     if (!job?.commitSha) {
       throw new InboxImplementationError('Không có commit đã duyệt để deploy.', 409, 'DEPLOY_COMMIT_MISSING');
     }
+    const qualityTests = qualityTestsForCheckpointApproval(job.testsJson, job.failureCode);
     const qualityGate = evaluateInboxImplementationQualityGate({
       changedFiles: safeJsonValue(job.changedFilesJson),
-      tests: safeJsonValue(job.testsJson),
+      tests: qualityTests,
     });
     if (!qualityGate.eligible) {
       throw new InboxImplementationError(`Không thể duyệt deploy: ${qualityGate.reason}`, 409, 'QUALITY_GATE_BLOCKED');
@@ -1267,6 +1281,7 @@ export class InboxImplementationService {
           status: 'PENDING',
           executionPhase: 'DEPLOY_APPROVED',
           failureCode: null,
+          testsJson: JSON.stringify(qualityTests),
           leaseToken: null,
           leasedBy: null,
           leaseExpiresAt: null,
