@@ -1,8 +1,45 @@
-node_modules
-apps/api
-apps/.venv-ads-portal
-.git
-.turbo
+# The Vercel project builds only apps/web and its @mos-lab/shared dependency.
+# Keep the root pnpm/turbo manifests, apps/web, and packages/shared available.
+
+# Workspace packages that cannot participate in the web build.
+apps/api/
+apps/ads-portal/
+apps/.venv-ads-portal/
+
+# Repository-only automation, documentation, and design artifacts.
+/.agents/
+/.github/
+/.husky/
+/docs/
+/scripts/
+*.md
+*.docx
+*.html
+
+# Local dependencies, caches, generated output, and reports.
+.git/
+.turbo/
+**/node_modules/
+**/.next/
+**/.next-*/
+**/dist/
+**/coverage/
+**/playwright-report/
+**/test-results/
 *.log
-apps/web/.next
-apps/web/.next-qa
+*.tsbuildinfo
+
+# Test-only source and configuration are not needed by `next build`.
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+apps/web/test/
+apps/web/vitest.config.ts
+
+# Browser-served design explorations are not product runtime assets.
+apps/web/public/mockups/
+apps/web/public/academy/workshop-popup-mockups/
+apps/web/public/*mockup*.html
+apps/web/public/*mockups*.html
+apps/web/public/*dashboard_flow.html
+apps/web/public/huge_telesales_dashboard_popup.html
