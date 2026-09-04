@@ -132,22 +132,36 @@ export function safeCodexCliFailureSummary(value: unknown): string | null {
   return safe ? safe.slice(0, 280) : null;
 }
 
-/** Extract only explicit Codex JSONL error events; model text is never inspected or retained. */
+/**
+ * Extract only explicit terminal failure events from Codex JSONL. Model text,
+ * tool output, prompts and successful events are never inspected or retained.
+ */
 export function safeCodexCliJsonFailureSummary(value: unknown): string | null {
   for (const line of String(value || '')
     .split(/\r?\n/)
     .reverse()) {
     try {
-      const event = JSON.parse(line) as { type?: unknown; error?: unknown; message?: unknown };
-      if (event.type !== 'error') continue;
-      const detail =
-        typeof event.error === 'string'
-          ? event.error
-          : event.error && typeof event.error === 'object' && 'message' in event.error
-            ? (event.error as { message?: unknown }).message
-            : event.message;
-      const summary = safeCodexCliFailureSummary(detail);
-      if (summary) return summary;
+      const event = JSON.parse(line) as {
+        type?: unknown;
+        error?: unknown;
+        message?: unknown;
+        item?: { error?: unknown; message?: unknown } | null;
+      };
+      const type = String(event.type ?? '')
+        .trim()
+        .slice(0, 80)
+        .toLowerCase();
+      if (!['error', 'turn.failed', 'item.failed'].includes(type)) continue;
+      for (const detail of [event.error, event.message, event.item?.error, event.item?.message]) {
+        const message =
+          typeof detail === 'string'
+            ? detail
+            : detail && typeof detail === 'object' && 'message' in detail
+              ? (detail as { message?: unknown }).message
+              : null;
+        const summary = safeCodexCliFailureSummary(message);
+        if (summary) return summary;
+      }
     } catch {
       // JSONL can end with a partial event while the CLI terminates.
     }

@@ -264,10 +264,19 @@ test('keeps only a bounded sanitized executor diagnosis for implementation failu
     safeCodexCliJsonFailureSummary(
       [
         JSON.stringify({ type: 'item.completed', item: { text: 'Do not retain this ticket sentence.' } }),
-        JSON.stringify({ type: 'error', message: 'Error: rate limit reached, token=do-not-store.' }),
+        JSON.stringify({ type: 'item.failed', item: { message: 'Error: rate limit reached, token=do-not-store.' } }),
       ].join('\n')
     ),
     'Error: rate limit reached, token=[redacted]'
+  );
+  assert.equal(
+    safeCodexCliJsonFailureSummary(
+      JSON.stringify({
+        type: 'turn.failed',
+        error: { message: 'Error: model unavailable at /Users/dannydo/projects/mos-lab/file.ts' },
+      })
+    ),
+    'Error: model unavailable at [internal-path]'
   );
 });
 
