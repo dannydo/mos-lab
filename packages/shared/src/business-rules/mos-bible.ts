@@ -631,6 +631,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Mỗi diff review được bộ phân loại thuần và bảo thủ gán một lane deployment có lý do, thao tác chạy/bỏ qua và rollback: WEB_ONLY, API_WORKER_ONLY, UI_COPY_CONTENT_ONLY hoặc FULL_DEPLOY. Không suy ra lane từ title ticket; diff trống, shared/schema/dependency/config, multi-runtime, hoặc UI Copy chưa có version-preview-rollback phải fail closed sang FULL_DEPLOY. Fast lane chỉ được thực thi sau khi health check và rollback riêng đã được kiểm chứng; trước đó Inbox hiển thị quyết định ở SHADOW để không hứa một đường deploy chưa tồn tại.',
       'Chỉ khi CLI thật sự bắt đầu ticket mới chuyển sang IMPLEMENTING. Kết quả thành công phải ghi native review gồm diff/file/test/risk đã lọc và chuyển sang chờ Danny duyệt commit.',
       'Quality gate là cổng server bắt buộc: không có tệp review an toàn, bất kỳ test FAILED hoặc NOT_RUN nào, hoặc thay đổi apps/web mà không có Playwright visual QA PASSED thì job phải dừng FAILED. Khi đó UI chỉ cho Danny chạy lại code/test; không action cũ, event trễ hay route trực tiếp nào được phép duyệt commit, deploy hoặc bàn giao nghiệm thu.',
+      'Lỗi commit hoặc deploy sau khi quality gate đã đạt là bằng chứng vận hành riêng, không được ghi đè testsJson thành FAILED. Commit/diff/test đã duyệt phải được giữ nguyên để Worker chỉ chạy lại checkpoint commit/deploy của đúng commit đó sau một phê duyệt mới.',
       'Bàn giao release là hai bằng chứng riêng: worker lưu commit SHA từ cổng commit, rồi sau khi Danny duyệt deploy worker chạy pipeline production. Server chỉ tự chuyển tiếp nếu commit đó chính là hoặc là tổ tiên của release marker production đang chạy. Release marker một mình không chứng minh code của ticket đã được deploy.',
       'Sau khi release được xác minh, người báo/yêu cầu ticket là người nghiệm thu mặc định; Danny chỉ nghiệm thu khi chính Danny là người báo. Người báo có thể đạt hoặc yêu cầu sửa thêm; cả hai quyết định phải cập nhật job, ticket, audit và notification trong cùng giao dịch.',
       'Người báo chọn yêu cầu sửa thêm là phản hồi mới, không phải quyền chạy code: ticket phải quay về Agent phân tích, giữ nguyên bằng chứng cũ, xoá xác nhận làm rõ cũ và chỉ được tạo implementation job mới sau khi requirement/tiêu chí nghiệm thu được xác nhận lại và Danny duyệt riêng.',
@@ -649,7 +650,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.16.0',
+    version: '1.17.0',
     effectiveFrom: '2026-09-04',
     sources: [
       {

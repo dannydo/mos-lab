@@ -320,6 +320,28 @@ function normalizeTests(value: unknown): InboxImplementationTestResult[] {
     .filter((item): item is InboxImplementationTestResult => Boolean(item));
 }
 
+/**
+ * A commit/deploy interruption is operational evidence, not a failed code or
+ * visual quality check. Preserve the review's completed test evidence so the
+ * exact retained commit can be resumed from its approval checkpoint.
+ */
+export function testsAfterOperationalCheckpointFailure(
+  existingTestsJson: string | null,
+  failureCode: string,
+  failureSummary: unknown,
+  preserveQualityEvidence: boolean
+): InboxImplementationTestResult[] {
+  if (preserveQualityEvidence) return normalizeTests(safeJsonValue(existingTestsJson));
+  return normalizeTests([
+    {
+      command: 'Codex executor',
+      status: 'FAILED',
+      failureCode,
+      failureSummary,
+    },
+  ]);
+}
+
 /** Keeps a useful diagnosis without retaining raw worker logs or secrets. */
 function redactFailureSummary(value: unknown): string | null {
   const summary = clean(value, 420);
@@ -2340,17 +2362,15 @@ export class InboxImplementationService {
     });
     if (!job) return;
     const code = clean(failureCode, 100) || 'IMPLEMENTATION_FAILED';
-    const tests = normalizeTests([
-      {
-        command: 'Codex executor',
-        status: 'FAILED',
-        failureCode: code,
-        failureSummary,
-      },
-    ]);
     const now = new Date();
     const commitFailure = job.executionPhase === 'COMMITTING';
     const deployFailure = job.executionPhase === 'DEPLOYING';
+    const tests = testsAfterOperationalCheckpointFailure(
+      job.testsJson,
+      code,
+      failureSummary,
+      commitFailure || deployFailure
+    );
     await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.update({
         where: { id },

@@ -12,6 +12,7 @@ import {
   isInboxImplementationExecutionEligible,
   isInboxImplementationEligible,
   normalizeInboxImplementationResult,
+  testsAfterOperationalCheckpointFailure,
 } from './inbox-implementation.service.js';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 
@@ -40,6 +41,29 @@ function source(overrides: Partial<Source> = {}): Source {
   const version = inboxImplementationSourceVersion(first);
   return { ...first, implementationApprovalSourceVersion: overrides.implementationApprovalSourceVersion ?? version };
 }
+
+test('preserves completed quality evidence when deploy is interrupted', () => {
+  const existing = JSON.stringify([
+    { command: 'pnpm --filter @mos-lab/shared build', status: 'PASSED' },
+    { command: 'git diff --check', status: 'PASSED' },
+  ]);
+
+  assert.deepEqual(testsAfterOperationalCheckpointFailure(existing, 'DEPLOY_INTERRUPTED', 'Worker restart.', true), [
+    { command: 'pnpm --filter @mos-lab/shared build', status: 'PASSED' },
+    { command: 'git diff --check', status: 'PASSED' },
+  ]);
+});
+
+test('records a code/test worker failure as failed quality evidence', () => {
+  assert.deepEqual(testsAfterOperationalCheckpointFailure(null, 'CODEX_EXEC_EXIT_1', 'Executor exited.', false), [
+    {
+      command: 'Codex executor',
+      status: 'FAILED',
+      failureCode: 'CODEX_EXEC_EXIT_1',
+      failureSummary: 'Executor exited.',
+    },
+  ]);
+});
 
 test('implementation requires a distinct approval and a native plan for the exact material source version', () => {
   const pendingPlan = source();
