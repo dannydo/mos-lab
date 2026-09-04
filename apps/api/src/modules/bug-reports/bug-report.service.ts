@@ -51,7 +51,7 @@ import {
   type TriageBugReportRequest,
 } from '@mos-lab/shared';
 import { BugReportStorage } from './bug-report.storage.js';
-import { canAuthorizeWorkerRecoveryRetry } from './inbox-implementation.service.js';
+import { canAuthorizeSchemaRecoveryRetry, canAuthorizeWorkerRecoveryRetry } from './inbox-implementation.service.js';
 
 const AGENT_READABLE_STATUSES = new Set<BugReportStatus>(['NEW', 'APPROVED', 'IN_PROGRESS', 'FIXED']);
 const AGENT_FIX_STATUSES = new Set<BugReportStatus>(['APPROVED', 'IN_PROGRESS', 'FIXED']);
@@ -142,6 +142,7 @@ const reportInclude = {
     orderBy: { createdAt: 'desc' as const },
     take: 1,
     select: {
+      id: true,
       status: true,
       executionPhase: true,
       progressLabel: true,
@@ -483,7 +484,8 @@ function progressResult(
 }
 
 function implementationStateDto(
-  value: ImplementationProgressSnapshot | null | undefined
+  value: (ImplementationProgressSnapshot & { id?: string }) | null | undefined,
+  audits: Array<{ action: string; afterJson: string | null }> = []
 ): BugReportImplementationState | null {
   if (!value) return null;
   const status = value.status as BugReportImplementationState['status'];
@@ -500,6 +502,10 @@ function implementationStateDto(
       ...value,
       retrySequence: value.retrySequence ?? -1,
     }),
+    canAuthorizeSchemaRecoveryRetry: canAuthorizeSchemaRecoveryRetry(
+      { ...value, id: value.id || '', retrySequence: value.retrySequence ?? -1 },
+      [...audits].reverse().find((audit) => audit.action === 'WORKER_READONLY_DIAGNOSTIC_PASSED')
+    ),
     failure: implementationFailureDto(value),
     hasRetainedDraft: Boolean(value.retainUntil),
     startedAt: value.startedAt?.toISOString() ?? null,
@@ -1007,7 +1013,7 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
   // Normalize after parsing so one incomplete ticket cannot break the whole Inbox.
   const context = sanitizeBugReportContext(safeJsonParse<unknown>(row.contextJson, {}));
   const requestType = storedRequestType(row.requestType);
-  const implementation = implementationStateDto(row.inboxImplementationJobs[0]);
+  const implementation = implementationStateDto(row.inboxImplementationJobs[0], row.audits);
   const progressSource = { ...row, implementation: row.inboxImplementationJobs[0] ?? null };
   const workflow = bugReportWorkflowProjection(progressSource);
   const reporterExperience = bugReportReporterExperience({

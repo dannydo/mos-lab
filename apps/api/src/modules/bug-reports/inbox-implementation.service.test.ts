@@ -3,6 +3,7 @@ import test from 'node:test';
 import { Prisma } from '../../generated/crm-client/index.js';
 import {
   InboxImplementationService,
+  canAuthorizeSchemaRecoveryRetry,
   canAuthorizeWorkerRecoveryRetry,
   inboxImplementationCurrentPlan,
   evaluateInboxImplementationQualityGate,
@@ -474,6 +475,82 @@ test('Danny may authorize exactly one recovery retry for a known Worker failure 
   assert.equal(auditAction, 'DANNY_WORKER_RECOVERY_RETRY_AUTHORIZED');
   assert.equal(canAuthorizeWorkerRecoveryRetry({ ...terminal, retrySequence: 3 }), false);
   assert.equal(canAuthorizeWorkerRecoveryRetry({ ...terminal, failureCode: 'QUALITY_GATE_FAILED' }), false);
+});
+
+test('schema recovery needs a diagnostic for the exact exhausted job and creates only sequence four', async () => {
+  const draft = source();
+  const sourceVersion = inboxImplementationSourceVersion(draft);
+  const report = source({
+    implementationActiveJobId: 'schema-terminal-job',
+    inboxPlanJobs: [
+      { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
+    ],
+  });
+  const terminal = {
+    id: 'schema-terminal-job',
+    status: 'FAILED',
+    retryOfJobId: 'worker-recovery-job',
+    retrySequence: 3,
+    sourceVersion,
+    planVersion: 'v1:plan',
+    failureCode: 'CODEX_EXEC_EXIT_1',
+  };
+  const diagnostic = {
+    action: 'WORKER_READONLY_DIAGNOSTIC_PASSED',
+    afterJson: JSON.stringify({
+      jobId: 'schema-terminal-job',
+      rootCause: 'STRICT_RESPONSE_SCHEMA_REQUIRED_FIELDS',
+    }),
+  };
+  const createdRows: Record<string, unknown>[] = [];
+  let auditAction = '';
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => report },
+        crmInboxImplementationJob: {
+          findUnique: async () => terminal,
+          findFirst: async () => null,
+        },
+        crmBugReportAudit: { findFirst: async () => diagnostic },
+        $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
+          callback({
+            crmInboxImplementationJob: {
+              create: async ({ data }: { data: Record<string, unknown> }) => {
+                createdRows.push(data);
+                return data;
+              },
+              update: async () => ({}),
+            },
+            crmBugReport: {
+              updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                Object.assign(report, data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: {
+              create: async ({ data }: { data: { action: string } }) => {
+                auditAction = data.action;
+                return {};
+              },
+            },
+          }),
+      },
+    },
+  };
+
+  assert.equal(canAuthorizeSchemaRecoveryRetry(terminal, diagnostic), true);
+  assert.equal(await InboxImplementationService.authorizeSchemaRecoveryRetry(fastify as never, 16, 1), true);
+  assert.equal(createdRows[0]?.retryOfJobId, 'schema-terminal-job');
+  assert.equal(createdRows[0]?.retrySequence, 4);
+  assert.equal(auditAction, 'DANNY_SCHEMA_RECOVERY_RETRY_AUTHORIZED');
+  assert.equal(
+    canAuthorizeSchemaRecoveryRetry(terminal, {
+      ...diagnostic,
+      afterJson: JSON.stringify({ jobId: 'different-job', rootCause: 'STRICT_RESPONSE_SCHEMA_REQUIRED_FIELDS' }),
+    }),
+    false
+  );
 });
 
 test('lease renewal accepts only the same active worker, token, and Codex process epoch', async () => {

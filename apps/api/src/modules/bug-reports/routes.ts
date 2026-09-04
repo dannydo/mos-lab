@@ -7,6 +7,7 @@ import {
   type AgentMarkBugFixedRequest,
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
+  type AuthorizeBugReportSchemaRecoveryRetryRequest,
   type AuthorizeBugReportWorkerRecoveryRetryRequest,
   type ApproveBugReportImplementationRequest,
   type ApproveBugReportImplementationCommitRequest,
@@ -195,6 +196,35 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     socket.on('close', () => RequestClassifierWorkerHub.remove(socket));
     socket.on('error', () => RequestClassifierWorkerHub.remove(socket));
   });
+  fastify.post(
+    '/bug-reports/:id/implementation-schema-recovery-retry',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const body = request.body as AuthorizeBugReportSchemaRecoveryRetryRequest;
+        if (body?.acknowledged !== true) {
+          throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi cấp retry sau khi sửa schema.', 422);
+        }
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const implementationQueued = await InboxImplementationService.authorizeSchemaRecoveryRetry(
+          fastify,
+          id,
+          request.user.id
+        );
+        if (implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
+        return reply.send({
+          success: true,
+          data: { reportId: id, implementationQueued, planRequested: false },
+          message: implementationQueued
+            ? 'Đã cấp đúng một retry sau khi sửa schema, liên kết với chẩn đoán đã xác minh.'
+            : 'Retry sau khi sửa schema không được tạo.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Authorize schema recovery retry failed');
+      }
+    }
+  );
+
   fastify.post(
     '/request-classifications',
     { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] },

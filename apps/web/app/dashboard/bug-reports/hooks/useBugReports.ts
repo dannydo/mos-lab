@@ -249,6 +249,17 @@ export function useBugReports() {
     [load]
   );
 
+  const authorizeSchemaRecoveryRetry = useCallback(
+    async (id: number): Promise<ApproveBugReportImplementationResult> => {
+      const response = await apiClient.bugReports.authorizeSchemaRecoveryRetry(id, { acknowledged: true });
+      if (!response.data) throw new Error('Máy chủ không trả về trạng thái retry sau khi sửa schema.');
+      void load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
+      return response.data;
+    },
+    [load]
+  );
+
   const approveImplementationCommit = useCallback(
     async (id: number): Promise<ApproveBugReportImplementationCommitResult> => {
       const response = await apiClient.bugReports.approveImplementationCommit(id, { acknowledged: true });
@@ -321,6 +332,7 @@ export function useBugReports() {
     approveImplementationDeploy,
     retryImplementation,
     authorizeWorkerRecoveryRetry,
+    authorizeSchemaRecoveryRetry,
     releaseImplementation,
     confirmClose,
     comment,

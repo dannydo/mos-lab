@@ -98,6 +98,7 @@ interface DetailDrawerProps {
   approveImplementationDeploy: (id: number) => Promise<ApproveBugReportImplementationDeployResult>;
   retryImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
   authorizeWorkerRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
+  authorizeSchemaRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -113,6 +114,7 @@ function DetailDrawer({
   approveImplementationDeploy,
   retryImplementation,
   authorizeWorkerRecoveryRetry: authorizeWorkerRecoveryRetryAction,
+  authorizeSchemaRecoveryRetry: authorizeSchemaRecoveryRetryAction,
   confirmClose,
   comment,
   canTriage,
@@ -302,6 +304,32 @@ function DetailDrawer({
     }
   }, [authorizeWorkerRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
 
+  const authorizeSchemaRecoveryRetry = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const outcome = await authorizeSchemaRecoveryRetryAction(detail.id);
+      if (outcome.implementationQueued) {
+        setStatus('IN_PROGRESS');
+        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
+      }
+      void getDetail(outcome.reportId)
+        .then(hydrateForm)
+        .catch(() => undefined);
+      messageApi.success('Đã cấp một retry sau khi sửa schema trong worktree mới.');
+    } catch (error) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(
+        responseMessage || (error instanceof Error ? error.message : 'Không thể cấp retry sau khi sửa schema.')
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [authorizeSchemaRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
+
   const approveCommit = useCallback(async () => {
     if (!detail) return;
     setSaving(true);
@@ -408,7 +436,19 @@ function DetailDrawer({
                 detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&
                 detail.priority &&
                 detail.clarification.status === 'READY' &&
-                (detail.implementation?.canAuthorizeWorkerRecoveryRetry ? (
+                (detail.implementation?.canAuthorizeSchemaRecoveryRetry ? (
+                  <Popconfirm
+                    title="Cho phép một retry sau khi đã sửa schema?"
+                    description="Chỉ áp dụng cho lỗi schema đã được chẩn đoán chỉ-đọc và xác minh. Hệ thống tạo worktree code/test mới, không commit, push, merge, deploy hay chạy migration. Quyền này chỉ dùng một lần cho lượt hiện tại."
+                    okText="Cho phép retry"
+                    cancelText="Chưa cho phép"
+                    onConfirm={() => void authorizeSchemaRecoveryRetry()}
+                  >
+                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
+                      Cho phép retry sau khi sửa schema
+                    </Button>
+                  </Popconfirm>
+                ) : detail.implementation?.canAuthorizeWorkerRecoveryRetry ? (
                   <Popconfirm
                     title="Cho phép một retry sau khi đã sửa Worker?"
                     description="Chỉ áp dụng cho lỗi hạ tầng đã nhận diện sau hai retry thường. Hệ thống tạo worktree code/test mới, không commit, push, merge, deploy hay chạy migration. Quyền này chỉ dùng một lần cho lượt hiện tại."
@@ -1056,6 +1096,7 @@ export default function BugReportsPage() {
         approveImplementationDeploy={inbox.approveImplementationDeploy}
         retryImplementation={inbox.retryImplementation}
         authorizeWorkerRecoveryRetry={inbox.authorizeWorkerRecoveryRetry}
+        authorizeSchemaRecoveryRetry={inbox.authorizeSchemaRecoveryRetry}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}

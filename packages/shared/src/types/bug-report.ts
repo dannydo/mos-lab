@@ -537,6 +537,8 @@ export interface BugReportImplementationState {
   retrySequence: number;
   /** Server-authoritative: a single recovery retry is allowed only for a known Worker failure. */
   canAuthorizeWorkerRecoveryRetry: boolean;
+  /** Server-authoritative: one post-diagnostic retry is allowed only after a verified schema repair. */
+  canAuthorizeSchemaRecoveryRetry: boolean;
   /** Safe, server-sanitized reason for the latest terminal implementation failure. */
   failure: BugReportImplementationFailure | null;
   hasRetainedDraft: boolean;
@@ -865,6 +867,11 @@ export interface AuthorizeBugReportWorkerRecoveryRetryRequest {
   acknowledged: true;
 }
 
+/** A separately audited, one-time retry after a verified Codex response-schema repair. */
+export interface AuthorizeBugReportSchemaRecoveryRetryRequest {
+  acknowledged: true;
+}
+
 /**
  * Records a separately approved production release. The reviewed commit must
  * be supplied explicitly and must match the production release marker.
@@ -965,6 +972,7 @@ export type ApproveBugReportImplementationCommitResponse = ActionResponse<Approv
 export type ApproveBugReportImplementationDeployResponse = ActionResponse<ApproveBugReportImplementationDeployResult>;
 export type RetryBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type AuthorizeBugReportWorkerRecoveryRetryResponse = ActionResponse<ApproveBugReportImplementationResult>;
+export type AuthorizeBugReportSchemaRecoveryRetryResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ReleaseBugReportImplementationResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportImplementationAcceptanceResponse = ActionResponse<BugReportDetail>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;

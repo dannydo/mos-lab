@@ -26,6 +26,9 @@ const IMPLEMENTATION_CHECKPOINT_LIMIT = 1;
 // terminal failures reviewable without turning the worker into an auto-loop.
 const MAX_DANNY_RETRY_SEQUENCE = 2;
 const WORKER_RECOVERY_RETRY_FAILURE_CODES = new Set(['CODEX_EXEC_EXIT_1']);
+const SCHEMA_RECOVERY_RETRY_FAILURE_CODES = new Set(['CODEX_EXEC_EXIT_1']);
+const SCHEMA_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_READONLY_DIAGNOSTIC_PASSED';
+const SCHEMA_RECOVERY_ROOT_CAUSE = 'STRICT_RESPONSE_SCHEMA_REQUIRED_FIELDS';
 const execFileAsync = promisify(execFile);
 
 const IMPLEMENTATION_PROGRESS_LABELS = {
@@ -179,6 +182,32 @@ export function canAuthorizeWorkerRecoveryRetry(source: {
     source.retrySequence === MAX_DANNY_RETRY_SEQUENCE &&
     Boolean(source.failureCode && WORKER_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode))
   );
+}
+
+/**
+ * The schema-recovery path is distinct from the ordinary and Worker recovery
+ * budgets. It requires a verified read-only diagnostic for this exact failed
+ * job, and can only create sequence four once.
+ */
+export function canAuthorizeSchemaRecoveryRetry(
+  source: { id: string; status: string; retrySequence: number; failureCode: string | null },
+  diagnostic: { action: string; afterJson: string | null } | null | undefined
+): boolean {
+  if (
+    source.status !== 'FAILED' ||
+    source.retrySequence !== MAX_DANNY_RETRY_SEQUENCE + 1 ||
+    !source.failureCode ||
+    !SCHEMA_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode) ||
+    diagnostic?.action !== SCHEMA_RECOVERY_DIAGNOSTIC_ACTION
+  ) {
+    return false;
+  }
+  try {
+    const evidence = JSON.parse(diagnostic.afterJson || '{}') as { jobId?: unknown; rootCause?: unknown };
+    return evidence.jobId === source.id && evidence.rootCause === SCHEMA_RECOVERY_ROOT_CAUSE;
+  } catch {
+    return false;
+  }
 }
 
 function isCurrentExecution(source: GateSource, sourceVersion: string, planVersion: string): boolean {
@@ -716,6 +745,101 @@ export class InboxImplementationService {
           actorStaffId,
           action: 'DANNY_WORKER_RECOVERY_RETRY_AUTHORIZED',
           note: 'Danny đã xác nhận một retry khôi phục sau khi Worker được sửa. Quyền này chỉ áp dụng cho lỗi hạ tầng đã nhận diện; job mới vẫn chỉ chạy code/test và dừng trước commit.',
+          beforeJson: snapshot(report),
+          afterJson: snapshot({
+            ...report,
+            status: 'APPROVED',
+            implementationActiveJobId: id,
+            comments: report.comments,
+            inboxPlanJobs: report.inboxPlanJobs,
+          }),
+        },
+      });
+      return true;
+    });
+  }
+
+  /** One additional, separately audited recovery only after a successful read-only schema diagnostic. */
+  static async authorizeSchemaRecoveryRetry(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number
+  ): Promise<boolean> {
+    const report = await fastify.prisma.crm.crmBugReport.findUnique({
+      where: { id: reportId },
+      include: implementationReportInclude(),
+    });
+    if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    const gate = isInboxImplementationExecutionEligible(report);
+    if (!gate.eligible || !gate.plan || !report.implementationActiveJobId) {
+      throw new InboxImplementationError(
+        'Ticket không còn đủ điều kiện để cấp retry sau khi sửa schema.',
+        409,
+        'SCHEMA_RECOVERY_RETRY_NOT_ELIGIBLE'
+      );
+    }
+    const failed = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({
+      where: { id: report.implementationActiveJobId },
+    });
+    const diagnostic = await fastify.prisma.crm.crmBugReportAudit.findFirst({
+      where: { reportId, action: SCHEMA_RECOVERY_DIAGNOSTIC_ACTION },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (
+      !failed ||
+      failed.sourceVersion !== gate.sourceVersion ||
+      failed.planVersion !== gate.plan.planVersion ||
+      !canAuthorizeSchemaRecoveryRetry(failed, diagnostic)
+    ) {
+      throw new InboxImplementationError(
+        'Quyền retry này chỉ áp dụng một lần sau chẩn đoán chỉ-đọc đã xác minh lỗi schema cho đúng job hiện tại.',
+        409,
+        'SCHEMA_RECOVERY_RETRY_NOT_ALLOWED'
+      );
+    }
+    const planVersion = gate.plan.planVersion;
+    const id = randomUUID();
+    const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const now = new Date();
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmInboxImplementationJob.create({
+        data: {
+          id,
+          reportId,
+          sourceVersion: gate.sourceVersion,
+          planVersion,
+          retryOfJobId: failed.id,
+          retrySequence: failed.retrySequence + 1,
+          branchName: safeBranchName(ticketKey, id),
+          executionPhase: 'QUEUED',
+          expiresAt: new Date(now.getTime() + JOB_TTL_MS),
+        },
+      });
+      const attached = await tx.crmBugReport.updateMany({
+        where: { id: reportId, implementationActiveJobId: failed.id },
+        data: {
+          status: 'APPROVED',
+          statusSort: 0,
+          startedAt: null,
+          resolvedAt: null,
+          closedAt: null,
+          implementationActiveJobId: id,
+          updatedAt: now,
+        },
+      });
+      if (!attached.count) {
+        await tx.crmInboxImplementationJob.update({
+          where: { id },
+          data: { status: 'STALE', failureCode: 'ACTIVE_JOB_RACE', executionPhase: 'STALE' },
+        });
+        return false;
+      }
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'DANNY_SCHEMA_RECOVERY_RETRY_AUTHORIZED',
+          note: 'Danny đã xác nhận một retry sau khi chẩn đoán chỉ-đọc xác minh schema structured output đã được sửa. Job mới chỉ chạy code/test và dừng trước commit.',
           beforeJson: snapshot(report),
           afterJson: snapshot({
             ...report,

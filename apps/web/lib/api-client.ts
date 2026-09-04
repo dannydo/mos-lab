@@ -41,6 +41,8 @@ import type {
   ApproveBugReportImplementationResponse,
   AuthorizeBugReportWorkerRecoveryRetryRequest,
   AuthorizeBugReportWorkerRecoveryRetryResponse,
+  AuthorizeBugReportSchemaRecoveryRetryRequest,
+  AuthorizeBugReportSchemaRecoveryRetryResponse,
   ReleaseBugReportImplementationRequest,
   ReleaseBugReportImplementationResponse,
   ReviewBugReportImplementationAcceptanceRequest,
@@ -714,6 +716,17 @@ export const apiClient = {
     ): Promise<AuthorizeBugReportWorkerRecoveryRetryResponse> => {
       const response = await api.post<AuthorizeBugReportWorkerRecoveryRetryResponse>(
         `/bug-reports/${id}/implementation-worker-recovery-retry`,
+        data,
+        { timeout: 12_000 }
+      );
+      return response.data;
+    },
+    authorizeSchemaRecoveryRetry: async (
+      id: number,
+      data: AuthorizeBugReportSchemaRecoveryRetryRequest
+    ): Promise<AuthorizeBugReportSchemaRecoveryRetryResponse> => {
+      const response = await api.post<AuthorizeBugReportSchemaRecoveryRetryResponse>(
+        `/bug-reports/${id}/implementation-schema-recovery-retry`,
         data,
         { timeout: 12_000 }
       );
