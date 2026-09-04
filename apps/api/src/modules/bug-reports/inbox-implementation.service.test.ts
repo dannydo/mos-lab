@@ -179,6 +179,31 @@ test('implementation outcome stores only bounded structured review metadata', ()
   );
 });
 
+test('normalizes an executor failure as safe retry evidence', () => {
+  assert.deepEqual(
+    normalizeInboxImplementationResult({
+      summary: 'Executor failure.',
+      tests: [
+        {
+          command: 'Codex executor',
+          status: 'FAILED',
+          failureCode: 'CODEX_EXEC_EXIT_1',
+          failureSummary: 'Error: token=do-not-store at /Users/dannydo/projects/mos-lab/file.ts',
+        },
+      ],
+      risksAndRollback: 'Keep the isolated worktree for review.',
+    }).tests,
+    [
+      {
+        command: 'Codex executor',
+        status: 'FAILED',
+        failureCode: 'CODEX_EXEC_EXIT_1',
+        failureSummary: 'Error: token=[redacted] at [internal-path]',
+      },
+    ]
+  );
+});
+
 test('quality gate blocks an unverified web patch and permits only passed visual QA', () => {
   const blocked = evaluateInboxImplementationQualityGate({
     changedFiles: ['apps/web/app/dashboard/bug-reports/page.tsx'],

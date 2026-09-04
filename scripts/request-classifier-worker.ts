@@ -82,8 +82,11 @@ export type CodexCliFailureCode =
   | 'DEPLOY_PIPELINE_FAILED'
   | `CODEX_EXEC_EXIT_${number}`;
 
-class CodexCliError extends Error {
-  constructor(readonly code: CodexCliFailureCode) {
+export class CodexCliError extends Error {
+  constructor(
+    readonly code: CodexCliFailureCode,
+    readonly failureSummary: string | null = null
+  ) {
     super(code);
   }
 }
@@ -99,6 +102,46 @@ type CodexCliLifecycle = {
   onStarted?: (runtime: CodexCliRuntime) => Promise<void> | void;
   onActivity?: () => void;
 };
+
+/**
+ * A Codex child can fail before it produces the structured result that the
+ * implementation job normally persists. Keep only a short, scrubbed diagnosis
+ * in memory so the worker can report the failure without retaining raw CLI
+ * output, ticket content, paths, or credentials.
+ */
+export function safeCodexCliFailureSummary(value: unknown): string | null {
+  const text = String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return null;
+  const candidate = text
+    .split(/(?<=\.)\s+|\s{2,}/)
+    .reverse()
+    .find((line) =>
+      /\b(error|failed|failure|invalid|unknown|cannot|unable|denied|unauthorized|forbidden|rate limit|not found)\b/i.test(
+        line
+      )
+    );
+  if (!candidate) return null;
+  const safe = candidate
+    .replace(/\b(token|secret|password|authorization|api[_-]?key)\s*[:=]\s*[^\s,;]+/gi, '$1=[redacted]')
+    .replace(/\b(?:Bearer\s+)?[A-Za-z0-9_-]{32,}\b/g, '[redacted]')
+    .replace(/\/(?:Users|home)\/[^\s:]+/g, '[internal-path]')
+    .replace(/[^\p{L}\p{N}\s.,:;()[\]_=-]/gu, '')
+    .trim();
+  return safe ? safe.slice(0, 280) : null;
+}
+
+export function inboxImplementationFailureSummary(error: unknown): string {
+  if (error instanceof CodexCliError) {
+    if (error.failureSummary) return error.failureSummary;
+    if (error.code.startsWith('CODEX_EXEC_EXIT_'))
+      return `Codex executor thoát với ${error.code.replace('CODEX_EXEC_EXIT_', 'mã ')} trước khi trả kết quả có cấu trúc.`;
+    if (error.code === 'CODEX_EXEC_TIMEOUT') return 'Codex executor vượt quá thời gian chạy cho phép.';
+    if (error.code === 'CODEX_EXEC_STALLED') return 'Codex executor không tạo tiến độ mới trong thời hạn cho phép.';
+  }
+  return 'Worker dừng trước khi nhận được kết quả kỹ thuật có cấu trúc.';
+}
 
 export function buildCodexExecArgs(schemaPath: string, outputPath: string, prompt: string): string[] {
   return [
@@ -444,6 +487,7 @@ export async function executeCodexCli(
     let terminationGraceExpired = false;
     let cancelTermination: (() => void) | null = null;
     let timeout: NodeJS.Timeout | null = null;
+    let stderrTail = '';
     const finish = (callback: () => void) => {
       if (finished) return;
       finished = true;
@@ -482,7 +526,12 @@ export async function executeCodexCli(
     }, timeoutMs);
     const markActivity = () => lifecycle?.onActivity?.();
     child.stdout?.on('data', markActivity);
-    child.stderr?.on('data', markActivity);
+    child.stderr?.on('data', (chunk: Buffer | string) => {
+      // Bounded, in-memory only. The structured safe summary below is the only
+      // diagnostic that can cross the worker bridge.
+      stderrTail = `${stderrTail}${String(chunk)}`.slice(-2_048);
+      markActivity();
+    });
     child.once('error', () => {
       // An error before spawn never had a server-side lease.  After spawn, do
       // not let the caller's fail path race a still-running `onStarted` call:
@@ -505,7 +554,15 @@ export async function executeCodexCli(
       }
       if (code === 0) finish(resolve);
       else if (signal) finish(() => reject(new CodexCliError('CODEX_EXEC_SIGNAL')));
-      else finish(() => reject(new CodexCliError(`CODEX_EXEC_EXIT_${Number.isInteger(code) ? code : -1}`)));
+      else
+        finish(() =>
+          reject(
+            new CodexCliError(
+              `CODEX_EXEC_EXIT_${Number.isInteger(code) ? code : -1}`,
+              safeCodexCliFailureSummary(stderrTail)
+            )
+          )
+        );
     };
     const completeLifecycle = () => {
       lifecycleReady = true;
@@ -1498,7 +1555,11 @@ async function processInboxImplementationOne(): Promise<boolean> {
     phase = 'fail';
     await workerFetch(`/request-classifier/inbox-implementations/${job.id}/fail`, {
       method: 'POST',
-      body: JSON.stringify({ leaseToken: job.leaseToken, code: inboxImplementationFailureCode(error) }),
+      body: JSON.stringify({
+        leaseToken: job.leaseToken,
+        code: inboxImplementationFailureCode(error),
+        failureSummary: inboxImplementationFailureSummary(error),
+      }),
     }).catch(() => undefined);
     if (started) finishWorkerJob('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));
     else recordWorkerOutcome('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));

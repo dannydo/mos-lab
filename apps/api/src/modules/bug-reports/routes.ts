@@ -1050,12 +1050,13 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     { preHandler: [requireClassifierWorker] },
     async (request, reply) => {
       try {
-        const body = request.body as { leaseToken?: string; code?: string };
+        const body = request.body as { leaseToken?: string; code?: string; failureSummary?: string };
         await InboxImplementationService.fail(
           fastify,
           String((request.params as { id: string }).id || ''),
           String(body?.leaseToken || ''),
-          body?.code
+          body?.code,
+          body?.failureSummary
         );
         return reply.send({ success: true });
       } catch (error) {

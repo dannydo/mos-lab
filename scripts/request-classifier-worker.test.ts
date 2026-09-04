@@ -5,6 +5,7 @@ import {
   buildCodexExecArgs,
   buildCodexImplementationArgs,
   buildInboxFollowUpPrompt,
+  CodexCliError,
   executeCodexCli,
   implementationWorktreeRoot,
   isCodexImplementationHelpCompatible,
@@ -20,6 +21,8 @@ import {
   parseCodexInboxImplementation,
   resolveCodexCliPath,
   safeBridgeFailureCode,
+  safeCodexCliFailureSummary,
+  inboxImplementationFailureSummary,
 } from './request-classifier-worker.js';
 
 test('builds a noninteractive Codex invocation with private structured output', async () => {
@@ -234,6 +237,28 @@ test('reports a numeric Codex exit code without child output', async () => {
     }) as never),
     (error) => formatInboxFollowUpFailure('codex_exec', error).endsWith('code=CODEX_EXEC_EXIT_1')
   );
+});
+
+test('keeps only a bounded sanitized executor diagnosis for implementation failures', async () => {
+  const child = new EventEmitter() as never as import('node:child_process').ChildProcess;
+  const stderr = new EventEmitter();
+  Object.assign(child, { stderr });
+  await assert.rejects(
+    executeCodexCli('/custom/codex', ['exec'], '/tmp', 1_000, (() => {
+      queueMicrotask(() => {
+        stderr.emit('data', 'Error: authorization=super-secret-value at /Users/dannydo/projects/mos-lab/file.ts');
+        child.emit('exit', 1, null);
+      });
+      return child;
+    }) as never),
+    (error) => {
+      assert.ok(error instanceof CodexCliError);
+      assert.match(inboxImplementationFailureSummary(error), /authorization=\[redacted\]/i);
+      assert.doesNotMatch(inboxImplementationFailureSummary(error), /super-secret|dannydo|file\.ts/i);
+      return true;
+    }
+  );
+  assert.equal(safeCodexCliFailureSummary('normal output only'), null);
 });
 
 test('treats the final child close event as a Codex completion', async () => {

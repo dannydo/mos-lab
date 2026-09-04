@@ -1812,13 +1812,27 @@ export class InboxImplementationService {
     });
   }
 
-  static async fail(fastify: FastifyInstance, id: string, leaseToken: string, failureCode: unknown): Promise<void> {
+  static async fail(
+    fastify: FastifyInstance,
+    id: string,
+    leaseToken: string,
+    failureCode: unknown,
+    failureSummary?: unknown
+  ): Promise<void> {
     const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
       where: { id, status: { in: ['LEASED', 'RUNNING'] }, leaseToken },
       include: { report: { include: implementationReportInclude() } },
     });
     if (!job) return;
     const code = clean(failureCode, 100) || 'IMPLEMENTATION_FAILED';
+    const tests = normalizeTests([
+      {
+        command: 'Codex executor',
+        status: 'FAILED',
+        failureCode: code,
+        failureSummary,
+      },
+    ]);
     const now = new Date();
     const commitFailure = job.executionPhase === 'COMMITTING';
     const deployFailure = job.executionPhase === 'DEPLOYING';
@@ -1828,6 +1842,7 @@ export class InboxImplementationService {
         data: {
           status: deployFailure ? 'AWAITING_DEPLOY_REVIEW' : commitFailure ? 'AWAITING_COMMIT_REVIEW' : 'FAILED',
           failureCode: code,
+          testsJson: JSON.stringify(tests),
           leaseToken: null,
           leasedBy: null,
           leaseExpiresAt: null,
