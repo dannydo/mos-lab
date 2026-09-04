@@ -250,7 +250,9 @@ export function canAuthorizeBuildLockRecoveryRetry(source: {
     source.status === 'FAILED' &&
     source.retrySequence === MAX_DANNY_RETRY_SEQUENCE + 3 &&
     Boolean(source.failureCode && BUILD_LOCK_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode)) &&
-    /private build-directory lock|another next build process is already running/i.test(failureEvidence)
+    /private build-directory lock|another next build process is already running|WEB_BUILD_ALREADY_RUNNING/i.test(
+      failureEvidence
+    )
   );
 }
 

@@ -666,6 +666,13 @@ test('build-lock recovery opens only once for the recorded private Next output l
   };
   assert.equal(canAuthorizeBuildLockRecoveryRetry(terminal), true);
   assert.equal(canAuthorizeBuildLockRecoveryRetry({ ...terminal, retrySequence: 6 }), false);
+  assert.equal(
+    canAuthorizeBuildLockRecoveryRetry({
+      ...terminal,
+      testsJson: JSON.stringify([{ status: 'FAILED', code: 'WEB_BUILD_ALREADY_RUNNING' }]),
+    }),
+    true
+  );
   assert.equal(canAuthorizeBuildLockRecoveryRetry({ ...terminal, testsJson: 'quality gate failed' }), false);
   assert.equal(canAuthorizeBuildLockRecoveryRetry({ ...terminal, failureCode: 'NEXT_BUILD_STALLED' }), false);
 });
