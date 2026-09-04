@@ -409,8 +409,20 @@ export function evaluateInboxImplementationQualityGate(input: {
   if (!tests.length) {
     return { eligible: false, reason: 'Worker chưa gửi kết quả kiểm thử bắt buộc.' };
   }
+  const changedWeb = changedFiles.some((file) => file.startsWith('apps/web/'));
   const hasBlockingTest = tests.some((test, index) => {
     if (test.status === 'PASSED') return false;
+    // A visual test is mandatory for user-visible web changes. For a
+    // packaging-only change, a NOT_RUN visual test is irrelevant evidence and
+    // must not turn an otherwise verified artifact build into a false failure.
+    if (
+      !changedWeb &&
+      test.status === 'NOT_RUN' &&
+      /playwright/i.test(test.command) &&
+      /(visual|screenshot|snapshot|tohavescreenshot)/i.test(test.command)
+    ) {
+      return false;
+    }
     if (test.status !== 'SUPERSEDED') return true;
     // Only a narrowly-defined archive diagnostic may be superseded, and its
     // corrected measurement must appear later in the same immutable result.
@@ -428,7 +440,6 @@ export function evaluateInboxImplementationQualityGate(input: {
   if (hasBlockingTest) {
     return { eligible: false, reason: 'Có kiểm thử FAILED hoặc NOT_RUN; phải chạy lại code/test.' };
   }
-  const changedWeb = changedFiles.some((file) => file.startsWith('apps/web/'));
   const passedVisualQa = tests.some(
     (test) =>
       test.status === 'PASSED' &&

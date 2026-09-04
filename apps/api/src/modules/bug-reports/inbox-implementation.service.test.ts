@@ -272,6 +272,16 @@ test('quality gate accepts only an audited corrected archive measurement and nev
   });
   assert.deepEqual(acceptedPatternDiagnostic, { eligible: true, reason: null });
 
+  const packagingOnlyWithoutVisualQa = evaluateInboxImplementationQualityGate({
+    changedFiles: ['.vercelignore'],
+    tests: [
+      { command: correctedCommand, status: 'PASSED' },
+      { command: 'pnpm build:web', status: 'PASSED' },
+      { command: 'Playwright visual QA', status: 'NOT_RUN' },
+    ],
+  });
+  assert.deepEqual(packagingOnlyWithoutVisualQa, { eligible: true, reason: null });
+
   const blocked = evaluateInboxImplementationQualityGate({
     changedFiles: ['apps/api/src/modules/bug-reports/inbox-implementation.service.ts'],
     tests: [
