@@ -974,7 +974,10 @@ export class InboxImplementationService {
         data: {
           reportId,
           actorStaffId,
-          action: 'DANNY_QUALITY_GATE_RECOVERY_RETRY_AUTHORIZED',
+          // crmBugReportAudit.action is VARCHAR(40); keep this durable event
+          // below that database boundary so the authorization transaction
+          // cannot create a job and then roll back while writing its audit.
+          action: 'DANNY_GATE_RECOVERY_RETRY_AUTH',
           note: 'Đã xác nhận một retry cuối sau khi cổng kiểm thử được sửa và kiểm chứng. Job mới chỉ chạy code/test trong worktree riêng; commit và deploy vẫn bị chặn bởi quality gate.',
           beforeJson: snapshot(report),
           afterJson: snapshot({

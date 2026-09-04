@@ -645,7 +645,7 @@ test('quality-gate recovery creates sequence five once after the verified gate r
   assert.equal(await InboxImplementationService.authorizeQualityGateRecoveryRetry(fastify as never, 16, 1), true);
   assert.equal(createdRows[0]?.retryOfJobId, 'quality-gate-terminal-job');
   assert.equal(createdRows[0]?.retrySequence, 5);
-  assert.equal(auditAction, 'DANNY_QUALITY_GATE_RECOVERY_RETRY_AUTHORIZED');
+  assert.equal(auditAction, 'DANNY_GATE_RECOVERY_RETRY_AUTH');
   assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 5 }), false);
   assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, failureCode: 'NEXT_BUILD_STALLED' }), false);
 });
