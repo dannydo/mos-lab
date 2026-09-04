@@ -588,10 +588,15 @@ export interface RenewInboxImplementationLeaseRequest {
 
 export interface InboxImplementationTestResult {
   command: string;
-  status: 'PASSED' | 'FAILED' | 'NOT_RUN';
+  status: 'PASSED' | 'FAILED' | 'NOT_RUN' | 'SUPERSEDED';
   /** Expected for FAILED results; the server supplies a safe fallback when absent. */
   failureCode?: string | null;
   failureSummary?: string | null;
+  /**
+   * A narrow audit link for a corrected diagnostic measurement.  It never
+   * applies to code, build, type, lint, or visual-QA failures.
+   */
+  supersededBy?: string | null;
 }
 
 export interface InboxImplementationWorkerResult {

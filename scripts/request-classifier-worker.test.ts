@@ -88,8 +88,14 @@ test('uses a strict Codex-compatible schema for every implementation test field'
   };
   const testItem = schema.properties.tests.items;
   assert.equal(testItem.additionalProperties, false);
-  assert.deepEqual(testItem.required, ['command', 'status', 'failureCode', 'failureSummary']);
-  assert.deepEqual(Object.keys(testItem.properties), ['command', 'status', 'failureCode', 'failureSummary']);
+  assert.deepEqual(testItem.required, ['command', 'status', 'failureCode', 'failureSummary', 'supersededBy']);
+  assert.deepEqual(Object.keys(testItem.properties), [
+    'command',
+    'status',
+    'failureCode',
+    'failureSummary',
+    'supersededBy',
+  ]);
 });
 
 test('requires the exact supported bundled Codex flags before implementation can claim work', () => {

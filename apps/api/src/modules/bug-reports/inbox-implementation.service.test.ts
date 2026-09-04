@@ -236,6 +236,40 @@ test('quality gate blocks an unverified web patch and permits only passed visual
   );
 });
 
+test('quality gate accepts only an audited corrected archive measurement and never bypasses a real failure', () => {
+  const archiveCommand = 'Initial newline-delimited archive measurement';
+  const correctedCommand = 'Null-delimited before/after archive measurement';
+  const accepted = evaluateInboxImplementationQualityGate({
+    changedFiles: ['apps/api/src/modules/bug-reports/inbox-implementation.service.ts'],
+    tests: [
+      {
+        command: archiveCommand,
+        status: 'SUPERSEDED',
+        failureCode: 'ARCHIVE_FILENAME_ENCODING',
+        failureSummary: 'The archive tool misinterpreted a non-ASCII filename.',
+        supersededBy: correctedCommand,
+      },
+      { command: correctedCommand, status: 'PASSED' },
+    ],
+  });
+  assert.deepEqual(accepted, { eligible: true, reason: null });
+
+  const blocked = evaluateInboxImplementationQualityGate({
+    changedFiles: ['apps/api/src/modules/bug-reports/inbox-implementation.service.ts'],
+    tests: [
+      {
+        command: 'pnpm build:web',
+        status: 'SUPERSEDED',
+        failureCode: 'NEXT_BUILD_LOCK_BUSY',
+        failureSummary: 'A build lock was held.',
+        supersededBy: correctedCommand,
+      },
+      { command: correctedCommand, status: 'PASSED' },
+    ],
+  });
+  assert.equal(blocked.eligible, false);
+});
+
 test('a failed visual QA completes as a retry-only terminal job, never a commit review', async () => {
   const seed = source({ status: 'IN_PROGRESS' });
   const report = source({

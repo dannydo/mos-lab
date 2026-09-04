@@ -245,12 +245,13 @@ function normalizeTests(value: unknown): InboxImplementationTestResult[] {
       const item = entry && typeof entry === 'object' ? (entry as Partial<InboxImplementationTestResult>) : {};
       const command = redactCommand(item.command);
       const status = item.status;
-      if (!command || !['PASSED', 'FAILED', 'NOT_RUN'].includes(status || '')) return null;
+      if (!command || !['PASSED', 'FAILED', 'NOT_RUN', 'SUPERSEDED'].includes(status || '')) return null;
       const failureCode =
         clean(item.failureCode, 80)
           .replace(/[^A-Z0-9_]/gi, '_')
           .slice(0, 80) || null;
       const failureSummary = redactFailureSummary(item.failureSummary);
+      const supersededBy = redactCommand(item.supersededBy);
       return {
         command,
         status: status as InboxImplementationTestResult['status'],
@@ -260,7 +261,14 @@ function normalizeTests(value: unknown): InboxImplementationTestResult[] {
               failureSummary:
                 failureSummary || 'Worker báo lệnh này không đạt nhưng chưa cung cấp tóm tắt lỗi an toàn.',
             }
-          : {}),
+          : status === 'SUPERSEDED'
+            ? {
+                failureCode: failureCode || 'SUPERSEDED_DIAGNOSTIC',
+                failureSummary:
+                  failureSummary || 'Phép đo chẩn đoán này đã được thay thế bằng một phép đo đã hiệu chỉnh.',
+                supersededBy: supersededBy || null,
+              }
+            : {}),
       };
     })
     .filter((item): item is InboxImplementationTestResult => Boolean(item));
@@ -347,7 +355,21 @@ export function evaluateInboxImplementationQualityGate(input: {
   if (!tests.length) {
     return { eligible: false, reason: 'Worker chưa gửi kết quả kiểm thử bắt buộc.' };
   }
-  if (tests.some((test) => test.status !== 'PASSED')) {
+  const hasBlockingTest = tests.some((test, index) => {
+    if (test.status === 'PASSED') return false;
+    if (test.status !== 'SUPERSEDED') return true;
+    // Only an archive filename-encoding diagnostic may be superseded, and its
+    // corrected measurement must appear later in the same immutable result.
+    // A build, test, type, lint, or visual-QA failure can never be bypassed.
+    return !(
+      test.failureCode === 'ARCHIVE_FILENAME_ENCODING' &&
+      test.supersededBy &&
+      tests
+        .slice(index + 1)
+        .some((candidate) => candidate.status === 'PASSED' && candidate.command === test.supersededBy)
+    );
+  });
+  if (hasBlockingTest) {
     return { eligible: false, reason: 'Có kiểm thử FAILED hoặc NOT_RUN; phải chạy lại code/test.' };
   }
   const changedWeb = changedFiles.some((file) => file.startsWith('apps/web/'));
