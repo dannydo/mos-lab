@@ -8,15 +8,39 @@ import {
   bugReportClarificationWhere,
   bugReportCompletionPath,
   bugReportWorkflowProjection,
+  bugReportReporterExperience,
   bugReportNextAction,
   bugReportNextActorWhere,
   isAgentReadableBugStatus,
   knowledgeTokens,
+  normalizeBugReportExpertDetails,
   normalizeAgentResolution,
   normalizeFeatureRequestContext,
   parseBugReportKey,
   sanitizeBugReportContext,
 } from './bug-report.service.js';
+
+test('normalizes optional expert details without making them a submission requirement', () => {
+  assert.equal(normalizeBugReportExpertDetails(undefined), null);
+  assert.deepEqual(
+    normalizeBugReportExpertDetails({
+      reproductionSteps: 'Mở Danh sách lỗi rồi zoom browser 150%.',
+      impact: 'HIGH',
+      environment: 'Chrome · 4K',
+      relatedTicket: 'MOS-BUG-17',
+      unexpected: 'ignored',
+    }),
+    {
+      reproductionSteps: 'Mở Danh sách lỗi rồi zoom browser 150%.',
+      expectedResult: null,
+      actualResult: null,
+      impact: 'HIGH',
+      environment: 'Chrome · 4K',
+      workaround: null,
+      relatedTicket: 'MOS-BUG-17',
+    }
+  );
+});
 
 function progressSource(
   overrides: Partial<Parameters<typeof bugReportAgentProgress>[0]> = {}
@@ -256,6 +280,59 @@ test('serializes progress and next owner from one server-owned workflow projecti
         waitingSince: agentAt.toISOString(),
       },
     }
+  );
+});
+
+test('projects a plain-language reporter view without exposing operating gates', () => {
+  const createdAt = new Date('2026-08-31T01:00:00.000Z');
+  const updatedAt = new Date('2026-08-31T01:05:00.000Z');
+  assert.deepEqual(
+    bugReportReporterExperience({
+      status: 'NEW',
+      clarificationStatus: 'PENDING_AGENT',
+      createdAt,
+      approvedAt: null,
+      startedAt: null,
+      resolvedAt: null,
+      closedAt: null,
+      updatedAt,
+    }),
+    {
+      state: 'REVIEWING',
+      label: 'Đang xem xét',
+      summary: 'mOS đang xem yêu cầu và thông tin bạn đã gửi.',
+      nextAction: {
+        label: 'Bạn chưa cần làm gì',
+        detail: 'mOS sẽ báo bạn khi cần thêm thông tin hoặc có kết quả để kiểm tra.',
+      },
+      updates: [{ label: 'Đã nhận yêu cầu của bạn', occurredAt: createdAt.toISOString() }],
+    }
+  );
+  assert.equal(
+    bugReportReporterExperience({
+      status: 'FIXED',
+      clarificationStatus: 'READY',
+      createdAt,
+      approvedAt: null,
+      startedAt: null,
+      resolvedAt: updatedAt,
+      closedAt: null,
+      updatedAt,
+    }).nextAction.label,
+    'Kiểm tra lại kết quả'
+  );
+  assert.equal(
+    bugReportReporterExperience({
+      status: 'NEW',
+      clarificationStatus: 'WAITING_REPORTER',
+      createdAt,
+      approvedAt: null,
+      startedAt: null,
+      resolvedAt: null,
+      closedAt: null,
+      updatedAt,
+    }).label,
+    'Cần bạn trả lời'
   );
 });
 

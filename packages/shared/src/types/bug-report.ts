@@ -12,6 +12,20 @@ export interface FeatureRequestContext {
   desiredOutcome: string | null;
 }
 
+export const BUG_REPORT_EXPERT_IMPACT_LEVELS = ['LOW', 'MEDIUM', 'HIGH'] as const;
+export type BugReportExpertImpact = (typeof BUG_REPORT_EXPERT_IMPACT_LEVELS)[number];
+
+/** Optional, structured detail for reporters who can reproduce or scope a request precisely. */
+export interface BugReportExpertDetails {
+  reproductionSteps: string | null;
+  expectedResult: string | null;
+  actualResult: string | null;
+  impact: BugReportExpertImpact | null;
+  environment: string | null;
+  workaround: string | null;
+  relatedTicket: string | null;
+}
+
 export const BUG_REPORT_STATUSES = [
   'NEW',
   'APPROVED',
@@ -138,6 +152,8 @@ export interface CreateBugReportRequest {
   description: string;
   context: BugReportContext;
   featureRequest?: FeatureRequestContext | null;
+  /** Optional reporter-owned detail. It is never required to submit a request. */
+  expertDetails?: BugReportExpertDetails | null;
   attachments?: CreateBugReportAttachmentRequest[];
   /** Advisory recommendation that the reporter explicitly accepted or overrode. */
   classificationJobId?: string | null;
@@ -628,6 +644,38 @@ export interface BugReportNextAction {
   waitingSince: string;
 }
 
+/** Plain-language lifecycle states intended for the person who submitted a request. */
+export const BUG_REPORT_REPORTER_STATES = [
+  'RECEIVED',
+  'REVIEWING',
+  'IN_PROGRESS',
+  'WAITING_REPORTER',
+  'READY_FOR_REVIEW',
+  'COMPLETED',
+  'NOT_PROCEEDING',
+] as const;
+export type BugReportReporterState = (typeof BUG_REPORT_REPORTER_STATES)[number];
+
+export interface BugReportReporterUpdate {
+  label: string;
+  occurredAt: string;
+}
+
+/**
+ * Server-owned, non-technical view of a ticket for the person who reported it.
+ * Internal plan, worker, commit and deployment details remain in the operator Inbox.
+ */
+export interface BugReportReporterExperience {
+  state: BugReportReporterState;
+  label: string;
+  summary: string;
+  nextAction: {
+    label: string;
+    detail: string;
+  };
+  updates: BugReportReporterUpdate[];
+}
+
 export interface BugReportComment {
   id: number;
   kind: BugReportCommentKind;
@@ -653,6 +701,8 @@ export interface BugReportSummary {
   key: string;
   requestType: BugReportRequestType;
   featureRequest: FeatureRequestContext | null;
+  /** Optional structured details the reporter supplied for faster Agent analysis. */
+  expertDetails: BugReportExpertDetails | null;
   title: string;
   description: string;
   status: BugReportStatus;
@@ -668,6 +718,7 @@ export interface BugReportSummary {
   /** The latest durable implementation job, when the ticket has entered code/test. */
   implementation: BugReportImplementationState | null;
   nextAction: BugReportNextAction;
+  reporterExperience: BugReportReporterExperience;
   reporter: BugReportReporter;
   approvedAt: string | null;
   timeline: BugReportTimeline;

@@ -523,6 +523,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'NO_OP chỉ dùng cho ticket đã qua bước Agent-needed hoặc sự kiện đã lỗi thời; REPORTER_REOPENED phải từ chối NO_OP để không tự READY hoặc mất lý do người báo.',
       'Reopen phải khóa snapshot audit gồm lý do, audit ID, thời điểm và metadata giới hạn của ảnh gốc vào follow-up/plan job; blob/URL không đi trong job. Worker chỉ đọc ảnh qua lease còn hạn.',
       'Nếu một ảnh gốc đã snapshot không còn đọc được, Agent phải tạo đúng một clarification thay vì suy đoán rằng đã có bằng chứng.',
+      'Người báo có thể gửi mô tả tối thiểu; chi tiết dành cho người quen kỹ thuật là tùy chọn, được lưu có cấu trúc cho Agent và không phải điều kiện gửi hoặc chuyển ticket sang READY.',
+      'Màn “Yêu cầu của tôi” chỉ dùng projection do server quyết định và chỉ nói trạng thái, mOS đang làm gì, việc tiếp theo và cập nhật gần đây; kế hoạch, worker, commit, deploy và audit là chi tiết vận hành, không hiển thị cho người báo.',
     ],
     rationale:
       'Người báo và Danny phải nhìn thấy cùng một chủ nhân bước tiếp theo; completed trong background không thể thay cho tiến độ vận hành trên Inbox.',
@@ -533,14 +535,16 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Agent cần làm rõ', 'READY', 'ASK_REPORTER', 'follow-up', 'AI review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.2.0',
-    effectiveFrom: '2026-09-03',
+    version: '1.4.0',
+    effectiveFrom: '2026-09-04',
     sources: [
       {
         label: 'Inbox follow-up source of truth',
         reference: 'apps/api/src/modules/bug-reports/inbox-follow-up.service.ts',
       },
       { label: 'Visible review transition', reference: 'apps/api/src/modules/bug-reports/bug-report.service.ts' },
+      { label: 'Progressive reporter intake', reference: 'apps/web/components/bug-reports/BugReportSurface.tsx' },
+      { label: 'Reporter experience projection', reference: 'apps/api/src/modules/bug-reports/bug-report.service.ts' },
     ],
   },
   {

@@ -1,12 +1,28 @@
 'use client';
 
 import React from 'react';
-import { Alert, Badge, Button, Image, Input, Select, Tabs, Upload, message, notification, theme } from 'antd';
-import { CircleHelp, ImagePlus, Inbox, Lightbulb, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
+import {
+  Alert,
+  Badge,
+  Button,
+  Checkbox,
+  Collapse,
+  Image,
+  Input,
+  Select,
+  Tabs,
+  Upload,
+  message,
+  notification,
+  theme,
+} from 'antd';
+import { ImagePlus, Inbox, Lightbulb, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import type {
   BugReportClientError,
   BugReportContext,
+  BugReportExpertDetails,
+  BugReportExpertImpact,
   BugReportRequestType,
   CreateBugReportAttachmentRequest,
   FeatureRequestAudience,
@@ -37,12 +53,18 @@ const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
 const LAUNCHER_SIZE = 44;
 const LAUNCHER_MARGIN = 12;
 const DRAG_THRESHOLD = 4;
+const EXPERT_DETAILS_PREFERENCE_KEY = 'mos_bug_report_expert_details_v1';
 
 const FEATURE_AUDIENCE_OPTIONS: Array<{ value: FeatureRequestAudience; label: string }> = [
   { value: 'SELF', label: 'Cá nhân tôi' },
   { value: 'TEAM', label: 'Đội / bộ phận của tôi' },
   { value: 'ALL_STAFF', label: 'Tất cả nhân viên' },
   { value: 'CUSTOMER', label: 'Khách hàng' },
+];
+const EXPERT_IMPACT_OPTIONS: Array<{ value: BugReportExpertImpact; label: string }> = [
+  { value: 'LOW', label: 'Thấp · có thể tiếp tục làm việc' },
+  { value: 'MEDIUM', label: 'Trung bình · gây bất tiện' },
+  { value: 'HIGH', label: 'Cao · chặn công việc' },
 ];
 
 type ReleaseMarker = { deployedAt: string | null; commitSha: string | null };
@@ -86,6 +108,8 @@ export function BugReportSurface() {
   const [featureReason, setFeatureReason] = React.useState('');
   const [featureAudience, setFeatureAudience] = React.useState<FeatureRequestAudience>('TEAM');
   const [featureDesiredOutcome, setFeatureDesiredOutcome] = React.useState('');
+  const [expertDetailsExpanded, setExpertDetailsExpanded] = React.useState(false);
+  const [rememberExpertDetails, setRememberExpertDetails] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [authenticated, setAuthenticated] = React.useState(false);
   const [canViewInbox, setCanViewInbox] = React.useState(false);
@@ -120,14 +144,36 @@ export function BugReportSurface() {
   const activeDraft = drafts[activeRequestView];
   const descriptionFieldId = activeRequestView === 'feature' ? 'mos-feature-description' : 'mos-bug-description';
 
+  React.useEffect(() => {
+    const saved = safeStorage.getItem(EXPERT_DETAILS_PREFERENCE_KEY) === 'true';
+    setRememberExpertDetails(saved);
+    setExpertDetailsExpanded(saved);
+  }, []);
+
+  const updateExpertDetails = React.useCallback(
+    (update: Partial<BugReportExpertDetails>) => {
+      setDrafts((current) =>
+        updateRequestDraft(current, activeRequestView, (draft) => ({
+          expertDetails: { ...draft.expertDetails, ...update },
+        }))
+      );
+    },
+    [activeRequestView]
+  );
+
+  const setExpertDetailsPreference = React.useCallback((checked: boolean) => {
+    setRememberExpertDetails(checked);
+    safeStorage.setItem(EXPERT_DETAILS_PREFERENCE_KEY, String(checked));
+  }, []);
+
   const switchRequestView = React.useCallback(
     (nextView: RequestDraftView) => {
-      if (nextView === activeRequestView) return;
+      if (nextView === activeView) return;
       setDrafts((current) => carryRequestDraft(current, activeRequestView, nextView));
       setConversationSessionId(null);
       setActiveView(nextView);
     },
-    [activeRequestView]
+    [activeRequestView, activeView]
   );
 
   const enabled = authenticated && pathname.startsWith('/dashboard');
@@ -474,6 +520,7 @@ export function BugReportSurface() {
                 desiredOutcome: featureDesiredOutcome.trim() || null,
               }
             : null,
+        expertDetails: draft.expertDetails,
         attachments,
       });
       const result = response.data;
@@ -613,7 +660,7 @@ export function BugReportSurface() {
               label: (
                 <span className="inline-flex items-center gap-2">
                   <AppIcon icon={MessageSquareWarning} size="sm" />
-                  Báo lỗi
+                  Có gì đó không hoạt động
                 </span>
               ),
             },
@@ -622,7 +669,7 @@ export function BugReportSurface() {
               label: (
                 <span className="inline-flex items-center gap-2">
                   <AppIcon icon={Lightbulb} size="sm" />
-                  Yêu cầu chức năng
+                  Tôi muốn làm việc này tốt hơn
                 </span>
               ),
             },
@@ -642,12 +689,6 @@ export function BugReportSurface() {
               {canViewInbox ? (
                 <IconButton label="Mở mOS Inbox" icon={Inbox} tone="text" href="/dashboard/bug-reports" />
               ) : null}
-              <IconButton
-                label="Xem workflow xử lý yêu cầu"
-                icon={CircleHelp}
-                tone="text"
-                onClick={() => setWorkflowOpen(true)}
-              />
             </div>
           }
         />
@@ -680,10 +721,10 @@ export function BugReportSurface() {
                 type="info"
                 showIcon
                 message="Bạn chỉ cần mô tả nhu cầu — AI Agent sẽ hỏi tiếp nếu còn thiếu"
-                description="Sau khi yêu cầu đủ rõ, Danny là người quyết định cuối cùng có đưa chức năng vào hàng triển khai hay không."
+                description="Bạn không cần viết đặc tả kỹ thuật. mOS chỉ hỏi thêm khi thật sự cần để hiểu nhu cầu."
               />
             ) : null}
-            {classification ? (
+            {classification && ['FAILED', 'EXPIRED'].includes(classification.status) ? (
               <Alert
                 type={
                   classification.status === 'COMPLETED'
@@ -693,37 +734,8 @@ export function BugReportSurface() {
                       : 'info'
                 }
                 showIcon
-                message={
-                  classification.status === 'COMPLETED' && classification.recommendation
-                    ? `AI đề xuất: ${classification.recommendation.requestType === 'FEATURE' ? 'Yêu cầu chức năng' : 'Báo lỗi'} · ${Math.round(classification.recommendation.confidence * 100)}%`
-                    : classification.status === 'PENDING' || classification.status === 'LEASED'
-                      ? 'AI đang xem mô tả để đề xuất loại yêu cầu…'
-                      : 'Bạn vẫn có thể tự chọn loại yêu cầu'
-                }
-                description={
-                  classification.status === 'COMPLETED' && classification.recommendation ? (
-                    <div className="space-y-2">
-                      <div>{classification.recommendation.rationale}</div>
-                      {classification.recommendation.clarificationQuestion ? (
-                        <div className="font-medium">
-                          Cần làm rõ: {classification.recommendation.clarificationQuestion}
-                        </div>
-                      ) : null}
-                      <Button
-                        size="small"
-                        onClick={() =>
-                          switchRequestView(
-                            classification.recommendation!.requestType === 'FEATURE' ? 'feature' : 'bug'
-                          )
-                        }
-                      >
-                        Dùng đề xuất này
-                      </Button>
-                    </div>
-                  ) : (
-                    classification.fallbackReason || 'Bạn có thể gửi ticket ngay cả khi không có đề xuất.'
-                  )
-                }
+                message="Bạn vẫn có thể gửi yêu cầu ngay"
+                description={classification.fallbackReason || 'mOS sẽ xem lại loại yêu cầu sau khi bạn gửi.'}
               />
             ) : null}
             <GuidedRequestConversation
@@ -771,49 +783,169 @@ export function BugReportSurface() {
               </p>
             </div>
 
-            {activeView === 'feature' ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label htmlFor="mos-feature-reason" className="mb-2 block text-sm font-semibold">
-                    Vì sao chức năng này cần thiết?
-                  </label>
-                  <Input.TextArea
-                    id="mos-feature-reason"
-                    value={featureReason}
-                    onChange={(event) => setFeatureReason(event.target.value)}
-                    maxLength={2000}
-                    showCount
-                    rows={3}
-                    placeholder="Hiện tại bạn phải làm thủ công, mất thời gian hoặc dễ sai ở bước nào?"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="mos-feature-audience" className="mb-2 block text-sm font-semibold">
-                    Ai sẽ sử dụng?
-                  </label>
-                  <Select
-                    id="mos-feature-audience"
-                    aria-label="Ai sẽ sử dụng chức năng"
-                    value={featureAudience}
-                    onChange={setFeatureAudience}
-                    options={FEATURE_AUDIENCE_OPTIONS}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="mos-feature-outcome" className="mb-2 block text-sm font-semibold">
-                    Kết quả mong muốn <span style={{ color: token.colorTextSecondary }}>(không bắt buộc)</span>
-                  </label>
-                  <Input
-                    id="mos-feature-outcome"
-                    value={featureDesiredOutcome}
-                    onChange={(event) => setFeatureDesiredOutcome(event.target.value)}
-                    maxLength={2000}
-                    placeholder="Ví dụ: Giảm còn 1 lần bấm"
-                  />
-                </div>
-              </div>
-            ) : null}
+            <Collapse
+              activeKey={expertDetailsExpanded ? ['expert'] : []}
+              onChange={(keys) => setExpertDetailsExpanded(keys.includes('expert'))}
+              items={[
+                {
+                  key: 'expert',
+                  label: 'Thêm chi tiết cho người quen kỹ thuật',
+                  children: (
+                    <div className="space-y-4">
+                      <p className="m-0 text-sm" style={{ color: token.colorTextSecondary }}>
+                        Không bắt buộc. Chi tiết này giúp mOS hiểu và xử lý nhanh hơn, nhưng bạn vẫn gửi được ngay.
+                      </p>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="sm:col-span-2">
+                          <label htmlFor="mos-expert-reproduction" className="mb-2 block text-sm font-semibold">
+                            Bước tái hiện
+                          </label>
+                          <Input.TextArea
+                            id="mos-expert-reproduction"
+                            value={activeDraft.expertDetails.reproductionSteps || ''}
+                            onChange={(event) => updateExpertDetails({ reproductionSteps: event.target.value || null })}
+                            maxLength={1200}
+                            rows={3}
+                            placeholder="Ví dụ: Mở Danh sách lỗi → zoom browser 150% → cuộn xuống cuối trang"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mos-expert-expected" className="mb-2 block text-sm font-semibold">
+                            Kết quả mong đợi
+                          </label>
+                          <Input.TextArea
+                            id="mos-expert-expected"
+                            value={activeDraft.expertDetails.expectedResult || ''}
+                            onChange={(event) => updateExpertDetails({ expectedResult: event.target.value || null })}
+                            maxLength={1200}
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mos-expert-actual" className="mb-2 block text-sm font-semibold">
+                            Kết quả thực tế
+                          </label>
+                          <Input.TextArea
+                            id="mos-expert-actual"
+                            value={activeDraft.expertDetails.actualResult || ''}
+                            onChange={(event) => updateExpertDetails({ actualResult: event.target.value || null })}
+                            maxLength={1200}
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mos-expert-impact" className="mb-2 block text-sm font-semibold">
+                            Mức ảnh hưởng
+                          </label>
+                          <Select
+                            id="mos-expert-impact"
+                            aria-label="Mức ảnh hưởng"
+                            value={activeDraft.expertDetails.impact || undefined}
+                            onChange={(impact) =>
+                              updateExpertDetails({ impact: (impact as BugReportExpertImpact | undefined) ?? null })
+                            }
+                            options={EXPERT_IMPACT_OPTIONS}
+                            placeholder="Chọn nếu bạn biết"
+                            allowClear
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mos-expert-environment" className="mb-2 block text-sm font-semibold">
+                            Môi trường
+                          </label>
+                          <Input
+                            id="mos-expert-environment"
+                            value={activeDraft.expertDetails.environment || ''}
+                            onChange={(event) => updateExpertDetails({ environment: event.target.value || null })}
+                            maxLength={500}
+                            placeholder="Ví dụ: Chrome 124 · 4K · zoom 150%"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mos-expert-workaround" className="mb-2 block text-sm font-semibold">
+                            Cách làm tạm thời
+                          </label>
+                          <Input
+                            id="mos-expert-workaround"
+                            value={activeDraft.expertDetails.workaround || ''}
+                            onChange={(event) => updateExpertDetails({ workaround: event.target.value || null })}
+                            maxLength={1200}
+                            placeholder="Nếu có"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mos-expert-related" className="mb-2 block text-sm font-semibold">
+                            Ticket liên quan
+                          </label>
+                          <Input
+                            id="mos-expert-related"
+                            value={activeDraft.expertDetails.relatedTicket || ''}
+                            onChange={(event) => updateExpertDetails({ relatedTicket: event.target.value || null })}
+                            maxLength={120}
+                            placeholder="Ví dụ: MOS-BUG-17"
+                          />
+                        </div>
+                      </div>
+                      {activeView === 'feature' ? (
+                        <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2">
+                          <div className="sm:col-span-2">
+                            <label htmlFor="mos-feature-reason" className="mb-2 block text-sm font-semibold">
+                              Vì sao cải tiến này cần thiết?
+                            </label>
+                            <Input.TextArea
+                              id="mos-feature-reason"
+                              value={featureReason}
+                              onChange={(event) => setFeatureReason(event.target.value)}
+                              maxLength={2000}
+                              rows={3}
+                              placeholder="Hiện tại bạn phải làm thủ công, mất thời gian hoặc dễ sai ở bước nào?"
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="mos-feature-audience" className="mb-2 block text-sm font-semibold">
+                              Ai sẽ sử dụng?
+                            </label>
+                            <Select
+                              id="mos-feature-audience"
+                              aria-label="Ai sẽ sử dụng chức năng"
+                              value={featureAudience}
+                              onChange={setFeatureAudience}
+                              options={FEATURE_AUDIENCE_OPTIONS}
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="mos-feature-outcome" className="mb-2 block text-sm font-semibold">
+                              Kết quả mong muốn
+                            </label>
+                            <Input
+                              id="mos-feature-outcome"
+                              value={featureDesiredOutcome}
+                              onChange={(event) => setFeatureDesiredOutcome(event.target.value)}
+                              maxLength={2000}
+                              placeholder="Ví dụ: Giảm còn 1 lần bấm"
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
+                        <span className="text-sm" style={{ color: token.colorTextSecondary }}>
+                          Độ đủ thông tin · {activeDraft.files.length ? 'đã có ảnh' : 'ảnh là tùy chọn'} · mOS tự lưu
+                          môi trường.
+                        </span>
+                        <Checkbox
+                          checked={rememberExpertDetails}
+                          onChange={(event) => setExpertDetailsPreference(event.target.checked)}
+                        >
+                          Lưu cách nhập chi tiết này cho lần sau
+                        </Checkbox>
+                      </div>
+                    </div>
+                  ),
+                },
+              ]}
+            />
 
             <Upload.Dragger
               key={`${activeRequestView}-upload`}

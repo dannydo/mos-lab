@@ -93,6 +93,7 @@ export function BugReportConversation({
   comments,
   onSubmit,
   readOnly = false,
+  reporterMode = false,
 }: {
   reportId: number;
   requestType: BugReportRequestType;
@@ -101,6 +102,8 @@ export function BugReportConversation({
   comments: BugReportComment[];
   onSubmit: (request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   readOnly?: boolean;
+  /** Keep internal workflow terminology out of the reporter's request view. */
+  reporterMode?: boolean;
 }) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
@@ -113,6 +116,25 @@ export function BugReportConversation({
   ];
   const locked = ['CLOSED', 'REJECTED', 'DUPLICATE'].includes(status);
   const isReadOnly = readOnly || locked;
+  const reporterClarificationCopy = reporterMode
+    ? {
+        PENDING_AGENT: {
+          type: 'info' as const,
+          title: 'mOS đang xem yêu cầu',
+          description: 'mOS sẽ hỏi bạn nếu thật sự cần thêm một chi tiết.',
+        },
+        WAITING_REPORTER: {
+          type: 'warning' as const,
+          title: 'Cần bạn trả lời thêm',
+          description: 'Trả lời câu hỏi bên dưới để mOS có thể tiếp tục.',
+        },
+        READY: {
+          type: 'success' as const,
+          title: 'mOS đã có đủ thông tin',
+          description: 'mOS đang chuẩn bị bước xử lý tiếp theo.',
+        },
+      }[clarification.status]
+    : clarificationCopy;
 
   const addFiles = React.useCallback(
     async (selected: File[]) => {
@@ -182,17 +204,25 @@ export function BugReportConversation({
     >
       {messageContext}
       <Alert
-        type={clarificationCopy.type}
+        type={reporterClarificationCopy.type}
         showIcon
-        message={clarificationCopy.title}
-        description={clarification.summary || clarificationCopy.description}
+        message={reporterClarificationCopy.title}
+        description={
+          reporterMode
+            ? reporterClarificationCopy.description
+            : clarification.summary || reporterClarificationCopy.description
+        }
       />
 
       {comments.length ? (
         <div className="space-y-3" aria-label="Hội thoại làm rõ yêu cầu">
           {comments.map((comment) => {
             const isAgent = comment.authorType === 'AGENT';
-            const authorName = isAgent ? 'AI Agent' : comment.author?.displayName || 'Nhân viên';
+            const authorName = isAgent
+              ? reporterMode
+                ? 'mOS'
+                : 'AI Agent'
+              : comment.author?.displayName || 'Nhân viên';
             return (
               <article
                 key={comment.id}
@@ -210,7 +240,9 @@ export function BugReportConversation({
                     <div className="flex flex-wrap items-center gap-2">
                       <Text strong>{authorName}</Text>
                       {comment.kind === 'CLARIFICATION_QUESTION' ? <Tag color="gold">Câu hỏi làm rõ</Tag> : null}
-                      {comment.kind === 'CLARIFICATION_REVIEW' ? <Tag color="green">Đã đối chiếu biz logic</Tag> : null}
+                      {comment.kind === 'CLARIFICATION_REVIEW' ? (
+                        <Tag color="green">{reporterMode ? 'Đã cập nhật' : 'Đã đối chiếu biz logic'}</Tag>
+                      ) : null}
                     </div>
                     <Text type="secondary" className="text-xs tabular-nums">
                       {dayjs(comment.createdAt).format('DD/MM/YYYY HH:mm')}
@@ -243,9 +275,11 @@ export function BugReportConversation({
           kind="empty"
           title="Chưa có trao đổi"
           description={
-            requestType === 'FEATURE'
-              ? 'Agent sẽ hỏi tại đây nếu nhu cầu, phạm vi hoặc kết quả mong muốn chưa đủ rõ.'
-              : 'Agent sẽ hỏi tại đây nếu mô tả hoặc biz logic chưa đủ rõ.'
+            reporterMode
+              ? 'mOS sẽ hỏi tại đây nếu cần thêm thông tin.'
+              : requestType === 'FEATURE'
+                ? 'Agent sẽ hỏi tại đây nếu nhu cầu, phạm vi hoặc kết quả mong muốn chưa đủ rõ.'
+                : 'Agent sẽ hỏi tại đây nếu mô tả hoặc biz logic chưa đủ rõ.'
           }
         />
       )}
@@ -261,7 +295,9 @@ export function BugReportConversation({
             onChange={(event) => setBody(event.target.value)}
             placeholder={
               clarification.status === 'WAITING_REPORTER'
-                ? 'Trả lời câu hỏi của Agent; có thể dán ảnh trực tiếp vào đây…'
+                ? reporterMode
+                  ? 'Trả lời câu hỏi của mOS; có thể dán ảnh trực tiếp vào đây…'
+                  : 'Trả lời câu hỏi của Agent; có thể dán ảnh trực tiếp vào đây…'
                 : 'Bổ sung chi tiết hoặc bằng chứng; có thể dán ảnh trực tiếp…'
             }
             maxLength={2000}
