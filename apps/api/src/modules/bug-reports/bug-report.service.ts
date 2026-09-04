@@ -27,6 +27,7 @@ import {
   type BugReportContext,
   type BugReportDetail,
   type BugReportExpertDetails,
+  type BugReportImplementationFailure,
   type BugReportImplementationState,
   type BugReportListQuery,
   type BugReportListResponse,
@@ -147,6 +148,7 @@ const reportInclude = {
       progressCount: true,
       checkpointCount: true,
       failureCode: true,
+      testsJson: true,
       retainUntil: true,
       startedAt: true,
       completedAt: true,
@@ -405,6 +407,7 @@ type ImplementationProgressSnapshot = {
   progressCount: number;
   checkpointCount: number;
   failureCode: string | null;
+  testsJson?: string | null;
   retainUntil: Date | null;
   startedAt: Date | null;
   completedAt: Date | null;
@@ -489,6 +492,7 @@ function implementationStateDto(
     progressCount: value.progressCount,
     checkpointCount: value.checkpointCount,
     failureCode: clipped(value.failureCode, 100) || null,
+    failure: implementationFailureDto(value),
     hasRetainedDraft: Boolean(value.retainUntil),
     startedAt: value.startedAt?.toISOString() ?? null,
     completedAt: value.completedAt?.toISOString() ?? null,
@@ -496,9 +500,29 @@ function implementationStateDto(
   };
 }
 
+function implementationFailureDto(value: ImplementationProgressSnapshot): BugReportImplementationFailure | null {
+  if (!value.failureCode) return null;
+  const tests = safeJsonParse<Array<Record<string, unknown>>>(value.testsJson ?? null, []);
+  const failed = tests.find((test) => test?.status === 'FAILED');
+  const command = clipped(failed?.command, 300) || null;
+  const code = clipped(failed?.failureCode, 80) || null;
+  const summary =
+    clipped(failed?.failureSummary, 420) ||
+    (command
+      ? `Lệnh ${command} không đạt, nhưng worker chưa lưu tóm tắt lỗi an toàn.`
+      : 'Worker dừng an toàn nhưng chưa lưu được điều kiện lỗi cụ thể.');
+  return {
+    command,
+    code,
+    summary,
+    occurredAt: value.completedAt?.toISOString() ?? value.updatedAt.toISOString(),
+  };
+}
+
 function implementationFailureNote(value: ImplementationProgressSnapshot): string {
+  const failure = implementationFailureDto(value);
   if (value.failureCode === 'QUALITY_GATE_FAILED') {
-    return 'Quality gate chưa đạt: commit và deploy đã bị chặn. Danny chỉ có thể chạy lại code/test sau khi rà soát bằng chứng.';
+    return `Quality gate chưa đạt: ${failure?.summary ?? 'commit và deploy đã bị chặn.'}`;
   }
   if (value.failureCode === 'CODEX_EXEC_TIMEOUT') {
     return 'Codex vượt thời lượng chạy cho phép; worker đã dừng an toàn. Bản nháp được giữ, chưa commit hoặc deploy.';

@@ -194,15 +194,41 @@ function normalizeTests(value: unknown): InboxImplementationTestResult[] {
   if (!Array.isArray(value)) return [];
   return value
     .slice(0, 8)
-    .map((entry) => {
+    .map((entry): InboxImplementationTestResult | null => {
       const item = entry && typeof entry === 'object' ? (entry as Partial<InboxImplementationTestResult>) : {};
       const command = redactCommand(item.command);
       const status = item.status;
-      return command && ['PASSED', 'FAILED', 'NOT_RUN'].includes(status || '')
-        ? { command, status: status as InboxImplementationTestResult['status'] }
-        : null;
+      if (!command || !['PASSED', 'FAILED', 'NOT_RUN'].includes(status || '')) return null;
+      const failureCode =
+        clean(item.failureCode, 80)
+          .replace(/[^A-Z0-9_]/gi, '_')
+          .slice(0, 80) || null;
+      const failureSummary = redactFailureSummary(item.failureSummary);
+      return {
+        command,
+        status: status as InboxImplementationTestResult['status'],
+        ...(status === 'FAILED'
+          ? {
+              failureCode,
+              failureSummary:
+                failureSummary || 'Worker báo lệnh này không đạt nhưng chưa cung cấp tóm tắt lỗi an toàn.',
+            }
+          : {}),
+      };
     })
     .filter((item): item is InboxImplementationTestResult => Boolean(item));
+}
+
+/** Keeps a useful diagnosis without retaining raw worker logs or secrets. */
+function redactFailureSummary(value: unknown): string | null {
+  const summary = clean(value, 420);
+  if (!summary) return null;
+  return (
+    summary
+      .replace(/\b(token|secret|password|authorization|api[_-]?key)\s*[:=]\s*[^\s,;]+/gi, '$1=[redacted]')
+      .replace(/\b(?:Bearer\s+)?[A-Za-z0-9_-]{32,}\b/g, '[redacted]')
+      .replace(/\/(?:Users|home)\/[^\s:]+/g, '[internal-path]') || null
+  );
 }
 
 function redactCommand(value: unknown): string {

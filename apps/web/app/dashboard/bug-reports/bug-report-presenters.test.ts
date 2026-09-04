@@ -47,6 +47,7 @@ describe('bugReportWorkerActivity', () => {
         progressCount: 2,
         checkpointCount: 0,
         failureCode: null,
+        failure: null,
         hasRetainedDraft: false,
         startedAt: '2026-08-31T00:00:00.000Z',
         completedAt: null,
@@ -70,6 +71,7 @@ describe('bugReportWorkerActivity', () => {
       progressCount: 2,
       checkpointCount: 0,
       failureCode: null,
+      failure: null,
       hasRetainedDraft: true,
       startedAt: '2026-08-31T00:00:00.000Z',
       completedAt: '2026-08-31T00:04:00.000Z',
@@ -89,6 +91,12 @@ describe('bugReportWorkerActivity', () => {
         status: 'FAILED',
         phase: 'FAILED',
         failureCode: 'QUALITY_GATE_FAILED',
+        failure: {
+          command: 'pnpm build:web',
+          code: 'TYPESCRIPT_ERROR',
+          summary: 'TypeScript không khớp kiểu dữ liệu đầu vào.',
+          occurredAt: '2026-08-31T00:04:00.000Z',
+        },
       },
     });
     expect(failed).toMatchObject({ headline: 'Worker dừng an toàn · cần retry', evidence: 'Quality gate chưa đạt.' });

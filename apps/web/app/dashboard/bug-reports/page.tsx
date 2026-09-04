@@ -504,6 +504,29 @@ function DetailDrawer({
               </div>
             </SectionCard>
 
+            {detail.implementation?.failure ? (
+              <SectionCard title="Vì sao worker dừng">
+                <Alert
+                  type="warning"
+                  showIcon
+                  message={detail.implementation.failure.summary}
+                  description={
+                    <div className="space-y-1">
+                      {detail.implementation.failure.command ? (
+                        <Text code>{detail.implementation.failure.command}</Text>
+                      ) : null}
+                      <div>
+                        <Text type="secondary" className="tabular-nums">
+                          {detail.implementation.failure.code ? `${detail.implementation.failure.code} · ` : ''}
+                          Ghi nhận {formatDate(detail.implementation.failure.occurredAt)}. Commit và deploy đã bị chặn.
+                        </Text>
+                      </div>
+                    </div>
+                  }
+                />
+              </SectionCard>
+            ) : null}
+
             {detail.reopen ? (
               <SectionCard title="Phản hồi reopen hiện tại">
                 <div className="space-y-1">

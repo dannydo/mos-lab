@@ -533,10 +533,19 @@ export interface BugReportImplementationState {
   progressCount: number;
   checkpointCount: number;
   failureCode: string | null;
+  /** Safe, server-sanitized reason for the latest terminal implementation failure. */
+  failure: BugReportImplementationFailure | null;
   hasRetainedDraft: boolean;
   startedAt: string | null;
   completedAt: string | null;
   updatedAt: string;
+}
+
+export interface BugReportImplementationFailure {
+  command: string | null;
+  code: string | null;
+  summary: string;
+  occurredAt: string | null;
 }
 
 export interface InboxImplementationWorkerJob {
@@ -574,6 +583,9 @@ export interface RenewInboxImplementationLeaseRequest {
 export interface InboxImplementationTestResult {
   command: string;
   status: 'PASSED' | 'FAILED' | 'NOT_RUN';
+  /** Expected for FAILED results; the server supplies a safe fallback when absent. */
+  failureCode?: string | null;
+  failureSummary?: string | null;
 }
 
 export interface InboxImplementationWorkerResult {

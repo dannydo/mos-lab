@@ -413,6 +413,28 @@ test('accepts a bounded implementation review result and never exposes child out
     }
   );
   assert.throws(() => parseCodexInboxImplementation('{"summary":"missing required structured fields"}'));
+  assert.deepEqual(
+    parseCodexInboxImplementation(
+      JSON.stringify({
+        summary: 'A build gate stopped the draft.',
+        tests: [
+          {
+            command: 'pnpm build:web',
+            status: 'FAILED',
+            failureCode: 'TYPESCRIPT_ERROR',
+            failureSummary: 'TypeScript could not satisfy a required component property.',
+          },
+        ],
+        risksAndRollback: 'Keep the draft isolated until the failed build is understood.',
+      })
+    ).tests[0],
+    {
+      command: 'pnpm build:web',
+      status: 'FAILED',
+      failureCode: 'TYPESCRIPT_ERROR',
+      failureSummary: 'TypeScript could not satisfy a required component property.',
+    }
+  );
   const sensitive = 'ticket body secret must never reach worker logs';
   const line = formatInboxImplementationFailure('codex_exec', new Error(`failed: ${sensitive}`));
   assert.equal(line, 'Inbox implementation class=inbox_implementation phase=codex_exec code=UNEXPECTED_FAILURE');

@@ -145,6 +145,38 @@ test('implementation outcome stores only bounded structured review metadata', ()
     }).tests,
     [{ command: 'TOKEN=[redacted] pnpm test', status: 'PASSED' }]
   );
+  assert.deepEqual(
+    normalizeInboxImplementationResult({
+      summary: 'Safe failure evidence.',
+      tests: [
+        {
+          command: 'pnpm build:web',
+          status: 'FAILED',
+          failureCode: 'TYPESCRIPT_ERROR',
+          failureSummary: 'Missing prop; token=do-not-store and Bearer abcdefghijklmnopqrstuvwxyz1234567890.',
+        },
+      ],
+      risksAndRollback: 'Keep the isolated worktree for review.',
+    }).tests,
+    [
+      {
+        command: 'pnpm build:web',
+        status: 'FAILED',
+        failureCode: 'TYPESCRIPT_ERROR',
+        failureSummary: 'Missing prop; token=[redacted] and [redacted].',
+      },
+    ]
+  );
+  assert.match(
+    String(
+      normalizeInboxImplementationResult({
+        summary: 'Safe fallback evidence.',
+        tests: [{ command: 'pnpm build:web', status: 'FAILED' }],
+        risksAndRollback: 'Keep the isolated worktree for review.',
+      }).tests[0]?.failureSummary
+    ),
+    /chưa cung cấp tóm tắt lỗi an toàn/i
+  );
 });
 
 test('quality gate blocks an unverified web patch and permits only passed visual QA', () => {
@@ -231,7 +263,14 @@ test('a failed visual QA completes as a retry-only terminal job, never a commit 
     {
       summary: 'Layout patch was attempted.',
       risksAndRollback: 'Discard the isolated draft.',
-      tests: [{ command: 'playwright visual screenshot QA at 125% zoom', status: 'FAILED' }],
+      tests: [
+        {
+          command: 'playwright visual screenshot QA at 125% zoom',
+          status: 'FAILED',
+          failureCode: 'VISUAL_REGRESSION',
+          failureSummary: 'Trang vẫn còn khoảng trống bên phải ở mức zoom 125%.',
+        },
+      ],
     },
     { changedFiles: ['apps/web/app/dashboard/bug-reports/page.tsx'], diffStat: '1 file changed' }
   );
@@ -239,6 +278,7 @@ test('a failed visual QA completes as a retry-only terminal job, never a commit 
   assert.equal(updates[0]?.status, 'FAILED');
   assert.equal(updates[0]?.failureCode, 'QUALITY_GATE_FAILED');
   assert.equal(updates[0]?.executionPhase, 'FAILED');
+  assert.match(String(updates[0]?.testsJson), /VISUAL_REGRESSION/);
   assert.equal((audits[0]?.data as { action?: string }).action, 'AGENT_IMPLEMENTATION_FAILED');
 });
 

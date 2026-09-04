@@ -1149,6 +1149,8 @@ function inboxImplementationSchema(): string {
           properties: {
             command: { type: 'string', minLength: 1, maxLength: 300 },
             status: { type: 'string', enum: ['PASSED', 'FAILED', 'NOT_RUN'] },
+            failureCode: { type: ['string', 'null'], maxLength: 80 },
+            failureSummary: { type: ['string', 'null'], maxLength: 420 },
           },
         },
       },
@@ -1331,6 +1333,7 @@ async function processInboxImplementationOne(): Promise<boolean> {
       'Work only in the current isolated worktree. Implement only the approved scope. Follow repository instructions.',
       'You may edit code and run focused tests only. Do not run git commit, git push, merge, deploy, migrations, process managers, network administration, or modify files outside this worktree.',
       'If you change apps/web, run a real Playwright visual/screenshot QA for the approved viewport or zoom behavior. Report it as PASSED only when that command truly passed; otherwise report FAILED or NOT_RUN. A DOM-only check is not visual QA.',
+      'For every FAILED test, include a short failureCode and a user-safe failureSummary identifying the first failing condition. Never paste raw logs, credentials, ticket text, or absolute paths; this summary is retained on the ticket before retry is allowed.',
       'Do not read or transmit credentials, attachments, tokens, or user configuration. Finish with JSON matching the schema: a concise safe summary, commands/statuses for tests, and risks/rollback. Never include ticket text verbatim.',
       JSON.stringify({
         ticketKey: job.ticketKey,
