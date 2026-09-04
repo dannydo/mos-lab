@@ -495,7 +495,14 @@ export function BugReportSurface() {
     const normalizedDescription = draft.description.trim();
     const requestType: BugReportRequestType = draftView === 'feature' ? 'FEATURE' : 'BUG';
     const normalizedFeatureReason = featureReason.trim();
-    if (normalizedDescription.length < 3 || !context) return;
+    if (normalizedDescription.length < 3) {
+      message.warning('Hãy mô tả yêu cầu bằng ít nhất 3 ký tự.');
+      return;
+    }
+    // Context normally arrives when the sheet opens.  A slow release-marker
+    // request must never leave the reporter with an enabled button that does
+    // nothing; capture a fresh safe context at the submit boundary instead.
+    const submissionContext = context ?? captureBugReportContext(release, null);
     setSubmitting(true);
     try {
       const attachments: CreateBugReportAttachmentRequest[] = await Promise.all(
@@ -509,7 +516,7 @@ export function BugReportSurface() {
       const response = await apiClient.bugReports.create({
         requestType,
         description: normalizedDescription,
-        context,
+        context: submissionContext,
         classificationJobId: classification?.status === 'COMPLETED' ? classification.id : null,
         conversationSessionId,
         featureRequest:

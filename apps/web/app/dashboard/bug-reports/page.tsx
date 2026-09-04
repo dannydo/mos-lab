@@ -654,6 +654,33 @@ function DetailDrawer({
               </div>
             </SectionCard>
 
+            {detail.implementation?.deploymentLane ? (
+              <SectionCard title="Lộ trình phát hành đề xuất">
+                <Alert
+                  type="info"
+                  showIcon
+                  message={`${detail.implementation.deploymentLane.lane} · chỉ quan sát`}
+                  description={
+                    <div className="space-y-1">
+                      <Text>{detail.implementation.deploymentLane.reason}</Text>
+                      <div>
+                        <Text type="secondary">
+                          Sẽ chạy: {detail.implementation.deploymentLane.willRun.join(' · ')}
+                        </Text>
+                      </div>
+                      {detail.implementation.deploymentLane.willSkip.length ? (
+                        <div>
+                          <Text type="secondary">
+                            Bỏ qua: {detail.implementation.deploymentLane.willSkip.join(' · ')}
+                          </Text>
+                        </div>
+                      ) : null}
+                    </div>
+                  }
+                />
+              </SectionCard>
+            ) : null}
+
             {detail.implementation?.failure ? (
               <SectionCard title="Vì sao worker dừng">
                 <Alert

@@ -1,4 +1,5 @@
 import type { ActionResponse, PageQuery, PageResponse } from './api.js';
+import type { DeploymentLaneDecision } from './deploy-lane.js';
 
 export const BUG_REPORT_REQUEST_TYPES = ['BUG', 'FEATURE'] as const;
 export type BugReportRequestType = (typeof BUG_REPORT_REQUEST_TYPES)[number];
@@ -533,6 +534,8 @@ export interface BugReportImplementationState {
   progressCount: number;
   checkpointCount: number;
   failureCode: string | null;
+  /** Conservative deployment recommendation computed from the reviewable source diff. */
+  deploymentLane?: DeploymentLaneDecision | null;
   /** The durable retry-chain position, exposed so the Inbox never guesses retry authority. */
   retrySequence: number;
   /** Server-authoritative: an ordinary clean retry is still within its bounded budget. */

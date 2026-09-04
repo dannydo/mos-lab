@@ -8,6 +8,7 @@ import {
   BUG_REPORT_REQUEST_TYPES,
   BUG_REPORT_STATUSES,
   FEATURE_REQUEST_AUDIENCES,
+  classifyDeploymentLane,
   formatBugReportKey,
   removeVietnameseTones,
   type AgentBugBundle,
@@ -158,6 +159,7 @@ const reportInclude = {
       failureCode: true,
       retrySequence: true,
       testsJson: true,
+      changedFilesJson: true,
       retainUntil: true,
       startedAt: true,
       completedAt: true,
@@ -419,6 +421,7 @@ type ImplementationProgressSnapshot = {
   checkpointCount: number;
   failureCode: string | null;
   testsJson?: string | null;
+  changedFilesJson?: string | null;
   retainUntil: Date | null;
   startedAt: Date | null;
   completedAt: Date | null;
@@ -504,6 +507,7 @@ function implementationStateDto(
     progressCount: value.progressCount,
     checkpointCount: value.checkpointCount,
     failureCode: clipped(value.failureCode, 100) || null,
+    deploymentLane: implementationDeploymentLane(value),
     retrySequence: value.retrySequence ?? 0,
     canRetryImplementation: canRetryInboxImplementation({
       status: value.status,
@@ -532,6 +536,11 @@ function implementationStateDto(
     completedAt: value.completedAt?.toISOString() ?? null,
     updatedAt: value.updatedAt.toISOString(),
   };
+}
+
+function implementationDeploymentLane(value: ImplementationProgressSnapshot) {
+  const changedFiles = safeJsonParse<string[]>(value.changedFilesJson ?? null, []);
+  return changedFiles.length ? classifyDeploymentLane(changedFiles) : null;
 }
 
 function implementationFailureDto(value: ImplementationProgressSnapshot): BugReportImplementationFailure | null {
