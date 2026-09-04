@@ -32,7 +32,7 @@ import type {
   CreateBugReportCommentRequest,
   TriageBugReportRequest,
 } from '@mos-lab/shared';
-import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import {
   CheckCircle2,
   Bot,
@@ -952,6 +952,7 @@ export default function BugReportsPage() {
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [canTriage, setCanTriage] = useState(false);
+  const [canOpenJournal, setCanOpenJournal] = useState(false);
 
   useEffect(() => {
     try {
@@ -961,8 +962,10 @@ export default function BugReportsPage() {
         email?: string | null;
       };
       setCanTriage(isSuperAdminRole(user.role) && isCanonicalSuperAdminIdentity(user));
+      setCanOpenJournal(isAdminOrSuperAdminRole(user.role));
     } catch {
       setCanTriage(false);
+      setCanOpenJournal(false);
     }
   }, []);
 
@@ -985,7 +988,7 @@ export default function BugReportsPage() {
         icon={<AppIcon icon={MessageSquareWarning} size="lg" />}
         headerActions={
           <Space size={4}>
-            {canTriage ? (
+            {canOpenJournal ? (
               <Tooltip title="Nhật ký Experience & Reliability (nội bộ)">
                 <Button
                   type="text"
@@ -1198,7 +1201,7 @@ export default function BugReportsPage() {
         />
       </ResourceListPage>
       <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} />
-      {canTriage ? (
+      {canOpenJournal ? (
         <ExperienceJournalDrawer
           open={journalOpen}
           onClose={() => setJournalOpen(false)}
