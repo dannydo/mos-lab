@@ -5217,7 +5217,7 @@ body {
 
 /* The Inbox is a wide operational queue. It must keep filling the available
    shell when browser zoom changes the CSS viewport across UHD breakpoints. */
-.dashboard-content--full-width {
+.dashboard-content.dashboard-content--full-width {
   max-width: none;
 }
 
