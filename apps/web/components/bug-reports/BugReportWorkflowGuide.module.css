@@ -41,11 +41,6 @@
   width: 1px;
 }
 
-.safetyRule {
-  background: color-mix(in srgb, var(--mos-accent) 9%, var(--mos-surface));
-  border-color: var(--mos-surface-border-strong);
-}
-
 @media (max-width: 639px) {
   .workflowStep {
     grid-template-columns: 2rem minmax(0, 1fr);

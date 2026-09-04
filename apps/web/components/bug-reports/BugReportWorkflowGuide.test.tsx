@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   BUG_REPORT_WORKFLOW_VISIBILITY_EVENT,
@@ -7,25 +7,27 @@ import {
 } from './BugReportWorkflowGuide';
 
 describe('BugReportWorkflowGuide', () => {
-  it('explains the canonical feature handoff and audited admin exception', () => {
+  it('keeps the feature workflow focused on the three staff actions', () => {
     render(<BugReportWorkflowGuide />);
 
-    expect(screen.getByText(/Mỗi ticket chỉ có một người cần hành động tiếp/)).toBeInTheDocument();
-    expect(screen.getByText('Danny · Quyết định')).toBeInTheDocument();
-    expect(screen.getByText('Người yêu cầu · Nghiệm thu')).toBeInTheDocument();
-    expect(screen.getByText('AI Agent · Xử lý phản hồi reopen')).toBeInTheDocument();
-    expect(screen.getByText(/Admin chỉ đóng ngoại lệ/)).toBeInTheDocument();
-    expect(screen.getByText(/cột/).closest('span')).toHaveTextContent('Bước tiếp theo');
+    expect(screen.getByRole('tab', { name: 'Thêm chức năng mới' })).toBeInTheDocument();
+    const featurePanel = screen.getByRole('tabpanel', { name: 'Thêm chức năng mới' });
+    expect(within(featurePanel).getByText('Nói cho mOS biết bạn muốn cải thiện gì')).toBeInTheDocument();
+    expect(within(featurePanel).getByText('Trả lời mOS nếu được hỏi')).toBeInTheDocument();
+    expect(within(featurePanel).getByText('Kiểm tra kết quả')).toBeInTheDocument();
+    expect(screen.queryByText(/Danny/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/retry/i)).not.toBeInTheDocument();
   });
 
-  it('keeps reporter review as the normal close path for bugs', () => {
+  it('uses a short bug label and keeps the same three staff actions', () => {
     render(<BugReportWorkflowGuide />);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Báo lỗi' }));
 
-    expect(screen.getByText('Nghiệm thu hoặc reopen')).toBeInTheDocument();
-    expect(screen.getByText('Người báo · Nghiệm thu')).toBeInTheDocument();
-    expect(screen.queryByText('Người báo / Admin')).not.toBeInTheDocument();
+    const bugPanel = screen.getByRole('tabpanel', { name: 'Báo lỗi' });
+    expect(within(bugPanel).getByText('Nói cho mOS biết chuyện gì xảy ra')).toBeInTheDocument();
+    expect(within(bugPanel).getByText('Trả lời mOS nếu được hỏi')).toBeInTheDocument();
+    expect(within(bugPanel).getByText('Kiểm tra kết quả')).toBeInTheDocument();
   });
 
   it('broadcasts modal visibility so floating launchers cannot overlap it', async () => {

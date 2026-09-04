@@ -668,7 +668,7 @@ export function BugReportSurface() {
               label: (
                 <span className="inline-flex items-center gap-2">
                   <AppIcon icon={MessageSquareWarning} size="sm" />
-                  Có gì đó không hoạt động
+                  Báo lỗi
                 </span>
               ),
             },
@@ -677,7 +677,7 @@ export function BugReportSurface() {
               label: (
                 <span className="inline-flex items-center gap-2">
                   <AppIcon icon={Lightbulb} size="sm" />
-                  Tôi muốn làm việc này tốt hơn
+                  Thêm chức năng mới
                 </span>
               ),
             },
