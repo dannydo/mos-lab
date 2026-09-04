@@ -100,6 +100,7 @@ interface DetailDrawerProps {
   authorizeWorkerRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
   authorizeSchemaRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
   authorizeQualityGateRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
+  authorizeBuildLockRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -117,6 +118,7 @@ function DetailDrawer({
   authorizeWorkerRecoveryRetry: authorizeWorkerRecoveryRetryAction,
   authorizeSchemaRecoveryRetry: authorizeSchemaRecoveryRetryAction,
   authorizeQualityGateRecoveryRetry: authorizeQualityGateRecoveryRetryAction,
+  authorizeBuildLockRecoveryRetry: authorizeBuildLockRecoveryRetryAction,
   confirmClose,
   comment,
   canTriage,
@@ -358,6 +360,21 @@ function DetailDrawer({
     }
   }, [authorizeQualityGateRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
 
+  const authorizeBuildLockRecoveryRetry = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      await authorizeBuildLockRecoveryRetryAction(detail.id);
+      messageApi.success('Đã tạo retry sau khi sửa lock build.');
+      const refreshed = await getDetail(detail.id);
+      hydrateForm(refreshed);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : 'Không thể tạo retry sau khi sửa lock build.');
+    } finally {
+      setSaving(false);
+    }
+  }, [authorizeBuildLockRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
+
   const approveCommit = useCallback(async () => {
     if (!detail) return;
     setSaving(true);
@@ -464,7 +481,19 @@ function DetailDrawer({
                 detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&
                 detail.priority &&
                 detail.clarification.status === 'READY' &&
-                (detail.implementation?.canAuthorizeQualityGateRecoveryRetry ? (
+                (detail.implementation?.canAuthorizeBuildLockRecoveryRetry ? (
+                  <Popconfirm
+                    title="Cho phép một retry sau khi sửa lock build?"
+                    description="Đúng lỗi lock output Next đã được sửa và kiểm chứng. Hệ thống tạo đúng một worktree code/test mới; commit, push, merge, deploy và migration vẫn không tự chạy."
+                    okText="Cho phép retry"
+                    cancelText="Chưa cho phép"
+                    onConfirm={() => void authorizeBuildLockRecoveryRetry()}
+                  >
+                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
+                      Cho phép retry sau khi sửa lock build
+                    </Button>
+                  </Popconfirm>
+                ) : detail.implementation?.canAuthorizeQualityGateRecoveryRetry ? (
                   <Popconfirm
                     title="Cho phép một retry sau khi sửa cổng kiểm thử?"
                     description="Cổng kiểm thử đã được sửa và xác minh. Hệ thống tạo đúng một worktree code/test mới; commit, push, merge, deploy và migration vẫn không tự chạy."
@@ -1138,6 +1167,7 @@ export default function BugReportsPage() {
         authorizeWorkerRecoveryRetry={inbox.authorizeWorkerRecoveryRetry}
         authorizeSchemaRecoveryRetry={inbox.authorizeSchemaRecoveryRetry}
         authorizeQualityGateRecoveryRetry={inbox.authorizeQualityGateRecoveryRetry}
+        authorizeBuildLockRecoveryRetry={inbox.authorizeBuildLockRecoveryRetry}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}

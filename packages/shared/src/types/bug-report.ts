@@ -543,6 +543,8 @@ export interface BugReportImplementationState {
   canAuthorizeSchemaRecoveryRetry: boolean;
   /** Server-authoritative: one final retry is allowed only after quality-gate infrastructure was repaired. */
   canAuthorizeQualityGateRecoveryRetry: boolean;
+  /** Server-authoritative: one retry is allowed only after the recorded Next build lock was repaired. */
+  canAuthorizeBuildLockRecoveryRetry: boolean;
   /** Safe, server-sanitized reason for the latest terminal implementation failure. */
   failure: BugReportImplementationFailure | null;
   hasRetainedDraft: boolean;
@@ -886,6 +888,11 @@ export interface AuthorizeBugReportQualityGateRecoveryRetryRequest {
   acknowledged: true;
 }
 
+/** A separately audited, one-time retry after the recorded Next build lock was repaired. */
+export interface AuthorizeBugReportBuildLockRecoveryRetryRequest {
+  acknowledged: true;
+}
+
 /**
  * Records a separately approved production release. The reviewed commit must
  * be supplied explicitly and must match the production release marker.
@@ -988,6 +995,7 @@ export type RetryBugReportImplementationResponse = ActionResponse<ApproveBugRepo
 export type AuthorizeBugReportWorkerRecoveryRetryResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type AuthorizeBugReportSchemaRecoveryRetryResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type AuthorizeBugReportQualityGateRecoveryRetryResponse = ActionResponse<ApproveBugReportImplementationResult>;
+export type AuthorizeBugReportBuildLockRecoveryRetryResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ReleaseBugReportImplementationResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportImplementationAcceptanceResponse = ActionResponse<BugReportDetail>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;

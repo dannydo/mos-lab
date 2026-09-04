@@ -3,6 +3,7 @@ import test from 'node:test';
 import { Prisma } from '../../generated/crm-client/index.js';
 import {
   InboxImplementationService,
+  canAuthorizeBuildLockRecoveryRetry,
   canAuthorizeQualityGateRecoveryRetry,
   canAuthorizeSchemaRecoveryRetry,
   canAuthorizeWorkerRecoveryRetry,
@@ -648,6 +649,25 @@ test('quality-gate recovery creates sequence five once after the verified gate r
   assert.equal(auditAction, 'DANNY_GATE_RECOVERY_RETRY_AUTH');
   assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 5 }), false);
   assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, failureCode: 'NEXT_BUILD_STALLED' }), false);
+});
+
+test('build-lock recovery opens only once for the recorded private Next output lock', () => {
+  const terminal = {
+    status: 'FAILED',
+    retrySequence: 5,
+    failureCode: 'QUALITY_GATE_FAILED',
+    testsJson: JSON.stringify([
+      {
+        status: 'FAILED',
+        summary:
+          'The repeated build was rejected because the initial build process still held the private build-directory lock.',
+      },
+    ]),
+  };
+  assert.equal(canAuthorizeBuildLockRecoveryRetry(terminal), true);
+  assert.equal(canAuthorizeBuildLockRecoveryRetry({ ...terminal, retrySequence: 6 }), false);
+  assert.equal(canAuthorizeBuildLockRecoveryRetry({ ...terminal, testsJson: 'quality gate failed' }), false);
+  assert.equal(canAuthorizeBuildLockRecoveryRetry({ ...terminal, failureCode: 'NEXT_BUILD_STALLED' }), false);
 });
 
 test('lease renewal accepts only the same active worker, token, and Codex process epoch', async () => {

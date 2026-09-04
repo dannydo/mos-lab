@@ -28,6 +28,7 @@ const MAX_DANNY_RETRY_SEQUENCE = 2;
 const WORKER_RECOVERY_RETRY_FAILURE_CODES = new Set(['CODEX_EXEC_EXIT_1']);
 const SCHEMA_RECOVERY_RETRY_FAILURE_CODES = new Set(['CODEX_EXEC_EXIT_1']);
 const QUALITY_GATE_RECOVERY_RETRY_FAILURE_CODES = new Set(['QUALITY_GATE_FAILED']);
+const BUILD_LOCK_RECOVERY_RETRY_FAILURE_CODES = new Set(['QUALITY_GATE_FAILED']);
 const SCHEMA_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_READONLY_DIAGNOSTIC_PASSED';
 const SCHEMA_RECOVERY_ROOT_CAUSE = 'STRICT_RESPONSE_SCHEMA_REQUIRED_FIELDS';
 const execFileAsync = promisify(execFile);
@@ -229,6 +230,27 @@ export function canAuthorizeQualityGateRecoveryRetry(source: {
     source.status === 'FAILED' &&
     source.retrySequence === MAX_DANNY_RETRY_SEQUENCE + 2 &&
     Boolean(source.failureCode && QUALITY_GATE_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode))
+  );
+}
+
+/**
+ * A one-time, named recovery for a verified Next build-directory lock. This
+ * sits after the quality-gate recovery and deliberately requires the exact
+ * recorded failure text, so a generic QUALITY_GATE_FAILED result cannot open
+ * another retry loop.
+ */
+export function canAuthorizeBuildLockRecoveryRetry(source: {
+  status: string;
+  retrySequence: number;
+  failureCode: string | null;
+  testsJson?: string | null;
+}): boolean {
+  const failureEvidence = String(source.testsJson ?? '');
+  return (
+    source.status === 'FAILED' &&
+    source.retrySequence === MAX_DANNY_RETRY_SEQUENCE + 3 &&
+    Boolean(source.failureCode && BUILD_LOCK_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode)) &&
+    /private build-directory lock|another next build process is already running/i.test(failureEvidence)
   );
 }
 
@@ -730,13 +752,14 @@ export class InboxImplementationService {
         'WORKER_RECOVERY_RETRY_NOT_ELIGIBLE'
       );
     }
+    const planVersion = gate.plan.planVersion;
     const failed = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({
       where: { id: report.implementationActiveJobId },
     });
     if (
       !failed ||
       failed.sourceVersion !== gate.sourceVersion ||
-      failed.planVersion !== gate.plan.planVersion ||
+      failed.planVersion !== planVersion ||
       !canAuthorizeWorkerRecoveryRetry(failed)
     ) {
       throw new InboxImplementationError(
@@ -746,7 +769,6 @@ export class InboxImplementationService {
       );
     }
 
-    const planVersion = gate.plan.planVersion;
     const id = randomUUID();
     const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
     const now = new Date();
@@ -993,6 +1015,98 @@ export class InboxImplementationService {
     });
   }
 
+  /** One audited retry after the verified Next private-output locking repair. */
+  static async authorizeBuildLockRecoveryRetry(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number
+  ): Promise<boolean> {
+    const report = await fastify.prisma.crm.crmBugReport.findUnique({
+      where: { id: reportId },
+      include: implementationReportInclude(),
+    });
+    if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    const gate = isInboxImplementationExecutionEligible(report);
+    if (!gate.eligible || !gate.plan || !report.implementationActiveJobId) {
+      throw new InboxImplementationError(
+        'Ticket không còn đủ điều kiện để cấp retry sau khi sửa lock build.',
+        409,
+        'BUILD_LOCK_RECOVERY_RETRY_NOT_ELIGIBLE'
+      );
+    }
+    const planVersion = gate.plan.planVersion;
+    const failed = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({
+      where: { id: report.implementationActiveJobId },
+    });
+    if (
+      !failed ||
+      failed.sourceVersion !== gate.sourceVersion ||
+      failed.planVersion !== planVersion ||
+      !canAuthorizeBuildLockRecoveryRetry(failed)
+    ) {
+      throw new InboxImplementationError(
+        'Quyền retry này chỉ áp dụng một lần cho đúng lỗi lock build đã được ghi nhận và sửa.',
+        409,
+        'BUILD_LOCK_RECOVERY_RETRY_NOT_ALLOWED'
+      );
+    }
+
+    const id = randomUUID();
+    const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const now = new Date();
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmInboxImplementationJob.create({
+        data: {
+          id,
+          reportId,
+          sourceVersion: gate.sourceVersion,
+          planVersion,
+          retryOfJobId: failed.id,
+          retrySequence: failed.retrySequence + 1,
+          branchName: safeBranchName(ticketKey, id),
+          executionPhase: 'QUEUED',
+          expiresAt: new Date(now.getTime() + JOB_TTL_MS),
+        },
+      });
+      const attached = await tx.crmBugReport.updateMany({
+        where: { id: reportId, implementationActiveJobId: failed.id },
+        data: {
+          status: 'APPROVED',
+          statusSort: 0,
+          startedAt: null,
+          resolvedAt: null,
+          closedAt: null,
+          implementationActiveJobId: id,
+          updatedAt: now,
+        },
+      });
+      if (!attached.count) {
+        await tx.crmInboxImplementationJob.update({
+          where: { id },
+          data: { status: 'STALE', failureCode: 'ACTIVE_JOB_RACE', executionPhase: 'STALE' },
+        });
+        return false;
+      }
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'DANNY_BUILD_LOCK_RECOVERY_AUTH',
+          note: 'Đã xác nhận một retry sau khi cơ chế khóa build riêng được sửa và kiểm chứng. Job mới chỉ chạy code/test trong worktree riêng; commit và deploy vẫn bị chặn bởi quality gate.',
+          beforeJson: snapshot(report),
+          afterJson: snapshot({
+            ...report,
+            status: 'APPROVED',
+            implementationActiveJobId: id,
+            comments: report.comments,
+            inboxPlanJobs: report.inboxPlanJobs,
+          }),
+        },
+      });
+      return true;
+    });
+  }
+
   /**
    * Danny's commit approval reuses the exact retained review job.  It never
    * creates a fresh patch, stages arbitrary files, pushes, merges, or deploys.
@@ -1179,12 +1293,13 @@ export class InboxImplementationService {
     for (const report of reports) {
       const gate = isInboxImplementationExecutionEligible(report);
       if (!gate.eligible || !gate.plan) continue;
+      const planVersion = gate.plan.planVersion;
       const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: {
           id: report.implementationActiveJobId || undefined,
           reportId: report.id,
           sourceVersion: gate.sourceVersion,
-          planVersion: gate.plan.planVersion,
+          planVersion,
           OR: [
             {
               status: 'STALE',

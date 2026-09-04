@@ -53,6 +53,7 @@ import {
 import { BugReportStorage } from './bug-report.storage.js';
 import {
   canAuthorizeSchemaRecoveryRetry,
+  canAuthorizeBuildLockRecoveryRetry,
   canAuthorizeQualityGateRecoveryRetry,
   canAuthorizeWorkerRecoveryRetry,
   canRetryInboxImplementation,
@@ -520,6 +521,10 @@ function implementationStateDto(
       status: value.status,
       retrySequence: value.retrySequence ?? -1,
       failureCode: value.failureCode,
+    }),
+    canAuthorizeBuildLockRecoveryRetry: canAuthorizeBuildLockRecoveryRetry({
+      ...value,
+      retrySequence: value.retrySequence ?? -1,
     }),
     failure: implementationFailureDto(value),
     hasRetainedDraft: Boolean(value.retainUntil),
