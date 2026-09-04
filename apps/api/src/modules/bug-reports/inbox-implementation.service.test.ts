@@ -256,6 +256,22 @@ test('quality gate accepts only an audited corrected archive measurement and nev
   });
   assert.deepEqual(accepted, { eligible: true, reason: null });
 
+  const acceptedPatternDiagnostic = evaluateInboxImplementationQualityGate({
+    changedFiles: ['.vercelignore'],
+    tests: [
+      {
+        command: 'BSD tar archive simulation',
+        status: 'SUPERSEDED',
+        failureCode: 'ARCHIVE_SIMULATION_PATTERN_MISMATCH',
+        failureSummary: 'BSD tar does not implement Vercel root-anchored patterns.',
+        supersededBy: correctedCommand,
+      },
+      { command: correctedCommand, status: 'PASSED' },
+      { command: 'pnpm build:web', status: 'PASSED' },
+    ],
+  });
+  assert.deepEqual(acceptedPatternDiagnostic, { eligible: true, reason: null });
+
   const blocked = evaluateInboxImplementationQualityGate({
     changedFiles: ['apps/api/src/modules/bug-reports/inbox-implementation.service.ts'],
     tests: [
@@ -270,6 +286,20 @@ test('quality gate accepts only an audited corrected archive measurement and nev
     ],
   });
   assert.equal(blocked.eligible, false);
+
+  const sandboxBlocked = evaluateInboxImplementationQualityGate({
+    changedFiles: ['.vercelignore'],
+    tests: [
+      { command: correctedCommand, status: 'PASSED' },
+      {
+        command: 'process diagnostic',
+        status: 'SUPERSEDED',
+        failureCode: 'SANDBOX_PROCESS_INSPECTION_DENIED',
+        supersededBy: correctedCommand,
+      },
+    ],
+  });
+  assert.equal(sandboxBlocked.eligible, false);
 });
 
 test('a failed visual QA completes as a retry-only terminal job, never a commit review', async () => {

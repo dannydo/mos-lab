@@ -384,6 +384,14 @@ export type InboxImplementationQualityGate = {
   reason: string | null;
 };
 
+const SUPERSEDABLE_ARCHIVE_DIAGNOSTICS = new Set([
+  'ARCHIVE_FILENAME_ENCODING',
+  // BSD tar does not implement Vercel's root-anchored ignore syntax. This is
+  // only a diagnostic when the same result includes a later, null-delimited
+  // repository measurement that passed.
+  'ARCHIVE_SIMULATION_PATTERN_MISMATCH',
+]);
+
 /**
  * Commit and deploy are safety gates, not a second chance to reinterpret a
  * failed worker result.  The server owns this decision so an old UI, delayed
@@ -404,11 +412,13 @@ export function evaluateInboxImplementationQualityGate(input: {
   const hasBlockingTest = tests.some((test, index) => {
     if (test.status === 'PASSED') return false;
     if (test.status !== 'SUPERSEDED') return true;
-    // Only an archive filename-encoding diagnostic may be superseded, and its
+    // Only a narrowly-defined archive diagnostic may be superseded, and its
     // corrected measurement must appear later in the same immutable result.
-    // A build, test, type, lint, or visual-QA failure can never be bypassed.
+    // A build, test, type, lint, visual-QA, or sandbox failure can never be
+    // bypassed.
     return !(
-      test.failureCode === 'ARCHIVE_FILENAME_ENCODING' &&
+      test.failureCode &&
+      SUPERSEDABLE_ARCHIVE_DIAGNOSTICS.has(test.failureCode) &&
       test.supersededBy &&
       tests
         .slice(index + 1)
