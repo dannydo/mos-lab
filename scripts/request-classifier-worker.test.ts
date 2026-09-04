@@ -22,6 +22,7 @@ import {
   resolveCodexCliPath,
   safeBridgeFailureCode,
   safeCodexCliFailureSummary,
+  safeCodexCliJsonFailureSummary,
   inboxImplementationFailureSummary,
 } from './request-classifier-worker.js';
 
@@ -259,6 +260,15 @@ test('keeps only a bounded sanitized executor diagnosis for implementation failu
     }
   );
   assert.equal(safeCodexCliFailureSummary('normal output only'), null);
+  assert.equal(
+    safeCodexCliJsonFailureSummary(
+      [
+        JSON.stringify({ type: 'item.completed', item: { text: 'Do not retain this ticket sentence.' } }),
+        JSON.stringify({ type: 'error', message: 'Error: rate limit reached, token=do-not-store.' }),
+      ].join('\n')
+    ),
+    'Error: rate limit reached, token=[redacted]'
+  );
 });
 
 test('treats the final child close event as a Codex completion', async () => {

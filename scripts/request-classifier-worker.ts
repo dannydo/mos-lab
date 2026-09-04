@@ -118,8 +118,8 @@ export function safeCodexCliFailureSummary(value: unknown): string | null {
     .split(/(?<=\.)\s+|\s{2,}/)
     .reverse()
     .find((line) =>
-      /\b(error|failed|failure|invalid|unknown|cannot|unable|denied|unauthorized|forbidden|rate limit|not found)\b/i.test(
-        line
+      /^(?:error|fatal|failed|failure|invalid|unknown|cannot|unable|denied|unauthorized|forbidden|rate limit|not found)\b/i.test(
+        line.trim()
       )
     );
   if (!candidate) return null;
@@ -130,6 +130,29 @@ export function safeCodexCliFailureSummary(value: unknown): string | null {
     .replace(/[^\p{L}\p{N}\s.,:;()[\]_=-]/gu, '')
     .trim();
   return safe ? safe.slice(0, 280) : null;
+}
+
+/** Extract only explicit Codex JSONL error events; model text is never inspected or retained. */
+export function safeCodexCliJsonFailureSummary(value: unknown): string | null {
+  for (const line of String(value || '')
+    .split(/\r?\n/)
+    .reverse()) {
+    try {
+      const event = JSON.parse(line) as { type?: unknown; error?: unknown; message?: unknown };
+      if (event.type !== 'error') continue;
+      const detail =
+        typeof event.error === 'string'
+          ? event.error
+          : event.error && typeof event.error === 'object' && 'message' in event.error
+            ? (event.error as { message?: unknown }).message
+            : event.message;
+      const summary = safeCodexCliFailureSummary(detail);
+      if (summary) return summary;
+    } catch {
+      // JSONL can end with a partial event while the CLI terminates.
+    }
+  }
+  return null;
 }
 
 export function inboxImplementationFailureSummary(error: unknown): string {
@@ -487,6 +510,7 @@ export async function executeCodexCli(
     let terminationGraceExpired = false;
     let cancelTermination: (() => void) | null = null;
     let timeout: NodeJS.Timeout | null = null;
+    let stdoutTail = '';
     let stderrTail = '';
     const finish = (callback: () => void) => {
       if (finished) return;
@@ -525,7 +549,12 @@ export async function executeCodexCli(
       runtime.terminate(timeoutCode);
     }, timeoutMs);
     const markActivity = () => lifecycle?.onActivity?.();
-    child.stdout?.on('data', markActivity);
+    child.stdout?.on('data', (chunk: Buffer | string) => {
+      // Codex JSONL stdout can contain model text. It remains in memory only;
+      // only a `type: error` event may yield a sanitized failure diagnosis.
+      stdoutTail = `${stdoutTail}${String(chunk)}`.slice(-2_048);
+      markActivity();
+    });
     child.stderr?.on('data', (chunk: Buffer | string) => {
       // Bounded, in-memory only. The structured safe summary below is the only
       // diagnostic that can cross the worker bridge.
@@ -559,7 +588,7 @@ export async function executeCodexCli(
           reject(
             new CodexCliError(
               `CODEX_EXEC_EXIT_${Number.isInteger(code) ? code : -1}`,
-              safeCodexCliFailureSummary(stderrTail)
+              safeCodexCliJsonFailureSummary(stdoutTail) || safeCodexCliFailureSummary(stderrTail)
             )
           )
         );
