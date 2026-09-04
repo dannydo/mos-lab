@@ -7,6 +7,7 @@ import {
   type AgentMarkBugFixedRequest,
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
+  type AuthorizeBugReportWorkerRecoveryRetryRequest,
   type ApproveBugReportImplementationRequest,
   type ApproveBugReportImplementationCommitRequest,
   type ApproveBugReportImplementationDeployRequest,
@@ -435,6 +436,35 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Retry inbox implementation failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/implementation-worker-recovery-retry',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const body = request.body as AuthorizeBugReportWorkerRecoveryRetryRequest;
+        if (body?.acknowledged !== true) {
+          throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi cấp retry khôi phục Worker.', 422);
+        }
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const implementationQueued = await InboxImplementationService.authorizeWorkerRecoveryRetry(
+          fastify,
+          id,
+          request.user.id
+        );
+        if (implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
+        return reply.send({
+          success: true,
+          data: { reportId: id, implementationQueued, planRequested: false },
+          message: implementationQueued
+            ? 'Đã cấp đúng một retry khôi phục Worker, liên kết với lỗi hạ tầng đã được ghi nhận.'
+            : 'Retry khôi phục Worker không được tạo.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Authorize Worker recovery retry failed');
       }
     }
   );

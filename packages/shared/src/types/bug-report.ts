@@ -533,6 +533,10 @@ export interface BugReportImplementationState {
   progressCount: number;
   checkpointCount: number;
   failureCode: string | null;
+  /** The durable retry-chain position, exposed so the Inbox never guesses retry authority. */
+  retrySequence: number;
+  /** Server-authoritative: a single recovery retry is allowed only for a known Worker failure. */
+  canAuthorizeWorkerRecoveryRetry: boolean;
   /** Safe, server-sanitized reason for the latest terminal implementation failure. */
   failure: BugReportImplementationFailure | null;
   hasRetainedDraft: boolean;
@@ -856,6 +860,11 @@ export interface RetryBugReportImplementationRequest {
   acknowledged: true;
 }
 
+/** A separately audited, one-time recovery retry after the Worker was remediated. */
+export interface AuthorizeBugReportWorkerRecoveryRetryRequest {
+  acknowledged: true;
+}
+
 /**
  * Records a separately approved production release. The reviewed commit must
  * be supplied explicitly and must match the production release marker.
@@ -955,6 +964,7 @@ export type ApproveBugReportImplementationResponse = ActionResponse<ApproveBugRe
 export type ApproveBugReportImplementationCommitResponse = ActionResponse<ApproveBugReportImplementationCommitResult>;
 export type ApproveBugReportImplementationDeployResponse = ActionResponse<ApproveBugReportImplementationDeployResult>;
 export type RetryBugReportImplementationResponse = ActionResponse<ApproveBugReportImplementationResult>;
+export type AuthorizeBugReportWorkerRecoveryRetryResponse = ActionResponse<ApproveBugReportImplementationResult>;
 export type ReleaseBugReportImplementationResponse = ActionResponse<BugReportDetail>;
 export type ReviewBugReportImplementationAcceptanceResponse = ActionResponse<BugReportDetail>;
 export type ConfirmCloseBugReportResponse = ActionResponse<BugReportDetail>;

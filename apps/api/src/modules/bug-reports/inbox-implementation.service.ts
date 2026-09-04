@@ -25,6 +25,7 @@ const IMPLEMENTATION_CHECKPOINT_LIMIT = 1;
 // A separate, explicit Danny action is required for every retry. The cap keeps
 // terminal failures reviewable without turning the worker into an auto-loop.
 const MAX_DANNY_RETRY_SEQUENCE = 2;
+const WORKER_RECOVERY_RETRY_FAILURE_CODES = new Set(['CODEX_EXEC_EXIT_1']);
 const execFileAsync = promisify(execFile);
 
 const IMPLEMENTATION_PROGRESS_LABELS = {
@@ -161,6 +162,23 @@ export function isInboxImplementationExecutionEligible(source: GateSource): {
       approved &&
       Boolean(plan),
   };
+}
+
+/**
+ * This does not relax the normal retry cap. It identifies the one exceptional
+ * retry that Danny may explicitly authorize after repairing known Worker/Codex
+ * infrastructure. The resulting sequence is 3, so it cannot repeat.
+ */
+export function canAuthorizeWorkerRecoveryRetry(source: {
+  status: string;
+  retrySequence: number;
+  failureCode: string | null;
+}): boolean {
+  return (
+    source.status === 'FAILED' &&
+    source.retrySequence === MAX_DANNY_RETRY_SEQUENCE &&
+    Boolean(source.failureCode && WORKER_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode))
+  );
 }
 
 function isCurrentExecution(source: GateSource, sourceVersion: string, planVersion: string): boolean {
@@ -614,6 +632,102 @@ export class InboxImplementationService {
       return true;
     });
     return queued;
+  }
+
+  /**
+   * A named, auditable recovery path for a Worker failure after the ordinary
+   * retry budget is exhausted. It cannot be used for code or QA failures and
+   * only creates the single next retry-chain entry.
+   */
+  static async authorizeWorkerRecoveryRetry(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number
+  ): Promise<boolean> {
+    const report = await fastify.prisma.crm.crmBugReport.findUnique({
+      where: { id: reportId },
+      include: implementationReportInclude(),
+    });
+    if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    const gate = isInboxImplementationExecutionEligible(report);
+    if (!gate.eligible || !gate.plan || !report.implementationActiveJobId) {
+      throw new InboxImplementationError(
+        'Ticket không còn đủ điều kiện để cấp retry khôi phục Worker.',
+        409,
+        'WORKER_RECOVERY_RETRY_NOT_ELIGIBLE'
+      );
+    }
+    const failed = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({
+      where: { id: report.implementationActiveJobId },
+    });
+    if (
+      !failed ||
+      failed.sourceVersion !== gate.sourceVersion ||
+      failed.planVersion !== gate.plan.planVersion ||
+      !canAuthorizeWorkerRecoveryRetry(failed)
+    ) {
+      throw new InboxImplementationError(
+        'Quyền retry khôi phục chỉ áp dụng một lần cho lỗi Worker đã được nhận diện sau hai retry thường.',
+        409,
+        'WORKER_RECOVERY_RETRY_NOT_ALLOWED'
+      );
+    }
+
+    const planVersion = gate.plan.planVersion;
+    const id = randomUUID();
+    const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+    const now = new Date();
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmInboxImplementationJob.create({
+        data: {
+          id,
+          reportId,
+          sourceVersion: gate.sourceVersion,
+          planVersion,
+          retryOfJobId: failed.id,
+          retrySequence: failed.retrySequence + 1,
+          branchName: safeBranchName(ticketKey, id),
+          executionPhase: 'QUEUED',
+          expiresAt: new Date(now.getTime() + JOB_TTL_MS),
+        },
+      });
+      const attached = await tx.crmBugReport.updateMany({
+        where: { id: reportId, implementationActiveJobId: failed.id },
+        data: {
+          status: 'APPROVED',
+          statusSort: 0,
+          startedAt: null,
+          resolvedAt: null,
+          closedAt: null,
+          implementationActiveJobId: id,
+          updatedAt: now,
+        },
+      });
+      if (!attached.count) {
+        await tx.crmInboxImplementationJob.update({
+          where: { id },
+          data: { status: 'STALE', failureCode: 'ACTIVE_JOB_RACE', executionPhase: 'STALE' },
+        });
+        return false;
+      }
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'DANNY_WORKER_RECOVERY_RETRY_AUTHORIZED',
+          note: 'Danny đã xác nhận một retry khôi phục sau khi Worker được sửa. Quyền này chỉ áp dụng cho lỗi hạ tầng đã nhận diện; job mới vẫn chỉ chạy code/test và dừng trước commit.',
+          beforeJson: snapshot(report),
+          afterJson: snapshot({
+            ...report,
+            status: 'APPROVED',
+            implementationActiveJobId: id,
+            comments: report.comments,
+            inboxPlanJobs: report.inboxPlanJobs,
+          }),
+        },
+      });
+      return true;
+    });
   }
 
   /**

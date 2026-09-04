@@ -3,6 +3,7 @@ import test from 'node:test';
 import { Prisma } from '../../generated/crm-client/index.js';
 import {
   InboxImplementationService,
+  canAuthorizeWorkerRecoveryRetry,
   inboxImplementationCurrentPlan,
   evaluateInboxImplementationQualityGate,
   isInboxImplementationExecutionEligible,
@@ -410,6 +411,69 @@ test('Danny retry creates a bounded linked chain and leaves terminal evidence un
   assert.equal(terminal.status, 'FAILED');
   assert.equal(report.status, 'APPROVED');
   assert.equal(auditAction, 'AGENT_IMPLEMENTATION_RETRY_QUEUED');
+});
+
+test('Danny may authorize exactly one recovery retry for a known Worker failure after the normal cap', async () => {
+  const draft = source();
+  const sourceVersion = inboxImplementationSourceVersion(draft);
+  const report = source({
+    implementationActiveJobId: 'worker-terminal-job',
+    inboxPlanJobs: [
+      { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
+    ],
+  });
+  const terminal = {
+    id: 'worker-terminal-job',
+    status: 'FAILED',
+    retryOfJobId: 'retry-1',
+    retrySequence: 2,
+    sourceVersion,
+    planVersion: 'v1:plan',
+    failureCode: 'CODEX_EXEC_EXIT_1',
+  };
+  const createdRows: Record<string, unknown>[] = [];
+  let auditAction = '';
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => report },
+        crmInboxImplementationJob: {
+          findUnique: async () => terminal,
+          findFirst: async () => null,
+        },
+        $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
+          callback({
+            crmInboxImplementationJob: {
+              create: async ({ data }: { data: Record<string, unknown> }) => {
+                createdRows.push(data);
+                return data;
+              },
+              update: async () => ({}),
+            },
+            crmBugReport: {
+              updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                Object.assign(report, data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: {
+              create: async ({ data }: { data: { action: string } }) => {
+                auditAction = data.action;
+                return {};
+              },
+            },
+          }),
+      },
+    },
+  };
+
+  assert.equal(canAuthorizeWorkerRecoveryRetry(terminal), true);
+  assert.equal(await InboxImplementationService.authorizeWorkerRecoveryRetry(fastify as never, 16, 1), true);
+  assert.equal(createdRows[0]?.retryOfJobId, 'worker-terminal-job');
+  assert.equal(createdRows[0]?.retrySequence, 3);
+  assert.equal(auditAction, 'DANNY_WORKER_RECOVERY_RETRY_AUTHORIZED');
+  assert.equal(canAuthorizeWorkerRecoveryRetry({ ...terminal, retrySequence: 3 }), false);
+  assert.equal(canAuthorizeWorkerRecoveryRetry({ ...terminal, failureCode: 'QUALITY_GATE_FAILED' }), false);
 });
 
 test('lease renewal accepts only the same active worker, token, and Codex process epoch', async () => {

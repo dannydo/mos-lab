@@ -51,6 +51,7 @@ import {
   type TriageBugReportRequest,
 } from '@mos-lab/shared';
 import { BugReportStorage } from './bug-report.storage.js';
+import { canAuthorizeWorkerRecoveryRetry } from './inbox-implementation.service.js';
 
 const AGENT_READABLE_STATUSES = new Set<BugReportStatus>(['NEW', 'APPROVED', 'IN_PROGRESS', 'FIXED']);
 const AGENT_FIX_STATUSES = new Set<BugReportStatus>(['APPROVED', 'IN_PROGRESS', 'FIXED']);
@@ -148,6 +149,7 @@ const reportInclude = {
       progressCount: true,
       checkpointCount: true,
       failureCode: true,
+      retrySequence: true,
       testsJson: true,
       retainUntil: true,
       startedAt: true,
@@ -401,6 +403,7 @@ function resolutionDto(value: ReportWithRelations['resolution']): BugReportResol
 
 type ImplementationProgressSnapshot = {
   status: string;
+  retrySequence?: number;
   executionPhase: string;
   progressLabel: string | null;
   lastProgressAt: Date | null;
@@ -492,6 +495,11 @@ function implementationStateDto(
     progressCount: value.progressCount,
     checkpointCount: value.checkpointCount,
     failureCode: clipped(value.failureCode, 100) || null,
+    retrySequence: value.retrySequence ?? 0,
+    canAuthorizeWorkerRecoveryRetry: canAuthorizeWorkerRecoveryRetry({
+      ...value,
+      retrySequence: value.retrySequence ?? -1,
+    }),
     failure: implementationFailureDto(value),
     hasRetainedDraft: Boolean(value.retainUntil),
     startedAt: value.startedAt?.toISOString() ?? null,

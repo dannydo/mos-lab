@@ -97,6 +97,7 @@ interface DetailDrawerProps {
   approveImplementationCommit: (id: number) => Promise<{ reportId: number; commitQueued: boolean }>;
   approveImplementationDeploy: (id: number) => Promise<ApproveBugReportImplementationDeployResult>;
   retryImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
+  authorizeWorkerRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -111,6 +112,7 @@ function DetailDrawer({
   approveImplementationCommit,
   approveImplementationDeploy,
   retryImplementation,
+  authorizeWorkerRecoveryRetry: authorizeWorkerRecoveryRetryAction,
   confirmClose,
   comment,
   canTriage,
@@ -274,6 +276,32 @@ function DetailDrawer({
     }
   }, [detail, getDetail, hydrateForm, messageApi, retryImplementation]);
 
+  const authorizeWorkerRecoveryRetry = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const outcome = await authorizeWorkerRecoveryRetryAction(detail.id);
+      if (outcome.implementationQueued) {
+        setStatus('IN_PROGRESS');
+        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
+      }
+      void getDetail(outcome.reportId)
+        .then(hydrateForm)
+        .catch(() => undefined);
+      messageApi.success('Đã cấp một retry khôi phục Worker trong worktree mới.');
+    } catch (error) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(
+        responseMessage || (error instanceof Error ? error.message : 'Không thể cấp retry khôi phục Worker.')
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [authorizeWorkerRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
+
   const approveCommit = useCallback(async () => {
     if (!detail) return;
     setSaving(true);
@@ -379,7 +407,20 @@ function DetailDrawer({
               {canTriage &&
                 detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&
                 detail.priority &&
-                detail.clarification.status === 'READY' && (
+                detail.clarification.status === 'READY' &&
+                (detail.implementation?.canAuthorizeWorkerRecoveryRetry ? (
+                  <Popconfirm
+                    title="Cho phép một retry sau khi đã sửa Worker?"
+                    description="Chỉ áp dụng cho lỗi hạ tầng đã nhận diện sau hai retry thường. Hệ thống tạo worktree code/test mới, không commit, push, merge, deploy hay chạy migration. Quyền này chỉ dùng một lần cho lượt hiện tại."
+                    okText="Cho phép retry"
+                    cancelText="Chưa cho phép"
+                    onConfirm={() => void authorizeWorkerRecoveryRetry()}
+                  >
+                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
+                      Cho phép retry sau khi sửa Worker
+                    </Button>
+                  </Popconfirm>
+                ) : (
                   <Popconfirm
                     title="Tạo đúng một retry sạch?"
                     description="Lượt cũ được giữ nguyên để review. Retry tạo job và worktree mới, chỉ chạy code/test rồi dừng trước commit, push, merge, deploy và migration."
@@ -391,7 +432,7 @@ function DetailDrawer({
                       Tạo retry sạch
                     </Button>
                   </Popconfirm>
-                )}
+                ))}
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' && (
                 <Popconfirm
                   title="Duyệt commit bản đã review?"
@@ -1014,6 +1055,7 @@ export default function BugReportsPage() {
         approveImplementationCommit={inbox.approveImplementationCommit}
         approveImplementationDeploy={inbox.approveImplementationDeploy}
         retryImplementation={inbox.retryImplementation}
+        authorizeWorkerRecoveryRetry={inbox.authorizeWorkerRecoveryRetry}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}
