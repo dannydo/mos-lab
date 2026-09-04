@@ -7,6 +7,7 @@ import type { BugReportSummary } from '@mos-lab/shared';
 import { ExternalLink } from 'lucide-react';
 import { AppIcon } from '../../../../components/ui';
 import { BugReportWorkflowProgress } from '../../../../components/bug-reports/BugReportWorkflowProgress';
+import { BugReportWorkerActivityCell } from './BugReportWorkerActivity';
 import {
   ClarificationTag,
   formatElapsed,
@@ -68,6 +69,12 @@ export function useBugReportInboxColumns(onOpen: (id: number) => void) {
         key: 'workflow',
         width: 175,
         render: (_, row) => <BugReportWorkflowProgress report={row} />,
+      },
+      {
+        title: 'Worker đang làm gì',
+        key: 'workerActivity',
+        width: 240,
+        render: (_, row) => <BugReportWorkerActivityCell report={row} />,
       },
       {
         title: 'Ảnh',

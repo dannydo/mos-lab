@@ -5,6 +5,7 @@ import type { BugReportSummary } from '@mos-lab/shared';
 import { Clock3 } from 'lucide-react';
 import { AppIcon } from '../../../../components/ui';
 import { BugReportWorkflowProgress } from '../../../../components/bug-reports/BugReportWorkflowProgress';
+import { BugReportWorkerActivityCell } from './BugReportWorkerActivity';
 import {
   BugStatusTag,
   ClarificationTag,
@@ -50,6 +51,12 @@ export function BugReportMobileCard({ report, onOpen }: BugReportMobileCardProps
           <ClarificationTag status={report.clarification.status} reporterName={report.reporter.displayName} />
           <div className="mt-2">
             <BugReportWorkflowProgress report={report} />
+          </div>
+          <div className="mt-3 rounded-lg border p-2.5">
+            <Text type="secondary" className="mb-1 block text-xs">
+              Worker đang làm gì
+            </Text>
+            <BugReportWorkerActivityCell report={report} />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Tooltip

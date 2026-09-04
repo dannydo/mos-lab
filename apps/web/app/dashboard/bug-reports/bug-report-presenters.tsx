@@ -164,6 +164,71 @@ export function durationBetween(start: string | null, end: string | null): strin
   return `${Math.floor(hours / 24)} ngày ${hours % 24} giờ`;
 }
 
+export interface BugReportWorkerActivity {
+  headline: string;
+  elapsed: string | null;
+  evidence: string | null;
+  active: boolean;
+}
+
+/**
+ * Render only durable server workflow state.  In particular, do not invent a
+ * percentage from elapsed time: a recent progress timestamp is evidence that
+ * the worker is alive, not a forecast of completion.
+ */
+export function bugReportWorkerActivity(
+  report: Pick<BugReportSummary, 'implementation' | 'agentProgress'>
+): BugReportWorkerActivity {
+  const implementation = report.implementation;
+  if (!implementation) {
+    return { headline: 'Chưa có job worker', elapsed: null, evidence: null, active: false };
+  }
+
+  const elapsed = implementation.startedAt
+    ? implementation.completedAt
+      ? durationBetween(implementation.startedAt, implementation.completedAt)
+      : formatElapsed(implementation.startedAt)
+    : null;
+  const evidence = implementation.lastProgressAt ? formatProgressUpdated(implementation.lastProgressAt) : null;
+
+  if (implementation.status === 'RUNNING') {
+    const headline =
+      implementation.phase === 'COMMITTING'
+        ? 'Worker đang tạo commit'
+        : implementation.phase === 'DEPLOYING'
+          ? 'Worker đang deploy'
+          : 'Worker đang code/test';
+    return { headline, elapsed: elapsed ? `Đã chạy ${elapsed}` : 'Đang bắt đầu', evidence, active: true };
+  }
+  if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
+    const headline =
+      implementation.phase === 'COMMIT_APPROVED'
+        ? 'Chờ worker tạo commit'
+        : implementation.phase === 'DEPLOY_APPROVED'
+          ? 'Chờ worker deploy'
+          : 'Chờ worker nhận code/test';
+    return { headline, elapsed: null, evidence, active: true };
+  }
+  if (implementation.status === 'AWAITING_COMMIT_REVIEW') {
+    return { headline: 'Code/test xong · chờ duyệt commit', elapsed, evidence, active: false };
+  }
+  if (implementation.status === 'AWAITING_DEPLOY_REVIEW') {
+    return { headline: 'Commit xong · chờ duyệt deploy', elapsed, evidence, active: false };
+  }
+  if (implementation.status === 'RELEASED') {
+    return { headline: 'Đã deploy · chờ người báo nghiệm thu', elapsed, evidence, active: false };
+  }
+  if (['FAILED', 'STALE', 'EXPIRED'].includes(implementation.status)) {
+    return {
+      headline: 'Worker dừng an toàn · cần retry',
+      elapsed,
+      evidence: report.agentProgress.note || evidence,
+      active: false,
+    };
+  }
+  return { headline: 'Worker đã hoàn tất', elapsed, evidence, active: false };
+}
+
 export function initials(value: string): string {
   return value
     .split(/\s+/)

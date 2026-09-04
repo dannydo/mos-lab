@@ -67,6 +67,7 @@ import { BugReportMobileCard } from './components/BugReportMobileCard';
 import { FeatureRequestDetails } from './components/FeatureRequestDetails';
 import { RequestClassifierWorkerHealthCard } from './components/RequestClassifierWorkerHealthCard';
 import { useBugReportInboxColumns } from './components/useBugReportInboxColumns';
+import { ActiveBugReportWorkCard } from './components/BugReportWorkerActivity';
 import {
   AgentProgressTag,
   BugStatusTag,
@@ -950,10 +951,11 @@ export default function BugReportsPage() {
             sourcePath: 'secondary',
             status: 'secondary',
             attachmentCount: 'tertiary',
+            workerActivity: 'secondary',
             agentProgress: 'secondary',
             action: 'primary',
           },
-          scroll: { x: 980 },
+          scroll: { x: 1220 },
           onRow: (row) => ({ onClick: () => setSelectedId(row.id), style: { cursor: 'pointer' } }),
           pagination: {
             current: inbox.pagination.page,
@@ -970,6 +972,7 @@ export default function BugReportsPage() {
           locale: { emptyText: emptyInboxMessage },
         }}
       >
+        <ActiveBugReportWorkCard reports={inbox.data} onOpen={setSelectedId} />
         <RequestClassifierWorkerHealthCard
           health={workerHealth.health}
           loading={workerHealth.loading}

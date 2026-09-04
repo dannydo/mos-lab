@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BugReportSummary } from '@mos-lab/shared';
 import {
+  bugReportWorkerActivity,
   effectiveBugReportAgentProgress,
   getBugReportWorkflowStage,
   needsReporterAttention,
@@ -31,6 +32,66 @@ describe('needsReporterAttention', () => {
 
   it('does not flag tickets that are still being processed', () => {
     expect(needsReporterAttention(baseReport)).toBe(false);
+  });
+});
+
+describe('bugReportWorkerActivity', () => {
+  it('shows durable worker phase, elapsed time, and latest evidence without inventing progress percent', () => {
+    const running = bugReportWorkerActivity({
+      ...baseReport,
+      implementation: {
+        status: 'RUNNING',
+        phase: 'CODEX_EVENT',
+        progressLabel: 'Worker có bằng chứng mới.',
+        lastProgressAt: '2026-08-31T00:04:00.000Z',
+        progressCount: 2,
+        checkpointCount: 0,
+        failureCode: null,
+        hasRetainedDraft: false,
+        startedAt: '2026-08-31T00:00:00.000Z',
+        completedAt: null,
+        updatedAt: '2026-08-31T00:04:00.000Z',
+      },
+    });
+    expect(running).toMatchObject({
+      headline: 'Worker đang code/test',
+      elapsed: expect.stringMatching(/^Đã chạy /),
+      active: true,
+    });
+    expect(running.evidence).toMatch(/Cập nhật|Vừa cập nhật/);
+  });
+
+  it('makes review and safe-stop states explicit in the table', () => {
+    const reviewImplementation = {
+      status: 'AWAITING_COMMIT_REVIEW' as const,
+      phase: 'AWAITING_COMMIT_REVIEW',
+      progressLabel: null,
+      lastProgressAt: '2026-08-31T00:04:00.000Z',
+      progressCount: 2,
+      checkpointCount: 0,
+      failureCode: null,
+      hasRetainedDraft: true,
+      startedAt: '2026-08-31T00:00:00.000Z',
+      completedAt: '2026-08-31T00:04:00.000Z',
+      updatedAt: '2026-08-31T00:04:00.000Z',
+    };
+    const review = bugReportWorkerActivity({
+      ...baseReport,
+      implementation: reviewImplementation,
+    });
+    expect(review).toMatchObject({ headline: 'Code/test xong · chờ duyệt commit', active: false });
+
+    const failed = bugReportWorkerActivity({
+      ...baseReport,
+      agentProgress: { ...baseReport.agentProgress, note: 'Quality gate chưa đạt.' },
+      implementation: {
+        ...reviewImplementation,
+        status: 'FAILED',
+        phase: 'FAILED',
+        failureCode: 'QUALITY_GATE_FAILED',
+      },
+    });
+    expect(failed).toMatchObject({ headline: 'Worker dừng an toàn · cần retry', evidence: 'Quality gate chưa đạt.' });
   });
 });
 
