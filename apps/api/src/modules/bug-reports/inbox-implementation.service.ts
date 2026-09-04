@@ -252,6 +252,47 @@ function safeJsonValue(value: string | null): unknown {
   }
 }
 
+export type InboxImplementationQualityGate = {
+  eligible: boolean;
+  reason: string | null;
+};
+
+/**
+ * Commit and deploy are safety gates, not a second chance to reinterpret a
+ * failed worker result.  The server owns this decision so an old UI, delayed
+ * event, or direct route call cannot move an unverified patch forward.
+ */
+export function evaluateInboxImplementationQualityGate(input: {
+  changedFiles: unknown;
+  tests: unknown;
+}): InboxImplementationQualityGate {
+  const changedFiles = safeFileList(input.changedFiles);
+  const tests = normalizeTests(input.tests);
+  if (!changedFiles.length) {
+    return { eligible: false, reason: 'Worker chưa ghi nhận tệp thay đổi an toàn để review.' };
+  }
+  if (!tests.length) {
+    return { eligible: false, reason: 'Worker chưa gửi kết quả kiểm thử bắt buộc.' };
+  }
+  if (tests.some((test) => test.status !== 'PASSED')) {
+    return { eligible: false, reason: 'Có kiểm thử FAILED hoặc NOT_RUN; phải chạy lại code/test.' };
+  }
+  const changedWeb = changedFiles.some((file) => file.startsWith('apps/web/'));
+  const passedVisualQa = tests.some(
+    (test) =>
+      test.status === 'PASSED' &&
+      /playwright/i.test(test.command) &&
+      /(visual|screenshot|snapshot|tohavescreenshot)/i.test(test.command)
+  );
+  if (changedWeb && !passedVisualQa) {
+    return {
+      eligible: false,
+      reason: 'Thay đổi giao diện cần Playwright visual QA PASSED trước khi có thể commit hoặc deploy.',
+    };
+  }
+  return { eligible: true, reason: null };
+}
+
 function releaseCommitSha(): string {
   const commitSha = clean(process.env.DEPLOY_COMMIT, 64);
   if (!/^[a-f0-9]{7,64}$/i.test(commitSha)) {
@@ -584,6 +625,13 @@ export class InboxImplementationService {
         'COMMIT_REVIEW_ARTIFACT_MISSING'
       );
     }
+    const qualityGate = evaluateInboxImplementationQualityGate({
+      changedFiles: safeJsonValue(job.changedFilesJson),
+      tests: safeJsonValue(job.testsJson),
+    });
+    if (!qualityGate.eligible) {
+      throw new InboxImplementationError(`Không thể duyệt commit: ${qualityGate.reason}`, 409, 'QUALITY_GATE_BLOCKED');
+    }
     const now = new Date();
     const queued = await fastify.prisma.crm.$transaction(async (tx) => {
       const updated = await tx.crmInboxImplementationJob.updateMany({
@@ -641,6 +689,13 @@ export class InboxImplementationService {
     });
     if (!job?.commitSha) {
       throw new InboxImplementationError('Không có commit đã duyệt để deploy.', 409, 'DEPLOY_COMMIT_MISSING');
+    }
+    const qualityGate = evaluateInboxImplementationQualityGate({
+      changedFiles: safeJsonValue(job.changedFilesJson),
+      tests: safeJsonValue(job.testsJson),
+    });
+    if (!qualityGate.eligible) {
+      throw new InboxImplementationError(`Không thể duyệt deploy: ${qualityGate.reason}`, 409, 'QUALITY_GATE_BLOCKED');
     }
     const now = new Date();
     return fastify.prisma.crm.$transaction(async (tx) => {
@@ -1281,6 +1336,7 @@ export class InboxImplementationService {
     }
     const changedFiles = safeFileList(artifacts.changedFiles);
     const diffStat = safeDiffStat(artifacts.diffStat);
+    const qualityGate = evaluateInboxImplementationQualityGate({ changedFiles, tests: result.tests });
     const now = new Date();
     // Do not reflect ticket-owned text (including sourcePath) into the durable
     // review artifact.  File paths and bounded test commands below are the only
@@ -1289,7 +1345,9 @@ export class InboxImplementationService {
     const safeRisks =
       'Review the isolated diff before any separate commit approval; discard the worktree to roll back this uncommitted patch.';
     const reviewBody = [
-      '## Kết quả implementation — chờ Danny duyệt commit',
+      qualityGate.eligible
+        ? '## Kết quả implementation — chờ Danny duyệt commit'
+        : '## Kết quả implementation — quality gate chưa đạt',
       '',
       `- Tóm tắt: ${safeSummary}`,
       `- Patch / job: ${job.id}`,
@@ -1306,33 +1364,43 @@ export class InboxImplementationService {
         ? result.tests.map((item) => `- ${item.status}: ${item.command}`)
         : ['- NOT_RUN: Chưa có lệnh test được báo cáo.']),
       '',
+      ...(qualityGate.eligible
+        ? []
+        : [
+            '### Cổng chặn bắt buộc',
+            `- Chặn commit và deploy: ${qualityGate.reason}`,
+            '- Bước tiếp theo: Danny chỉ có thể chọn chạy lại code/test; không có nút duyệt commit hoặc duyệt deploy.',
+            '',
+          ]),
       '### Diff tóm tắt',
       diffStat || 'Không có diff stat được báo cáo.',
       '',
       '### Rủi ro / rollback',
       safeRisks,
       '',
-      'Đã dừng tại checkpoint review. Worker không commit, push, merge, deploy, chạy migration hoặc thay đổi production.',
+      qualityGate.eligible
+        ? 'Đã dừng tại checkpoint review. Worker không commit, push, merge, deploy, chạy migration hoặc thay đổi production.'
+        : 'Đã dừng an toàn trước checkpoint commit. Worker không commit, push, merge, deploy, chạy migration hoặc thay đổi production.',
     ].join('\n');
     await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmInboxImplementationJob.update({
         where: { id },
         data: {
-          status: 'AWAITING_COMMIT_REVIEW',
+          status: qualityGate.eligible ? 'AWAITING_COMMIT_REVIEW' : 'FAILED',
           summary: safeSummary,
           changedFilesJson: JSON.stringify(changedFiles),
           testsJson: JSON.stringify(result.tests),
           diffStat,
           risksAndRollback: safeRisks,
-          failureCode: null,
+          failureCode: qualityGate.eligible ? null : 'QUALITY_GATE_FAILED',
           completedAt: now,
-          retainUntil: new Date(now.getTime() + REVIEW_RETENTION_MS),
+          retainUntil: new Date(now.getTime() + (qualityGate.eligible ? REVIEW_RETENTION_MS : FAILURE_RETENTION_MS)),
           leaseToken: null,
           leasedBy: null,
           leaseExpiresAt: null,
           leaseHeartbeatAt: now,
           processPid: null,
-          executionPhase: 'AWAITING_COMMIT_REVIEW',
+          executionPhase: qualityGate.eligible ? 'AWAITING_COMMIT_REVIEW' : 'FAILED',
         },
       });
       const updated = await tx.crmBugReport.update({ where: { id: job.reportId }, data: { updatedAt: now } });
@@ -1342,8 +1410,10 @@ export class InboxImplementationService {
       await tx.crmBugReportAudit.create({
         data: {
           reportId: job.reportId,
-          action: 'AGENT_IMPLEMENTATION_REVIEW_READY',
-          note: 'Code và kiểm thử đã hoàn tất trong worktree riêng; chờ Danny duyệt commit.',
+          action: qualityGate.eligible ? 'AGENT_IMPLEMENTATION_REVIEW_READY' : 'AGENT_IMPLEMENTATION_FAILED',
+          note: qualityGate.eligible
+            ? 'Code và kiểm thử đã hoàn tất trong worktree riêng; chờ Danny duyệt commit.'
+            : `Quality gate chặn commit và deploy: ${qualityGate.reason}`,
           beforeJson: snapshot(job.report),
           afterJson: snapshot({
             ...job.report,
@@ -1489,6 +1559,18 @@ export class InboxImplementationService {
     });
     if (!job) {
       throw new InboxImplementationError('Không tìm thấy commit đang chờ Danny xác nhận deploy.', 409);
+    }
+
+    const qualityGate = evaluateInboxImplementationQualityGate({
+      changedFiles: safeJsonValue(job.changedFilesJson),
+      tests: safeJsonValue(job.testsJson),
+    });
+    if (!qualityGate.eligible) {
+      throw new InboxImplementationError(
+        `Không thể bàn giao nghiệm thu: ${qualityGate.reason}`,
+        409,
+        'QUALITY_GATE_BLOCKED'
+      );
     }
 
     const { reviewedCommitSha, deployedCommitSha } = await verifiedReleasedCommit({

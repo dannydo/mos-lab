@@ -4,6 +4,7 @@ import { Prisma } from '../../generated/crm-client/index.js';
 import {
   InboxImplementationService,
   inboxImplementationCurrentPlan,
+  evaluateInboxImplementationQualityGate,
   isInboxImplementationExecutionEligible,
   isInboxImplementationEligible,
   normalizeInboxImplementationResult,
@@ -144,6 +145,101 @@ test('implementation outcome stores only bounded structured review metadata', ()
     }).tests,
     [{ command: 'TOKEN=[redacted] pnpm test', status: 'PASSED' }]
   );
+});
+
+test('quality gate blocks an unverified web patch and permits only passed visual QA', () => {
+  const blocked = evaluateInboxImplementationQualityGate({
+    changedFiles: ['apps/web/app/dashboard/bug-reports/page.tsx'],
+    tests: [
+      { command: 'pnpm --filter @mos-lab/web typecheck', status: 'PASSED' },
+      { command: 'playwright visual QA at 125% zoom', status: 'FAILED' },
+    ],
+  });
+  assert.equal(blocked.eligible, false);
+  assert.match(blocked.reason || '', /FAILED|NOT_RUN/i);
+
+  const missingVisual = evaluateInboxImplementationQualityGate({
+    changedFiles: ['apps/web/app/dashboard/bug-reports/page.tsx'],
+    tests: [{ command: 'pnpm --filter @mos-lab/web typecheck', status: 'PASSED' }],
+  });
+  assert.equal(missingVisual.eligible, false);
+  assert.match(missingVisual.reason || '', /visual QA/i);
+
+  assert.deepEqual(
+    evaluateInboxImplementationQualityGate({
+      changedFiles: ['apps/web/app/dashboard/bug-reports/page.tsx'],
+      tests: [
+        { command: 'pnpm --filter @mos-lab/web typecheck', status: 'PASSED' },
+        { command: 'playwright visual screenshot QA at 125% and 150%', status: 'PASSED' },
+      ],
+    }),
+    { eligible: true, reason: null }
+  );
+});
+
+test('a failed visual QA completes as a retry-only terminal job, never a commit review', async () => {
+  const seed = source({ status: 'IN_PROGRESS' });
+  const report = source({
+    status: 'IN_PROGRESS',
+    implementationActiveJobId: 'quality-gate-job',
+    inboxPlanJobs: [
+      {
+        id: 'plan-1',
+        status: 'COMPLETED',
+        resultAction: 'POST_PLAN',
+        sourceVersion: inboxImplementationSourceVersion(seed),
+        planVersion: 'v1:plan',
+      },
+    ],
+  });
+  const job = {
+    id: 'quality-gate-job',
+    reportId: 16,
+    status: 'RUNNING',
+    leaseToken: 'lease-1',
+    leaseExpiresAt: new Date(Date.now() + 60_000),
+    sourceVersion: inboxImplementationSourceVersion(report),
+    planVersion: 'v1:plan',
+    report,
+  };
+  const updates: Array<Record<string, unknown>> = [];
+  const audits: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findFirst: async () => job,
+        },
+        crmInboxImplementationWorkerLock: { updateMany: async () => ({ count: 1 }) },
+        $transaction: async (callback: (tx: unknown) => Promise<void>) =>
+          callback({
+            crmInboxImplementationJob: {
+              update: async (input: { data: Record<string, unknown> }) => updates.push(input.data),
+            },
+            crmBugReport: { update: async () => ({ ...report, updatedAt: new Date() }) },
+            crmBugReportComment: { create: async () => ({}) },
+            crmBugReportAudit: { create: async (input: Record<string, unknown>) => audits.push(input) },
+          }),
+      },
+    },
+  };
+
+  await InboxImplementationService.complete(
+    fastify as never,
+    job.id,
+    'lease-1',
+    {
+      summary: 'Layout patch was attempted.',
+      risksAndRollback: 'Discard the isolated draft.',
+      tests: [{ command: 'playwright visual screenshot QA at 125% zoom', status: 'FAILED' }],
+    },
+    { changedFiles: ['apps/web/app/dashboard/bug-reports/page.tsx'], diffStat: '1 file changed' }
+  );
+
+  assert.equal(updates[0]?.status, 'FAILED');
+  assert.equal(updates[0]?.failureCode, 'QUALITY_GATE_FAILED');
+  assert.equal(updates[0]?.executionPhase, 'FAILED');
+  assert.equal((audits[0]?.data as { action?: string }).action, 'AGENT_IMPLEMENTATION_FAILED');
 });
 
 test('duplicate approval delivery creates one durable implementation job for the same source and plan', async () => {
@@ -636,9 +732,12 @@ test('a verified release hands a reviewed implementation to reporter acceptance 
   const job = {
     id: 'review-job',
     reportId: 16,
-    status: 'AWAITING_COMMIT_REVIEW',
+    status: 'AWAITING_DEPLOY_REVIEW',
     changedFilesJson: JSON.stringify(['apps/web/app/dashboard/bug-reports/page.tsx']),
-    testsJson: JSON.stringify([{ command: 'pnpm --filter @mos-lab/web typecheck', status: 'PASSED' }]),
+    testsJson: JSON.stringify([
+      { command: 'pnpm --filter @mos-lab/web typecheck', status: 'PASSED' },
+      { command: 'playwright visual screenshot QA', status: 'PASSED' },
+    ]),
   };
   const jobUpdates: Array<Record<string, unknown>> = [];
   const reportUpdates: Array<Record<string, unknown>> = [];
@@ -722,6 +821,10 @@ test('commit approval requeues only the retained reviewed patch for the Mac work
     sourceVersion: inboxImplementationSourceVersion(readySource),
     planVersion: 'v1:plan',
     changedFilesJson: JSON.stringify(['apps/web/app/dashboard/bug-reports/page.tsx']),
+    testsJson: JSON.stringify([
+      { command: 'pnpm --filter @mos-lab/web typecheck', status: 'PASSED' },
+      { command: 'playwright visual screenshot QA', status: 'PASSED' },
+    ]),
     updatedAt: new Date('2026-09-04T00:00:00.000Z'),
   };
   const updates: Array<Record<string, unknown>> = [];
@@ -751,6 +854,44 @@ test('commit approval requeues only the retained reviewed patch for the Mac work
   assert.equal((audits[0]?.data as { action?: string }).action, 'DANNY_COMMIT_APPROVED');
 });
 
+test('commit approval rejects a retained patch when quality gate evidence failed', async () => {
+  const readySource = source({
+    status: 'IN_PROGRESS',
+    implementationActiveJobId: 'failed-review-job',
+    inboxPlanJobs: [
+      {
+        id: 'plan-1',
+        status: 'COMPLETED',
+        resultAction: 'POST_PLAN',
+        sourceVersion: inboxImplementationSourceVersion(source()),
+        planVersion: 'v1:plan',
+      },
+    ],
+  });
+  const job = {
+    id: 'failed-review-job',
+    reportId: 16,
+    status: 'AWAITING_COMMIT_REVIEW',
+    sourceVersion: inboxImplementationSourceVersion(readySource),
+    planVersion: 'v1:plan',
+    changedFilesJson: JSON.stringify(['apps/web/app/dashboard/bug-reports/page.tsx']),
+    testsJson: JSON.stringify([{ command: 'playwright visual screenshot QA', status: 'FAILED' }]),
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => readySource },
+        crmInboxImplementationJob: { findFirst: async () => job },
+      },
+    },
+  };
+
+  await assert.rejects(
+    () => InboxImplementationService.approveCommit(fastify as never, 16, 1),
+    (error: unknown) => error instanceof Error && /không thể duyệt commit/i.test(error.message)
+  );
+});
+
 test('deploy approval requeues only the recorded implementation commit for the Mac worker', async () => {
   const readySource = source({
     status: 'IN_PROGRESS',
@@ -772,6 +913,8 @@ test('deploy approval requeues only the recorded implementation commit for the M
     sourceVersion: inboxImplementationSourceVersion(readySource),
     planVersion: 'v1:plan',
     commitSha: 'fb757616e4a48f1fdb2f4b236b20bee68ae65716',
+    changedFilesJson: JSON.stringify(['apps/api/src/modules/bug-reports/inbox-implementation.service.ts']),
+    testsJson: JSON.stringify([{ command: 'pnpm --filter @mos-lab/api typecheck', status: 'PASSED' }]),
     updatedAt: new Date('2026-09-04T00:00:00.000Z'),
   };
   const updates: Array<Record<string, unknown>> = [];

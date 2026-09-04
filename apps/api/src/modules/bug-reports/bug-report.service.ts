@@ -470,6 +470,9 @@ function implementationStateDto(
 }
 
 function implementationFailureNote(value: ImplementationProgressSnapshot): string {
+  if (value.failureCode === 'QUALITY_GATE_FAILED') {
+    return 'Quality gate chưa đạt: commit và deploy đã bị chặn. Danny chỉ có thể chạy lại code/test sau khi rà soát bằng chứng.';
+  }
   if (value.failureCode === 'CODEX_EXEC_TIMEOUT') {
     return 'Codex vượt thời lượng chạy cho phép; worker đã dừng an toàn. Bản nháp được giữ, chưa commit hoặc deploy.';
   }
@@ -732,8 +735,8 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
     return nextAction(
       'DANNY',
       'REVIEW_DEPLOY',
-      'Xác nhận deploy',
-      'Commit đã nằm ở branch riêng. Sau khi branch được merge và release live, Inbox tự đối chiếu release marker trước khi bàn giao nghiệm thu.',
+      'Duyệt deploy',
+      'Commit đã nằm ở branch riêng. Sau khi Danny duyệt deploy, worker mới được merge, phát hành và để server đối chiếu release marker trước khi bàn giao nghiệm thu.',
       implementation.updatedAt
     );
   }

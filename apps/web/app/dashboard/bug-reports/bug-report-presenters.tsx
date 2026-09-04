@@ -66,7 +66,7 @@ export const AGENT_PROGRESS_LABELS: Record<BugReportAgentProgressStage, string> 
   DEPLOYING: 'Đang deploy',
   VERIFYING: 'Đang kiểm thử',
   AWAITING_DANNY_COMMIT_REVIEW: 'Chờ Danny duyệt commit',
-  AWAITING_DANNY_DEPLOY_APPROVAL: 'Commit xong · chờ Danny xác nhận deploy',
+  AWAITING_DANNY_DEPLOY_APPROVAL: 'Commit xong · chờ Danny duyệt deploy',
   AWAITING_REPORTER_ACCEPTANCE: 'Chờ người báo nghiệm thu',
   IMPLEMENTATION_FAILED: 'Implementation cần Danny xử lý',
   AWAITING_REPORTER_REVIEW: 'Đã sửa · chờ xác nhận',
