@@ -24,6 +24,7 @@ import {
   safeCodexCliFailureSummary,
   safeCodexCliJsonFailureSummary,
   inboxImplementationFailureSummary,
+  inboxImplementationSchema,
 } from './request-classifier-worker.js';
 
 test('builds a noninteractive Codex invocation with private structured output', async () => {
@@ -77,6 +78,18 @@ test('builds a write-enabled but noninteractive implementation command for an is
     implementationWorktreeRoot('/Users/dannydo/projects/mos-lab'),
     '/Users/dannydo/projects/.mos-inbox-worktrees'
   );
+});
+
+test('uses a strict Codex-compatible schema for every implementation test field', () => {
+  const schema = JSON.parse(inboxImplementationSchema()) as {
+    properties: {
+      tests: { items: { additionalProperties: boolean; required: string[]; properties: Record<string, unknown> } };
+    };
+  };
+  const testItem = schema.properties.tests.items;
+  assert.equal(testItem.additionalProperties, false);
+  assert.deepEqual(testItem.required, ['command', 'status', 'failureCode', 'failureSummary']);
+  assert.deepEqual(Object.keys(testItem.properties), ['command', 'status', 'failureCode', 'failureSummary']);
 });
 
 test('requires the exact supported bundled Codex flags before implementation can claim work', () => {

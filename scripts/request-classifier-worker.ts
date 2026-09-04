@@ -1232,7 +1232,7 @@ export function parseCodexInboxPlan(stdout: string): InboxPlanWorkerResult {
   throw new Error('Codex did not return a valid inbox plan JSON object.');
 }
 
-function inboxImplementationSchema(): string {
+export function inboxImplementationSchema(): string {
   return JSON.stringify({
     type: 'object',
     additionalProperties: false,
@@ -1245,7 +1245,10 @@ function inboxImplementationSchema(): string {
         items: {
           type: 'object',
           additionalProperties: false,
-          required: ['command', 'status'],
+          // Codex structured output requires every declared object property
+          // to be required. Nullable fields remain nullable, so successful
+          // tests return null instead of omitting diagnostic fields.
+          required: ['command', 'status', 'failureCode', 'failureSummary'],
           properties: {
             command: { type: 'string', minLength: 1, maxLength: 300 },
             status: { type: 'string', enum: ['PASSED', 'FAILED', 'NOT_RUN'] },
