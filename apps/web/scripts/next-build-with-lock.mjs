@@ -67,7 +67,13 @@ async function acquireBuildLock() {
 function runNextBuild() {
   return new Promise((resolve, reject) => {
     const executable = process.platform === 'win32' ? 'next.cmd' : 'next';
-    const child = spawn(executable, ['build'], { env: process.env, stdio: 'inherit' });
+    // The isolated Inbox worker runs many short-lived builds in worktrees. On
+    // this host, Next's Turbopack compiler can remain in its compile phase
+    // after a successful artifact has otherwise been produced. Keep the
+    // production default untouched, but allow that worker to opt into the
+    // stable Webpack compiler for a deterministic quality gate.
+    const compilerArgs = process.env.MOS_NEXT_BUILD_COMPILER === 'webpack' ? ['--webpack'] : [];
+    const child = spawn(executable, ['build', ...compilerArgs], { env: process.env, stdio: 'inherit' });
     child.once('error', reject);
     child.once('exit', (code, signal) => {
       if (code === 0) resolve();

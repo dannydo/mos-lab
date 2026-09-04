@@ -363,6 +363,9 @@ async function implementationGitEnvironment(worktreePath: string, jobId: string)
     // It prevents a background build from taking the shared `.next` lock in
     // another isolated implementation worktree.
     NEXT_DIST_DIR: `.next-inbox-${jobId.replace(/[^a-z0-9]/gi, '').slice(0, 16)}`,
+    // Use the stable compiler for isolated quality-gate builds. This does not
+    // change the normal local or Vercel production build command.
+    MOS_NEXT_BUILD_COMPILER: 'webpack',
     GIT_CONFIG_COUNT: String(configIndex + 1),
     [`GIT_CONFIG_KEY_${configIndex}`]: 'core.hooksPath',
     [`GIT_CONFIG_VALUE_${configIndex}`]: hookRoot,
