@@ -460,7 +460,7 @@ function DetailDrawer({
                       Cho phép retry sau khi sửa Worker
                     </Button>
                   </Popconfirm>
-                ) : (
+                ) : detail.implementation?.canRetryImplementation ? (
                   <Popconfirm
                     title="Tạo đúng một retry sạch?"
                     description="Lượt cũ được giữ nguyên để review. Retry tạo job và worktree mới, chỉ chạy code/test rồi dừng trước commit, push, merge, deploy và migration."
@@ -472,7 +472,7 @@ function DetailDrawer({
                       Tạo retry sạch
                     </Button>
                   </Popconfirm>
-                ))}
+                ) : null)}
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' && (
                 <Popconfirm
                   title="Duyệt commit bản đã review?"

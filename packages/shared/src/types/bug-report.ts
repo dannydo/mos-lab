@@ -535,6 +535,8 @@ export interface BugReportImplementationState {
   failureCode: string | null;
   /** The durable retry-chain position, exposed so the Inbox never guesses retry authority. */
   retrySequence: number;
+  /** Server-authoritative: an ordinary clean retry is still within its bounded budget. */
+  canRetryImplementation: boolean;
   /** Server-authoritative: a single recovery retry is allowed only for a known Worker failure. */
   canAuthorizeWorkerRecoveryRetry: boolean;
   /** Server-authoritative: one post-diagnostic retry is allowed only after a verified schema repair. */

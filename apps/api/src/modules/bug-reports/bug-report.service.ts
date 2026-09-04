@@ -498,6 +498,7 @@ function implementationStateDto(
     checkpointCount: value.checkpointCount,
     failureCode: clipped(value.failureCode, 100) || null,
     retrySequence: value.retrySequence ?? 0,
+    canRetryImplementation: value.status === 'FAILED' && (value.retrySequence ?? 0) < 2,
     canAuthorizeWorkerRecoveryRetry: canAuthorizeWorkerRecoveryRetry({
       ...value,
       retrySequence: value.retrySequence ?? -1,
@@ -517,7 +518,13 @@ function implementationStateDto(
 function implementationFailureDto(value: ImplementationProgressSnapshot): BugReportImplementationFailure | null {
   if (!value.failureCode) return null;
   const tests = safeJsonParse<Array<Record<string, unknown>>>(value.testsJson ?? null, []);
-  const failed = tests.find((test) => test?.status === 'FAILED');
+  const failures = tests.filter((test) => test?.status === 'FAILED');
+  // A filename-encoding probe may fail and be immediately superseded by the
+  // null-delimited measurement. Prefer the latest substantive failure so the
+  // operator sees the condition that actually kept the quality gate closed.
+  const failed =
+    [...failures].reverse().find((test) => clipped(test.failureCode, 80) !== 'ARCHIVE_FILENAME_ENCODING') ??
+    failures[0];
   const command = clipped(failed?.command, 300) || null;
   const code = clipped(failed?.failureCode, 80) || null;
   const summary =
