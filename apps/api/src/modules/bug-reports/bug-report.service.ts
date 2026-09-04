@@ -53,6 +53,7 @@ import {
 import { BugReportStorage } from './bug-report.storage.js';
 import {
   canAuthorizeSchemaRecoveryRetry,
+  canAuthorizeQualityGateRecoveryRetry,
   canAuthorizeWorkerRecoveryRetry,
   canRetryInboxImplementation,
 } from './inbox-implementation.service.js';
@@ -515,6 +516,11 @@ function implementationStateDto(
       { ...value, id: value.id || '', retrySequence: value.retrySequence ?? -1 },
       [...audits].reverse().find((audit) => audit.action === 'WORKER_READONLY_DIAGNOSTIC_PASSED')
     ),
+    canAuthorizeQualityGateRecoveryRetry: canAuthorizeQualityGateRecoveryRetry({
+      status: value.status,
+      retrySequence: value.retrySequence ?? -1,
+      failureCode: value.failureCode,
+    }),
     failure: implementationFailureDto(value),
     hasRetainedDraft: Boolean(value.retainUntil),
     startedAt: value.startedAt?.toISOString() ?? null,
@@ -829,6 +835,20 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
           'RETRY_IMPLEMENTATION',
           'Cho phép retry sau khi sửa schema',
           'Chẩn đoán chỉ-đọc đã xác minh schema Worker được sửa. Danny có thể cấp đúng một lượt code/test có audit.',
+          implementation.updatedAt
+        );
+      }
+      const canRecoverQualityGate = canAuthorizeQualityGateRecoveryRetry({
+        status: implementation.status,
+        retrySequence,
+        failureCode: implementation.failureCode,
+      });
+      if (canRecoverQualityGate) {
+        return nextAction(
+          'DANNY',
+          'RETRY_IMPLEMENTATION',
+          'Cho phép retry sau khi sửa cổng kiểm thử',
+          'Cổng kiểm thử đã được sửa và xác minh. Danny có thể cấp đúng một lượt code/test cuối có audit.',
           implementation.updatedAt
         );
       }

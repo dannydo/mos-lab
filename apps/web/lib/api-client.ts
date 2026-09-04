@@ -43,6 +43,8 @@ import type {
   AuthorizeBugReportWorkerRecoveryRetryResponse,
   AuthorizeBugReportSchemaRecoveryRetryRequest,
   AuthorizeBugReportSchemaRecoveryRetryResponse,
+  AuthorizeBugReportQualityGateRecoveryRetryRequest,
+  AuthorizeBugReportQualityGateRecoveryRetryResponse,
   ReleaseBugReportImplementationRequest,
   ReleaseBugReportImplementationResponse,
   ReviewBugReportImplementationAcceptanceRequest,
@@ -727,6 +729,17 @@ export const apiClient = {
     ): Promise<AuthorizeBugReportSchemaRecoveryRetryResponse> => {
       const response = await api.post<AuthorizeBugReportSchemaRecoveryRetryResponse>(
         `/bug-reports/${id}/implementation-schema-recovery-retry`,
+        data,
+        { timeout: 12_000 }
+      );
+      return response.data;
+    },
+    authorizeQualityGateRecoveryRetry: async (
+      id: number,
+      data: AuthorizeBugReportQualityGateRecoveryRetryRequest
+    ): Promise<AuthorizeBugReportQualityGateRecoveryRetryResponse> => {
+      const response = await api.post<AuthorizeBugReportQualityGateRecoveryRetryResponse>(
+        `/bug-reports/${id}/implementation-quality-gate-recovery-retry`,
         data,
         { timeout: 12_000 }
       );

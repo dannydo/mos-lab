@@ -99,6 +99,7 @@ interface DetailDrawerProps {
   retryImplementation: (id: number) => Promise<ApproveBugReportImplementationResult>;
   authorizeWorkerRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
   authorizeSchemaRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
+  authorizeQualityGateRecoveryRetry: (id: number) => Promise<ApproveBugReportImplementationResult>;
   confirmClose: (id: number, request: ConfirmCloseBugReportRequest) => Promise<BugReportDetail>;
   comment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
   canTriage: boolean;
@@ -115,6 +116,7 @@ function DetailDrawer({
   retryImplementation,
   authorizeWorkerRecoveryRetry: authorizeWorkerRecoveryRetryAction,
   authorizeSchemaRecoveryRetry: authorizeSchemaRecoveryRetryAction,
+  authorizeQualityGateRecoveryRetry: authorizeQualityGateRecoveryRetryAction,
   confirmClose,
   comment,
   canTriage,
@@ -330,6 +332,32 @@ function DetailDrawer({
     }
   }, [authorizeSchemaRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
 
+  const authorizeQualityGateRecoveryRetry = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const outcome = await authorizeQualityGateRecoveryRetryAction(detail.id);
+      if (outcome.implementationQueued) {
+        setStatus('IN_PROGRESS');
+        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
+      }
+      void getDetail(outcome.reportId)
+        .then(hydrateForm)
+        .catch(() => undefined);
+      messageApi.success('Đã cấp retry sau khi sửa cổng kiểm thử trong worktree mới.');
+    } catch (error) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(
+        responseMessage || (error instanceof Error ? error.message : 'Không thể cấp retry sau khi sửa cổng kiểm thử.')
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [authorizeQualityGateRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
+
   const approveCommit = useCallback(async () => {
     if (!detail) return;
     setSaving(true);
@@ -436,7 +464,19 @@ function DetailDrawer({
                 detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&
                 detail.priority &&
                 detail.clarification.status === 'READY' &&
-                (detail.implementation?.canAuthorizeSchemaRecoveryRetry ? (
+                (detail.implementation?.canAuthorizeQualityGateRecoveryRetry ? (
+                  <Popconfirm
+                    title="Cho phép một retry sau khi sửa cổng kiểm thử?"
+                    description="Cổng kiểm thử đã được sửa và xác minh. Hệ thống tạo đúng một worktree code/test mới; commit, push, merge, deploy và migration vẫn không tự chạy."
+                    okText="Cho phép retry"
+                    cancelText="Chưa cho phép"
+                    onConfirm={() => void authorizeQualityGateRecoveryRetry()}
+                  >
+                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
+                      Cho phép retry sau khi sửa cổng kiểm thử
+                    </Button>
+                  </Popconfirm>
+                ) : detail.implementation?.canAuthorizeSchemaRecoveryRetry ? (
                   <Popconfirm
                     title="Cho phép một retry sau khi đã sửa schema?"
                     description="Chỉ áp dụng cho lỗi schema đã được chẩn đoán chỉ-đọc và xác minh. Hệ thống tạo worktree code/test mới, không commit, push, merge, deploy hay chạy migration. Quyền này chỉ dùng một lần cho lượt hiện tại."
@@ -1097,6 +1137,7 @@ export default function BugReportsPage() {
         retryImplementation={inbox.retryImplementation}
         authorizeWorkerRecoveryRetry={inbox.authorizeWorkerRecoveryRetry}
         authorizeSchemaRecoveryRetry={inbox.authorizeSchemaRecoveryRetry}
+        authorizeQualityGateRecoveryRetry={inbox.authorizeQualityGateRecoveryRetry}
         confirmClose={inbox.confirmClose}
         comment={inbox.comment}
         canTriage={canTriage}

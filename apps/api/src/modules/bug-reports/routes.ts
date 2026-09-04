@@ -8,6 +8,7 @@ import {
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
   type AuthorizeBugReportSchemaRecoveryRetryRequest,
+  type AuthorizeBugReportQualityGateRecoveryRetryRequest,
   type AuthorizeBugReportWorkerRecoveryRetryRequest,
   type ApproveBugReportImplementationRequest,
   type ApproveBugReportImplementationCommitRequest,
@@ -221,6 +222,38 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Authorize schema recovery retry failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/implementation-quality-gate-recovery-retry',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const body = request.body as AuthorizeBugReportQualityGateRecoveryRetryRequest;
+        if (body?.acknowledged !== true) {
+          throw new InboxImplementationError(
+            'Cần xác nhận rõ ràng trước khi cấp retry sau khi sửa cổng kiểm thử.',
+            422
+          );
+        }
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const implementationQueued = await InboxImplementationService.authorizeQualityGateRecoveryRetry(
+          fastify,
+          id,
+          request.user.id
+        );
+        if (implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
+        return reply.send({
+          success: true,
+          data: { reportId: id, implementationQueued, planRequested: false },
+          message: implementationQueued
+            ? 'Đã cấp đúng một retry cuối sau khi cổng kiểm thử được sửa và xác minh.'
+            : 'Retry sau khi sửa cổng kiểm thử không được tạo.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Authorize quality-gate recovery retry failed');
       }
     }
   );

@@ -3,6 +3,7 @@ import test from 'node:test';
 import { Prisma } from '../../generated/crm-client/index.js';
 import {
   InboxImplementationService,
+  canAuthorizeQualityGateRecoveryRetry,
   canAuthorizeSchemaRecoveryRetry,
   canAuthorizeWorkerRecoveryRetry,
   inboxImplementationCurrentPlan,
@@ -585,6 +586,68 @@ test('schema recovery needs a diagnostic for the exact exhausted job and creates
     }),
     false
   );
+});
+
+test('quality-gate recovery creates sequence five once after the verified gate repair', async () => {
+  const draft = source();
+  const sourceVersion = inboxImplementationSourceVersion(draft);
+  const report = source({
+    implementationActiveJobId: 'quality-gate-terminal-job',
+    inboxPlanJobs: [
+      { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
+    ],
+  });
+  const terminal = {
+    id: 'quality-gate-terminal-job',
+    status: 'FAILED',
+    retryOfJobId: 'schema-recovery-job',
+    retrySequence: 4,
+    sourceVersion,
+    planVersion: 'v1:plan',
+    failureCode: 'QUALITY_GATE_FAILED',
+  };
+  const createdRows: Record<string, unknown>[] = [];
+  let auditAction = '';
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => report },
+        crmInboxImplementationJob: {
+          findUnique: async () => terminal,
+        },
+        $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
+          callback({
+            crmInboxImplementationJob: {
+              create: async ({ data }: { data: Record<string, unknown> }) => {
+                createdRows.push(data);
+                return data;
+              },
+              update: async () => ({}),
+            },
+            crmBugReport: {
+              updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                Object.assign(report, data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: {
+              create: async ({ data }: { data: { action: string } }) => {
+                auditAction = data.action;
+                return {};
+              },
+            },
+          }),
+      },
+    },
+  };
+
+  assert.equal(canAuthorizeQualityGateRecoveryRetry(terminal), true);
+  assert.equal(await InboxImplementationService.authorizeQualityGateRecoveryRetry(fastify as never, 16, 1), true);
+  assert.equal(createdRows[0]?.retryOfJobId, 'quality-gate-terminal-job');
+  assert.equal(createdRows[0]?.retrySequence, 5);
+  assert.equal(auditAction, 'DANNY_QUALITY_GATE_RECOVERY_RETRY_AUTHORIZED');
+  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 5 }), false);
+  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, failureCode: 'NEXT_BUILD_STALLED' }), false);
 });
 
 test('lease renewal accepts only the same active worker, token, and Codex process epoch', async () => {

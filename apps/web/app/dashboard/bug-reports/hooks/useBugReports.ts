@@ -260,6 +260,17 @@ export function useBugReports() {
     [load]
   );
 
+  const authorizeQualityGateRecoveryRetry = useCallback(
+    async (id: number): Promise<ApproveBugReportImplementationResult> => {
+      const response = await apiClient.bugReports.authorizeQualityGateRecoveryRetry(id, { acknowledged: true });
+      if (!response.data) throw new Error('Máy chủ không trả về trạng thái retry sau khi sửa cổng kiểm thử.');
+      void load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
+      return response.data;
+    },
+    [load]
+  );
+
   const approveImplementationCommit = useCallback(
     async (id: number): Promise<ApproveBugReportImplementationCommitResult> => {
       const response = await apiClient.bugReports.approveImplementationCommit(id, { acknowledged: true });
@@ -333,6 +344,7 @@ export function useBugReports() {
     retryImplementation,
     authorizeWorkerRecoveryRetry,
     authorizeSchemaRecoveryRetry,
+    authorizeQualityGateRecoveryRetry,
     releaseImplementation,
     confirmClose,
     comment,
