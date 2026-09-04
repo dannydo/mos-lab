@@ -13,6 +13,7 @@ import {
   isInboxImplementationEligible,
   normalizeInboxImplementationResult,
   qualityTestsForCheckpointApproval,
+  recoverLegacyDeployQualityEvidence,
   testsAfterOperationalCheckpointFailure,
 } from './inbox-implementation.service.js';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
@@ -85,6 +86,30 @@ test('removes only legacy operational checkpoint evidence before re-approving de
     { command: 'pnpm --filter @mos-lab/shared build', status: 'PASSED' },
     { command: 'git diff --check', status: 'PASSED' },
   ]);
+});
+
+test('recovers only a legacy interrupted deploy from its exact immutable review record', () => {
+  const tests = recoverLegacyDeployQualityEvidence(
+    JSON.stringify([
+      {
+        command: 'Codex executor',
+        status: 'FAILED',
+        failureCode: 'DEPLOY_INTERRUPTED',
+        failureSummary: 'Worker restart.',
+      },
+    ]),
+    'DEPLOY_INTERRUPTED',
+    'job-24',
+    [
+      '## Kết quả implementation — chờ Danny duyệt commit\n\n- Patch / job: job-24\n\n### Kiểm thử\n- PASSED: pnpm --filter @mos-lab/shared build\n- PASSED: git diff --check',
+    ]
+  );
+
+  assert.deepEqual(tests, [
+    { command: 'pnpm --filter @mos-lab/shared build', status: 'PASSED' },
+    { command: 'git diff --check', status: 'PASSED' },
+  ]);
+  assert.deepEqual(recoverLegacyDeployQualityEvidence(null, 'DEPLOY_INTERRUPTED', 'job-24', []), []);
 });
 
 test('implementation requires a distinct approval and a native plan for the exact material source version', () => {
@@ -1250,6 +1275,7 @@ test('commit approval requeues only the retained reviewed patch for the Mac work
       crm: {
         crmBugReport: { findUnique: async () => readySource },
         crmInboxImplementationJob: { findFirst: async () => job },
+        crmBugReportComment: { findMany: async () => [] },
         $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
           callback({
             crmInboxImplementationJob: {
@@ -1340,6 +1366,7 @@ test('deploy approval requeues only the recorded implementation commit for the M
       crm: {
         crmBugReport: { findUnique: async () => readySource },
         crmInboxImplementationJob: { findFirst: async () => job },
+        crmBugReportComment: { findMany: async () => [] },
         $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
           callback({
             crmInboxImplementationJob: {

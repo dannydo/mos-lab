@@ -355,6 +355,32 @@ export function qualityTestsForCheckpointApproval(
   );
 }
 
+/**
+ * A pre-1.17 deploy interruption could replace the completed quality evidence
+ * with a synthetic `Codex executor` failure. Recover only that legacy shape
+ * from its immutable review record; never infer tests from a title, diff, or
+ * arbitrary comment.
+ */
+export function recoverLegacyDeployQualityEvidence(
+  existingTestsJson: string | null,
+  checkpointFailureCode: string | null,
+  jobId: string,
+  reviewCommentBodies: readonly string[]
+): InboxImplementationTestResult[] {
+  const current = qualityTestsForCheckpointApproval(existingTestsJson, checkpointFailureCode);
+  if (current.length || checkpointFailureCode !== 'DEPLOY_INTERRUPTED') return current;
+
+  const jobMarker = `Patch / job: ${jobId}`;
+  for (const body of reviewCommentBodies) {
+    if (!body.includes(jobMarker) || !body.includes('Kết quả implementation — chờ Danny duyệt commit')) continue;
+    const recovered = normalizeTests(
+      Array.from(body.matchAll(/^- PASSED:\s*(.+)$/gm), ([, command]) => ({ command, status: 'PASSED' }))
+    );
+    if (recovered.length) return recovered;
+  }
+  return current;
+}
+
 /** Keeps a useful diagnosis without retaining raw worker logs or secrets. */
 function redactFailureSummary(value: unknown): string | null {
   const summary = clean(value, 420);
@@ -1265,7 +1291,24 @@ export class InboxImplementationService {
     if (!job?.commitSha) {
       throw new InboxImplementationError('Không có commit đã duyệt để deploy.', 409, 'DEPLOY_COMMIT_MISSING');
     }
-    const qualityTests = qualityTestsForCheckpointApproval(job.testsJson, job.failureCode);
+    const recoveryComments = await fastify.prisma.crm.crmBugReportComment.findMany({
+      where: {
+        reportId,
+        authorType: 'AGENT',
+        kind: 'COMMENT',
+        body: { contains: `Patch / job: ${job.id}` },
+      },
+      select: { body: true },
+      take: 2,
+    });
+    const preRecoveryTests = qualityTestsForCheckpointApproval(job.testsJson, job.failureCode);
+    const qualityTests = recoverLegacyDeployQualityEvidence(
+      job.testsJson,
+      job.failureCode,
+      job.id,
+      recoveryComments.map((comment) => comment.body)
+    );
+    const recoveredLegacyEvidence = !preRecoveryTests.length && qualityTests.length > 0;
     const qualityGate = evaluateInboxImplementationQualityGate({
       changedFiles: safeJsonValue(job.changedFilesJson),
       tests: qualityTests,
@@ -1295,7 +1338,7 @@ export class InboxImplementationService {
           reportId,
           actorStaffId,
           action: 'DANNY_DEPLOY_APPROVED',
-          note: 'Danny đã duyệt deploy. Worker Mac chỉ được merge commit đã ghi nhận, push main, chạy pipeline production và xác minh release marker.',
+          note: `Danny đã duyệt deploy. Worker Mac chỉ được merge commit đã ghi nhận, push main, chạy pipeline production và xác minh release marker.${recoveredLegacyEvidence ? ' Đã khôi phục bằng chứng test từ review record bất biến sau gián đoạn deploy cũ.' : ''}`,
           beforeJson: snapshot(report),
           afterJson: snapshot({ ...report, comments: report.comments, inboxPlanJobs: report.inboxPlanJobs }),
         },
