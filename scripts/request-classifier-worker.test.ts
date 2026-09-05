@@ -27,6 +27,7 @@ import {
   inboxImplementationSchema,
   inboxVisualQaSyntheticStorage,
   privateVisualQaFailureCode,
+  privateVisualQaScenarioForChangedFiles,
   renewImplementationLeaseWithRetry,
   withWorkerOwnedVisualQaEvidence,
 } from './request-classifier-worker.js';
@@ -90,7 +91,7 @@ test('uses scoped synthetic storage for private visual QA without a production c
   assert.match(manager.mos_token, /^inbox-qa-synthetic-manager-v1$/);
   assert.match(participant.mos_token, /^inbox-qa-synthetic-participant-v1$/);
   assert.equal(JSON.parse(manager.mos_user).role, 'admin');
-  assert.equal(JSON.parse(participant.mos_user).role, 'staff');
+  assert.equal(JSON.parse(participant.mos_user).role, 'telesales');
   assert.equal(manager.mos_testing_bot, 'true');
 });
 
@@ -105,18 +106,43 @@ test('keeps private visual QA failure diagnostics fixed and scrubbed by phase', 
   );
 });
 
+test('routes Game BK changes to the Game BK surface while keeping generic web checks as architecture smoke', () => {
+  assert.equal(
+    privateVisualQaScenarioForChangedFiles(['apps/web/app/dashboard/bk/components/BkGameTab.tsx']),
+    'game_bk'
+  );
+  assert.equal(privateVisualQaScenarioForChangedFiles(['apps/web/config/sidebar.config.tsx']), 'architecture_smoke');
+});
+
 test('adds worker-owned visual QA evidence only for changed web files and preserves model visual evidence', () => {
   const base = { summary: 'Safe result.', risksAndRollback: 'Discard draft.', tests: [] };
-  assert.deepEqual(withWorkerOwnedVisualQaEvidence(base, ['apps/api/src/index.ts'], { passed: true }), base);
-  const injected = withWorkerOwnedVisualQaEvidence(base, ['apps/web/app/dashboard/page.tsx'], { passed: true });
+  assert.deepEqual(
+    withWorkerOwnedVisualQaEvidence(base, ['apps/api/src/index.ts'], { scenario: 'architecture_smoke', passed: true }),
+    base
+  );
+  const injected = withWorkerOwnedVisualQaEvidence(base, ['apps/web/app/dashboard/page.tsx'], {
+    scenario: 'architecture_smoke',
+    passed: true,
+  });
   assert.equal(injected.tests[0]?.status, 'PASSED');
-  assert.match(injected.tests[0]?.command || '', /Worker-owned Playwright visual QA/);
+  assert.match(injected.tests[0]?.command || '', /Worker-owned Playwright/);
+  const gameFailure = withWorkerOwnedVisualQaEvidence(base, ['apps/web/app/dashboard/bk/page.tsx'], {
+    scenario: 'game_bk',
+    passed: false,
+    failureCode: 'PRIVATE_QA_PARTICIPANT_ASSERTION_FAILED',
+  });
+  assert.match(gameFailure.tests[0]?.command || '', /Game BK.*dashboard\/bk\?tab=game/);
+  assert.equal(gameFailure.tests[0]?.failureCode, 'PRIVATE_QA_PARTICIPANT_ASSERTION_FAILED');
+  assert.doesNotMatch(gameFailure.tests[0]?.failureSummary || '', /Timeout|cookie|token|screenshot/i);
   const modelVisual = {
     ...base,
     tests: [{ command: 'Playwright visual QA by model', status: 'FAILED' as const, failureCode: 'VISUAL_REGRESSION' }],
   };
   assert.deepEqual(
-    withWorkerOwnedVisualQaEvidence(modelVisual, ['apps/web/app/dashboard/page.tsx'], { passed: true }),
+    withWorkerOwnedVisualQaEvidence(modelVisual, ['apps/web/app/dashboard/page.tsx'], {
+      scenario: 'architecture_smoke',
+      passed: true,
+    }),
     modelVisual
   );
 });

@@ -452,6 +452,15 @@ export type PrivateVisualQaFailureCode =
   | 'PRIVATE_QA_PARTICIPANT_ASSERTION_FAILED'
   | 'PRIVATE_QA_PARTICIPANT_SCREENSHOT_FAILED';
 
+export type PrivateVisualQaScenario = 'architecture_smoke' | 'game_bk';
+
+type PrivateVisualQaResult = {
+  scenario: PrivateVisualQaScenario;
+  passed: boolean;
+  evidence: { managerScreenshotSha256: string; participantScreenshotSha256: string } | null;
+  failureCode?: PrivateVisualQaFailureCode;
+};
+
 const PRIVATE_VISUAL_QA_EXACT_FAILURE_CODES = new Set<PrivateVisualQaFailureCode>([
   'PRIVATE_QA_PNPM_UNAVAILABLE',
   'PRIVATE_QA_PORT_UNAVAILABLE',
@@ -485,7 +494,7 @@ export function inboxVisualQaSyntheticStorage(role: InboxVisualQaRole): Record<s
           username: 'inbox-qa-participant',
           email: 'inbox-qa-participant@invalid.test',
           displayName: 'Inbox QA Participant',
-          role: 'staff',
+          role: 'telesales',
         };
   return {
     // This is a fixture marker, never a JWT or a copied production cookie.
@@ -505,12 +514,57 @@ function syntheticVisualQaApiResponse(pathname: string, role: InboxVisualQaRole)
   if (pathname.endsWith('/academy-sales/access')) return { data: { canAccess: false } };
   if (pathname.endsWith('/academy-sales/campaigns/sidebar')) return [];
   if (pathname.endsWith('/campaigns')) return { items: [] };
+  if (pathname.endsWith('/kpi/bk/booking/leaderboard')) return { leaderboard: [] };
   if (pathname.endsWith('/bug-reports/mine')) {
     return { data: [], notifications: [], unreadCount: 0, actionRequiredCount: 0 };
   }
   if (pathname.endsWith('/bug-reports')) return { summary: { readyForDannyCount: 0 }, data: [] };
   if (pathname.endsWith('/release')) return { deployedAt: null };
   return {};
+}
+
+/**
+ * The route under test must follow the user-visible surface that changed.
+ * Architecture remains a worker-harness smoke check; it is never Game BK
+ * evidence merely because a web patch happened to pass it.
+ */
+export function privateVisualQaScenarioForChangedFiles(changedFiles: readonly string[]): PrivateVisualQaScenario {
+  return changedFiles.some((file) => file.startsWith('apps/web/app/dashboard/bk/')) ? 'game_bk' : 'architecture_smoke';
+}
+
+function privateVisualQaRoute(scenario: PrivateVisualQaScenario): string {
+  return scenario === 'game_bk' ? '/dashboard/bk?tab=game' : '/dashboard/architecture';
+}
+
+async function assertPrivateVisualQaSurface(
+  page: import('playwright').Page,
+  scenario: PrivateVisualQaScenario,
+  role: InboxVisualQaRole
+): Promise<void> {
+  if (scenario === 'architecture_smoke') {
+    await page
+      .getByText(role === 'manager' ? 'Sơ Đồ Kiến Trúc Knowledge Graph' : 'Chỉ Dành Cho Quản Trị Viên', {
+        exact: false,
+      })
+      .waitFor({ state: 'visible', timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS });
+    return;
+  }
+
+  await page.getByText('Game BK', { exact: false }).first().waitFor({
+    state: 'visible',
+    timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS,
+  });
+  await page.getByLabel('Chỉ số xếp hạng Game BK').waitFor({
+    state: 'visible',
+    timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS,
+  });
+
+  const inboxNavigation = page.getByText('mOS Inbox', { exact: true });
+  if (role === 'manager') {
+    await inboxNavigation.waitFor({ state: 'visible', timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS });
+    return;
+  }
+  if ((await inboxNavigation.count()) !== 0) throw new Error('PRIVATE_QA_PARTICIPANT_ASSERTION_FAILED');
 }
 
 async function reservePrivateLoopbackPort(): Promise<number> {
@@ -563,11 +617,10 @@ async function waitForPrivateVisualQaServer(url: string, child: ChildProcess): P
  * storage-only sessions, and request fixtures. No production token, cookie,
  * API response, or screenshot leaves this function.
  */
-export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
-  passed: boolean;
-  evidence: { managerScreenshotSha256: string; participantScreenshotSha256: string } | null;
-  failureCode?: PrivateVisualQaFailureCode;
-}> {
+export async function runPrivateVisualQaScenario(
+  workspace: string,
+  scenario: PrivateVisualQaScenario
+): Promise<PrivateVisualQaResult> {
   let outputDirectory = '';
   let outputDirectoryPath = '';
   let server: ChildProcess | null = null;
@@ -623,22 +676,12 @@ export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
           const pageErrors: string[] = [];
           page.on('pageerror', () => pageErrors.push('pageerror'));
           phase = `${role}_navigation`;
-          await page.goto(`${baseUrl}/dashboard/architecture`, {
+          await page.goto(`${baseUrl}${privateVisualQaRoute(scenario)}`, {
             waitUntil: 'domcontentloaded',
             timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS,
           });
           phase = `${role}_assertion`;
-          if (role === 'manager') {
-            await page.getByText('Sơ Đồ Kiến Trúc Knowledge Graph', { exact: false }).waitFor({
-              state: 'visible',
-              timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS,
-            });
-          } else {
-            await page.getByText('Chỉ Dành Cho Quản Trị Viên', { exact: false }).waitFor({
-              state: 'visible',
-              timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS,
-            });
-          }
+          await assertPrivateVisualQaSurface(page, scenario, role);
           if (pageErrors.length) throw new Error('PRIVATE_QA_PAGE_ERROR');
           // The screenshot stays in memory; only a non-reversible digest is retained as evidence.
           phase = `${role}_screenshot`;
@@ -650,12 +693,12 @@ export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
       };
       const managerScreenshotSha256 = await runRole('manager');
       const participantScreenshotSha256 = await runRole('participant');
-      return { passed: true, evidence: { managerScreenshotSha256, participantScreenshotSha256 } };
+      return { scenario, passed: true, evidence: { managerScreenshotSha256, participantScreenshotSha256 } };
     } finally {
       await browser.close();
     }
   } catch (error) {
-    return { passed: false, evidence: null, failureCode: privateVisualQaFailureCode(phase, error) };
+    return { scenario, passed: false, evidence: null, failureCode: privateVisualQaFailureCode(phase, error) };
   } finally {
     if (server) {
       const cancelEscalation = terminateCodexProcessGroup(server.pid ?? null, server);
@@ -667,6 +710,21 @@ export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
     }
     if (outputDirectoryPath) await rm(outputDirectoryPath, { recursive: true, force: true }).catch(() => undefined);
   }
+}
+
+/** The recovery self-check is deliberately a generic worker-harness smoke. */
+export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<PrivateVisualQaResult> {
+  return runPrivateVisualQaScenario(workspace, 'architecture_smoke');
+}
+
+async function runPrivateVisualQaForImplementation(
+  workspace: string,
+  changedFiles: readonly string[]
+): Promise<PrivateVisualQaResult> {
+  const smoke = await runPrivateVisualQaSelfCheck(workspace);
+  if (!smoke.passed) return smoke;
+  const scenario = privateVisualQaScenarioForChangedFiles(changedFiles);
+  return scenario === 'architecture_smoke' ? smoke : runPrivateVisualQaScenario(workspace, scenario);
 }
 
 export function isCodexImplementationHelpCompatible(help: string): boolean {
@@ -1579,10 +1637,13 @@ export function parseCodexInboxImplementation(stdout: string): InboxImplementati
 export function withWorkerOwnedVisualQaEvidence(
   result: InboxImplementationWorkerResult,
   changedFiles: readonly string[],
-  visualQa: { passed: boolean }
+  visualQa: Pick<PrivateVisualQaResult, 'scenario' | 'passed' | 'failureCode'>
 ): InboxImplementationWorkerResult {
   if (!changedFiles.some((file) => file.startsWith('apps/web/'))) return result;
-  const command = 'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)';
+  const command =
+    visualQa.scenario === 'game_bk'
+      ? 'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game (private synthetic manager and participant sessions)'
+      : 'Worker-owned Playwright Architecture smoke QA at /dashboard/architecture (private synthetic manager and participant sessions)';
   const hasModelVisualEvidence = result.tests.some((test) =>
     /(visual|screenshot|snapshot|tohavescreenshot)/i.test(test.command)
   );
@@ -1598,8 +1659,11 @@ export function withWorkerOwnedVisualQaEvidence(
         : {
             command,
             status: 'FAILED' as const,
-            failureCode: 'WORKER_VISUAL_QA_FAILED',
-            failureSummary: 'Private visual QA harness không hoàn tất nên quality gate giữ commit và deploy bị chặn.',
+            failureCode: visualQa.failureCode ?? 'PRIVATE_QA_PREPARE_FAILED',
+            failureSummary:
+              visualQa.scenario === 'game_bk'
+                ? 'Game BK private visual QA không hoàn tất; quality gate giữ commit và deploy bị chặn.'
+                : 'Private Architecture smoke QA không hoàn tất; quality gate giữ commit và deploy bị chặn.',
           },
     ],
   };
@@ -1926,7 +1990,7 @@ async function processInboxImplementationOne(): Promise<boolean> {
       result = withWorkerOwnedVisualQaEvidence(
         result,
         artifacts.changedFiles,
-        await runPrivateVisualQaSelfCheck(worktreePath)
+        await runPrivateVisualQaForImplementation(worktreePath, artifacts.changedFiles)
       );
     }
     phase = 'complete';
