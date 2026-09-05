@@ -521,11 +521,16 @@ function implementationStateDto(
       { ...value, id: value.id || '', retrySequence: value.retrySequence ?? -1 },
       [...audits].reverse().find((audit) => audit.action === 'WORKER_READONLY_DIAGNOSTIC_PASSED')
     ),
-    canAuthorizeQualityGateRecoveryRetry: canAuthorizeQualityGateRecoveryRetry({
-      status: value.status,
-      retrySequence: value.retrySequence ?? -1,
-      failureCode: value.failureCode,
-    }),
+    canAuthorizeQualityGateRecoveryRetry: canAuthorizeQualityGateRecoveryRetry(
+      {
+        id: value.id || '',
+        status: value.status,
+        retrySequence: value.retrySequence ?? -1,
+        failureCode: value.failureCode,
+        testsJson: value.testsJson,
+      },
+      [...audits].reverse().find((audit) => audit.action === 'WORKER_VISUAL_QA_SELF_CHECK')
+    ),
     canAuthorizeBuildLockRecoveryRetry: canAuthorizeBuildLockRecoveryRetry({
       ...value,
       retrySequence: value.retrySequence ?? -1,
@@ -852,11 +857,21 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
           implementation.updatedAt
         );
       }
-      const canRecoverQualityGate = canAuthorizeQualityGateRecoveryRetry({
-        status: implementation.status,
-        retrySequence,
-        failureCode: implementation.failureCode,
-      });
+      const qualityGateDiagnosticAudit = [...source.audits]
+        .reverse()
+        .find((audit) => audit.action === 'WORKER_VISUAL_QA_SELF_CHECK');
+      const canRecoverQualityGate = canAuthorizeQualityGateRecoveryRetry(
+        {
+          id: implementation.id || '',
+          status: implementation.status,
+          retrySequence,
+          failureCode: implementation.failureCode,
+          testsJson: implementation.testsJson,
+        },
+        qualityGateDiagnosticAudit
+          ? { action: qualityGateDiagnosticAudit.action, afterJson: qualityGateDiagnosticAudit.afterJson ?? null }
+          : null
+      );
       if (canRecoverQualityGate) {
         return nextAction(
           'DANNY',
@@ -2554,36 +2569,62 @@ export class BugReportService {
           },
         ],
       },
-      include: { audits: { orderBy: { createdAt: 'asc' } } },
+      include: {
+        audits: { orderBy: { createdAt: 'asc' } },
+        inboxImplementationJobs: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            status: true,
+            executionPhase: true,
+            progressLabel: true,
+            lastProgressAt: true,
+            progressCount: true,
+            checkpointCount: true,
+            failureCode: true,
+            retrySequence: true,
+            testsJson: true,
+            changedFilesJson: true,
+            retainUntil: true,
+            startedAt: true,
+            completedAt: true,
+            updatedAt: true,
+          },
+        },
+      },
       orderBy: [{ prioritySort: 'asc' }, { updatedAt: 'desc' }],
       take: 200,
     });
-    return rows.map((row) => ({
-      id: row.id,
-      key: formatBugReportKey(row.id, storedRequestType(row.requestType)),
-      requestType: storedRequestType(row.requestType),
-      title: row.title,
-      status: row.status as AgentBugQueueItem['status'],
-      priority: row.priority as BugPriority | null,
-      workType: row.clarificationStatus === 'READY' ? 'FIX' : 'CLARIFY',
-      clarification: {
-        status: row.clarificationStatus as BugReportClarificationStatus,
-        summary: row.clarificationSummary,
-        clarifiedAt: row.clarifiedAt?.toISOString() ?? null,
-      },
-      agentProgress: bugReportAgentProgress(row),
-      nextAction: bugReportNextAction(row),
-      sourcePath: row.sourcePath,
-      timeline: {
-        reportedAt: row.createdAt.toISOString(),
-        approvedAt: row.approvedAt?.toISOString() ?? null,
-        startedAt: row.startedAt?.toISOString() ?? null,
-        fixedAt: row.resolvedAt?.toISOString() ?? null,
-        closedAt: row.closedAt?.toISOString() ?? null,
+    return rows.map((row) => {
+      const progressSource = { ...row, implementation: row.inboxImplementationJobs[0] ?? null };
+      return {
+        id: row.id,
+        key: formatBugReportKey(row.id, storedRequestType(row.requestType)),
+        requestType: storedRequestType(row.requestType),
+        title: row.title,
+        status: row.status as AgentBugQueueItem['status'],
+        priority: row.priority as BugPriority | null,
+        workType: row.clarificationStatus === 'READY' ? 'FIX' : 'CLARIFY',
+        clarification: {
+          status: row.clarificationStatus as BugReportClarificationStatus,
+          summary: row.clarificationSummary,
+          clarifiedAt: row.clarifiedAt?.toISOString() ?? null,
+        },
+        agentProgress: bugReportAgentProgress(progressSource),
+        nextAction: bugReportNextAction(progressSource),
+        sourcePath: row.sourcePath,
+        timeline: {
+          reportedAt: row.createdAt.toISOString(),
+          approvedAt: row.approvedAt?.toISOString() ?? null,
+          startedAt: row.startedAt?.toISOString() ?? null,
+          fixedAt: row.resolvedAt?.toISOString() ?? null,
+          closedAt: row.closedAt?.toISOString() ?? null,
+          updatedAt: row.updatedAt.toISOString(),
+        },
         updatedAt: row.updatedAt.toISOString(),
-      },
-      updatedAt: row.updatedAt.toISOString(),
-    }));
+      };
+    });
   }
 
   static async agentBundle(fastify: FastifyInstance, key: string): Promise<AgentBugBundle> {

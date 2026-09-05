@@ -25,7 +25,9 @@ import {
   safeCodexCliJsonFailureSummary,
   inboxImplementationFailureSummary,
   inboxImplementationSchema,
+  inboxVisualQaSyntheticStorage,
   renewImplementationLeaseWithRetry,
+  withWorkerOwnedVisualQaEvidence,
 } from './request-classifier-worker.js';
 
 test('builds a noninteractive Codex invocation with private structured output', async () => {
@@ -78,6 +80,32 @@ test('builds a write-enabled but noninteractive implementation command for an is
   assert.equal(
     implementationWorktreeRoot('/Users/dannydo/projects/mos-lab'),
     '/Users/dannydo/projects/.mos-inbox-worktrees'
+  );
+});
+
+test('uses scoped synthetic storage for private visual QA without a production credential', () => {
+  const manager = inboxVisualQaSyntheticStorage('manager');
+  const participant = inboxVisualQaSyntheticStorage('participant');
+  assert.match(manager.mos_token, /^inbox-qa-synthetic-manager-v1$/);
+  assert.match(participant.mos_token, /^inbox-qa-synthetic-participant-v1$/);
+  assert.equal(JSON.parse(manager.mos_user).role, 'admin');
+  assert.equal(JSON.parse(participant.mos_user).role, 'staff');
+  assert.equal(manager.mos_testing_bot, 'true');
+});
+
+test('adds worker-owned visual QA evidence only for changed web files and preserves model visual evidence', () => {
+  const base = { summary: 'Safe result.', risksAndRollback: 'Discard draft.', tests: [] };
+  assert.deepEqual(withWorkerOwnedVisualQaEvidence(base, ['apps/api/src/index.ts'], { passed: true }), base);
+  const injected = withWorkerOwnedVisualQaEvidence(base, ['apps/web/app/dashboard/page.tsx'], { passed: true });
+  assert.equal(injected.tests[0]?.status, 'PASSED');
+  assert.match(injected.tests[0]?.command || '', /Worker-owned Playwright visual QA/);
+  const modelVisual = {
+    ...base,
+    tests: [{ command: 'Playwright visual QA by model', status: 'FAILED' as const, failureCode: 'VISUAL_REGRESSION' }],
+  };
+  assert.deepEqual(
+    withWorkerOwnedVisualQaEvidence(modelVisual, ['apps/web/app/dashboard/page.tsx'], { passed: true }),
+    modelVisual
   );
 });
 

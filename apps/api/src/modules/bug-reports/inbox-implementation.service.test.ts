@@ -700,7 +700,7 @@ test('schema recovery needs a diagnostic for the exact exhausted job and creates
   );
 });
 
-test('quality-gate recovery creates sequence five once after the verified gate repair', async () => {
+test('quality-gate recovery creates sequence three once after the matching private harness self-check', async () => {
   const draft = source();
   const sourceVersion = inboxImplementationSourceVersion(draft);
   const report = source({
@@ -709,14 +709,26 @@ test('quality-gate recovery creates sequence five once after the verified gate r
       { id: 'plan-1', status: 'COMPLETED', resultAction: 'POST_PLAN', sourceVersion, planVersion: 'v1:plan' },
     ],
   });
+  const diagnostic = {
+    action: 'WORKER_VISUAL_QA_SELF_CHECK',
+    afterJson: JSON.stringify({
+      jobId: 'quality-gate-terminal-job',
+      rootCause: 'SANDBOX_PORT_BINDING',
+      selfCheck: 'PASSED',
+    }),
+  };
+  Object.assign(report, { audits: [diagnostic] });
   const terminal = {
     id: 'quality-gate-terminal-job',
     status: 'FAILED',
     retryOfJobId: 'schema-recovery-job',
-    retrySequence: 4,
+    retrySequence: 2,
     sourceVersion,
     planVersion: 'v1:plan',
     failureCode: 'QUALITY_GATE_FAILED',
+    testsJson: JSON.stringify([
+      { status: 'FAILED', failureCode: 'SANDBOX_PORT_BINDING', command: 'next dev --port private' },
+    ]),
   };
   const createdRows: Record<string, unknown>[] = [];
   let auditAction = '';
@@ -753,13 +765,69 @@ test('quality-gate recovery creates sequence five once after the verified gate r
     },
   };
 
-  assert.equal(canAuthorizeQualityGateRecoveryRetry(terminal), true);
+  assert.equal(canAuthorizeQualityGateRecoveryRetry(terminal, diagnostic), true);
   assert.equal(await InboxImplementationService.authorizeQualityGateRecoveryRetry(fastify as never, 16, 1), true);
   assert.equal(createdRows[0]?.retryOfJobId, 'quality-gate-terminal-job');
-  assert.equal(createdRows[0]?.retrySequence, 5);
+  assert.equal(createdRows[0]?.retrySequence, 3);
   assert.equal(auditAction, 'DANNY_GATE_RECOVERY_RETRY_AUTH');
-  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 5 }), false);
-  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, failureCode: 'NEXT_BUILD_STALLED' }), false);
+  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 3 }, diagnostic), false);
+  assert.equal(
+    canAuthorizeQualityGateRecoveryRetry({ ...terminal, failureCode: 'NEXT_BUILD_STALLED' }, diagnostic),
+    false
+  );
+  assert.equal(
+    canAuthorizeQualityGateRecoveryRetry(terminal, {
+      ...diagnostic,
+      afterJson: JSON.stringify({
+        jobId: 'other-job',
+        rootCause: 'SANDBOX_PORT_BINDING',
+        selfCheck: 'PASSED',
+      }),
+    }),
+    false
+  );
+});
+
+test('records a private visual-QA self-check only for the active sequence-two sandbox failure', async () => {
+  const audits: Array<{ data: Record<string, unknown> }> = [];
+  const job = {
+    id: 'quality-gate-terminal-job',
+    reportId: 16,
+    status: 'FAILED',
+    retrySequence: 2,
+    failureCode: 'QUALITY_GATE_FAILED',
+    testsJson: JSON.stringify([{ status: 'FAILED', failureCode: 'SANDBOX_PORT_BINDING' }]),
+    report: { implementationActiveJobId: 'quality-gate-terminal-job', audits: [] },
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: { findUnique: async () => job },
+        $transaction: async (callback: (tx: unknown) => Promise<void>) =>
+          callback({
+            crmBugReport: { update: async () => ({}) },
+            crmBugReportAudit: { create: async (input: { data: Record<string, unknown> }) => audits.push(input) },
+          }),
+      },
+    },
+  };
+
+  assert.equal(
+    await InboxImplementationService.recordQualityGateRecoverySelfCheck(fastify as never, job.id, {
+      selfCheck: 'PASSED',
+      rootCause: 'SANDBOX_PORT_BINDING',
+    }),
+    true
+  );
+  assert.equal(audits[0]?.data.action, 'WORKER_VISUAL_QA_SELF_CHECK');
+  assert.match(String(audits[0]?.data.afterJson), /quality-gate-terminal-job/);
+  await assert.rejects(
+    InboxImplementationService.recordQualityGateRecoverySelfCheck(fastify as never, job.id, {
+      selfCheck: 'PASSED',
+      rootCause: 'OTHER_FAILURE',
+    }),
+    /không hợp lệ/i
+  );
 });
 
 test('build-lock recovery opens only once for the recorded private Next output lock', () => {

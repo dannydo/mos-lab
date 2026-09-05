@@ -4,6 +4,7 @@ import { formatBugReportKey } from '@mos-lab/shared';
 import {
   assertBugReportTransition,
   assertAgentProgressUpdateAllowed,
+  BugReportService,
   bugReportAgentProgress,
   bugReportClarificationWhere,
   bugReportCompletionPath,
@@ -281,6 +282,64 @@ test('serializes progress and next owner from one server-owned workflow projecti
       },
     }
   );
+});
+
+test('agent queue projects the latest durable implementation job for terminal and commit-review tickets', async () => {
+  const updatedAt = new Date('2026-09-05T01:00:00.000Z');
+  const report = (id: number, implementation: Record<string, unknown>) => ({
+    ...progressSource({ status: 'IN_PROGRESS', clarificationStatus: 'READY', updatedAt, startedAt: updatedAt }),
+    id,
+    requestType: 'FEATURE',
+    title: `Ticket ${id}`,
+    priority: 'P0',
+    sourcePath: '/dashboard/bk',
+    inboxImplementationJobs: [implementation],
+  });
+  const terminal = report(13, {
+    id: 'terminal-sequence-two',
+    status: 'FAILED',
+    executionPhase: 'FAILED',
+    progressLabel: null,
+    lastProgressAt: null,
+    progressCount: 1,
+    checkpointCount: 0,
+    failureCode: 'QUALITY_GATE_FAILED',
+    retrySequence: 2,
+    testsJson: JSON.stringify([{ status: 'FAILED', failureCode: 'SANDBOX_PORT_BINDING' }]),
+    changedFilesJson: '[]',
+    retainUntil: new Date('2026-09-19T01:00:00.000Z'),
+    startedAt: updatedAt,
+    completedAt: updatedAt,
+    updatedAt,
+  });
+  const review = report(14, {
+    id: 'review-ready',
+    status: 'AWAITING_COMMIT_REVIEW',
+    executionPhase: 'AWAITING_COMMIT_REVIEW',
+    progressLabel: null,
+    lastProgressAt: null,
+    progressCount: 1,
+    checkpointCount: 0,
+    failureCode: null,
+    retrySequence: 0,
+    testsJson: '[]',
+    changedFilesJson: '[]',
+    retainUntil: new Date('2026-10-05T01:00:00.000Z'),
+    startedAt: updatedAt,
+    completedAt: updatedAt,
+    updatedAt,
+  });
+  const fastify = {
+    prisma: { crm: { crmBugReport: { findMany: async () => [terminal, review] } } },
+  };
+
+  const queue = await BugReportService.agentQueue(fastify as never);
+  assert.equal(queue[0]?.agentProgress.stage, 'IMPLEMENTATION_FAILED');
+  assert.equal(queue[0]?.nextAction.actor, 'SYSTEM');
+  assert.equal(queue[0]?.nextAction.label, 'Đang chờ khắc phục cổng kiểm thử');
+  assert.notEqual(queue[0]?.nextAction.label, 'Quyết định retry');
+  assert.equal(queue[1]?.agentProgress.stage, 'AWAITING_DANNY_COMMIT_REVIEW');
+  assert.equal(queue[1]?.nextAction.type, 'REVIEW_COMMIT');
 });
 
 test('projects a plain-language reporter view without exposing operating gates', () => {
