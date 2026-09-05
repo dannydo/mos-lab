@@ -34,6 +34,11 @@ const SCHEMA_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_READONLY_DIAGNOSTIC_PASSED';
 const SCHEMA_RECOVERY_ROOT_CAUSE = 'STRICT_RESPONSE_SCHEMA_REQUIRED_FIELDS';
 const QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_VISUAL_QA_SELF_CHECK';
 const QUALITY_GATE_RECOVERY_ROOT_CAUSE = 'SANDBOX_PORT_BINDING';
+const LEGACY_WORKER_VISUAL_QA_FAILURE_CODE = 'WORKER_VISUAL_QA_FAILED';
+const LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE = 'LEGACY_WORKER_VISUAL_QA_FAILED';
+const LEGACY_WORKER_VISUAL_QA_COMMAND =
+  'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)';
+type QualityGateRecoveryRootCause = typeof QUALITY_GATE_RECOVERY_ROOT_CAUSE | typeof LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE;
 const execFileAsync = promisify(execFile);
 
 export function canRetryInboxImplementation(source: { status: string; retrySequence: number }): boolean {
@@ -219,14 +224,27 @@ export function canAuthorizeSchemaRecoveryRetry(
   }
 }
 
-function hasSandboxPortBindingEvidence(testsJson: string | null | undefined): boolean {
+function qualityGateRecoveryRootCause(testsJson: string | null | undefined): QualityGateRecoveryRootCause | null {
   try {
-    const tests = JSON.parse(testsJson || '[]') as Array<{ status?: unknown; failureCode?: unknown }>;
-    return Array.isArray(tests)
-      ? tests.some((test) => test?.status === 'FAILED' && test.failureCode === QUALITY_GATE_RECOVERY_ROOT_CAUSE)
-      : false;
+    const tests = JSON.parse(testsJson || '[]') as Array<{
+      status?: unknown;
+      failureCode?: unknown;
+      command?: unknown;
+    }>;
+    if (!Array.isArray(tests)) return null;
+    if (tests.some((test) => test?.status === 'FAILED' && test.failureCode === QUALITY_GATE_RECOVERY_ROOT_CAUSE)) {
+      return QUALITY_GATE_RECOVERY_ROOT_CAUSE;
+    }
+    return tests.some(
+      (test) =>
+        test?.status === 'FAILED' &&
+        test.failureCode === LEGACY_WORKER_VISUAL_QA_FAILURE_CODE &&
+        test.command === LEGACY_WORKER_VISUAL_QA_COMMAND
+    )
+      ? LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE
+      : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -246,12 +264,13 @@ export function canAuthorizeQualityGateRecoveryRetry(
   },
   diagnostic: { action: string; afterJson: string | null } | null | undefined
 ): boolean {
+  const rootCause = qualityGateRecoveryRootCause(source.testsJson);
   if (
     source.status !== 'FAILED' ||
     source.retrySequence !== MAX_DANNY_RETRY_SEQUENCE ||
     !source.failureCode ||
     !QUALITY_GATE_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode) ||
-    !hasSandboxPortBindingEvidence(source.testsJson) ||
+    !rootCause ||
     diagnostic?.action !== QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION
   ) {
     return false;
@@ -262,11 +281,7 @@ export function canAuthorizeQualityGateRecoveryRetry(
       rootCause?: unknown;
       selfCheck?: unknown;
     };
-    return (
-      evidence.jobId === source.id &&
-      evidence.rootCause === QUALITY_GATE_RECOVERY_ROOT_CAUSE &&
-      evidence.selfCheck === 'PASSED'
-    );
+    return evidence.jobId === source.id && evidence.rootCause === rootCause && evidence.selfCheck === 'PASSED';
   } catch {
     return false;
   }
@@ -1048,7 +1063,9 @@ export class InboxImplementationService {
    * job and have not yet received a trusted harness self-check. The worker
    * learns no ticket content from this queue.
    */
-  static async qualityGateRecoverySelfCheckCandidates(fastify: FastifyInstance): Promise<Array<{ id: string }>> {
+  static async qualityGateRecoverySelfCheckCandidates(
+    fastify: FastifyInstance
+  ): Promise<Array<{ id: string; rootCause: QualityGateRecoveryRootCause }>> {
     const jobs = await fastify.prisma.crm.crmInboxImplementationJob.findMany({
       where: {
         status: 'FAILED',
@@ -1072,25 +1089,28 @@ export class InboxImplementationService {
       },
       take: 8,
     });
-    return jobs
-      .filter(
-        (job) =>
-          job.report.implementationActiveJobId === job.id &&
-          hasSandboxPortBindingEvidence(job.testsJson) &&
-          !job.report.audits.some((audit) =>
-            canAuthorizeQualityGateRecoveryRetry(
-              {
-                id: job.id,
-                status: 'FAILED',
-                retrySequence: MAX_DANNY_RETRY_SEQUENCE,
-                failureCode: 'QUALITY_GATE_FAILED',
-                testsJson: job.testsJson,
-              },
-              audit
-            )
+    return jobs.flatMap((job) => {
+      const rootCause = qualityGateRecoveryRootCause(job.testsJson);
+      if (
+        job.report.implementationActiveJobId !== job.id ||
+        !rootCause ||
+        job.report.audits.some((audit) =>
+          canAuthorizeQualityGateRecoveryRetry(
+            {
+              id: job.id,
+              status: 'FAILED',
+              retrySequence: MAX_DANNY_RETRY_SEQUENCE,
+              failureCode: 'QUALITY_GATE_FAILED',
+              testsJson: job.testsJson,
+            },
+            audit
           )
-      )
-      .map((job) => ({ id: job.id }));
+        )
+      ) {
+        return [];
+      }
+      return [{ id: job.id, rootCause }];
+    });
   }
 
   /** Records sanitized proof from the trusted worker's private visual-QA harness. */
@@ -1100,7 +1120,7 @@ export class InboxImplementationService {
     raw: unknown
   ): Promise<boolean> {
     const result = raw && typeof raw === 'object' ? (raw as { selfCheck?: unknown; rootCause?: unknown }) : {};
-    if (result.selfCheck !== 'PASSED' || result.rootCause !== QUALITY_GATE_RECOVERY_ROOT_CAUSE) {
+    if (result.selfCheck !== 'PASSED') {
       throw new InboxImplementationError(
         'Chẩn đoán cổng kiểm thử không hợp lệ.',
         422,
@@ -1135,7 +1155,7 @@ export class InboxImplementationService {
       job.status !== 'FAILED' ||
       job.retrySequence !== MAX_DANNY_RETRY_SEQUENCE ||
       job.failureCode !== 'QUALITY_GATE_FAILED' ||
-      !hasSandboxPortBindingEvidence(job.testsJson)
+      !qualityGateRecoveryRootCause(job.testsJson)
     ) {
       throw new InboxImplementationError(
         'Chẩn đoán chỉ áp dụng cho đúng job quality gate sequence 2 bị chặn cổng sandbox.',
@@ -1143,9 +1163,17 @@ export class InboxImplementationService {
         'QUALITY_GATE_SELF_CHECK_NOT_ELIGIBLE'
       );
     }
+    const rootCause = qualityGateRecoveryRootCause(job.testsJson);
+    if (!rootCause || result.rootCause !== rootCause) {
+      throw new InboxImplementationError(
+        'Chẩn đoán cổng kiểm thử không khớp failure category đã ghi nhận.',
+        422,
+        'QUALITY_GATE_SELF_CHECK_INVALID'
+      );
+    }
     const evidence = JSON.stringify({
       jobId: job.id,
-      rootCause: QUALITY_GATE_RECOVERY_ROOT_CAUSE,
+      rootCause,
       selfCheck: 'PASSED',
       harness: 'private-synthetic-visual-qa-v1',
     });
@@ -1169,7 +1197,7 @@ export class InboxImplementationService {
         data: {
           reportId: job.reportId,
           action: QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION,
-          note: 'Worker đã xác minh private visual QA harness bằng hai session tổng hợp; cổng sandbox có thể chạy lại.',
+          note: 'Worker đã xác minh private visual QA harness bằng hai session tổng hợp; chỉ category QA đã ghi nhận có thể retry lại.',
           afterJson: evidence,
         },
       });

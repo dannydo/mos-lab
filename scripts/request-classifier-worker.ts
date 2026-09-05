@@ -2186,16 +2186,25 @@ async function runWorkerStep(kind: RequestClassifierWorkerJobKind, run: () => Pr
 }
 
 /**
- * A terminal sandbox-port failure is not retried automatically. The worker may
- * only add its audited diagnostic after its own private harness succeeds; the
- * separate Danny authorization remains the only operation that creates a job.
+ * A terminal known visual-QA failure is not retried automatically. The worker
+ * may only add its audited diagnostic after its own private harness succeeds;
+ * the separate Danny authorization remains the only operation that creates a job.
  */
 async function processQualityGateRecoverySelfChecks(): Promise<boolean> {
   const response = await workerFetch('/request-classifier/inbox-implementations/quality-gate-recovery-self-checks');
-  const payload = (await response.json()) as { data?: Array<{ id?: unknown }> };
+  const payload = (await response.json()) as {
+    data?: Array<{ id?: unknown; rootCause?: unknown }>;
+  };
   const candidates = (payload.data ?? [])
-    .map((candidate) => String(candidate?.id || '').trim())
-    .filter((id) => /^[a-f0-9-]{36}$/i.test(id));
+    .map((candidate) => ({
+      id: String(candidate?.id || '').trim(),
+      rootCause: candidate?.rootCause,
+    }))
+    .filter(
+      (candidate): candidate is { id: string; rootCause: 'SANDBOX_PORT_BINDING' | 'LEGACY_WORKER_VISUAL_QA_FAILED' } =>
+        /^[a-f0-9-]{36}$/i.test(candidate.id) &&
+        (candidate.rootCause === 'SANDBOX_PORT_BINDING' || candidate.rootCause === 'LEGACY_WORKER_VISUAL_QA_FAILED')
+    );
   if (!candidates.length) return false;
 
   const selfCheck = await runPrivateVisualQaSelfCheck(configuredWorkspace());
@@ -2205,10 +2214,10 @@ async function processQualityGateRecoverySelfChecks(): Promise<boolean> {
     );
     return false;
   }
-  for (const id of candidates) {
-    await workerFetch(`/request-classifier/inbox-implementations/${id}/quality-gate-recovery-self-check`, {
+  for (const candidate of candidates) {
+    await workerFetch(`/request-classifier/inbox-implementations/${candidate.id}/quality-gate-recovery-self-check`, {
       method: 'POST',
-      body: JSON.stringify({ selfCheck: 'PASSED', rootCause: 'SANDBOX_PORT_BINDING' }),
+      body: JSON.stringify({ selfCheck: 'PASSED', rootCause: candidate.rootCause }),
     });
   }
   console.log('Private visual QA self-check recorded for eligible terminal jobs.');

@@ -788,7 +788,56 @@ test('quality-gate recovery creates sequence three once after the matching priva
   );
 });
 
-test('records a private visual-QA self-check only for the active sequence-two sandbox failure', async () => {
+test('legacy worker-owned visual QA needs its exact command and matching audited self-check', () => {
+  const terminal = {
+    id: 'legacy-quality-gate-job',
+    status: 'FAILED',
+    retrySequence: 2,
+    failureCode: 'QUALITY_GATE_FAILED',
+    testsJson: JSON.stringify([
+      {
+        status: 'FAILED',
+        failureCode: 'WORKER_VISUAL_QA_FAILED',
+        command: 'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)',
+      },
+    ]),
+  };
+  const diagnostic = {
+    action: 'WORKER_VISUAL_QA_SELF_CHECK',
+    afterJson: JSON.stringify({
+      jobId: terminal.id,
+      rootCause: 'LEGACY_WORKER_VISUAL_QA_FAILED',
+      selfCheck: 'PASSED',
+    }),
+  };
+
+  assert.equal(canAuthorizeQualityGateRecoveryRetry(terminal, diagnostic), true);
+  assert.equal(
+    canAuthorizeQualityGateRecoveryRetry(
+      {
+        ...terminal,
+        testsJson: JSON.stringify([
+          { status: 'FAILED', failureCode: 'WORKER_VISUAL_QA_FAILED', command: 'Worker-owned Playwright visual QA' },
+        ]),
+      },
+      diagnostic
+    ),
+    false
+  );
+  assert.equal(
+    canAuthorizeQualityGateRecoveryRetry(terminal, {
+      ...diagnostic,
+      afterJson: JSON.stringify({
+        jobId: terminal.id,
+        rootCause: 'SANDBOX_PORT_BINDING',
+        selfCheck: 'PASSED',
+      }),
+    }),
+    false
+  );
+});
+
+test('records a private visual-QA self-check only for the active exact legacy worker-owned failure', async () => {
   const audits: Array<{ data: Record<string, unknown> }> = [];
   const job = {
     id: 'quality-gate-terminal-job',
@@ -796,7 +845,13 @@ test('records a private visual-QA self-check only for the active sequence-two sa
     status: 'FAILED',
     retrySequence: 2,
     failureCode: 'QUALITY_GATE_FAILED',
-    testsJson: JSON.stringify([{ status: 'FAILED', failureCode: 'SANDBOX_PORT_BINDING' }]),
+    testsJson: JSON.stringify([
+      {
+        status: 'FAILED',
+        failureCode: 'WORKER_VISUAL_QA_FAILED',
+        command: 'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)',
+      },
+    ]),
     report: { implementationActiveJobId: 'quality-gate-terminal-job', audits: [] },
   };
   const fastify = {
@@ -815,7 +870,7 @@ test('records a private visual-QA self-check only for the active sequence-two sa
   assert.equal(
     await InboxImplementationService.recordQualityGateRecoverySelfCheck(fastify as never, job.id, {
       selfCheck: 'PASSED',
-      rootCause: 'SANDBOX_PORT_BINDING',
+      rootCause: 'LEGACY_WORKER_VISUAL_QA_FAILED',
     }),
     true
   );
@@ -826,7 +881,7 @@ test('records a private visual-QA self-check only for the active sequence-two sa
       selfCheck: 'PASSED',
       rootCause: 'OTHER_FAILURE',
     }),
-    /không hợp lệ/i
+    /không khớp/i
   );
 });
 
