@@ -282,7 +282,7 @@ export default function SidebarNav({
     });
   }, []);
 
-  const selectedKey = getSelectedMenuKey(pathname, assignedStaffId, academySidebarCampaigns);
+  const selectedKey = getSelectedMenuKey(pathname, assignedStaffId, academySidebarCampaigns, searchParams.get('tab'));
   const sidebarGroups = getSidebarGroups(
     userRole,
     activeCampaigns,

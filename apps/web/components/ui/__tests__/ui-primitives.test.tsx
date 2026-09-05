@@ -187,6 +187,16 @@ describe('UI primitives', () => {
     expect(crmGroup?.items.some((item) => item.key === 'loca' && item.path === '/dashboard/loca')).toBe(true);
   });
 
+  it('keeps the direct Game BK entry selected when its BK workspace tab is open', () => {
+    const reportsGroup = getSidebarGroups('telesales').find((group) => group.groupKey === 'grp-reports');
+
+    expect(reportsGroup?.items.find((item) => item.key === 'bk-game')).toMatchObject({
+      label: 'Game BK',
+      path: '/dashboard/bk?tab=game',
+    });
+    expect(getSelectedMenuKey('/dashboard/bk', undefined, [], 'game')).toBe('bk-game');
+  });
+
   it('hides dynamic children together when their menu category is restricted', () => {
     const groups = getSidebarGroups(
       'telesales',
