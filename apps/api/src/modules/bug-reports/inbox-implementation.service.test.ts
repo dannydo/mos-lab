@@ -788,17 +788,18 @@ test('quality-gate recovery creates sequence three once after the matching priva
   );
 });
 
-test('legacy worker-owned visual QA needs its exact command and matching audited self-check', () => {
+test('the exact sequence-two Game BK manager assertion needs its matching audited self-check', () => {
   const terminal = {
     id: 'legacy-quality-gate-job',
     status: 'FAILED',
-    retrySequence: 3,
+    retrySequence: 2,
     failureCode: 'QUALITY_GATE_FAILED',
     testsJson: JSON.stringify([
       {
         status: 'FAILED',
-        failureCode: 'WORKER_VISUAL_QA_FAILED',
-        command: 'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)',
+        failureCode: 'PRIVATE_QA_MANAGER_ASSERTION_FAILED',
+        command:
+          'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game (private synthetic manager and participant sessions)',
       },
     ]),
   };
@@ -806,19 +807,58 @@ test('legacy worker-owned visual QA needs its exact command and matching audited
     action: 'WORKER_VISUAL_QA_SELF_CHECK',
     afterJson: JSON.stringify({
       jobId: terminal.id,
-      rootCause: 'LEGACY_WORKER_VISUAL_QA_FAILED',
+      rootCause: 'LEGACY_GAME_BK_PRIVATE_QA_MANAGER_ASSERTION_FAILED',
       selfCheck: 'PASSED',
     }),
   };
 
   assert.equal(canAuthorizeQualityGateRecoveryRetry(terminal, diagnostic), true);
-  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 2 }, diagnostic), false);
+  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 3 }, diagnostic), false);
   assert.equal(
     canAuthorizeQualityGateRecoveryRetry(
       {
         ...terminal,
         testsJson: JSON.stringify([
-          { status: 'FAILED', failureCode: 'WORKER_VISUAL_QA_FAILED', command: 'Worker-owned Playwright visual QA' },
+          {
+            status: 'FAILED',
+            failureCode: 'PRIVATE_QA_PARTICIPANT_ASSERTION_FAILED',
+            command:
+              'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game (private synthetic manager and participant sessions)',
+          },
+        ]),
+      },
+      diagnostic
+    ),
+    false
+  );
+  assert.equal(
+    canAuthorizeQualityGateRecoveryRetry(
+      {
+        ...terminal,
+        testsJson: JSON.stringify([
+          {
+            status: 'FAILED',
+            failureCode: 'PRIVATE_QA_MANAGER_ASSERTION_FAILED',
+            command: 'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game',
+          },
+        ]),
+      },
+      diagnostic
+    ),
+    false
+  );
+  assert.equal(
+    canAuthorizeQualityGateRecoveryRetry(
+      {
+        ...terminal,
+        testsJson: JSON.stringify([
+          {
+            status: 'FAILED',
+            failureCode: 'PRIVATE_QA_MANAGER_ASSERTION_FAILED',
+            command:
+              'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game (private synthetic manager and participant sessions)',
+          },
+          { status: 'FAILED', failureCode: 'TYPESCRIPT_ERROR', command: 'pnpm --filter @mos-lab/web typecheck' },
         ]),
       },
       diagnostic
@@ -838,19 +878,20 @@ test('legacy worker-owned visual QA needs its exact command and matching audited
   );
 });
 
-test('records a private visual-QA self-check only for the active exact legacy worker-owned failure', async () => {
+test('records a private visual-QA self-check only for the active exact Game BK manager assertion', async () => {
   const audits: Array<{ data: Record<string, unknown> }> = [];
   const job = {
     id: 'quality-gate-terminal-job',
     reportId: 16,
     status: 'FAILED',
-    retrySequence: 3,
+    retrySequence: 2,
     failureCode: 'QUALITY_GATE_FAILED',
     testsJson: JSON.stringify([
       {
         status: 'FAILED',
-        failureCode: 'WORKER_VISUAL_QA_FAILED',
-        command: 'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)',
+        failureCode: 'PRIVATE_QA_MANAGER_ASSERTION_FAILED',
+        command:
+          'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game (private synthetic manager and participant sessions)',
       },
     ]),
     report: { implementationActiveJobId: 'quality-gate-terminal-job', audits: [] },
@@ -871,7 +912,7 @@ test('records a private visual-QA self-check only for the active exact legacy wo
   assert.equal(
     await InboxImplementationService.recordQualityGateRecoverySelfCheck(fastify as never, job.id, {
       selfCheck: 'PASSED',
-      rootCause: 'LEGACY_WORKER_VISUAL_QA_FAILED',
+      rootCause: 'LEGACY_GAME_BK_PRIVATE_QA_MANAGER_ASSERTION_FAILED',
     }),
     true
   );
@@ -886,19 +927,32 @@ test('records a private visual-QA self-check only for the active exact legacy wo
   );
 });
 
-test('queues only the active sequence-three legacy visual-QA terminal job for a self-check', async () => {
+test('queues only the active sequence-two exact Game BK manager assertion for a self-check', async () => {
   let where: unknown;
   const job = {
     id: 'legacy-quality-gate-job',
-    retrySequence: 3,
+    retrySequence: 2,
     testsJson: JSON.stringify([
       {
         status: 'FAILED',
-        failureCode: 'WORKER_VISUAL_QA_FAILED',
-        command: 'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)',
+        failureCode: 'PRIVATE_QA_MANAGER_ASSERTION_FAILED',
+        command:
+          'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game (private synthetic manager and participant sessions)',
       },
     ]),
     report: { implementationActiveJobId: 'legacy-quality-gate-job', audits: [] },
+  };
+  const rejectedJob = {
+    ...job,
+    id: 'other-quality-gate-job',
+    testsJson: JSON.stringify([
+      {
+        status: 'FAILED',
+        failureCode: 'PRIVATE_QA_MANAGER_ASSERTION_FAILED',
+        command: 'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game',
+      },
+    ]),
+    report: { implementationActiveJobId: 'other-quality-gate-job', audits: [] },
   };
   const fastify = {
     prisma: {
@@ -906,7 +960,7 @@ test('queues only the active sequence-three legacy visual-QA terminal job for a 
         crmInboxImplementationJob: {
           findMany: async (input: { where: unknown }) => {
             where = input.where;
-            return [job];
+            return [job, rejectedJob];
           },
         },
       },
@@ -914,11 +968,11 @@ test('queues only the active sequence-three legacy visual-QA terminal job for a 
   };
 
   assert.deepEqual(await InboxImplementationService.qualityGateRecoverySelfCheckCandidates(fastify as never), [
-    { id: job.id, rootCause: 'LEGACY_WORKER_VISUAL_QA_FAILED' },
+    { id: job.id, rootCause: 'LEGACY_GAME_BK_PRIVATE_QA_MANAGER_ASSERTION_FAILED' },
   ]);
   assert.deepEqual(where, {
     status: 'FAILED',
-    retrySequence: { in: [2, 3] },
+    retrySequence: 2,
     failureCode: 'QUALITY_GATE_FAILED',
   });
 });

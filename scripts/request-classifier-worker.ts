@@ -2201,9 +2201,15 @@ async function processQualityGateRecoverySelfChecks(): Promise<boolean> {
       rootCause: candidate?.rootCause,
     }))
     .filter(
-      (candidate): candidate is { id: string; rootCause: 'SANDBOX_PORT_BINDING' | 'LEGACY_WORKER_VISUAL_QA_FAILED' } =>
+      (
+        candidate
+      ): candidate is {
+        id: string;
+        rootCause: 'SANDBOX_PORT_BINDING' | 'LEGACY_GAME_BK_PRIVATE_QA_MANAGER_ASSERTION_FAILED';
+      } =>
         /^[a-f0-9-]{36}$/i.test(candidate.id) &&
-        (candidate.rootCause === 'SANDBOX_PORT_BINDING' || candidate.rootCause === 'LEGACY_WORKER_VISUAL_QA_FAILED')
+        (candidate.rootCause === 'SANDBOX_PORT_BINDING' ||
+          candidate.rootCause === 'LEGACY_GAME_BK_PRIVATE_QA_MANAGER_ASSERTION_FAILED')
     );
   if (!candidates.length) return false;
 

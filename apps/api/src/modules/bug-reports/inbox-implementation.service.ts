@@ -34,12 +34,13 @@ const SCHEMA_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_READONLY_DIAGNOSTIC_PASSED';
 const SCHEMA_RECOVERY_ROOT_CAUSE = 'STRICT_RESPONSE_SCHEMA_REQUIRED_FIELDS';
 const QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_VISUAL_QA_SELF_CHECK';
 const QUALITY_GATE_RECOVERY_ROOT_CAUSE = 'SANDBOX_PORT_BINDING';
-const LEGACY_WORKER_VISUAL_QA_FAILURE_CODE = 'WORKER_VISUAL_QA_FAILED';
-const LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE = 'LEGACY_WORKER_VISUAL_QA_FAILED';
-const LEGACY_WORKER_VISUAL_QA_COMMAND =
-  'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)';
-type QualityGateRecoveryRootCause = typeof QUALITY_GATE_RECOVERY_ROOT_CAUSE | typeof LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE;
-const LEGACY_WORKER_VISUAL_QA_RETRY_SEQUENCE = MAX_DANNY_RETRY_SEQUENCE + 1;
+const LEGACY_GAME_BK_PRIVATE_QA_FAILURE_CODE = 'PRIVATE_QA_MANAGER_ASSERTION_FAILED';
+const LEGACY_GAME_BK_PRIVATE_QA_ROOT_CAUSE = 'LEGACY_GAME_BK_PRIVATE_QA_MANAGER_ASSERTION_FAILED';
+const LEGACY_GAME_BK_PRIVATE_QA_COMMAND =
+  'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game (private synthetic manager and participant sessions)';
+type QualityGateRecoveryRootCause =
+  typeof QUALITY_GATE_RECOVERY_ROOT_CAUSE | typeof LEGACY_GAME_BK_PRIVATE_QA_ROOT_CAUSE;
+const LEGACY_GAME_BK_PRIVATE_QA_RETRY_SEQUENCE = MAX_DANNY_RETRY_SEQUENCE;
 const execFileAsync = promisify(execFile);
 
 export function canRetryInboxImplementation(source: { status: string; retrySequence: number }): boolean {
@@ -236,13 +237,11 @@ function qualityGateRecoveryRootCause(testsJson: string | null | undefined): Qua
     if (tests.some((test) => test?.status === 'FAILED' && test.failureCode === QUALITY_GATE_RECOVERY_ROOT_CAUSE)) {
       return QUALITY_GATE_RECOVERY_ROOT_CAUSE;
     }
-    return tests.some(
-      (test) =>
-        test?.status === 'FAILED' &&
-        test.failureCode === LEGACY_WORKER_VISUAL_QA_FAILURE_CODE &&
-        test.command === LEGACY_WORKER_VISUAL_QA_COMMAND
-    )
-      ? LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE
+    const failedTests = tests.filter((test) => test?.status === 'FAILED');
+    return failedTests.length === 1 &&
+      failedTests[0]?.failureCode === LEGACY_GAME_BK_PRIVATE_QA_FAILURE_CODE &&
+      failedTests[0]?.command === LEGACY_GAME_BK_PRIVATE_QA_COMMAND
+      ? LEGACY_GAME_BK_PRIVATE_QA_ROOT_CAUSE
       : null;
   } catch {
     return null;
@@ -257,17 +256,20 @@ function qualityGateRecoveryRootCauseForRetrySequence(
   if (rootCause === QUALITY_GATE_RECOVERY_ROOT_CAUSE && retrySequence === MAX_DANNY_RETRY_SEQUENCE) {
     return rootCause;
   }
-  if (rootCause === LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE && retrySequence === LEGACY_WORKER_VISUAL_QA_RETRY_SEQUENCE) {
+  if (
+    rootCause === LEGACY_GAME_BK_PRIVATE_QA_ROOT_CAUSE &&
+    retrySequence === LEGACY_GAME_BK_PRIVATE_QA_RETRY_SEQUENCE
+  ) {
     return rootCause;
   }
   return null;
 }
 
 /**
- * This is an exceptional, single recovery for the exact visual-QA runner
- * failure. It does not reopen the general retry budget: the trusted worker
- * must first prove that its private harness can start Next and run both
- * synthetic role contexts for this same terminal job.
+ * This is an exceptional, single recovery for the exact Game BK private
+ * manager visual-QA failure. It does not reopen the general retry budget: the
+ * trusted worker must first prove that its private harness can start Next and
+ * run both synthetic role contexts for this same terminal job.
  */
 export function canAuthorizeQualityGateRecoveryRetry(
   source: {
@@ -1083,7 +1085,7 @@ export class InboxImplementationService {
     const jobs = await fastify.prisma.crm.crmInboxImplementationJob.findMany({
       where: {
         status: 'FAILED',
-        retrySequence: { in: [MAX_DANNY_RETRY_SEQUENCE, LEGACY_WORKER_VISUAL_QA_RETRY_SEQUENCE] },
+        retrySequence: MAX_DANNY_RETRY_SEQUENCE,
         failureCode: 'QUALITY_GATE_FAILED',
       },
       select: {

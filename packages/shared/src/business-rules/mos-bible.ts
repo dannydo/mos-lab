@@ -639,7 +639,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Inbox serialise progress và chủ nhân bước tiếp theo trong cùng một server workflow projection. Frontend chỉ render projection này; không được tự đổi chặng từ status, clarification hoặc cache cục bộ.',
       'Worker chỉ lưu bằng chứng vận hành đã lọc (pha, thời điểm tiến triển, số checkpoint), không lưu prompt, nội dung ticket hay stdout/stderr Codex. Sau 10 phút không có bằng chứng mới phải hiện cảnh báo; sau 20 phút không có bằng chứng mới phải dừng an toàn và giữ worktree.',
       'Một phiên code/test mặc định tối đa 45 phút. Khi còn có bằng chứng tiến triển, worker được tự tiếp tục đúng một chặng checkpoint trong cùng worktree và cùng approval; sau đó phải dừng an toàn để Danny quyết định. Không checkpoint nào cho phép commit, push, merge hoặc deploy tự động.',
-      'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Retry sau terminal failure chỉ có thể do Danny xác nhận riêng, tối đa hai retry cho cùng source/plan: mỗi retry tạo job/branch/worktree mới liên kết immutable với job terminal ngay trước đó, recheck approval/source/plan trước worktree, prelaunch và result, rồi dừng trước commit. Ngoại lệ duy nhất cho quality gate là job terminal sequence 2 có test `SANDBOX_PORT_BINDING`: Worker phải ghi self-check private visual QA PASSED trỏ đúng job, rồi Danny vẫn bấm retry riêng đúng một lần; không self-check nào tự tạo job. Restart chỉ reclaim lease stale khi không còn Codex PID đã đăng ký sống; worker preflight CLI thật trong môi trường launchd, quản lý process group và terminate group khi timeout/lease failure để không bỏ orphan. Recovery chỉ giữ nguyên active-job pointer khi nó trỏ đúng cùng job; pointer khác là hard stop. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
+      'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Retry sau terminal failure chỉ có thể do Danny xác nhận riêng, tối đa hai retry cho cùng source/plan: mỗi retry tạo job/branch/worktree mới liên kết immutable với job terminal ngay trước đó, recheck approval/source/plan trước worktree, prelaunch và result, rồi dừng trước commit. Ngoại lệ quality gate chỉ áp dụng cho job terminal sequence 2 có đúng một trong hai bằng chứng đã định danh: test `SANDBOX_PORT_BINDING`, hoặc test Game BK của Worker có đúng command private manager/participant và failure code `PRIVATE_QA_MANAGER_ASSERTION_FAILED`. Worker phải ghi self-check private visual QA PASSED với root cause chuẩn hóa trỏ đúng job, rồi Danny vẫn bấm retry riêng đúng một lần; không self-check nào tự tạo job. Mọi command, failure code, sequence hoặc category khác bị từ chối. Restart chỉ reclaim lease stale khi không còn Codex PID đã đăng ký sống; worker preflight CLI thật trong môi trường launchd, quản lý process group và terminate group khi timeout/lease failure để không bỏ orphan. Recovery chỉ giữ nguyên active-job pointer khi nó trỏ đúng cùng job; pointer khác là hard stop. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
     ],
     rationale:
       'Tự động hóa phải giảm thao tác lặp lại nhưng không được vượt qua cổng quyết định của Danny hay làm mất bằng chứng review trước commit/deploy.',
@@ -650,7 +650,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.18.0',
+    version: '1.19.0',
     effectiveFrom: '2026-09-05',
     sources: [
       {
@@ -663,7 +663,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       },
       { label: 'Outbound isolated-worktree worker', reference: 'scripts/request-classifier-worker.ts' },
       {
-        label: 'Private visual-QA recovery guard',
+        label: 'Exact Game BK private visual-QA recovery guard',
         reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
       },
     ],
