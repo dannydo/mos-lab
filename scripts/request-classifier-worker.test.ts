@@ -26,6 +26,7 @@ import {
   inboxImplementationFailureSummary,
   inboxImplementationSchema,
   inboxVisualQaSyntheticStorage,
+  privateVisualQaFailureCode,
   renewImplementationLeaseWithRetry,
   withWorkerOwnedVisualQaEvidence,
 } from './request-classifier-worker.js';
@@ -91,6 +92,17 @@ test('uses scoped synthetic storage for private visual QA without a production c
   assert.equal(JSON.parse(manager.mos_user).role, 'admin');
   assert.equal(JSON.parse(participant.mos_user).role, 'staff');
   assert.equal(manager.mos_testing_bot, 'true');
+});
+
+test('keeps private visual QA failure diagnostics fixed and scrubbed by phase', () => {
+  assert.equal(
+    privateVisualQaFailureCode('manager_navigation', new Error('Timeout 60000ms exceeded while loading private page')),
+    'PRIVATE_QA_MANAGER_NAVIGATION_FAILED'
+  );
+  assert.equal(
+    privateVisualQaFailureCode('server', new Error('PRIVATE_QA_SERVER_TIMEOUT')),
+    'PRIVATE_QA_SERVER_TIMEOUT'
+  );
 });
 
 test('adds worker-owned visual QA evidence only for changed web files and preserves model visual evidence', () => {

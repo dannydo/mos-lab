@@ -417,9 +417,57 @@ function terminateCodexProcessGroup(processId: number | null, child: ChildProces
   return () => undefined;
 }
 
-const PRIVATE_VISUAL_QA_TIMEOUT_MS = 45_000;
+// A private Next output starts cold on every check. Keep readiness and page
+// rendering budgets independent so the first architecture compilation cannot
+// create a false negative while the loopback server is otherwise healthy.
+const PRIVATE_VISUAL_QA_SERVER_TIMEOUT_MS = 90_000;
+const PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS = 60_000;
 
 type InboxVisualQaRole = 'manager' | 'participant';
+type PrivateVisualQaPhase =
+  | 'prepare'
+  | 'server'
+  | 'browser'
+  | 'manager_navigation'
+  | 'manager_assertion'
+  | 'manager_screenshot'
+  | 'participant_navigation'
+  | 'participant_assertion'
+  | 'participant_screenshot';
+export type PrivateVisualQaFailureCode =
+  | 'PRIVATE_QA_PNPM_UNAVAILABLE'
+  | 'PRIVATE_QA_PORT_UNAVAILABLE'
+  | 'PRIVATE_QA_SERVER_UNAVAILABLE'
+  | 'PRIVATE_QA_SERVER_EXITED'
+  | 'PRIVATE_QA_SERVER_TIMEOUT'
+  | 'PRIVATE_QA_PAGE_ERROR'
+  | 'PRIVATE_QA_PREPARE_FAILED'
+  | 'PRIVATE_QA_SERVER_FAILED'
+  | 'PRIVATE_QA_BROWSER_FAILED'
+  | 'PRIVATE_QA_MANAGER_NAVIGATION_FAILED'
+  | 'PRIVATE_QA_MANAGER_ASSERTION_FAILED'
+  | 'PRIVATE_QA_MANAGER_SCREENSHOT_FAILED'
+  | 'PRIVATE_QA_PARTICIPANT_NAVIGATION_FAILED'
+  | 'PRIVATE_QA_PARTICIPANT_ASSERTION_FAILED'
+  | 'PRIVATE_QA_PARTICIPANT_SCREENSHOT_FAILED';
+
+const PRIVATE_VISUAL_QA_EXACT_FAILURE_CODES = new Set<PrivateVisualQaFailureCode>([
+  'PRIVATE_QA_PNPM_UNAVAILABLE',
+  'PRIVATE_QA_PORT_UNAVAILABLE',
+  'PRIVATE_QA_SERVER_UNAVAILABLE',
+  'PRIVATE_QA_SERVER_EXITED',
+  'PRIVATE_QA_SERVER_TIMEOUT',
+  'PRIVATE_QA_PAGE_ERROR',
+]);
+
+/** Returns only fixed operational codes; raw browser/server errors stay local. */
+export function privateVisualQaFailureCode(phase: PrivateVisualQaPhase, error: unknown): PrivateVisualQaFailureCode {
+  const message = error instanceof Error ? error.message : '';
+  if (PRIVATE_VISUAL_QA_EXACT_FAILURE_CODES.has(message as PrivateVisualQaFailureCode)) {
+    return message as PrivateVisualQaFailureCode;
+  }
+  return `PRIVATE_QA_${phase.toUpperCase()}_FAILED` as PrivateVisualQaFailureCode;
+}
 
 export function inboxVisualQaSyntheticStorage(role: InboxVisualQaRole): Record<string, string> {
   const user =
@@ -481,7 +529,7 @@ async function reservePrivateLoopbackPort(): Promise<number> {
 }
 
 async function waitForPrivateVisualQaServer(url: string, child: ChildProcess): Promise<void> {
-  const deadline = Date.now() + PRIVATE_VISUAL_QA_TIMEOUT_MS;
+  const deadline = Date.now() + PRIVATE_VISUAL_QA_SERVER_TIMEOUT_MS;
   let exited = false;
   child.once('exit', () => {
     exited = true;
@@ -509,10 +557,12 @@ async function waitForPrivateVisualQaServer(url: string, child: ChildProcess): P
 export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
   passed: boolean;
   evidence: { managerScreenshotSha256: string; participantScreenshotSha256: string } | null;
+  failureCode?: PrivateVisualQaFailureCode;
 }> {
   let outputDirectory = '';
   let outputDirectoryPath = '';
   let server: ChildProcess | null = null;
+  let phase: PrivateVisualQaPhase = 'prepare';
   try {
     if (!isExecutablePath(PNPM_EXECUTABLE)) throw new Error('PRIVATE_QA_PNPM_UNAVAILABLE');
     const port = await reservePrivateLoopbackPort();
@@ -536,7 +586,9 @@ export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
     );
     if (!server.pid) throw new Error('PRIVATE_QA_SERVER_UNAVAILABLE');
     const baseUrl = `http://127.0.0.1:${port}`;
+    phase = 'server';
     await waitForPrivateVisualQaServer(`${baseUrl}/login`, server);
+    phase = 'browser';
     const browser = await chromium.launch({ headless: true });
     try {
       const runRole = async (role: InboxVisualQaRole): Promise<string> => {
@@ -561,20 +613,26 @@ export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
           const page = await context.newPage();
           const pageErrors: string[] = [];
           page.on('pageerror', () => pageErrors.push('pageerror'));
-          await page.goto(`${baseUrl}/dashboard/architecture`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+          phase = `${role}_navigation`;
+          await page.goto(`${baseUrl}/dashboard/architecture`, {
+            waitUntil: 'domcontentloaded',
+            timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS,
+          });
+          phase = `${role}_assertion`;
           if (role === 'manager') {
             await page.getByText('Sơ Đồ Kiến Trúc Knowledge Graph', { exact: false }).waitFor({
               state: 'visible',
-              timeout: 20_000,
+              timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS,
             });
           } else {
             await page.getByText('Chỉ Dành Cho Quản Trị Viên', { exact: false }).waitFor({
               state: 'visible',
-              timeout: 20_000,
+              timeout: PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS,
             });
           }
           if (pageErrors.length) throw new Error('PRIVATE_QA_PAGE_ERROR');
           // The screenshot stays in memory; only a non-reversible digest is retained as evidence.
+          phase = `${role}_screenshot`;
           const screenshot = await page.screenshot({ type: 'png', fullPage: false, scale: 'css' });
           return createHash('sha256').update(screenshot).digest('hex');
         } finally {
@@ -587,8 +645,8 @@ export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
     } finally {
       await browser.close();
     }
-  } catch {
-    return { passed: false, evidence: null };
+  } catch (error) {
+    return { passed: false, evidence: null, failureCode: privateVisualQaFailureCode(phase, error) };
   } finally {
     if (server) {
       const cancelEscalation = terminateCodexProcessGroup(server.pid ?? null, server);
@@ -2069,7 +2127,9 @@ async function processQualityGateRecoverySelfChecks(): Promise<boolean> {
 
   const selfCheck = await runPrivateVisualQaSelfCheck(configuredWorkspace());
   if (!selfCheck.passed) {
-    console.log('Private visual QA self-check did not pass; no recovery retry was enabled.');
+    console.log(
+      `Private visual QA self-check did not pass code=${selfCheck.failureCode ?? 'PRIVATE_QA_PREPARE_FAILED'}; no recovery retry was enabled.`
+    );
     return false;
   }
   for (const id of candidates) {
