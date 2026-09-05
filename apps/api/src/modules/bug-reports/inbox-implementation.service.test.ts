@@ -792,7 +792,7 @@ test('legacy worker-owned visual QA needs its exact command and matching audited
   const terminal = {
     id: 'legacy-quality-gate-job',
     status: 'FAILED',
-    retrySequence: 2,
+    retrySequence: 3,
     failureCode: 'QUALITY_GATE_FAILED',
     testsJson: JSON.stringify([
       {
@@ -812,6 +812,7 @@ test('legacy worker-owned visual QA needs its exact command and matching audited
   };
 
   assert.equal(canAuthorizeQualityGateRecoveryRetry(terminal, diagnostic), true);
+  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 2 }, diagnostic), false);
   assert.equal(
     canAuthorizeQualityGateRecoveryRetry(
       {
@@ -843,7 +844,7 @@ test('records a private visual-QA self-check only for the active exact legacy wo
     id: 'quality-gate-terminal-job',
     reportId: 16,
     status: 'FAILED',
-    retrySequence: 2,
+    retrySequence: 3,
     failureCode: 'QUALITY_GATE_FAILED',
     testsJson: JSON.stringify([
       {
@@ -883,6 +884,43 @@ test('records a private visual-QA self-check only for the active exact legacy wo
     }),
     /không khớp/i
   );
+});
+
+test('queues only the active sequence-three legacy visual-QA terminal job for a self-check', async () => {
+  let where: unknown;
+  const job = {
+    id: 'legacy-quality-gate-job',
+    retrySequence: 3,
+    testsJson: JSON.stringify([
+      {
+        status: 'FAILED',
+        failureCode: 'WORKER_VISUAL_QA_FAILED',
+        command: 'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)',
+      },
+    ]),
+    report: { implementationActiveJobId: 'legacy-quality-gate-job', audits: [] },
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findMany: async (input: { where: unknown }) => {
+            where = input.where;
+            return [job];
+          },
+        },
+      },
+    },
+  };
+
+  assert.deepEqual(await InboxImplementationService.qualityGateRecoverySelfCheckCandidates(fastify as never), [
+    { id: job.id, rootCause: 'LEGACY_WORKER_VISUAL_QA_FAILED' },
+  ]);
+  assert.deepEqual(where, {
+    status: 'FAILED',
+    retrySequence: { in: [2, 3] },
+    failureCode: 'QUALITY_GATE_FAILED',
+  });
 });
 
 test('build-lock recovery opens only once for the recorded private Next output lock', () => {

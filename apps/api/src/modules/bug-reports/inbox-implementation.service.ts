@@ -39,6 +39,7 @@ const LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE = 'LEGACY_WORKER_VISUAL_QA_FAILED';
 const LEGACY_WORKER_VISUAL_QA_COMMAND =
   'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)';
 type QualityGateRecoveryRootCause = typeof QUALITY_GATE_RECOVERY_ROOT_CAUSE | typeof LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE;
+const LEGACY_WORKER_VISUAL_QA_RETRY_SEQUENCE = MAX_DANNY_RETRY_SEQUENCE + 1;
 const execFileAsync = promisify(execFile);
 
 export function canRetryInboxImplementation(source: { status: string; retrySequence: number }): boolean {
@@ -248,6 +249,20 @@ function qualityGateRecoveryRootCause(testsJson: string | null | undefined): Qua
   }
 }
 
+function qualityGateRecoveryRootCauseForRetrySequence(
+  retrySequence: number,
+  testsJson: string | null | undefined
+): QualityGateRecoveryRootCause | null {
+  const rootCause = qualityGateRecoveryRootCause(testsJson);
+  if (rootCause === QUALITY_GATE_RECOVERY_ROOT_CAUSE && retrySequence === MAX_DANNY_RETRY_SEQUENCE) {
+    return rootCause;
+  }
+  if (rootCause === LEGACY_WORKER_VISUAL_QA_ROOT_CAUSE && retrySequence === LEGACY_WORKER_VISUAL_QA_RETRY_SEQUENCE) {
+    return rootCause;
+  }
+  return null;
+}
+
 /**
  * This is an exceptional, single recovery for the exact visual-QA runner
  * failure. It does not reopen the general retry budget: the trusted worker
@@ -264,10 +279,9 @@ export function canAuthorizeQualityGateRecoveryRetry(
   },
   diagnostic: { action: string; afterJson: string | null } | null | undefined
 ): boolean {
-  const rootCause = qualityGateRecoveryRootCause(source.testsJson);
+  const rootCause = qualityGateRecoveryRootCauseForRetrySequence(source.retrySequence, source.testsJson);
   if (
     source.status !== 'FAILED' ||
-    source.retrySequence !== MAX_DANNY_RETRY_SEQUENCE ||
     !source.failureCode ||
     !QUALITY_GATE_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode) ||
     !rootCause ||
@@ -1069,11 +1083,12 @@ export class InboxImplementationService {
     const jobs = await fastify.prisma.crm.crmInboxImplementationJob.findMany({
       where: {
         status: 'FAILED',
-        retrySequence: MAX_DANNY_RETRY_SEQUENCE,
+        retrySequence: { in: [MAX_DANNY_RETRY_SEQUENCE, LEGACY_WORKER_VISUAL_QA_RETRY_SEQUENCE] },
         failureCode: 'QUALITY_GATE_FAILED',
       },
       select: {
         id: true,
+        retrySequence: true,
         testsJson: true,
         report: {
           select: {
@@ -1090,7 +1105,7 @@ export class InboxImplementationService {
       take: 8,
     });
     return jobs.flatMap((job) => {
-      const rootCause = qualityGateRecoveryRootCause(job.testsJson);
+      const rootCause = qualityGateRecoveryRootCauseForRetrySequence(job.retrySequence, job.testsJson);
       if (
         job.report.implementationActiveJobId !== job.id ||
         !rootCause ||
@@ -1099,7 +1114,7 @@ export class InboxImplementationService {
             {
               id: job.id,
               status: 'FAILED',
-              retrySequence: MAX_DANNY_RETRY_SEQUENCE,
+              retrySequence: job.retrySequence,
               failureCode: 'QUALITY_GATE_FAILED',
               testsJson: job.testsJson,
             },
@@ -1153,17 +1168,16 @@ export class InboxImplementationService {
       !job ||
       job.report.implementationActiveJobId !== job.id ||
       job.status !== 'FAILED' ||
-      job.retrySequence !== MAX_DANNY_RETRY_SEQUENCE ||
       job.failureCode !== 'QUALITY_GATE_FAILED' ||
-      !qualityGateRecoveryRootCause(job.testsJson)
+      !qualityGateRecoveryRootCauseForRetrySequence(job.retrySequence, job.testsJson)
     ) {
       throw new InboxImplementationError(
-        'Chẩn đoán chỉ áp dụng cho đúng job quality gate sequence 2 bị chặn cổng sandbox.',
+        'Chẩn đoán chỉ áp dụng cho đúng job quality gate đã ghi nhận category recovery.',
         409,
         'QUALITY_GATE_SELF_CHECK_NOT_ELIGIBLE'
       );
     }
-    const rootCause = qualityGateRecoveryRootCause(job.testsJson);
+    const rootCause = qualityGateRecoveryRootCauseForRetrySequence(job.retrySequence, job.testsJson);
     if (!rootCause || result.rootCause !== rootCause) {
       throw new InboxImplementationError(
         'Chẩn đoán cổng kiểm thử không khớp failure category đã ghi nhận.',
