@@ -13,6 +13,7 @@ import {
   ClockCircleOutlined,
   BarChartOutlined,
   MoreOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons';
 import { Settings2 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
@@ -55,6 +56,14 @@ const BkRevenueTab = dynamic(() => import('./components/BkRevenueTab'), {
   ),
 });
 const BkThuNhapTab = dynamic(() => import('./components/BkThuNhapTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
+const BkGameTab = dynamic(() => import('./components/BkGameTab'), {
   ssr: false,
   loading: () => (
     <div className="p-8 text-center">
@@ -115,7 +124,7 @@ export default function BkDashboardPage() {
 
       if (
         initialTab &&
-        ['booking', 'done', 'tip', 'revenue', 'thunhap', 'history-30d', 'alloc-audit'].includes(initialTab)
+        ['booking', 'done', 'tip', 'revenue', 'thunhap', 'game', 'history-30d', 'alloc-audit'].includes(initialTab)
       ) {
         setActiveTab(initialTab);
       }
@@ -237,6 +246,12 @@ export default function BkDashboardPage() {
             comparisonMode={viewMode}
           />
         ) : null,
+    },
+    {
+      key: 'game',
+      icon: <TrophyOutlined />,
+      label: 'Game BK',
+      children: activeTab === 'game' ? <BkGameTab dateRange={dateRange} comparisonMode={viewMode} /> : null,
     },
   ];
 
