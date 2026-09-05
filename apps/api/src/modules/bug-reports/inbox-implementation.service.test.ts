@@ -788,11 +788,11 @@ test('quality-gate recovery creates sequence three once after the matching priva
   );
 });
 
-test('the exact sequence-two Game BK manager assertion needs its matching audited self-check', () => {
+test('the exact sequence-four Game BK manager assertion needs its matching audited self-check', () => {
   const terminal = {
     id: 'legacy-quality-gate-job',
     status: 'FAILED',
-    retrySequence: 2,
+    retrySequence: 4,
     failureCode: 'QUALITY_GATE_FAILED',
     testsJson: JSON.stringify([
       {
@@ -813,6 +813,7 @@ test('the exact sequence-two Game BK manager assertion needs its matching audite
   };
 
   assert.equal(canAuthorizeQualityGateRecoveryRetry(terminal, diagnostic), true);
+  assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 2 }, diagnostic), false);
   assert.equal(canAuthorizeQualityGateRecoveryRetry({ ...terminal, retrySequence: 3 }, diagnostic), false);
   assert.equal(
     canAuthorizeQualityGateRecoveryRetry(
@@ -878,13 +879,13 @@ test('the exact sequence-two Game BK manager assertion needs its matching audite
   );
 });
 
-test('records a private visual-QA self-check only for the active exact Game BK manager assertion', async () => {
+test('records a private visual-QA self-check only for the active exact sequence-four Game BK manager assertion', async () => {
   const audits: Array<{ data: Record<string, unknown> }> = [];
   const job = {
     id: 'quality-gate-terminal-job',
     reportId: 16,
     status: 'FAILED',
-    retrySequence: 2,
+    retrySequence: 4,
     failureCode: 'QUALITY_GATE_FAILED',
     testsJson: JSON.stringify([
       {
@@ -927,11 +928,11 @@ test('records a private visual-QA self-check only for the active exact Game BK m
   );
 });
 
-test('queues only the active sequence-two exact Game BK manager assertion for a self-check', async () => {
+test('queues only the active sequence-four exact Game BK manager assertion for a self-check', async () => {
   let where: unknown;
   const job = {
     id: 'legacy-quality-gate-job',
-    retrySequence: 2,
+    retrySequence: 4,
     testsJson: JSON.stringify([
       {
         status: 'FAILED',
@@ -972,7 +973,7 @@ test('queues only the active sequence-two exact Game BK manager assertion for a 
   ]);
   assert.deepEqual(where, {
     status: 'FAILED',
-    retrySequence: 2,
+    retrySequence: { in: [2, 4] },
     failureCode: 'QUALITY_GATE_FAILED',
   });
 });

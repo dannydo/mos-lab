@@ -40,7 +40,7 @@ const LEGACY_GAME_BK_PRIVATE_QA_COMMAND =
   'Worker-owned Playwright Game BK visual QA at /dashboard/bk?tab=game (private synthetic manager and participant sessions)';
 type QualityGateRecoveryRootCause =
   typeof QUALITY_GATE_RECOVERY_ROOT_CAUSE | typeof LEGACY_GAME_BK_PRIVATE_QA_ROOT_CAUSE;
-const LEGACY_GAME_BK_PRIVATE_QA_RETRY_SEQUENCE = MAX_DANNY_RETRY_SEQUENCE;
+const LEGACY_GAME_BK_PRIVATE_QA_RETRY_SEQUENCE = 4;
 const execFileAsync = promisify(execFile);
 
 export function canRetryInboxImplementation(source: { status: string; retrySequence: number }): boolean {
@@ -1085,7 +1085,7 @@ export class InboxImplementationService {
     const jobs = await fastify.prisma.crm.crmInboxImplementationJob.findMany({
       where: {
         status: 'FAILED',
-        retrySequence: MAX_DANNY_RETRY_SEQUENCE,
+        retrySequence: { in: [MAX_DANNY_RETRY_SEQUENCE, LEGACY_GAME_BK_PRIVATE_QA_RETRY_SEQUENCE] },
         failureCode: 'QUALITY_GATE_FAILED',
       },
       select: {
