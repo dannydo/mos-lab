@@ -1,10 +1,11 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process';
 import { execFile } from 'node:child_process';
 import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
 import { chmod, lstat, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import { readdir } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
+import { createServer } from 'node:net';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -20,6 +21,7 @@ import type { InboxFollowUpWorkerJob, InboxFollowUpWorkerResult } from '@mos-lab
 import type { InboxPlanWorkerJob, InboxPlanWorkerResult } from '@mos-lab/shared';
 import type { InboxImplementationWorkerJob, InboxImplementationWorkerResult } from '@mos-lab/shared';
 import { classifyDeploymentLane } from '@mos-lab/shared';
+import { chromium } from 'playwright';
 import WebSocket from 'ws';
 
 const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
@@ -413,6 +415,191 @@ function terminateCodexProcessGroup(processId: number | null, child: ChildProces
   }
   child.kill('SIGTERM');
   return () => undefined;
+}
+
+const PRIVATE_VISUAL_QA_TIMEOUT_MS = 45_000;
+
+type InboxVisualQaRole = 'manager' | 'participant';
+
+export function inboxVisualQaSyntheticStorage(role: InboxVisualQaRole): Record<string, string> {
+  const user =
+    role === 'manager'
+      ? {
+          id: -71001,
+          username: 'inbox-qa-manager',
+          email: 'inbox-qa-manager@invalid.test',
+          displayName: 'Inbox QA Manager',
+          role: 'admin',
+        }
+      : {
+          id: -71002,
+          username: 'inbox-qa-participant',
+          email: 'inbox-qa-participant@invalid.test',
+          displayName: 'Inbox QA Participant',
+          role: 'staff',
+        };
+  return {
+    // This is a fixture marker, never a JWT or a copied production cookie.
+    mos_token: `inbox-qa-synthetic-${role}-v1`,
+    mos_user: JSON.stringify(user),
+    mos_theme: 'light',
+    mos_testing_bot: 'true',
+  };
+}
+
+function syntheticVisualQaApiResponse(pathname: string, role: InboxVisualQaRole): unknown {
+  const user = JSON.parse(inboxVisualQaSyntheticStorage(role).mos_user);
+  if (pathname.endsWith('/auth/me')) return user;
+  if (pathname.endsWith('/menu-access/sidebar-visibility')) {
+    return { data: { visibility: {}, categoryVisibility: {} } };
+  }
+  if (pathname.endsWith('/academy-sales/access')) return { data: { canAccess: false } };
+  if (pathname.endsWith('/academy-sales/campaigns/sidebar')) return [];
+  if (pathname.endsWith('/campaigns')) return { items: [] };
+  if (pathname.endsWith('/bug-reports/mine')) {
+    return { data: [], notifications: [], unreadCount: 0, actionRequiredCount: 0 };
+  }
+  if (pathname.endsWith('/bug-reports')) return { summary: { readyForDannyCount: 0 }, data: [] };
+  if (pathname.endsWith('/release')) return { deployedAt: null };
+  return {};
+}
+
+async function reservePrivateLoopbackPort(): Promise<number> {
+  return new Promise((resolvePort, reject) => {
+    const reservation = createServer();
+    reservation.once('error', reject);
+    reservation.listen(0, '127.0.0.1', () => {
+      const address = reservation.address();
+      if (!address || typeof address === 'string') {
+        reservation.close();
+        reject(new Error('PRIVATE_QA_PORT_UNAVAILABLE'));
+        return;
+      }
+      reservation.close((error) => (error ? reject(error) : resolvePort(address.port)));
+    });
+  });
+}
+
+async function waitForPrivateVisualQaServer(url: string, child: ChildProcess): Promise<void> {
+  const deadline = Date.now() + PRIVATE_VISUAL_QA_TIMEOUT_MS;
+  let exited = false;
+  child.once('exit', () => {
+    exited = true;
+  });
+  while (Date.now() < deadline) {
+    if (exited) throw new Error('PRIVATE_QA_SERVER_EXITED');
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(1_000) });
+      if (response.ok) return;
+    } catch {
+      // Next can need a few seconds to initialize a fresh private output directory.
+    }
+    await new Promise<void>((resolveWait) => setTimeout(resolveWait, 250));
+  }
+  throw new Error('PRIVATE_QA_SERVER_TIMEOUT');
+}
+
+/**
+ * This starts Next from the trusted worker process, after Codex has finished
+ * and outside Codex's workspace-write sandbox. It intentionally uses a fresh
+ * loopback port, a private per-job output directory, two synthetic
+ * storage-only sessions, and request fixtures. No production token, cookie,
+ * API response, or screenshot leaves this function.
+ */
+export async function runPrivateVisualQaSelfCheck(workspace: string): Promise<{
+  passed: boolean;
+  evidence: { managerScreenshotSha256: string; participantScreenshotSha256: string } | null;
+}> {
+  let outputDirectory = '';
+  let outputDirectoryPath = '';
+  let server: ChildProcess | null = null;
+  try {
+    if (!isExecutablePath(PNPM_EXECUTABLE)) throw new Error('PRIVATE_QA_PNPM_UNAVAILABLE');
+    const port = await reservePrivateLoopbackPort();
+    outputDirectory = `.next-inbox-private-qa-${randomUUID().replace(/-/g, '').slice(0, 16)}`;
+    outputDirectoryPath = join(workspace, 'apps', 'web', outputDirectory);
+    server = spawn(
+      PNPM_EXECUTABLE,
+      ['--filter', '@mos-lab/web', 'exec', 'next', 'dev', '--hostname', '127.0.0.1', '--port', String(port)],
+      {
+        cwd: workspace,
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+        env: {
+          ...process.env,
+          NEXT_DIST_DIR: outputDirectory,
+          NEXT_PUBLIC_API_URL: '/api',
+          MOS_NEXT_BUILD_COMPILER: 'webpack',
+        },
+      }
+    );
+    if (!server.pid) throw new Error('PRIVATE_QA_SERVER_UNAVAILABLE');
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await waitForPrivateVisualQaServer(`${baseUrl}/login`, server);
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const runRole = async (role: InboxVisualQaRole): Promise<string> => {
+        const context = await browser.newContext({
+          viewport: { width: 1440, height: 960 },
+          deviceScaleFactor: 1,
+          reducedMotion: 'reduce',
+        });
+        try {
+          const storage = inboxVisualQaSyntheticStorage(role);
+          await context.addInitScript((values) => {
+            Object.entries(values).forEach(([key, value]) => localStorage.setItem(key, value));
+          }, storage);
+          await context.route('**/api/**', async (route) => {
+            const pathname = new URL(route.request().url()).pathname;
+            await route.fulfill({
+              status: 200,
+              contentType: 'application/json',
+              body: JSON.stringify(syntheticVisualQaApiResponse(pathname, role)),
+            });
+          });
+          const page = await context.newPage();
+          const pageErrors: string[] = [];
+          page.on('pageerror', () => pageErrors.push('pageerror'));
+          await page.goto(`${baseUrl}/dashboard/architecture`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+          if (role === 'manager') {
+            await page.getByText('Sơ Đồ Kiến Trúc Knowledge Graph', { exact: false }).waitFor({
+              state: 'visible',
+              timeout: 20_000,
+            });
+          } else {
+            await page.getByText('Chỉ Dành Cho Quản Trị Viên', { exact: false }).waitFor({
+              state: 'visible',
+              timeout: 20_000,
+            });
+          }
+          if (pageErrors.length) throw new Error('PRIVATE_QA_PAGE_ERROR');
+          // The screenshot stays in memory; only a non-reversible digest is retained as evidence.
+          const screenshot = await page.screenshot({ type: 'png', fullPage: false, scale: 'css' });
+          return createHash('sha256').update(screenshot).digest('hex');
+        } finally {
+          await context.close();
+        }
+      };
+      const managerScreenshotSha256 = await runRole('manager');
+      const participantScreenshotSha256 = await runRole('participant');
+      return { passed: true, evidence: { managerScreenshotSha256, participantScreenshotSha256 } };
+    } finally {
+      await browser.close();
+    }
+  } catch {
+    return { passed: false, evidence: null };
+  } finally {
+    if (server) {
+      const cancelEscalation = terminateCodexProcessGroup(server.pid ?? null, server);
+      // A pnpm parent can close before its detached Next child has flushed its
+      // output. Let the process-group grace/escalation finish before deleting
+      // the private directory, otherwise the child can recreate it after rm.
+      await new Promise<void>((resolveStopped) => setTimeout(resolveStopped, CODEX_STOP_GRACE_MS + 250));
+      cancelEscalation();
+    }
+    if (outputDirectoryPath) await rm(outputDirectoryPath, { recursive: true, force: true }).catch(() => undefined);
+  }
 }
 
 export function isCodexImplementationHelpCompatible(help: string): boolean {
@@ -1322,6 +1509,35 @@ export function parseCodexInboxImplementation(stdout: string): InboxImplementati
   throw new Error('Invalid implementation JSON.');
 }
 
+export function withWorkerOwnedVisualQaEvidence(
+  result: InboxImplementationWorkerResult,
+  changedFiles: readonly string[],
+  visualQa: { passed: boolean }
+): InboxImplementationWorkerResult {
+  if (!changedFiles.some((file) => file.startsWith('apps/web/'))) return result;
+  const command = 'Worker-owned Playwright visual QA (private synthetic manager and participant sessions)';
+  const hasModelVisualEvidence = result.tests.some((test) =>
+    /(visual|screenshot|snapshot|tohavescreenshot)/i.test(test.command)
+  );
+  // Do not replace a model-reported visual failure: that would weaken the
+  // server gate. New jobs are instructed to omit this worker-owned evidence.
+  if (hasModelVisualEvidence) return result;
+  return {
+    ...result,
+    tests: [
+      ...result.tests,
+      visualQa.passed
+        ? { command, status: 'PASSED' as const }
+        : {
+            command,
+            status: 'FAILED' as const,
+            failureCode: 'WORKER_VISUAL_QA_FAILED',
+            failureSummary: 'Private visual QA harness không hoàn tất nên quality gate giữ commit và deploy bị chặn.',
+          },
+    ],
+  };
+}
+
 async function processInboxImplementationOne(): Promise<boolean> {
   const { workerId } = configuration();
   let phase = 'preflight';
@@ -1480,7 +1696,7 @@ async function processInboxImplementationOne(): Promise<boolean> {
       'Work only in the current isolated worktree. Implement only the approved scope. Follow repository instructions.',
       'This is an implementation job, not a planning job. You must make at least one reviewable source-code change that delivers an approved slice. Do not stop after writing a proposal, plan, analysis, or documentation-only file. If the approved scope cannot be safely implemented, return a FAILED test with a safe explanation instead of claiming completion.',
       'You may edit code and run focused tests only. Do not run git commit, git push, merge, deploy, migrations, process managers, network administration, or modify files outside this worktree.',
-      'If you change user-visible files under apps/web, run a real Playwright visual/screenshot QA for the approved viewport or zoom behavior. Report it as PASSED only when that command truly passed; otherwise report FAILED or NOT_RUN. For a packaging-only change outside apps/web, omit visual QA from tests entirely. A DOM-only check is not visual QA.',
+      'If you change user-visible files under apps/web, do not start Next or Playwright yourself. After your structured result, the trusted worker runs a private real-browser harness outside this sandbox with synthetic manager/participant storage and injects its own visual-QA evidence. Omit visual QA from your tests; for a packaging-only change outside apps/web, omit visual QA entirely. A DOM-only check is not visual QA.',
       'The worker has set NEXT_DIST_DIR to a private per-job directory. Keep that environment for every web build; do not override it or build into the shared default .next directory.',
       'For every FAILED test, include a short failureCode and a user-safe failureSummary identifying the first failing condition. Never paste raw logs, credentials, ticket text, or absolute paths; this summary is retained on the ticket before retry is allowed.',
       'Report only final verification evidence in tests. If you fix formatting, a local configuration issue, or another intermediate condition in the same worktree and the final rerun passes, omit the earlier transient failure entirely. Do not use SUPERSEDED for it: SUPERSEDED is reserved only for the archive diagnostics stated below.',
@@ -1635,9 +1851,17 @@ async function processInboxImplementationOne(): Promise<boolean> {
       throw new CodexCliError('FORBIDDEN_GIT_MUTATION');
     }
     const output = await readFile(outputPath(), 'utf8');
-    const result = parseCodexInboxImplementation(output);
+    let result = parseCodexInboxImplementation(output);
     phase = 'artifacts';
     const artifacts = await implementationDiffArtifacts(worktreePath);
+    if (artifacts.changedFiles.some((file) => file.startsWith('apps/web/'))) {
+      phase = 'private_visual_qa';
+      result = withWorkerOwnedVisualQaEvidence(
+        result,
+        artifacts.changedFiles,
+        await runPrivateVisualQaSelfCheck(worktreePath)
+      );
+    }
     phase = 'complete';
     await workerFetch(`/request-classifier/inbox-implementations/${job.id}/complete`, {
       method: 'POST',
@@ -1830,11 +2054,40 @@ async function runWorkerStep(kind: RequestClassifierWorkerJobKind, run: () => Pr
   }
 }
 
+/**
+ * A terminal sandbox-port failure is not retried automatically. The worker may
+ * only add its audited diagnostic after its own private harness succeeds; the
+ * separate Danny authorization remains the only operation that creates a job.
+ */
+async function processQualityGateRecoverySelfChecks(): Promise<boolean> {
+  const response = await workerFetch('/request-classifier/inbox-implementations/quality-gate-recovery-self-checks');
+  const payload = (await response.json()) as { data?: Array<{ id?: unknown }> };
+  const candidates = (payload.data ?? [])
+    .map((candidate) => String(candidate?.id || '').trim())
+    .filter((id) => /^[a-f0-9-]{36}$/i.test(id));
+  if (!candidates.length) return false;
+
+  const selfCheck = await runPrivateVisualQaSelfCheck(configuredWorkspace());
+  if (!selfCheck.passed) {
+    console.log('Private visual QA self-check did not pass; no recovery retry was enabled.');
+    return false;
+  }
+  for (const id of candidates) {
+    await workerFetch(`/request-classifier/inbox-implementations/${id}/quality-gate-recovery-self-check`, {
+      method: 'POST',
+      body: JSON.stringify({ selfCheck: 'PASSED', rootCause: 'SANDBOX_PORT_BINDING' }),
+    });
+  }
+  console.log('Private visual QA self-check recorded for eligible terminal jobs.');
+  return true;
+}
+
 async function drain(): Promise<void> {
   if (draining) return;
   draining = true;
   try {
     while (
+      (await runWorkerStep('INBOX_IMPLEMENTATION', processQualityGateRecoverySelfChecks)) ||
       (await runWorkerStep('CLASSIFICATION', processOne)) ||
       (await runWorkerStep('CONVERSATION', processConversationOne)) ||
       (await runWorkerStep('INBOX_FOLLOW_UP', processInboxFollowUpOne)) ||

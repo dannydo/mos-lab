@@ -32,6 +32,8 @@ const QUALITY_GATE_RECOVERY_RETRY_FAILURE_CODES = new Set(['QUALITY_GATE_FAILED'
 const BUILD_LOCK_RECOVERY_RETRY_FAILURE_CODES = new Set(['QUALITY_GATE_FAILED']);
 const SCHEMA_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_READONLY_DIAGNOSTIC_PASSED';
 const SCHEMA_RECOVERY_ROOT_CAUSE = 'STRICT_RESPONSE_SCHEMA_REQUIRED_FIELDS';
+const QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION = 'WORKER_VISUAL_QA_SELF_CHECK';
+const QUALITY_GATE_RECOVERY_ROOT_CAUSE = 'SANDBOX_PORT_BINDING';
 const execFileAsync = promisify(execFile);
 
 export function canRetryInboxImplementation(source: { status: string; retrySequence: number }): boolean {
@@ -217,21 +219,57 @@ export function canAuthorizeSchemaRecoveryRetry(
   }
 }
 
+function hasSandboxPortBindingEvidence(testsJson: string | null | undefined): boolean {
+  try {
+    const tests = JSON.parse(testsJson || '[]') as Array<{ status?: unknown; failureCode?: unknown }>;
+    return Array.isArray(tests)
+      ? tests.some((test) => test?.status === 'FAILED' && test.failureCode === QUALITY_GATE_RECOVERY_ROOT_CAUSE)
+      : false;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * A final recovery is allowed only after the ordinary, Worker, and schema
- * attempts have all been consumed and the terminal condition is the verified
- * quality-gate infrastructure failure. It creates sequence five once.
+ * This is an exceptional, single recovery for the exact visual-QA runner
+ * failure. It does not reopen the general retry budget: the trusted worker
+ * must first prove that its private harness can start Next and run both
+ * synthetic role contexts for this same terminal job.
  */
-export function canAuthorizeQualityGateRecoveryRetry(source: {
-  status: string;
-  retrySequence: number;
-  failureCode: string | null;
-}): boolean {
-  return (
-    source.status === 'FAILED' &&
-    source.retrySequence === MAX_DANNY_RETRY_SEQUENCE + 2 &&
-    Boolean(source.failureCode && QUALITY_GATE_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode))
-  );
+export function canAuthorizeQualityGateRecoveryRetry(
+  source: {
+    id: string;
+    status: string;
+    retrySequence: number;
+    failureCode: string | null;
+    testsJson?: string | null;
+  },
+  diagnostic: { action: string; afterJson: string | null } | null | undefined
+): boolean {
+  if (
+    source.status !== 'FAILED' ||
+    source.retrySequence !== MAX_DANNY_RETRY_SEQUENCE ||
+    !source.failureCode ||
+    !QUALITY_GATE_RECOVERY_RETRY_FAILURE_CODES.has(source.failureCode) ||
+    !hasSandboxPortBindingEvidence(source.testsJson) ||
+    diagnostic?.action !== QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION
+  ) {
+    return false;
+  }
+  try {
+    const evidence = JSON.parse(diagnostic.afterJson || '{}') as {
+      jobId?: unknown;
+      rootCause?: unknown;
+      selfCheck?: unknown;
+    };
+    return (
+      evidence.jobId === source.id &&
+      evidence.rootCause === QUALITY_GATE_RECOVERY_ROOT_CAUSE &&
+      evidence.selfCheck === 'PASSED'
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -1005,6 +1043,140 @@ export class InboxImplementationService {
     });
   }
 
+  /**
+   * Returns only terminal runner failures that are still the ticket's active
+   * job and have not yet received a trusted harness self-check. The worker
+   * learns no ticket content from this queue.
+   */
+  static async qualityGateRecoverySelfCheckCandidates(fastify: FastifyInstance): Promise<Array<{ id: string }>> {
+    const jobs = await fastify.prisma.crm.crmInboxImplementationJob.findMany({
+      where: {
+        status: 'FAILED',
+        retrySequence: MAX_DANNY_RETRY_SEQUENCE,
+        failureCode: 'QUALITY_GATE_FAILED',
+      },
+      select: {
+        id: true,
+        testsJson: true,
+        report: {
+          select: {
+            implementationActiveJobId: true,
+            audits: {
+              where: { action: QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION },
+              select: { action: true, afterJson: true },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
+            },
+          },
+        },
+      },
+      take: 8,
+    });
+    return jobs
+      .filter(
+        (job) =>
+          job.report.implementationActiveJobId === job.id &&
+          hasSandboxPortBindingEvidence(job.testsJson) &&
+          !job.report.audits.some((audit) =>
+            canAuthorizeQualityGateRecoveryRetry(
+              {
+                id: job.id,
+                status: 'FAILED',
+                retrySequence: MAX_DANNY_RETRY_SEQUENCE,
+                failureCode: 'QUALITY_GATE_FAILED',
+                testsJson: job.testsJson,
+              },
+              audit
+            )
+          )
+      )
+      .map((job) => ({ id: job.id }));
+  }
+
+  /** Records sanitized proof from the trusted worker's private visual-QA harness. */
+  static async recordQualityGateRecoverySelfCheck(
+    fastify: FastifyInstance,
+    id: string,
+    raw: unknown
+  ): Promise<boolean> {
+    const result = raw && typeof raw === 'object' ? (raw as { selfCheck?: unknown; rootCause?: unknown }) : {};
+    if (result.selfCheck !== 'PASSED' || result.rootCause !== QUALITY_GATE_RECOVERY_ROOT_CAUSE) {
+      throw new InboxImplementationError(
+        'Chẩn đoán cổng kiểm thử không hợp lệ.',
+        422,
+        'QUALITY_GATE_SELF_CHECK_INVALID'
+      );
+    }
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        reportId: true,
+        status: true,
+        retrySequence: true,
+        failureCode: true,
+        testsJson: true,
+        report: {
+          select: {
+            implementationActiveJobId: true,
+            audits: {
+              where: { action: QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION },
+              select: { action: true, afterJson: true },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
+            },
+          },
+        },
+      },
+    });
+    if (
+      !job ||
+      job.report.implementationActiveJobId !== job.id ||
+      job.status !== 'FAILED' ||
+      job.retrySequence !== MAX_DANNY_RETRY_SEQUENCE ||
+      job.failureCode !== 'QUALITY_GATE_FAILED' ||
+      !hasSandboxPortBindingEvidence(job.testsJson)
+    ) {
+      throw new InboxImplementationError(
+        'Chẩn đoán chỉ áp dụng cho đúng job quality gate sequence 2 bị chặn cổng sandbox.',
+        409,
+        'QUALITY_GATE_SELF_CHECK_NOT_ELIGIBLE'
+      );
+    }
+    const evidence = JSON.stringify({
+      jobId: job.id,
+      rootCause: QUALITY_GATE_RECOVERY_ROOT_CAUSE,
+      selfCheck: 'PASSED',
+      harness: 'private-synthetic-visual-qa-v1',
+    });
+    const existing = job.report.audits.some((audit) =>
+      canAuthorizeQualityGateRecoveryRetry(
+        {
+          id: job.id,
+          status: job.status,
+          retrySequence: job.retrySequence,
+          failureCode: job.failureCode,
+          testsJson: job.testsJson,
+        },
+        audit
+      )
+    );
+    if (existing) return false;
+    const now = new Date();
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmBugReport.update({ where: { id: job.reportId }, data: { updatedAt: now } });
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId: job.reportId,
+          action: QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION,
+          note: 'Worker đã xác minh private visual QA harness bằng hai session tổng hợp; cổng sandbox có thể chạy lại.',
+          afterJson: evidence,
+        },
+      });
+    });
+    return true;
+  }
+
   /** One final, audited recovery after a verified quality-gate infrastructure repair. */
   static async authorizeQualityGateRecoveryRetry(
     fastify: FastifyInstance,
@@ -1013,7 +1185,15 @@ export class InboxImplementationService {
   ): Promise<boolean> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
-      include: implementationReportInclude(),
+      include: {
+        ...implementationReportInclude(),
+        audits: {
+          where: { action: QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION },
+          select: { action: true, afterJson: true },
+          orderBy: { createdAt: 'desc' },
+          take: 8,
+        },
+      },
     });
     if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
     const gate = isInboxImplementationExecutionEligible(report);
@@ -1031,7 +1211,10 @@ export class InboxImplementationService {
       !failed ||
       failed.sourceVersion !== gate.sourceVersion ||
       failed.planVersion !== gate.plan.planVersion ||
-      !canAuthorizeQualityGateRecoveryRetry(failed)
+      !canAuthorizeQualityGateRecoveryRetry(
+        failed,
+        report.audits.find((audit) => audit.action === QUALITY_GATE_RECOVERY_DIAGNOSTIC_ACTION)
+      )
     ) {
       throw new InboxImplementationError(
         'Quyền retry này chỉ áp dụng một lần sau khi đã sửa cổng kiểm thử cho đúng job quality gate bị dừng.',

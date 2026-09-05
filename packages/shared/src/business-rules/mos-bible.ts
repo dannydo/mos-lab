@@ -630,7 +630,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Worker chỉ dùng worktree/branch riêng từ workspace tin cậy; không sửa primary checkout. Sau khi Danny bấm Duyệt commit, worker chỉ được stage danh sách tệp review bất biến và commit vào branch riêng. Chỉ sau cú bấm Duyệt deploy riêng, worker mới được dùng deploy worktree tách biệt để merge commit đã ghi nhận, push main, chạy pipeline production và xác minh release marker.',
       'Mỗi diff review được bộ phân loại thuần và bảo thủ gán một lane deployment có lý do, thao tác chạy/bỏ qua và rollback: WEB_ONLY, API_WORKER_ONLY, UI_COPY_CONTENT_ONLY hoặc FULL_DEPLOY. Không suy ra lane từ title ticket; diff trống, shared/schema/dependency/config, multi-runtime, hoặc UI Copy chưa có version-preview-rollback phải fail closed sang FULL_DEPLOY. Fast lane chỉ được thực thi sau khi health check và rollback riêng đã được kiểm chứng; trước đó Inbox hiển thị quyết định ở SHADOW để không hứa một đường deploy chưa tồn tại.',
       'Chỉ khi CLI thật sự bắt đầu ticket mới chuyển sang IMPLEMENTING. Kết quả thành công phải ghi native review gồm diff/file/test/risk đã lọc và chuyển sang chờ Danny duyệt commit.',
-      'Quality gate là cổng server bắt buộc: không có tệp review an toàn, bất kỳ test FAILED hoặc NOT_RUN nào, hoặc thay đổi apps/web mà không có Playwright visual QA PASSED thì job phải dừng FAILED. Khi đó UI chỉ cho Danny chạy lại code/test; không action cũ, event trễ hay route trực tiếp nào được phép duyệt commit, deploy hoặc bàn giao nghiệm thu.',
+      'Quality gate là cổng server bắt buộc: không có tệp review an toàn, bất kỳ test FAILED hoặc NOT_RUN nào, hoặc thay đổi apps/web mà không có Playwright visual QA PASSED thì job phải dừng FAILED. Visual QA của implementation chạy từ Worker tin cậy trên private loopback Next server, output tạm ngoài worktree, hai storage session tổng hợp Manager/Participant và fixture API; không dùng cookie hay dữ liệu Production. Khi đó UI chỉ cho Danny chạy lại code/test; không action cũ, event trễ hay route trực tiếp nào được phép duyệt commit, deploy hoặc bàn giao nghiệm thu.',
       'Lỗi commit hoặc deploy sau khi quality gate đã đạt là bằng chứng vận hành riêng, không được ghi đè testsJson thành FAILED. Commit/diff/test đã duyệt phải được giữ nguyên để Worker chỉ chạy lại checkpoint commit/deploy của đúng commit đó sau một phê duyệt mới. Với bản cũ từng ghi đè sai bằng chứng vì DEPLOY_INTERRUPTED, server chỉ được khôi phục test PASSED từ đúng native review record có job ID trùng; nếu thiếu record đó thì phải fail closed.',
       'Bàn giao release là hai bằng chứng riêng: worker lưu commit SHA từ cổng commit, rồi sau khi Danny duyệt deploy worker chạy pipeline production. Server chỉ tự chuyển tiếp nếu commit đó chính là hoặc là tổ tiên của release marker production đang chạy. Release marker một mình không chứng minh code của ticket đã được deploy.',
       'Sau khi release được xác minh, người báo/yêu cầu ticket là người nghiệm thu mặc định; Danny chỉ nghiệm thu khi chính Danny là người báo. Người báo có thể đạt hoặc yêu cầu sửa thêm; cả hai quyết định phải cập nhật job, ticket, audit và notification trong cùng giao dịch.',
@@ -639,7 +639,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Inbox serialise progress và chủ nhân bước tiếp theo trong cùng một server workflow projection. Frontend chỉ render projection này; không được tự đổi chặng từ status, clarification hoặc cache cục bộ.',
       'Worker chỉ lưu bằng chứng vận hành đã lọc (pha, thời điểm tiến triển, số checkpoint), không lưu prompt, nội dung ticket hay stdout/stderr Codex. Sau 10 phút không có bằng chứng mới phải hiện cảnh báo; sau 20 phút không có bằng chứng mới phải dừng an toàn và giữ worktree.',
       'Một phiên code/test mặc định tối đa 45 phút. Khi còn có bằng chứng tiến triển, worker được tự tiếp tục đúng một chặng checkpoint trong cùng worktree và cùng approval; sau đó phải dừng an toàn để Danny quyết định. Không checkpoint nào cho phép commit, push, merge hoặc deploy tự động.',
-      'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Retry sau terminal failure chỉ có thể do Danny xác nhận riêng, tối đa hai retry cho cùng source/plan: mỗi retry tạo job/branch/worktree mới liên kết immutable với job terminal ngay trước đó, recheck approval/source/plan trước worktree, prelaunch và result, rồi dừng trước commit. Restart chỉ reclaim lease stale khi không còn Codex PID đã đăng ký sống; worker preflight CLI thật trong môi trường launchd, quản lý process group và terminate group khi timeout/lease failure để không bỏ orphan. Recovery chỉ giữ nguyên active-job pointer khi nó trỏ đúng cùng job; pointer khác là hard stop. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
+      'Timeout, lease cũ, source hoặc plan stale phải dừng an toàn, giữ worktree để review/retry và không tạo comment hoặc worktree trùng. Retry sau terminal failure chỉ có thể do Danny xác nhận riêng, tối đa hai retry cho cùng source/plan: mỗi retry tạo job/branch/worktree mới liên kết immutable với job terminal ngay trước đó, recheck approval/source/plan trước worktree, prelaunch và result, rồi dừng trước commit. Ngoại lệ duy nhất cho quality gate là job terminal sequence 2 có test `SANDBOX_PORT_BINDING`: Worker phải ghi self-check private visual QA PASSED trỏ đúng job, rồi Danny vẫn bấm retry riêng đúng một lần; không self-check nào tự tạo job. Restart chỉ reclaim lease stale khi không còn Codex PID đã đăng ký sống; worker preflight CLI thật trong môi trường launchd, quản lý process group và terminate group khi timeout/lease failure để không bỏ orphan. Recovery chỉ giữ nguyên active-job pointer khi nó trỏ đúng cùng job; pointer khác là hard stop. Worktree chờ review được giữ tối thiểu 30 ngày; không có cleanup scheduler tự xóa branch chờ duyệt.',
     ],
     rationale:
       'Tự động hóa phải giảm thao tác lặp lại nhưng không được vượt qua cổng quyết định của Danny hay làm mất bằng chứng review trước commit/deploy.',
@@ -650,8 +650,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.17.0',
-    effectiveFrom: '2026-09-04',
+    version: '1.18.0',
+    effectiveFrom: '2026-09-05',
     sources: [
       {
         label: 'Implementation gate and durable job',
@@ -662,6 +662,10 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
         reference: 'apps/api/src/modules/bug-reports/inbox-plan.service.ts',
       },
       { label: 'Outbound isolated-worktree worker', reference: 'scripts/request-classifier-worker.ts' },
+      {
+        label: 'Private visual-QA recovery guard',
+        reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
+      },
     ],
   },
   {

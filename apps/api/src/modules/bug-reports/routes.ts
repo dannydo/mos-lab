@@ -18,6 +18,7 @@ import {
   type ReviewBugReportImplementationAcceptanceRequest,
   type RetryBugReportImplementationRequest,
   type RenewInboxImplementationLeaseRequest,
+  type RecordInboxImplementationQualityGateSelfCheckRequest,
   type BugReportListQuery,
   type ConfirmCloseBugReportRequest,
   type CreateBugReportCommentRequest,
@@ -1003,6 +1004,33 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         return reply.send({ data: await InboxImplementationService.claim(fastify, workerId) });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox implementation claim failed');
+      }
+    }
+  );
+  fastify.get(
+    '/request-classifier/inbox-implementations/quality-gate-recovery-self-checks',
+    { preHandler: [requireClassifierWorker] },
+    async (_request, reply) => {
+      try {
+        return reply.send({ data: await InboxImplementationService.qualityGateRecoverySelfCheckCandidates(fastify) });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'List quality-gate recovery self-checks failed');
+      }
+    }
+  );
+  fastify.post(
+    '/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check',
+    { preHandler: [requireClassifierWorker] },
+    async (request, reply) => {
+      try {
+        const recorded = await InboxImplementationService.recordQualityGateRecoverySelfCheck(
+          fastify,
+          String((request.params as { id: string }).id || ''),
+          request.body as RecordInboxImplementationQualityGateSelfCheckRequest
+        );
+        return reply.send({ success: true, data: { recorded } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Record quality-gate recovery self-check failed');
       }
     }
   );

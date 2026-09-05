@@ -891,6 +891,17 @@ export interface AuthorizeBugReportQualityGateRecoveryRetryRequest {
   acknowledged: true;
 }
 
+/** Worker-only, sanitized proof that the private visual-QA harness can run again. */
+export interface RecordInboxImplementationQualityGateSelfCheckRequest {
+  selfCheck: 'PASSED';
+  rootCause: 'SANDBOX_PORT_BINDING';
+}
+
+/** The worker receives identifiers only; ticket content remains server-side. */
+export interface InboxImplementationQualityGateSelfCheckCandidate {
+  id: string;
+}
+
 /** A separately audited, one-time retry after the recorded Next build lock was repaired. */
 export interface AuthorizeBugReportBuildLockRecoveryRetryRequest {
   acknowledged: true;
