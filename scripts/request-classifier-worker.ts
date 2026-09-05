@@ -420,7 +420,8 @@ function terminateCodexProcessGroup(processId: number | null, child: ChildProces
 // A private Next output starts cold on every check. Keep readiness and page
 // rendering budgets independent so the first architecture compilation cannot
 // create a false negative while the loopback server is otherwise healthy.
-const PRIVATE_VISUAL_QA_SERVER_TIMEOUT_MS = 90_000;
+const PRIVATE_VISUAL_QA_SERVER_TIMEOUT_MS = 180_000;
+const PRIVATE_VISUAL_QA_SERVER_PROBE_TIMEOUT_MS = 10_000;
 const PRIVATE_VISUAL_QA_PAGE_TIMEOUT_MS = 60_000;
 
 type InboxVisualQaRole = 'manager' | 'participant';
@@ -537,7 +538,15 @@ async function waitForPrivateVisualQaServer(url: string, child: ChildProcess): P
   while (Date.now() < deadline) {
     if (exited) throw new Error('PRIVATE_QA_SERVER_EXITED');
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(1_000) });
+      // A fresh private Next output can compile its first route while the
+      // request is in flight. Aborting every second makes that cold build
+      // flaky under a busy worker; a bounded probe lets it finish without
+      // weakening the total startup deadline.
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(
+          Math.min(PRIVATE_VISUAL_QA_SERVER_PROBE_TIMEOUT_MS, Math.max(1, deadline - Date.now()))
+        ),
+      });
       if (response.ok) return;
     } catch {
       // Next can need a few seconds to initialize a fresh private output directory.
