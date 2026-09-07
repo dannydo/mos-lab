@@ -7,6 +7,7 @@ import {
   type InboxImplementationTestResult,
   type InboxImplementationWorkerJob,
   type InboxImplementationWorkerResult,
+  type InboxIdeTaskProvisioningRequest,
   type RecordInboxIdeCommitReceiptRequest,
   type RecordInboxIdeImplementationReceiptRequest,
   type ReleaseBugReportImplementationRequest,
@@ -24,6 +25,7 @@ import { Prisma } from '../../generated/crm-client/index.js';
 import { makeReleaseManifest, readReleaseManifest, matchesReleaseManifest } from './inbox-release-manifest.js';
 
 const LEASE_MS = 12 * 60 * 1000;
+const IDE_PROVISIONING_LEASE_MS = 2 * 60 * 1000;
 const RETRY_LIMIT = 3;
 const CLI_ARGUMENTS_RECOVERY_ATTEMPT = 'CLI_ARGUMENTS_RECOVERED';
 const CLI_PROCESS_RECOVERY_ATTEMPT = 'CLI_PROCESS_RECOVERED';
@@ -718,6 +720,127 @@ async function clearTicketActiveJob(fastify: FastifyInstance, reportId: number, 
 }
 
 export class InboxImplementationService {
+  /**
+   * Gives an opted-in local companion one bounded creation request. The stable
+   * request id lets a crashed companion finish the task it already created,
+   * rather than starting a second Codex task after reconnecting.
+   */
+  static async claimIdeTaskProvisioning(
+    fastify: FastifyInstance,
+    provisionerId: unknown
+  ): Promise<InboxIdeTaskProvisioningRequest | null> {
+    safeWorkerId(provisionerId);
+    const now = new Date();
+    const candidate = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: {
+        executionOwner: 'IDE',
+        status: 'PENDING',
+        ideTaskId: null,
+        ideHandoffRevokedAt: null,
+        ideProvisioningRequestId: { not: null },
+        OR: [
+          { ideProvisioningState: 'PENDING' },
+          { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
+        ],
+      },
+      include: { report: { select: { id: true, requestType: true, title: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!candidate?.ideProvisioningRequestId) return null;
+    const leaseToken = randomUUID();
+    const claimed = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
+      where: {
+        id: candidate.id,
+        status: 'PENDING',
+        ideTaskId: null,
+        ideHandoffRevokedAt: null,
+        ideProvisioningRequestId: candidate.ideProvisioningRequestId,
+        OR: [
+          { ideProvisioningState: 'PENDING' },
+          { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
+        ],
+      },
+      data: {
+        ideProvisioningState: 'LEASED',
+        ideProvisioningLeaseToken: leaseToken,
+        ideProvisioningLeaseExpiresAt: new Date(now.getTime() + IDE_PROVISIONING_LEASE_MS),
+        ideProvisioningAttemptCount: { increment: 1 },
+        ideProvisioningFailureCode: null,
+        executionPhase: 'IDE_PROVISIONING_LEASED',
+        progressLabel: 'Codex IDE đang tạo handoff cục bộ.',
+      },
+    });
+    if (!claimed.count) return null;
+    return {
+      jobId: candidate.id,
+      requestId: candidate.ideProvisioningRequestId,
+      reportId: candidate.reportId,
+      ticketKey: formatBugReportKey(
+        candidate.report.id,
+        candidate.report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG'
+      ),
+      title: clean(candidate.report.title, 240),
+      branchName: candidate.branchName,
+      sourceVersion: candidate.sourceVersion,
+      planVersion: candidate.planVersion,
+    };
+  }
+
+  static async deferIdeTaskProvisioning(
+    fastify: FastifyInstance,
+    jobId: unknown,
+    requestId: unknown,
+    failureCode: unknown
+  ) {
+    const normalizedJobId = String(jobId || '').trim();
+    const normalizedRequestId = String(requestId || '').trim();
+    const normalizedFailureCode = clean(failureCode, 100);
+    if (!/^[a-f0-9-]{36}$/i.test(normalizedJobId) || !/^[a-f0-9-]{36}$/i.test(normalizedRequestId))
+      throw new InboxImplementationError('Yêu cầu provisioning IDE không hợp lệ.', 422, 'IDE_PROVISIONING_INVALID');
+    if (!/^[A-Z0-9_]{3,100}$/.test(normalizedFailureCode))
+      throw new InboxImplementationError('Mã lỗi provisioning IDE không hợp lệ.', 422, 'IDE_PROVISIONING_INVALID');
+    const deferred = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
+      where: {
+        id: normalizedJobId,
+        ideProvisioningRequestId: normalizedRequestId,
+        ideProvisioningState: 'LEASED',
+        ideTaskId: null,
+        ideHandoffRevokedAt: null,
+      },
+      data: {
+        ideProvisioningState: 'PENDING',
+        ideProvisioningLeaseToken: null,
+        ideProvisioningLeaseExpiresAt: null,
+        ideProvisioningFailureCode: normalizedFailureCode,
+        executionPhase: 'IDE_PROVISIONING_PENDING',
+        progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
+      },
+    });
+    if (!deferred.count)
+      throw new InboxImplementationError(
+        'Provisioning IDE đã stale hoặc bị thu hồi.',
+        409,
+        'IDE_PROVISIONING_REJECTED'
+      );
+    return 'DEFERRED' as const;
+  }
+
+  static async completeIdeTaskProvisioning(
+    fastify: FastifyInstance,
+    jobId: unknown,
+    requestId: unknown,
+    taskId: unknown
+  ) {
+    const normalizedJobId = String(jobId || '').trim();
+    const normalizedRequestId = String(requestId || '').trim();
+    if (!/^[a-f0-9-]{36}$/i.test(normalizedJobId) || !/^[a-f0-9-]{36}$/i.test(normalizedRequestId))
+      throw new InboxImplementationError('Yêu cầu provisioning IDE không hợp lệ.', 422, 'IDE_PROVISIONING_INVALID');
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findUnique({ where: { id: normalizedJobId } });
+    if (!job || job.ideProvisioningRequestId !== normalizedRequestId)
+      throw new InboxImplementationError('Provisioning IDE không còn hiệu lực.', 409, 'IDE_PROVISIONING_REJECTED');
+    return this.bindIdeTask(fastify, job.reportId, taskId, normalizedRequestId);
+  }
+
   static async recordIdeCommitReceipt(
     fastify: FastifyInstance,
     reportId: number,
@@ -957,7 +1080,12 @@ export class InboxImplementationService {
     });
   }
 
-  static async bindIdeTask(fastify: FastifyInstance, reportId: number, taskId: unknown) {
+  static async bindIdeTask(
+    fastify: FastifyInstance,
+    reportId: number,
+    taskId: unknown,
+    expectedProvisioningRequestId?: string
+  ) {
     const normalizedTaskId = String(taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{8,160}$/.test(normalizedTaskId))
       throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
@@ -973,6 +1101,19 @@ export class InboxImplementationService {
           409,
           'IDE_TASK_BIND_REJECTED'
         );
+      const now = new Date();
+      if (
+        expectedProvisioningRequestId !== undefined &&
+        (job.ideProvisioningRequestId !== expectedProvisioningRequestId ||
+          job.ideProvisioningState !== 'LEASED' ||
+          !job.ideProvisioningLeaseExpiresAt ||
+          job.ideProvisioningLeaseExpiresAt <= now)
+      )
+        throw new InboxImplementationError(
+          'Provisioning IDE đã stale hoặc bị thu hồi.',
+          409,
+          'IDE_PROVISIONING_REJECTED'
+        );
       if (job.ideTaskId === normalizedTaskId) return { outcome: 'DUPLICATE' as const, jobId: job.id };
       if (job.ideTaskId)
         throw new InboxImplementationError('IDE handoff đã được gán cho task khác.', 409, 'IDE_TASK_ALREADY_BOUND');
@@ -983,12 +1124,15 @@ export class InboxImplementationService {
           409,
           'IDE_TASK_ALREADY_BOUND'
         );
-      const now = new Date();
       const updated = await tx.crmInboxImplementationJob.updateMany({
         where: { id: job.id, status: 'PENDING', ideTaskId: null, ideHandoffRevokedAt: null },
         data: {
           ideTaskId: normalizedTaskId,
           ideTaskBoundAt: now,
+          ideProvisioningState: 'READY',
+          ideProvisioningLeaseToken: null,
+          ideProvisioningLeaseExpiresAt: null,
+          ideProvisioningFailureCode: null,
           executionPhase: 'IDE_HANDOFF_READY',
           ideReceiptNonce: job.ideReceiptNonce || randomUUID(),
         },
@@ -1428,6 +1572,10 @@ export class InboxImplementationService {
           sourceVersion: gate.sourceVersion,
           planVersion,
           branchName: safeBranchName(ticketKey, id),
+          executionOwner: 'IDE',
+          executionPhase: 'IDE_PROVISIONING_PENDING',
+          ideProvisioningRequestId: randomUUID(),
+          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
           expiresAt: new Date(Date.now() + JOB_TTL_MS),
         },
       });
@@ -1503,8 +1651,9 @@ export class InboxImplementationService {
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
           executionOwner: 'IDE',
-          executionPhase: 'IDE_HANDOFF_READY',
-          ideReceiptNonce: randomUUID(),
+          executionPhase: 'IDE_PROVISIONING_PENDING',
+          ideProvisioningRequestId: randomUUID(),
+          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -1601,7 +1750,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionPhase: 'QUEUED',
+          executionOwner: 'IDE',
+          executionPhase: 'IDE_PROVISIONING_PENDING',
+          ideProvisioningRequestId: randomUUID(),
+          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -1696,7 +1848,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionPhase: 'QUEUED',
+          executionOwner: 'IDE',
+          executionPhase: 'IDE_PROVISIONING_PENDING',
+          ideProvisioningRequestId: randomUUID(),
+          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -1946,7 +2101,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionPhase: 'QUEUED',
+          executionOwner: 'IDE',
+          executionPhase: 'IDE_PROVISIONING_PENDING',
+          ideProvisioningRequestId: randomUUID(),
+          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2041,7 +2199,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionPhase: 'QUEUED',
+          executionOwner: 'IDE',
+          executionPhase: 'IDE_PROVISIONING_PENDING',
+          ideProvisioningRequestId: randomUUID(),
+          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });

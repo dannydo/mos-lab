@@ -541,6 +541,28 @@ export interface BindInboxIdeTaskRequest {
   taskId: string;
 }
 
+/** A bounded local-only request. It never contains a receipt nonce or task prompt. */
+export interface InboxIdeTaskProvisioningRequest {
+  jobId: string;
+  requestId: string;
+  reportId: number;
+  ticketKey: string;
+  title: string;
+  branchName: string;
+  sourceVersion: string;
+  planVersion: string;
+}
+
+export interface CompleteInboxIdeTaskProvisioningRequest {
+  requestId: string;
+  taskId: string;
+}
+
+export interface DeferInboxIdeTaskProvisioningRequest {
+  requestId: string;
+  failureCode: string;
+}
+
 export interface InboxIdeTaskBridgeHandoff {
   /** Server-authoritative phase; the private nonce is valid only for this operation. */
   phase: 'IDE_HANDOFF_READY' | 'IDE_COMMIT_HANDOFF';

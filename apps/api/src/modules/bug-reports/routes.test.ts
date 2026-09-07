@@ -269,6 +269,65 @@ test('IDE task bridge receipt requires its separate bearer and never uses a brow
   }
 });
 
+test('IDE task provisioning routes require the bridge bearer and pass only durable correlation fields', async (t) => {
+  const app = Fastify();
+  app.decorate('prisma', { crm: { crmStaff: { update: async () => ({}) } } } as unknown as typeof app.prisma);
+  const token = 'ide-task-bridge-token-that-is-definitely-over-32-characters';
+  const previous = process.env.MOS_IDE_TASK_BRIDGE_TOKEN;
+  process.env.MOS_IDE_TASK_BRIDGE_TOKEN = token;
+  const claim = t.mock.method(InboxImplementationService, 'claimIdeTaskProvisioning', async () => null);
+  const complete = t.mock.method(InboxImplementationService, 'completeIdeTaskProvisioning', async () => ({
+    outcome: 'BOUND' as const,
+    jobId: 'job-1',
+  }));
+  const defer = t.mock.method(InboxImplementationService, 'deferIdeTaskProvisioning', async () => 'DEFERRED' as const);
+  await app.register(bugReportRoutes);
+  const requestId = '22222222-2222-4222-8222-222222222222';
+  const jobId = '11111111-1111-4111-8111-111111111111';
+  try {
+    assert.equal((await app.inject({ method: 'GET', url: '/ide-task-bridge/provisioning/next' })).statusCode, 401);
+    assert.equal(
+      (
+        await app.inject({
+          method: 'GET',
+          url: '/ide-task-bridge/provisioning/next',
+          headers: { authorization: `Bearer ${token}`, 'x-ide-provisioner-id': 'danny-codex' },
+        })
+      ).statusCode,
+      200
+    );
+    assert.deepEqual(claim.mock.calls[0].arguments.slice(1), ['danny-codex']);
+    assert.equal(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `/ide-task-bridge/provisioning/${jobId}/complete`,
+          headers: { authorization: `Bearer ${token}` },
+          payload: { requestId, taskId: 'task-ide-30' },
+        })
+      ).statusCode,
+      200
+    );
+    assert.deepEqual(complete.mock.calls[0].arguments.slice(1), [jobId, requestId, 'task-ide-30']);
+    assert.equal(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `/ide-task-bridge/provisioning/${jobId}/defer`,
+          headers: { authorization: `Bearer ${token}` },
+          payload: { requestId, failureCode: 'CODEX_APP_SERVER_UNAVAILABLE' },
+        })
+      ).statusCode,
+      200
+    );
+    assert.deepEqual(defer.mock.calls[0].arguments.slice(1), [jobId, requestId, 'CODEX_APP_SERVER_UNAVAILABLE']);
+  } finally {
+    if (previous === undefined) delete process.env.MOS_IDE_TASK_BRIDGE_TOKEN;
+    else process.env.MOS_IDE_TASK_BRIDGE_TOKEN = previous;
+    await app.close();
+  }
+});
+
 test('Admin and Super Admin can read every Inbox ticket without gaining Danny triage authority', () => {
   assert.equal(canReadBugInbox({ role: 'super_admin' }), true);
   assert.equal(canReadBugInbox({ role: 'admin' }), true);

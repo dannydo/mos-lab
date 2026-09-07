@@ -164,6 +164,21 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(screen.getByText(/Không cấp lease thực thi/)).toBeVisible();
   });
 
+  it('projects a pending local Codex task provisioning request without exposing a nonce', async () => {
+    const detail = makeDetail({
+      status: 'APPROVED',
+      implementation: makeImplementation({
+        status: 'PENDING',
+        phase: 'IDE_PROVISIONING_PENDING',
+        ideHandoff: { reference: 'ide-provisioning-job-31', phase: 'IDE_PROVISIONING_PENDING', taskId: null },
+      }),
+    });
+    render(<BugReportDetailDrawer {...propsFor(detail)} />);
+    expect(await screen.findByText('Chờ Codex IDE tạo task')).toBeVisible();
+    expect(screen.getByText(/Chưa cấp nonce hay quyền code\/test/)).toBeVisible();
+    expect(screen.queryByText(/receiptNonce/i)).not.toBeInTheDocument();
+  });
+
   it('keeps code approval hidden while the revised native plan is still being prepared', async () => {
     const detail = makeDetail({
       status: 'APPROVED',

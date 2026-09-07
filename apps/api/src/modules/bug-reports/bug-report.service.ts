@@ -993,11 +993,15 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
         ? 'IMPLEMENT'
         : 'CONTINUE_IMPLEMENTATION',
       ideOwned && implementation.status !== 'RUNNING'
-        ? implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
-          ? 'Chờ Codex IDE ghi commit đã duyệt'
-          : implementation.executionPhase === 'DEPLOY_APPROVED'
-            ? 'Chờ IDE xác minh release đã duyệt'
-            : 'Chờ Codex IDE nhận handoff'
+        ? implementation.executionPhase === 'IDE_PROVISIONING_PENDING'
+          ? 'Chờ Codex IDE tạo handoff'
+          : implementation.executionPhase === 'IDE_PROVISIONING_LEASED'
+            ? 'Codex IDE đang tạo task'
+            : implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
+              ? 'Chờ Codex IDE ghi commit đã duyệt'
+              : implementation.executionPhase === 'DEPLOY_APPROVED'
+                ? 'Chờ IDE xác minh release đã duyệt'
+                : 'Chờ Codex IDE nhận handoff'
         : implementation.executionPhase === 'DEPLOY_APPROVED'
           ? 'Chờ worker deploy'
           : implementation.executionPhase === 'COMMIT_APPROVED'
@@ -1010,11 +1014,15 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
                   ? 'Đang code/test'
                   : 'Chờ worker nhận',
       ideOwned && implementation.status !== 'RUNNING'
-        ? implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
-          ? `${handoffReference} đã sẵn sàng ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.`
-          : implementation.executionPhase === 'DEPLOY_APPROVED'
-            ? `${handoffReference} đang chờ release marker Production đã xác minh. Deploy approval đã được khóa; không có thao tác deploy hoặc click lặp.`
-            : `${handoffReference} đã sẵn sàng cho code/test theo scope được duyệt. Không cấp lease thực thi nào.`
+        ? implementation.executionPhase === 'IDE_PROVISIONING_PENDING'
+          ? `${handoffReference} đang chờ companion Codex IDE cục bộ tạo task/worktree. Không cấp nonce, lease thực thi, commit, push, merge, deploy hoặc migration.`
+          : implementation.executionPhase === 'IDE_PROVISIONING_LEASED'
+            ? `${handoffReference} đang được companion Codex IDE cục bộ tạo task/worktree. Nếu companion mất kết nối, request ID giữ nguyên để retry không tạo task thứ hai.`
+            : implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
+              ? `${handoffReference} đã sẵn sàng ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.`
+              : implementation.executionPhase === 'DEPLOY_APPROVED'
+                ? `${handoffReference} đang chờ release marker Production đã xác minh. Deploy approval đã được khóa; không có thao tác deploy hoặc click lặp.`
+                : `${handoffReference} đã sẵn sàng cho code/test theo scope được duyệt. Không cấp lease thực thi nào.`
         : implementation.status === 'RUNNING'
           ? implementationProgressNote(implementation, 'Worker đang xử lý trong worktree riêng.')
           : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',

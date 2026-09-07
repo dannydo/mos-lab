@@ -20,6 +20,7 @@
     "graph": "tsx scripts/generate-graph.ts",
     "bug:agent": "tsx scripts/bug-agent.ts",
     "ide-task-bridge": "tsx scripts/ide-task-bridge.ts",
+    "ide-task-provisioner:once": "tsx scripts/ide-task-provisioner.ts",
     "request-classifier:worker": "tsx scripts/request-classifier-worker.ts",
     "request-classifier:worker:once": "tsx scripts/request-classifier-worker.ts --once",
     "qa:responsive:baseline": "node scripts/responsive/capture-baseline.mjs",

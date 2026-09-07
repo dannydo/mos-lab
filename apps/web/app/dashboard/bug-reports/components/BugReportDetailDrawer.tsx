@@ -413,7 +413,11 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   message={
                     detail.implementation.ideHandoff.taskId
                       ? 'Đã gán cho task Codex IDE'
-                      : 'Đang chờ Codex IDE nhận handoff'
+                      : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_PENDING'
+                        ? 'Chờ Codex IDE tạo task'
+                        : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_LEASED'
+                          ? 'Codex IDE đang tạo task'
+                          : 'Đang chờ Codex IDE nhận handoff'
                   }
                   description={
                     <div className="space-y-1">
@@ -428,9 +432,13 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                         </div>
                       ) : null}
                       <Text type="secondary">
-                        {detail.implementation.ideHandoff.phase === 'IDE_COMMIT_HANDOFF'
-                          ? 'Chỉ ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.'
-                          : 'Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc migration.'}
+                        {detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_PENDING'
+                          ? 'Companion cục bộ đã opt-in sẽ tạo task/worktree. Chưa cấp nonce hay quyền code/test.'
+                          : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_LEASED'
+                            ? 'Companion cục bộ đang tạo task/worktree với request ID bền vững. Mất kết nối sẽ retry cùng request, không tạo task thứ hai.'
+                            : detail.implementation.ideHandoff.phase === 'IDE_COMMIT_HANDOFF'
+                              ? 'Chỉ ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.'
+                              : 'Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc migration.'}
                       </Text>
                     </div>
                   }

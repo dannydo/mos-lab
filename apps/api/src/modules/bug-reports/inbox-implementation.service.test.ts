@@ -557,8 +557,9 @@ test('Danny retry creates a bounded linked chain and leaves terminal evidence un
   assert.equal(createdRows[0]?.retryOfJobId, 'terminal-job');
   assert.equal(createdRows[0]?.retrySequence, 2);
   assert.equal(createdRows[0]?.executionOwner, 'IDE');
-  assert.equal(createdRows[0]?.executionPhase, 'IDE_HANDOFF_READY');
-  assert.equal(typeof createdRows[0]?.ideReceiptNonce, 'string');
+  assert.equal(createdRows[0]?.executionPhase, 'IDE_PROVISIONING_PENDING');
+  assert.match(String(createdRows[0]?.ideProvisioningRequestId || ''), /^[a-f0-9-]{36}$/i);
+  assert.equal(createdRows[0]?.ideReceiptNonce, undefined);
   assert.equal(terminal.status, 'FAILED');
   assert.equal(report.status, 'APPROVED');
   assert.equal(auditAction, 'AGENT_IMPLEMENTATION_RETRY_QUEUED');
@@ -1542,6 +1543,7 @@ test('IDE code/test and commit receipts consume a fresh handoff once and never d
   const fastify = {
     prisma: {
       crm: {
+        crmInboxImplementationJob: { findUnique: async () => job },
         $transaction: async (callback: (tx: unknown) => Promise<unknown>) =>
           callback({
             $queryRaw: async () => [],
@@ -1893,5 +1895,108 @@ test('Danny reopen requires a note and does not create an implementation job', a
   await assert.rejects(
     () => InboxImplementationService.reviewReporterAcceptance({} as never, 16, 1, { decision: 'REOPEN' }),
     /cần mô tả/i
+  );
+});
+
+test('IDE provisioning leases exactly one stable request under a concurrent claim race', async () => {
+  let available = true;
+  const job = {
+    id: '11111111-1111-4111-8111-111111111111',
+    reportId: 16,
+    sourceVersion: 'source-v1',
+    planVersion: 'plan-v1',
+    branchName: 'codex/mos-feat-16-11111111',
+    ideProvisioningRequestId: '22222222-2222-4222-8222-222222222222',
+    report: { id: 16, requestType: 'FEATURE', title: 'Provision an IDE task once' },
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findFirst: async () => job,
+          updateMany: async () => {
+            if (!available) return { count: 0 };
+            available = false;
+            return { count: 1 };
+          },
+        },
+      },
+    },
+  };
+  const [first, second] = await Promise.all([
+    InboxImplementationService.claimIdeTaskProvisioning(fastify as never, 'local-codex'),
+    InboxImplementationService.claimIdeTaskProvisioning(fastify as never, 'local-codex'),
+  ]);
+  const claimed = [first, second].filter(Boolean);
+  assert.equal(claimed.length, 1);
+  assert.deepEqual(claimed[0], {
+    jobId: job.id,
+    requestId: job.ideProvisioningRequestId,
+    reportId: 16,
+    ticketKey: 'MOS-FEAT-16',
+    title: job.report.title,
+    branchName: job.branchName,
+    sourceVersion: 'source-v1',
+    planVersion: 'plan-v1',
+  });
+});
+
+test('IDE provisioning defer is rejected once its handoff has been revoked', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          updateMany: async () => ({ count: 0 }),
+        },
+      },
+    },
+  };
+  await assert.rejects(
+    () =>
+      InboxImplementationService.deferIdeTaskProvisioning(
+        fastify as never,
+        '11111111-1111-4111-8111-111111111111',
+        '22222222-2222-4222-8222-222222222222',
+        'CODEX_APP_SERVER_UNAVAILABLE'
+      ),
+    /stale hoặc bị thu hồi/i
+  );
+});
+
+test('IDE provisioning cannot bind a task after its local creation lease expires', async () => {
+  const report = { id: 16, implementationActiveJobId: '11111111-1111-4111-8111-111111111111' };
+  const job = {
+    id: report.implementationActiveJobId,
+    reportId: 16,
+    executionOwner: 'IDE',
+    status: 'PENDING',
+    ideHandoffRevokedAt: null,
+    ideTaskId: null,
+    ideProvisioningRequestId: '22222222-2222-4222-8222-222222222222',
+    ideProvisioningState: 'LEASED',
+    ideProvisioningLeaseExpiresAt: new Date(Date.now() - 1_000),
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: { findUnique: async () => job },
+        $transaction: async (callback: (tx: unknown) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async () => [],
+            crmBugReport: { findUnique: async () => report },
+            crmInboxImplementationJob: { findUnique: async () => job },
+          }),
+      },
+    },
+  };
+  await assert.rejects(
+    () =>
+      InboxImplementationService.completeIdeTaskProvisioning(
+        fastify as never,
+        job.id,
+        job.ideProvisioningRequestId,
+        'task-ide-stale-30'
+      ),
+    /stale hoặc bị thu hồi/i
   );
 });

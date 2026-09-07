@@ -6,6 +6,8 @@ import {
   isSuperAdminRole,
   type AgentMarkBugFixedRequest,
   type BindInboxIdeTaskRequest,
+  type CompleteInboxIdeTaskProvisioningRequest,
+  type DeferInboxIdeTaskProvisioningRequest,
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
   type AuthorizeBugReportSchemaRecoveryRetryRequest,
@@ -222,6 +224,53 @@ function sendAttachment(reply: FastifyReply, value: Awaited<ReturnType<typeof Bu
 }
 
 export async function bugReportRoutes(fastify: FastifyInstance) {
+  fastify.get('/ide-task-bridge/provisioning/next', { preHandler: [requireIdeTaskBridge] }, async (request, reply) => {
+    try {
+      const requestData = await InboxImplementationService.claimIdeTaskProvisioning(
+        fastify,
+        request.headers['x-ide-provisioner-id']
+      );
+      return reply.send({ success: true, data: requestData });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Claim IDE task provisioning failed');
+    }
+  });
+  fastify.post(
+    '/ide-task-bridge/provisioning/:jobId/complete',
+    { preHandler: [requireIdeTaskBridge] },
+    async (request, reply) => {
+      try {
+        const body = request.body as CompleteInboxIdeTaskProvisioningRequest;
+        const result = await InboxImplementationService.completeIdeTaskProvisioning(
+          fastify,
+          (request.params as { jobId: string }).jobId,
+          body?.requestId,
+          body?.taskId
+        );
+        return reply.send({ success: true, data: result });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Complete IDE task provisioning failed');
+      }
+    }
+  );
+  fastify.post(
+    '/ide-task-bridge/provisioning/:jobId/defer',
+    { preHandler: [requireIdeTaskBridge] },
+    async (request, reply) => {
+      try {
+        const body = request.body as DeferInboxIdeTaskProvisioningRequest;
+        const outcome = await InboxImplementationService.deferIdeTaskProvisioning(
+          fastify,
+          (request.params as { jobId: string }).jobId,
+          body?.requestId,
+          body?.failureCode
+        );
+        return reply.send({ success: true, data: { outcome } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Defer IDE task provisioning failed');
+      }
+    }
+  );
   fastify.post('/ide-task-bridge/:id/bind', { preHandler: [requireIdeTaskBridge] }, async (request, reply) => {
     try {
       const id = numericParam((request.params as { id: string }).id, 'Ticket ID');

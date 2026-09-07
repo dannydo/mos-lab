@@ -2592,6 +2592,12 @@ model CrmInboxImplementationJob {
   ideHandoffRevokedAt DateTime? @map("ide_handoff_revoked_at") @db.DateTime(0)
   ideTaskId String? @map("ide_task_id") @db.VarChar(160)
   ideTaskBoundAt DateTime? @map("ide_task_bound_at") @db.DateTime(0)
+  ideProvisioningRequestId String? @map("ide_provisioning_request_id") @db.VarChar(36)
+  ideProvisioningState String @default("PENDING") @map("ide_provisioning_state") @db.VarChar(32)
+  ideProvisioningLeaseToken String? @map("ide_provisioning_lease_token") @db.VarChar(64)
+  ideProvisioningLeaseExpiresAt DateTime? @map("ide_provisioning_lease_expires_at") @db.DateTime(0)
+  ideProvisioningAttemptCount Int @default(0) @map("ide_provisioning_attempt_count")
+  ideProvisioningFailureCode String? @map("ide_provisioning_failure_code") @db.VarChar(100)
   status String @default("PENDING") @db.VarChar(32)
   attemptCount Int @default(0) @map("attempt_count")
   leaseToken String? @map("lease_token") @db.VarChar(64)
@@ -2627,6 +2633,8 @@ model CrmInboxImplementationJob {
   @@index([leaseExpiresAt])
   @@index([retryOfJobId])
   @@index([ideTaskId])
+  @@index([ideProvisioningState, ideProvisioningLeaseExpiresAt])
+  @@index([ideProvisioningRequestId])
   @@map("crm_inbox_implementation_jobs")
 }
 
