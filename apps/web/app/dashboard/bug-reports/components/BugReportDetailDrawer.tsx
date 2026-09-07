@@ -53,6 +53,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
   const [changesReason, setChangesReason] = useState('');
   const [reviewedPlan, setReviewedPlan] = useState<BugReportPlanReviewCandidate | null>(null);
   const [planReason, setPlanReason] = useState('');
+  const [retryConfirmationOpen, setRetryConfirmationOpen] = useState(false);
   const { reportId } = actions;
   const {
     messageContext,
@@ -218,18 +219,14 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     </Button>
                   </Popconfirm>
                 ) : detail.implementation?.canRetryImplementation ? (
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Tạo đúng một retry sạch?"
-                    description="Lượt cũ được giữ nguyên để review. Retry tạo job và worktree mới, chỉ chạy code/test rồi dừng trước commit, push, merge, deploy và migration."
-                    okText="Tạo retry"
-                    cancelText="Chưa retry"
-                    onConfirm={() => void retryCodeExecution()}
+                  <Button
+                    type="primary"
+                    loading={saving}
+                    icon={<AppIcon icon={RefreshCw} size="sm" />}
+                    onClick={() => setRetryConfirmationOpen(true)}
                   >
-                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
-                      Tạo retry sạch
-                    </Button>
-                  </Popconfirm>
+                    Tạo retry sạch
+                  </Button>
                 ) : null)}
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' && (
                 <>
@@ -691,6 +688,33 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
           </div>
         )}
       </AdaptiveDrawer>
+      <AdaptiveModal
+        intent="confirm"
+        open={retryConfirmationOpen}
+        title="Tạo đúng một retry sạch?"
+        onCancel={() => setRetryConfirmationOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setRetryConfirmationOpen(false)}>
+            Chưa retry
+          </Button>,
+          <Button
+            key="confirm"
+            type="primary"
+            loading={saving}
+            onClick={() => {
+              setRetryConfirmationOpen(false);
+              void retryCodeExecution();
+            }}
+          >
+            Tạo retry
+          </Button>,
+        ]}
+      >
+        <p>
+          Lượt cũ được giữ nguyên để review. Retry chỉ tạo một handoff IDE mới để chạy code/test; không cấp lease Worker
+          Mac, không commit, push, merge, deploy hay migration.
+        </p>
+      </AdaptiveModal>
     </>
   );
 }
