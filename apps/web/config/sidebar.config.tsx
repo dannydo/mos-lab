@@ -14,7 +14,6 @@ import {
   BgColorsOutlined,
   CustomerServiceOutlined,
   SafetyCertificateOutlined,
-  TrophyOutlined,
 } from '@ant-design/icons';
 import {
   BookOpen,
@@ -384,12 +383,6 @@ export function getSidebarGroups(
         icon: <CalendarOutlined />,
         path: '/dashboard/bk',
       },
-      {
-        key: 'bk-game',
-        label: 'Game BK',
-        icon: <TrophyOutlined />,
-        path: '/dashboard/bk?tab=game',
-      },
     ],
   };
 
@@ -536,7 +529,6 @@ export function getSelectedMenuKey(
 
   if (pathname.includes('/dashboard/cc')) return 'cc';
   if (pathname.includes('/dashboard/cv')) return 'cv';
-  if (pathname.includes('/dashboard/bk') && activeTab === 'game') return 'bk-game';
   if (pathname.includes('/dashboard/bk')) return 'bk';
   if (pathname.includes('/dashboard/staff/teams')) return 'teams';
   if (pathname.includes('/dashboard/staff/menu-access')) return 'menu-access';
