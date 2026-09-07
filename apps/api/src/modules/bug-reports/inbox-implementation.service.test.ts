@@ -1518,6 +1518,83 @@ test('commit approval requeues only the retained reviewed patch for the Mac work
   assert.equal((audits[0]?.data as { action?: string }).action, 'DANNY_COMMIT_APPROVED');
 });
 
+test('IDE code/test and commit receipts consume a fresh handoff once and never duplicate their audit', async () => {
+  const report = { ...source(), implementationActiveJobId: 'ide-job' };
+  const job = {
+    id: 'ide-job',
+    reportId: 16,
+    executionOwner: 'IDE',
+    status: 'PENDING',
+    executionPhase: 'IDE_HANDOFF_READY',
+    ideReceiptNonce: 'code-nonce',
+    ideHandoffRevokedAt: null,
+    changedFilesJson: null,
+    testsJson: null,
+    failureCode: null,
+    commitSha: null,
+  };
+  const audits: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        $transaction: async (callback: (tx: unknown) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async () => [],
+            crmBugReport: { findUnique: async () => report },
+            crmInboxImplementationJob: {
+              findUnique: async () => job,
+              updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                Object.assign(job, data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: { create: async (input: Record<string, unknown>) => audits.push(input) },
+          }),
+      },
+    },
+  };
+  const codeReceipt = {
+    handoff: { jobId: 'ide-job', sourceVersion: 'v1:source', planVersion: 'v1:plan', receiptNonce: 'code-nonce' },
+    result: {
+      summary: 'Verified in the visible IDE.',
+      risksAndRollback: 'Revert the reviewed change.',
+      tests: [{ command: 'pnpm --filter @mos-lab/api typecheck', status: 'PASSED' as const }],
+    },
+    changedFiles: ['apps/api/src/modules/bug-reports/routes.ts'],
+    diffStat: '1 file changed',
+    baseCommit: 'a'.repeat(40),
+    patchHash: 'b'.repeat(64),
+  };
+  assert.equal(await InboxImplementationService.recordIdeReceipt(fastify as never, 16, 1, codeReceipt), 'RECORDED');
+  assert.equal(await InboxImplementationService.recordIdeReceipt(fastify as never, 16, 1, codeReceipt), 'DUPLICATE');
+  assert.equal(audits.length, 1);
+  assert.equal(job.status, 'AWAITING_COMMIT_REVIEW');
+
+  Object.assign(job, { status: 'PENDING', executionPhase: 'IDE_COMMIT_HANDOFF', ideReceiptNonce: 'commit-nonce' });
+  const commitReceipt = {
+    handoff: { ...codeReceipt.handoff, receiptNonce: 'commit-nonce' },
+    commitSha: 'a'.repeat(40),
+  };
+  assert.equal(
+    await InboxImplementationService.recordIdeCommitReceipt(fastify as never, 16, 1, commitReceipt),
+    'RECORDED'
+  );
+  assert.equal(
+    await InboxImplementationService.recordIdeCommitReceipt(fastify as never, 16, 1, commitReceipt),
+    'DUPLICATE'
+  );
+  assert.equal(audits.length, 2);
+  assert.equal(job.status, 'AWAITING_DEPLOY_REVIEW');
+  await assert.rejects(
+    InboxImplementationService.recordIdeCommitReceipt(fastify as never, 16, 1, {
+      ...commitReceipt,
+      commitSha: 'b'.repeat(40),
+    }),
+    { code: 'IDE_COMMIT_REJECTED' }
+  );
+  assert.equal(audits.length, 2);
+});
+
 test('commit approval rejects a retained patch when quality gate evidence failed', async () => {
   const readySource = source({
     status: 'IN_PROGRESS',

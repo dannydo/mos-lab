@@ -2416,8 +2416,7 @@ async function drain(): Promise<void> {
       (await runWorkerStep('CLASSIFICATION', processOne)) ||
       (await runWorkerStep('CONVERSATION', processConversationOne)) ||
       (await runWorkerStep('INBOX_FOLLOW_UP', processInboxFollowUpOne)) ||
-      (await runWorkerStep('INBOX_PLAN', processInboxPlanOne)) ||
-      (await runWorkerStep('INBOX_IMPLEMENTATION', processInboxImplementationOne))
+      (await runWorkerStep('INBOX_PLAN', processInboxPlanOne))
     ) {
       /* one serial worker preserves leases */
     }

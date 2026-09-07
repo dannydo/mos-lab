@@ -21,6 +21,8 @@ import {
   type RetryBugReportImplementationRequest,
   type RenewInboxImplementationLeaseRequest,
   type RecordInboxImplementationQualityGateSelfCheckRequest,
+  type RecordInboxIdeImplementationReceiptRequest,
+  type RecordInboxIdeCommitReceiptRequest,
   type BugReportListQuery,
   type ConfirmCloseBugReportRequest,
   type CreateBugReportCommentRequest,
@@ -509,7 +511,6 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         if (outcome.planRequested && (await InboxPlanService.enqueue(fastify, id, 'IMPLEMENTATION_APPROVAL'))) {
           RequestClassifierWorkerHub.notify('inbox_plan_available');
         }
-        if (outcome.implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
         return reply.send({
           success: true,
           // Return the durable receipt immediately. Reloading the rich ticket
@@ -517,7 +518,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           // has already started, leaving the UI spinner stuck.
           data: { reportId: id, ...outcome },
           message: outcome.implementationQueued
-            ? 'Đã tạo implementation job trong hàng đợi worker.'
+            ? 'Đã tạo IDE handoff. Hãy thực hiện code/test trong Codex IDE hiển thị.'
             : outcome.planRequested
               ? 'Đã lưu duyệt triển khai; worker đang tạo plan native khớp source hiện hành.'
               : 'Đã lưu duyệt triển khai.',
@@ -549,6 +550,72 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Retry inbox implementation failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/ide-implementation-receipt',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const outcome = await InboxImplementationService.recordIdeReceipt(
+          fastify,
+          id,
+          request.user.id,
+          request.body as RecordInboxIdeImplementationReceiptRequest
+        );
+        return reply.send({
+          success: true,
+          data: { reportId: id, outcome },
+          message:
+            outcome === 'DUPLICATE'
+              ? 'IDE receipt này đã được ghi trước đó; không tạo thêm audit hay checkpoint.'
+              : 'Đã ghi IDE receipt. Ticket đang chờ review commit; Worker Mac không được chạy bước tiếp theo.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Record IDE implementation receipt failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/ide-handoff-cancel',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const cancelled = await InboxImplementationService.cancelIdeHandoff(fastify, id, request.user.id);
+        return reply.send({ success: true, data: { reportId: id, cancelled } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Cancel IDE handoff failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/ide-commit-receipt',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const recorded = await InboxImplementationService.recordIdeCommitReceipt(
+          fastify,
+          id,
+          request.user.id,
+          request.body as RecordInboxIdeCommitReceiptRequest
+        );
+        return reply.send({
+          success: true,
+          data: { reportId: id, outcome: recorded },
+          message:
+            recorded === 'DUPLICATE'
+              ? 'Commit receipt này đã được ghi trước đó; không tạo thêm audit hay checkpoint.'
+              : 'Đã ghi commit receipt. Ticket đang chờ Danny duyệt deploy.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Record IDE commit receipt failed');
       }
     }
   );
@@ -1056,11 +1123,12 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       try {
         const workerId = String((request.body as { workerId?: string })?.workerId || '');
         await RequestClassificationService.heartbeat(fastify, workerId);
-        if (await InboxImplementationService.recoverApprovedPlanEvents(fastify)) {
-          RequestClassifierWorkerHub.notify('inbox_plan_available');
-        }
-        await InboxImplementationService.recoverInterruptedImplementationJobs(fastify);
-        return reply.send({ data: await InboxImplementationService.claim(fastify, workerId) });
+        // Fail closed at the only worker-dispatch boundary. Implementation
+        // work is IDE-owned and this endpoint must never lease code/test,
+        // commit, or deploy authority to the Mac worker.
+        return reply
+          .code(410)
+          .send({ error: 'IDE_EXECUTION_REQUIRED', message: 'Implementation chỉ được thực hiện trong Codex IDE.' });
       } catch (error) {
         return sendError(fastify, reply, error, 'Inbox implementation claim failed');
       }

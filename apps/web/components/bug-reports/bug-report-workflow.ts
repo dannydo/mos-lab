@@ -62,6 +62,12 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
     detail: 'Agent chưa được phép sửa hoặc kiểm thử',
     tone: 'primary',
   },
+  AWAITING_IDE_HANDOFF: {
+    position: 3,
+    label: 'Chờ mở trong Codex IDE',
+    detail: 'Worker Mac không có quyền chạy code, commit hoặc deploy',
+    tone: 'info',
+  },
   QUEUED_FOR_FIX: {
     position: 3,
     label: 'Đã duyệt · chờ xử lý',

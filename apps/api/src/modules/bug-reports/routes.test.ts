@@ -117,6 +117,91 @@ test('IDE release checkpoint accepts only the independent publisher token and ne
   }
 });
 
+test('IDE handoff receipt routes require canonical Danny and forward only the supplied receipt', async (t) => {
+  const app = Fastify();
+  app.decorate('prisma', { crm: { crmStaff: { update: async () => ({}) } } } as unknown as typeof app.prisma);
+  app.decorateRequest('jwtVerify', async function () {
+    if (!this.headers['x-test-role']) throw new Error('No session');
+    this.user = {
+      id: 1,
+      username: String(this.headers['x-test-name'] || 'not-danny'),
+      displayName: 'Synthetic review',
+      role: this.headers['x-test-role'] as never,
+    };
+  });
+  const implementationReceipt = t.mock.method(
+    InboxImplementationService,
+    'recordIdeReceipt',
+    async () => 'DUPLICATE' as const
+  );
+  const cancel = t.mock.method(InboxImplementationService, 'cancelIdeHandoff', async () => true);
+  const commitReceipt = t.mock.method(
+    InboxImplementationService,
+    'recordIdeCommitReceipt',
+    async () => 'RECORDED' as const
+  );
+  await app.register(bugReportRoutes);
+  const handoff = {
+    jobId: 'job-1',
+    sourceVersion: 'v1:source',
+    planVersion: 'v1:plan',
+    receiptNonce: 'one-time-nonce',
+  };
+  const codeReceipt = {
+    handoff,
+    result: { summary: 'Implemented and verified.', risksAndRollback: 'Revert the IDE commit.', tests: [] },
+    changedFiles: ['apps/api/src/modules/bug-reports/routes.ts'],
+    diffStat: '1 file changed',
+    baseCommit: 'a'.repeat(40),
+    patchHash: 'b'.repeat(64),
+  };
+  const commit = { handoff, commitSha: 'c'.repeat(40) };
+  const headers = { 'x-test-role': 'super_admin', 'x-test-name': 'danhdo@gmail.com' };
+  try {
+    assert.equal(
+      (await app.inject({ method: 'POST', url: '/bug-reports/29/ide-implementation-receipt', payload: codeReceipt }))
+        .statusCode,
+      401
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/bug-reports/29/ide-implementation-receipt',
+          headers: { 'x-test-role': 'super_admin' },
+          payload: codeReceipt,
+        })
+      ).statusCode,
+      403
+    );
+    const receiptResponse = await app.inject({
+      method: 'POST',
+      url: '/bug-reports/29/ide-implementation-receipt',
+      headers,
+      payload: codeReceipt,
+    });
+    assert.equal(receiptResponse.statusCode, 200);
+    assert.match(receiptResponse.json().message, /không tạo thêm audit/i);
+    assert.deepEqual(implementationReceipt.mock.calls[0].arguments.slice(1), [29, 1, codeReceipt]);
+
+    const cancelResponse = await app.inject({ method: 'POST', url: '/bug-reports/29/ide-handoff-cancel', headers });
+    assert.equal(cancelResponse.statusCode, 200);
+    assert.deepEqual(cancel.mock.calls[0].arguments.slice(1), [29, 1]);
+
+    const commitResponse = await app.inject({
+      method: 'POST',
+      url: '/bug-reports/29/ide-commit-receipt',
+      headers,
+      payload: commit,
+    });
+    assert.equal(commitResponse.statusCode, 200);
+    assert.match(commitResponse.json().message, /chờ Danny duyệt deploy/i);
+    assert.deepEqual(commitReceipt.mock.calls[0].arguments.slice(1), [29, 1, commit]);
+  } finally {
+    await app.close();
+  }
+});
+
 test('Admin and Super Admin can read every Inbox ticket without gaining Danny triage authority', () => {
   assert.equal(canReadBugInbox({ role: 'super_admin' }), true);
   assert.equal(canReadBugInbox({ role: 'admin' }), true);

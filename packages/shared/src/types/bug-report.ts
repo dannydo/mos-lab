@@ -59,6 +59,8 @@ export const BUG_REPORT_AGENT_PROGRESS_STAGES = [
   'READY_FOR_TRIAGE',
   /** A current plan exists, but Danny has not yet authorized code/test. */
   'AWAITING_DANNY_IMPLEMENTATION_APPROVAL',
+  /** Danny has authorized a visible Codex IDE handoff; no background worker may execute it. */
+  'AWAITING_IDE_HANDOFF',
   'QUEUED_FOR_FIX',
   'QUEUED_FOR_COMMIT',
   'QUEUED_FOR_DEPLOY',
@@ -523,6 +525,11 @@ export const INBOX_IMPLEMENTATION_JOB_STATUSES = [
 ] as const;
 export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STATUSES)[number];
 
+/** Code, tests, commits and releases belong to a visible IDE task. The Mac
+ * classifier worker is limited to clarification and planning work. */
+export const INBOX_IMPLEMENTATION_EXECUTION_OWNERS = ['IDE'] as const;
+export type InboxImplementationExecutionOwner = (typeof INBOX_IMPLEMENTATION_EXECUTION_OWNERS)[number];
+
 /**
  * Safe, server-derived execution metadata for Inbox. It deliberately excludes
  * branch/worktree paths, prompts, source content and worker credentials.
@@ -531,6 +538,7 @@ export interface BugReportImplementationState {
   /** Candidate identity for a version-bound review decision; no execution credentials. */
   reviewCandidate?: { jobId: string; sourceVersion: string; planVersion: string } | null;
   status: InboxImplementationJobStatus;
+  executionOwner?: InboxImplementationExecutionOwner;
   phase: string;
   progressLabel: string | null;
   lastProgressAt: string | null;
@@ -558,6 +566,39 @@ export interface BugReportImplementationState {
   completedAt: string | null;
   updatedAt: string;
 }
+
+export interface InboxIdeHandoff {
+  jobId: string;
+  sourceVersion: string;
+  planVersion: string;
+  /** Receipt nonce is one-time and is never rendered by Inbox. */
+  receiptNonce: string;
+}
+
+export interface RecordInboxIdeImplementationReceiptRequest {
+  handoff: InboxIdeHandoff;
+  result: InboxImplementationWorkerResult;
+  changedFiles: string[];
+  diffStat: string | null;
+  baseCommit: string;
+  patchHash: string;
+}
+
+export type RecordInboxIdeImplementationReceiptResponse = ActionResponse<{
+  reportId: number;
+  outcome: 'RECORDED' | 'DUPLICATE';
+}>;
+
+/** A commit receipt can only consume the nonce issued after Danny's commit approval. */
+export interface RecordInboxIdeCommitReceiptRequest {
+  handoff: InboxIdeHandoff;
+  commitSha: string;
+}
+
+export type RecordInboxIdeCommitReceiptResponse = ActionResponse<{
+  reportId: number;
+  outcome: 'RECORDED' | 'DUPLICATE';
+}>;
 
 export interface BugReportImplementationFailure {
   command: string | null;

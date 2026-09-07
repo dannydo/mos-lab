@@ -7,6 +7,8 @@ import {
   type InboxImplementationTestResult,
   type InboxImplementationWorkerJob,
   type InboxImplementationWorkerResult,
+  type RecordInboxIdeCommitReceiptRequest,
+  type RecordInboxIdeImplementationReceiptRequest,
   type ReleaseBugReportImplementationRequest,
   type ReviewBugReportImplementationAcceptanceRequest,
   type RequestBugReportImplementationChangesRequest,
@@ -716,6 +718,158 @@ async function clearTicketActiveJob(fastify: FastifyInstance, reportId: number, 
 }
 
 export class InboxImplementationService {
+  static async recordIdeCommitReceipt(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number,
+    input: RecordInboxIdeCommitReceiptRequest
+  ) {
+    const sha = String(input?.commitSha || '');
+    if (!/^[a-f0-9]{40}$/i.test(sha))
+      throw new InboxImplementationError('Commit IDE không hợp lệ.', 422, 'IDE_COMMIT_INVALID');
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+      const report = await tx.crmBugReport.findUnique({ where: { id: reportId } });
+      const job = report?.implementationActiveJobId
+        ? await tx.crmInboxImplementationJob.findUnique({ where: { id: report.implementationActiveJobId } })
+        : null;
+      if (
+        job?.executionOwner === 'IDE' &&
+        job.status === 'AWAITING_DEPLOY_REVIEW' &&
+        job.executionPhase === 'AWAITING_DEPLOY_REVIEW' &&
+        job.commitSha === sha &&
+        !job.ideReceiptNonce
+      ) {
+        return 'DUPLICATE' as const;
+      }
+      if (
+        !report ||
+        !job ||
+        job.executionOwner !== 'IDE' ||
+        job.status !== 'PENDING' ||
+        job.executionPhase !== 'IDE_COMMIT_HANDOFF' ||
+        job.ideHandoffRevokedAt ||
+        job.ideReceiptNonce !== input?.handoff?.receiptNonce
+      )
+        throw new InboxImplementationError('Commit receipt stale hoặc không được duyệt.', 409, 'IDE_COMMIT_REJECTED');
+      const updated = await tx.crmInboxImplementationJob.updateMany({
+        where: { id: job.id, status: 'PENDING', ideReceiptNonce: input.handoff.receiptNonce },
+        data: {
+          status: 'AWAITING_DEPLOY_REVIEW',
+          executionPhase: 'AWAITING_DEPLOY_REVIEW',
+          ideReceiptNonce: null,
+          commitSha: sha,
+        },
+      });
+      if (!updated.count) throw new InboxImplementationError('Commit receipt đã thay đổi.', 409, 'IDE_COMMIT_REJECTED');
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'IDE_COMMIT_RECEIPT_RECORDED',
+          note: 'IDE đã ghi commit đã review; Worker Mac không có quyền commit.',
+          beforeJson: '{}',
+          afterJson: JSON.stringify({ jobId: job.id, commitSha: sha }),
+        },
+      });
+      return 'RECORDED' as const;
+    });
+  }
+  /** IDE receipt is serialized on the ticket and is deliberately unusable by the worker. */
+  static async recordIdeReceipt(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number,
+    input: RecordInboxIdeImplementationReceiptRequest
+  ) {
+    const result = normalizeInboxImplementationResult(input?.result);
+    const files = safeFileList(input?.changedFiles);
+    const gateResult = evaluateInboxImplementationQualityGate({ changedFiles: files, tests: result.tests });
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+      const report = await tx.crmBugReport.findUnique({
+        where: { id: reportId },
+        include: implementationReportInclude(),
+      });
+      const job = report?.implementationActiveJobId
+        ? await tx.crmInboxImplementationJob.findUnique({ where: { id: report.implementationActiveJobId } })
+        : null;
+      if (!report || !job || job.executionOwner !== 'IDE' || job.ideHandoffRevokedAt)
+        throw new InboxImplementationError('IDE handoff không hợp lệ.', 409, 'IDE_RECEIPT_REJECTED');
+      if (job.status === 'AWAITING_COMMIT_REVIEW' && !job.ideReceiptNonce) return 'DUPLICATE' as const;
+      if (
+        job.status !== 'PENDING' ||
+        job.executionPhase !== 'IDE_HANDOFF_READY' ||
+        job.ideReceiptNonce !== input?.handoff?.receiptNonce
+      )
+        throw new InboxImplementationError('IDE receipt stale hoặc đã dùng.', 409, 'IDE_RECEIPT_REJECTED');
+      const updated = await tx.crmInboxImplementationJob.updateMany({
+        where: { id: job.id, ideReceiptNonce: input.handoff.receiptNonce, status: 'PENDING' },
+        data: {
+          status: gateResult.eligible ? 'AWAITING_COMMIT_REVIEW' : 'FAILED',
+          executionPhase: gateResult.eligible ? 'AWAITING_COMMIT_REVIEW' : 'FAILED',
+          ideReceiptNonce: null,
+          changedFilesJson: JSON.stringify(files),
+          testsJson: JSON.stringify(result.tests),
+          diffStat: safeDiffStat(input?.diffStat),
+          summary: clean(result.summary, 1200),
+          risksAndRollback: clean(result.risksAndRollback, 1200),
+          failureCode: gateResult.eligible ? null : 'QUALITY_GATE_FAILED',
+        },
+      });
+      if (!updated.count) throw new InboxImplementationError('IDE receipt đã thay đổi.', 409, 'IDE_RECEIPT_REJECTED');
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'IDE_RECEIPT_RECORDED',
+          note: 'IDE receipt được ghi; worker không nhận quyền thực thi.',
+          beforeJson: snapshot(report),
+          afterJson: JSON.stringify({ jobId: job.id }),
+        },
+      });
+      return 'RECORDED' as const;
+    });
+  }
+
+  static async cancelIdeHandoff(fastify: FastifyInstance, reportId: number, actorStaffId: number) {
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+      const report = await tx.crmBugReport.findUnique({ where: { id: reportId } });
+      if (!report?.implementationActiveJobId) return false;
+      const updated = await tx.crmInboxImplementationJob.updateMany({
+        where: {
+          id: report.implementationActiveJobId,
+          executionOwner: 'IDE',
+          status: 'PENDING',
+          ideHandoffRevokedAt: null,
+        },
+        data: {
+          status: 'STALE',
+          executionPhase: 'IDE_HANDOFF_CANCELLED',
+          ideReceiptNonce: null,
+          ideHandoffRevokedAt: new Date(),
+          failureCode: 'IDE_HANDOFF_CANCELLED',
+        },
+      });
+      if (!updated.count) return false;
+      await tx.crmBugReport.update({
+        where: { id: reportId },
+        data: { implementationActiveJobId: null, status: 'APPROVED', statusSort: 0 },
+      });
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'IDE_HANDOFF_CANCELLED',
+          note: 'IDE handoff bị thu hồi; receipt cũ bị chặn.',
+          beforeJson: '{}',
+          afterJson: '{}',
+        },
+      });
+      return true;
+    });
+  }
   /** Retire only the reviewed plan, preserving its content and all historical evidence. */
   static async requestPlanChanges(
     fastify: FastifyInstance,
@@ -1796,6 +1950,32 @@ export class InboxImplementationService {
         'COMMIT_REVIEW_ARTIFACT_MISSING'
       );
     }
+    if (job.executionOwner === 'IDE') {
+      const now = new Date();
+      return fastify.prisma.crm.$transaction(async (tx) => {
+        const updated = await tx.crmInboxImplementationJob.updateMany({
+          where: { id: job.id, status: 'AWAITING_COMMIT_REVIEW', updatedAt: job.updatedAt },
+          data: {
+            status: 'PENDING',
+            executionPhase: 'IDE_COMMIT_HANDOFF',
+            ideReceiptNonce: randomUUID(),
+            updatedAt: now,
+          },
+        });
+        if (!updated.count) return false;
+        await tx.crmBugReportAudit.create({
+          data: {
+            reportId,
+            actorStaffId,
+            action: 'DANNY_COMMIT_APPROVED',
+            note: 'Danny đã duyệt commit trong Codex IDE; Worker Mac không nhận commit job.',
+            beforeJson: snapshot(report),
+            afterJson: await releaseApprovalSnapshot(tx, report, job),
+          },
+        });
+        return true;
+      });
+    }
     const qualityGate = evaluateInboxImplementationQualityGate({
       changedFiles: safeJsonValue(job.changedFilesJson),
       tests: safeJsonValue(job.testsJson),
@@ -1860,6 +2040,29 @@ export class InboxImplementationService {
     });
     if (!job?.commitSha) {
       throw new InboxImplementationError('Không có commit đã duyệt để deploy.', 409, 'DEPLOY_COMMIT_MISSING');
+    }
+    if (job.executionOwner === 'IDE') {
+      return fastify.prisma.crm.$transaction(async (tx) => {
+        await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+        const unchanged = await tx.crmInboxImplementationJob.findUnique({ where: { id: job.id } });
+        if (!unchanged || unchanged.status !== 'AWAITING_DEPLOY_REVIEW') return false;
+        const afterJson = await releaseApprovalSnapshot(tx, report, job);
+        const existing = await tx.crmBugReportAudit.findFirst({
+          where: { reportId, actorStaffId, action: 'DANNY_DEPLOY_APPROVED', afterJson },
+        });
+        if (existing) return true;
+        await tx.crmBugReportAudit.create({
+          data: {
+            reportId,
+            actorStaffId,
+            action: 'DANNY_DEPLOY_APPROVED',
+            note: 'Danny đã duyệt deploy do Codex IDE thực hiện. Inbox chỉ chờ release receipt đã xác minh.',
+            beforeJson: snapshot(report),
+            afterJson,
+          },
+        });
+        return true;
+      });
     }
     const recoveryComments = await fastify.prisma.crm.crmBugReportComment.findMany({
       where: {

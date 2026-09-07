@@ -45,6 +45,8 @@ import type {
   ApproveBugReportImplementationDeployRequest,
   ApproveBugReportImplementationDeployResponse,
   ApproveBugReportImplementationResponse,
+  RecordInboxIdeImplementationReceiptRequest,
+  RecordInboxIdeImplementationReceiptResponse,
   AuthorizeBugReportWorkerRecoveryRetryRequest,
   AuthorizeBugReportWorkerRecoveryRetryResponse,
   AuthorizeBugReportSchemaRecoveryRetryRequest,
@@ -698,6 +700,17 @@ export const apiClient = {
     ): Promise<ApproveBugReportImplementationResponse> => {
       const response = await api.post<ApproveBugReportImplementationResponse>(
         `/bug-reports/${id}/implementation-approval`,
+        data,
+        { timeout: 12_000 }
+      );
+      return response.data;
+    },
+    recordIdeImplementationReceipt: async (
+      id: number,
+      data: RecordInboxIdeImplementationReceiptRequest
+    ): Promise<RecordInboxIdeImplementationReceiptResponse> => {
+      const response = await api.post<RecordInboxIdeImplementationReceiptResponse>(
+        `/bug-reports/${id}/ide-implementation-receipt`,
         data,
         { timeout: 12_000 }
       );
