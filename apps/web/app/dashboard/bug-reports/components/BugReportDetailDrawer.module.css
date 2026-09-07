@@ -1,0 +1,7 @@
+@media (prefers-reduced-motion: reduce) {
+  .confirmationPopup {
+    /* rc-trigger measures this positioning root synchronously. Even the global
+       0.01ms transition animates its temporary coordinates and corrupts alignment. */
+    transition: none !important;
+  }
+}

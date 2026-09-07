@@ -4,8 +4,11 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import type { JwtUserPayload } from '../../middlewares/auth.js';
 import { academySalesRoutes } from './routes.js';
 
-test('GET campaign list gives active Marketing & Sales members the Academy manager scope', async () => {
+test('GET campaign list gives active Academy members manager scope, not roles alone', async (t) => {
   const app = Fastify();
+  t.after(() => app.close());
+  const academyMemberIds = new Set([191, 192, 193]);
+  let campaignReads = 0;
   const rosterlessCampaign = {
     id: 91,
     name: 'Quản lý nội bộ Academy',
@@ -33,19 +36,45 @@ test('GET campaign list gives active Marketing & Sales members the Academy manag
         findUnique: async () => ({ legacyStaffId: null, role: 'admin', isActive: true }),
       },
       crmTeamMember: {
-        findFirst: async ({ where }: { where: { crmStaffId?: number; team?: { code?: string } } }) =>
-          where.team?.code === 'MARKETING_SALES' ? (where.crmStaffId === 193 ? { id: 2 } : null) : { id: 1 },
+        findFirst: async ({
+          where,
+        }: {
+          where: {
+            isActive?: boolean;
+            OR?: { crmStaffId?: number }[];
+            team?: { isActive?: boolean; department?: { code?: string; isActive?: boolean } };
+          };
+        }) =>
+          where.isActive === true &&
+          where.team?.isActive === true &&
+          where.team.department?.code === 'ACADEMY' &&
+          where.team.department.isActive === true &&
+          where.OR?.some((member) => academyMemberIds.has(member.crmStaffId ?? 0))
+            ? { id: 1 }
+            : null,
       },
-      crmAcademyCampaign: { findMany: async () => [rosterlessCampaign] },
+      crmAcademyCampaign: {
+        findMany: async () => {
+          campaignReads += 1;
+          return [rosterlessCampaign];
+        },
+      },
     },
     legacy: {},
   } as unknown as FastifyInstance['prisma']);
   app.decorateRequest('user', null as unknown as JwtUserPayload);
   app.decorateRequest('jwtVerify', function (this: FastifyRequest) {
     const testRole = String(this.headers['x-test-role'] || 'telesales');
-    const role = testRole === 'manager' ? 'manager' : 'telesales';
+    const role = testRole === 'manager' || testRole === 'non-member-manager' ? 'manager' : 'telesales';
+    const actorIds: Record<string, number> = {
+      manager: 191,
+      telesales: 192,
+      marketing: 193,
+      'non-member-manager': 194,
+      'non-member-telesales': 195,
+    };
     this.user = {
-      id: role === 'manager' ? 191 : testRole === 'marketing' ? 193 : 192,
+      id: actorIds[testRole] ?? 0,
       username: testRole,
       displayName: testRole,
       role,
@@ -55,31 +84,27 @@ test('GET campaign list gives active Marketing & Sales members the Academy manag
   });
   await app.register(academySalesRoutes);
 
-  const manager = await app.inject({
-    method: 'GET',
-    url: '/academy-sales/campaigns',
-    headers: { 'x-test-role': 'manager' },
-  });
-  assert.equal(manager.statusCode, 200);
-  assert.equal(manager.json().total, 1);
+  for (const role of ['manager', 'marketing', 'telesales']) {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/academy-sales/campaigns',
+      headers: { 'x-test-role': role },
+    });
+    assert.equal(response.statusCode, 200, `${role} Academy member can access campaigns`);
+    assert.equal(response.json().total, 1, `${role} Academy member can manage a rosterless campaign`);
+    assert.equal(response.json().data[0].id, rosterlessCampaign.id);
+  }
 
-  const marketing = await app.inject({
-    method: 'GET',
-    url: '/academy-sales/campaigns',
-    headers: { 'x-test-role': 'marketing' },
-  });
-  assert.equal(marketing.statusCode, 200);
-  assert.equal(marketing.json().total, 1);
-
-  const telesales = await app.inject({
-    method: 'GET',
-    url: '/academy-sales/campaigns',
-    headers: { 'x-test-role': 'telesales' },
-  });
-  assert.equal(telesales.statusCode, 200);
-  assert.equal(telesales.json().total, 0);
-
-  await app.close();
+  for (const role of ['non-member-manager', 'non-member-telesales']) {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/academy-sales/campaigns',
+      headers: { 'x-test-role': role },
+    });
+    assert.equal(response.statusCode, 403, `${role} cannot gain access from role alone`);
+    assert.match(response.json().message, /Department Academy/);
+  }
+  assert.equal(campaignReads, 3, 'denied actors must not query campaign data');
 });
 
 test('GET campaign sidebar only exposes pinned Academy links to admins or assigned staff', async () => {

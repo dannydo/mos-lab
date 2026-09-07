@@ -98,7 +98,7 @@ export interface TouchpointPalette {
   dot: string;
 }
 
-export const getTouchpointPalette = (colorStr: string | undefined, themeMode: string): TouchpointPalette => {
+const getTouchpointPalette = (colorStr: string | undefined, themeMode: string): TouchpointPalette => {
   const isDark = themeMode === 'dark';
 
   if (!colorStr) {

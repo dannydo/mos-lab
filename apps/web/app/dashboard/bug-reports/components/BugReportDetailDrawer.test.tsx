@@ -1,0 +1,247 @@
+import type { ComponentProps } from 'react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BugReportDetailDrawer } from './BugReportDetailDrawer';
+import { capturedAt, makeDetail, makeImplementation } from '../__tests__/detail-fixtures';
+import styles from './BugReportDetailDrawer.module.css';
+
+const feedback = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), warning: vi.fn() }));
+vi.mock('antd', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('antd')>()),
+  message: { useMessage: () => [feedback, null] },
+}));
+
+type Props = ComponentProps<typeof BugReportDetailDrawer>;
+function propsFor(detail = makeDetail(), canTriage = true) {
+  const receipt = { reportId: detail.id, implementationQueued: true, planRequested: false };
+  return {
+    reportId: detail.id,
+    canTriage,
+    onClose: vi.fn(),
+    getDetail: vi.fn<Props['getDetail']>().mockResolvedValue(detail),
+    triage: vi.fn<Props['triage']>().mockResolvedValue(detail),
+    approveImplementation: vi.fn<Props['approveImplementation']>().mockResolvedValue(receipt),
+    approveImplementationCommit: vi
+      .fn<Props['approveImplementationCommit']>()
+      .mockResolvedValue({ reportId: detail.id, commitQueued: true }),
+    approveImplementationDeploy: vi
+      .fn<Props['approveImplementationDeploy']>()
+      .mockResolvedValue({ reportId: detail.id, deploymentQueued: true }),
+    retryImplementation: vi.fn<Props['retryImplementation']>().mockResolvedValue(receipt),
+    authorizeWorkerRecoveryRetry: vi.fn<Props['authorizeWorkerRecoveryRetry']>().mockResolvedValue(receipt),
+    authorizeSchemaRecoveryRetry: vi.fn<Props['authorizeSchemaRecoveryRetry']>().mockResolvedValue(receipt),
+    authorizeQualityGateRecoveryRetry: vi.fn<Props['authorizeQualityGateRecoveryRetry']>().mockResolvedValue(receipt),
+    authorizeBuildLockRecoveryRetry: vi.fn<Props['authorizeBuildLockRecoveryRetry']>().mockResolvedValue(receipt),
+    confirmClose: vi.fn<Props['confirmClose']>().mockResolvedValue(detail),
+    comment: vi.fn<Props['comment']>().mockResolvedValue({ report: detail, attachmentWarnings: [] }),
+  } satisfies Props;
+}
+
+afterEach(cleanup);
+beforeEach(() => {
+  vi.clearAllMocks();
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1440 });
+});
+
+describe('BugReportDetailDrawer behavior', () => {
+  it('keeps read-only viewers out of every mutation and preserves detail/context/audit display', async () => {
+    const detail = makeDetail({
+      audits: [
+        { id: 1, action: 'CREATED', actor: null, note: 'Audit đầu', before: null, after: null, createdAt: capturedAt },
+        {
+          id: 2,
+          action: 'AGENT_PLAN_POSTED',
+          actor: null,
+          note: 'Audit sau',
+          before: null,
+          after: null,
+          createdAt: capturedAt,
+        },
+      ],
+    });
+    const props = propsFor(detail, false);
+    render(<BugReportDetailDrawer {...props} />);
+    await screen.findByText(detail.description);
+    expect(screen.getByText('Xem plan hiện tại.')).toBeVisible();
+    expect(screen.getByText('Context tự động')).toBeVisible();
+    expect(screen.getByText('/dashboard/bk')).toBeVisible();
+    expect(screen.getByText('Không ghi nhận API lỗi gần đây.')).toBeVisible();
+    expect(screen.getByText('Không ghi nhận JavaScript error gần đây.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lưu triage' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Gửi bình luận' })).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Audit sau').compareDocumentPosition(screen.getByText('Audit đầu')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).not.toBe(0);
+    expect(props.triage).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(props.onClose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { requestType: 'BUG' as const, ready: false, businessContext: '', enabled: false },
+    { requestType: 'BUG' as const, ready: false, businessContext: 'Nghiệp vụ đúng đã rõ', enabled: true },
+    { requestType: 'FEATURE' as const, ready: false, businessContext: 'Nghiệp vụ đúng đã rõ', enabled: false },
+    { requestType: 'FEATURE' as const, ready: true, businessContext: '', enabled: true },
+  ])(
+    'preserves $requestType approval clarity gate (ready=$ready, context=$businessContext)',
+    async ({ requestType, ready, businessContext, enabled }) => {
+      const detail = makeDetail({
+        requestType,
+        businessContext,
+        clarification: { status: ready ? 'READY' : 'PENDING_AGENT', summary: null, clarifiedAt: null },
+      });
+      render(<BugReportDetailDrawer {...propsFor(detail)} />);
+      const button = await screen.findByRole('button', {
+        name: requestType === 'FEATURE' ? 'Duyệt triển khai' : 'Approve',
+      });
+      if (enabled) expect(button).toBeEnabled();
+      else expect(button).toBeDisabled();
+    }
+  );
+
+  it('requires the code/test confirmation before invoking the existing approval callback', async () => {
+    const props = propsFor(makeDetail({ status: 'APPROVED' }));
+    render(<BugReportDetailDrawer {...props} />);
+    const trigger = await screen.findByRole('button', { name: 'Duyệt code/test' });
+    expect(props.approveImplementation).not.toHaveBeenCalled();
+    fireEvent.click(trigger);
+    await screen.findByText('Duyệt AI chạy code/test?');
+    expect(props.approveImplementation).not.toHaveBeenCalled();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
+    await waitFor(() => expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId));
+  });
+
+  it.each([
+    ['READY_FOR_TRIAGE', 'Duyệt code/test', 'approveImplementation'],
+    ['AWAITING_DANNY_COMMIT_REVIEW', 'Duyệt commit', 'approveImplementationCommit'],
+  ] as const)('keeps the %s popup root scoped and cancellation side-effect free', async (stage, label, action) => {
+    const props = propsFor(
+      makeDetail({
+        status: stage === 'READY_FOR_TRIAGE' ? 'APPROVED' : 'IN_PROGRESS',
+        agentProgress: { stage, note: null, updatedAt: capturedAt },
+      })
+    );
+    render(<BugReportDetailDrawer {...props} />);
+    const trigger = await screen.findByRole('button', { name: label });
+    fireEvent.click(trigger);
+    const cancel = await screen.findByRole('button', { name: 'Chưa duyệt' });
+    const popup = cancel.closest('.ant-popover');
+    expect(popup).toHaveClass(styles.confirmationPopup);
+    fireEvent.click(cancel);
+    // Assert closed interaction state here; real-browser QA covers placement and animation completion.
+    await waitFor(() => expect(trigger).not.toHaveClass('ant-popover-open'));
+    expect(popup).toHaveStyle({ pointerEvents: 'none' });
+    expect(props[action]).not.toHaveBeenCalled();
+    expect(props.triage).not.toHaveBeenCalled();
+  });
+
+  const recoveryCases = [
+    ['canAuthorizeBuildLockRecoveryRetry', 'authorizeBuildLockRecoveryRetry', 'Cho phép retry sau khi sửa lock build'],
+    [
+      'canAuthorizeQualityGateRecoveryRetry',
+      'authorizeQualityGateRecoveryRetry',
+      'Cho phép retry sau khi sửa cổng kiểm thử',
+    ],
+    ['canAuthorizeSchemaRecoveryRetry', 'authorizeSchemaRecoveryRetry', 'Cho phép retry sau khi sửa schema'],
+    ['canAuthorizeWorkerRecoveryRetry', 'authorizeWorkerRecoveryRetry', 'Cho phép retry sau khi sửa Worker'],
+    ['canRetryImplementation', 'retryImplementation', 'Tạo retry sạch'],
+  ] as const;
+
+  it.each(recoveryCases)(
+    'preserves server recovery precedence for %s and requires confirmation',
+    async (flag, action, label) => {
+      const index = recoveryCases.findIndex((item) => item[0] === flag);
+      const flags = Object.fromEntries(recoveryCases.map((item, current) => [item[0], current >= index]));
+      const props = propsFor(
+        makeDetail({
+          status: 'IN_PROGRESS',
+          agentProgress: { stage: 'IMPLEMENTATION_FAILED', note: null, updatedAt: capturedAt },
+          implementation: makeImplementation(flags),
+        })
+      );
+      render(<BugReportDetailDrawer {...props} />);
+      const trigger = await screen.findByRole('button', { name: label });
+      for (const item of recoveryCases) {
+        if (item[0] !== flag) expect(screen.queryByRole('button', { name: item[2] })).not.toBeInTheDocument();
+        expect(props[item[1]]).not.toHaveBeenCalled();
+      }
+      fireEvent.click(trigger);
+      const confirmation = await screen.findByRole('button', {
+        name: flag === 'canRetryImplementation' ? 'Tạo retry' : 'Cho phép retry',
+      });
+      expect(props[action]).not.toHaveBeenCalled();
+      fireEvent.click(confirmation);
+      await waitFor(() => expect(props[action]).toHaveBeenCalledExactlyOnceWith(props.reportId));
+    }
+  );
+
+  it.each([
+    ['AWAITING_DANNY_COMMIT_REVIEW', 'Duyệt commit', 'approveImplementationCommit'],
+    ['AWAITING_DANNY_DEPLOY_APPROVAL', 'Duyệt deploy', 'approveImplementationDeploy'],
+  ] as const)('preserves the %s checkpoint without automatic release', async (stage, label, action) => {
+    const props = propsFor(
+      makeDetail({ status: 'IN_PROGRESS', agentProgress: { stage, note: null, updatedAt: capturedAt } })
+    );
+    render(<BugReportDetailDrawer {...props} />);
+    fireEvent.click(await screen.findByRole('button', { name: label }));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: label })).toHaveLength(2));
+    expect(props[action]).not.toHaveBeenCalled();
+    fireEvent.click(screen.getAllByRole('button', { name: label }).at(-1)!);
+    await waitFor(() => expect(props[action]).toHaveBeenCalledExactlyOnceWith(props.reportId));
+  });
+
+  it('keeps reporter acceptance out of the administrative close exception', async () => {
+    render(
+      <BugReportDetailDrawer
+        {...propsFor(
+          makeDetail({
+            status: 'FIXED',
+            agentProgress: { stage: 'AWAITING_REPORTER_ACCEPTANCE', note: null, updatedAt: capturedAt },
+          })
+        )}
+      />
+    );
+    await screen.findByText(makeDetail().description);
+    expect(screen.queryByRole('button', { name: 'Đóng ngoại lệ' })).not.toBeInTheDocument();
+  });
+
+  it('keeps detail retry UI and recovers from a read error', async () => {
+    const props = propsFor();
+    props.getDetail.mockRejectedValueOnce(new Error('Lỗi đọc tổng hợp.'));
+    render(<BugReportDetailDrawer {...props} />);
+    await screen.findByText('Lỗi đọc tổng hợp.');
+    fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
+    await screen.findByText(makeDetail().description);
+    expect(props.getDetail).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders client-error evidence through theme-aware typography without changing the stack text', async () => {
+    const detail = makeDetail();
+    detail.context.recentClientErrors = [
+      { occurredAt: capturedAt, name: 'TypeError', message: 'Synthetic diagnostic', stack: 'Frame one\n  Frame two' },
+    ];
+    render(<BugReportDetailDrawer {...propsFor(detail, false)} />);
+    const stack = await screen.findByText('Frame one Frame two');
+    expect(stack.textContent).toBe('Frame one\n  Frame two');
+    expect(stack).toHaveClass('ant-typography-secondary', 'font-mono', 'whitespace-pre-wrap');
+    expect(screen.getByText(detail.description)).toHaveClass('![font-size:var(--text-base)]');
+  });
+
+  it('passes the conversation payload through and hydrates the returned report', async () => {
+    const props = propsFor();
+    props.comment.mockResolvedValueOnce({ report: makeDetail({ title: 'Đã nhận bình luận' }), attachmentWarnings: [] });
+    render(<BugReportDetailDrawer {...props} />);
+    const input = await screen.findByPlaceholderText('Bổ sung chi tiết hoặc bằng chứng; có thể dán ảnh trực tiếp…');
+    fireEvent.change(input, { target: { value: '  Bằng chứng bổ sung  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi bình luận' }));
+    await waitFor(() =>
+      expect(props.comment).toHaveBeenCalledExactlyOnceWith(props.reportId, {
+        body: 'Bằng chứng bổ sung',
+        attachments: [],
+      })
+    );
+    await screen.findByText('MOS-BUG-900001 · Đã nhận bình luận');
+  });
+});
