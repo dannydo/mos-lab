@@ -379,6 +379,31 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'PEOPLE-003',
+    book: 'PEOPLE',
+    title: 'Ngoại lệ nhân sự phải đúng người, đúng nhóm',
+    summary: 'Picker đội nhóm giữ nguyên tập nhân sự hợp lệ; ngoại lệ không được mở rộng thành toàn bộ hồ sơ Staff.',
+    commandments: [
+      'Danh sách mặc định vẫn yêu cầu user_profile liên kết staff_profile, provider = Staff và is_disabled = 0.',
+      'Chỉ BK_TELESALES được bổ sung legacy #52598 khi CRM #70 còn active, role telesales và liên kết chính xác tới #52598.',
+      'Ngoại lệ vẫn phải thỏa provider Staff, không bị vô hiệu hóa; không đổi tên hoặc gộp với nhân sự #47530.',
+      'Hiển thị ứng viên không tự thêm người vào team; các nhóm khác không nhận ngoại lệ này.',
+    ],
+    rationale: 'Nhiều hồ sơ khách legacy cũng mang provider Staff; chỉ bỏ JOIN sẽ đưa sai đối tượng vào picker.',
+    exceptions: [
+      'Ngoại lệ cá nhân Thanh Vũ do Danny duyệt ngày 07/09/2026; không phải chính sách nhập nhân sự đại trà.',
+    ],
+    tags: ['nhân sự', 'BK', 'Telesales', 'nhóm', 'ngoại lệ'],
+    routeScopes: ['/dashboard/staff/teams'],
+    status: 'ACTIVE',
+    version: '1.1.0',
+    effectiveFrom: '2026-09-07',
+    sources: [
+      { label: 'Điều kiện ứng viên và ngoại lệ', reference: 'apps/api/src/modules/teams/team.service.ts' },
+      { label: 'Kiểm thử phạm vi ngoại lệ', reference: 'apps/api/src/modules/teams/team.service.test.ts' },
+    ],
+  },
+  {
     id: 'CAT-001',
     book: 'CATALOG',
     title: 'Một đồng là một đồng, không có 0,18 đồng',
