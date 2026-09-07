@@ -2209,6 +2209,27 @@ export class InboxImplementationService {
       });
       return null;
     }
+    let releaseManifestDigest: string | null = null;
+    if (operation === 'DEPLOY') {
+      const reviewAudit = await fastify.prisma.crm.crmBugReportAudit.findFirst({
+        where: { reportId: job.reportId, action: 'AGENT_IMPLEMENTATION_REVIEW_READY', afterJson: { contains: job.id } },
+        orderBy: { id: 'desc' },
+      });
+      const manifest = readReleaseManifest(reviewAudit?.afterJson || null);
+      const tests = qualityTestsForCheckpointApproval(job.testsJson, job.failureCode);
+      if (!manifest || !matchesReleaseManifest(manifest, job, tests)) {
+        await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
+          where: { id: job.id, status: 'PENDING', executionPhase: 'DEPLOY_APPROVED' },
+          data: {
+            status: 'AWAITING_DEPLOY_REVIEW',
+            executionPhase: 'AWAITING_DEPLOY_REVIEW',
+            failureCode: 'RELEASE_MANIFEST_MISSING',
+          },
+        });
+        return null;
+      }
+      releaseManifestDigest = manifest.digest;
+    }
 
     await fastify.prisma.crm.crmInboxImplementationWorkerLock.upsert({
       where: { id: 1 },
@@ -2243,6 +2264,7 @@ export class InboxImplementationService {
       planVersion: job.planVersion,
       branchName: job.branchName,
       commitSha: job.commitSha,
+      releaseManifestDigest,
       operation,
       reviewedFiles,
       retryOfJobId: job.retryOfJobId,
@@ -2719,10 +2741,6 @@ export class InboxImplementationService {
       });
     });
     await clearGlobalPermit(fastify, id);
-    await this.recordReleasedForReporterAcceptance(fastify, job.reportId, null, {
-      acknowledged: true,
-      commitSha: job.commitSha,
-    });
   }
 
   /**

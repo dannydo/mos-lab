@@ -28,9 +28,151 @@ import {
   inboxVisualQaSyntheticStorage,
   privateVisualQaFailureCode,
   privateVisualQaScenarioForChangedFiles,
+  publishVerifiedIdeReleaseCheckpoint,
   renewImplementationLeaseWithRetry,
   withWorkerOwnedVisualQaEvidence,
 } from './request-classifier-worker.js';
+
+const RELEASE_COMMIT = 'a'.repeat(40);
+const RELEASE_DIGEST = 'b'.repeat(64);
+
+function releaseResponse(commitSha: string, status = 200): Response {
+  return new Response(JSON.stringify({ commitSha }), { status, headers: { 'Content-Type': 'application/json' } });
+}
+
+test('publishes exactly one verified five-field IDE release receipt only after release confirmation', async () => {
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
+  const receipt = await publishVerifiedIdeReleaseCheckpoint(
+    {
+      ticketId: 29,
+      jobId: '123e4567-e89b-12d3-a456-426614174000',
+      manifestDigest: RELEASE_DIGEST,
+      commitSha: RELEASE_COMMIT,
+      releaseConfirmed: true,
+      apiUrl: 'https://api.example.test/api',
+      token: 't'.repeat(32),
+      webReleaseUrl: 'https://web.example.test/api/release-version',
+      requiresWebRelease: true,
+    },
+    {
+      fetcher: (async (url: string | URL | Request, init?: RequestInit) => {
+        calls.push({ url: String(url), init });
+        if (String(url).endsWith('/api/release')) return releaseResponse(RELEASE_COMMIT);
+        if (String(url).includes('release-version')) return releaseResponse(RELEASE_COMMIT);
+        return new Response('{}', { status: 200 });
+      }) as typeof fetch,
+      verifyAncestor: async (ancestor, descendant) => ancestor === RELEASE_COMMIT && descendant === RELEASE_COMMIT,
+    }
+  );
+  assert.deepEqual(receipt, {
+    jobId: '123e4567-e89b-12d3-a456-426614174000',
+    manifestDigest: RELEASE_DIGEST,
+    commitSha: RELEASE_COMMIT,
+    apiRelease: RELEASE_COMMIT,
+    webRelease: RELEASE_COMMIT,
+  });
+  assert.equal(calls.length, 3);
+  assert.equal(calls[2]?.url, 'https://api.example.test/api/ide-release-checkpoints/29');
+  assert.deepEqual(JSON.parse(String(calls[2]?.init?.body)), receipt);
+  assert.match(String((calls[2]?.init?.headers as Record<string, string>).Authorization), /^Bearer t+$/);
+});
+
+test('refuses missing, stale, mismatched, and unconfirmed release evidence before any checkpoint write', async (t) => {
+  const base = {
+    ticketId: 29,
+    jobId: '123e4567-e89b-12d3-a456-426614174000',
+    manifestDigest: RELEASE_DIGEST,
+    commitSha: RELEASE_COMMIT,
+    releaseConfirmed: true,
+    apiUrl: 'https://api.example.test/api',
+    token: 't'.repeat(32),
+    webReleaseUrl: 'https://web.example.test/api/release-version',
+    requiresWebRelease: false,
+  };
+  const cases: Array<[string, Partial<typeof base>, boolean]> = [
+    ['missing manifest', { manifestDigest: '' }, true],
+    ['not confirmed', { releaseConfirmed: false }, true],
+    ['stale marker', {}, false],
+  ];
+  for (const [name, patch, skipMarker] of cases) {
+    await t.test(name, async () => {
+      let writes = 0;
+      await assert.rejects(
+        publishVerifiedIdeReleaseCheckpoint(
+          { ...base, ...patch },
+          {
+            fetcher: (async (url: string | URL | Request) => {
+              if (String(url).includes('ide-release-checkpoints')) writes += 1;
+              return releaseResponse('c'.repeat(40));
+            }) as typeof fetch,
+            verifyAncestor: async () => false,
+          }
+        )
+      );
+      assert.equal(writes, 0);
+      if (skipMarker) assert.equal(writes, 0);
+    });
+  }
+});
+
+test('retries only the identical receipt after a transient unavailable checkpoint endpoint', async () => {
+  const bodies: string[] = [];
+  let checkpointCalls = 0;
+  await publishVerifiedIdeReleaseCheckpoint(
+    {
+      ticketId: 29,
+      jobId: '123e4567-e89b-12d3-a456-426614174000',
+      manifestDigest: RELEASE_DIGEST,
+      commitSha: RELEASE_COMMIT,
+      releaseConfirmed: true,
+      apiUrl: 'https://api.example.test/api',
+      token: 't'.repeat(32),
+      webReleaseUrl: 'https://web.example.test/api/release-version',
+      requiresWebRelease: false,
+    },
+    {
+      fetcher: (async (url: string | URL | Request, init?: RequestInit) => {
+        if (String(url).endsWith('/api/release')) return releaseResponse(RELEASE_COMMIT);
+        checkpointCalls += 1;
+        bodies.push(String(init?.body));
+        return new Response('{}', { status: checkpointCalls === 1 ? 503 : 200 });
+      }) as typeof fetch,
+      verifyAncestor: async () => true,
+      wait: async () => undefined,
+    }
+  );
+  assert.equal(checkpointCalls, 2);
+  assert.equal(bodies[0], bodies[1]);
+});
+
+test('does not retry an unauthorized or rejected checkpoint receipt', async () => {
+  let checkpointCalls = 0;
+  await assert.rejects(
+    publishVerifiedIdeReleaseCheckpoint(
+      {
+        ticketId: 29,
+        jobId: '123e4567-e89b-12d3-a456-426614174000',
+        manifestDigest: RELEASE_DIGEST,
+        commitSha: RELEASE_COMMIT,
+        releaseConfirmed: true,
+        apiUrl: 'https://api.example.test/api',
+        token: 't'.repeat(32),
+        webReleaseUrl: 'https://web.example.test/api/release-version',
+        requiresWebRelease: false,
+      },
+      {
+        fetcher: (async (url: string | URL | Request) => {
+          if (String(url).endsWith('/api/release')) return releaseResponse(RELEASE_COMMIT);
+          checkpointCalls += 1;
+          return new Response('{}', { status: 401 });
+        }) as typeof fetch,
+        verifyAncestor: async () => true,
+        wait: async () => undefined,
+      }
+    )
+  );
+  assert.equal(checkpointCalls, 1);
+});
 
 test('builds a noninteractive Codex invocation with private structured output', async () => {
   const prompt = 'QA controlled input';
