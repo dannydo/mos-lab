@@ -12,12 +12,14 @@ import {
   type RequestBugReportImplementationChangesRequest,
   type RequestBugReportPlanChangesRequest,
   type BugReportPlanReviewCandidate,
+  type InboxIdeReleaseToken,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 import { InboxPlanService } from './inbox-plan.service.js';
 import { ExperienceJournalService } from '../experience-journal/experience-journal.service.js';
 import { Prisma } from '../../generated/crm-client/index.js';
+import { makeReleaseManifest, readReleaseManifest, matchesReleaseManifest } from './inbox-release-manifest.js';
 
 const LEASE_MS = 12 * 60 * 1000;
 const RETRY_LIMIT = 3;
@@ -357,11 +359,48 @@ function snapshot(source: GateSource) {
   });
 }
 
-function implementationReportInclude() {
+export function implementationReportInclude() {
   return {
     comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' as const }, take: 8 },
     inboxPlanJobs: { orderBy: { createdAt: 'desc' as const }, take: 12 },
   };
+}
+
+async function releaseApprovalSnapshot(
+  tx: Prisma.TransactionClient,
+  report: GateSource,
+  job: {
+    id: string;
+    reportId: number;
+    sourceVersion: string;
+    planVersion: string;
+    changedFilesJson: string | null;
+    testsJson: string | null;
+    failureCode: string | null;
+    commitSha: string | null;
+  }
+) {
+  const audit = await tx.crmBugReportAudit.findFirst({
+    where: { reportId: report.id, action: 'AGENT_IMPLEMENTATION_REVIEW_READY', afterJson: { contains: job.id } },
+    orderBy: { id: 'desc' },
+  });
+  const manifest = readReleaseManifest(audit?.afterJson || null);
+  const tests = qualityTestsForCheckpointApproval(job.testsJson, job.failureCode);
+  return JSON.stringify({
+    ...JSON.parse(snapshot(report)),
+    ...(manifest && matchesReleaseManifest(manifest, job, tests)
+      ? {
+          releaseApproval: {
+            jobId: job.id,
+            manifestDigest: manifest.digest,
+            commitSha: job.commitSha,
+            sourceVersion: job.sourceVersion,
+            planVersion: job.planVersion,
+            reviewAuditId: audit!.id,
+          },
+        }
+      : {}),
+  });
 }
 
 function normalizeTests(value: unknown): InboxImplementationTestResult[] {
@@ -1787,7 +1826,7 @@ export class InboxImplementationService {
           action: 'DANNY_COMMIT_APPROVED',
           note: 'Danny đã duyệt commit bản diff đã review. Worker Mac chỉ được stage các tệp đã ghi nhận, commit vào branch riêng, rồi dừng chờ deploy.',
           beforeJson: snapshot(report),
-          afterJson: snapshot({ ...report, comments: report.comments, inboxPlanJobs: report.inboxPlanJobs }),
+          afterJson: await releaseApprovalSnapshot(tx, report, job),
         },
       });
       return true;
@@ -1871,7 +1910,7 @@ export class InboxImplementationService {
           action: 'DANNY_DEPLOY_APPROVED',
           note: `Danny đã duyệt deploy. Worker Mac chỉ được merge commit đã ghi nhận, push main, chạy pipeline production và xác minh release marker.${recoveredLegacyEvidence ? ' Đã khôi phục bằng chứng test từ review record bất biến sau gián đoạn deploy cũ.' : ''}`,
           beforeJson: snapshot(report),
-          afterJson: snapshot({ ...report, comments: report.comments, inboxPlanJobs: report.inboxPlanJobs }),
+          afterJson: await releaseApprovalSnapshot(tx, report, { ...job, testsJson: JSON.stringify(qualityTests) }),
         },
       });
       return true;
@@ -2461,7 +2500,7 @@ export class InboxImplementationService {
     id: string,
     leaseToken: string,
     raw: unknown,
-    artifacts: { changedFiles?: unknown; diffStat?: unknown }
+    artifacts: { changedFiles?: unknown; diffStat?: unknown; baseCommit?: unknown; patchHash?: unknown }
   ): Promise<void> {
     const result = normalizeInboxImplementationResult(raw);
     const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
@@ -2488,6 +2527,16 @@ export class InboxImplementationService {
     }
     const changedFiles = safeFileList(artifacts.changedFiles);
     const diffStat = safeDiffStat(artifacts.diffStat);
+    const releaseManifest = makeReleaseManifest({
+      reportId: job.reportId,
+      jobId: job.id,
+      sourceVersion: job.sourceVersion,
+      planVersion: job.planVersion,
+      baseCommit: String(artifacts.baseCommit || ''),
+      patchHash: String(artifacts.patchHash || ''),
+      changedFiles,
+      tests: result.tests,
+    });
     const qualityGate = evaluateInboxImplementationQualityGate({ changedFiles, tests: result.tests });
     const now = new Date();
     // Do not reflect ticket-owned text (including sourcePath) into the durable
@@ -2567,12 +2616,7 @@ export class InboxImplementationService {
             ? 'Code và kiểm thử đã hoàn tất trong worktree riêng; chờ Danny duyệt commit.'
             : `Quality gate chặn commit và deploy: ${qualityGate.reason}`,
           beforeJson: snapshot(job.report),
-          afterJson: snapshot({
-            ...job.report,
-            ...updated,
-            comments: job.report.comments,
-            inboxPlanJobs: job.report.inboxPlanJobs,
-          }),
+          afterJson: JSON.stringify({ ...JSON.parse(snapshot({ ...job.report, ...updated })), releaseManifest }),
         },
       });
     });
@@ -2691,9 +2735,11 @@ export class InboxImplementationService {
     fastify: FastifyInstance,
     reportId: number,
     actorStaffId: number | null,
-    input: ReleaseBugReportImplementationRequest
+    input: ReleaseBugReportImplementationRequest,
+    ide?: { tx: Prisma.TransactionClient; evidence: InboxIdeReleaseToken; approvalActors: number[] }
   ): Promise<void> {
-    const report = await fastify.prisma.crm.crmBugReport.findUnique({
+    const db = ide?.tx || fastify.prisma.crm;
+    const report = await db.crmBugReport.findUnique({
       where: { id: reportId },
       include: implementationReportInclude(),
     });
@@ -2702,7 +2748,7 @@ export class InboxImplementationService {
       throw new InboxImplementationError('Ticket chưa ở checkpoint duyệt commit để bàn giao nghiệm thu.', 409);
     }
 
-    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+    const job = await db.crmInboxImplementationJob.findFirst({
       where: {
         id: report.implementationActiveJobId,
         reportId,
@@ -2742,12 +2788,13 @@ export class InboxImplementationService {
     );
     const releaseUrl = 'https://lab.masteros.app/dashboard/bug-reports';
 
-    await fastify.prisma.crm.$transaction(async (tx) => {
+    const writeCheckpoint = async (tx: Prisma.TransactionClient) => {
       const releasedJob = await tx.crmInboxImplementationJob.updateMany({
         where: { id: job.id, reportId, status: 'AWAITING_DEPLOY_REVIEW' },
         data: {
           status: 'RELEASED',
           executionPhase: 'AWAITING_REPORTER_ACCEPTANCE',
+          ...(ide ? { failureCode: null } : {}),
           retainUntil: new Date(now.getTime() + REVIEW_RETENTION_MS),
         },
       });
@@ -2799,15 +2846,23 @@ export class InboxImplementationService {
         data: {
           reportId,
           ...(actorStaffId ? { actorStaffId } : {}),
-          action: 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
-          note: actorStaffId
-            ? `Danny đã xác nhận commit ${reviewedCommitSha.slice(0, 12)} đã có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`
-            : `Worker đã xác minh commit ${reviewedCommitSha.slice(0, 12)} có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
+          action: ide ? 'IDE_RELEASE_RECORDED' : 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
+          note: ide
+            ? `Đã ghi nhận release từ IDE; server xác minh commit ${reviewedCommitSha.slice(0, 12)}. Người ghi nhận #${actorStaffId}; người duyệt #${ide.approvalActors.join(', #')}. Chờ người báo nghiệm thu.`
+            : actorStaffId
+              ? `Danny đã xác nhận commit ${reviewedCommitSha.slice(0, 12)} đã có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`
+              : `Worker đã xác minh commit ${reviewedCommitSha.slice(0, 12)} có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
           beforeJson: snapshot(report),
-          afterJson: snapshot({
-            ...report,
-            status: 'FIXED',
-            implementationActiveJobId: null,
+          afterJson: JSON.stringify({
+            ...JSON.parse(snapshot({ ...report, status: 'FIXED', implementationActiveJobId: null })),
+            ...(ide
+              ? {
+                  source: 'IDE',
+                  recordedByStaffId: actorStaffId,
+                  approvalActors: ide.approvalActors,
+                  evidence: ide.evidence,
+                }
+              : {}),
           }),
         },
       });
@@ -2821,6 +2876,7 @@ export class InboxImplementationService {
             '',
             `- Commit đã duyệt: ${reviewedCommitSha}`,
             `- Release đang chạy: ${deployedCommitSha}`,
+            ...(ide ? ['- Nguồn ghi nhận: IDE; không giả worker completion hoặc nghiệm thu của người báo.'] : []),
             `- Ticket: ${key}`,
             '- Bản sửa đã được deploy. Người báo nghiệm thu đạt hoặc yêu cầu chỉnh lại.',
           ].join('\n'),
@@ -2836,7 +2892,9 @@ export class InboxImplementationService {
           actionUrl: `/dashboard?bugReview=${encodeURIComponent(key)}`,
         },
       });
-    });
+    };
+    if (ide) await writeCheckpoint(ide.tx);
+    else await fastify.prisma.crm.$transaction(writeCheckpoint);
   }
 
   /**

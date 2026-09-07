@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process';
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
 import { chmod, lstat, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import { readdir } from 'node:fs/promises';
@@ -237,12 +237,28 @@ function configuredWorkspace(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), '..');
 }
 
-async function runTrustedGit(args: string[], cwd: string): Promise<string> {
+// Code may run from a clean release worktree, but retained job/PID registries
+// must stay anchored to the repository's common checkout across worker reloads.
+let operationalWorkspace: string | null = null;
+function configuredOperationalWorkspace(): string {
+  if (!operationalWorkspace) {
+    const common = execFileSync('/usr/bin/git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
+      cwd: configuredWorkspace(),
+      encoding: 'utf8',
+      timeout: 5_000,
+    }).trim();
+    if (!common.endsWith('/.git')) throw new Error('TRUSTED_WORKSPACE_INVALID');
+    operationalWorkspace = dirname(common);
+  }
+  return operationalWorkspace;
+}
+
+async function runTrustedGit(args: string[], cwd: string, maxBuffer = 64 * 1024): Promise<string> {
   const { stdout } = await execFileAsync('/usr/bin/git', args, {
     cwd,
     encoding: 'utf8',
     timeout: 30_000,
-    maxBuffer: 64 * 1024,
+    maxBuffer,
   });
   return String(stdout || '').trim();
 }
@@ -251,7 +267,7 @@ async function createOrReuseImplementationWorktree(job: InboxImplementationWorke
   const workspace = await realpath(configuredWorkspace());
   const gitRoot = await realpath(await runTrustedGit(['rev-parse', '--show-toplevel'], workspace));
   if (gitRoot !== workspace) throw new Error('TRUSTED_WORKSPACE_INVALID');
-  const root = implementationWorktreeRoot(workspace);
+  const root = implementationWorktreeRoot(configuredOperationalWorkspace());
   const worktreePath = join(root, job.id);
   await mkdir(root, { recursive: true, mode: 0o700 });
   try {
@@ -280,7 +296,7 @@ async function createOrReuseDeploymentWorktree(job: InboxImplementationWorkerJob
   const workspace = await realpath(configuredWorkspace());
   const gitRoot = await realpath(await runTrustedGit(['rev-parse', '--show-toplevel'], workspace));
   if (gitRoot !== workspace) throw new Error('TRUSTED_WORKSPACE_INVALID');
-  const root = implementationDeploymentWorktreeRoot(workspace);
+  const root = implementationDeploymentWorktreeRoot(configuredOperationalWorkspace());
   // A failed push can leave a local merge commit in the prior deploy worktree.
   // Never reset that reviewable evidence in place: every claimed deploy attempt
   // gets a fresh branch from the then-current origin/main instead.
@@ -379,14 +395,20 @@ async function implementationGitEnvironment(worktreePath: string, jobId: string)
 
 async function implementationDiffArtifacts(
   worktreePath: string
-): Promise<{ changedFiles: string[]; diffStat: string }> {
+): Promise<{ changedFiles: string[]; diffStat: string; baseCommit: string; patchHash: string }> {
   const changedFiles = (await runTrustedGit(['diff', '--name-only', 'HEAD'], worktreePath))
     .split(/\r?\n/)
     .map((file) => file.trim())
     .filter((file) => file && !file.startsWith('/') && !file.includes('..'))
     .slice(0, 100);
   const diffStat = (await runTrustedGit(['diff', '--stat', 'HEAD'], worktreePath)).slice(0, 4_000);
-  return { changedFiles, diffStat };
+  const baseCommit = (await runTrustedGit(['rev-parse', 'HEAD'], worktreePath)).trim();
+  const patch = await runTrustedGit(
+    ['-c', 'core.quotePath=false', 'diff', '--binary', '--no-ext-diff', '--no-renames', 'HEAD'],
+    worktreePath,
+    10 * 1024 * 1024
+  );
+  return { changedFiles, diffStat, baseCommit, patchHash: createHash('sha256').update(patch.trim()).digest('hex') };
 }
 
 function sameReviewedFiles(actual: string[], reviewed: string[]): boolean {
@@ -751,7 +773,7 @@ async function ensureCodexImplementationPreflight(): Promise<void> {
 }
 
 function implementationRunRegistryPath(jobId: string): string {
-  return join(implementationWorktreeRoot(configuredWorkspace()), `.mos-inbox-run-${jobId}.json`);
+  return join(implementationWorktreeRoot(configuredOperationalWorkspace()), `.mos-inbox-run-${jobId}.json`);
 }
 
 async function registeredCodexProcessAlive(processId: number): Promise<boolean> {
@@ -769,7 +791,7 @@ async function registeredCodexProcessAlive(processId: number): Promise<boolean> 
 }
 
 async function registerImplementationProcess(jobId: string, processId: number): Promise<void> {
-  const root = implementationWorktreeRoot(configuredWorkspace());
+  const root = implementationWorktreeRoot(configuredOperationalWorkspace());
   await mkdir(root, { recursive: true, mode: 0o700 });
   await writeFile(
     implementationRunRegistryPath(jobId),
@@ -785,7 +807,7 @@ async function clearImplementationProcessRegistration(jobId: string, processId: 
 
 /** Never reclaim an expired lease while its recorded Codex process might still be working. */
 async function containOrphanedImplementationProcesses(): Promise<boolean> {
-  const root = implementationWorktreeRoot(configuredWorkspace());
+  const root = implementationWorktreeRoot(configuredOperationalWorkspace());
   let entries: string[];
   try {
     entries = await readdir(root);
