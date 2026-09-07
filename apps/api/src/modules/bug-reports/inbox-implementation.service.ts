@@ -2740,7 +2740,7 @@ export class InboxImplementationService {
       tx: Prisma.TransactionClient;
       evidence: InboxIdeReleaseToken;
       approvalActors: number[];
-      source?: 'IDE' | 'TECHNICAL_HOTFIX';
+      source?: 'IDE' | 'TECHNICAL_HOTFIX' | 'IDE_RELEASE_CHECKPOINT';
     }
   ): Promise<void> {
     const db = ide?.tx || fastify.prisma.crm;
@@ -2854,12 +2854,16 @@ export class InboxImplementationService {
           action: ide
             ? ide.source === 'TECHNICAL_HOTFIX'
               ? 'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED'
-              : 'IDE_RELEASE_RECORDED'
+              : ide.source === 'IDE_RELEASE_CHECKPOINT'
+                ? 'IDE_RELEASE_CHECKPOINT_RECORDED'
+                : 'IDE_RELEASE_RECORDED'
             : 'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
           note: ide
             ? ide.source === 'TECHNICAL_HOTFIX'
               ? `Đã ghi nhận hotfix kỹ thuật trực tiếp; server xác minh commit ${reviewedCommitSha.slice(0, 12)}. Người ủy quyền/ghi nhận #${actorStaffId}. Chờ người báo nghiệm thu.`
-              : `Đã ghi nhận release từ IDE; server xác minh commit ${reviewedCommitSha.slice(0, 12)}. Người ghi nhận #${actorStaffId}; người duyệt #${ide.approvalActors.join(', #')}. Chờ người báo nghiệm thu.`
+              : ide.source === 'IDE_RELEASE_CHECKPOINT'
+                ? `IDE release publisher đã gửi metadata; server xác minh commit ${reviewedCommitSha.slice(0, 12)} và release Production. Chờ người báo nghiệm thu.`
+                : `Đã ghi nhận release từ IDE; server xác minh commit ${reviewedCommitSha.slice(0, 12)}. Người ghi nhận #${actorStaffId}; người duyệt #${ide.approvalActors.join(', #')}. Chờ người báo nghiệm thu.`
             : actorStaffId
               ? `Danny đã xác nhận commit ${reviewedCommitSha.slice(0, 12)} đã có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`
               : `Worker đã xác minh commit ${reviewedCommitSha.slice(0, 12)} có trong release ${deployedCommitSha.slice(0, 12)}; ticket chuyển sang chờ người báo nghiệm thu.`,
@@ -2868,7 +2872,12 @@ export class InboxImplementationService {
             ...JSON.parse(snapshot({ ...report, status: 'FIXED', implementationActiveJobId: null })),
             ...(ide
               ? {
-                  source: ide.source === 'TECHNICAL_HOTFIX' ? 'TECHNICAL_HOTFIX' : 'IDE',
+                  source:
+                    ide.source === 'TECHNICAL_HOTFIX'
+                      ? 'TECHNICAL_HOTFIX'
+                      : ide.source === 'IDE_RELEASE_CHECKPOINT'
+                        ? 'IDE_RELEASE_CHECKPOINT'
+                        : 'IDE',
                   recordedByStaffId: actorStaffId,
                   approvalActors: ide.approvalActors,
                   evidence: ide.evidence,

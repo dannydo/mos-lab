@@ -957,6 +957,19 @@ export interface InboxIdeReleaseToken {
   approvalAuditIds: number[];
 }
 
+/**
+ * Receipt published by the trusted IDE release publisher only after production
+ * has started. The API independently rechecks every field before mutating a
+ * ticket; this is not a deploy or acceptance command.
+ */
+export interface InboxIdeReleaseCheckpointMetadata {
+  jobId: string;
+  manifestDigest: string;
+  commitSha: string;
+  apiRelease: string;
+  webRelease: string | null;
+}
+
 export interface InboxIdeReleasePreview {
   eligible: boolean;
   code: string | null;

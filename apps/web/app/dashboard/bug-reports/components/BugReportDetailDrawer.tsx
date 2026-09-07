@@ -39,7 +39,6 @@ import {
 import { useBugReportDetail, type BugReportDetailOptions } from '../hooks/useBugReportDetail';
 import type { useBugReports } from '../hooks/useBugReports';
 import styles from './BugReportDetailDrawer.module.css';
-import { IdeReleaseAction } from './IdeReleaseAction';
 
 const { Text, Paragraph } = Typography;
 
@@ -161,9 +160,6 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                 >
                   Yêu cầu sửa lại plan
                 </Button>
-              )}
-              {canTriage && ['APPROVED', 'IN_PROGRESS'].includes(detail.status) && (
-                <IdeReleaseAction key={detail.id} reportId={detail.id} disabled={saving} onRecorded={hydrateForm} />
               )}
               {canTriage &&
                 detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&

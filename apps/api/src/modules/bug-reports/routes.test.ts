@@ -69,7 +69,7 @@ test('only Danny canonical Super Admin can manage Bug Inbox', () => {
   assert.equal(canManageBugInbox({ role: 'manager', username: 'manager' }), false);
 });
 
-test('IDE preview and confirmation require canonical Danny and never enqueue execution', async (t) => {
+test('IDE release checkpoint accepts only the independent publisher token and never enqueues execution', async (t) => {
   const app = Fastify();
   app.decorate('prisma', {
     crm: { crmStaff: { update: async () => ({}), findUnique: async () => ({ role: 'admin', isActive: true }) } },
@@ -83,38 +83,36 @@ test('IDE preview and confirmation require canonical Danny and never enqueue exe
       displayName: 'Test',
     };
   });
-  const preview = t.mock.method(InboxIdeReleaseService, 'preview', async () => ({
-    eligible: false,
-    code: 'IDE_MANIFEST_MISSING',
-    reason: 'Thiếu manifest',
-    token: null,
-  }));
-  const record = t.mock.method(InboxIdeReleaseService, 'record', async () => {});
+  const record = t.mock.method(InboxIdeReleaseService, 'recordOfficialCheckpoint', async () => {});
   const enqueue = t.mock.method(InboxImplementationService, 'approve', async () => false);
-  t.mock.method(BugReportService, 'detail', async () => ({ id: 29, status: 'FIXED' }) as never);
+  const token = 'ide-release-publisher-token-that-is-definitely-over-32-characters';
+  const previous = process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN;
+  process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN = token;
   await app.register(bugReportRoutes);
   try {
-    for (const method of ['GET', 'POST'] as const) {
-      const request = (headers: Record<string, string>) =>
-        app.inject({
-          method,
-          url: '/bug-reports/29/ide-release',
-          headers,
-          ...(method === 'POST' ? { payload: { acknowledged: true, token: null } } : {}),
-        });
-      assert.equal((await request({})).statusCode, 401);
-      assert.equal((await request({ 'x-test-role': 'admin', 'x-test-name': 'danhdo@gmail.com' })).statusCode, 403);
-      assert.equal((await request({ 'x-test-role': 'super_admin' })).statusCode, 403);
-      assert.equal(
-        (await request({ 'x-test-role': 'super_admin', 'x-test-name': 'danhdo@gmail.com' })).statusCode,
-        200
-      );
-    }
-    assert.equal(preview.mock.callCount(), 1);
+    const payload = {
+      jobId: 'test-job',
+      manifestDigest: 'a'.repeat(64),
+      commitSha: 'b'.repeat(40),
+      apiRelease: 'b'.repeat(40),
+      webRelease: null,
+    };
+    const request = (authorization?: string) =>
+      app.inject({
+        method: 'POST',
+        url: '/ide-release-checkpoints/29',
+        headers: authorization ? { authorization } : {},
+        payload,
+      });
+    assert.equal((await request()).statusCode, 401);
+    assert.equal((await request('Bearer invalid')).statusCode, 401);
+    assert.equal((await request(`Bearer ${token}`)).statusCode, 200);
     assert.equal(record.mock.callCount(), 1);
     assert.equal(enqueue.mock.callCount(), 0);
-    assert.deepEqual(record.mock.calls[0].arguments.slice(1), [29, 1, { acknowledged: true, token: null }]);
+    assert.deepEqual(record.mock.calls[0].arguments.slice(1), [29, payload]);
   } finally {
+    if (previous === undefined) delete process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN;
+    else process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN = previous;
     await app.close();
   }
 });

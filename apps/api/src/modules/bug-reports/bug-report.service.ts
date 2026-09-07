@@ -477,6 +477,7 @@ function latestAgentActivity(source: AgentProgressSource) {
           'AGENT_IMPLEMENTATION_RETRY_SCHEDULED',
           'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
           'IDE_RELEASE_RECORDED',
+          'IDE_RELEASE_CHECKPOINT_RECORDED',
           'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED',
           'REPORTER_IMPLEMENTATION_ACCEPTED',
           'REPORTER_IMPLEMENTATION_REOPENED',
@@ -699,6 +700,7 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
       [
         'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
         'IDE_RELEASE_RECORDED',
+        'IDE_RELEASE_CHECKPOINT_RECORDED',
         'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED',
       ].includes(latest.action)
     ) {
@@ -802,6 +804,7 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
       [
         'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
         'IDE_RELEASE_RECORDED',
+        'IDE_RELEASE_CHECKPOINT_RECORDED',
         'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED',
       ].includes(latestAgentActivity(source)?.action || '')
     ) {
