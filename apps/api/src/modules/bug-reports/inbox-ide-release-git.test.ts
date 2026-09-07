@@ -72,3 +72,53 @@ test('real Git content/parent/ancestry and fixed web marker are required, not a 
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('allows a non-overlapping control-plane hotfix between the reviewed base and one-file candidate commit', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'mos-ide-intervening-hotfix-test-'));
+  const cwd = process.cwd();
+  const marker = process.env.DEPLOY_COMMIT;
+  const exec = promisify(execFile);
+  const git = async (...args: string[]) =>
+    (
+      await exec('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args], { cwd: directory })
+    ).stdout.trim();
+  try {
+    await git('init');
+    await writeFile(join(directory, 'candidate.txt'), 'before\n');
+    await git('add', 'candidate.txt');
+    await git('commit', '-m', 'base');
+    const baseCommit = await git('rev-parse', 'HEAD');
+    await writeFile(join(directory, 'bridge.txt'), 'bridge hotfix\n');
+    await git('add', 'bridge.txt');
+    await git('commit', '-m', 'bridge hotfix');
+    await writeFile(join(directory, 'candidate.txt'), 'after\n');
+    const patch = await git('diff', '--binary', '--no-ext-diff', '--no-renames', 'HEAD');
+    const manifest = makeReleaseManifest({
+      reportId: 30,
+      jobId: 'test-job',
+      sourceVersion: 'v1:s',
+      planVersion: 'v1:p',
+      baseCommit,
+      patchHash: createHash('sha256').update(patch).digest('hex'),
+      changedFiles: ['candidate.txt'],
+      tests: [{ command: 'test', status: 'PASSED' }],
+    })!;
+    await git('add', 'candidate.txt');
+    await git('commit', '-m', 'reviewed candidate');
+    const commit = await git('rev-parse', 'HEAD');
+    process.chdir(directory);
+    process.env.DEPLOY_COMMIT = commit;
+    assert.deepEqual(await verifyIdeProductionRelease(manifest, commit), { apiRelease: commit, webRelease: null });
+    await writeFile(join(directory, 'candidate.txt'), 'overlap\n');
+    await git('add', 'candidate.txt');
+    await git('commit', '-m', 'overlapping hotfix');
+    await writeFile(join(directory, 'candidate.txt'), 'candidate again\n');
+    const overlappingCommit = await git('rev-parse', 'HEAD');
+    await assert.rejects(verifyIdeProductionRelease(manifest, overlappingCommit), { code: 'IDE_PATCH_MISMATCH' });
+  } finally {
+    process.chdir(cwd);
+    if (marker === undefined) delete process.env.DEPLOY_COMMIT;
+    else process.env.DEPLOY_COMMIT = marker;
+    await rm(directory, { recursive: true, force: true });
+  }
+});

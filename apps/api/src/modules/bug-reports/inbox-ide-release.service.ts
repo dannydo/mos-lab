@@ -64,9 +64,22 @@ export async function verifyIdeProductionRelease(manifest: InboxReleaseManifest,
   let webRelease: string | null = null;
   try {
     const parents = await git(['rev-list', '--parents', '-n', '1', commitSha]);
-    if (parents !== `${commitSha} ${manifest.baseCommit}`)
-      fail('IDE_PATCH_MISMATCH', 'Commit không có đúng base đã được review.');
-    const patch = await git(['diff', '--binary', '--no-ext-diff', '--no-renames', manifest.baseCommit, commitSha]);
+    const [, parent] = parents.split(' ');
+    if (!parent || parents.split(' ').length !== 2)
+      fail('IDE_PATCH_MISMATCH', 'Commit phải có đúng một parent để đối chiếu candidate đã review.');
+    if (parent !== manifest.baseCommit) {
+      try {
+        await git(['merge-base', '--is-ancestor', manifest.baseCommit, parent]);
+        const interveningFiles = await git(['diff', '--name-only', manifest.baseCommit, parent]);
+        const reviewedFiles = new Set(manifest.changedFiles);
+        if (interveningFiles.split('\n').some((file) => reviewedFiles.has(file)))
+          fail('IDE_PATCH_MISMATCH', 'Commit xen giữa đã chạm candidate được review.');
+      } catch (error) {
+        if (error instanceof InboxImplementationError) throw error;
+        fail('IDE_PATCH_MISMATCH', 'Commit không tiếp nối base đã được review.');
+      }
+    }
+    const patch = await git(['diff', '--binary', '--no-ext-diff', '--no-renames', parent, commitSha]);
     if (createHash('sha256').update(patch).digest('hex') !== manifest.patchHash)
       fail('IDE_PATCH_MISMATCH', 'Nội dung commit khác manifest đã được duyệt.');
     await git(['merge-base', '--is-ancestor', commitSha, apiRelease]);

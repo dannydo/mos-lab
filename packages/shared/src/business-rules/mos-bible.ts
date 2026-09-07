@@ -655,7 +655,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'IDE receipt chỉ được ghi sau khi IDE đã code/test. Receipt của task đã bind đi qua bridge bearer riêng, đối chiếu task/job/nonce/source/plan/quality gate/trạng thái trong một transaction; browser không gửi nonce. Thiếu, cũ, sai, revoked, task khác hoặc không có quyền bị từ chối không ghi gì; replay không nhân audit.',
       'Danny duyệt commit chỉ cấp nonce commit cho đúng candidate đã review. Inbox phải chiếu rõ “Chờ Codex IDE ghi commit đã duyệt”, còn task đã bind nhận nonce qua bridge bearer riêng và ghi commit SHA hợp lệ; ticket mới sang chờ duyệt deploy. Replay cùng SHA trả kết quả idempotent, không tạo audit thứ hai.',
       'Danny duyệt deploy chỉ là xác nhận quyền phát hành cho đúng commit/manifest. Inbox không tự deploy, push, merge, accept hay close ticket; IDE release publisher mới có thể gửi receipt sau khi production đã chạy.',
-      'IDE release publisher chỉ được gửi metadata release bất biến sau khi production đã chạy, bằng bearer token riêng; server tự đối chiếu manifest review (job/source/plan/base commit/hash bản diff/files/tests), approval code/test hiện hành, approval commit và deploy gắn đúng manifest, nội dung commit thật trong Git và release API/web Production. Thiếu, cũ, sai hoặc không có quyền phải từ chối không ghi gì; không backfill, reconciliation hay tái dùng approval. Một giao dịch ghi job/resolution/audit nguồn IDE/checkpoint/comment/thông báo rồi chuyển chờ người báo nghiệm thu; retry cùng receipt không nhân đôi, receipt cũ không áp lại sau reopen. Publisher không chạy worker, commit, push, deploy, đóng hay nghiệm thu ticket.',
+      'IDE release publisher chỉ được gửi metadata release bất biến sau khi production đã chạy, bằng bearer token riêng; server tự đối chiếu manifest review (job/source/plan/base commit/hash bản diff/files/tests), approval code/test hiện hành, approval commit và deploy gắn đúng manifest, nội dung commit thật trong Git và release API/web Production. Candidate có thể nối sau một hotfix control-plane chỉ khi base là ancestor, hotfix xen giữa không chạm bất kỳ file reviewed nào và hash diff từ parent trực tiếp của candidate vẫn khớp; các trường hợp khác bị từ chối. Thiếu, cũ, sai hoặc không có quyền phải từ chối không ghi gì; không backfill, reconciliation hay tái dùng approval. Một giao dịch ghi job/resolution/audit nguồn IDE/checkpoint/comment/thông báo rồi chuyển chờ người báo nghiệm thu; retry cùng receipt không nhân đôi, receipt cũ không áp lại sau reopen. Publisher không chạy worker, commit, push, deploy, đóng hay nghiệm thu ticket.',
       'Sau release đã xác minh, người báo là người nghiệm thu mặc định. Ticket/audit/next action/Inbox notification được thay đổi cùng transaction; người báo yêu cầu sửa thêm phải quay lại Agent phân tích và cần approval mới.',
     ],
     rationale:
@@ -667,7 +667,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex IDE', 'implementation', 'handoff', 'Danny approval', 'receipt', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.30.0',
+    version: '1.31.0',
     effectiveFrom: '2026-09-07',
     sources: [
       {
