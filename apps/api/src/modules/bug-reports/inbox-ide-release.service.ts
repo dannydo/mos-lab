@@ -103,9 +103,10 @@ async function resolveEvidence(db: Prisma.TransactionClient, reportId: number, v
     );
   }
   const audits = await db.crmBugReportAudit.findMany({ where: { reportId }, orderBy: { id: 'desc' } });
-  const review = audits.find(
-    (a) => a.action === 'AGENT_IMPLEMENTATION_REVIEW_READY' && readReleaseManifest(a.afterJson)?.jobId === job!.id
-  );
+  // Select the current review before validating its contents. Searching for a valid
+  // manifest would silently revive an older approval when a newer review is corrupt
+  // or belongs to a different candidate.
+  const review = audits.find((a) => a.action === 'AGENT_IMPLEMENTATION_REVIEW_READY');
   const manifest = readReleaseManifest(review?.afterJson || null);
   const tests = qualityTestsForCheckpointApproval(job!.testsJson, job!.failureCode);
   if (
@@ -181,6 +182,127 @@ async function resolveEvidence(db: Prisma.TransactionClient, reportId: number, v
 }
 
 export class InboxIdeReleaseService {
+  /**
+   * Operator-only control-plane escape hatch.  It is deliberately not exposed
+   * through HTTP: the caller must be in the production operator environment
+   * and the user must have explicitly authorized this technical hotfix.
+   */
+  static async recordDirectTechnicalHotfix(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number,
+    commitSha: string,
+    verify: Verifier = verifyIdeProductionRelease
+  ): Promise<void> {
+    const outcome = await fastify.prisma.crm.$transaction(
+      async (tx) => {
+        await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+        await tx.$queryRaw(
+          Prisma.sql`SELECT id FROM crm_inbox_implementation_jobs WHERE report_id = ${reportId} FOR UPDATE`
+        );
+        await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_inbox_plan_jobs WHERE report_id = ${reportId} FOR UPDATE`);
+        const actor = await tx.crmStaff.findUnique({ where: { id: actorStaffId } });
+        if (!actor?.isActive || !isSuperAdminRole(actor.role) || !isCanonicalSuperAdminIdentity(actor))
+          throw new InboxImplementationError('Chỉ Danny được xác nhận hotfix kỹ thuật.', 403, 'FORBIDDEN');
+        if (!SHA.test(commitSha)) fail('DIRECT_HOTFIX_COMMIT_INVALID', 'Hotfix phải dùng full commit SHA.');
+
+        const receipts = await tx.crmBugReportAudit.findMany({
+          where: { reportId, action: 'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED' },
+          orderBy: { id: 'desc' },
+        });
+        const receipt = receipts[0];
+        if (receipt && parseReleaseEvidence(receipt.afterJson).evidence) {
+          const evidence = parseReleaseEvidence(receipt.afterJson).evidence as Record<string, unknown>;
+          if (evidence.commitSha === commitSha) {
+            const current = await tx.crmBugReport.findUnique({ where: { id: reportId } });
+            if (current?.status === 'FIXED' && !current.implementationActiveJobId) return null;
+            fail('DIRECT_HOTFIX_RECEIPT_STALE', 'Receipt hotfix không còn khớp ticket hiện tại.');
+          }
+        }
+
+        const report = await tx.crmBugReport.findUnique({
+          where: { id: reportId },
+          include: implementationReportInclude(),
+        });
+        if (!report) fail('BUG_NOT_FOUND', 'Không tìm thấy ticket.');
+        const currentReport = report!;
+        const gate = isInboxImplementationExecutionEligible(currentReport);
+        if (
+          !gate.eligible ||
+          !gate.plan ||
+          currentReport.status !== 'IN_PROGRESS' ||
+          !currentReport.implementationActiveJobId
+        )
+          fail(
+            'DIRECT_HOTFIX_CURRENT_EVIDENCE_MISSING',
+            'Thiếu plan/job/approval code-test hiện hành cho hotfix kỹ thuật.'
+          );
+        const plan = gate.plan!;
+        const job = await tx.crmInboxImplementationJob.findUnique({
+          where: { id: currentReport.implementationActiveJobId! },
+        });
+        if (
+          !job ||
+          job.reportId !== reportId ||
+          job.sourceVersion !== gate.sourceVersion ||
+          job.planVersion !== plan.planVersion ||
+          job.status !== 'AWAITING_COMMIT_REVIEW' ||
+          job.leaseToken
+        )
+          fail('DIRECT_HOTFIX_JOB_NOT_READY', 'Job không còn ở checkpoint review hiện hành.');
+        const audits = await tx.crmBugReportAudit.findMany({ where: { reportId }, orderBy: { id: 'desc' } });
+        const review = audits.find((audit) => audit.action === 'AGENT_IMPLEMENTATION_REVIEW_READY');
+        const manifest = readReleaseManifest(review?.afterJson || null);
+        const tests = qualityTestsForCheckpointApproval(job!.testsJson, job!.failureCode);
+        if (
+          !manifest ||
+          !matchesReleaseManifest(manifest!, job!, tests) ||
+          !evaluateInboxImplementationQualityGate({ changedFiles: manifest!.changedFiles, tests }).eligible
+        )
+          fail('DIRECT_HOTFIX_MANIFEST_MISSING', 'Manifest hoặc test review hiện hành không khớp hotfix.');
+        const currentManifest = manifest!;
+        const release = await verify(currentManifest, commitSha);
+        const evidence: InboxIdeReleaseToken = {
+          jobId: job!.id,
+          manifestDigest: currentManifest.digest,
+          commitSha,
+          ...release,
+          approvalAuditIds: [],
+        };
+        const now = new Date();
+        const attached = await tx.crmInboxImplementationJob.updateMany({
+          where: { id: job!.id, status: 'AWAITING_COMMIT_REVIEW', updatedAt: job!.updatedAt },
+          data: {
+            commitSha,
+            status: 'AWAITING_DEPLOY_REVIEW',
+            executionPhase: 'AWAITING_DEPLOY_REVIEW',
+            updatedAt: now,
+          },
+        });
+        if (!attached.count) fail('DIRECT_HOTFIX_RACE', 'Job thay đổi trong lúc đối chiếu hotfix.');
+        await tx.crmBugReportAudit.create({
+          data: {
+            reportId,
+            actorStaffId,
+            action: 'DIRECT_TECHNICAL_HOTFIX_AUTHORIZED',
+            note: 'Danny đã ủy quyền hotfix kỹ thuật trực tiếp ngoài luồng nút/phê duyệt Inbox. Server chỉ tiếp tục sau khi đối chiếu manifest, commit và release Production.',
+            afterJson: JSON.stringify({ source: 'TECHNICAL_HOTFIX', reviewAuditId: review!.id, evidence }),
+          },
+        });
+        await InboxImplementationService.recordReleasedForReporterAcceptance(
+          fastify,
+          reportId,
+          actorStaffId,
+          { acknowledged: true, commitSha },
+          { tx, evidence, approvalActors: [actorStaffId], source: 'TECHNICAL_HOTFIX' }
+        );
+        return null;
+      },
+      { timeout: 30_000 }
+    );
+    if (outcome) throw outcome;
+  }
+
   static async preview(
     fastify: FastifyInstance,
     reportId: number,

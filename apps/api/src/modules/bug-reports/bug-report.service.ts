@@ -477,6 +477,7 @@ function latestAgentActivity(source: AgentProgressSource) {
           'AGENT_IMPLEMENTATION_RETRY_SCHEDULED',
           'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
           'IDE_RELEASE_RECORDED',
+          'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED',
           'REPORTER_IMPLEMENTATION_ACCEPTED',
           'REPORTER_IMPLEMENTATION_REOPENED',
           'CLARIFICATION_ANSWERED',
@@ -693,7 +694,14 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('STOPPED', source, null, source.closedAt);
   }
   if (source.status === 'FIXED') {
-    if (latest && ['DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE', 'IDE_RELEASE_RECORDED'].includes(latest.action)) {
+    if (
+      latest &&
+      [
+        'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
+        'IDE_RELEASE_RECORDED',
+        'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED',
+      ].includes(latest.action)
+    ) {
       return progressResult('AWAITING_REPORTER_ACCEPTANCE', source, latest, source.resolvedAt);
     }
     return {
@@ -791,9 +799,11 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
 
   if (source.status === 'FIXED') {
     if (
-      ['DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE', 'IDE_RELEASE_RECORDED'].includes(
-        latestAgentActivity(source)?.action || ''
-      )
+      [
+        'DANNY_RELEASED_FOR_REPORTER_ACCEPTANCE',
+        'IDE_RELEASE_RECORDED',
+        'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED',
+      ].includes(latestAgentActivity(source)?.action || '')
     ) {
       return nextAction(
         'REPORTER',

@@ -61,7 +61,7 @@ function fixture() {
     status: 'AWAITING_DEPLOY_REVIEW',
     executionPhase: 'AWAITING_DEPLOY_REVIEW',
     leaseToken: null,
-    commitSha: COMMIT,
+    commitSha: COMMIT as string | null,
     changedFilesJson: JSON.stringify(['apps/api/src/example.ts']),
     testsJson: JSON.stringify(tests),
     failureCode: null,
@@ -202,12 +202,14 @@ function fixture() {
   const preview = () => InboxIdeReleaseService.preview(fastify, 29, verify);
   const record = (token: InboxIdeReleaseToken | null) =>
     InboxIdeReleaseService.record(fastify, 29, 1, { acknowledged: true, token }, verify);
+  const recordDirect = () => InboxIdeReleaseService.recordDirectTechnicalHotfix(fastify, 29, 1, COMMIT, verify);
   return {
     state,
     manifest,
     fastify,
     preview,
     record,
+    recordDirect,
     setFailure: (value: typeof failure) => {
       failure = value;
     },
@@ -244,6 +246,43 @@ test('IDE checkpoint is atomic, truthful and idempotent under concurrent submiss
     assert.equal(bugReportWorkflowProjection(source as never).nextAction.actor, 'REPORTER');
     f.state.report.status = 'APPROVED';
     await assert.rejects(f.record(p.token), { code: 'IDE_RECEIPT_STALE' });
+  } finally {
+    if (oldMarker === undefined) delete process.env.DEPLOY_COMMIT;
+    else process.env.DEPLOY_COMMIT = oldMarker;
+  }
+});
+
+test('direct technical hotfix uses the same checkpoint, fails closed, and retries without duplicate effects', async () => {
+  const f = fixture();
+  f.state.job.status = 'AWAITING_COMMIT_REVIEW';
+  f.state.job.executionPhase = 'AWAITING_COMMIT_REVIEW';
+  f.state.job.commitSha = null;
+  f.state.audits = f.state.audits.filter(
+    (audit) => !['DANNY_COMMIT_APPROVED', 'DANNY_DEPLOY_APPROVED'].includes(audit.action)
+  );
+  const oldMarker = process.env.DEPLOY_COMMIT;
+  process.env.DEPLOY_COMMIT = COMMIT;
+  try {
+    await Promise.all([f.recordDirect(), f.recordDirect(), f.recordDirect()]);
+    assert.equal(f.state.report.status, 'FIXED');
+    assert.equal(f.state.report.implementationActiveJobId, null);
+    assert.equal(f.state.job.status, 'RELEASED');
+    assert.equal(f.state.comments.length, 1);
+    assert.equal(f.state.notifications.length, 1);
+    assert.equal(f.state.resolutions.length, 1);
+    assert.equal(f.state.audits.filter((audit) => audit.action === 'DIRECT_TECHNICAL_HOTFIX_AUTHORIZED').length, 1);
+    const release = f.state.audits.filter((audit) => audit.action === 'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED');
+    assert.equal(release.length, 1);
+    assert.equal(JSON.parse(release[0].afterJson!).source, 'TECHNICAL_HOTFIX');
+    assert.equal(
+      bugReportAgentProgress({ ...f.state.report, audits: f.state.audits, implementation: null } as never).stage,
+      'AWAITING_REPORTER_ACCEPTANCE'
+    );
+    assert.equal(
+      bugReportWorkflowProjection({ ...f.state.report, audits: f.state.audits, implementation: null } as never)
+        .nextAction.actor,
+      'REPORTER'
+    );
   } finally {
     if (oldMarker === undefined) delete process.env.DEPLOY_COMMIT;
     else process.env.DEPLOY_COMMIT = oldMarker;
@@ -352,6 +391,54 @@ test('missing/mismatched/current-plan/approval/test/manifest evidence is rejecte
       assert.equal(f.state.audits.filter((a) => a.action === 'IDE_RELEASE_REJECTED').length, 1);
       assert.equal(f.state.audits.filter((a) => a.action === 'IDE_RELEASE_RECORDED').length, 0);
     });
+});
+
+test('newest review cannot revive approvals from an older valid candidate', async (t) => {
+  const cases = [
+    ['malformed review', () => '{', 'IDE_MANIFEST_MISSING'],
+    ['missing manifest', () => '{}', 'IDE_MANIFEST_MISSING'],
+    [
+      'corrupt manifest',
+      (f: ReturnType<typeof fixture>) =>
+        JSON.stringify({ releaseManifest: { ...f.manifest, patchHash: '0'.repeat(64) } }),
+      'IDE_MANIFEST_MISSING',
+    ],
+    [
+      'different candidate',
+      (f: ReturnType<typeof fixture>) => {
+        const { version: _version, digest: _digest, ...content } = f.manifest;
+        return JSON.stringify({ releaseManifest: makeReleaseManifest({ ...content, jobId: 'other-job' }) });
+      },
+      'IDE_MANIFEST_MISSING',
+    ],
+    [
+      'new review of identical manifest without fresh approvals',
+      (f: ReturnType<typeof fixture>) => JSON.stringify({ releaseManifest: f.manifest }),
+      'IDE_APPROVAL_BINDING_MISSING',
+    ],
+  ] as const;
+  for (const [name, afterJson, code] of cases) {
+    await t.test(name, async () => {
+      const f = fixture();
+      const preview = await f.preview();
+      assert.equal(preview.eligible, true);
+      f.state.audits.push({ ...f.state.audits[1], id: 50, afterJson: afterJson(f) });
+      const history = structuredClone(f.state.audits);
+      assert.equal((await f.preview()).code, code);
+      await Promise.all([
+        assert.rejects(f.record(preview.token), { code }),
+        assert.rejects(f.record(preview.token), { code }),
+      ]);
+      assert.deepEqual(f.state.audits.slice(0, history.length), history);
+      assert.equal(f.state.audits.filter((a) => a.action === 'IDE_RELEASE_REJECTED').length, 1);
+      assert.equal(f.state.audits.filter((a) => a.action === 'IDE_RELEASE_RECORDED').length, 0);
+      assert.equal(f.state.report.status, 'IN_PROGRESS');
+      assert.equal(f.state.job.status, 'AWAITING_DEPLOY_REVIEW');
+      assert.equal(f.state.comments.length, 0);
+      assert.equal(f.state.notifications.length, 0);
+      assert.equal(f.state.resolutions.length, 0);
+    });
+  }
 });
 
 test('unexpected or domain write failure rolls back every mutation, including success audit', async () => {
