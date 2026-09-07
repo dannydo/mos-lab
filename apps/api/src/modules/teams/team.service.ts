@@ -492,12 +492,11 @@ export class TeamService {
         `);
       }
 
-      // Default/BK/Subteams query: all active staff profiles
+      // Default/BK/Subteams: active Staff identities do not require optional HR details in staff_profile.
       return await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
         SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
           COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
         FROM \`user_profile\` up
-        JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
         WHERE up.provider = 'Staff' AND up.is_disabled = 0
         ORDER BY up.full_name ASC
       `);
