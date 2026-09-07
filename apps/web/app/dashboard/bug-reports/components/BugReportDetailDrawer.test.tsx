@@ -62,12 +62,14 @@ describe('BugReportDetailDrawer behavior', () => {
     });
     const props = propsFor(detail);
     render(<BugReportDetailDrawer {...props} />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Yêu cầu sửa lại' }));
-    expect(screen.getByRole('button', { name: 'Gửi yêu cầu sửa lại' })).toBeDisabled();
-    fireEvent.change(screen.getByRole('textbox', { name: 'Lý do yêu cầu sửa lại' }), {
+    fireEvent.click(await screen.findByText('Yêu cầu sửa lại', { exact: true }));
+    const submit = screen.getByText('Gửi yêu cầu sửa lại', { exact: true }).closest('button')!;
+    expect(submit).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Lý do yêu cầu sửa lại'), {
       target: { value: 'Cần bổ sung toàn bộ tiêu chí đã duyệt.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu sửa lại' }));
+    expect(submit).toBeEnabled();
+    fireEvent.click(submit);
     await waitFor(() =>
       expect(props.requestImplementationChanges).toHaveBeenCalledExactlyOnceWith(detail.id, {
         ...candidate,
@@ -78,8 +80,8 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(props.approveImplementation).not.toHaveBeenCalled();
     expect(props.approveImplementationCommit).not.toHaveBeenCalled();
     expect(props.confirmClose).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Duyệt commit' })).not.toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: 'Duyệt code/test' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Duyệt commit', { exact: true })).not.toBeInTheDocument());
+    expect(screen.queryByText('Duyệt code/test', { exact: true })).not.toBeInTheDocument();
   });
 
   it('does not offer duplicate code approval for an already queued implementation', async () => {

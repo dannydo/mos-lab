@@ -169,6 +169,26 @@ test('duplicate and concurrent identical review requests produce one decision/co
   );
 });
 
+test('fresh code approval cannot be recorded before the returned candidate has a current native plan', async () => {
+  const f = fixture();
+  await InboxImplementationService.requestChanges(f.fastify, 29, 1, input);
+  f.state.report.clarificationStatus = 'READY';
+  const before = structuredClone(f.state);
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => f.state.report },
+        crmInboxImplementationJob: { findFirst: async () => ({ id: candidate.jobId }) },
+        $transaction: async () => {
+          throw new Error('Approval must not be written');
+        },
+      },
+    },
+  } as never;
+  await assert.rejects(InboxImplementationService.approve(fastify, 29, 1), { code: 'REPLAN_REQUIRED' });
+  assert.deepEqual(f.state, before);
+});
+
 test('outbox failure rolls back rejection, authority clearing and history writes', async () => {
   const f = fixture();
   const before = structuredClone(f.state);

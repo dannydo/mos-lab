@@ -825,6 +825,19 @@ export class InboxImplementationService {
       );
     }
     const sourceVersion = inboxImplementationSourceVersion(report);
+    if (!inboxImplementationCurrentPlan(report, sourceVersion)) {
+      const returnedCandidate = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { reportId, status: 'CHANGES_REQUESTED' },
+        select: { id: true },
+      });
+      if (returnedCandidate) {
+        throw new InboxImplementationError(
+          'Agent phải đăng plan mới trước khi Danny duyệt code/test lại.',
+          409,
+          'REPLAN_REQUIRED'
+        );
+      }
+    }
     const now = new Date();
     await fastify.prisma.crm.$transaction(async (tx) => {
       const current = await tx.crmBugReport.update({
