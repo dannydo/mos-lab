@@ -679,7 +679,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.25.0',
+    version: '1.26.0',
     effectiveFrom: '2026-09-07',
     sources: [
       {
@@ -699,6 +699,10 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
         reference: 'apps/api/src/modules/bug-reports/inbox-plan.service.ts',
       },
       { label: 'Outbound isolated-worktree worker', reference: 'scripts/request-classifier-worker.ts' },
+      {
+        label: 'Verified IDE publisher receipt and retry tests',
+        reference: 'scripts/request-classifier-worker.test.ts',
+      },
       {
         label: 'Exact Game BK private visual-QA recovery guard',
         reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',

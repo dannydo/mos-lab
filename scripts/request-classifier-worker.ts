@@ -19,12 +19,17 @@ import type {
 import type { RequestConversationWorkerJob, RequestConversationWorkerResult } from '@mos-lab/shared';
 import type { InboxFollowUpWorkerJob, InboxFollowUpWorkerResult } from '@mos-lab/shared';
 import type { InboxPlanWorkerJob, InboxPlanWorkerResult } from '@mos-lab/shared';
-import type { InboxImplementationWorkerJob, InboxImplementationWorkerResult } from '@mos-lab/shared';
+import type {
+  InboxIdeReleaseCheckpointMetadata,
+  InboxImplementationWorkerJob,
+  InboxImplementationWorkerResult,
+} from '@mos-lab/shared';
 import { classifyDeploymentLane } from '@mos-lab/shared';
 import { chromium } from 'playwright';
 import WebSocket from 'ws';
 
 const DEFAULT_API_URL = 'https://api.lab.masteros.app/api';
+const DEFAULT_WEB_RELEASE_URL = 'https://lab.masteros.app/api/release-version';
 const POLL_INTERVAL_MS = 30_000;
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const CODEX_TIMEOUT_MS = 90_000;
@@ -167,7 +172,8 @@ export function safeCodexCliJsonFailureSummary(value: unknown): string | null {
         const summary = safeCodexCliFailureSummary(message);
         if (summary) return summary;
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof CodexCliError) throw error;
       // JSONL can end with a partial event while the CLI terminates.
     }
   }
@@ -1054,12 +1060,119 @@ function loadLocalWorkerEnv(): void {
     if (!existsSync(filePath)) continue;
     for (const line of readFileSync(filePath, 'utf8').split(/\r?\n/)) {
       const match = line.match(
-        /^\s*(MOS_REQUEST_CLASSIFIER_WORKER_TOKEN|MOS_REQUEST_CLASSIFIER_API_URL|MOS_REQUEST_CLASSIFIER_WORKER_ID|MOS_REQUEST_CLASSIFIER_WORKER_VERSION)\s*=\s*(.*?)\s*$/
+        /^\s*(MOS_REQUEST_CLASSIFIER_WORKER_TOKEN|MOS_REQUEST_CLASSIFIER_API_URL|MOS_REQUEST_CLASSIFIER_WORKER_ID|MOS_REQUEST_CLASSIFIER_WORKER_VERSION|MOS_IDE_RELEASE_CHECKPOINT_TOKEN|MOS_IDE_RELEASE_WEB_RELEASE_URL)\s*=\s*(.*?)\s*$/
       );
       if (!match || process.env[match[1]]) continue;
       process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, '$2');
     }
   }
+}
+
+function ideReleasePublisherConfiguration(): { apiUrl: string; token: string; webReleaseUrl: string } {
+  loadLocalWorkerEnv();
+  const token = String(process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN || '').trim();
+  if (token.length < 32) throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'IDE release publisher is not configured.');
+  return {
+    apiUrl: String(process.env.MOS_REQUEST_CLASSIFIER_API_URL || DEFAULT_API_URL).replace(/\/+$/, ''),
+    token,
+    webReleaseUrl: String(process.env.MOS_IDE_RELEASE_WEB_RELEASE_URL || DEFAULT_WEB_RELEASE_URL).trim(),
+  };
+}
+
+type ReleaseMarker = { commitSha: string };
+type ReleasePublisherDependencies = {
+  fetcher?: typeof fetch;
+  verifyAncestor?: (ancestor: string, descendant: string) => Promise<boolean>;
+  wait?: (milliseconds: number) => Promise<void>;
+};
+
+function releaseMarker(value: unknown): ReleaseMarker {
+  const commitSha = String((value as { commitSha?: unknown } | null)?.commitSha || '')
+    .trim()
+    .toLowerCase();
+  if (!/^[a-f0-9]{40}$/.test(commitSha))
+    throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Production release marker is invalid.');
+  return { commitSha };
+}
+
+/**
+ * Publishes only a fixed, independently verified receipt. Retrying is limited
+ * to the identical idempotent receipt after a transport/5xx failure; no 4xx
+ * rejection is retried and no state is inferred from a failed request.
+ */
+export async function publishVerifiedIdeReleaseCheckpoint(
+  input: {
+    ticketId: number;
+    jobId: string;
+    manifestDigest: string;
+    commitSha: string;
+    releaseConfirmed: boolean;
+    apiUrl: string;
+    token: string;
+    webReleaseUrl: string;
+    requiresWebRelease: boolean;
+  },
+  dependencies: ReleasePublisherDependencies = {}
+): Promise<InboxIdeReleaseCheckpointMetadata> {
+  if (!input.releaseConfirmed)
+    throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Production release has not been confirmed.');
+  if (!Number.isSafeInteger(input.ticketId) || input.ticketId <= 0 || !/^[a-f0-9-]{8,}$/i.test(input.jobId))
+    throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Release receipt identity is invalid.');
+  if (
+    !/^[a-f0-9]{64}$/i.test(input.manifestDigest) ||
+    !/^[a-f0-9]{40}$/i.test(input.commitSha) ||
+    input.token.length < 32
+  )
+    throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Release receipt evidence is incomplete.');
+  const fetcher = dependencies.fetcher ?? fetch;
+  const verifyAncestor = dependencies.verifyAncestor;
+  if (!verifyAncestor) throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Release ancestry verifier is unavailable.');
+  const readMarker = async (url: string): Promise<ReleaseMarker> => {
+    const response = await fetcher(url, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(WORKER_FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Production release marker is unavailable.');
+    return releaseMarker(await response.json());
+  };
+  const apiRelease = await readMarker(`${input.apiUrl}/release`);
+  if (!(await verifyAncestor(input.commitSha.toLowerCase(), apiRelease.commitSha)))
+    throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Production API marker does not contain the approved commit.');
+  const webRelease = input.requiresWebRelease ? await readMarker(input.webReleaseUrl) : null;
+  if (webRelease && !(await verifyAncestor(input.commitSha.toLowerCase(), webRelease.commitSha)))
+    throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Production web marker does not contain the approved commit.');
+  const metadata: InboxIdeReleaseCheckpointMetadata = {
+    jobId: input.jobId,
+    manifestDigest: input.manifestDigest.toLowerCase(),
+    commitSha: input.commitSha.toLowerCase(),
+    apiRelease: apiRelease.commitSha,
+    webRelease: webRelease?.commitSha ?? null,
+  };
+  const body = JSON.stringify(metadata);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetcher(`${input.apiUrl}/ide-release-checkpoints/${input.ticketId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${input.token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body,
+        signal: AbortSignal.timeout(WORKER_FETCH_TIMEOUT_MS),
+      });
+      if (response.ok) return metadata;
+      if (![502, 503, 504].includes(response.status))
+        throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Release checkpoint was rejected.');
+    } catch (error) {
+      if (error instanceof CodexCliError) throw error;
+    }
+    if (attempt === 0)
+      await (dependencies.wait ?? ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))))(
+        1_000
+      );
+  }
+  throw new CodexCliError('DEPLOY_PIPELINE_FAILED', 'Release checkpoint endpoint is unavailable.');
 }
 
 function configuration() {
@@ -1719,6 +1832,7 @@ async function processInboxImplementationOne(): Promise<boolean> {
   let activeProcessId: number | null = null;
   let stopLeaseRenewal: (() => void) | null = null;
   let started = false;
+  let deploymentFinalized = false;
   const schemaPath = () => join(worktreePath, '.mos-inbox-implementation-schema.json');
   const outputPath = () => join(worktreePath, '.mos-inbox-implementation-output.json');
   try {
@@ -1786,7 +1900,41 @@ async function processInboxImplementationOne(): Promise<boolean> {
         method: 'POST',
         body: JSON.stringify({ leaseToken: job.leaseToken }),
       });
-      console.log('Inbox implementation deployed and verified; awaiting reporter acceptance.');
+      deploymentFinalized = true;
+      phase = 'release_checkpoint';
+      if (!job.commitSha || !job.releaseManifestDigest) {
+        throw new CodexCliError(
+          'DEPLOY_PIPELINE_FAILED',
+          'Verified deployment is missing its immutable release receipt.'
+        );
+      }
+      const publisher = ideReleasePublisherConfiguration();
+      await publishVerifiedIdeReleaseCheckpoint(
+        {
+          ticketId: job.ticketId,
+          jobId: job.id,
+          manifestDigest: job.releaseManifestDigest,
+          commitSha: job.commitSha,
+          releaseConfirmed: true,
+          apiUrl: publisher.apiUrl,
+          token: publisher.token,
+          webReleaseUrl: publisher.webReleaseUrl,
+          requiresWebRelease: job.reviewedFiles.some(
+            (file) => file.startsWith('apps/web/') || file.startsWith('packages/shared/')
+          ),
+        },
+        {
+          verifyAncestor: async (ancestor, descendant) => {
+            try {
+              await runTrustedGit(['merge-base', '--is-ancestor', ancestor, descendant], worktreePath);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+        }
+      );
+      console.log('Inbox implementation deployed, verified, and checkpointed; awaiting reporter acceptance.');
       finishWorkerJob('INBOX_IMPLEMENTATION', 'SUCCEEDED', 'INFO', 'AWAITING_REPORTER_ACCEPTANCE');
       return true;
     }
@@ -2024,17 +2172,24 @@ async function processInboxImplementationOne(): Promise<boolean> {
     finishWorkerJob('INBOX_IMPLEMENTATION', 'SUCCEEDED', 'INFO', 'AWAITING_COMMIT_REVIEW');
   } catch (error) {
     console.log(formatInboxImplementationFailure(phase, error));
-    phase = 'fail';
-    await workerFetch(`/request-classifier/inbox-implementations/${job.id}/fail`, {
-      method: 'POST',
-      body: JSON.stringify({
-        leaseToken: job.leaseToken,
-        code: inboxImplementationFailureCode(error),
-        failureSummary: inboxImplementationFailureSummary(error),
-      }),
-    }).catch(() => undefined);
-    if (started) finishWorkerJob('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));
-    else recordWorkerOutcome('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));
+    if (!deploymentFinalized) {
+      phase = 'fail';
+      await workerFetch(`/request-classifier/inbox-implementations/${job.id}/fail`, {
+        method: 'POST',
+        body: JSON.stringify({
+          leaseToken: job.leaseToken,
+          code: inboxImplementationFailureCode(error),
+          failureSummary: inboxImplementationFailureSummary(error),
+        }),
+      }).catch(() => undefined);
+      if (started) finishWorkerJob('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));
+      else recordWorkerOutcome('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', inboxImplementationFailureCode(error));
+    } else {
+      // The deploy lease is deliberately closed before publishing. A publisher
+      // failure must leave the native job at AWAITING_DEPLOY_REVIEW rather than
+      // inventing a failed deploy or mutating reporter acceptance.
+      recordWorkerOutcome('INBOX_IMPLEMENTATION', 'FAILED', 'WARNING', 'RELEASE_CHECKPOINT_PENDING');
+    }
   } finally {
     stopLeaseRenewal?.();
     activeWorkerJob = null;

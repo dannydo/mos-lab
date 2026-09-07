@@ -575,6 +575,8 @@ export interface InboxImplementationWorkerJob {
   branchName: string;
   /** Present only for the server-authorized DEPLOY operation. */
   commitSha: string | null;
+  /** Immutable digest from the native review record; required before a DEPLOY receipt can publish. */
+  releaseManifestDigest: string | null;
   operation: 'CODE_TEST' | 'COMMIT' | 'DEPLOY';
   reviewedFiles: string[];
   retryOfJobId: string | null;
