@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { spawn, execFile as execFileCallback } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -21,24 +21,70 @@ type ProvisionerDeps = {
   provisionerId: string;
 };
 
+export type IdeTaskProvisionerRuntimeConfig = {
+  apiUrl: string;
+  provisionerId: string;
+  repository: string;
+  worktreeRoot: string;
+};
+
 function clean(value: unknown, limit: number) {
   return String(value || '')
     .trim()
     .slice(0, limit);
 }
 
-function runtimePath() {
+export function runtimePath() {
   return resolve(homedir(), '.codex/runtime/mos-ide-task-provisioner-state.json');
 }
 
-function readToken() {
-  const secretFile = resolve(homedir(), '.codex/secrets/mos-ide-task-bridge.env');
+export function tokenPath() {
+  return resolve(homedir(), '.codex/secrets/mos-ide-task-bridge.env');
+}
+
+export function runtimeConfigPath() {
+  return resolve(homedir(), '.codex/secrets/mos-ide-task-provisioner.env');
+}
+
+export function readToken() {
+  const secretFile = tokenPath();
   const token =
     readFileSync(secretFile, 'utf8')
       .match(/^MOS_IDE_TASK_BRIDGE_TOKEN=(.+)$/m)?.[1]
       ?.trim() || '';
   if (token.length < 32) throw new Error('IDE task bridge token is unavailable.');
   return token;
+}
+
+function readRequiredConfigValue(values: Map<string, string>, name: string) {
+  const value = clean(values.get(name), 500);
+  if (!value) throw new Error(`IDE provisioner managed runtime config is missing ${name}.`);
+  return value;
+}
+
+/**
+ * This file is deliberately distinct from the bearer secret. launchd and
+ * interactive shells do not carry repository paths or bridge settings; the
+ * local installer writes this 0600 file once and the companion owns it.
+ */
+export function readManagedRuntimeConfig(path = runtimeConfigPath()): IdeTaskProvisionerRuntimeConfig {
+  const stats = lstatSync(path);
+  if (!stats.isFile() || stats.isSymbolicLink())
+    throw new Error('IDE provisioner managed runtime config must be a regular file.');
+  if ((stats.mode & 0o077) !== 0)
+    throw new Error('IDE provisioner managed runtime config must not be group/world-readable.');
+  const values = new Map<string, string>();
+  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (match) values.set(match[1], match[2].trim());
+  }
+  const repository = readRequiredConfigValue(values, 'MOS_IDE_PROVISIONER_REPOSITORY');
+  const worktreeRoot = readRequiredConfigValue(values, 'MOS_IDE_PROVISIONER_WORKTREE_ROOT');
+  const apiUrl = readRequiredConfigValue(values, 'MOS_IDE_PROVISIONER_API_URL').replace(/\/$/, '');
+  const provisionerId = clean(values.get('MOS_IDE_PROVISIONER_ID') || 'danny-codex-desktop', 100);
+  if (!repository.startsWith('/') || !worktreeRoot.startsWith('/') || !/^https:\/\//.test(apiUrl) || !provisionerId)
+    throw new Error('IDE provisioner managed runtime config is invalid.');
+  return { apiUrl, provisionerId, repository, worktreeRoot };
 }
 
 export function readProvisioningLedger(path: string): ProvisioningLedger {
@@ -199,8 +245,9 @@ export async function createCodexTask(request: InboxIdeTaskProvisioningRequest, 
 }
 
 export async function prepareIdeWorktree(request: InboxIdeTaskProvisioningRequest): Promise<string> {
-  const configuredRepository = clean(process.env.MOS_IDE_PROVISIONER_REPOSITORY, 500);
-  const configuredRoot = clean(process.env.MOS_IDE_PROVISIONER_WORKTREE_ROOT, 500);
+  const config = readManagedRuntimeConfig();
+  const configuredRepository = config.repository;
+  const configuredRoot = config.worktreeRoot;
   if (!configuredRepository.startsWith('/') || !configuredRoot.startsWith('/'))
     throw new Error(
       'IDE provisioner requires absolute MOS_IDE_PROVISIONER_REPOSITORY and MOS_IDE_PROVISIONER_WORKTREE_ROOT.'
@@ -215,7 +262,10 @@ export async function prepareIdeWorktree(request: InboxIdeTaskProvisioningReques
   if (existsSync(worktreePath))
     throw new Error('IDE provisioning worktree already exists; refusing to reuse an unverified path.');
   mkdirSync(root, { recursive: true, mode: 0o700 });
-  await execFile('git', ['-C', repository, 'worktree', 'add', '-b', request.branchName, worktreePath, 'HEAD'], {
+  // Always branch from the fetched approved main ref, never from a dirty
+  // launchd working directory or an interactive checkout's detached HEAD.
+  await execFile('git', ['-C', repository, 'fetch', 'origin', 'main'], { timeout: REQUEST_TIMEOUT_MS });
+  await execFile('git', ['-C', repository, 'worktree', 'add', '-b', request.branchName, worktreePath, 'origin/main'], {
     timeout: REQUEST_TIMEOUT_MS,
   });
   return worktreePath;
@@ -269,19 +319,15 @@ export async function runProvisionerOnce(deps: ProvisionerDeps): Promise<'IDLE' 
 
 async function main() {
   const token = readToken();
-  const apiUrl = clean(
-    process.env.MOS_IDE_PROVISIONER_API_URL || process.env.MOS_API_URL || 'https://api.lab.masteros.app/api',
-    500
-  ).replace(/\/$/, '');
-  const provisionerId = clean(process.env.MOS_IDE_PROVISIONER_ID || 'danny-codex-desktop', 100);
+  const config = readManagedRuntimeConfig();
   const result = await runProvisionerOnce({
     createTask: createCodexTask,
     prepareWorktree: prepareIdeWorktree,
     fetch,
     ledgerPath: runtimePath(),
     token,
-    apiUrl,
-    provisionerId,
+    apiUrl: config.apiUrl,
+    provisionerId: config.provisionerId,
   });
   process.stdout.write(`IDE task provisioner: ${result}.\n`);
 }

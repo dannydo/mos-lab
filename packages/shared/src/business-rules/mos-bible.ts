@@ -650,7 +650,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Code, test, commit và deploy chỉ diễn ra trong Codex IDE hiển thị. Inbox giữ cổng duyệt, handoff và receipt đã kiểm chứng; commit và deploy vẫn là hai quyết định Danny tách biệt.',
     commandments: [
       'APPROVED triage không tự là quyền chạy code: Danny phải thực hiện hành động Duyệt code/test riêng, ticket phải READY, có priority và có native plan khớp source version.',
-      'Inbox tạo một implementation job IDE-owned, source/plan-version-bound cùng một provisioning request ID. Companion đã opt-in trên máy cục bộ lease request rồi gọi Codex App Server tạo đúng một task/worktree hiển thị; request ID và ledger 0600 khiến crash/reconnect hoàn tất task cũ thay vì tạo task thứ hai. Worker Mac và route claim không được lease hay thực hiện code/test, commit hoặc deploy.',
+      'Inbox tạo một implementation job IDE-owned, source/plan-version-bound cùng một provisioning request ID. Local companion được cài qua launchd managed runtime (config 0600 riêng bearer) tự poll, lease request rồi gọi Codex App Server tạo đúng một task/worktree hiển thị; request ID và ledger 0600 khiến restart/reconnect hoàn tất task cũ thay vì tạo task thứ hai. Worker Mac và route claim không được lease hay thực hiện code/test, commit hoặc deploy.',
       'Nonce handoff chỉ được sinh sau khi companion báo task ID và server bind atomically đúng request đang lease. Inbox phải chiếu PENDING/LEASED/READY bằng nhãn Codex IDE phù hợp, không được nói chờ Worker Mac. Revoked, stale, thiếu quyền hoặc callback khác request bị từ chối không giao nonce, không audit/comment/notification; provisioning tạm không có task là retryable.',
       'IDE receipt chỉ được ghi sau khi IDE đã code/test. Receipt của task đã bind đi qua bridge bearer riêng, đối chiếu task/job/nonce/source/plan/quality gate/trạng thái trong một transaction; browser không gửi nonce. Thiếu, cũ, sai, revoked, task khác hoặc không có quyền bị từ chối không ghi gì; replay không nhân audit.',
       'Danny duyệt commit chỉ cấp nonce commit cho đúng candidate đã review. Inbox phải chiếu rõ “Chờ Codex IDE ghi commit đã duyệt”, còn task đã bind nhận nonce qua bridge bearer riêng và ghi commit SHA hợp lệ; ticket mới sang chờ duyệt deploy. Replay cùng SHA trả kết quả idempotent, không tạo audit thứ hai.',
@@ -667,7 +667,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex IDE', 'implementation', 'handoff', 'Danny approval', 'receipt', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.33.0',
+    version: '1.34.0',
     effectiveFrom: '2026-09-07',
     sources: [
       {
@@ -683,7 +683,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
         reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
       },
       {
-        label: 'Local Codex App Server provisioner and replay ledger',
+        label: 'Managed local Codex App Server provisioner, launchd runtime and replay ledger',
         reference: 'scripts/ide-task-provisioner.ts',
       },
       {

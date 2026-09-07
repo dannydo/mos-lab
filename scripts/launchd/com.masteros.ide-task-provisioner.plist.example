@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.masteros.ide-task-provisioner</string>
+  <key>ProgramArguments</key><array><string>/opt/homebrew/bin/pnpm</string><string>ide-task-provisioner:service</string></array>
+  <key>WorkingDirectory</key><string>/absolute/path/to/mos-lab</string>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>/Applications/ChatGPT.app/Contents/Resources:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>/Users/dannydo/Library/Logs/masteros-ide-task-provisioner.log</string>
+  <key>StandardErrorPath</key><string>/Users/dannydo/Library/Logs/masteros-ide-task-provisioner.error.log</string>
+</dict></plist>

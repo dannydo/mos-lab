@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { readProvisioningLedger, runProvisionerOnce } from './ide-task-provisioner.js';
+import { readManagedRuntimeConfig, readProvisioningLedger, runProvisionerOnce } from './ide-task-provisioner.js';
+import { renderLaunchAgentPlist } from './install-ide-task-provisioner.js';
 
 const request = {
   jobId: '11111111-1111-4111-8111-111111111111',
@@ -84,4 +85,40 @@ test('provisioner does not create a task when the bridge has no pending request'
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
+});
+
+test('managed runtime config is 0600, separate from the bearer, and rejects an exposed config', async () => {
+  const temporary = await mkdtemp(join(tmpdir(), 'mos-ide-provisioner-config-'));
+  const configPath = join(temporary, 'runtime.env');
+  try {
+    await writeFile(
+      configPath,
+      [
+        'MOS_IDE_PROVISIONER_REPOSITORY=/tmp/repository',
+        'MOS_IDE_PROVISIONER_WORKTREE_ROOT=/tmp/worktrees',
+        'MOS_IDE_PROVISIONER_API_URL=https://api.lab.masteros.app/api',
+        'MOS_IDE_PROVISIONER_ID=test-companion',
+        '',
+      ].join('\n'),
+      { mode: 0o600 }
+    );
+    assert.deepEqual(readManagedRuntimeConfig(configPath), {
+      repository: '/tmp/repository',
+      worktreeRoot: '/tmp/worktrees',
+      apiUrl: 'https://api.lab.masteros.app/api',
+      provisionerId: 'test-companion',
+    });
+    await chmod(configPath, 0o644);
+    assert.throws(() => readManagedRuntimeConfig(configPath), /must not be group\/world-readable/);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+test('launchd service definition contains no bridge bearer or nonce and starts the polling service', () => {
+  const plist = renderLaunchAgentPlist('/tmp/mos-lab', '/opt/homebrew/bin/pnpm');
+  assert.match(plist, /ide-task-provisioner:service/);
+  assert.match(plist, /RunAtLoad/);
+  assert.match(plist, /KeepAlive/);
+  assert.doesNotMatch(plist, /TOKEN|NONCE|Authorization/i);
 });
