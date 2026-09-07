@@ -2,6 +2,8 @@ import api, { resolveApiBaseUrl } from './api';
 import type {
   RequestBugReportImplementationChangesRequest,
   RequestBugReportPlanChangesRequest,
+  InboxIdeReleasePreview,
+  RecordInboxIdeReleaseRequest,
   AnnualHolidayCalendarQuery,
   AnnualHolidayCalendarResponse,
   CreateStaffPerformanceEventRequest,
@@ -792,6 +794,21 @@ export const apiClient = {
       data: RequestBugReportPlanChangesRequest
     ): Promise<ReleaseBugReportImplementationResponse> => {
       const response = await api.post(`/bug-reports/${id}/plan-request-changes`, data);
+      return response.data;
+    },
+    previewIdeRelease: async (id: number): Promise<InboxIdeReleasePreview> => {
+      const response = await api.get<{ data: InboxIdeReleasePreview }>(`/bug-reports/${id}/ide-release`, {
+        timeout: 30_000,
+      });
+      return response.data.data;
+    },
+    recordIdeRelease: async (
+      id: number,
+      data: RecordInboxIdeReleaseRequest
+    ): Promise<ReleaseBugReportImplementationResponse> => {
+      const response = await api.post<ReleaseBugReportImplementationResponse>(`/bug-reports/${id}/ide-release`, data, {
+        timeout: 35_000,
+      });
       return response.data;
     },
     releaseImplementation: async (

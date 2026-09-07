@@ -934,6 +934,41 @@ export interface ReleaseBugReportImplementationRequest {
   commitSha?: string;
 }
 
+/** Trusted worker-captured content, subsequently bound by native approval audits. */
+export interface InboxReleaseManifest {
+  version: 1;
+  reportId: number;
+  jobId: string;
+  sourceVersion: string;
+  planVersion: string;
+  baseCommit: string;
+  patchHash: string;
+  changedFiles: string[];
+  tests: InboxImplementationTestResult[];
+  digest: string;
+}
+
+export interface InboxIdeReleaseToken {
+  jobId: string;
+  manifestDigest: string;
+  commitSha: string;
+  apiRelease: string;
+  webRelease: string | null;
+  approvalAuditIds: number[];
+}
+
+export interface InboxIdeReleasePreview {
+  eligible: boolean;
+  code: string | null;
+  reason: string;
+  token: InboxIdeReleaseToken | null;
+}
+
+export interface RecordInboxIdeReleaseRequest {
+  acknowledged: true;
+  token: InboxIdeReleaseToken | null;
+}
+
 /** Reject only this candidate. This does not approve another code/test execution. */
 export interface RequestBugReportImplementationChangesRequest {
   acknowledged: true;

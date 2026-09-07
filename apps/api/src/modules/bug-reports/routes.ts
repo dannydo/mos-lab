@@ -17,6 +17,7 @@ import {
   type ReleaseBugReportImplementationRequest,
   type RequestBugReportImplementationChangesRequest,
   type RequestBugReportPlanChangesRequest,
+  type RecordInboxIdeReleaseRequest,
   type ReviewBugReportImplementationAcceptanceRequest,
   type RetryBugReportImplementationRequest,
   type RenewInboxImplementationLeaseRequest,
@@ -40,6 +41,7 @@ import { RequestClassifierWorkerHub } from './request-classifier-worker-hub.js';
 import { InboxFollowUpError, InboxFollowUpService } from './inbox-follow-up.service.js';
 import { InboxPlanError, InboxPlanService } from './inbox-plan.service.js';
 import { InboxImplementationError, InboxImplementationService } from './inbox-implementation.service.js';
+import { InboxIdeReleaseService } from './inbox-ide-release.service.js';
 import {
   RequestClassifierWorkerHealthError,
   RequestClassifierWorkerHealthService,
@@ -663,6 +665,24 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   );
 
+  fastify.get('/bug-reports/:id/ide-release', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      return reply.send({ success: true, data: await InboxIdeReleaseService.preview(fastify, id) });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Preview IDE release failed');
+    }
+  });
+  fastify.post('/bug-reports/:id/ide-release', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      await InboxIdeReleaseService.record(fastify, id, request.user.id, request.body as RecordInboxIdeReleaseRequest);
+      return reply.send({ success: true, data: await BugReportService.detail(fastify, id) });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Record IDE release failed');
+    }
+  });
+
   fastify.post(
     '/bug-reports/:id/implementation-release',
     { preHandler: [requireAuth, requireDanny] },
@@ -673,7 +693,16 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi bàn giao ticket nghiệm thu.', 422);
         }
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-        await InboxImplementationService.recordReleasedForReporterAcceptance(fastify, id, request.user.id, body);
+        // Old browser entrypoint cannot bypass the stricter IDE evidence gate.
+        const preview = await InboxIdeReleaseService.preview(fastify, id);
+        if (body.commitSha && body.commitSha !== preview.token?.commitSha) {
+          throw new InboxImplementationError(
+            'Commit yêu cầu không khớp bằng chứng server.',
+            409,
+            'IDE_COMMIT_MISMATCH'
+          );
+        }
+        await InboxIdeReleaseService.record(fastify, id, request.user.id, { acknowledged: true, token: preview.token });
         return reply.send({
           success: true,
           data: await BugReportService.detail(fastify, id),
@@ -1137,13 +1166,20 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           result?: unknown;
           changedFiles?: unknown;
           diffStat?: unknown;
+          baseCommit?: unknown;
+          patchHash?: unknown;
         };
         await InboxImplementationService.complete(
           fastify,
           String((request.params as { id: string }).id || ''),
           String(body?.leaseToken || ''),
           body?.result,
-          { changedFiles: body?.changedFiles, diffStat: body?.diffStat }
+          {
+            changedFiles: body?.changedFiles,
+            diffStat: body?.diffStat,
+            baseCommit: body?.baseCommit,
+            patchHash: body?.patchHash,
+          }
         );
         return reply.send({ success: true });
       } catch (error) {

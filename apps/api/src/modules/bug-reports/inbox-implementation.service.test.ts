@@ -1506,6 +1506,12 @@ test('commit approval requeues only the retained reviewed patch for the Mac work
     },
   };
 
+  const originalTransaction = fastify.prisma.crm.$transaction;
+  fastify.prisma.crm.$transaction = (callback) =>
+    originalTransaction(async (tx) => {
+      (tx as { crmBugReportAudit: { findFirst?: () => Promise<null> } }).crmBugReportAudit.findFirst = async () => null;
+      return callback(tx);
+    });
   assert.equal(await InboxImplementationService.approveCommit(fastify as never, 16, 1), true);
   assert.equal(updates[0]?.status, 'PENDING');
   assert.equal(updates[0]?.executionPhase, 'COMMIT_APPROVED');
@@ -1597,6 +1603,12 @@ test('deploy approval requeues only the recorded implementation commit for the M
     },
   };
 
+  const originalTransaction = fastify.prisma.crm.$transaction;
+  fastify.prisma.crm.$transaction = (callback) =>
+    originalTransaction(async (tx) => {
+      (tx as { crmBugReportAudit: { findFirst?: () => Promise<null> } }).crmBugReportAudit.findFirst = async () => null;
+      return callback(tx);
+    });
   assert.equal(await InboxImplementationService.approveDeploy(fastify as never, 16, 1), true);
   assert.equal(updates[0]?.status, 'PENDING');
   assert.equal(updates[0]?.executionPhase, 'DEPLOY_APPROVED');

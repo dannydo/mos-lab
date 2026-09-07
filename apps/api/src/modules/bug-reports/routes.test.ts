@@ -4,6 +4,7 @@ import Fastify from 'fastify';
 import { bugReportRoutes } from './routes.js';
 import { InboxImplementationService } from './inbox-implementation.service.js';
 import { BugReportService } from './bug-report.service.js';
+import { InboxIdeReleaseService } from './inbox-ide-release.service.js';
 import {
   canManageBugInbox,
   canReadBugInbox,
@@ -66,6 +67,56 @@ test('only Danny canonical Super Admin can manage Bug Inbox', () => {
   assert.equal(canManageBugInbox({ role: 'super_admin', username: 'another-admin' }), false);
   assert.equal(canManageBugInbox({ role: 'admin', username: 'danhdo@gmail.com' }), false);
   assert.equal(canManageBugInbox({ role: 'manager', username: 'manager' }), false);
+});
+
+test('IDE preview and confirmation require canonical Danny and never enqueue execution', async (t) => {
+  const app = Fastify();
+  app.decorate('prisma', {
+    crm: { crmStaff: { update: async () => ({}), findUnique: async () => ({ role: 'admin', isActive: true }) } },
+  } as unknown as typeof app.prisma);
+  app.decorateRequest('jwtVerify', async function () {
+    if (!this.headers['x-test-role']) throw new Error('No session');
+    this.user = {
+      id: 1,
+      role: this.headers['x-test-role'] as never,
+      username: String(this.headers['x-test-name'] || 'other'),
+      displayName: 'Test',
+    };
+  });
+  const preview = t.mock.method(InboxIdeReleaseService, 'preview', async () => ({
+    eligible: false,
+    code: 'IDE_MANIFEST_MISSING',
+    reason: 'Thiếu manifest',
+    token: null,
+  }));
+  const record = t.mock.method(InboxIdeReleaseService, 'record', async () => {});
+  const enqueue = t.mock.method(InboxImplementationService, 'approve', async () => false);
+  t.mock.method(BugReportService, 'detail', async () => ({ id: 29, status: 'FIXED' }) as never);
+  await app.register(bugReportRoutes);
+  try {
+    for (const method of ['GET', 'POST'] as const) {
+      const request = (headers: Record<string, string>) =>
+        app.inject({
+          method,
+          url: '/bug-reports/29/ide-release',
+          headers,
+          ...(method === 'POST' ? { payload: { acknowledged: true, token: null } } : {}),
+        });
+      assert.equal((await request({})).statusCode, 401);
+      assert.equal((await request({ 'x-test-role': 'admin', 'x-test-name': 'danhdo@gmail.com' })).statusCode, 403);
+      assert.equal((await request({ 'x-test-role': 'super_admin' })).statusCode, 403);
+      assert.equal(
+        (await request({ 'x-test-role': 'super_admin', 'x-test-name': 'danhdo@gmail.com' })).statusCode,
+        200
+      );
+    }
+    assert.equal(preview.mock.callCount(), 1);
+    assert.equal(record.mock.callCount(), 1);
+    assert.equal(enqueue.mock.callCount(), 0);
+    assert.deepEqual(record.mock.calls[0].arguments.slice(1), [29, 1, { acknowledged: true, token: null }]);
+  } finally {
+    await app.close();
+  }
 });
 
 test('Admin and Super Admin can read every Inbox ticket without gaining Danny triage authority', () => {
