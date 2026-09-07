@@ -202,6 +202,53 @@ test('IDE handoff receipt routes require canonical Danny and forward only the su
   }
 });
 
+test('IDE task bridge receipt requires its separate bearer and never uses a browser session', async (t) => {
+  const app = Fastify();
+  app.decorate('prisma', { crm: { crmStaff: { update: async () => ({}) } } } as unknown as typeof app.prisma);
+  const token = 'ide-task-bridge-token-that-is-definitely-over-32-characters';
+  const previous = process.env.MOS_IDE_TASK_BRIDGE_TOKEN;
+  process.env.MOS_IDE_TASK_BRIDGE_TOKEN = token;
+  const record = t.mock.method(InboxImplementationService, 'recordIdeTaskReceipt', async () => 'RECORDED' as const);
+  await app.register(bugReportRoutes);
+  const receipt = {
+    handoff: { jobId: 'job-1', sourceVersion: 'v1:s', planVersion: 'v1:p', receiptNonce: 'private-nonce' },
+  };
+  try {
+    assert.equal(
+      (await app.inject({ method: 'POST', url: '/ide-task-bridge/tasks/task-ide-30/receipt', payload: { receipt } }))
+        .statusCode,
+      401
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/ide-task-bridge/tasks/task-ide-30/receipt',
+          headers: { authorization: 'Bearer wrong' },
+          payload: { receipt },
+        })
+      ).statusCode,
+      401
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/ide-task-bridge/tasks/task-ide-30/receipt',
+          headers: { authorization: `Bearer ${token}` },
+          payload: { receipt },
+        })
+      ).statusCode,
+      200
+    );
+    assert.deepEqual(record.mock.calls[0].arguments.slice(1), ['task-ide-30', receipt]);
+  } finally {
+    if (previous === undefined) delete process.env.MOS_IDE_TASK_BRIDGE_TOKEN;
+    else process.env.MOS_IDE_TASK_BRIDGE_TOKEN = previous;
+    await app.close();
+  }
+});
+
 test('Admin and Super Admin can read every Inbox ticket without gaining Danny triage authority', () => {
   assert.equal(canReadBugInbox({ role: 'super_admin' }), true);
   assert.equal(canReadBugInbox({ role: 'admin' }), true);

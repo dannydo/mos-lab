@@ -1531,6 +1531,8 @@ test('IDE code/test and commit receipts consume a fresh handoff once and never d
     executionPhase: 'IDE_HANDOFF_READY',
     ideReceiptNonce: 'code-nonce',
     ideHandoffRevokedAt: null,
+    sourceVersion: 'v1:source',
+    planVersion: 'v1:plan',
     changedFilesJson: null,
     testsJson: null,
     failureCode: null,
@@ -1596,6 +1598,79 @@ test('IDE code/test and commit receipts consume a fresh handoff once and never d
     { code: 'IDE_COMMIT_REJECTED' }
   );
   assert.equal(audits.length, 2);
+});
+
+test('trusted IDE task receipt accepts only its bound task and keeps replays audit-idempotent', async () => {
+  const report = { ...source(), implementationActiveJobId: 'bound-ide-job' };
+  const job = {
+    id: 'bound-ide-job',
+    reportId: 16,
+    executionOwner: 'IDE',
+    ideTaskId: 'task-ide-30',
+    status: 'PENDING',
+    executionPhase: 'IDE_HANDOFF_READY',
+    ideReceiptNonce: 'bound-nonce',
+    ideHandoffRevokedAt: null,
+    sourceVersion: 'v1:source',
+    planVersion: 'v1:plan',
+    changedFilesJson: null,
+    testsJson: null,
+    failureCode: null,
+  };
+  const audits: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findFirst: async ({ where }: { where: { ideTaskId?: string } }) =>
+            where.ideTaskId === 'task-ide-30' ? job : null,
+        },
+        $transaction: async (callback: (tx: unknown) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async () => [],
+            crmBugReport: { findUnique: async () => report },
+            crmInboxImplementationJob: {
+              findUnique: async () => job,
+              updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+                Object.assign(job, data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: { create: async (input: Record<string, unknown>) => audits.push(input) },
+          }),
+      },
+    },
+  };
+  const receipt = {
+    handoff: {
+      jobId: 'bound-ide-job',
+      sourceVersion: 'v1:source',
+      planVersion: 'v1:plan',
+      receiptNonce: 'bound-nonce',
+    },
+    result: {
+      summary: 'Verified by the bound IDE task.',
+      risksAndRollback: 'Revert the candidate.',
+      tests: [{ command: 'pnpm test', status: 'PASSED' as const }],
+    },
+    changedFiles: ['apps/api/src/modules/bug-reports/routes.ts'],
+    diffStat: '1 file changed',
+    baseCommit: 'a'.repeat(40),
+    patchHash: 'b'.repeat(64),
+  };
+  await assert.rejects(() => InboxImplementationService.recordIdeTaskReceipt(fastify as never, 'other-task', receipt), {
+    code: 'IDE_TASK_HANDOFF_UNAVAILABLE',
+  });
+  assert.equal(
+    await InboxImplementationService.recordIdeTaskReceipt(fastify as never, 'task-ide-30', receipt),
+    'RECORDED'
+  );
+  assert.equal(
+    await InboxImplementationService.recordIdeTaskReceipt(fastify as never, 'task-ide-30', receipt),
+    'DUPLICATE'
+  );
+  assert.equal(audits.length, 1);
+  assert.equal((audits[0]?.data as { actorStaffId?: number | null }).actorStaffId, null);
 });
 
 test('commit approval rejects a retained patch when quality gate evidence failed', async () => {

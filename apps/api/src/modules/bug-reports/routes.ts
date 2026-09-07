@@ -23,6 +23,7 @@ import {
   type RenewInboxImplementationLeaseRequest,
   type RecordInboxImplementationQualityGateSelfCheckRequest,
   type RecordInboxIdeImplementationReceiptRequest,
+  type RecordInboxIdeTaskReceiptRequest,
   type RecordInboxIdeCommitReceiptRequest,
   type BugReportListQuery,
   type ConfirmCloseBugReportRequest,
@@ -246,6 +247,22 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         return reply.send({ success: true, data: handoff });
       } catch (error) {
         return sendError(fastify, reply, error, 'Receive IDE task handoff failed');
+      }
+    }
+  );
+  fastify.post(
+    '/ide-task-bridge/tasks/:taskId/receipt',
+    { preHandler: [requireIdeTaskBridge] },
+    async (request, reply) => {
+      try {
+        const outcome = await InboxImplementationService.recordIdeTaskReceipt(
+          fastify,
+          (request.params as { taskId: string }).taskId,
+          (request.body as RecordInboxIdeTaskReceiptRequest)?.receipt
+        );
+        return reply.send({ success: true, data: { outcome } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Record IDE task receipt failed');
       }
     }
   );

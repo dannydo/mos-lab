@@ -605,6 +605,17 @@ export interface RecordInboxIdeImplementationReceiptRequest {
   patchHash: string;
 }
 
+/**
+ * A receipt submitted only by the trusted IDE-task bridge. The task identity
+ * comes from the authenticated URL, while the nonce comes from its private
+ * handoff file; neither is accepted from the Inbox UI.
+ */
+export interface RecordInboxIdeTaskReceiptRequest {
+  receipt: RecordInboxIdeImplementationReceiptRequest;
+}
+
+export type RecordInboxIdeTaskReceiptResponse = RecordInboxIdeImplementationReceiptResponse;
+
 export type RecordInboxIdeImplementationReceiptResponse = ActionResponse<{
   reportId: number;
   outcome: 'RECORDED' | 'DUPLICATE';

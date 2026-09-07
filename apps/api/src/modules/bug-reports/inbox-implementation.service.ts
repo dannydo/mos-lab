@@ -779,8 +779,9 @@ export class InboxImplementationService {
   static async recordIdeReceipt(
     fastify: FastifyInstance,
     reportId: number,
-    actorStaffId: number,
-    input: RecordInboxIdeImplementationReceiptRequest
+    actorStaffId: number | null,
+    input: RecordInboxIdeImplementationReceiptRequest,
+    expectedTaskId?: string
   ) {
     const result = normalizeInboxImplementationResult(input?.result);
     const files = safeFileList(input?.changedFiles);
@@ -794,7 +795,16 @@ export class InboxImplementationService {
       const job = report?.implementationActiveJobId
         ? await tx.crmInboxImplementationJob.findUnique({ where: { id: report.implementationActiveJobId } })
         : null;
-      if (!report || !job || job.executionOwner !== 'IDE' || job.ideHandoffRevokedAt)
+      if (
+        !report ||
+        !job ||
+        job.executionOwner !== 'IDE' ||
+        job.ideHandoffRevokedAt ||
+        (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId) ||
+        input?.handoff?.jobId !== job.id ||
+        input?.handoff?.sourceVersion !== job.sourceVersion ||
+        input?.handoff?.planVersion !== job.planVersion
+      )
         throw new InboxImplementationError('IDE handoff không hợp lệ.', 409, 'IDE_RECEIPT_REJECTED');
       if (job.status === 'AWAITING_COMMIT_REVIEW' && !job.ideReceiptNonce) return 'DUPLICATE' as const;
       if (
@@ -823,13 +833,36 @@ export class InboxImplementationService {
           reportId,
           actorStaffId,
           action: 'IDE_RECEIPT_RECORDED',
-          note: 'IDE receipt được ghi; worker không nhận quyền thực thi.',
+          note: expectedTaskId
+            ? 'IDE task đã bind ghi receipt qua bridge tin cậy; worker không nhận quyền thực thi.'
+            : 'IDE receipt được ghi; worker không nhận quyền thực thi.',
           beforeJson: snapshot(report),
           afterJson: JSON.stringify({ jobId: job.id }),
         },
       });
       return 'RECORDED' as const;
     });
+  }
+
+  /** The bridge may record only for its already-bound task, never by report id alone. */
+  static async recordIdeTaskReceipt(
+    fastify: FastifyInstance,
+    taskId: unknown,
+    input: RecordInboxIdeImplementationReceiptRequest
+  ) {
+    const normalizedTaskId = String(taskId || '').trim();
+    if (!/^[A-Za-z0-9_-]{8,160}$/.test(normalizedTaskId))
+      throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: { ideTaskId: normalizedTaskId },
+    });
+    if (!job)
+      throw new InboxImplementationError(
+        'IDE task không có handoff đang hiệu lực.',
+        409,
+        'IDE_TASK_HANDOFF_UNAVAILABLE'
+      );
+    return this.recordIdeReceipt(fastify, job.reportId, null, input, normalizedTaskId);
   }
 
   static async cancelIdeHandoff(fastify: FastifyInstance, reportId: number, actorStaffId: number) {
