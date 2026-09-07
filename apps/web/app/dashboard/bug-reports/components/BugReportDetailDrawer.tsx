@@ -128,6 +128,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
               )}
               {canTriage &&
                 detail.status === 'APPROVED' &&
+                detail.agentProgress.stage === 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL' &&
                 !detail.implementation &&
                 !approvalReceived &&
                 detail.priority &&

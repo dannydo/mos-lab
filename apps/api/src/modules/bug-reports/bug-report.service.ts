@@ -485,6 +485,15 @@ function latestAgentActivity(source: AgentProgressSource) {
   return null;
 }
 
+function pendingReviewPlan(source: AgentProgressSource): Date | null {
+  for (let index = source.audits.length - 1; index >= 0; index -= 1) {
+    const audit = source.audits[index];
+    if (audit.action === 'AGENT_PLAN_POSTED') return null;
+    if (audit.action === 'DANNY_CHANGES_REQUESTED') return audit.createdAt;
+  }
+  return null;
+}
+
 function progressResult(
   stage: BugReportAgentProgressStage,
   source: AgentProgressSource,
@@ -716,6 +725,14 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('IMPLEMENTATION_FAILED', source, latest, source.updatedAt);
   }
   if (source.status === 'APPROVED') {
+    const replanAt = pendingReviewPlan(source);
+    if (replanAt) {
+      return {
+        stage: 'CHECKING_BUSINESS_LOGIC',
+        note: 'Agent đang lập plan mới theo yêu cầu sửa lại. Chưa mở duyệt code/test.',
+        updatedAt: replanAt.toISOString(),
+      };
+    }
     // An APPROVED triage is deliberately not enough to say that Agent has
     // started. Only a durable implementation job may use QUEUED_FOR_FIX or a
     // later execution stage; otherwise the visible owner is still Danny.
@@ -974,6 +991,16 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
   }
 
   if (source.status === 'APPROVED') {
+    const replanAt = pendingReviewPlan(source);
+    if (replanAt) {
+      return nextAction(
+        'AGENT',
+        'REVIEW_CLARIFICATION',
+        'Đăng plan sửa lại',
+        'Chờ Agent đăng plan mới trước khi Danny duyệt code/test lại.',
+        replanAt
+      );
+    }
     return nextAction(
       'DANNY',
       'IMPLEMENT',

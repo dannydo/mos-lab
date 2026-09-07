@@ -151,7 +151,14 @@ test('request changes preserves candidate/history, revokes execution, and atomic
   const projection = bugReportWorkflowProjection(projectionSource as never);
   assert.equal(projection.nextAction.actor, 'AGENT');
   const readySource = { ...projectionSource, clarificationStatus: 'READY' };
-  assert.equal(bugReportAgentProgress(readySource as never).stage, 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL');
+  assert.equal(bugReportAgentProgress(readySource as never).stage, 'CHECKING_BUSINESS_LOGIC');
+  assert.equal(bugReportWorkflowProjection(readySource as never).nextAction.actor, 'AGENT');
+  const plannedSource = {
+    ...readySource,
+    audits: [...readySource.audits, { action: 'AGENT_PLAN_POSTED', createdAt: new Date() }],
+  };
+  assert.equal(bugReportAgentProgress(plannedSource as never).stage, 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL');
+  assert.equal(bugReportWorkflowProjection(plannedSource as never).nextAction.actor, 'DANNY');
   assert.equal(isInboxImplementationExecutionEligible(readySource as never).eligible, false);
 });
 

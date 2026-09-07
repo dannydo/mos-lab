@@ -90,6 +90,16 @@ describe('BugReportDetailDrawer behavior', () => {
     await screen.findByText(detail.description);
     expect(screen.queryByRole('button', { name: 'Duyệt code/test' })).not.toBeInTheDocument();
   });
+
+  it('keeps code approval hidden while the revised native plan is still being prepared', async () => {
+    const detail = makeDetail({
+      status: 'APPROVED',
+      agentProgress: { stage: 'CHECKING_BUSINESS_LOGIC', note: 'Đang lập plan mới', updatedAt: capturedAt },
+    });
+    render(<BugReportDetailDrawer {...propsFor(detail)} />);
+    await screen.findByText(detail.description);
+    expect(screen.queryByText('Duyệt code/test', { exact: true })).not.toBeInTheDocument();
+  });
   it('keeps read-only viewers out of every mutation and preserves detail/context/audit display', async () => {
     const detail = makeDetail({
       audits: [
@@ -148,7 +158,16 @@ describe('BugReportDetailDrawer behavior', () => {
   );
 
   it('requires the code/test confirmation before invoking the existing approval callback', async () => {
-    const props = propsFor(makeDetail({ status: 'APPROVED' }));
+    const props = propsFor(
+      makeDetail({
+        status: 'APPROVED',
+        agentProgress: {
+          stage: 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL',
+          note: null,
+          updatedAt: capturedAt,
+        },
+      })
+    );
     render(<BugReportDetailDrawer {...props} />);
     const trigger = await screen.findByRole('button', { name: 'Duyệt code/test' });
     expect(props.approveImplementation).not.toHaveBeenCalled();
@@ -160,12 +179,12 @@ describe('BugReportDetailDrawer behavior', () => {
   });
 
   it.each([
-    ['READY_FOR_TRIAGE', 'Duyệt code/test', 'approveImplementation'],
+    ['AWAITING_DANNY_IMPLEMENTATION_APPROVAL', 'Duyệt code/test', 'approveImplementation'],
     ['AWAITING_DANNY_COMMIT_REVIEW', 'Duyệt commit', 'approveImplementationCommit'],
   ] as const)('keeps the %s popup root scoped and cancellation side-effect free', async (stage, label, action) => {
     const props = propsFor(
       makeDetail({
-        status: stage === 'READY_FOR_TRIAGE' ? 'APPROVED' : 'IN_PROGRESS',
+        status: stage === 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL' ? 'APPROVED' : 'IN_PROGRESS',
         agentProgress: { stage, note: null, updatedAt: capturedAt },
       })
     );
