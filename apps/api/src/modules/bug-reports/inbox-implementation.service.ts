@@ -3113,7 +3113,7 @@ export class InboxImplementationService {
       include: implementationReportInclude(),
     });
     if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
-    if (report.status !== 'IN_PROGRESS' || !report.implementationActiveJobId) {
+    if (!['IN_PROGRESS', 'APPROVED'].includes(report.status) || !report.implementationActiveJobId) {
       throw new InboxImplementationError('Ticket chưa ở checkpoint duyệt commit để bàn giao nghiệm thu.', 409);
     }
 
@@ -3126,6 +3126,9 @@ export class InboxImplementationService {
     });
     if (!job) {
       throw new InboxImplementationError('Không tìm thấy commit đang chờ Danny xác nhận deploy.', 409);
+    }
+    if (report.status === 'APPROVED' && job.executionOwner !== 'IDE') {
+      throw new InboxImplementationError('Projection APPROVED chỉ hợp lệ cho commit IDE đã được duyệt.', 409);
     }
 
     const qualityGate = evaluateInboxImplementationQualityGate({

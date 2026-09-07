@@ -60,6 +60,7 @@ function fixture() {
     planVersion: plan.planVersion,
     status: 'AWAITING_DEPLOY_REVIEW',
     executionPhase: 'AWAITING_DEPLOY_REVIEW',
+    executionOwner: 'IDE',
     leaseToken: null,
     commitSha: COMMIT as string | null,
     changedFilesJson: JSON.stringify(['apps/api/src/example.ts']),
@@ -290,6 +291,28 @@ test('official IDE release metadata checkpoints once and rejects stale or forged
       code: 'IDE_RELEASE_METADATA_MISMATCH',
     });
     assert.deepEqual(invalid.state, before);
+  } finally {
+    if (marker === undefined) delete process.env.DEPLOY_COMMIT;
+    else process.env.DEPLOY_COMMIT = marker;
+  }
+});
+
+test('official IDE checkpoint accepts the native APPROVED projection only for its IDE-owned deploy-review job', async () => {
+  const f = fixture();
+  const marker = process.env.DEPLOY_COMMIT;
+  process.env.DEPLOY_COMMIT = COMMIT;
+  f.state.report.status = 'APPROVED';
+  const metadata: InboxIdeReleaseCheckpointMetadata = {
+    jobId: f.state.job.id,
+    manifestDigest: f.manifest.digest,
+    commitSha: COMMIT,
+    apiRelease: COMMIT,
+    webRelease: null,
+  };
+  try {
+    await f.recordOfficial(metadata);
+    assert.equal(f.state.report.status, 'FIXED');
+    assert.equal(f.state.job.status, 'RELEASED');
   } finally {
     if (marker === undefined) delete process.env.DEPLOY_COMMIT;
     else process.env.DEPLOY_COMMIT = marker;

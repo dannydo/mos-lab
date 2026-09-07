@@ -109,7 +109,12 @@ async function resolveEvidence(db: Prisma.TransactionClient, reportId: number, v
   const report = await db.crmBugReport.findUnique({ where: { id: reportId }, include: implementationReportInclude() });
   if (!report) fail('BUG_NOT_FOUND', 'Không tìm thấy ticket.');
   const gate = isInboxImplementationExecutionEligible(report!);
-  if (!gate.eligible || !gate.plan || !report!.implementationActiveJobId || report!.status !== 'IN_PROGRESS') {
+  if (
+    !gate.eligible ||
+    !gate.plan ||
+    !report!.implementationActiveJobId ||
+    !['IN_PROGRESS', 'APPROVED'].includes(report!.status)
+  ) {
     fail(
       'IDE_CURRENT_APPROVAL_MISSING',
       'Thiếu job/plan và approval code/test hiện hành. Không thể ghi nhận release IDE.'
@@ -119,6 +124,7 @@ async function resolveEvidence(db: Prisma.TransactionClient, reportId: number, v
   if (
     !job ||
     job.reportId !== reportId ||
+    (report!.status === 'APPROVED' && job.executionOwner !== 'IDE') ||
     job.sourceVersion !== gate.sourceVersion ||
     job.planVersion !== gate.plan!.planVersion ||
     job.status !== 'AWAITING_DEPLOY_REVIEW' ||
