@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { InboxIdeReleaseToken } from '@mos-lab/shared';
+import type { InboxIdeReleaseCheckpointMetadata, InboxIdeReleaseToken } from '@mos-lab/shared';
 import { InboxIdeReleaseService } from './inbox-ide-release.service.js';
 import { makeReleaseManifest, readReleaseManifest } from './inbox-release-manifest.js';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
@@ -202,6 +202,8 @@ function fixture() {
   const preview = () => InboxIdeReleaseService.preview(fastify, 29, verify);
   const record = (token: InboxIdeReleaseToken | null) =>
     InboxIdeReleaseService.record(fastify, 29, 1, { acknowledged: true, token }, verify);
+  const recordOfficial = (metadata: InboxIdeReleaseCheckpointMetadata) =>
+    InboxIdeReleaseService.recordOfficialCheckpoint(fastify, 29, metadata, verify);
   const recordDirect = () => InboxIdeReleaseService.recordDirectTechnicalHotfix(fastify, 29, 1, COMMIT, verify);
   return {
     state,
@@ -209,6 +211,7 @@ function fixture() {
     fastify,
     preview,
     record,
+    recordOfficial,
     recordDirect,
     setFailure: (value: typeof failure) => {
       failure = value;
@@ -252,28 +255,25 @@ test('IDE checkpoint is atomic, truthful and idempotent under concurrent submiss
   }
 });
 
-test('direct technical hotfix uses the same checkpoint, fails closed, and retries without duplicate effects', async () => {
+test('official IDE release metadata checkpoints once and rejects stale or forged metadata without writes', async () => {
   const f = fixture();
-  f.state.job.status = 'AWAITING_COMMIT_REVIEW';
-  f.state.job.executionPhase = 'AWAITING_COMMIT_REVIEW';
-  f.state.job.commitSha = null;
-  f.state.audits = f.state.audits.filter(
-    (audit) => !['DANNY_COMMIT_APPROVED', 'DANNY_DEPLOY_APPROVED'].includes(audit.action)
-  );
-  const oldMarker = process.env.DEPLOY_COMMIT;
+  const marker = process.env.DEPLOY_COMMIT;
   process.env.DEPLOY_COMMIT = COMMIT;
+  const metadata: InboxIdeReleaseCheckpointMetadata = {
+    jobId: f.state.job.id,
+    manifestDigest: f.manifest.digest,
+    commitSha: COMMIT,
+    apiRelease: COMMIT,
+    webRelease: null,
+  };
   try {
-    await Promise.all([f.recordDirect(), f.recordDirect(), f.recordDirect()]);
+    await Promise.all([f.recordOfficial(metadata), f.recordOfficial(metadata), f.recordOfficial(metadata)]);
     assert.equal(f.state.report.status, 'FIXED');
-    assert.equal(f.state.report.implementationActiveJobId, null);
     assert.equal(f.state.job.status, 'RELEASED');
     assert.equal(f.state.comments.length, 1);
     assert.equal(f.state.notifications.length, 1);
     assert.equal(f.state.resolutions.length, 1);
-    assert.equal(f.state.audits.filter((audit) => audit.action === 'DIRECT_TECHNICAL_HOTFIX_AUTHORIZED').length, 1);
-    const release = f.state.audits.filter((audit) => audit.action === 'DIRECT_TECHNICAL_HOTFIX_RELEASE_RECORDED');
-    assert.equal(release.length, 1);
-    assert.equal(JSON.parse(release[0].afterJson!).source, 'TECHNICAL_HOTFIX');
+    assert.equal(f.state.audits.filter((audit) => audit.action === 'IDE_RELEASE_CHECKPOINT_RECORDED').length, 1);
     assert.equal(
       bugReportAgentProgress({ ...f.state.report, audits: f.state.audits, implementation: null } as never).stage,
       'AWAITING_REPORTER_ACCEPTANCE'
@@ -283,10 +283,24 @@ test('direct technical hotfix uses the same checkpoint, fails closed, and retrie
         .nextAction.actor,
       'REPORTER'
     );
+
+    const invalid = fixture();
+    const before = structuredClone(invalid.state);
+    await assert.rejects(invalid.recordOfficial({ ...metadata, manifestDigest: '0'.repeat(64) }), {
+      code: 'IDE_RELEASE_METADATA_MISMATCH',
+    });
+    assert.deepEqual(invalid.state, before);
   } finally {
-    if (oldMarker === undefined) delete process.env.DEPLOY_COMMIT;
-    else process.env.DEPLOY_COMMIT = oldMarker;
+    if (marker === undefined) delete process.env.DEPLOY_COMMIT;
+    else process.env.DEPLOY_COMMIT = marker;
   }
+});
+
+test('retired direct technical-hotfix reconciliation cannot mutate a ticket', async () => {
+  const f = fixture();
+  const before = structuredClone(f.state);
+  await assert.rejects(f.recordDirect(), { code: 'DIRECT_TECHNICAL_HOTFIX_RETIRED', statusCode: 410 });
+  assert.deepEqual(f.state, before);
 });
 
 test('missing/mismatched/current-plan/approval/test/manifest evidence is rejected with no success effects', async (t) => {

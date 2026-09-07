@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import type { FastifyInstance } from 'fastify';
 import type {
   InboxIdeReleasePreview,
+  InboxIdeReleaseCheckpointMetadata,
   InboxIdeReleaseToken,
   InboxReleaseManifest,
   RecordInboxIdeReleaseRequest,
@@ -30,6 +31,21 @@ const SHA = /^[a-f0-9]{40}$/;
 const fail = (code: string, message: string): never => {
   throw new InboxImplementationError(message, 409, code);
 };
+
+function checkpointMetadata(value: unknown): InboxIdeReleaseCheckpointMetadata | null {
+  const raw = value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+  if (!raw) return null;
+  const { jobId, manifestDigest, commitSha, apiRelease, webRelease } = raw;
+  if (
+    typeof jobId !== 'string' ||
+    typeof manifestDigest !== 'string' ||
+    typeof commitSha !== 'string' ||
+    typeof apiRelease !== 'string' ||
+    (webRelease !== null && typeof webRelease !== 'string')
+  )
+    return null;
+  return { jobId, manifestDigest, commitSha, apiRelease, webRelease };
+}
 
 async function git(args: string[]) {
   const result = await execute('git', ['-c', 'core.quotePath=false', ...args], {
@@ -183,6 +199,60 @@ async function resolveEvidence(db: Prisma.TransactionClient, reportId: number, v
 
 export class InboxIdeReleaseService {
   /**
+   * Machine-to-machine checkpoint intake. The publisher has no authority to
+   * deploy, approve, or close: a byte-for-byte receipt must match the current
+   * server-derived evidence inside the same locked transaction.
+   */
+  static async recordOfficialCheckpoint(
+    fastify: FastifyInstance,
+    reportId: number,
+    metadata: InboxIdeReleaseCheckpointMetadata,
+    verify: Verifier = verifyIdeProductionRelease
+  ): Promise<void> {
+    const outcome = await fastify.prisma.crm.$transaction(
+      async (tx) => {
+        await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+        await tx.$queryRaw(
+          Prisma.sql`SELECT id FROM crm_inbox_implementation_jobs WHERE report_id = ${reportId} FOR UPDATE`
+        );
+        await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_inbox_plan_jobs WHERE report_id = ${reportId} FOR UPDATE`);
+        const receipts = await tx.crmBugReportAudit.findMany({
+          where: { reportId, action: 'IDE_RELEASE_CHECKPOINT_RECORDED' },
+          orderBy: { id: 'desc' },
+        });
+        const receiptMetadata = receipts[0]
+          ? checkpointMetadata(parseReleaseEvidence(receipts[0].afterJson).evidence)
+          : null;
+        if (receiptMetadata && releaseDigest(receiptMetadata) === releaseDigest(metadata)) {
+          const current = await tx.crmBugReport.findUnique({ where: { id: reportId } });
+          if (current?.status === 'FIXED' && !current.implementationActiveJobId && current.resolvedAt) return null;
+          fail('IDE_RELEASE_RECEIPT_STALE', 'Receipt release cũ không thể áp lại sau khi ticket đã thay đổi.');
+        }
+        const evidence = await resolveEvidence(tx, reportId, verify);
+        const expected: InboxIdeReleaseCheckpointMetadata = {
+          jobId: evidence.token.jobId,
+          manifestDigest: evidence.token.manifestDigest,
+          commitSha: evidence.token.commitSha,
+          apiRelease: evidence.token.apiRelease,
+          webRelease: evidence.token.webRelease,
+        };
+        if (releaseDigest(metadata) !== releaseDigest(expected))
+          fail('IDE_RELEASE_METADATA_MISMATCH', 'Metadata IDE không khớp release và evidence hiện hành trên server.');
+        await InboxImplementationService.recordReleasedForReporterAcceptance(
+          fastify,
+          reportId,
+          null,
+          { acknowledged: true, commitSha: expected.commitSha },
+          { tx, evidence: evidence.token, approvalActors: evidence.approvalActors, source: 'IDE_RELEASE_CHECKPOINT' }
+        );
+        return null;
+      },
+      { timeout: 30_000 }
+    );
+    if (outcome) throw outcome;
+  }
+
+  /**
    * Operator-only control-plane escape hatch.  It is deliberately not exposed
    * through HTTP: the caller must be in the production operator environment
    * and the user must have explicitly authorized this technical hotfix.
@@ -194,6 +264,11 @@ export class InboxIdeReleaseService {
     commitSha: string,
     verify: Verifier = verifyIdeProductionRelease
   ): Promise<void> {
+    throw new InboxImplementationError(
+      'Direct technical-hotfix reconciliation đã bị retire; chỉ IDE release publisher được phép tạo checkpoint.',
+      410,
+      'DIRECT_TECHNICAL_HOTFIX_RETIRED'
+    );
     const outcome = await fastify.prisma.crm.$transaction(
       async (tx) => {
         await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);

@@ -14,10 +14,9 @@ import {
   type ApproveBugReportImplementationRequest,
   type ApproveBugReportImplementationCommitRequest,
   type ApproveBugReportImplementationDeployRequest,
-  type ReleaseBugReportImplementationRequest,
   type RequestBugReportImplementationChangesRequest,
   type RequestBugReportPlanChangesRequest,
-  type RecordInboxIdeReleaseRequest,
+  type InboxIdeReleaseCheckpointMetadata,
   type ReviewBugReportImplementationAcceptanceRequest,
   type RetryBugReportImplementationRequest,
   type RenewInboxImplementationLeaseRequest,
@@ -79,6 +78,10 @@ function agentToken(): string {
 
 function classifierWorkerToken(): string {
   return String(process.env.MOS_REQUEST_CLASSIFIER_WORKER_TOKEN || '').trim();
+}
+
+function ideReleaseCheckpointToken(): string {
+  return String(process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN || '').trim();
 }
 
 function secureTokenEqual(actual: string, expected: string): boolean {
@@ -160,6 +163,18 @@ async function requireClassifierWorker(request: FastifyRequest, reply: FastifyRe
   if (!consumeClassifierWorkerRateLimit(workerClientKey(request))) {
     return reply.status(429).send({ error: 'Too Many Requests', message: 'Worker bridge đang gửi quá nhiều yêu cầu.' });
   }
+}
+
+async function requireIdeReleasePublisher(request: FastifyRequest, reply: FastifyReply) {
+  const expected = ideReleaseCheckpointToken();
+  if (expected.length < 32) {
+    request.log.error('MOS_IDE_RELEASE_CHECKPOINT_TOKEN is missing or shorter than 32 characters');
+    return reply
+      .status(503)
+      .send({ error: 'IDE Release Publisher Unavailable', message: 'IDE release publisher chưa được cấu hình.' });
+  }
+  if (!isValidAgentAuthorization(String(request.headers.authorization || ''), expected))
+    return reply.status(401).send({ error: 'Unauthorized', message: 'IDE release publisher token không hợp lệ.' });
 }
 
 function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown, context: string) {
@@ -665,54 +680,19 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   );
 
-  fastify.get('/bug-reports/:id/ide-release', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
+  fastify.post('/ide-release-checkpoints/:id', { preHandler: [requireIdeReleasePublisher] }, async (request, reply) => {
     try {
       const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-      return reply.send({ success: true, data: await InboxIdeReleaseService.preview(fastify, id) });
+      await InboxIdeReleaseService.recordOfficialCheckpoint(
+        fastify,
+        id,
+        request.body as InboxIdeReleaseCheckpointMetadata
+      );
+      return reply.send({ success: true, data: { recorded: true } });
     } catch (error) {
-      return sendError(fastify, reply, error, 'Preview IDE release failed');
+      return sendError(fastify, reply, error, 'Record IDE release checkpoint failed');
     }
   });
-  fastify.post('/bug-reports/:id/ide-release', { preHandler: [requireAuth, requireDanny] }, async (request, reply) => {
-    try {
-      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-      await InboxIdeReleaseService.record(fastify, id, request.user.id, request.body as RecordInboxIdeReleaseRequest);
-      return reply.send({ success: true, data: await BugReportService.detail(fastify, id) });
-    } catch (error) {
-      return sendError(fastify, reply, error, 'Record IDE release failed');
-    }
-  });
-
-  fastify.post(
-    '/bug-reports/:id/implementation-release',
-    { preHandler: [requireAuth, requireDanny] },
-    async (request, reply) => {
-      try {
-        const body = request.body as ReleaseBugReportImplementationRequest;
-        if (body?.acknowledged !== true) {
-          throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi bàn giao ticket nghiệm thu.', 422);
-        }
-        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-        // Old browser entrypoint cannot bypass the stricter IDE evidence gate.
-        const preview = await InboxIdeReleaseService.preview(fastify, id);
-        if (body.commitSha && body.commitSha !== preview.token?.commitSha) {
-          throw new InboxImplementationError(
-            'Commit yêu cầu không khớp bằng chứng server.',
-            409,
-            'IDE_COMMIT_MISMATCH'
-          );
-        }
-        await InboxIdeReleaseService.record(fastify, id, request.user.id, { acknowledged: true, token: preview.token });
-        return reply.send({
-          success: true,
-          data: await BugReportService.detail(fastify, id),
-          message: 'Đã xác minh commit đang chạy trên production; ticket chuyển sang chờ người báo nghiệm thu.',
-        });
-      } catch (error) {
-        return sendError(fastify, reply, error, 'Release inbox implementation failed');
-      }
-    }
-  );
 
   fastify.patch('/bug-reports/:id/implementation-acceptance', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
