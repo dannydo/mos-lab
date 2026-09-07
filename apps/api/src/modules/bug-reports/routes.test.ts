@@ -1,11 +1,52 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import Fastify from 'fastify';
+import { bugReportRoutes } from './routes.js';
+import { InboxImplementationService } from './inbox-implementation.service.js';
+import { BugReportService } from './bug-report.service.js';
 import {
   canManageBugInbox,
   canReadBugInbox,
   consumeClassifierWorkerRateLimit,
   isValidAgentAuthorization,
 } from './routes.js';
+
+test('request-changes route permits only authenticated canonical Danny and passes the exact review payload', async (t) => {
+  const app = Fastify();
+  app.decorate('prisma', { crm: { crmStaff: { update: async () => ({}) } } } as unknown as typeof app.prisma);
+  app.decorateRequest('jwtVerify', async function () {
+    if (!this.headers['x-test-role']) throw new Error('No test session');
+    this.user = {
+      id: 1,
+      username: String(this.headers['x-test-name'] || 'not-danny'),
+      displayName: 'Synthetic review',
+      role: this.headers['x-test-role'] as never,
+    };
+  });
+  const called = t.mock.method(InboxImplementationService, 'requestChanges', async () => {});
+  t.mock.method(BugReportService, 'detail', async () => ({ id: 29 }) as never);
+  await app.register(bugReportRoutes);
+  const payload = {
+    acknowledged: true,
+    jobId: 'ae32a70f-8490-4247-aa4f-2f0e45bcdc40',
+    sourceVersion: 'v1:s',
+    planVersion: 'v1:p',
+    reason: 'Cần bổ sung tiêu chí nghiệm thu.',
+  };
+  try {
+    const inject = (headers: Record<string, string>) =>
+      app.inject({ method: 'POST', url: '/bug-reports/29/implementation-request-changes', headers, payload });
+    assert.equal((await inject({})).statusCode, 401);
+    assert.equal((await inject({ 'x-test-role': 'manager' })).statusCode, 403);
+    assert.equal((await inject({ 'x-test-role': 'super_admin' })).statusCode, 403);
+    assert.equal(called.mock.callCount(), 0);
+    assert.equal((await inject({ 'x-test-role': 'super_admin', 'x-test-name': 'danhdo@gmail.com' })).statusCode, 200);
+    assert.equal(called.mock.callCount(), 1);
+    assert.deepEqual(called.mock.calls[0].arguments.slice(1), [29, 1, payload]);
+  } finally {
+    await app.close();
+  }
+});
 
 test('only Danny canonical Super Admin can manage Bug Inbox', () => {
   assert.equal(canManageBugInbox({ role: 'super_admin', username: 'danhdo@gmail.com' }), true);

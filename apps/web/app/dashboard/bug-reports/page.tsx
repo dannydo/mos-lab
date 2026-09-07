@@ -307,6 +307,8 @@ export default function BugReportsPage() {
       ) : null}
       <BugReportDetailDrawer
         reportId={selectedId}
+        liveVersion={inbox.data.find((row) => row.id === selectedId)?.updatedAt}
+        requestImplementationChanges={inbox.requestImplementationChanges}
         onClose={() => setSelectedId(null)}
         getDetail={inbox.getDetail}
         triage={inbox.triage}

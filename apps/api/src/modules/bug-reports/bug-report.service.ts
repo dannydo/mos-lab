@@ -152,6 +152,8 @@ const reportInclude = {
       id: true,
       status: true,
       executionPhase: true,
+      sourceVersion: true,
+      planVersion: true,
       progressLabel: true,
       lastProgressAt: true,
       progressCount: true,
@@ -412,6 +414,8 @@ function resolutionDto(value: ReportWithRelations['resolution']): BugReportResol
 
 type ImplementationProgressSnapshot = {
   id?: string;
+  sourceVersion?: string;
+  planVersion?: string;
   status: string;
   retrySequence?: number;
   executionPhase: string;
@@ -464,6 +468,7 @@ function latestAgentActivity(source: AgentProgressSource) {
           'AGENT_ASKED_CLARIFICATION',
           'AGENT_CONFIRMED_CLARITY',
           'AGENT_IMPLEMENTATION_REVIEW_READY',
+          'DANNY_CHANGES_REQUESTED',
           'AGENT_IMPLEMENTATION_FAILED',
           'AGENT_IMPLEMENTATION_RETRY_QUEUED',
           'AGENT_IMPLEMENTATION_RETRY_SCHEDULED',
@@ -501,6 +506,10 @@ function implementationStateDto(
   const status = value.status as BugReportImplementationState['status'];
   return {
     status,
+    reviewCandidate:
+      status === 'AWAITING_COMMIT_REVIEW' && value.id && value.sourceVersion && value.planVersion
+        ? { jobId: value.id, sourceVersion: value.sourceVersion, planVersion: value.planVersion }
+        : null,
     phase: clipped(value.executionPhase, 32) || 'QUEUED',
     progressLabel: clipped(value.progressLabel, 160) || null,
     lastProgressAt: value.lastProgressAt?.toISOString() ?? null,
@@ -599,7 +608,7 @@ function implementationProgressNote(value: ImplementationProgressSnapshot, fallb
 
 function implementationStage(source: AgentProgressSource, fallbackAt: Date | null): BugReportAgentProgress | null {
   const implementation = source.implementation;
-  if (!implementation) return null;
+  if (!implementation || implementation.status === 'CHANGES_REQUESTED') return null;
   if (['FAILED', 'STALE', 'EXPIRED'].includes(implementation.status)) {
     return {
       stage: 'IMPLEMENTATION_FAILED',
@@ -683,6 +692,9 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('WAITING_REPORTER', source, latest, source.updatedAt);
   }
   if (source.clarificationStatus === 'PENDING_AGENT') {
+    if (latest?.action === 'DANNY_CHANGES_REQUESTED') {
+      return progressResult('ANALYZING', source, latest, source.updatedAt);
+    }
     if (latest?.action === 'REPORTER_REOPENED') {
       return progressResult('REOPENED_BY_REPORTER', source, latest, source.updatedAt);
     }
@@ -1125,8 +1137,10 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
   // Normalize after parsing so one incomplete ticket cannot break the whole Inbox.
   const context = sanitizeBugReportContext(safeJsonParse<unknown>(row.contextJson, {}));
   const requestType = storedRequestType(row.requestType);
-  const implementation = implementationStateDto(row.inboxImplementationJobs[0], row.audits);
-  const progressSource = { ...row, implementation: row.inboxImplementationJobs[0] ?? null };
+  const currentImplementation =
+    row.inboxImplementationJobs[0]?.status === 'CHANGES_REQUESTED' ? null : row.inboxImplementationJobs[0];
+  const implementation = implementationStateDto(currentImplementation, row.audits);
+  const progressSource = { ...row, implementation: currentImplementation ?? null };
   const workflow = bugReportWorkflowProjection(progressSource);
   const reporterExperience = bugReportReporterExperience({
     status: row.status as BugReportStatus,

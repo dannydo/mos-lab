@@ -20,6 +20,11 @@ function propsFor(detail = makeDetail(), canTriage = true) {
     onClose: vi.fn(),
     getDetail: vi.fn<Props['getDetail']>().mockResolvedValue(detail),
     triage: vi.fn<Props['triage']>().mockResolvedValue(detail),
+    requestImplementationChanges: vi
+      .fn<Props['requestImplementationChanges']>()
+      .mockResolvedValue(
+        makeDetail({ status: 'APPROVED', clarification: { status: 'PENDING_AGENT', summary: null, clarifiedAt: null } })
+      ),
     approveImplementation: vi.fn<Props['approveImplementation']>().mockResolvedValue(receipt),
     approveImplementationCommit: vi
       .fn<Props['approveImplementationCommit']>()
@@ -44,6 +49,45 @@ beforeEach(() => {
 });
 
 describe('BugReportDetailDrawer behavior', () => {
+  it('requires a reason for request changes and never approves code, commit or closes', async () => {
+    const candidate = {
+      jobId: 'ae32a70f-8490-4247-aa4f-2f0e45bcdc40',
+      sourceVersion: 'v1:source',
+      planVersion: 'v1:plan',
+    };
+    const detail = makeDetail({
+      status: 'IN_PROGRESS',
+      agentProgress: { stage: 'AWAITING_DANNY_COMMIT_REVIEW', note: null, updatedAt: capturedAt },
+      implementation: makeImplementation({ status: 'AWAITING_COMMIT_REVIEW', reviewCandidate: candidate }),
+    });
+    const props = propsFor(detail);
+    render(<BugReportDetailDrawer {...props} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Yêu cầu sửa lại' }));
+    expect(screen.getByRole('button', { name: 'Gửi yêu cầu sửa lại' })).toBeDisabled();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Lý do yêu cầu sửa lại' }), {
+      target: { value: 'Cần bổ sung toàn bộ tiêu chí đã duyệt.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu sửa lại' }));
+    await waitFor(() =>
+      expect(props.requestImplementationChanges).toHaveBeenCalledExactlyOnceWith(detail.id, {
+        ...candidate,
+        acknowledged: true,
+        reason: 'Cần bổ sung toàn bộ tiêu chí đã duyệt.',
+      })
+    );
+    expect(props.approveImplementation).not.toHaveBeenCalled();
+    expect(props.approveImplementationCommit).not.toHaveBeenCalled();
+    expect(props.confirmClose).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Duyệt commit' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Duyệt code/test' })).not.toBeInTheDocument();
+  });
+
+  it('does not offer duplicate code approval for an already queued implementation', async () => {
+    const detail = makeDetail({ status: 'APPROVED', implementation: makeImplementation({ status: 'PENDING' }) });
+    render(<BugReportDetailDrawer {...propsFor(detail)} />);
+    await screen.findByText(detail.description);
+    expect(screen.queryByRole('button', { name: 'Duyệt code/test' })).not.toBeInTheDocument();
+  });
   it('keeps read-only viewers out of every mutation and preserves detail/context/audit display', async () => {
     const detail = makeDetail({
       audits: [
