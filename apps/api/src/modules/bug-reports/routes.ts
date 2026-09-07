@@ -250,6 +250,25 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       }
     }
   );
+  fastify.get(
+    '/ide-task-bridge/tasks/:taskId/release-preview',
+    { preHandler: [requireIdeTaskBridge] },
+    async (request, reply) => {
+      try {
+        const taskId = (request.params as { taskId: string }).taskId;
+        const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({ where: { ideTaskId: taskId } });
+        if (!job)
+          throw new InboxImplementationError(
+            'IDE task không có handoff đang hiệu lực.',
+            409,
+            'IDE_TASK_HANDOFF_UNAVAILABLE'
+          );
+        return reply.send({ success: true, data: await InboxIdeReleaseService.preview(fastify, job.reportId) });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Preview IDE task release failed');
+      }
+    }
+  );
   fastify.post(
     '/ide-task-bridge/tasks/:taskId/receipt',
     { preHandler: [requireIdeTaskBridge] },
