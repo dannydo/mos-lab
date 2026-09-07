@@ -154,6 +154,7 @@ const reportInclude = {
       id: true,
       status: true,
       executionOwner: true,
+      ideTaskId: true,
       executionPhase: true,
       sourceVersion: true,
       planVersion: true,
@@ -421,6 +422,7 @@ type ImplementationProgressSnapshot = {
   planVersion?: string;
   status: string;
   executionOwner?: string;
+  ideTaskId?: string | null;
   retrySequence?: number;
   executionPhase: string;
   progressLabel: string | null;
@@ -535,6 +537,7 @@ function implementationStateDto(
             // Retry records created during the first IDE rollout used QUEUED;
             // their owner remains IDE and must not be presented as worker work.
             phase: value.executionPhase === 'QUEUED' ? 'IDE_HANDOFF_READY' : clipped(value.executionPhase, 32),
+            taskId: clipped(value.ideTaskId, 160) || null,
           }
         : null,
     phase: clipped(value.executionPhase, 32) || 'QUEUED',

@@ -410,13 +410,23 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                 <Alert
                   type="info"
                   showIcon
-                  message="Đang chờ Codex IDE nhận handoff"
+                  message={
+                    detail.implementation.ideHandoff.taskId
+                      ? 'Đã gán cho task Codex IDE'
+                      : 'Đang chờ Codex IDE nhận handoff'
+                  }
                   description={
                     <div className="space-y-1">
                       <div>
                         <Text strong>Mã tham chiếu: </Text>
                         <Text code>{detail.implementation.ideHandoff.reference}</Text>
                       </div>
+                      {detail.implementation.ideHandoff.taskId ? (
+                        <div>
+                          <Text strong>Task Codex IDE: </Text>
+                          <Text code>{detail.implementation.ideHandoff.taskId}</Text>
+                        </div>
+                      ) : null}
                       <Text type="secondary">
                         Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc
                         migration.

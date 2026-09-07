@@ -148,7 +148,7 @@ describe('BugReportDetailDrawer behavior', () => {
       implementation: makeImplementation({
         status: 'PENDING',
         phase: 'IDE_HANDOFF_READY',
-        ideHandoff: { reference: 'ide-handoff-job-30', phase: 'IDE_HANDOFF_READY' },
+        ideHandoff: { reference: 'ide-handoff-job-30', phase: 'IDE_HANDOFF_READY', taskId: null },
       }),
       nextAction: {
         actor: 'AGENT',

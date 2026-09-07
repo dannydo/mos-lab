@@ -534,6 +534,19 @@ export type InboxImplementationExecutionOwner = (typeof INBOX_IMPLEMENTATION_EXE
 export interface BugReportIdeHandoffState {
   reference: string;
   phase: string;
+  taskId: string | null;
+}
+
+export interface BindInboxIdeTaskRequest {
+  taskId: string;
+}
+
+export interface InboxIdeTaskBridgeHandoff {
+  reportId: number;
+  jobId: string;
+  sourceVersion: string;
+  planVersion: string;
+  receiptNonce: string;
 }
 
 /**

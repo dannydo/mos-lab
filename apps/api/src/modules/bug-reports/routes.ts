@@ -5,6 +5,7 @@ import {
   isCanonicalSuperAdminIdentity,
   isSuperAdminRole,
   type AgentMarkBugFixedRequest,
+  type BindInboxIdeTaskRequest,
   type AgentReviewBugReportRequest,
   type AgentUpdateBugProgressRequest,
   type AuthorizeBugReportSchemaRecoveryRetryRequest,
@@ -84,6 +85,10 @@ function classifierWorkerToken(): string {
 
 function ideReleaseCheckpointToken(): string {
   return String(process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN || '').trim();
+}
+
+function ideTaskBridgeToken(): string {
+  return String(process.env.MOS_IDE_TASK_BRIDGE_TOKEN || '').trim();
 }
 
 function secureTokenEqual(actual: string, expected: string): boolean {
@@ -179,6 +184,16 @@ async function requireIdeReleasePublisher(request: FastifyRequest, reply: Fastif
     return reply.status(401).send({ error: 'Unauthorized', message: 'IDE release publisher token không hợp lệ.' });
 }
 
+async function requireIdeTaskBridge(request: FastifyRequest, reply: FastifyReply) {
+  const expected = ideTaskBridgeToken();
+  if (expected.length < 32)
+    return reply
+      .status(503)
+      .send({ error: 'IDE Task Bridge Unavailable', message: 'IDE task bridge chưa được cấu hình.' });
+  if (!isValidAgentAuthorization(String(request.headers.authorization || ''), expected))
+    return reply.status(401).send({ error: 'Unauthorized', message: 'IDE task bridge token không hợp lệ.' });
+}
+
 function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown, context: string) {
   if (
     error instanceof BugReportError ||
@@ -206,6 +221,34 @@ function sendAttachment(reply: FastifyReply, value: Awaited<ReturnType<typeof Bu
 }
 
 export async function bugReportRoutes(fastify: FastifyInstance) {
+  fastify.post('/ide-task-bridge/:id/bind', { preHandler: [requireIdeTaskBridge] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      const result = await InboxImplementationService.bindIdeTask(
+        fastify,
+        id,
+        (request.body as BindInboxIdeTaskRequest)?.taskId
+      );
+      return reply.send({ success: true, data: result });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Bind IDE task failed');
+    }
+  });
+  fastify.get(
+    '/ide-task-bridge/tasks/:taskId/handoff',
+    { preHandler: [requireIdeTaskBridge] },
+    async (request, reply) => {
+      try {
+        const handoff = await InboxImplementationService.receiveIdeTaskHandoff(
+          fastify,
+          (request.params as { taskId: string }).taskId
+        );
+        return reply.send({ success: true, data: handoff });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Receive IDE task handoff failed');
+      }
+    }
+  );
   fastify.get('/request-classifier/stream', { websocket: true }, (socket, request) => {
     if (!isValidAgentAuthorization(String(request.headers.authorization || ''), classifierWorkerToken())) {
       socket.close(1008, 'Unauthorized');

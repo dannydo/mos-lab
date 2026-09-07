@@ -2590,6 +2590,8 @@ model CrmInboxImplementationJob {
   executionOwner String @default("IDE") @map("execution_owner") @db.VarChar(16)
   ideReceiptNonce String? @map("ide_receipt_nonce") @db.VarChar(64)
   ideHandoffRevokedAt DateTime? @map("ide_handoff_revoked_at") @db.DateTime(0)
+  ideTaskId String? @map("ide_task_id") @db.VarChar(160)
+  ideTaskBoundAt DateTime? @map("ide_task_bound_at") @db.DateTime(0)
   status String @default("PENDING") @db.VarChar(32)
   attemptCount Int @default(0) @map("attempt_count")
   leaseToken String? @map("lease_token") @db.VarChar(64)
@@ -2624,6 +2626,7 @@ model CrmInboxImplementationJob {
   @@index([status, expiresAt])
   @@index([leaseExpiresAt])
   @@index([retryOfJobId])
+  @@index([ideTaskId])
   @@map("crm_inbox_implementation_jobs")
 }
 

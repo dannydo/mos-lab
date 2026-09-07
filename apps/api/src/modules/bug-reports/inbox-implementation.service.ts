@@ -870,6 +870,86 @@ export class InboxImplementationService {
       return true;
     });
   }
+
+  static async bindIdeTask(fastify: FastifyInstance, reportId: number, taskId: unknown) {
+    const normalizedTaskId = String(taskId || '').trim();
+    if (!/^[A-Za-z0-9_-]{8,160}$/.test(normalizedTaskId))
+      throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
+    return fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+      const report = await tx.crmBugReport.findUnique({ where: { id: reportId } });
+      const job = report?.implementationActiveJobId
+        ? await tx.crmInboxImplementationJob.findUnique({ where: { id: report.implementationActiveJobId } })
+        : null;
+      if (!report || !job || job.executionOwner !== 'IDE' || job.status !== 'PENDING' || job.ideHandoffRevokedAt)
+        throw new InboxImplementationError(
+          'IDE handoff không còn sẵn sàng để gán task.',
+          409,
+          'IDE_TASK_BIND_REJECTED'
+        );
+      if (job.ideTaskId === normalizedTaskId) return { outcome: 'DUPLICATE' as const, jobId: job.id };
+      if (job.ideTaskId)
+        throw new InboxImplementationError('IDE handoff đã được gán cho task khác.', 409, 'IDE_TASK_ALREADY_BOUND');
+      const existingTask = await tx.crmInboxImplementationJob.findFirst({ where: { ideTaskId: normalizedTaskId } });
+      if (existingTask)
+        throw new InboxImplementationError(
+          'Task Codex IDE đã được gán cho handoff khác.',
+          409,
+          'IDE_TASK_ALREADY_BOUND'
+        );
+      const now = new Date();
+      const updated = await tx.crmInboxImplementationJob.updateMany({
+        where: { id: job.id, status: 'PENDING', ideTaskId: null, ideHandoffRevokedAt: null },
+        data: {
+          ideTaskId: normalizedTaskId,
+          ideTaskBoundAt: now,
+          executionPhase: 'IDE_HANDOFF_READY',
+          ideReceiptNonce: job.ideReceiptNonce || randomUUID(),
+        },
+      });
+      if (!updated.count) throw new InboxImplementationError('IDE handoff đã thay đổi.', 409, 'IDE_TASK_BIND_REJECTED');
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId: null,
+          action: 'IDE_TASK_BOUND',
+          note: 'Handoff IDE đã được gán đúng một task Codex IDE qua bridge tin cậy.',
+          beforeJson: '{}',
+          afterJson: JSON.stringify({ jobId: job.id, taskId: normalizedTaskId }),
+        },
+      });
+      return { outcome: 'BOUND' as const, jobId: job.id };
+    });
+  }
+
+  static async receiveIdeTaskHandoff(fastify: FastifyInstance, taskId: unknown) {
+    const normalizedTaskId = String(taskId || '').trim();
+    if (!/^[A-Za-z0-9_-]{8,160}$/.test(normalizedTaskId))
+      throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: { ideTaskId: normalizedTaskId },
+    });
+    if (
+      !job ||
+      job.executionOwner !== 'IDE' ||
+      job.status !== 'PENDING' ||
+      job.executionPhase !== 'IDE_HANDOFF_READY' ||
+      job.ideHandoffRevokedAt ||
+      !job.ideReceiptNonce
+    )
+      throw new InboxImplementationError(
+        'IDE task không có handoff đang hiệu lực.',
+        409,
+        'IDE_TASK_HANDOFF_UNAVAILABLE'
+      );
+    return {
+      reportId: job.reportId,
+      jobId: job.id,
+      sourceVersion: job.sourceVersion,
+      planVersion: job.planVersion,
+      receiptNonce: job.ideReceiptNonce,
+    };
+  }
   /** Retire only the reviewed plan, preserving its content and all historical evidence. */
   static async requestPlanChanges(
     fastify: FastifyInstance,
