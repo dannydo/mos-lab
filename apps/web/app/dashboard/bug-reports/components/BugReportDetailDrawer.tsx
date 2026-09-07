@@ -15,7 +15,7 @@ import {
   Space,
   Typography,
 } from 'antd';
-import type { BugPriority } from '@mos-lab/shared';
+import type { BugPriority, BugReportPlanReviewCandidate } from '@mos-lab/shared';
 import { CheckCircle2, Gavel, RefreshCw, Send } from 'lucide-react';
 import { AdaptiveDrawer, AdaptiveModal, AppIcon, SectionCard, StatePanel } from '../../../../components/ui';
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
@@ -51,6 +51,8 @@ type BugReportDetailDrawerProps = BugReportDetailOptions &
 export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions }: BugReportDetailDrawerProps) {
   const [changesOpen, setChangesOpen] = useState(false);
   const [changesReason, setChangesReason] = useState('');
+  const [reviewedPlan, setReviewedPlan] = useState<BugReportPlanReviewCandidate | null>(null);
+  const [planReason, setPlanReason] = useState('');
   const { reportId } = actions;
   const {
     messageContext,
@@ -59,6 +61,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
     saving,
     approvalReceived,
     requestChanges,
+    revisePlan,
     loadError,
     status,
     setStatus,
@@ -146,6 +149,18 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     </Button>
                   </Popconfirm>
                 )}
+              {canTriage && detail.planReview && !approvalReceived && (
+                <Button
+                  disabled={saving}
+                  icon={<AppIcon icon={RefreshCw} size="sm" />}
+                  onClick={() => {
+                    setPlanReason('');
+                    setReviewedPlan(detail.planReview!);
+                  }}
+                >
+                  Yêu cầu sửa lại plan
+                </Button>
+              )}
               {canTriage &&
                 detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&
                 detail.priority &&
@@ -278,6 +293,32 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
           ) : undefined
         }
       >
+        <AdaptiveModal
+          title="Yêu cầu sửa lại plan"
+          open={Boolean(reviewedPlan)}
+          onCancel={() => !saving && setReviewedPlan(null)}
+          okText="Gửi yêu cầu sửa plan"
+          cancelText="Hủy"
+          confirmLoading={saving}
+          okButtonProps={{ disabled: planReason.trim().length < 10 || saving || !detail?.planReview }}
+          onOk={async () => {
+            if (reviewedPlan && (await revisePlan(planReason, reviewedPlan))) setReviewedPlan(null);
+          }}
+        >
+          <Paragraph>
+            Plan cũ và audit được giữ nguyên. Agent lập lại plan theo lý do này; Danny phải duyệt plan mới trước
+            code/test. Không đóng ticket.
+          </Paragraph>
+          <Input.TextArea
+            aria-label="Lý do yêu cầu sửa plan"
+            value={planReason}
+            onChange={(event) => setPlanReason(event.target.value)}
+            maxLength={2000}
+            showCount
+            rows={5}
+            placeholder="Nêu phần plan cần sửa và kết quả mong muốn (ít nhất 10 ký tự)."
+          />
+        </AdaptiveModal>
         <AdaptiveModal
           title="Yêu cầu sửa lại trước commit"
           open={changesOpen}

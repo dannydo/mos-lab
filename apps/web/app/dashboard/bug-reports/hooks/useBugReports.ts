@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   RequestBugReportImplementationChangesRequest,
+  RequestBugReportPlanChangesRequest,
+  BugReportPlanReviewCandidate,
   BugPriority,
   BugReportClarificationFilter,
   BugReportDetail,
@@ -216,8 +218,8 @@ export function useBugReports() {
   );
 
   const approveImplementation = useCallback(
-    async (id: number): Promise<ApproveBugReportImplementationResult> => {
-      const response = await apiClient.bugReports.approveImplementation(id, { acknowledged: true });
+    async (id: number, planReview?: BugReportPlanReviewCandidate): Promise<ApproveBugReportImplementationResult> => {
+      const response = await apiClient.bugReports.approveImplementation(id, { acknowledged: true, planReview });
       if (!response.data) throw new Error('Máy chủ không trả về trạng thái duyệt implementation.');
       // Approval has already been recorded. Refresh the list in the background
       // so a slow list request can never keep the confirmation button spinning.
@@ -287,6 +289,17 @@ export function useBugReports() {
     async (id: number, input: RequestBugReportImplementationChangesRequest) => {
       const response = await apiClient.bugReports.requestImplementationChanges(id, input);
       if (!response.data) throw new Error('Máy chủ chưa trả về quyết định sửa lại.');
+      void load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
+      return response.data;
+    },
+    [load]
+  );
+
+  const requestPlanChanges = useCallback(
+    async (id: number, input: RequestBugReportPlanChangesRequest) => {
+      const response = await apiClient.bugReports.requestPlanChanges(id, input);
+      if (!response.data) throw new Error('Máy chủ chưa trả về quyết định sửa plan.');
       void load();
       window.dispatchEvent(new Event('mos-bug-inbox-updated'));
       return response.data;
@@ -364,6 +377,7 @@ export function useBugReports() {
     approveImplementation,
     approveImplementationCommit,
     requestImplementationChanges,
+    requestPlanChanges,
     approveImplementationDeploy,
     retryImplementation,
     authorizeWorkerRecoveryRetry,

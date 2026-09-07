@@ -20,6 +20,13 @@ function propsFor(detail = makeDetail(), canTriage = true) {
     onClose: vi.fn(),
     getDetail: vi.fn<Props['getDetail']>().mockResolvedValue(detail),
     triage: vi.fn<Props['triage']>().mockResolvedValue(detail),
+    requestPlanChanges: vi.fn<Props['requestPlanChanges']>().mockResolvedValue(
+      makeDetail({
+        status: 'APPROVED',
+        planReview: null,
+        clarification: { status: 'PENDING_AGENT', summary: null, clarifiedAt: null },
+      })
+    ),
     requestImplementationChanges: vi
       .fn<Props['requestImplementationChanges']>()
       .mockResolvedValue(
@@ -49,6 +56,50 @@ beforeEach(() => {
 });
 
 describe('BugReportDetailDrawer behavior', () => {
+  it('shows all three plan gate actions, requires a reason, and refreshes without execution', async () => {
+    const planReview = {
+      planJobId: 'ae32a70f-8490-4247-aa4f-2f0e45bcdc40',
+      sourceVersion: 'v1:s',
+      planVersion: 'v1:p',
+    };
+    const props = propsFor(
+      makeDetail({
+        status: 'APPROVED',
+        planReview,
+        agentProgress: { stage: 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL', note: null, updatedAt: capturedAt },
+      })
+    );
+    render(<BugReportDetailDrawer {...props} />);
+    const revise = await screen.findByRole('button', { name: 'Yêu cầu sửa lại plan' });
+    expect(screen.getByRole('button', { name: 'Duyệt code/test' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Đóng ngoại lệ' })).toBeVisible();
+    fireEvent.click(revise);
+    const submit = screen.getByRole('button', { name: 'Gửi yêu cầu sửa plan' });
+    expect(submit).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Lý do yêu cầu sửa plan'), {
+      target: { value: 'Bổ sung tiêu chí nghiệm thu trong plan.' },
+    });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+    await waitFor(() =>
+      expect(props.requestPlanChanges).toHaveBeenCalledExactlyOnceWith(props.reportId, {
+        ...planReview,
+        acknowledged: true,
+        reason: 'Bổ sung tiêu chí nghiệm thu trong plan.',
+      })
+    );
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Yêu cầu sửa lại plan' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Duyệt code/test' })).not.toBeInTheDocument();
+    expect(props.approveImplementation).not.toHaveBeenCalled();
+    expect(props.confirmClose).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])('hides plan revision without server eligibility (viewer=%s)', async (canTriage) => {
+    const detail = makeDetail({ planReview: null });
+    render(<BugReportDetailDrawer {...propsFor(detail, canTriage)} />);
+    await screen.findByText(detail.description);
+    expect(screen.queryByRole('button', { name: 'Yêu cầu sửa lại plan' })).not.toBeInTheDocument();
+  });
   it('requires a reason for request changes and never approves code, commit or closes', async () => {
     const candidate = {
       jobId: 'ae32a70f-8490-4247-aa4f-2f0e45bcdc40',

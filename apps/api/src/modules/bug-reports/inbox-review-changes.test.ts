@@ -186,9 +186,13 @@ test('fresh code approval cannot be recorded before the returned candidate has a
       crm: {
         crmBugReport: { findUnique: async () => f.state.report },
         crmInboxImplementationJob: { findFirst: async () => ({ id: candidate.jobId }) },
-        $transaction: async () => {
-          throw new Error('Approval must not be written');
-        },
+        $transaction: async (callback: (tx: unknown) => unknown) =>
+          callback({
+            $queryRaw: async () => [],
+            crmBugReport: { findUnique: async () => f.state.report },
+            crmBugReportAudit: { findFirst: async () => null },
+            crmInboxImplementationJob: { findFirst: async () => ({ id: candidate.jobId }) },
+          }),
       },
     },
   } as never;
