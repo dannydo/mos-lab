@@ -14,7 +14,7 @@ async function main() {
   const require = createRequire(resolve('apps/api/package.json'));
   const env = require('dotenv').parse(readFileSync('apps/api/.env', 'utf8')) as Record<string, string>;
   const { PrismaClient } =
-    require('../apps/api/src/generated/crm-client/index.js') as typeof import('../apps/api/src/generated/crm-client/index.js');
+    require('./src/generated/crm-client/index.js') as typeof import('../apps/api/src/generated/crm-client/index.js');
   const crm = new PrismaClient({ datasources: { db: { url: env.CRM_DATABASE_URL } } });
   try {
     const pm2 = JSON.parse(execFileSync('pm2', ['jlist'], { encoding: 'utf8', timeout: 5_000 })) as Array<{
