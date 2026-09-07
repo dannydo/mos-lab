@@ -624,6 +624,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     summary:
       'Codex CLI chỉ được chạy code/test sau phê duyệt implementation riêng của Danny, trong worktree tách biệt và theo đúng source/plan version; commit và deploy là hai cổng Danny riêng, có action UI khớp trạng thái server.',
     commandments: [
+      'Tại chờ duyệt commit, Danny có thể Yêu cầu sửa lại với lý do bắt buộc và đúng candidate/version. Một giao dịch ghi DANNY_CHANGES_REQUESTED, giữ nguyên diff/test/plan/approval lịch sử, đánh dấu candidate CHANGES_REQUESTED (không giả worker FAILED), gỡ quyền commit và quyền code/test hiện hành, đưa ticket về Agent phân tích cùng follow-up bền vững. Retry cùng quyết định không nhân đôi audit/comment/job. Plan mới và phê duyệt code/test mới của Danny là điều kiện bắt buộc; không tự commit, deploy hoặc đóng ticket.',
       'APPROVED triage không tự là quyền chạy code: Danny phải thực hiện hành động Duyệt code/test riêng, ticket phải READY, có priority và có native plan khớp source version.',
       'Approval event được lưu bền và idempotent theo source + event kind; worker fallback chỉ phục hồi delivery của approval đã có, không tạo quyền duyệt hoặc ticket scheduler mới.',
       'Mỗi implementation job có lease token/worker identity/PID, heartbeat server-time chỉ khi Codex process thật sự còn sống, idempotency theo source/plan version, một active job mỗi ticket và một permit build toàn cục mặc định cho Mac worker.',
@@ -650,8 +651,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex CLI', 'implementation', 'worktree', 'Danny approval', 'lease', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.20.0',
-    effectiveFrom: '2026-09-05',
+    version: '1.21.0',
+    effectiveFrom: '2026-09-07',
     sources: [
       {
         label: 'Implementation gate and durable job',

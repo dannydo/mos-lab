@@ -24,6 +24,9 @@ function makeActions(detail = makeDetail()) {
     reportId: detail.id as number | null,
     getDetail: vi.fn<BugReportDetailOptions['getDetail']>().mockResolvedValue(detail),
     triage: vi.fn<BugReportDetailOptions['triage']>().mockResolvedValue(detail),
+    requestImplementationChanges: vi
+      .fn<BugReportDetailOptions['requestImplementationChanges']>()
+      .mockResolvedValue(detail),
     approveImplementation: vi.fn<BugReportDetailOptions['approveImplementation']>().mockResolvedValue(receipt),
     approveImplementationCommit: vi
       .fn<BugReportDetailOptions['approveImplementationCommit']>()

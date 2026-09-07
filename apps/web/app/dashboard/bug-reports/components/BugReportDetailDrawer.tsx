@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import {
   Alert,
   Avatar,
@@ -15,7 +17,7 @@ import {
 } from 'antd';
 import type { BugPriority } from '@mos-lab/shared';
 import { CheckCircle2, Gavel, RefreshCw, Send } from 'lucide-react';
-import { AdaptiveDrawer, AppIcon, SectionCard, StatePanel } from '../../../../components/ui';
+import { AdaptiveDrawer, AdaptiveModal, AppIcon, SectionCard, StatePanel } from '../../../../components/ui';
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
 import { FeatureRequestDetails } from './FeatureRequestDetails';
@@ -47,12 +49,16 @@ type BugReportDetailDrawerProps = BugReportDetailOptions &
   };
 
 export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions }: BugReportDetailDrawerProps) {
+  const [changesOpen, setChangesOpen] = useState(false);
+  const [changesReason, setChangesReason] = useState('');
   const { reportId } = actions;
   const {
     messageContext,
     detail,
     loading,
     saving,
+    approvalReceived,
+    requestChanges,
     loadError,
     status,
     setStatus,
@@ -122,6 +128,8 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
               )}
               {canTriage &&
                 detail.status === 'APPROVED' &&
+                !detail.implementation &&
+                !approvalReceived &&
                 detail.priority &&
                 detail.clarification.status === 'READY' && (
                   <Popconfirm
@@ -208,18 +216,32 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   </Popconfirm>
                 ) : null)}
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' && (
-                <Popconfirm
-                  classNames={{ root: styles.confirmationPopup }}
-                  title="Duyệt commit bản đã review?"
-                  description="Worker Mac chỉ stage đúng các tệp đã ghi trong review, commit vào branch riêng rồi dừng. Không push, merge hay deploy."
-                  okText="Duyệt commit"
-                  cancelText="Chưa duyệt"
-                  onConfirm={() => void approveCommit()}
-                >
-                  <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                    Duyệt commit
-                  </Button>
-                </Popconfirm>
+                <>
+                  <Popconfirm
+                    classNames={{ root: styles.confirmationPopup }}
+                    title="Duyệt commit bản đã review?"
+                    description="Worker Mac chỉ stage đúng các tệp đã ghi trong review, commit vào branch riêng rồi dừng. Không push, merge hay deploy."
+                    okText="Duyệt commit"
+                    cancelText="Chưa duyệt"
+                    onConfirm={() => void approveCommit()}
+                  >
+                    <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
+                      Duyệt commit
+                    </Button>
+                  </Popconfirm>
+                  {detail.implementation?.reviewCandidate && (
+                    <Button
+                      disabled={saving}
+                      icon={<AppIcon icon={RefreshCw} size="sm" />}
+                      onClick={() => {
+                        setChangesReason('');
+                        setChangesOpen(true);
+                      }}
+                    >
+                      Yêu cầu sửa lại
+                    </Button>
+                  )}
+                </>
               )}
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL' && (
                 <Popconfirm
@@ -255,6 +277,32 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
           ) : undefined
         }
       >
+        <AdaptiveModal
+          title="Yêu cầu sửa lại trước commit"
+          open={changesOpen}
+          onCancel={() => !saving && setChangesOpen(false)}
+          okText="Gửi yêu cầu sửa lại"
+          cancelText="Hủy"
+          confirmLoading={saving}
+          okButtonProps={{ disabled: changesReason.trim().length < 10 || saving }}
+          onOk={async () => {
+            if (await requestChanges(changesReason)) setChangesOpen(false);
+          }}
+        >
+          <Paragraph>
+            Candidate và bằng chứng cũ được giữ nguyên. Agent lập plan mới; chỉ chạy code/test sau một phê duyệt mới của
+            Danny. Không commit hoặc đóng ticket.
+          </Paragraph>
+          <Input.TextArea
+            aria-label="Lý do yêu cầu sửa lại"
+            value={changesReason}
+            onChange={(event) => setChangesReason(event.target.value)}
+            maxLength={2000}
+            showCount
+            rows={5}
+            placeholder="Nêu phần chưa đạt và kết quả cần bổ sung (ít nhất 10 ký tự)."
+          />
+        </AdaptiveModal>
         {loading && <StatePanel kind="loading" minHeight={256} surface={false} />}
         {loadError && (
           <Alert

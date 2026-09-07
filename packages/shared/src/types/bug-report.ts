@@ -514,6 +514,7 @@ export const INBOX_IMPLEMENTATION_JOB_STATUSES = [
   'LEASED',
   'RUNNING',
   'AWAITING_COMMIT_REVIEW',
+  'CHANGES_REQUESTED',
   'AWAITING_DEPLOY_REVIEW',
   'RELEASED',
   'FAILED',
@@ -527,6 +528,8 @@ export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STAT
  * branch/worktree paths, prompts, source content and worker credentials.
  */
 export interface BugReportImplementationState {
+  /** Candidate identity for a version-bound review decision; no execution credentials. */
+  reviewCandidate?: { jobId: string; sourceVersion: string; planVersion: string } | null;
   status: InboxImplementationJobStatus;
   phase: string;
   progressLabel: string | null;
@@ -915,6 +918,15 @@ export interface ReleaseBugReportImplementationRequest {
   acknowledged: true;
   /** Omitted by the Inbox UI once the trusted worker has recorded the approved commit. */
   commitSha?: string;
+}
+
+/** Reject only this candidate. This does not approve another code/test execution. */
+export interface RequestBugReportImplementationChangesRequest {
+  acknowledged: true;
+  jobId: string;
+  sourceVersion: string;
+  planVersion: string;
+  reason: string;
 }
 
 /** The reporter's final decision after checking the deployed implementation. */

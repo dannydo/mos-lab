@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
+  RequestBugReportImplementationChangesRequest,
   BugPriority,
   BugReportClarificationFilter,
   BugReportDetail,
@@ -282,6 +283,17 @@ export function useBugReports() {
     [load]
   );
 
+  const requestImplementationChanges = useCallback(
+    async (id: number, input: RequestBugReportImplementationChangesRequest) => {
+      const response = await apiClient.bugReports.requestImplementationChanges(id, input);
+      if (!response.data) throw new Error('Máy chủ chưa trả về quyết định sửa lại.');
+      void load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
+      return response.data;
+    },
+    [load]
+  );
+
   const approveImplementationCommit = useCallback(
     async (id: number): Promise<ApproveBugReportImplementationCommitResult> => {
       const response = await apiClient.bugReports.approveImplementationCommit(id, { acknowledged: true });
@@ -351,6 +363,7 @@ export function useBugReports() {
     triage,
     approveImplementation,
     approveImplementationCommit,
+    requestImplementationChanges,
     approveImplementationDeploy,
     retryImplementation,
     authorizeWorkerRecoveryRetry,

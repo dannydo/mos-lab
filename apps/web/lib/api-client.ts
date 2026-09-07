@@ -1,5 +1,6 @@
 import api, { resolveApiBaseUrl } from './api';
 import type {
+  RequestBugReportImplementationChangesRequest,
   AnnualHolidayCalendarQuery,
   AnnualHolidayCalendarResponse,
   CreateStaffPerformanceEventRequest,
@@ -776,6 +777,13 @@ export const apiClient = {
         data,
         { timeout: 12_000 }
       );
+      return response.data;
+    },
+    requestImplementationChanges: async (
+      id: number,
+      data: RequestBugReportImplementationChangesRequest
+    ): Promise<ReleaseBugReportImplementationResponse> => {
+      const response = await api.post(`/bug-reports/${id}/implementation-request-changes`, data);
       return response.data;
     },
     releaseImplementation: async (

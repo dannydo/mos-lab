@@ -15,6 +15,7 @@ import {
   type ApproveBugReportImplementationCommitRequest,
   type ApproveBugReportImplementationDeployRequest,
   type ReleaseBugReportImplementationRequest,
+  type RequestBugReportImplementationChangesRequest,
   type ReviewBugReportImplementationAcceptanceRequest,
   type RetryBugReportImplementationRequest,
   type RenewInboxImplementationLeaseRequest,
@@ -609,6 +610,30 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Approve inbox implementation deploy failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/implementation-request-changes',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        await InboxImplementationService.requestChanges(
+          fastify,
+          id,
+          request.user.id,
+          request.body as RequestBugReportImplementationChangesRequest
+        );
+        RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+        return reply.send({
+          success: true,
+          data: await BugReportService.detail(fastify, id),
+          message: 'Đã yêu cầu sửa lại. Agent lập plan mới; code/test cần Danny duyệt mới.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Request implementation changes failed');
       }
     }
   );

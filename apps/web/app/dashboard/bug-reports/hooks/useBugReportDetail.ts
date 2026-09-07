@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { message } from 'antd';
 import type { BugPriority, BugReportDetail, BugReportStatus, TriageBugReportRequest } from '@mos-lab/shared';
 import { parseDuplicateKey } from '../bug-report-presenters';
@@ -12,6 +12,7 @@ export type BugReportDetailOptions = Pick<
   | 'triage'
   | 'approveImplementation'
   | 'approveImplementationCommit'
+  | 'requestImplementationChanges'
   | 'approveImplementationDeploy'
   | 'retryImplementation'
   | 'authorizeWorkerRecoveryRetry'
@@ -19,14 +20,16 @@ export type BugReportDetailOptions = Pick<
   | 'authorizeQualityGateRecoveryRetry'
   | 'authorizeBuildLockRecoveryRetry'
   | 'confirmClose'
-> & { reportId: number | null };
+> & { reportId: number | null; liveVersion?: string };
 
 export function useBugReportDetail({
   reportId,
+  liveVersion,
   getDetail,
   triage,
   approveImplementation,
   approveImplementationCommit,
+  requestImplementationChanges,
   approveImplementationDeploy,
   retryImplementation,
   authorizeWorkerRecoveryRetry: authorizeWorkerRecoveryRetryAction,
@@ -45,6 +48,9 @@ export function useBugReportDetail({
   const [businessContext, setBusinessContext] = useState('');
   const [note, setNote] = useState('');
   const [duplicateKey, setDuplicateKey] = useState('');
+  const reviewPending = useRef(false);
+  const approvalPending = useRef(false);
+  const [approvalReceived, setApprovalReceived] = useState(false);
 
   const hydrateForm = useCallback((report: BugReportDetail) => {
     setDetail(report);
@@ -71,7 +77,11 @@ export function useBugReportDetail({
   useEffect(() => {
     if (reportId) void load();
     else setDetail(null);
-  }, [load, reportId]);
+  }, [load, reportId, liveVersion]);
+
+  useEffect(() => {
+    setApprovalReceived(false);
+  }, [reportId]);
 
   const save = useCallback(
     async (override?: Partial<TriageBugReportRequest>) => {
@@ -138,10 +148,12 @@ export function useBugReportDetail({
   }, [businessContext, confirmClose, detail, hydrateForm, messageApi, note]);
 
   const approveCodeExecution = useCallback(async () => {
-    if (!detail) return;
+    if (!detail || approvalPending.current || approvalReceived) return;
+    approvalPending.current = true;
     setSaving(true);
     try {
       const outcome = await approveImplementation(detail.id);
+      setApprovalReceived(true);
       if (outcome.implementationQueued) {
         setStatus('IN_PROGRESS');
         setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
@@ -165,9 +177,38 @@ export function useBugReportDetail({
           : null;
       messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt implementation.'));
     } finally {
+      approvalPending.current = false;
       setSaving(false);
     }
-  }, [approveImplementation, detail, getDetail, hydrateForm, messageApi]);
+  }, [approvalReceived, approveImplementation, detail, getDetail, hydrateForm, messageApi]);
+
+  const requestChanges = useCallback(
+    async (reason: string): Promise<boolean> => {
+      const candidate = detail?.implementation?.reviewCandidate;
+      if (!detail || !candidate || reviewPending.current) return false;
+      if (reason.trim().length < 10) {
+        messageApi.error('Ghi rõ điều cần sửa, ít nhất 10 ký tự.');
+        return false;
+      }
+      reviewPending.current = true;
+      setSaving(true);
+      try {
+        hydrateForm(
+          await requestImplementationChanges(detail.id, { ...candidate, acknowledged: true, reason: reason.trim() })
+        );
+        setApprovalReceived(false);
+        messageApi.success('Đã yêu cầu sửa lại. Agent lập plan mới; code/test cần duyệt mới.');
+        return true;
+      } catch (error) {
+        messageApi.error(error instanceof Error ? error.message : 'Không thể yêu cầu sửa lại. Hãy tải lại ticket.');
+        return false;
+      } finally {
+        reviewPending.current = false;
+        setSaving(false);
+      }
+    },
+    [detail, hydrateForm, messageApi, requestImplementationChanges]
+  );
 
   const retryCodeExecution = useCallback(async () => {
     if (!detail) return;
@@ -335,6 +376,8 @@ export function useBugReportDetail({
     detail,
     loading,
     saving,
+    approvalReceived,
+    requestChanges,
     loadError,
     status,
     setStatus,
