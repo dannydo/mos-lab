@@ -428,8 +428,9 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                         </div>
                       ) : null}
                       <Text type="secondary">
-                        Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc
-                        migration.
+                        {detail.implementation.ideHandoff.phase === 'IDE_COMMIT_HANDOFF'
+                          ? 'Chỉ ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.'
+                          : 'Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc migration.'}
                       </Text>
                     </div>
                   }

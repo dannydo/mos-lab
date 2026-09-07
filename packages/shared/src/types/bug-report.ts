@@ -542,6 +542,8 @@ export interface BindInboxIdeTaskRequest {
 }
 
 export interface InboxIdeTaskBridgeHandoff {
+  /** Server-authoritative phase; the private nonce is valid only for this operation. */
+  phase: 'IDE_HANDOFF_READY' | 'IDE_COMMIT_HANDOFF';
   reportId: number;
   jobId: string;
   sourceVersion: string;

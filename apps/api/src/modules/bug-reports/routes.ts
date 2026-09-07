@@ -266,6 +266,23 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       }
     }
   );
+  fastify.post(
+    '/ide-task-bridge/tasks/:taskId/commit-receipt',
+    { preHandler: [requireIdeTaskBridge] },
+    async (request, reply) => {
+      try {
+        const outcome = await InboxImplementationService.recordIdeTaskCommitReceipt(
+          fastify,
+          (request.params as { taskId: string }).taskId,
+          (request.body as { receipt?: RecordInboxIdeCommitReceiptRequest })
+            ?.receipt as RecordInboxIdeCommitReceiptRequest
+        );
+        return reply.send({ success: true, data: { outcome } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Record IDE task commit receipt failed');
+      }
+    }
+  );
   fastify.get('/request-classifier/stream', { websocket: true }, (socket, request) => {
     if (!isValidAgentAuthorization(String(request.headers.authorization || ''), classifierWorkerToken())) {
       socket.close(1008, 'Unauthorized');

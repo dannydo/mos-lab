@@ -13,11 +13,11 @@ async function main() {
   const taskId = args[args.indexOf('--task-id') + 1];
   const outputPath = args[args.indexOf('--out') + 1];
   const receiptPath = args[args.indexOf('--receipt') + 1];
-  if (!taskId || (command === 'receive' && !outputPath) || (command === 'submit' && !receiptPath))
+  if (!taskId || (command === 'receive' && !outputPath) || (['submit', 'commit'].includes(command) && !receiptPath))
     throw new Error(
-      'Usage: ide-task-bridge receive --task-id <id> --out <path> | submit --task-id <id> --receipt <path>'
+      'Usage: ide-task-bridge receive --task-id <id> --out <path> | submit --task-id <id> --receipt <path> | commit --task-id <id> --receipt <path>'
     );
-  if (command !== 'receive' && command !== 'submit') throw new Error('IDE task bridge command is invalid.');
+  if (!['receive', 'submit', 'commit'].includes(command)) throw new Error('IDE task bridge command is invalid.');
   const apiUrl = String(process.env.MOS_API_URL || 'https://api.masteros.app/api').replace(/\/$/, '');
   if (command === 'receive') {
     const response = await fetch(`${apiUrl}/ide-task-bridge/tasks/${encodeURIComponent(taskId)}/handoff`, {
@@ -32,13 +32,18 @@ async function main() {
     return;
   }
   const receipt = JSON.parse(readFileSync(resolve(receiptPath), 'utf8'));
-  const response = await fetch(`${apiUrl}/ide-task-bridge/tasks/${encodeURIComponent(taskId)}/receipt`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ receipt }),
-  });
+  const response = await fetch(
+    `${apiUrl}/ide-task-bridge/tasks/${encodeURIComponent(taskId)}/${command === 'commit' ? 'commit-receipt' : 'receipt'}`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receipt }),
+    }
+  );
   if (!response.ok) throw new Error(`IDE task receipt rejected (${response.status}).`);
-  process.stdout.write('IDE code/test receipt submitted through the trusted bridge.\n');
+  process.stdout.write(
+    `IDE ${command === 'commit' ? 'commit' : 'code/test'} receipt submitted through the trusted bridge.\n`
+  );
 }
 
 void main();

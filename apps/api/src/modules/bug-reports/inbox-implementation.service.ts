@@ -721,8 +721,9 @@ export class InboxImplementationService {
   static async recordIdeCommitReceipt(
     fastify: FastifyInstance,
     reportId: number,
-    actorStaffId: number,
-    input: RecordInboxIdeCommitReceiptRequest
+    actorStaffId: number | null,
+    input: RecordInboxIdeCommitReceiptRequest,
+    expectedTaskId?: string
   ) {
     const sha = String(input?.commitSha || '');
     if (!/^[a-f0-9]{40}$/i.test(sha))
@@ -735,6 +736,7 @@ export class InboxImplementationService {
         : null;
       if (
         job?.executionOwner === 'IDE' &&
+        (expectedTaskId === undefined || job.ideTaskId === expectedTaskId) &&
         job.status === 'AWAITING_DEPLOY_REVIEW' &&
         job.executionPhase === 'AWAITING_DEPLOY_REVIEW' &&
         job.commitSha === sha &&
@@ -746,9 +748,13 @@ export class InboxImplementationService {
         !report ||
         !job ||
         job.executionOwner !== 'IDE' ||
+        (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId) ||
         job.status !== 'PENDING' ||
         job.executionPhase !== 'IDE_COMMIT_HANDOFF' ||
         job.ideHandoffRevokedAt ||
+        input?.handoff?.jobId !== job.id ||
+        input?.handoff?.sourceVersion !== job.sourceVersion ||
+        input?.handoff?.planVersion !== job.planVersion ||
         job.ideReceiptNonce !== input?.handoff?.receiptNonce
       )
         throw new InboxImplementationError('Commit receipt stale hoặc không được duyệt.', 409, 'IDE_COMMIT_REJECTED');
@@ -865,6 +871,27 @@ export class InboxImplementationService {
     return this.recordIdeReceipt(fastify, job.reportId, null, input, normalizedTaskId);
   }
 
+  /** A commit receipt can only be recorded by the task already bound to this handoff. */
+  static async recordIdeTaskCommitReceipt(
+    fastify: FastifyInstance,
+    taskId: unknown,
+    input: RecordInboxIdeCommitReceiptRequest
+  ) {
+    const normalizedTaskId = String(taskId || '').trim();
+    if (!/^[A-Za-z0-9_-]{8,160}$/.test(normalizedTaskId))
+      throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
+    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: { ideTaskId: normalizedTaskId },
+    });
+    if (!job)
+      throw new InboxImplementationError(
+        'IDE task không có handoff đang hiệu lực.',
+        409,
+        'IDE_TASK_HANDOFF_UNAVAILABLE'
+      );
+    return this.recordIdeCommitReceipt(fastify, job.reportId, null, input, normalizedTaskId);
+  }
+
   static async cancelIdeHandoff(fastify: FastifyInstance, reportId: number, actorStaffId: number) {
     return fastify.prisma.crm.$transaction(async (tx) => {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
@@ -966,7 +993,7 @@ export class InboxImplementationService {
       !job ||
       job.executionOwner !== 'IDE' ||
       job.status !== 'PENDING' ||
-      job.executionPhase !== 'IDE_HANDOFF_READY' ||
+      !['IDE_HANDOFF_READY', 'IDE_COMMIT_HANDOFF'].includes(job.executionPhase || '') ||
       job.ideHandoffRevokedAt ||
       !job.ideReceiptNonce
     )
@@ -976,6 +1003,7 @@ export class InboxImplementationService {
         'IDE_TASK_HANDOFF_UNAVAILABLE'
       );
     return {
+      phase: job.executionPhase as 'IDE_HANDOFF_READY' | 'IDE_COMMIT_HANDOFF',
       reportId: job.reportId,
       jobId: job.id,
       sourceVersion: job.sourceVersion,

@@ -209,6 +209,11 @@ test('IDE task bridge receipt requires its separate bearer and never uses a brow
   const previous = process.env.MOS_IDE_TASK_BRIDGE_TOKEN;
   process.env.MOS_IDE_TASK_BRIDGE_TOKEN = token;
   const record = t.mock.method(InboxImplementationService, 'recordIdeTaskReceipt', async () => 'RECORDED' as const);
+  const recordCommit = t.mock.method(
+    InboxImplementationService,
+    'recordIdeTaskCommitReceipt',
+    async () => 'RECORDED' as const
+  );
   await app.register(bugReportRoutes);
   const receipt = {
     handoff: { jobId: 'job-1', sourceVersion: 'v1:s', planVersion: 'v1:p', receiptNonce: 'private-nonce' },
@@ -242,6 +247,21 @@ test('IDE task bridge receipt requires its separate bearer and never uses a brow
       200
     );
     assert.deepEqual(record.mock.calls[0].arguments.slice(1), ['task-ide-30', receipt]);
+    assert.equal(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/ide-task-bridge/tasks/task-ide-30/commit-receipt',
+          headers: { authorization: `Bearer ${token}` },
+          payload: { receipt: { ...receipt, commitSha: 'a'.repeat(40) } },
+        })
+      ).statusCode,
+      200
+    );
+    assert.deepEqual(recordCommit.mock.calls[0].arguments.slice(1), [
+      'task-ide-30',
+      { ...receipt, commitSha: 'a'.repeat(40) },
+    ]);
   } finally {
     if (previous === undefined) delete process.env.MOS_IDE_TASK_BRIDGE_TOKEN;
     else process.env.MOS_IDE_TASK_BRIDGE_TOKEN = previous;
