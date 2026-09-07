@@ -540,12 +540,11 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         }
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
         const implementationQueued = await InboxImplementationService.retryFailed(fastify, id, request.user.id);
-        if (implementationQueued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
         return reply.send({
           success: true,
           data: { reportId: id, implementationQueued, planRequested: false },
           message: implementationQueued
-            ? 'Đã tạo đúng một retry implementation liên kết job terminal cũ.'
+            ? 'Đã tạo đúng một handoff Codex IDE liên kết job terminal cũ.'
             : 'Retry implementation không được tạo.',
         });
       } catch (error) {

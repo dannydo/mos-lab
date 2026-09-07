@@ -142,6 +142,28 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(screen.queryByRole('button', { name: 'Duyệt code/test' })).not.toBeInTheDocument();
   });
 
+  it('surfaces an IDE-owned handoff with its durable reference and no execution lease', async () => {
+    const detail = makeDetail({
+      status: 'APPROVED',
+      implementation: makeImplementation({
+        status: 'PENDING',
+        phase: 'IDE_HANDOFF_READY',
+        ideHandoff: { reference: 'ide-handoff-job-30', phase: 'IDE_HANDOFF_READY' },
+      }),
+      nextAction: {
+        actor: 'AGENT',
+        type: 'IMPLEMENT',
+        label: 'Chờ Codex IDE nhận handoff',
+        detail: 'Handoff Codex IDE ide-handoff-job-30 đã sẵn sàng.',
+        waitingSince: capturedAt,
+      },
+    });
+    render(<BugReportDetailDrawer {...propsFor(detail)} />);
+    expect(await screen.findByText('Handoff Codex IDE')).toBeVisible();
+    expect(screen.getByText('ide-handoff-job-30')).toBeVisible();
+    expect(screen.getByText(/Không cấp lease thực thi/)).toBeVisible();
+  });
+
   it('keeps code approval hidden while the revised native plan is still being prepared', async () => {
     const detail = makeDetail({
       status: 'APPROVED',

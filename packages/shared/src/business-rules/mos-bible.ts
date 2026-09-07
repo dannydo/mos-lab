@@ -651,6 +651,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     commandments: [
       'APPROVED triage không tự là quyền chạy code: Danny phải thực hiện hành động Duyệt code/test riêng, ticket phải READY, có priority và có native plan khớp source version.',
       'Inbox tạo một implementation job IDE-owned, source/plan-version-bound cùng nonce handoff một lần. Worker Mac và route claim không được lease hay thực hiện code/test, commit hoặc deploy.',
+      'Inbox phải chiếu job IDE-owned PENDING thành handoff Codex IDE có mã tham chiếu an toàn và nhãn chờ Codex IDE nhận; không được nói chờ Worker Mac. Retry IDE ghi IDE_HANDOFF_READY và nonce mới, còn retry cũ có owner IDE/phase QUEUED vẫn phải được chiếu như handoff IDE để không che chủ nhân thực.',
       'IDE receipt chỉ được ghi sau khi IDE đã code/test. Server kiểm quality gate, nonce, owner, source/plan và trạng thái trong một transaction; thiếu, cũ, sai hoặc không có quyền bị từ chối không ghi gì.',
       'Danny duyệt commit chỉ cấp nonce commit cho đúng candidate đã review. IDE ghi commit SHA hợp lệ bằng nonce đó rồi ticket mới sang chờ duyệt deploy; replay cùng SHA trả kết quả idempotent, không tạo audit thứ hai.',
       'Danny duyệt deploy chỉ là xác nhận quyền phát hành cho đúng commit/manifest. Inbox không tự deploy, push, merge, accept hay close ticket; IDE release publisher mới có thể gửi receipt sau khi production đã chạy.',
@@ -666,7 +667,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['mOS Inbox', 'Codex IDE', 'implementation', 'handoff', 'Danny approval', 'receipt', 'commit review'],
     routeScopes: ['/dashboard/bug-reports'],
     status: 'ACTIVE',
-    version: '1.27.0',
+    version: '1.28.0',
     effectiveFrom: '2026-09-07',
     sources: [
       {

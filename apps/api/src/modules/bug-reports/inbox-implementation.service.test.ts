@@ -556,6 +556,9 @@ test('Danny retry creates a bounded linked chain and leaves terminal evidence un
   assert.equal(await InboxImplementationService.retryFailed(fastify as never, 16, 1), true);
   assert.equal(createdRows[0]?.retryOfJobId, 'terminal-job');
   assert.equal(createdRows[0]?.retrySequence, 2);
+  assert.equal(createdRows[0]?.executionOwner, 'IDE');
+  assert.equal(createdRows[0]?.executionPhase, 'IDE_HANDOFF_READY');
+  assert.equal(typeof createdRows[0]?.ideReceiptNonce, 'string');
   assert.equal(terminal.status, 'FAILED');
   assert.equal(report.status, 'APPROVED');
   assert.equal(auditAction, 'AGENT_IMPLEMENTATION_RETRY_QUEUED');

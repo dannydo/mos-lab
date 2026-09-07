@@ -153,6 +153,7 @@ const reportInclude = {
     select: {
       id: true,
       status: true,
+      executionOwner: true,
       executionPhase: true,
       sourceVersion: true,
       planVersion: true,
@@ -419,6 +420,7 @@ type ImplementationProgressSnapshot = {
   sourceVersion?: string;
   planVersion?: string;
   status: string;
+  executionOwner?: string;
   retrySequence?: number;
   executionPhase: string;
   progressLabel: string | null;
@@ -521,9 +523,19 @@ function implementationStateDto(
   const status = value.status as BugReportImplementationState['status'];
   return {
     status,
+    executionOwner: value.executionOwner === 'IDE' ? 'IDE' : undefined,
     reviewCandidate:
       status === 'AWAITING_COMMIT_REVIEW' && value.id && value.sourceVersion && value.planVersion
         ? { jobId: value.id, sourceVersion: value.sourceVersion, planVersion: value.planVersion }
+        : null,
+    ideHandoff:
+      value.executionOwner === 'IDE' && value.id
+        ? {
+            reference: value.id,
+            // Retry records created during the first IDE rollout used QUEUED;
+            // their owner remains IDE and must not be presented as worker work.
+            phase: value.executionPhase === 'QUEUED' ? 'IDE_HANDOFF_READY' : clipped(value.executionPhase, 32),
+          }
         : null,
     phase: clipped(value.executionPhase, 32) || 'QUEUED',
     progressLabel: clipped(value.progressLabel, 160) || null,
@@ -646,6 +658,7 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
     };
   }
   if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
+    const ideOwned = implementation.executionOwner === 'IDE';
     return {
       stage:
         implementation.executionPhase === 'DEPLOY_APPROVED'
@@ -653,8 +666,9 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
           : implementation.executionPhase === 'COMMIT_APPROVED'
             ? 'QUEUED_FOR_COMMIT'
             : 'QUEUED_FOR_FIX',
-      note:
-        implementation.executionPhase === 'DEPLOY_APPROVED'
+      note: ideOwned
+        ? `Handoff Codex IDE ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
+        : implementation.executionPhase === 'DEPLOY_APPROVED'
           ? 'Danny đã duyệt deploy; worker Mac đang chờ nhận đúng commit đã duyệt.'
           : implementation.executionPhase === 'COMMIT_APPROVED'
             ? 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.'
@@ -968,25 +982,31 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
     );
   }
   if (implementation && ['PENDING', 'LEASED', 'RUNNING'].includes(implementation.status)) {
+    const ideOwned = implementation.executionOwner === 'IDE';
+    const handoffReference = implementation.id ? `Handoff Codex IDE ${implementation.id}` : 'Handoff Codex IDE';
     return nextAction(
       'AGENT',
       implementation.status === 'PENDING' || implementation.status === 'LEASED'
         ? 'IMPLEMENT'
         : 'CONTINUE_IMPLEMENTATION',
-      implementation.executionPhase === 'DEPLOY_APPROVED'
-        ? 'Chờ worker deploy'
-        : implementation.executionPhase === 'COMMIT_APPROVED'
-          ? 'Chờ worker tạo commit'
-          : implementation.executionPhase === 'COMMITTING'
-            ? 'Đang tạo commit'
-            : implementation.executionPhase === 'DEPLOYING'
-              ? 'Đang deploy'
-              : implementation.status === 'RUNNING'
-                ? 'Đang code/test'
-                : 'Chờ worker nhận',
-      implementation.status === 'RUNNING'
-        ? implementationProgressNote(implementation, 'Worker đang xử lý trong worktree riêng.')
-        : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',
+      ideOwned && implementation.status !== 'RUNNING'
+        ? 'Chờ Codex IDE nhận handoff'
+        : implementation.executionPhase === 'DEPLOY_APPROVED'
+          ? 'Chờ worker deploy'
+          : implementation.executionPhase === 'COMMIT_APPROVED'
+            ? 'Chờ worker tạo commit'
+            : implementation.executionPhase === 'COMMITTING'
+              ? 'Đang tạo commit'
+              : implementation.executionPhase === 'DEPLOYING'
+                ? 'Đang deploy'
+                : implementation.status === 'RUNNING'
+                  ? 'Đang code/test'
+                  : 'Chờ worker nhận',
+      ideOwned && implementation.status !== 'RUNNING'
+        ? `${handoffReference} đã sẵn sàng cho code/test theo scope được duyệt. Không cấp lease thực thi nào.`
+        : implementation.status === 'RUNNING'
+          ? implementationProgressNote(implementation, 'Worker đang xử lý trong worktree riêng.')
+          : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',
       implementation.updatedAt
     );
   }

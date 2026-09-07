@@ -530,6 +530,12 @@ export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STAT
 export const INBOX_IMPLEMENTATION_EXECUTION_OWNERS = ['IDE'] as const;
 export type InboxImplementationExecutionOwner = (typeof INBOX_IMPLEMENTATION_EXECUTION_OWNERS)[number];
 
+/** Safe, durable IDE task locator rendered by Inbox; never includes the receipt nonce. */
+export interface BugReportIdeHandoffState {
+  reference: string;
+  phase: string;
+}
+
 /**
  * Safe, server-derived execution metadata for Inbox. It deliberately excludes
  * branch/worktree paths, prompts, source content and worker credentials.
@@ -539,6 +545,8 @@ export interface BugReportImplementationState {
   reviewCandidate?: { jobId: string; sourceVersion: string; planVersion: string } | null;
   status: InboxImplementationJobStatus;
   executionOwner?: InboxImplementationExecutionOwner;
+  /** Present only for an IDE-owned durable implementation job. */
+  ideHandoff?: BugReportIdeHandoffState | null;
   phase: string;
   progressLabel: string | null;
   lastProgressAt: string | null;

@@ -405,6 +405,28 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
               </div>
             </SectionCard>
 
+            {detail.implementation?.ideHandoff ? (
+              <SectionCard title="Handoff Codex IDE">
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Đang chờ Codex IDE nhận handoff"
+                  description={
+                    <div className="space-y-1">
+                      <div>
+                        <Text strong>Mã tham chiếu: </Text>
+                        <Text code>{detail.implementation.ideHandoff.reference}</Text>
+                      </div>
+                      <Text type="secondary">
+                        Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc
+                        migration.
+                      </Text>
+                    </div>
+                  }
+                />
+              </SectionCard>
+            ) : null}
+
             {detail.implementation?.deploymentLane ? (
               <SectionCard title="Lộ trình phát hành đề xuất">
                 <Alert

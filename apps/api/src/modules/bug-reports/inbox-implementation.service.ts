@@ -1335,7 +1335,9 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionPhase: 'QUEUED',
+          executionOwner: 'IDE',
+          executionPhase: 'IDE_HANDOFF_READY',
+          ideReceiptNonce: randomUUID(),
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -1363,7 +1365,7 @@ export class InboxImplementationService {
           reportId,
           actorStaffId,
           action: 'AGENT_IMPLEMENTATION_RETRY_QUEUED',
-          note: 'Danny đã xác nhận retry sạch; job mới liên kết job terminal cũ và vẫn dừng trước commit.',
+          note: 'Danny đã xác nhận retry sạch; handoff Codex IDE mới liên kết job terminal cũ và vẫn dừng trước commit.',
           beforeJson: snapshot(report),
           afterJson: snapshot({
             ...report,
