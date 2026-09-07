@@ -70,11 +70,11 @@ describe('BugReportDetailDrawer behavior', () => {
       })
     );
     render(<BugReportDetailDrawer {...props} />);
-    const revise = await screen.findByRole('button', { name: 'Yêu cầu sửa lại plan' });
-    expect(screen.getByRole('button', { name: 'Duyệt code/test' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Đóng ngoại lệ' })).toBeVisible();
+    const revise = (await screen.findByText('Yêu cầu sửa lại plan', { exact: true })).closest('button')!;
+    expect(screen.getByText('Duyệt code/test', { exact: true }).closest('button')).toBeVisible();
+    expect(screen.getByText('Đóng ngoại lệ', { exact: true }).closest('button')).toBeVisible();
     fireEvent.click(revise);
-    const submit = screen.getByRole('button', { name: 'Gửi yêu cầu sửa plan' });
+    const submit = screen.getByText('Gửi yêu cầu sửa plan', { exact: true }).closest('button')!;
     expect(submit).toBeDisabled();
     fireEvent.change(screen.getByLabelText('Lý do yêu cầu sửa plan'), {
       target: { value: 'Bổ sung tiêu chí nghiệm thu trong plan.' },
@@ -88,8 +88,8 @@ describe('BugReportDetailDrawer behavior', () => {
         reason: 'Bổ sung tiêu chí nghiệm thu trong plan.',
       })
     );
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Yêu cầu sửa lại plan' })).not.toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: 'Duyệt code/test' })).not.toBeInTheDocument();
+    await waitFor(() => expect(revise).not.toBeInTheDocument());
+    expect(screen.queryByText('Duyệt code/test', { exact: true })).not.toBeInTheDocument();
     expect(props.approveImplementation).not.toHaveBeenCalled();
     expect(props.confirmClose).not.toHaveBeenCalled();
   });
