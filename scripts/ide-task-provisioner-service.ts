@@ -6,6 +6,7 @@ import {
   runProvisionerOnce,
   runtimePath,
 } from './ide-task-provisioner.js';
+import { basename } from 'node:path';
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -42,4 +43,4 @@ async function main() {
   }
 }
 
-if (process.argv[1]?.endsWith('ide-task-provisioner-service.ts')) void main();
+if (process.argv[1] && basename(process.argv[1]) === 'ide-task-provisioner-service.ts') void main();

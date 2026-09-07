@@ -2,6 +2,7 @@ import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
+import { basename } from 'node:path';
 import { runtimeConfigPath } from './ide-task-provisioner.js';
 
 const label = 'com.masteros.ide-task-provisioner';
@@ -67,7 +68,14 @@ export function installManagedRuntime(repositoryInput = process.cwd()) {
   } catch {
     // First install has no existing agent to unload.
   }
-  execFileSync('launchctl', ['bootstrap', domain, plistPath], { stdio: 'ignore' });
+  try {
+    execFileSync('launchctl', ['bootstrap', domain, plistPath], { stdio: 'ignore' });
+  } catch {
+    // A prior launchd registration can survive a terminated child briefly.
+    // Reload its updated plist rather than asking an operator to export shell
+    // values or manually manufacture a task.
+    execFileSync('launchctl', ['kickstart', '-k', `${domain}/${label}`], { stdio: 'ignore' });
+  }
   return { configPath, plistPath, repository };
 }
 
@@ -76,4 +84,4 @@ function main() {
   process.stdout.write(`IDE task provisioner managed runtime installed at ${installed.plistPath}.\n`);
 }
 
-if (process.argv[1]?.endsWith('install-ide-task-provisioner.ts')) main();
+if (process.argv[1] && basename(process.argv[1]) === 'install-ide-task-provisioner.ts') main();

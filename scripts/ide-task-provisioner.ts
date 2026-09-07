@@ -12,7 +12,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import type { InboxIdeTaskProvisioningRequest } from '@mos-lab/shared';
 
@@ -362,4 +362,4 @@ async function main() {
   process.stdout.write(`IDE task provisioner: ${result}.\n`);
 }
 
-if (process.argv[1]?.endsWith('ide-task-provisioner.ts')) void main();
+if (process.argv[1] && basename(process.argv[1]) === 'ide-task-provisioner.ts') void main();
