@@ -492,15 +492,46 @@ export class TeamService {
         `);
       }
 
-      // Default/BK/Subteams query: all active staff profiles
-      return await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+      // Danny-approved exception (2026-09-07): only Thanh Vu's exact active CRM identity,
+      // only in BK_TELESALES. Never remove the employee JOIN from the existing population.
+      let allowThanhVu = false;
+      if (teamCode === 'BK_TELESALES') {
+        try {
+          const staff = await fastify.prisma.crm.crmStaff.findUnique({
+            where: { id: 70 },
+            select: { id: true, legacyStaffId: true, isActive: true, role: true },
+          });
+          allowThanhVu =
+            staff?.id === 70 && staff.legacyStaffId === 52598 && staff.isActive && staff.role === 'telesales';
+        } catch (err) {
+          // A failed exception lookup must not remove the normal eligible candidates.
+          fastify.log.error(err as SafeAny, 'Could not validate approved BK staff exception');
+        }
+      }
+
+      // UNION keeps the original INNER-JOIN candidate set and deduplicates an already eligible identity.
+      return await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `
         SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
           COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
         FROM \`user_profile\` up
         JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
         WHERE up.provider = 'Staff' AND up.is_disabled = 0
-        ORDER BY up.full_name ASC
-      `);
+        ${
+          allowThanhVu
+            ? `
+        UNION
+        SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
+          COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
+        FROM \`user_profile\` up
+        WHERE up.provider = 'Staff' AND up.is_disabled = 0 AND up.user_id = ?
+        `
+            : ''
+        }
+        ORDER BY displayName ASC
+      `,
+        ...(allowThanhVu ? [52598] : [])
+      );
     } catch (err) {
       fastify.log.error(err as SafeAny, `Error querying staff profiles for team ${teamCode}`);
       return [];
