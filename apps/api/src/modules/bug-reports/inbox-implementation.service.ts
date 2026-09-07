@@ -687,6 +687,7 @@ export class InboxImplementationService {
     const reason = clean(input?.reason, 2000);
     if (
       input?.acknowledged !== true ||
+      typeof input?.reason !== 'string' ||
       reason.length < 10 ||
       String(input.reason).length > 2000 ||
       !/^[a-f0-9-]{36}$/i.test(input?.planJobId || '') ||

@@ -168,6 +168,7 @@ test('identical concurrent submissions produce one audit/comment/outbox; conflic
 test('invalid reason, acknowledgment, candidate, version, active/approved/wrong state all fail without writes', async () => {
   for (const change of [
     { reason: '' },
+    { reason: { text: 'not a reason string' } },
     { reason: 'x'.repeat(2001) },
     { acknowledged: false },
     { planJobId: 'bad' },
