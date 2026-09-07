@@ -732,6 +732,8 @@ export interface BugReportAuditEntry {
 }
 
 export interface BugReportSummary {
+  /** Server-owned, exact native plan eligible for a pre-code review decision. */
+  planReview?: BugReportPlanReviewCandidate | null;
   id: number;
   key: string;
   requestType: BugReportRequestType;
@@ -862,6 +864,18 @@ export interface TriageBugReportRequest {
 /** A separate affirmative action; APPROVED triage alone is never implementation authority. */
 export interface ApproveBugReportImplementationRequest {
   acknowledged: true;
+  planReview?: BugReportPlanReviewCandidate;
+}
+
+export interface BugReportPlanReviewCandidate {
+  planJobId: string;
+  sourceVersion: string;
+  planVersion: string;
+}
+
+export interface RequestBugReportPlanChangesRequest extends BugReportPlanReviewCandidate {
+  acknowledged: true;
+  reason: string;
 }
 
 /** Explicit Danny authorization for the retained review patch to be committed by the trusted Mac worker. */

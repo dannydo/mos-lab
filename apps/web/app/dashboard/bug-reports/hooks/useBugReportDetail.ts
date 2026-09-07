@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { message } from 'antd';
-import type { BugPriority, BugReportDetail, BugReportStatus, TriageBugReportRequest } from '@mos-lab/shared';
+import type {
+  BugPriority,
+  BugReportDetail,
+  BugReportPlanReviewCandidate,
+  BugReportStatus,
+  TriageBugReportRequest,
+} from '@mos-lab/shared';
 import { parseDuplicateKey } from '../bug-report-presenters';
 import type { useBugReports } from './useBugReports';
 
@@ -13,6 +19,7 @@ export type BugReportDetailOptions = Pick<
   | 'approveImplementation'
   | 'approveImplementationCommit'
   | 'requestImplementationChanges'
+  | 'requestPlanChanges'
   | 'approveImplementationDeploy'
   | 'retryImplementation'
   | 'authorizeWorkerRecoveryRetry'
@@ -30,6 +37,7 @@ export function useBugReportDetail({
   approveImplementation,
   approveImplementationCommit,
   requestImplementationChanges,
+  requestPlanChanges,
   approveImplementationDeploy,
   retryImplementation,
   authorizeWorkerRecoveryRetry: authorizeWorkerRecoveryRetryAction,
@@ -148,11 +156,13 @@ export function useBugReportDetail({
   }, [businessContext, confirmClose, detail, hydrateForm, messageApi, note]);
 
   const approveCodeExecution = useCallback(async () => {
-    if (!detail || approvalPending.current || approvalReceived) return;
+    if (!detail || approvalPending.current || reviewPending.current || approvalReceived) return;
     approvalPending.current = true;
     setSaving(true);
     try {
-      const outcome = await approveImplementation(detail.id);
+      const outcome = detail.planReview
+        ? await approveImplementation(detail.id, detail.planReview)
+        : await approveImplementation(detail.id);
       setApprovalReceived(true);
       if (outcome.implementationQueued) {
         setStatus('IN_PROGRESS');
@@ -208,6 +218,37 @@ export function useBugReportDetail({
       }
     },
     [detail, hydrateForm, messageApi, requestImplementationChanges]
+  );
+
+  const revisePlan = useCallback(
+    async (reason: string, reviewedPlan: BugReportPlanReviewCandidate): Promise<boolean> => {
+      if (!detail?.planReview || reviewPending.current || approvalPending.current || approvalReceived) return false;
+      if (JSON.stringify(reviewedPlan) !== JSON.stringify(detail.planReview)) {
+        messageApi.error('Plan đã thay đổi. Đóng hộp thoại và đọc lại plan mới trước khi gửi.');
+        return false;
+      }
+      if (reason.trim().length < 10) {
+        messageApi.error('Ghi rõ điều cần sửa trong plan, ít nhất 10 ký tự.');
+        return false;
+      }
+      reviewPending.current = true;
+      setSaving(true);
+      try {
+        hydrateForm(
+          await requestPlanChanges(detail.id, { ...detail.planReview, acknowledged: true, reason: reason.trim() })
+        );
+        setApprovalReceived(false);
+        messageApi.success('Đã yêu cầu Agent sửa lại plan. Chưa duyệt code/test.');
+        return true;
+      } catch (error) {
+        messageApi.error(error instanceof Error ? error.message : 'Không thể yêu cầu sửa plan. Hãy tải lại ticket.');
+        return false;
+      } finally {
+        reviewPending.current = false;
+        setSaving(false);
+      }
+    },
+    [approvalReceived, detail, hydrateForm, messageApi, requestPlanChanges]
   );
 
   const retryCodeExecution = useCallback(async () => {
@@ -378,6 +419,7 @@ export function useBugReportDetail({
     saving,
     approvalReceived,
     requestChanges,
+    revisePlan,
     loadError,
     status,
     setStatus,

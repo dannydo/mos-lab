@@ -24,6 +24,7 @@ test('request-changes route permits only authenticated canonical Danny and passe
     };
   });
   const called = t.mock.method(InboxImplementationService, 'requestChanges', async () => {});
+  const planCalled = t.mock.method(InboxImplementationService, 'requestPlanChanges', async () => {});
   t.mock.method(BugReportService, 'detail', async () => ({ id: 29 }) as never);
   await app.register(bugReportRoutes);
   const payload = {
@@ -43,6 +44,18 @@ test('request-changes route permits only authenticated canonical Danny and passe
     assert.equal((await inject({ 'x-test-role': 'super_admin', 'x-test-name': 'danhdo@gmail.com' })).statusCode, 200);
     assert.equal(called.mock.callCount(), 1);
     assert.deepEqual(called.mock.calls[0].arguments.slice(1), [29, 1, payload]);
+    const planPayload = { ...payload, planJobId: payload.jobId };
+    const planInject = (headers: Record<string, string>) =>
+      app.inject({ method: 'POST', url: '/bug-reports/29/plan-request-changes', headers, payload: planPayload });
+    assert.equal((await planInject({})).statusCode, 401);
+    assert.equal((await planInject({ 'x-test-role': 'manager' })).statusCode, 403);
+    assert.equal((await planInject({ 'x-test-role': 'super_admin' })).statusCode, 403);
+    assert.equal(planCalled.mock.callCount(), 0);
+    assert.equal(
+      (await planInject({ 'x-test-role': 'super_admin', 'x-test-name': 'danhdo@gmail.com' })).statusCode,
+      200
+    );
+    assert.deepEqual(planCalled.mock.calls[0].arguments.slice(1), [29, 1, planPayload]);
   } finally {
     await app.close();
   }

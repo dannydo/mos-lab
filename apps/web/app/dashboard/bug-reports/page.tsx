@@ -309,6 +309,7 @@ export default function BugReportsPage() {
         reportId={selectedId}
         liveVersion={inbox.data.find((row) => row.id === selectedId)?.updatedAt}
         requestImplementationChanges={inbox.requestImplementationChanges}
+        requestPlanChanges={inbox.requestPlanChanges}
         onClose={() => setSelectedId(null)}
         getDetail={inbox.getDetail}
         triage={inbox.triage}

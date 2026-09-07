@@ -58,6 +58,7 @@ import {
   canAuthorizeQualityGateRecoveryRetry,
   canAuthorizeWorkerRecoveryRetry,
   canRetryInboxImplementation,
+  inboxPlanReviewCandidate,
 } from './inbox-implementation.service.js';
 
 const AGENT_READABLE_STATUSES = new Set<BugReportStatus>(['NEW', 'APPROVED', 'IN_PROGRESS', 'FIXED']);
@@ -129,6 +130,7 @@ export function bugReportNextActorWhere(nextActor: unknown): Prisma.CrmBugReport
 }
 
 const reportInclude = {
+  inboxPlanJobs: { orderBy: { createdAt: 'desc' as const }, take: 12 },
   reporter: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
   approver: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
   duplicateOf: { select: { requestType: true } },
@@ -469,6 +471,7 @@ function latestAgentActivity(source: AgentProgressSource) {
           'AGENT_CONFIRMED_CLARITY',
           'AGENT_IMPLEMENTATION_REVIEW_READY',
           'DANNY_CHANGES_REQUESTED',
+          'DANNY_PLAN_CHANGES_REQUESTED',
           'AGENT_IMPLEMENTATION_FAILED',
           'AGENT_IMPLEMENTATION_RETRY_QUEUED',
           'AGENT_IMPLEMENTATION_RETRY_SCHEDULED',
@@ -489,7 +492,7 @@ function pendingReviewPlan(source: AgentProgressSource): Date | null {
   for (let index = source.audits.length - 1; index >= 0; index -= 1) {
     const audit = source.audits[index];
     if (audit.action === 'AGENT_PLAN_POSTED') return null;
-    if (audit.action === 'DANNY_CHANGES_REQUESTED') return audit.createdAt;
+    if (['DANNY_CHANGES_REQUESTED', 'DANNY_PLAN_CHANGES_REQUESTED'].includes(audit.action)) return audit.createdAt;
   }
   return null;
 }
@@ -701,7 +704,7 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
     return progressResult('WAITING_REPORTER', source, latest, source.updatedAt);
   }
   if (source.clarificationStatus === 'PENDING_AGENT') {
-    if (latest?.action === 'DANNY_CHANGES_REQUESTED') {
+    if (latest && ['DANNY_CHANGES_REQUESTED', 'DANNY_PLAN_CHANGES_REQUESTED'].includes(latest.action)) {
       return progressResult('ANALYZING', source, latest, source.updatedAt);
     }
     if (latest?.action === 'REPORTER_REOPENED') {
@@ -1184,6 +1187,14 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
     .find((audit) => audit.action === 'REPORTER_REOPENED' && Boolean(audit.note?.trim()));
   return {
     id: row.id,
+    planReview: inboxPlanReviewCandidate({
+      ...row,
+      inboxPlanJobs: row.inboxPlanJobs ?? [],
+      comments: row.comments
+        .filter((comment) => comment.authorType === 'STAFF')
+        .reverse()
+        .slice(0, 8),
+    }),
     key: formatBugReportKey(row.id, requestType),
     requestType,
     featureRequest: featureRequestDto(row),

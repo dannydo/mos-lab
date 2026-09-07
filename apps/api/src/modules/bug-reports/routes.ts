@@ -16,6 +16,7 @@ import {
   type ApproveBugReportImplementationDeployRequest,
   type ReleaseBugReportImplementationRequest,
   type RequestBugReportImplementationChangesRequest,
+  type RequestBugReportPlanChangesRequest,
   type ReviewBugReportImplementationAcceptanceRequest,
   type RetryBugReportImplementationRequest,
   type RenewInboxImplementationLeaseRequest,
@@ -487,7 +488,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi duyệt implementation.', 422);
         }
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-        const outcome = await InboxImplementationService.approve(fastify, id, request.user.id);
+        const outcome = await InboxImplementationService.approve(fastify, id, request.user.id, body.planReview);
         if (outcome.planRequested && (await InboxPlanService.enqueue(fastify, id, 'IMPLEMENTATION_APPROVAL'))) {
           RequestClassifierWorkerHub.notify('inbox_plan_available');
         }
@@ -634,6 +635,30 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         return sendError(fastify, reply, error, 'Request implementation changes failed');
+      }
+    }
+  );
+
+  fastify.post(
+    '/bug-reports/:id/plan-request-changes',
+    { preHandler: [requireAuth, requireDanny] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        await InboxImplementationService.requestPlanChanges(
+          fastify,
+          id,
+          request.user.id,
+          request.body as RequestBugReportPlanChangesRequest
+        );
+        RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+        return reply.send({
+          success: true,
+          data: await BugReportService.detail(fastify, id),
+          message: 'Đã yêu cầu Agent sửa lại plan. Chưa duyệt code/test.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Request plan changes failed');
       }
     }
   );

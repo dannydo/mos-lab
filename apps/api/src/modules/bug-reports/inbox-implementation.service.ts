@@ -10,6 +10,8 @@ import {
   type ReleaseBugReportImplementationRequest,
   type ReviewBugReportImplementationAcceptanceRequest,
   type RequestBugReportImplementationChangesRequest,
+  type RequestBugReportPlanChangesRequest,
+  type BugReportPlanReviewCandidate,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
@@ -135,6 +137,13 @@ export function inboxImplementationCurrentPlan(source: GateSource, sourceVersion
   return candidate?.planVersion && candidate.sourceVersion
     ? { id: candidate.id, sourceVersion: candidate.sourceVersion, planVersion: candidate.planVersion }
     : null;
+}
+
+export function inboxPlanReviewCandidate(source: GateSource): BugReportPlanReviewCandidate | null {
+  if (!isInboxImplementationBaseEligible(source) || source.implementationApprovedAt || source.implementationActiveJobId)
+    return null;
+  const plan = inboxImplementationCurrentPlan(source, inboxImplementationSourceVersion(source));
+  return plan ? { planJobId: plan.id, sourceVersion: plan.sourceVersion, planVersion: plan.planVersion } : null;
 }
 
 export function isInboxImplementationEligible(source: GateSource): {
@@ -668,6 +677,117 @@ async function clearTicketActiveJob(fastify: FastifyInstance, reportId: number, 
 }
 
 export class InboxImplementationService {
+  /** Retire only the reviewed plan, preserving its content and all historical evidence. */
+  static async requestPlanChanges(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number,
+    input: RequestBugReportPlanChangesRequest
+  ): Promise<void> {
+    const reason = clean(input?.reason, 2000);
+    if (
+      input?.acknowledged !== true ||
+      typeof input?.reason !== 'string' ||
+      reason.length < 10 ||
+      String(input.reason).length > 2000 ||
+      !/^[a-f0-9-]{36}$/i.test(input?.planJobId || '') ||
+      !input?.sourceVersion ||
+      !input?.planVersion
+    ) {
+      throw new InboxImplementationError(
+        'Cần đúng plan và lý do sửa lại từ 10 đến 2000 ký tự.',
+        422,
+        'PLAN_CHANGES_INVALID'
+      );
+    }
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+      const report = await tx.crmBugReport.findUnique({
+        where: { id: reportId },
+        include: implementationReportInclude(),
+      });
+      if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+      const plan = await tx.crmInboxPlanJob.findUnique({ where: { id: input.planJobId } });
+      if (
+        !plan ||
+        plan.reportId !== reportId ||
+        plan.sourceVersion !== input.sourceVersion ||
+        plan.planVersion !== input.planVersion
+      )
+        throw new InboxImplementationError('Plan đã thay đổi. Hãy tải lại ticket.', 409, 'PLAN_REVIEW_CHANGED');
+      if (plan.status === 'SUPERSEDED') {
+        const previous = await tx.crmBugReportAudit.findFirst({
+          where: { reportId, action: 'DANNY_PLAN_CHANGES_REQUESTED', afterJson: { contains: plan.id } },
+          orderBy: { id: 'desc' },
+        });
+        const decision = previous?.afterJson ? JSON.parse(previous.afterJson) : null;
+        if (decision?.planJobId === plan.id && decision.reason === reason && previous?.actorStaffId === actorStaffId)
+          return;
+        throw new InboxImplementationError('Plan đã có quyết định sửa khác.', 409, 'PLAN_REVIEW_CONFLICT');
+      }
+      const candidate = inboxPlanReviewCandidate(report);
+      if (!candidate || candidate.planJobId !== plan.id)
+        throw new InboxImplementationError(
+          'Chỉ plan sẵn sàng chưa duyệt code/test mới được trả sửa.',
+          409,
+          'PLAN_REVIEW_NOT_OPEN'
+        );
+      const now = new Date();
+      await tx.crmInboxPlanJob.update({ where: { id: plan.id }, data: { status: 'SUPERSEDED' } });
+      // An older leased plan must not land after this decision and reopen the old approval gate.
+      await tx.crmInboxPlanJob.updateMany({
+        where: { reportId, status: { in: ['PENDING', 'LEASED'] } },
+        data: { status: 'SUPERSEDED', leaseToken: null, leasedBy: null, leaseExpiresAt: null },
+      });
+      await tx.crmBugReport.update({
+        where: { id: reportId },
+        data: {
+          clarificationStatus: 'PENDING_AGENT',
+          clarificationSummary: null,
+          clarifiedAt: null,
+          implementationApprovedAt: null,
+          implementationApprovedByStaffId: null,
+          implementationApprovalSourceVersion: null,
+          updatedAt: now,
+        },
+      });
+      const comment = await tx.crmBugReportComment.create({
+        data: {
+          reportId,
+          authorType: 'STAFF',
+          authorStaffId: actorStaffId,
+          kind: 'COMMENT',
+          body: `Yêu cầu sửa lại plan ${plan.id}:\n${reason}\n\nGiữ lịch sử plan cũ. Agent lập plan mới; cần Danny duyệt mới trước code/test.`,
+        },
+      });
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId,
+          actorStaffId,
+          action: 'DANNY_PLAN_CHANGES_REQUESTED',
+          note: reason,
+          beforeJson: JSON.stringify({ report: JSON.parse(snapshot(report)), plan }),
+          afterJson: JSON.stringify({
+            ...candidate,
+            reason,
+            commentId: comment.id,
+            nextAction: 'AGENT_REPLAN',
+            implementationApprovedAt: null,
+          }),
+        },
+      });
+      await tx.crmInboxFollowUpJob.create({
+        data: {
+          id: randomUUID(),
+          reportId,
+          eventKind: 'REPORTER_COMMENT',
+          eventVersion: `plan-review:${plan.id}`,
+          expiresAt: new Date(now.getTime() + JOB_TTL_MS),
+        },
+      });
+    });
+  }
+
   /** A review rejection is not a worker failure or permission to execute again. */
   static async requestChanges(
     fastify: FastifyInstance,
@@ -812,34 +932,58 @@ export class InboxImplementationService {
   }
 
   /** Stores a distinct Danny approval. It never starts code by itself. */
-  static async approve(fastify: FastifyInstance, reportId: number, actorStaffId: number) {
-    const report = await fastify.prisma.crm.crmBugReport.findUnique({
-      where: { id: reportId },
-      include: implementationReportInclude(),
-    });
-    if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
-    if (!isInboxImplementationBaseEligible(report)) {
-      throw new InboxImplementationError(
-        'Ticket cần ở trạng thái Đã duyệt, có priority và đã đủ rõ trước khi duyệt triển khai.',
-        409
-      );
-    }
-    const sourceVersion = inboxImplementationSourceVersion(report);
-    if (!inboxImplementationCurrentPlan(report, sourceVersion)) {
-      const returnedCandidate = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
-        where: { reportId, status: 'CHANGES_REQUESTED' },
-        select: { id: true },
+  static async approve(
+    fastify: FastifyInstance,
+    reportId: number,
+    actorStaffId: number,
+    expectedPlan?: BugReportPlanReviewCandidate
+  ) {
+    const sourceVersion = await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
+      const report = await tx.crmBugReport.findUnique({
+        where: { id: reportId },
+        include: implementationReportInclude(),
       });
-      if (returnedCandidate) {
+      if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+      if (!isInboxImplementationBaseEligible(report)) {
         throw new InboxImplementationError(
-          'Agent phải đăng plan mới trước khi Danny duyệt code/test lại.',
-          409,
-          'REPLAN_REQUIRED'
+          'Ticket cần ở trạng thái Đã duyệt, có priority và đã đủ rõ trước khi duyệt triển khai.',
+          409
         );
       }
-    }
-    const now = new Date();
-    await fastify.prisma.crm.$transaction(async (tx) => {
+      const sourceVersion = inboxImplementationSourceVersion(report);
+      const plan = inboxImplementationCurrentPlan(report, sourceVersion);
+      const revision = await tx.crmBugReportAudit.findFirst({
+        where: { reportId, action: 'DANNY_PLAN_CHANGES_REQUESTED' },
+      });
+      if (
+        (revision && !expectedPlan) ||
+        (expectedPlan &&
+          (!plan ||
+            expectedPlan.planJobId !== plan.id ||
+            expectedPlan.sourceVersion !== plan.sourceVersion ||
+            expectedPlan.planVersion !== plan.planVersion))
+      ) {
+        throw new InboxImplementationError(
+          'Plan đã thay đổi. Hãy tải lại và duyệt đúng plan mới.',
+          409,
+          'PLAN_REVIEW_CHANGED'
+        );
+      }
+      if (!inboxImplementationCurrentPlan(report, sourceVersion)) {
+        const returnedCandidate = await tx.crmInboxImplementationJob.findFirst({
+          where: { reportId, status: 'CHANGES_REQUESTED' },
+          select: { id: true },
+        });
+        if (returnedCandidate) {
+          throw new InboxImplementationError(
+            'Agent phải đăng plan mới trước khi Danny duyệt code/test lại.',
+            409,
+            'REPLAN_REQUIRED'
+          );
+        }
+      }
+      const now = new Date();
       const current = await tx.crmBugReport.update({
         where: { id: reportId },
         data: {
@@ -863,6 +1007,7 @@ export class InboxImplementationService {
           }),
         },
       });
+      return sourceVersion;
     });
     const queued = await this.enqueueApproved(fastify, reportId);
     const refreshed = await fastify.prisma.crm.crmBugReport.findUnique({

@@ -24,6 +24,7 @@ function makeActions(detail = makeDetail()) {
     reportId: detail.id as number | null,
     getDetail: vi.fn<BugReportDetailOptions['getDetail']>().mockResolvedValue(detail),
     triage: vi.fn<BugReportDetailOptions['triage']>().mockResolvedValue(detail),
+    requestPlanChanges: vi.fn<BugReportDetailOptions['requestPlanChanges']>().mockResolvedValue(detail),
     requestImplementationChanges: vi
       .fn<BugReportDetailOptions['requestImplementationChanges']>()
       .mockResolvedValue(detail),
@@ -53,6 +54,56 @@ function makeActions(detail = makeDetail()) {
 
 describe('useBugReportDetail preserved request contract', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('plan revision locks duplicate/competing clicks, hydrates success, and exposes server errors', async () => {
+    const planReview = {
+      planJobId: 'ae32a70f-8490-4247-aa4f-2f0e45bcdc40',
+      sourceVersion: 'v1:s',
+      planVersion: 'v1:p',
+    };
+    const detail = makeDetail({ status: 'APPROVED', planReview });
+    const actions = makeActions(detail);
+    const pending = deferred<BugReportDetail>();
+    actions.requestPlanChanges.mockReturnValueOnce(pending.promise);
+    const { result } = renderHook(useBugReportDetail, { initialProps: actions });
+    await waitFor(() => expect(result.current.detail).toEqual(detail));
+    let submitted!: Promise<boolean>;
+    await act(async () => {
+      submitted = result.current.revisePlan('Lý do cần sửa kế hoạch.', planReview);
+      expect(await result.current.revisePlan('Lý do cần sửa kế hoạch.', planReview)).toBe(false);
+      await result.current.approveCodeExecution();
+    });
+    expect(result.current.saving).toBe(true);
+    expect(actions.requestPlanChanges).toHaveBeenCalledTimes(1);
+    expect(actions.approveImplementation).not.toHaveBeenCalled();
+    await act(async () => {
+      pending.resolve(makeDetail({ planReview: null }));
+      expect(await submitted).toBe(true);
+    });
+    expect(result.current.saving).toBe(false);
+    expect(result.current.detail?.planReview).toBeNull();
+    act(() => result.current.hydrateForm(detail));
+    actions.requestPlanChanges.mockRejectedValueOnce(new Error('Plan đã thay đổi.'));
+    await act(async () => {
+      expect(await result.current.revisePlan('Lý do cần sửa kế hoạch.', planReview)).toBe(false);
+    });
+    expect(feedback.error).toHaveBeenCalledWith('Plan đã thay đổi.');
+    expect(result.current.saving).toBe(false);
+    expect(result.current.detail).toEqual(detail);
+  });
+
+  it('a dialog opened for an older plan cannot submit against a freshly hydrated plan', async () => {
+    const planReview = { planJobId: 'old', sourceVersion: 'old', planVersion: 'old' };
+    const actions = makeActions(makeDetail({ planReview }));
+    const { result } = renderHook(useBugReportDetail, { initialProps: actions });
+    await waitFor(() => expect(result.current.detail?.planReview).toEqual(planReview));
+    act(() => result.current.hydrateForm(makeDetail({ planReview: { ...planReview, planJobId: 'new' } })));
+    await act(async () => {
+      expect(await result.current.revisePlan('Lý do cần sửa kế hoạch.', planReview)).toBe(false);
+    });
+    expect(actions.requestPlanChanges).not.toHaveBeenCalled();
+    expect(feedback.error).toHaveBeenCalledWith(expect.stringContaining('Plan đã thay đổi'));
+  });
 
   it('loads only a selected report, hydrates the form and clears detail when closed', async () => {
     const detail = makeDetail();
