@@ -995,7 +995,9 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
       ideOwned && implementation.status !== 'RUNNING'
         ? implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
           ? 'Chờ Codex IDE ghi commit đã duyệt'
-          : 'Chờ Codex IDE nhận handoff'
+          : implementation.executionPhase === 'DEPLOY_APPROVED'
+            ? 'Chờ IDE xác minh release đã duyệt'
+            : 'Chờ Codex IDE nhận handoff'
         : implementation.executionPhase === 'DEPLOY_APPROVED'
           ? 'Chờ worker deploy'
           : implementation.executionPhase === 'COMMIT_APPROVED'
@@ -1010,7 +1012,9 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
       ideOwned && implementation.status !== 'RUNNING'
         ? implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
           ? `${handoffReference} đã sẵn sàng ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.`
-          : `${handoffReference} đã sẵn sàng cho code/test theo scope được duyệt. Không cấp lease thực thi nào.`
+          : implementation.executionPhase === 'DEPLOY_APPROVED'
+            ? `${handoffReference} đang chờ release marker Production đã xác minh. Deploy approval đã được khóa; không có thao tác deploy hoặc click lặp.`
+            : `${handoffReference} đã sẵn sàng cho code/test theo scope được duyệt. Không cấp lease thực thi nào.`
         : implementation.status === 'RUNNING'
           ? implementationProgressNote(implementation, 'Worker đang xử lý trong worktree riêng.')
           : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',

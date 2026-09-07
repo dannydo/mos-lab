@@ -834,6 +834,20 @@ export class InboxImplementationService {
         },
       });
       if (!updated.count) throw new InboxImplementationError('IDE receipt đã thay đổi.', 409, 'IDE_RECEIPT_REJECTED');
+      const releaseManifest = gateResult.eligible
+        ? makeReleaseManifest({
+            reportId,
+            jobId: job.id,
+            sourceVersion: job.sourceVersion,
+            planVersion: job.planVersion,
+            baseCommit: String(input?.baseCommit || ''),
+            patchHash: String(input?.patchHash || ''),
+            changedFiles: files,
+            tests: result.tests,
+          })
+        : null;
+      if (gateResult.eligible && !releaseManifest)
+        throw new InboxImplementationError('Manifest review IDE không hợp lệ.', 409, 'IDE_MANIFEST_INVALID');
       await tx.crmBugReportAudit.create({
         data: {
           reportId,
@@ -843,9 +857,21 @@ export class InboxImplementationService {
             ? 'IDE task đã bind ghi receipt qua bridge tin cậy; worker không nhận quyền thực thi.'
             : 'IDE receipt được ghi; worker không nhận quyền thực thi.',
           beforeJson: snapshot(report),
-          afterJson: JSON.stringify({ jobId: job.id }),
+          afterJson: JSON.stringify({ jobId: job.id, ...(releaseManifest ? { releaseManifest } : {}) }),
         },
       });
+      if (releaseManifest) {
+        await tx.crmBugReportAudit.create({
+          data: {
+            reportId,
+            actorStaffId,
+            action: 'AGENT_IMPLEMENTATION_REVIEW_READY',
+            note: 'IDE code/test receipt đã tạo immutable manifest; chờ Danny duyệt commit.',
+            beforeJson: snapshot(report),
+            afterJson: JSON.stringify({ releaseManifest }),
+          },
+        });
+      }
       return 'RECORDED' as const;
     });
   }

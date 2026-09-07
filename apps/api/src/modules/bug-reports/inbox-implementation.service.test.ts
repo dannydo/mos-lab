@@ -1572,7 +1572,8 @@ test('IDE code/test and commit receipts consume a fresh handoff once and never d
   };
   assert.equal(await InboxImplementationService.recordIdeReceipt(fastify as never, 16, 1, codeReceipt), 'RECORDED');
   assert.equal(await InboxImplementationService.recordIdeReceipt(fastify as never, 16, 1, codeReceipt), 'DUPLICATE');
-  assert.equal(audits.length, 1);
+  assert.equal(audits.length, 2);
+  assert.equal((audits[1]?.data as { action?: string }).action, 'AGENT_IMPLEMENTATION_REVIEW_READY');
   assert.equal(job.status, 'AWAITING_COMMIT_REVIEW');
 
   Object.assign(job, { status: 'PENDING', executionPhase: 'IDE_COMMIT_HANDOFF', ideReceiptNonce: 'commit-nonce' });
@@ -1588,7 +1589,7 @@ test('IDE code/test and commit receipts consume a fresh handoff once and never d
     await InboxImplementationService.recordIdeCommitReceipt(fastify as never, 16, 1, commitReceipt),
     'DUPLICATE'
   );
-  assert.equal(audits.length, 2);
+  assert.equal(audits.length, 3);
   assert.equal(job.status, 'AWAITING_DEPLOY_REVIEW');
   await assert.rejects(
     InboxImplementationService.recordIdeCommitReceipt(fastify as never, 16, 1, {
@@ -1597,7 +1598,7 @@ test('IDE code/test and commit receipts consume a fresh handoff once and never d
     }),
     { code: 'IDE_COMMIT_REJECTED' }
   );
-  assert.equal(audits.length, 2);
+  assert.equal(audits.length, 3);
 });
 
 test('trusted IDE task receipt accepts only its bound task and keeps replays audit-idempotent', async () => {
@@ -1669,7 +1670,8 @@ test('trusted IDE task receipt accepts only its bound task and keeps replays aud
     await InboxImplementationService.recordIdeTaskReceipt(fastify as never, 'task-ide-30', receipt),
     'DUPLICATE'
   );
-  assert.equal(audits.length, 1);
+  assert.equal(audits.length, 2);
+  assert.equal((audits[1]?.data as { action?: string }).action, 'AGENT_IMPLEMENTATION_REVIEW_READY');
   assert.equal((audits[0]?.data as { actorStaffId?: number | null }).actorStaffId, null);
 });
 
