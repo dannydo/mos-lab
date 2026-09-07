@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Badge, Menu, Popover, Tooltip } from 'antd';
+import { Menu, Popover, Tooltip } from 'antd';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { isCanonicalSuperAdminIdentity, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
@@ -310,36 +310,40 @@ export default function SidebarNav({
       };
     }
 
+    const hasBadge = (item.badgeCount ?? 0) > 0;
+    const itemLabel =
+      item.key.startsWith('nyc-campaign-') || item.key.startsWith('academy-campaign-') ? (
+        <span className="sidebar-menu-live-label">
+          <span>{item.label}</span>
+          <span className="sidebar-menu-live-dot" aria-hidden />
+        </span>
+      ) : (
+        item.label
+      );
+
     return {
       key: item.key,
-      icon:
-        item.badgeCount && item.badgeCount > 0 ? (
-          <Badge count={item.badgeCount} color={token.colorWarning} overflowCount={99} offset={[3, 0]} size="small">
-            <span className="inline-flex">{item.icon}</span>
-          </Badge>
-        ) : (
-          item.icon
-        ),
-      title:
-        item.badgeCount && item.badgeCount > 0
-          ? `${item.label} — ${item.badgeCount} ticket đang chờ Danny duyệt`
-          : item.label,
+      icon: item.icon,
+      title: hasBadge ? `${item.label} — ${item.badgeCount} ticket đang chờ Danny duyệt` : item.label,
       className:
         depth === 0 ? 'sidebar-menu-entry sidebar-menu-entry--root' : 'sidebar-menu-entry sidebar-menu-entry--nested',
       label: item.path ? (
         <span
-          className={`sidebar-menu-label ${depth > 0 ? 'sidebar-menu-label--nested' : 'sidebar-menu-label--root'}`}
+          className={`sidebar-menu-label ${hasBadge ? 'sidebar-menu-label--with-badge' : ''} ${
+            depth > 0 ? 'sidebar-menu-label--nested' : 'sidebar-menu-label--root'
+          }`}
           onMouseEnter={() => item.path && router.prefetch(item.path)}
-          style={{ display: 'inline-block', width: '100%' }}
         >
-          {item.key.startsWith('nyc-campaign-') || item.key.startsWith('academy-campaign-') ? (
-            <span className="sidebar-menu-live-label">
-              <span>{item.label}</span>
-              <span className="sidebar-menu-live-dot" aria-hidden />
+          <span className="sidebar-menu-label__content">{itemLabel}</span>
+          {hasBadge ? (
+            <span
+              className="sidebar-menu-label__badge"
+              aria-label={`${item.badgeCount} ticket đang chờ Danny duyệt`}
+              style={{ backgroundColor: token.colorWarning, color: token.colorTextLightSolid }}
+            >
+              {item.badgeCount}
             </span>
-          ) : (
-            item.label
-          )}
+          ) : null}
         </span>
       ) : (
         item.label

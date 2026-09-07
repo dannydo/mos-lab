@@ -1049,6 +1049,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               text-overflow: ellipsis;
               white-space: nowrap;
             }
+            .antd-custom-menu .sidebar-menu-label--with-badge {
+              align-items: center;
+              display: flex;
+              gap: 8px;
+              justify-content: space-between;
+              overflow: visible;
+              width: 100%;
+            }
+            .antd-custom-menu .sidebar-menu-label__content {
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+            .antd-custom-menu .sidebar-menu-label__badge {
+              align-items: center;
+              border: 0;
+              border-radius: 999px;
+              box-shadow: none;
+              display: inline-flex;
+              flex: 0 0 auto;
+              font-variant-numeric: tabular-nums;
+              font-size: 11px;
+              font-weight: 700;
+              height: 18px;
+              justify-content: center;
+              line-height: 18px;
+              min-width: 18px;
+              padding-inline: 6px;
+              white-space: nowrap;
+            }
             .antd-custom-menu .ant-menu-sub.ant-menu-inline {
               background: transparent !important;
               border-inline-start: 1px solid
