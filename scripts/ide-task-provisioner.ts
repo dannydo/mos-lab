@@ -1,6 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { spawn, execFile as execFileCallback } from 'node:child_process';
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  accessSync,
+  chmodSync,
+  constants,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -32,6 +42,26 @@ function clean(value: unknown, limit: number) {
   return String(value || '')
     .trim()
     .slice(0, limit);
+}
+
+export function resolveCodexAppServerCommand(env: NodeJS.ProcessEnv = process.env) {
+  const configured = clean(env.MOS_CODEX_APP_SERVER_COMMAND, 500);
+  const candidates = [
+    configured,
+    resolve(homedir(), '.local/bin/codex'),
+    '/Applications/ChatGPT.app/Contents/Resources/codex',
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      accessSync(candidate, constants.X_OK);
+      return candidate;
+    } catch {
+      // Try the next trusted local candidate; never fall back to a PATH binary
+      // supplied by a ticket or launchd environment.
+    }
+  }
+  throw new Error('Codex App Server executable is unavailable.');
 }
 
 export function runtimePath() {
@@ -128,7 +158,7 @@ async function bridgeJson(fetcher: typeof fetch, url: string, init: RequestInit)
 }
 
 export async function createCodexTask(request: InboxIdeTaskProvisioningRequest, cwd: string): Promise<string> {
-  const command = clean(process.env.MOS_CODEX_APP_SERVER_COMMAND, 500) || 'codex';
+  const command = resolveCodexAppServerCommand();
   const child = spawn(command, ['app-server', '--stdio'], { stdio: ['pipe', 'pipe', 'pipe'] });
   let buffer = '';
   let stderr = '';
