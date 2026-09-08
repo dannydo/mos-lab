@@ -51,6 +51,8 @@ type BugReportDetailDrawerProps = BugReportDetailOptions &
 export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions }: BugReportDetailDrawerProps) {
   const [changesOpen, setChangesOpen] = useState(false);
   const [changesReason, setChangesReason] = useState('');
+  const [exceptionCloseOpen, setExceptionCloseOpen] = useState(false);
+  const [exceptionCloseReason, setExceptionCloseReason] = useState('');
   const [reviewedPlan, setReviewedPlan] = useState<BugReportPlanReviewCandidate | null>(null);
   const [planReason, setPlanReason] = useState('');
   const [retryConfirmationOpen, setRetryConfirmationOpen] = useState(false);
@@ -273,23 +275,46 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
               {canTriage &&
                 ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) &&
                 detail.agentProgress.stage !== 'AWAITING_REPORTER_ACCEPTANCE' && (
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Đóng ticket bằng ngoại lệ Admin?"
-                    description="Bắt buộc ghi bằng chứng/lý do ở ô Ghi chú xử lý. mOS không tạo trạng thái sửa giả."
-                    okText="Override & đóng"
-                    cancelText="Kiểm tra lại"
-                    onConfirm={() => void confirmResolvedAndClose()}
+                  <Button
+                    loading={saving}
+                    icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                    onClick={() => {
+                      setExceptionCloseReason('');
+                      setExceptionCloseOpen(true);
+                    }}
                   >
-                    <Button loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                      Đóng ngoại lệ
-                    </Button>
-                  </Popconfirm>
+                    Đóng ngoại lệ
+                  </Button>
                 )}
             </Space>
           ) : undefined
         }
       >
+        <AdaptiveModal
+          title="Đóng ticket bằng ngoại lệ Admin?"
+          open={exceptionCloseOpen}
+          onCancel={() => !saving && setExceptionCloseOpen(false)}
+          okText="Xác nhận đóng ngoại lệ"
+          cancelText="Kiểm tra lại"
+          confirmLoading={saving}
+          okButtonProps={{ disabled: exceptionCloseReason.trim().length < 10 || saving }}
+          onOk={async () => {
+            if (await confirmResolvedAndClose(exceptionCloseReason)) setExceptionCloseOpen(false);
+          }}
+        >
+          <Paragraph>
+            Ghi rõ bằng chứng hoặc lý do đóng ngoại lệ. Thao tác này chỉ dành cho Danny và vẫn được máy chủ kiểm tra.
+          </Paragraph>
+          <Input.TextArea
+            aria-label="Lý do đóng ngoại lệ"
+            value={exceptionCloseReason}
+            onChange={(event) => setExceptionCloseReason(event.target.value)}
+            maxLength={2000}
+            showCount
+            rows={5}
+            placeholder="Nêu bằng chứng release/kiểm tra và lý do đóng (ít nhất 10 ký tự)."
+          />
+        </AdaptiveModal>
         <AdaptiveModal
           title="Yêu cầu sửa lại plan"
           open={Boolean(reviewedPlan)}

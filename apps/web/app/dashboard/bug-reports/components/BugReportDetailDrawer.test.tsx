@@ -100,6 +100,31 @@ describe('BugReportDetailDrawer behavior', () => {
     await screen.findByText(detail.description);
     expect(screen.queryByRole('button', { name: 'Yêu cầu sửa lại plan' })).not.toBeInTheDocument();
   });
+
+  it('requires an in-context reason before confirming an administrative close exception', async () => {
+    const detail = makeDetail({ status: 'APPROVED' });
+    const props = propsFor(detail);
+    render(<BugReportDetailDrawer {...props} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Đóng ngoại lệ' }));
+    const reason = screen.getByRole('textbox', { name: 'Lý do đóng ngoại lệ' });
+    const close = screen.getByRole('button', { name: 'Xác nhận đóng ngoại lệ' });
+    expect(close).toBeDisabled();
+    expect(props.confirmClose).not.toHaveBeenCalled();
+
+    fireEvent.change(reason, {
+      target: { value: 'Đã kiểm tra release và nghiệm thu giao diện.' },
+    });
+    expect(close).toBeEnabled();
+    fireEvent.click(close);
+
+    await waitFor(() =>
+      expect(props.confirmClose).toHaveBeenCalledExactlyOnceWith(detail.id, {
+        businessContext: detail.businessContext,
+        note: 'Đã kiểm tra release và nghiệm thu giao diện.',
+      })
+    );
+  });
   it('requires a reason for request changes and never approves code, commit or closes', async () => {
     const candidate = {
       jobId: 'ae32a70f-8490-4247-aa4f-2f0e45bcdc40',

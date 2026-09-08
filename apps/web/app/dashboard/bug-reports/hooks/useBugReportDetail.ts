@@ -130,30 +130,36 @@ export function useBugReportDetail({
     [businessContext, detail, duplicateKey, hydrateForm, messageApi, note, priority, status, triage]
   );
 
-  const confirmResolvedAndClose = useCallback(async () => {
-    if (!detail) return;
-    if (note.trim().length < 10) {
-      messageApi.error('Ghi ít nhất 10 ký tự về bằng chứng hoặc lý do đóng ngoại lệ.');
-      return;
-    }
-    setSaving(true);
-    try {
-      const updated = await confirmClose(detail.id, {
-        businessContext,
-        note: note.trim(),
-      });
-      hydrateForm(updated);
-      messageApi.success('Đã xác nhận sửa đúng và đóng ticket.');
-    } catch (error) {
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể đóng ticket.'));
-    } finally {
-      setSaving(false);
-    }
-  }, [businessContext, confirmClose, detail, hydrateForm, messageApi, note]);
+  const confirmResolvedAndClose = useCallback(
+    async (closeNote = note) => {
+      if (!detail) return;
+      const trimmedCloseNote = closeNote.trim();
+      if (trimmedCloseNote.length < 10) {
+        messageApi.error('Ghi ít nhất 10 ký tự về bằng chứng hoặc lý do đóng ngoại lệ.');
+        return false;
+      }
+      setSaving(true);
+      try {
+        const updated = await confirmClose(detail.id, {
+          businessContext,
+          note: trimmedCloseNote,
+        });
+        hydrateForm(updated);
+        messageApi.success('Đã xác nhận sửa đúng và đóng ticket.');
+        return true;
+      } catch (error) {
+        const responseMessage =
+          error && typeof error === 'object' && 'response' in error
+            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+            : null;
+        messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể đóng ticket.'));
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [businessContext, confirmClose, detail, hydrateForm, messageApi, note]
+  );
 
   const approveCodeExecution = useCallback(async () => {
     if (!detail || approvalPending.current || reviewPending.current || approvalReceived) return;
