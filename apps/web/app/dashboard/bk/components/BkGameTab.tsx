@@ -7,6 +7,7 @@ import { RefreshCw, Trophy } from 'lucide-react';
 import type { BkBookingLeaderboardEntry } from '@mos-lab/shared';
 import { AppIcon, DataSection, DataTable, MetricGrid, StatePanel } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
+import BkAvatar from './BkAvatar';
 
 type GameMetric = 'calls' | 'pickups' | 'bookings' | 'done';
 
@@ -159,7 +160,17 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 width: 64,
                 render: (value) => <span className="tabular-nums font-semibold">{value}</span>,
               },
-              { title: 'Telesales', dataIndex: 'displayName', key: 'staff' },
+              {
+                title: 'Telesales',
+                dataIndex: 'displayName',
+                key: 'staff',
+                render: (name, record) => (
+                  <div className="flex min-w-0 items-center gap-2">
+                    <BkAvatar name={name || 'Booker'} src={record.avatar} size={32} />
+                    <span className="truncate font-medium">{name || 'Chưa có tên'}</span>
+                  </div>
+                ),
+              },
               {
                 title: METRIC_LABEL[metric],
                 dataIndex: 'gameScore',

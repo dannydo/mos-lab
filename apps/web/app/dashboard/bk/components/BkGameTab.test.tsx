@@ -13,6 +13,14 @@ vi.mock('~/lib/api-client', () => ({
   },
 }));
 
+vi.mock('./BkAvatar', () => ({
+  default: ({ name, src }: { name: string; src?: string | null }) => (
+    <span data-testid="booker-avatar" data-src={src || ''}>
+      {name}
+    </span>
+  ),
+}));
+
 describe('BkGameTab', () => {
   beforeEach(() => {
     apiMocks.getBookingLeaderboard.mockResolvedValue({
@@ -41,5 +49,40 @@ describe('BkGameTab', () => {
         storeId: 'ALL',
       })
     );
+  });
+
+  it('shows each ranked Telesales avatar without changing the displayed ranking data', async () => {
+    apiMocks.getBookingLeaderboard.mockResolvedValue({
+      leaderboard: [
+        {
+          rank: 1,
+          bookerId: 42,
+          displayName: 'Ngọc Điệp',
+          avatar: 'avatars/ngoc-diep.jpg',
+          store: 'ALL',
+          totalCreatedBookings: 8,
+          doneBookings: 4,
+          missedBookings: 0,
+          conversionRate: 50,
+          callCount: 12,
+          pickupCount: 6,
+          pickupRate: 50,
+        },
+      ],
+      summary: {
+        totalBookings: 8,
+        doneBookings: 4,
+        missedBookings: 0,
+        conversionRate: 50,
+        totalCalls: 12,
+        totalPickups: 6,
+      },
+    });
+
+    render(<BkGameTab dateRange={[dayjs('2026-09-05'), dayjs('2026-09-05')]} comparisonMode="day" />);
+
+    expect(await screen.findByTestId('booker-avatar')).toHaveTextContent('Ngọc Điệp');
+    expect(screen.getByTestId('booker-avatar')).toHaveAttribute('data-src', 'avatars/ngoc-diep.jpg');
+    expect(screen.getAllByText('8').length).toBeGreaterThan(0);
   });
 });
