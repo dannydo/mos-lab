@@ -138,6 +138,10 @@ export interface CcPaystubRecord extends HolidayPayBreakdown {
   hourlyWage: number;
   totalWorkHours: number;
   hourlyRate?: number;
+  /** Cash Bonus ledger total before the monthly 1.5x CC Daily Bonus cap. */
+  rawCcXoayBonus?: number;
+  /** Cash Bonus ledger amount deferred because the monthly cap was reached. */
+  ccXoayHoldBonus?: number;
   ccXoayBonus: number;
   checkinCount: number;
   comboProductBonus: number;

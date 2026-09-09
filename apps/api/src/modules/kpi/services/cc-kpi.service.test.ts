@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { calculateWheelBonusCap } from '@mos-lab/shared';
 import {
   buildGreenVisitEligibilitySql,
   buildCashTipCurrencyPredicate,
@@ -83,6 +84,19 @@ test('uses only the Cash ledger and never infers a bonus when the row is missing
   assert.equal(resolveCcCashBonus({ dbCashBonus: -130, cashBonusRows: 1 }), -130);
   assert.equal(resolveCcCashBonus({ dbCashBonus: 130.5, cashBonusRows: 1 }), 130.5);
   assert.equal(resolveCcCashBonus({ dbCashBonus: 130, cashBonusRows: 0 }), 0);
+});
+
+test('caps CC Xoay payroll income at 150% of the same-month Daily Bonus', () => {
+  const result = calculateWheelBonusCap(1_344_979, 3_235_960);
+
+  assert.deepEqual(result, {
+    monthlyDailyBonus: 1_344_979,
+    rawWheelBonus: 3_235_960,
+    maxWheelBonusAllowed: 2_017_469,
+    effectiveWheelBonus: 2_017_469,
+    wheelCapPercent: 241,
+    capStatus: 'HARDCAPPED',
+  });
 });
 
 test('includes only Cash tips in CC income queries', () => {

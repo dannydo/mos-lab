@@ -498,7 +498,13 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
       key: 'ccXoayBonus',
       align: 'right' as const,
       render: (val: number, record: CcPaystubRecord) => (
-        <Tooltip title={`Click để xem Chi Tiết Ca Check-in Xoay (${record.checkinCount} lượt check-in)`}>
+        <Tooltip
+          title={
+            (record.ccXoayHoldBonus || 0) > 0
+              ? `Thưởng gốc ${formatVND(record.rawCcXoayBonus || 0)}đ · nhận ${formatVND(val)}đ · on hold ${formatVND(record.ccXoayHoldBonus || 0)}đ (cap 150% Daily Bonus)`
+              : `Click để xem Chi Tiết Ca Check-in Xoay (${record.checkinCount} lượt check-in)`
+          }
+        >
           <div
             className="text-right cursor-pointer group hover:bg-purple-500/10 p-1.5 rounded-lg transition-colors border border-transparent hover:border-purple-500/30"
             role="button"
@@ -520,7 +526,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
             <div
               className={`text-[11px] tabular-nums flex items-center justify-end gap-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}
             >
-              <span>({record.checkinCount} lượt)</span>
+              <span>{(record.ccXoayHoldBonus || 0) > 0 ? 'Đã cap 150%' : `(${record.checkinCount} lượt)`}</span>
               <EyeOutlined
                 className={`text-[10px] opacity-75 group-hover:opacity-100 transition-opacity ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
               />
@@ -645,9 +651,12 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
         },
         {
           key: 2,
-          item: 'Thưởng CC Xoay (Lượt Khách Check-in)',
+          item: 'Thưởng CC Xoay (Được nhận)',
           amount: selectedRecord.ccXoayBonus,
-          note: `Bóc tách ${selectedRecord.checkinCount} lượt check-in`,
+          note:
+            (selectedRecord.ccXoayHoldBonus || 0) > 0
+              ? `Thưởng gốc ${formatVND(selectedRecord.rawCcXoayBonus || 0)}đ từ ${selectedRecord.checkinCount} lượt; cap 150% Daily Bonus, on hold ${formatVND(selectedRecord.ccXoayHoldBonus || 0)}đ`
+              : `Bóc tách ${selectedRecord.checkinCount} lượt check-in`,
         },
         {
           key: 3,
