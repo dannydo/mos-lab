@@ -145,6 +145,33 @@ export function resolveCcLedgerCashBonus(input: { dbCashBonus: number; cashBonus
 }
 
 /**
+ * Builds the CC Xoay figures used by the income/paystub report from the same
+ * posted Cash Bonus rows as the Xoay detail report. Keep fractional shares
+ * intact until each consultant's final total is rounded once.
+ */
+export function summarizeCcLedgerXoayForPaystub(
+  records: ReadonlyArray<{ consultantId?: number; consultantBonus?: number; cashBonusRows?: number }>
+): Map<number, { count: number; bonus: number }> {
+  const totals = new Map<number, { count: number; bonus: number }>();
+
+  for (const record of records) {
+    const consultantId = Number(record.consultantId || 0);
+    if (consultantId <= 0 || Number(record.cashBonusRows || 0) <= 0) continue;
+
+    const total = totals.get(consultantId) || { count: 0, bonus: 0 };
+    total.count += 1;
+    total.bonus += Number(record.consultantBonus || 0);
+    totals.set(consultantId, total);
+  }
+
+  for (const total of totals.values()) {
+    total.bonus = Math.round(total.bonus);
+  }
+
+  return totals;
+}
+
+/**
  * Cash is the only tip currency that belongs in CC income and payroll views.
  * Other tip currencies remain visible in their own operational reporting but
  * must never be converted into VND income.
@@ -819,13 +846,17 @@ export class CcKpiService {
         const ccOutName = String(row.ccOutName || '');
         const fal = falMap.get(Number(row.order_service_id)) || null;
 
+        const cashBonusRows = Number(sbData.cashBonusRows || 0);
         const consultantBonus = resolveCcLedgerCashBonus({
           dbCashBonus: Number(sbData.dbCashBonus || 0),
-          cashBonusRows: Number(sbData.cashBonusRows || 0),
+          cashBonusRows,
         });
 
         const dateOnly = String(row.dateOnlyStr || '').substring(0, 10);
-        if (dateOnly >= startStr && dateOnly <= endStr) {
+        // A Xoay detail row is an earned-bonus row. Services without a posted
+        // Cash Bonus ledger entry stay available for data-quality audit, but
+        // must not appear as a zero-value payout in the payroll-facing report.
+        if (dateOnly >= startStr && dateOnly <= endStr && cashBonusRows > 0) {
           filteredRecords.push({
             consultantId: targetStaffId,
             orderId: Number(row.order_id),
@@ -840,6 +871,7 @@ export class CcKpiService {
             avatar: targetAvatar || null,
             consultantLevel: calculatedLevel,
             consultantBonus,
+            cashBonusRows,
             pointsAccu: Math.round(newTotal * 10) / 10,
             consultantPoints,
             ccInName,

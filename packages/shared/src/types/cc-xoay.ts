@@ -15,6 +15,8 @@ export interface CcXoayRecord {
   avatar?: string | null;
   consultantLevel: number;
   consultantBonus: number;
+  /** Number of posted Cash Bonus ledger rows backing this service/staff share. */
+  cashBonusRows: number;
   pointsAccu: number;
   consultantPoints: number;
   ccInName: string;
