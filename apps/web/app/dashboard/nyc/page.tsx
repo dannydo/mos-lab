@@ -55,7 +55,7 @@ const TableConfigDrawer = dynamic(
 const SMSModal = dynamic(() => import('../../../components/sms/SMSModal').then((m) => m.SMSModal), { ssr: false });
 import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 import { useTableConfig } from '../../../hooks/useTableConfig';
-import { Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/shared';
+import { canManageCustomerAllocation, Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useNycData, TAB_KEYS } from './hooks/useNycData';
 import { getNycColumns } from './components/NycColumns';
@@ -450,7 +450,7 @@ export default function NycCampaignPage() {
 
             {/* Booker Filter & Action Buttons */}
             <Space wrap size="small">
-              {currentUser?.role === 'admin' && (
+              {canManageCustomerAllocation(currentUser?.role) && (
                 <Select
                   showSearch
                   filterOption={vietnameseSearchFilter}

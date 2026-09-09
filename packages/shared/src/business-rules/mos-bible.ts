@@ -336,6 +336,34 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     sources: [{ label: 'Chu kỳ dặm và LoCa', reference: 'AGENTS.md · Rules #16, #28, #36' }],
   },
   {
+    id: 'CUSTOMER-002',
+    book: 'CUSTOMER',
+    title: 'Chủ khách hiện tại quyết định quyền và nhãn phân bổ',
+    summary:
+      'Quyền xem khách và trạng thái “Chưa phân bổ” chỉ dùng chủ hiện tại trong crm_customer_assignments, không suy từ lịch sử hay ledger.',
+    commandments: [
+      'Admin và Quản lý đang hoạt động được xem danh sách và chi tiết khách trong phạm vi vận hành của họ.',
+      'Telesales/Booker chỉ được xem hoặc thao tác khách có crm_customer_assignments hiện tại trỏ đúng CRM staff ID của họ.',
+      'Khách đã trả pool, bị thu hồi, chuyển sang người khác hoặc chỉ còn batch/history/ledger cũ không cấp quyền truy cập.',
+      'Bộ lọc “Chưa phân bổ” loại trừ mọi khách có chủ hiện tại; batch đang chờ xác nhận có thể hiện nhãn chờ nhưng không được thay thế chủ hiện tại.',
+      'Role của phiên phải được đối chiếu với CRM staff ID đang active; không ghép quyền theo tên hiển thị hoặc email gần giống.',
+    ],
+    rationale:
+      'Lịch sử cần giữ để audit, nhưng dùng nó làm quyền hiện tại sẽ vừa lộ sai khách vừa làm bảng “Chưa phân bổ” nói sai trạng thái.',
+    tags: ['khách hàng', 'phân bổ', 'crm_customer_assignments', 'telesales', 'phân quyền'],
+    routeScopes: ['/dashboard/customers', '/dashboard/nyc', '/dashboard/nyc/campaigns'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-09',
+    sources: [
+      {
+        label: 'Chủ khách và access policy',
+        reference: 'apps/api/src/modules/customers/services/customer-access.service.ts',
+      },
+      { label: 'API danh sách khách', reference: 'apps/api/src/modules/customers/routes.ts' },
+    ],
+  },
+  {
     id: 'PEOPLE-001',
     book: 'PEOPLE',
     title: 'Ngày OFF cố định phải xem từ lịch gốc',

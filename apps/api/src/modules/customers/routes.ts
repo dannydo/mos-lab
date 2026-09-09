@@ -58,29 +58,16 @@ const buildCompletedServiceUsageJoin = (serviceIds: number[]): string => {
 };
 
 /**
- * Keeps customer-list and customer-stats access scopes identical. Administrators
- * and super administrators retain the selected scope (including the default
- * all-customer scope); telesales remains restricted to their own assignments.
+ * Keeps customer-list and customer-stats access scopes identical. Customer
+ * managers retain the selected scope (including the default all-customer
+ * scope); telesales remains restricted to their own durable assignments.
  */
-const resolveEffectiveAssignedStaffId = (
+export const resolveEffectiveAssignedStaffId = (
   user: { id: number; role?: string | null },
   bucket: BucketType | 'ALL' | 'NEW_LOCA' | 'NOT_COMBO_LIVE' | undefined,
   assignedStaffId: string | undefined
 ): string | undefined => {
-  if (CustomerAccessService.isTelesales(user)) return 'me';
-
-  if (
-    !isAdminOrSuperAdminRole(user.role) &&
-    bucket !== 'NEW_LOCA' &&
-    bucket !== 'COMBO_LIVE' &&
-    assignedStaffId !== 'ALL' &&
-    assignedStaffId !== 'all' &&
-    assignedStaffId !== 'unassigned'
-  ) {
-    return 'me';
-  }
-
-  return assignedStaffId;
+  return CustomerAccessService.resolveListAssignedStaffId(user, assignedStaffId, bucket);
 };
 
 export async function customerRoutes(fastify: FastifyInstance) {
@@ -100,7 +87,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     customerId: number
   ): Promise<boolean> => {
     const user = request.user as { id: number; role?: string };
-    const isAllowed = await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, customerId);
+    const isAllowed = await CustomerAccessService.canAccessCustomer(fastify, user, customerId);
     if (isAllowed) return true;
 
     reply.status(403).send({
@@ -219,9 +206,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       fastify,
       adminUser
     );
-    const effectiveAssignedStaffId = hasGlobalRescheduleAccess
-      ? assignedStaffId
-      : resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
+    const effectiveAssignedStaffId = CustomerAccessService.isTelesales(adminUser)
+      ? 'me'
+      : hasGlobalRescheduleAccess
+        ? assignedStaffId
+        : resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
 
     try {
       const sortParam = (sortField || sort || 'id_desc') as string;
@@ -1117,7 +1106,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
           ? fastify.prisma.crm.crmAllocationBatchItem.findMany({
               where: {
                 customerId: { in: customerIds },
-                status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
+                status: 'PENDING_ACCEPT',
+                batch: { status: 'PENDING_ACCEPT' },
               },
               select: {
                 customerId: true,
@@ -1125,6 +1115,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 createdAt: true,
                 batch: {
                   select: {
+                    status: true,
                     booker: { select: { id: true, displayName: true, username: true } },
                   },
                 },
@@ -1266,11 +1257,10 @@ export async function customerRoutes(fastify: FastifyInstance) {
       });
 
       activeBatchItems.forEach((bi) => {
-        if (bi.batch && bi.batch.booker) {
-          const statusSuffix = bi.status === 'PENDING_ACCEPT' ? ' (Chờ xác nhận)' : '';
+        if (CustomerAccessService.isPendingAllocationOwner(bi) && bi.batch?.booker) {
           assignmentMap.set(bi.customerId, {
             id: bi.batch.booker.id,
-            displayName: `${bi.batch.booker.displayName}${statusSuffix}`,
+            displayName: `${bi.batch.booker.displayName} (Chờ xác nhận)`,
             username: bi.batch.booker.username,
             assignedAt: bi.createdAt ? bi.createdAt.toISOString() : null,
             status: bi.status,
@@ -1585,7 +1575,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
                 }
               : null,
           assignedStaff: assigned,
-          assignedAt: assigned?.assignedAt || lastAllocation?.assignedAt || null,
+          // `assignedAt` is a current-owner field. Historical allocation evidence stays
+          // isolated in `lastAllocation`, so an unassigned customer never looks owned.
+          assignedAt: assigned?.assignedAt || null,
           lastAllocation,
           avatar: row.avatar,
           lastBookingState: booking ? booking.orderState : null,
@@ -1717,9 +1709,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
       return cachedStats;
     }
 
-    const effectiveAssignedStaffId = hasGlobalRescheduleAccess
-      ? assignedStaffId
-      : resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
+    const effectiveAssignedStaffId = CustomerAccessService.isTelesales(adminUser)
+      ? 'me'
+      : hasGlobalRescheduleAccess
+        ? assignedStaffId
+        : resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
 
     try {
       // Determine what joins and select fields we need in the inner query to optimize performance
