@@ -78,11 +78,13 @@ test('preserves a 50/50 CC split without inflating counts', () => {
 test('uses only the Cash ledger and never infers a bonus when the row is missing', () => {
   assert.equal(resolveCcCashBonus({ dbCashBonus: 0, cashBonusRows: 1 }), 0);
   assert.equal(resolveCcCashBonus({ dbCashBonus: -130, cashBonusRows: 1 }), -130);
+  assert.equal(resolveCcCashBonus({ dbCashBonus: 130.5, cashBonusRows: 1 }), 130.5);
   assert.equal(resolveCcCashBonus({ dbCashBonus: 130, cashBonusRows: 0 }), 0);
 });
 
 test('keeps CC Xoay on the posted Cash ledger and never recreates a missing Cash row', () => {
   assert.equal(resolveCcLedgerCashBonus({ dbCashBonus: 1_000, cashBonusRows: 1 }), 1_000);
+  assert.equal(resolveCcLedgerCashBonus({ dbCashBonus: 1_000.5, cashBonusRows: 1 }), 1_000.5);
   assert.equal(resolveCcLedgerCashBonus({ dbCashBonus: 0, cashBonusRows: 1 }), 0);
   assert.equal(resolveCcLedgerCashBonus({ dbCashBonus: 0, cashBonusRows: 0 }), 0);
 });
@@ -149,4 +151,33 @@ test('builds leaderboard totals from the same CC Xoay detail records', () => {
       monthlyWheelBonus: 150,
     }
   );
+});
+
+test('rounds CC Xoay once after summing posted half-đồng ledger rows', () => {
+  const firstHalf = {
+    consultantId: 10,
+    consultantName: 'CC A',
+    avatar: null,
+    orderId: 100,
+    serviceId: 1001,
+    checkin: '2026-08-10 10:00:00',
+    store: 'DT',
+    consultantBonus: 0.5,
+    pointsAccu: 80,
+  };
+  const secondHalf = {
+    ...firstHalf,
+    serviceId: 1002,
+    checkin: '2026-08-10 11:00:00',
+  };
+
+  const leaderboard = buildCcLeaderboard({
+    selectedRecords: [firstHalf, secondHalf],
+    monthlyRecords: [firstHalf, secondHalf],
+    selectedDailySales: [],
+    monthlyDailySales: [],
+  });
+
+  assert.equal(leaderboard[0].totalConsultantBonus, 1);
+  assert.equal(leaderboard[0].monthlyWheelBonus, 1);
 });

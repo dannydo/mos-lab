@@ -133,7 +133,7 @@ export function resolveCcCashBonus(input: { dbCashBonus: number; cashBonusRows: 
   // Payroll/reporting must never infer a cash amount from points or level.
   // A missing Cash ledger row is a data-quality exception, not earned money.
   if (input.cashBonusRows <= 0) return 0;
-  return Math.round(input.dbCashBonus || 0);
+  return Number(input.dbCashBonus || 0);
 }
 
 /**
@@ -141,7 +141,7 @@ export function resolveCcCashBonus(input: { dbCashBonus: number; cashBonusRows: 
  * rather than recreating a bonus from the current Level × 65đ formula.
  */
 export function resolveCcLedgerCashBonus(input: { dbCashBonus: number; cashBonusRows: number }): number {
-  return input.cashBonusRows > 0 ? Math.round(input.dbCashBonus || 0) : 0;
+  return input.cashBonusRows > 0 ? Number(input.dbCashBonus || 0) : 0;
 }
 
 const CC_DAILY_BONUS_TIER_RATES = [
@@ -202,7 +202,7 @@ export function buildCcLeaderboard({
     if (record.store) current.stores.add(String(record.store));
     if (Number(record.orderId) > 0) current.orderIds.add(Number(record.orderId));
     if (Number(record.serviceId) > 0) current.serviceIds.add(Number(record.serviceId));
-    current.totalConsultantBonus += Math.round(Number(record.consultantBonus) || 0);
+    current.totalConsultantBonus += Number(record.consultantBonus) || 0;
     selectedByStaff.set(consultantId, current);
   }
 
@@ -216,7 +216,7 @@ export function buildCcLeaderboard({
       latestPoints: 0,
       latestKey: '',
     };
-    current.totalWheelBonus += Math.round(Number(record.consultantBonus) || 0);
+    current.totalWheelBonus += Number(record.consultantBonus) || 0;
 
     const chronologicalKey = `${String(record.checkin || '')}_${String(record.serviceId || '').padStart(12, '0')}`;
     if (chronologicalKey >= current.latestKey) {
@@ -877,7 +877,9 @@ export class CcKpiService {
       total,
       summary: {
         totalCheckins: total,
-        totalBonus,
+        // Cash Bonus rows can include half-đồng shares. Round the total once,
+        // never individual rows, so reporting matches the posted ledger.
+        totalBonus: Math.round(totalBonus),
         totalPoints,
         comparison:
           comparisonResult?.summary && comparisonWindow && comparisonMode
