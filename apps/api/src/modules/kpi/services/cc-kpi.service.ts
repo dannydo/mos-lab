@@ -144,6 +144,20 @@ export function resolveCcLedgerCashBonus(input: { dbCashBonus: number; cashBonus
   return input.cashBonusRows > 0 ? Number(input.dbCashBonus || 0) : 0;
 }
 
+/**
+ * Cash is the only tip currency that belongs in CC income and payroll views.
+ * Other tip currencies remain visible in their own operational reporting but
+ * must never be converted into VND income.
+ */
+export const CASH_TIP_CURRENCY_ID = 2;
+
+export function buildCashTipCurrencyPredicate(tableAlias = 'st'): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(tableAlias)) {
+    throw new Error('Invalid SQL table alias');
+  }
+  return `${tableAlias}.tip_currency_id = ${CASH_TIP_CURRENCY_ID}`;
+}
+
 const CC_DAILY_BONUS_TIER_RATES = [
   { minimumSales: 20_000_000, ratePercent: 2.5 },
   { minimumSales: 15_000_000, ratePercent: 2.0 },
@@ -1432,6 +1446,7 @@ export class CcKpiService {
       WHERE o.order_state = 'Completed'
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr}'
         AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
+        AND ${buildCashTipCurrencyPredicate()}
         ${activeCcFilter}
         ${storeFilterClause}
       GROUP BY st.user_id, up.full_name, up.avatar
