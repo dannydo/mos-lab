@@ -141,6 +141,44 @@ export function resolveCcCashBonus(input: {
   return input.isSplit ? Math.round(fullBonus / 2) : fullBonus;
 }
 
+/**
+ * CC Xoay is a ledger report. If a service has no Cash row, report zero
+ * rather than recreating a bonus from the current Level × 65đ formula.
+ */
+export function resolveCcLedgerCashBonus(input: { dbCashBonus: number; cashBonusRows: number }): number {
+  return input.cashBonusRows > 0 ? Math.round(input.dbCashBonus || 0) : 0;
+}
+
+/** Mirrors the Combo-Sold value read by the Wings iOS CC report. */
+export function readPayrollComboDailyBonus(trackingKey: string | null | undefined): number {
+  if (!trackingKey) return 0;
+  try {
+    const parsed = JSON.parse(trackingKey) as { level?: unknown };
+    if (!Array.isArray(parsed.level)) return 0;
+
+    let amount = 0;
+    for (const entry of parsed.level) {
+      if (!entry || typeof entry !== 'object') continue;
+      const combo = (entry as Record<string, unknown>).BonusSalesDayCombo;
+      if (!combo || typeof combo !== 'object') continue;
+      const reward = Number((combo as Record<string, unknown>).total_reward_amount);
+      if (Number.isFinite(reward)) amount = Math.round(reward);
+    }
+    return amount;
+  } catch {
+    return 0;
+  }
+}
+
+export function getMonthEndDate(date: string): string {
+  const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(date);
+  if (!match) throw new Error('Expected YYYY-MM-DD date.');
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${match[1]}-${match[2]}-${String(day).padStart(2, '0')}`;
+}
+
 const CC_DAILY_BONUS_TIER_RATES = [
   { minimumSales: 20_000_000, ratePercent: 2.5 },
   { minimumSales: 15_000_000, ratePercent: 2.0 },
@@ -161,7 +199,7 @@ interface BuildCcLeaderboardInput {
   selectedRecords: SafeAny[];
   monthlyRecords: SafeAny[];
   selectedDailySales: SafeAny[];
-  monthlyDailySales: SafeAny[];
+  monthlyPayrollDailyBonusByStaff: Map<number, number>;
 }
 
 interface CcLeaderboardAccumulator {
@@ -178,7 +216,7 @@ export function buildCcLeaderboard({
   selectedRecords,
   monthlyRecords,
   selectedDailySales,
-  monthlyDailySales,
+  monthlyPayrollDailyBonusByStaff,
 }: BuildCcLeaderboardInput): SafeAny[] {
   const selectedByStaff = new Map<number, CcLeaderboardAccumulator>();
 
@@ -233,23 +271,13 @@ export function buildCcLeaderboard({
     selectedSalesByStaff.set(consultantId, current);
   }
 
-  const monthlyDailyBonusByStaff = new Map<number, number>();
-  for (const row of monthlyDailySales) {
-    const consultantId = Number(row.user_id);
-    if (!consultantId) continue;
-    monthlyDailyBonusByStaff.set(
-      consultantId,
-      (monthlyDailyBonusByStaff.get(consultantId) || 0) + Math.round(Number(row.daily_bonus) || 0)
-    );
-  }
-
   const leaderboard = Array.from(selectedByStaff.values()).map((selected) => {
     const monthly = monthlyByStaff.get(selected.consultantId) || {
       totalWheelBonus: selected.totalConsultantBonus,
       latestPoints: 0,
     };
     const selectedSales = selectedSalesByStaff.get(selected.consultantId) || { comboRevenue: 0, comboCount: 0 };
-    const monthlyDailyBonus = monthlyDailyBonusByStaff.get(selected.consultantId) || 0;
+    const monthlyDailyBonus = monthlyPayrollDailyBonusByStaff.get(selected.consultantId) || 0;
     const capResult = calculateWheelBonusCap(monthlyDailyBonus, monthly.totalWheelBonus);
     const totalPointsAccu = monthly.latestPoints;
     const totalCheckins = selected.orderIds.size;
@@ -800,14 +828,11 @@ export class CcKpiService {
 
         const ccInName = String(row.ccInName || '');
         const ccOutName = String(row.ccOutName || '');
-        const isSplit = checkInId > 0 && checkOutId > 0 && checkInId !== checkOutId;
         const fal = falMap.get(Number(row.order_service_id)) || null;
 
-        const consultantBonus = resolveCcCashBonus({
+        const consultantBonus = resolveCcLedgerCashBonus({
           dbCashBonus: Number(sbData.dbCashBonus || 0),
           cashBonusRows: Number(sbData.cashBonusRows || 0),
-          level: calculatedLevel,
-          isSplit,
         });
 
         const dateOnly = String(row.dateOnlyStr || '').substring(0, 10);
@@ -897,6 +922,38 @@ export class CcKpiService {
   private static leaderboardCache = new Map<string, { data: SafeAny[]; timestamp: number }>();
 
   /**
+   * Reads the immutable Combo-Sold payroll snapshot used by the Wings iOS CC
+   * report. This is intentionally read-only and returns no calculated fallback
+   * when a payroll snapshot is absent.
+   */
+  private static async getPayrollDailyBonusByStaff(
+    fastify: FastifyInstance,
+    monthEnd: string,
+    staffIds: number[]
+  ): Promise<Map<number, number>> {
+    const normalizedStaffIds = staffIds.map(Number).filter(Number.isFinite);
+    if (normalizedStaffIds.length === 0) return new Map();
+
+    const rows = await fastify.prisma.legacy.$queryRawUnsafe<
+      Array<{ user_id: number | bigint; tracking_key: string | null }>
+    >(`
+      SELECT sp.user_id, sp.tracking_key
+      FROM staff_payroll sp
+      WHERE sp.date = '${monthEnd}'
+        AND sp.user_id IN (${normalizedStaffIds.join(',')})
+      ORDER BY sp.user_id ASC, sp.id DESC
+    `);
+
+    const amounts = new Map<number, number>();
+    for (const row of rows) {
+      const userId = Number(row.user_id);
+      if (!userId || amounts.has(userId)) continue;
+      amounts.set(userId, readPayrollComboDailyBonus(row.tracking_key));
+    }
+    return amounts;
+  }
+
+  /**
    * 2. GET Realtime CC Leaderboard rankings
    */
   public static async getCcLeaderboard(fastify: FastifyInstance, filters: CcKpiFilters) {
@@ -933,26 +990,23 @@ export class CcKpiService {
       dateTo: endDateStr,
       storeId: normalizedStoreId,
     });
-    const monthlyDailySalesPromise =
-      startDateStr === monthStart
-        ? selectedDailySalesPromise
-        : this.getCcDailySalesBonus(fastify, {
-            dateFrom: monthStart,
-            dateTo: endDateStr,
-            storeId: normalizedStoreId,
-          });
+    const monthlyPayrollDailyBonusPromise = this.getPayrollDailyBonusByStaff(
+      fastify,
+      getMonthEndDate(endDateStr),
+      activeCcIds
+    );
 
-    const [selectedReport, monthlyReport, selectedDailySales, monthlyDailySales] = await Promise.all([
+    const [selectedReport, monthlyReport, selectedDailySales, monthlyPayrollDailyBonusByStaff] = await Promise.all([
       selectedReportPromise,
       monthlyReportPromise,
       selectedDailySalesPromise,
-      monthlyDailySalesPromise,
+      monthlyPayrollDailyBonusPromise,
     ]);
     const leaderboard = buildCcLeaderboard({
       selectedRecords: selectedReport.data,
       monthlyRecords: monthlyReport.data,
       selectedDailySales: selectedDailySales.data,
-      monthlyDailySales: monthlyDailySales.data,
+      monthlyPayrollDailyBonusByStaff,
     });
 
     this.leaderboardCache.set(cacheKey, { data: leaderboard, timestamp: Date.now() });
