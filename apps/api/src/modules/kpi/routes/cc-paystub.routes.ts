@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { CcPaystubRecord, CcPaystubResponse, SafeAny, calculateWheelBonusCap } from '@mos-lab/shared';
-import { CcKpiService } from '../services/cc-kpi.service.js';
+import { buildCashTipCurrencyPredicate, CcKpiService } from '../services/cc-kpi.service.js';
 import { TeamService } from '../../teams/team.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 
@@ -154,6 +154,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             )
           )
           AND st.user_id IN (${validStaffListStr})
+          AND ${buildCashTipCurrencyPredicate()}
         GROUP BY st.user_id
       `;
 

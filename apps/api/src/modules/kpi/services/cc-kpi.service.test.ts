@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildGreenVisitEligibilitySql,
+  buildCashTipCurrencyPredicate,
   buildCcLeaderboard,
+  CASH_TIP_CURRENCY_ID,
   FAL_RULE_VALUES,
   FAL_RULE_VALUES_SQL,
   FAL_TRACKING_KEY_SQL_CASES,
@@ -80,6 +82,13 @@ test('uses only the Cash ledger and never infers a bonus when the row is missing
   assert.equal(resolveCcCashBonus({ dbCashBonus: -130, cashBonusRows: 1 }), -130);
   assert.equal(resolveCcCashBonus({ dbCashBonus: 130.5, cashBonusRows: 1 }), 130.5);
   assert.equal(resolveCcCashBonus({ dbCashBonus: 130, cashBonusRows: 0 }), 0);
+});
+
+test('includes only Cash tips in CC income queries', () => {
+  assert.equal(CASH_TIP_CURRENCY_ID, 2);
+  assert.equal(buildCashTipCurrencyPredicate(), 'st.tip_currency_id = 2');
+  assert.equal(buildCashTipCurrencyPredicate('tip'), 'tip.tip_currency_id = 2');
+  assert.throws(() => buildCashTipCurrencyPredicate('st; DROP TABLE staff_tip'), /Invalid SQL table alias/);
 });
 
 test('keeps CC Xoay on the posted Cash ledger and never recreates a missing Cash row', () => {

@@ -234,7 +234,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     summary: 'Khi CC IN khác CC OUT, điểm và khoản thưởng thuộc ca được chia 50/50 theo đúng nguồn ledger.',
     commandments: [
       'CC Bonus và điểm CC chia 50/50 khi CC IN khác CC OUT.',
-      'CC Tip là 20% tổng tip của đơn Completed; hai CC khác nhau nhận 10% mỗi người.',
+      'CC Tip chỉ tính từ Cash Tip của đơn Completed; hai CC khác nhau nhận 10% mỗi người.',
       'Thưởng thực tế ưu tiên đọc staff_bonus; công thức chỉ là fallback khi ledger hợp lệ bị thiếu.',
       'Tổng trên leaderboard phải khớp từng đồng với tổng chi tiết ca làm.',
     ],
@@ -243,8 +243,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['CC', '50/50', 'tip', 'staff_bonus', 'ledger'],
     routeScopes: ['/dashboard/cc', '/dashboard/kpi'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-09-02',
+    version: '1.1.0',
+    effectiveFrom: '2026-09-10',
     sources: [
       { label: 'CC Gamification', reference: 'AGENTS.md · Rules #6, #7, #12' },
       { label: 'Hằng số thưởng', reference: 'packages/shared/src/constants/system-constants.ts' },
