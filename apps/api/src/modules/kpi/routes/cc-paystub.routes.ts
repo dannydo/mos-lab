@@ -1,7 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { CcPaystubRecord, CcPaystubResponse, SafeAny, calculateWheelBonusCap } from '@mos-lab/shared';
-import { buildCashTipCurrencyPredicate, CcKpiService } from '../services/cc-kpi.service.js';
+import {
+  buildCashTipCurrencyPredicate,
+  CcKpiService,
+  summarizeCcLedgerXoayForPaystub,
+} from '../services/cc-kpi.service.js';
 import { TeamService } from '../../teams/team.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 
@@ -198,20 +202,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       const workDaysMap = new Map<number, number>();
       workDaysRows.forEach((r) => workDaysMap.set(Number(r.staff_id), Number(r.active_days || 0)));
 
-      const xoayMap = new Map<number, { count: number; bonus: number }>();
-      if (xoayReportResult && Array.isArray(xoayReportResult.data)) {
-        xoayReportResult.data.forEach((r: SafeAny) => {
-          const uid = Number(r.consultantId || r.check_in_staff_id || r.check_out_staff_id);
-          if (uid > 0) {
-            if (!xoayMap.has(uid)) {
-              xoayMap.set(uid, { count: 0, bonus: 0 });
-            }
-            const stat = xoayMap.get(uid)!;
-            stat.count += 1;
-            stat.bonus += Math.round(Number(r.consultantBonus || 0));
-          }
-        });
-      }
+      const xoayMap = summarizeCcLedgerXoayForPaystub(xoayReportResult?.data || []);
 
       // Compute Daily Sales Bonus per staff from CcKpiService (Single Source of Truth)
       const staffDailyBonusTotals = new Map<number, { bonus: number; comboQty: number; productQty: number }>();

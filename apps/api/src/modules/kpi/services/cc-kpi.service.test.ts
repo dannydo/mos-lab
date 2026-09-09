@@ -4,6 +4,7 @@ import {
   buildGreenVisitEligibilitySql,
   buildCashTipCurrencyPredicate,
   buildCcLeaderboard,
+  summarizeCcLedgerXoayForPaystub,
   CASH_TIP_CURRENCY_ID,
   FAL_RULE_VALUES,
   FAL_RULE_VALUES_SQL,
@@ -189,4 +190,15 @@ test('rounds CC Xoay once after summing posted half-đồng ledger rows', () => 
 
   assert.equal(leaderboard[0].totalConsultantBonus, 1);
   assert.equal(leaderboard[0].monthlyWheelBonus, 1);
+});
+
+test('keeps the income/paystub Xoay total and count on posted Cash ledger rows', () => {
+  const totals = summarizeCcLedgerXoayForPaystub([
+    { consultantId: 10, consultantBonus: 0.5, cashBonusRows: 1 },
+    { consultantId: 10, consultantBonus: 0.5, cashBonusRows: 1 },
+    { consultantId: 10, consultantBonus: 0, cashBonusRows: 0 },
+    { consultantId: 10, consultantBonus: 36, cashBonusRows: 0 },
+  ]);
+
+  assert.deepEqual(totals.get(10), { count: 2, bonus: 1 });
 });
