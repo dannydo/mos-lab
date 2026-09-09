@@ -110,6 +110,9 @@ describe('UI primitives', () => {
     ];
 
     expect(requiredItems).toHaveLength(5);
+    expect(requiredItems.find((item) => item.key === 'my-customers')?.path).toBe(
+      '/dashboard/customers?assignedStaffId=me&tab=ALL'
+    );
 
     const { container } = render(
       <>

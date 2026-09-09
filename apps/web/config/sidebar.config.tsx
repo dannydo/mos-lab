@@ -111,7 +111,8 @@ export function getSidebarGroups(
       key: 'my-customers',
       label: 'KH của tôi',
       icon: <AppIcon icon={UserRound} size="sm" />,
-      path: '/dashboard/customers?assignedStaffId=me',
+      // A personal queue must not inherit a prior campaign/bucket tab.
+      path: '/dashboard/customers?assignedStaffId=me&tab=ALL',
     },
     {
       key: 'referrals',

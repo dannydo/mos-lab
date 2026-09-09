@@ -108,7 +108,7 @@ function getQuickActions(role?: string): QuickAction[] {
         key: 'customers',
         title: 'Khách hàng của tôi',
         description: 'Danh sách ưu tiên gọi lại và follow-up trong ngày.',
-        href: '/dashboard/customers?assignedStaffId=me',
+        href: '/dashboard/customers?assignedStaffId=me&tab=ALL',
         icon: <UsergroupAddOutlined />,
       },
       {
