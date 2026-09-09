@@ -256,7 +256,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     title: 'CC có thưởng ngày, không có thưởng doanh số tháng',
     summary: 'Thu nhập CC gồm thưởng ca, thưởng doanh số theo ngày và tip; không tự sinh hoa hồng chốt tháng.',
     commandments: [
-      'Chỉ ghi nhận Thưởng Ca Làm CC Xoay, CC Daily Bonus và CC Tip theo nguồn đã chốt.',
+      'CC Xoay chỉ đọc Cash Bonus đã ghi sổ và liên kết dịch vụ; không tự dựng tiền bằng công thức Level × 65đ khi ledger thiếu dòng.',
+      'Daily Bonus dùng snapshot Combo-Sold trong payroll cùng kỳ để báo cáo cap, không tính lại từ doanh số đơn hàng.',
       'Daily Bonus có bốn danh mục: Combo mới, sản phẩm, thu nợ và nâng cấp Combo.',
       'Không cộng thêm Monthly Sales Bonus hoặc nhân tỷ lệ trên doanh số tháng.',
       'Wheel Bonus mỗi tháng không vượt 1,5 lần tổng CC Daily Bonus cùng tháng.',
@@ -266,9 +267,12 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['CC', 'daily bonus', 'không thưởng tháng', 'wheel cap'],
     routeScopes: ['/dashboard/cc', '/dashboard/kpi'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-09-02',
-    sources: [{ label: 'Chính sách thu nhập CC', reference: 'AGENTS.md · Rules #45, #49, #50' }],
+    version: '1.1.0',
+    effectiveFrom: '2026-09-09',
+    sources: [
+      { label: 'Sổ Cash Bonus và payroll legacy', reference: 'Wings Report::getClientConsultantReport' },
+      { label: 'Chính sách thu nhập CC', reference: 'AGENTS.md · Rules #45, #49, #50' },
+    ],
   },
   {
     id: 'FAL-001',
