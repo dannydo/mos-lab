@@ -257,7 +257,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     summary: 'Thu nhập CC gồm thưởng ca, thưởng doanh số theo ngày và tip; không tự sinh hoa hồng chốt tháng.',
     commandments: [
       'CC Xoay chỉ đọc Cash Bonus đã ghi sổ và liên kết dịch vụ; không tự dựng tiền bằng công thức Level × 65đ khi ledger thiếu dòng.',
-      'Daily Bonus dùng snapshot Combo-Sold trong payroll cùng kỳ để báo cáo cap, không tính lại từ doanh số đơn hàng.',
+      'Daily Bonus dùng tổng thưởng ngày đã tính theo quy tắc CC trong cùng kỳ để báo cáo cap; không dùng tổng Combo-Sold payroll như một khoản thay thế.',
       'Daily Bonus có bốn danh mục: Combo mới, sản phẩm, thu nợ và nâng cấp Combo.',
       'Không cộng thêm Monthly Sales Bonus hoặc nhân tỷ lệ trên doanh số tháng.',
       'Wheel Bonus mỗi tháng không vượt 1,5 lần tổng CC Daily Bonus cùng tháng.',

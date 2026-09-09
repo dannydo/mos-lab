@@ -7,8 +7,6 @@ import {
   FAL_RULE_VALUES_SQL,
   FAL_TRACKING_KEY_SQL_CASES,
   filterActiveCcTargets,
-  getMonthEndDate,
-  readPayrollComboDailyBonus,
   resolveCcDailyBonusTierRate,
   resolveCcCashBonus,
   resolveCcLedgerCashBonus,
@@ -89,23 +87,6 @@ test('keeps CC Xoay on the posted Cash ledger and never recreates a missing Cash
   assert.equal(resolveCcLedgerCashBonus({ dbCashBonus: 0, cashBonusRows: 0 }), 0);
 });
 
-test('reads the same Combo-Sold payroll snapshot and month-end date as the iOS CC report', () => {
-  assert.equal(getMonthEndDate('2026-08-10'), '2026-08-31');
-  assert.equal(getMonthEndDate('2026-02-10'), '2026-02-28');
-  assert.equal(
-    readPayrollComboDailyBonus(
-      JSON.stringify({
-        level: [
-          { BonusSalesDayCombo: { total_reward_amount: 123_456 } },
-          { BonusSalesDayCombo: { total_reward_amount: 1_408_185 } },
-        ],
-      })
-    ),
-    1_408_185
-  );
-  assert.equal(readPayrollComboDailyBonus('{not-json}'), 0);
-});
-
 test('uses the exact daily CC bonus tier thresholds after CC sales allocation', () => {
   assert.equal(resolveCcDailyBonusTierRate(4_999_999), 0.5);
   assert.equal(resolveCcDailyBonusTierRate(5_000_000), 1.0);
@@ -138,7 +119,7 @@ test('builds leaderboard totals from the same CC Xoay detail records', () => {
     selectedRecords: [newer, older],
     monthlyRecords: [newer, older],
     selectedDailySales: [{ user_id: 10, combo_sales: 1_000_000, combo_count: 1 }],
-    monthlyPayrollDailyBonusByStaff: new Map([[10, 75_000]]),
+    monthlyDailySales: [{ user_id: 10, daily_bonus: 75_000 }],
   });
 
   assert.equal(leaderboard.length, 1);
