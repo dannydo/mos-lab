@@ -111,6 +111,9 @@ export const useCustomerFilters = (
         setAssignedStaffId(scopeParam);
       } else if (currentUser?.role === 'telesales') {
         setAssignedStaffId('me');
+        // A telesales queue must surface newly accepted allocations first.
+        // Do not override an explicit operational sort selected after login.
+        setSortField((currentSort) => (currentSort === 'id_desc' ? 'assignedAt_desc' : currentSort));
       }
     }
   }, [currentUser?.role, scopeParam]);

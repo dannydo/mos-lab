@@ -169,6 +169,7 @@ function CustomersPageContent() {
 
   const isManagerOrAdmin = canManageCustomerAllocation(data.currentUser?.role);
   const sortOptions = [
+    { value: 'assignedAt_desc', label: 'Phân bổ mới nhất' },
     { value: 'id_desc', label: 'Mới nhất' },
     { value: 'name_asc', label: 'Tên A → Z' },
     { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé lâu nhất' },

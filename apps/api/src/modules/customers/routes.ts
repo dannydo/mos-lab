@@ -33,6 +33,7 @@ import {
   resolveBookingUpdateFields,
 } from './services/booking-update.service.js';
 import { BookingReschedulePermissionService } from './services/booking-reschedule-permission.service.js';
+import { isAssignmentTimeSort, resolveCustomerListSort } from './customer-list-sort.js';
 
 const parseServiceFilterIds = (value: unknown): number[] => {
   if (typeof value !== 'string') return [];
@@ -213,7 +214,8 @@ export async function customerRoutes(fastify: FastifyInstance) {
         : resolveEffectiveAssignedStaffId(adminUser, bucket, assignedStaffId);
 
     try {
-      const sortParam = (sortField || sort || 'id_desc') as string;
+      const sortParam = resolveCustomerListSort(sortField || sort, effectiveAssignedStaffId === 'me');
+      const needsAssignmentTimeSort = isAssignmentTimeSort(sortParam);
 
       // Determine what joins and select fields we need in the inner query to optimize performance
       const needServiceBalance = bucket && bucket !== 'ALL';
@@ -565,6 +567,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
         allowedUserIds !== null && allowedUserIds.length > 0 ? `WHERE o.user_id IN (${allowedUserIds.join(',')})` : '';
 
       let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+      if (needsAssignmentTimeSort) {
+        // This is the same current-owner record used to scope a telesales queue.
+        // It deliberately does not read allocation history, so recalled or
+        // transferred customers cannot float back into the queue.
+        innerJoins +=
+          ' LEFT JOIN mos_lab.crm_customer_assignments assignment_sort ON assignment_sort.legacy_user_id = u.id';
+      }
       if (needServiceBalance) {
         innerJoins += ` LEFT JOIN (
           SELECT 
@@ -928,7 +937,13 @@ export async function customerRoutes(fastify: FastifyInstance) {
       // Sorting
       let innerOrderBy = 'ORDER BY u.id DESC';
       let outerOrderBy = 'ORDER BY id DESC';
-      if (
+      if (sortParam === 'assignedAt_desc') {
+        innerOrderBy = 'ORDER BY assignment_sort.assigned_at DESC, u.id DESC';
+        outerOrderBy = 'ORDER BY assignmentSortAt DESC, id DESC';
+      } else if (sortParam === 'assignedAt_asc') {
+        innerOrderBy = 'ORDER BY assignment_sort.assigned_at ASC, u.id ASC';
+        outerOrderBy = 'ORDER BY assignmentSortAt ASC, id ASC';
+      } else if (
         sortParam === 'purchaseDate_desc' ||
         sortParam === 'comboPurchaseDate_desc' ||
         (bucket === 'NEW_LOCA' &&
@@ -1005,6 +1020,12 @@ export async function customerRoutes(fastify: FastifyInstance) {
           GROUP BY user_id
         ) as order_counts ON u.id = order_counts.user_id`
         : '';
+      const outerAssignmentSortSelect = needsAssignmentTimeSort
+        ? 'assignment_sort.assigned_at as assignmentSortAt,'
+        : 'NULL as assignmentSortAt,';
+      const outerAssignmentSortJoin = needsAssignmentTimeSort
+        ? 'LEFT JOIN mos_lab.crm_customer_assignments assignment_sort ON assignment_sort.legacy_user_id = u.id'
+        : '';
 
       // 4. Main Query (deferred pagination; page-scoped metrics are hydrated below)
       const querySql = `
@@ -1025,6 +1046,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
           TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) as age,
           up.last_order_booking as lastVisit,
           DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
+          ${outerAssignmentSortSelect}
           ${outerOrderCountsSelect}
           0 as totalPromotionsUsed,
           0 as totalReferrals,
@@ -1038,6 +1060,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ) as p
         JOIN user u ON u.id = p.id
         LEFT JOIN user_profile up ON u.id = up.user_id
+        ${outerAssignmentSortJoin}
         ${outerOrderCountsJoin}
         ${outerOrderBy}
       `;
