@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { isAdminOrSuperAdminRole, isSuperAdminRole } from '@mos-lab/shared';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 import { StaffOffDayService } from './services/staff-off-day.service.js';
+import { AllocationLedgerService } from '../allocation/allocation-ledger.service.js';
 
 interface CreateStaffInput {
   username?: string;
@@ -865,11 +866,24 @@ export async function staffRoutes(fastify: FastifyInstance) {
       // Execute merge inside Prisma transaction
       await fastify.prisma.crm.$transaction(async (tx) => {
         for (const srcId of filteredSources) {
-          // 1. Reassign Customer Assignments
-          await tx.crmCustomerAssignment.updateMany({
-            where: { staffId: srcId },
-            data: { staffId: targetStaffId },
-          });
+          const sourceStaff = sourceStaffs.find((staff) => staff.id === srcId);
+          const assignments = await tx.crmCustomerAssignment.findMany({ where: { staffId: srcId } });
+          for (const assignment of assignments) {
+            await AllocationLedgerService.setOwner(tx, {
+              customerId: assignment.legacyUserId,
+              eventType: 'STAFF_MERGED',
+              previousStaffId: srcId,
+              nextStaffId: targetStaffId,
+              actorStaffId: request.user.id,
+              previousStaffLabel: sourceStaff?.displayName ?? `Nhân sự #${srcId}`,
+              nextStaffLabel: targetStaff.displayName,
+              reason: `Gộp tài khoản ${sourceStaff?.displayName ?? `#${srcId}`} vào ${targetStaff.displayName}`,
+              sourceType: 'STAFF',
+              actionContext: 'STAFF_MERGE',
+              correlationId: `staff-merge-${srcId}-to-${targetStaffId}`,
+              occurredAt: new Date(),
+            });
+          }
 
           // 2. Reassign Call Logs
           await tx.crmCallLog.updateMany({
@@ -925,23 +939,10 @@ export async function staffRoutes(fastify: FastifyInstance) {
             }
           }
 
-          // 5. Reassign Assignment Histories
-          await tx.crmAssignmentHistory.updateMany({
-            where: { prevStaffId: srcId },
-            data: { prevStaffId: targetStaffId },
-          });
-          await tx.crmAssignmentHistory.updateMany({
-            where: { newStaffId: srcId },
-            data: { newStaffId: targetStaffId },
-          });
-          await tx.crmAssignmentHistory.updateMany({
-            where: { assignedBy: srcId },
-            data: { assignedBy: targetStaffId },
-          });
-
-          // 6. Delete source staff
-          await tx.crmStaff.delete({
+          // 5. Preserve source identity and historical links. Deactivating the duplicate is reversible.
+          await tx.crmStaff.update({
             where: { id: srcId },
+            data: { isActive: false },
           });
         }
 

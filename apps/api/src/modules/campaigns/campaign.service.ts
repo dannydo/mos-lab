@@ -20,6 +20,7 @@ import {
   UpdateCampaignDto,
 } from '@mos-lab/shared';
 import { CampaignPromotionSyncService } from './campaign-promotion-sync.service.js';
+import { AllocationLedgerService } from '../allocation/allocation-ledger.service.js';
 import {
   CustomerServiceFilterCatalogService,
   normalizeFixedFinalPriceCategoryKeys,
@@ -1666,10 +1667,26 @@ export class CampaignService {
         },
       });
 
-      // 2. Clear old Booker assignments
-      await tx.crmCustomerAssignment.deleteMany({
+      // 2. Return current owners to pool with immutable campaign evidence.
+      const assignments = await tx.crmCustomerAssignment.findMany({
         where: { legacyUserId: { in: uniqueCustomerIds } },
       });
+      for (const assignment of assignments) {
+        await AllocationLedgerService.setOwner(tx, {
+          customerId: assignment.legacyUserId,
+          eventType: 'CAMPAIGN_RETURNED_TO_POOL',
+          previousStaffId: assignment.staffId,
+          nextStaffId: null,
+          actorStaffId: staffId,
+          reason: reason || `Quản lý chuyển sang chiến dịch "${targetCampaign.name}"`,
+          sourceType: 'CAMPAIGN',
+          actionContext: 'CAMPAIGN_TRANSFER',
+          campaignId,
+          correlationId: `campaign-transfer-${campaignId}`,
+          deleteWhenPool: true,
+          occurredAt: now,
+        });
+      }
 
       // 3. Add to target campaign
       await tx.crmCampaignCustomer.createMany({
@@ -1722,10 +1739,25 @@ export class CampaignService {
         },
       });
 
-      // Clear Booker assignment so customer returns to unassigned NYC main pool
-      await tx.crmCustomerAssignment.deleteMany({
+      const assignment = await tx.crmCustomerAssignment.findUnique({
         where: { legacyUserId: record.legacyUserId },
       });
+      if (assignment) {
+        await AllocationLedgerService.setOwner(tx, {
+          customerId: record.legacyUserId,
+          eventType: 'CAMPAIGN_RETURNED_TO_POOL',
+          previousStaffId: assignment.staffId,
+          nextStaffId: null,
+          actorStaffId: staffId,
+          reason: reason || 'Quản lý gỡ khỏi chiến dịch',
+          sourceType: 'CAMPAIGN',
+          actionContext: 'CAMPAIGN_REMOVE',
+          campaignId,
+          correlationId: `campaign-remove-${record.id}`,
+          deleteWhenPool: true,
+          occurredAt: now,
+        });
+      }
     });
 
     return {
@@ -1778,11 +1810,27 @@ export class CampaignService {
         },
       });
 
-      // Clear Booker assignments so customers return to unassigned NYC main pool
+      // Clear Booker assignments so customers return to the NYC pool, with one append-only event per affected customer.
       if (legacyUserIds.length > 0) {
-        await tx.crmCustomerAssignment.deleteMany({
+        const assignments = await tx.crmCustomerAssignment.findMany({
           where: { legacyUserId: { in: legacyUserIds } },
         });
+        for (const assignment of assignments) {
+          await AllocationLedgerService.setOwner(tx, {
+            customerId: assignment.legacyUserId,
+            eventType: 'CAMPAIGN_RETURNED_TO_POOL',
+            previousStaffId: assignment.staffId,
+            nextStaffId: null,
+            actorStaffId: staffId,
+            reason: reason || 'Quản lý gỡ hàng loạt khỏi chiến dịch',
+            sourceType: 'CAMPAIGN',
+            actionContext: 'CAMPAIGN_BULK_REMOVE',
+            campaignId,
+            correlationId: `campaign-bulk-remove-${campaignId}`,
+            deleteWhenPool: true,
+            occurredAt: now,
+          });
+        }
       }
     });
 

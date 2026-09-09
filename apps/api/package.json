@@ -15,6 +15,7 @@
     "data-migrations:validate": "tsx src/scripts/run-data-migrations.ts --validate",
     "data-migrations:plan": "tsx src/scripts/run-data-migrations.ts --plan",
     "data-migrations:run": "tsx src/scripts/run-data-migrations.ts",
+    "allocation-ledger:backfill": "tsx src/scripts/backfill-allocation-ledger.ts",
     "post-hub:import-history": "tsx src/scripts/import-post-hub-sheet-history.ts",
     "legacy:indexes:phase1": "tsx src/scripts/apply-dashboard-phase1-indexes.ts",
     "legacy:indexes:customers": "tsx src/scripts/apply-customer-query-perf-indexes.ts",
