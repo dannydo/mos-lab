@@ -947,10 +947,10 @@ export default function AcademyWorkshopRegistrationPage() {
   const submit = React.useCallback(async () => {
     try {
       const values = await form.validateFields();
-      const menuSelections = Object.entries(values.menuSelections || {}).map(([category, menuItemId]) => ({
-        category: category as AcademyWorkshopMenuCategory,
-        menuItemId: Number(menuItemId),
-      }));
+      const menuSelections = (info?.workshop.menu.categories || []).flatMap((category) => {
+        const menuItemId = Number(values.menuSelections?.[category.category]);
+        return Number.isInteger(menuItemId) && menuItemId > 0 ? [{ category: category.category, menuItemId }] : [];
+      });
       const registration = { ...values, menuSelections };
       setSubmitting(true);
       const result = googleCredential
@@ -988,7 +988,7 @@ export default function AcademyWorkshopRegistrationPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [clearDraft, code, form, googleCredential, load, rememberReceipt, zaloTicket]);
+  }, [clearDraft, code, form, googleCredential, info, load, rememberReceipt, zaloTicket]);
 
   const startAnotherRegistration = React.useCallback(() => {
     if (receiptStorageKey) window.sessionStorage.removeItem(receiptStorageKey);
@@ -1053,7 +1053,6 @@ export default function AcademyWorkshopRegistrationPage() {
   const nonRegistrationPhase = info.phase !== 'REGISTRATION';
   const status = nonRegistrationPhase ? phaseCopy(info) : null;
   const menuIncomplete = workshop.menu.required && workshop.menu.categories.some((category) => !category.items.length);
-  const selectedMenuCount = Object.values(selectedMenuChoices || {}).filter(Boolean).length;
   const selectedEquipmentPackage = workshop.equipment.packages.find(
     (item) => item.id === Number(selectedEquipmentPackageId)
   );
@@ -1071,6 +1070,7 @@ export default function AcademyWorkshopRegistrationPage() {
         ]
       : [];
   });
+  const selectedMenuCount = selectedMenuItems.length;
   const openSelectionSheet = (selection: 'equipment' | 'menu') => setActiveSelectionSheet(selection);
   return (
     <main className={`min-h-[100svh] p-3 sm:p-6 lg:p-8 ${styles.shell}`}>
@@ -1482,7 +1482,7 @@ export default function AcademyWorkshopRegistrationPage() {
                                 <div className="relative h-44 overflow-hidden sm:h-48">
                                   <Image
                                     src="/academy/viet-thai-menu-hero-v1.webp"
-                                    alt="Bữa trưa Việt Thái với nước ép, món chính và tráng miệng"
+                                    alt="Bữa ăn workshop"
                                     fill
                                     priority
                                     sizes="(max-width: 640px) 100vw, 420px"
@@ -1505,7 +1505,7 @@ export default function AcademyWorkshopRegistrationPage() {
                                         Chọn phần ăn của bạn
                                       </h3>
                                       <span className="shrink-0 whitespace-nowrap rounded-full border border-white/20 bg-white/15 px-2.5 py-1 text-xs font-bold tabular-nums">
-                                        {selectedMenuCount}/3 đã chọn
+                                        {selectedMenuCount}/{workshop.menu.categories.length} đã chọn
                                       </span>
                                     </div>
                                   </div>

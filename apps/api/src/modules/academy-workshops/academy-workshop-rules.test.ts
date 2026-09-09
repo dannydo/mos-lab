@@ -12,8 +12,10 @@ import {
 import { AcademyWorkshopBonusService } from './academy-workshop-bonus.service.js';
 import {
   AcademyWorkshopPublicJoinService,
+  buildPublicMenu,
   getAcademyWorkshopPublicRegistrationPhase,
   normalizeAcademyWorkshopPhone,
+  validateMenuSelections,
 } from './academy-workshop-public.service.js';
 import {
   WorkshopRealtimeHub,
@@ -46,6 +48,31 @@ test('keeps public registration, check-in, and live workshop phases separate', (
   );
   assert.equal(getAcademyWorkshopPublicRegistrationPhase({ status: 'LIVE', registrationOpen: true }), 'LIVE');
   assert.equal(getAcademyWorkshopPublicRegistrationPhase({ status: 'COMPLETED', registrationOpen: true }), 'COMPLETED');
+});
+
+test('keeps a workshop menu usable when dessert is not configured', () => {
+  const availableItems = [
+    { id: 1, category: 'JUICE', name: 'Nước cam', description: null, imageUrl: null },
+    { id: 2, category: 'MAIN_COURSE', name: 'Cơm gà', description: null, imageUrl: null },
+  ];
+
+  const menu = buildPublicMenu(availableItems, true);
+  assert.equal(menu.required, true);
+  assert.deepEqual(
+    menu.categories.map((category) => category.category),
+    ['JUICE', 'MAIN_COURSE']
+  );
+
+  assert.deepEqual(
+    validateMenuSelections(
+      [
+        { category: 'JUICE', menuItemId: 1 },
+        { category: 'MAIN_COURSE', menuItemId: 2 },
+      ],
+      availableItems
+    ).map((selection) => selection.menuItemId),
+    [1, 2]
+  );
 });
 
 test('scores correct answers from 500–1000 and preserves lower response time as tie-break evidence', () => {

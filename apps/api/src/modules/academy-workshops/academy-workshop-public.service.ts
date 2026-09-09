@@ -199,53 +199,49 @@ function validateEquipmentSelection(
   };
 }
 
-function buildPublicMenu(
+export function buildPublicMenu(
   items: PublicMenuItem[],
   selectionEnabled: boolean
 ): AcademyWorkshopPublicRegistrationInfo['workshop']['menu'] {
+  const categories = ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category) => ({
+    category,
+    label: ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[category],
+    items: items
+      .filter((item) => item.category === category)
+      .map((item) => ({ id: item.id, name: item.name, description: item.description, imageUrl: item.imageUrl })),
+  })).filter((category) => category.items.length > 0);
+
   return {
-    required: selectionEnabled && items.length > 0,
-    categories: ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category) => ({
-      category,
-      label: ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[category],
-      items: items
-        .filter((item) => item.category === category)
-        .map((item) => ({ id: item.id, name: item.name, description: item.description, imageUrl: item.imageUrl })),
-    })),
+    required: selectionEnabled && categories.length > 0,
+    categories,
   };
 }
 
-function validateMenuSelections(
+export function validateMenuSelections(
   input: AcademyWorkshopMenuSelectionInput[] | undefined,
   availableItems: PublicMenuItem[]
 ): Array<{ category: AcademyWorkshopMenuCategory; menuItemId: number; itemName: string }> {
   if (!availableItems.length) return [];
 
-  const configuredCategories = new Set(
-    availableItems
-      .map((item) => item.category)
-      .filter((category): category is AcademyWorkshopMenuCategory =>
-        MENU_CATEGORIES.has(category as AcademyWorkshopMenuCategory)
-      )
+  const configuredCategories = ACADEMY_WORKSHOP_MENU_CATEGORIES.filter((category) =>
+    availableItems.some((item) => item.category === category)
   );
-  const incompleteCategory = ACADEMY_WORKSHOP_MENU_CATEGORIES.find((category) => !configuredCategories.has(category));
-  if (incompleteCategory) {
-    throw new AcademySalesError(
-      `Thực đơn workshop chưa có ${ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[incompleteCategory]}. Vui lòng liên hệ Academy.`,
-      409
-    );
-  }
 
   const selections = Array.isArray(input) ? input : [];
-  if (selections.length !== ACADEMY_WORKSHOP_MENU_CATEGORIES.length) {
-    throw new AcademySalesError('Vui lòng chọn đủ nước ép, món chính và tráng miệng.');
+  if (selections.length !== configuredCategories.length) {
+    const labels = configuredCategories.map((category) => ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[category]);
+    throw new AcademySalesError(`Vui lòng chọn đủ ${labels.join(', ')}.`);
   }
 
   const selectedCategories = new Set<AcademyWorkshopMenuCategory>();
   return selections.map((selection) => {
     const category = selection?.category;
     const menuItemId = Math.round(Number(selection?.menuItemId));
-    if (!MENU_CATEGORIES.has(category) || selectedCategories.has(category)) {
+    if (
+      !MENU_CATEGORIES.has(category) ||
+      !configuredCategories.includes(category) ||
+      selectedCategories.has(category)
+    ) {
       throw new AcademySalesError('Lựa chọn thực đơn không hợp lệ.');
     }
     if (!Number.isInteger(menuItemId) || menuItemId <= 0) {
