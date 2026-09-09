@@ -75,10 +75,10 @@ test('preserves a 50/50 CC split without inflating counts', () => {
   assert.deepEqual(splitCcShares(10, 20, [10]), [{ staffId: 10, share: 0.5 }]);
 });
 
-test('uses formula fallback only when the Cash row is genuinely missing', () => {
-  assert.equal(resolveCcCashBonus({ dbCashBonus: 0, cashBonusRows: 1, level: 3, isSplit: false }), 0);
-  assert.equal(resolveCcCashBonus({ dbCashBonus: -130, cashBonusRows: 1, level: 3, isSplit: false }), -130);
-  assert.equal(resolveCcCashBonus({ dbCashBonus: 0, cashBonusRows: 0, level: 2, isSplit: true }), 65);
+test('uses only the Cash ledger and never infers a bonus when the row is missing', () => {
+  assert.equal(resolveCcCashBonus({ dbCashBonus: 0, cashBonusRows: 1 }), 0);
+  assert.equal(resolveCcCashBonus({ dbCashBonus: -130, cashBonusRows: 1 }), -130);
+  assert.equal(resolveCcCashBonus({ dbCashBonus: 130, cashBonusRows: 0 }), 0);
 });
 
 test('keeps CC Xoay on the posted Cash ledger and never recreates a missing Cash row', () => {

@@ -129,16 +129,11 @@ export function splitCcShares(
   return result;
 }
 
-export function resolveCcCashBonus(input: {
-  dbCashBonus: number;
-  cashBonusRows: number;
-  level: number;
-  isSplit: boolean;
-}): number {
-  if (input.cashBonusRows > 0) return Math.round(input.dbCashBonus || 0);
-
-  const fullBonus = Math.max(0, input.level || 0) * CC_GAMIFICATION_SYSTEM_CONFIG.BONUS_PER_LEVEL_VND;
-  return input.isSplit ? Math.round(fullBonus / 2) : fullBonus;
+export function resolveCcCashBonus(input: { dbCashBonus: number; cashBonusRows: number }): number {
+  // Payroll/reporting must never infer a cash amount from points or level.
+  // A missing Cash ledger row is a data-quality exception, not earned money.
+  if (input.cashBonusRows <= 0) return 0;
+  return Math.round(input.dbCashBonus || 0);
 }
 
 /**
