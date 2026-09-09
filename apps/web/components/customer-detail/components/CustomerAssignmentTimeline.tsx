@@ -72,8 +72,16 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
   const getActionTag = (item: CustomerAssignmentTimelineItem) => {
     const action = item.actionType?.toUpperCase();
     switch (action) {
+      case 'OFFERED':
+        return (
+          <Tag color="cyan">
+            <ClockCircleOutlined style={{ marginRight: 4 }} />
+            Chờ xác nhận
+          </Tag>
+        );
       case 'ACCEPT':
       case 'ACCEPT_ALLOCATION':
+      case 'ACCEPTED':
         return (
           <Tag color="green">
             <CheckCircleOutlined style={{ marginRight: 4 }} />
@@ -82,6 +90,7 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
         );
       case 'DECLINE':
       case 'DECLINE_ALLOCATION':
+      case 'DECLINED':
         return (
           <Tag color="red">
             <CloseCircleOutlined style={{ marginRight: 4 }} />
@@ -90,6 +99,7 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
         );
       case 'RECALL':
       case 'RECALL_ALLOCATION':
+      case 'RECALLED':
         return (
           <Tag color="volcano">
             <RollbackOutlined style={{ marginRight: 4 }} />
@@ -105,6 +115,7 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
           </Tag>
         );
       case 'RANDOM_SELECT':
+      case 'RANDOM_SELECTED':
         return (
           <Tag color="purple">
             <FilterOutlined style={{ marginRight: 4 }} />
@@ -119,6 +130,7 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
           </Tag>
         );
       case 'TRANSFER':
+      case 'TRANSFERRED':
         return (
           <Tag color="blue">
             <UserSwitchOutlined style={{ marginRight: 4 }} />
@@ -126,17 +138,40 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
           </Tag>
         );
       case 'REVOKE':
+      case 'RETURNED_TO_POOL':
         return (
           <Tag color="volcano">
             <DeleteOutlined style={{ marginRight: 4 }} />
             Thu hồi về Pool
           </Tag>
         );
+      case 'CAMPAIGN_RETURNED_TO_POOL':
+        return (
+          <Tag color="magenta">
+            <GiftOutlined style={{ marginRight: 4 }} />
+            Chiến dịch trả về Pool
+          </Tag>
+        );
       case 'UNDO':
+      case 'UNDO_REVERSED':
         return (
           <Tag color="warning">
             <UndoOutlined style={{ marginRight: 4 }} />
             Đã hoàn tác
+          </Tag>
+        );
+      case 'RETENTION_CHANGED':
+        return (
+          <Tag color="gold">
+            <PushpinFilled style={{ marginRight: 4 }} />
+            Thay đổi giữ data
+          </Tag>
+        );
+      case 'STAFF_MERGED':
+        return (
+          <Tag color="geekblue">
+            <UserSwitchOutlined style={{ marginRight: 4 }} />
+            Gộp nhân sự
           </Tag>
         );
       default:
@@ -149,25 +184,38 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
     switch (action) {
       case 'ACCEPT':
       case 'ACCEPT_ALLOCATION':
+      case 'ACCEPTED':
         return 'green';
       case 'DECLINE':
       case 'DECLINE_ALLOCATION':
+      case 'DECLINED':
         return 'red';
       case 'RECALL':
       case 'RECALL_ALLOCATION':
+      case 'RECALLED':
       case 'REVOKE':
+      case 'RETURNED_TO_POOL':
         return 'volcano';
+      case 'CAMPAIGN_RETURNED_TO_POOL':
+        return 'magenta';
       case 'EXPIRE':
       case 'EXPIRED':
         return 'orange';
       case 'RANDOM_SELECT':
+      case 'RANDOM_SELECTED':
         return 'purple';
       case 'ASSIGN':
         return 'green';
       case 'TRANSFER':
+      case 'TRANSFERRED':
         return 'blue';
       case 'UNDO':
+      case 'UNDO_REVERSED':
         return 'gold';
+      case 'RETENTION_CHANGED':
+        return 'gold';
+      case 'STAFF_MERGED':
+        return 'geekblue';
       default:
         return 'blue';
     }
@@ -176,30 +224,47 @@ export const CustomerAssignmentTimeline: React.FC<CustomerAssignmentTimelineProp
   const getActionTitle = (item: CustomerAssignmentTimelineItem) => {
     const action = item.actionType?.toUpperCase();
     switch (action) {
+      case 'OFFERED':
+        return item.staffName ? `Đề nghị phân bổ cho: ${item.staffName}` : 'Đề nghị phân bổ chờ xác nhận';
       case 'ACCEPT':
       case 'ACCEPT_ALLOCATION':
+      case 'ACCEPTED':
         return item.staffName ? `${item.staffName} đã chấp nhận nhận data` : 'Đã chấp nhận nhận data';
       case 'DECLINE':
       case 'DECLINE_ALLOCATION':
+      case 'DECLINED':
         return item.prevStaffName || item.staffName
           ? `${item.prevStaffName || item.staffName} từ chối nhận data`
           : 'Từ chối nhận data';
       case 'RECALL':
       case 'RECALL_ALLOCATION':
+      case 'RECALLED':
         return item.prevStaffName ? `Thu hồi data từ ${item.prevStaffName}` : 'Thu hồi đợt phân bổ';
       case 'EXPIRE':
       case 'EXPIRED':
         return item.prevStaffName ? `Hết hạn phân bổ của ${item.prevStaffName}` : 'Hết hạn phân bổ';
       case 'RANDOM_SELECT':
+      case 'RANDOM_SELECTED':
         return 'Được chọn ngẫu nhiên trong đợt lọc';
       case 'ASSIGN':
         return item.staffName ? `Phân bổ cho: ${item.staffName}` : 'Phân bổ mới';
       case 'TRANSFER':
+      case 'TRANSFERRED':
         return item.staffName ? `Chuyển sang cho: ${item.staffName}` : 'Chuyển Booker';
       case 'REVOKE':
+      case 'RETURNED_TO_POOL':
         return item.prevStaffName ? `Thu hồi từ: ${item.prevStaffName}` : 'Thu hồi về Pool';
+      case 'CAMPAIGN_RETURNED_TO_POOL':
+        return item.prevStaffName
+          ? `Chiến dịch trả data của ${item.prevStaffName} về Pool`
+          : 'Chiến dịch trả data về Pool';
       case 'UNDO':
+      case 'UNDO_REVERSED':
         return 'Đã hoàn tác đợt phân bổ';
+      case 'RETENTION_CHANGED':
+        return item.isRetained ? 'Đánh dấu giữ data' : 'Bỏ trạng thái giữ data';
+      case 'STAFF_MERGED':
+        return item.staffName ? `Gộp quyền sở hữu sang: ${item.staffName}` : 'Gộp quyền sở hữu nhân sự';
       default:
         return item.staffName
           ? `Phân bổ cho: ${item.staffName}`

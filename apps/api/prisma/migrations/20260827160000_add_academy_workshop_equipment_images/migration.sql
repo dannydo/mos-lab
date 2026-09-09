@@ -7,7 +7,7 @@ CREATE TABLE `crm_academy_workshop_equipment_package_images` (
   `created_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `updated_at` DATETIME(0) NOT NULL,
   PRIMARY KEY (`id`),
-  INDEX `crm_academy_workshop_equipment_package_images_equipment_package_id_sort_order_idx` (`equipment_package_id`, `sort_order`),
-  CONSTRAINT `crm_academy_workshop_equipment_package_images_equipment_package_id_fkey`
+  INDEX `crm_academy_workshop_equipment_package_images_equipment_pack_idx` (`equipment_package_id`, `sort_order`),
+  CONSTRAINT `crm_academy_workshop_equipment_package_images_equipment_pac_fkey`
     FOREIGN KEY (`equipment_package_id`) REFERENCES `crm_academy_workshop_equipment_packages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

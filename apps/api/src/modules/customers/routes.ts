@@ -23,7 +23,7 @@ import { LashBenchmarkService, parseLashSpecs } from '../catalog/services/lash-b
 import { resolveIsForeign, getForeignSqlFilter } from './services/foreign-customer.service.js';
 import { StaffOffDayService } from '../staff/services/staff-off-day.service.js';
 import { CustomerAccessService } from './services/customer-access.service.js';
-import { buildDurableCustomerAssignmentData } from './services/customer-assignment-policy.service.js';
+import { AllocationLedgerService } from '../allocation/allocation-ledger.service.js';
 import { CustomerServiceFilterCatalogService } from './services/customer-service-filter-catalog.service.js';
 import { CvAttendanceService } from './services/cv-attendance.service.js';
 import { CustomerCreationError, CustomerCreationService } from './services/customer-creation.service.js';
@@ -3067,19 +3067,35 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const sourceFilterSummary = `Chọn ngẫu nhiên ${filterSummaryParts.join(' | ')}`;
 
       if (ids.length > 0 && actingUser?.id) {
-        await fastify.prisma.crm.crmAssignmentHistory.createMany({
-          data: ids.map((cid) => ({
-            batchId,
-            legacyUserId: cid,
-            prevStaffId: null,
-            newStaffId: null,
-            assignedBy: actingUser.id,
-            assignedAt: new Date(),
-            sourceType: 'RANDOM',
-            sourceFilterJson: JSON.stringify(request.query),
-            sourceFilterSummary,
-            actionType: 'RANDOM_SELECT',
-          })),
+        const selectedAt = new Date();
+        await fastify.prisma.crm.$transaction(async (tx) => {
+          for (const customerId of ids) {
+            await AllocationLedgerService.append(tx, {
+              customerId,
+              eventType: 'RANDOM_SELECTED',
+              actorStaffId: actingUser.id,
+              reason: 'Khách được chọn trong bộ lọc ngẫu nhiên để phân bổ',
+              sourceType: 'RANDOM',
+              actionContext: 'RANDOM_CUSTOMER_SELECTION',
+              batchId,
+              metadata: { filters: request.query },
+              occurredAt: selectedAt,
+            });
+          }
+          await tx.crmAssignmentHistory.createMany({
+            data: ids.map((cid) => ({
+              batchId,
+              legacyUserId: cid,
+              prevStaffId: null,
+              newStaffId: null,
+              assignedBy: actingUser.id,
+              assignedAt: selectedAt,
+              sourceType: 'RANDOM',
+              sourceFilterJson: JSON.stringify(request.query),
+              sourceFilterSummary,
+              actionType: 'RANDOM_SELECT',
+            })),
+          });
         });
       }
 
@@ -3650,17 +3666,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
           select: { id: true },
         });
         if (!existingAssignment) {
-          await fastify.prisma.crm.crmCustomerAssignment.create({
-            data: { legacyUserId: created.customer.id, staffId: user.id, assignedBy: user.id },
-          });
-          await fastify.prisma.crm.crmAssignmentHistory.create({
-            data: {
-              batchId: `alloc_customer_create_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-              legacyUserId: created.customer.id,
-              prevStaffId: null,
-              newStaffId: user.id,
-              assignedBy: user.id,
-            },
+          const batchId = `alloc_customer_create_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+          await fastify.prisma.crm.$transaction(async (tx) => {
+            await AllocationLedgerService.setOwner(tx, {
+              customerId: created.customer.id,
+              nextStaffId: user.id,
+              actorStaffId: user.id,
+              eventType: 'ACCEPTED',
+              previousStaffId: null,
+              reason: 'Booker tạo khách hàng mới',
+              sourceType: 'CUSTOMER_CREATE',
+              actionContext: 'CUSTOMER_CREATE_AUTO_ASSIGN',
+              batchId,
+            });
+            await tx.crmAssignmentHistory.create({
+              data: {
+                batchId,
+                legacyUserId: created.customer.id,
+                prevStaffId: null,
+                newStaffId: user.id,
+                assignedBy: user.id,
+              },
+            });
           });
         }
       }
@@ -3946,23 +3973,28 @@ export async function customerRoutes(fastify: FastifyInstance) {
         });
 
         if (crmStaffExists) {
-          await fastify.prisma.crm.crmCustomerAssignment.create({
-            data: {
-              legacyUserId: finalCustomerId,
-              staffId: user.id,
-              assignedBy: user.id,
-            },
-          });
-
           const batchId = `alloc_auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          await fastify.prisma.crm.crmAssignmentHistory.create({
-            data: {
+          await fastify.prisma.crm.$transaction(async (tx) => {
+            await AllocationLedgerService.setOwner(tx, {
+              customerId: finalCustomerId,
+              nextStaffId: user.id,
+              actorStaffId: user.id,
+              eventType: 'ACCEPTED',
+              previousStaffId: null,
+              reason: 'Booker tạo lịch hẹn cho khách chưa có chủ sở hữu',
+              sourceType: 'BOOKING',
+              actionContext: 'BOOKING_AUTO_ASSIGN',
               batchId,
-              legacyUserId: finalCustomerId,
-              prevStaffId: null,
-              newStaffId: user.id,
-              assignedBy: user.id,
-            },
+            });
+            await tx.crmAssignmentHistory.create({
+              data: {
+                batchId,
+                legacyUserId: finalCustomerId,
+                prevStaffId: null,
+                newStaffId: user.id,
+                assignedBy: user.id,
+              },
+            });
           });
         }
       }
@@ -4959,18 +4991,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      // 1. Get current assignments for all selected customerIds to know prevStaffId
-      const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-        where: { legacyUserId: { in: customerIds } },
-      });
-      const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
-
       const now = new Date();
-      const durableAssignment = buildDurableCustomerAssignmentData({
-        staffId,
-        assignedBy: adminUser.id,
-        assignedAt: now,
-      });
 
       // 3. Generate a unique batch ID
       const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -4978,27 +4999,32 @@ export async function customerRoutes(fastify: FastifyInstance) {
         ? `${sourceFilterSummary || 'Phân bổ Booker'} (Nguồn: ${parentBatchId})`
         : sourceFilterSummary || null;
 
-      // 4. Perform upserts and create history entries in a transaction
-      await fastify.prisma.crm.$transaction([
-        ...customerIds.map((cid) =>
-          fastify.prisma.crm.crmCustomerAssignment.upsert({
-            where: { legacyUserId: cid },
-            update: {
-              ...durableAssignment,
-              retainedAt: null,
-            },
-            create: {
-              legacyUserId: cid,
-              ...durableAssignment,
-            },
-          })
-        ),
-        ...customerIds.map((cid) =>
-          fastify.prisma.crm.crmAssignmentHistory.create({
+      // 4. Ownership and immutable evidence share one transaction.
+      await fastify.prisma.crm.$transaction(async (tx) => {
+        for (const cid of customerIds) {
+          const previous = await tx.crmCustomerAssignment.findUnique({ where: { legacyUserId: cid } });
+          const eventType = previous?.staffId && previous.staffId !== staffId ? 'TRANSFERRED' : 'ACCEPTED';
+          const reason = parentBatchId
+            ? `Nguồn ngẫu nhiên: ${parentBatchId}`
+            : sourceFilterSummary || 'Quản lý phân bổ trực tiếp';
+          await AllocationLedgerService.setOwner(tx, {
+            customerId: cid,
+            nextStaffId: staffId,
+            actorStaffId: adminUser.id,
+            eventType,
+            previousStaffId: previous?.staffId ?? null,
+            reason,
+            sourceType: sourceType || 'MANUAL',
+            actionContext: 'CUSTOMER_DIRECT_ASSIGN',
+            batchId,
+            correlationId: parentBatchId || null,
+            occurredAt: now,
+          });
+          await tx.crmAssignmentHistory.create({
             data: {
               batchId,
               legacyUserId: cid,
-              prevStaffId: assignmentMap.get(cid) ?? null,
+              prevStaffId: previous?.staffId ?? null,
               newStaffId: staffId,
               assignedBy: adminUser.id,
               assignedAt: now,
@@ -5007,11 +5033,11 @@ export async function customerRoutes(fastify: FastifyInstance) {
               sourceFilterSummary: summaryText,
               sourceFilterJson: sourceFilterJson || null,
               actionType: 'ASSIGN',
-              reason: parentBatchId ? `Nguồn ngẫu nhiên: ${parentBatchId}` : null,
+              reason,
             },
-          })
-        ),
-      ]);
+          });
+        }
+      });
 
       return { success: true, count: customerIds.length, batchId };
     } catch (error: SafeAny) {
@@ -5193,45 +5219,58 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const batchId = requestedBatchId || `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const now = new Date();
 
-      // Recall previous batch items for these customer IDs
-      await fastify.prisma.crm.crmAllocationBatchItem.updateMany({
-        where: {
-          customerId: { in: toRevokeUserIds },
-          status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] },
-        },
-        data: { status: 'RECALLED' },
-      });
-
       if (targetStaffId) {
-        // Direct transfer to new Booker using AllocationService.createBatch
+        // A transfer remains pending until the new Booker accepts.
+        await fastify.prisma.crm.$transaction(async (tx) => {
+          await tx.crmAllocationBatchItem.updateMany({
+            where: { customerId: { in: toRevokeUserIds }, status: { in: ['PENDING_ACCEPT', 'ACCEPTED'] } },
+            data: { status: 'RECALLED' },
+          });
+          for (const item of currentBatchItems) {
+            if (!toRevokeUserIds.includes(item.customerId)) continue;
+            await AllocationLedgerService.append(tx, {
+              customerId: item.customerId,
+              eventType: 'RECALLED',
+              previousStaffId: item.batch.bookerId,
+              nextStaffId: item.batch.bookerId,
+              actorStaffId: adminUser.id,
+              reason: cleanReason,
+              sourceType: 'MANUAL',
+              actionContext: 'CUSTOMER_TRANSFER_RECALL_SOURCE_BATCH',
+              batchId: item.batch.batchCode,
+              campaignId: item.batch.campaignId,
+              correlationId: batchId,
+              occurredAt: now,
+            });
+          }
+        });
         await AllocationService.createBatch(fastify, adminUser.id, {
           bookerId: targetStaffId,
           customerIds: toRevokeUserIds,
           sourceType: 'MANUAL',
-          sourceFilterSummary: `Chuyển giao cho Booker #${targetStaffId}`,
+          sourceFilterSummary: `Chuyển giao cho Booker #${targetStaffId}: ${cleanReason}`,
           sourceFilterJson: JSON.stringify({ transferReason: cleanReason, parentBatchId }),
+          parentBatchId: batchId,
         });
       } else {
         // Revoke back to pool
         await fastify.prisma.crm.$transaction(async (tx) => {
           for (const cid of toRevokeUserIds) {
-            const existing = await tx.crmCustomerAssignment.findUnique({
-              where: { legacyUserId: cid },
+            const existing = await tx.crmCustomerAssignment.findUnique({ where: { legacyUserId: cid } });
+            await AllocationLedgerService.setOwner(tx, {
+              customerId: cid,
+              eventType: 'RETURNED_TO_POOL',
+              previousStaffId: assignmentMap.get(cid) ?? existing?.staffId ?? null,
+              nextStaffId: null,
+              actorStaffId: adminUser.id,
+              reason: parentBatchId ? `${cleanReason} (Nguồn: ${parentBatchId})` : cleanReason,
+              sourceType: 'MANUAL',
+              actionContext: 'CUSTOMER_REVOKE_TO_POOL',
+              batchId,
+              correlationId: parentBatchId || null,
+              deleteWhenPool: true,
+              occurredAt: now,
             });
-            if (existing && existing.isRetained) {
-              await tx.crmCustomerAssignment.update({
-                where: { legacyUserId: cid },
-                data: {
-                  staffId: null,
-                  expiresAt: null,
-                  assignedDurationDays: null,
-                },
-              });
-            } else {
-              await tx.crmCustomerAssignment.deleteMany({
-                where: { legacyUserId: cid },
-              });
-            }
 
             await tx.crmAssignmentHistory.create({
               data: {
@@ -5247,16 +5286,7 @@ export async function customerRoutes(fastify: FastifyInstance) {
             });
           }
 
-          if (requestedBatchId) {
-            await tx.crmAssignmentHistory.updateMany({
-              where: { batchId: requestedBatchId },
-              data: {
-                isUndone: true,
-                undoneAt: now,
-                reason: cleanReason,
-              },
-            });
-          }
+          // Historic compatibility rows are intentionally never altered.
         });
       }
 
@@ -5289,32 +5319,39 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      const currentAssignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
-        where: { legacyUserId: { in: customerIds } },
-      });
-      const assignmentMap = new Map(currentAssignments.map((a) => [a.legacyUserId, a.staffId]));
       const batchId = `alloc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const now = new Date();
 
-      await fastify.prisma.crm.$transaction([
-        fastify.prisma.crm.crmCustomerAssignment.deleteMany({
-          where: { legacyUserId: { in: customerIds } },
-        }),
-        ...customerIds.map((cid) =>
-          fastify.prisma.crm.crmAssignmentHistory.create({
+      await fastify.prisma.crm.$transaction(async (tx) => {
+        for (const cid of customerIds) {
+          const existing = await tx.crmCustomerAssignment.findUnique({ where: { legacyUserId: cid } });
+          await AllocationLedgerService.setOwner(tx, {
+            customerId: cid,
+            eventType: 'RETURNED_TO_POOL',
+            previousStaffId: existing?.staffId ?? null,
+            nextStaffId: null,
+            actorStaffId: adminUser.id,
+            reason,
+            sourceType: 'MANUAL',
+            actionContext: 'CUSTOMER_UNASSIGN',
+            batchId,
+            deleteWhenPool: true,
+            occurredAt: now,
+          });
+          await tx.crmAssignmentHistory.create({
             data: {
               batchId,
               legacyUserId: cid,
-              prevStaffId: assignmentMap.get(cid) ?? null,
+              prevStaffId: existing?.staffId ?? null,
               newStaffId: null,
               assignedBy: adminUser.id,
               assignedAt: now,
               actionType: 'REVOKE',
               reason,
             },
-          })
-        ),
-      ]);
+          });
+        }
+      });
 
       return { success: true, count: customerIds.length, batchId };
     } catch (error: SafeAny) {
@@ -5371,16 +5408,22 @@ export async function customerRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Update retention status
-      await fastify.prisma.crm.crmCustomerAssignment.updateMany({
-        where: {
-          legacyUserId: { in: customerIds },
-          ...(user.role !== 'admin' ? { staffId: user.id } : {}),
-        },
-        data: {
-          isRetained,
-          retainedAt: isRetained ? new Date() : null,
-        },
+      const now = new Date();
+      await fastify.prisma.crm.$transaction(async (tx) => {
+        const assignments = await tx.crmCustomerAssignment.findMany({
+          where: { legacyUserId: { in: customerIds }, ...(user.role !== 'admin' ? { staffId: user.id } : {}) },
+        });
+        for (const assignment of assignments) {
+          await AllocationLedgerService.changeRetention(tx, {
+            customerId: assignment.legacyUserId,
+            actorStaffId: user.id,
+            reason: isRetained ? 'Booker đánh dấu giữ data' : 'Booker bỏ trạng thái giữ data',
+            sourceType: 'MANUAL',
+            actionContext: 'CUSTOMER_RETENTION_TOGGLED',
+            occurredAt: now,
+            isRetained,
+          });
+        }
       });
 
       return reply.send({
@@ -5770,39 +5813,21 @@ export async function customerRoutes(fastify: FastifyInstance) {
             where: { legacyUserId: record.legacyUserId },
           });
 
-          if (record.prevStaffId === null) {
-            if (existing && existing.isRetained) {
-              await tx.crmCustomerAssignment.update({
-                where: { legacyUserId: record.legacyUserId },
-                data: {
-                  staffId: null,
-                  expiresAt: null,
-                  assignedDurationDays: null,
-                },
-              });
-            } else {
-              await tx.crmCustomerAssignment.deleteMany({
-                where: { legacyUserId: record.legacyUserId },
-              });
-            }
-          } else {
-            await tx.crmCustomerAssignment.upsert({
-              where: { legacyUserId: record.legacyUserId },
-              update: { staffId: record.prevStaffId, assignedBy: adminUser.id, assignedAt: new Date() },
-              create: { legacyUserId: record.legacyUserId, staffId: record.prevStaffId, assignedBy: adminUser.id },
-            });
-          }
-        }
-
-        // Mark the entire batch in history as undone with undo reason
-        await tx.crmAssignmentHistory.updateMany({
-          where: { batchId },
-          data: {
-            isUndone: true,
-            undoneAt: new Date(),
+          await AllocationLedgerService.setOwner(tx, {
+            customerId: record.legacyUserId,
+            eventType: 'UNDO_REVERSED',
+            previousStaffId: existing?.staffId ?? null,
+            nextStaffId: record.prevStaffId,
+            actorStaffId: adminUser.id,
             reason: cleanReason,
-          },
-        });
+            sourceType: 'MANUAL',
+            actionContext: 'ASSIGNMENT_HISTORY_UNDO',
+            batchId,
+            correlationId: String(record.id),
+            deleteWhenPool: true,
+          });
+        }
+        // Undo is an appended reversal event; historic rows must not be rewritten.
       });
 
       return {
@@ -5829,39 +5854,74 @@ export async function customerRoutes(fastify: FastifyInstance) {
     if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
 
     try {
-      const historyRecords = await fastify.prisma.crm.crmAssignmentHistory.findMany({
+      const ledgerEvents = await fastify.prisma.crm.crmAllocationLedgerEvent.findMany({
         where: { legacyUserId: customerId },
-        include: {
-          prevStaff: { select: { displayName: true } },
-          newStaff: { select: { displayName: true } },
-          assigner: { select: { displayName: true } },
-        },
-        orderBy: { assignedAt: 'desc' },
+        orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
       });
+      const staffIds = Array.from(
+        new Set(
+          ledgerEvents
+            .flatMap((event) => [event.previousStaffId, event.nextStaffId, event.actorStaffId])
+            .filter((id): id is number => id !== null)
+        )
+      );
+      const staff = await fastify.prisma.crm.crmStaff.findMany({
+        where: { id: { in: staffIds } },
+        select: { id: true, displayName: true },
+      });
+      const staffNames = new Map(staff.map((member) => [member.id, member.displayName]));
 
       // Get current active assignment details if any
       const activeAssignment = await fastify.prisma.crm.crmCustomerAssignment.findUnique({
         where: { legacyUserId: customerId },
       });
 
-      const data = historyRecords.map((r) => ({
-        id: r.id,
-        batchId: r.batchId,
-        assignedAt: r.assignedAt,
-        actionType: r.actionType || (r.isUndone ? 'UNDO' : r.newStaffId ? 'ASSIGN' : 'REVOKE'),
-        staffId: r.newStaffId,
-        staffName: r.newStaff?.displayName || null,
-        prevStaffId: r.prevStaffId,
-        prevStaffName: r.prevStaff?.displayName || null,
-        assignedBy: r.assigner?.displayName || 'Hệ thống',
-        expiresAt: r.expiresAt,
-        isRetained: activeAssignment ? activeAssignment.isRetained && activeAssignment.staffId === r.newStaffId : false,
-        sourceType: r.sourceType || 'MANUAL',
-        sourceFilterSummary: r.sourceFilterSummary,
-        reason: r.reason,
-        isUndone: r.isUndone,
-        undoneAt: r.undoneAt,
-      }));
+      const data = ledgerEvents.map((event) => {
+        let metadata: Record<string, unknown> | null = null;
+        if (event.metadataJson) {
+          try {
+            metadata = JSON.parse(event.metadataJson) as Record<string, unknown>;
+          } catch {
+            metadata = { raw: event.metadataJson };
+          }
+        }
+        return {
+          id: event.id,
+          batchId: event.batchId || '',
+          assignedAt: event.occurredAt,
+          actionType: event.eventType,
+          staffId: event.nextStaffId,
+          staffName:
+            event.nextStaffLabel ||
+            (event.nextStaffId ? staffNames.get(event.nextStaffId) || `Nhân sự #${event.nextStaffId}` : null),
+          prevStaffId: event.previousStaffId,
+          prevStaffName:
+            event.previousStaffLabel ||
+            (event.previousStaffId
+              ? staffNames.get(event.previousStaffId) || `Nhân sự #${event.previousStaffId}`
+              : null),
+          assignedBy:
+            event.actorLabel ||
+            (event.actorStaffId ? staffNames.get(event.actorStaffId) || `Nhân sự #${event.actorStaffId}` : 'Hệ thống'),
+          expiresAt: null,
+          durationDays: null,
+          isRetained:
+            event.eventType === 'RETENTION_CHANGED'
+              ? metadata?.isRetained === true
+              : activeAssignment
+                ? activeAssignment.isRetained && activeAssignment.staffId === event.nextStaffId
+                : false,
+          sourceType: event.sourceType,
+          sourceFilterSummary: event.campaignId
+            ? `Chiến dịch #${event.campaignId}${event.actionContext ? ` · ${event.actionContext}` : ''}`
+            : event.actionContext,
+          reason: event.reason,
+          actionContext: event.actionContext,
+          campaignId: event.campaignId,
+          correlationId: event.correlationId,
+          metadata,
+        };
+      });
 
       return { data };
     } catch (error: SafeAny) {

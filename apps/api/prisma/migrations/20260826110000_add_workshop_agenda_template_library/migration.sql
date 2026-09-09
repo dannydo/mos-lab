@@ -6,7 +6,7 @@ CREATE TABLE `crm_academy_workshop_agenda_templates` (
   `created_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `updated_at` DATETIME(0) NOT NULL,
   UNIQUE INDEX `crm_academy_workshop_agenda_templates_title_key` (`title`),
-  INDEX `crm_academy_workshop_agenda_templates_created_by_staff_id_updated_at_idx` (`created_by_staff_id`, `updated_at`),
+  INDEX `crm_academy_workshop_agenda_templates_created_by_staff_id_up_idx` (`created_by_staff_id`, `updated_at`),
   PRIMARY KEY (`id`),
   CONSTRAINT `crm_academy_workshop_agenda_templates_created_by_staff_id_fkey`
     FOREIGN KEY (`created_by_staff_id`) REFERENCES `crm_staff` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
@@ -22,7 +22,7 @@ CREATE TABLE `crm_academy_workshop_agenda_template_items` (
   `sort_order` INT NOT NULL DEFAULT 0,
   `created_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `updated_at` DATETIME(0) NOT NULL,
-  INDEX `crm_academy_workshop_agenda_template_items_template_id_sort_order_idx` (`template_id`, `sort_order`),
+  INDEX `crm_academy_workshop_agenda_template_items_template_id_sort__idx` (`template_id`, `sort_order`),
   PRIMARY KEY (`id`),
   CONSTRAINT `crm_academy_workshop_agenda_template_items_template_id_fkey`
     FOREIGN KEY (`template_id`) REFERENCES `crm_academy_workshop_agenda_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE

@@ -10,8 +10,8 @@ CREATE TABLE `crm_academy_workshop_equipment_packages` (
   `created_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `updated_at` DATETIME(0) NOT NULL,
   PRIMARY KEY (`id`),
-  INDEX `crm_academy_workshop_equipment_packages_workshop_id_sort_order_idx` (`workshop_id`, `sort_order`),
-  INDEX `crm_academy_workshop_equipment_packages_workshop_id_is_available_idx` (`workshop_id`, `is_available`),
+  INDEX `crm_academy_workshop_equipment_packages_workshop_id_sort_ord_idx` (`workshop_id`, `sort_order`),
+  INDEX `crm_academy_workshop_equipment_packages_workshop_id_is_avail_idx` (`workshop_id`, `is_available`),
   CONSTRAINT `crm_academy_workshop_equipment_packages_workshop_id_fkey`
     FOREIGN KEY (`workshop_id`) REFERENCES `crm_academy_workshops` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -25,10 +25,10 @@ CREATE TABLE `crm_academy_workshop_participant_equipment_selections` (
   `price_vnd` INT NOT NULL,
   `selected_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   PRIMARY KEY (`id`),
-  UNIQUE INDEX `crm_academy_workshop_participant_equipment_selections_participant_id_key` (`participant_id`),
-  INDEX `crm_academy_workshop_participant_equipment_selections_equipment_package_id_idx` (`equipment_package_id`),
-  CONSTRAINT `crm_academy_workshop_participant_equipment_selections_participant_id_fkey`
+  UNIQUE INDEX `crm_academy_workshop_participant_equipment_selections_partic_key` (`participant_id`),
+  INDEX `crm_academy_workshop_participant_equipment_selections_equipm_idx` (`equipment_package_id`),
+  CONSTRAINT `crm_academy_workshop_participant_equipment_selections_parti_fkey`
     FOREIGN KEY (`participant_id`) REFERENCES `crm_academy_workshop_participants` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `crm_academy_workshop_participant_equipment_selections_equipment_package_id_fkey`
+  CONSTRAINT `crm_academy_workshop_participant_equipment_selections_equip_fkey`
     FOREIGN KEY (`equipment_package_id`) REFERENCES `crm_academy_workshop_equipment_packages` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

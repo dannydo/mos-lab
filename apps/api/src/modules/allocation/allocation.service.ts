@@ -12,7 +12,7 @@ import {
   AllocationBatchStatus,
   BookerAllocationBatchSummary,
 } from '@mos-lab/shared';
-import { buildDurableCustomerAssignmentData } from '../customers/services/customer-assignment-policy.service.js';
+import { AllocationLedgerService } from './allocation-ledger.service.js';
 
 export const ACCEPT_ACTION_TYPES = ['ACCEPT', 'ACCEPT_ALLOCATION'];
 
@@ -65,6 +65,16 @@ export class AllocationService {
 
         // Record history log
         for (const item of batch.items) {
+          await AllocationLedgerService.append(tx, {
+            customerId: item.customerId,
+            eventType: 'EXPIRED',
+            actorStaffId: batch.assignerId,
+            reason: 'Tự động hết hạn 24h chờ xác nhận (Auto Expired 24h)',
+            sourceType: 'SYSTEM',
+            actionContext: 'ALLOCATION_BATCH_EXPIRY',
+            batchId: batch.batchCode,
+            occurredAt: now,
+          });
           await tx.crmAssignmentHistory.create({
             data: {
               batchId: batch.batchCode,
@@ -144,8 +154,28 @@ export class AllocationService {
           where: { id: { in: pendingItemIds } },
           data: { status: 'RECALLED' },
         });
-
         const affectedBatchIds = Array.from(new Set(pendingItemsRaw.map((i) => Number(i.batch_id))));
+        const recalledBatches = await tx.crmAllocationBatch.findMany({
+          where: { id: { in: affectedBatchIds } },
+          select: { id: true, batchCode: true, bookerId: true, campaignId: true },
+        });
+        const recalledBatchById = new Map(recalledBatches.map((batch) => [batch.id, batch]));
+        for (const item of pendingItemsRaw) {
+          const recalledBatch = recalledBatchById.get(Number(item.batch_id));
+          await AllocationLedgerService.append(tx, {
+            customerId: Number(item.customer_id),
+            eventType: 'RECALLED',
+            previousStaffId: recalledBatch?.bookerId ?? null,
+            nextStaffId: null,
+            actorStaffId: assignerId,
+            reason: 'Thu hồi đề nghị phân bổ đang chờ để tạo đề nghị mới',
+            sourceType: 'MANUAL',
+            actionContext: 'PENDING_BATCH_REPLACED',
+            batchId: recalledBatch?.batchCode ?? String(item.batch_id),
+            campaignId: recalledBatch?.campaignId ?? null,
+            occurredAt: now,
+          });
+        }
         for (const pBatchId of affectedBatchIds) {
           const remainingPendingCount = await tx.crmAllocationBatchItem.count({
             where: { batchId: pBatchId, status: 'PENDING_ACCEPT' },
@@ -188,6 +218,31 @@ export class AllocationService {
       await tx.crmAllocationBatchItem.createMany({
         data: itemData,
       });
+
+      const currentAssignments = await tx.crmCustomerAssignment.findMany({
+        where: { legacyUserId: { in: uniqueCustomerIds } },
+        select: { legacyUserId: true, staffId: true },
+      });
+      const currentOwnerByCustomer = new Map(
+        currentAssignments.map((assignment) => [assignment.legacyUserId, assignment.staffId])
+      );
+      for (const customerId of uniqueCustomerIds) {
+        await AllocationLedgerService.append(tx, {
+          customerId,
+          eventType: 'OFFERED',
+          previousStaffId: currentOwnerByCustomer.get(customerId) ?? null,
+          nextStaffId: bookerId,
+          actorStaffId: assignerId,
+          reason: dto.sourceFilterSummary || 'Quản lý tạo đề nghị phân bổ chờ Booker xác nhận',
+          sourceType: dto.sourceType || 'MANUAL',
+          actionContext: 'ALLOCATION_BATCH_CREATED',
+          batchId: batch.batchCode,
+          campaignId: dto.campaignId || null,
+          correlationId: dto.parentBatchId || null,
+          metadata: { expiresAt: expiresAt.toISOString() },
+          occurredAt: now,
+        });
+      }
 
       // Write representative history records so batch appears in AssignmentHistoryDrawer
       const historyData = uniqueCustomerIds.map((cId) => ({
@@ -421,14 +476,27 @@ export class AllocationService {
 
     const now = new Date();
     if (now > batchInfo.expiresAt) {
-      // Dedicated update outside failing transaction so EXPIRED status persists in DB
-      await fastify.prisma.crm.crmAllocationBatch.update({
-        where: { id: batchId },
-        data: { status: 'EXPIRED' },
-      });
-      await fastify.prisma.crm.crmAllocationBatchItem.updateMany({
-        where: { batchId },
-        data: { status: 'EXPIRED' },
+      await fastify.prisma.crm.$transaction(async (tx) => {
+        const expiringBatch = await tx.crmAllocationBatch.findUnique({
+          where: { id: batchId },
+          include: { items: true },
+        });
+        if (!expiringBatch || expiringBatch.status !== 'PENDING_ACCEPT') return;
+        await tx.crmAllocationBatch.update({ where: { id: batchId }, data: { status: 'EXPIRED' } });
+        await tx.crmAllocationBatchItem.updateMany({ where: { batchId }, data: { status: 'EXPIRED' } });
+        for (const item of expiringBatch.items) {
+          await AllocationLedgerService.append(tx, {
+            customerId: item.customerId,
+            eventType: 'EXPIRED',
+            actorKind: 'SYSTEM',
+            reason: 'Tự động hết hạn 24h chờ xác nhận (Auto Expired 24h)',
+            sourceType: 'SYSTEM',
+            actionContext: 'ALLOCATION_BATCH_ACCEPT_AFTER_EXPIRY',
+            batchId: expiringBatch.batchCode,
+            campaignId: expiringBatch.campaignId,
+            occurredAt: now,
+          });
+        }
       });
       throw new Error('Đợt phân bổ đã vượt quá 24h xác nhận');
     }
@@ -473,18 +541,22 @@ export class AllocationService {
 
       // R2: Exact +N Customer assignment & Audit logging
       for (const item of batch.items) {
-        const durableAssignment = buildDurableCustomerAssignmentData({
-          staffId: bookerId,
-          assignedBy: batch.assignerId,
-          assignedAt: txNow,
-        });
-        await tx.crmCustomerAssignment.upsert({
+        const existingAssignment = await tx.crmCustomerAssignment.findUnique({
           where: { legacyUserId: item.customerId },
-          update: durableAssignment,
-          create: {
-            legacyUserId: item.customerId,
-            ...durableAssignment,
-          },
+        });
+        await AllocationLedgerService.setOwner(tx, {
+          customerId: item.customerId,
+          eventType:
+            existingAssignment?.staffId && existingAssignment.staffId !== bookerId ? 'TRANSFERRED' : 'ACCEPTED',
+          previousStaffId: existingAssignment?.staffId ?? null,
+          nextStaffId: bookerId,
+          actorStaffId: bookerId,
+          reason: batch.sourceFilterSummary || 'Booker đã chấp nhận đợt phân bổ data',
+          sourceType: 'ALLOCATION',
+          actionContext: 'ALLOCATION_BATCH_ACCEPTED',
+          batchId: batch.batchCode,
+          campaignId: batch.campaignId,
+          occurredAt: txNow,
         });
 
         await tx.crmAssignmentHistory.create({
@@ -577,6 +649,19 @@ export class AllocationService {
 
       // Audit history records
       for (const item of batch.items) {
+        await AllocationLedgerService.append(tx, {
+          customerId: item.customerId,
+          eventType: 'DECLINED',
+          previousStaffId: null,
+          nextStaffId: null,
+          actorStaffId: bookerId,
+          reason: `Booker từ chối: ${fullReason}`,
+          sourceType: 'ALLOCATION',
+          actionContext: 'ALLOCATION_BATCH_DECLINED',
+          batchId: batch.batchCode,
+          campaignId: batch.campaignId,
+          occurredAt: now,
+        });
         await tx.crmAssignmentHistory.create({
           data: {
             batchId: batch.batchCode,
@@ -636,8 +721,19 @@ export class AllocationService {
           });
 
           if (assignment && assignment.staffId === batch.bookerId) {
-            await tx.crmCustomerAssignment.delete({
-              where: { legacyUserId: item.customerId },
+            await AllocationLedgerService.setOwner(tx, {
+              customerId: item.customerId,
+              eventType: 'RECALLED',
+              previousStaffId: batch.bookerId,
+              nextStaffId: null,
+              actorStaffId: adminId,
+              reason: `Quản lý thu hồi đợt phân bổ: ${reason}`,
+              sourceType: 'ALLOCATION',
+              actionContext: 'ALLOCATION_BATCH_RECALLED',
+              batchId: batch.batchCode,
+              campaignId: batch.campaignId,
+              deleteWhenPool: true,
+              occurredAt: now,
             });
 
             await tx.crmAssignmentHistory.create({

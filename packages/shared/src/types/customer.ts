@@ -363,7 +363,21 @@ export interface CustomerAssignmentTimelineItem {
   id: number;
   batchId: string;
   assignedAt: string;
-  actionType: 'ASSIGN' | 'REVOKE' | 'EXPIRE' | 'UNDO' | 'TRANSFER' | string;
+  actionType:
+    | 'OFFERED'
+    | 'ACCEPTED'
+    | 'DECLINED'
+    | 'EXPIRED'
+    | 'RETURNED_TO_POOL'
+    | 'TRANSFERRED'
+    | 'RECALLED'
+    | 'UNDO_REVERSED'
+    | 'RETENTION_CHANGED'
+    | 'CAMPAIGN_RETURNED_TO_POOL'
+    | 'STAFF_MERGED'
+    | 'RANDOM_SELECTED'
+    | 'SYSTEM_REPAIR'
+    | string;
   staffId: number | null;
   staffName: string | null;
   prevStaffId: number | null;
@@ -375,6 +389,10 @@ export interface CustomerAssignmentTimelineItem {
   sourceType: string;
   sourceFilterSummary: string | null;
   reason: string | null;
+  actionContext?: string | null;
+  campaignId?: number | null;
+  correlationId?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface AssignmentHistoryResponse {

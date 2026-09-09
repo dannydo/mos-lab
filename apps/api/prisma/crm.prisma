@@ -363,6 +363,37 @@ model CrmAssignmentHistory {
   @@map("crm_assignment_history")
 }
 
+/// Immutable, per-customer evidence for every allocation/ownership decision.
+/// This deliberately has no staff foreign keys: a staff merge may retire the
+/// source account, but must never rewrite the historical owner or actor IDs.
+model CrmAllocationLedgerEvent {
+  id                 Int      @id @default(autoincrement())
+  legacyUserId       Int      @map("legacy_user_id")
+  eventType          String   @map("event_type") @db.VarChar(40)
+  previousStaffId    Int?     @map("previous_staff_id")
+  nextStaffId        Int?     @map("next_staff_id")
+  actorStaffId       Int?     @map("actor_staff_id")
+  actorKind          String   @default("USER") @map("actor_kind") @db.VarChar(16)
+  previousStaffLabel String?  @map("previous_staff_label") @db.VarChar(150)
+  nextStaffLabel     String?  @map("next_staff_label") @db.VarChar(150)
+  actorLabel         String?  @map("actor_label") @db.VarChar(150)
+  reason             String?  @db.Text
+  sourceType         String   @default("MANUAL") @map("source_type") @db.VarChar(40)
+  actionContext      String?  @map("action_context") @db.VarChar(80)
+  batchId            String?  @map("batch_id") @db.VarChar(80)
+  campaignId         Int?     @map("campaign_id")
+  correlationId      String?  @map("correlation_id") @db.VarChar(100)
+  metadataJson       String?  @map("metadata_json") @db.LongText
+  legacyHistoryId    Int?     @unique @map("legacy_history_id")
+  occurredAt         DateTime @default(now()) @map("occurred_at") @db.DateTime(0)
+
+  @@index([legacyUserId, occurredAt])
+  @@index([batchId])
+  @@index([campaignId])
+  @@index([correlationId])
+  @@map("crm_allocation_ledger_events")
+}
+
 // ═══════════════════════════════════════════
 // OmiCall Integration — Raw webhook data + AI results
 // ═══════════════════════════════════════════
