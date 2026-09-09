@@ -183,8 +183,8 @@ test('branch coverage saves CC and CV requirements together using the canonical 
           findUnique: async () => ({
             id: 9,
             status: 'DRAFT',
-            startDate: new Date('2026-08-31T17:00:00Z'),
-            endDate: new Date('2026-09-01T17:00:00Z'),
+            startDate: new Date('2026-09-01T05:00:00Z'),
+            endDate: new Date('2026-09-02T05:00:00Z'),
           }),
         },
         crmStore: {
@@ -302,8 +302,8 @@ test('roster import is idempotent for the same holiday, date, and staff identity
           findUnique: async () => ({
             id: 9,
             status: 'DRAFT',
-            startDate: new Date('2026-08-31T17:00:00Z'),
-            endDate: new Date('2026-09-01T17:00:00Z'),
+            startDate: new Date('2026-09-01T05:00:00Z'),
+            endDate: new Date('2026-09-02T05:00:00Z'),
           }),
         },
         crmTeam: { findMany: async () => [{ code: 'CV' }] },
@@ -356,6 +356,7 @@ test('roster import is idempotent for the same holiday, date, and staff identity
   assert.equal(rows.size, 1);
   assert.equal(first.id, second.id);
   assert.equal(first.rosterKey, '2026-09-01:staff:777');
+  assert.equal((rows.get('2026-09-01:staff:777')?.workDate as Date).toISOString().slice(0, 10), '2026-09-01');
   assert.equal(auditCount, 2);
 });
 
@@ -367,8 +368,8 @@ test('manager cannot nominate staff outside an active leader team', async () => 
           findUnique: async () => ({
             id: 9,
             status: 'DRAFT',
-            startDate: new Date('2026-08-31T17:00:00Z'),
-            endDate: new Date('2026-09-01T17:00:00Z'),
+            startDate: new Date('2026-09-01T05:00:00Z'),
+            endDate: new Date('2026-09-02T05:00:00Z'),
           }),
         },
         crmStaff: { findUnique: async () => ({ legacyStaffId: 99 }) },
@@ -408,8 +409,8 @@ test('admin must explain an insufficient-data scheduling decision', async () => 
           findUnique: async () => ({
             id: 9,
             status: 'DRAFT',
-            startDate: new Date('2026-08-31T17:00:00Z'),
-            endDate: new Date('2026-09-01T17:00:00Z'),
+            startDate: new Date('2026-09-01T05:00:00Z'),
+            endDate: new Date('2026-09-02T05:00:00Z'),
           }),
         },
         crmTeam: { findMany: async () => [{ code: 'CV' }] },
@@ -448,8 +449,8 @@ test('resolving a roster exception requires an auditable decision reason', async
           findUnique: async () => ({
             id: 9,
             status: 'DRAFT',
-            startDate: new Date('2026-08-31T17:00:00Z'),
-            endDate: new Date('2026-09-01T17:00:00Z'),
+            startDate: new Date('2026-09-01T05:00:00Z'),
+            endDate: new Date('2026-09-02T05:00:00Z'),
           }),
         },
         crmTeam: { findMany: async () => [{ code: 'CV' }] },
