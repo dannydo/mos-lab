@@ -240,11 +240,11 @@ const dateKey = (value: Date | string): string => {
 
 const toDbDate = (value: string): Date => {
   if (!DATE_KEY_PATTERN.test(value)) throw new HolidayWorkError(`Ngày không hợp lệ: ${value}`);
-  // MySQL DATE values are persisted from the UTC calendar portion of a JS Date.
-  // Use noon in the business timezone so a date-only value remains on the same
-  // calendar day after conversion to UTC; midnight ICT would otherwise save the
-  // previous day (for example 2026-09-01 as 2026-08-31).
-  const parsed = new Date(`${value}T12:00:00+07:00`);
+  // A holiday date is a calendar key, not an instant. Prisma/MySQL DATE uses
+  // the UTC date portion, so construct UTC midnight directly. A Vietnam offset
+  // would roll the date, or make the final calendar day compare after a stored
+  // DATE boundary.
+  const parsed = new Date(`${value}T00:00:00.000Z`);
   if (Number.isNaN(parsed.getTime()) || dateKey(parsed) !== value) {
     throw new HolidayWorkError(`Ngày không hợp lệ: ${value}`);
   }
