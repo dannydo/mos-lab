@@ -670,6 +670,38 @@ export const apiClient = {
       return response.data;
     },
   },
+  safeDevNativeCcPayroll: {
+    run: async (): Promise<import('@mos-lab/shared').NativeCcPayrollLocalRunResponse> => {
+      const response = await api.get<import('@mos-lab/shared').NativeCcPayrollLocalRunResponse>(
+        '/safe-dev/payroll-native-cc-run'
+      );
+      return response.data;
+    },
+  },
+  safeDevLegacyCcComparison: {
+    run: async (): Promise<import('@mos-lab/shared').LegacyCcComparisonResponse> => {
+      const response = await api.get<import('@mos-lab/shared').LegacyCcComparisonResponse>(
+        '/safe-dev/legacy-cc-comparison'
+      );
+      return response.data;
+    },
+  },
+  safeDevLegacyCcParityReplay: {
+    run: async (): Promise<import('@mos-lab/shared').LegacyCcParityReplayResponse> => {
+      const response = await api.get<import('@mos-lab/shared').LegacyCcParityReplayResponse>(
+        '/safe-dev/legacy-cc-parity-replay'
+      );
+      return response.data;
+    },
+  },
+  safeDevLegacyCcCohortAudit: {
+    run: async (): Promise<import('@mos-lab/shared').LegacyCcCohortAuditResponse> => {
+      const response = await api.get<import('@mos-lab/shared').LegacyCcCohortAuditResponse>(
+        '/safe-dev/legacy-cc-cohort-audit'
+      );
+      return response.data;
+    },
+  },
   experienceJournal: {
     list: async (params?: ExperienceJournalListQuery): Promise<ExperienceJournalListResponse> => {
       const response = await api.get<ExperienceJournalListResponse>('/experience-journal', { params });

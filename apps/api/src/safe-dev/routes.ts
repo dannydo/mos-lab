@@ -20,6 +20,10 @@ import {
 } from '../modules/payroll-ledger/payroll-settlement-closing.service.js';
 import { dryRunApprovedAdjustment } from '../modules/payroll-ledger/payroll-adjustment-posting-dry-run.service.js';
 import { getLocalSettlementReview } from './payroll-settlement-review-lab.js';
+import { getLocalNativeCcPayrollRun } from './native-cc-payroll-run.js';
+import { getLegacyCcComparison } from './legacy-cc-comparison.js';
+import { getLegacyCcParityReplay } from './legacy-cc-parity-replay.js';
+import { getLegacyCcCohortAudit } from './legacy-cc-cohort-audit.js';
 import {
   createLocalAdjustmentDraft,
   createLocalEligibleAdjustmentDraft,
@@ -165,6 +169,50 @@ async function localCaseListResponse(fastify: FastifyInstance): Promise<PayrollA
  * or payroll-write route.
  */
 export async function safeDevRoutes(fastify: FastifyInstance) {
+  fastify.get('/safe-dev/payroll-native-cc-run', async (_request, reply) => {
+    if (!isSafeDev()) return reply.status(404).send({ message: 'Not found' });
+    try {
+      return reply.send(await getLocalNativeCcPayrollRun(fastify));
+    } catch (error) {
+      return reply.status(409).send({
+        message: error instanceof Error ? error.message : 'Unable to run the local native CC payroll rehearsal',
+      });
+    }
+  });
+
+  fastify.get('/safe-dev/legacy-cc-comparison', async (_request, reply) => {
+    if (!isSafeDev()) return reply.status(404).send({ message: 'Not found' });
+    try {
+      return reply.send(await getLegacyCcComparison(fastify));
+    } catch (error) {
+      return reply.status(409).send({
+        message: error instanceof Error ? error.message : 'Unable to prepare the Legacy read-only comparison',
+      });
+    }
+  });
+
+  fastify.get('/safe-dev/legacy-cc-parity-replay', async (_request, reply) => {
+    if (!isSafeDev()) return reply.status(404).send({ message: 'Not found' });
+    try {
+      return reply.send(await getLegacyCcParityReplay(fastify));
+    } catch (error) {
+      return reply.status(409).send({
+        message: error instanceof Error ? error.message : 'Unable to run the local Legacy parity replay',
+      });
+    }
+  });
+
+  fastify.get('/safe-dev/legacy-cc-cohort-audit', async (_request, reply) => {
+    if (!isSafeDev()) return reply.status(404).send({ message: 'Not found' });
+    try {
+      return reply.send(await getLegacyCcCohortAudit(fastify));
+    } catch (error) {
+      return reply.status(409).send({
+        message: error instanceof Error ? error.message : 'Unable to run the Legacy CC cohort audit',
+      });
+    }
+  });
+
   fastify.get('/safe-dev/payroll-adjustment-lab/settlement-review', async (_request, reply) => {
     if (!isSafeDev()) return reply.status(404).send({ message: 'Not found' });
     try {
@@ -284,11 +332,9 @@ export async function safeDevRoutes(fastify: FastifyInstance) {
       );
       return reply.send({ mode: 'LOCAL_ONLY', adjustmentCase: await getLocalSettlementSnapshotCase(fastify) });
     } catch (error) {
-      return reply
-        .status(400)
-        .send({
-          message: error instanceof Error ? error.message : 'Settlement snapshot decision could not be recorded',
-        });
+      return reply.status(400).send({
+        message: error instanceof Error ? error.message : 'Settlement snapshot decision could not be recorded',
+      });
     }
   });
 
