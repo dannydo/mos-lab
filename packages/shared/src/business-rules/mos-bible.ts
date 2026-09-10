@@ -316,13 +316,14 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Cash Bonus và các sổ nguồn phải cộng ở độ chính xác nửa đồng trước, sau đó chỉ làm tròn một lần ở tổng người/kỳ.',
       'Kỳ LOCKED không bị xóa, regenerate hay ghi đè. Fix, Adjust hoặc Log phát sinh trễ chỉ có thể tạo một adjustment mới sau phê duyệt.',
       'Shadow settlement phải gắn period, calculation version, source key duy nhất và chỉ-đọc; thiếu snapshot hoặc lệch nguồn thì fail closed.',
+      'Phase 2 chỉ tạo case, snapshot, line và audit để review. Chỉ một Phase posting được duyệt riêng mới có quyền ghi adjustment vào kỳ hiện tại.',
     ],
     rationale:
       'Lương phải truy vết được từng đồng mà vẫn giữ nguyên payslip đã chốt; một thay đổi muộn không được làm lịch sử hay level của kỳ cũ trôi đi.',
     tags: ['payroll', 'ledger', 'settlement', 'adjustment', 'audit', 'Cash Bonus'],
     routeScopes: ['/dashboard/cc', '/dashboard/cv', '/dashboard/fal', '/dashboard/kpi'],
     status: 'ACTIVE',
-    version: '1.0.0',
+    version: '1.1.0',
     effectiveFrom: '2026-09-10',
     sources: [
       {
