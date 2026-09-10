@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { RecordCcNativeEvidenceRequest } from '@mos-lab/shared';
 import { requireAuth, requireSuperAdmin } from '../../middlewares/auth.js';
 import { CcNativeEvidenceService } from './cc-native-evidence.service.js';
+import { CcNativePilotDashboardService } from './cc-native-pilot-dashboard.service.js';
 import { CcNativePilotCohortService } from './cc-native-pilot-cohort.service.js';
 import { LockedSettlementExportService } from './locked-settlement-export.service.js';
 
@@ -13,6 +14,20 @@ import { LockedSettlementExportService } from './locked-settlement-export.servic
  * does not create a period, rebuild Legacy data, or post any payroll entry.
  */
 export async function payrollLedgerRoutes(fastify: FastifyInstance) {
+  fastify.get<{ Querystring: { periodKey?: string } }>(
+    '/payroll-ledger/cc-pilot-dashboard',
+    { preHandler: [requireAuth, requireSuperAdmin] },
+    async (request, reply) => {
+      try {
+        return reply.send(await CcNativePilotDashboardService.get(fastify, request.query.periodKey));
+      } catch (error) {
+        return reply.status(409).send({
+          message: error instanceof Error ? error.message : 'Unable to load the native CC pilot dashboard',
+        });
+      }
+    }
+  );
+
   /**
    * A temporary, operator-only native-evidence boundary.  Future mOS service,
    * sales-close and tip workflows call this service directly; no Legacy/iOS

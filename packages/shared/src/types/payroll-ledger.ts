@@ -249,3 +249,49 @@ export interface LegacyCcCohortAuditResponse {
     }>;
   }>;
 }
+
+/** Production-safe, Super Admin-only operational view of the native CC pilot.
+ * It reads mOS evidence and ledger rows only; Legacy parity stays local-only. */
+export interface NativeCcPilotDashboardResponse {
+  mode: 'PRODUCTION_PILOT_READ_ONLY';
+  cohort: {
+    version: string;
+    enabled: true;
+    subjects: Array<{ subjectKey: string; displayName: string }>;
+  };
+  periods: Array<{
+    id: number;
+    periodKey: string;
+    label: string;
+    status: PayrollPeriodStatus;
+    lockedAt: string | null;
+  }>;
+  activePeriodKey: string | null;
+  summary: {
+    cohortSize: number;
+    evidenceCount: number;
+    finalizedSubjectCount: number;
+    settlementStatus: string | null;
+  };
+  rows: Array<{
+    subjectKey: string;
+    displayName: string;
+    evidence: Array<{
+      evidenceKey: string;
+      kind: CcNativeEvidenceKind;
+      component: 'CC_XOAY_CASH' | 'CC_DAILY_BONUS' | 'CC_TIP_CASH';
+      amountHalfDong: number;
+      sourceReference: string;
+      sourceOccurredAt: string;
+      policyVersion: string | null;
+    }>;
+    ledger: Array<{
+      eventKey: string;
+      component: string;
+      amountHalfDong: number;
+      sourceReference: string;
+      sourceOccurredAt: string;
+    }>;
+    finalized: boolean;
+  }>;
+}
