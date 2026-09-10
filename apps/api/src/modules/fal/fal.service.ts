@@ -9,6 +9,11 @@ import {
 import { FastifyInstance } from 'fastify';
 
 export const FAL_RULE_VALUES = ['Fix', 'Adjust', 'Log', 'Replace'] as const;
+/**
+ * One shared boundary for every FAL consumer.  A remediation that lasts
+ * exactly 25 minutes remains on the short-service (Chuối/head) path.
+ */
+export const FAL_SHORT_REMEDIATION_MAX_MINUTES = 25;
 
 type LogExplanationLike = {
   id: number;
@@ -37,7 +42,14 @@ export function getOriginResponsibility(rule: FalRule): 'CV' | 'CC' | null {
 
 export function totalFalMinutes(servicingMinutes?: number | null, cleaningMinutes?: number | null): number | null {
   if (servicingMinutes == null || cleaningMinutes == null) return null;
-  return Math.max(0, Number(servicingMinutes)) + Math.max(0, Number(cleaningMinutes));
+  const servicing = Number(servicingMinutes);
+  const cleaning = Number(cleaningMinutes);
+
+  // Missing or malformed timeline data must fail closed.  Treating it as
+  // zero would issue (or route) a reward from an incomplete service record.
+  if (!Number.isFinite(servicing) || !Number.isFinite(cleaning) || servicing < 0 || cleaning < 0) return null;
+
+  return servicing + cleaning;
 }
 
 export function resolveFalCompensationMode(input: {
@@ -50,7 +62,7 @@ export function resolveFalCompensationMode(input: {
   if (input.rule === 'Replace') return 'NORMAL_FINAL';
   if (!input.totalMinutes || input.totalMinutes <= 0) return 'BLOCKED';
   if (input.rule === 'Log' && input.decisionStatus !== 'APPROVED') return 'BLOCKED';
-  return input.totalMinutes <= 25 ? 'BANANA_HEAD' : 'NORMAL_FINAL';
+  return input.totalMinutes <= FAL_SHORT_REMEDIATION_MAX_MINUTES ? 'BANANA_HEAD' : 'NORMAL_FINAL';
 }
 
 export function resolveFalRotationMode(input: {
@@ -63,7 +75,7 @@ export function resolveFalRotationMode(input: {
   // FAL head-of-queue token, regardless of the service duration.
   if (input.rule === 'Replace') return 'FINAL';
   if (!input.totalMinutes || input.totalMinutes <= 0) return 'UNDETERMINED';
-  return input.totalMinutes <= 25 ? 'HEAD' : 'FINAL';
+  return input.totalMinutes <= FAL_SHORT_REMEDIATION_MAX_MINUTES ? 'HEAD' : 'FINAL';
 }
 
 export function resolveFalFinancialEligibility(input: {

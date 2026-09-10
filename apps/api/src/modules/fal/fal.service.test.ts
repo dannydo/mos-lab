@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  FAL_SHORT_REMEDIATION_MAX_MINUTES,
   getOriginResponsibility,
   resolveFalCompensationMode,
   resolveFalFinancialEligibility,
@@ -8,9 +9,11 @@ import {
   totalFalMinutes,
 } from './fal.service.js';
 
-test('FAL duration is servicing plus cleaning and zero/missing is blocked', () => {
+test('FAL duration contract sums servicing and cleaning, and fails closed for incomplete timelines', () => {
   assert.equal(totalFalMinutes(20, 5), 25);
   assert.equal(totalFalMinutes(20, null), null);
+  assert.equal(totalFalMinutes(-1, 26), null);
+  assert.equal(totalFalMinutes(Number.NaN, 26), null);
   assert.equal(resolveFalCompensationMode({ rule: 'Adjust', caseRole: 'REMEDIATION', totalMinutes: 0 }), 'BLOCKED');
   assert.equal(
     resolveFalFinancialEligibility({ rule: 'Fix', caseRole: 'REMEDIATION', totalMinutes: null }),
@@ -37,11 +40,40 @@ test('Fix and Adjust retain their existing accountability paths', () => {
   assert.equal(resolveFalCompensationMode({ rule: 'Adjust', caseRole: 'ORIGIN', totalMinutes: 10 }), 'ORIGIN_ONLY');
 });
 
-test('<=25 remediation uses head banana; >25 uses final normal rewards', () => {
-  assert.equal(resolveFalCompensationMode({ rule: 'Fix', caseRole: 'REMEDIATION', totalMinutes: 25 }), 'BANANA_HEAD');
+test('25-minute boundary keeps short remediation on head banana; 26 minutes uses final normal rewards', () => {
+  assert.equal(FAL_SHORT_REMEDIATION_MAX_MINUTES, 25);
+  assert.equal(totalFalMinutes(20, 5), FAL_SHORT_REMEDIATION_MAX_MINUTES);
   assert.equal(
-    resolveFalCompensationMode({ rule: 'Adjust', caseRole: 'REMEDIATION', totalMinutes: 26 }),
+    resolveFalCompensationMode({
+      rule: 'Fix',
+      caseRole: 'REMEDIATION',
+      totalMinutes: FAL_SHORT_REMEDIATION_MAX_MINUTES,
+    }),
+    'BANANA_HEAD'
+  );
+  assert.equal(
+    resolveFalCompensationMode({
+      rule: 'Adjust',
+      caseRole: 'REMEDIATION',
+      totalMinutes: FAL_SHORT_REMEDIATION_MAX_MINUTES + 1,
+    }),
     'NORMAL_FINAL'
+  );
+  assert.equal(
+    resolveFalRotationMode({
+      rule: 'Fix',
+      caseRole: 'REMEDIATION',
+      totalMinutes: FAL_SHORT_REMEDIATION_MAX_MINUTES,
+    }),
+    'HEAD'
+  );
+  assert.equal(
+    resolveFalRotationMode({
+      rule: 'Fix',
+      caseRole: 'REMEDIATION',
+      totalMinutes: FAL_SHORT_REMEDIATION_MAX_MINUTES + 1,
+    }),
+    'FINAL'
   );
 });
 
