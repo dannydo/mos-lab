@@ -24,6 +24,14 @@ describe('Kinh Thánh mOS contextual registry', () => {
     expect(ids).toContain('PEOPLE-002');
   });
 
+  it('suggests the FAL duration contract on every affected FAL, CC, CV, and KPI page', () => {
+    for (const pathname of ['/dashboard/fal', '/dashboard/cc', '/dashboard/cv', '/dashboard/kpi']) {
+      const ids = getMosBibleCommandmentsForPath(pathname).map((item) => item.id);
+
+      expect(ids, pathname).toContain('FAL-001');
+    }
+  });
+
   it('searches Vietnamese terms without tones', () => {
     const results = filterMosBibleCommandments(MOS_BIBLE_COMMANDMENTS, 'khong dau');
 

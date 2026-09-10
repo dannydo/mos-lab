@@ -59,6 +59,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Logic dùng ở từ hai nơi trở lên phải được tập trung tại Fastify service/model hoặc helper dùng chung phù hợp.',
       'Kiểu dữ liệu công khai phải được định nghĩa tại @mos-lab/shared; frontend chỉ trình bày kết quả đã thống nhất.',
       'Khi nghiệp vụ thay đổi, cùng thay đổi đó phải cập nhật hoặc tạo Điều răn, routeScopes và nguồn kiểm chứng.',
+      'Mỗi Điều răn phải khai báo các trang liên quan; khi mở Kinh Thánh từ một trang đó, Điều răn phải tự xuất hiện trong “Trang này” và có test chứng minh.',
       'Điều răn cũ không bị xóa âm thầm: chuyển sang Revised hoặc Retired và dẫn tới phiên bản thay thế.',
     ],
     rationale: 'AI, nhân viên và mã nguồn cần cùng trỏ về một ý nghĩa để báo cáo không diễn giải khác nhau.',
@@ -66,11 +67,12 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['single source of truth', 'AI', 'quản trị', 'thay đổi nghiệp vụ'],
     routeScopes: ['/dashboard'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-09-02',
+    version: '1.1.0',
+    effectiveFrom: '2026-09-10',
     sources: [
       { label: 'Quy tắc hợp nhất business logic', reference: 'AGENTS.md · Rule #11' },
       { label: 'Hướng dẫn phát triển', reference: 'docs/DEVELOPMENT.md' },
+      { label: 'Contextual Kinh Thánh UI', reference: 'apps/web/components/mos-bible/MosBibleDrawer.tsx' },
     ],
   },
   {
@@ -277,13 +279,15 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   {
     id: 'FAL-001',
     book: 'REWARDS',
-    title: 'FAL tách lỗi cũ và công mới thành hai ledger',
-    summary: 'Fix, Adjust, Log và Replace phải tách trách nhiệm ca gốc khỏi công sức của ca xử lý mới.',
+    title: 'FAL tách lỗi cũ, công mới và mốc 25 phút thành một contract',
+    summary:
+      'Fix, Adjust, Log và Replace phải tách trách nhiệm ca gốc khỏi công sức của ca xử lý mới; mọi màn hình dùng cùng contract thời lượng 25 phút.',
     commandments: [
       'Adjust thu hồi 100% điểm/thưởng CC ca gốc; CV ca gốc giữ nguyên. Fix làm điều ngược lại: thu hồi CV ca gốc, CC giữ nguyên.',
+      'Thời lượng FAL luôn bằng servicing + cleaning. Đúng 25 phút vẫn là ca ngắn; trên 25 phút là ca Normal.',
       'Ca Fix/Adjust/Log mới có thời lượng dương không quá 25 phút: CV nhận 15 Chuối, CC nhận tổng 5 Chuối và vào tua đầu.',
-      'Ca mới trên 25 phút chạy như Normal ở tua cuối; thời lượng bằng 0 hoặc thiếu dữ liệu phải rà soát.',
-      'Log không phạt ca gốc; thưởng Log mới chỉ chốt sau khi Admin hoặc Quản lý/CHO duyệt giải trình.',
+      'Ca mới trên 25 phút chạy như Normal ở tua cuối. Thời lượng bằng 0, thiếu, âm hoặc không hợp lệ phải Pending review; không được tự coi là 0 hay tự sinh thưởng.',
+      'Log không phạt ca gốc; bất kỳ ledger thưởng Log nào cũng chỉ chốt sau khi Admin hoặc Quản lý/CHO duyệt giải trình.',
       'Replace tính thưởng Full theo bộ mi mới và áp dụng quy tắc thu hồi kỹ thuật riêng cho CV ca gốc.',
     ],
     rationale:
@@ -291,9 +295,15 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     tags: ['FAL', 'Fix', 'Adjust', 'Log', 'Replace', 'Chuối'],
     routeScopes: ['/dashboard/fal', '/dashboard/cv', '/dashboard/cc', '/dashboard/kpi'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-09-02',
-    sources: [{ label: 'Ledger FAL', reference: 'AGENTS.md · Rule #13' }],
+    version: '1.1.0',
+    effectiveFrom: '2026-09-10',
+    sources: [
+      { label: 'Ledger FAL', reference: 'AGENTS.md · Rule #13' },
+      {
+        label: 'FAL duration contract',
+        reference: 'apps/api/src/modules/fal/fal.service.ts',
+      },
+    ],
   },
   {
     id: 'COMBO-001',
