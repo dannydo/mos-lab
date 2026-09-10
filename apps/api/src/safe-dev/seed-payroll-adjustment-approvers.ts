@@ -105,7 +105,7 @@ async function run() {
       };
     });
 
-    console.log(JSON.stringify(result));
+    process.stdout.write(`${JSON.stringify(result)}\n`);
   } finally {
     await crm.$disconnect();
   }

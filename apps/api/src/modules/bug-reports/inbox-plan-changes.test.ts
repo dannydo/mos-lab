@@ -4,6 +4,12 @@ import { InboxImplementationService, inboxPlanReviewCandidate } from './inbox-im
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 import { bugReportAgentProgress, bugReportWorkflowProjection } from './bug-report.service.js';
 
+type MutableRow = Record<string, unknown>;
+type AuditRow = MutableRow & { action: string; beforeJson: string };
+type CommentRow = MutableRow & { id: number; body: string };
+type FollowUpRow = MutableRow & { eventVersion: string };
+type SqlQuery = { sql: string; values: unknown[] };
+
 function fixture() {
   const report = {
     id: 29,
@@ -39,14 +45,20 @@ function fixture() {
     resultJson: '{"immutable":"plan evidence"}',
     reviewCommentId: 77,
   };
-  const state = { report, plans: [plan], audits: [] as any[], comments: [] as any[], followUps: [] as any[] };
+  const state = {
+    report,
+    plans: [plan],
+    audits: [] as AuditRow[],
+    comments: [] as CommentRow[],
+    followUps: [] as FollowUpRow[],
+  };
   let failure = false;
   let queue = Promise.resolve();
   const read = () =>
     structuredClone({ ...state.report, comments: [...state.comments].reverse(), inboxPlanJobs: state.plans });
-  const db: any = {
+  const db = {
     crmBugReport: { findUnique: async () => read() },
-    $transaction: async (callback: (tx: any) => Promise<any>) => {
+    $transaction: async (callback: (tx: unknown) => Promise<unknown>) => {
       const previous = queue;
       let release!: () => void;
       queue = new Promise<void>((done) => {
@@ -56,7 +68,7 @@ function fixture() {
       const before = structuredClone(state);
       let locked = false;
       const tx = {
-        $queryRaw: async (query: any) => {
+        $queryRaw: async (query: SqlQuery) => {
           assert.match(query.sql, /FOR UPDATE/);
           assert.deepEqual(query.values, [29]);
           locked = true;
@@ -66,40 +78,42 @@ function fixture() {
             assert.ok(locked);
             return read();
           },
-          update: async ({ data }: any) => {
+          update: async ({ data }: { data: MutableRow }) => {
             Object.assign(state.report, data);
             return read();
           },
         },
         crmInboxPlanJob: {
-          findUnique: async ({ where }: any) => structuredClone(state.plans.find((p) => p.id === where.id)),
-          update: async ({ where, data }: any) =>
+          findUnique: async ({ where }: { where: { id: string } }) =>
+            structuredClone(state.plans.find((p) => p.id === where.id)),
+          update: async ({ where, data }: { where: { id: string }; data: MutableRow }) =>
             Object.assign(
               state.plans.find((p) => p.id === where.id)!,
               data
             ),
-          updateMany: async ({ where, data }: any) => {
+          updateMany: async ({ where, data }: { where: { status: { in: string[] } }; data: MutableRow }) => {
             for (const p of state.plans) if (where.status.in.includes(p.status)) Object.assign(p, data);
           },
         },
         crmInboxImplementationJob: { findFirst: async () => null },
         crmBugReportComment: {
-          create: async ({ data }: any) => {
-            const row = { id: 78, ...data };
+          create: async ({ data }: { data: MutableRow }) => {
+            const row = { id: 78, body: '', ...data } as CommentRow;
             state.comments.push(row);
             return row;
           },
         },
         crmBugReportAudit: {
-          create: async ({ data }: any) => {
-            state.audits.push({ ...data, createdAt: new Date() });
+          create: async ({ data }: { data: MutableRow }) => {
+            state.audits.push({ action: '', beforeJson: '', ...data, createdAt: new Date() } as AuditRow);
           },
-          findFirst: async ({ where }: any) => state.audits.find((a) => a.action === where.action) ?? null,
+          findFirst: async ({ where }: { where: { action: string } }) =>
+            state.audits.find((a) => a.action === where.action) ?? null,
         },
         crmInboxFollowUpJob: {
-          create: async ({ data }: any) => {
+          create: async ({ data }: { data: MutableRow }) => {
             if (failure) throw new Error('outbox unavailable');
-            state.followUps.push(data);
+            state.followUps.push({ eventVersion: '', ...data } as FollowUpRow);
           },
         },
       };

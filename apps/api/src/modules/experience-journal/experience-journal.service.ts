@@ -27,7 +27,6 @@ export class ExperienceJournalError extends Error {
 }
 
 type SafeMetadata = Record<string, string | number | boolean | null>;
-type CrmClient = FastifyInstance['prisma']['crm'];
 
 function clean(value: unknown, maxLength: number): string {
   return String(value ?? '')
