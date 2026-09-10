@@ -32,7 +32,7 @@ const migration: DataMigration = {
   },
   async up(connection) {
     await connection.execute(
-      'INSERT INTO crm_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `key` = `key`',
+      'INSERT INTO crm_config (`key`, `value`, `updated_at`) VALUES (?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE `key` = `key`',
       [configKey, configValue]
     );
   },
