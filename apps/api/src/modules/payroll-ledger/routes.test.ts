@@ -114,6 +114,14 @@ test('native CC pilot dashboard is restricted to Super Admin', async () => {
   await app.close();
 });
 
+test('opening the native CC pilot month is restricted to Super Admin', async () => {
+  const app = createPayrollLedgerRouteApp('admin');
+  await app.register(payrollLedgerRoutes);
+  const response = await app.inject({ method: 'POST', url: '/payroll-ledger/cc-pilot-periods/open-current-month' });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+
 test('native CC evidence remains closed until the production pilot cohort is configured', async () => {
   const app = createPayrollLedgerRouteApp('super_admin');
   await app.register(payrollLedgerRoutes);

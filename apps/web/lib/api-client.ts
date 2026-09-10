@@ -101,6 +101,7 @@ import type {
   PayrollAdjustmentLabDecisionRequest,
   PayrollAdjustmentLabDraftRequest,
   NativeCcPilotDashboardResponse,
+  OpenNativeCcPilotPeriodResponse,
 } from '@mos-lab/shared';
 import {
   Customer,
@@ -554,6 +555,12 @@ export const apiClient = {
   payrollLedger: {
     ccPilotDashboard: async (params?: { periodKey?: string }): Promise<NativeCcPilotDashboardResponse> => {
       const response = await api.get<NativeCcPilotDashboardResponse>('/payroll-ledger/cc-pilot-dashboard', { params });
+      return response.data;
+    },
+    openCurrentCcPilotPeriod: async (): Promise<OpenNativeCcPilotPeriodResponse> => {
+      const response = await api.post<OpenNativeCcPilotPeriodResponse>(
+        '/payroll-ledger/cc-pilot-periods/open-current-month'
+      );
       return response.data;
     },
   },

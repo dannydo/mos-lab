@@ -320,6 +320,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Tích hợp từ Wings chỉ nhận settlement export đã LOCKED, có cutoff, phiên bản và hash xác minh. Không được truy vấn Legacy đang biến động rồi gọi kết quả đó là snapshot đã chốt.',
       'mOS Payroll Ledger phải tạo settlement ở REVIEWING với snapshot đầy đủ trước; chỉ một transaction chốt hợp lệ mới chuyển đồng thời settlement và kỳ sang LOCKED để phát export.',
       'Mọi khoản nguồn của settlement phải bắt đầu bằng mOS evidence bất biến cho dịch vụ Completed, chốt doanh số ngày hoặc Cash Tip; sau đó mới đi qua Payroll Ledger Event có idempotency key, subject, số nửa đồng, reference và hash. Kỳ LOCKED hoặc ARCHIVED tuyệt đối không nhận evidence hay event mới.',
+      'Pilot CC chỉ được Super Admin mở một lần cho đúng tháng hiện tại ở trạng thái OPEN sau khi cohort fail-closed đã hợp lệ. Mở kỳ chỉ tạo biên nhận evidence; không tạo settlement, adjustment hoặc payout và không được tái sử dụng kỳ đã thuộc workflow khác.',
+      'Số tháng lịch sử được phép hiện trong dashboard pilot chỉ dưới dạng snapshot parity đã xác minh và có hash. Snapshot này chỉ giải thích, không phải evidence mOS và không được dùng để finalize, tạo settlement hay payout.',
       'CC native chỉ nhận evidence do mOS phát hành; không nhập Cash Bonus từ iOS/Legacy. Mỗi cash event được mOS tính theo Level = floor(điểm trước ca / 100) + 1, × 65đ, và chia 50/50 chính xác tới nửa đồng khi có hai CC. CC Xoay thiếu event Cash là 0. Mỗi người/kỳ phải có evidence chốt Daily Bonus, kể cả giá trị 0, trước khi finalize. Cap 150% lấy tổng Daily Bonus và tổng CC Xoay của cả tháng, chỉ chạy đúng một lần khi finalize người/kỳ; phần vượt được ghi thành một event hold bất biến trước khi settlement review.',
       'Đối chiếu mOS với iOS/Legacy chỉ đọc phải so từng component theo source key chuẩn và đơn vị nửa đồng. Không có tolerance “lệch vài đồng”; thiếu dòng hoặc lệch nửa đồng đều là case cần điều tra trước khi LOCKED.',
       'Mỗi Adjustment Line phải lưu snapshot bất biến của người nhận: người cụ thể, avatar, vai trò CC/CV/Staff và chi nhánh. Không được suy lại từ hồ sơ hiện tại; thiếu snapshot thì không được tạo draft.',
@@ -334,11 +336,12 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '/dashboard/cv',
       '/dashboard/fal',
       '/dashboard/kpi',
+      '/dashboard/payroll-pilot',
       '/payroll-adjustment-lab',
       '/payroll-native-cc-run',
     ],
     status: 'ACTIVE',
-    version: '2.5.0',
+    version: '2.7.0',
     effectiveFrom: '2026-09-10',
     sources: [
       {
@@ -380,6 +383,14 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       {
         label: 'Evidence CC native từ mOS',
         reference: 'apps/api/src/modules/payroll-ledger/cc-native-evidence.service.ts',
+      },
+      {
+        label: 'Mở kỳ intake cho pilot CC',
+        reference: 'apps/api/src/modules/payroll-ledger/cc-native-pilot-period.service.ts',
+      },
+      {
+        label: 'Snapshot parity lịch sử cho dashboard pilot',
+        reference: 'apps/api/src/modules/payroll-ledger/cc-native-pilot-history.service.ts',
       },
       {
         label: 'Đối chiếu component payroll chính xác',

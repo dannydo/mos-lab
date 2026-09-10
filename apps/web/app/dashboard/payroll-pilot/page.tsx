@@ -3,7 +3,7 @@
 import { Alert, Button, Collapse, Descriptions, Select, Space, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { NativeCcPilotDashboardResponse } from '@mos-lab/shared';
-import { RefreshCw, ShieldCheck, UsersRound } from 'lucide-react';
+import { CalendarPlus, RefreshCw, ShieldCheck, UsersRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppIcon, DataSection, DataTable, FeaturePage, MetricGrid, StatusTag } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
@@ -11,10 +11,20 @@ import { apiClient } from '~/lib/api-client';
 const { Text } = Typography;
 
 type PilotRow = NativeCcPilotDashboardResponse['rows'][number];
+type HistoryRow = NonNullable<
+  NativeCcPilotDashboardResponse['historicalSnapshot']
+>['subjects'][number]['months'][number] & {
+  subjectKey: string;
+  displayName: string;
+};
 
 function formatHalfDong(amountHalfDong: number): string {
   const amount = amountHalfDong / 2;
   return `${amount.toLocaleString('vi-VN', { minimumFractionDigits: amount % 1 ? 1 : 0 })} đ`;
+}
+
+function formatVnd(amountVnd: number): string {
+  return `${amountVnd.toLocaleString('vi-VN')} đ`;
 }
 
 function evidenceLabel(kind: PilotRow['evidence'][number]['kind']): string {
@@ -36,6 +46,7 @@ export default function PayrollPilotPage() {
   const [dashboard, setDashboard] = useState<NativeCcPilotDashboardResponse | null>(null);
   const [periodKey, setPeriodKey] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+  const [openingPeriod, setOpeningPeriod] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (nextPeriodKey?: string) => {
@@ -95,17 +106,61 @@ export default function PayrollPilotPage() {
     []
   );
 
+  const historyRows = useMemo<HistoryRow[]>(
+    () =>
+      dashboard?.historicalSnapshot?.subjects.flatMap((subject) =>
+        subject.months.map((month) => ({ ...month, subjectKey: subject.subjectKey, displayName: subject.displayName }))
+      ) || [],
+    [dashboard?.historicalSnapshot]
+  );
+
+  const historyColumns = useMemo<ColumnsType<HistoryRow>>(
+    () => [
+      { title: 'CC', dataIndex: 'displayName', key: 'displayName' },
+      {
+        title: 'Tháng',
+        dataIndex: 'periodKey',
+        key: 'periodKey',
+        render: (value) => <Text className="tabular-nums">{value}</Text>,
+      },
+      {
+        title: 'Xoay sau cap',
+        dataIndex: 'effectiveXoayVnd',
+        key: 'effectiveXoayVnd',
+        render: formatVnd,
+      },
+      { title: 'Daily Bonus', dataIndex: 'dailyBonusVnd', key: 'dailyBonusVnd', render: formatVnd },
+      { title: 'Cash Tip', dataIndex: 'cashTipVnd', key: 'cashTipVnd', render: formatVnd },
+      { title: 'Tổng đối chiếu', dataIndex: 'componentTotalVnd', key: 'componentTotalVnd', render: formatVnd },
+    ],
+    []
+  );
+
   const evidenceCount = dashboard?.summary.evidenceCount ?? 0;
   const hasPeriod = Boolean(dashboard?.activePeriodKey);
+
+  const openCurrentMonth = useCallback(async () => {
+    setOpeningPeriod(true);
+    setError(null);
+    try {
+      const result = await apiClient.payrollLedger.openCurrentCcPilotPeriod();
+      await load(result.period.periodKey);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : 'Không thể mở kỳ pilot tháng này.';
+      setError(message);
+    } finally {
+      setOpeningPeriod(false);
+    }
+  }, [load]);
 
   return (
     <FeaturePage
       title="Pilot Payroll CC"
-      subtitle="Theo dõi evidence mOS và ledger của bốn CC pilot. Màn này chỉ đọc, không import Legacy và không có payout."
+      subtitle="Theo dõi evidence mOS và ledger của bốn CC pilot. Chỉ Super Admin có thể mở kỳ tháng; không import Legacy và không có payout."
       icon={<AppIcon icon={ShieldCheck} size="lg" />}
-      tag={<StatusTag status="processing" label="PILOT · READ ONLY" />}
+      tag={<StatusTag status="processing" label="PILOT · KIỂM SOÁT" />}
       toolbar={{
-        primary: (
+        primary: hasPeriod ? (
           <Select
             aria-label="Chọn kỳ payroll"
             className="min-w-56"
@@ -118,6 +173,16 @@ export default function PayrollPilotPage() {
             }))}
             disabled={loading || !dashboard?.periods.length}
           />
+        ) : (
+          <Button
+            type="primary"
+            icon={<AppIcon icon={CalendarPlus} size="action" />}
+            onClick={() => void openCurrentMonth()}
+            loading={openingPeriod}
+            disabled={loading}
+          >
+            Mở kỳ pilot tháng này
+          </Button>
         ),
         actions: (
           <Button
@@ -145,7 +210,7 @@ export default function PayrollPilotPage() {
             type="info"
             showIcon
             message="Ranh giới an toàn"
-            description="Chỉ dữ liệu evidence do mOS tạo mới xuất hiện ở đây. Đối chiếu Legacy, fixture và debug local không được đưa lên production."
+            description="Mở kỳ chỉ tạo biên nhận evidence tháng ở trạng thái OPEN. Evidence vận hành chỉ nhận từ mOS; snapshot lịch sử đã xác minh, nếu có, chỉ để đối chiếu và không được dùng để finalize, settlement hoặc payout."
           />
 
           <MetricGrid
@@ -176,6 +241,48 @@ export default function PayrollPilotPage() {
               },
             ]}
           />
+
+          {dashboard.historicalSnapshot ? (
+            <DataSection
+              title="Lịch sử đối chiếu đã xác minh"
+              extra={<Text type="secondary">Tháng 8–9 · chỉ đọc · không phải evidence mOS</Text>}
+            >
+              <DataTable<HistoryRow>
+                columns={historyColumns}
+                dataSource={historyRows}
+                rowKey={(row) => `${row.subjectKey}:${row.periodKey}`}
+                pagination={false}
+                columnPriority={{
+                  displayName: 'primary',
+                  periodKey: 'primary',
+                  effectiveXoayVnd: 'secondary',
+                  dailyBonusVnd: 'tertiary',
+                  cashTipVnd: 'secondary',
+                  componentTotalVnd: 'primary',
+                }}
+                mobileRecordKey={(row) => `${row.subjectKey}:${row.periodKey}`}
+                mobileRenderer={(row) => (
+                  <Space direction="vertical" size={2} className="w-full">
+                    <Text strong>
+                      {row.displayName} · {row.periodKey}
+                    </Text>
+                    <Text className="tabular-nums">Tổng đối chiếu: {formatVnd(row.componentTotalVnd)}</Text>
+                    <Text type="secondary">
+                      Xoay sau cap {formatVnd(row.effectiveXoayVnd)} · Daily {formatVnd(row.dailyBonusVnd)} · Tip{' '}
+                      {formatVnd(row.cashTipVnd)}
+                    </Text>
+                  </Space>
+                )}
+              />
+            </DataSection>
+          ) : (
+            <DataSection
+              title="Lịch sử đối chiếu"
+              state="empty"
+              stateTitle="Chưa phát hành snapshot tháng 8–9"
+              stateDescription="Khi bản đối chiếu chỉ-đọc đã được xác minh và băm, nó sẽ hiện riêng tại đây; không trộn vào evidence mOS của kỳ pilot."
+            />
+          )}
 
           <DataSection
             title={hasPeriod ? `Bốn CC pilot · ${dashboard.activePeriodKey}` : 'Bốn CC pilot đã được khóa cohort'}
@@ -212,8 +319,8 @@ export default function PayrollPilotPage() {
             <DataSection
               title="Chưa có kỳ payroll mOS"
               state="empty"
-              stateTitle="Pilot đã bật, đang chờ mở kỳ tháng"
-              stateDescription="Bốn CC ở trên đã được khóa vào cohort. Khi một kỳ payroll mOS được mở, evidence sẽ xuất hiện ở đây để kiểm tra trước khi finalize và settlement."
+              stateTitle="Pilot đã bật, sẵn sàng mở kỳ tháng"
+              stateDescription="Bốn CC ở trên đã được khóa vào cohort. Super Admin mở kỳ hiện tại một lần; sau đó evidence mOS mới xuất hiện ở đây để kiểm tra trước khi finalize và settlement."
             />
           ) : (
             <>

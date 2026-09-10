@@ -4,6 +4,7 @@ import { requireAuth, requireSuperAdmin } from '../../middlewares/auth.js';
 import { CcNativeEvidenceService } from './cc-native-evidence.service.js';
 import { CcNativePilotDashboardService } from './cc-native-pilot-dashboard.service.js';
 import { CcNativePilotCohortService } from './cc-native-pilot-cohort.service.js';
+import { CcNativePilotPeriodService } from './cc-native-pilot-period.service.js';
 import { LockedSettlementExportService } from './locked-settlement-export.service.js';
 
 /**
@@ -23,6 +24,26 @@ export async function payrollLedgerRoutes(fastify: FastifyInstance) {
       } catch (error) {
         return reply.status(409).send({
           message: error instanceof Error ? error.message : 'Unable to load the native CC pilot dashboard',
+        });
+      }
+    }
+  );
+
+  /**
+   * Opens only the present calendar month for the already configured pilot
+   * cohort.  This is an intake boundary, not a review, settlement, lock, or
+   * payout action.
+   */
+  fastify.post(
+    '/payroll-ledger/cc-pilot-periods/open-current-month',
+    { preHandler: [requireAuth, requireSuperAdmin] },
+    async (_request, reply) => {
+      try {
+        const result = await CcNativePilotPeriodService.openCurrentMonth(fastify);
+        return reply.status(result.created ? 201 : 200).send(result);
+      } catch (error) {
+        return reply.status(409).send({
+          message: error instanceof Error ? error.message : 'Unable to open the native CC pilot period',
         });
       }
     }
