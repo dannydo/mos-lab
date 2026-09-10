@@ -306,6 +306,33 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'PAY-001',
+    book: 'REWARDS',
+    title: 'Payroll đã khóa là bất biến; mọi sửa trễ phải có shadow settlement',
+    summary:
+      'Kỳ payroll đã khóa không bị Legacy regenerate ghi đè. Sửa trễ dùng snapshot kỳ gốc để tính shadow settlement, rồi chờ một adjustment có audit ở kỳ hiện tại.',
+    commandments: [
+      'Mọi UI payroll, iOS và mOS phải lấy cùng một nguồn settlement; không màn hình nào tự tính lại từ Level hiện tại.',
+      'Cash Bonus và các sổ nguồn phải cộng ở độ chính xác nửa đồng trước, sau đó chỉ làm tròn một lần ở tổng người/kỳ.',
+      'Kỳ LOCKED không bị xóa, regenerate hay ghi đè. Fix, Adjust hoặc Log phát sinh trễ chỉ có thể tạo một adjustment mới sau phê duyệt.',
+      'Shadow settlement phải gắn period, calculation version, source key duy nhất và chỉ-đọc; thiếu snapshot hoặc lệch nguồn thì fail closed.',
+    ],
+    rationale:
+      'Lương phải truy vết được từng đồng mà vẫn giữ nguyên payslip đã chốt; một thay đổi muộn không được làm lịch sử hay level của kỳ cũ trôi đi.',
+    tags: ['payroll', 'ledger', 'settlement', 'adjustment', 'audit', 'Cash Bonus'],
+    routeScopes: ['/dashboard/cc', '/dashboard/cv', '/dashboard/fal', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-10',
+    sources: [
+      {
+        label: 'Payroll Period và shadow settlement',
+        reference: 'apps/api/src/modules/payroll-ledger/shadow-settlement.service.ts',
+      },
+      { label: 'Ledger và cap CC', reference: 'AGENTS.md · Rules #45, #49, #50' },
+    ],
+  },
+  {
     id: 'COMBO-001',
     book: 'CUSTOMER',
     title: 'Combo bán mới và Combo Live không phải một phép màu',
