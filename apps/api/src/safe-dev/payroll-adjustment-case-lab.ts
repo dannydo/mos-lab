@@ -494,6 +494,8 @@ async function getLocalAdjustmentCaseByEventKey(
   const adjustmentCase = await fastify.prisma.crm.crmPayrollAdjustmentCase.findUnique({
     where: { eventKey },
     include: {
+      sourcePeriod: true,
+      targetPeriod: true,
       snapshots: { orderBy: { revision: 'asc' } },
       lines: { orderBy: { id: 'asc' } },
       auditLogs: { orderBy: { createdAt: 'asc' } },
@@ -530,6 +532,22 @@ async function getLocalAdjustmentCaseByEventKey(
     beforeAmount: snapshot?.beforeNetAmount ?? null,
     afterAmount: snapshot?.afterNetAmount ?? null,
     deltaAmount: snapshot?.netDelta ?? null,
+    sourcePeriod: adjustmentCase.sourcePeriod
+      ? {
+          periodKey: adjustmentCase.sourcePeriod.periodKey,
+          label: adjustmentCase.sourcePeriod.label,
+          status: adjustmentCase.sourcePeriod.status,
+          startDate: adjustmentCase.sourcePeriod.startDate.toISOString(),
+          endDate: adjustmentCase.sourcePeriod.endDate.toISOString(),
+        }
+      : null,
+    targetPeriod: {
+      periodKey: adjustmentCase.targetPeriod.periodKey,
+      label: adjustmentCase.targetPeriod.label,
+      status: adjustmentCase.targetPeriod.status,
+      startDate: adjustmentCase.targetPeriod.startDate.toISOString(),
+      endDate: adjustmentCase.targetPeriod.endDate.toISOString(),
+    },
     lines: adjustmentCase.lines.map((line) => {
       const fallback = LOCAL_RECIPIENT_BY_LEGACY_STAFF_ID.get(line.recipientLegacyStaffId);
       const isStoredSnapshot = Boolean(

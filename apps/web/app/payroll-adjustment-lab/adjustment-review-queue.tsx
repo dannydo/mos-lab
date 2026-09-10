@@ -1,7 +1,8 @@
 'use client';
 
-import { Alert, Avatar, Card, Space, Statistic, Tag, Typography } from 'antd';
-import type { PayrollAdjustmentLabCase } from '@mos-lab/shared';
+import { Alert, Avatar, Card, DatePicker, Space, Statistic, Tag, Typography } from 'antd';
+import type { PayrollAdjustmentLabCase, PayrollAdjustmentLabPeriod } from '@mos-lab/shared';
+import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 
 const { Text } = Typography;
@@ -20,6 +21,16 @@ function caseStatusColor(status: string) {
   return 'blue';
 }
 
+function formatPayrollMonth(period: PayrollAdjustmentLabPeriod): string {
+  return new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(
+    new Date(period.startDate)
+  );
+}
+
+function payrollMonthKey(period: PayrollAdjustmentLabPeriod): string {
+  return period.startDate.slice(0, 7);
+}
+
 function recipientInitials(displayName: string): string {
   return displayName
     .split(/\s+/)
@@ -32,36 +43,71 @@ function recipientInitials(displayName: string): string {
 
 export function AdjustmentReviewQueue({ cases }: { cases: readonly PayrollAdjustmentLabCase[] }) {
   const [filter, setFilter] = useState<QueueFilter>('ALL');
+  const [targetMonthKey, setTargetMonthKey] = useState<string | null>(null);
   const [selectedReference, setSelectedReference] = useState<string | null>(null);
 
+  const targetMonths = useMemo(() => {
+    const monthByKey = new Map<string, PayrollAdjustmentLabPeriod>();
+    for (const adjustmentCase of cases) {
+      const monthKey = payrollMonthKey(adjustmentCase.targetPeriod);
+      if (!monthByKey.has(monthKey)) monthByKey.set(monthKey, adjustmentCase.targetPeriod);
+    }
+    return [...monthByKey.entries()]
+      .map(([monthKey, period]) => ({ monthKey, period }))
+      .sort((left, right) => right.monthKey.localeCompare(left.monthKey));
+  }, [cases]);
+
+  const activeTargetMonthKey = targetMonthKey || targetMonths[0]?.monthKey || null;
+  const activeTargetMonth = targetMonths.find((month) => month.monthKey === activeTargetMonthKey) || null;
+  const monthlyCases = useMemo(
+    () => cases.filter((adjustmentCase) => payrollMonthKey(adjustmentCase.targetPeriod) === activeTargetMonthKey),
+    [activeTargetMonthKey, cases]
+  );
+
   const visibleCases = useMemo(
-    () => (filter === 'ALL' ? cases : cases.filter((adjustmentCase) => adjustmentCase.status === filter)),
-    [cases, filter]
+    () => (filter === 'ALL' ? monthlyCases : monthlyCases.filter((adjustmentCase) => adjustmentCase.status === filter)),
+    [filter, monthlyCases]
   );
   const selectedCase = useMemo(
-    () => cases.find((adjustmentCase) => adjustmentCase.reference === selectedReference) || null,
-    [cases, selectedReference]
+    () => monthlyCases.find((adjustmentCase) => adjustmentCase.reference === selectedReference) || null,
+    [monthlyCases, selectedReference]
   );
 
   useEffect(() => {
-    if (selectedReference && cases.some((adjustmentCase) => adjustmentCase.reference === selectedReference)) return;
-    setSelectedReference(cases[0]?.reference ?? null);
-  }, [cases, selectedReference]);
+    if (targetMonthKey && targetMonths.some((month) => month.monthKey === targetMonthKey)) return;
+    setTargetMonthKey(targetMonths[0]?.monthKey ?? null);
+  }, [targetMonthKey, targetMonths]);
+
+  useEffect(() => {
+    if (selectedReference && monthlyCases.some((adjustmentCase) => adjustmentCase.reference === selectedReference))
+      return;
+    setSelectedReference(monthlyCases[0]?.reference ?? null);
+  }, [monthlyCases, selectedReference]);
 
   const chooseFilter = (value: QueueFilter) => {
     setFilter(value);
-    const first = value === 'ALL' ? cases[0] : cases.find((adjustmentCase) => adjustmentCase.status === value);
+    const first =
+      value === 'ALL' ? monthlyCases[0] : monthlyCases.find((adjustmentCase) => adjustmentCase.status === value);
     setSelectedReference(first?.reference ?? null);
   };
 
+  const chooseTargetMonth = (monthKey: string) => {
+    setTargetMonthKey(monthKey);
+    setFilter('ALL');
+    setSelectedReference(null);
+  };
+
   const filters: ReadonlyArray<readonly [QueueFilter, string]> = [
-    ['ALL', `Tất cả (${cases.length})`],
+    ['ALL', `Tất cả (${monthlyCases.length})`],
     [
       'READY_FOR_APPROVAL',
-      `Chờ duyệt (${cases.filter((adjustmentCase) => adjustmentCase.status === 'READY_FOR_APPROVAL').length})`,
+      `Chờ duyệt (${monthlyCases.filter((adjustmentCase) => adjustmentCase.status === 'READY_FOR_APPROVAL').length})`,
     ],
-    ['APPROVED', `Đã duyệt (${cases.filter((adjustmentCase) => adjustmentCase.status === 'APPROVED').length})`],
-    ['REJECTED', `Đã từ chối (${cases.filter((adjustmentCase) => adjustmentCase.status === 'REJECTED').length})`],
+    ['APPROVED', `Đã duyệt (${monthlyCases.filter((adjustmentCase) => adjustmentCase.status === 'APPROVED').length})`],
+    [
+      'REJECTED',
+      `Đã từ chối (${monthlyCases.filter((adjustmentCase) => adjustmentCase.status === 'REJECTED').length})`,
+    ],
   ];
 
   return (
@@ -73,6 +119,34 @@ export function AdjustmentReviewQueue({ cases }: { cases: readonly PayrollAdjust
           message="Queue chỉ đọc, không có nút post tiền"
           description="Mỗi dòng là một case bất biến. Chọn một dòng để xem nguồn, người tạo, người duyệt, comment, audit và trạng thái posting."
         />
+        {targetMonths.length ? (
+          <div>
+            <Text strong>Kỳ payroll đang duyệt</Text>
+            <div className="mt-2">
+              <DatePicker
+                picker="month"
+                allowClear={false}
+                className="w-full sm:w-72"
+                format="MM/YYYY"
+                value={activeTargetMonthKey ? dayjs(`${activeTargetMonthKey}-01`) : null}
+                disabledDate={(date) => !targetMonths.some((month) => month.monthKey === date.format('YYYY-MM'))}
+                onChange={(date) => {
+                  if (date) chooseTargetMonth(date.format('YYYY-MM'));
+                }}
+              />
+            </div>
+            {activeTargetMonthKey ? (
+              <div>
+                <Text type="secondary">
+                  {activeTargetMonth
+                    ? `${formatPayrollMonth(activeTargetMonth.period)} (${monthlyCases.length} case). `
+                    : null}
+                  Chỉ hiển thị Adjustment nhận vào kỳ này; kỳ nguồn nằm trong chi tiết để audit.
+                </Text>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center justify-start gap-2" aria-label="Lọc Adjustment Review Queue">
           {filters.map(([value, label]) => (
             <button
@@ -157,6 +231,14 @@ export function AdjustmentReviewQueue({ cases }: { cases: readonly PayrollAdjust
                 <Statistic title="Delta" value={formatDong(selectedCase.deltaAmount)} />
               </div>
               <Text type="secondary">Lý do / comment: {selectedCase.reason || '—'}</Text>
+              <Text type="secondary">
+                Kỳ nhận: {formatPayrollMonth(selectedCase.targetPeriod)} · {selectedCase.targetPeriod.status}
+              </Text>
+              {selectedCase.sourcePeriod ? (
+                <Text type="secondary">
+                  Kỳ nguồn: {formatPayrollMonth(selectedCase.sourcePeriod)} · {selectedCase.sourcePeriod.status}
+                </Text>
+              ) : null}
               {selectedCase.lines.map((line) => (
                 <Card type="inner" size="small" key={`${line.component}-${line.recipient.legacyStaffId}`}>
                   <Space wrap size={10}>

@@ -93,6 +93,8 @@ export interface PayrollAdjustmentLabCase {
   beforeAmount: number | null;
   afterAmount: number | null;
   deltaAmount: number | null;
+  sourcePeriod: PayrollAdjustmentLabPeriod | null;
+  targetPeriod: PayrollAdjustmentLabPeriod;
   lines: Array<{
     component: string;
     deltaAmount: number;
@@ -108,6 +110,14 @@ export interface PayrollAdjustmentLabCase {
     };
   }>;
   audit: Array<{ action: string; actorName: string; reason: string | null; occurredAt: string }>;
+}
+
+export interface PayrollAdjustmentLabPeriod {
+  periodKey: string;
+  label: string;
+  status: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface PayrollAdjustmentLabSettlementReviewResponse {
