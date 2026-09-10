@@ -273,6 +273,7 @@ export interface NativeCcPilotDashboardResponse {
     finalizedSubjectCount: number;
     settlementStatus: string | null;
   };
+  historicalSnapshot: NativeCcPilotHistorySnapshot | null;
   rows: Array<{
     subjectKey: string;
     displayName: string;
@@ -293,5 +294,47 @@ export interface NativeCcPilotDashboardResponse {
       sourceOccurredAt: string;
     }>;
     finalized: boolean;
+  }>;
+}
+
+/**
+ * A Super Admin can open exactly the current monthly mOS pilot period.  This
+ * creates an OPEN intake boundary only: it does not create evidence,
+ * settlement, adjustment, or payout records.
+ */
+export interface OpenNativeCcPilotPeriodResponse {
+  created: boolean;
+  period: {
+    id: number;
+    periodKey: string;
+    label: string;
+    status: 'OPEN';
+  };
+}
+
+/** A verified historical comparison is a read-only published snapshot.
+ * It is never mOS evidence and cannot be used to finalize, settle, or pay. */
+export interface NativeCcPilotHistorySnapshot {
+  version: 'cc-native-pilot-history.v1';
+  source: 'LOCAL_LEGACY_PARITY_REPLAY';
+  verifiedAt: string;
+  sourceHash: string;
+  subjects: Array<{
+    subjectKey: string;
+    displayName: string;
+    months: Array<{
+      periodKey: string;
+      rawXoayVnd: number;
+      dailyBonusVnd: number;
+      heldXoayVnd: number;
+      effectiveXoayVnd: number;
+      cashTipVnd: number;
+      componentTotalVnd: number;
+      sourceCounts: {
+        xoayLedgerRows: number;
+        dailyCloses: number;
+        cashTipRows: number;
+      };
+    }>;
   }>;
 }

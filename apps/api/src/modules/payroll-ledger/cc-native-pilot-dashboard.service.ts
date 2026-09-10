@@ -1,6 +1,7 @@
 import type { NativeCcPilotDashboardResponse } from '@mos-lab/shared';
 import type { FastifyInstance } from 'fastify';
 import { CcNativePilotCohortService } from './cc-native-pilot-cohort.service.js';
+import { CcNativePilotHistoryService } from './cc-native-pilot-history.service.js';
 
 /**
  * Read-only operational projection for the production CC pilot. It deliberately
@@ -9,7 +10,10 @@ import { CcNativePilotCohortService } from './cc-native-pilot-cohort.service.js'
  */
 export class CcNativePilotDashboardService {
   static async get(fastify: FastifyInstance, requestedPeriodKey?: string): Promise<NativeCcPilotDashboardResponse> {
-    const cohort = await CcNativePilotCohortService.getCohort(fastify);
+    const [cohort, historicalSnapshot] = await Promise.all([
+      CcNativePilotCohortService.getCohort(fastify),
+      CcNativePilotHistoryService.get(fastify),
+    ]);
     const periods = await fastify.prisma.crm.crmPayrollPeriod.findMany({
       orderBy: [{ startDate: 'desc' }, { id: 'desc' }],
       take: 24,
@@ -39,6 +43,7 @@ export class CcNativePilotDashboardService {
           finalizedSubjectCount: 0,
           settlementStatus: null,
         },
+        historicalSnapshot,
         rows: cohort.subjects.map((subject) => ({ ...subject, evidence: [], ledger: [], finalized: false })),
       };
     }
@@ -121,6 +126,7 @@ export class CcNativePilotDashboardService {
         finalizedSubjectCount: rows.filter((row) => row.finalized).length,
         settlementStatus: settlement?.status ?? null,
       },
+      historicalSnapshot,
       rows,
     };
   }
