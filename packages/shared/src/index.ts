@@ -11,6 +11,7 @@ export * from './types/kpi.js';
 export * from './types/holiday-work.js';
 export * from './types/payroll-ledger.js';
 export * from './types/fal-adjustment.js';
+export * from './types/payroll-adjustment.js';
 export * from './constants/index.js';
 export * from './types/table-config.js';
 export * from './types/cc-xoay.js';

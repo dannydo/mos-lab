@@ -2071,8 +2071,8 @@ model CrmPayrollPeriod {
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
 
   settlements          CrmPayrollSettlement[]
-  sourceAdjustmentCases CrmFalAdjustmentCase[] @relation("fal_adjustment_source_period")
-  targetAdjustmentCases CrmFalAdjustmentCase[] @relation("fal_adjustment_target_period")
+  sourceAdjustmentCases CrmPayrollAdjustmentCase[] @relation("payroll_adjustment_source_period")
+  targetAdjustmentCases CrmPayrollAdjustmentCase[] @relation("payroll_adjustment_target_period")
 
   @@index([status, startDate], map: "payroll_period_status_start_idx")
   @@index([startDate, endDate], map: "payroll_period_date_range_idx")
@@ -2095,25 +2095,45 @@ model CrmPayrollSettlement {
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
 
   payrollPeriod CrmPayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Restrict)
+  subjects      CrmPayrollSettlementSubject[]
 
   @@unique([payrollPeriodId, version], map: "payroll_settlement_period_version")
   @@index([payrollPeriodId, status], map: "payroll_settlement_period_status_idx")
   @@map("crm_payroll_settlements")
 }
 
-/// A late Fix, Adjust, or approved Log is represented as an append-only case.
+/// Frozen per-person settlement evidence. FAL adjustments must reference this
+/// record instead of accepting a historical amount supplied by a request.
+model CrmPayrollSettlementSubject {
+  id            Int      @id @default(autoincrement())
+  settlementId  Int      @map("settlement_id")
+  subjectKey    String   @map("subject_key") @db.VarChar(191)
+  inputJson     String   @map("input_json") @db.LongText
+  resultJson    String   @map("result_json") @db.LongText
+  inputHash     String   @map("input_hash") @db.VarChar(128)
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  settlement CrmPayrollSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+
+  @@unique([settlementId, subjectKey], map: "payroll_settlement_subject_key")
+  @@index([subjectKey], map: "payroll_settlement_subject_lookup_idx")
+  @@map("crm_payroll_settlement_subjects")
+}
+
+/// Every late payroll change uses one append-only case: FAL, HR or System.
 /// The case contains reviewable shadow math only; a later, separately approved
 /// phase will be responsible for any current-period ledger posting.
-model CrmFalAdjustmentCase {
+model CrmPayrollAdjustmentCase {
   id                       Int       @id @default(autoincrement())
   eventKey                 String    @unique @map("event_key") @db.VarChar(191)
-  falType                  String    @map("fal_type") @db.VarChar(16)
-  originOrderServiceId     Int       @map("origin_order_service_id")
-  remediationOrderServiceId Int      @map("remediation_order_service_id")
-  originOccurredAt         DateTime  @map("origin_occurred_at") @db.DateTime(0)
-  sourcePeriodId           Int       @map("source_period_id")
+  sourceType               String    @default("FAL") @map("source_type") @db.VarChar(24)
+  adjustmentType            String   @map("adjustment_type") @db.VarChar(64)
+  originOrderServiceId     Int?      @map("origin_order_service_id")
+  remediationOrderServiceId Int?     @map("remediation_order_service_id")
+  originOccurredAt         DateTime? @map("origin_occurred_at") @db.DateTime(0)
+  sourcePeriodId           Int?      @map("source_period_id")
   targetPeriodId           Int       @map("target_period_id")
-  sourcePeriodStatus       String    @map("source_period_status") @db.VarChar(24)
+  sourcePeriodStatus       String?   @map("source_period_status") @db.VarChar(24)
   status                   String    @default("DRAFT") @db.VarChar(32)
   reason                   String?   @db.Text
   sourceFingerprint        String    @map("source_fingerprint") @db.VarChar(128)
@@ -2126,11 +2146,11 @@ model CrmFalAdjustmentCase {
   createdAt                DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt                DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
 
-  sourcePeriod CrmPayrollPeriod @relation("fal_adjustment_source_period", fields: [sourcePeriodId], references: [id], onDelete: Restrict)
-  targetPeriod CrmPayrollPeriod @relation("fal_adjustment_target_period", fields: [targetPeriodId], references: [id], onDelete: Restrict)
-  snapshots    CrmFalAdjustmentSnapshot[]
-  lines        CrmFalAdjustmentLine[]
-  auditLogs    CrmFalAdjustmentAudit[]
+  sourcePeriod CrmPayrollPeriod? @relation("payroll_adjustment_source_period", fields: [sourcePeriodId], references: [id], onDelete: Restrict)
+  targetPeriod CrmPayrollPeriod @relation("payroll_adjustment_target_period", fields: [targetPeriodId], references: [id], onDelete: Restrict)
+  snapshots    CrmPayrollAdjustmentSnapshot[]
+  lines        CrmPayrollAdjustmentLine[]
+  auditLogs    CrmPayrollAdjustmentAudit[]
 
   @@index([sourcePeriodId, status], map: "fal_adjustment_source_period_status_idx")
   @@index([targetPeriodId, status], map: "fal_adjustment_target_period_status_idx")
@@ -2138,7 +2158,7 @@ model CrmFalAdjustmentCase {
   @@map("crm_fal_adjustment_cases")
 }
 
-model CrmFalAdjustmentSnapshot {
+model CrmPayrollAdjustmentSnapshot {
   id                    Int      @id @default(autoincrement())
   caseId                Int      @map("case_id")
   revision              Int
@@ -2153,15 +2173,15 @@ model CrmFalAdjustmentSnapshot {
   computedAt            DateTime @default(now()) @map("computed_at") @db.DateTime(0)
   createdAt             DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
-  adjustmentCase CrmFalAdjustmentCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
-  lines          CrmFalAdjustmentLine[]
+  adjustmentCase CrmPayrollAdjustmentCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  lines          CrmPayrollAdjustmentLine[]
 
   @@unique([caseId, revision], map: "fal_adjustment_snapshot_case_revision")
   @@index([caseId, computedAt], map: "fal_adjustment_snapshot_case_computed_idx")
   @@map("crm_fal_adjustment_snapshots")
 }
 
-model CrmFalAdjustmentLine {
+model CrmPayrollAdjustmentLine {
   id                     Int       @id @default(autoincrement())
   caseId                 Int       @map("case_id")
   snapshotId             Int       @map("snapshot_id")
@@ -2178,15 +2198,15 @@ model CrmFalAdjustmentLine {
   targetPayrollReference String?   @map("target_payroll_reference") @db.VarChar(191)
   createdAt              DateTime  @default(now()) @map("created_at") @db.DateTime(0)
 
-  adjustmentCase CrmFalAdjustmentCase     @relation(fields: [caseId], references: [id], onDelete: Restrict)
-  snapshot       CrmFalAdjustmentSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Restrict)
+  adjustmentCase CrmPayrollAdjustmentCase     @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  snapshot       CrmPayrollAdjustmentSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Restrict)
 
   @@unique([snapshotId, lineKey], map: "fal_adjustment_line_snapshot_key")
   @@index([caseId, postingState], map: "fal_adjustment_line_case_posting_idx")
   @@map("crm_fal_adjustment_lines")
 }
 
-model CrmFalAdjustmentAudit {
+model CrmPayrollAdjustmentAudit {
   id              Int      @id @default(autoincrement())
   caseId          Int      @map("case_id")
   action          String   @db.VarChar(50)
@@ -2197,7 +2217,7 @@ model CrmFalAdjustmentAudit {
   correlationKey  String   @map("correlation_key") @db.VarChar(128)
   createdAt       DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
-  adjustmentCase CrmFalAdjustmentCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  adjustmentCase CrmPayrollAdjustmentCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
 
   @@index([caseId, createdAt], map: "fal_adjustment_audit_case_created_idx")
   @@index([correlationKey], map: "fal_adjustment_audit_correlation_idx")
