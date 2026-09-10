@@ -106,6 +106,14 @@ test('native CC evidence write boundary is restricted to Super Admin', async () 
   await app.close();
 });
 
+test('native CC pilot dashboard is restricted to Super Admin', async () => {
+  const app = createPayrollLedgerRouteApp('admin');
+  await app.register(payrollLedgerRoutes);
+  const response = await app.inject({ method: 'GET', url: '/payroll-ledger/cc-pilot-dashboard' });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+
 test('native CC evidence remains closed until the production pilot cohort is configured', async () => {
   const app = createPayrollLedgerRouteApp('super_admin');
   await app.register(payrollLedgerRoutes);

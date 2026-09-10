@@ -386,6 +386,14 @@ export function getSidebarGroups(
       },
     ],
   };
+  if (isSuperAdmin) {
+    reportsGroup.items.push({
+      key: 'cc-payroll-pilot',
+      label: 'Pilot Payroll CC',
+      icon: <SafetyCertificateOutlined />,
+      path: '/dashboard/payroll-pilot',
+    });
+  }
 
   // Group 8: QUẢN TRỊ HỆ THỐNG (Only for Admin)
   const systemGroupItems: SidebarItemConfig[] = [];
@@ -527,6 +535,7 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/omicall')) return 'omicall';
   if (pathname.includes('/dashboard/qa-shop')) return 'qa-shop';
   if (pathname.includes('/dashboard/kpi')) return 'kpi';
+  if (pathname.includes('/dashboard/payroll-pilot')) return 'cc-payroll-pilot';
 
   if (pathname.includes('/dashboard/cc')) return 'cc';
   if (pathname.includes('/dashboard/cv')) return 'cv';

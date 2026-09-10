@@ -100,6 +100,7 @@ import type {
   PayrollAdjustmentLabCaseListResponse,
   PayrollAdjustmentLabDecisionRequest,
   PayrollAdjustmentLabDraftRequest,
+  NativeCcPilotDashboardResponse,
 } from '@mos-lab/shared';
 import {
   Customer,
@@ -550,6 +551,12 @@ export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<
 
 // API Client SDK for mos-lab
 export const apiClient = {
+  payrollLedger: {
+    ccPilotDashboard: async (params?: { periodKey?: string }): Promise<NativeCcPilotDashboardResponse> => {
+      const response = await api.get<NativeCcPilotDashboardResponse>('/payroll-ledger/cc-pilot-dashboard', { params });
+      return response.data;
+    },
+  },
   safeDevPayrollAdjustmentLab: {
     settlementReview: async (): Promise<PayrollAdjustmentLabSettlementReviewResponse> => {
       const response = await api.get<PayrollAdjustmentLabSettlementReviewResponse>(

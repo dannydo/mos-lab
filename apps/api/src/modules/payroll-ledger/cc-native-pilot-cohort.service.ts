@@ -2,13 +2,13 @@ import type { FastifyInstance } from 'fastify';
 
 export const CC_NATIVE_PAYROLL_PILOT_COHORT_CONFIG_KEY = 'CC_NATIVE_PAYROLL_PILOT_COHORT';
 
-type PilotSubject = {
+export type PilotSubject = {
   subjectKey: string;
   legacyStaffId: number;
   displayName: string;
 };
 
-type PilotCohortConfig = {
+export type PilotCohortConfig = {
   version: 'cc-native-pilot.v1';
   enabled: true;
   subjects: PilotSubject[];
@@ -67,15 +67,19 @@ function parsePilotConfig(value: string | null | undefined): PilotCohortConfig {
  * payroll value is read or accepted through this boundary.
  */
 export class CcNativePilotCohortService {
-  static async requireSubject(fastify: FastifyInstance, subjectKey: unknown): Promise<PilotSubject> {
-    if (typeof subjectKey !== 'string' || !subjectKey.trim()) {
-      throw new Error('Native CC evidence requires a pilot subject');
-    }
+  static async getCohort(fastify: FastifyInstance): Promise<PilotCohortConfig> {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: CC_NATIVE_PAYROLL_PILOT_COHORT_CONFIG_KEY },
       select: { value: true },
     });
-    const config = parsePilotConfig(configRecord?.value);
+    return parsePilotConfig(configRecord?.value);
+  }
+
+  static async requireSubject(fastify: FastifyInstance, subjectKey: unknown): Promise<PilotSubject> {
+    if (typeof subjectKey !== 'string' || !subjectKey.trim()) {
+      throw new Error('Native CC evidence requires a pilot subject');
+    }
+    const config = await this.getCohort(fastify);
     const subject = config.subjects.find((candidate) => candidate.subjectKey === subjectKey);
     if (!subject) throw new Error('This CC is outside the approved native payroll pilot cohort');
     return subject;
