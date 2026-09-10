@@ -3,6 +3,11 @@ import test from 'node:test';
 import { InboxImplementationService, isInboxImplementationExecutionEligible } from './inbox-implementation.service.js';
 import { bugReportAgentProgress, bugReportWorkflowProjection } from './bug-report.service.js';
 
+type MutableRow = Record<string, unknown>;
+type AuditRow = MutableRow & { action: string; beforeJson: string };
+type CommentRow = MutableRow & { body: string };
+type FollowUpRow = MutableRow & { eventVersion: string };
+
 const candidate = { jobId: 'ae32a70f-8490-4247-aa4f-2f0e45bcdc40', sourceVersion: 'v1:source', planVersion: 'v1:plan' };
 const input = { ...candidate, acknowledged: true as const, reason: 'Bổ sung đủ tiêu chí đã duyệt trước khi commit.' };
 function fixture() {
@@ -40,15 +45,15 @@ function fixture() {
       worktreePath: '/retained/candidate',
       completedAt: now,
     },
-    audits: [] as Array<Record<string, any>>,
-    comments: [] as Array<Record<string, any>>,
-    followUps: [] as Array<Record<string, any>>,
+    audits: [] as AuditRow[],
+    comments: [] as CommentRow[],
+    followUps: [] as FollowUpRow[],
   };
   let failAt = '';
   let lostCas = false;
   let queue = Promise.resolve();
   const db = {
-    $transaction: async (callback: (tx: any) => Promise<void>) => {
+    $transaction: async (callback: (tx: unknown) => Promise<void>) => {
       const previous = queue;
       let release!: () => void;
       queue = new Promise<void>((done) => {
@@ -68,14 +73,14 @@ function fixture() {
             assert.equal(locked, true);
             return structuredClone(state.report);
           },
-          updateMany: async ({ data }: any) => {
+          updateMany: async ({ data }: { data: MutableRow }) => {
             Object.assign(state.report, data);
             return { count: 1 };
           },
         },
         crmInboxImplementationJob: {
           findUnique: async () => structuredClone(state.job),
-          updateMany: async ({ where, data }: any) => {
+          updateMany: async ({ where, data }: { where: { status: string }; data: MutableRow }) => {
             assert.equal(where.status, 'AWAITING_COMMIT_REVIEW');
             if (lostCas || state.job.status !== where.status) return { count: 0 };
             Object.assign(state.job, data);
@@ -83,21 +88,21 @@ function fixture() {
           },
         },
         crmBugReportComment: {
-          create: async ({ data }: any) => {
-            state.comments.push(data);
+          create: async ({ data }: { data: MutableRow }) => {
+            state.comments.push({ body: '', ...data } as CommentRow);
             return { id: 177 };
           },
         },
         crmBugReportAudit: {
-          create: async ({ data }: any) => {
-            state.audits.push(data);
+          create: async ({ data }: { data: MutableRow }) => {
+            state.audits.push({ action: '', beforeJson: '', ...data } as AuditRow);
           },
           findFirst: async () => state.audits[0] ?? null,
         },
         crmInboxFollowUpJob: {
-          create: async ({ data }: any) => {
+          create: async ({ data }: { data: MutableRow }) => {
             if (failAt === 'outbox') throw new Error('outbox unavailable');
-            state.followUps.push(data);
+            state.followUps.push({ eventVersion: '', ...data } as FollowUpRow);
           },
         },
       };
