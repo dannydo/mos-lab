@@ -1,11 +1,16 @@
 import type { FalAdjustmentSnapshotInput, PayrollAdjustmentSourceType } from '@mos-lab/shared';
 import type { FastifyInstance } from 'fastify';
 import { calculateFalAdjustmentShadow } from './fal-adjustment-shadow.service.js';
+import { requirePayrollAdjustmentApprover } from './payroll-adjustment-approver.service.js';
 
 export type FalAdjustmentDraftLine = {
   lineKey: string;
   recipientLegacyStaffId: number;
   recipientRole: 'CC' | 'CV' | 'STAFF';
+  recipientDisplayName: string;
+  recipientAvatarUrl: string;
+  recipientBranchKey: string;
+  recipientBranchName: string;
   component: string;
   beforeAmount: number;
   afterAmount: number;
@@ -30,6 +35,17 @@ function assertDraftLines(lines: readonly FalAdjustmentDraftLine[], expectedDelt
   if (!lines.length) throw new Error('At least one adjustment line is required for review');
   if (new Set(lines.map((line) => line.lineKey)).size !== lines.length) {
     throw new Error('Adjustment line keys must be unique within one snapshot');
+  }
+  if (
+    lines.some(
+      (line) =>
+        !line.recipientDisplayName.trim() ||
+        !line.recipientAvatarUrl.trim() ||
+        !line.recipientBranchKey.trim() ||
+        !line.recipientBranchName.trim()
+    )
+  ) {
+    throw new Error('Every adjustment line requires an immutable recipient identity and branch snapshot');
   }
   const actualDelta = lines.reduce((total, line) => total + line.afterAmount - line.beforeAmount, 0);
   if (actualDelta !== expectedDelta) {
@@ -136,6 +152,10 @@ export class FalAdjustmentCaseService {
           lineKey: line.lineKey,
           recipientLegacyStaffId: line.recipientLegacyStaffId,
           recipientRole: line.recipientRole,
+          recipientDisplayName: line.recipientDisplayName.trim(),
+          recipientAvatarUrl: line.recipientAvatarUrl.trim(),
+          recipientBranchKey: line.recipientBranchKey.trim(),
+          recipientBranchName: line.recipientBranchName.trim(),
           component: line.component,
           beforeAmount: line.beforeAmount,
           afterAmount: line.afterAmount,
@@ -170,6 +190,7 @@ export class FalAdjustmentCaseService {
       if (adjustmentCase.requestedByStaffId === actorStaffId) {
         throw new Error('The creator cannot approve or reject their own FAL adjustment case');
       }
+      await requirePayrollAdjustmentApprover(tx, actorStaffId);
       if (adjustmentCase.status !== 'READY_FOR_APPROVAL') {
         throw new Error('Only a ready FAL adjustment case can be decided');
       }

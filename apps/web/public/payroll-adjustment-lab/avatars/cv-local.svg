@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="CV Local Bình">
+  <rect width="96" height="96" rx="48" fill="#0f766e"/>
+  <circle cx="48" cy="39" r="20" fill="#c98d68"/>
+  <path d="M25 38c3-23 41-25 46 0-12-9-33-9-46 0Z" fill="#1c1917"/>
+  <path d="M18 96c4-24 18-35 30-35s26 11 30 35" fill="#99f6e4"/>
+  <circle cx="41" cy="41" r="2" fill="#1c1917"/><circle cx="55" cy="41" r="2" fill="#1c1917"/>
+  <path d="M42 51c4 3 8 3 12 0" fill="none" stroke="#7f1d1d" stroke-width="2" stroke-linecap="round"/>
+</svg>

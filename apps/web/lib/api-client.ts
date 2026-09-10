@@ -85,6 +85,21 @@ import type {
   RequestClassificationJob,
   RequestClassifierWorkerHealth,
   RequestConversation,
+  PayrollAdjustmentLabShadowRequest,
+  PayrollAdjustmentLabSettlementReviewResponse,
+  PayrollAdjustmentLabSettlementLockRequest,
+  PayrollAdjustmentLabSettlementLockResponse,
+  PayrollAdjustmentLabShadowResponse,
+  PayrollAdjustmentLabHrCustomRequest,
+  PayrollAdjustmentLabHrCustomResponse,
+  PayrollAdjustmentLabHrCustomDraftRequest,
+  PayrollAdjustmentLabApproverGroupResponse,
+  PayrollAdjustmentLabApprovalCheckRequest,
+  PayrollAdjustmentLabApprovalCheckResponse,
+  PayrollAdjustmentLabCaseResponse,
+  PayrollAdjustmentLabCaseListResponse,
+  PayrollAdjustmentLabDecisionRequest,
+  PayrollAdjustmentLabDraftRequest,
 } from '@mos-lab/shared';
 import {
   Customer,
@@ -535,6 +550,126 @@ export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<
 
 // API Client SDK for mos-lab
 export const apiClient = {
+  safeDevPayrollAdjustmentLab: {
+    settlementReview: async (): Promise<PayrollAdjustmentLabSettlementReviewResponse> => {
+      const response = await api.get<PayrollAdjustmentLabSettlementReviewResponse>(
+        '/safe-dev/payroll-adjustment-lab/settlement-review'
+      );
+      return response.data;
+    },
+    lockSettlementReview: async (
+      payload: PayrollAdjustmentLabSettlementLockRequest
+    ): Promise<PayrollAdjustmentLabSettlementLockResponse> => {
+      const response = await api.post<PayrollAdjustmentLabSettlementLockResponse>(
+        '/safe-dev/payroll-adjustment-lab/settlement-review/lock',
+        payload
+      );
+      return response.data;
+    },
+    approverGroup: async (): Promise<PayrollAdjustmentLabApproverGroupResponse> => {
+      const response = await api.get<PayrollAdjustmentLabApproverGroupResponse>(
+        '/safe-dev/payroll-adjustment-lab/approvers'
+      );
+      return response.data;
+    },
+    checkApproval: async (
+      payload: PayrollAdjustmentLabApprovalCheckRequest
+    ): Promise<PayrollAdjustmentLabApprovalCheckResponse> => {
+      const response = await api.post<PayrollAdjustmentLabApprovalCheckResponse>(
+        '/safe-dev/payroll-adjustment-lab/approval-check',
+        payload
+      );
+      return response.data;
+    },
+    getCase: async (): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.get<PayrollAdjustmentLabCaseResponse>('/safe-dev/payroll-adjustment-lab/case');
+      return response.data;
+    },
+    listCases: async (): Promise<PayrollAdjustmentLabCaseListResponse> => {
+      const response = await api.get<PayrollAdjustmentLabCaseListResponse>('/safe-dev/payroll-adjustment-lab/cases');
+      return response.data;
+    },
+    createDraft: async (payload: PayrollAdjustmentLabDraftRequest): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.post<PayrollAdjustmentLabCaseResponse>(
+        '/safe-dev/payroll-adjustment-lab/case/draft',
+        payload
+      );
+      return response.data;
+    },
+    decideCase: async (payload: PayrollAdjustmentLabDecisionRequest): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.post<PayrollAdjustmentLabCaseResponse>(
+        '/safe-dev/payroll-adjustment-lab/case/decision',
+        payload
+      );
+      return response.data;
+    },
+    getEligibleCase: async (): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.get<PayrollAdjustmentLabCaseResponse>(
+        '/safe-dev/payroll-adjustment-lab/case/eligible'
+      );
+      return response.data;
+    },
+    createEligibleDraft: async (
+      payload: PayrollAdjustmentLabDraftRequest
+    ): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.post<PayrollAdjustmentLabCaseResponse>(
+        '/safe-dev/payroll-adjustment-lab/case/eligible/draft',
+        payload
+      );
+      return response.data;
+    },
+    decideEligibleCase: async (
+      payload: PayrollAdjustmentLabDecisionRequest
+    ): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.post<PayrollAdjustmentLabCaseResponse>(
+        '/safe-dev/payroll-adjustment-lab/case/eligible/decision',
+        payload
+      );
+      return response.data;
+    },
+    getHrCustomCase: async (): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.get<PayrollAdjustmentLabCaseResponse>(
+        '/safe-dev/payroll-adjustment-lab/case/hr-custom'
+      );
+      return response.data;
+    },
+    createHrCustomDraft: async (
+      payload: PayrollAdjustmentLabHrCustomDraftRequest
+    ): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.post<PayrollAdjustmentLabCaseResponse>(
+        '/safe-dev/payroll-adjustment-lab/case/hr-custom/draft',
+        payload
+      );
+      return response.data;
+    },
+    decideHrCustomCase: async (
+      payload: PayrollAdjustmentLabDecisionRequest
+    ): Promise<PayrollAdjustmentLabCaseResponse> => {
+      const response = await api.post<PayrollAdjustmentLabCaseResponse>(
+        '/safe-dev/payroll-adjustment-lab/case/hr-custom/decision',
+        payload
+      );
+      return response.data;
+    },
+    calculateShadow: async (
+      payload: PayrollAdjustmentLabShadowRequest
+    ): Promise<PayrollAdjustmentLabShadowResponse> => {
+      const response = await api.post<PayrollAdjustmentLabShadowResponse>(
+        '/safe-dev/payroll-adjustment-lab/shadow',
+        payload
+      );
+      return response.data;
+    },
+    validateHrCustom: async (
+      payload: PayrollAdjustmentLabHrCustomRequest
+    ): Promise<PayrollAdjustmentLabHrCustomResponse> => {
+      const response = await api.post<PayrollAdjustmentLabHrCustomResponse>(
+        '/safe-dev/payroll-adjustment-lab/hr-custom',
+        payload
+      );
+      return response.data;
+    },
+  },
   experienceJournal: {
     list: async (params?: ExperienceJournalListQuery): Promise<ExperienceJournalListResponse> => {
       const response = await api.get<ExperienceJournalListResponse>('/experience-journal', { params });

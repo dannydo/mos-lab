@@ -308,27 +308,61 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   {
     id: 'PAY-001',
     book: 'REWARDS',
-    title: 'Payroll đã khóa là bất biến; mọi sửa trễ phải có shadow settlement',
+    title: 'Payroll chỉ tạo Adjustment từ snapshot đã khóa',
     summary:
-      'Kỳ payroll đã khóa không bị Legacy regenerate ghi đè. Sửa trễ dùng snapshot kỳ gốc để tính shadow settlement, rồi chờ một adjustment có audit ở kỳ hiện tại.',
+      'Kỳ REVIEWING chưa là nguồn tài chính. Chỉ kỳ LOCKED có snapshot bất biến để tính shadow settlement; sửa trễ trở thành adjustment có audit ở kỳ hiện tại.',
     commandments: [
       'Mọi UI payroll, iOS và mOS phải lấy cùng một nguồn settlement; không màn hình nào tự tính lại từ Level hiện tại.',
       'Cash Bonus và các sổ nguồn phải cộng ở độ chính xác nửa đồng trước, sau đó chỉ làm tròn một lần ở tổng người/kỳ.',
       'Kỳ LOCKED không bị xóa, regenerate hay ghi đè. Fix, Adjust hoặc Log phát sinh trễ chỉ có thể tạo một adjustment mới sau phê duyệt.',
+      'Kỳ REVIEWING chưa có snapshot tài chính để tham chiếu: không được hiển thị số Trước/Sau/Delta, tạo draft Adjustment hay ghi payout. Hệ thống phải fail closed cho đến khi kỳ chuyển LOCKED.',
       'Shadow settlement phải gắn period, calculation version, source key duy nhất và chỉ-đọc; thiếu snapshot hoặc lệch nguồn thì fail closed.',
+      'Tích hợp từ Wings chỉ nhận settlement export đã LOCKED, có cutoff, phiên bản và hash xác minh. Không được truy vấn Legacy đang biến động rồi gọi kết quả đó là snapshot đã chốt.',
+      'mOS Payroll Ledger phải tạo settlement ở REVIEWING với snapshot đầy đủ trước; chỉ một transaction chốt hợp lệ mới chuyển đồng thời settlement và kỳ sang LOCKED để phát export.',
+      'Mọi khoản nguồn của settlement phải đi qua Payroll Ledger Event bất biến, có idempotency key, subject, số nửa đồng, reference và hash. Kỳ LOCKED hoặc ARCHIVED tuyệt đối không nhận event mới.',
+      'Mỗi Adjustment Line phải lưu snapshot bất biến của người nhận: người cụ thể, avatar, vai trò CC/CV/Staff và chi nhánh. Không được suy lại từ hồ sơ hiện tại; thiếu snapshot thì không được tạo draft.',
+      'Chỉ thành viên active của nhóm Payroll Adjustment Approvers mới được duyệt hoặc từ chối Adjustment. Người tạo case bị cấm tự duyệt; mọi quyết định phải ghi người duyệt, thời điểm và lý do.',
       'Phase 2 chỉ tạo case, snapshot, line và audit để review. Chỉ một Phase posting được duyệt riêng mới có quyền ghi adjustment vào kỳ hiện tại.',
     ],
     rationale:
       'Lương phải truy vết được từng đồng mà vẫn giữ nguyên payslip đã chốt; một thay đổi muộn không được làm lịch sử hay level của kỳ cũ trôi đi.',
     tags: ['payroll', 'ledger', 'settlement', 'adjustment', 'audit', 'Cash Bonus'],
-    routeScopes: ['/dashboard/cc', '/dashboard/cv', '/dashboard/fal', '/dashboard/kpi'],
+    routeScopes: ['/dashboard/cc', '/dashboard/cv', '/dashboard/fal', '/dashboard/kpi', '/payroll-adjustment-lab'],
     status: 'ACTIVE',
-    version: '1.1.0',
+    version: '2.0.0',
     effectiveFrom: '2026-09-10',
     sources: [
       {
         label: 'Payroll Period và shadow settlement',
         reference: 'apps/api/src/modules/payroll-ledger/shadow-settlement.service.ts',
+      },
+      {
+        label: 'Phân quyền duyệt Adjustment',
+        reference: 'apps/api/src/modules/payroll-ledger/payroll-adjustment-approver.service.ts',
+      },
+      {
+        label: 'Snapshot người nhận Adjustment',
+        reference: 'apps/api/src/modules/payroll-ledger/fal-adjustment-case.service.ts',
+      },
+      {
+        label: 'Xác minh settlement export đã khóa',
+        reference: 'apps/api/src/modules/payroll-ledger/locked-settlement-import.service.ts',
+      },
+      {
+        label: 'mOS Payroll Ledger phát hành settlement export',
+        reference: 'apps/api/src/modules/payroll-ledger/locked-settlement-export.service.ts',
+      },
+      {
+        label: 'Staging settlement export chỉ-đọc ở local',
+        reference: 'apps/api/src/modules/payroll-ledger/locked-settlement-import.service.ts',
+      },
+      {
+        label: 'Nghi thức review và lock payroll settlement',
+        reference: 'apps/api/src/modules/payroll-ledger/payroll-settlement-closing.service.ts',
+      },
+      {
+        label: 'Payroll Ledger Event bất biến',
+        reference: 'apps/api/src/modules/payroll-ledger/payroll-ledger-event.service.ts',
       },
       { label: 'Ledger và cap CC', reference: 'AGENTS.md · Rules #45, #49, #50' },
     ],
