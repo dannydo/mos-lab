@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { calculateWheelBonusCap } from '@mos-lab/shared';
 import {
+  CcKpiService,
   buildGreenVisitEligibilitySql,
   buildCashTipCurrencyPredicate,
   buildCcLeaderboard,
@@ -77,6 +78,11 @@ test('preserves a 50/50 CC split without inflating counts', () => {
   ]);
   assert.deepEqual(splitCcShares(10, 10, [10, 20]), [{ staffId: 10, share: 1 }]);
   assert.deepEqual(splitCcShares(10, 20, [10]), [{ staffId: 10, share: 0.5 }]);
+});
+
+test('keeps a two-CC Cash Bonus share at half-VND instead of rounding one service', () => {
+  assert.equal(CcKpiService.calculateCcBonus(1, true), 32.5);
+  assert.equal(CcKpiService.calculateCcBonus(2, true), 65);
 });
 
 test('uses only the Cash ledger and never infers a bonus when the row is missing', () => {

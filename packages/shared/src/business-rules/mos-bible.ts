@@ -319,7 +319,9 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Shadow settlement phải gắn period, calculation version, source key duy nhất và chỉ-đọc; thiếu snapshot hoặc lệch nguồn thì fail closed.',
       'Tích hợp từ Wings chỉ nhận settlement export đã LOCKED, có cutoff, phiên bản và hash xác minh. Không được truy vấn Legacy đang biến động rồi gọi kết quả đó là snapshot đã chốt.',
       'mOS Payroll Ledger phải tạo settlement ở REVIEWING với snapshot đầy đủ trước; chỉ một transaction chốt hợp lệ mới chuyển đồng thời settlement và kỳ sang LOCKED để phát export.',
-      'Mọi khoản nguồn của settlement phải đi qua Payroll Ledger Event bất biến, có idempotency key, subject, số nửa đồng, reference và hash. Kỳ LOCKED hoặc ARCHIVED tuyệt đối không nhận event mới.',
+      'Mọi khoản nguồn của settlement phải bắt đầu bằng mOS evidence bất biến cho dịch vụ Completed, chốt doanh số ngày hoặc Cash Tip; sau đó mới đi qua Payroll Ledger Event có idempotency key, subject, số nửa đồng, reference và hash. Kỳ LOCKED hoặc ARCHIVED tuyệt đối không nhận evidence hay event mới.',
+      'CC native chỉ nhận evidence do mOS phát hành; không nhập Cash Bonus từ iOS/Legacy. Mỗi cash event được mOS tính theo Level = floor(điểm trước ca / 100) + 1, × 65đ, và chia 50/50 chính xác tới nửa đồng khi có hai CC. CC Xoay thiếu event Cash là 0. Mỗi người/kỳ phải có evidence chốt Daily Bonus, kể cả giá trị 0, trước khi finalize. Cap 150% lấy tổng Daily Bonus và tổng CC Xoay của cả tháng, chỉ chạy đúng một lần khi finalize người/kỳ; phần vượt được ghi thành một event hold bất biến trước khi settlement review.',
+      'Đối chiếu mOS với iOS/Legacy chỉ đọc phải so từng component theo source key chuẩn và đơn vị nửa đồng. Không có tolerance “lệch vài đồng”; thiếu dòng hoặc lệch nửa đồng đều là case cần điều tra trước khi LOCKED.',
       'Mỗi Adjustment Line phải lưu snapshot bất biến của người nhận: người cụ thể, avatar, vai trò CC/CV/Staff và chi nhánh. Không được suy lại từ hồ sơ hiện tại; thiếu snapshot thì không được tạo draft.',
       'Chỉ thành viên active của nhóm Payroll Adjustment Approvers mới được duyệt hoặc từ chối Adjustment. Người tạo case bị cấm tự duyệt; mọi quyết định phải ghi người duyệt, thời điểm và lý do.',
       'Phase 2 chỉ tạo case, snapshot, line và audit để review. Chỉ một Phase posting được duyệt riêng mới có quyền ghi adjustment vào kỳ hiện tại.',
@@ -327,9 +329,16 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     rationale:
       'Lương phải truy vết được từng đồng mà vẫn giữ nguyên payslip đã chốt; một thay đổi muộn không được làm lịch sử hay level của kỳ cũ trôi đi.',
     tags: ['payroll', 'ledger', 'settlement', 'adjustment', 'audit', 'Cash Bonus'],
-    routeScopes: ['/dashboard/cc', '/dashboard/cv', '/dashboard/fal', '/dashboard/kpi', '/payroll-adjustment-lab'],
+    routeScopes: [
+      '/dashboard/cc',
+      '/dashboard/cv',
+      '/dashboard/fal',
+      '/dashboard/kpi',
+      '/payroll-adjustment-lab',
+      '/payroll-native-cc-run',
+    ],
     status: 'ACTIVE',
-    version: '2.0.0',
+    version: '2.5.0',
     effectiveFrom: '2026-09-10',
     sources: [
       {
@@ -363,6 +372,18 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       {
         label: 'Payroll Ledger Event bất biến',
         reference: 'apps/api/src/modules/payroll-ledger/payroll-ledger-event.service.ts',
+      },
+      {
+        label: 'CC native policy và cap event',
+        reference: 'apps/api/src/modules/payroll-ledger/cc-native-payroll-policy.service.ts',
+      },
+      {
+        label: 'Evidence CC native từ mOS',
+        reference: 'apps/api/src/modules/payroll-ledger/cc-native-evidence.service.ts',
+      },
+      {
+        label: 'Đối chiếu component payroll chính xác',
+        reference: 'apps/api/src/modules/payroll-ledger/payroll-component-parity.service.ts',
       },
       { label: 'Ledger và cap CC', reference: 'AGENTS.md · Rules #45, #49, #50' },
     ],

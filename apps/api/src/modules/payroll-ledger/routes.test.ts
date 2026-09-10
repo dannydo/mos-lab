@@ -20,6 +20,7 @@ function createPayrollLedgerRouteApp(role: JwtUserPayload['role'] | null) {
   app.decorate('prisma', {
     crm: {
       crmStaff: { update: async () => ({}) },
+      crmConfig: { findUnique: async () => null },
       crmPayrollPeriod: {
         findUnique: async () => ({
           id: 1,
@@ -84,4 +85,43 @@ test('locked settlement export is restricted to Super Admin and remains read-onl
   assert.equal(exportPayload.subjects.length, 1);
   assert.equal(typeof exportPayload.exportHash, 'string');
   await sourceApp.close();
+});
+
+test('native CC evidence write boundary is restricted to Super Admin', async () => {
+  const app = createPayrollLedgerRouteApp('admin');
+  await app.register(payrollLedgerRoutes);
+  const response = await app.inject({
+    method: 'POST',
+    url: '/payroll-ledger/cc-evidence',
+    payload: {
+      evidenceKey: 'mos:evidence:service:9001:cc-1',
+      payrollPeriodId: 1,
+      subjectKey: 'staff:cc:1',
+      sourceReference: 'mos:completed-service:9001',
+      sourceOccurredAt: '2026-09-10T09:00:00.000Z',
+      payload: { kind: 'COMPLETED_SERVICE', previousPoints: 0, shareCount: 1 },
+    },
+  });
+  assert.equal(response.statusCode, 403);
+  await app.close();
+});
+
+test('native CC evidence remains closed until the production pilot cohort is configured', async () => {
+  const app = createPayrollLedgerRouteApp('super_admin');
+  await app.register(payrollLedgerRoutes);
+  const response = await app.inject({
+    method: 'POST',
+    url: '/payroll-ledger/cc-evidence',
+    payload: {
+      evidenceKey: 'mos:evidence:service:9001:pilot',
+      payrollPeriodId: 1,
+      subjectKey: 'staff:legacy:37790',
+      sourceReference: 'mos:completed-service:9001',
+      sourceOccurredAt: '2026-09-10T09:00:00.000Z',
+      payload: { kind: 'COMPLETED_SERVICE', previousPoints: 0, shareCount: 1 },
+    },
+  });
+  assert.equal(response.statusCode, 409);
+  assert.match(response.json().message, /pilot is not configured/);
+  await app.close();
 });

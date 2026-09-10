@@ -529,7 +529,9 @@ export class CcKpiService {
    */
   public static calculateCcBonus(level: number, isSplit: boolean): number {
     const fullBonus = level * CC_GAMIFICATION_SYSTEM_CONFIG.BONUS_PER_LEVEL_VND;
-    return isSplit ? Math.round(fullBonus / 2) : fullBonus;
+    // Cash rows may legitimately hold a half-VND share. Keep that exact value
+    // until the subject's settlement total is rounded once.
+    return isSplit ? fullBonus / 2 : fullBonus;
   }
 
   /**
