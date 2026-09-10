@@ -33,6 +33,18 @@ describe('Kinh Thánh mOS contextual registry', () => {
     }
   });
 
+  it('shows the locked-source payroll rule in the local payroll adjustment lab', () => {
+    const payRule = getMosBibleCommandmentsForPath('/payroll-adjustment-lab').find((item) => item.id === 'PAY-001');
+
+    expect(payRule).toBeDefined();
+    expect(payRule?.commandments.join(' ')).toContain('Kỳ REVIEWING');
+    expect(payRule?.commandments.join(' ')).toContain('fail closed');
+    expect(payRule?.commandments.join(' ')).toContain('Payroll Adjustment Approvers');
+    expect(payRule?.commandments.join(' ')).toContain('cấm tự duyệt');
+    expect(payRule?.commandments.join(' ')).toContain('snapshot bất biến của người nhận');
+    expect(payRule?.commandments.join(' ')).toContain('avatar');
+  });
+
   it('searches Vietnamese terms without tones', () => {
     const results = filterMosBibleCommandments(MOS_BIBLE_COMMANDMENTS, 'khong dau');
 

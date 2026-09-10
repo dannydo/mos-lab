@@ -6,10 +6,11 @@ import { registerHappyCallCron } from './services/happy-call-cron.service.js';
 import { ticketService } from './services/ticket.service.js';
 import { campaignService } from './services/campaign.service.js';
 import { dashboardService } from './services/dashboard.service.js';
+import { isSafeDev } from '../../safe-dev/runtime.js';
 
 export async function csRoutes(fastify: FastifyInstance) {
   // Start automated happy call generation cronjob
-  registerHappyCallCron(fastify);
+  if (!isSafeDev()) registerHappyCallCron(fastify);
 
   // ---------------------------------------------------------
   // Happy Call Endpoints

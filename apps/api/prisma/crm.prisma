@@ -2071,12 +2071,37 @@ model CrmPayrollPeriod {
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
 
   settlements          CrmPayrollSettlement[]
+  ledgerEvents         CrmPayrollLedgerEvent[]
   sourceAdjustmentCases CrmPayrollAdjustmentCase[] @relation("payroll_adjustment_source_period")
   targetAdjustmentCases CrmPayrollAdjustmentCase[] @relation("payroll_adjustment_target_period")
 
   @@index([status, startDate], map: "payroll_period_status_start_idx")
   @@index([startDate, endDate], map: "payroll_period_date_range_idx")
   @@map("crm_payroll_periods")
+}
+
+/// Append-only source evidence for one exact half-VND payroll component.
+/// A locked period never accepts new events; late changes become an Adjustment
+/// in an open future period instead of rewriting this history.
+model CrmPayrollLedgerEvent {
+  id                Int      @id @default(autoincrement())
+  eventKey          String   @unique @map("event_key") @db.VarChar(191)
+  payrollPeriodId   Int      @map("payroll_period_id")
+  subjectKey        String   @map("subject_key") @db.VarChar(191)
+  sourceType        String   @map("source_type") @db.VarChar(32)
+  component         String   @db.VarChar(64)
+  amountHalfDong    Int      @map("amount_half_dong")
+  sourceReference   String   @map("source_reference") @db.VarChar(191)
+  sourceHash        String   @map("source_hash") @db.VarChar(128)
+  sourceOccurredAt  DateTime @map("source_occurred_at") @db.DateTime(0)
+  metadataJson      String?  @map("metadata_json") @db.LongText
+  createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  payrollPeriod CrmPayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Restrict)
+
+  @@index([payrollPeriodId, subjectKey, sourceOccurredAt], map: "payroll_ledger_period_subject_time_idx")
+  @@index([sourceReference], map: "payroll_ledger_source_reference_idx")
+  @@map("crm_payroll_ledger_events")
 }
 
 /// A versioned, immutable summary of the calculation inputs used for a
@@ -2188,6 +2213,10 @@ model CrmPayrollAdjustmentLine {
   lineKey                String    @map("line_key") @db.VarChar(191)
   recipientLegacyStaffId Int       @map("recipient_legacy_staff_id")
   recipientRole          String    @map("recipient_role") @db.VarChar(16)
+  recipientDisplayName   String?   @map("recipient_display_name") @db.VarChar(100)
+  recipientAvatarUrl     String?   @map("recipient_avatar_url") @db.Text
+  recipientBranchKey     String?   @map("recipient_branch_key") @db.VarChar(30)
+  recipientBranchName    String?   @map("recipient_branch_name") @db.VarChar(160)
   component              String    @db.VarChar(64)
   beforeAmount           Int       @map("before_amount")
   afterAmount            Int       @map("after_amount")

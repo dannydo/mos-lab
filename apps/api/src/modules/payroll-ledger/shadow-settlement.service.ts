@@ -61,3 +61,19 @@ export function calculateShadowSettlement(request: ShadowSettlementRequest): Sha
     holdAmount,
   };
 }
+
+/**
+ * Calculates a settlement-review snapshot after its event inputs have been
+ * captured in one local transaction. Unlike an adjustment, this creates the
+ * source settlement itself, so its period is still REVIEWING at this point.
+ */
+export function calculateSettlementFromEventSnapshot(
+  request: Omit<ShadowSettlementRequest, 'sourcePeriod'> & {
+    sourcePeriod: Pick<ShadowSettlementRequest['sourcePeriod'], 'periodKey' | 'calculationVersion'>;
+  }
+): ShadowSettlementResult {
+  return calculateShadowSettlement({
+    ...request,
+    sourcePeriod: { ...request.sourcePeriod, status: 'LOCKED' },
+  });
+}

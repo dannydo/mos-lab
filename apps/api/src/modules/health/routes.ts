@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { isSafeDev } from '../../safe-dev/runtime.js';
 
 export async function healthRoutes(fastify: FastifyInstance) {
   // Deliberately avoids database checks: the sidebar polls this lightweight release marker.
@@ -9,6 +10,19 @@ export async function healthRoutes(fastify: FastifyInstance) {
 
   fastify.get('/health', async (request, reply) => {
     try {
+      if (isSafeDev()) {
+        await Promise.all([fastify.prisma.legacy.$queryRaw`SELECT 1`, fastify.prisma.crm.$queryRaw`SELECT 1`]);
+        return {
+          status: 'ok',
+          timestamp: new Date().toISOString(),
+          mode: 'safe-dev',
+          databases: {
+            legacy: 'connected',
+            crm: 'connected',
+          },
+        };
+      }
+
       // Test legacy DB connection with simple query count
       // Using queryRaw to bypass client generation issues before db pull is complete
       const legacyResult = await fastify.prisma.legacy.$queryRawUnsafe<

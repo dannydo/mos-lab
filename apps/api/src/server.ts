@@ -47,9 +47,12 @@ import { startPancakeAcademySync } from './modules/academy-sales/pancake-sync.se
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 
 import { CampaignPromotionSyncService } from './modules/campaigns/campaign-promotion-sync.service.js';
+import { assertSafeDevConfiguration, isSafeDev, runtimeListenHost } from './safe-dev/runtime.js';
+import { safeDevRoutes } from './safe-dev/routes.js';
 
 // Load environment variables
 dotenv.config();
+assertSafeDevConfiguration();
 
 // BigInt JSON serialization patch
 (BigInt.prototype as unknown as SafeAny).toJSON = function () {
@@ -74,12 +77,25 @@ function isDevelopmentLanOrigin(origin: string): boolean {
   }
 }
 
+function isSafeDevLoopbackOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    return url.protocol === 'http:' && url.port === '4100' && ['127.0.0.1', 'localhost', '::1'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 const start = async () => {
   try {
     // Register CORS
     const configuredCorsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
     await server.register(cors, {
       origin: (origin, callback) => {
+        if (isSafeDev()) {
+          callback(null, !origin || isSafeDevLoopbackOrigin(origin));
+          return;
+        }
         callback(null, !origin || origin === configuredCorsOrigin || isDevelopmentLanOrigin(origin));
       },
       credentials: true,
@@ -262,6 +278,7 @@ const start = async () => {
 
     // Register routes
     await server.register(healthRoutes, { prefix: '/api' });
+    if (isSafeDev()) await server.register(safeDevRoutes, { prefix: '/api' });
     await server.register(authRoutes, { prefix: '/api' });
     await server.register(customerRoutes, { prefix: '/api' });
     await server.register(planRoutes, { prefix: '/api' });
@@ -290,44 +307,48 @@ const start = async () => {
     await server.register(experienceJournalRoutes, { prefix: '/api' });
     await server.register(bugReportRoutes, { prefix: '/api' });
 
-    startPancakeAcademySync(server);
+    if (isSafeDev()) {
+      server.log.info('Safe Dev enabled: background jobs and external synchronization are disabled.');
+    } else {
+      startPancakeAcademySync(server);
 
-    // Start background analyzer polling for AI laugh detection
-    startRecordingAnalyzer(server);
-    startBugReportCleanup(server);
-    startRequestClassifierWorkerHealthMonitor(server);
-    const cleanupExperienceJournal = () =>
-      ExperienceJournalService.cleanupExpired(server).catch((error) =>
-        server.log.warn({ error }, 'Experience Journal retention cleanup failed')
-      );
-    const experienceJournalCleanupInitial = setTimeout(cleanupExperienceJournal, 60_000);
-    experienceJournalCleanupInitial.unref();
-    const experienceJournalCleanupInterval = setInterval(cleanupExperienceJournal, 24 * 60 * 60 * 1000);
-    experienceJournalCleanupInterval.unref();
-    const cleanupClassifications = () =>
-      RequestClassificationService.cleanupExpired(server).catch((error) =>
-        server.log.warn({ error }, 'Request classification cleanup failed')
-      );
-    const classificationCleanupInitial = setTimeout(cleanupClassifications, 45_000);
-    classificationCleanupInitial.unref();
-    const classificationCleanupInterval = setInterval(cleanupClassifications, 10 * 60 * 1000);
-    classificationCleanupInterval.unref();
-    const cleanupConversations = () =>
-      RequestConversationService.cleanupExpired(server).catch((error) =>
-        server.log.warn({ error }, 'Request conversation cleanup failed')
-      );
-    const conversationCleanupInitial = setTimeout(cleanupConversations, 50_000);
-    conversationCleanupInitial.unref();
-    const conversationCleanupInterval = setInterval(cleanupConversations, 10 * 60 * 1000);
-    conversationCleanupInterval.unref();
+      // Start background analyzer polling for AI laugh detection
+      startRecordingAnalyzer(server);
+      startBugReportCleanup(server);
+      startRequestClassifierWorkerHealthMonitor(server);
+      const cleanupExperienceJournal = () =>
+        ExperienceJournalService.cleanupExpired(server).catch((error) =>
+          server.log.warn({ error }, 'Experience Journal retention cleanup failed')
+        );
+      const experienceJournalCleanupInitial = setTimeout(cleanupExperienceJournal, 60_000);
+      experienceJournalCleanupInitial.unref();
+      const experienceJournalCleanupInterval = setInterval(cleanupExperienceJournal, 24 * 60 * 60 * 1000);
+      experienceJournalCleanupInterval.unref();
+      const cleanupClassifications = () =>
+        RequestClassificationService.cleanupExpired(server).catch((error) =>
+          server.log.warn({ error }, 'Request classification cleanup failed')
+        );
+      const classificationCleanupInitial = setTimeout(cleanupClassifications, 45_000);
+      classificationCleanupInitial.unref();
+      const classificationCleanupInterval = setInterval(cleanupClassifications, 10 * 60 * 1000);
+      classificationCleanupInterval.unref();
+      const cleanupConversations = () =>
+        RequestConversationService.cleanupExpired(server).catch((error) =>
+          server.log.warn({ error }, 'Request conversation retention cleanup failed')
+        );
+      const conversationCleanupInitial = setTimeout(cleanupConversations, 50_000);
+      conversationCleanupInitial.unref();
+      const conversationCleanupInterval = setInterval(cleanupConversations, 10 * 60 * 1000);
+      conversationCleanupInterval.unref();
 
-    // Run backfill migration for existing CRM promotions to sync to legacy DB
-    CampaignPromotionSyncService.backfillExistingPromotions(server).catch((err) => {
-      server.log.warn('Backfill campaign promotions error:', err);
-    });
+      // Run backfill migration for existing CRM promotions to sync to legacy DB
+      CampaignPromotionSyncService.backfillExistingPromotions(server).catch((err) => {
+        server.log.warn('Backfill campaign promotions error:', err);
+      });
+    }
 
     const port = Number(process.env.PORT) || 3001;
-    await server.listen({ port, host: '0.0.0.0' });
+    await server.listen({ port, host: runtimeListenHost() });
 
     server.log.info(`Server is running at http://localhost:${port}`);
   } catch (err) {
