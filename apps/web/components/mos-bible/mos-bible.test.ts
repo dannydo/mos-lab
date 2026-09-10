@@ -29,6 +29,7 @@ describe('Kinh Thánh mOS contextual registry', () => {
       const ids = getMosBibleCommandmentsForPath(pathname).map((item) => item.id);
 
       expect(ids, pathname).toContain('FAL-001');
+      expect(ids, pathname).toContain('PAY-001');
     }
   });
 

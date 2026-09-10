@@ -2052,6 +2052,29 @@ model CrmAcademyCampaignTouchpointLog {
 // Holiday Work — roster, recommendation and payroll audit
 // ═══════════════════════════════════════════
 
+// Company-wide payroll boundary. Phase 1 deliberately stores only the period
+// state; settlement and adjustment posting arrive in later, separately
+// approved phases. This prevents a read-only shadow calculation from
+// mutating historical payroll.
+model CrmPayrollPeriod {
+  id                 Int       @id @default(autoincrement())
+  periodKey          String    @unique @map("period_key") @db.VarChar(20)
+  label              String    @db.VarChar(160)
+  startDate          DateTime  @map("start_date") @db.Date
+  endDate            DateTime  @map("end_date") @db.Date
+  timezone           String    @default("Asia/Ho_Chi_Minh") @db.VarChar(50)
+  status             String    @default("OPEN") @db.VarChar(24)
+  calculationVersion String    @map("calculation_version") @db.VarChar(64)
+  lockedByStaffId    Int?      @map("locked_by_staff_id")
+  lockedAt           DateTime? @map("locked_at") @db.DateTime(0)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([status, startDate], map: "payroll_period_status_start_idx")
+  @@index([startDate, endDate], map: "payroll_period_date_range_idx")
+  @@map("crm_payroll_periods")
+}
+
 model CrmHolidayPeriod {
   id                       Int       @id @default(autoincrement())
   code                     String    @unique @db.VarChar(50)
