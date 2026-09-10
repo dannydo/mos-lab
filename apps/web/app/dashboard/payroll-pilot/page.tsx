@@ -27,6 +27,10 @@ function formatVnd(amountVnd: number): string {
   return `${amountVnd.toLocaleString('vi-VN')} đ`;
 }
 
+function sourceRowCount(row: HistoryRow): number {
+  return row.sourceCounts.xoayLedgerRows + row.sourceCounts.dailyCloses + row.sourceCounts.cashTipRows;
+}
+
 function evidenceLabel(kind: PilotRow['evidence'][number]['kind']): string {
   if (kind === 'COMPLETED_SERVICE') return 'Dịch vụ hoàn thành';
   if (kind === 'DAILY_SALES_CLOSE') return 'Chốt doanh số ngày';
@@ -124,6 +128,18 @@ export default function PayrollPilotPage() {
         render: (value) => <Text className="tabular-nums">{value}</Text>,
       },
       {
+        title: 'Xoay gốc',
+        dataIndex: 'rawXoayVnd',
+        key: 'rawXoayVnd',
+        render: formatVnd,
+      },
+      {
+        title: 'Giữ cap Xoay',
+        dataIndex: 'heldXoayVnd',
+        key: 'heldXoayVnd',
+        render: formatVnd,
+      },
+      {
         title: 'Xoay sau cap',
         dataIndex: 'effectiveXoayVnd',
         key: 'effectiveXoayVnd',
@@ -132,6 +148,7 @@ export default function PayrollPilotPage() {
       { title: 'Daily Bonus', dataIndex: 'dailyBonusVnd', key: 'dailyBonusVnd', render: formatVnd },
       { title: 'Cash Tip', dataIndex: 'cashTipVnd', key: 'cashTipVnd', render: formatVnd },
       { title: 'Tổng đối chiếu', dataIndex: 'componentTotalVnd', key: 'componentTotalVnd', render: formatVnd },
+      { title: 'Dòng nguồn', key: 'sourceRows', render: (_, row) => sourceRowCount(row) },
     ],
     []
   );
@@ -255,10 +272,13 @@ export default function PayrollPilotPage() {
                 columnPriority={{
                   displayName: 'primary',
                   periodKey: 'primary',
+                  rawXoayVnd: 'tertiary',
+                  heldXoayVnd: 'tertiary',
                   effectiveXoayVnd: 'secondary',
                   dailyBonusVnd: 'tertiary',
                   cashTipVnd: 'secondary',
                   componentTotalVnd: 'primary',
+                  sourceRows: 'tertiary',
                 }}
                 mobileRecordKey={(row) => `${row.subjectKey}:${row.periodKey}`}
                 mobileRenderer={(row) => (
@@ -268,8 +288,12 @@ export default function PayrollPilotPage() {
                     </Text>
                     <Text className="tabular-nums">Tổng đối chiếu: {formatVnd(row.componentTotalVnd)}</Text>
                     <Text type="secondary">
-                      Xoay sau cap {formatVnd(row.effectiveXoayVnd)} · Daily {formatVnd(row.dailyBonusVnd)} · Tip{' '}
-                      {formatVnd(row.cashTipVnd)}
+                      Xoay {formatVnd(row.rawXoayVnd)} − giữ cap {formatVnd(row.heldXoayVnd)} ={' '}
+                      {formatVnd(row.effectiveXoayVnd)}
+                    </Text>
+                    <Text type="secondary">
+                      Daily {formatVnd(row.dailyBonusVnd)} · Tip {formatVnd(row.cashTipVnd)} · {sourceRowCount(row)}{' '}
+                      dòng nguồn
                     </Text>
                   </Space>
                 )}
