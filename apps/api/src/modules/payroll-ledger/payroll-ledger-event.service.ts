@@ -6,7 +6,7 @@ export type PayrollLedgerEventInput = {
   eventKey: string;
   payrollPeriodId: number;
   subjectKey: string;
-  sourceType: 'FAL' | 'HR' | 'SYSTEM';
+  sourceType: 'FAL' | 'HR' | 'SYSTEM' | 'CC';
   component: string;
   amountHalfDong: number;
   sourceReference: string;
@@ -30,6 +30,20 @@ export class PayrollLedgerEventService {
     });
     if (frozenInput) {
       throw new Error('A settlement review already freezes this payroll period event input');
+    }
+    if (input.sourceType === 'CC' && input.component !== 'CC_POLICY_FINALIZED') {
+      const finalizedCcPolicy = await tx.crmPayrollLedgerEvent.findFirst({
+        where: {
+          payrollPeriodId: input.payrollPeriodId,
+          subjectKey: input.subjectKey,
+          sourceType: 'CC',
+          component: 'CC_POLICY_FINALIZED',
+        },
+        select: { id: true },
+      });
+      if (finalizedCcPolicy) {
+        throw new Error('A finalized native CC policy cannot accept additional source events');
+      }
     }
     await tx.crmPayrollLedgerEvent.create({
       data: {

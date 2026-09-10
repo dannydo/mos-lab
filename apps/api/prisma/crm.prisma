@@ -2072,6 +2072,7 @@ model CrmPayrollPeriod {
 
   settlements          CrmPayrollSettlement[]
   ledgerEvents         CrmPayrollLedgerEvent[]
+  ccEvidence           CrmPayrollCcEvidence[]
   sourceAdjustmentCases CrmPayrollAdjustmentCase[] @relation("payroll_adjustment_source_period")
   targetAdjustmentCases CrmPayrollAdjustmentCase[] @relation("payroll_adjustment_target_period")
 
@@ -2102,6 +2103,34 @@ model CrmPayrollLedgerEvent {
   @@index([payrollPeriodId, subjectKey, sourceOccurredAt], map: "payroll_ledger_period_subject_time_idx")
   @@index([sourceReference], map: "payroll_ledger_source_reference_idx")
   @@map("crm_payroll_ledger_events")
+}
+
+/// Immutable mOS operational evidence for CC payroll.  A row is a snapshot of
+/// one completed service, daily-sales close, or cash-tip fact.  It is captured
+/// before the corresponding ledger event bundle is finalized, and never reads
+/// from or writes back to Legacy/iOS payroll data.
+model CrmPayrollCcEvidence {
+  id               Int      @id @default(autoincrement())
+  evidenceKey      String   @unique @map("evidence_key") @db.VarChar(191)
+  payrollPeriodId  Int      @map("payroll_period_id")
+  subjectKey       String   @map("subject_key") @db.VarChar(191)
+  evidenceKind     String   @map("evidence_kind") @db.VarChar(32)
+  component        String   @db.VarChar(64)
+  amountHalfDong   Int      @map("amount_half_dong")
+  sourceReference  String   @map("source_reference") @db.VarChar(191)
+  sourceHash       String   @map("source_hash") @db.VarChar(128)
+  sourceOccurredAt DateTime @map("source_occurred_at") @db.DateTime(0)
+  policyVersion    String?  @map("policy_version") @db.VarChar(64)
+  policyHash       String?  @map("policy_hash") @db.VarChar(128)
+  payloadJson      String   @map("payload_json") @db.LongText
+  createdByStaffId Int?     @map("created_by_staff_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  payrollPeriod CrmPayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Restrict)
+
+  @@index([payrollPeriodId, subjectKey, sourceOccurredAt], map: "payroll_cc_evidence_period_subject_time_idx")
+  @@index([sourceReference], map: "payroll_cc_evidence_source_reference_idx")
+  @@map("crm_payroll_cc_evidence")
 }
 
 /// A versioned, immutable summary of the calculation inputs used for a
