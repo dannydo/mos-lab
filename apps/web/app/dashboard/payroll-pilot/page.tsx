@@ -177,44 +177,46 @@ export default function PayrollPilotPage() {
             ]}
           />
 
+          <DataSection
+            title={hasPeriod ? `Bốn CC pilot · ${dashboard.activePeriodKey}` : 'Bốn CC pilot đã được khóa cohort'}
+          >
+            <DataTable<PilotRow>
+              columns={columns}
+              dataSource={dashboard.rows}
+              rowKey="subjectKey"
+              pagination={false}
+              columnPriority={{
+                staff: 'primary',
+                evidence: 'secondary',
+                ledger: 'secondary',
+                finalized: 'tertiary',
+              }}
+              mobileRecordKey={(row) => row.subjectKey}
+              mobileRenderer={(row) => (
+                <Space direction="vertical" size={4} className="w-full">
+                  <Text strong>{row.displayName}</Text>
+                  <Text type="secondary">
+                    {row.evidence.length} evidence · {row.ledger.length} ledger
+                  </Text>
+                  {row.finalized ? (
+                    <StatusTag status="success" label="Đã finalize" />
+                  ) : (
+                    <StatusTag status="warning" label="Chờ evidence" />
+                  )}
+                </Space>
+              )}
+            />
+          </DataSection>
+
           {!hasPeriod ? (
             <DataSection
               title="Chưa có kỳ payroll mOS"
               state="empty"
               stateTitle="Pilot đã bật, đang chờ mở kỳ tháng"
-              stateDescription="Khi một kỳ payroll mOS được mở, evidence cho bốn CC pilot sẽ xuất hiện ở đây để kiểm tra trước khi finalize và settlement."
+              stateDescription="Bốn CC ở trên đã được khóa vào cohort. Khi một kỳ payroll mOS được mở, evidence sẽ xuất hiện ở đây để kiểm tra trước khi finalize và settlement."
             />
           ) : (
             <>
-              <DataSection title={`Bốn CC pilot · ${dashboard.activePeriodKey}`}>
-                <DataTable<PilotRow>
-                  columns={columns}
-                  dataSource={dashboard.rows}
-                  rowKey="subjectKey"
-                  pagination={false}
-                  columnPriority={{
-                    staff: 'primary',
-                    evidence: 'secondary',
-                    ledger: 'secondary',
-                    finalized: 'tertiary',
-                  }}
-                  mobileRecordKey={(row) => row.subjectKey}
-                  mobileRenderer={(row) => (
-                    <Space direction="vertical" size={4} className="w-full">
-                      <Text strong>{row.displayName}</Text>
-                      <Text type="secondary">
-                        {row.evidence.length} evidence · {row.ledger.length} ledger
-                      </Text>
-                      {row.finalized ? (
-                        <StatusTag status="success" label="Đã finalize" />
-                      ) : (
-                        <StatusTag status="warning" label="Chờ evidence" />
-                      )}
-                    </Space>
-                  )}
-                />
-              </DataSection>
-
               <DataSection
                 title="Trace theo người và kỳ"
                 extra={<Text type="secondary">Nguồn · rule · số tiền · thời điểm</Text>}
