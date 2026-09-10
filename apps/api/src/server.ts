@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 import prismaPlugin from './plugins/prisma.js';
 import cachePlugin from './plugins/cache.js';
 import { healthRoutes } from './modules/health/routes.js';
+import { payrollLedgerRoutes } from './modules/payroll-ledger/routes.js';
 import { authRoutes } from './modules/auth/routes.js';
 import { customerRoutes } from './modules/customers/routes.js';
 import { planRoutes } from './modules/plans/routes.js';
@@ -278,6 +279,7 @@ const start = async () => {
 
     // Register routes
     await server.register(healthRoutes, { prefix: '/api' });
+    await server.register(payrollLedgerRoutes, { prefix: '/api' });
     if (isSafeDev()) await server.register(safeDevRoutes, { prefix: '/api' });
     await server.register(authRoutes, { prefix: '/api' });
     await server.register(customerRoutes, { prefix: '/api' });
