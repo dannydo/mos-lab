@@ -1,4 +1,5 @@
 export * from './types/customer.js';
+export * from './types/projection.js';
 export * from './types/academy-sales.js';
 export * from './types/academy-talent-assessment.js';
 export * from './types/academy-campaign.js';

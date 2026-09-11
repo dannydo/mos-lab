@@ -26,6 +26,7 @@ import {
   normalizeFixedFinalPriceCategoryKeys,
   resolveFixedFinalPriceScope,
 } from '../customers/services/customer-service-filter-catalog.service.js';
+import { CustomerVisitProjectionService } from '../projections/customer-visit-projection.service.js';
 
 type CampaignReadOptions = {
   /** Managers retain archived records for audit and restoration; staff do not. */
@@ -1253,16 +1254,9 @@ export class CampaignService {
         WHERE user_id IN (${idListStr}) AND order_state = 'Completed'
         GROUP BY user_id
       `),
-      fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-        SELECT 
-          o.user_id as userId,
-          COALESCE(MAX(ro.actual_booking_date_start), MAX(o.booking_date_start)) as lastVisitDate,
-          DATEDIFF(NOW(), COALESCE(MAX(ro.actual_booking_date_start), MAX(o.booking_date_start))) as daysSinceLastVisit
-        FROM \`order\` o
-        LEFT JOIN report_order ro ON o.id = ro.order_id
-        WHERE o.user_id IN (${idListStr}) AND o.order_state = 'Completed'
-        GROUP BY o.user_id
-      `),
+      process.env.CUSTOMER_VISIT_PROJECTION_READ_ENABLED === 'true'
+        ? CustomerVisitProjectionService.readForCustomers(fastify, legacyUserIds)
+        : CustomerVisitProjectionService.readCanonicalForCustomers(fastify, legacyUserIds),
       fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT 
           o.user_id as userId,
@@ -1287,11 +1281,10 @@ export class CampaignService {
     const orderStatsMap = new Map(orderStatsRows.map((r) => [Number(r.userId), Math.round(Number(r.totalSpent || 0))]));
     const lastVisitMap = new Map(
       lastVisitRows.map((r) => [
-        Number(r.userId),
+        r.legacyUserId,
         {
-          lastVisitDate: r.lastVisitDate ? new Date(r.lastVisitDate).toISOString() : null,
-          daysSinceLastVisit:
-            r.daysSinceLastVisit !== null && r.daysSinceLastVisit !== undefined ? Number(r.daysSinceLastVisit) : null,
+          lastVisitDate: r.lastVisitAt,
+          daysSinceLastVisit: r.daysSinceLastVisit,
         },
       ])
     );

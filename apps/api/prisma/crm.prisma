@@ -739,6 +739,43 @@ model CrmLocaTouchpoint {
 }
 
 // ═══════════════════════════════════════════
+// Durable read projections — Legacy stays read-only; mOS owns these rows.
+// ═══════════════════════════════════════════
+model CrmCustomerVisitProjection {
+  legacyUserId   Int       @id @map("legacy_user_id")
+  lastVisitAt    DateTime? @map("last_visit_at") @db.DateTime(0)
+  sourceRevision String    @map("source_revision") @db.VarChar(191)
+  formulaVersion String    @map("formula_version") @db.VarChar(40)
+  status         String    @default("FRESH") @db.VarChar(20)
+  computedAt     DateTime  @default(now()) @map("computed_at") @db.DateTime(0)
+  reconciledAt   DateTime? @map("reconciled_at") @db.DateTime(0)
+  lastError      String?   @map("last_error") @db.VarChar(500)
+
+  @@index([status, computedAt])
+  @@map("crm_customer_visit_projections")
+}
+
+model CrmProjectionJob {
+  id             Int       @id @default(autoincrement())
+  projectionKey  String    @map("projection_key") @db.VarChar(80)
+  entityKey      String    @map("entity_key") @db.VarChar(100)
+  sourceRevision String    @map("source_revision") @db.VarChar(191)
+  reason         String    @db.VarChar(80)
+  status         String    @default("PENDING") @db.VarChar(20)
+  attempts       Int       @default(0)
+  availableAt    DateTime  @default(now()) @map("available_at") @db.DateTime(0)
+  leasedBy       String?   @map("leased_by") @db.VarChar(100)
+  leaseExpiresAt DateTime? @map("lease_expires_at") @db.DateTime(0)
+  lastError      String?   @map("last_error") @db.VarChar(500)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@unique([projectionKey, entityKey])
+  @@index([status, availableAt])
+  @@map("crm_projection_jobs")
+}
+
+// ═══════════════════════════════════════════
 // Custom Sub-Campaign Models (NYC Sub-Campaign System)
 // ═══════════════════════════════════════════
 

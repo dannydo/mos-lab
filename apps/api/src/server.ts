@@ -46,6 +46,7 @@ import { RequestConversationService } from './modules/bug-reports/request-conver
 import { startRequestClassifierWorkerHealthMonitor } from './modules/bug-reports/request-classifier-worker-health.service.js';
 import { startPancakeAcademySync } from './modules/academy-sales/pancake-sync.service.js';
 import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
+import { startProjectionWorker } from './modules/projections/projection-worker.service.js';
 
 import { CampaignPromotionSyncService } from './modules/campaigns/campaign-promotion-sync.service.js';
 import { assertSafeDevConfiguration, isSafeDev, runtimeListenHost } from './safe-dev/runtime.js';
@@ -316,6 +317,7 @@ const start = async () => {
 
       // Start background analyzer polling for AI laugh detection
       startRecordingAnalyzer(server);
+      startProjectionWorker(server);
       startBugReportCleanup(server);
       startRequestClassifierWorkerHealthMonitor(server);
       const cleanupExperienceJournal = () =>
