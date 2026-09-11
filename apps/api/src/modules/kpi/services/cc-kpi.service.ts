@@ -1089,13 +1089,29 @@ export class CcKpiService {
     // `endAt` is internal-only and lets an active period compare against the
     // exact same clock time in the matching previous period.
     const queryEndAt = endAt || `${endStr} 23:59:59`;
-    const actualCheckinRangeClause = `
-      AND (
-        (ro.actual_booking_date_start >= '${startStr} 00:00:00' AND ro.actual_booking_date_start <= '${queryEndAt}')
-        OR (
-          ro.actual_booking_date_start IS NULL
-          AND o.booking_date_start >= '${startStr} 00:00:00' AND o.booking_date_start <= '${queryEndAt}'
-        )
+    // The two branches are mutually exclusive. Querying either indexed date
+    // directly is cheaper than repeatedly applying COALESCE/OR to each
+    // Order/Service category query below.
+    const eligibleOrdersCte = `
+      WITH eligible_orders AS (
+        SELECT o.id AS order_id, o.user_id, o.client_store_id, o.combo_sale_required,
+               o.date_created, o.booking_date_start, ro.actual_booking_date_start AS sale_at
+        FROM report_order ro
+        INNER JOIN \`order\` o ON o.id = ro.order_id
+        WHERE o.order_state = 'Completed'
+          AND ro.actual_booking_date_start >= '${startStr} 00:00:00'
+          AND ro.actual_booking_date_start <= '${queryEndAt}'
+          ${storeFilterClause}
+        UNION ALL
+        SELECT o.id AS order_id, o.user_id, o.client_store_id, o.combo_sale_required,
+               o.date_created, o.booking_date_start, o.booking_date_start AS sale_at
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON ro.order_id = o.id
+        WHERE o.order_state = 'Completed'
+          AND ro.actual_booking_date_start IS NULL
+          AND o.booking_date_start >= '${startStr} 00:00:00'
+          AND o.booking_date_start <= '${queryEndAt}'
+          ${storeFilterClause}
       )`;
 
     const staffProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
@@ -1118,8 +1134,9 @@ export class CcKpiService {
     // === RAW PER-ORDER QUERIES: Return both check_in & check_out staff IDs for 50/50 split ===
 
     const comboSalesQuery = `
+      ${eligibleOrdersCte}
       SELECT 
-        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
+        DATE_FORMAT(eo.sale_at, '%Y-%m-%d') as sale_date,
         COALESCE(osc.check_in_staff_id,
           (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = osc.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1)
         ) as cc_in_id,
@@ -1128,18 +1145,15 @@ export class CcKpiService {
         ) as cc_out_id,
         GREATEST(0, (COALESCE(NULLIF(osc.total_price - osc.tax_amount, 0), osc.service_price - osc.discount_amount - osc.tax_amount, 0) - COALESCE(ud.debt_amount, 0))) as combo_sales,
         COALESCE(osc.quantity, 1) as combo_count,
-        CASE WHEN ${buildGreenVisitEligibilitySql('o')} THEN 1 ELSE 0 END as is_green_visit,
+        CASE WHEN COALESCE(eo.combo_sale_required, 0) <> 0 THEN 1 ELSE 0 END as is_green_visit,
         UPPER(cs.client_store_key) as store_code
-      FROM \`order\` o
-      JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+      FROM eligible_orders eo
+      JOIN \`order_service_combo\` osc ON osc.order_id = eo.order_id
       LEFT JOIN \`service_price\` sp ON sp.id = osc.service_price_id
       LEFT JOIN \`service_language\` sl ON sl.service_id = osc.service_id AND sl.language_id = 1
-      LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
-      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-      WHERE o.order_state = 'Completed'
-        ${actualCheckinRangeClause}
-        AND ${buildComboBalanceExistsSql('o')}
+      LEFT JOIN \`user_debt\` ud ON ud.order_id = eo.order_id AND ud.debt_amount > 0
+      LEFT JOIN \`client_store\` cs ON cs.id = eo.client_store_id
+      WHERE ${buildComboBalanceExistsSql('eo')}
         AND (sp.service_price_package_key IS NULL OR (
           LOWER(sp.service_price_package_key) NOT LIKE '%single%'
           AND LOWER(sp.service_price_package_key) NOT LIKE '%refill%'
@@ -1150,86 +1164,73 @@ export class CcKpiService {
           AND LOWER(sl.service_name) NOT LIKE '%refill%'
           AND LOWER(sl.service_name) NOT LIKE '%balance%'
         ))
-        ${storeFilterClause}
     `;
 
     const upgradeSalesQuery = `
+      ${eligibleOrdersCte}
       SELECT 
-        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
+        DATE_FORMAT(eo.sale_at, '%Y-%m-%d') as sale_date,
         os.check_in_staff_id as cc_in_id,
         os.check_out_staff_id as cc_out_id,
         os.upgrade_price as combo_sales,
         0 as combo_count,
         UPPER(cs.client_store_key) as store_code
-      FROM \`order\` o
-      JOIN \`order_service\` os ON os.order_id = o.id
-      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-      WHERE o.order_state = 'Completed'
-        ${actualCheckinRangeClause}
-        AND os.upgrade_price > 0
-        ${storeFilterClause}
+      FROM eligible_orders eo
+      JOIN \`order_service\` os ON os.order_id = eo.order_id
+      LEFT JOIN \`client_store\` cs ON cs.id = eo.client_store_id
+      WHERE os.upgrade_price > 0
     `;
 
     const productSalesQuery = `
+      ${eligibleOrdersCte}
       SELECT 
-        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
+        DATE_FORMAT(eo.sale_at, '%Y-%m-%d') as sale_date,
         (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = op.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1) as cc_in_id,
         (SELECT os2.check_out_staff_id FROM \`order_service\` os2 WHERE os2.order_id = op.order_id AND os2.check_out_staff_id IS NOT NULL LIMIT 1) as cc_out_id,
         op.total_price as product_sales,
         op.quantity as product_count,
         UPPER(cs.client_store_key) as store_code
-      FROM \`order\` o
-      JOIN \`order_product\` op ON op.order_id = o.id
-      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-      WHERE o.order_state = 'Completed'
-        ${actualCheckinRangeClause}
-        ${storeFilterClause}
+      FROM eligible_orders eo
+      JOIN \`order_product\` op ON op.order_id = eo.order_id
+      LEFT JOIN \`client_store\` cs ON cs.id = eo.client_store_id
     `;
 
     const singleSalesQuery = `
+      ${eligibleOrdersCte}
       SELECT 
-        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as sale_date,
+        DATE_FORMAT(eo.sale_at, '%Y-%m-%d') as sale_date,
         os.check_in_staff_id as cc_in_id,
         os.check_out_staff_id as cc_out_id,
         os.total_price as single_sales,
         UPPER(cs.client_store_key) as store_code
-      FROM \`order\` o
-      JOIN \`order_service\` os ON os.order_id = o.id
-      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-      WHERE o.order_state = 'Completed'
-        ${actualCheckinRangeClause}
-        AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
+      FROM eligible_orders eo
+      JOIN \`order_service\` os ON os.order_id = eo.order_id
+      LEFT JOIN \`client_store\` cs ON cs.id = eo.client_store_id
+      WHERE LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_type, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%product%'
-        ${storeFilterClause}
     `;
 
     // A "Vòng Xanh" appointment uses the same combo-sale eligibility snapshot
     // persisted by Legacy when the booking was created. Completion and report
     // date still follow the actual check-in window (Rule #15).
     const visitMetricsQuery = `
+      ${eligibleOrdersCte}
       SELECT
-        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as visit_date,
+        DATE_FORMAT(eo.sale_at, '%Y-%m-%d') as visit_date,
         MAX(os.check_in_staff_id) as cc_in_id,
         MAX(os.check_out_staff_id) as cc_out_id,
         UPPER(cs.client_store_key) as store_code,
-        CASE WHEN ${buildGreenVisitEligibilitySql('o')} THEN 1 ELSE 0 END as is_green_visit
-      FROM \`order\` o
-      JOIN \`order_service\` os ON os.order_id = o.id
-      LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-      LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-      WHERE o.order_state = 'Completed'
-        ${actualCheckinRangeClause}
-        ${storeFilterClause}
+        CASE WHEN COALESCE(eo.combo_sale_required, 0) <> 0 THEN 1 ELSE 0 END as is_green_visit
+      FROM eligible_orders eo
+      JOIN \`order_service\` os ON os.order_id = eo.order_id
+      LEFT JOIN \`client_store\` cs ON cs.id = eo.client_store_id
       GROUP BY
-        o.id,
-        o.user_id,
-        o.date_created,
-        ro.actual_booking_date_start,
-        o.booking_date_start,
+        eo.order_id,
+        eo.user_id,
+        eo.date_created,
+        eo.sale_at,
+        eo.booking_date_start,
         cs.client_store_key
     `;
 
