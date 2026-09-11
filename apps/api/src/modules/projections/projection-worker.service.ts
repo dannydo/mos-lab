@@ -1,12 +1,46 @@
 import type { FastifyInstance } from 'fastify';
 import { CustomerVisitProjectionService } from './customer-visit-projection.service.js';
+import { CcKpiDailyProjectionService, type CcKpiDailyResponse } from './cc-kpi-daily-projection.service.js';
+import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
 
 const POLL_INTERVAL_MS = 60_000;
 const RECONCILE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_BATCH_SIZE = 200;
+const CC_KPI_REBUILD_INTERVAL_MS = 15 * 60 * 1000;
 
 function enabled(value: string | undefined): boolean {
   return value === 'true';
+}
+
+function ictDate(value = new Date()): string {
+  return value.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+}
+
+function daysBefore(date: string, days: number): string {
+  const value = new Date(`${date}T00:00:00.000Z`);
+  value.setUTCDate(value.getUTCDate() - Math.max(0, Math.floor(days)));
+  return value.toISOString().slice(0, 10);
+}
+
+async function rebuildCcKpiProjection(fastify: FastifyInstance, backfill: boolean): Promise<number> {
+  if (!enabled(process.env.CC_KPI_DAILY_PROJECTION_WORKER_ENABLED)) return 0;
+  const configuredDays = Number.parseInt(
+    backfill
+      ? (process.env.CC_KPI_DAILY_PROJECTION_BACKFILL_DAYS ?? '')
+      : (process.env.CC_KPI_DAILY_PROJECTION_ROLLING_DAYS ?? ''),
+    10
+  );
+  const days =
+    Number.isFinite(configuredDays) && configuredDays > 0 ? Math.min(configuredDays, 365) : backfill ? 90 : 3;
+  const dateTo = ictDate();
+  const dateFrom = daysBefore(dateTo, days - 1);
+  return CcKpiDailyProjectionService.rebuildRange(
+    fastify,
+    async (filters) =>
+      (await CcKpiService.getCcDailySalesBonusCanonical(fastify, filters)) as unknown as CcKpiDailyResponse,
+    dateFrom,
+    dateTo
+  );
 }
 
 /**
@@ -58,10 +92,37 @@ export function startProjectionWorker(fastify: FastifyInstance): void {
   poll.unref();
   const reconcile = setInterval(() => void run(true), RECONCILE_INTERVAL_MS);
   reconcile.unref();
+
+  // CC daily facts use their own opt-in flag. The first build is deliberately
+  // separate from read enablement; missing or stale coverage always falls back
+  // to canonical Legacy SQL.
+  const ccKpiInitial = setTimeout(async () => {
+    try {
+      const processed = await rebuildCcKpiProjection(
+        fastify,
+        enabled(process.env.CC_KPI_DAILY_PROJECTION_INITIAL_BACKFILL)
+      );
+      if (processed > 0) fastify.log.info({ processed }, 'CC KPI daily projection worker cycle complete');
+    } catch (error) {
+      fastify.log.error({ error }, 'CC KPI daily projection worker cycle failed');
+    }
+  }, 45_000);
+  ccKpiInitial.unref();
+  const ccKpiPoll = setInterval(async () => {
+    try {
+      const processed = await rebuildCcKpiProjection(fastify, false);
+      if (processed > 0) fastify.log.info({ processed }, 'CC KPI daily projection worker cycle complete');
+    } catch (error) {
+      fastify.log.error({ error }, 'CC KPI daily projection worker cycle failed');
+    }
+  }, CC_KPI_REBUILD_INTERVAL_MS);
+  ccKpiPoll.unref();
   fastify.addHook('onClose', async () => {
     clearTimeout(firstRun);
     clearInterval(poll);
     clearInterval(reconcile);
+    clearTimeout(ccKpiInitial);
+    clearInterval(ccKpiPoll);
   });
   fastify.log.info({ initialBackfill, batchSize }, 'Customer visit projection worker started in shadow mode.');
 }

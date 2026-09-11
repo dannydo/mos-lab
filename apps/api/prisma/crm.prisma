@@ -775,6 +775,24 @@ model CrmProjectionJob {
   @@map("crm_projection_jobs")
 }
 
+// Daily CC KPI read model. It contains only derived mOS facts; Legacy remains
+// the canonical, read-only source and can rebuild any affected business day.
+model CrmCcKpiDailyProjection {
+  businessDate    DateTime @map("business_date") @db.Date
+  storeScope      String   @map("store_scope") @db.VarChar(40)
+  payload         Json
+  sourceRevision  String   @map("source_revision") @db.VarChar(191)
+  formulaVersion  String   @map("formula_version") @db.VarChar(40)
+  status          String   @default("FRESH") @db.VarChar(20)
+  computedAt      DateTime @default(now()) @map("computed_at") @db.DateTime(0)
+  reconciledAt    DateTime? @map("reconciled_at") @db.DateTime(0)
+  lastError       String?  @map("last_error") @db.VarChar(500)
+
+  @@id([businessDate, storeScope])
+  @@index([storeScope, status, computedAt])
+  @@map("crm_cc_kpi_daily_projections")
+}
+
 // ═══════════════════════════════════════════
 // Custom Sub-Campaign Models (NYC Sub-Campaign System)
 // ═══════════════════════════════════════════

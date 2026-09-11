@@ -11,6 +11,7 @@ import { TeamService } from '../../teams/team.service.js';
 import { buildComboBalanceExistsSql } from '../../customers/services/combo-recognition.service.js';
 import { getFalReadModelMap } from '../../fal/fal.service.js';
 import { getPreviousReportPeriod } from './report-period-comparison.js';
+import { CcKpiDailyProjectionService } from '../../projections/cc-kpi-daily-projection.service.js';
 
 export interface CcKpiFilters {
   dateFrom?: string;
@@ -1013,7 +1014,41 @@ export class CcKpiService {
   /**
    * 3. GET Daily Sales Bonus for Consultants
    */
+  /**
+   * Read projection only after a separate shadow rollout has explicitly enabled
+   * it. Any missing coverage, changed active-CC configuration, store-specific
+   * filter, or comparison request falls back to the canonical Legacy query.
+   */
   public static async getCcDailySalesBonus(
+    fastify: FastifyInstance,
+    filters: CcKpiFilters
+  ): Promise<DailySalesBonusConsultantResponse> {
+    const { dateFrom, dateTo, storeId, consultantId, includeComparison = false } = filters;
+    const canUseProjection =
+      process.env.CC_KPI_DAILY_PROJECTION_READ_ENABLED === 'true' &&
+      !includeComparison &&
+      (!storeId || storeId === 'ALL');
+    if (canUseProjection) {
+      const { startStr, endStr } = parseDateRange(dateFrom, dateTo);
+      const activeCcIds = await this.getActiveCcStaffIds(fastify);
+      const parsedConsultantId = consultantId && consultantId !== 'ALL' ? Number(consultantId) : undefined;
+      const projected = await CcKpiDailyProjectionService.readRange(
+        fastify,
+        startStr,
+        endStr,
+        'ALL',
+        activeCcIds,
+        Number.isSafeInteger(parsedConsultantId) && Number(parsedConsultantId) > 0
+          ? Number(parsedConsultantId)
+          : undefined
+      );
+      if (projected) return projected as unknown as DailySalesBonusConsultantResponse;
+    }
+    return this.getCcDailySalesBonusCanonical(fastify, filters);
+  }
+
+  /** Exact Legacy calculation used for projection rebuild and safe fallback. */
+  public static async getCcDailySalesBonusCanonical(
     fastify: FastifyInstance,
     filters: CcKpiFilters
   ): Promise<DailySalesBonusConsultantResponse> {
@@ -1024,7 +1059,7 @@ export class CcKpiService {
     const comparisonWindow =
       includeComparison && comparisonMode ? getPreviousReportPeriod(startStr, endStr, comparisonMode) : null;
     const comparisonPromise: Promise<DailySalesBonusConsultantResponse> | null = comparisonWindow
-      ? this.getCcDailySalesBonus(fastify, {
+      ? this.getCcDailySalesBonusCanonical(fastify, {
           dateFrom: comparisonWindow.dateFrom,
           dateTo: comparisonWindow.dateTo,
           storeId,
