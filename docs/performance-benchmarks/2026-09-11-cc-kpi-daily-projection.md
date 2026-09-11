@@ -37,3 +37,13 @@
 3. Compare canonical and projection hashes/totals for the full covered period.
 4. Enable the read flag only after complete coverage and zero mismatches.
 5. Confirm API health and observe new slow logs; leave Wings Control untouched throughout.
+
+## Production shadow benchmark
+
+| Variant                               |           Runs |    p50 |    p95 | Output parity               | Decision     |
+| ------------------------------------- | -------------: | -----: | -----: | --------------------------- | ------------ |
+| Canonical Daily Sales, cache bypassed | 10 + 3 warmups | 2.222s | 3.105s | Baseline                    | Fails target |
+| Daily projection direct read          |             10 |    6ms |    7ms | Exact normalized hash match | Pass         |
+| Guarded projection read               |             10 |      — |   21ms | Exact normalized hash match | Pass         |
+
+The shadow read is 99.3% lower at p95 (about 148× faster) and remains below the 0.5s target. Active-CC configuration divergence fell back as designed. The next revision additionally makes a projection including today fail closed when its current-day fact is older than 90 seconds, and rebuilds the three-day rolling window every minute.

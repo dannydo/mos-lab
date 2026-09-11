@@ -32,6 +32,16 @@ function dateAtMidnight(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
+function ictDate(value = new Date()): string {
+  return value.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+}
+
+function currentDayMaxAgeMs(): number {
+  const configuredSeconds = Number.parseInt(process.env.CC_KPI_DAILY_PROJECTION_CURRENT_DAY_MAX_AGE_SECONDS ?? '', 10);
+  const seconds = Number.isFinite(configuredSeconds) && configuredSeconds > 0 ? configuredSeconds : 90;
+  return Math.min(seconds, 15 * 60) * 1_000;
+}
+
 function payloadRevision(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
@@ -139,7 +149,7 @@ export class CcKpiDailyProjectionService {
         status: 'FRESH',
       },
       orderBy: { businessDate: 'asc' },
-      select: { payload: true },
+      select: { businessDate: true, computedAt: true, payload: true },
     });
 
     const expectedDays = Math.max(
@@ -147,6 +157,15 @@ export class CcKpiDailyProjectionService {
       Math.round((dateAtMidnight(dateTo).getTime() - dateAtMidnight(dateFrom).getTime()) / 86_400_000) + 1
     );
     if (rows.length !== expectedDays) return null;
+    // Today's source rows can still change. Only serve the projection while its
+    // current-day fact is fresh; otherwise the caller safely falls back to the
+    // canonical Legacy query. Closed historical dates are reconciled by the
+    // worker and do not carry this latency-sensitive requirement.
+    const currentDateKey = ictDate();
+    if (dateFrom <= currentDateKey && currentDateKey <= dateTo) {
+      const todayRow = rows.find((row) => dateKey(row.businessDate) === currentDateKey);
+      if (!todayRow || Date.now() - todayRow.computedAt.getTime() > currentDayMaxAgeMs()) return null;
+    }
     const responsePayloads = rows.map((row) => responseFromPayload(row.payload));
     const projectedStaffIds = new Set(responsePayloads[0]?.activeStaff.map((staff) => asNumber(staff.userId)) || []);
     const expectedStaffIds = new Set(activeStaffIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0));

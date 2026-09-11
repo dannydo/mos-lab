@@ -6,7 +6,7 @@ import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
 const POLL_INTERVAL_MS = 60_000;
 const RECONCILE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_BATCH_SIZE = 200;
-const CC_KPI_REBUILD_INTERVAL_MS = 15 * 60 * 1000;
+const CC_KPI_REBUILD_INTERVAL_MS = 60 * 1000;
 
 function enabled(value: string | undefined): boolean {
   return value === 'true';

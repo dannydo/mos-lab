@@ -100,9 +100,10 @@ async function main() {
     }
     const activeCcIds = canonical.activeStaff?.map((staff) => Number(staff.userId)) || [];
     const changedActiveCcFallback = await CcKpiDailyProjectionService.readRange(app, dateFrom, dateTo, 'ALL', [-1]);
+    const missingCoverageDate = dateKey(new Date(new Date(`${dateFrom}T00:00:00.000Z`).getTime() - 366 * 86_400_000));
     const missingCoverageFallback = await CcKpiDailyProjectionService.readRange(
       app,
-      dateKey(new Date(new Date(`${dateFrom}T00:00:00.000Z`).getTime() - 86_400_000)),
+      missingCoverageDate,
       dateTo,
       'ALL',
       activeCcIds
