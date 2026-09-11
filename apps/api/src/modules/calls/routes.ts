@@ -337,6 +337,7 @@ export async function callRoutes(fastify: FastifyInstance) {
             COALESCE(SUM(total_price), 0) as totalSpent
           FROM \`order\`
           WHERE order_state = 'Completed'
+            AND user_id IN (${legacyUserIds.join(',')})
           GROUP BY user_id
         ) as order_counts ON u.id = order_counts.user_id
         LEFT JOIN (
@@ -352,6 +353,7 @@ export async function callRoutes(fastify: FastifyInstance) {
             SUM(retain_count) as retainCount,
             MAX(date_expired) as expiryDate
           FROM user_service_balance
+          WHERE user_id IN (${legacyUserIds.join(',')})
           GROUP BY user_id
         ) as usb_agg ON u.id = usb_agg.user_id
         WHERE u.id IN (${legacyUserIds.join(',')})
