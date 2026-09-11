@@ -52,23 +52,34 @@ export class HappyCallService {
     // 2. Get completed orders from the last 14 days using raw SQL
     const completedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
       `
-      SELECT 
-        o.id AS orderId,
-        o.user_id AS customerId,
-        COALESCE(ro.actual_booking_date_start, o.booking_date_start) AS checkoutDate,
-        (SELECT os.check_in_staff_id FROM order_service os WHERE os.order_id = o.id AND os.check_in_staff_id IS NOT NULL LIMIT 1) AS ccInStaffId,
-        (SELECT os.check_out_staff_id FROM order_service os WHERE os.order_id = o.id AND os.check_out_staff_id IS NOT NULL LIMIT 1) AS ccOutStaffId,
-        o.created_staff_id AS bookerStaffId,
+      WITH eligible_orders AS (
+        SELECT o.id, o.user_id, o.created_staff_id, ro.actual_booking_date_start AS checkout_date
+        FROM report_order ro
+        INNER JOIN \`order\` o ON o.id = ro.order_id
+        WHERE o.order_state = 'Completed'
+          AND ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+        UNION ALL
+        SELECT o.id, o.user_id, o.created_staff_id, o.booking_date_start AS checkout_date
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON ro.order_id = o.id
+        WHERE o.order_state = 'Completed'
+          AND ro.actual_booking_date_start IS NULL
+          AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+      )
+      SELECT
+        eo.id AS orderId,
+        eo.user_id AS customerId,
+        eo.checkout_date AS checkoutDate,
+        (SELECT os.check_in_staff_id FROM order_service os WHERE os.order_id = eo.id AND os.check_in_staff_id IS NOT NULL LIMIT 1) AS ccInStaffId,
+        (SELECT os.check_out_staff_id FROM order_service os WHERE os.order_id = eo.id AND os.check_out_staff_id IS NOT NULL LIMIT 1) AS ccOutStaffId,
+        eo.created_staff_id AS bookerStaffId,
         (
           SELECT os2.assigned_staff_id FROM order_service os2 
-          WHERE os2.order_id = o.id AND os2.assigned_staff_id IS NOT NULL
+          WHERE os2.order_id = eo.id AND os2.assigned_staff_id IS NOT NULL
           LIMIT 1
         ) AS technicianId
-      FROM \`order\` o
-      LEFT JOIN report_order ro ON o.id = ro.order_id
-      WHERE o.order_state = 'Completed'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 14 DAY)
-      ORDER BY o.id DESC
+      FROM eligible_orders eo
+      ORDER BY eo.id DESC
     `
     );
 
