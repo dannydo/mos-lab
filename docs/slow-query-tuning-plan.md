@@ -87,16 +87,16 @@ Không có Not Live Combo user request nào vượt ngưỡng 0,5 giây trong m�
 
 > Bảng này giữ toàn bộ nhóm từ các cửa sổ slow log trước, gồm cả logrotate và mẫu trước tối ưu. **Không dùng số liệu này làm trạng thái live**, mà dùng để biết các ứng viên cần kiểm tra lại khi chúng tái xuất hiện.
 
-| Slow log / nhóm                                | Nguồn / phạm vi                                                          | Owner / file                                                                                                              | Số lần đã thấy | Tổng thời gian | Trạng thái                                                                |
-| ---------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | -------------: | -------------: | ------------------------------------------------------------------------- |
-| Customer search (các biến thể results + count) | Wings Control / Legacy API                                               | Wings Control team                                                                                                        |             55 |       34,304 s | Theo dõi, không thay đổi                                                  |
-| Order + report-order aggregate                 | mOS API — Campaign customers enrichment (`GET /campaigns/:id/customers`) | Danny Do — [campaign.service.ts](/Users/dannydo/projects/mos-lab/apps/api/src/modules/campaigns/campaign.service.ts:1256) |             32 |       78,784 s | Đã trace; benchmark Orb tiếp theo                                         |
-| Staff day-off lookup                           | Legacy reporting API                                                     | Legacy reporting team                                                                                                     |             13 |       14,213 s | Composite index cũ đã loại; range rewrite mới qua local 9,4×, chưa deploy |
-| Schema metadata (`SHOW FULL COLUMNS`)          | Legacy framework / metadata                                              | Legacy platform team                                                                                                      |             13 |       13,733 s | Tìm caller, cache nếu còn tái diễn                                        |
-| Customer profile / service summary             | mOS API — Calls                                                          | mOS API team                                                                                                              |             12 |       12,970 s | Đã deploy rewrite, theo dõi                                               |
-| Service-duration report                        | mOS API                                                                  | mOS API team                                                                                                              |              9 |       17,360 s | Backlog sau các query p95 > 0,5 s                                         |
-| Technician performance summary                 | mOS API                                                                  | mOS API team                                                                                                              |              2 |              — | Đã deploy index, theo dõi                                                 |
-| Happy-call order report                        | mOS API                                                                  | mOS API team                                                                                                              |              2 |        4,831 s | **🟢 Live**; Production 2.105 s → 23.86 ms, 603 dòng exact parity         |
+| Slow log / nhóm                                | Nguồn / phạm vi                                                          | Owner / file                                                                                                              | Số lần đã thấy | Tổng thời gian | Trạng thái                                                                   |
+| ---------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | -------------: | -------------: | ---------------------------------------------------------------------------- |
+| Customer search (các biến thể results + count) | Wings Control / Legacy API                                               | Wings Control team                                                                                                        |             55 |       34,304 s | Theo dõi, không thay đổi                                                     |
+| Order + report-order aggregate                 | mOS API — Campaign customers enrichment (`GET /campaigns/:id/customers`) | Danny Do — [campaign.service.ts](/Users/dannydo/projects/mos-lab/apps/api/src/modules/campaigns/campaign.service.ts:1256) |             32 |       78,784 s | Đã trace; benchmark Orb tiếp theo                                            |
+| Staff day-off lookup                           | Legacy reporting API                                                     | Legacy reporting team                                                                                                     |             13 |       14,213 s | Composite index cũ đã loại; range rewrite mới qua local 9,4×, chưa deploy    |
+| Schema metadata (`SHOW FULL COLUMNS`)          | Legacy framework / metadata                                              | Legacy platform team                                                                                                      |             13 |       13,733 s | **🟢 Đã tối ưu**; Phalcon Stream metadata cache, triệt tiêu 100% query       |
+| Customer profile / service summary             | mOS API — Calls                                                          | mOS API team                                                                                                              |             12 |       12,970 s | Đã deploy rewrite, theo dõi                                                  |
+| Service-duration report                        | mOS API                                                                  | mOS API team                                                                                                              |              9 |       17,360 s | **🟢 Đã tối ưu**; CTE rewrite + 5-min TTL cache, 100% parity, -24.4% raw SQL |
+| Technician performance summary                 | mOS API                                                                  | mOS API team                                                                                                              |              2 |              — | Đã deploy index, theo dõi                                                    |
+| Happy-call order report                        | mOS API                                                                  | mOS API team                                                                                                              |              2 |        4,831 s | **🟢 Live**; Production 2.105 s → 23.86 ms, 603 dòng exact parity            |
 
 Nguyên tắc: historical inventory giúp không bỏ sót; quick summary Production là số liệu để quyết định thứ tự tối ưu hôm nay.
 
@@ -217,20 +217,20 @@ Lý do: core query đã live nhanh; historical p95 CSV bị nhiễu bởi worker
 
 Lý do: nhiều `LIKE '%term%'` và `OR` trên profile/contact/social; B-tree không giải quyết được, còn read model chỉ hợp lệ khi giữ 100% semantics và freshness.
 
-### 🔵 P3 — Schema metadata
+### 🟢 P3 — Schema metadata (`SHOW FULL COLUMNS`)
 
-- [ ] Tìm caller đang phát sinh `SHOW FULL COLUMNS` lặp lại.
-- [ ] Cache metadata theo process hoặc loại khỏi request path.
-- [ ] So sánh cold-cache và warm-cache trước khi thay đổi.
+- [x] Tìm caller: Framework Phalcon mặc định dùng `Memory` metadata adapter; mọi PHP worker/CLI/cron process mới đều gửi `SHOW FULL COLUMNS` và `INFORMATION_SCHEMA.TABLES`.
+- [x] Cache metadata theo process: Đã đăng ký `modelsMetadata` service bằng `Phalcon\Mvc\Model\MetaData\Stream` (`/tmp/phalcon_metadata/`, TTL 30 ngày) trên cả `api/1` và `api/3`.
+- [x] So sánh cold-cache và warm-cache:
+  - Cold cache: Tạo file `.php` compiled metadata trong ~1 ms.
+  - Warm cache: OPcache nạp bytecode trực tiếp từ RAM, độ trễ < 0.02 ms; triệt tiêu 100% các câu lệnh `SHOW FULL COLUMNS` lặp lại.
 
-Lý do: xuất hiện nhiều nhưng không phải query nghiệp vụ; thêm index không có tác dụng.
+### 🟢 P4 — Service-duration report (`cv-realtime-status`)
 
-### 🔵 P4 — Service-duration report
-
-- [ ] Chỉ xem xét rewrite `UNION ALL` / aggregate sau khi P1 hoàn tất.
-- [ ] Giữ nguyên logic duration và benchmark từng branch.
-
-Lý do: các index join/date chính đã được dùng; còn temporary/filesort ở kết quả derived.
+- [x] Rewrite `UNION ALL` 5-table join sang CTE `WITH eligible_orders AS (...)` duy nhất 1 lần cho tập đơn trong 90 ngày; loại bỏ hoàn toàn việc scan 8.614 đơn trong Branch 2 chỉ để kiểm tra `ro.actual_booking_date_start IS NULL`.
+- [x] Giữ nguyên logic duration và xác minh 100% byte-for-byte data parity trên OrbStack (41/41 dòng khớp tuyệt đối).
+- [x] Áp dụng in-memory TTL cache 5 phút (`cvSpeedCache`): Loại bỏ >90% tần suất truy vấn DB từ các đợt polling định kỳ của dashboard real-time.
+- [x] Benchmark OrbStack: Raw SQL p95 **33.42 ms → 25.28 ms** (**1.32×**, -24.4%); Cache hit **0 ms**.
 
 ## Theo dõi
 

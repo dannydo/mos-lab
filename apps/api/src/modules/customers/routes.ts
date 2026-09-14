@@ -9044,6 +9044,9 @@ export async function customerRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // In-memory TTL cache for CV 90-day average speed (P4 Optimization: 5-minute TTL)
+  const cvSpeedCache = new Map<string, { data: SafeAny[]; timestamp: number }>();
+
   // GET /api/customers/cv-realtime-status
   // Real-time CV availability status from legacy order_state + order_staff_queue.
   fastify.get('/customers/cv-realtime-status', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -9193,60 +9196,52 @@ export async function customerRoutes(fastify: FastifyInstance) {
         todayEnd
       );
 
-      // Query average actual lash extension speed for effectiveCvStaffIds
-      const speedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-        SELECT
-          duration_rows.staff_id,
-          duration_rows.service_type,
-          ROUND(AVG(duration_rows.total_minute)) as avg_min
-        FROM (
+      // Query average actual lash extension speed for effectiveCvStaffIds (with 5-minute TTL cache)
+      const sortedStaffKey = [...effectiveCvStaffIds].sort((a, b) => a - b).join(',');
+      const cachedSpeed = cvSpeedCache.get(sortedStaffKey);
+      let speedRows: SafeAny[];
+
+      if (cachedSpeed && Date.now() - cachedSpeed.timestamp < 5 * 60 * 1000) {
+        speedRows = cachedSpeed.data;
+      } else {
+        speedRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          WITH eligible_orders AS (
+            SELECT o.id AS order_id
+            FROM report_order ro
+            JOIN \`order\` o ON o.id = ro.order_id
+            WHERE o.order_state = 'Completed'
+              AND ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            UNION ALL
+            SELECT o.id AS order_id
+            FROM \`order\` o
+            LEFT JOIN report_order ro ON ro.order_id = o.id
+            WHERE o.order_state = 'Completed'
+              AND ro.actual_booking_date_start IS NULL
+              AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+          )
           SELECT
             os.assigned_staff_id as staff_id,
             s.service_type,
-            COALESCE(ros.preparation_minute, 0) +
-            COALESCE(ros.pre_servicing_minute, 0) +
-            COALESCE(ros.cleaning_minute, 0) +
-            COALESCE(ros.servicing_minute, 0) as total_minute
-          FROM order_service os
-          JOIN \`order\` o ON os.order_id = o.id
+            ROUND(AVG(
+              COALESCE(ros.preparation_minute, 0) +
+              COALESCE(ros.pre_servicing_minute, 0) +
+              COALESCE(ros.cleaning_minute, 0) +
+              COALESCE(ros.servicing_minute, 0)
+            )) as avg_min
+          FROM eligible_orders eo
+          JOIN order_service os ON eo.order_id = os.order_id
           JOIN service s ON os.service_id = s.id
           JOIN report_order_service ros ON os.id = ros.order_service_id
-          LEFT JOIN report_order ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
+          WHERE s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
             AND os.assigned_staff_id IN (${effectiveCvStaffIds.join(',')})
             AND (COALESCE(ros.preparation_minute, 0) +
                  COALESCE(ros.pre_servicing_minute, 0) +
                  COALESCE(ros.cleaning_minute, 0) +
                  COALESCE(ros.servicing_minute, 0)) BETWEEN 15 AND 200
-            AND ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
-
-          UNION ALL
-
-          SELECT
-            os.assigned_staff_id as staff_id,
-            s.service_type,
-            COALESCE(ros.preparation_minute, 0) +
-            COALESCE(ros.pre_servicing_minute, 0) +
-            COALESCE(ros.cleaning_minute, 0) +
-            COALESCE(ros.servicing_minute, 0) as total_minute
-          FROM order_service os
-          JOIN \`order\` o ON os.order_id = o.id
-          JOIN service s ON os.service_id = s.id
-          JOIN report_order_service ros ON os.id = ros.order_service_id
-          LEFT JOIN report_order ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
-            AND os.assigned_staff_id IN (${effectiveCvStaffIds.join(',')})
-            AND (COALESCE(ros.preparation_minute, 0) +
-                 COALESCE(ros.pre_servicing_minute, 0) +
-                 COALESCE(ros.cleaning_minute, 0) +
-                 COALESCE(ros.servicing_minute, 0)) BETWEEN 15 AND 200
-            AND ro.actual_booking_date_start IS NULL
-            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
-        ) AS duration_rows
-        GROUP BY duration_rows.staff_id, duration_rows.service_type
-      `);
+          GROUP BY os.assigned_staff_id, s.service_type
+        `);
+        cvSpeedCache.set(sortedStaffKey, { data: speedRows, timestamp: Date.now() });
+      }
 
       const staffSpeedMap = new Map<
         number,
