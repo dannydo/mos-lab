@@ -187,6 +187,7 @@ export class CustomerVisitProjectionService {
   static async enqueueRecentLegacyChanges(fastify: FastifyInstance, lookbackMinutes = 15): Promise<number> {
     const boundedMinutes = Math.min(Math.max(Math.floor(lookbackMinutes), 1), 24 * 60);
     const rows = await fastify.prisma.legacy.$queryRawUnsafe<Array<{ userId: number }>>(`
+      /* mOS: CustomerVisitProjectionService.enqueueRecentLegacyChanges */
       SELECT DISTINCT user_id AS userId
       FROM \`order\`
       WHERE date_updated IS NOT NULL

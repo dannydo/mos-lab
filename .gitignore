@@ -44,6 +44,7 @@ scratch/
 # Local server scripts and logs
 start-servers.sh
 stop-servers.sh
+scripts/double-control-listener
 logs/
 .agents/skills/
 .agents/teamwork_preview_*
