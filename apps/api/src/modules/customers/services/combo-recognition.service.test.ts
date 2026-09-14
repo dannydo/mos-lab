@@ -83,7 +83,7 @@ test('recognizes completed combo sales only by actual check-in and an existing c
     '2026-08-01 00:00:00',
     '2026-08-12 23:59:59',
   ]);
-  assert.match(capturedSql, /EXISTS\s*\(\s*SELECT 1\s+FROM user_service_balance usb/);
+  assert.match(capturedSql, /EXISTS\s*\(\s*SELECT(?:\s+\/\*.*?\*\/)?\s+1\s+FROM user_service_balance usb/);
   assert.match(capturedSql, /usb\.user_id = recognized_combo\.user_id/);
   assert.match(capturedSql, /ro_nl\.actual_booking_date_start >= \?/);
   assert.match(capturedSql, /ro_nl\.actual_booking_date_start IS NULL/);

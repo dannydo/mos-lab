@@ -25,7 +25,7 @@ export function buildComboBalanceExistsSql(candidateAlias: string): string {
   assertSqlAlias(candidateAlias);
 
   return `EXISTS (
-    SELECT 1
+    SELECT /* origin: ComboRecognitionService.buildComboBalanceExistsSql */ 1
     FROM user_service_balance usb
     WHERE usb.user_id = ${candidateAlias}.user_id
   )`;
@@ -44,10 +44,21 @@ export function buildComboLiveAtBookingSql(orderAlias: string): string {
   assertSqlAlias(orderAlias);
 
   return `EXISTS (
-    SELECT 1
+    SELECT /* origin: ComboRecognitionService.buildComboLiveAtBookingSql */ 1
     FROM user_service_balance usb
     WHERE usb.user_id = ${orderAlias}.user_id
       AND usb.date_created < ${orderAlias}.date_created
+      -- Short-circuit 1: If current balance + future uses <= 0, balance can never be live!
+      AND (
+        usb.normal_count + usb.retain_count + (
+          SELECT COALESCE(SUM(usbt_after.normal_count + usbt_after.retain_count), 0)
+          FROM user_service_balance_transaction usbt_after
+          WHERE usbt_after.user_service_balance_id = usb.id
+            AND usbt_after.date_created >= ${orderAlias}.date_created
+            AND usbt_after.used_staff_id IS NOT NULL
+        )
+      ) > 0
+      -- Short-circuit 2: Expiration check (null or >= booking date)
       AND (
         COALESCE(
           (
@@ -72,25 +83,17 @@ export function buildComboLiveAtBookingSql(orderAlias: string): string {
           usb.date_expired
         ) >= DATE(${orderAlias}.date_created)
       )
-      AND LEAST(
-        COALESCE(
-          (
-            SELECT usbt.total_normal_count_left + usbt.total_retain_count_left
-            FROM user_service_balance_transaction usbt
-            WHERE usbt.user_service_balance_id = usb.id
-              AND usbt.date_created < ${orderAlias}.date_created
-            ORDER BY usbt.date_created DESC, usbt.id DESC
-            LIMIT 1
-          ),
-          999999
+      -- Short-circuit 3: Remaining count at last transaction (or fallback 999999) > 0
+      AND COALESCE(
+        (
+          SELECT usbt.total_normal_count_left + usbt.total_retain_count_left
+          FROM user_service_balance_transaction usbt
+          WHERE usbt.user_service_balance_id = usb.id
+            AND usbt.date_created < ${orderAlias}.date_created
+          ORDER BY usbt.date_created DESC, usbt.id DESC
+          LIMIT 1
         ),
-        usb.normal_count + usb.retain_count + (
-          SELECT COALESCE(SUM(usbt_after.normal_count + usbt_after.retain_count), 0)
-          FROM user_service_balance_transaction usbt_after
-          WHERE usbt_after.user_service_balance_id = usb.id
-            AND usbt_after.date_created >= ${orderAlias}.date_created
-            AND usbt_after.used_staff_id IS NOT NULL
-        )
+        999999
       ) > 0
   )`;
 }
@@ -178,7 +181,7 @@ export class ComboRecognitionService {
     const rows = await fastify.prisma.legacy.$queryRawUnsafe<
       Array<{ orderId: number; serviceName: string | null; packageKey: string | null; netRevenue: number | null }>
     >(`
-      SELECT
+      SELECT /* origin: ComboRecognitionService.getRecognizedComboSalesByOrderIds */
         recognized_combo.orderId,
         recognized_combo.serviceName,
         recognized_combo.packageKey,
@@ -265,7 +268,7 @@ export class ComboRecognitionService {
 
     try {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
-        `SELECT DISTINCT recognized_combo.user_id FROM (
+        `SELECT /* origin: ComboRecognitionService.getNewLoCaCustomerIds */ DISTINCT recognized_combo.user_id FROM (
           SELECT o_nl.user_id FROM \`order\` o_nl
           JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
           LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
