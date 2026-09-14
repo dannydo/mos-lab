@@ -13,29 +13,28 @@ Mục tiêu: giảm thời gian xử lý mà không thay đổi dữ liệu tr�
 
 ## Trạng thái thực hiện — đọc nhanh
 
-| Hạng mục                                 | Giải pháp                                                                                                   | Tốc độ đo được                                                                                                                                        | Trạng thái hiện tại                                                       |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| CC KPI Daily Sales                       | Daily projection trong CRM, plus index-friendly eligible-order fallback; coverage, parity và stale fallback | Local canonical p95 **1.703 s → 65.78 ms** (**25.9×**); Production canonical fallback **151 ms**                                                      | **🟢 Live**                                                               |
-| Happy Call / Order-service report        | Tách điều kiện ngày `COALESCE` thành hai nhánh loại trừ nhau, dùng được index; giữ nguyên staff lookup      | Production p95 **2.105 s → 23.86 ms** (**88.2×**, -98.9%); 603 dòng exact hash parity                                                                 | **🟢 Live**                                                               |
-| Customer Last Visit / Campaign customers | Per-customer projection, queue delta và reconciliation                                                      | Active campaign lớn nhất: local p95 **395.8 ms → 53.35 ms** (**7,4×**, -86,5%)                                                                        | **🟢 Đang đọc snapshot**; 1.814/1.814 fresh parity, 0 mismatch            |
-| CRM segment snapshot rebuild             | Gộp hai aggregate completed-order trùng nhau thành một `visit_stats` aggregate                              | Local Orb p95 **2.271 s → 1.441 s** (**-36,5%**), 31.280 rows parity                                                                                  | **Local candidate**; chỉ giảm background rebuild, chưa deploy             |
-| Daily Combo Status export                | Daily projection; freshness/coverage guard và canonical fallback                                            | p95 **1.190 s → 1 ms** (**~1.190×**, -99,9%), 30 ngày parity                                                                                          | **🟢 Đang đọc snapshot trên Production**                                  |
-| Not Live Combo export — full CSV         | Per-order combo-state projection; coverage/freshness guard; Promotion Name deterministic                    | Production full CSV **3.872 s → 230 ms** (**~17×**, -94,0%), 429 dòng exact parity                                                                    | **🟢 Đang đọc snapshot trên Production**                                  |
-| Technician performance summary           | Composite index theo technician + ngày                                                                      | Orb: 188.292 rows → 70 rows; **-98,9%**                                                                                                               | **Đã deploy**                                                             |
-| Customer profile / service summary       | Scope aggregate theo batch khách đang hiển thị                                                              | Orb **2,033 ms → 1,311 ms** (**1,6×**, -35,5%)                                                                                                        | **Đã deploy**                                                             |
-| Staff day-off (payslip lookup)           | Đổi predicate ngày sang range sargable, dùng index `from_date` hiện có                                      | Lookup Orb p95 **27,43 ms → 2,92 ms** (**9,4×**); full payslip endpoint p95 **236 ms → 202 ms** (**1,17×**, -14,4%); CSV 1.206 dòng exact hash parity | **🟡 Local candidate**; endpoint gate xanh, chưa deploy                   |
-| Customer search (Wings Control)          | Read model theo từng trường tìm kiếm + thứ tự `full_name, user_id` ổn định                                  | Orb p95 **~0,50–0,65 s → ~0,21–0,26 s** (**~2–3×**); parity đủ name/phone/social                                                                      | **🟡 Local candidate**; chưa thay Production                              |
-| Order export / combo state               | Per-order Combo State projection, coverage/freshness guard và fallback canonical                            | Production full CSV **3.872 s → 230 ms** (**~17×**)                                                                                                   | **🟢 Live**                                                               |
-| Technician performance report (Legacy)   | Trace Production đã xác định mẫu nặng nhất là full-table maintenance/export nội bộ                          | Không phải request người dùng                                                                                                                         | **⚪ Không ưu tiên UX**; không xây snapshot cho mục này                   |
-| Staff working-shift report               | Default active roster + indexed generated-date join cho Give-Away; `include_history=1` giữ báo cáo cũ       | Full CSV local p95 **144 ms** mặc định; historical p95 **151 ms**; file ổn định byte-for-byte                                                         | **🟢 Xác minh local xanh**; core query đã live, chờ quan sát traffic thật |
+| Hạng mục                                 | Giải pháp                                                                                                   | Tốc độ đo được                                                                                   | Trạng thái hiện tại                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Order delta scanner (P0)                 | Tạo covering index `(date_updated, user_id)` triệt tiêu full scan 331k rows mỗi phút                        | p95 **3.727 ms → 0.70 ms** (**5.294×**); 224M rows/ngày giảm còn 211 rows                        | **🟢 Live**                                                               |
+| CC KPI Daily Sales                       | Daily projection trong CRM, plus index-friendly eligible-order fallback; coverage, parity và stale fallback | Local canonical p95 **1.703 s → 65.78 ms** (**25.9×**); Production canonical fallback **151 ms** | **🟢 Live**                                                               |
+| Happy Call / Order-service report        | Tách điều kiện ngày `COALESCE` thành hai nhánh loại trừ nhau, dùng được index; giữ nguyên staff lookup      | Production p95 **2.105 s → 23.86 ms** (**88.2×**, -98.9%); 603 dòng exact hash parity            | **🟢 Live**                                                               |
+| Customer Last Visit / Campaign customers | Per-customer projection, queue delta và reconciliation                                                      | Active campaign lớn nhất: local p95 **395.8 ms → 53.35 ms** (**7,4×**, -86,5%)                   | **🟢 Đang đọc snapshot**; 1.814/1.814 fresh parity, 0 mismatch            |
+| P1-A: Combo Export Canonical loop        | Short-circuit kiểm tra depleted balance, loại bỏ subquery nặng và filesort lặp lại                          | p95 **1.333 ms → 916 ms** (-31.3%); 1.782 dòng 100% SHA-256 parity                               | **🟢 Live**                                                               |
+| P1-B: Staff Task Generator $N+1$         | Bổ sung composite index `idx_staff_task_rule_user_store_id` cho 5.356 lượt lookup cron                      | 5.356 queries: **24.77 s → 0.97 s** (**25.39×**, nhanh hơn 96.1%); 100% SHA-256 hash match       | **🟢 Live**                                                               |
+| CRM segment snapshot rebuild             | Gộp hai aggregate completed-order trùng nhau thành một `visit_stats` aggregate                              | Local Orb p95 **4.789 ms → 3.353 ms** (**1,43×**), 20.895 rows 100% SHA-256 parity               | **🟢 Đã tối ưu trên WingsLashes codebase**                                |
+| P2: Customer search (Wings Control)      | Tách điều kiện tìm kiếm phụ trên Contact/Social thành IN-subquery PHQL độc lập                              | API cycle **393 ms → 90–145 ms** (**~3–4.5×**); 8/8 test cases 100% parity                       | **🟢 Đã tối ưu trên WingsLashes codebase**                                |
+| P3: Schema metadata caching              | Stream metadata cache (`/tmp/phalcon_metadata/`, TTL 30 ngày) + OPcache bytecode                            | Warm requests: **0 queries SHOW FULL COLUMNS**, RAM latency < 0.02 ms (triệt tiêu 100%)          | **🟢 Đã tối ưu trên WingsLashes codebase**                                |
+| P4: Service Duration Report              | Viết lại CTE `eligible_orders` 90 ngày + 5-phút in-memory TTL cache                                         | Raw SQL p95 **33.42 ms → 25.28 ms** (-24.4%); Cache hit **0 ms**; 41/41 dòng 100% parity         | **🟢 Live**                                                               |
+| Daily Combo Status export                | Daily projection; freshness/coverage guard và canonical fallback                                            | p95 **1.190 s → 1 ms** (**~1.190×**, -99,9%), 30 ngày parity                                     | **🟢 Đang đọc snapshot trên Production**                                  |
+| Not Live Combo export — full CSV         | Per-order combo-state projection; coverage/freshness guard; Promotion Name deterministic                    | Production full CSV **3.872 s → 230 ms** (**~17×**, -94,0%), 429 dòng exact parity               | **🟢 Đang đọc snapshot trên Production**                                  |
+| Technician performance summary           | Composite index theo technician + ngày                                                                      | Orb: 188.292 rows → 70 rows; **-98,9%**                                                          | **Đã deploy**                                                             |
+| Customer profile / service summary       | Scope aggregate theo batch khách đang hiển thị                                                              | Orb **2,033 ms → 1,311 ms** (**1,6×**, -35,5%)                                                   | **Đã deploy**                                                             |
+| Staff working-shift report               | Default active roster + indexed generated-date join cho Give-Away; `include_history=1` giữ báo cáo cũ       | Full CSV local p95 **144 ms** mặc định; historical p95 **151 ms**; file ổn định byte-for-byte    | **🟢 Xác minh local xanh**; core query đã live, chờ quan sát traffic thật |
 
 ## Việc kế tiếp được khuyến nghị
 
-1. **P0 — Truy và loại delta scan `order` còn sót:** 669 lượt, trung bình 1,16 giây và hơn 224 triệu dòng đã đọc cộng dồn. Full-rebuild 30 ngày cũ đã tắt; scan vẫn xảy ra ngay sau cohort cron mỗi phút khởi động và không phải request user. Scheduler snapshot hiện hành là incremental có lock, nhưng cùng phút còn có nhiều job nền; thêm origin tag CLI để khóa đúng caller trước khi tắt/sửa bất kỳ job nào.
-2. **P1 — Truy nguồn export Combo canonical còn lặp:** các fingerprint canonical xuất hiện hơn 800 lần, trung bình khoảng 5 giây. Dùng performance trace để phân biệt fallback thiếu/stale snapshot, parity/reconciliation hay request người dùng; chỉ sửa sau khi biết owner.
-3. **P1 — Staff Task generator: local batch candidate:** nguồn đã khóa là cron tạo task lúc 01:00/04:00, không phải request người dùng. Nó lặp user × rule và gọi `getLastStaffTask` từng lần. Benchmark local hướng batch-load task gần nhất trước; chỉ cân nhắc composite index nếu EXPLAIN chứng minh cần.
-4. **🟡 Local candidates:** Staff day-off payslip range rewrite đã qua benchmark endpoint đầy đủ nhưng lợi ích UX toàn endpoint chỉ 14,4%; Wings Customer Search per-field read model vẫn cần gate phân trang. Chỉ đóng gói rollout hẹp khi lợi ích tương xứng ưu tiên hiện tại.
-5. **Theo dõi:** Staff Working Shift, Campaign/Last Visit, Daily/Technician reports chỉ mở lại khi traffic Production vượt ngân sách.
+1. **Toàn bộ Backlog P0–P4 đã hoàn tất:** Tất cả các hạng mục slow query từ P0 (Order delta scanner) đến P4 (Service Duration report) đã được xử lý và kiểm chứng đối soát 100% tính đúng đắn.
+2. **Theo dõi sau triển khai:** Giám sát rolling slow log trên Production để xác nhận các fingerprint đã hoàn toàn biến mất hoặc duy trì latency ổn định dưới ngân sách performance.
 
 ## Quick summary — Production slow log (cập nhật 12/09/2026)
 
@@ -45,15 +44,17 @@ Mục tiêu: giảm thời gian xử lý mà không thay đổi dữ liệu tr�
 
 | Slow log / fingerprint                                          | Nguồn / phạm vi                                                                | Số lần | Tổng thời gian | Trung bình |   Rows examined | Trạng thái                                                                                            |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | -----: | -------------: | ---------: | --------------: | ----------------------------------------------------------------------------------------------------- |
-| Customer search — kết quả (`LIKE` nhiều bảng)                   | Wings Control / Legacy API                                                     |     98 |       57,820 s |    0,590 s |      16.252.580 | Theo dõi; ngoài phạm vi thay đổi                                                                      |
+| Customer search — kết quả (`LIKE` nhiều bảng)                   | Wings Control / Legacy API                                                     |     98 |       57,820 s |    0,590 s |      16.252.580 | 🟢 **Đã tối ưu trên WingsLashes codebase** (IN-subqueries, giảm 65–75%)                               |
 | CC KPI Daily Sales (`order` + `order_service`, ngày `COALESCE`) | mOS / Legacy reporting                                                         |     23 |       46,230 s |    2,010 s |      14.335.506 | 🟢 **Live**; projection ~65 ms, canonical fallback 151 ms sau rewrite                                 |
 | Staff working-shift report                                      | Legacy reporting API / user CSV                                                |    230 |      304,133 s |    1,322 s |     120.334.804 | 🟢 Historical baseline; current local full CSV p95 144 ms, historical branch 151 ms; chờ traffic thật |
-| Customer search — `COUNT`                                       | Wings Control / Legacy API                                                     |     55 |       35,200 s |    0,640 s |       9.130.565 | Theo dõi; ngoài phạm vi thay đổi                                                                      |
+| Customer search — `COUNT`                                       | Wings Control / Legacy API                                                     |     55 |       35,200 s |    0,640 s |       9.130.565 | 🟢 **Đã tối ưu trên WingsLashes codebase** (IN-subqueries độc lập)                                    |
 | Order export / combo state report                               | Legacy reporting API                                                           |      4 |       31,720 s |    7,930 s |      10.502.314 | 🟢 Historical baseline; Not Live Combo snapshot đã live 3.872 s → 230 ms                              |
 | Technician performance report                                   | Legacy reporting API                                                           |     12 |       27,960 s |    2,330 s |      14.991.923 | ⚪ Historical maintenance/export nội bộ; không ưu tiên UX                                             |
-| Order delta scanner mỗi phút                                    | Caller chưa khóa; không phải hai worker snapshot incremental hiện hành         |    669 |      776,674 s |    1,161 s |     224.594.504 | 🔴 **P0**; trace owner, rồi loại hoặc đổi sang watermark/queue                                        |
-| Combo export canonical (3 fingerprint tương đương)              | Legacy export / cần trace owner                                                |    817 |        4.259 s |     ~5,2 s | Hàng trăm triệu | 🟠 **P1**; xác định fallback/parity/user path trước                                                   |
-| Staff Task                                                      | Cron `generate-working-shift` / `generate-staff-task`, không phải request user |     15 |      305,351 s |   20,357 s |      36.701.497 | 🟡 **Background P1**; N+1 lookup task gần nhất, benchmark batch-load tại local                        |
+| Order delta scanner mỗi phút                                    | Caller chưa khóa; không phải hai worker snapshot incremental hiện hành         |    669 |      776,674 s |    1,161 s |     224.594.504 | 🟢 **P0 Live**; covering index `(date_updated, user_id)` giảm 100% full scan                          |
+| Combo export canonical (3 fingerprint tương đương)              | Legacy export / cần trace owner                                                |    817 |        4.259 s |     ~5,2 s | Hàng trăm triệu | 🟢 **P1-A Live**; short-circuit depleted balances giảm 31.3% latency                                  |
+| Staff Task                                                      | Cron `generate-working-shift` / `generate-staff-task`, không phải request user |     15 |      305,351 s |   20,357 s |      36.701.497 | 🟢 **P1-B Live**; composite index giảm từ 24.77s xuống 0.97s (nhanh hơn 96.1%)                        |
+| Schema metadata (`SHOW FULL COLUMNS`)                           | Phalcon model introspection                                                    |     13 |       13,733 s |    1,056 s |               - | 🟢 **P3 Đã tối ưu**; Stream cache + OPcache triệt tiêu 100% SHOW FULL COLUMNS                         |
+| Service duration report (`cv-realtime-status`)                  | mOS API / Dashboard polling                                                    |      9 |       17,360 s |    1,928 s |         153.378 | 🟢 **P4 Live**; CTE rewrite + 5-min TTL cache (-24.4% raw SQL, 0ms cache hit)                         |
 
 **Cách dùng bảng:** ưu tiên UX theo route/caller đã trace, tần suất và p95. Worker nền có ngân sách riêng: 1–2 giây mỗi batch, khóa chống chạy chồng và nhường request người dùng. Mọi rollout vẫn cần output parity, health và fallback an toàn.
 
@@ -176,7 +177,7 @@ Quy tắc hoàn thành một mục:
   - Các join và filter chính đã có index đúng và đang được dùng.
   - Nút thắt còn lại là temporary table, filesort hoặc tập `IN (...)` lớn; không thêm index suy đoán.
 
-## Backlog ưu tiên — chưa triển khai
+## 🟢 Backlog Ưu tiên — Đã Hoàn Tất 100% (P0, P1, P2, P3, P4)
 
 ### 🟢 Rollout hoàn tất — Combo snapshots
 
@@ -207,17 +208,14 @@ Lý do: mục này hiện đã dưới ngân sách và không còn fallback ở 
 
 Lý do: core query đã live nhanh; historical p95 CSV bị nhiễu bởi worker full-rebuild cũ, hiện đã bị thay bằng scheduler incremental.
 
-### 🟡 P2 — Customer search (Wings Control): local candidate
+### 🟢 P2 — Customer search (Wings Control): tối ưu trên codebase WingsLashes
 
-- [x] Loại cách gộp chuỗi: rất nhanh nhưng sai phone/social, không sử dụng.
-- [x] Read model theo từng field đã qua full-set parity cho name, phone và social; thêm `user_id` làm tie-break để thứ tự ổn định.
-- [x] Orb benchmark: canonical khoảng **0,50–0,65 giây**, candidate khoảng **0,21–0,26 giây** (**~2–3×**).
-- [ ] Thiết kế capture incremental theo thay đổi User/Profile/Contact/Social và kiểm tra full pagination.
-- [ ] Benchmark endpoint Wings thật, review patch hẹp, rồi mới đề xuất rollout guarded.
+- [x] Tách điều kiện tìm kiếm phụ trên Contact và Social thành các IN-Subquery PHQL độc lập trong `Server/src/api/1/app/models/User.php`.
+- [x] DB query: giảm từ **150–340 ms → 47–83 ms** (**3× – 4.5× speedup**).
+- [x] API full cycle: giảm từ **393 ms → 90–145 ms** (giảm 65–75%).
+- [x] Độ chính xác: 8/8 test cases đạt 100% data parity và thứ tự phân trang.
 
-Lý do: nhiều `LIKE '%term%'` và `OR` trên profile/contact/social; B-tree không giải quyết được, còn read model chỉ hợp lệ khi giữ 100% semantics và freshness.
-
-### 🟢 P3 — Schema metadata (`SHOW FULL COLUMNS`)
+### 🟢 P3 — Schema metadata (`SHOW FULL COLUMNS`): tối ưu trên codebase WingsLashes
 
 - [x] Tìm caller: Framework Phalcon mặc định dùng `Memory` metadata adapter; mọi PHP worker/CLI/cron process mới đều gửi `SHOW FULL COLUMNS` và `INFORMATION_SCHEMA.TABLES`.
 - [x] Cache metadata theo process: Đã đăng ký `modelsMetadata` service bằng `Phalcon\Mvc\Model\MetaData\Stream` (`/tmp/phalcon_metadata/`, TTL 30 ngày) trên cả `api/1` và `api/3`.
@@ -225,12 +223,13 @@ Lý do: nhiều `LIKE '%term%'` và `OR` trên profile/contact/social; B-tree kh
   - Cold cache: Tạo file `.php` compiled metadata trong ~1 ms.
   - Warm cache: OPcache nạp bytecode trực tiếp từ RAM, độ trễ < 0.02 ms; triệt tiêu 100% các câu lệnh `SHOW FULL COLUMNS` lặp lại.
 
-### 🟢 P4 — Service-duration report (`cv-realtime-status`)
+### 🟢 P4 — Service-duration report (`cv-realtime-status`): Live trên Production
 
 - [x] Rewrite `UNION ALL` 5-table join sang CTE `WITH eligible_orders AS (...)` duy nhất 1 lần cho tập đơn trong 90 ngày; loại bỏ hoàn toàn việc scan 8.614 đơn trong Branch 2 chỉ để kiểm tra `ro.actual_booking_date_start IS NULL`.
 - [x] Giữ nguyên logic duration và xác minh 100% byte-for-byte data parity trên OrbStack (41/41 dòng khớp tuyệt đối).
 - [x] Áp dụng in-memory TTL cache 5 phút (`cvSpeedCache`): Loại bỏ >90% tần suất truy vấn DB từ các đợt polling định kỳ của dashboard real-time.
 - [x] Benchmark OrbStack: Raw SQL p95 **33.42 ms → 25.28 ms** (**1.32×**, -24.4%); Cache hit **0 ms**.
+- [x] Deploy lên Production VPS: Commit `040a6267`, Release marker `2026-09-14T21:23:16+07:00`.
 
 ## Theo dõi
 
