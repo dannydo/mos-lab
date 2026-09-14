@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from '../context/ThemeContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { BugReportSurface } from '../components/bug-reports/BugReportSurface';
+import { BugReportSurfacePortal } from '../components/bug-reports/BugReportSurfacePortal';
 
 export default function RootLayout({
   children,
@@ -24,7 +24,7 @@ export default function RootLayout({
         <AntdRegistry>
           <ThemeProvider>
             <ErrorBoundary>{children}</ErrorBoundary>
-            <BugReportSurface />
+            <BugReportSurfacePortal />
           </ThemeProvider>
         </AntdRegistry>
       </body>

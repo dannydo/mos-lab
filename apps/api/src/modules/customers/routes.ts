@@ -9102,6 +9102,17 @@ export async function customerRoutes(fastify: FastifyInstance) {
       const checkedInCvStaffIds = activeDutyStaffIds.filter((id: number) => checkedInStaffIds.has(id));
       const effectiveCvStaffIds = checkedInCvStaffIds.length > 0 ? checkedInCvStaffIds : activeDutyStaffIds;
 
+      const { countOnly } = (request.query || {}) as { countOnly?: string | boolean };
+      if (countOnly === 'true' || countOnly === true) {
+        return {
+          workingCvCount: effectiveCvStaffIds.length,
+          offCvCount: offStaffUserIds.size,
+          staffStatuses: [],
+          queueByStore: {},
+          timestamp: nowICT.toISOString(),
+        };
+      }
+
       // 3. Query today's queue from order_staff_queue for working CV staff IDs
       const queueRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `

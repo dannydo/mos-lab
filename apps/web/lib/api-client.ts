@@ -1351,8 +1351,8 @@ export const apiClient = {
       const data = await dedupeApiGet<ListAppointmentsResponse>('/customers/appointments', params, 2000);
       return data;
     },
-    getCvRealtimeStatus: async (): Promise<CvRealtimeStatusResponse> => {
-      const response = await api.get('/customers/cv-realtime-status');
+    getCvRealtimeStatus: async (params?: { countOnly?: boolean | string }): Promise<CvRealtimeStatusResponse> => {
+      const response = await api.get('/customers/cv-realtime-status', { params });
       return response.data;
     },
     getCvScheduleRoster: async (date: string): Promise<CvScheduleRosterResponse> => {

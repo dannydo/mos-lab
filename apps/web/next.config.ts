@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
   ],
   turbopack: {},
   experimental: {
-    optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs'],
+    optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs', '@mos-lab/shared'],
   },
   webpack: (config, { dev }) => {
     if (dev) {

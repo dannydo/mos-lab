@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { theme } from 'antd';
-import { IconPickerModal } from '../IconPickerModal';
+import dynamic from 'next/dynamic';
+
+const IconPickerModal = dynamic(() => import('../IconPickerModal').then((m) => m.IconPickerModal), { ssr: false });
 import { getAntdIconComponent, getDynamicLucideIcon, getCustomIconComponent } from '../IconSystem';
 import {
   BedDouble,

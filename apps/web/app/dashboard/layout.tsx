@@ -100,9 +100,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [workingCvCount, setWorkingCvCount] = useState(0);
   const hasAuthenticatedUser = !loading && Boolean(user?.id);
 
+  const isDocumentVisible = () => typeof document === 'undefined' || document.visibilityState === 'visible';
+
   const fetchWorkingCvCount = useCallback(async () => {
     try {
-      const res = await apiClient.customers.getCvRealtimeStatus();
+      const res = await apiClient.customers.getCvRealtimeStatus({ countOnly: true });
       if (res?.workingCvCount !== undefined) {
         setWorkingCvCount(res.workingCvCount);
       } else if (res?.staffStatuses) {
@@ -116,7 +118,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!hasAuthenticatedUser) return;
     fetchWorkingCvCount();
-    const interval = setInterval(fetchWorkingCvCount, 30000);
+    const interval = setInterval(() => {
+      if (isDocumentVisible()) fetchWorkingCvCount();
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchWorkingCvCount, hasAuthenticatedUser]);
 
@@ -124,6 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!hasAuthenticatedUser) return;
 
     const fetchReleaseMarker = () => {
+      if (!isDocumentVisible()) return;
       apiClient.release
         .get()
         .then((release) => setDeployedAt(release.deployedAt))
@@ -147,7 +152,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!hasAuthenticatedUser) return;
     fetchPendingAllocationsCount();
-    const interval = setInterval(fetchPendingAllocationsCount, 30000);
+    const interval = setInterval(() => {
+      if (isDocumentVisible()) fetchPendingAllocationsCount();
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchPendingAllocationsCount, hasAuthenticatedUser]);
 
@@ -173,7 +180,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!hasAuthenticatedUser) return;
     fetchDailyCallsCount();
-    const interval = setInterval(fetchDailyCallsCount, 30000);
+    const interval = setInterval(() => {
+      if (isDocumentVisible()) fetchDailyCallsCount();
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchDailyCallsCount, hasAuthenticatedUser]);
 
@@ -238,9 +247,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!hasAuthenticatedUser) return;
     fetchOnlineStaff();
-    const interval = setInterval(fetchOnlineStaff, 25000);
+    const interval = setInterval(() => {
+      if (isDocumentVisible()) fetchOnlineStaff();
+    }, 25000);
     return () => clearInterval(interval);
   }, [fetchOnlineStaff, hasAuthenticatedUser]);
+
+  useEffect(() => {
+    if (!hasAuthenticatedUser) return;
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchWorkingCvCount();
+        fetchPendingAllocationsCount();
+        fetchDailyCallsCount();
+        fetchOnlineStaff();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchWorkingCvCount, fetchPendingAllocationsCount, fetchDailyCallsCount, fetchOnlineStaff, hasAuthenticatedUser]);
 
   useEffect(() => {
     const saved = localStorage.getItem('mos_sidebar_collapsed');
