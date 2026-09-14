@@ -28,6 +28,11 @@ const phase1Indexes = [
     table: 'staff_task',
     columns: ['staff_task_rule_id', 'from_user_id', 'from_client_store_id', 'id'],
   },
+  {
+    name: 'idx_report_staff_technician_date_user',
+    table: 'report_staff_technician',
+    columns: ['date', 'user_id'],
+  },
 ] as const;
 
 const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
