@@ -20,11 +20,16 @@ export type BookingRescheduleEligibility = {
  */
 export class BookingReschedulePermissionService {
   /**
-   * Global scheduling scope is deliberately narrower than general customer
-   * administration. Active BK_CONTROL membership is the source of truth.
+   * Global scheduling scope is granted to Admin/Super Admin, Control staff,
+   * Managers, or active BK_CONTROL team members.
    */
   static async hasGlobalRescheduleAccess(fastify: FastifyInstance, actor: BookingRescheduleActor): Promise<boolean> {
-    if (isAdminOrSuperAdminRole(actor.role)) return true;
+    const role = String(actor.role || '')
+      .trim()
+      .toLowerCase();
+
+    if (isAdminOrSuperAdminRole(role)) return true;
+    if (role === 'control' || role === 'manager') return true;
 
     return TeamService.isActiveCrmStaffMember(fastify, 'BK_CONTROL', actor.id, 'ACTIVE_BK_CONTROL_STAFF_CONFIG');
   }
@@ -42,15 +47,7 @@ export class BookingReschedulePermissionService {
       return { allowed: true, reason: 'ALLOWED', message: '' };
     }
 
-    if (!isTelesalesRole(role)) {
-      return {
-        allowed: false,
-        reason: 'ROLE_NOT_ALLOWED',
-        message:
-          'Tài khoản hiện tại không có quyền dời lịch. Chỉ Admin, BK_CONTROL, Booker hoặc Telesales được thực hiện thao tác này.',
-      };
-    }
-
+    // 1. Check if the customer is directly assigned to the actor
     const assignment = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
       where: {
         legacyUserId,
@@ -61,6 +58,38 @@ export class BookingReschedulePermissionService {
 
     if (assignment) {
       return { allowed: true, reason: 'ALLOWED', message: '' };
+    }
+
+    // 2. Check if the actor created any booking for this customer
+    try {
+      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: actor.id },
+        select: { legacyStaffId: true },
+      });
+
+      if (crmStaff?.legacyStaffId) {
+        const createdOrders = await fastify.prisma.legacy.$queryRawUnsafe<Array<{ id: number }>>(
+          'SELECT id FROM `order` WHERE user_id = ? AND created_staff_id = ? LIMIT 1',
+          legacyUserId,
+          crmStaff.legacyStaffId
+        );
+        if (createdOrders && createdOrders.length > 0) {
+          return { allowed: true, reason: 'ALLOWED', message: '' };
+        }
+      }
+    } catch (err: unknown) {
+      fastify.log?.warn?.(err, 'Could not query creator orders for booking reschedule evaluation');
+    }
+
+    // 3. Fallback role check for unassigned customers
+    const bookingRoles = ['telesales', 'booker', 'manager', 'control', 'cs', 'oc'];
+    if (!isTelesalesRole(role) && !bookingRoles.includes(role)) {
+      return {
+        allowed: false,
+        reason: 'ROLE_NOT_ALLOWED',
+        message:
+          'Tài khoản hiện tại không có quyền dời lịch. Chỉ Admin, BK_CONTROL, Booker hoặc Telesales được thực hiện thao tác này.',
+      };
     }
 
     return {
