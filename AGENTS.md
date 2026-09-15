@@ -4,6 +4,17 @@ This guide outlines common commands, monorepo architecture, coding standards, an
 
 Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package map, source-of-truth routing, and fast/full verification workflow. Read only the business-rule sections relevant to the files being changed.
 
+## 🎙️ Antigravity Developer Voice Chat & Double-Control Invariant (Mandatory)
+
+- **Double-Control Global Shortcut**: Hệ thống macOS chạy LaunchAgent thường trực `com.antigravity.double-control` (`~/Library/LaunchAgents/com.antigravity.double-control.plist`) thực thi binary native `/Users/dannydo/.gemini/antigravity/bin/double-control-listener`. Khi Danny gõ đúp phím `Control` (⌃⌃) ở bất kỳ đâu trên máy tính (Chrome, Terminal, Finder, IDE...), daemon tự động chuyển cửa sổ về **Antigravity** và gửi tổ hợp phím `Control + M` để kích hoạt micro thu âm cho Danny nói chuyện trực tiếp.
+- **Bắt buộc Phản hồi Bằng Giọng Nói (Mandatory Voice Chat TTS Response)**: Ở cuối **mỗi lượt trả lời** của bất kỳ session nào (kể cả code hay trả lời câu hỏi), Agent **BẮT BUỘC** phải gọi script phát âm thanh giọng nói tiếng Việt bằng tool `run_command` (với `BypassSandbox: true`):
+  ```bash
+  /Users/dannydo/.gemini/antigravity/bin/speak "<Tóm tắt 2-3 câu ngắn gọn bằng tiếng Việt tự nhiên về kết quả và trạng thái>"
+  ```
+  Giọng đọc chuẩn: `vi-VN-HoaiMyNeural` (Hoài My). Tóm tắt phát âm cần ngắn gọn, rõ ràng, thân thiện và gãy gọn để Danny nghe ngay lập tức khi đang làm việc.
+
+---
+
 ## 📖 Kinh Thánh mOS — Human-readable Business Canon
 
 - Registry hiển thị cho nhân viên và AI nằm tại `packages/shared/src/business-rules/mos-bible.ts`; quy ước biên soạn nằm tại `docs/kinh-thanh-mos/README.md`.
@@ -521,12 +532,3 @@ mos-lab/
 - **Orb là môi trường kiểm chứng mặc định**: Hầu hết thay đổi, script vận hành, regeneration và backfill dự định chạy trên VPS Production đều phải được chạy và đối soát trước trong Orb local qua `ssh root@ubuntu@orb`, nơi có stack PHP/Phalcon và dữ liệu mô phỏng tương thích.
 - **Trình tự bắt buộc**: backup source cục bộ trên Orb → lint/kiểm tra code → dry-run đọc dữ liệu → apply cục bộ khi được duyệt → chạy lại dry-run phải sạch → đối soát trực tiếp ledger/side-effect → mới đề xuất triển khai Production.
 - **Ranh giới Production**: Không được suy diễn kết quả Orb là quyền triển khai Production. Production chỉ được động tới sau khi có yêu cầu/duyệt riêng của người dùng; nêu rõ phạm vi, batch, bằng chứng Orb và phương án rollback trước khi chạy.
-
-### 56. Antigravity Developer Voice Chat & Double-Control Invariant
-
-- **Double-Control Global Shortcut**: Hệ thống macOS chạy LaunchAgent thường trực `com.antigravity.double-control` (`~/Library/LaunchAgents/com.antigravity.double-control.plist`) thực thi binary native `/Users/dannydo/.gemini/antigravity/bin/double-control-listener`. Khi Danny gõ đúp phím `Control` (⌃⌃) ở bất kỳ đâu trên máy tính (Chrome, Terminal, Finder, IDE...), daemon tự động chuyển cửa sổ về **Antigravity** và gửi tổ hợp phím `Control + M` để kích hoạt micro thu âm cho Danny nói chuyện trực tiếp.
-- **Bắt buộc Phản hồi Bằng Giọng Nói (Mandatory Voice Chat TTS Response)**: Ở cuối **mỗi lượt trả lời** của bất kỳ session coding nào, Agent **BẮT BUỘC** phải gọi script phát âm thanh giọng nói tiếng Việt:
-  ```bash
-  /Users/dannydo/.gemini/antigravity/bin/speak "<Tóm tắt 2-3 câu ngắn gọn bằng tiếng Việt tự nhiên về kết quả và trạng thái>"
-  ```
-  Giọng đọc chuẩn: `vi-VN-HoaiMyNeural` (Hoài My). Tóm tắt phát âm cần ngắn gọn, rõ ràng, thân thiện và gãy gọn để Danny nghe ngay lập tức khi đang làm việc.

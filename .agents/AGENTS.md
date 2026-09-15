@@ -1,3 +1,21 @@
+# 🎙️ Antigravity Developer Voice Chat & Double-Control Invariant (Mandatory)
+
+## 1. Double-Control Global Shortcut
+
+- Hệ thống macOS chạy LaunchAgent thường trực `com.antigravity.double-control` (`~/Library/LaunchAgents/com.antigravity.double-control.plist`) thực thi binary native `/Users/dannydo/.gemini/antigravity/bin/double-control-listener`.
+- Khi Danny gõ đúp phím `Control` (⌃⌃) ở bất kỳ đâu trên máy tính (Chrome, Terminal, Finder, IDE...), daemon tự động chuyển cửa sổ về **Antigravity** và gửi tổ hợp phím `Control + M` để kích hoạt micro thu âm cho Danny nói chuyện trực tiếp.
+
+## 2. Bắt buộc Phản hồi Bằng Giọng Nói (Mandatory Voice Chat TTS Response)
+
+- Ở cuối **mỗi lượt trả lời** của bất kỳ session nào (kể cả code hay trả lời câu hỏi), Agent **BẮT BUỘC** phải gọi script phát âm thanh giọng nói tiếng Việt bằng tool `run_command` (với `BypassSandbox: true`):
+  ```bash
+  /Users/dannydo/.gemini/antigravity/bin/speak "<Tóm tắt 2-3 câu ngắn gọn bằng tiếng Việt tự nhiên về kết quả và trạng thái>"
+  ```
+- Giọng đọc chuẩn: `vi-VN-HoaiMyNeural` (Hoài My).
+- Tóm tắt phát âm cần ngắn gọn, rõ ràng, thân thiện và gãy gọn để Danny nghe ngay lập tức khi đang làm việc.
+
+---
+
 # Frontend Theme Customization Rules
 
 Để đảm bảo hệ thống hỗ trợ cả giao diện sáng (Light Theme) và tối (Dark Theme) chính xác, tất cả các tác vụ cập nhật giao diện trong tương lai cần tuân thủ nghiêm ngặt các quy tắc sau:
@@ -613,18 +631,3 @@ Mọi tác vụ kiểm thử và khắc phục sự cố tổng đài OmiCall We
    - Khai báo chuẩn tại `@mos-lab/shared` (`packages/shared/src/types/catalog.ts`): đối tượng `LASH_STYLES` và kiểu dữ liệu `LashStyle`.
    - Service backend (`LashBenchmarkService.parseLashSpecs()`) phân tích `service_key` / `service_name` thành `{ lashStyle, lashCount }`.
    - Không nhầm lẫn **Dòng Mi / Dáng Mi** (`lashStyle`: Classic, Mink, Volume, Ivylight...) với **Loại Dịch Vụ** (`serviceType`: Normal, Retain, Fix, Adjust, Removal) hay **Nhóm Dịch Vụ** (`serviceGroup`: LashesTop, LashesUnder, Sauna...).
-
----
-
-# 🎙️ Antigravity Developer Voice Chat & Double-Control Invariant
-
-1. **Double-Control Global Shortcut**:
-   - Hệ thống macOS chạy LaunchAgent thường trực `com.antigravity.double-control` (`~/Library/LaunchAgents/com.antigravity.double-control.plist`) thực thi binary native `/Users/dannydo/.gemini/antigravity/bin/double-control-listener`.
-   - Khi Danny gõ đúp phím `Control` (⌃⌃) ở bất kỳ đâu trên máy tính (Chrome, Terminal, Finder, IDE...), daemon tự động chuyển cửa sổ về **Antigravity** và gửi tổ hợp phím `Control + M` để kích hoạt micro thu âm cho Danny nói chuyện trực tiếp.
-2. **Bắt buộc Phản hồi Bằng Giọng Nói (Mandatory Voice Chat TTS Response)**:
-   - Ở cuối **mỗi lượt trả lời** của bất kỳ session coding nào, Agent **BẮT BUỘC** phải gọi script phát âm thanh giọng nói tiếng Việt:
-     ```bash
-     /Users/dannydo/.gemini/antigravity/bin/speak "<Tóm tắt 2-3 câu ngắn gọn bằng tiếng Việt tự nhiên về kết quả và trạng thái>"
-     ```
-   - Giọng đọc chuẩn: `vi-VN-HoaiMyNeural` (Hoài My).
-   - Tóm tắt phát âm cần ngắn gọn, rõ ràng, thân thiện và gãy gọn để Danny nghe ngay lập tức khi đang làm việc.
