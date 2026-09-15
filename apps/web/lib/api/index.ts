@@ -9,8 +9,10 @@ import { staffApi } from './staff.api';
 import { telecomApi } from './telecom.api';
 import { academyApi } from './academy.api';
 import { qaShopApi } from './qa-shop.api';
+import { aiApi } from './ai.api';
 
 export * from './base';
+export * from './ai.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -24,6 +26,7 @@ export const apiClient = {
   ...telecomApi,
   ...academyApi,
   ...qaShopApi,
+  ...aiApi,
 };
 
 export default apiClient;

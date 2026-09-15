@@ -50,6 +50,9 @@ const BugReportProfileControl = dynamic(() => import('../../components/bug-repor
   ssr: false,
 });
 const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBibleDrawer'), { ssr: false });
+const GlobalVoiceAssistant = dynamic(() => import('../../components/voice-assistant/GlobalVoiceAssistant'), {
+  ssr: false,
+});
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
@@ -1403,6 +1406,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           currentDate={cvDrawerDate}
           onDateChange={(d) => setCvDrawerDate(d)}
         />
+        <GlobalVoiceAssistant userName={user?.displayName} userRole={user?.role} />
       </OmiCallProvider>
     </SeasonalAccentProvider>
   );
