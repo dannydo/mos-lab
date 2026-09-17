@@ -1120,9 +1120,9 @@ export default function CampaignDetailPage() {
               src={record.avatar || undefined}
               icon={<UserOutlined style={{ fontSize: '12px' }} />}
               style={{
-                backgroundColor: '#1f1f1f',
-                color: '#D4A84B',
-                border: '1px solid #333',
+                backgroundColor: token.colorBgContainer,
+                color: token.colorPrimary,
+                border: `1px solid ${token.colorBorderSecondary}`,
                 flexShrink: 0,
               }}
             />

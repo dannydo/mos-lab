@@ -459,7 +459,7 @@ export default function PlansPage() {
                       size="small"
                       icon={<PlusOutlined />}
                       onClick={() => openCallLog(record, date)}
-                      style={{ borderColor: '#444', color: '#888' }}
+                      style={{ borderColor: token.colorBorder, color: token.colorTextSecondary }}
                     />
                   )
                 )}

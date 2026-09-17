@@ -115,3 +115,145 @@ describe('ThemeProvider display density', () => {
     await waitFor(() => expect(document.documentElement.dataset.uiDensity).toBe('comfortable'));
   });
 });
+
+function ThemeProbe() {
+  const { themeId, themeMode, setCoreThemeId, toggleTheme, availableCoreThemes, saveCustomTheme, canManageThemes } =
+    useTheme();
+
+  return (
+    <div>
+      <output data-testid="theme-id">{themeId}</output>
+      <output data-testid="theme-mode">{themeMode}</output>
+      <output data-testid="theme-count">{availableCoreThemes.length}</output>
+      <output data-testid="can-manage-themes">{String(canManageThemes)}</output>
+      <button type="button" onClick={() => setCoreThemeId('ivory')}>
+        Set Ivory
+      </button>
+      <button type="button" onClick={() => setCoreThemeId('midnight')}>
+        Set Midnight
+      </button>
+      <button type="button" onClick={toggleTheme}>
+        Toggle Mode
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          saveCustomTheme({
+            id: 'my-custom',
+            label: 'My Custom Theme',
+            base: 'light',
+            colors: {
+              primary: '#ff0055',
+              bgLayout: '#fdf0f5',
+              bgContainer: '#ffffff',
+              borderColor: '#ffccd8',
+              textPrimary: '#330011',
+              textSecondary: '#661122',
+            },
+          })
+        }
+      >
+        Save Custom
+      </button>
+    </div>
+  );
+}
+
+describe('ThemeProvider multi-theme engine', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    delete document.documentElement.dataset.theme;
+    delete document.documentElement.dataset.themeBase;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('provides built-in themes including Warm Ivory and Midnight', () => {
+    render(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    expect(Number(screen.getByTestId('theme-count').textContent)).toBeGreaterThanOrEqual(5);
+    expect(screen.getByTestId('theme-id')).toHaveTextContent('mos');
+  });
+
+  it('switches to Warm Ivory, updates dataset and sets light base', async () => {
+    render(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set Ivory' }));
+
+    expect(screen.getByTestId('theme-id')).toHaveTextContent('ivory');
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('ivory');
+      expect(document.documentElement.dataset.themeBase).toBe('light');
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#f6f3ee');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#9e6e24');
+    });
+  });
+
+  it('switches to Midnight Royal, updates dataset and sets dark base', async () => {
+    render(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set Midnight' }));
+
+    expect(screen.getByTestId('theme-id')).toHaveTextContent('midnight');
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark');
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('midnight');
+      expect(document.documentElement.dataset.themeBase).toBe('dark');
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#070a13');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#38bdf8');
+    });
+  });
+
+  it('allows admins to create and dynamically apply a custom theme', async () => {
+    render(
+      <ThemeProvider defaultIsAdmin={true}>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('can-manage-themes')).toHaveTextContent('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Custom' }));
+
+    expect(screen.getByTestId('theme-id')).toHaveTextContent('my-custom');
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('my-custom');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#ff0055');
+    });
+  });
+
+  it('restricts non-admin users from creating themes while still allowing theme switching', async () => {
+    render(
+      <ThemeProvider defaultIsAdmin={false}>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('can-manage-themes')).toHaveTextContent('false');
+
+    // Attempting to save custom theme should be blocked
+    fireEvent.click(screen.getByRole('button', { name: 'Save Custom' }));
+    expect(screen.getByTestId('theme-id')).toHaveTextContent('mos'); // Stays on default theme
+
+    // But non-admin can freely switch to built-in themes
+    fireEvent.click(screen.getByRole('button', { name: 'Set Midnight' }));
+    expect(screen.getByTestId('theme-id')).toHaveTextContent('midnight');
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark');
+  });
+});

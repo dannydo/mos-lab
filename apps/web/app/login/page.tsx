@@ -2,7 +2,7 @@
 
 import '../suppress-warnings';
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Typography, message, Divider } from 'antd';
+import { Form, Input, Button, Card, Typography, message, Divider, theme } from 'antd';
 import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '../../lib/api-client';
@@ -11,6 +11,7 @@ import { useTheme } from '../../context/ThemeContext';
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
+  const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [mockEmail, setMockEmail] = useState('danny.do@wingslashes.com');
@@ -147,7 +148,7 @@ export default function LoginPage() {
       style={{
         background:
           themeMode === 'dark'
-            ? 'linear-gradient(135deg, #0b0f19 0%, #111827 100%)'
+            ? 'linear-gradient(135deg, #090d16 0%, #101726 100%)'
             : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         padding: '20px',
       }}
@@ -157,8 +158,8 @@ export default function LoginPage() {
           width: 400,
           borderRadius: 12,
           boxShadow: themeMode === 'dark' ? '0 8px 30px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)',
-          background: themeMode === 'dark' ? '#111827' : '#ffffff',
-          border: `1px solid ${themeMode === 'dark' ? '#1f2937' : '#e2e8f0'}`,
+          background: token.colorBgContainer,
+          border: `1px solid ${token.colorBorderSecondary}`,
         }}
       >
         <div className="text-center mb-8">
@@ -168,7 +169,7 @@ export default function LoginPage() {
               width: 70,
               height: 70,
               borderRadius: '50%',
-              background: '#D4A84B',
+              background: token.colorPrimary,
               fontSize: '28px',
               color: '#000',
               fontWeight: 'bold',
@@ -177,10 +178,10 @@ export default function LoginPage() {
           >
             W
           </div>
-          <Title level={3} style={{ color: '#D4A84B', margin: 0 }}>
+          <Title level={3} style={{ color: token.colorPrimary, margin: 0 }}>
             WINGS LASHES
           </Title>
-          <Text style={{ color: '#888' }}>Living Lab CRM — Telesales Portal</Text>
+          <Text style={{ color: token.colorTextDescription }}>Living Lab CRM — Telesales Portal</Text>
         </div>
 
         <div className="flex flex-col items-center gap-3 w-full">
@@ -199,9 +200,9 @@ export default function LoginPage() {
                 onClick={() => setShowMockOptions(true)}
                 block
                 style={{
-                  background: '#222',
-                  borderColor: '#333',
-                  color: '#D4A84B',
+                  background: themeMode === 'dark' ? '#141c2e' : '#f1f5f9',
+                  borderColor: token.colorBorderSecondary,
+                  color: token.colorPrimary,
                   height: '40px',
                   fontWeight: '500',
                 }}
@@ -212,15 +213,15 @@ export default function LoginPage() {
               <div
                 style={{
                   width: '100%',
-                  background: '#1c1c1c',
+                  background: themeMode === 'dark' ? '#141c2e' : '#f8fafc',
                   padding: '12px',
                   borderRadius: '8px',
-                  border: '1px solid #333',
+                  border: `1px solid ${token.colorBorderSecondary}`,
                 }}
               >
                 <div
                   style={{
-                    color: '#888',
+                    color: token.colorTextDescription,
                     fontSize: '11px',
                     marginBottom: '8px',
                     textAlign: 'center',
@@ -236,9 +237,9 @@ export default function LoginPage() {
                     onClick={() => handleMockGoogleLogin('danny.do@wingslashes.com', 'Danny Wings')}
                     loading={loading}
                     style={{
-                      background: '#262626',
-                      borderColor: '#434343',
-                      color: '#D4A84B',
+                      background: token.colorBgContainer,
+                      borderColor: token.colorBorderSecondary,
+                      color: token.colorPrimary,
                       width: '100%',
                       textAlign: 'left',
                     }}
@@ -250,9 +251,9 @@ export default function LoginPage() {
                     onClick={() => handleMockGoogleLogin('danhdo@gmail.com', 'Danh Do')}
                     loading={loading}
                     style={{
-                      background: '#262626',
-                      borderColor: '#434343',
-                      color: '#D4A84B',
+                      background: token.colorBgContainer,
+                      borderColor: token.colorBorderSecondary,
+                      color: token.colorPrimary,
                       width: '100%',
                       textAlign: 'left',
                     }}
@@ -265,14 +266,18 @@ export default function LoginPage() {
                       placeholder="Custom email..."
                       value={mockEmail}
                       onChange={(e) => setMockEmail(e.target.value)}
-                      style={{ background: '#1f1f1f', border: '1px solid #333', color: '#fff' }}
+                      style={{
+                        background: token.colorBgContainer,
+                        borderColor: token.colorBorderSecondary,
+                        color: token.colorText,
+                      }}
                     />
                     <Button
                       size="middle"
                       type="primary"
                       onClick={() => handleMockGoogleLogin(mockEmail, mockEmail.split('@')[0])}
                       loading={loading}
-                      style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
+                      style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
                     >
                       Go
                     </Button>
@@ -282,9 +287,9 @@ export default function LoginPage() {
                       type="link"
                       size="small"
                       onClick={() => setShowMockOptions(false)}
-                      style={{ color: '#666', padding: 0, height: 'auto' }}
+                      style={{ color: token.colorTextDescription, padding: 0, height: 'auto' }}
                     >
-                      Hide Mock Options
+                      Ẩn tùy chọn
                     </Button>
                   </div>
                 </div>
@@ -295,7 +300,7 @@ export default function LoginPage() {
         {!showPasswordForm ? (
           <div style={{ textAlign: 'center', marginTop: '24px' }}>
             <Text
-              style={{ color: '#888', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ color: token.colorTextDescription, cursor: 'pointer', textDecoration: 'underline' }}
               onClick={() => setShowPasswordForm(true)}
             >
               Hoặc đăng nhập bằng tài khoản & mật khẩu
@@ -303,7 +308,14 @@ export default function LoginPage() {
           </div>
         ) : (
           <>
-            <Divider style={{ borderColor: '#333', margin: '24px 0 16px 0', color: '#666', fontSize: '12px' }}>
+            <Divider
+              style={{
+                borderColor: token.colorBorderSecondary,
+                margin: '24px 0 16px 0',
+                color: token.colorTextDescription,
+                fontSize: '12px',
+              }}
+            >
               TÀI KHOẢN & MẬT KHẨU
             </Divider>
 
@@ -316,25 +328,15 @@ export default function LoginPage() {
             >
               <Form.Item name="username" rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}>
                 <Input
-                  prefix={<UserOutlined style={{ color: '#888' }} />}
+                  prefix={<UserOutlined style={{ color: token.colorTextPlaceholder }} />}
                   placeholder="Tên đăng nhập"
-                  style={{
-                    background: '#1f1f1f',
-                    border: '1px solid #333',
-                    color: '#fff',
-                  }}
                 />
               </Form.Item>
 
               <Form.Item name="password" rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}>
                 <Input.Password
-                  prefix={<LockOutlined style={{ color: '#888' }} />}
+                  prefix={<LockOutlined style={{ color: token.colorTextPlaceholder }} />}
                   placeholder="Mật khẩu"
-                  style={{
-                    background: '#1f1f1f',
-                    border: '1px solid #333',
-                    color: '#fff',
-                  }}
                 />
               </Form.Item>
 
@@ -345,8 +347,8 @@ export default function LoginPage() {
                   loading={loading}
                   block
                   style={{
-                    background: '#D4A84B',
-                    borderColor: '#D4A84B',
+                    background: token.colorPrimary,
+                    borderColor: token.colorPrimary,
                     color: '#000',
                     fontWeight: '600',
                     height: '45px',
@@ -359,7 +361,7 @@ export default function LoginPage() {
 
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
               <Text
-                style={{ color: '#888', cursor: 'pointer', textDecoration: 'underline' }}
+                style={{ color: token.colorTextDescription, cursor: 'pointer', textDecoration: 'underline' }}
                 onClick={() => setShowPasswordForm(false)}
               >
                 Quay lại đăng nhập Google

@@ -676,6 +676,132 @@ a[href] {
   --color-gold: #d4a84b;
 }
 
+/* Warm Ivory Theme (Màu Ngà Quý Phái) Overrides - Light Mode */
+.light-theme[data-theme='ivory'],
+.light-theme.theme-ivory {
+  color-scheme: light;
+  --background: #f5efeb;
+  --foreground: #2d2824;
+  --avatar-bg: #e8e1d5;
+  --avatar-border: #d8cebe;
+  --client-name-color: #2d2824;
+  --client-phone-color: #6e655f;
+  --client-desc-color: #6e655f;
+  --color-gold: #966820;
+}
+
+.light-theme[data-theme='ivory'] body,
+.light-theme.theme-ivory body {
+  background-color: #f5efeb;
+  color: #2d2824;
+}
+
+.light-theme[data-theme='ivory'] .ant-table,
+.light-theme.theme-ivory .ant-table {
+  background: #fdfbf7 !important;
+  color: #2d2824 !important;
+}
+
+.light-theme[data-theme='ivory'] .ant-table-thead > tr > th,
+.light-theme.theme-ivory .ant-table-thead > tr > th {
+  background: #ede6df !important;
+  color: #2d2824 !important;
+  border-bottom: 1px solid #e2d9cd !important;
+}
+
+.light-theme[data-theme='ivory'] .ant-table-tbody > tr > td,
+.light-theme.theme-ivory .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #efeae2 !important;
+}
+
+.light-theme[data-theme='ivory'] .ant-card,
+.light-theme.theme-ivory .ant-card {
+  background: #fdfbf7 !important;
+  border-color: #e8e1d5 !important;
+}
+
+.light-theme[data-theme='ivory'] .ant-card-head,
+.light-theme.theme-ivory .ant-card-head {
+  background: #fdfbf7 !important;
+  border-bottom: 1px solid #e8e1d5 !important;
+}
+
+.light-theme[data-theme='ivory'] .ant-modal-content,
+.light-theme[data-theme='ivory'] .ant-modal-header,
+.light-theme.theme-ivory .ant-modal-content,
+.light-theme.theme-ivory .ant-modal-header {
+  background: #fdfbf7 !important;
+}
+
+.light-theme[data-theme='ivory'] .ant-drawer-content,
+.light-theme.theme-ivory .ant-drawer-content {
+  background: #fdfbf7 !important;
+}
+
+/* Warm Ivory Theme - Dark Mode (Warm Espresso & Amber Bronze) */
+.dark-theme[data-theme='ivory'],
+.dark-theme.theme-ivory {
+  color-scheme: dark;
+  --background: #141210;
+  --foreground: #fafaf9;
+  --avatar-bg: #292524;
+  --avatar-border: #44403c;
+  --client-name-color: #fafaf9;
+  --client-phone-color: #a8a29e;
+  --client-desc-color: #a8a29e;
+  --color-gold: #d4a359;
+}
+
+.dark-theme[data-theme='ivory'] body,
+.dark-theme.theme-ivory body {
+  background-color: #141210;
+  color: #fafaf9;
+}
+
+.dark-theme[data-theme='ivory'] .ant-table,
+.dark-theme.theme-ivory .ant-table {
+  background: #1c1917 !important;
+  color: #fafaf9 !important;
+  border-color: #292524 !important;
+}
+
+.dark-theme[data-theme='ivory'] .ant-table-thead > tr > th,
+.dark-theme.theme-ivory .ant-table-thead > tr > th {
+  background: #181513 !important;
+  color: #a8a29e !important;
+  border-bottom: 1px solid #292524 !important;
+}
+
+.dark-theme[data-theme='ivory'] .ant-table-tbody > tr > td,
+.dark-theme.theme-ivory .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #292524 !important;
+  color: #f5f5f4 !important;
+}
+
+.dark-theme[data-theme='ivory'] .ant-card,
+.dark-theme.theme-ivory .ant-card {
+  background: #1c1917 !important;
+  border-color: #292524 !important;
+}
+
+.dark-theme[data-theme='ivory'] .ant-card-head,
+.dark-theme.theme-ivory .ant-card-head {
+  background: #1c1917 !important;
+  border-bottom: 1px solid #292524 !important;
+}
+
+.dark-theme[data-theme='ivory'] .ant-modal-content,
+.dark-theme[data-theme='ivory'] .ant-modal-header,
+.dark-theme.theme-ivory .ant-modal-content,
+.dark-theme.theme-ivory .ant-modal-header {
+  background: #1c1917 !important;
+}
+
+.dark-theme[data-theme='ivory'] .ant-drawer-content,
+.dark-theme.theme-ivory .ant-drawer-content {
+  background: #1c1917 !important;
+}
+
 /* WCAG AA tag contrast. Ant Design's default semantic tag foregrounds are
    designed for larger text and miss AA at our compact 12px operational density. */
 .light-theme .ant-tag-success {
@@ -886,6 +1012,103 @@ body {
   font-feature-settings: 'tnum';
 }
 
+/* ==========================================================================
+   Global Scrollbar System: Dark Theme & Light Theme
+   Ensures consistent, sleek scrollbars across all browsers, containers & tables
+   ========================================================================== */
+
+/* Dark Theme Scrollbars - Universal */
+.dark-theme,
+[data-theme-base='dark'],
+.dark-theme * {
+  scrollbar-color: #334155 #090d16;
+  scrollbar-width: thin;
+}
+
+.dark-theme::-webkit-scrollbar,
+.dark-theme *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-theme::-webkit-scrollbar-track,
+.dark-theme *::-webkit-scrollbar-track {
+  background: #090d16;
+}
+
+.dark-theme::-webkit-scrollbar-thumb,
+.dark-theme *::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+  border: 2px solid #090d16;
+}
+
+.dark-theme::-webkit-scrollbar-thumb:hover,
+.dark-theme *::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+.dark-theme::-webkit-scrollbar-corner,
+.dark-theme *::-webkit-scrollbar-corner {
+  background: #090d16;
+}
+
+/* Light Theme Scrollbars - Universal */
+.light-theme,
+[data-theme-base='light'],
+.light-theme * {
+  scrollbar-color: #cbd5e1 #f8fafc;
+  scrollbar-width: thin;
+}
+
+.light-theme::-webkit-scrollbar,
+.light-theme *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.light-theme::-webkit-scrollbar-track,
+.light-theme *::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.light-theme::-webkit-scrollbar-thumb,
+.light-theme *::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  border: 2px solid #f8fafc;
+}
+
+.light-theme::-webkit-scrollbar-thumb:hover,
+.light-theme *::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.light-theme::-webkit-scrollbar-corner,
+.light-theme *::-webkit-scrollbar-corner {
+  background: #f8fafc;
+}
+
+/* Ant Design Scrollable Table & Virtual Lists in Dark Theme */
+.dark-theme .ant-table-body::-webkit-scrollbar,
+.dark-theme .ant-table-content::-webkit-scrollbar,
+.dark-theme .ant-drawer-body::-webkit-scrollbar,
+.dark-theme .ant-modal-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-theme .ant-select-dropdown .rc-virtual-list-scrollbar-thumb,
+.dark-theme .ant-table-body .rc-virtual-list-scrollbar-thumb {
+  background: #1e293b !important;
+  border-radius: 4px !important;
+}
+
+.dark-theme .ant-select-dropdown .rc-virtual-list-scrollbar-thumb:hover,
+.dark-theme .ant-table-body .rc-virtual-list-scrollbar-thumb:hover {
+  background: #334155 !important;
+}
+
 /* Custom scrollbar utility class */
 .custom-scrollbar {
   overflow-y: auto;
@@ -910,7 +1133,6 @@ body {
   background: rgba(0, 0, 0, 0.3);
 }
 
-/* Dark mode scrollbars */
 .dark-theme .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
 }
@@ -967,7 +1189,7 @@ body {
 
 /* Antd Table Customization in Dark & Light Themes for High Contrast & Visual Depth */
 .dark-theme .ant-table {
-  background: #0f172a !important;
+  background: #101726 !important;
   color: #f8fafc !important;
   border-color: #1e293b !important;
 }
@@ -979,20 +1201,23 @@ body {
 }
 
 .dark-theme .ant-table-thead > tr > th {
-  background: #1e293b !important;
-  color: #cbd5e1 !important;
-  border-bottom: 1px solid #334155 !important;
-  font-weight: 700 !important;
-  font-size: 13px !important;
-  letter-spacing: 0.2px !important;
+  background: #0d1320 !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #1e293b !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.3px !important;
+  text-transform: uppercase !important;
 }
 
 .light-theme .ant-table-thead > tr > th {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-  border-bottom: 1px solid #cbd5e1 !important;
-  font-weight: 700 !important;
-  font-size: 13px !important;
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.3px !important;
+  text-transform: uppercase !important;
 }
 
 .dark-theme .ant-table-tbody > tr > td {
@@ -1006,11 +1231,11 @@ body {
 }
 
 .dark-theme .ant-table-row:hover > td {
-  background: #1e293b !important;
+  background: rgba(212, 168, 75, 0.05) !important;
 }
 
 .light-theme .ant-table-row:hover > td {
-  background: #f1f5f9 !important;
+  background: rgba(133, 91, 14, 0.03) !important;
 }
 
 .dark-theme .ant-table-cell {
@@ -1021,9 +1246,7 @@ body {
   border-color: #e2e8f0 !important;
 }
 
-/* Pagination uses the same semantic-token pipeline as all other controls.
-   Avoid a dark-only hard-coded active state: it previously made the current
-   page numeral disappear whenever a table did not use DataTable. */
+/* Pagination uses the same semantic-token pipeline as all other controls. */
 .dark-theme .ant-pagination-item {
   background: var(--mos-surface-raised) !important;
   border-color: var(--mos-surface-border-strong) !important;
@@ -1046,17 +1269,23 @@ body {
 
 /* Custom styles for Drawer and Cards in Dark & Light Themes */
 .dark-theme .ant-card {
-  background: #111827 !important;
-  border-color: #1f2937 !important;
+  background: #101726 !important;
+  border: 1px solid #1e293b !important;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 4px 20px -2px rgba(0, 0, 0, 0.35) !important;
 }
 
 .light-theme .ant-card {
   background: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.02),
+    0 6px 18px -4px rgba(0, 0, 0, 0.04) !important;
 }
 
 .dark-theme .ant-card-head {
-  border-bottom-color: #1f2937 !important;
+  border-bottom-color: #1e293b !important;
 }
 
 .light-theme .ant-card-head {

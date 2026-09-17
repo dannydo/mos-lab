@@ -4,6 +4,8 @@
  * Density Presets, Typography, and Tabular-nums Formatting.
  */
 
+import { adjustBrightness } from './palette-utils.js';
+
 export interface ThemeColors {
   primary: string;
   primaryHover: string;
@@ -208,6 +210,7 @@ export interface CoreThemeModeDefinition {
 export interface CoreThemeDefinition {
   id: string;
   label: string;
+  description?: string;
   defaultMode: CoreThemeMode;
   modes: Record<CoreThemeMode, CoreThemeModeDefinition>;
   typography: DesignTokens['typography'];
@@ -230,13 +233,13 @@ export const themeTokens: DesignTokens = {
       success: '#52c41a',
       warning: '#faad14',
       error: '#ff4d4f',
-      bgLayout: '#0b0f19',
-      bgContainer: '#111827',
-      bgElevated: '#1e293b',
-      borderColor: '#1f2937',
-      borderSecondary: '#374151',
+      bgLayout: '#090d16',
+      bgContainer: '#101726',
+      bgElevated: '#172033',
+      borderColor: '#1e293b',
+      borderSecondary: '#2d3748',
       textPrimary: '#f8fafc',
-      textSecondary: '#cbd5e1',
+      textSecondary: '#94a3b8',
     },
     light: {
       primary: '#855b0e',
@@ -431,40 +434,176 @@ export const themeTokens: DesignTokens = {
   },
   semantic: {
     dark: {
-      surface: '#111827',
-      surfaceRaised: '#1e293b',
-      surfaceMuted: '#0f172a',
+      surface: '#101726',
+      surfaceRaised: '#172033',
+      surfaceMuted: '#090d16',
       text: '#f8fafc',
-      textMuted: '#cbd5e1',
-      border: '#1f2937',
-      borderStrong: '#374151',
+      textMuted: '#94a3b8',
+      border: '#1e293b',
+      borderStrong: '#2d3748',
       accent: '#D4A84B',
-      accentContrast: '#111827',
-      focusRing: 'rgba(212, 168, 75, 0.28)',
-      shadow: '0 12px 28px rgba(0, 0, 0, 0.22)',
+      accentContrast: '#090d16',
+      focusRing: 'rgba(212, 168, 75, 0.22)',
+      shadow: '0 16px 36px -8px rgba(0, 0, 0, 0.45), 0 1px 0 0 rgba(255, 255, 255, 0.05) inset',
     },
     light: {
       surface: '#ffffff',
       surfaceRaised: '#ffffff',
       surfaceMuted: '#f8fafc',
       text: '#0f172a',
-      textMuted: '#475569',
+      textMuted: '#64748b',
       border: '#e2e8f0',
       borderStrong: '#cbd5e1',
       accent: '#855b0e',
       accentContrast: '#ffffff',
       focusRing: 'rgba(133, 91, 14, 0.2)',
-      shadow: '0 12px 28px rgba(15, 23, 42, 0.08)',
+      shadow: '0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04)',
     },
   },
 };
 
 export const DEFAULT_CORE_THEME_ID = 'mos';
 
-export const coreThemeRegistry: Readonly<Record<string, CoreThemeDefinition>> = {
+export interface ThemePresetInput {
+  id: string;
+  label: string;
+  description?: string;
+  base: CoreThemeMode;
+  colors: {
+    primary: string;
+    primaryHover?: string;
+    info?: string;
+    success?: string;
+    warning?: string;
+    error?: string;
+    bgLayout: string;
+    bgContainer: string;
+    bgElevated?: string;
+    borderColor: string;
+    borderSecondary?: string;
+    textPrimary: string;
+    textSecondary: string;
+  };
+  chartPalette?: string[];
+}
+
+export function defineTheme(input: ThemePresetInput): CoreThemeDefinition {
+  const isLight = input.base === 'light';
+  const c = input.colors;
+  const primaryHover = c.primaryHover ?? (isLight ? adjustBrightness(c.primary, -15) : adjustBrightness(c.primary, 15));
+  const bgElevated = c.bgElevated ?? (isLight ? '#ffffff' : adjustBrightness(c.bgContainer, 15));
+  const borderSecondary =
+    c.borderSecondary ?? (isLight ? adjustBrightness(c.borderColor, 5) : adjustBrightness(c.borderColor, -5));
+
+  const primaryModeColors: ThemeColors = {
+    primary: c.primary,
+    primaryHover,
+    info: c.info ?? (isLight ? '#0284c7' : '#38bdf8'),
+    success: c.success ?? (isLight ? '#16a34a' : '#52c41a'),
+    warning: c.warning ?? (isLight ? '#d97706' : '#faad14'),
+    error: c.error ?? (isLight ? '#dc2626' : '#ff4d4f'),
+    bgLayout: c.bgLayout,
+    bgContainer: c.bgContainer,
+    bgElevated,
+    borderColor: c.borderColor,
+    borderSecondary,
+    textPrimary: c.textPrimary,
+    textSecondary: c.textSecondary,
+  };
+
+  const primarySemantic: SemanticThemeTokens = {
+    surface: c.bgContainer,
+    surfaceRaised: bgElevated,
+    surfaceMuted: c.bgLayout,
+    text: c.textPrimary,
+    textMuted: c.textSecondary,
+    border: c.borderColor,
+    borderStrong: borderSecondary,
+    accent: c.primary,
+    accentContrast: isLight ? '#ffffff' : '#111827',
+    focusRing: isLight ? 'rgba(150, 104, 32, 0.2)' : 'rgba(212, 168, 75, 0.25)',
+    shadow: isLight ? '0 12px 28px rgba(0, 0, 0, 0.08)' : '0 12px 28px rgba(0, 0, 0, 0.25)',
+  };
+
+  const primaryComponents: CoreThemeComponentTokens = {
+    controlOutline: isLight ? 'rgba(150, 104, 32, 0.2)' : 'rgba(212, 168, 75, 0.25)',
+    tableHeaderBg: isLight ? adjustBrightness(c.bgLayout, -3) : adjustBrightness(c.bgContainer, 10),
+    tableHeaderColor: c.textPrimary,
+    tableHeaderSplit: c.borderColor,
+    tableRowHover: isLight ? 'rgba(150, 104, 32, 0.05)' : 'rgba(212, 168, 75, 0.08)',
+    inputBg: c.bgContainer,
+  };
+
+  const primaryDefinition: CoreThemeModeDefinition = {
+    colors: primaryModeColors,
+    semantic: primarySemantic,
+    components: primaryComponents,
+  };
+
+  const companionColors: ThemeColors = isLight
+    ? {
+        ...themeTokens.colors.dark,
+        primary: c.primary,
+        primaryHover,
+      }
+    : {
+        ...themeTokens.colors.light,
+        primary: c.primary,
+        primaryHover,
+      };
+
+  const companionSemantic: SemanticThemeTokens = isLight
+    ? { ...themeTokens.semantic.dark, accent: c.primary }
+    : { ...themeTokens.semantic.light, accent: c.primary };
+
+  const companionComponents: CoreThemeComponentTokens = isLight
+    ? {
+        controlOutline: 'rgba(212, 168, 75, 0.25)',
+        tableHeaderBg: '#1e293b',
+        tableHeaderColor: '#f8fafc',
+        tableHeaderSplit: '#334155',
+        tableRowHover: 'rgba(212, 168, 75, 0.08)',
+        inputBg: '#1a2234',
+      }
+    : {
+        controlOutline: 'rgba(133, 91, 14, 0.25)',
+        tableHeaderBg: '#f1f5f9',
+        tableHeaderColor: '#0f172a',
+        tableHeaderSplit: '#cbd5e1',
+        tableRowHover: 'rgba(212, 168, 75, 0.05)',
+        inputBg: '#ffffff',
+      };
+
+  const companionDefinition: CoreThemeModeDefinition = {
+    colors: companionColors,
+    semantic: companionSemantic,
+    components: companionComponents,
+  };
+
+  return {
+    id: input.id,
+    label: input.label,
+    defaultMode: input.base,
+    typography: themeTokens.typography,
+    radii: themeTokens.radii,
+    motion: {
+      fast: 120,
+      standard: 180,
+      slow: 280,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+    },
+    chartPalette: input.chartPalette ?? ['#D4A84B', '#38bdf8', '#22c55e', '#a78bfa', '#f97316', '#ec4899'],
+    modes: {
+      light: isLight ? primaryDefinition : companionDefinition,
+      dark: isLight ? companionDefinition : primaryDefinition,
+    },
+  };
+}
+
+export const builtInThemes: Record<string, CoreThemeDefinition> = {
   [DEFAULT_CORE_THEME_ID]: {
     id: DEFAULT_CORE_THEME_ID,
-    label: 'mOS Gold',
+    label: 'mOS Obsidian Gold (Tối)',
     defaultMode: 'dark',
     typography: themeTokens.typography,
     radii: themeTokens.radii,
@@ -480,29 +619,175 @@ export const coreThemeRegistry: Readonly<Record<string, CoreThemeDefinition>> = 
         colors: themeTokens.colors.dark,
         semantic: themeTokens.semantic.dark,
         components: {
-          controlOutline: 'rgba(212, 168, 75, 0.25)',
-          tableHeaderBg: '#1e293b',
-          tableHeaderColor: '#f8fafc',
-          tableHeaderSplit: '#334155',
-          tableRowHover: 'rgba(212, 168, 75, 0.08)',
-          inputBg: '#1a2234',
+          controlOutline: 'rgba(212, 168, 75, 0.20)',
+          tableHeaderBg: '#0d1320',
+          tableHeaderColor: '#94a3b8',
+          tableHeaderSplit: '#1e293b',
+          tableRowHover: 'rgba(212, 168, 75, 0.04)',
+          inputBg: '#090d16',
         },
       },
       light: {
         colors: themeTokens.colors.light,
         semantic: themeTokens.semantic.light,
         components: {
-          controlOutline: 'rgba(133, 91, 14, 0.25)',
+          controlOutline: 'rgba(133, 91, 14, 0.20)',
           tableHeaderBg: '#f1f5f9',
-          tableHeaderColor: '#0f172a',
-          tableHeaderSplit: '#cbd5e1',
-          tableRowHover: 'rgba(212, 168, 75, 0.05)',
+          tableHeaderColor: '#475569',
+          tableHeaderSplit: '#e2e8f0',
+          tableRowHover: 'rgba(212, 168, 75, 0.04)',
           inputBg: '#ffffff',
         },
       },
     },
   },
+  'mos-light': defineTheme({
+    id: 'mos-light',
+    label: 'mOS Modern Slate (Sáng)',
+    description: 'Giao diện nền sáng thanh lịch, rõ nét, viền sắc sảo',
+    base: 'light',
+    colors: {
+      primary: '#855b0e',
+      primaryHover: '#6d4a0a',
+      bgLayout: '#f5f7fa',
+      bgContainer: '#ffffff',
+      bgElevated: '#ffffff',
+      borderColor: '#e2e8f0',
+      borderSecondary: '#f1f5f9',
+      textPrimary: '#0f172a',
+      textSecondary: '#64748b',
+    },
+  }),
+  ivory: {
+    id: 'ivory',
+    label: 'Warm Ivory (Màu Ngà Quý Phái)',
+    description: 'Màu giấy ngà ấm áp, chống mỏi mắt, phong cách spa & beauty cao cấp',
+    defaultMode: 'light',
+    typography: themeTokens.typography,
+    radii: themeTokens.radii,
+    motion: {
+      fast: 120,
+      standard: 180,
+      slow: 280,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+    },
+    chartPalette: ['#9e6e24', '#d97706', '#ca8a04', '#16a34a', '#2563eb', '#db2777'],
+    modes: {
+      light: {
+        colors: {
+          primary: '#9e6e24',
+          primaryHover: '#875c1d',
+          info: '#3b82f6',
+          success: '#16a34a',
+          warning: '#d97706',
+          error: '#dc2626',
+          bgLayout: '#f6f3ee',
+          bgContainer: '#ffffff',
+          bgElevated: '#ffffff',
+          borderColor: '#e6dfd5',
+          borderSecondary: '#ede7de',
+          textPrimary: '#231f1b',
+          textSecondary: '#6b635b',
+        },
+        semantic: {
+          surface: '#ffffff',
+          surfaceRaised: '#ffffff',
+          surfaceMuted: '#f6f3ee',
+          text: '#231f1b',
+          textMuted: '#6b635b',
+          border: '#e6dfd5',
+          borderStrong: '#d8cebe',
+          accent: '#9e6e24',
+          accentContrast: '#ffffff',
+          focusRing: 'rgba(158, 110, 36, 0.2)',
+          shadow: '0 12px 28px rgba(35, 31, 27, 0.08)',
+        },
+        components: {
+          controlOutline: 'rgba(158, 110, 36, 0.2)',
+          tableHeaderBg: '#ede6df',
+          tableHeaderColor: '#231f1b',
+          tableHeaderSplit: '#e2d9cd',
+          tableRowHover: 'rgba(158, 110, 36, 0.04)',
+          inputBg: '#ffffff',
+        },
+      },
+      dark: {
+        colors: {
+          primary: '#d4a359',
+          primaryHover: '#e0b574',
+          info: '#60a5fa',
+          success: '#4ade80',
+          warning: '#fbbf24',
+          error: '#f87171',
+          bgLayout: '#141210',
+          bgContainer: '#1c1917',
+          bgElevated: '#292524',
+          borderColor: '#38332e',
+          borderSecondary: '#292524',
+          textPrimary: '#fafaf9',
+          textSecondary: '#a8a29e',
+        },
+        semantic: {
+          surface: '#1c1917',
+          surfaceRaised: '#292524',
+          surfaceMuted: '#141210',
+          text: '#fafaf9',
+          textMuted: '#a8a29e',
+          border: '#38332e',
+          borderStrong: '#44403c',
+          accent: '#d4a359',
+          accentContrast: '#1c1917',
+          focusRing: 'rgba(212, 163, 89, 0.25)',
+          shadow: '0 12px 28px rgba(0, 0, 0, 0.35)',
+        },
+        components: {
+          controlOutline: 'rgba(212, 163, 89, 0.25)',
+          tableHeaderBg: '#181513',
+          tableHeaderColor: '#a8a29e',
+          tableHeaderSplit: '#292524',
+          tableRowHover: 'rgba(212, 163, 89, 0.06)',
+          inputBg: '#181513',
+        },
+      },
+    },
+  },
+  midnight: defineTheme({
+    id: 'midnight',
+    label: 'Midnight Royal (Đêm Huyền Diệu)',
+    description: 'Tone xanh đen đại dương huyền bí, điểm nhấn xanh băng mát mắt',
+    base: 'dark',
+    colors: {
+      primary: '#38bdf8',
+      primaryHover: '#0ea5e9',
+      bgLayout: '#070a13',
+      bgContainer: '#0d1222',
+      bgElevated: '#161e36',
+      borderColor: '#1e293b',
+      borderSecondary: '#2d3748',
+      textPrimary: '#f8fafc',
+      textSecondary: '#94a3b8',
+    },
+  }),
+  emerald: defineTheme({
+    id: 'emerald',
+    label: 'Emerald Velvet (Ngọc Lục Bảo)',
+    description: 'Tone ngọc bích quý phái hoàng gia, dịu mắt và giàu năng lượng',
+    base: 'dark',
+    colors: {
+      primary: '#10b981',
+      primaryHover: '#059669',
+      bgLayout: '#041410',
+      bgContainer: '#08231c',
+      bgElevated: '#0e332a',
+      borderColor: '#133e33',
+      borderSecondary: '#1d5547',
+      textPrimary: '#f0fdf4',
+      textSecondary: '#a7f3d0',
+    },
+  }),
 };
+
+export const coreThemeRegistry: Readonly<Record<string, CoreThemeDefinition>> = builtInThemes;
 
 export function getCoreThemeDefinition(themeId = DEFAULT_CORE_THEME_ID): CoreThemeDefinition {
   return coreThemeRegistry[themeId] ?? coreThemeRegistry[DEFAULT_CORE_THEME_ID];

@@ -308,14 +308,14 @@ export default function ReferralsPage() {
   return (
     <div
       className="responsive-page responsive-workspace referrals-page"
-      style={{ padding: '24px', minHeight: '100vh', background: themeMode === 'dark' ? '#0f172a' : '#f8fafc' }}
+      style={{ padding: '24px', minHeight: '100vh' }}
     >
       {/* Header card */}
       <Card
         style={{
           marginBottom: '20px',
-          background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-          borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
+          background: token.colorBgContainer,
+          borderColor: token.colorBorderSecondary,
           boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
         }}
       >
@@ -345,7 +345,7 @@ export default function ReferralsPage() {
               <ShareAltOutlined />
             </div>
             <div>
-              <Title level={3} style={{ margin: 0, color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>
+              <Title level={3} style={{ margin: 0, color: token.colorText }}>
                 QUẢN LÝ GIỚI THIỆU KHÁCH HÀNG
               </Title>
               <Text type="secondary" style={{ fontSize: '13px' }}>

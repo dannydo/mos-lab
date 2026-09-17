@@ -82,6 +82,7 @@ import {
 import { themeTokens, type DesktopDensity } from '@mos-lab/shared';
 import { useRouter } from 'next/navigation';
 import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
+import { ThemeStudioModal } from '../../../components/theme/ThemeStudioModal';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text, Paragraph } = Typography;
@@ -114,6 +115,7 @@ export default function DesignSystemPage() {
     desktopDensity,
     effectiveDensity,
     setDesktopDensity,
+    canManageThemes,
   } = useTheme();
   const router = useRouter();
   const responsiveTier = useResponsiveTier();
@@ -122,6 +124,7 @@ export default function DesignSystemPage() {
   const [activeTab, setActiveTab] = useState('ready-kits');
 
   const [auditFilter, setAuditFilter] = useState<string>('ALL');
+  const [studioOpen, setStudioOpen] = useState(false);
 
   // Interactive Modals for Demo
   const [activeDemoModal, setActiveDemoModal] = useState<string | null>(null);
@@ -299,6 +302,11 @@ export default function DesignSystemPage() {
               options={availableCoreThemes.map(({ id, label }) => ({ value: id, label }))}
               onChange={setCoreThemeId}
             />
+            {canManageThemes && (
+              <Button icon={<BgColorsOutlined className="text-amber-500" />} onClick={() => setStudioOpen(true)}>
+                Theme Studio (Tự sửa / Dán màu)
+              </Button>
+            )}
             <Button icon={<ClusterOutlined />} onClick={() => router.push('/dashboard/architecture')}>
               Xem Sơ Đồ Graphify
             </Button>
@@ -307,7 +315,7 @@ export default function DesignSystemPage() {
               icon={themeMode === 'dark' ? <ThunderboltOutlined /> : <BgColorsOutlined />}
               onClick={toggleTheme}
             >
-              Đổi Theme: {themeMode === 'dark' ? 'Dark' : 'Light'} Mode
+              Đổi Mode: {themeMode === 'dark' ? 'Dark' : 'Light'}
             </Button>
           </Space>
         }
@@ -869,6 +877,8 @@ export default function DesignSystemPage() {
           <Button onClick={() => setAdaptiveDrawerOpen(false)}>Đóng</Button>
         </AdaptiveOverlayFooter>
       </AdaptiveDrawer>
+
+      {canManageThemes && <ThemeStudioModal open={studioOpen} onClose={() => setStudioOpen(false)} />}
     </div>
   );
 }

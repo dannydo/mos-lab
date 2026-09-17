@@ -13,13 +13,18 @@ import { safeStorage } from '../lib/safe-storage';
 import {
   coreThemeRegistry,
   DEFAULT_CORE_THEME_ID,
+  defineTheme,
   getDensityMeasurements,
   getCoreThemeDefinition,
   isDesktopDensity,
   resolveDensityProfile,
+  isAdminOrSuperAdminRole,
+  type CoreThemeDefinition,
   type CoreThemeMode,
   type DensityProfile,
   type DesktopDensity,
+  type ThemeColors,
+  type ThemePresetInput,
 } from '@mos-lab/shared';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
 
@@ -40,11 +45,23 @@ type ThemeMode = CoreThemeMode;
 
 export const DESKTOP_DENSITY_STORAGE_KEY = 'mos_desktop_density';
 export const CORE_THEME_STORAGE_KEY = 'mos_core_theme';
+export const CUSTOM_THEMES_STORAGE_KEY = 'mos_custom_themes';
+
+export interface AvailableThemeItem {
+  id: string;
+  label: string;
+  description?: string;
+  base: CoreThemeMode;
+  isCustom?: boolean;
+  colors: ThemeColors;
+}
 
 interface ThemeContextType {
   coreThemeId: string;
-  availableCoreThemes: ReadonlyArray<{ id: string; label: string }>;
+  themeId: string;
+  availableCoreThemes: ReadonlyArray<AvailableThemeItem>;
   setCoreThemeId: (themeId: string) => void;
+  setThemeId: (themeId: string) => void;
   themeMode: ThemeMode;
   toggleTheme: () => void;
   /** Saved preference used whenever the viewport is not a phone. */
@@ -52,17 +69,90 @@ interface ThemeContextType {
   /** The active profile after applying the mobile touch-safety policy. */
   effectiveDensity: DensityProfile;
   setDesktopDensity: (density: DesktopDensity) => void;
+  saveCustomTheme: (input: ThemePresetInput) => void;
+  deleteCustomTheme: (themeId: string) => void;
+  activeThemeDefinition: CoreThemeDefinition;
+  canManageThemes: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children, defaultIsAdmin }: { children: React.ReactNode; defaultIsAdmin?: boolean }) {
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    if (typeof defaultIsAdmin === 'boolean') {
+      return defaultIsAdmin;
+    }
+    try {
+      const userStr = safeStorage.getItem('mos_user');
+      if (!userStr) return false;
+      const user = JSON.parse(userStr);
+      return isAdminOrSuperAdminRole(user?.role);
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (typeof defaultIsAdmin === 'boolean') return;
+    const checkRole = () => {
+      try {
+        const userStr = safeStorage.getItem('mos_user');
+        if (!userStr) {
+          setIsAdmin(false);
+          return;
+        }
+        const user = JSON.parse(userStr);
+        setIsAdmin(isAdminOrSuperAdminRole(user?.role));
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    checkRole();
+    window.addEventListener('storage', checkRole);
+    return () => window.removeEventListener('storage', checkRole);
+  }, [defaultIsAdmin]);
+  const [customThemes, setCustomThemes] = useState<Record<string, ThemePresetInput>>(() => {
+    try {
+      const saved = safeStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const mergedThemeRegistry = React.useMemo<Record<string, CoreThemeDefinition>>(() => {
+    const registry: Record<string, CoreThemeDefinition> = { ...coreThemeRegistry };
+    for (const [id, input] of Object.entries(customThemes)) {
+      try {
+        registry[id] = defineTheme(input);
+      } catch (e) {
+        console.error('Invalid custom theme', id, e);
+      }
+    }
+    return registry;
+  }, [customThemes]);
+
   const [coreThemeId, setCoreThemeIdState] = useState(() => {
     const saved = safeStorage.getItem(CORE_THEME_STORAGE_KEY);
-    return saved && coreThemeRegistry[saved] ? saved : DEFAULT_CORE_THEME_ID;
+    return saved && (coreThemeRegistry[saved] || saved in customThemes) ? saved : DEFAULT_CORE_THEME_ID;
   });
-  const coreTheme = getCoreThemeDefinition(coreThemeId);
-  const availableCoreThemes = Object.values(coreThemeRegistry).map(({ id, label }) => ({ id, label }));
+
+  const coreTheme = mergedThemeRegistry[coreThemeId] ?? coreThemeRegistry[DEFAULT_CORE_THEME_ID];
+
+  const availableCoreThemes = React.useMemo<AvailableThemeItem[]>(() => {
+    return Object.values(mergedThemeRegistry).map((def) => {
+      const activeColors = def.modes[def.defaultMode].colors;
+      return {
+        id: def.id,
+        label: def.label,
+        description: def.description,
+        base: def.defaultMode,
+        isCustom: Boolean(customThemes[def.id]),
+        colors: activeColors,
+      };
+    });
+  }, [mergedThemeRegistry, customThemes]);
+
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     const saved = safeStorage.getItem('mos_theme') as ThemeMode;
     if (saved === 'light' || saved === 'dark') {
@@ -93,9 +183,29 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.classList.remove('light-theme');
         root.classList.add('dark-theme', 'dark');
       }
-      const activeMode = coreTheme.modes[themeMode];
+
+      // Sync theme class
+      Array.from(root.classList).forEach((cls) => {
+        if (cls.startsWith('theme-')) root.classList.remove(cls);
+      });
+      root.classList.add(`theme-${coreTheme.id}`);
+
+      const activeMode = coreTheme.modes[themeMode] ?? coreTheme.modes[coreTheme.defaultMode];
       const semantic = activeMode.semantic;
       const colors = activeMode.colors;
+
+      // Base HTML & Tailwind custom properties
+      root.style.setProperty('--background', colors.bgLayout);
+      root.style.setProperty('--foreground', colors.textPrimary);
+      root.style.setProperty('--avatar-bg', colors.bgElevated);
+      root.style.setProperty('--avatar-border', colors.borderColor);
+      root.style.setProperty('--client-name-color', colors.textPrimary);
+      root.style.setProperty('--client-phone-color', colors.textSecondary);
+      root.style.setProperty('--client-desc-color', colors.textSecondary);
+      root.style.setProperty('--color-gold', colors.primary);
+      root.style.setProperty('--color-primary', colors.primary);
+
+      // Semantic tokens
       root.style.setProperty('--mos-surface', semantic.surface);
       root.style.setProperty('--mos-surface-raised', semantic.surfaceRaised);
       root.style.setProperty('--mos-surface-muted', semantic.surfaceMuted);
@@ -112,8 +222,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.style.setProperty('--mos-motion-standard', `${coreTheme.motion.standard}ms`);
       root.style.setProperty('--mos-motion-slow', `${coreTheme.motion.slow}ms`);
       root.style.setProperty('--mos-motion-easing', coreTheme.motion.easing);
+
       root.dataset.uiDensity = effectiveDensity;
       root.dataset.desktopDensity = desktopDensity;
+      root.dataset.theme = coreTheme.id;
+      root.dataset.themeBase = themeMode;
     } catch (_) {}
   }, [coreTheme, desktopDensity, effectiveDensity, mounted, themeMode]);
 
@@ -121,6 +234,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const nextTheme = themeMode === 'light' ? 'dark' : 'light';
     setThemeMode(nextTheme);
     safeStorage.setItem('mos_theme', nextTheme);
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (nextTheme === 'light') {
+        root.classList.remove('dark-theme', 'dark');
+        root.classList.add('light-theme');
+      } else {
+        root.classList.remove('light-theme');
+        root.classList.add('dark-theme', 'dark');
+      }
+      root.dataset.themeBase = nextTheme;
+    }
   };
 
   const setDesktopDensity = (density: DesktopDensity) => {
@@ -129,13 +253,67 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setCoreThemeId = (themeId: string) => {
-    if (!coreThemeRegistry[themeId]) return;
+    const target = mergedThemeRegistry[themeId];
+    if (!target) return;
     setCoreThemeIdState(themeId);
     safeStorage.setItem(CORE_THEME_STORAGE_KEY, themeId);
+    setThemeMode(target.defaultMode);
+    safeStorage.setItem('mos_theme', target.defaultMode);
+
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (target.defaultMode === 'light') {
+        root.classList.remove('dark-theme', 'dark');
+        root.classList.add('light-theme');
+      } else {
+        root.classList.remove('light-theme');
+        root.classList.add('dark-theme', 'dark');
+      }
+      Array.from(root.classList).forEach((cls) => {
+        if (cls.startsWith('theme-')) root.classList.remove(cls);
+      });
+      root.classList.add(`theme-${target.id}`);
+      root.dataset.theme = target.id;
+      root.dataset.themeBase = target.defaultMode;
+    }
+  };
+
+  const saveCustomTheme = (input: ThemePresetInput) => {
+    if (!isAdmin) {
+      console.warn('Unauthorized: Only admins can create or edit themes.');
+      return;
+    }
+    try {
+      defineTheme(input); // Validate definition
+      const updated = { ...customThemes, [input.id]: input };
+      setCustomThemes(updated);
+      safeStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(updated));
+      setCoreThemeIdState(input.id);
+      safeStorage.setItem(CORE_THEME_STORAGE_KEY, input.id);
+      setThemeMode(input.base);
+      safeStorage.setItem('mos_theme', input.base);
+    } catch (err) {
+      console.error('Failed to save custom theme', err);
+    }
+  };
+
+  const deleteCustomTheme = (id: string) => {
+    if (!isAdmin) {
+      console.warn('Unauthorized: Only admins can delete themes.');
+      return;
+    }
+    if (coreThemeRegistry[id]) return;
+    const updated = { ...customThemes };
+    delete updated[id];
+    setCustomThemes(updated);
+    safeStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(updated));
+    if (coreThemeId === id) {
+      setCoreThemeId(DEFAULT_CORE_THEME_ID);
+    }
   };
 
   const isDark = themeMode === 'dark';
-  const activeMode = coreTheme.modes[themeMode];
+  const activeMode = coreTheme.modes[themeMode] ?? coreTheme.modes[coreTheme.defaultMode];
   const currentTokens = activeMode.colors;
   const semanticTokens = activeMode.semantic;
   const componentTokens = activeMode.components;
@@ -145,13 +323,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     <ThemeContext.Provider
       value={{
         coreThemeId: coreTheme.id,
+        themeId: coreTheme.id,
         availableCoreThemes,
         setCoreThemeId,
+        setThemeId: setCoreThemeId,
         themeMode,
         toggleTheme,
         desktopDensity,
         effectiveDensity,
         setDesktopDensity,
+        saveCustomTheme,
+        deleteCustomTheme,
+        activeThemeDefinition: coreTheme,
+        canManageThemes: isAdmin,
       }}
     >
       <ConfigProvider

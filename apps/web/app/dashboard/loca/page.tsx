@@ -1046,7 +1046,7 @@ export default function LocaCampaignPage() {
                     { value: 'CALL', label: 'Cuộc gọi', icon: <PhoneOutlined /> },
                     { value: 'TEXT', label: 'Tin nhắn', icon: <MessageOutlined /> },
                   ]}
-                  style={{ background: themeMode === 'dark' ? '#1f1f1f' : '#f5f5f5' }}
+                  style={{ background: token.colorFillAlter }}
                 />
               </div>
             )}

@@ -26,6 +26,8 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
 import { SeasonalAccentProvider } from '../../context/SeasonalAccentContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
+import { ThemeSelector } from '../../components/theme/ThemeSelector';
+import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
@@ -836,6 +838,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </Dropdown>
                 )}
 
+                <ThemeSelector isAdmin={isAdminOrSuperAdminRole(user?.role)} />
                 <HeaderIconButton
                   action="theme"
                   label={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
