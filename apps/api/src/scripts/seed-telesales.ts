@@ -1,4 +1,4 @@
-import { PrismaClient as CrmPrismaClient } from '../generated/crm-client';
+import { PrismaClient as CrmPrismaClient } from '../generated/crm-client/index.js';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import path from 'path';

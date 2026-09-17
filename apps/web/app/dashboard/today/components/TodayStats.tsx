@@ -799,7 +799,7 @@ export default function TodayStats({
           >
             <div>
               <span style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorTextSecondary }}>
-                <BarChartOutlined style={{ color: '#D4A84B', marginRight: '6px' }} />
+                <BarChartOutlined style={{ color: token.colorPrimary, marginRight: '6px' }} />
                 Doanh Thu Thực Tế
               </span>
               <PeriodComparison

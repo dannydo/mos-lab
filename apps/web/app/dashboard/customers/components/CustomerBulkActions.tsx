@@ -140,7 +140,11 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
       >
         <Space>
           <Text strong style={{ color: token.colorText }}>
-            Đã chọn <span style={{ color: '#D4A84B', fontSize: '16px' }}>{selectedRowKeys.length}</span> khách hàng
+            Đã chọn{' '}
+            <span style={{ color: token.colorPrimary, fontSize: '16px' }} className="tabular-nums font-bold">
+              {selectedRowKeys.length}
+            </span>{' '}
+            khách hàng
           </Text>
         </Space>
         {isMobile ? (
@@ -160,7 +164,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
               type="primary"
               icon={<TeamOutlined />}
               onClick={() => setAssignModalVisible(true)}
-              style={{ background: '#D4A84B', borderColor: '#D4A84B', borderRadius: '6px', fontWeight: 600 }}
+              style={{ borderRadius: '6px', fontWeight: 600 }}
             >
               Phân bổ data
             </Button>
@@ -212,7 +216,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
               type="primary"
               icon={<TeamOutlined />}
               onClick={() => setAssignModalVisible(true)}
-              style={{ background: '#D4A84B', borderColor: '#D4A84B', borderRadius: '6px', fontWeight: 600 }}
+              style={{ borderRadius: '6px', fontWeight: 600 }}
             >
               Phân bổ data
             </Button>
@@ -324,7 +328,6 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         cancelText="Hủy"
         okButtonProps={{
           disabled: !targetRole || !targetStaffId,
-          style: { background: '#D4A84B', borderColor: '#D4A84B' },
         }}
       >
         <div style={{ margin: '16px 0' }}>

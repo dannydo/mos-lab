@@ -610,7 +610,7 @@ export function BugReportSurface() {
               }
               showReporter(null);
             }}
-            icon={<AppIcon icon={MessageSquareWarning} size="sm" />}
+            icon={<AppIcon icon={MessageSquareWarning} size={18} />}
             style={{
               width: LAUNCHER_SIZE,
               minWidth: LAUNCHER_SIZE,

@@ -137,14 +137,20 @@ export default function OmiCallWidget() {
           <div className="absolute inset-0 rounded-full bg-slate-500/20 dark:bg-slate-800/30 blur-md group-hover:bg-amber-500/20 transition-all duration-300" />
 
           <div
-            className="relative flex items-center justify-center h-12 w-12 rounded-full shadow-lg border transition-all duration-300"
+            className="relative flex items-center justify-center h-11 w-11 rounded-full shadow-lg border transition-all duration-300"
             style={{
+              width: 44,
+              minWidth: 44,
+              height: 44,
               background: containerBg,
               borderColor: borderColor,
               color: descColor,
             }}
           >
-            <PhoneOutlined className="text-lg text-slate-500 dark:text-slate-400 group-hover:text-amber-500 transition-colors duration-300" />
+            <PhoneOutlined
+              className="text-slate-500 dark:text-slate-400 group-hover:text-amber-500 transition-colors duration-300"
+              style={{ fontSize: '18px' }}
+            />
 
             {/* Tooltip */}
             <div className="absolute right-14 whitespace-nowrap bg-zinc-900 text-zinc-100 text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-xl border border-zinc-800">

@@ -419,9 +419,6 @@ export default function CcThuongTransactionsModal({
                   type={modalWidth === 900 ? 'primary' : 'default'}
                   icon={<CompressOutlined />}
                   onClick={() => updateModalWidth(900)}
-                  style={
-                    modalWidth === 900 ? { background: '#D4A84B', borderColor: '#D4A84B', color: '#000' } : undefined
-                  }
                 />
               </Tooltip>
               <Tooltip title="Kích thước Rộng (1200px)">
@@ -430,9 +427,6 @@ export default function CcThuongTransactionsModal({
                   type={modalWidth === 1200 ? 'primary' : 'default'}
                   icon={<ColumnWidthOutlined />}
                   onClick={() => updateModalWidth(1200)}
-                  style={
-                    modalWidth === 1200 ? { background: '#D4A84B', borderColor: '#D4A84B', color: '#000' } : undefined
-                  }
                 />
               </Tooltip>
               <Tooltip title="Kích thước Tối đa (1450px)">
@@ -441,9 +435,6 @@ export default function CcThuongTransactionsModal({
                   type={modalWidth === 1450 ? 'primary' : 'default'}
                   icon={<FullscreenOutlined />}
                   onClick={() => updateModalWidth(1450)}
-                  style={
-                    modalWidth === 1450 ? { background: '#D4A84B', borderColor: '#D4A84B', color: '#000' } : undefined
-                  }
                 />
               </Tooltip>
             </Space>
@@ -458,11 +449,7 @@ export default function CcThuongTransactionsModal({
           <Text type="secondary" className="text-xs">
             💡 Kéo mép phải để thay đổi kích thước ({modalWidth}px) - Tự động lưu khi F5
           </Text>
-          <Button
-            type="primary"
-            onClick={onClose}
-            style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
-          >
+          <Button type="primary" onClick={onClose}>
             Đóng
           </Button>
         </div>,
@@ -536,13 +523,17 @@ export default function CcThuongTransactionsModal({
               value={activeTierRate}
               suffix="%"
               precision={1}
-              valueStyle={{ fontSize: '16px', color: '#d4a84b', fontVariantNumeric: 'tabular-nums' }}
+              valueStyle={{ fontSize: '16px', color: token.colorPrimary, fontVariantNumeric: 'tabular-nums' }}
               prefix={<RiseOutlined className="text-amber-500" />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={5}>
-          <Card size="small" variant="outlined" style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}>
+          <Card
+            size="small"
+            variant="outlined"
+            style={{ background: token.colorBgContainer, borderColor: token.colorPrimary }}
+          >
             <Statistic
               title={
                 <div className="flex items-center justify-between">

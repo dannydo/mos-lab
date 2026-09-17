@@ -483,7 +483,7 @@ export function AcademyLeadDrawer({
         />
       )}
       {lead && lead.status === 'WON' && (
-        <Paragraph type="secondary" className="mt-2">
+        <Paragraph type="secondary" className="mt-2 tabular-nums">
           Giá trị chốt: {formatVND(lead.revenueVnd)} · {statusLabel(lead.status)}
         </Paragraph>
       )}

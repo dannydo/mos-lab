@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Modal, Input, Button, Tag, Space, Select, Spin, Empty, Typography, Tooltip, message, Form } from 'antd';
+import { Modal, Input, Button, Tag, Space, Select, Spin, Empty, Typography, Tooltip, message, Form, theme } from 'antd';
 import {
   MessageOutlined,
   SendOutlined,
@@ -46,6 +46,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
   const isModalOpen = open ?? visible ?? false;
   const { themeMode: contextThemeMode } = useTheme();
   const themeMode = propThemeMode || contextThemeMode;
+  const { token } = theme.useToken();
 
   const [user, setUser] = useState<{ id?: number; role?: string } | null>(null);
   const [history, setHistory] = useState<CustomerSmsHistoryItem[]>([]);
@@ -383,7 +384,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
       title={
         <div className="flex justify-between items-center pr-6">
           <Space size="middle">
-            <MessageOutlined style={{ color: '#D4A84B', fontSize: '18px' }} />
+            <MessageOutlined style={{ color: token.colorPrimary, fontSize: '18px' }} />
             <span style={{ fontWeight: 'bold' }}>Gửi tin nhắn SMS — {customer?.name || 'Khách hàng'}</span>
           </Space>
 
@@ -537,7 +538,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
           <div>
             <div className="flex justify-between items-center mb-3">
               <Space>
-                <HistoryOutlined style={{ color: '#D4A84B' }} />
+                <HistoryOutlined style={{ color: token.colorPrimary }} />
                 <span className="font-bold text-sm">Lịch sử SMS</span>
                 <Tag color="gold" style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}>
                   {history.length}
@@ -587,7 +588,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
                       </Tag>
                     </div>
                     <div className="font-semibold text-slate-300 dark:text-slate-200 mb-1 flex items-center gap-1">
-                      <PhoneOutlined style={{ fontSize: '10px', color: '#D4A84B' }} />
+                      <PhoneOutlined style={{ fontSize: '10px', color: token.colorPrimary }} />
                       <span className="tabular-nums">{item.toPhoneNumber}</span>
                     </div>
                     <div
@@ -611,7 +612,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
             <div>
               <Text className="text-xs font-bold block mb-1">Số điện thoại người nhận:</Text>
               <Input
-                prefix={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+                prefix={<PhoneOutlined style={{ color: token.colorPrimary }} />}
                 value={selectedPhone}
                 onChange={(e) => setSelectedPhone(e.target.value)}
                 placeholder="Nhập số điện thoại..."
@@ -686,7 +687,7 @@ export const SMSModal: React.FC<SMSModalProps> = ({
                       type="text"
                       size="small"
                       shape="circle"
-                      icon={<CopyOutlined style={{ color: '#D4A84B', fontSize: '13px' }} />}
+                      icon={<CopyOutlined style={{ color: token.colorPrimary, fontSize: '13px' }} />}
                       onClick={handleCopyLivePreview}
                       className="hover:bg-amber-500/10 flex items-center justify-center transition-colors"
                       style={{ width: '22px', height: '22px' }}
@@ -739,8 +740,6 @@ export const SMSModal: React.FC<SMSModalProps> = ({
                 loading={sending}
                 onClick={handleSendSms}
                 style={{
-                  backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                  borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
                   fontWeight: 'bold',
                 }}
               >

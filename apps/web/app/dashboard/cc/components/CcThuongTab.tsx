@@ -503,14 +503,14 @@ export default function CcThuongTab({
           title={`Tỷ lệ Combo trên Vòng Xanh: ${formatVisitCount(val)} combo / ${formatVisitCount(record.greenVisits)} lượt Vòng Xanh = ${record.greenComboConversionRate}%. Doanh số combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ`}
         >
           <div className="w-full text-right">
-            <div className="tabular-nums font-semibold text-blue-400 text-xs">{val} combo</div>
+            <div className="tabular-nums font-semibold text-blue-600 dark:text-blue-400 text-xs">{val} combo</div>
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              <span className="tabular-nums inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+              <span className="tabular-nums inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                 Tỷ lệ
                 <Tooltip title="Vòng xanh">
-                  <SyncOutlined aria-label="Vòng xanh" className="text-emerald-400" />
+                  <SyncOutlined aria-label="Vòng xanh" className="text-emerald-600 dark:text-emerald-400" />
                 </Tooltip>
-                : <strong className="text-emerald-400">{record.greenComboConversionRate}%</strong>
+                : <strong className="text-emerald-600 dark:text-emerald-400">{record.greenComboConversionRate}%</strong>
               </span>
               <div className="w-10">
                 <Progress
@@ -533,7 +533,7 @@ export default function CcThuongTab({
       width: 160,
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-sky-400 text-xs">
+        <span className="tabular-nums font-semibold text-sky-600 dark:text-sky-400 text-xs">
           {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -549,8 +549,8 @@ export default function CcThuongTab({
           title={`Đã bán ${val} Sản phẩm. Doanh số Single tham khảo: ${Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ`}
         >
           <div className="w-full text-right">
-            <div className="tabular-nums font-semibold text-purple-400 text-xs">{val} SP</div>
-            <div className="tabular-nums text-[11px] text-slate-400 mt-0.5">
+            <div className="tabular-nums font-semibold text-purple-600 dark:text-purple-400 text-xs">{val} SP</div>
+            <div className="tabular-nums text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               Single: {Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ
             </div>
           </div>
@@ -563,7 +563,7 @@ export default function CcThuongTab({
       key: 'totalSales',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-amber-400 text-xs">
+        <span className="tabular-nums font-bold text-amber-600 dark:text-amber-400 text-xs">
           {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -604,7 +604,7 @@ export default function CcThuongTab({
           >
             <div className="w-full text-right cursor-help">
               <div className="flex items-center justify-end gap-1.5">
-                <span className="tabular-nums font-bold text-emerald-400 text-sm">
+                <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400 text-sm">
                   +{Math.round(val || 0).toLocaleString('vi-VN')} đ
                 </span>
                 {isHardcapped && (
@@ -638,7 +638,9 @@ export default function CcThuongTab({
       dataIndex: 'date',
       key: 'date',
       width: 110,
-      render: (val: string) => <span className="tabular-nums font-medium text-xs text-slate-400">{val}</span>,
+      render: (val: string) => (
+        <span className="tabular-nums font-medium text-xs text-slate-600 dark:text-slate-400">{val}</span>
+      ),
     },
     {
       title: 'CC',
@@ -651,7 +653,7 @@ export default function CcThuongTab({
           <div className="flex items-center gap-1 whitespace-nowrap">
             <span className="font-medium text-xs whitespace-nowrap">{val}</span>
             {record.store_code && (
-              <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
                 · {formatStoreCode(record.store_code)}
               </span>
             )}
@@ -666,11 +668,13 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number, record: DailySalesBonusConsultantRecord) => (
         <div>
-          <span className="tabular-nums font-semibold text-xs text-blue-400">
+          <span className="tabular-nums font-semibold text-xs text-blue-600 dark:text-blue-400">
             {Math.round(val || 0).toLocaleString('vi-VN')} đ
           </span>
           {record.combo_count ? (
-            <div className="text-[11px] text-slate-400 tabular-nums">({record.combo_count} combo)</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+              ({record.combo_count} combo)
+            </div>
           ) : null}
         </div>
       ),
@@ -682,11 +686,13 @@ export default function CcThuongTab({
       align: 'right' as const,
       render: (val: number, record: DailySalesBonusConsultantRecord) => (
         <div>
-          <span className="tabular-nums font-semibold text-xs text-purple-400">
+          <span className="tabular-nums font-semibold text-xs text-purple-600 dark:text-purple-400">
             {Math.round(val || 0).toLocaleString('vi-VN')} đ
           </span>
           {record.product_count ? (
-            <div className="text-[11px] text-slate-400 tabular-nums">({record.product_count} SP)</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+              ({record.product_count} SP)
+            </div>
           ) : null}
         </div>
       ),
@@ -697,7 +703,9 @@ export default function CcThuongTab({
       key: 'single_sales',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-slate-500">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums text-xs text-slate-600 dark:text-slate-400">
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+        </span>
       ),
     },
     {
@@ -706,7 +714,9 @@ export default function CcThuongTab({
       key: 'debt_collected',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-slate-400">{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums text-xs text-slate-600 dark:text-slate-400">
+          {Math.round(val || 0).toLocaleString('vi-VN')} đ
+        </span>
       ),
     },
     {
@@ -715,7 +725,9 @@ export default function CcThuongTab({
       key: 'vat',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-rose-400/80">-{Math.round(val || 0).toLocaleString('vi-VN')} đ</span>
+        <span className="tabular-nums text-xs text-rose-600 dark:text-rose-400/80">
+          -{Math.round(val || 0).toLocaleString('vi-VN')} đ
+        </span>
       ),
     },
     {
@@ -724,7 +736,7 @@ export default function CcThuongTab({
       key: 'debt',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums text-xs text-orange-400/80">
+        <span className="tabular-nums text-xs text-orange-600 dark:text-orange-400/80">
           -{Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -735,7 +747,7 @@ export default function CcThuongTab({
       key: 'total_sales',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-xs text-amber-400">
+        <span className="tabular-nums font-bold text-xs text-amber-600 dark:text-amber-400">
           {Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -761,7 +773,7 @@ export default function CcThuongTab({
       key: 'daily_bonus',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-xs text-emerald-400">
+        <span className="tabular-nums font-bold text-xs text-emerald-600 dark:text-emerald-400">
           +{Math.round(val || 0).toLocaleString('vi-VN')} đ
         </span>
       ),
@@ -809,7 +821,7 @@ export default function CcThuongTab({
             {trend === 'positive' ? <RiseOutlined /> : trend === 'negative' ? <FallOutlined /> : null}
             {percentage}
           </span>
-          <span className="tabular-nums text-slate-400 whitespace-nowrap">
+          <span className="tabular-nums text-slate-600 dark:text-slate-400 whitespace-nowrap">
             Kỳ trước: {formatCompactVND(previousValue)}
           </span>
         </div>
@@ -822,13 +834,13 @@ export default function CcThuongTab({
       return (
         <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
           <div
-            className={`text-xs font-medium text-slate-500 flex items-center justify-between cursor-help opacity-70 ${
+            className={`text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between cursor-help opacity-70 ${
               hasComparison ? 'mt-1' : 'mt-2 border-t border-slate-700/20 pt-1.5'
             }`}
             style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
           >
             <span>Thực tế chốt {periodNoun}:</span>
-            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-400 whitespace-nowrap">
               {formatCompactVND(projectedVal)}
             </span>
           </div>
@@ -841,7 +853,7 @@ export default function CcThuongTab({
         title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
       >
         <div
-          className={`text-xs font-medium text-slate-400 flex items-center justify-between cursor-help ${
+          className={`text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between cursor-help ${
             hasComparison ? 'mt-1' : 'mt-2 border-t border-slate-700/30 pt-1.5'
           }`}
           style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
@@ -849,7 +861,7 @@ export default function CcThuongTab({
           <span role="img" aria-label="Dự kiến cuối tháng" className="shrink-0 text-sm leading-none">
             🔮
           </span>
-          <span className="tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+          <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
             ~{formatCompactVND(projectedVal)}
           </span>
         </div>

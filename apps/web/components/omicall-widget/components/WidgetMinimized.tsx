@@ -1,5 +1,6 @@
 import React from 'react';
 import { PhoneOutlined } from '@ant-design/icons';
+import { theme } from 'antd';
 
 interface WidgetMinimizedProps {
   callState: string;
@@ -16,25 +17,34 @@ export const WidgetMinimized: React.FC<WidgetMinimizedProps> = ({
   onDragStart,
   position,
 }) => {
+  const { token } = theme.useToken();
+
   return (
     <div
       onMouseDown={onDragStart}
-      className="omicall-launcher fixed h-14 w-14 rounded-full flex items-center justify-center cursor-pointer shadow-2xl hover:scale-105 animate-pulse"
+      className="omicall-launcher fixed h-11 w-11 rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:scale-105 transition-transform"
       style={{
-        background: '#D4A84B',
-        boxShadow: '0 8px 30px rgba(212, 168, 75, 0.4)',
-        border: '2px solid white',
+        width: 44,
+        minWidth: 44,
+        height: 44,
+        background: 'var(--mos-accent, ' + token.colorPrimary + ')',
+        boxShadow: token.boxShadowSecondary || '0 4px 14px rgba(0, 0, 0, 0.15)',
         left: position ? `${position.x}px` : undefined,
         top: position ? `${position.y}px` : undefined,
-        right: position ? undefined : 'calc(var(--mos-floating-offset) + env(safe-area-inset-right))',
-        bottom: position ? undefined : 'calc(var(--mos-floating-offset) + env(safe-area-inset-bottom))',
+        right: position ? 'auto' : 'calc(var(--mos-floating-offset) + env(safe-area-inset-right))',
+        bottom: position ? 'auto' : 'calc(var(--mos-floating-offset) + env(safe-area-inset-bottom))',
         zIndex: 10040,
       }}
     >
       {callState === 'connected' ? (
-        <span className="text-black font-bold text-xs font-mono">{formatDuration(callDuration)}</span>
+        <span
+          className="font-bold text-[11px] font-mono leading-none"
+          style={{ color: 'var(--mos-accent-contrast, #000000)' }}
+        >
+          {formatDuration(callDuration)}
+        </span>
       ) : (
-        <PhoneOutlined style={{ fontSize: '20px', color: 'black' }} />
+        <PhoneOutlined style={{ fontSize: '18px', color: 'var(--mos-accent-contrast, #000000)' }} />
       )}
     </div>
   );

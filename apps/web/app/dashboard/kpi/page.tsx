@@ -169,7 +169,7 @@ export default function KPIPage() {
                     aria-label="Cấu hình lương Booker"
                     icon={<SettingOutlined />}
                     onClick={() => setConfigDrawerOpen(true)}
-                    className="table-toolbar-settings-trigger !border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+                    className="table-toolbar-settings-trigger !border-amber-500 !text-amber-500 hover:!border-amber-400 hover:!text-amber-400"
                   />
                 </Tooltip>
               )}
@@ -318,17 +318,23 @@ export default function KPIPage() {
                     </Col>
 
                     <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-                      <Card variant="outlined" style={{ background: token.colorBgContainer, borderColor: '#D4A84B' }}>
+                      <Card
+                        variant="outlined"
+                        style={{ background: token.colorBgContainer, borderColor: token.colorPrimary }}
+                      >
                         <Space>
-                          <DollarOutlined style={{ color: '#D4A84B', fontSize: '15px' }} />
+                          <DollarOutlined style={{ color: token.colorPrimary, fontSize: '15px' }} />
                           <Text type="secondary" style={{ fontSize: '12px' }}>
                             THU NHẬP LIVE
                           </Text>
                         </Space>
-                        <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#D4A84B' }}>
+                        <div
+                          style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: token.colorPrimary }}
+                          className="tabular-nums"
+                        >
                           {(summary?.totalEarnings || 0).toLocaleString('vi-VN')} đ
                         </div>
-                        <Progress percent={100} showInfo={false} strokeColor="#D4A84B" size="small" />
+                        <Progress percent={100} showInfo={false} strokeColor={token.colorPrimary} size="small" />
                         <Text type="secondary" style={{ fontSize: '11px' }}>
                           ∑ Thu nhập
                         </Text>
@@ -341,7 +347,7 @@ export default function KPIPage() {
                     <Card
                       title={
                         <span style={{ color: token.colorText }}>
-                          <DollarOutlined style={{ color: '#D4A84B' }} />{' '}
+                          <DollarOutlined style={{ color: token.colorPrimary }} />{' '}
                           {summary.salary.role === 'oc'
                             ? 'Chi Tiết Lương & Thưởng Client Consultant (Live Paystub)'
                             : 'Chi Tiết Lương & Hoa Hồng Online Consultant (Live Paystub)'}
@@ -349,7 +355,7 @@ export default function KPIPage() {
                       }
                       variant="outlined"
                       className="mb-6"
-                      style={{ background: token.colorBgContainer, borderColor: '#D4A84B' }}
+                      style={{ background: token.colorBgContainer, borderColor: token.colorPrimary }}
                     >
                       {summary.salary.role === 'oc' ? (
                         <Row gutter={[16, 16]}>
@@ -516,7 +522,10 @@ export default function KPIPage() {
                         <Text style={{ fontSize: '15px', fontWeight: 'bold', color: token.colorText }}>
                           ∑ THU NHẬP TẠM TÍNH (LIVE SALARY):
                         </Text>
-                        <Text style={{ fontSize: '22px', fontWeight: 'bold', color: '#D4A84B' }}>
+                        <Text
+                          className="tabular-nums"
+                          style={{ fontSize: '22px', fontWeight: 'bold', color: token.colorPrimary }}
+                        >
                           {summary.salary.totalSalary.toLocaleString('vi-VN')} đ
                         </Text>
                       </div>
@@ -639,8 +648,8 @@ export default function KPIPage() {
                     <Card
                       title={
                         <span style={{ color: token.colorText }}>
-                          <TrophyOutlined style={{ color: selectedRole === 'oc' ? '#722ED1' : '#D4A84B' }} /> Bảng Xếp
-                          Hạng Doanh Thu Thưởng (
+                          <TrophyOutlined style={{ color: selectedRole === 'oc' ? '#722ED1' : token.colorPrimary }} />{' '}
+                          Bảng Xếp Hạng Doanh Thu Thưởng (
                           {selectedRole === 'oc' ? 'Online Consultant Leaderboard' : 'Booker Leaderboard'})
                         </span>
                       }

@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client';
+import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client/index.js';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 

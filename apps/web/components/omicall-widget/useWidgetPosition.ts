@@ -30,8 +30,8 @@ export const useWidgetPosition = () => {
     setIsDragging(true);
     const startX = e.clientX;
     const startY = e.clientY;
-    const currentWidth = isMinimized ? 56 : size.width;
-    const currentHeight = isMinimized ? 56 : size.height;
+    const currentWidth = isMinimized ? 44 : size.width;
+    const currentHeight = isMinimized ? 44 : size.height;
 
     const viewport = getViewportSize();
     const initialX = position?.x ?? viewport.width - currentWidth - 24;
@@ -50,8 +50,9 @@ export const useWidgetPosition = () => {
       }
 
       const currentViewport = getViewportSize();
-      const newX = Math.max(10, Math.min(currentViewport.width - currentWidth - 10, initialX + deltaX));
-      const newY = Math.max(10, Math.min(currentViewport.height - currentHeight - 10, initialY + deltaY));
+      const minX = currentViewport.width >= 1024 ? 260 : 12;
+      const newX = Math.max(minX, Math.min(currentViewport.width - currentWidth - 12, initialX + deltaX));
+      const newY = Math.max(12, Math.min(currentViewport.height - currentHeight - 12, initialY + deltaY));
       latestPos = { x: newX, y: newY };
 
       if (animationFrameId === null) {
@@ -165,11 +166,12 @@ export const useWidgetPosition = () => {
       if (savedPos) {
         try {
           const parsed = JSON.parse(savedPos);
-          const currentWidth = savedMin === 'true' ? 56 : savedSize ? JSON.parse(savedSize).width : 384;
-          const currentHeight = savedMin === 'true' ? 56 : savedSize ? JSON.parse(savedSize).height : 320;
+          const currentWidth = savedMin === 'true' ? 44 : savedSize ? JSON.parse(savedSize).width : 384;
+          const currentHeight = savedMin === 'true' ? 44 : savedSize ? JSON.parse(savedSize).height : 320;
           const viewport = getViewportSize();
-          const x = Math.max(10, Math.min(viewport.width - currentWidth - 10, parsed.x));
-          const y = Math.max(10, Math.min(viewport.height - currentHeight - 10, parsed.y));
+          const minX = viewport.width >= 1024 ? 260 : 12;
+          const x = Math.max(minX, Math.min(viewport.width - currentWidth - 12, parsed.x));
+          const y = Math.max(12, Math.min(viewport.height - currentHeight - 12, parsed.y));
           setPosition({ x, y });
         } catch (e) {}
       } else {

@@ -1,4 +1,4 @@
-import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client';
+import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client/index.js';
 import dotenv from 'dotenv';
 import path from 'path';
 

@@ -132,6 +132,12 @@ function ThemeProbe() {
       <button type="button" onClick={() => setCoreThemeId('midnight')}>
         Set Midnight
       </button>
+      <button type="button" onClick={() => setCoreThemeId('blush')}>
+        Set Blush
+      </button>
+      <button type="button" onClick={() => setCoreThemeId('wings')}>
+        Set Wings
+      </button>
       <button type="button" onClick={toggleTheme}>
         Toggle Mode
       </button>
@@ -216,6 +222,44 @@ describe('ThemeProvider multi-theme engine', () => {
       expect(document.documentElement.dataset.themeBase).toBe('dark');
       expect(document.documentElement.style.getPropertyValue('--background')).toBe('#070a13');
       expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#38bdf8');
+    });
+  });
+
+  it('switches to Blush Blossom (Hồng Phấn), updates dataset and sets light base', async () => {
+    render(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set Blush' }));
+
+    expect(screen.getByTestId('theme-id')).toHaveTextContent('blush');
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('blush');
+      expect(document.documentElement.dataset.themeBase).toBe('light');
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#fdf4f6');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#d85a85');
+    });
+  });
+
+  it('switches to Wings Golden Amber (Hoàng Kim Wings), updates dataset and sets dark base', async () => {
+    render(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set Wings' }));
+
+    expect(screen.getByTestId('theme-id')).toHaveTextContent('wings');
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark');
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('wings');
+      expect(document.documentElement.dataset.themeBase).toBe('dark');
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#0d0c0a');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#fbad18');
     });
   });
 

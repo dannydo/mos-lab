@@ -802,6 +802,671 @@ a[href] {
   background: #1c1917 !important;
 }
 
+/* Blush Blossom Theme (Hồng Phấn Quý Cô) Overrides - Light Mode */
+.light-theme[data-theme='blush'],
+.light-theme.theme-blush {
+  color-scheme: light;
+  --background: #fdf4f6;
+  --foreground: #2a1e24;
+  --avatar-bg: #fae1e9;
+  --avatar-border: #f2dce3;
+  --client-name-color: #2a1e24;
+  --client-phone-color: #7a6b73;
+  --client-desc-color: #7a6b73;
+  --color-gold: #d85a85;
+}
+
+.light-theme[data-theme='blush'] body,
+.light-theme.theme-blush body {
+  background-color: #fdf4f6;
+  color: #2a1e24;
+}
+
+.light-theme[data-theme='blush'] .ant-table,
+.light-theme.theme-blush .ant-table {
+  background: #ffffff !important;
+  color: #2a1e24 !important;
+}
+
+.light-theme[data-theme='blush'] .ant-table-thead > tr > th,
+.light-theme.theme-blush .ant-table-thead > tr > th {
+  background: #faebf0 !important;
+  color: #2a1e24 !important;
+  border-bottom: 1px solid #f0d5de !important;
+}
+
+.light-theme[data-theme='blush'] .ant-table-tbody > tr > td,
+.light-theme.theme-blush .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f9ebf0 !important;
+}
+
+.light-theme[data-theme='blush'] .ant-card,
+.light-theme.theme-blush .ant-card {
+  background: #ffffff !important;
+  border-color: #f2dce3 !important;
+}
+
+.light-theme[data-theme='blush'] .ant-card-head,
+.light-theme.theme-blush .ant-card-head {
+  background: #ffffff !important;
+  border-bottom: 1px solid #f2dce3 !important;
+}
+
+.light-theme[data-theme='blush'] .ant-modal-content,
+.light-theme[data-theme='blush'] .ant-modal-header,
+.light-theme.theme-blush .ant-modal-content,
+.light-theme.theme-blush .ant-modal-header {
+  background: #ffffff !important;
+}
+
+.light-theme[data-theme='blush'] .ant-drawer-content,
+.light-theme.theme-blush .ant-drawer-content {
+  background: #ffffff !important;
+}
+
+/* Blush Blossom Theme - Dark Mode (Deep Velvet Rose) */
+.dark-theme[data-theme='blush'],
+.dark-theme.theme-blush {
+  color-scheme: dark;
+  --background: #181116;
+  --foreground: #fdf2f6;
+  --avatar-bg: #2d202b;
+  --avatar-border: #3d2b3a;
+  --client-name-color: #fdf2f6;
+  --client-phone-color: #b8a2af;
+  --client-desc-color: #b8a2af;
+  --color-gold: #f472b6;
+}
+
+.dark-theme[data-theme='blush'] body,
+.dark-theme.theme-blush body {
+  background-color: #181116;
+  color: #fdf2f6;
+}
+
+.dark-theme[data-theme='blush'] .ant-table,
+.dark-theme.theme-blush .ant-table {
+  background: #221820 !important;
+  color: #fdf2f6 !important;
+  border-color: #31232e !important;
+}
+
+.dark-theme[data-theme='blush'] .ant-table-thead > tr > th,
+.dark-theme.theme-blush .ant-table-thead > tr > th {
+  background: #1e141c !important;
+  color: #b8a2af !important;
+  border-bottom: 1px solid #31232e !important;
+}
+
+.dark-theme[data-theme='blush'] .ant-table-tbody > tr > td,
+.dark-theme.theme-blush .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #31232e !important;
+  color: #fdf2f6 !important;
+}
+
+.dark-theme[data-theme='blush'] .ant-card,
+.dark-theme.theme-blush .ant-card {
+  background: #221820 !important;
+  border-color: #31232e !important;
+}
+
+.dark-theme[data-theme='blush'] .ant-card-head,
+.dark-theme.theme-blush .ant-card-head {
+  background: #221820 !important;
+  border-bottom: 1px solid #31232e !important;
+}
+
+.dark-theme[data-theme='blush'] .ant-modal-content,
+.dark-theme[data-theme='blush'] .ant-modal-header,
+.dark-theme.theme-blush .ant-modal-content,
+.dark-theme.theme-blush .ant-modal-header {
+  background: #221820 !important;
+}
+
+.dark-theme[data-theme='blush'] .ant-drawer-content,
+.dark-theme.theme-blush .ant-drawer-content {
+  background: #221820 !important;
+}
+
+/* ==========================================================================
+   WINGS GOLDEN AMBER THEME (HOÀNG KIM WINGS)
+   ========================================================================== */
+.light-theme.theme-wings {
+  color-scheme: light;
+  --background: #faf7f2;
+  --foreground: #1c1811;
+  --avatar-bg: #ffffff;
+  --avatar-border: #ebdcc9;
+  --client-name-color: #1c1811;
+  --client-phone-color: #4f4433;
+  --client-desc-color: #4f4433;
+  --color-gold: #b87400;
+}
+
+.light-theme[data-theme='wings'] body,
+.light-theme.theme-wings body {
+  background-color: #faf7f2;
+  color: #1c1811;
+}
+
+.light-theme[data-theme='wings'] .ant-table,
+.light-theme.theme-wings .ant-table {
+  background: #ffffff !important;
+  color: #1c1811 !important;
+  border-color: #ebdcc9 !important;
+  box-shadow:
+    0 4px 20px -2px rgba(180, 120, 20, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+
+.light-theme[data-theme='wings'] .ant-table-thead > tr > th,
+.light-theme.theme-wings .ant-table-thead > tr > th {
+  background: #f7f1e6 !important;
+  color: #2b2111 !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid #ebdcc9 !important;
+}
+
+.light-theme[data-theme='wings'] .ant-table-tbody > tr:hover > td,
+.light-theme.theme-wings .ant-table-tbody > tr:hover > td {
+  background: rgba(184, 116, 0, 0.035) !important;
+}
+
+.light-theme[data-theme='wings'] .ant-table-tbody > tr > td,
+.light-theme.theme-wings .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f0e6d8 !important;
+}
+
+.light-theme[data-theme='wings'] .ant-card,
+.light-theme.theme-wings .ant-card {
+  background: #ffffff !important;
+  border-color: #ebdcc9 !important;
+  box-shadow:
+    0 4px 16px -2px rgba(180, 120, 20, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.light-theme[data-theme='wings'] .ant-card:hover,
+.light-theme.theme-wings .ant-card:hover {
+  box-shadow:
+    0 8px 24px -2px rgba(180, 120, 20, 0.07),
+    0 2px 6px rgba(0, 0, 0, 0.03) !important;
+}
+
+.light-theme[data-theme='wings'] .ant-card-head,
+.light-theme.theme-wings .ant-card-head {
+  background: #ffffff !important;
+  border-bottom: 1px solid #ebdcc9 !important;
+}
+
+.light-theme[data-theme='wings'] .ant-modal-content,
+.light-theme[data-theme='wings'] .ant-modal-header,
+.light-theme.theme-wings .ant-modal-content,
+.light-theme.theme-wings .ant-modal-header {
+  background: #ffffff !important;
+}
+
+.light-theme[data-theme='wings'] .ant-drawer-content,
+.light-theme.theme-wings .ant-drawer-content {
+  background: #ffffff !important;
+}
+
+.dark-theme.theme-wings {
+  color-scheme: dark;
+  --background: #0d0c0a;
+  --foreground: #fbf9f5;
+  --avatar-bg: #231f18;
+  --avatar-border: #2e281e;
+  --client-name-color: #fbf9f5;
+  --client-phone-color: #a39886;
+  --client-desc-color: #a39886;
+  --color-gold: #fbad18;
+}
+
+.dark-theme[data-theme='wings'] body,
+.dark-theme.theme-wings body {
+  background-color: #0d0c0a;
+  color: #fbf9f5;
+}
+
+.dark-theme[data-theme='wings'] .ant-table,
+.dark-theme.theme-wings .ant-table {
+  background: #171511 !important;
+  color: #fbf9f5 !important;
+  border-color: #2e281e !important;
+}
+
+.dark-theme[data-theme='wings'] .ant-table-thead > tr > th,
+.dark-theme.theme-wings .ant-table-thead > tr > th {
+  background: #1c1914 !important;
+  color: #a39886 !important;
+  border-bottom: 1px solid #2e281e !important;
+}
+
+.dark-theme[data-theme='wings'] .ant-table-tbody > tr > td,
+.dark-theme.theme-wings .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #2e281e !important;
+  color: #fbf9f5 !important;
+}
+
+.dark-theme[data-theme='wings'] .ant-card,
+.dark-theme.theme-wings .ant-card {
+  background: #171511 !important;
+  border-color: #2e281e !important;
+}
+
+.dark-theme[data-theme='wings'] .ant-card-head,
+.dark-theme.theme-wings .ant-card-head {
+  background: #171511 !important;
+  border-bottom: 1px solid #2e281e !important;
+}
+
+.dark-theme[data-theme='wings'] .ant-modal-content,
+.dark-theme[data-theme='wings'] .ant-modal-header,
+.dark-theme.theme-wings .ant-modal-content,
+.dark-theme.theme-wings .ant-modal-header {
+  background: #171511 !important;
+}
+
+.dark-theme[data-theme='wings'] .ant-drawer-content,
+.dark-theme.theme-wings .ant-drawer-content {
+  background: #171511 !important;
+}
+
+/* ==========================================================================
+   Midnight Royal Theme: Light (Frosty Ocean) & Dark (Oceanic Abyss)
+   ========================================================================== */
+.light-theme[data-theme='midnight'],
+.light-theme.theme-midnight {
+  color-scheme: light;
+  --background: #f0f6ff;
+  --foreground: #0a213a;
+  --avatar-bg: #e2effd;
+  --avatar-border: #cfe2f7;
+  --client-name-color: #0a213a;
+  --client-phone-color: #476180;
+  --client-desc-color: #476180;
+  --color-gold: #0284c7;
+}
+
+.light-theme[data-theme='midnight'] body,
+.light-theme.theme-midnight body {
+  background-color: #f0f6ff;
+  color: #0a213a;
+}
+
+.light-theme[data-theme='midnight'] .ant-table,
+.light-theme.theme-midnight .ant-table {
+  background: #ffffff !important;
+  color: #0a213a !important;
+  border-color: #cfe2f7 !important;
+}
+
+.light-theme[data-theme='midnight'] .ant-table-thead > tr > th,
+.light-theme.theme-midnight .ant-table-thead > tr > th {
+  background: #e6f1fc !important;
+  color: #0a213a !important;
+  border-bottom: 1px solid #cfe2f7 !important;
+}
+
+.light-theme[data-theme='midnight'] .ant-table-tbody > tr:hover > td,
+.light-theme.theme-midnight .ant-table-tbody > tr:hover > td {
+  background: rgba(2, 132, 199, 0.05) !important;
+}
+
+.light-theme[data-theme='midnight'] .ant-table-tbody > tr > td,
+.light-theme.theme-midnight .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #e2effd !important;
+  color: #0a213a !important;
+}
+
+.light-theme[data-theme='midnight'] .ant-card,
+.light-theme.theme-midnight .ant-card {
+  background: #ffffff !important;
+  border-color: #cfe2f7 !important;
+  box-shadow:
+    0 4px 20px -2px rgba(2, 132, 199, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+
+.light-theme[data-theme='midnight'] .ant-card-head,
+.light-theme.theme-midnight .ant-card-head {
+  background: #ffffff !important;
+  border-bottom: 1px solid #cfe2f7 !important;
+}
+
+.light-theme[data-theme='midnight'] .ant-modal-content,
+.light-theme[data-theme='midnight'] .ant-modal-header,
+.light-theme.theme-midnight .ant-modal-content,
+.light-theme.theme-midnight .ant-modal-header,
+.light-theme[data-theme='midnight'] .ant-drawer-content,
+.light-theme.theme-midnight .ant-drawer-content {
+  background: #ffffff !important;
+}
+
+.dark-theme[data-theme='midnight'],
+.dark-theme.theme-midnight {
+  color-scheme: dark;
+  --background: #070a13;
+  --foreground: #f8fafc;
+  --avatar-bg: #161e36;
+  --avatar-border: #1e293b;
+  --client-name-color: #f8fafc;
+  --client-phone-color: #94a3b8;
+  --client-desc-color: #94a3b8;
+  --color-gold: #38bdf8;
+}
+
+.dark-theme[data-theme='midnight'] body,
+.dark-theme.theme-midnight body {
+  background-color: #070a13;
+  color: #f8fafc;
+}
+
+.dark-theme[data-theme='midnight'] .ant-table,
+.dark-theme.theme-midnight .ant-table {
+  background: #0d1222 !important;
+  color: #f8fafc !important;
+  border-color: #1e293b !important;
+}
+
+.dark-theme[data-theme='midnight'] .ant-table-thead > tr > th,
+.dark-theme.theme-midnight .ant-table-thead > tr > th {
+  background: #10172b !important;
+  color: #f8fafc !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+.dark-theme[data-theme='midnight'] .ant-table-tbody > tr > td,
+.dark-theme.theme-midnight .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark-theme[data-theme='midnight'] .ant-card,
+.dark-theme.theme-midnight .ant-card {
+  background: #0d1222 !important;
+  border-color: #1e293b !important;
+}
+
+.dark-theme[data-theme='midnight'] .ant-card-head,
+.dark-theme.theme-midnight .ant-card-head {
+  background: #0d1222 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+.dark-theme[data-theme='midnight'] .ant-modal-content,
+.dark-theme[data-theme='midnight'] .ant-modal-header,
+.dark-theme.theme-midnight .ant-modal-content,
+.dark-theme.theme-midnight .ant-modal-header,
+.dark-theme[data-theme='midnight'] .ant-drawer-content,
+.dark-theme.theme-midnight .ant-drawer-content {
+  background: #0d1222 !important;
+}
+
+/* ==========================================================================
+   Emerald Velvet Theme: Light (Fresh Jade) & Dark (Velvet Emerald)
+   ========================================================================== */
+.light-theme[data-theme='emerald'],
+.light-theme.theme-emerald {
+  color-scheme: light;
+  --background: #f0fbf5;
+  --foreground: #052e20;
+  --avatar-bg: #e2f6ec;
+  --avatar-border: #cceedd;
+  --client-name-color: #052e20;
+  --client-phone-color: #3b6957;
+  --client-desc-color: #3b6957;
+  --color-gold: #059669;
+}
+
+.light-theme[data-theme='emerald'] body,
+.light-theme.theme-emerald body {
+  background-color: #f0fbf5;
+  color: #052e20;
+}
+
+.light-theme[data-theme='emerald'] .ant-table,
+.light-theme.theme-emerald .ant-table {
+  background: #ffffff !important;
+  color: #052e20 !important;
+  border-color: #cceedd !important;
+}
+
+.light-theme[data-theme='emerald'] .ant-table-thead > tr > th,
+.light-theme.theme-emerald .ant-table-thead > tr > th {
+  background: #e4f6ec !important;
+  color: #052e20 !important;
+  border-bottom: 1px solid #cceedd !important;
+}
+
+.light-theme[data-theme='emerald'] .ant-table-tbody > tr:hover > td,
+.light-theme.theme-emerald .ant-table-tbody > tr:hover > td {
+  background: rgba(5, 150, 105, 0.05) !important;
+}
+
+.light-theme[data-theme='emerald'] .ant-table-tbody > tr > td,
+.light-theme.theme-emerald .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #e2f6ec !important;
+  color: #052e20 !important;
+}
+
+.light-theme[data-theme='emerald'] .ant-card,
+.light-theme.theme-emerald .ant-card {
+  background: #ffffff !important;
+  border-color: #cceedd !important;
+  box-shadow:
+    0 4px 20px -2px rgba(5, 150, 105, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+
+.light-theme[data-theme='emerald'] .ant-card-head,
+.light-theme.theme-emerald .ant-card-head {
+  background: #ffffff !important;
+  border-bottom: 1px solid #cceedd !important;
+}
+
+.light-theme[data-theme='emerald'] .ant-modal-content,
+.light-theme[data-theme='emerald'] .ant-modal-header,
+.light-theme.theme-emerald .ant-modal-content,
+.light-theme.theme-emerald .ant-modal-header,
+.light-theme[data-theme='emerald'] .ant-drawer-content,
+.light-theme.theme-emerald .ant-drawer-content {
+  background: #ffffff !important;
+}
+
+.dark-theme[data-theme='emerald'],
+.dark-theme.theme-emerald {
+  color-scheme: dark;
+  --background: #041410;
+  --foreground: #f0fdf4;
+  --avatar-bg: #0e332a;
+  --avatar-border: #133e33;
+  --client-name-color: #f0fdf4;
+  --client-phone-color: #a7f3d0;
+  --client-desc-color: #a7f3d0;
+  --color-gold: #10b981;
+}
+
+.dark-theme[data-theme='emerald'] body,
+.dark-theme.theme-emerald body {
+  background-color: #041410;
+  color: #f0fdf4;
+}
+
+.dark-theme[data-theme='emerald'] .ant-table,
+.dark-theme.theme-emerald .ant-table {
+  background: #08231c !important;
+  color: #f0fdf4 !important;
+  border-color: #133e33 !important;
+}
+
+.dark-theme[data-theme='emerald'] .ant-table-thead > tr > th,
+.dark-theme.theme-emerald .ant-table-thead > tr > th {
+  background: #0b2d24 !important;
+  color: #f0fdf4 !important;
+  border-bottom: 1px solid #133e33 !important;
+}
+
+.dark-theme[data-theme='emerald'] .ant-table-tbody > tr > td,
+.dark-theme.theme-emerald .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #133e33 !important;
+  color: #f0fdf4 !important;
+}
+
+.dark-theme[data-theme='emerald'] .ant-card,
+.dark-theme.theme-emerald .ant-card {
+  background: #08231c !important;
+  border-color: #133e33 !important;
+}
+
+.dark-theme[data-theme='emerald'] .ant-card-head,
+.dark-theme.theme-emerald .ant-card-head {
+  background: #08231c !important;
+  border-bottom: 1px solid #133e33 !important;
+}
+
+.dark-theme[data-theme='emerald'] .ant-modal-content,
+.dark-theme[data-theme='emerald'] .ant-modal-header,
+.dark-theme.theme-emerald .ant-modal-content,
+.dark-theme.theme-emerald .ant-modal-header,
+.dark-theme[data-theme='emerald'] .ant-drawer-content,
+.dark-theme.theme-emerald .ant-drawer-content {
+  background: #08231c !important;
+}
+
+/* ==========================================================================
+   mOS Modern Slate Theme: Light (Royal Blue) & Dark (Deep Slate Blue)
+   ========================================================================== */
+.light-theme[data-theme='mos-light'],
+.light-theme.theme-mos-light {
+  color-scheme: light;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --avatar-bg: #f1f5f9;
+  --avatar-border: #e2e8f0;
+  --client-name-color: #0f172a;
+  --client-phone-color: #475569;
+  --client-desc-color: #475569;
+  --color-gold: #2563eb;
+}
+
+.light-theme[data-theme='mos-light'] body,
+.light-theme.theme-mos-light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.light-theme[data-theme='mos-light'] .ant-table,
+.light-theme.theme-mos-light .ant-table {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-theme[data-theme='mos-light'] .ant-table-thead > tr > th,
+.light-theme.theme-mos-light .ant-table-thead > tr > th {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.light-theme[data-theme='mos-light'] .ant-table-tbody > tr:hover > td,
+.light-theme.theme-mos-light .ant-table-tbody > tr:hover > td {
+  background: rgba(37, 99, 235, 0.05) !important;
+}
+
+.light-theme[data-theme='mos-light'] .ant-table-tbody > tr > td,
+.light-theme.theme-mos-light .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.light-theme[data-theme='mos-light'] .ant-card,
+.light-theme.theme-mos-light .ant-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow:
+    0 4px 20px -2px rgba(15, 23, 42, 0.05),
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+
+.light-theme[data-theme='mos-light'] .ant-card-head,
+.light-theme.theme-mos-light .ant-card-head {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.light-theme[data-theme='mos-light'] .ant-modal-content,
+.light-theme[data-theme='mos-light'] .ant-modal-header,
+.light-theme.theme-mos-light .ant-modal-content,
+.light-theme.theme-mos-light .ant-modal-header,
+.light-theme[data-theme='mos-light'] .ant-drawer-content,
+.light-theme.theme-mos-light .ant-drawer-content {
+  background: #ffffff !important;
+}
+
+.dark-theme[data-theme='mos-light'],
+.dark-theme.theme-mos-light {
+  color-scheme: dark;
+  --background: #0b0f19;
+  --foreground: #f9fafb;
+  --avatar-bg: #1f2937;
+  --avatar-border: #374151;
+  --client-name-color: #f9fafb;
+  --client-phone-color: #9ca3af;
+  --client-desc-color: #9ca3af;
+  --color-gold: #60a5fa;
+}
+
+.dark-theme[data-theme='mos-light'] body,
+.dark-theme.theme-mos-light body {
+  background-color: #0b0f19;
+  color: #f9fafb;
+}
+
+.dark-theme[data-theme='mos-light'] .ant-table,
+.dark-theme.theme-mos-light .ant-table {
+  background: #111827 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+
+.dark-theme[data-theme='mos-light'] .ant-table-thead > tr > th,
+.dark-theme.theme-mos-light .ant-table-thead > tr > th {
+  background: #162032 !important;
+  color: #f9fafb !important;
+  border-bottom: 1px solid #374151 !important;
+}
+
+.dark-theme[data-theme='mos-light'] .ant-table-tbody > tr > td,
+.dark-theme.theme-mos-light .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #374151 !important;
+  color: #f9fafb !important;
+}
+
+.dark-theme[data-theme='mos-light'] .ant-card,
+.dark-theme.theme-mos-light .ant-card {
+  background: #111827 !important;
+  border-color: #374151 !important;
+}
+
+.dark-theme[data-theme='mos-light'] .ant-card-head,
+.dark-theme.theme-mos-light .ant-card-head {
+  background: #111827 !important;
+  border-bottom: 1px solid #374151 !important;
+}
+
+.dark-theme[data-theme='mos-light'] .ant-modal-content,
+.dark-theme[data-theme='mos-light'] .ant-modal-header,
+.dark-theme.theme-mos-light .ant-modal-content,
+.dark-theme.theme-mos-light .ant-modal-header,
+.dark-theme[data-theme='mos-light'] .ant-drawer-content,
+.dark-theme.theme-mos-light .ant-drawer-content {
+  background: #111827 !important;
+}
+
 /* WCAG AA tag contrast. Ant Design's default semantic tag foregrounds are
    designed for larger text and miss AA at our compact 12px operational density. */
 .light-theme .ant-tag-success {
@@ -5488,7 +6153,7 @@ body {
   max-width: calc(100vw - (var(--mos-floating-offset) * 2) - env(safe-area-inset-left) - env(safe-area-inset-right));
 }
 
-.omicall-launcher {
+.omicall-launcher:not([style*='left']) {
   bottom: calc(var(--mos-floating-offset) + env(safe-area-inset-bottom)) !important;
   right: calc(var(--mos-floating-offset) + env(safe-area-inset-right)) !important;
 }

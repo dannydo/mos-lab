@@ -136,31 +136,41 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
         )}
 
         {daysSinceLastVisitMax !== undefined && (
-          <Tag color="blue" closable onClose={() => onClearFilter('daysSinceLastVisitMax')}>
+          <Tag color="blue" className="tabular-nums" closable onClose={() => onClearFilter('daysSinceLastVisitMax')}>
             Chưa ghé &lt;= {daysSinceLastVisitMax} ngày
           </Tag>
         )}
 
         {totalSpentMin !== undefined && (
-          <Tag color="gold" closable onClose={() => onClearFilter('totalSpentMin')}>
+          <Tag
+            color="gold"
+            className="tabular-nums font-medium"
+            closable
+            onClose={() => onClearFilter('totalSpentMin')}
+          >
             Chi tiêu &gt;= {formatVND(totalSpentMin)}
           </Tag>
         )}
 
         {totalSpentMax !== undefined && (
-          <Tag color="gold" closable onClose={() => onClearFilter('totalSpentMax')}>
+          <Tag
+            color="gold"
+            className="tabular-nums font-medium"
+            closable
+            onClose={() => onClearFilter('totalSpentMax')}
+          >
             Chi tiêu &lt;= {formatVND(totalSpentMax)}
           </Tag>
         )}
 
         {totalVisitsMin !== undefined && (
-          <Tag color="purple" closable onClose={() => onClearFilter('totalVisitsMin')}>
+          <Tag color="purple" className="tabular-nums" closable onClose={() => onClearFilter('totalVisitsMin')}>
             Ghé &gt;= {totalVisitsMin} lần
           </Tag>
         )}
 
         {totalVisitsMax !== undefined && (
-          <Tag color="purple" closable onClose={() => onClearFilter('totalVisitsMax')}>
+          <Tag color="purple" className="tabular-nums" closable onClose={() => onClearFilter('totalVisitsMax')}>
             Ghé &lt;= {totalVisitsMax} lần
           </Tag>
         )}

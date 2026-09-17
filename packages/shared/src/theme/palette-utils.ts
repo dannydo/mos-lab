@@ -65,6 +65,15 @@ export function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /**
+ * Converts Hex string to CSS rgba(...) string with given alpha.
+ */
+export function hexToRgba(hex: string, alpha: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return `rgba(212, 168, 75, ${alpha})`;
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+}
+
+/**
  * Calculates relative luminance according to WCAG specifications (0 = pitch black, 1 = pure white).
  */
 export function getLuminance(hex: string): number {

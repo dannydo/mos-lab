@@ -359,7 +359,7 @@ export default function TodayCalendarSummary({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CalendarOutlined style={{ color: '#D4A84B', fontSize: '18px' }} />
+            <CalendarOutlined style={{ color: token.colorPrimary, fontSize: '18px' }} />
             <span style={{ fontWeight: 'bold', fontSize: '15px', color: token.colorText }}>
               Tổng Quan Lịch Phân Giờ ({dateBounds?.label || selectedDate.format('DD/MM/YYYY')})
             </span>
@@ -536,10 +536,12 @@ export default function TodayCalendarSummary({
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#D4A84B', textTransform: 'uppercase' }}>
+              <span
+                style={{ fontSize: '11px', fontWeight: 'bold', color: token.colorPrimary, textTransform: 'uppercase' }}
+              >
                 📅 SCHEDULED (ĐÃ HẸN)
               </span>
-              <Avatar size={28} style={{ backgroundColor: '#D4A84B' }}>
+              <Avatar size={28} style={{ backgroundColor: token.colorPrimary }}>
                 <CalendarOutlined />
               </Avatar>
             </div>
@@ -643,14 +645,14 @@ export default function TodayCalendarSummary({
             title={
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <BarChartOutlined style={{ color: '#D4A84B' }} />
+                  <BarChartOutlined style={{ color: token.colorPrimary }} />
                   <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
                     Phân Bố 4 Chỉ Số Theo Khung Giờ (08:00 - 21:00)
                   </span>
                 </div>
                 <Space size="small">
                   <span style={{ fontSize: '11px', color: '#0284c7' }}>● Created</span>
-                  <span style={{ fontSize: '11px', color: '#D4A84B' }}>● Scheduled</span>
+                  <span style={{ fontSize: '11px', color: token.colorPrimary }}>● Scheduled</span>
                   <span style={{ fontSize: '11px', color: '#ff4d4f' }}>● Missed</span>
                   <span style={{ fontSize: '11px', color: '#52c41a' }}>● Done</span>
                 </Space>
@@ -723,7 +725,7 @@ export default function TodayCalendarSummary({
                             style={{
                               width: '22%',
                               height: `${Math.max(d.scheduled > 0 ? 8 : 0, hScheduledPct)}%`,
-                              background: '#D4A84B',
+                              background: token.colorPrimary,
                               borderRadius: '3px 3px 0 0',
                               transition: 'all 0.3s ease',
                             }}
@@ -796,7 +798,7 @@ export default function TodayCalendarSummary({
           <Card
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <PieChartOutlined style={{ color: '#D4A84B' }} />
+                <PieChartOutlined style={{ color: token.colorPrimary }} />
                 <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Tỷ Lệ Vận Hành & Chi Nhánh</span>
               </div>
             }
@@ -882,7 +884,7 @@ export default function TodayCalendarSummary({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ClockCircleOutlined style={{ color: '#D4A84B' }} />
+              <ClockCircleOutlined style={{ color: token.colorPrimary }} />
               <span style={{ fontWeight: 'bold', fontSize: '15px' }}>
                 Ma Trận Lịch Phân Giờ Theo Chi Nhánh (Hourly Calendar Matrix)
               </span>
@@ -902,7 +904,12 @@ export default function TodayCalendarSummary({
                 </span>
               </Radio.Button>
               <Radio.Button value="scheduled">
-                <span style={{ color: matrixStatusFilter === 'scheduled' ? '#ffffff' : '#D4A84B', fontWeight: 'bold' }}>
+                <span
+                  style={{
+                    color: matrixStatusFilter === 'scheduled' ? '#ffffff' : token.colorPrimary,
+                    fontWeight: 'bold',
+                  }}
+                >
                   📅 Scheduled ({totalScheduled})
                 </span>
               </Radio.Button>
@@ -1049,7 +1056,9 @@ export default function TodayCalendarSummary({
                                 }}
                               >
                                 {c > 0 && <div style={{ width: `${cPct}%`, background: '#0284c7', height: '100%' }} />}
-                                {s > 0 && <div style={{ width: `${sPct}%`, background: '#D4A84B', height: '100%' }} />}
+                                {s > 0 && (
+                                  <div style={{ width: `${sPct}%`, background: token.colorPrimary, height: '100%' }} />
+                                )}
                                 {m > 0 && <div style={{ width: `${mPct}%`, background: '#ff4d4f', height: '100%' }} />}
                                 {dCount > 0 && (
                                   <div style={{ width: `${dPct}%`, background: '#52c41a', height: '100%' }} />
@@ -1084,9 +1093,9 @@ export default function TodayCalendarSummary({
                                 {(matrixStatusFilter === 'all' || matrixStatusFilter === 'scheduled') && s > 0 && (
                                   <span
                                     style={{
-                                      background: '#D4A84B22',
-                                      color: '#D4A84B',
-                                      border: '1px solid #D4A84B44',
+                                      background: `${token.colorPrimary}22`,
+                                      color: token.colorPrimary,
+                                      border: `1px solid ${token.colorPrimary}44`,
                                       padding: '0 4px',
                                       borderRadius: '4px',
                                       fontWeight: 'bold',
@@ -1150,7 +1159,7 @@ export default function TodayCalendarSummary({
         width={750}
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ClockCircleOutlined style={{ color: '#D4A84B' }} />
+            <ClockCircleOutlined style={{ color: token.colorPrimary }} />
             <span>
               Chi Tiết Lịch Hẹn Khung Giờ {selectedSlot?.hour}
               {selectedSlot?.branchKey && ` - ${BRANCH_CONFIG[selectedSlot.branchKey]?.name}`}
@@ -1161,7 +1170,7 @@ export default function TodayCalendarSummary({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '12px' }}>
           {/* Scheduled / Coming list */}
           <div>
-            <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#D4A84B', marginBottom: '8px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '13px', color: token.colorPrimary, marginBottom: '8px' }}>
               📅 Lịch Hẹn Khách Đến ({modalSlotItems.scheduled.length} lượt)
             </div>
             {modalSlotItems.scheduled.length === 0 ? (

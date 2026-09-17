@@ -75,7 +75,12 @@ export const WrapupPanel: React.FC<WrapupPanelProps> = ({
             icon={<RollbackOutlined />}
             onClick={handleReopen}
             className="w-full text-xs"
-            style={{ background: '#D4A84B', borderColor: '#D4A84B', color: 'black', fontWeight: 'bold' }}
+            style={{
+              background: 'var(--mos-accent, #D4A84B)',
+              borderColor: 'var(--mos-accent, #D4A84B)',
+              color: 'var(--mos-accent-contrast, black)',
+              fontWeight: 'bold',
+            }}
           >
             Mở lại bảng ghi nhận
           </Button>

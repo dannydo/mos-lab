@@ -162,14 +162,14 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                 width: '32px',
                 height: '32px',
                 borderRadius: '8px',
-                background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.2)' : 'rgba(212, 168, 75, 0.1)',
-                color: '#D4A84B',
+                background: `${token.colorPrimary}20`,
+                color: token.colorPrimary,
               }}
             >
               <HistoryOutlined style={{ fontSize: '18px' }} />
             </span>
             <div>
-              <div style={{ color: '#D4A84B', fontWeight: 700, fontSize: '16px', lineHeight: 1.2 }}>
+              <div style={{ color: token.colorPrimary, fontWeight: 700, fontSize: '16px', lineHeight: 1.2 }}>
                 Lịch Sử Phân Bổ Data
               </div>
               <Text style={{ fontSize: '12px', color: token.colorTextDescription }}>
@@ -318,7 +318,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: '#D4A84B',
+                          color: token.colorPrimary,
                           fontWeight: 'bold',
                         }}
                       >
@@ -337,13 +337,13 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
 
                           <Tag
                             color={badge.color}
-                            style={{ borderRadius: '12px', padding: '1px 10px', fontWeight: 600 }}
+                            style={{ borderRadius: '12px', padding: '2px 8px', fontWeight: 600 }}
                           >
                             {badge.label}
                           </Tag>
                         </div>
 
-                        <div style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: 2 }}>
+                        <div style={{ fontSize: '12px', color: token.colorTextDescription, marginTop: 4 }}>
                           Thực hiện bởi:{' '}
                           <strong style={{ color: token.colorText }}>{batch.assignedBy || 'Hệ thống'}</strong>
                         </div>
@@ -353,8 +353,8 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                     {/* COUNT BADGE */}
                     <div
                       style={{
-                        background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : '#fffbe6',
-                        border: `1px solid ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.3)' : '#ffe58f'}`,
+                        background: themeMode === 'dark' ? `${token.colorPrimary}25` : '#fffbe6',
+                        border: `1px solid ${themeMode === 'dark' ? `${token.colorPrimary}4d` : '#ffe58f'}`,
                         borderRadius: '20px',
                         padding: '3px 12px',
                         display: 'inline-flex',
@@ -375,7 +375,7 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                         style={{
                           fontWeight: 800,
                           fontSize: '14px',
-                          color: '#D4A84B',
+                          color: token.colorPrimary,
                           fontVariantNumeric: 'tabular-nums',
                         }}
                       >
@@ -547,9 +547,6 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                           style={{
                             borderRadius: '6px',
                             fontWeight: 600,
-                            background: '#D4A84B',
-                            borderColor: '#D4A84B',
-                            color: '#000',
                           }}
                         >
                           Hoàn tác đợt này
@@ -595,7 +592,12 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                                           onClose();
                                           onOpenCustomerDetail(record.legacyUserId);
                                         }}
-                                        style={{ padding: 0, height: 'auto', fontWeight: 600, color: '#D4A84B' }}
+                                        style={{
+                                          padding: 0,
+                                          height: 'auto',
+                                          fontWeight: 600,
+                                          color: token.colorPrimary,
+                                        }}
                                       >
                                         {text || `Khách hàng #${record.legacyUserId}`}
                                       </Button>

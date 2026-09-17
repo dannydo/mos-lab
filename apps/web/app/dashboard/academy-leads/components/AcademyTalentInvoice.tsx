@@ -82,7 +82,7 @@ export function AcademyTalentInvoice({ lead, assessment, className = '' }: Acade
         </dl>
       </header>
 
-      <section className={styles.invoicePaymentFocus} aria-label="Thông tin thanh toán">
+      <section className={`${styles.invoicePaymentFocus} tabular-nums`} aria-label="Thông tin thanh toán">
         <div className={styles.invoicePaymentFocusHead}>
           <div>
             <p className={styles.invoiceKicker}>01 / Thanh toán</p>
@@ -164,7 +164,7 @@ export function AcademyTalentInvoice({ lead, assessment, className = '' }: Acade
         </div>
       </section>
 
-      <section className={styles.invoiceLineSection}>
+      <section className={`${styles.invoiceLineSection} tabular-nums`}>
         <h3 className={styles.invoiceContentsHeading}>02 / Những gì học viên nhận được</h3>
         <div className={styles.invoiceLineHead}>
           <span>Khóa học</span>
@@ -217,7 +217,7 @@ export function AcademyTalentInvoice({ lead, assessment, className = '' }: Acade
         {!pricing?.lineItems?.length && <div className={styles.invoiceEmptyLine}>Chưa có khóa học nào được chọn.</div>}
       </section>
 
-      <section className={styles.invoiceTotals}>
+      <section className={`${styles.invoiceTotals} tabular-nums`}>
         <div>
           <span>Tổng giá ưu đãi</span>
           <strong>{formatVND(pricing?.promoTotalVnd || 0)}</strong>

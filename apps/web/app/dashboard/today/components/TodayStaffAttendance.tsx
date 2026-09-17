@@ -20,7 +20,7 @@ interface TodayStaffAttendanceProps {
 const TodayStaffAttendance = React.memo(
   function TodayStaffAttendance({ themeMode = 'light', token, ccList, cvList }: TodayStaffAttendanceProps) {
     const tableRegionRef = React.useRef<HTMLDivElement>(null);
-    const goldText = themeMode === 'dark' ? '#D4A84B' : '#855b0e';
+    const goldText = token?.colorPrimary || (themeMode === 'dark' ? '#D4A84B' : '#855b0e');
     const infoText = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
     const mutedText = themeMode === 'dark' ? '#cbd5e1' : '#475569';
 

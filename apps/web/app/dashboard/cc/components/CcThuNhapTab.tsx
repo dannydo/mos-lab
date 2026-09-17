@@ -632,7 +632,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
           type="primary"
           icon={<EyeOutlined />}
           onClick={() => handleOpenDetailModal(record)}
-          style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: '500' }}
+          style={{ fontWeight: '500' }}
         >
           Chi Tiết
         </Button>
@@ -791,7 +791,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               precision={0}
               valueStyle={{
                 fontSize: '15px',
-                color: isDark ? '#fbbf24' : '#d4a84b',
+                color: token.colorPrimary,
                 fontVariantNumeric: 'tabular-nums',
               }}
               prefix={<DollarOutlined />}
@@ -836,7 +836,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
           <Card
             size="small"
             variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: isDark ? '#fbbf24' : '#d4a84b' }}
+            style={{ background: token.colorBgContainer, borderColor: token.colorPrimary }}
           >
             <Statistic
               title="Thu Nhập"
@@ -845,7 +845,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               precision={0}
               valueStyle={{
                 fontSize: '15px',
-                color: isDark ? '#fde047' : '#d4a84b',
+                color: token.colorPrimary,
                 fontWeight: 'bold',
                 fontVariantNumeric: 'tabular-nums',
               }}
@@ -885,7 +885,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
           </div>
         }
         variant="outlined"
-        style={{ background: token.colorBgContainer, borderColor: isDark ? '#fbbf24' : '#d4a84b' }}
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
         styles={{ body: { padding: 0 } }}
         className="full-bleed-card shadow-sm rounded-xl"
       >
@@ -1028,12 +1028,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
             </div>
           }
           footer={[
-            <Button
-              key="close"
-              type="primary"
-              onClick={() => setModalOpen(false)}
-              style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
-            >
+            <Button key="close" type="primary" onClick={() => setModalOpen(false)}>
               Đóng Phiếu Lương
             </Button>,
           ]}
@@ -1346,11 +1341,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               <Text type="secondary" className="cc-worklog-modal-resize-hint text-xs italic">
                 💡 Kéo mép phải để chỉnh rộng / hẹp ({modalWidth}px) — Tự động ghi nhớ khi F5
               </Text>
-              <Button
-                type="primary"
-                onClick={() => setWorkLogModalOpen(false)}
-                style={{ background: '#D4A84B', borderColor: '#D4A84B', color: '#000' }}
-              >
+              <Button type="primary" onClick={() => setWorkLogModalOpen(false)}>
                 Đóng Báo Cáo Ca Làm
               </Button>
             </AdaptiveOverlayFooter>

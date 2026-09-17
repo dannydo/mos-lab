@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Form, Select, Button, Badge, Tooltip } from 'antd';
+import { Form, Select, Button, Badge, Tooltip, theme } from 'antd';
 import {
   FilterOutlined,
   CalendarOutlined,
@@ -191,6 +191,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
   PRESET_FILTERS,
   onOpenRandomModal,
 }: CustomerFiltersProps) {
+  const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
   const isCompactTier = responsiveTier === 'mobile' || responsiveTier === 'tablet';
   const isManagerOrAdmin = canManageCustomerAllocation(currentUser?.role);
@@ -467,8 +468,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   icon={<AimOutlined />}
                   onClick={onOpenRandomModal}
                   style={{
-                    borderColor: themeMode === 'dark' ? '#D4A84B' : '#d97706',
-                    color: themeMode === 'dark' ? '#D4A84B' : '#d97706',
+                    borderColor: token.colorPrimary,
+                    color: token.colorPrimary,
                     borderRadius: '6px',
                   }}
                 />
@@ -486,7 +487,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   aria-label="Lưu bộ lọc hiện tại"
                   icon={<SaveOutlined />}
                   onClick={() => setSaveFilterModalVisible(true)}
-                  style={{ borderColor: '#D4A84B', color: '#D4A84B', borderRadius: '6px' }}
+                  style={{ borderColor: token.colorPrimary, color: token.colorPrimary, borderRadius: '6px' }}
                 />
               </Tooltip>
             </div>
@@ -516,11 +517,11 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   width: '32px',
                   height: '32px',
                   borderRadius: '8px',
-                  background: 'rgba(212, 168, 75, 0.12)',
+                  background: `${token.colorPrimary}20`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#D4A84B',
+                  color: token.colorPrimary,
                   fontSize: '16px',
                 }}
               >
@@ -546,9 +547,9 @@ const CustomerFilters = React.memo(function CustomerFilters({
               <Badge
                 count={`${activeFilterCount} tiêu chí đang bật`}
                 style={{
-                  backgroundColor: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.2)' : '#fffbe6',
-                  color: '#D4A84B',
-                  borderColor: '#D4A84B',
+                  backgroundColor: themeMode === 'dark' ? `${token.colorPrimary}33` : '#fffbe6',
+                  color: token.colorPrimary,
+                  borderColor: token.colorPrimary,
                   fontSize: '11px',
                   fontWeight: 600,
                   padding: '0 8px',
@@ -600,8 +601,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
                 disabled={!hasActiveFilters}
                 onClick={() => setSaveFilterModalVisible(true)}
                 style={{
-                  borderColor: '#D4A84B',
-                  color: '#D4A84B',
+                  borderColor: token.colorPrimary,
+                  color: token.colorPrimary,
                   borderRadius: '8px',
                   height: '38px',
                   padding: '0 16px',
@@ -615,14 +616,14 @@ const CustomerFilters = React.memo(function CustomerFilters({
                 icon={<FilterOutlined />}
                 onClick={() => setFilterDrawerVisible(false)}
                 style={{
-                  backgroundColor: '#D4A84B',
-                  borderColor: '#D4A84B',
+                  backgroundColor: token.colorPrimary,
+                  borderColor: token.colorPrimary,
                   color: '#0f172a',
                   borderRadius: '8px',
                   height: '38px',
                   padding: '0 20px',
                   fontWeight: 600,
-                  boxShadow: '0 2px 8px rgba(212, 168, 75, 0.25)',
+                  boxShadow: `0 2px 8px ${token.colorPrimary}40`,
                 }}
               >
                 Áp dụng bộ lọc
@@ -647,7 +648,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: isResizing ? 'rgba(212, 168, 75, 0.25)' : 'transparent',
+              background: isResizing ? `${token.colorPrimary}40` : 'transparent',
               transition: 'background 0.15s ease',
             }}
           >
@@ -656,8 +657,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
                 width: '4px',
                 height: '48px',
                 borderRadius: '2px',
-                backgroundColor: isResizing ? '#D4A84B' : themeMode === 'dark' ? '#475569' : '#cbd5e1',
-                boxShadow: isResizing ? '0 0 10px rgba(212, 168, 75, 0.9)' : undefined,
+                backgroundColor: isResizing ? token.colorPrimary : themeMode === 'dark' ? '#475569' : '#cbd5e1',
+                boxShadow: isResizing ? `0 0 10px ${token.colorPrimary}` : undefined,
                 transition: 'all 0.15s ease',
               }}
             />
@@ -745,8 +746,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
                         padding: '0 10px',
                         height: '24px',
                         lineHeight: '22px',
-                        backgroundColor: birthdayPreset === preset.value ? '#D4A84B' : undefined,
-                        borderColor: birthdayPreset === preset.value ? '#D4A84B' : undefined,
+                        backgroundColor: birthdayPreset === preset.value ? token.colorPrimary : undefined,
+                        borderColor: birthdayPreset === preset.value ? token.colorPrimary : undefined,
                       }}
                     >
                       {preset.label}
@@ -814,8 +815,8 @@ const CustomerFilters = React.memo(function CustomerFilters({
                           padding: '0 8px',
                           height: '24px',
                           lineHeight: '22px',
-                          backgroundColor: isSelected ? '#D4A84B' : undefined,
-                          borderColor: isSelected ? '#D4A84B' : undefined,
+                          backgroundColor: isSelected ? token.colorPrimary : undefined,
+                          borderColor: isSelected ? token.colorPrimary : undefined,
                         }}
                       >
                         {preset.label}

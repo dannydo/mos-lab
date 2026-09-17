@@ -1,20 +1,23 @@
 'use client';
 
 import React from 'react';
-import { Button, Checkbox, Input, InputRef, Popconfirm, Space, Tooltip, message } from 'antd';
+import { Button, Checkbox, Input, Popconfirm, Space, Tooltip, message } from 'antd';
 import dayjs from 'dayjs';
 import {
   ArrowLeft,
-  Check,
+  Briefcase,
   CheckCircle2,
   Copy,
   MessageCircle,
+  Phone,
   Plus,
   RotateCcw,
   Save,
   Settings2,
   Sparkles,
   Trash2,
+  User,
+  Utensils,
 } from 'lucide-react';
 import {
   DEFAULT_ACADEMY_WORKSHOP_ZALO_TEMPLATES,
@@ -167,6 +170,16 @@ export default function AcademyWorkshopZaloScriptModal({
     }
   };
 
+  const handleCopyPhone = () => {
+    if (!participant?.lead.phone) return;
+    navigator.clipboard
+      .writeText(participant.lead.phone)
+      .then(() => {
+        message.success(`Đã sao chép SĐT: ${participant.lead.phone}`);
+      })
+      .catch(() => message.error('Không thể sao chép SĐT.'));
+  };
+
   const handleCopy = React.useCallback(() => {
     if (!activeMessage.trim()) {
       message.warning('Nội dung tin nhắn trống.');
@@ -278,23 +291,62 @@ export default function AcademyWorkshopZaloScriptModal({
       open={open}
       onCancel={onClose}
       title={
-        <div className="flex items-center justify-between pr-6">
-          <div className="flex items-center gap-2">
-            <AppIcon icon={MessageCircle} className="text-blue-500" />
-            <span className="font-semibold">
-              {isManaging ? 'Quản lý các mẫu kịch bản Zalo' : `Kịch bản Zalo · ${participant.lead.name}`}
-            </span>
+        <div className="flex items-center justify-between w-full pr-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 shrink-0">
+              <AppIcon icon={MessageCircle} size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-base text-slate-900 dark:text-slate-100">
+                  {isManaging ? 'Quản lý mẫu kịch bản Zalo' : 'Gửi kịch bản Zalo cho học viên'}
+                </span>
+                {!isManaging && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-medium border border-blue-200/60 dark:border-blue-800/60">
+                    {participant.lead.name}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 m-0">
+                {isManaging
+                  ? 'Tùy chỉnh nội dung và các biến thông tin tự động của từng mẫu'
+                  : 'Chọn mẫu kịch bản phù hợp theo từng giai đoạn tham gia Workshop'}
+              </p>
+            </div>
           </div>
-          {isManaging && <StatusTag status="processing" label="Đang tùy biến mẫu" />}
+          <div>
+            {!isManaging ? (
+              <Button
+                size="small"
+                icon={<AppIcon icon={Settings2} size={13} />}
+                onClick={() => {
+                  setEditingTemplateId(selectedTemplateId);
+                  setIsManaging(true);
+                }}
+                className="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs"
+              >
+                Quản lý mẫu
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                icon={<AppIcon icon={ArrowLeft} size={13} />}
+                onClick={() => setIsManaging(false)}
+                className="text-slate-600 dark:text-slate-300 text-xs"
+              >
+                Quay lại gửi tin
+              </Button>
+            )}
+          </div>
         </div>
       }
-      width={800}
+      width={880}
       footer={
         isManaging ? (
           <div className="flex items-center justify-between w-full pt-1">
             <Popconfirm
               title="Khôi phục mẫu mặc định?"
-              description="Hành động này sẽ ghi đè toàn bộ mẫu hiện tại về 3 mẫu chuẩn ban đầu."
+              description="Hành động này sẽ ghi đè toàn bộ mẫu hiện tại về các mẫu chuẩn ban đầu."
               okText="Khôi phục"
               cancelText="Hủy"
               onConfirm={handleResetDefaults}
@@ -303,7 +355,7 @@ export default function AcademyWorkshopZaloScriptModal({
                 Khôi phục mẫu gốc
               </Button>
             </Popconfirm>
-            <Space>
+            <Space size={8}>
               <Button onClick={() => setIsManaging(false)} disabled={isSaving}>
                 Hủy bỏ
               </Button>
@@ -323,12 +375,18 @@ export default function AcademyWorkshopZaloScriptModal({
               checked={autoMarkSent}
               onChange={(e) => setAutoMarkSent(e.target.checked)}
               disabled={Boolean(participant.infoSentAt)}
+              className="text-xs"
             >
-              {participant.infoSentAt ? 'Đã đánh dấu gửi thông tin' : 'Tự động tick "Đã gửi thông tin"'}
+              {participant.infoSentAt ? 'Đã đánh dấu gửi thông tin' : 'Tự động tick "Đã gửi thông tin" cho học viên'}
             </Checkbox>
-            <Space>
+            <Space size={8}>
               <Button onClick={onClose}>Đóng</Button>
-              <Button type="primary" icon={<AppIcon icon={Copy} size="sm" />} onClick={handleCopy}>
+              <Button
+                type="primary"
+                icon={<AppIcon icon={Copy} size={14} />}
+                onClick={handleCopy}
+                className="bg-blue-600 hover:bg-blue-700 font-medium px-4"
+              >
                 Sao chép tin nhắn Zalo
               </Button>
             </Space>
@@ -338,21 +396,15 @@ export default function AcademyWorkshopZaloScriptModal({
     >
       {isManaging ? (
         /* TEMPLATE MANAGEMENT VIEW */
-        <div className="space-y-4 pt-1">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-            <Button
-              type="text"
-              size="small"
-              icon={<AppIcon icon={ArrowLeft} size="sm" />}
-              onClick={() => setIsManaging(false)}
-              className="text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-            >
-              Quay lại xem tin nhắn
-            </Button>
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 dark:border-slate-800">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Chỉnh sửa các mẫu tin nhắn mẫu để CSKH gửi nhanh cho toàn bộ học viên Workshop.
+            </div>
             <Button
               type="dashed"
               size="small"
-              icon={<AppIcon icon={Plus} size="sm" />}
+              icon={<AppIcon icon={Plus} size={13} />}
               onClick={handleAddNewTemplate}
               className="border-blue-300 text-blue-600 hover:border-blue-500 dark:border-blue-700 dark:text-blue-400"
             >
@@ -360,13 +412,13 @@ export default function AcademyWorkshopZaloScriptModal({
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
             {/* Left list of templates */}
-            <div className="md:col-span-4 border-r border-slate-100 pr-2 dark:border-slate-800 space-y-1.5 max-h-[420px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <div className="text-[11px] font-medium uppercase tracking-wider text-slate-400 px-2 pb-1">
+            <div className="md:col-span-4 border-r border-slate-100 pr-2.5 dark:border-slate-800 space-y-1.5 max-h-[420px] overflow-y-auto [scrollbar-width:thin]">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-slate-400 px-1 pb-1">
                 Danh sách mẫu ({templates.length})
               </div>
-              {templates.map((tmpl) => {
+              {templates.map((tmpl, idx) => {
                 const isSelected = tmpl.id === editingTemplateId;
                 return (
                   <div
@@ -380,16 +432,19 @@ export default function AcademyWorkshopZaloScriptModal({
                       );
                       setEditingTemplateId(tmpl.id);
                     }}
-                    className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all text-xs ${
+                    className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer transition-all text-xs ${
                       isSelected
-                        ? 'bg-blue-50/80 border border-blue-200 text-blue-700 font-medium dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300 shadow-sm'
+                        ? 'bg-blue-50/90 border border-blue-300 text-blue-700 font-medium dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300 shadow-2xs'
                         : 'hover:bg-slate-50 border border-transparent text-slate-700 dark:hover:bg-slate-800/60 dark:text-slate-300'
                     }`}
                   >
-                    <span className="truncate pr-1">{tmpl.title}</span>
-                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0 pr-1">
+                      <span className="text-[10px] text-slate-400 font-mono">{idx + 1}.</span>
+                      <span className="truncate">{tmpl.title}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       {tmpl.isDefault && (
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Chuẩn</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Gốc</span>
                       )}
                       {templates.length > 1 && (
                         <Popconfirm
@@ -441,7 +496,7 @@ export default function AcademyWorkshopZaloScriptModal({
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
                     <AppIcon icon={Sparkles} size={14} className="text-amber-500" />
-                    Chèn biến tự động (Click để chèn)
+                    Chèn biến tự động (Click để chèn vào con trỏ)
                   </label>
                 </div>
                 <div className="flex flex-wrap gap-1 bg-slate-50 p-2 rounded-lg border border-slate-100 dark:bg-slate-900/60 dark:border-slate-800">
@@ -461,7 +516,7 @@ export default function AcademyWorkshopZaloScriptModal({
 
               <div>
                 <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">
-                  Nội dung mẫu (hỗ trợ các biến trong dấu ngoặc nhọn)
+                  Nội dung mẫu (hỗ trợ các biến trong ngoặc nhọn kép)
                 </label>
                 <Input.TextArea
                   ref={editTextAreaRef}
@@ -472,7 +527,7 @@ export default function AcademyWorkshopZaloScriptModal({
                       prev.map((t) => (t.id === editingTemplateId ? { ...t, content: e.target.value } : t))
                     );
                   }}
-                  autoSize={{ minRows: 9, maxRows: 16 }}
+                  autoSize={{ minRows: 9, maxRows: 15 }}
                   className="font-mono text-xs leading-relaxed rounded-lg resize-none p-3"
                   placeholder="Nhập nội dung tin nhắn Zalo..."
                 />
@@ -481,101 +536,168 @@ export default function AcademyWorkshopZaloScriptModal({
           </div>
         </div>
       ) : (
-        /* MAIN SEND VIEW */
-        <div className="space-y-3 pt-1">
-          {/* Top Bar with Template Selector and Manage Buttons */}
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              {templates.map((tmpl) => {
-                const isActive = tmpl.id === selectedTemplateId;
-                return (
-                  <button
-                    key={tmpl.id}
-                    type="button"
-                    onClick={() => handleSelectTemplate(tmpl.id)}
-                    className={`px-3 py-1 text-xs rounded-full whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 border font-medium ${
-                      isActive
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {isActive && <AppIcon icon={Check} size={12} />}
-                    <span>{tmpl.title}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Tooltip title="Thêm mẫu kịch bản mới">
-                <Button
-                  size="small"
-                  icon={<AppIcon icon={Plus} size="sm" />}
-                  onClick={handleAddNewTemplate}
-                  className="text-blue-600 border-blue-300 hover:border-blue-500 dark:border-blue-700 dark:text-blue-400"
-                >
-                  Mẫu mới
-                </Button>
-              </Tooltip>
-              <Tooltip title="Chỉnh sửa hoặc xóa các mẫu kịch bản">
-                <Button
-                  size="small"
-                  icon={<AppIcon icon={Settings2} size="sm" />}
-                  onClick={() => {
-                    setEditingTemplateId(selectedTemplateId);
-                    setIsManaging(true);
-                  }}
-                  className="text-slate-600 dark:text-slate-300"
-                >
-                  Quản lý mẫu
-                </Button>
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Recipient Details & Action Bar */}
-          <div className="flex items-center justify-between px-1 text-xs text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-3">
-              <span>
-                Học viên: <strong className="text-slate-700 dark:text-slate-200">{participant.lead.name}</strong>
-              </span>
-              <span>
-                SĐT:{' '}
-                <strong className="text-slate-700 dark:text-slate-200 tabular-nums">
-                  {participant.lead.phone || 'Chưa có'}
-                </strong>
-              </span>
-            </div>
-            {isCustomEdited && (
-              <Button
-                type="link"
-                size="small"
-                icon={<AppIcon icon={RotateCcw} size={12} />}
-                onClick={handleResetToTemplate}
-                className="p-0 text-amber-600 hover:text-amber-700 dark:text-amber-400"
-              >
-                Khôi phục theo mẫu gốc
-              </Button>
-            )}
-          </div>
-
-          {/* Text Area for Final Message */}
-          <div className="relative">
-            <Input.TextArea
-              value={activeMessage}
-              onChange={(e) => {
-                setActiveMessage(e.target.value);
-                setIsCustomEdited(true);
-              }}
-              autoSize={{ minRows: 11, maxRows: 18 }}
-              className="font-mono text-[13px] leading-relaxed bg-slate-50/70 dark:bg-slate-900/50 rounded-xl p-3.5 pb-8 border-slate-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900 resize-none"
-              placeholder="Nội dung kịch bản tin nhắn Zalo..."
-            />
-            {isCustomEdited && (
-              <div className="absolute bottom-3 right-3">
-                <StatusTag status="warning" label="Đã chỉnh sửa thủ công" />
+        /* MAIN SEND VIEW (2 COLUMNS) */
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 pt-1">
+          {/* Left Column: Student Summary & Journey Stages (5 cols) */}
+          <div className="md:col-span-5 space-y-3">
+            {/* Student Summary Card */}
+            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 p-3 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                    Học viên nhận tin
+                  </span>
+                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 mt-0.5 truncate">
+                    <AppIcon icon={User} size={14} className="text-slate-400 shrink-0" />
+                    <span className="truncate">{participant.lead.name}</span>
+                  </div>
+                </div>
+                <div className="shrink-0">
+                  {participant.infoSentAt ? (
+                    <StatusTag status="success" label="Đã gửi tin" />
+                  ) : (
+                    <StatusTag status="default" label="Chưa gửi tin" />
+                  )}
+                </div>
               </div>
-            )}
+
+              {participant.lead.phone && (
+                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <AppIcon icon={Phone} size={13} className="text-emerald-500 shrink-0" />
+                    <span className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                      {participant.lead.phone}
+                    </span>
+                  </div>
+                  <Tooltip title="Sao chép SĐT để tìm kiếm trên Zalo">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<AppIcon icon={Copy} size={12} />}
+                      onClick={handleCopyPhone}
+                      className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 flex items-center gap-1 font-medium"
+                    >
+                      Copy SĐT
+                    </Button>
+                  </Tooltip>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-1.5 pt-1.5 border-t border-slate-200/60 dark:border-slate-800 text-xs">
+                <div className="flex items-start gap-1.5 text-slate-600 dark:text-slate-300">
+                  <AppIcon icon={Utensils} size={13} className="text-amber-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <span className="text-slate-400 dark:text-slate-500">Suất ăn: </span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{mealsText}</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1.5 text-slate-600 dark:text-slate-300">
+                  <AppIcon icon={Briefcase} size={13} className="text-purple-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <span className="text-slate-400 dark:text-slate-500">Cốp đồ: </span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{equipmentText}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Journey Stage Selector */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Giai đoạn kịch bản ({templates.length})
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">Bấm để đổi kịch bản</span>
+              </div>
+
+              <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                {templates.map((tmpl, idx) => {
+                  const isSelected = tmpl.id === selectedTemplateId;
+                  return (
+                    <div
+                      key={tmpl.id}
+                      onClick={() => handleSelectTemplate(tmpl.id)}
+                      className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all text-xs border ${
+                        isSelected
+                          ? 'bg-blue-50/90 dark:bg-blue-950/50 border-blue-400/80 dark:border-blue-700 text-blue-700 dark:text-blue-300 shadow-2xs font-medium'
+                          : 'bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${
+                            isSelected
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-slate-200'
+                          }`}
+                        >
+                          {idx + 1}
+                        </span>
+                        <span className="truncate">{tmpl.title}</span>
+                      </div>
+                      {isSelected && (
+                        <div className="shrink-0 text-blue-600 dark:text-blue-400">
+                          <AppIcon icon={CheckCircle2} size={15} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Authentic Zalo Preview & Direct Editor (7 cols) */}
+          <div className="md:col-span-7 flex flex-col space-y-2">
+            {/* Preview Top Bar */}
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nội dung tin nhắn Zalo</span>
+                {isCustomEdited ? (
+                  <StatusTag status="warning" label="Đã sửa riêng" />
+                ) : (
+                  <StatusTag status="success" label="Chuẩn theo mẫu" />
+                )}
+              </div>
+              <div className="flex items-center gap-2.5">
+                {isCustomEdited && (
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<AppIcon icon={RotateCcw} size={12} />}
+                    onClick={handleResetToTemplate}
+                    className="p-0 text-amber-600 hover:text-amber-700 dark:text-amber-400 text-xs font-medium"
+                  >
+                    Khôi phục gốc
+                  </Button>
+                )}
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 tabular-nums">
+                  {activeMessage.length} ký tự
+                </span>
+              </div>
+            </div>
+
+            {/* Message Bubble Card */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 p-3 space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 pb-1.5 border-b border-slate-200/50 dark:border-slate-800/60">
+                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Đã tự động điền thông tin học viên
+                </span>
+                <span className="text-slate-400 dark:text-slate-500">Có thể sửa trực tiếp trước khi copy</span>
+              </div>
+
+              <Input.TextArea
+                value={activeMessage}
+                onChange={(e) => {
+                  setActiveMessage(e.target.value);
+                  setIsCustomEdited(true);
+                }}
+                autoSize={{ minRows: 13, maxRows: 18 }}
+                className="font-mono text-xs leading-relaxed rounded-xl p-3 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-800 dark:text-slate-100 resize-none shadow-2xs"
+                placeholder="Nội dung kịch bản tin nhắn Zalo..."
+              />
+            </div>
           </div>
         </div>
       )}

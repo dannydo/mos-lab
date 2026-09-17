@@ -18,7 +18,6 @@ import {
   ShopOutlined,
   RocketOutlined,
   BgColorsOutlined,
-  ColumnHeightOutlined,
 } from '@ant-design/icons';
 import { BookOpenCheck, CalendarPlus, Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRound } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -45,12 +44,7 @@ import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
-const OmiCallProfileControl = dynamic(() => import('../../components/omicall-widget/OmiCallHeaderControl'), {
-  ssr: false,
-});
-const BugReportProfileControl = dynamic(() => import('../../components/bug-reports/BugReportProfileControl'), {
-  ssr: false,
-});
+import UserProfileDropdown from '../../components/layout/UserProfileDropdown';
 const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBibleDrawer'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
@@ -66,8 +60,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const responsiveTier = useResponsiveTier();
   const isMobileTier = responsiveTier === 'mobile';
   const isTabletTier = responsiveTier === 'tablet';
-  const desktopDensityLabel =
-    desktopDensity === 'compact' ? 'Compact' : desktopDensity === 'comfortable' ? 'Comfortable' : 'Standard';
   const persistentNavWidth =
     responsiveTier === 'uhd'
       ? 248
@@ -407,67 +399,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const userMenu = {
-    items: [
-      {
-        key: 'profile',
-        label: `Tài khoản: ${user?.displayName}`,
-        disabled: true,
-      },
-      {
-        key: 'role',
-        label: `Vai trò: ${user?.role?.toUpperCase()}`,
-        disabled: true,
-      },
-      {
-        key: 'display-density',
-        icon: <ColumnHeightOutlined />,
-        label: isMobileTier
-          ? `Mật độ desktop: ${desktopDensityLabel} (mobile dùng Compact)`
-          : `Mật độ desktop: ${desktopDensityLabel}`,
-        children: [
-          {
-            key: 'display-density-compact',
-            label: 'Compact · 32px / 16px',
-            onClick: () => setDesktopDensity('compact'),
-          },
-          {
-            key: 'display-density-standard',
-            label: 'Standard · 36px / 18px',
-            onClick: () => setDesktopDensity('standard'),
-          },
-          {
-            key: 'display-density-comfortable',
-            label: 'Comfortable · 44px / 20px',
-            onClick: () => setDesktopDensity('comfortable'),
-          },
-        ],
-      },
-      {
-        type: 'divider' as const,
-      },
-      {
-        key: 'telesales_dashboard',
-        icon: <BarChartOutlined className="text-gold" />,
-        label: 'KPI Đội Telesales',
-        onClick: () => {
-          setSelectedMemberId('DD');
-          setIsDashboardVisible(true);
-        },
-      },
-      {
-        type: 'divider' as const,
-      },
-      {
-        key: 'logout',
-        danger: true,
-        icon: <LogoutOutlined />,
-        label: 'Đăng xuất',
-        onClick: handleLogout,
-      },
-    ],
-  };
-
   const mobileUtilityMenu = {
     items: [
       {
@@ -590,7 +521,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               width={persistentNavWidth}
               suppressHydrationWarning
               style={{
-                backgroundColor: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
+                backgroundColor: 'var(--mos-surface, ' + token.colorBgContainer + ')',
                 backgroundImage: 'var(--mos-seasonal-sidebar-gradient, none)',
                 borderRightColor: 'var(--mos-seasonal-border, var(--mos-surface-border))',
                 borderRightStyle: 'solid',
@@ -627,9 +558,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: 0,
-                background: themeMode === 'dark' ? '#141414' : '#ffffff',
-                border: `1px solid ${themeMode === 'dark' ? '#303030' : '#d9d9d9'}`,
-                color: themeMode === 'dark' ? '#D4A84B' : '#855b0e',
+                background: 'var(--mos-surface-raised, ' + (themeMode === 'dark' ? '#141414' : '#ffffff') + ')',
+                border: '1px solid var(--mos-surface-border, ' + (themeMode === 'dark' ? '#303030' : '#d9d9d9') + ')',
+                color: 'var(--mos-accent, ' + (themeMode === 'dark' ? '#D4A84B' : '#855b0e') + ')',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                 cursor: 'pointer',
                 transition: 'left 0.2s ease, opacity 0.2s ease, background 0.2s, transform 0.2s ease',
@@ -846,47 +777,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   onClick={toggleTheme}
                   aria-pressed={themeMode === 'dark'}
                 />
-                <Dropdown
-                  menu={userMenu}
-                  placement="bottomRight"
-                  arrow
-                  popupRender={(menu) => (
-                    <div
-                      className="overflow-hidden rounded-xl"
-                      style={{ background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}` }}
-                    >
-                      <OmiCallProfileControl />
-                      <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>
-                        <BugReportProfileControl />
-                      </div>
-                      <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>{menu}</div>
-                    </div>
-                  )}
-                >
-                  <button
-                    type="button"
-                    className="mos-header-avatar-action"
-                    data-header-action="user-menu"
-                    aria-label="Mở menu người dùng"
-                    aria-haspopup="menu"
-                    title="Mở menu người dùng"
-                  >
-                    <Avatar
-                      className="mos-header-avatar"
-                      src={
-                        user?.avatarUrl
-                          ? user.avatarUrl.replace(
-                              /^https?:\/\/(s|api)\.wingslashes\.com/,
-                              'https://cdn.wingslashes.com'
-                            )
-                          : undefined
-                      }
-                      alt={user?.name ? `Ảnh đại diện ${user.name}` : 'Ảnh đại diện người dùng'}
-                      icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
-                      style={{ backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb', color: '#ffffff' }}
-                    />
-                  </button>
-                </Dropdown>
+                <UserProfileDropdown
+                  user={user}
+                  isImpersonating={isImpersonating}
+                  onExitImpersonation={handleExitImpersonation}
+                  desktopDensity={desktopDensity}
+                  setDesktopDensity={setDesktopDensity}
+                  onOpenTelesalesDashboard={() => {
+                    setSelectedMemberId('DD');
+                    setIsDashboardVisible(true);
+                  }}
+                  onLogout={handleLogout}
+                />
               </div>
             </Header>
 
@@ -1009,12 +911,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               font-weight: 600;
             }
             .antd-custom-menu .ant-menu-submenu-open > .ant-menu-submenu-title {
-              color: ${themeMode === 'dark' ? '#e6c77a' : '#855b0e'} !important;
-              background-color: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.1)' : 'rgba(212, 168, 75, 0.1)'} !important;
+              color: var(
+                --mos-sidebar-submenu-open-text,
+                var(--mos-accent, ${themeMode === 'dark' ? '#e6c77a' : '#855b0e'})
+              ) !important;
+              background-color: var(
+                --mos-sidebar-submenu-open-bg,
+                var(--mos-focus-ring, rgba(212, 168, 75, 0.1))
+              ) !important;
             }
             .antd-custom-menu .ant-menu-submenu-title:hover {
-              color: #d4a84b !important;
-              background-color: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.13)' : 'rgba(212, 168, 75, 0.09)'} !important;
+              color: var(--mos-sidebar-hover-text, var(--mos-accent, #d4a84b)) !important;
+              background-color: var(
+                --mos-sidebar-hover-bg,
+                var(--mos-focus-ring, ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.13)' : 'rgba(212, 168, 75, 0.09)'})
+              ) !important;
             }
             .antd-custom-menu .ant-menu-item-group-title {
               margin: 8px 0 3px !important;
@@ -1139,7 +1050,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               width: 3px;
             }
             .antd-custom-menu .sidebar-menu-entry--nested.ant-menu-item-selected::before {
-              background: #d4a84b;
+              background: var(--mos-sidebar-active-bg, #d4a84b);
               height: 18px;
               width: 3px;
             }
@@ -1207,8 +1118,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               width: 40px;
             }
             .sidebar-rail-action:hover {
-              background: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.14)' : 'rgba(212, 168, 75, 0.1)'};
-              color: #d4a84b;
+              background: var(
+                --mos-sidebar-hover-bg,
+                ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.14)' : 'rgba(212, 168, 75, 0.1)'}
+              );
+              color: var(--mos-sidebar-hover-text, var(--mos-accent, #d4a84b));
               transform: translateY(-1px);
             }
             .sidebar-rail-action:focus-visible {
@@ -1216,9 +1130,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               outline: none;
             }
             .sidebar-rail-action--active {
-              background: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.18)' : 'rgba(212, 168, 75, 0.13)'};
-              box-shadow: inset 3px 0 0 #d4a84b;
-              color: #d4a84b;
+              background: var(
+                --mos-sidebar-hover-bg,
+                ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.18)' : 'rgba(212, 168, 75, 0.13)'}
+              );
+              box-shadow: inset 3px 0 0 var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b));
+              color: var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b));
             }
             .sidebar-rail-action__icon {
               align-items: center;
@@ -1247,7 +1164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }
             .sidebar-rail-action:hover .sidebar-rail-action__submenu-indicator,
             .sidebar-rail-action--active .sidebar-rail-action__submenu-indicator {
-              color: #d4a84b;
+              color: var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b));
               transform: translate(1px, -50%);
             }
             .sidebar-rail-divider {
@@ -1335,8 +1252,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               width: 100% !important;
             }
             .sidebar-rail-flyout .ant-menu-item-selected {
-              background: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.18)' : 'rgba(212, 168, 75, 0.13)'} !important;
-              color: ${themeMode === 'dark' ? '#e6c77a' : '#855b0e'} !important;
+              background: var(
+                --mos-sidebar-hover-bg,
+                var(--mos-focus-ring, ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.18)' : 'rgba(212, 168, 75, 0.13)'})
+              ) !important;
+              color: var(
+                --mos-sidebar-submenu-open-text,
+                var(--mos-accent, ${themeMode === 'dark' ? '#e6c77a' : '#855b0e'})
+              ) !important;
             }
             .sidebar-rail-flyout .sidebar-menu-entry--nested::before {
               display: none;
@@ -1344,28 +1267,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             /* Override Ant Design dark sidebar menu hover/select colors */
             .antd-custom-menu .ant-menu-item-selected {
-              background-color: #d4a84b !important;
+              background-color: var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b)) !important;
             }
             .antd-custom-menu .ant-menu-item-selected .ant-menu-title-content,
             .antd-custom-menu .ant-menu-item-selected .anticon {
-              color: #000000 !important;
+              color: var(--mos-sidebar-active-text, var(--mos-accent-contrast, #000000)) !important;
             }
 
-            /* Keep black color on selected item hover */
+            /* Keep contrast text color on selected item hover */
             .antd-custom-menu .ant-menu-item-selected:hover,
             .antd-custom-menu .ant-menu-item-selected:hover .ant-menu-title-content,
             .antd-custom-menu .ant-menu-item-selected:hover .anticon {
-              color: #000000 !important;
-              background-color: #d4a84b !important;
+              color: var(--mos-sidebar-active-text, var(--mos-accent-contrast, #000000)) !important;
+              background-color: var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b)) !important;
             }
 
             /* Hover styles for normal items */
             .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover {
-              background-color: ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : 'rgba(212, 168, 75, 0.08)'} !important;
+              background-color: var(
+                --mos-sidebar-hover-bg,
+                var(--mos-focus-ring, ${themeMode === 'dark' ? 'rgba(212, 168, 75, 0.15)' : 'rgba(212, 168, 75, 0.08)'})
+              ) !important;
             }
             .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover .ant-menu-title-content,
             .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover .anticon {
-              color: #d4a84b !important;
+              color: var(--mos-sidebar-hover-text, var(--mos-accent, #d4a84b)) !important;
             }
 
             /* Show toggle button on sidebar hover */

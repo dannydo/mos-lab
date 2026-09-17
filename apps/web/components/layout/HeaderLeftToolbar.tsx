@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { theme } from 'antd';
-import { CalendarDays } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { HeaderActionIndicator } from '../ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../ui/HeaderIconButton';
 
@@ -24,7 +24,7 @@ export const HeaderLeftToolbar: React.FC<HeaderLeftToolbarProps> = ({ onOpenCvDr
         <HeaderIconButton
           action="cv-schedule"
           label={scheduleLabel}
-          icon={CalendarDays}
+          icon={Users}
           tone="accent"
           onClick={onOpenCvDrawer}
         />

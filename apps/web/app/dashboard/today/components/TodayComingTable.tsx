@@ -61,7 +61,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const { makeCall } = useOmiCall();
-  const goldText = themeMode === 'dark' ? '#D4A84B' : '#855b0e';
+  const goldText = token.colorPrimary;
   const infoText = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);

@@ -696,7 +696,7 @@ export default function AcademyLeadsPage() {
                     description={
                       <>
                         <div>{item.description || item.code}</div>
-                        <Text type="secondary">
+                        <Text type="secondary" className="tabular-nums">
                           Niêm yết {formatVND(item.listPriceVnd)} · Ưu đãi {formatVND(item.promoPriceVnd)}
                         </Text>
                       </>

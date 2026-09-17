@@ -71,7 +71,7 @@ export function AcademyTalentFollowUpPaymentSlip({
 
   return (
     <article
-      className={`${styles.followUpPaymentSlip} ${className}`}
+      className={`${styles.followUpPaymentSlip} tabular-nums ${className}`}
       aria-label="Phiếu yêu cầu thanh toán học phí follow-up"
     >
       <header className={styles.followUpPaymentSlipHeader}>

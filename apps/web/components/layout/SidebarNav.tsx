@@ -533,7 +533,7 @@ export default function SidebarNav({
         }
         items={expandedMenuItems}
         style={{
-          background: themeMode === 'dark' ? '#000000' : token.colorBgContainer,
+          background: 'transparent',
           paddingTop: '4px',
           borderRight: 0,
         }}

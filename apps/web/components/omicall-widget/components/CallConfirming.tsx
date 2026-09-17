@@ -44,9 +44,9 @@ export const CallConfirming: React.FC<CallConfirmingProps> = ({
             size={72}
             icon={!currentCall?.avatar ? <UserOutlined /> : undefined}
             style={{
-              backgroundColor: '#D4A84B',
-              color: 'black',
-              boxShadow: '0 8px 24px rgba(212, 168, 75, 0.25)',
+              backgroundColor: 'var(--mos-accent, #D4A84B)',
+              color: 'var(--mos-accent-contrast, black)',
+              boxShadow: '0 8px 24px var(--mos-focus-ring, rgba(0, 0, 0, 0.25))',
               border: `2px solid ${isDark ? '#27272a' : '#e4e4e7'}`,
             }}
             className="transition-all duration-300 hover:scale-[1.05]"

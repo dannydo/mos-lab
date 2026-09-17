@@ -223,6 +223,17 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
       root.style.setProperty('--mos-motion-slow', `${coreTheme.motion.slow}ms`);
       root.style.setProperty('--mos-motion-easing', coreTheme.motion.easing);
 
+      // Sidebar navigation tokens
+      root.style.setProperty('--mos-sidebar-active-bg', semantic.accent);
+      root.style.setProperty('--mos-sidebar-active-text', semantic.accentContrast);
+      root.style.setProperty('--mos-sidebar-hover-bg', semantic.focusRing);
+      root.style.setProperty('--mos-sidebar-hover-text', semantic.accent);
+      root.style.setProperty('--mos-sidebar-submenu-open-bg', semantic.focusRing);
+      root.style.setProperty(
+        '--mos-sidebar-submenu-open-text',
+        themeMode === 'dark' ? colors.primaryHover || semantic.accent : semantic.accent
+      );
+
       root.dataset.uiDensity = effectiveDensity;
       root.dataset.desktopDensity = desktopDensity;
       root.dataset.theme = coreTheme.id;
@@ -433,6 +444,13 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
               itemActiveBgDisabled: semanticTokens.surfaceMuted,
               itemActiveColorDisabled: semanticTokens.textMuted,
               itemInputBg: semanticTokens.surfaceRaised,
+            },
+            Menu: {
+              itemSelectedBg: semanticTokens.accent,
+              itemSelectedColor: semanticTokens.accentContrast,
+              itemHoverBg: semanticTokens.focusRing,
+              itemHoverColor: semanticTokens.accent,
+              subMenuItemBg: 'transparent',
             },
           },
         }}

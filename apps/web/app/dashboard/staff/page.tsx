@@ -201,7 +201,10 @@ export default function StaffPage() {
       {/* Page Header */}
       <div className="staff-page-header">
         <div className="staff-page-header-copy">
-          <Title level={3} style={{ color: '#D4A84B', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Title
+            level={3}
+            style={{ color: token.colorPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
             <SolutionOutlined /> Quản Lý Nhân Sự & Vai Trò (HR)
           </Title>
           <Text type="secondary">
@@ -229,9 +232,6 @@ export default function StaffPage() {
                 icon={<PlusOutlined />}
                 onClick={() => openStaffModal(null)}
                 style={{
-                  background: '#D4A84B',
-                  borderColor: '#D4A84B',
-                  color: '#000',
                   fontWeight: '600',
                   borderRadius: '6px',
                 }}
@@ -245,9 +245,6 @@ export default function StaffPage() {
               icon={<PlusOutlined />}
               onClick={() => openRoleModal(null)}
               style={{
-                background: '#D4A84B',
-                borderColor: '#D4A84B',
-                color: '#000',
                 fontWeight: '600',
                 borderRadius: '6px',
               }}
@@ -427,7 +424,7 @@ export default function StaffPage() {
             <Badge
               count={selectedRowKeys.length}
               overflowCount={999}
-              style={{ backgroundColor: '#D4A84B', color: '#000', fontWeight: 'bold' }}
+              style={{ backgroundColor: token.colorPrimary, color: token.colorTextLightSolid, fontWeight: 'bold' }}
             />
             <Text
               style={{
@@ -437,7 +434,11 @@ export default function StaffPage() {
                 whiteSpace: 'nowrap',
               }}
             >
-              Đã chọn <strong style={{ color: '#D4A84B' }}>{selectedRowKeys.length}</strong> nhân viên
+              Đã chọn{' '}
+              <strong className="tabular-nums" style={{ color: token.colorPrimary }}>
+                {selectedRowKeys.length}
+              </strong>{' '}
+              nhân viên
             </Text>
           </div>
 
@@ -473,9 +474,6 @@ export default function StaffPage() {
               disabled={!selectedBulkRole}
               onClick={() => handleBulkUpdateRole()}
               style={{
-                background: selectedBulkRole ? '#D4A84B' : undefined,
-                borderColor: selectedBulkRole ? '#D4A84B' : undefined,
-                color: selectedBulkRole ? '#000' : undefined,
                 fontWeight: '600',
                 borderRadius: '6px',
                 whiteSpace: 'nowrap',
@@ -559,7 +557,7 @@ export default function StaffPage() {
       {/* Staff Add/Edit Modal */}
       <Modal
         title={
-          <Text style={{ fontSize: '18px', fontWeight: 'bold', color: '#D4A84B' }}>
+          <Text style={{ fontSize: '18px', fontWeight: 'bold', color: token.colorPrimary }}>
             {editingStaff ? `Chỉnh sửa nhân viên: ${editingStaff.displayName}` : 'Thêm Nhân Viên Mới'}
           </Text>
         }
@@ -568,8 +566,8 @@ export default function StaffPage() {
         footer={null}
         width={700}
         destroyOnHidden
-        style={{
-          background: themeMode === 'dark' ? '#141414' : '#fff',
+        styles={{
+          content: { background: token.colorBgElevated },
         }}
       >
         <Form
@@ -595,7 +593,7 @@ export default function StaffPage() {
       {/* Role Add/Edit Modal */}
       <Modal
         title={
-          <Text style={{ fontSize: '18px', fontWeight: 'bold', color: '#D4A84B' }}>
+          <Text style={{ fontSize: '18px', fontWeight: 'bold', color: token.colorPrimary }}>
             {editingRole ? `Cấu hình nhóm quyền: ${editingRole.name}` : 'Thêm Nhóm Quyền / Vai Trò Mới'}
           </Text>
         }
@@ -604,8 +602,8 @@ export default function StaffPage() {
         footer={null}
         width={600}
         destroyOnHidden
-        style={{
-          background: themeMode === 'dark' ? '#141414' : '#fff',
+        styles={{
+          content: { background: token.colorBgElevated },
         }}
       >
         <Form form={roleForm} layout="vertical" onFinish={handleRoleSubmit} style={{ marginTop: '20px' }}>
@@ -677,14 +675,14 @@ export default function StaffPage() {
           <Card
             title={
               <Space>
-                <SafetyCertificateOutlined style={{ color: '#D4A84B' }} />
+                <SafetyCertificateOutlined style={{ color: token.colorPrimary }} />
                 <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Phân Quyền Hệ Thống (Permissions)</Text>
               </Space>
             }
             size="small"
             style={{
-              background: themeMode === 'dark' ? '#1c1c1c' : '#fafafa',
-              border: `1px solid ${themeMode === 'dark' ? '#2d2d2d' : '#e8e8e8'}`,
+              background: token.colorBgContainer,
+              border: `1px solid ${token.colorBorderSecondary}`,
               marginBottom: '20px',
             }}
           >
@@ -739,9 +737,6 @@ export default function StaffPage() {
               htmlType="submit"
               loading={roleSubmitting}
               style={{
-                background: '#D4A84B',
-                borderColor: '#D4A84B',
-                color: '#000',
                 fontWeight: '600',
               }}
             >
@@ -755,7 +750,7 @@ export default function StaffPage() {
       <Drawer
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <SolutionOutlined style={{ color: '#D4A84B', fontSize: '20px' }} />
+            <SolutionOutlined style={{ color: token.colorPrimary, fontSize: '20px' }} />
             <Text style={{ fontSize: '16px', fontWeight: 'bold', color: token.colorText }}>Hồ Sơ Nhân Sự Chi Tiết</Text>
           </div>
         }
@@ -765,13 +760,13 @@ export default function StaffPage() {
         open={isDrawerOpen}
         styles={{
           body: {
-            background: themeMode === 'dark' ? '#141414' : '#fafafa',
+            background: token.colorBgContainer,
             color: token.colorText,
             padding: '24px',
           },
           header: {
-            background: themeMode === 'dark' ? '#1d1d1d' : '#fff',
-            borderBottom: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#f0f0f0'}`,
+            background: token.colorBgElevated,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
           },
         }}
       >
@@ -829,7 +824,11 @@ export default function StaffPage() {
 
             {/* General Info */}
             <Descriptions
-              title={<Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>Thông tin cơ bản</Text>}
+              title={
+                <Text style={{ color: token.colorPrimary, fontSize: '15px', fontWeight: 'bold' }}>
+                  Thông tin cơ bản
+                </Text>
+              }
               column={1}
               bordered
               size="small"
@@ -876,7 +875,7 @@ export default function StaffPage() {
             {/* HR specific data */}
             <Descriptions
               title={
-                <Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>
+                <Text style={{ color: token.colorPrimary, fontSize: '15px', fontWeight: 'bold' }}>
                   Thông tin nhân sự & Công việc
                 </Text>
               }
@@ -986,7 +985,11 @@ export default function StaffPage() {
 
             {/* Emergency Contact */}
             <Descriptions
-              title={<Text style={{ color: '#D4A84B', fontSize: '15px', fontWeight: 'bold' }}>Liên hệ khẩn cấp</Text>}
+              title={
+                <Text style={{ color: token.colorPrimary, fontSize: '15px', fontWeight: 'bold' }}>
+                  Liên hệ khẩn cấp
+                </Text>
+              }
               column={1}
               bordered
               size="small"
@@ -1011,11 +1014,15 @@ export default function StaffPage() {
             {/* Notes */}
             {selectedStaff.notes && (
               <Card
-                title={<Text style={{ color: '#D4A84B', fontSize: '14px', fontWeight: 'bold' }}>Ghi chú nội bộ</Text>}
+                title={
+                  <Text style={{ color: token.colorPrimary, fontSize: '14px', fontWeight: 'bold' }}>
+                    Ghi chú nội bộ
+                  </Text>
+                }
                 size="small"
                 style={{
-                  background: themeMode === 'dark' ? '#1c1c1c' : '#fff',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a2a2a' : '#e8e8e8'}`,
+                  background: token.colorBgContainer,
+                  border: `1px solid ${token.colorBorderSecondary}`,
                 }}
               >
                 <Text style={{ whiteSpace: 'pre-wrap' }}>{selectedStaff.notes}</Text>
