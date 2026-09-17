@@ -241,14 +241,17 @@ run_remote_dump() {
       done
       
       (
-        # Step 1: Dump full schema (no data)
-        $DUMP_CMD --no-data $EXCLUDES "$db_name"
+        # Step 1: Dump full schema WITHOUT triggers
+        $DUMP_CMD --no-data --skip-triggers $EXCLUDES "$db_name"
         
-        # Step 2: Dump heavy transactional tables filtered by recent 6 months
-        $DUMP_CMD --no-create-info $EXCLUDES --where="date_created >= DATE_SUB(NOW(), INTERVAL 6 MONTH)" "$db_name" $HEAVY_TABLES 2>/dev/null || true
+        # Step 2: Dump heavy transactional tables filtered by recent 6 months (NO triggers)
+        $DUMP_CMD --no-create-info --skip-triggers $EXCLUDES --where="date_created >= DATE_SUB(NOW(), INTERVAL 6 MONTH)" "$db_name" $HEAVY_TABLES 2>/dev/null || true
         
-        # Step 3: Dump all other tables in full
-        $DUMP_CMD --no-create-info $EXCLUDES $IGNORE_HEAVY "$db_name"
+        # Step 3: Dump all other tables in full (NO triggers)
+        $DUMP_CMD --no-create-info --skip-triggers $EXCLUDES $IGNORE_HEAVY "$db_name"
+
+        # Step 4: Dump triggers at the very end after all data is restored
+        $DUMP_CMD --no-create-info --no-data --triggers $EXCLUDES "$db_name"
       ) | gzip -c
     fi
 REMOTE_EOF
