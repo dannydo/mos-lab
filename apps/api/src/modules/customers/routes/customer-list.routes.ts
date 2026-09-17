@@ -13,6 +13,39 @@ import {
   createRouteHelpers,
 } from './helpers.js';
 
+function buildSearchCondition(search: string): { sql: string; params: string[] } {
+  const rawSearch = search.trim();
+  const cleanDigits = rawSearch.replace(/[\s.-]/g, '');
+  const isPotentialPhone = /^\+?[0-9]{4,15}$/.test(cleanDigits);
+
+  if (isPotentialPhone) {
+    const phonePrefix = `${cleanDigits}%`;
+    const nameLike = `%${rawSearch}%`;
+    return {
+      sql: `(
+        EXISTS (
+          SELECT 1 
+          FROM user_contact uc 
+          WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND (uc.phone_number = ? OR uc.phone_number LIKE ?)
+        ) OR up.full_name LIKE ?
+      )`,
+      params: [cleanDigits, phonePrefix, nameLike],
+    };
+  }
+
+  const searchLike = `%${rawSearch}%`;
+  return {
+    sql: `(
+      up.full_name LIKE ? OR EXISTS (
+        SELECT 1 
+        FROM user_contact uc 
+        WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
+      )
+    )`,
+    params: [searchLike, searchLike],
+  };
+}
+
 export async function registerCustomerListRoutes(fastify: FastifyInstance) {
   const { getNewLocaUserIds } = createRouteHelpers(fastify);
 
@@ -605,17 +638,11 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push(foreignFilterSql);
       }
 
-      // 1. Filter by Search (Name or Phone using EXISTS for contact to avoid GROUP BY)
+      // 1. Filter by Search (Name or Phone using Phone Fast-Path)
       if (search && search.trim() !== '') {
-        const searchLike = `%${search.trim()}%`;
-        innerWhereClauses.push(`(
-          up.full_name LIKE ? OR EXISTS (
-            SELECT 1 
-            FROM user_contact uc 
-            WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
-          )
-        )`);
-        innerParams.push(searchLike, searchLike);
+        const { sql, params } = buildSearchCondition(search);
+        innerWhereClauses.push(sql);
+        innerParams.push(...params);
       }
 
       // 2. Filter by Bucket (Optimized using usb_agg joins)
@@ -1775,15 +1802,9 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       // Apply other filters (search, bucket, stats, etc.)
       if (search && search.trim() !== '') {
-        const searchLike = `%${search.trim()}%`;
-        innerWhereClauses.push(`(
-          up.full_name LIKE ? OR EXISTS (
-            SELECT 1 
-            FROM user_contact uc 
-            WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
-          )
-        )`);
-        innerParams.push(searchLike, searchLike);
+        const { sql, params } = buildSearchCondition(search);
+        innerWhereClauses.push(sql);
+        innerParams.push(...params);
       }
 
       if (bucket && bucket !== 'ALL') {
