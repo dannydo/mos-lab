@@ -60,6 +60,26 @@ export class WorkshopRealtimeHub {
       }
     }
   }
+
+  broadcastAudience(workshopId: number, factory: (audience: RealtimeAudience) => AcademyWorkshopRealtimeEvent | null) {
+    const connections = this.workshops.get(workshopId) || [];
+    const cache = new Map<RealtimeAudience, string>();
+    for (const connection of connections) {
+      if (connection.socket.readyState !== 1) continue;
+      try {
+        let payload = cache.get(connection.audience);
+        if (!payload) {
+          const event = factory(connection.audience);
+          if (!event) continue;
+          payload = JSON.stringify(event);
+          cache.set(connection.audience, payload);
+        }
+        connection.socket.send(payload);
+      } catch {
+        connection.socket.close();
+      }
+    }
+  }
 }
 
 export const academyWorkshopRealtimeHub = new WorkshopRealtimeHub();
@@ -296,6 +316,7 @@ export class AcademyWorkshopLiveService {
                 row.agendaItems.find((item) => ['RUNNING', 'PAUSED'].includes(item.status))!
             )
           : null,
+      agenda: row.agendaItems.map((item: SafeAny) => toAcademyWorkshopAgendaItem(item)),
       activeQuiz,
       activeQuestion,
       gameLeaderboard: await this.gameLeaderboard(fastify, workshopId),
@@ -304,10 +325,14 @@ export class AcademyWorkshopLiveService {
   }
 
   static async broadcastState(fastify: FastifyInstance, workshopId: number) {
-    academyWorkshopRealtimeHub.broadcast(workshopId, {
+    const [displayState, staffState] = await Promise.all([
+      this.liveState(fastify, workshopId, 'DISPLAY'),
+      this.liveState(fastify, workshopId, 'STAFF'),
+    ]);
+    academyWorkshopRealtimeHub.broadcastAudience(workshopId, (audience) => ({
       type: 'STATE_SNAPSHOT',
-      data: await this.liveState(fastify, workshopId, 'DISPLAY'),
-    });
+      data: audience === 'STAFF' ? staffState : displayState,
+    }));
   }
 
   static async updateDisplaySettings(
@@ -343,7 +368,7 @@ export class AcademyWorkshopLiveService {
       PAUSE: ['RUNNING'],
       RESUME: ['PAUSED'],
       COMPLETE: ['RUNNING', 'PAUSED'],
-      SKIP: ['PENDING'],
+      SKIP: ['PENDING', 'RUNNING', 'PAUSED'],
     };
     if (!transitions[action]?.includes(item.status)) {
       throw new AcademySalesError(
@@ -358,7 +383,7 @@ export class AcademyWorkshopLiveService {
       if (other) throw new AcademySalesError(`Cần hoàn tất "${other.title}" trước khi bắt đầu phần mới.`, 409);
     }
     const pauseDelta =
-      item.pausedAt && ['RESUME', 'COMPLETE'].includes(action)
+      item.pausedAt && ['RESUME', 'COMPLETE', 'SKIP'].includes(action)
         ? Math.max(0, Math.floor((now.getTime() - item.pausedAt.getTime()) / 1000))
         : 0;
     const status =
@@ -370,6 +395,12 @@ export class AcademyWorkshopLiveService {
             ? 'COMPLETED'
             : 'SKIPPED';
     const updated = await fastify.prisma.crm.$transaction(async (tx) => {
+      const currentWorkshop = await tx.crmAcademyWorkshop.findUnique({
+        where: { id: workshopId },
+        select: { liveAgendaItemId: true, status: true },
+      });
+      const isActiveItem = currentWorkshop?.liveAgendaItemId === item.id || ['RUNNING', 'PAUSED'].includes(item.status);
+
       const next = await tx.crmAcademyWorkshopAgendaItem.update({
         where: { id: item.id },
         data: {
@@ -380,11 +411,24 @@ export class AcademyWorkshopLiveService {
           completedAt: ['COMPLETE', 'SKIP'].includes(action) ? now : null,
         },
       });
+
+      const nextLiveAgendaItemId =
+        action === 'START' || action === 'RESUME'
+          ? item.id
+          : ['COMPLETE', 'SKIP'].includes(action)
+            ? isActiveItem
+              ? null
+              : (currentWorkshop?.liveAgendaItemId ?? null)
+            : (currentWorkshop?.liveAgendaItemId ?? null);
+
+      const nextWorkshopStatus =
+        action === 'PAUSE' ? 'PAUSED' : ['START', 'RESUME'].includes(action) ? 'LIVE' : undefined;
+
       await tx.crmAcademyWorkshop.update({
         where: { id: workshopId },
         data: {
-          liveAgendaItemId: ['COMPLETE', 'SKIP'].includes(action) ? null : item.id,
-          status: action === 'PAUSE' ? 'PAUSED' : ['START', 'RESUME'].includes(action) ? 'LIVE' : undefined,
+          liveAgendaItemId: nextLiveAgendaItemId,
+          ...(nextWorkshopStatus ? { status: nextWorkshopStatus } : {}),
         },
       });
       await tx.crmAcademyWorkshopTimelineEvent.create({

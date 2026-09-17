@@ -3,6 +3,10 @@ import { networkInterfaces } from 'node:os';
 // Touch next.config.ts to trigger dev server reload
 import withBundleAnalyzer from '@next/bundle-analyzer';
 
+if (process.env.NODE_ENV !== 'production' && !process.env.WATCHPACK_POLLING) {
+  process.env.WATCHPACK_POLLING = 'true';
+}
+
 function localIpv4Hosts(): string[] {
   return Array.from(
     new Set(

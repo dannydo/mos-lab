@@ -20,6 +20,23 @@
 - **Nếu Hột Mít (VoicePilot) đang mở**: Tự động đồng bộ bản ghi và trạng thái phản hồi qua Hột Mít (`/tmp/voice_hud.json`: `ai_badge: "Đang trả lời..."`, `ai_status: "speaking"`, hiển thị câu trả lời và phát âm thanh tương tác).
 - **Nếu Hột Mít không mở**: Tự động phát âm thanh phản hồi trực tiếp tại đây qua `/Users/dannydo/.gemini/antigravity/bin/speak` ra loa máy tính.
 
+## 4. Quy tắc Chống Đè Giọng & Cấm Phát Âm Thanh Khi Nhận Task Notification (Anti-Voice Clashing Invariant)
+
+- **Chỉ phát âm thanh khi phản hồi trực tiếp cho câu hỏi của Danny**: Tuyệt đối không phát sinh lệnh `speak` khi chỉ nhận thông báo hệ thống `<SYSTEM_MESSAGE>` về việc background task (như task speak trước đó, compile, build, lint, cronjob) vừa hoàn thành mà Danny không gửi yêu cầu mới.
+- **Cơ chế Triệt tiêu Đè giọng (Barge-in Mutual Exclusion)**: Mọi lệnh `speak` trước khi phát audio bắt buộc phải kiểm tra và hủy mọi tiến trình `afplay.*antigravity_speech` đang chạy dở dang, đảm bảo trong bất kỳ thời điểm nào chỉ có DUY NHẤT 1 giọng nói phát ra loa máy tính.
+
+---
+
+# ⚡ Zero-Friction Execution Invariants (Quy tắc Thực thi Không Ma Sát)
+
+Để triệt tiêu các lỗi vặt làm gián đoạn luồng làm việc và lãng phí thời gian của người dùng:
+
+1. **Never Guess Binaries & Paths (Tuyệt đối không đoán mò)**: Không bao giờ giả định tên binary (ví dụ: `python3.12`) hoặc đường dẫn tệp. Luôn dùng `which <cmd>` hoặc kiểm tra tệp tồn tại trước.
+2. **Defensive Terminal Reading (Thực thi phòng thủ khi đọc tệp)**: Mọi lệnh terminal kiểm tra tệp bắt buộc có fallback an toàn (ví dụ: `cat file 2>/dev/null || true` hoặc `test -f file && cat file`) để không gây crash với exit code 1.
+3. **Workspace Anchoring & Absolute Config Paths (Neo thư mục gốc chuẩn xác)**: Luôn neo `Cwd` tại thư mục gốc workspace (`/Users/dannydo/projects/mos-lab`). Các đường dẫn tệp cấu hình môi trường (.env) bắt buộc dùng đường dẫn tuyệt đối hoặc tính từ root để tránh lỗi nhân đôi path (`apps/api/apps/api/.env`).
+4. **Pre-edit Context Freshness (Làm tươi ngữ cảnh trước khi sửa tệp)**: Trước khi gọi `replace_file_content`, nếu tệp vừa được chỉnh sửa ở các bước trước, bắt buộc `view_file` lại 15-20 dòng xung quanh để đảm bảo khớp 100% từng ký tự, tránh lỗi `target content not found`.
+5. **Tool Scope Discipline (Tuân thủ phạm vi công cụ)**: `write_to_file` chỉ dùng cho Artifacts (`brain/...`) và Code dự án (`projects/mos-lab/...`). Đối với các tệp cấu hình hệ thống ngoài workspace (`~/.gemini/antigravity/...`), luôn dùng Python inline hoặc Bash script để không vi phạm sandbox boundary.
+
 ---
 
 # Frontend Theme Customization Rules

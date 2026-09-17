@@ -498,6 +498,7 @@ export interface AcademyWorkshopLiveState {
   connectedParticipantCount: number;
   showJoinQrOnDisplay: boolean;
   activeAgendaItem: AcademyWorkshopAgendaItem | null;
+  agenda: AcademyWorkshopAgendaItem[];
   activeQuiz: AcademyWorkshopQuiz | null;
   activeQuestion: AcademyWorkshopQuizQuestion | null;
   gameLeaderboard: AcademyWorkshopGameLeaderboardEntry[];

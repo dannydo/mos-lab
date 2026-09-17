@@ -13,6 +13,22 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
   ```
   Giọng đọc chuẩn: `vi-VN-HoaiMyNeural` (Hoài My). Tóm tắt phát âm cần ngắn gọn, rõ ràng, thân thiện và gãy gọn để Danny nghe ngay lập tức khi đang làm việc.
 - **Quy tắc Phản hồi Âm thanh & Tích hợp Hột Mít (Always Voice Feedback Mode)**: Khi Danny test hoặc hỏi bất kỳ điều gì trong Antigravity, Agent **LUÔN LUÔN phản hồi lại bằng âm thanh**. Nếu Hột Mít (VoicePilot) đang mở: tự động đồng bộ bản ghi và trạng thái phản hồi qua Hột Mít (`/tmp/voice_hud.json`: `ai_badge: "Đang trả lời..."`, `ai_status: "speaking"`, hiển thị câu trả lời và phát âm thanh tương tác). Nếu Hột Mít không mở: tự động phát âm thanh phản hồi trực tiếp tại đây qua `/Users/dannydo/.gemini/antigravity/bin/speak` ra loa máy tính.
+- **Quy tắc Chống Đè Giọng & Cấm Phát Âm Thanh Khi Nhận Task Notification (Anti-Voice Clashing Invariant)**:
+  - Chỉ gọi `speak` **1 lần duy nhất** khi kết thúc lượt trả lời trực tiếp cho câu hỏi hoặc yêu cầu của Danny.
+  - **Tuyệt đối KHÔNG gọi `speak`** khi chỉ nhận thông báo hệ thống (`<SYSTEM_MESSAGE>`) về việc một background task (như task speak trước đó, compile, build, test, cronjob) vừa chạy xong mà Danny không hề gửi yêu cầu mới.
+  - `speak_engine.py` tự động ngắt (`pkill -9 -f "afplay.*antigravity_speech"`) bất kỳ giọng nói nào đang đọc dở trước khi phát audio mới (Barge-in Mutual Exclusion), đảm bảo không bao giờ có 2 luồng âm thanh Hoài My đọc đè lên nhau.
+
+---
+
+## ⚡ Zero-Friction Execution Invariants (Quy tắc Thực thi Không Ma Sát)
+
+Để triệt tiêu các lỗi vặt làm gián đoạn luồng làm việc và lãng phí thời gian của người dùng:
+
+1. **Never Guess Binaries & Paths (Tuyệt đối không đoán mò)**: Không bao giờ giả định tên binary (ví dụ: `python3.12`) hoặc đường dẫn tệp. Luôn dùng `which <cmd>` hoặc kiểm tra tệp tồn tại trước.
+2. **Defensive Terminal Reading (Thực thi phòng thủ khi đọc tệp)**: Mọi lệnh terminal kiểm tra tệp bắt buộc có fallback an toàn (ví dụ: `cat file 2>/dev/null || true` hoặc `test -f file && cat file`) để không gây crash với exit code 1.
+3. **Workspace Anchoring & Absolute Config Paths (Neo thư mục gốc chuẩn xác)**: Luôn neo `Cwd` tại thư mục gốc workspace (`/Users/dannydo/projects/mos-lab`). Các đường dẫn tệp cấu hình môi trường (.env) bắt buộc dùng đường dẫn tuyệt đối hoặc tính từ root để tránh lỗi nhân đôi path (`apps/api/apps/api/.env`).
+4. **Pre-edit Context Freshness (Làm tươi ngữ cảnh trước khi sửa tệp)**: Trước khi gọi `replace_file_content`, nếu tệp vừa được chỉnh sửa ở các bước trước, bắt buộc `view_file` lại 15-20 dòng xung quanh để đảm bảo khớp 100% từng ký tự, tránh lỗi `target content not found`.
+5. **Tool Scope Discipline (Tuân thủ phạm vi công cụ)**: `write_to_file` chỉ dùng cho Artifacts (`brain/...`) và Code dự án (`projects/mos-lab/...`). Đối với các tệp cấu hình hệ thống ngoài workspace (`~/.gemini/antigravity/...`), luôn dùng Python inline hoặc Bash script để không vi phạm sandbox boundary.
 
 ---
 

@@ -24,9 +24,24 @@ export function createAcademyWorkshopIdempotencyKey(
 }
 
 export function academyWorkshopWebSocketUrl() {
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const configured = process.env.NEXT_PUBLIC_API_URL;
+    if (configured && !configured.startsWith('/')) {
+      try {
+        const url = new URL(configured, window.location.origin);
+        const wsProto = url.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${wsProto}//${url.host}${url.pathname.replace(/\/$/, '')}/academy/workshops/ws`;
+      } catch {
+        // Fall back to direct port 4001
+      }
+    }
+    // Fastify API runs on port 4001 (direct WebSocket upgrade, bypasses Next.js rewrites which do not support WS proxying)
+    return `${protocol}//${host}:4001/api/academy/workshops/ws`;
+  }
   const apiUrl = resolveApiBaseUrl();
-  const absoluteApiUrl = typeof window === 'undefined' ? apiUrl : new URL(apiUrl, window.location.origin).toString();
-  return `${absoluteApiUrl.replace(/^http/, 'ws').replace(/\/$/, '')}/academy/workshops/ws`;
+  return `${apiUrl.replace(/^http/, 'ws').replace(/\/$/, '')}/academy/workshops/ws`;
 }
 
 export function connectAcademyWorkshopSocket(options: {
@@ -38,36 +53,92 @@ export function connectAcademyWorkshopSocket(options: {
   let socket: WebSocket | null = null;
   let disposed = false;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let disconnectDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let retryCount = 0;
+  let isConnected = false;
+
+  const sanitizedToken = String(options.token || '')
+    .replace(/^Bearer\s+/i, '')
+    .trim();
+
+  const reportConnection = (connected: boolean) => {
+    if (disconnectDebounceTimer) {
+      clearTimeout(disconnectDebounceTimer);
+      disconnectDebounceTimer = null;
+    }
+    if (connected) {
+      if (!isConnected) {
+        isConnected = true;
+        options.onConnection?.(true);
+      }
+    } else {
+      // Debounce disconnect notification by 2000ms to eliminate visual jitter/flicker
+      // during brief reconnects or packet reordering.
+      disconnectDebounceTimer = setTimeout(() => {
+        if (!disposed && isConnected) {
+          isConnected = false;
+          options.onConnection?.(false);
+        }
+      }, 2000);
+    }
+  };
 
   const connect = () => {
     if (disposed) return;
-    socket = new WebSocket(academyWorkshopWebSocketUrl());
+    try {
+      socket = new WebSocket(academyWorkshopWebSocketUrl());
+    } catch {
+      reportConnection(false);
+      return;
+    }
+
     socket.addEventListener('open', () => {
-      retryCount = 0;
-      options.onConnection?.(true);
-      socket?.send(JSON.stringify({ type: 'AUTH', token: options.token, workshopId: options.workshopId }));
+      // Send AUTH frame immediately. Do NOT mark connected = true yet;
+      // wait until the server confirms with the first STATE_SNAPSHOT.
+      socket?.send(JSON.stringify({ type: 'AUTH', token: sanitizedToken, workshopId: options.workshopId }));
     });
+
     socket.addEventListener('message', (event) => {
       try {
         const payload = JSON.parse(String(event.data)) as AcademyWorkshopRealtimeEvent;
-        if (payload.type === 'STATE_SNAPSHOT') options.onState(payload.data);
+        if (payload.type === 'STATE_SNAPSHOT') {
+          retryCount = 0;
+          reportConnection(true);
+          options.onState(payload.data);
+        } else if (payload.type === 'ERROR') {
+          console.warn('[WorkshopWS] Received error from server:', payload.data);
+        }
       } catch {
         // Ignore non-protocol frames so a malformed broadcast cannot crash live UI.
       }
     });
-    socket.addEventListener('close', () => {
-      options.onConnection?.(false);
+
+    socket.addEventListener('close', (event) => {
+      reportConnection(false);
       if (disposed) return;
-      const delay = Math.min(10_000, 500 * 2 ** retryCount++);
+
+      // If unauthorized (4401), stop tight loop retries to avoid flickering and server hammering.
+      if (event.code === 4401) {
+        console.warn('[WorkshopWS] Authentication rejected (code 4401). Retrying in 15s.');
+        retryTimer = setTimeout(connect, 15_000);
+        return;
+      }
+
+      const delay = Math.min(10_000, 1000 * 2 ** Math.min(retryCount++, 4));
       retryTimer = setTimeout(connect, delay);
     });
-    socket.addEventListener('error', () => socket?.close());
+
+    socket.addEventListener('error', () => {
+      // Allow close event to handle reconnection gracefully
+    });
   };
 
   connect();
   return () => {
     disposed = true;
+    if (disconnectDebounceTimer) clearTimeout(disconnectDebounceTimer);
+    isConnected = false;
+    options.onConnection?.(false);
     if (retryTimer) clearTimeout(retryTimer);
     socket?.close();
   };

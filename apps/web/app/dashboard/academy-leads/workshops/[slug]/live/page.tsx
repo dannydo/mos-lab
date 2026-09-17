@@ -38,7 +38,14 @@ import {
   workshopRemainingMs,
 } from '../../../../../../lib/academy-workshop-live';
 import { AppIcon, FeaturePage, IconText, MetricGrid, StatePanel, StatusTag } from '../../../../../../components/ui';
+import { safeStorage } from '../../../../../../lib/safe-storage';
 import AcademyWorkshopSharedQrButton from '../../../components/AcademyWorkshopSharedQrButton';
+
+function cleanAgendaTitle(title: string) {
+  return String(title || '')
+    .replace(/^\d+[\.\)]\s*/, '')
+    .trim();
+}
 
 const AGENDA_STATUS_LABELS = {
   PENDING: 'Chưa bắt đầu',
@@ -100,6 +107,7 @@ export default function WorkshopLiveControlPage() {
   const [detail, setDetail] = React.useState<Awaited<
     ReturnType<typeof apiClient.academySales.workshops.getBySlug>
   > | null>(null);
+  const [workshopId, setWorkshopId] = React.useState<number | null>(null);
   const [state, setState] = React.useState<AcademyWorkshopLiveState | null>(null);
   const [receivedAt, setReceivedAt] = React.useState(Date.now());
   const [connected, setConnected] = React.useState(false);
@@ -125,6 +133,7 @@ export default function WorkshopLiveControlPage() {
       .then(async (nextDetail) => {
         if (disposed) return;
         setDetail(nextDetail);
+        setWorkshopId(nextDetail.id);
         acceptState(await apiClient.academySales.workshops.liveState(nextDetail.id));
       })
       .catch((cause) => setError(cause?.response?.data?.message || 'Không thể mở Live Control.'));
@@ -133,21 +142,25 @@ export default function WorkshopLiveControlPage() {
     };
   }, [acceptState, slug]);
 
+  const acceptStateRef = React.useRef(acceptState);
+  acceptStateRef.current = acceptState;
+
   React.useEffect(() => {
-    if (!detail || typeof window === 'undefined') return;
-    const staffToken = window.localStorage.getItem('mos_token');
+    if (!workshopId || typeof window === 'undefined') return;
+    const staffToken = safeStorage.getItem('mos_token') || window.localStorage.getItem('mos_token');
     if (!staffToken) return;
     return connectAcademyWorkshopSocket({
       token: staffToken,
-      workshopId: detail.id,
-      onState: acceptState,
+      workshopId,
+      onState: (next) => acceptStateRef.current(next),
       onConnection: setConnected,
     });
-  }, [acceptState, detail]);
+  }, [workshopId]);
 
   const refresh = React.useCallback(async () => {
     if (!detail) return;
-    acceptState(await apiClient.academySales.workshops.liveState(detail.id));
+    const nextState = await apiClient.academySales.workshops.liveState(detail.id);
+    acceptState(nextState);
   }, [acceptState, detail]);
 
   const agendaCommand = React.useCallback(
@@ -155,7 +168,36 @@ export default function WorkshopLiveControlPage() {
       if (!detail) return;
       setBusy(true);
       try {
-        await apiClient.academySales.workshops.agendaCommand(detail.id, agendaItemId, { action });
+        const res = await apiClient.academySales.workshops.agendaCommand(detail.id, agendaItemId, { action });
+        const updatedItem = res?.data;
+        if (updatedItem) {
+          setDetail((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  liveAgendaItemId: ['COMPLETE', 'SKIP'].includes(action)
+                    ? prev.liveAgendaItemId === agendaItemId
+                      ? null
+                      : prev.liveAgendaItemId
+                    : updatedItem.id,
+                  agenda: prev.agenda.map((it) => (it.id === updatedItem.id ? updatedItem : it)),
+                }
+              : null
+          );
+          setState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  activeAgendaItem: ['COMPLETE', 'SKIP'].includes(action)
+                    ? prev.activeAgendaItem?.id === agendaItemId
+                      ? null
+                      : prev.activeAgendaItem
+                    : updatedItem,
+                  agenda: (prev.agenda || []).map((it) => (it.id === updatedItem.id ? updatedItem : it)),
+                }
+              : null
+          );
+        }
         await refresh();
       } catch (cause: any) {
         message.error(cause?.response?.data?.message || 'Không thể cập nhật agenda.');
@@ -270,7 +312,7 @@ export default function WorkshopLiveControlPage() {
       title={`Live Control · ${detail.name}`}
       subtitle="Host commands qua REST transaction; WebSocket chỉ broadcast snapshot để reconnect an toàn."
       icon={<AppIcon icon={Presentation} />}
-      tag={connected ? 'Realtime connected' : 'Đang reconnect'}
+      tag={detail.displayCode ? `Mã ${detail.displayCode}` : undefined}
       headerActions={
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => router.push(`/dashboard/academy-leads/workshops/${detail.slug}`)}>
@@ -297,7 +339,7 @@ export default function WorkshopLiveControlPage() {
             <IconText icon={<AppIcon icon={MonitorUp} />}>Leaderboard</IconText>
           </Button>
           <StatusTag
-            className="!h-8 !px-2"
+            className="!h-8 !px-3 min-w-[135px] justify-center tabular-nums"
             status={connected ? 'success' : 'orange'}
             label={
               <IconText gap={4} icon={<AppIcon icon={connected ? Wifi : WifiOff} />} textClassName="leading-none">
@@ -344,26 +386,87 @@ export default function WorkshopLiveControlPage() {
         >
           {state.activeAgendaItem && (
             <div
-              className="mb-4 rounded-2xl p-5 text-center"
-              style={{ background: agendaRemaining < 0 ? token.colorErrorBg : token.colorPrimaryBg }}
+              className="mb-4 rounded-2xl p-5 text-center transition-colors duration-300"
+              style={{
+                background:
+                  agendaRemaining < 0
+                    ? token.colorErrorBg
+                    : state.activeAgendaItem.status === 'PAUSED'
+                      ? token.colorWarningBg
+                      : token.colorPrimaryBg,
+              }}
             >
-              <div className="text-sm font-semibold uppercase tracking-[0.18em] opacity-65">Phần đang chạy</div>
-              <div className="mt-2 text-2xl font-bold">{state.activeAgendaItem.title}</div>
+              <div className="text-sm font-semibold uppercase tracking-[0.18em] opacity-65">
+                {state.activeAgendaItem.status === 'PAUSED' ? 'Phần đang tạm dừng' : 'Phần đang chạy'}
+              </div>
+              <div className="mt-2 text-2xl font-bold">{cleanAgendaTitle(state.activeAgendaItem.title)}</div>
               <div className={`mt-3 text-6xl font-black tabular-nums ${agendaRemaining < 0 ? 'text-red-500' : ''}`}>
                 {formatWorkshopClock(agendaRemaining)}
               </div>
               {agendaRemaining < 0 && <div className="mt-2 font-bold text-red-500">QUÁ GIỜ</div>}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                {state.activeAgendaItem.status === 'RUNNING' && (
+                  <Button
+                    size="large"
+                    icon={<AppIcon icon={CirclePause} />}
+                    loading={busy}
+                    onClick={() => void agendaCommand(state.activeAgendaItem!.id, 'PAUSE')}
+                  >
+                    Tạm dừng
+                  </Button>
+                )}
+                {state.activeAgendaItem.status === 'PAUSED' && (
+                  <Button
+                    size="large"
+                    type="primary"
+                    icon={<AppIcon icon={CirclePlay} />}
+                    loading={busy}
+                    onClick={() => void agendaCommand(state.activeAgendaItem!.id, 'RESUME')}
+                  >
+                    Tiếp tục
+                  </Button>
+                )}
+                <Popconfirm
+                  title="Hoàn thành phần này?"
+                  description="Timeline sẽ chốt thời lượng thực tế và không tự chuyển sang phần kế tiếp."
+                  okText="Hoàn thành"
+                  cancelText="Chưa"
+                  onConfirm={() => void agendaCommand(state.activeAgendaItem!.id, 'COMPLETE')}
+                >
+                  <Button
+                    size="large"
+                    type="primary"
+                    icon={<AppIcon icon={CircleCheckBig} />}
+                    loading={busy}
+                    className="font-semibold"
+                  >
+                    Hoàn thành
+                  </Button>
+                </Popconfirm>
+                <Popconfirm
+                  title="Bỏ qua phần đang chạy này?"
+                  description="Phần này sẽ dừng ngay và được ghi nhận là đã bỏ qua trong timeline."
+                  okText="Bỏ qua ngay"
+                  cancelText="Chưa"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() => void agendaCommand(state.activeAgendaItem!.id, 'SKIP')}
+                >
+                  <Button size="large" danger icon={<AppIcon icon={SkipForward} />} loading={busy}>
+                    Bỏ qua phần này
+                  </Button>
+                </Popconfirm>
+              </div>
             </div>
           )}
           <div className="space-y-2">
-            {detail.agenda.map((item) => (
+            {(state?.agenda ?? detail.agenda).map((item) => (
               <div
                 key={item.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-inherit p-3"
               >
                 <div>
                   <strong>
-                    {item.sortOrder}. {item.title}
+                    {item.sortOrder}. {cleanAgendaTitle(item.title)}
                   </strong>
                   <div className="text-xs opacity-60 tabular-nums">
                     {Math.round(item.plannedDurationSeconds / 60)} phút · {AGENDA_STATUS_LABELS[item.status]}
@@ -416,7 +519,7 @@ export default function WorkshopLiveControlPage() {
                       </Button>
                     </Popconfirm>
                   )}
-                  {item.status === 'PENDING' && (
+                  {['PENDING', 'RUNNING', 'PAUSED'].includes(item.status) && (
                     <Popconfirm
                       title="Bỏ qua phần này?"
                       description="Phần này sẽ được ghi nhận là đã bỏ qua trong timeline."
@@ -430,6 +533,8 @@ export default function WorkshopLiveControlPage() {
                       </Button>
                     </Popconfirm>
                   )}
+                  {item.status === 'COMPLETED' && <StatusTag status="success" label="Đã hoàn thành" />}
+                  {item.status === 'SKIPPED' && <StatusTag status="default" label="Đã bỏ qua" />}
                 </Space>
               </div>
             ))}

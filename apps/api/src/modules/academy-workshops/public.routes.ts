@@ -529,20 +529,28 @@ export async function academyWorkshopPublicRoutes(fastify: FastifyInstance) {
             email: staffPayload.email,
           });
           if (!Number.isInteger(workshopId) || workshopId <= 0 || !access.canAccess) throw publicError;
-          await AcademyWorkshopService.rowById(fastify, { ...staffPayload, academyAccess: true }, workshopId);
+          await AcademyWorkshopService.rowById(
+            fastify,
+            { ...staffPayload, academyAccess: true, academyCrudAccess: access.canManage },
+            workshopId
+          );
           audience = 'STAFF';
         }
         authenticated = true;
         clearTimeout(timeout);
         dispose = academyWorkshopRealtimeHub.add(workshopId, { socket, audience, participantId });
+        console.log('[WS AUTH SUCCESS]', { workshopId, audience, participantId });
         socket.send(
           JSON.stringify({
             type: 'STATE_SNAPSHOT',
             data: await AcademyWorkshopLiveService.liveState(fastify, workshopId, audience),
           })
         );
-        await AcademyWorkshopLiveService.broadcastState(fastify, workshopId);
+        if (audience === 'PARTICIPANT') {
+          await AcademyWorkshopLiveService.broadcastState(fastify, workshopId);
+        }
       } catch (cause) {
+        console.error('[WS AUTH REJECTED]', cause);
         request.log.warn({ cause }, 'Workshop websocket authentication rejected');
         socket.send(
           JSON.stringify({ type: 'ERROR', data: { code: 'UNAUTHORIZED', message: 'Workshop session không hợp lệ.' } })
