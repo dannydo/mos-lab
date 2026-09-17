@@ -15,12 +15,15 @@ import {
   RotateCcw,
   Trophy,
   UserPlus,
+  UtensilsCrossed,
 } from 'lucide-react';
-import type {
-  AcademyLead,
-  AcademyWorkshopDetail,
-  AcademyWorkshopParticipant,
-  AcademyWorkshopResourcesResponse,
+import AcademyWorkshopParticipantSelectionsModal from './AcademyWorkshopParticipantSelectionsModal';
+import {
+  ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS,
+  type AcademyLead,
+  type AcademyWorkshopDetail,
+  type AcademyWorkshopParticipant,
+  type AcademyWorkshopResourcesResponse,
 } from '@mos-lab/shared';
 import {
   AdaptiveDrawer,
@@ -88,6 +91,12 @@ interface AcademyWorkshopParticipantOverlaysProps {
   onCreateWalkIn: (values: AcademyWorkshopWalkInForm) => void;
   onCloseFee: () => void;
   onSaveFee: (values: AcademyWorkshopFeeForm) => void;
+  onOpenZaloScript?: (participant: AcademyWorkshopParticipant) => void;
+  selectionsOpen?: boolean;
+  selectionsParticipant?: AcademyWorkshopParticipant | null;
+  onOpenSelections?: (participant: AcademyWorkshopParticipant) => void;
+  onCloseSelections?: () => void;
+  onSaveSelections?: (menuItemIds: number[], equipmentPackageId: number | null) => Promise<void>;
 }
 
 export default function AcademyWorkshopParticipantOverlays({
@@ -128,6 +137,12 @@ export default function AcademyWorkshopParticipantOverlays({
   onCreateWalkIn,
   onCloseFee,
   onSaveFee,
+  onOpenZaloScript,
+  selectionsOpen = false,
+  selectionsParticipant = null,
+  onOpenSelections,
+  onCloseSelections,
+  onSaveSelections,
 }: AcademyWorkshopParticipantOverlaysProps) {
   return (
     <>
@@ -154,6 +169,82 @@ export default function AcademyWorkshopParticipantOverlays({
               <Descriptions.Item label="Check-in">
                 {selected.checkedInAt ? dayjs(selected.checkedInAt).format('DD/MM HH:mm') : 'Chưa đến'}
               </Descriptions.Item>
+              <Descriptions.Item
+                label={
+                  <div className="flex items-center justify-between">
+                    <span>Thực đơn</span>
+                    {onOpenSelections && (
+                      <Button
+                        size="small"
+                        type="link"
+                        className="!h-auto !p-0 text-xs text-emerald-600 dark:text-emerald-400"
+                        onClick={() => onOpenSelections(selected)}
+                      >
+                        Chọn / Đổi
+                      </Button>
+                    )}
+                  </div>
+                }
+              >
+                {selected.menuSelections.length > 0 ? (
+                  <div className="space-y-1">
+                    {selected.menuSelections.map((selection) => (
+                      <div key={selection.id} className="text-xs">
+                        <span className="opacity-60">
+                          {ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[selection.category]}:{' '}
+                        </span>
+                        <strong className="font-semibold">{selection.itemName}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <StatusTag status="default" label="Chưa chọn món" />
+                    {onOpenSelections && (
+                      <Button size="small" type="dashed" className="text-xs" onClick={() => onOpenSelections(selected)}>
+                        Chọn món ngay
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item
+                label={
+                  <div className="flex items-center justify-between">
+                    <span>Cốp dụng cụ</span>
+                    {onOpenSelections && (
+                      <Button
+                        size="small"
+                        type="link"
+                        className="!h-auto !p-0 text-xs text-indigo-600 dark:text-indigo-400"
+                        onClick={() => onOpenSelections(selected)}
+                      >
+                        Chọn / Đổi
+                      </Button>
+                    )}
+                  </div>
+                }
+              >
+                {selected.equipmentSelection ? (
+                  <div className="text-xs">
+                    <strong className="font-semibold">{selected.equipmentSelection.packageName}</strong>
+                    {selected.equipmentSelection.priceVnd > 0 && (
+                      <span className="ml-2 opacity-65 tabular-nums">
+                        (+{selected.equipmentSelection.priceVnd.toLocaleString('vi-VN')} đ)
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <StatusTag status="default" label="Chưa chọn dụng cụ" />
+                    {onOpenSelections && (
+                      <Button size="small" type="dashed" className="text-xs" onClick={() => onOpenSelections(selected)}>
+                        Chọn cốp đồ nghề
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </Descriptions.Item>
               <Descriptions.Item label="Tố Chất">
                 {selected.talent
                   ? `${selected.talent.strands5Min} sợi / 5 phút · ${selected.talent.rankLabel}`
@@ -167,6 +258,11 @@ export default function AcademyWorkshopParticipantOverlays({
                 {selected.lead.facebookChatLink ? (
                   <Button href={selected.lead.facebookChatLink} target="_blank" icon={<AppIcon icon={MessageCircle} />}>
                     Mở Pancake/chat
+                  </Button>
+                ) : null}
+                {onOpenZaloScript ? (
+                  <Button icon={<AppIcon icon={MessageCircle} />} onClick={() => onOpenZaloScript(selected)}>
+                    Kịch bản Zalo
                   </Button>
                 ) : null}
                 <Button
@@ -438,6 +534,17 @@ export default function AcademyWorkshopParticipantOverlays({
             </Form>
           )}
         </AdaptiveModal>
+      )}
+
+      {onCloseSelections && onSaveSelections && (
+        <AcademyWorkshopParticipantSelectionsModal
+          open={selectionsOpen}
+          participant={selectionsParticipant}
+          workshop={workshop}
+          busy={busy}
+          onClose={onCloseSelections}
+          onSave={onSaveSelections}
+        />
       )}
     </>
   );

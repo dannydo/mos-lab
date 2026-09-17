@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Avatar, Button, Select } from 'antd';
+import { Avatar, Button, Select, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { Check, Clock3, X } from 'lucide-react';
+import { Check, Clock3, MessageCircle, X } from 'lucide-react';
 import {
   ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS,
   removeVietnameseTones,
@@ -34,7 +34,7 @@ const ATTENDANCE_PRESENTATION = {
 } as const;
 
 const QUICK_ACTION_CLASS =
-  'rounded-md text-left transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-current disabled:cursor-wait disabled:opacity-50';
+  'rounded-lg text-left transition-all hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-wait disabled:opacity-50';
 
 function identityInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -106,6 +106,7 @@ function WorkshopInstructorIdentity({
 export interface AcademyWorkshopRosterProps {
   participants: AcademyWorkshopParticipant[];
   resources: AcademyWorkshopResourcesResponse;
+  menuTitle?: string | null;
   loading: boolean;
   page: number;
   pageSize: number;
@@ -124,11 +125,14 @@ export interface AcademyWorkshopRosterProps {
   onCheckIn: (participant: AcademyWorkshopParticipant) => void;
   onAssignInstructor: (participant: AcademyWorkshopParticipant, instructorId: number | null) => void;
   onOpenTalent: (participant: AcademyWorkshopParticipant) => void;
+  onOpenZaloScript?: (participant: AcademyWorkshopParticipant) => void;
+  onOpenSelections?: (participant: AcademyWorkshopParticipant) => void;
 }
 
 export default function AcademyWorkshopRoster({
   participants,
   resources,
+  menuTitle,
   loading,
   page,
   pageSize,
@@ -143,6 +147,8 @@ export default function AcademyWorkshopRoster({
   onCheckIn,
   onAssignInstructor,
   onOpenTalent,
+  onOpenZaloScript,
+  onOpenSelections,
 }: AcademyWorkshopRosterProps) {
   const columns = React.useMemo<ColumnsType<AcademyWorkshopParticipant>>(
     () => [
@@ -195,7 +201,7 @@ export default function AcademyWorkshopRoster({
             <div>
               <Select<AcademyWorkshopParticipant['attendanceStatus']>
                 aria-label={`Xác nhận tham dự của ${row.lead.name}`}
-                size="small"
+                size="middle"
                 variant="borderless"
                 popupMatchSelectWidth={false}
                 value={row.attendanceStatus}
@@ -250,39 +256,67 @@ export default function AcademyWorkshopRoster({
       },
       {
         key: 'menu',
-        title: 'Thực đơn Việt Thái',
+        title: menuTitle ? `Thực đơn (${menuTitle})` : 'Thực đơn',
         width: 230,
-        render: (_value, row) =>
-          row.menuSelections.length ? (
-            <div className="space-y-1 text-xs leading-5">
-              {row.menuSelections.map((selection) => (
-                <div key={selection.id} className="flex min-w-0 gap-1.5">
-                  <span className="shrink-0 opacity-55">
-                    {ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[selection.category]}:
-                  </span>
-                  <span className="truncate font-semibold">{selection.itemName}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <StatusTag status="default" label="Chưa chọn món" />
-          ),
+        render: (_value, row) => (
+          <button
+            type="button"
+            className="group block w-full text-left transition-opacity hover:opacity-80"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenSelections?.(row);
+            }}
+          >
+            {row.menuSelections.length ? (
+              <div className="space-y-1 text-xs leading-5">
+                {row.menuSelections.map((selection) => (
+                  <div key={selection.id} className="flex min-w-0 gap-1.5">
+                    <span className="shrink-0 opacity-55">
+                      {ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[selection.category]}:
+                    </span>
+                    <span className="truncate font-semibold">{selection.itemName}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <StatusTag
+                status="default"
+                label="Chưa chọn món"
+                className="cursor-pointer transition-opacity group-hover:opacity-80"
+              />
+            )}
+          </button>
+        ),
       },
       {
         key: 'equipment',
         title: 'Dụng cụ thực hành',
         width: 210,
-        render: (_value, row) =>
-          row.equipmentSelection ? (
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold">{row.equipmentSelection.packageName}</div>
-              <div className="mt-1 tabular-nums text-xs opacity-65">
-                Phụ thu {row.equipmentSelection.priceVnd.toLocaleString('vi-VN')} đ
+        render: (_value, row) => (
+          <button
+            type="button"
+            className="group block w-full text-left transition-opacity hover:opacity-80"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenSelections?.(row);
+            }}
+          >
+            {row.equipmentSelection ? (
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold">{row.equipmentSelection.packageName}</div>
+                <div className="mt-1 tabular-nums text-xs opacity-65">
+                  Phụ thu {row.equipmentSelection.priceVnd.toLocaleString('vi-VN')} đ
+                </div>
               </div>
-            </div>
-          ) : (
-            <StatusTag status="default" label="Chưa chọn dụng cụ" />
-          ),
+            ) : (
+              <StatusTag
+                status="default"
+                label="Chưa chọn dụng cụ"
+                className="cursor-pointer transition-opacity group-hover:opacity-80"
+              />
+            )}
+          </button>
+        ),
       },
       {
         key: 'checkin',
@@ -311,7 +345,7 @@ export default function AcademyWorkshopRoster({
             aria-label={`Giáo viên chính của ${row.lead.name}`}
             allowClear
             showSearch
-            size="large"
+            size="middle"
             variant="borderless"
             className="w-full"
             placeholder="Chưa phân"
@@ -379,11 +413,22 @@ export default function AcademyWorkshopRoster({
       {
         key: 'action',
         title: 'Thao tác',
-        width: 110,
+        width: 140,
         render: (_value, row) => (
-          <Button size="small" onClick={() => onOpenParticipant(row)}>
-            Chăm sóc
-          </Button>
+          <Space size={4}>
+            <Button size="small" onClick={() => onOpenParticipant(row)}>
+              Chăm sóc
+            </Button>
+            {onOpenZaloScript ? (
+              <Button
+                size="small"
+                icon={<AppIcon icon={MessageCircle} size={14} />}
+                aria-label="Mở kịch bản tin nhắn Zalo"
+                title="Mở kịch bản tin nhắn Zalo"
+                onClick={() => onOpenZaloScript(row)}
+              />
+            ) : null}
+          </Space>
         ),
       },
     ],
@@ -395,6 +440,7 @@ export default function AcademyWorkshopRoster({
       onOpenFee,
       onOpenParticipant,
       onOpenTalent,
+      onOpenZaloScript,
       onUpdateCare,
       page,
       pageSize,

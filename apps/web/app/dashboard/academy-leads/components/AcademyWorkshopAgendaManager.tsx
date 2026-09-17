@@ -39,6 +39,8 @@ import {
   StatusTag,
 } from '../../../../components/ui';
 import AcademyWorkshopAgendaTemplateLibrary from './AcademyWorkshopAgendaTemplateLibrary';
+import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
+import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
 import { useAcademyWorkshopAgendaTemplates } from './useAcademyWorkshopAgendaTemplates';
 
 const AGENDA_KIND_LABELS: Record<AcademyWorkshopAgendaKind, string> = {
@@ -302,20 +304,7 @@ export default function AcademyWorkshopAgendaManager({
   return (
     <DataSection
       className="academy-workshop-agenda-section"
-      title={
-        <IconText
-          icon={
-            <span
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg"
-              style={{ background: token.colorPrimaryBg, color: token.colorPrimary }}
-            >
-              <AppIcon icon={ListChecks} size="sm" />
-            </span>
-          }
-        >
-          Agenda & timeline
-        </IconText>
-      }
+      title={<AcademyWorkshopSectionTitle icon={ListChecks} title="Agenda & timeline" />}
       extra={
         canEdit && !structureLocked ? (
           <Button type="primary" onClick={openCreate} loading={saving}>
@@ -343,91 +332,36 @@ export default function AcademyWorkshopAgendaManager({
             }
           />
         ) : (
-          <section
-            className="academy-workshop-template-panel"
-            style={{ borderColor: token.colorBorderSecondary }}
-            aria-label="Chọn mẫu agenda cho workshop"
-          >
-            <div className="academy-workshop-template-panel__header">
-              <div className="academy-workshop-template-panel__title">
-                <h3 className="m-0 text-sm font-semibold">Mẫu agenda</h3>
-                {isCurrentTemplate && selectedTemplate ? (
-                  <StatusTag status="success" label="Đang áp dụng" className="!mb-0" />
-                ) : null}
-              </div>
-              <Button type="text" size="small" onClick={() => setTemplateLibraryOpen(true)} disabled={saving}>
-                <IconText icon={<AppIcon icon={LibraryBig} />}>Thư viện mẫu</IconText>
-              </Button>
-            </div>
-
-            <div className="academy-workshop-template-panel__selection">
-              <div className="academy-workshop-template-panel__field">
-                <label className="sr-only" htmlFor="workshop-agenda-template">
-                  Chọn mẫu agenda
-                </label>
-                <Select
-                  id="workshop-agenda-template"
-                  value={templateId || undefined}
-                  size="middle"
-                  className="w-full"
-                  loading={templates.loading}
-                  disabled={!canEdit || saving || templates.loading}
-                  placeholder={templates.error ? 'Không thể tải mẫu agenda' : 'Chọn một mẫu agenda'}
-                  options={templates.data.map((template) => ({
-                    value: template.id,
-                    label: template.title,
-                  }))}
-                  onChange={setTemplateId}
-                />
-              </div>
-
-              <div className="academy-workshop-template-panel__action">
-                {!selectedTemplate ? (
-                  <span
-                    className="academy-workshop-template-panel__action-hint"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    Chọn mẫu để tiếp tục
-                  </span>
-                ) : isCurrentTemplate ? null : (
-                  <Popconfirm
-                    title="Áp dụng mẫu agenda này?"
-                    description="Các mục agenda hiện tại sẽ được thay bằng bản sao từ mẫu đã chọn."
-                    okText="Áp dụng"
-                    cancelText="Hủy"
-                    onConfirm={() => void applyTemplate()}
-                    disabled={saving || !selectedTemplate}
-                  >
-                    <Button type="primary" size="middle" disabled={saving} loading={saving}>
-                      <IconText icon={<AppIcon icon={WandSparkles} />}>Áp dụng mẫu</IconText>
-                    </Button>
-                  </Popconfirm>
-                )}
-              </div>
-            </div>
-
-            <div
-              className="academy-workshop-template-panel__details"
-              style={{ color: templates.error ? token.colorError : token.colorTextSecondary }}
-              role={templates.error ? 'alert' : undefined}
-            >
-              <span>
-                {templates.error ||
-                  selectedTemplate?.description ||
-                  'Chọn một mẫu từ thư viện để áp dụng cho workshop.'}
-              </span>
-              {selectedTemplate ? (
-                <span className="academy-workshop-template-panel__metadata tabular-nums">
+          <AcademyWorkshopTemplateBar
+            title="Mẫu agenda"
+            ariaLabel="Chọn mẫu agenda cho workshop"
+            templates={templates.data}
+            selectedTemplateId={templateId}
+            isCurrentTemplate={isCurrentTemplate}
+            selectedTemplateTitle={selectedTemplate?.title}
+            selectedTemplateDescription={selectedTemplate?.description}
+            canEdit={canEdit}
+            loading={templates.loading}
+            saving={saving}
+            error={templates.error}
+            applyConfirmTitle="Áp dụng mẫu agenda này?"
+            applyConfirmDescription="Các mục agenda hiện tại sẽ được thay bằng bản sao từ mẫu đã chọn."
+            metadata={
+              selectedTemplate ? (
+                <>
                   <IconText icon={<AppIcon icon={ListChecks} size="sm" />} tabular>
                     {selectedTemplateStepCount} bước
                   </IconText>
                   <IconText icon={<AppIcon icon={Clock3} size="sm" />} tabular>
                     {selectedTemplateMinutes} phút
                   </IconText>
-                </span>
-              ) : null}
-            </div>
-          </section>
+                </>
+              ) : null
+            }
+            onSelectTemplate={setTemplateId}
+            onOpenLibrary={() => setTemplateLibraryOpen(true)}
+            onApplyTemplate={applyTemplate}
+          />
         )}
 
         {workshop.agenda.length ? (

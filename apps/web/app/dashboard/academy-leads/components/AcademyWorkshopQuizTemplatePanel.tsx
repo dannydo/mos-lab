@@ -14,6 +14,8 @@ import {
   IconText,
   StatusTag,
 } from '../../../../components/ui';
+import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
+import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
 import { useAcademyWorkshopQuizTemplates } from './useAcademyWorkshopQuizTemplates';
 
 type SaveTemplateValues = {
@@ -133,110 +135,44 @@ export default function AcademyWorkshopQuizTemplatePanel({
 
   return (
     <>
-      <DataSection title={<IconText icon={<AppIcon icon={Gamepad2} />}>Mẫu game &amp; câu hỏi</IconText>}>
-        <section
-          className="academy-workshop-template-panel"
-          style={{ borderColor: token.colorBorderSecondary }}
-          aria-label="Chọn mẫu game và bộ câu hỏi cho workshop"
-        >
-          <div className="academy-workshop-template-panel__header">
-            <div className="academy-workshop-template-panel__title">
-              <h3 className="m-0 text-sm font-semibold">Mẫu game &amp; câu hỏi</h3>
-              {isCurrentTemplate && selectedTemplateTitle ? (
-                <StatusTag status="success" label="Đang áp dụng" className="!mb-0" />
-              ) : null}
-            </div>
-            <Button type="text" size="small" onClick={onOpenLibrary} disabled={saving || templateSaving}>
-              <IconText icon={<AppIcon icon={LibraryBig} />}>Thư viện mẫu</IconText>
-            </Button>
-          </div>
-
-          <div className="academy-workshop-template-panel__selection">
-            <div className="academy-workshop-template-panel__field">
-              <label className="sr-only" htmlFor="workshop-quiz-template">
-                Chọn mẫu game và bộ câu hỏi
-              </label>
-              <Select
-                id="workshop-quiz-template"
-                value={templateId || undefined}
-                className="w-full"
-                loading={templates.loading}
-                disabled={!canEdit || saving || templateSaving || templates.loading}
-                placeholder={templates.error ? 'Không thể tải mẫu game' : 'Chọn một mẫu game & câu hỏi'}
-                options={selectableTemplates.map((template) => ({ value: template.id, label: template.title }))}
-                onChange={setTemplateId}
-              />
-            </div>
-            <div className="academy-workshop-template-panel__action">
-              {!canEdit && !selectedTemplateTitle ? (
-                <span
-                  className="academy-workshop-template-panel__action-hint"
-                  style={{ color: token.colorTextSecondary }}
-                >
-                  Chọn mẫu để tiếp tục
-                </span>
-              ) : (
-                <Space wrap size={8}>
-                  {canEdit && quiz?.status === 'DRAFT' && isCurrentTemplate && selectedTemplateTitle ? (
-                    <Popconfirm
-                      title={`Cập nhật mẫu “${selectedTemplateTitle}”?`}
-                      description="Câu hỏi, đáp án và cấu hình phần thưởng của game nháp hiện tại sẽ thay thế nội dung mẫu. Các workshop khác vẫn giữ bản sao riêng."
-                      okText="Cập nhật mẫu"
-                      cancelText="Hủy"
-                      okButtonProps={{ loading: templateSaving }}
-                      onConfirm={() => void updateCurrentTemplate()}
-                      disabled={saving || templateSaving}
-                    >
-                      <Button disabled={saving || templateSaving} loading={templateSaving}>
-                        <IconText icon={<AppIcon icon={Save} />}>Cập nhật mẫu</IconText>
-                      </Button>
-                    </Popconfirm>
-                  ) : null}
-                  {canEdit && templateId && selectedTemplateTitle && !isCurrentTemplate ? (
-                    <Popconfirm
-                      title="Áp dụng mẫu game này?"
-                      description="Game nháp hiện tại sẽ được thay bằng một bản sao độc lập của mẫu. Game đang chạy cần được chốt trước khi thay mẫu."
-                      okText="Áp dụng"
-                      cancelText="Hủy"
-                      onConfirm={() => void applyTemplate()}
-                      disabled={saving || templateSaving || !canReplaceGame}
-                    >
-                      <Button type="primary" disabled={saving || templateSaving || !canReplaceGame} loading={saving}>
-                        <IconText icon={<AppIcon icon={WandSparkles} />}>Áp dụng mẫu</IconText>
-                      </Button>
-                    </Popconfirm>
-                  ) : null}
-                  {canEdit ? (
-                    <Button onClick={openSaveTemplate} disabled={!quiz?.questions.length || saving || templateSaving}>
-                      <IconText icon={<AppIcon icon={Save} />}>Lưu mẫu mới</IconText>
-                    </Button>
-                  ) : null}
-                </Space>
-              )}
-            </div>
-          </div>
-
-          <div
-            className="academy-workshop-template-panel__details"
-            style={{ color: templates.error ? token.colorError : token.colorTextSecondary }}
-            role={templates.error ? 'alert' : undefined}
-          >
-            <span>
-              {templates.error ||
-                selectedTemplate?.description ||
-                (isCurrentTemplate
-                  ? 'Game hiện tại được liên kết với mẫu này; bạn có thể cập nhật lại mẫu khi game còn ở bản nháp.'
-                  : 'Chọn một mẫu từ thư viện để áp dụng cho workshop.')}
-            </span>
-            {selectedTemplateTitle ? (
-              <span className="academy-workshop-template-panel__metadata tabular-nums">
-                <IconText icon={<AppIcon icon={Gamepad2} size="sm" />} tabular>
-                  {selectedQuestionCount} câu hỏi
-                </IconText>
-              </span>
-            ) : null}
-          </div>
-        </section>
+      <DataSection title={<AcademyWorkshopSectionTitle icon={Gamepad2} title="Mẫu game & câu hỏi" />}>
+        <AcademyWorkshopTemplateBar
+          title="Mẫu game & câu hỏi"
+          ariaLabel="Chọn mẫu game và bộ câu hỏi cho workshop"
+          templates={selectableTemplates}
+          selectedTemplateId={templateId}
+          isCurrentTemplate={isCurrentTemplate}
+          selectedTemplateTitle={selectedTemplateTitle}
+          selectedTemplateDescription={
+            templates.error ||
+            selectedTemplate?.description ||
+            (isCurrentTemplate
+              ? 'Game hiện tại được liên kết với mẫu này; bạn có thể cập nhật lại mẫu khi game còn ở bản nháp.'
+              : 'Chọn một mẫu từ thư viện để áp dụng cho workshop.')
+          }
+          canEdit={canEdit}
+          loading={templates.loading}
+          saving={saving}
+          templateSaving={templateSaving}
+          error={templates.error}
+          saveAsNewDisabled={!quiz?.questions.length}
+          applyConfirmTitle={selectedTemplateTitle ? `Áp dụng mẫu “${selectedTemplateTitle}”?` : undefined}
+          applyConfirmDescription="Game nháp hiện tại sẽ được thay bằng một bản sao độc lập của mẫu. Game đang chạy cần được chốt trước khi thay mẫu."
+          updateConfirmTitle={selectedTemplateTitle ? `Cập nhật mẫu “${selectedTemplateTitle}”?` : undefined}
+          updateConfirmDescription="Câu hỏi, đáp án và cấu hình phần thưởng của game nháp hiện tại sẽ thay thế nội dung mẫu. Các workshop khác vẫn giữ bản sao riêng."
+          metadata={
+            selectedTemplateTitle ? (
+              <IconText icon={<AppIcon icon={Gamepad2} size="sm" />} tabular>
+                {selectedQuestionCount} câu hỏi
+              </IconText>
+            ) : null
+          }
+          onSelectTemplate={setTemplateId}
+          onOpenLibrary={onOpenLibrary}
+          onApplyTemplate={canReplaceGame ? applyTemplate : undefined}
+          onUpdateCurrentTemplate={quiz?.status === 'DRAFT' ? updateCurrentTemplate : undefined}
+          onSaveAsNewTemplate={openSaveTemplate}
+        />
       </DataSection>
 
       <EntityFormDrawer

@@ -728,6 +728,74 @@ export interface UpdateAcademyWorkshopCareRequest {
   note?: string | null;
 }
 
+export interface UpdateAcademyWorkshopParticipantSelectionsRequest {
+  menuItemIds?: number[];
+  menuSelections?: AcademyWorkshopMenuSelectionInput[];
+  equipmentPackageId?: number | null;
+}
+
+export interface AcademyWorkshopZaloTemplate {
+  id: string;
+  title: string;
+  content: string;
+  isDefault?: boolean;
+}
+
+export interface UpdateAcademyWorkshopZaloTemplatesRequest {
+  templates: AcademyWorkshopZaloTemplate[];
+}
+
+export const DEFAULT_ACADEMY_WORKSHOP_ZALO_TEMPLATES: AcademyWorkshopZaloTemplate[] = [
+  {
+    id: 'confirm',
+    title: '1. Xác nhận giữ chỗ',
+    isDefault: true,
+    content: `Dạ em chào chị {{ten_hoc_vien}}! ❤️
+Academy xin gửi chị thông tin chi tiết tham dự Workshop: {{ten_workshop}}.
+
+⏰ Thời gian: {{thoi_gian}}
+📍 Địa điểm: {{dia_diem}}
+🅿️ Hướng dẫn gửi xe: Quý khách gửi xe tại tầng hầm tòa nhà và đi thang máy lên khu vực sảnh Workshop.
+🍽️ Suất ăn đã chọn: {{suat_an}}
+🧰 Dụng cụ thực hành: {{dung_cu}}
+
+📲 Mã QR tự check-in vào lớp của chị:
+{{qr_link}}
+
+(Chị nhớ lưu lại tin nhắn này để quét điểm danh tại bàn lễ tân và tham gia game đố vui nhận quà trên màn hình lớn nhé ạ)
+
+Chúc chị có một buổi trải nghiệm thật nhiều giá trị cùng Master và các bạn học viên!`,
+  },
+  {
+    id: 'remind',
+    title: '2. Nhắc lịch trước 24h',
+    isDefault: true,
+    content: `Chị {{ten_hoc_vien}} ơi! Ngày mai là buổi Workshop {{ten_workshop}} rồi ạ! ✨
+
+⏰ Thời gian đón khách: {{gio_don_khach}} (Bắt đầu lúc {{gio_bat_dau}})
+📍 Địa điểm: {{dia_diem}}
+
+💡 Lưu ý nhỏ:
+- Giảng viên đã chuẩn bị sẵn giáo trình và cốp đồ nghề cho chị.
+- Chị nhớ đến sớm 10-15 phút để thưởng thức đồ uống chào mừng và nhận thẻ đeo nhé!
+
+📲 Link check-in cá nhân của chị:
+{{qr_link}}
+
+Hẹn gặp chị ngày mai ạ! ❤️`,
+  },
+  {
+    id: 'thanks',
+    title: '3. Cảm ơn sau lớp',
+    isDefault: true,
+    content: `Dạ em chào chị {{ten_hoc_vien}}!
+Cảm ơn chị đã dành trọn vẹn thời gian tham gia Workshop {{ten_workshop}} hôm nay. ❤️
+
+Hy vọng chị đã có những trải nghiệm thật tuyệt vời và nắm vững các kỹ thuật mi chuyên sâu từ Master.
+Em gửi lại chị lộ trình đào tạo chuyên sâu và ưu đãi đặc quyền dành riêng cho học viên tham dự workshop. Nếu có bất kỳ thắc mắc kỹ thuật nào trong quá trình thực hành, chị cứ nhắn em hỗ trợ ngay nhé ạ!`,
+  },
+];
+
 export interface CheckInAcademyWorkshopParticipantRequest {
   checkedIn?: boolean;
   qrToken?: string;

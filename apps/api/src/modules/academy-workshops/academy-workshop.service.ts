@@ -42,6 +42,9 @@ import {
   type UpdateAcademyWorkshopMenuItemRequest,
   type UpdateAcademyWorkshopEquipmentPackageRequest,
   type UpdateAcademyWorkshopEquipmentPackageImageRequest,
+  type UpdateAcademyWorkshopParticipantSelectionsRequest,
+  type AcademyWorkshopZaloTemplate,
+  type UpdateAcademyWorkshopZaloTemplatesRequest,
   type UpdateAcademyWorkshopRequest,
   type UpsertAcademyWorkshopAgendaItemRequest,
 } from '@mos-lab/shared';
@@ -83,6 +86,59 @@ const MENU_CATEGORIES = new Set<AcademyWorkshopMenuCategory>(ACADEMY_WORKSHOP_ME
 const MENU_CATEGORY_ORDER = new Map<AcademyWorkshopMenuCategory, number>(
   ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category, index) => [category, index])
 );
+
+export const ACADEMY_WORKSHOP_ZALO_TEMPLATES_KEY = 'ACADEMY_WORKSHOP_ZALO_TEMPLATES';
+
+export const DEFAULT_ACADEMY_WORKSHOP_ZALO_TEMPLATES: AcademyWorkshopZaloTemplate[] = [
+  {
+    id: 'confirm',
+    title: '1. Xác nhận giữ chỗ',
+    isDefault: true,
+    content: `Dạ em chào chị {{ten_hoc_vien}}! ❤️
+Academy xin gửi chị thông tin chi tiết tham dự Workshop: {{ten_workshop}}.
+
+⏰ Thời gian: {{thoi_gian}}
+📍 Địa điểm: {{dia_diem}}
+🅿️ Hướng dẫn gửi xe: Quý khách gửi xe tại tầng hầm tòa nhà và đi thang máy lên khu vực sảnh Workshop.
+🍽️ Suất ăn đã chọn: {{suat_an}}
+🧰 Dụng cụ thực hành: {{dung_cu}}
+
+📲 Mã QR tự check-in vào lớp của chị:
+{{qr_link}}
+
+(Chị nhớ lưu lại tin nhắn này để quét điểm danh tại bàn lễ tân và tham gia game đố vui nhận quà trên màn hình lớn nhé ạ)
+
+Chúc chị có một buổi trải nghiệm thật nhiều giá trị cùng Master và các bạn học viên!`,
+  },
+  {
+    id: 'remind',
+    title: '2. Nhắc lịch trước 24h',
+    isDefault: true,
+    content: `Chị {{ten_hoc_vien}} ơi! Ngày mai là buổi Workshop {{ten_workshop}} rồi ạ! ✨
+
+⏰ Thời gian đón khách: {{gio_don_khach}} (Bắt đầu lúc {{gio_bat_dau}})
+📍 Địa điểm: {{dia_diem}}
+
+💡 Lưu ý nhỏ:
+- Giảng viên đã chuẩn bị sẵn giáo trình và cốp đồ nghề cho chị.
+- Chị nhớ đến sớm 10-15 phút để thưởng thức đồ uống chào mừng và nhận thẻ đeo nhé!
+
+📲 Link check-in cá nhân của chị:
+{{qr_link}}
+
+Hẹn gặp chị ngày mai ạ! ❤️`,
+  },
+  {
+    id: 'thanks',
+    title: '3. Cảm ơn sau lớp',
+    isDefault: true,
+    content: `Dạ em chào chị {{ten_hoc_vien}}!
+Cảm ơn chị đã dành trọn vẹn thời gian tham gia Workshop {{ten_workshop}} hôm nay. ❤️
+
+Hy vọng chị đã có những trải nghiệm thật tuyệt vời và nắm vững các kỹ thuật mi chuyên sâu từ Master.
+Em gửi lại chị lộ trình đào tạo chuyên sâu và ưu đãi đặc quyền dành riêng cho học viên tham dự workshop. Nếu có bất kỳ thắc mắc kỹ thuật nào trong quá trình thực hành, chị cứ nhắn em hỗ trợ ngay nhé ạ!`,
+  },
+];
 
 const STAFF_SELECT = { id: true, displayName: true, email: true };
 const PARTICIPANT_INCLUDE: SafeAny = {
@@ -1785,6 +1841,108 @@ export class AcademyWorkshopService {
     return this.getParticipant(fastify, actor, workshopId, participantId);
   }
 
+  static async updateParticipantSelections(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    participantId: number,
+    input: UpdateAcademyWorkshopParticipantSelectionsRequest
+  ) {
+    const participant = await this.participantRow(fastify, actor, workshopId, participantId);
+    const workshop = await this.rowById(fastify, actor, workshopId);
+
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      // 1. Equipment package update
+      if (input.equipmentPackageId !== undefined) {
+        if (input.equipmentPackageId === null || Number(input.equipmentPackageId) <= 0) {
+          await tx.crmAcademyWorkshopParticipantEquipmentSelection.deleteMany({
+            where: { participantId: participant.id },
+          });
+        } else {
+          const pkgId = Number(input.equipmentPackageId);
+          const pkg = await tx.crmAcademyWorkshopEquipmentPackage.findFirst({
+            where: { id: pkgId, workshopId: workshop.id },
+          });
+          if (!pkg) {
+            throw new AcademySalesError('Bộ dụng cụ không tồn tại trong workshop này.', 404);
+          }
+          await tx.crmAcademyWorkshopParticipantEquipmentSelection.upsert({
+            where: { participantId: participant.id },
+            create: {
+              participantId: participant.id,
+              equipmentPackageId: pkg.id,
+              packageName: pkg.name,
+              packageContentsJson: pkg.includedItemsJson,
+              priceVnd: pkg.priceVnd,
+            },
+            update: {
+              equipmentPackageId: pkg.id,
+              packageName: pkg.name,
+              packageContentsJson: pkg.includedItemsJson,
+              priceVnd: pkg.priceVnd,
+              selectedAt: new Date(),
+            },
+          });
+        }
+      }
+
+      // 2. Menu selections update
+      let resolvedItemIds: number[] | null = null;
+      if (Array.isArray(input.menuItemIds)) {
+        resolvedItemIds = input.menuItemIds.map(Number).filter((id) => Number.isInteger(id) && id > 0);
+      } else if (Array.isArray(input.menuSelections)) {
+        resolvedItemIds = input.menuSelections
+          .map((s) => Number(s.menuItemId))
+          .filter((id) => Number.isInteger(id) && id > 0);
+      }
+
+      if (resolvedItemIds !== null) {
+        await tx.crmAcademyWorkshopParticipantMenuSelection.deleteMany({
+          where: { participantId: participant.id },
+        });
+
+        if (resolvedItemIds.length > 0) {
+          const items = await tx.crmAcademyWorkshopMenuItem.findMany({
+            where: { id: { in: resolvedItemIds }, workshopId: workshop.id },
+          });
+
+          const seenCategories = new Set<string>();
+          const itemsToInsert: typeof items = [];
+          for (const item of items) {
+            if (!seenCategories.has(item.category)) {
+              seenCategories.add(item.category);
+              itemsToInsert.push(item);
+            }
+          }
+
+          if (itemsToInsert.length > 0) {
+            await tx.crmAcademyWorkshopParticipantMenuSelection.createMany({
+              data: itemsToInsert.map((item) => ({
+                participantId: participant.id,
+                menuItemId: item.id,
+                category: item.category,
+                itemName: item.name,
+              })),
+            });
+          }
+        }
+      }
+
+      // 3. Event audit trail
+      await tx.crmAcademyWorkshopParticipantEvent.create({
+        data: {
+          workshopId: workshop.id,
+          participantId: participant.id,
+          eventType: 'SELECTIONS_UPDATED',
+          metadataJson: JSON.stringify(input),
+          actorStaffId: actor.id,
+        },
+      });
+    });
+
+    return this.getParticipant(fastify, actor, workshopId, participantId);
+  }
+
   static async checkIn(
     fastify: FastifyInstance,
     actor: AcademyActor,
@@ -2046,6 +2204,53 @@ export class AcademyWorkshopService {
         },
       });
     }
+  }
+
+  static async getZaloTemplates(fastify: FastifyInstance): Promise<AcademyWorkshopZaloTemplate[]> {
+    const record = await fastify.prisma.crm.crmConfig.findUnique({
+      where: { key: ACADEMY_WORKSHOP_ZALO_TEMPLATES_KEY },
+    });
+    if (!record?.value) {
+      return DEFAULT_ACADEMY_WORKSHOP_ZALO_TEMPLATES;
+    }
+    try {
+      const parsed = JSON.parse(record.value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as AcademyWorkshopZaloTemplate[];
+      }
+    } catch {
+      // fallback to defaults
+    }
+    return DEFAULT_ACADEMY_WORKSHOP_ZALO_TEMPLATES;
+  }
+
+  static async saveZaloTemplates(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    templates: AcademyWorkshopZaloTemplate[]
+  ): Promise<AcademyWorkshopZaloTemplate[]> {
+    if (!Array.isArray(templates) || templates.length === 0) {
+      throw new AcademySalesError('Danh sách mẫu kịch bản không hợp lệ.', 400);
+    }
+    const sanitized: AcademyWorkshopZaloTemplate[] = templates.map((t, idx) => ({
+      id: String(t.id || `template_${Date.now()}_${idx}`).trim(),
+      title: String(t.title || `Mẫu ${idx + 1}`).trim(),
+      content: String(t.content || '').trim(),
+      isDefault: Boolean(t.isDefault),
+    }));
+
+    await fastify.prisma.crm.crmConfig.upsert({
+      where: { key: ACADEMY_WORKSHOP_ZALO_TEMPLATES_KEY },
+      create: {
+        key: ACADEMY_WORKSHOP_ZALO_TEMPLATES_KEY,
+        value: JSON.stringify(sanitized),
+      },
+      update: {
+        value: JSON.stringify(sanitized),
+      },
+    });
+
+    return sanitized;
   }
 }
 

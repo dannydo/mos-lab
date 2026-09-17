@@ -632,6 +632,12 @@ body {
   overflow-x: hidden;
 }
 
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+a[href] {
+  cursor: pointer;
+}
+
 /* Reporter history is a decision surface. At Laptop Large and above, retain
    its list-and-detail relationship instead of stacking the detail below the
    list. The component still collapses naturally on smaller screens. */

@@ -9,12 +9,16 @@ import {
   type AcademyWorkshopDetail,
   type AcademyWorkshopMenuCategory,
   type AcademyWorkshopMenuItem,
+  type AcademyWorkshopParticipant,
   type CreateAcademyWorkshopMenuItemRequest,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import AcademyWorkshopServerImageUpload from './AcademyWorkshopServerImageUpload';
 import AcademyWorkshopMenuTemplateLibrary from './AcademyWorkshopMenuTemplateLibrary';
+import AcademyWorkshopKitchenOrderModal from './AcademyWorkshopKitchenOrderModal';
 import AcademyWorkshopSelectionDeadline from './AcademyWorkshopSelectionDeadline';
+import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
+import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
 import { useAcademyWorkshopMenuTemplates } from './useAcademyWorkshopMenuTemplates';
 import {
   AppIcon,
@@ -61,10 +65,12 @@ function sortMenu(items: AcademyWorkshopMenuItem[]) {
 
 export default function AcademyWorkshopMenuManager({
   workshop,
+  participants,
   canEdit,
   onUpdated,
 }: {
   workshop: AcademyWorkshopDetail;
+  participants?: AcademyWorkshopParticipant[];
   canEdit: boolean;
   onUpdated: (workshop: AcademyWorkshopDetail) => void;
 }) {
@@ -72,6 +78,7 @@ export default function AcademyWorkshopMenuManager({
   const [form] = Form.useForm<MenuFormValues>();
   const [editingItem, setEditingItem] = React.useState<AcademyWorkshopMenuItem | null>(null);
   const [editorOpen, setEditorOpen] = React.useState(false);
+  const [kitchenModalOpen, setKitchenModalOpen] = React.useState(false);
   const [templateLibraryOpen, setTemplateLibraryOpen] = React.useState(false);
   const [templateId, setTemplateId] = React.useState<number | null>(workshop.menuTemplate?.id || null);
   const [templateSaveRequestId, setTemplateSaveRequestId] = React.useState(0);
@@ -93,15 +100,28 @@ export default function AcademyWorkshopMenuManager({
     [selectableTemplates, templateId, workshop.menuTemplate]
   );
   const isCurrentTemplate = templateId === (workshop.menuTemplate?.id || null);
+  const activeMenuItems = React.useMemo(() => {
+    if (isCurrentTemplate) {
+      return workshop.menuItems;
+    }
+    return selectedTemplate?.items || [];
+  }, [isCurrentTemplate, selectedTemplate?.items, workshop.menuItems]);
   const selectedTemplateCounts = React.useMemo(
     () =>
       Object.fromEntries(
         ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category) => [
           category,
-          selectedTemplate?.items.filter((item) => item.category === category).length || 0,
+          activeMenuItems.filter((item) => item.category === category).length || 0,
         ])
       ) as Record<AcademyWorkshopMenuCategory, number>,
-    [selectedTemplate]
+    [activeMenuItems]
+  );
+  const workshopCategories = React.useMemo(
+    () =>
+      ACADEMY_WORKSHOP_MENU_CATEGORIES.filter((category) =>
+        workshop.menuItems.some((item) => item.category === category)
+      ),
+    [workshop.menuItems]
   );
   const menuAgendaItem = React.useMemo(
     () => workshop.agenda.find((item) => item.id === workshop.menuAgendaItemId) || null,
@@ -227,135 +247,54 @@ export default function AcademyWorkshopMenuManager({
   return (
     <>
       <DataSection
-        title={
-          <IconText
-            icon={
-              <span
-                className="inline-flex h-7 w-7 items-center justify-center rounded-lg"
-                style={{ background: token.colorPrimaryBg, color: token.colorPrimary }}
-              >
-                <AppIcon icon={UtensilsCrossed} size="sm" />
-              </span>
-            }
-          >
-            Thực đơn workshop
-          </IconText>
-        }
+        title={<AcademyWorkshopSectionTitle icon={UtensilsCrossed} title="Thực đơn workshop" />}
         extra={
-          canEdit ? (
-            <Button type="primary" loading={saving} onClick={openCreate}>
-              <IconText icon={<AppIcon icon={Plus} />}>Thêm món</IconText>
-            </Button>
-          ) : undefined
+          <Space wrap>
+            {participants ? (
+              <Button onClick={() => setKitchenModalOpen(true)}>
+                <IconText icon={<AppIcon icon={UtensilsCrossed} />}>Báo cáo Bếp & Đặt món</IconText>
+              </Button>
+            ) : null}
+            {canEdit ? (
+              <Button type="primary" loading={saving} onClick={openCreate}>
+                <IconText icon={<AppIcon icon={Plus} />}>Thêm món</IconText>
+              </Button>
+            ) : null}
+          </Space>
         }
       >
         <div className="space-y-4">
-          <section
-            className="academy-workshop-template-panel"
-            style={{ borderColor: token.colorBorderSecondary }}
-            aria-label="Chọn mẫu thực đơn cho workshop"
-          >
-            <div className="academy-workshop-template-panel__header">
-              <div className="academy-workshop-template-panel__title">
-                <h3 className="m-0 text-sm font-semibold">Mẫu thực đơn</h3>
-                {isCurrentTemplate && selectedTemplate ? (
-                  <StatusTag status="success" label="Đang áp dụng" className="!mb-0" />
-                ) : null}
-              </div>
-              <Button type="text" size="small" onClick={() => setTemplateLibraryOpen(true)} disabled={saving}>
-                <IconText icon={<AppIcon icon={LibraryBig} />}>Thư viện mẫu</IconText>
-              </Button>
-            </div>
-
-            <div className="academy-workshop-template-panel__selection">
-              <div className="academy-workshop-template-panel__field">
-                <label className="sr-only" htmlFor="workshop-menu-template">
-                  Chọn mẫu thực đơn
-                </label>
-                <Select
-                  id="workshop-menu-template"
-                  value={templateId || undefined}
-                  className="w-full"
-                  loading={templates.loading}
-                  disabled={!canEdit || saving || templates.loading}
-                  placeholder={templates.error ? 'Không thể tải mẫu thực đơn' : 'Chọn một mẫu thực đơn'}
-                  options={selectableTemplates.map((template) => ({ value: template.id, label: template.title }))}
-                  onChange={setTemplateId}
-                />
-              </div>
-              <div className="academy-workshop-template-panel__action">
-                {!canEdit && !selectedTemplate ? (
-                  <span
-                    className="academy-workshop-template-panel__action-hint"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    Chọn mẫu để tiếp tục
-                  </span>
-                ) : (
-                  <Space wrap size={8}>
-                    {canEdit && isCurrentTemplate && selectedTemplate ? (
-                      <Popconfirm
-                        title={`Cập nhật mẫu “${selectedTemplate.title}”?`}
-                        description="Thực đơn hiện tại sẽ thay thế nội dung mẫu. Các workshop khác đã áp dụng mẫu vẫn giữ dữ liệu riêng."
-                        okText="Cập nhật mẫu"
-                        cancelText="Hủy"
-                        okButtonProps={{ loading: templateSaving }}
-                        onConfirm={() => void updateCurrentTemplate()}
-                        disabled={saving || templateSaving}
-                      >
-                        <Button disabled={saving || templateSaving} loading={templateSaving}>
-                          <IconText icon={<AppIcon icon={Save} />}>Cập nhật mẫu</IconText>
-                        </Button>
-                      </Popconfirm>
-                    ) : null}
-                    {canEdit && selectedTemplate && !isCurrentTemplate ? (
-                      <Popconfirm
-                        title="Áp dụng mẫu thực đơn này?"
-                        description="Thực đơn hiện tại sẽ được thay bằng bản sao từ mẫu đã chọn. Lựa chọn đã lưu của học viên vẫn được giữ để đối soát."
-                        okText="Áp dụng"
-                        cancelText="Hủy"
-                        onConfirm={() => void applyTemplate()}
-                        disabled={saving || templateSaving}
-                      >
-                        <Button type="primary" disabled={saving || templateSaving} loading={saving}>
-                          <IconText icon={<AppIcon icon={WandSparkles} />}>Áp dụng mẫu</IconText>
-                        </Button>
-                      </Popconfirm>
-                    ) : null}
-                    {canEdit ? (
-                      <Button
-                        onClick={saveAsNewTemplate}
-                        disabled={!workshop.menuItems.length || saving || templateSaving}
-                      >
-                        <IconText icon={<AppIcon icon={Save} />}>Lưu mẫu mới</IconText>
-                      </Button>
-                    ) : null}
-                  </Space>
-                )}
-              </div>
-            </div>
-
-            <div
-              className="academy-workshop-template-panel__details"
-              style={{ color: templates.error ? token.colorError : token.colorTextSecondary }}
-              role={templates.error ? 'alert' : undefined}
-            >
-              <span>
-                {templates.error ||
-                  selectedTemplate?.description ||
-                  'Chọn một mẫu từ thư viện để áp dụng cho workshop.'}
-              </span>
-              {selectedTemplate ? (
-                <span className="academy-workshop-template-panel__metadata tabular-nums">
-                  {ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category) => (
-                    <IconText key={category} icon={<AppIcon icon={UtensilsCrossed} size="sm" />} tabular>
-                      {ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[category]}: {selectedTemplateCounts[category]}
-                    </IconText>
-                  ))}
-                </span>
-              ) : null}
-            </div>
-          </section>
+          <AcademyWorkshopTemplateBar
+            title="Mẫu thực đơn"
+            ariaLabel="Chọn mẫu thực đơn cho workshop"
+            templates={selectableTemplates}
+            selectedTemplateId={templateId}
+            isCurrentTemplate={isCurrentTemplate}
+            selectedTemplateTitle={selectedTemplate?.title}
+            selectedTemplateDescription={selectedTemplate?.description}
+            canEdit={canEdit}
+            loading={templates.loading}
+            saving={saving}
+            templateSaving={templateSaving}
+            error={templates.error}
+            saveAsNewDisabled={!workshop.menuItems.length}
+            metadata={
+              selectedTemplate
+                ? ACADEMY_WORKSHOP_MENU_CATEGORIES.filter((category) => selectedTemplateCounts[category] > 0).map(
+                    (category) => (
+                      <IconText key={category} icon={<AppIcon icon={UtensilsCrossed} size="sm" />} tabular>
+                        {ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[category]}: {selectedTemplateCounts[category]}
+                      </IconText>
+                    )
+                  )
+                : null
+            }
+            onSelectTemplate={setTemplateId}
+            onOpenLibrary={() => setTemplateLibraryOpen(true)}
+            onApplyTemplate={applyTemplate}
+            onUpdateCurrentTemplate={updateCurrentTemplate}
+            onSaveAsNewTemplate={saveAsNewTemplate}
+          />
           <AcademyWorkshopSelectionDeadline
             workshop={workshop}
             canEdit={canEdit}
@@ -412,8 +351,16 @@ export default function AcademyWorkshopMenuManager({
             description="Lựa chọn được lưu theo từng học viên trong tab Roster để Academy tổng hợp và gửi đúng nhà hàng phục vụ workshop."
           />
           {workshop.menuItems.length ? (
-            <div className="grid gap-4 xl:grid-cols-3">
-              {ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category) => {
+            <div
+              className={`grid gap-4 ${
+                workshopCategories.length === 1
+                  ? 'grid-cols-1'
+                  : workshopCategories.length === 2
+                    ? 'grid-cols-1 md:grid-cols-2'
+                    : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+              }`}
+            >
+              {workshopCategories.map((category) => {
                 const items = workshop.menuItems.filter((item) => item.category === category);
                 return (
                   <section
@@ -489,7 +436,7 @@ export default function AcademyWorkshopMenuManager({
               kind="empty"
               surface={false}
               title="Chưa có thực đơn"
-              description="Thêm nước ép, món chính và tráng miệng để học viên lựa chọn khi đăng ký."
+              description="Thêm món ăn và đồ uống để học viên lựa chọn khi đăng ký."
               extra={canEdit ? <Button onClick={openCreate}>Thêm món đầu tiên</Button> : undefined}
             />
           )}
@@ -553,6 +500,12 @@ export default function AcademyWorkshopMenuManager({
         saveRequestId={templateSaveRequestId}
         onClose={() => setTemplateLibraryOpen(false)}
         onApplied={onUpdated}
+      />
+      <AcademyWorkshopKitchenOrderModal
+        open={kitchenModalOpen}
+        onClose={() => setKitchenModalOpen(false)}
+        workshop={workshop}
+        participants={participants || []}
       />
     </>
   );

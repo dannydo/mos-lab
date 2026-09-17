@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, DatePicker, Space, message, theme } from 'antd';
+import { Button, DatePicker, message } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { Clock3, Save } from 'lucide-react';
 import type { AcademyWorkshopDetail } from '@mos-lab/shared';
@@ -21,7 +21,6 @@ export default function AcademyWorkshopSelectionDeadline({
   onUpdated: (workshop: AcademyWorkshopDetail) => void;
   selectionType: SelectionType;
 }) {
-  const { token } = theme.useToken();
   const configuration =
     selectionType === 'menu'
       ? {
@@ -78,29 +77,29 @@ export default function AcademyWorkshopSelectionDeadline({
 
   return (
     <section
-      className="rounded-xl border p-3"
-      style={{ borderColor: token.colorBorderSecondary, background: token.colorFillQuaternary }}
+      className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 dark:border-slate-800 dark:bg-slate-900/40"
       aria-label={configuration.title}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="m-0 text-sm font-semibold">
-            <IconText icon={<AppIcon icon={Clock3} size="sm" />}>{configuration.title}</IconText>
+          <h3 className="m-0 flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-white">
+            <AppIcon icon={Clock3} size="sm" className="text-amber-500" />
+            <span>{configuration.title}</span>
           </h3>
-          <p className="mb-0 mt-1 text-xs leading-5 opacity-65">
+          <p className="mb-0 mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
             Học viên có thể chọn hoặc thay đổi {configuration.itemLabel} đến mốc này.
           </p>
         </div>
         <StatusTag
           status={configuration.deadline ? 'success' : 'default'}
-          label={configuration.deadline ? 'Đã đặt' : 'Theo giờ bắt đầu'}
+          label={configuration.deadline ? 'Đã đặt riêng' : 'Theo giờ bắt đầu'}
           className="!mb-0"
         />
       </div>
 
-      <div className="mt-3 flex flex-wrap items-end gap-2">
-        <div className="min-w-[240px] flex-1">
-          <label className="mb-1 block text-xs font-medium" htmlFor={`workshop-${selectionType}-selection-deadline`}>
+      <div className="mt-3 flex flex-wrap items-center gap-2.5">
+        <div className="w-full sm:w-72">
+          <label className="sr-only" htmlFor={`workshop-${selectionType}-selection-deadline`}>
             {configuration.inputLabel}
           </label>
           <DatePicker
@@ -112,28 +111,59 @@ export default function AcademyWorkshopSelectionDeadline({
             value={draftDeadline}
             status={deadlineIsInvalid ? 'error' : undefined}
             disabled={!canEdit || saving}
-            placeholder="Để trống: chốt khi workshop bắt đầu"
+            placeholder="Chốt khi bắt đầu workshop"
             onChange={setDraftDeadline}
           />
         </div>
-        {canEdit ? (
-          <Button
-            type="primary"
-            loading={saving}
-            disabled={!deadlineHasChanged || deadlineIsInvalid}
-            onClick={() => void saveDeadline()}
-          >
+
+        {canEdit && deadlineHasChanged ? (
+          <Button type="primary" loading={saving} disabled={deadlineIsInvalid} onClick={() => void saveDeadline()}>
             <IconText icon={<AppIcon icon={Save} />}>Lưu hạn chốt</IconText>
           </Button>
+        ) : null}
+
+        {canEdit ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] text-slate-400">Gợi ý mốc:</span>
+            <button
+              type="button"
+              onClick={() => setDraftDeadline(startsAt.subtract(24, 'hour'))}
+              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Trước 24h
+            </button>
+            <button
+              type="button"
+              onClick={() => setDraftDeadline(startsAt.subtract(12, 'hour'))}
+              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Trước 12h
+            </button>
+            <button
+              type="button"
+              onClick={() => setDraftDeadline(startsAt.subtract(2, 'hour'))}
+              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Trước 2h
+            </button>
+            {draftDeadline ? (
+              <button
+                type="button"
+                onClick={() => setDraftDeadline(null)}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-slate-800 dark:bg-slate-800 dark:text-rose-400 dark:hover:bg-rose-950/30"
+              >
+                Giờ bắt đầu
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
       <p
-        className="mb-0 mt-2 text-xs leading-5"
-        style={{ color: deadlineIsInvalid ? token.colorError : token.colorTextSecondary }}
+        className={`mb-0 mt-2 text-xs leading-5 ${deadlineIsInvalid ? 'text-rose-500 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}
       >
         {deadlineIsInvalid
-          ? 'Hạn chốt không được sau giờ bắt đầu workshop.'
+          ? '⚠️ Hạn chốt không được sau giờ bắt đầu workshop.'
           : draftDeadline
             ? `Học viên có thể thay đổi ${configuration.itemLabel} đến ${effectiveDeadline.format('HH:mm · DD/MM/YYYY')}.`
             : `Chưa đặt riêng — học viên được thay đổi ${configuration.itemLabel} đến ${effectiveDeadline.format('HH:mm · DD/MM/YYYY')} (giờ bắt đầu workshop).`}

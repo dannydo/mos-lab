@@ -30,6 +30,7 @@ import type {
   SetAcademyWorkshopPhotoConsentRequest,
   UpdateAcademyInstructorBonusRequest,
   UpdateAcademyWorkshopCareRequest,
+  UpdateAcademyWorkshopParticipantSelectionsRequest,
   UpdateAcademyWorkshopAgendaItemRequest,
   UpdateAcademyWorkshopAgendaTemplateRequest,
   UpdateAcademyWorkshopMenuItemRequest,
@@ -39,6 +40,7 @@ import type {
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
+  UpdateAcademyWorkshopZaloTemplatesRequest,
   UpsertAcademyWorkshopQuestionRequest,
   UpsertAcademyWorkshopQuizRequest,
   WaiveAcademyWorkshopFeeRequest,
@@ -269,6 +271,24 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, message: 'Đã xóa mẫu câu hỏi.' });
     } catch (cause) {
       return error(fastify, reply, cause, 'Delete workshop quiz template');
+    }
+  });
+
+  fastify.get('/academy-sales/workshop-zalo-templates', async (request, reply) => {
+    try {
+      return reply.send(await AcademyWorkshopService.getZaloTemplates(fastify));
+    } catch (cause) {
+      return error(fastify, reply, cause, 'List workshop zalo templates');
+    }
+  });
+
+  fastify.put('/academy-sales/workshop-zalo-templates', async (request, reply) => {
+    try {
+      const body = request.body as UpdateAcademyWorkshopZaloTemplatesRequest;
+      const data = await AcademyWorkshopService.saveZaloTemplates(fastify, actorFrom(request), body.templates);
+      return reply.send({ success: true, data, message: 'Đã lưu danh sách mẫu kịch bản Zalo.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Save workshop zalo templates');
     }
   });
 
@@ -834,6 +854,22 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, data, message: 'Đã ghi nhận bước chăm sóc.' });
     } catch (cause) {
       return error(fastify, reply, cause, 'Update workshop care');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/participants/:participantId/selections', async (request, reply) => {
+    try {
+      const { workshopId, participantId } = request.params as { workshopId: string; participantId: string };
+      const data = await AcademyWorkshopService.updateParticipantSelections(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(participantId, 'Participant ID'),
+        request.body as UpdateAcademyWorkshopParticipantSelectionsRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã lưu lựa chọn thực đơn và dụng cụ.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Update participant selections');
     }
   });
 

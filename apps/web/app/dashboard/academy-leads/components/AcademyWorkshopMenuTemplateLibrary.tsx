@@ -233,7 +233,7 @@ export default function AcademyWorkshopMenuTemplateLibrary({
                       ) : null}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category) => (
+                      {ACADEMY_WORKSHOP_MENU_CATEGORIES.filter((category) => counts[category] > 0).map((category) => (
                         <span
                           key={category}
                           className="inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-xs font-semibold leading-none"

@@ -2,12 +2,26 @@
 
 import React from 'react';
 import { Button } from 'antd';
-import { BadgeCheck, ExternalLink, LogIn, Play, RefreshCw, Trophy, Users } from 'lucide-react';
+import {
+  BadgeCheck,
+  CircleDollarSign,
+  ExternalLink,
+  IdCard,
+  ListChecks,
+  LogIn,
+  Play,
+  RefreshCw,
+  TrendingUp,
+  Trophy,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import type {
   AcademyInstructorBonus,
   AcademyStaffOption,
   AcademyWorkshopAgendaItem,
   AcademyWorkshopDetail,
+  AcademyWorkshopParticipant,
   AcademyWorkshopReward,
   AcademyWorkshopSummary,
 } from '@mos-lab/shared';
@@ -23,6 +37,7 @@ import {
 } from '../../../../components/ui';
 import AcademyWorkshopEditButton from './AcademyWorkshopEditButton';
 import AcademyWorkshopSharedQrButton from './AcademyWorkshopSharedQrButton';
+import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
 
 export function AcademyWorkshopHeaderActions({
   workshop,
@@ -31,6 +46,7 @@ export function AcademyWorkshopHeaderActions({
   loading,
   onRefresh,
   onOpenLive,
+  onOpenPrintBadges,
   onUpdated,
 }: {
   workshop: AcademyWorkshopDetail;
@@ -39,6 +55,7 @@ export function AcademyWorkshopHeaderActions({
   loading: boolean;
   onRefresh: () => void;
   onOpenLive: () => void;
+  onOpenPrintBadges?: () => void;
   onUpdated: (updated: AcademyWorkshopDetail) => void;
 }) {
   return (
@@ -51,6 +68,9 @@ export function AcademyWorkshopHeaderActions({
         iconOnly
         onUpdated={onUpdated}
       />
+      {onOpenPrintBadges ? (
+        <IconButton label="In thẻ đeo & Điểm danh" icon={IdCard} onClick={onOpenPrintBadges} />
+      ) : null}
       {workshop.registrationUrl ? (
         <AcademyWorkshopSharedQrButton
           workshopName={workshop.name}
@@ -115,10 +135,13 @@ export function AcademyWorkshopMetrics({ summary }: { summary: AcademyWorkshopSu
 
 export function AcademyWorkshopAgendaSnapshot({ agenda }: { agenda: AcademyWorkshopAgendaItem[] }) {
   return (
-    <DataSection title="Agenda snapshot">
+    <DataSection title={<AcademyWorkshopSectionTitle icon={ListChecks} title="Agenda snapshot" />}>
       <div className="space-y-3">
         {agenda.map((item) => (
-          <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+          <div
+            key={item.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-900/60 transition-colors"
+          >
             <div>
               <div className="font-semibold">
                 {item.sortOrder}. {item.title}
@@ -147,74 +170,171 @@ export function AcademyWorkshopAgendaSnapshot({ agenda }: { agenda: AcademyWorks
 }
 
 export function AcademyWorkshopSettlement({
+  workshop,
+  participants = [],
   rewards,
   bonuses,
   onFulfillReward,
   onPayBonus,
 }: {
+  workshop?: AcademyWorkshopDetail;
+  participants?: AcademyWorkshopParticipant[];
   rewards: AcademyWorkshopReward[];
   bonuses: AcademyInstructorBonus[];
   onFulfillReward: (rewardId: number) => void;
   onPayBonus: (bonusId: number) => void;
 }) {
+  const pnl = React.useMemo(() => {
+    const totalTicketRevenue = participants.reduce((acc, p) => acc + (p.feePaidVnd || 0), 0);
+    const paidTicketCount = participants.filter((p) => p.feeStatus === 'PAID').length;
+    const waivedTicketCount = participants.filter((p) => p.feeStatus === 'WAIVED').length;
+
+    const totalEquipmentRevenue = participants.reduce((acc, p) => acc + (p.equipmentSelection?.priceVnd || 0), 0);
+    const equipmentCount = participants.filter((p) => Boolean(p.equipmentSelection)).length;
+
+    const totalInstructorBonuses = bonuses.reduce((acc, b) => acc + (b.amountVnd || 0), 0);
+    const paidInstructorBonuses = bonuses
+      .filter((b) => b.status === 'PAID')
+      .reduce((acc, b) => acc + (b.amountVnd || 0), 0);
+
+    const directRevenue = totalTicketRevenue + totalEquipmentRevenue;
+    const netDirectMargin = directRevenue - totalInstructorBonuses;
+    const tuitionWonCount = workshop?.summary.tuitionPaid || 0;
+
+    return {
+      totalTicketRevenue,
+      paidTicketCount,
+      waivedTicketCount,
+      totalEquipmentRevenue,
+      equipmentCount,
+      totalInstructorBonuses,
+      paidInstructorBonuses,
+      directRevenue,
+      netDirectMargin,
+      tuitionWonCount,
+    };
+  }, [bonuses, participants, workshop?.summary.tuitionPaid]);
+
   return (
-    <div className="academy-workshop-settlement grid gap-4 xl:grid-cols-2">
-      <DataSection title="Phần thưởng game">
-        <div className="space-y-2">
-          {rewards.length ? (
-            rewards.map((reward) => (
-              <div key={reward.id} className="flex items-center justify-between gap-3 rounded-xl border p-3">
-                <div>
-                  <strong>{reward.label}</strong>
-                  <div className="text-xs opacity-60">
-                    Participant #{reward.participantId} · {reward.sourceType}
-                  </div>
-                </div>
-                {reward.status === 'PROMISED' ? (
-                  <Button size="small" onClick={() => onFulfillReward(reward.id)}>
-                    Đã trao
-                  </Button>
-                ) : (
-                  <StatusTag status={reward.status === 'FULFILLED' ? 'success' : 'default'} label={reward.status} />
-                )}
-              </div>
-            ))
-          ) : (
-            <StatePanel kind="empty" title="Chưa có phần thưởng được hứa" surface={false} />
-          )}
-        </div>
+    <div className="space-y-6">
+      {/* Master Event P&L Statement */}
+      <DataSection
+        title={
+          <AcademyWorkshopSectionTitle icon={Trophy} title="Quyết toán tài chính sự kiện (Workshop P&L Statement)" />
+        }
+      >
+        <MetricGrid
+          items={[
+            {
+              key: 'revenue',
+              title: 'Doanh thu trực tiếp (Vé + Dụng cụ)',
+              value: pnl.directRevenue,
+              format: 'vnd',
+              icon: <AppIcon icon={CircleDollarSign} />,
+            },
+            {
+              key: 'ticket',
+              title: `Thu tiền vé (${pnl.paidTicketCount} đã đóng, ${pnl.waivedTicketCount} miễn)`,
+              value: pnl.totalTicketRevenue,
+              format: 'vnd',
+              icon: <AppIcon icon={Wallet} />,
+            },
+            {
+              key: 'equipment',
+              title: `Phụ thu dụng cụ (${pnl.equipmentCount} bộ)`,
+              value: pnl.totalEquipmentRevenue,
+              format: 'vnd',
+              icon: <AppIcon icon={Wallet} />,
+            },
+            {
+              key: 'bonus',
+              title: 'Thù lao giảng viên',
+              value: pnl.totalInstructorBonuses,
+              format: 'vnd',
+              icon: <AppIcon icon={TrendingUp} />,
+            },
+            {
+              key: 'margin',
+              title: 'Lợi nhuận trực tiếp sự kiện',
+              value: pnl.netDirectMargin,
+              format: 'vnd',
+              icon: <AppIcon icon={Trophy} />,
+            },
+            {
+              key: 'converted',
+              title: 'Học viên chốt khóa (Tuition Won)',
+              value: pnl.tuitionWonCount,
+              format: 'number',
+              icon: <AppIcon icon={BadgeCheck} />,
+            },
+          ]}
+        />
       </DataSection>
-      <DataSection title="Thưởng giáo viên">
-        <div className="space-y-2">
-          {bonuses.length ? (
-            bonuses.map((bonus) => (
-              <div key={bonus.id} className="flex items-center justify-between gap-3 rounded-xl border p-3">
-                <div>
-                  <strong>{bonus.instructor.displayName}</strong>
-                  <div className="text-xs opacity-60">
-                    {bonus.courseName} ·{' '}
-                    <span className="tabular-nums">{bonus.amountVnd.toLocaleString('vi-VN')} đ</span>
+
+      <div className="academy-workshop-settlement grid gap-4 xl:grid-cols-2">
+        <DataSection title={<AcademyWorkshopSectionTitle icon={Trophy} title="Phần thưởng game" />}>
+          <div className="space-y-2">
+            {rewards.length ? (
+              rewards.map((reward) => (
+                <div
+                  key={reward.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/60 p-3 dark:border-slate-800 dark:bg-slate-900/60 transition-colors"
+                >
+                  <div>
+                    <strong>{reward.label}</strong>
+                    <div className="text-xs opacity-60 tabular-nums">
+                      Participant #{reward.participantId} · {reward.sourceType}
+                    </div>
                   </div>
+                  {reward.status === 'PROMISED' ? (
+                    <Button size="small" onClick={() => onFulfillReward(reward.id)}>
+                      Đã trao
+                    </Button>
+                  ) : (
+                    <StatusTag status={reward.status === 'FULFILLED' ? 'success' : 'default'} label={reward.status} />
+                  )}
                 </div>
-                {bonus.status === 'EARNED' ? (
-                  <Button size="small" onClick={() => onPayBonus(bonus.id)}>
-                    Đã chi
-                  </Button>
-                ) : (
-                  <StatusTag
-                    status={
-                      bonus.status === 'MISSING_CONFIG' ? 'orange' : bonus.status === 'PAID' ? 'success' : 'default'
-                    }
-                    label={bonus.status}
-                  />
-                )}
-              </div>
-            ))
-          ) : (
-            <StatePanel kind="empty" title="Chưa phát sinh thưởng giáo viên" surface={false} />
-          )}
-        </div>
-      </DataSection>
+              ))
+            ) : (
+              <StatePanel kind="empty" title="Chưa có phần thưởng được hứa" surface={false} />
+            )}
+          </div>
+        </DataSection>
+        <DataSection title={<AcademyWorkshopSectionTitle icon={TrendingUp} title="Thưởng giáo viên" />}>
+          <div className="space-y-2">
+            {bonuses.length ? (
+              bonuses.map((bonus) => (
+                <div
+                  key={bonus.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/60 p-3 dark:border-slate-800 dark:bg-slate-900/60 transition-colors"
+                >
+                  <div>
+                    <strong>{bonus.instructor.displayName}</strong>
+                    <div className="text-xs opacity-60">
+                      {bonus.courseName} ·{' '}
+                      <span className="tabular-nums">{bonus.amountVnd.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                  </div>
+                  {bonus.status === 'EARNED' ? (
+                    <Button size="small" onClick={() => onPayBonus(bonus.id)}>
+                      Đã chi
+                    </Button>
+                  ) : (
+                    <StatusTag
+                      status={
+                        bonus.status === 'MISSING_CONFIG' ? 'orange' : bonus.status === 'PAID' ? 'success' : 'default'
+                      }
+                      label={bonus.status}
+                    />
+                  )}
+                </div>
+              ))
+            ) : (
+              <StatePanel kind="empty" title="Chưa phát sinh thưởng giáo viên" surface={false} />
+            )}
+          </div>
+        </DataSection>
+      </div>
     </div>
   );
 }

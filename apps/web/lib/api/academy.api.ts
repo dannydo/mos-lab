@@ -40,6 +40,7 @@ import type {
   AcademyWorkshopReward,
   AcademyWorkshopSharedJoinInfo,
   AcademyWorkshopTalentLeaderboardEntry,
+  AcademyWorkshopZaloTemplate,
   AcademyWorkspaceAccessResponse,
   AddAcademyCampaignLeadsRequest,
   AddAcademyWorkshopParticipantsRequest,
@@ -119,6 +120,7 @@ import type {
   UpdateAcademyWorkshopAgendaItemRequest,
   UpdateAcademyWorkshopAgendaTemplateRequest,
   UpdateAcademyWorkshopCareRequest,
+  UpdateAcademyWorkshopParticipantSelectionsRequest,
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopEquipmentPackageImageRequest,
   UpdateAcademyWorkshopEquipmentPackageRequest,
@@ -126,6 +128,7 @@ import type {
   UpdateAcademyWorkshopMenuItemRequest,
   UpdateAcademyWorkshopRequest,
   UpdateAcademyWorkshopRewardRequest,
+  UpdateAcademyWorkshopZaloTemplatesRequest,
   UpsertAcademyCourseRequest,
   UpsertAcademyPlaybookRequest,
   UpsertAcademyTalentInstructorRequest,
@@ -417,6 +420,18 @@ export const academyApi = {
         await api.delete(`/academy-sales/workshop-equipment-templates/${templateId}`);
         invalidateAcademySalesReadCache();
       },
+      listZaloTemplates: async (): Promise<AcademyWorkshopZaloTemplate[]> => {
+        const response = await api.get<AcademyWorkshopZaloTemplate[]>('/academy-sales/workshop-zalo-templates');
+        return response.data;
+      },
+      saveZaloTemplates: async (templates: AcademyWorkshopZaloTemplate[]): Promise<AcademyWorkshopZaloTemplate[]> => {
+        const response = await api.put<{ success: boolean; data: AcademyWorkshopZaloTemplate[] }>(
+          '/academy-sales/workshop-zalo-templates',
+          { templates }
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
       list: async (params?: ListAcademyWorkshopsParams): Promise<ListAcademyWorkshopsResponse> => {
         return dedupeApiGet<ListAcademyWorkshopsResponse>(
           '/academy-sales/workshops',
@@ -692,6 +707,18 @@ export const academyApi = {
           `/academy-sales/workshops/${workshopId}/participants/${participantId}/care`,
           dto
         );
+        return response.data.data;
+      },
+      updateSelections: async (
+        workshopId: number,
+        participantId: number,
+        dto: UpdateAcademyWorkshopParticipantSelectionsRequest
+      ): Promise<AcademyWorkshopParticipant> => {
+        const response = await api.put<{ data: AcademyWorkshopParticipant }>(
+          `/academy-sales/workshops/${workshopId}/participants/${participantId}/selections`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
         return response.data.data;
       },
       checkIn: async (

@@ -318,11 +318,11 @@ export const customersApi = {
       return response.data;
     },
     unpinNote: async (customerId: number, noteId: number): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post(`/customers/${customerId}/notes/${noteId}/unpin`);
+      const response = await api.post(`/customers/${customerId}/notes/${noteId}/unpin`, {});
       return response.data;
     },
     pinNote: async (customerId: number, noteId: number): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post(`/customers/${customerId}/notes/${noteId}/pin`);
+      const response = await api.post(`/customers/${customerId}/notes/${noteId}/pin`, {});
       return response.data;
     },
   },

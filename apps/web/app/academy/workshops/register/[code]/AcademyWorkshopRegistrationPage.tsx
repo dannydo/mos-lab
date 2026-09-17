@@ -1520,7 +1520,8 @@ export default function AcademyWorkshopRegistrationPage() {
                                         Thực đơn theo set
                                       </p>
                                       <p className="mb-0 mt-1 text-sm leading-5 text-slate-700">
-                                        Chọn một món ở mỗi phần. Academy sẽ tổng hợp trước cho nhà hàng Việt Thái.
+                                        Chọn một món ở mỗi nhóm. Academy sẽ tổng hợp trước cho đơn vị ẩm thực phục vụ
+                                        workshop.
                                       </p>
                                     </div>
                                   </div>

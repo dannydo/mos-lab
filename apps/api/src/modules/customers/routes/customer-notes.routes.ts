@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { SafeAny } from '@mos-lab/shared';
+import { SafeAny, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { createRouteHelpers } from './helpers.js';
 
 export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
@@ -37,17 +37,42 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
       });
 
       const staffId = crmStaff?.legacyStaffId || 0;
+      const groupKey = Math.floor(Date.now() / 1000).toString();
+      const isDisabled = noteFieldKey === 'order_note' ? 1 : 0;
+      const deptOptionId = noteFieldKey === 'order_note' ? 120 : 119;
 
-      // Insert into user_note raw table
-      await fastify.prisma.legacy.$executeRawUnsafe(
-        `INSERT INTO user_note (client_id, client_business_id, user_id, note, note_field_key, is_sticky, is_issue, created_staff_id, is_disabled, date_created)
-         VALUES (11, 1, ?, ?, ?, ?, 0, ?, 0, NOW())`,
-        customerId,
-        note.trim(),
-        noteFieldKey || 'note',
-        isSticky ? 1 : 0,
-        staffId
-      );
+      await fastify.prisma.legacy.$transaction(async (tx) => {
+        // Insert into user_note raw table with attribute_group_key and proper is_disabled flag
+        await tx.$executeRawUnsafe(
+          `INSERT INTO user_note (client_id, client_business_id, user_id, note, note_field_key, attribute_group_key, is_sticky, is_issue, created_staff_id, is_disabled, date_created)
+           VALUES (11, 1, ?, ?, ?, ?, ?, 0, ?, ?, NOW())`,
+          customerId,
+          note.trim(),
+          noteFieldKey || 'note',
+          groupKey,
+          isSticky ? 1 : 0,
+          staffId,
+          isDisabled
+        );
+
+        const lastIdResult = await tx.$queryRawUnsafe<Array<{ id: number | bigint }>>('SELECT LAST_INSERT_ID() as id');
+        const newNoteId = Number(lastIdResult[0]?.id);
+
+        if (newNoteId) {
+          // Insert matching legacy attribute values for Warning Type (Normal) and Department (Note/Booking)
+          await tx.$executeRawUnsafe(
+            `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_id, attribute_option_value, group_key, date_created)
+             VALUES 
+             (11, 1, 'user-note-attribute', ?, 23, 116, '', ?, NOW()),
+             (11, 1, 'user-note-attribute', ?, 24, ?, '', ?, NOW())`,
+            newNoteId,
+            groupKey,
+            newNoteId,
+            deptOptionId,
+            groupKey
+          );
+        }
+      });
 
       return reply.send({ success: true, message: 'Thêm ghi chú thành công' });
     } catch (err: SafeAny) {
@@ -60,15 +85,15 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
   });
 
   // POST /api/customers/:id/notes/:noteId/unpin
-  // Unpin a customer note (admin only)
+  // Unpin a customer note (admin/super_admin/manager)
   fastify.post('/customers/:id/notes/:noteId/unpin', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id, noteId } = request.params as { id: string; noteId: string };
     const user = request.user as { id: number; role: string };
 
-    if (user.role !== 'admin') {
+    if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'manager') {
       return reply
         .status(403)
-        .send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép bỏ ghim ghi chú.' });
+        .send({ error: 'Forbidden', message: 'Chỉ có quản trị viên hoặc quản lý mới được phép bỏ ghim ghi chú.' });
     }
 
     const customerId = parseInt(id, 10);
@@ -95,15 +120,15 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
   });
 
   // POST /api/customers/:id/notes/:noteId/pin
-  // Pin a customer note (admin only)
+  // Pin a customer note (admin/super_admin/manager)
   fastify.post('/customers/:id/notes/:noteId/pin', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id, noteId } = request.params as { id: string; noteId: string };
     const user = request.user as { id: number; role: string };
 
-    if (user.role !== 'admin') {
+    if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'manager') {
       return reply
         .status(403)
-        .send({ error: 'Forbidden', message: 'Chỉ có quản trị viên (admin) mới được phép ghim ghi chú.' });
+        .send({ error: 'Forbidden', message: 'Chỉ có quản trị viên hoặc quản lý mới được phép ghim ghi chú.' });
     }
 
     const customerId = parseInt(id, 10);
@@ -113,11 +138,50 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      await fastify.prisma.legacy.$executeRawUnsafe(
-        `UPDATE user_note SET is_sticky = 1 WHERE id = ? AND user_id = ?`,
-        parsedNoteId,
-        customerId
-      );
+      await fastify.prisma.legacy.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(
+          `UPDATE user_note SET is_sticky = 1 WHERE id = ? AND user_id = ?`,
+          parsedNoteId,
+          customerId
+        );
+
+        // Self-heal attribute_group_key and item_attribute_value if missing
+        const noteRecords = await tx.$queryRawUnsafe<
+          Array<{ attribute_group_key: string | null; note_field_key: string }>
+        >(`SELECT attribute_group_key, note_field_key FROM user_note WHERE id = ? LIMIT 1`, parsedNoteId);
+
+        if (noteRecords.length > 0) {
+          let currentGroupKey = noteRecords[0]?.attribute_group_key;
+          if (!currentGroupKey) {
+            currentGroupKey = Math.floor(Date.now() / 1000).toString();
+            await tx.$executeRawUnsafe(
+              `UPDATE user_note SET attribute_group_key = ? WHERE id = ?`,
+              currentGroupKey,
+              parsedNoteId
+            );
+          }
+
+          const existingAttrs = await tx.$queryRawUnsafe<Array<{ id: number }>>(
+            `SELECT id FROM item_attribute_value WHERE item_id = ? AND type = 'user-note-attribute' LIMIT 1`,
+            parsedNoteId
+          );
+
+          if (existingAttrs.length === 0) {
+            const deptOptionId = noteRecords[0]?.note_field_key === 'order_note' ? 120 : 119;
+            await tx.$executeRawUnsafe(
+              `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_id, attribute_option_value, group_key, date_created)
+               VALUES 
+               (11, 1, 'user-note-attribute', ?, 23, 116, '', ?, NOW()),
+               (11, 1, 'user-note-attribute', ?, 24, ?, '', ?, NOW())`,
+              parsedNoteId,
+              currentGroupKey,
+              parsedNoteId,
+              deptOptionId,
+              currentGroupKey
+            );
+          }
+        }
+      });
 
       return reply.send({ success: true, message: 'Ghim ghi chú thành công' });
     } catch (err: SafeAny) {

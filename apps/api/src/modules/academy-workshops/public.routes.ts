@@ -539,7 +539,7 @@ export async function academyWorkshopPublicRoutes(fastify: FastifyInstance) {
         authenticated = true;
         clearTimeout(timeout);
         dispose = academyWorkshopRealtimeHub.add(workshopId, { socket, audience, participantId });
-        console.log('[WS AUTH SUCCESS]', { workshopId, audience, participantId });
+        request.log.info({ workshopId, audience, participantId }, 'Workshop websocket authenticated');
         socket.send(
           JSON.stringify({
             type: 'STATE_SNAPSHOT',
@@ -550,7 +550,6 @@ export async function academyWorkshopPublicRoutes(fastify: FastifyInstance) {
           await AcademyWorkshopLiveService.broadcastState(fastify, workshopId);
         }
       } catch (cause) {
-        console.error('[WS AUTH REJECTED]', cause);
         request.log.warn({ cause }, 'Workshop websocket authentication rejected');
         socket.send(
           JSON.stringify({ type: 'ERROR', data: { code: 'UNAUTHORIZED', message: 'Workshop session không hợp lệ.' } })

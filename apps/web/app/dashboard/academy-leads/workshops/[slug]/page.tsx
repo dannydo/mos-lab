@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Form, Progress, Space, Tabs, message, theme } from 'antd';
+import { Button, Space, Tabs, message, theme } from 'antd';
 import dayjs from 'dayjs';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -14,15 +14,13 @@ import {
   UserPlus,
   Users,
   UtensilsCrossed,
+  Wrench,
 } from 'lucide-react';
-import {
-  removeVietnameseTones,
-  type AcademyInstructorBonus,
-  type AcademyLead,
-  type AcademyTalentAssessment,
-  type AcademyWorkshopParticipant,
-  type AcademyWorkshopResourcesResponse,
-  type AcademyWorkshopReward,
+import type {
+  AcademyInstructorBonus,
+  AcademyWorkshopParticipant,
+  AcademyWorkshopResourcesResponse,
+  AcademyWorkshopReward,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../../lib/api-client';
 import { useAcademyAccess } from '../../components/AcademyAccessGate';
@@ -32,6 +30,8 @@ import AcademyWorkshopQuizManager from '../../components/AcademyWorkshopQuizMana
 import AcademyWorkshopQuizTemplateLibrary from '../../components/AcademyWorkshopQuizTemplateLibrary';
 import AcademyWorkshopQuizTemplatePanel from '../../components/AcademyWorkshopQuizTemplatePanel';
 import AcademyWorkshopRoster from '../../components/AcademyWorkshopRoster';
+import AcademyWorkshopRosterToolbar from '../../components/AcademyWorkshopRosterToolbar';
+import AcademyWorkshopSectionTitle from '../../components/AcademyWorkshopSectionTitle';
 import {
   AcademyWorkshopHeaderActions,
   AcademyWorkshopMetrics,
@@ -40,24 +40,17 @@ import {
 import AcademyWorkshopAgendaManager from '../../components/AcademyWorkshopAgendaManager';
 import AcademyWorkshopMenuManager from '../../components/AcademyWorkshopMenuManager';
 import AcademyWorkshopEquipmentManager from '../../components/AcademyWorkshopEquipmentManager';
-import { compressWorkshopImage } from '../../components/academy-workshop-image';
-import AcademyWorkshopParticipantOverlays, {
-  type AcademyWorkshopFeeForm,
-  type AcademyWorkshopWalkInForm,
-} from '../../components/AcademyWorkshopParticipantOverlays';
+import AcademyWorkshopParticipantOverlays from '../../components/AcademyWorkshopParticipantOverlays';
+import AcademyWorkshopPrintBadgesModal from '../../components/AcademyWorkshopPrintBadgesModal';
+import AcademyWorkshopZaloScriptModal from '../../components/AcademyWorkshopZaloScriptModal';
+import AcademyWorkshopQrCheckInModal from '../../components/AcademyWorkshopQrCheckInModal';
+import AcademyWorkshopKitchenOrderModal from '../../components/AcademyWorkshopKitchenOrderModal';
+import AcademyWorkshopEquipmentPrepModal from '../../components/AcademyWorkshopEquipmentPrepModal';
 import { academyTalentCourseSelectionRules } from '../../components/academy-talent-workshop.adapter';
-import type {
-  AcademyTalentAssessmentView,
-  AcademyTalentDraft,
-  AcademyTalentLead,
-} from '../../components/academy-talent-workshop.types';
 import { useAcademyTalentLadderConfiguration } from '../../components/useAcademyTalentLadderConfiguration';
 import { useAcademyWorkshopQuizActions } from '../../components/useAcademyWorkshopQuizActions';
-import {
-  buildTalentSessions,
-  talentAssessmentRequest,
-  talentWorkshopView,
-} from '../../lead-manager/lead-manager.helpers';
+import { useAcademyWorkshopTalentAssessment } from '../../components/useAcademyWorkshopTalentAssessment';
+import { useAcademyWorkshopParticipantActions } from '../../components/useAcademyWorkshopParticipantActions';
 import { useAcademyTalentResources } from '../../lead-manager/useAcademyTalentResources';
 import styles from './AcademyWorkshopWorkspace.module.css';
 
@@ -77,38 +70,17 @@ export default function AcademyWorkshopWorkspacePage() {
   const [resources, setResources] = React.useState<AcademyWorkshopResourcesResponse>({ staff: [], instructors: [] });
   const [rewards, setRewards] = React.useState<AcademyWorkshopReward[]>([]);
   const [bonuses, setBonuses] = React.useState<AcademyInstructorBonus[]>([]);
-  const [leadOptions, setLeadOptions] = React.useState<AcademyLead[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState('roster');
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(20);
-  const [selected, setSelected] = React.useState<AcademyWorkshopParticipant | null>(null);
-  const [careDrawerOpen, setCareDrawerOpen] = React.useState(false);
-  const [addLeadIds, setAddLeadIds] = React.useState<number[]>([]);
-  const [leadSearch, setLeadSearch] = React.useState('');
-  const deferredLeadSearch = React.useDeferredValue(leadSearch);
-  const [leadLoading, setLeadLoading] = React.useState(false);
-  const [leadError, setLeadError] = React.useState<string | null>(null);
-  const [addOpen, setAddOpen] = React.useState(false);
-  const [walkInOpen, setWalkInOpen] = React.useState(false);
-  const [feeOpen, setFeeOpen] = React.useState(false);
   const [templateLibraryOpen, setTemplateLibraryOpen] = React.useState(false);
-  const [qrDataUrl, setQrDataUrl] = React.useState('');
-  const [qrTargetUrl, setQrTargetUrl] = React.useState('');
-  const [busy, setBusy] = React.useState(false);
-  const [busyParticipantId, setBusyParticipantId] = React.useState<number | null>(null);
-  const [talentLead, setTalentLead] = React.useState<AcademyTalentLead | null>(null);
-  const [talentParticipantId, setTalentParticipantId] = React.useState<number | null>(null);
-  const [talentOpen, setTalentOpen] = React.useState(false);
-  const [talentAssessments, setTalentAssessments] = React.useState<AcademyTalentAssessment[]>([]);
-  const [talentAssessmentId, setTalentAssessmentId] = React.useState<number | null>(null);
-  const [talentLoading, setTalentLoading] = React.useState(false);
-  const [talentSaving, setTalentSaving] = React.useState(false);
-  const talentLoadVersionRef = React.useRef(0);
-  const talentAssessmentIdRef = React.useRef<number | null>(null);
-  const [walkInForm] = Form.useForm<AcademyWorkshopWalkInForm>();
-  const [feeForm] = Form.useForm<AcademyWorkshopFeeForm>();
+  const [printBadgesOpen, setPrintBadgesOpen] = React.useState(false);
+  const [zaloScriptParticipant, setZaloScriptParticipant] = React.useState<AcademyWorkshopParticipant | null>(null);
+  const [qrCheckInOpen, setQrCheckInOpen] = React.useState(false);
+  const [kitchenModalOpen, setKitchenModalOpen] = React.useState(false);
+  const [equipmentPrepModalOpen, setEquipmentPrepModalOpen] = React.useState(false);
 
   const talentLadder = useAcademyTalentLadderConfiguration(canAccess);
   const { courses, talentInstructors, saveTalentCourseConfiguration } = useAcademyTalentResources(canAccess);
@@ -141,7 +113,7 @@ export default function AcademyWorkshopWorkspacePage() {
       setResources(nextResources);
       setRewards(nextRewards);
       setBonuses(nextBonuses);
-      setSelected((previous) => roster.data.find((item) => item.id === previous?.id) || null);
+      participantActions.setSelected((previous) => roster.data.find((item) => item.id === previous?.id) || null);
       setError(null);
     } catch (cause: any) {
       setError(cause?.response?.data?.message || 'Không thể tải workspace workshop.');
@@ -150,73 +122,21 @@ export default function AcademyWorkshopWorkspacePage() {
     }
   }, [canAccess, slug]);
 
-  React.useEffect(() => void load(), [load]);
+  const participantActions = useAcademyWorkshopParticipantActions({
+    workshop,
+    slug,
+    canManageRestricted,
+    participants,
+    setWorkshop,
+    setParticipants,
+    load,
+  });
+
+  const talentAssessment = useAcademyWorkshopTalentAssessment(participantActions.selected);
 
   React.useEffect(() => {
-    if (!addOpen) return;
-    let active = true;
-    setLeadLoading(true);
-    setLeadError(null);
-    const timer = window.setTimeout(
-      () => {
-        void apiClient.academySales
-          .listLeads({ page: 1, limit: 100, search: deferredLeadSearch.trim() || undefined })
-          .then((response) => {
-            if (!active) return;
-            setLeadOptions((current) => {
-              const byId = new Map(current.map((lead) => [lead.id, lead]));
-              response.data.forEach((lead) => byId.set(lead.id, lead));
-              return [...byId.values()];
-            });
-          })
-          .catch((cause: any) => {
-            if (!active) return;
-            setLeadError(cause?.response?.data?.message || 'Không thể tải danh sách học viên Academy.');
-          })
-          .finally(() => {
-            if (active) setLeadLoading(false);
-          });
-      },
-      deferredLeadSearch ? 250 : 0
-    );
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [addOpen, deferredLeadSearch]);
-
-  const availableLeadOptions = React.useMemo(() => {
-    const rosterLeadIds = new Set(participants.map((participant) => participant.lead.id));
-    const normalizedSearch = removeVietnameseTones(leadSearch);
-    return leadOptions.filter((lead) => {
-      if (rosterLeadIds.has(lead.id)) return false;
-      if (addLeadIds.includes(lead.id) || !normalizedSearch) return true;
-      return removeVietnameseTones(`${lead.name} ${lead.phone || ''} ${lead.email || ''}`).includes(normalizedSearch);
-    });
-  }, [addLeadIds, leadOptions, leadSearch, participants]);
-
-  const mutateParticipant = React.useCallback(
-    async (mutation: () => Promise<AcademyWorkshopParticipant>, success: string, participantId?: number) => {
-      setBusy(true);
-      if (participantId) setBusyParticipantId(participantId);
-      try {
-        const next = await mutation();
-        setParticipants((rows) => rows.map((row) => (row.id === next.id ? next : row)));
-        setSelected((current) => (current?.id === next.id ? next : current));
-        void apiClient.academySales.workshops
-          .getBySlug(slug)
-          .then(setWorkshop)
-          .catch(() => undefined);
-        message.success(success);
-      } catch (cause: any) {
-        message.error(cause?.response?.data?.message || 'Không thể cập nhật học viên.');
-      } finally {
-        setBusy(false);
-        setBusyParticipantId(null);
-      }
-    },
-    [slug]
-  );
+    void load();
+  }, [load]);
 
   const {
     createWorkshopQuiz,
@@ -226,340 +146,6 @@ export default function AcademyWorkshopWorkspacePage() {
     completeWorkshopQuiz,
     cloneWorkshopQuiz,
   } = useAcademyWorkshopQuizActions({ workshop, setWorkshop, setTemplateLibraryOpen });
-
-  const openCareDrawer = React.useCallback((participant: AcademyWorkshopParticipant) => {
-    setQrDataUrl('');
-    setQrTargetUrl('');
-    setSelected(participant);
-    setCareDrawerOpen(true);
-  }, []);
-  const openFeeForParticipant = (participant: AcademyWorkshopParticipant) => {
-    if (!canManageRestricted) return;
-    setSelected(participant);
-    feeForm.resetFields();
-    feeForm.setFieldValue('method', 'BANK_TRANSFER');
-    if (participant.feeRemainingVnd > 0) feeForm.setFieldValue('amountVnd', participant.feeRemainingVnd);
-    setFeeOpen(true);
-  };
-
-  const closeFeeModal = React.useCallback(() => {
-    setFeeOpen(false);
-    feeForm.resetFields();
-    if (!careDrawerOpen) setSelected(null);
-  }, [careDrawerOpen, feeForm]);
-
-  const addExisting = React.useCallback(async () => {
-    if (!workshop || !addLeadIds.length) return;
-    setBusy(true);
-    try {
-      const added = await apiClient.academySales.workshops.addParticipants(workshop.id, { leadIds: addLeadIds });
-      message.success(`Đã thêm ${added.length} học viên và cấp QR.`);
-      setAddOpen(false);
-      setAddLeadIds([]);
-      setLeadSearch('');
-      await load();
-    } catch (cause: any) {
-      message.error(cause?.response?.data?.message || 'Không thể thêm học viên.');
-    } finally {
-      setBusy(false);
-    }
-  }, [addLeadIds, load, workshop]);
-
-  const createWalkIn = React.useCallback(
-    async (values: AcademyWorkshopWalkInForm) => {
-      if (!workshop) return;
-      setBusy(true);
-      try {
-        const added = await apiClient.academySales.workshops.addWalkIn(workshop.id, values);
-        setWalkInOpen(false);
-        walkInForm.resetFields();
-        setSelected(added);
-        setCareDrawerOpen(true);
-        setParticipants((rows) => [added, ...rows]);
-        if (added.qrUrl) {
-          const QRCode = (await import('qrcode')).default;
-          setQrDataUrl(await QRCode.toDataURL(added.qrUrl, { width: 520, margin: 2 }));
-          setQrTargetUrl(added.qrUrl);
-        }
-        message.success('Đã tạo walk-in và cấp QR.');
-      } catch (cause: any) {
-        message.error(cause?.response?.data?.message || 'Không thể tạo walk-in.');
-      } finally {
-        setBusy(false);
-      }
-    },
-    [walkInForm, workshop]
-  );
-
-  const reissueQr = React.useCallback(async () => {
-    if (!workshop || !selected) return;
-    await mutateParticipant(async () => {
-      const next = await apiClient.academySales.workshops.reissueQr(workshop.id, selected.id);
-      if (next.qrUrl) {
-        const QRCode = (await import('qrcode')).default;
-        setQrDataUrl(await QRCode.toDataURL(next.qrUrl, { width: 520, margin: 2 }));
-        setQrTargetUrl(next.qrUrl);
-      }
-      return next;
-    }, 'Đã cấp QR mới; QR cũ không còn hiệu lực.');
-  }, [mutateParticipant, selected, workshop]);
-
-  const saveFee = React.useCallback(
-    async (values: AcademyWorkshopFeeForm) => {
-      if (!workshop || !selected) return;
-      await mutateParticipant(
-        () => apiClient.academySales.workshops.recordFee(workshop.id, selected.id, values),
-        'Đã ghi nhận bút toán phí.',
-        selected.id
-      );
-      closeFeeModal();
-    },
-    [closeFeeModal, mutateParticipant, selected, workshop]
-  );
-
-  const uploadPhoto = React.useCallback(
-    async (file: File) => {
-      if (!workshop || !selected) return false;
-      setBusy(true);
-      try {
-        const compressed = await compressWorkshopImage(file);
-        const intent = await apiClient.academySales.workshops.createPhotoUploadIntent(workshop.id, selected.id, {
-          fileName: compressed.name,
-          mimeType: compressed.type as 'image/jpeg' | 'image/png' | 'image/webp',
-          sizeBytes: compressed.size,
-        });
-        const response = await fetch(intent.signedUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': compressed.type, 'x-upsert': 'false' },
-          body: compressed,
-        });
-        if (!response.ok) throw new Error('Storage từ chối upload ảnh.');
-        const next = await apiClient.academySales.workshops.confirmPhoto(workshop.id, selected.id, {
-          storagePath: intent.storagePath,
-          mimeType: compressed.type,
-          sizeBytes: compressed.size,
-          capturedAt: new Date().toISOString(),
-        });
-        setSelected(next);
-        setParticipants((rows) => rows.map((row) => (row.id === next.id ? next : row)));
-        message.success('Đã lưu ảnh khoảnh khắc.');
-      } catch (cause: any) {
-        message.error(cause?.response?.data?.message || cause?.message || 'Không thể tải ảnh.');
-      } finally {
-        setBusy(false);
-      }
-      return false;
-    },
-    [selected, workshop]
-  );
-
-  const closeTalentAssessment = React.useCallback(() => {
-    talentLoadVersionRef.current += 1;
-    setTalentOpen(false);
-    setTalentLead(null);
-    setTalentParticipantId(null);
-    setTalentAssessments([]);
-    setTalentLoading(false);
-    talentAssessmentIdRef.current = null;
-    setTalentAssessmentId(null);
-  }, []);
-
-  const openTalentAssessment = React.useCallback(
-    async (participantOverride?: AcademyWorkshopParticipant) => {
-      const participant = participantOverride || selected;
-      if (!participant) return;
-      const version = ++talentLoadVersionRef.current;
-      setTalentOpen(true);
-      setTalentLoading(true);
-      setTalentLead(null);
-      setTalentParticipantId(participant.id);
-      setTalentAssessments([]);
-      talentAssessmentIdRef.current = null;
-      setTalentAssessmentId(null);
-      try {
-        const [lead, response] = await Promise.all([
-          apiClient.academySales.getLead(participant.lead.id),
-          apiClient.academySales.listTalentAssessments(participant.lead.id),
-        ]);
-        if (version !== talentLoadVersionRef.current) return;
-        setTalentLead(lead);
-        setTalentAssessments(response.data);
-        const requestedAssessmentId = participant.talent?.assessmentId;
-        const nextAssessmentId =
-          requestedAssessmentId && response.data.some((assessment) => assessment.id === requestedAssessmentId)
-            ? requestedAssessmentId
-            : null;
-        talentAssessmentIdRef.current = nextAssessmentId;
-        setTalentAssessmentId(nextAssessmentId);
-      } catch (cause: any) {
-        if (version !== talentLoadVersionRef.current) return;
-        closeTalentAssessment();
-        message.error(cause?.response?.data?.message || 'Không thể tải phiên Tố Chất.');
-      } finally {
-        if (version === talentLoadVersionRef.current) setTalentLoading(false);
-      }
-    },
-    [closeTalentAssessment, selected]
-  );
-
-  const selectedTalentAssessment = React.useMemo(
-    () => talentAssessments.find((assessment) => assessment.id === talentAssessmentId) ?? null,
-    [talentAssessmentId, talentAssessments]
-  );
-  const selectedTalentView = React.useMemo<AcademyTalentAssessmentView | null>(
-    () => (selectedTalentAssessment ? talentWorkshopView(selectedTalentAssessment, talentAssessments) : null),
-    [selectedTalentAssessment, talentAssessments]
-  );
-  const talentSessions = React.useMemo(() => buildTalentSessions(talentAssessments), [talentAssessments]);
-
-  const upsertTalentAssessment = React.useCallback(
-    (assessment: AcademyTalentAssessment) => {
-      const next = talentAssessments.some((item) => item.id === assessment.id)
-        ? talentAssessments.map((item) => (item.id === assessment.id ? assessment : item))
-        : [assessment, ...talentAssessments];
-      setTalentAssessments(next);
-      talentAssessmentIdRef.current = assessment.id;
-      setTalentAssessmentId(assessment.id);
-      return talentWorkshopView(assessment, next);
-    },
-    [talentAssessments]
-  );
-
-  const saveTalentDraft = React.useCallback(
-    async (draft: AcademyTalentDraft) => {
-      if (!talentLead || !talentParticipantId) throw new Error('Chưa chọn học viên workshop.');
-      setTalentSaving(true);
-      try {
-        const dto = talentAssessmentRequest(draft);
-        const activeAssessmentId = talentAssessmentIdRef.current;
-        const response = activeAssessmentId
-          ? await apiClient.academySales.updateTalentAssessment(activeAssessmentId, dto)
-          : await apiClient.academySales.createTalentAssessment(talentLead.id, {
-              ...dto,
-              workshopParticipantId: talentParticipantId,
-            });
-        return upsertTalentAssessment(response.data);
-      } finally {
-        setTalentSaving(false);
-      }
-    },
-    [talentLead, talentParticipantId, upsertTalentAssessment]
-  );
-
-  const previewTalentQuote = React.useCallback(
-    async (draft: AcademyTalentDraft) => {
-      if (!talentLead) throw new Error('Chưa chọn học viên workshop.');
-      const response = await apiClient.academySales.previewTalentAssessmentQuote(talentLead.id, {
-        assessmentId: talentAssessmentIdRef.current ?? undefined,
-        eyeScore: draft.eyeScore,
-        handScore: draft.handScore,
-        strands5Min: draft.strands5Min,
-        errorSkin: draft.errors.skin,
-        errorRoot: draft.errors.root,
-        errorStickies: draft.errors.stickies,
-        errorDirection: draft.errors.direction,
-        selectedCourseIds: draft.selectedCourseIds,
-        selectedSampleCourseIds: draft.selectedSampleCourseIds,
-        selectedKitCourseIds: draft.selectedKitCourseIds,
-        selectedInstructorIdsByCourse: draft.selectedInstructorIdsByCourse,
-        paymentMode: draft.paymentMode,
-        ...(draft.depositVnd === null ? {} : { depositVnd: draft.depositVnd }),
-      });
-      return response.data;
-    },
-    [talentLead]
-  );
-
-  const issueTalentInvoice = React.useCallback(
-    async (draft: AcademyTalentDraft) => {
-      if (selectedTalentAssessment?.payment.status === 'PAID') {
-        setTalentSaving(true);
-        try {
-          const response = await apiClient.academySales.printTalentAssessmentInvoice(selectedTalentAssessment.id);
-          return upsertTalentAssessment(response.data);
-        } finally {
-          setTalentSaving(false);
-        }
-      }
-      const saved = await saveTalentDraft(draft);
-      setTalentSaving(true);
-      try {
-        const response = await apiClient.academySales.printTalentAssessmentInvoice(saved.id);
-        return upsertTalentAssessment(response.data);
-      } finally {
-        setTalentSaving(false);
-      }
-    },
-    [saveTalentDraft, selectedTalentAssessment, upsertTalentAssessment]
-  );
-
-  const recordTalentPayment = React.useCallback(
-    async (assessmentId: number, input: Parameters<typeof apiClient.academySales.recordTalentAssessmentPayment>[1]) => {
-      setTalentSaving(true);
-      try {
-        const response = await apiClient.academySales.recordTalentAssessmentPayment(assessmentId, input);
-        return upsertTalentAssessment(response.data);
-      } finally {
-        setTalentSaving(false);
-      }
-    },
-    [upsertTalentAssessment]
-  );
-
-  const selectTalentSession = React.useCallback(
-    async (assessmentId: number) => {
-      const assessment = talentAssessments.find((item) => item.id === assessmentId);
-      if (!assessment) throw new Error('Không tìm thấy lần test đã chọn.');
-      talentAssessmentIdRef.current = assessmentId;
-      setTalentAssessmentId(assessmentId);
-      return talentWorkshopView(assessment, talentAssessments);
-    },
-    [talentAssessments]
-  );
-
-  const startNewTalentSession = React.useCallback(() => {
-    talentAssessmentIdRef.current = null;
-  }, []);
-
-  const quickUpdateCare = React.useCallback(
-    (
-      participant: AcademyWorkshopParticipant,
-      input: Parameters<typeof apiClient.academySales.workshops.updateCare>[2],
-      success: string
-    ) => {
-      if (!workshop) return Promise.resolve();
-      return mutateParticipant(
-        () => apiClient.academySales.workshops.updateCare(workshop.id, participant.id, input),
-        success,
-        participant.id
-      );
-    },
-    [mutateParticipant, workshop]
-  );
-
-  const quickCheckIn = React.useCallback(
-    (participant: AcademyWorkshopParticipant) => {
-      if (!workshop) return Promise.resolve();
-      return mutateParticipant(
-        () => apiClient.academySales.workshops.checkIn(workshop.id, participant.id, { checkedIn: true }),
-        'Check-in thành công.',
-        participant.id
-      );
-    },
-    [mutateParticipant, workshop]
-  );
-
-  const quickAssignInstructor = React.useCallback(
-    (participant: AcademyWorkshopParticipant, instructorId: number | null) => {
-      if (!workshop) return Promise.resolve();
-      return mutateParticipant(
-        () => apiClient.academySales.workshops.assignInstructor(workshop.id, participant.id, { instructorId }),
-        instructorId ? 'Đã phân giáo viên chính.' : 'Đã bỏ phân giáo viên chính.',
-        participant.id
-      );
-    },
-    [mutateParticipant, workshop]
-  );
 
   if (!canAccess) return <StatePanel kind="empty" title="Bạn chưa có quyền truy cập workshop." />;
   if (error)
@@ -600,6 +186,7 @@ export default function AcademyWorkshopWorkspacePage() {
           loading={loading}
           onRefresh={() => void load()}
           onOpenLive={() => router.push(`/dashboard/academy-leads/workshops/${workshop.slug}/live`)}
+          onOpenPrintBadges={() => setPrintBadgesOpen(true)}
           onUpdated={(updated) => {
             setWorkshop(updated);
             if (updated.slug !== slug)
@@ -620,58 +207,58 @@ export default function AcademyWorkshopWorkspacePage() {
             label: <IconText icon={<AppIcon icon={Users} size="sm" />}>Roster & chăm sóc</IconText>,
             children: (
               <DataSection
-                title="Học viên workshop"
+                title={
+                  <AcademyWorkshopSectionTitle
+                    icon={Users}
+                    title="Học viên workshop"
+                    subtitle={<span className="tabular-nums">{participants.length} học viên</span>}
+                  />
+                }
                 extra={
-                  <Space wrap align="center" size={8}>
-                    <Button
-                      onClick={() => {
-                        const token = window.prompt('Dán QR token để check-in');
-                        if (token)
-                          void apiClient.academySales.workshops
-                            .scanCheckIn(workshop.id, token)
-                            .then(() => load())
-                            .catch((cause) => message.error(cause?.response?.data?.message || 'QR không hợp lệ'));
-                      }}
-                    >
-                      <IconText icon={<AppIcon icon={QrCode} />}>Quét / nhập QR</IconText>
-                    </Button>
-                    <Button onClick={() => setWalkInOpen(true)}>
-                      <IconText icon={<AppIcon icon={UserPlus} />}>Học viên mới / Walk-in</IconText>
-                    </Button>
-                    <Button type="primary" onClick={() => setAddOpen(true)}>
-                      <IconText icon={<AppIcon icon={Users} />}>Thêm học viên</IconText>
-                    </Button>
-                  </Space>
+                  <AcademyWorkshopRosterToolbar
+                    hasMenuItems={workshop.menuItems.length > 0}
+                    hasEquipmentPackages={workshop.equipmentPackages.length > 0}
+                    onOpenKitchenModal={() => setKitchenModalOpen(true)}
+                    onOpenEquipmentPrepModal={() => setEquipmentPrepModalOpen(true)}
+                    onOpenQrCheckIn={() => setQrCheckInOpen(true)}
+                    onOpenWalkIn={() => participantActions.setWalkInOpen(true)}
+                    onOpenAddParticipant={() => participantActions.setAddOpen(true)}
+                  />
                 }
               >
                 <AcademyWorkshopRoster
                   participants={participants}
                   resources={resources}
+                  menuTitle={workshop.menuTemplate?.title}
                   loading={loading}
                   page={page}
                   pageSize={pageSize}
-                  busyParticipantId={busyParticipantId}
-                  talentLoading={talentLoading}
-                  talentParticipantId={talentParticipantId}
+                  busyParticipantId={participantActions.busyParticipantId}
+                  talentLoading={talentAssessment.talentLoading}
+                  talentParticipantId={talentAssessment.talentParticipantId}
                   canManageRestricted={canManageRestricted}
                   onPageChange={(nextPage, nextSize) => {
                     setPage(nextPage);
                     setPageSize(nextSize);
                   }}
-                  onOpenParticipant={openCareDrawer}
-                  onOpenFee={openFeeForParticipant}
+                  onOpenParticipant={participantActions.openCareDrawer}
+                  onOpenFee={participantActions.openFeeForParticipant}
                   onUpdateCare={(participant, input, success) => {
-                    void quickUpdateCare(participant, input, success);
+                    void participantActions.quickUpdateCare(participant, input, success);
                   }}
                   onCheckIn={(participant) => {
-                    void quickCheckIn(participant);
+                    void participantActions.quickCheckIn(participant);
                   }}
                   onAssignInstructor={(participant, instructorId) => {
-                    void quickAssignInstructor(participant, instructorId);
+                    void participantActions.quickAssignInstructor(participant, instructorId);
                   }}
                   onOpenTalent={(participant) => {
-                    void openTalentAssessment(participant);
+                    void talentAssessment.openTalentAssessment(participant);
                   }}
+                  onOpenZaloScript={(participant) => {
+                    setZaloScriptParticipant(participant);
+                  }}
+                  onOpenSelections={participantActions.openSelectionsForParticipant}
                 />
               </DataSection>
             ),
@@ -722,13 +309,25 @@ export default function AcademyWorkshopWorkspacePage() {
           {
             key: 'menu',
             label: <IconText icon={<AppIcon icon={UtensilsCrossed} size="sm" />}>Thực đơn</IconText>,
-            children: <AcademyWorkshopMenuManager workshop={workshop} canEdit={canAccess} onUpdated={setWorkshop} />,
+            children: (
+              <AcademyWorkshopMenuManager
+                workshop={workshop}
+                participants={participants}
+                canEdit={canAccess}
+                onUpdated={setWorkshop}
+              />
+            ),
           },
           {
             key: 'equipment',
             label: <IconText icon={<AppIcon icon={PackageCheck} size="sm" />}>Dụng cụ thực hành</IconText>,
             children: (
-              <AcademyWorkshopEquipmentManager workshop={workshop} canEdit={canAccess} onUpdated={setWorkshop} />
+              <AcademyWorkshopEquipmentManager
+                workshop={workshop}
+                participants={participants}
+                canEdit={canAccess}
+                onUpdated={setWorkshop}
+              />
             ),
           },
           {
@@ -743,6 +342,8 @@ export default function AcademyWorkshopWorkspacePage() {
             ),
             children: (
               <AcademyWorkshopSettlement
+                workshop={workshop}
+                participants={participants}
                 rewards={rewards}
                 bonuses={bonuses}
                 onFulfillReward={(rewardId) =>
@@ -767,26 +368,26 @@ export default function AcademyWorkshopWorkspacePage() {
       />
 
       <AcademyTalentWorkshopDrawer
-        open={talentOpen}
-        lead={talentLead}
+        open={talentAssessment.talentOpen}
+        lead={talentAssessment.talentLead}
         courses={courses}
-        assessment={selectedTalentView}
-        sessions={talentSessions}
-        loading={talentLoading}
-        saving={talentSaving}
+        assessment={talentAssessment.selectedTalentView}
+        sessions={talentAssessment.talentSessions}
+        loading={talentAssessment.talentLoading}
+        saving={talentAssessment.talentSaving}
         courseSelectionRules={talentCourseRules}
         instructors={talentInstructors}
         ladderConfiguration={talentLadder.configuration}
         canEditLadder={canManageRestricted}
         canManageCourses={canManage}
         canConfirmPayment={canManageRestricted}
-        onClose={closeTalentAssessment}
-        onPreviewQuote={previewTalentQuote}
-        onSaveDraft={saveTalentDraft}
-        onIssueInvoice={issueTalentInvoice}
-        onRecordPayment={recordTalentPayment}
-        onSelectSession={selectTalentSession}
-        onStartNewSession={startNewTalentSession}
+        onClose={talentAssessment.closeTalentAssessment}
+        onPreviewQuote={talentAssessment.previewTalentQuote}
+        onSaveDraft={talentAssessment.saveTalentDraft}
+        onIssueInvoice={talentAssessment.issueTalentInvoice}
+        onRecordPayment={talentAssessment.recordTalentPayment}
+        onSelectSession={talentAssessment.selectTalentSession}
+        onStartNewSession={talentAssessment.startNewTalentSession}
         onSaveLadderConfiguration={talentLadder.save}
         onSaveCourseConfiguration={saveTalentCourseConfiguration}
         onSaved={async () => {
@@ -796,103 +397,152 @@ export default function AcademyWorkshopWorkspacePage() {
 
       <AcademyWorkshopParticipantOverlays
         workshop={workshop}
-        selected={selected}
+        selected={participantActions.selected}
         resources={resources}
-        busy={busy}
-        talentLoading={talentLoading}
+        busy={participantActions.busy}
+        talentLoading={talentAssessment.talentLoading}
         canManageRestricted={canManageRestricted}
-        careDrawerOpen={careDrawerOpen}
-        qrDataUrl={qrDataUrl}
-        qrTargetUrl={qrTargetUrl}
-        addOpen={addOpen}
-        addLeadIds={addLeadIds}
-        leadSearch={leadSearch}
-        leadLoading={leadLoading}
-        leadError={leadError}
-        availableLeadOptions={availableLeadOptions}
-        walkInOpen={walkInOpen}
-        feeOpen={feeOpen}
-        walkInForm={walkInForm}
-        feeForm={feeForm}
+        careDrawerOpen={participantActions.careDrawerOpen}
+        qrDataUrl={participantActions.qrDataUrl}
+        qrTargetUrl={participantActions.qrTargetUrl}
+        addOpen={participantActions.addOpen}
+        addLeadIds={participantActions.addLeadIds}
+        leadSearch={participantActions.leadSearch}
+        leadLoading={participantActions.leadLoading}
+        leadError={participantActions.leadError}
+        availableLeadOptions={participantActions.availableLeadOptions}
+        walkInOpen={participantActions.walkInOpen}
+        feeOpen={participantActions.feeOpen}
+        walkInForm={participantActions.walkInForm}
+        feeForm={participantActions.feeForm}
+        selectionsOpen={participantActions.selectionsOpen}
+        selectionsParticipant={participantActions.selectionsParticipant}
+        onOpenSelections={participantActions.openSelectionsForParticipant}
+        onCloseSelections={participantActions.closeSelectionsModal}
+        onSaveSelections={participantActions.saveSelections}
         onCloseCare={() => {
-          setCareDrawerOpen(false);
-          setSelected(null);
-          setQrDataUrl('');
-          setQrTargetUrl('');
+          participantActions.setCareDrawerOpen(false);
+          participantActions.setSelected(null);
+          participantActions.setQrDataUrl('');
+          participantActions.setQrTargetUrl('');
         }}
         onReissueQr={() => {
-          void reissueQr();
+          void participantActions.reissueQr();
         }}
         onUpdateCare={(input, success) => {
-          if (!selected) return;
-          void mutateParticipant(
-            () => apiClient.academySales.workshops.updateCare(workshop.id, selected.id, input),
+          if (!participantActions.selected) return;
+          void participantActions.mutateParticipant(
+            () => apiClient.academySales.workshops.updateCare(workshop.id, participantActions.selected!.id, input),
             success,
-            selected.id
+            participantActions.selected.id
           );
         }}
         onCheckIn={(checkedIn) => {
-          if (!selected) return;
-          void mutateParticipant(
-            () => apiClient.academySales.workshops.checkIn(workshop.id, selected.id, { checkedIn }),
+          if (!participantActions.selected) return;
+          void participantActions.mutateParticipant(
+            () => apiClient.academySales.workshops.checkIn(workshop.id, participantActions.selected!.id, { checkedIn }),
             checkedIn ? 'Check-in thành công.' : 'Đã hoàn tác check-in.',
-            selected.id
+            participantActions.selected.id
           );
         }}
         onOpenFee={() => {
-          if (canManageRestricted) setFeeOpen(true);
+          if (canManageRestricted) participantActions.setFeeOpen(true);
         }}
         onAssignInstructor={(instructorId) => {
-          if (!selected) return;
-          void mutateParticipant(
-            () => apiClient.academySales.workshops.assignInstructor(workshop.id, selected.id, { instructorId }),
+          if (!participantActions.selected) return;
+          void participantActions.mutateParticipant(
+            () =>
+              apiClient.academySales.workshops.assignInstructor(workshop.id, participantActions.selected!.id, {
+                instructorId,
+              }),
             instructorId ? 'Đã phân giáo viên chính.' : 'Đã bỏ phân giáo viên chính.',
-            selected.id
+            participantActions.selected.id
           );
         }}
         onSetPhotoConsent={(consent) => {
-          if (!selected) return;
-          void mutateParticipant(
+          if (!participantActions.selected) return;
+          void participantActions.mutateParticipant(
             () =>
-              apiClient.academySales.workshops.setConsent(workshop.id, selected.id, {
+              apiClient.academySales.workshops.setConsent(workshop.id, participantActions.selected!.id, {
                 consent,
                 policyVersion: 'academy-photo-v1',
               }),
             consent ? 'Đã ghi nhận consent.' : 'Đã thu hồi consent.',
-            selected.id
+            participantActions.selected.id
           );
         }}
         onUploadPhoto={(file) => {
-          void uploadPhoto(file);
+          void participantActions.uploadPhoto(file);
         }}
         onOpenTalent={() => {
-          void openTalentAssessment();
+          void talentAssessment.openTalentAssessment();
         }}
         onAddExisting={() => {
-          void addExisting();
+          void participantActions.addExisting();
         }}
-        onAddLeadIdsChange={setAddLeadIds}
-        onLeadSearchChange={setLeadSearch}
+        onAddLeadIdsChange={participantActions.setAddLeadIds}
+        onLeadSearchChange={participantActions.setLeadSearch}
         onCloseAdd={() => {
-          setAddOpen(false);
-          setAddLeadIds([]);
-          setLeadSearch('');
-          setLeadError(null);
+          participantActions.setAddOpen(false);
+          participantActions.setAddLeadIds([]);
+          participantActions.setLeadSearch('');
+          participantActions.setLeadError(null);
         }}
         onOpenWalkInFromAdd={() => {
-          setAddOpen(false);
-          setAddLeadIds([]);
-          setLeadSearch('');
-          setWalkInOpen(true);
+          participantActions.setAddOpen(false);
+          participantActions.setAddLeadIds([]);
+          participantActions.setLeadSearch('');
+          participantActions.setWalkInOpen(true);
         }}
-        onCloseWalkIn={() => setWalkInOpen(false)}
+        onCloseWalkIn={() => participantActions.setWalkInOpen(false)}
         onCreateWalkIn={(values) => {
-          void createWalkIn(values);
+          void participantActions.createWalkIn(values);
         }}
-        onCloseFee={closeFeeModal}
+        onCloseFee={participantActions.closeFeeModal}
         onSaveFee={(values) => {
-          void saveFee(values);
+          void participantActions.saveFee(values);
         }}
+        onOpenZaloScript={(participant) => {
+          setZaloScriptParticipant(participant);
+        }}
+      />
+
+      <AcademyWorkshopPrintBadgesModal
+        open={printBadgesOpen}
+        onClose={() => setPrintBadgesOpen(false)}
+        workshop={workshop}
+        participants={participants}
+      />
+
+      <AcademyWorkshopZaloScriptModal
+        open={Boolean(zaloScriptParticipant)}
+        onClose={() => setZaloScriptParticipant(null)}
+        workshop={workshop}
+        participant={zaloScriptParticipant}
+        onMarkInfoSent={(participant) => {
+          void participantActions.quickUpdateCare(participant, { infoSent: true }, 'Đã đánh dấu đã gửi thông tin.');
+        }}
+      />
+
+      <AcademyWorkshopQrCheckInModal
+        open={qrCheckInOpen}
+        onClose={() => setQrCheckInOpen(false)}
+        workshopId={workshop.id}
+        onSuccess={load}
+      />
+
+      <AcademyWorkshopKitchenOrderModal
+        open={kitchenModalOpen}
+        onClose={() => setKitchenModalOpen(false)}
+        workshop={workshop}
+        participants={participants}
+      />
+
+      <AcademyWorkshopEquipmentPrepModal
+        open={equipmentPrepModalOpen}
+        onClose={() => setEquipmentPrepModalOpen(false)}
+        workshop={workshop}
+        participants={participants}
       />
     </FeaturePage>
   );

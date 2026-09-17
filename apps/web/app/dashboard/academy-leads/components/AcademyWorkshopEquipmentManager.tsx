@@ -7,13 +7,17 @@ import {
   type AcademyWorkshopDetail,
   type AcademyWorkshopEquipmentPackage,
   type AcademyWorkshopEquipmentPackageImage,
+  type AcademyWorkshopParticipant,
   type CreateAcademyWorkshopEquipmentPackageRequest,
   type CreateAcademyWorkshopEquipmentPackageImageRequest,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import AcademyWorkshopServerImageUpload from './AcademyWorkshopServerImageUpload';
 import AcademyWorkshopEquipmentTemplateLibrary from './AcademyWorkshopEquipmentTemplateLibrary';
+import AcademyWorkshopEquipmentPrepModal from './AcademyWorkshopEquipmentPrepModal';
 import AcademyWorkshopSelectionDeadline from './AcademyWorkshopSelectionDeadline';
+import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
+import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
 import { useAcademyWorkshopEquipmentTemplates } from './useAcademyWorkshopEquipmentTemplates';
 import {
   AppIcon,
@@ -86,10 +90,12 @@ function sortImages(images: AcademyWorkshopEquipmentPackageImage[]) {
 
 export default function AcademyWorkshopEquipmentManager({
   workshop,
+  participants,
   canEdit,
   onUpdated,
 }: {
   workshop: AcademyWorkshopDetail;
+  participants?: AcademyWorkshopParticipant[];
   canEdit: boolean;
   onUpdated: (workshop: AcademyWorkshopDetail) => void;
 }) {
@@ -103,6 +109,7 @@ export default function AcademyWorkshopEquipmentManager({
   } | null>(null);
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [imageEditorOpen, setImageEditorOpen] = React.useState(false);
+  const [prepModalOpen, setPrepModalOpen] = React.useState(false);
   const [templateLibraryOpen, setTemplateLibraryOpen] = React.useState(false);
   const [templateSaveRequestId, setTemplateSaveRequestId] = React.useState(0);
   const [templateId, setTemplateId] = React.useState<number | null>(workshop.equipmentTemplate?.id || null);
@@ -329,138 +336,55 @@ export default function AcademyWorkshopEquipmentManager({
   return (
     <>
       <DataSection
-        title={
-          <IconText
-            icon={
-              <span
-                className="inline-flex h-7 w-7 items-center justify-center rounded-lg"
-                style={{ background: token.colorPrimaryBg, color: token.colorPrimary }}
-              >
-                <AppIcon icon={PackageCheck} size="sm" />
-              </span>
-            }
-          >
-            Bộ dụng cụ thực hành
-          </IconText>
-        }
+        title={<AcademyWorkshopSectionTitle icon={PackageCheck} title="Bộ dụng cụ thực hành" />}
         extra={
-          canEdit ? (
-            <Space wrap>
+          <Space wrap>
+            {participants ? (
+              <Button onClick={() => setPrepModalOpen(true)}>
+                <IconText icon={<AppIcon icon={Wrench} />}>Báo cáo Soạn kho</IconText>
+              </Button>
+            ) : null}
+            {canEdit ? (
               <Button type="primary" loading={saving} onClick={openCreate}>
                 <IconText icon={<AppIcon icon={Plus} />}>Thêm bộ dụng cụ</IconText>
               </Button>
-            </Space>
-          ) : undefined
+            ) : null}
+          </Space>
         }
       >
         <div className="space-y-4">
-          <section
-            className="academy-workshop-template-panel"
-            style={{ borderColor: token.colorBorderSecondary }}
-            aria-label="Chọn mẫu bộ dụng cụ cho workshop"
-          >
-            <div className="academy-workshop-template-panel__header">
-              <div className="academy-workshop-template-panel__title">
-                <h3 className="m-0 text-sm font-semibold">Mẫu bộ dụng cụ</h3>
-                {isCurrentTemplate && selectedTemplate ? (
-                  <StatusTag status="success" label="Đang áp dụng" className="!mb-0" />
-                ) : null}
-              </div>
-              <Button type="text" size="small" onClick={() => setTemplateLibraryOpen(true)} disabled={saving}>
-                <IconText icon={<AppIcon icon={LibraryBig} />}>Thư viện mẫu</IconText>
-              </Button>
-            </div>
-
-            <div className="academy-workshop-template-panel__selection">
-              <div className="academy-workshop-template-panel__field">
-                <label className="sr-only" htmlFor="workshop-equipment-template">
-                  Chọn mẫu bộ dụng cụ
-                </label>
-                <Select
-                  id="workshop-equipment-template"
-                  value={templateId || undefined}
-                  className="w-full"
-                  loading={templates.loading}
-                  disabled={!canEdit || saving || templates.loading}
-                  placeholder={templates.error ? 'Không thể tải mẫu bộ dụng cụ' : 'Chọn một mẫu bộ dụng cụ'}
-                  options={selectableTemplates.map((template) => ({ value: template.id, label: template.title }))}
-                  onChange={setTemplateId}
-                />
-              </div>
-              <div className="academy-workshop-template-panel__action">
-                {!canEdit && !selectedTemplate ? (
-                  <span
-                    className="academy-workshop-template-panel__action-hint"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    Chọn mẫu để tiếp tục
-                  </span>
-                ) : (
-                  <Space wrap size={8}>
-                    {canEdit && isCurrentTemplate && selectedTemplate ? (
-                      <Popconfirm
-                        title={`Cập nhật mẫu “${selectedTemplate.title}”?`}
-                        description="Nội dung bộ dụng cụ hiện tại sẽ thay thế nội dung mẫu. Các workshop khác đã áp dụng mẫu vẫn giữ dữ liệu riêng."
-                        okText="Cập nhật mẫu"
-                        cancelText="Hủy"
-                        okButtonProps={{ loading: templateSaving }}
-                        onConfirm={() => void updateCurrentTemplate()}
-                        disabled={saving || templateSaving}
-                      >
-                        <Button disabled={saving || templateSaving} loading={templateSaving}>
-                          <IconText icon={<AppIcon icon={Save} />}>Cập nhật mẫu</IconText>
-                        </Button>
-                      </Popconfirm>
-                    ) : null}
-                    {canEdit && selectedTemplate && !isCurrentTemplate ? (
-                      <Popconfirm
-                        title="Áp dụng mẫu bộ dụng cụ này?"
-                        description="Các gói dụng cụ hiện tại sẽ được thay bằng bản sao từ mẫu đã chọn. Lựa chọn và giá đã lưu của học viên vẫn được giữ để đối soát."
-                        okText="Áp dụng"
-                        cancelText="Hủy"
-                        onConfirm={() => void applyTemplate()}
-                        disabled={saving || templateSaving}
-                      >
-                        <Button type="primary" disabled={saving || templateSaving} loading={saving}>
-                          <IconText icon={<AppIcon icon={WandSparkles} />}>Áp dụng mẫu</IconText>
-                        </Button>
-                      </Popconfirm>
-                    ) : null}
-                    {canEdit ? (
-                      <Button
-                        onClick={saveAsNewTemplate}
-                        disabled={!workshop.equipmentPackages.length || saving || templateSaving}
-                      >
-                        <IconText icon={<AppIcon icon={Save} />}>Lưu mẫu mới</IconText>
-                      </Button>
-                    ) : null}
-                  </Space>
-                )}
-              </div>
-            </div>
-
-            <div
-              className="academy-workshop-template-panel__details"
-              style={{ color: templates.error ? token.colorError : token.colorTextSecondary }}
-              role={templates.error ? 'alert' : undefined}
-            >
-              <span>
-                {templates.error ||
-                  selectedTemplate?.description ||
-                  'Chọn một mẫu từ thư viện để áp dụng cho workshop.'}
-              </span>
-              {selectedTemplate ? (
-                <span className="academy-workshop-template-panel__metadata tabular-nums">
+          <AcademyWorkshopTemplateBar
+            title="Mẫu bộ dụng cụ"
+            ariaLabel="Chọn mẫu bộ dụng cụ cho workshop"
+            templates={selectableTemplates}
+            selectedTemplateId={templateId}
+            isCurrentTemplate={isCurrentTemplate}
+            selectedTemplateTitle={selectedTemplate?.title}
+            selectedTemplateDescription={selectedTemplate?.description}
+            canEdit={canEdit}
+            loading={templates.loading}
+            saving={saving}
+            templateSaving={templateSaving}
+            error={templates.error}
+            saveAsNewDisabled={!workshop.equipmentPackages.length}
+            metadata={
+              selectedTemplate ? (
+                <>
                   <IconText icon={<AppIcon icon={PackageCheck} size="sm" />} tabular>
                     {selectedTemplate.packages.length} gói
                   </IconText>
                   <IconText icon={<AppIcon icon={Wrench} size="sm" />} tabular>
                     {selectedTemplateItemCount} dụng cụ
                   </IconText>
-                </span>
-              ) : null}
-            </div>
-          </section>
+                </>
+              ) : null
+            }
+            onSelectTemplate={setTemplateId}
+            onOpenLibrary={() => setTemplateLibraryOpen(true)}
+            onApplyTemplate={applyTemplate}
+            onUpdateCurrentTemplate={updateCurrentTemplate}
+            onSaveAsNewTemplate={saveAsNewTemplate}
+          />
           <AcademyWorkshopSelectionDeadline
             workshop={workshop}
             canEdit={canEdit}
@@ -710,6 +634,12 @@ export default function AcademyWorkshopEquipmentManager({
         saveRequestId={templateSaveRequestId}
         onClose={() => setTemplateLibraryOpen(false)}
         onApplied={onUpdated}
+      />
+      <AcademyWorkshopEquipmentPrepModal
+        open={prepModalOpen}
+        onClose={() => setPrepModalOpen(false)}
+        workshop={workshop}
+        participants={participants || []}
       />
     </>
   );
