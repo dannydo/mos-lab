@@ -1,8 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { BucketType, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
-import { UserServiceTypeService } from '../services/user-service-type.service.js';
-import { LashBenchmarkService, parseLashSpecs } from '../../catalog/services/lash-benchmark.service.js';
+import { BucketType, SafeAny } from '@mos-lab/shared';
 import { resolveIsForeign } from '../services/foreign-customer.service.js';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';

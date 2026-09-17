@@ -152,6 +152,11 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     </Button>
                   </Popconfirm>
                 )}
+              {canTriage && approvalReceived && (
+                <Button disabled type="dashed" icon={<AppIcon icon={RefreshCw} size="sm" className="animate-spin" />}>
+                  Đã duyệt · Đang xếp hàng code/test...
+                </Button>
+              )}
               {canTriage && detail.planReview && !approvalReceived && (
                 <Button
                   disabled={saving}

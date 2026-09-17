@@ -63,7 +63,7 @@ test('CV speed cache key is deterministic regardless of staff ID order', () => {
 });
 
 test('CV speed cache honors 5-minute TTL window', () => {
-  const cache = new Map<string, { data: any[]; timestamp: number }>();
+  const cache = new Map<string, { data: unknown[]; timestamp: number }>();
   const TTL_MS = 5 * 60 * 1000;
   const key = '3832,13783';
   const sampleData = [{ staff_id: 3832, service_type: 'Normal', avg_min: 90 }];

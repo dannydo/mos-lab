@@ -725,6 +725,67 @@ export class InboxImplementationService {
    * request id lets a crashed companion finish the task it already created,
    * rather than starting a second Codex task after reconnecting.
    */
+  static async claimAgTaskProvisioning(
+    fastify: FastifyInstance,
+    provisionerId: unknown
+  ): Promise<InboxIdeTaskProvisioningRequest | null> {
+    safeWorkerId(provisionerId);
+    const now = new Date();
+    const candidate = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+      where: {
+        executionOwner: 'AG',
+        status: 'PENDING',
+        ideTaskId: null,
+        ideHandoffRevokedAt: null,
+        ideProvisioningRequestId: { not: null },
+        OR: [
+          { ideProvisioningState: 'PENDING' },
+          { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
+        ],
+      },
+      include: { report: { select: { id: true, requestType: true, title: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!candidate?.ideProvisioningRequestId) return null;
+    const leaseToken = randomUUID();
+    const claimed = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
+      where: {
+        id: candidate.id,
+        status: 'PENDING',
+        ideTaskId: null,
+        ideHandoffRevokedAt: null,
+        ideProvisioningRequestId: candidate.ideProvisioningRequestId,
+        OR: [
+          { ideProvisioningState: 'PENDING' },
+          { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
+        ],
+      },
+      data: {
+        ideProvisioningState: 'LEASED',
+        ideProvisioningLeaseToken: leaseToken,
+        ideProvisioningLeaseExpiresAt: new Date(now.getTime() + IDE_PROVISIONING_LEASE_MS),
+        ideProvisioningAttemptCount: { increment: 1 },
+        ideProvisioningFailureCode: null,
+        executionPhase: 'IDE_PROVISIONING_LEASED',
+        progressLabel: 'Antigravity đang tạo handoff cục bộ.',
+      },
+    });
+    if (!claimed.count) return null;
+    return {
+      jobId: candidate.id,
+      requestId: candidate.ideProvisioningRequestId,
+      reportId: candidate.reportId,
+      ticketKey: formatBugReportKey(
+        candidate.report.id,
+        candidate.report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG'
+      ),
+      title: clean(candidate.report.title, 240),
+      branchName: candidate.branchName,
+      sourceVersion: candidate.sourceVersion,
+      planVersion: candidate.planVersion,
+    };
+  }
+
   static async claimIdeTaskProvisioning(
     fastify: FastifyInstance,
     provisionerId: unknown
@@ -858,7 +919,8 @@ export class InboxImplementationService {
         ? await tx.crmInboxImplementationJob.findUnique({ where: { id: report.implementationActiveJobId } })
         : null;
       if (
-        job?.executionOwner === 'IDE' &&
+        job &&
+        ['IDE', 'AG'].includes(job.executionOwner) &&
         (expectedTaskId === undefined || job.ideTaskId === expectedTaskId) &&
         job.status === 'AWAITING_DEPLOY_REVIEW' &&
         job.executionPhase === 'AWAITING_DEPLOY_REVIEW' &&
@@ -870,7 +932,7 @@ export class InboxImplementationService {
       if (
         !report ||
         !job ||
-        job.executionOwner !== 'IDE' ||
+        !['IDE', 'AG'].includes(job.executionOwner) ||
         (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId) ||
         job.status !== 'PENDING' ||
         job.executionPhase !== 'IDE_COMMIT_HANDOFF' ||
@@ -927,7 +989,7 @@ export class InboxImplementationService {
       if (
         !report ||
         !job ||
-        job.executionOwner !== 'IDE' ||
+        !['IDE', 'AG'].includes(job.executionOwner) ||
         job.ideHandoffRevokedAt ||
         (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId) ||
         input?.handoff?.jobId !== job.id ||
@@ -1095,7 +1157,13 @@ export class InboxImplementationService {
       const job = report?.implementationActiveJobId
         ? await tx.crmInboxImplementationJob.findUnique({ where: { id: report.implementationActiveJobId } })
         : null;
-      if (!report || !job || job.executionOwner !== 'IDE' || job.status !== 'PENDING' || job.ideHandoffRevokedAt)
+      if (
+        !report ||
+        !job ||
+        !['IDE', 'AG'].includes(job.executionOwner) ||
+        job.status !== 'PENDING' ||
+        job.ideHandoffRevokedAt
+      )
         throw new InboxImplementationError(
           'IDE handoff không còn sẵn sàng để gán task.',
           409,
@@ -1161,7 +1229,7 @@ export class InboxImplementationService {
     });
     if (
       !job ||
-      job.executionOwner !== 'IDE' ||
+      !['IDE', 'AG'].includes(job.executionOwner) ||
       job.status !== 'PENDING' ||
       !['IDE_HANDOFF_READY', 'IDE_COMMIT_HANDOFF'].includes(job.executionPhase || '') ||
       job.ideHandoffRevokedAt ||
@@ -1442,7 +1510,7 @@ export class InboxImplementationService {
     actorStaffId: number,
     expectedPlan?: BugReportPlanReviewCandidate
   ) {
-    const sourceVersion = await fastify.prisma.crm.$transaction(async (tx) => {
+    const approvalResult = await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
       const report = await tx.crmBugReport.findUnique({
         where: { id: reportId },
@@ -1487,39 +1555,47 @@ export class InboxImplementationService {
           );
         }
       }
-      const now = new Date();
-      const current = await tx.crmBugReport.update({
-        where: { id: reportId },
-        data: {
-          implementationApprovedByStaffId: actorStaffId,
-          implementationApprovedAt: now,
-          implementationApprovalSourceVersion: sourceVersion,
-        },
-      });
-      await tx.crmBugReportAudit.create({
-        data: {
-          reportId,
-          actorStaffId,
-          action: 'IMPLEMENTATION_APPROVED',
-          note: 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
-          beforeJson: snapshot(report),
-          afterJson: snapshot({
-            ...report,
-            ...current,
-            comments: report.comments,
-            inboxPlanJobs: report.inboxPlanJobs,
-          }),
-        },
-      });
-      return sourceVersion;
+      const alreadyApproved = Boolean(
+        report.implementationApprovedAt && report.implementationApprovalSourceVersion === sourceVersion
+      );
+
+      if (!alreadyApproved) {
+        const now = new Date();
+        const current = await tx.crmBugReport.update({
+          where: { id: reportId },
+          data: {
+            implementationApprovedByStaffId: actorStaffId,
+            implementationApprovedAt: now,
+            implementationApprovalSourceVersion: sourceVersion,
+          },
+        });
+        await tx.crmBugReportAudit.create({
+          data: {
+            reportId,
+            actorStaffId,
+            action: 'IMPLEMENTATION_APPROVED',
+            note: 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
+            beforeJson: snapshot(report),
+            afterJson: snapshot({
+              ...report,
+              ...current,
+              comments: report.comments,
+              inboxPlanJobs: report.inboxPlanJobs,
+            }),
+          },
+        });
+      }
+      return { sourceVersion, alreadyApproved };
     });
     const queued = await this.enqueueApproved(fastify, reportId);
     const refreshed = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
       include: implementationReportInclude(),
     });
-    const planRequested = Boolean(refreshed && !inboxImplementationCurrentPlan(refreshed, sourceVersion));
-    return { implementationQueued: queued, planRequested };
+    const planRequested = Boolean(
+      refreshed && !inboxImplementationCurrentPlan(refreshed, approvalResult.sourceVersion)
+    );
+    return { implementationQueued: queued || approvalResult.alreadyApproved, planRequested };
   }
 
   /** Called only by a ticket event (approval or new native plan), never a poller. */
@@ -2280,7 +2356,7 @@ export class InboxImplementationService {
         'COMMIT_REVIEW_ARTIFACT_MISSING'
       );
     }
-    if (job.executionOwner === 'IDE') {
+    if (['IDE', 'AG'].includes(job.executionOwner)) {
       const now = new Date();
       return fastify.prisma.crm.$transaction(async (tx) => {
         const updated = await tx.crmInboxImplementationJob.updateMany({
@@ -2371,7 +2447,7 @@ export class InboxImplementationService {
     if (!job?.commitSha) {
       throw new InboxImplementationError('Không có commit đã duyệt để deploy.', 409, 'DEPLOY_COMMIT_MISSING');
     }
-    if (job.executionOwner === 'IDE') {
+    if (['IDE', 'AG'].includes(job.executionOwner)) {
       return fastify.prisma.crm.$transaction(async (tx) => {
         await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
         const unchanged = await tx.crmInboxImplementationJob.findUnique({ where: { id: job.id } });
@@ -3314,7 +3390,7 @@ export class InboxImplementationService {
     if (!job) {
       throw new InboxImplementationError('Không tìm thấy commit đang chờ Danny xác nhận deploy.', 409);
     }
-    if (report.status === 'APPROVED' && job.executionOwner !== 'IDE') {
+    if (report.status === 'APPROVED' && !['IDE', 'AG'].includes(job.executionOwner)) {
       throw new InboxImplementationError('Projection APPROVED chỉ hợp lệ cho commit IDE đã được duyệt.', 409);
     }
 

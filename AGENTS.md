@@ -12,6 +12,7 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
   /Users/dannydo/.gemini/antigravity/bin/speak "<Tóm tắt 2-3 câu ngắn gọn bằng tiếng Việt tự nhiên về kết quả và trạng thái>"
   ```
   Giọng đọc chuẩn: `vi-VN-HoaiMyNeural` (Hoài My). Tóm tắt phát âm cần ngắn gọn, rõ ràng, thân thiện và gãy gọn để Danny nghe ngay lập tức khi đang làm việc.
+- **Quy tắc Phản hồi Âm thanh & Tích hợp Hột Mít (Always Voice Feedback Mode)**: Khi Danny test hoặc hỏi bất kỳ điều gì trong Antigravity, Agent **LUÔN LUÔN phản hồi lại bằng âm thanh**. Nếu Hột Mít (VoicePilot) đang mở: tự động đồng bộ bản ghi và trạng thái phản hồi qua Hột Mít (`/tmp/voice_hud.json`: `ai_badge: "Đang trả lời..."`, `ai_status: "speaking"`, hiển thị câu trả lời và phát âm thanh tương tác). Nếu Hột Mít không mở: tự động phát âm thanh phản hồi trực tiếp tại đây qua `/Users/dannydo/.gemini/antigravity/bin/speak` ra loa máy tính.
 
 ---
 
@@ -532,3 +533,19 @@ mos-lab/
 - **Orb là môi trường kiểm chứng mặc định**: Hầu hết thay đổi, script vận hành, regeneration và backfill dự định chạy trên VPS Production đều phải được chạy và đối soát trước trong Orb local qua `ssh root@ubuntu@orb`, nơi có stack PHP/Phalcon và dữ liệu mô phỏng tương thích.
 - **Trình tự bắt buộc**: backup source cục bộ trên Orb → lint/kiểm tra code → dry-run đọc dữ liệu → apply cục bộ khi được duyệt → chạy lại dry-run phải sạch → đối soát trực tiếp ledger/side-effect → mới đề xuất triển khai Production.
 - **Ranh giới Production**: Không được suy diễn kết quả Orb là quyền triển khai Production. Production chỉ được động tới sau khi có yêu cầu/duyệt riêng của người dùng; nêu rõ phạm vi, batch, bằng chứng Orb và phương án rollback trước khi chạy.
+
+### 56. Mandatory Intent Clarification & Verification Invariant (Quy tắc Bắt buộc Làm Rõ Ý Định Trước Khi Thi Hành)
+
+- **Nguyên tắc Bất Di Bất Dịch**: "Nếu không hiểu rõ hoặc có rủi ro, tuyệt đối không gửi lệnh, và kể cả AG, thấy không rõ thì phải clarify trước khi làm!"
+- **Hột Mít Voice Pilot (Frontline AI Gate)**:
+  - Khi người dùng đưa ra câu lệnh kỹ thuật mơ hồ, thiếu tham số (ví dụ: "kiểm tra slow queries log trên production", "xem log server", "kiểm tra database", "sửa lỗi thanh toán"), hoặc lệnh nhạy cảm đụng chạm Production/dữ liệu:
+    $\rightarrow$ Hột Mít **tuyệt đối KHÔNG ĐƯỢC tự ý gửi lệnh bừa bãi vào AG**.
+    $\rightarrow$ Bắt buộc phải **hỏi lại (Clarify)** bằng giọng nói 1 câu ngắn gọn, chuẩn xác để làm rõ:
+    1. Đối tượng cụ thể (hệ thống nào, database nào, VPS nào)?
+    2. Phạm vi hoặc khoảng thời gian cần kiểm tra?
+       $\rightarrow$ Chỉ khi người dùng xác nhận hoặc cung cấp đủ thông tin, Hột Mít mới chuyển lệnh đã được làm rõ có cấu trúc vào AG.
+- **Antigravity (AG) Agent (Execution Guard)**:
+  - Khi AG nhận bất kỳ chỉ thị nào liên quan đến Production, sửa đổi database, hoặc yêu cầu chưa đủ thông tin rõ ràng:
+    $\rightarrow$ AG **tuyệt đối KHÔNG được cắm đầu chạy lệnh bừa bãi**.
+    $\rightarrow$ AG bắt buộc phải **Clarify với Danny trước khi thực thi**: Nêu rõ server đích, database, câu lệnh dự kiến, phạm vi ảnh hưởng và rủi ro.
+    $\rightarrow$ Nếu là tác vụ phức tạp hoặc có rủi ro, bắt buộc lập Implementation Plan và yêu cầu Danny duyệt (Proceed) trước khi chạy.

@@ -14,6 +14,12 @@
 - Giọng đọc chuẩn: `vi-VN-HoaiMyNeural` (Hoài My).
 - Tóm tắt phát âm cần ngắn gọn, rõ ràng, thân thiện và gãy gọn để Danny nghe ngay lập tức khi đang làm việc.
 
+## 3. Quy tắc Phản hồi Âm thanh & Tích hợp Hột Mít (Always Voice Feedback Mode)
+
+- Khi Danny test hoặc hỏi bất kỳ điều gì trong Antigravity, Agent **LUÔN LUÔN phản hồi lại bằng âm thanh**.
+- **Nếu Hột Mít (VoicePilot) đang mở**: Tự động đồng bộ bản ghi và trạng thái phản hồi qua Hột Mít (`/tmp/voice_hud.json`: `ai_badge: "Đang trả lời..."`, `ai_status: "speaking"`, hiển thị câu trả lời và phát âm thanh tương tác).
+- **Nếu Hột Mít không mở**: Tự động phát âm thanh phản hồi trực tiếp tại đây qua `/Users/dannydo/.gemini/antigravity/bin/speak` ra loa máy tính.
+
 ---
 
 # Frontend Theme Customization Rules

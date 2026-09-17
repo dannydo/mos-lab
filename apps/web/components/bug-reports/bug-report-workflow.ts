@@ -169,17 +169,23 @@ export function getBugReportWorkflowStage(
   if (
     report.status === 'NEW' &&
     report.clarification.status === 'PENDING_AGENT' &&
+    agentProgress?.stage &&
     ['REOPENED_BY_DANNY', 'REOPENED_BY_REPORTER'].includes(agentProgress.stage)
   ) {
     return WORKFLOW_STAGE_BY_AGENT_PROGRESS[agentProgress.stage];
   }
-  const workflow = WORKFLOW_STAGE_BY_AGENT_PROGRESS[agentProgress.stage];
+  const workflow = (agentProgress?.stage ? WORKFLOW_STAGE_BY_AGENT_PROGRESS[agentProgress.stage] : null) ?? {
+    position: 1,
+    label: 'Đang xử lý',
+    detail: 'Trạng thái đang được cập nhật',
+    tone: 'info',
+  };
   const reporterName = shortBugReportReporterName(report.reporter?.displayName);
   if (!reporterName) return workflow;
-  if (agentProgress.stage === 'WAITING_REPORTER') {
+  if (agentProgress?.stage === 'WAITING_REPORTER') {
     return { ...workflow, label: `Chờ ${reporterName} làm rõ` };
   }
-  if (agentProgress.stage === 'AWAITING_REPORTER_REVIEW') {
+  if (agentProgress?.stage === 'AWAITING_REPORTER_REVIEW') {
     return { ...workflow, label: `Chờ ${reporterName} nghiệm thu` };
   }
   return workflow;

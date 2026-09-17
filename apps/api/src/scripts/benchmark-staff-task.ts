@@ -145,7 +145,7 @@ async function main() {
     }
   }
 
-  const stringifyBigInt = (obj: any) => JSON.stringify(obj, (k, v) => (typeof v === 'bigint' ? v.toString() : v));
+  const stringifyBigInt = (obj: unknown) => JSON.stringify(obj, (k, v) => (typeof v === 'bigint' ? v.toString() : v));
 
   const hashBase = createHash('sha256')
     .update(stringifyBigInt([...baselineResults]))

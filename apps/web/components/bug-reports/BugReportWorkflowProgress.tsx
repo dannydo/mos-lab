@@ -27,7 +27,8 @@ export function BugReportWorkflowProgress({ report, compact = false }: BugReport
     success: token.colorSuccess,
     muted: token.colorTextSecondary,
   };
-  const workflowColor = colorByTone[workflow.tone];
+  const tone = workflow?.tone ?? 'info';
+  const workflowColor = colorByTone[tone] ?? token.colorInfo;
   const isStopped = workflow.position === null;
   const positionLabel = isStopped ? 'Dừng' : `Chặng ${workflow.position}/5`;
   const route = BUG_REPORT_WORKFLOW_STEPS.join(' → ');

@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import { SafeAny } from '@mos-lab/shared';
 import { getBkPaystubData } from '../../kpi/services/bk-salary.service.js';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { TeamService } from '../../teams/team.service.js';

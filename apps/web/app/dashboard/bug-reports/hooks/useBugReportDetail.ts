@@ -165,15 +165,26 @@ export function useBugReportDetail({
     if (!detail || approvalPending.current || reviewPending.current || approvalReceived) return;
     approvalPending.current = true;
     setSaving(true);
+    setApprovalReceived(true);
     try {
       const outcome = detail.planReview
         ? await approveImplementation(detail.id, detail.planReview)
         : await approveImplementation(detail.id);
-      setApprovalReceived(true);
       if (outcome.implementationQueued) {
         setStatus('IN_PROGRESS');
-        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
       }
+      setDetail((current) =>
+        current
+          ? {
+              ...current,
+              agentProgress: {
+                stage: 'QUEUED_FOR_FIX',
+                note: 'Đã duyệt code/test; đang xếp hàng cho worker/IDE.',
+                updatedAt: new Date().toISOString(),
+              },
+            }
+          : current
+      );
       // The rich ticket refresh is non-blocking. The durable receipt above is
       // enough to stop the button spinner even if a later read is slow.
       void getDetail(outcome.reportId)
@@ -187,6 +198,7 @@ export function useBugReportDetail({
             : 'Đã lưu duyệt implementation.'
       );
     } catch (error) {
+      setApprovalReceived(false);
       const responseMessage =
         error && typeof error === 'object' && 'response' in error
           ? (error as { response?: { data?: { message?: string } } }).response?.data?.message

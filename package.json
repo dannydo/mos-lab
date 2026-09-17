@@ -15,6 +15,7 @@
     "test:run": "turbo test:run",
     "verify:quick": "pnpm lint && pnpm typecheck && pnpm test:run",
     "verify": "pnpm verify:quick && pnpm build",
+    "test:voice-gate": "/Users/dannydo/.gemini/antigravity/bin/voice-gate",
     "check:ui-contract": "pnpm exec tsx scripts/check-ui-contract.ts",
     "clean": "turbo run clean && rm -rf .turbo",
     "graph": "tsx scripts/generate-graph.ts",

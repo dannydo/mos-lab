@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import axios from 'axios';
-import { SafeAny } from '@mos-lab/shared';
 
 const SYSTEM_PROMPT = `Bạn là mOS Voice Copilot — Trợ lý điều hành AI bằng giọng nói của hệ thống mOS Lab (chuỗi salon Wings Lashes).
 

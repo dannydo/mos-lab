@@ -4,7 +4,7 @@ import { BucketType, SafeAny } from '@mos-lab/shared';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { parseComboDateBounds } from '../services/combo-recognition.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';
-import { resolveIsForeign, getForeignSqlFilter } from '../services/foreign-customer.service.js';
+import { getForeignSqlFilter } from '../services/foreign-customer.service.js';
 import {
   parseServiceFilterIds,
   buildCompletedServiceUsageJoin,

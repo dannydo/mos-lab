@@ -1,9 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { canManageCustomerAllocation, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import { canManageCustomerAllocation, SafeAny } from '@mos-lab/shared';
 import { AllocationService } from '../../allocation/allocation.service.js';
-import { TeamService } from '../../teams/team.service.js';
-import { CustomerAccessService } from '../services/customer-access.service.js';
 import { AllocationLedgerService } from '../../allocation/allocation-ledger.service.js';
 import { createRouteHelpers } from './helpers.js';
 

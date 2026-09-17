@@ -764,6 +764,13 @@ export function bugReportAgentProgress(source: AgentProgressSource): BugReportAg
         updatedAt: replanAt.toISOString(),
       };
     }
+    if (source.implementationApprovedAt || source.implementationActiveJobId) {
+      return {
+        stage: 'QUEUED_FOR_FIX',
+        note: 'Danny đã duyệt code/test; đang chờ worker/IDE nhận việc.',
+        updatedAt: (source.implementationApprovedAt ?? source.updatedAt).toISOString(),
+      };
+    }
     // An APPROVED triage is deliberately not enough to say that Agent has
     // started. Only a durable implementation job may use QUEUED_FOR_FIX or a
     // later execution stage; otherwise the visible owner is still Danny.
@@ -1059,6 +1066,15 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
         'Đăng plan sửa lại',
         'Chờ Agent đăng plan mới trước khi Danny duyệt code/test lại.',
         replanAt
+      );
+    }
+    if (source.implementationApprovedAt || source.implementationActiveJobId) {
+      return nextAction(
+        'AGENT',
+        'IMPLEMENT',
+        'Chờ worker/IDE nhận việc',
+        'Danny đã duyệt code/test; đang chờ worker/IDE nhận việc trong worktree riêng.',
+        source.implementationApprovedAt ?? source.updatedAt
       );
     }
     return nextAction(
