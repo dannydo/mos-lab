@@ -152,6 +152,17 @@ export function DataTable<RecordType extends object>({
       scrollSurface.scrollBy({ left: event.key === 'ArrowRight' ? 160 : -160, behavior: 'smooth' });
     };
 
+    const handleWheelScroll = (event: WheelEvent) => {
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      const scrollSurface = region.querySelector<HTMLElement>('.ant-table-content, .ant-table-body');
+      if (!scrollSurface || scrollSurface.scrollWidth <= scrollSurface.clientWidth + 1) return;
+
+      const hasVerticalScroll = scrollSurface.scrollHeight > scrollSurface.clientHeight + 1;
+      if (!event.shiftKey && !hasVerticalScroll && event.deltaY !== 0) {
+        scrollSurface.scrollLeft += event.deltaY;
+      }
+    };
+
     makeMeasurementRowsInert();
     updateHorizontalOverflow();
     const observer = new MutationObserver(() => {
@@ -162,10 +173,12 @@ export function DataTable<RecordType extends object>({
     const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateHorizontalOverflow);
     resizeObserver?.observe(region);
     region.addEventListener('keydown', handleKeyboardScroll);
+    region.addEventListener('wheel', handleWheelScroll, { passive: true });
     return () => {
       observer.disconnect();
       resizeObserver?.disconnect();
       region.removeEventListener('keydown', handleKeyboardScroll);
+      region.removeEventListener('wheel', handleWheelScroll);
     };
   }, []);
 
@@ -211,7 +224,7 @@ export function DataTable<RecordType extends object>({
         dataSource={dataSource}
         loading={loading}
         rowKey={rowKey}
-        scroll={scroll ?? (tier === 'mobile' || tier === 'tablet' ? { x: 'max-content' } : undefined)}
+        scroll={scroll ?? { x: 'max-content' }}
         className={`antd-custom-table ${className}`}
         style={{
           background: token.colorBgContainer,

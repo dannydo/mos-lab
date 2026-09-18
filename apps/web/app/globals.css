@@ -6026,10 +6026,30 @@ body {
   cursor: pointer;
 }
 
-.mos-header-avatar {
-  height: min(32px, calc(var(--mos-control-height) - 8px)) !important;
-  line-height: 1;
-  width: min(32px, calc(var(--mos-control-height) - 8px)) !important;
+.mos-header-avatar,
+.dashboard-online-member-avatar {
+  border-radius: 50% !important;
+  box-sizing: border-box !important;
+  height: 32px !important;
+  line-height: 1 !important;
+  max-height: 32px !important;
+  max-width: 32px !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  width: 32px !important;
+}
+
+.dashboard-online-member-avatar img,
+.mos-header-avatar img {
+  border-radius: 50% !important;
+  display: block !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  max-width: 100% !important;
+  min-height: 100% !important;
+  min-width: 100% !important;
+  object-fit: cover !important;
+  width: 100% !important;
 }
 
 .mos-header-avatar__icon {

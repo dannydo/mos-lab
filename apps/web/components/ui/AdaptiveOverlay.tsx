@@ -28,7 +28,7 @@ export function AdaptiveDrawer({ intent = 'detail', className = '', width, ...pr
     <Drawer
       {...props}
       width={isMobile ? '100vw' : (width ?? getOverlayWidth(tier, intent))}
-      placement={isMobile ? 'right' : props.placement}
+      placement={isMobile ? 'right' : (props.placement ?? 'right')}
       className={`adaptive-overlay ${isMobile ? 'adaptive-overlay-mobile-fullscreen' : ''} ${className}`}
     />
   );

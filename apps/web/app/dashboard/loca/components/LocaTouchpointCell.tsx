@@ -121,16 +121,9 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     displayStatus = 'OVERDUE';
   }
 
-  const handleCellClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (loading) return;
-    setPopoverOpen((prev) => !prev);
-  };
-
   const handleCellKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();
-    e.stopPropagation();
     if (loading) return;
     setPopoverOpen((prev) => !prev);
   };
@@ -665,21 +658,24 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
   };
 
   return (
-    <Popover
-      content={popoverContent}
-      title={null}
-      trigger="click"
-      open={popoverOpen}
-      onOpenChange={setPopoverOpen}
-      placement="bottom"
-    >
-      <Tooltip title={popoverOpen ? '' : renderTooltip()} placement="top">
+    <Tooltip title={popoverOpen ? '' : renderTooltip()} placement="top">
+      <Popover
+        content={popoverContent}
+        title={null}
+        trigger="click"
+        open={popoverOpen}
+        onOpenChange={(open) => {
+          if (loading) return;
+          setPopoverOpen(open);
+        }}
+        placement="bottom"
+        destroyTooltipOnHide
+      >
         <div
           className={styles.touchpointTile}
           role="button"
           tabIndex={0}
           aria-label={`Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}`}
-          onClick={handleCellClick}
           onKeyDown={handleCellKeyDown}
           style={{
             cursor: loading ? 'wait' : 'pointer',
@@ -714,7 +710,7 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
             </span>
           )}
         </div>
-      </Tooltip>
-    </Popover>
+      </Popover>
+    </Tooltip>
   );
 };

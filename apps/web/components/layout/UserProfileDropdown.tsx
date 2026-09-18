@@ -8,6 +8,7 @@ import type { SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
+import { useTheme } from '../../context/ThemeContext';
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -99,9 +100,9 @@ function getCallStatusInfo({
   if (callState === 'ringing') {
     return {
       text: 'Đang đổ chuông...',
-      dotClass: 'bg-amber-500 animate-bounce',
-      iconBg: 'bg-amber-500/15',
-      iconColor: '#f59e0b',
+      dotClass: 'bg-sky-500 animate-pulse',
+      iconBg: 'bg-sky-500/15',
+      iconColor: '#0ea5e9',
     };
   }
   if (callState === 'confirming') {
@@ -146,6 +147,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   onLogout,
 }) => {
   const [open, setOpen] = useState(false);
+  const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
   const isMobileTier = responsiveTier === 'mobile';
@@ -422,9 +424,22 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         title="Mở menu người dùng"
       >
         <Avatar
+          size={32}
           className="mos-header-avatar"
           src={avatarUrl}
           icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
+          style={{
+            width: '32px',
+            height: '32px',
+            minWidth: '32px',
+            minHeight: '32px',
+            maxWidth: '32px',
+            maxHeight: '32px',
+            borderWidth: '2px',
+            borderStyle: 'solid',
+            borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
+            boxSizing: 'border-box',
+          }}
         />
       </button>
     </Dropdown>
