@@ -128,13 +128,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
         JOIN \`order_service\` os ON os.order_id = o.id
         WHERE o.order_state = 'Completed'
-          AND (
-            (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
-            OR (
-              ro.actual_booking_date_start IS NULL
-              AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59'
-            )
-          )
+          AND o.booking_date_start >= '${startPart} 00:00:00'
+          AND o.booking_date_start <= '${endPart} 23:59:59'
           AND ${staffExprOs} IN (${validStaffListStr})
           ${storeFilterClause}
         GROUP BY staff_id

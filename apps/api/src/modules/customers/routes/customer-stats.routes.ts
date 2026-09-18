@@ -638,6 +638,29 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
     }
   });
 
+  let lastStatsDbVersion = '';
+  let lastStatsDbVersionCheckedAt = 0;
+
+  async function getStatsDbVersion(fastify: FastifyInstance): Promise<string> {
+    const now = Date.now();
+    if (lastStatsDbVersion && now - lastStatsDbVersionCheckedAt < 2000) {
+      return lastStatsDbVersion;
+    }
+    try {
+      const rows = await fastify.prisma.legacy.$queryRawUnsafe<{ max_order_id: number; max_usb_id: number }[]>(`
+      SELECT 
+        (SELECT MAX(id) FROM \`order\`) as max_order_id,
+        (SELECT MAX(id) FROM user_service_balance) as max_usb_id
+    `);
+      const r = rows && rows[0] ? rows[0] : { max_order_id: 0, max_usb_id: 0 };
+      lastStatsDbVersion = `${r.max_order_id || 0}:${r.max_usb_id || 0}`;
+      lastStatsDbVersionCheckedAt = now;
+      return lastStatsDbVersion;
+    } catch {
+      return `${Date.now()}`;
+    }
+  }
+
   // GET /api/customers/loca-stats
   // Batch stats endpoint for LoCa campaign: returns all tab counts and touchpoint counts in 1 SQL query
   fastify.get('/customers/loca-stats', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -645,18 +668,21 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       const { search, assignedStaffId, dateFrom, dateTo, customTouchpoints } = request.query as SafeAny;
 
       const adminUser = request.user;
-      const cacheKey = `loca_stats:${adminUser?.id || 0}:${adminUser?.role || ''}:${JSON.stringify(request.query)}`;
+      let effectiveAssignedStaffId = assignedStaffId;
+
+      if (CustomerAccessService.isTelesales(adminUser)) {
+        effectiveAssignedStaffId = 'me';
+      }
+
+      const effectiveScope =
+        effectiveAssignedStaffId === 'me' ? `staff:${adminUser?.id || 0}` : effectiveAssignedStaffId || 'all';
+      const dbVersion = await getStatsDbVersion(fastify);
+      const cacheKey = `loca_stats:${effectiveScope}:${dbVersion}:${JSON.stringify(request.query)}`;
       const cachedStats = fastify.cache.get<{ tabs: Record<string, number>; touchpoints: Record<string, number> }>(
         cacheKey
       );
       if (cachedStats) {
         return cachedStats;
-      }
-
-      let effectiveAssignedStaffId = assignedStaffId;
-
-      if (CustomerAccessService.isTelesales(adminUser)) {
-        effectiveAssignedStaffId = 'me';
       }
 
       let allowedUserIds: number[] | null = null;
@@ -930,7 +956,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       });
 
       const stats = { tabs, touchpoints };
-      fastify.cache.set(cacheKey, stats, 15000);
+      fastify.cache.set(cacheKey, stats, 300000); // 5 minutes TTL, auto-invalidated by dbVersion
       return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get LoCa stats error:');
@@ -952,6 +978,17 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       if (CustomerAccessService.isTelesales(adminUser)) {
         effectiveAssignedStaffId = 'me';
+      }
+
+      const effectiveScope =
+        effectiveAssignedStaffId === 'me' ? `staff:${adminUser?.id || 0}` : effectiveAssignedStaffId || 'all';
+      const dbVersion = await getStatsDbVersion(fastify);
+      const cacheKey = `nyc_stats:${effectiveScope}:${dbVersion}:${JSON.stringify(request.query)}`;
+      const cachedStats = fastify.cache.get<{ tabs: Record<string, number>; touchpoints: Record<string, number> }>(
+        cacheKey
+      );
+      if (cachedStats) {
+        return cachedStats;
       }
 
       let allowedUserIds: number[] | null = null;
@@ -1123,7 +1160,9 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         touchpoints[tp.key] = Number(row[`tp_${tp.key}`] || 0);
       });
 
-      return { tabs, touchpoints };
+      const stats = { tabs, touchpoints };
+      fastify.cache.set(cacheKey, stats, 300000); // 5 minutes TTL, auto-invalidated by dbVersion
+      return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get NYC stats error:');
       return reply.status(500).send({
