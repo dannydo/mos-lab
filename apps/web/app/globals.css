@@ -3227,9 +3227,22 @@ body {
 
 /* WCAG 2.2 target-size minimum for Ant Design's compact pagination selector. */
 .ant-pagination .ant-select-single.ant-select-sm,
-.ant-pagination .ant-select-single.ant-select-sm .ant-select-selector,
-.ant-pagination .ant-select-single.ant-select-sm .ant-select-selection-search-input {
+.ant-pagination .ant-select-single.ant-select-sm .ant-select-selector {
   min-height: 24px;
+}
+
+/* Ant Design pagination size changer is strictly a select dropdown, never an editable search input */
+.ant-pagination .ant-select-selection-search {
+  display: none !important;
+}
+
+/* Suppress WebKit search decorations (magnifying glass icon 🔍) inside any Ant Design select */
+.ant-select input[type='search']::-webkit-search-decoration,
+.ant-select input[type='search']::-webkit-search-cancel-button,
+.ant-select input[type='search']::-webkit-search-results-button,
+.ant-select input[type='search']::-webkit-search-results-decoration {
+  display: none !important;
+  -webkit-appearance: none !important;
 }
 
 /* Icon-only controls and the actual editable surfaces inside compound controls
@@ -3238,7 +3251,6 @@ body {
   min-width: 24px;
 }
 
-.ant-select .ant-select-selection-search-input,
 .ant-picker input:not([type='hidden']) {
   min-height: 24px;
 }
@@ -6050,10 +6062,14 @@ body {
   pointer-events: none !important;
 }
 
-/* Ensure icons inside Ant Design buttons never capture pointer events independently */
+/* Ensure icons inside Ant Design buttons and native buttons never capture pointer events independently */
 .ant-btn-icon,
-.ant-btn-icon * {
-  pointer-events: none;
+.ant-btn-icon *,
+button > svg,
+button > span[aria-hidden],
+.ant-btn svg,
+.ant-btn span[aria-hidden] {
+  pointer-events: none !important;
 }
 
 .mos-header-avatar,

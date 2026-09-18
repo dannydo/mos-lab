@@ -496,11 +496,17 @@ export default function LocaCampaignPage() {
                 ]}
               />
             )}
-            <Tooltip title="Đặt lịch mới">
+            <Tooltip
+              title="Đặt lịch mới"
+              placement="top"
+              arrow={false}
+              mouseEnterDelay={0.15}
+              align={{ offset: [0, -8] }}
+            >
               <Button
                 type="primary"
                 aria-label="Đặt lịch mới"
-                icon={<CalendarPlusIcon fontSize={18} />}
+                icon={<CalendarPlusIcon fontSize={18} className="pointer-events-none" />}
                 style={{
                   backgroundColor: '#D4A84B',
                   borderColor: '#D4A84B',
@@ -1147,17 +1153,24 @@ export default function LocaCampaignPage() {
 
               {/* Minimalist Booking Status Filter Buttons (Square Buttons matching Gear Button style) */}
               <div className="flex items-center gap-1.5">
-                <Tooltip title="Tất cả khách hàng (Cả đã book & chưa book)">
+                <Tooltip
+                  title="Tất cả khách hàng (Cả đã book & chưa book)"
+                  placement="top"
+                  arrow={false}
+                  mouseEnterDelay={0.15}
+                  align={{ offset: [0, -8] }}
+                >
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('ALL')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
                       bookingStatusFilter === 'ALL'
                         ? 'bg-blue-50 text-blue-600 border-blue-300 shadow-xs dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                     }`}
                   >
                     <UnorderedListOutlined
+                      className="pointer-events-none"
                       style={{
                         fontSize: '14px',
                         color:
@@ -1167,17 +1180,24 @@ export default function LocaCampaignPage() {
                   </button>
                 </Tooltip>
 
-                <Tooltip title="Đã book (Có lịch hẹn tương lai)">
+                <Tooltip
+                  title="Đã book (Có lịch hẹn tương lai)"
+                  placement="top"
+                  arrow={false}
+                  mouseEnterDelay={0.15}
+                  align={{ offset: [0, -8] }}
+                >
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('BOOKED')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
                       bookingStatusFilter === 'BOOKED'
                         ? 'bg-emerald-50 text-emerald-600 border-emerald-300 shadow-xs dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                     }`}
                   >
                     <CalendarOutlined
+                      className="pointer-events-none"
                       style={{
                         fontSize: '14px',
                         color:
@@ -1187,17 +1207,24 @@ export default function LocaCampaignPage() {
                   </button>
                 </Tooltip>
 
-                <Tooltip title="Chưa book (Chưa có lịch hẹn tương lai)">
+                <Tooltip
+                  title="Chưa book (Chưa có lịch hẹn tương lai)"
+                  placement="top"
+                  arrow={false}
+                  mouseEnterDelay={0.15}
+                  align={{ offset: [0, -8] }}
+                >
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('NOT_BOOKED')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
                       bookingStatusFilter === 'NOT_BOOKED'
                         ? 'bg-rose-50 text-rose-600 border-rose-300 shadow-xs dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                     }`}
                   >
                     <CloseCircleOutlined
+                      className="pointer-events-none"
                       style={{
                         fontSize: '14px',
                         color:
@@ -1226,10 +1253,18 @@ export default function LocaCampaignPage() {
               </div>
 
               {/* Action buttons (Settings) */}
-              <Tooltip title="Cấu hình cột bảng">
+              <Tooltip
+                title="Cấu hình cột bảng"
+                placement="top"
+                arrow={false}
+                mouseEnterDelay={0.15}
+                align={{ offset: [0, -8] }}
+              >
                 <Button
                   type="primary"
-                  icon={<SettingOutlined style={{ color: '#ffffff', fontSize: '14px' }} />}
+                  icon={
+                    <SettingOutlined className="pointer-events-none" style={{ color: '#ffffff', fontSize: '14px' }} />
+                  }
                   onClick={openLocaConfig}
                   style={{
                     backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',

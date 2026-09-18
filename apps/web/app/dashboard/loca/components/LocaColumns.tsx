@@ -488,8 +488,10 @@ export const getLocaColumns = ({
           <Space size={4} align="center" style={{ justifyContent: 'center' }}>
             <Tooltip
               title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}
+              placement="top"
               arrow={false}
               mouseEnterDelay={0.15}
+              align={{ offset: [0, -8] }}
             >
               <Button
                 type="text"
@@ -497,9 +499,9 @@ export const getLocaColumns = ({
                 loading={isAdding}
                 icon={
                   isPlanned ? (
-                    <CheckCircleOutlined style={{ color: '#34D399', fontSize: 16 }} />
+                    <CheckCircleOutlined style={{ color: '#34D399', fontSize: 16 }} className="pointer-events-none" />
                   ) : (
-                    <CalendarPlus size={16} strokeWidth={2.4} color="#D4A84B" />
+                    <CalendarPlus size={16} strokeWidth={2.4} color="#D4A84B" className="pointer-events-none" />
                   )
                 }
                 onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
@@ -525,11 +527,17 @@ export const getLocaColumns = ({
                 disabled={isPlanned || isAdding}
               />
             </Tooltip>
-            <Tooltip title="Gửi tin nhắn SMS" arrow={false} mouseEnterDelay={0.15}>
+            <Tooltip
+              title="Gửi tin nhắn SMS"
+              placement="top"
+              arrow={false}
+              mouseEnterDelay={0.15}
+              align={{ offset: [0, -8] }}
+            >
               <Button
                 type="text"
                 aria-label="Gửi tin nhắn SMS"
-                icon={<MessageOutlined style={{ color: '#D4A84B', fontSize: 16 }} />}
+                icon={<MessageOutlined style={{ color: '#D4A84B', fontSize: 16 }} className="pointer-events-none" />}
                 onClick={() => handleOpenSmsModal?.(record)}
                 style={{
                   width: 30,
@@ -743,8 +751,10 @@ export const getNewLocaColumns = ({
           <Space size={4} align="center" style={{ justifyContent: 'center' }}>
             <Tooltip
               title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}
+              placement="top"
               arrow={false}
               mouseEnterDelay={0.15}
+              align={{ offset: [0, -8] }}
             >
               <Button
                 type="text"
@@ -752,9 +762,9 @@ export const getNewLocaColumns = ({
                 loading={isAdding}
                 icon={
                   isPlanned ? (
-                    <CheckCircleOutlined style={{ color: '#34D399', fontSize: 16 }} />
+                    <CheckCircleOutlined style={{ color: '#34D399', fontSize: 16 }} className="pointer-events-none" />
                   ) : (
-                    <CalendarPlus size={16} strokeWidth={2.4} color="#D4A84B" />
+                    <CalendarPlus size={16} strokeWidth={2.4} color="#D4A84B" className="pointer-events-none" />
                   )
                 }
                 onClick={() => !isPlanned && !isAdding && handleAddToPlan(record.id)}
@@ -780,11 +790,17 @@ export const getNewLocaColumns = ({
                 disabled={isPlanned || isAdding}
               />
             </Tooltip>
-            <Tooltip title="Gửi tin nhắn SMS" arrow={false} mouseEnterDelay={0.15}>
+            <Tooltip
+              title="Gửi tin nhắn SMS"
+              placement="top"
+              arrow={false}
+              mouseEnterDelay={0.15}
+              align={{ offset: [0, -8] }}
+            >
               <Button
                 type="text"
                 aria-label="Gửi tin nhắn SMS"
-                icon={<MessageOutlined style={{ color: '#D4A84B', fontSize: 16 }} />}
+                icon={<MessageOutlined style={{ color: '#D4A84B', fontSize: 16 }} className="pointer-events-none" />}
                 onClick={() => handleOpenSmsModal?.(record)}
                 style={{
                   width: 30,
