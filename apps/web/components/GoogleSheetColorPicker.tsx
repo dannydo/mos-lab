@@ -332,6 +332,11 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
     >
       <button
         type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setPopoverOpen((prev) => !prev);
+        }}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -346,6 +351,7 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
           transition: 'all 0.15s',
           width: '100%',
           justifyContent: 'space-between',
+          touchAction: 'manipulation',
         }}
         className="hover:border-amber-400/70"
       >

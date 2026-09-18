@@ -670,96 +670,102 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
   };
 
   return (
-    <Tooltip title={popoverOpen ? '' : renderTooltip()} placement="top">
-      <Popover
-        content={popoverContent}
-        title={null}
-        trigger="click"
-        open={popoverOpen}
-        onOpenChange={(open) => {
+    <Popover
+      content={popoverContent}
+      title={null}
+      trigger="click"
+      open={popoverOpen}
+      onOpenChange={(open) => {
+        if (loading) return;
+        setPopoverOpen(open);
+      }}
+      placement="bottom"
+      destroyTooltipOnHide
+    >
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Cập nhật trạng thái ${labelText} cho ${customerName}`}
+        title={!popoverOpen ? `Cập nhật trạng thái ${labelText} cho ${customerName}` : undefined}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           if (loading) return;
-          setPopoverOpen(open);
+          setPopoverOpen((prev) => !prev);
         }}
-        placement="bottom"
-        destroyTooltipOnHide
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!loading) setPopoverOpen((prev) => !prev);
+          }
+        }}
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '28px',
+          height: '24px',
+          borderRadius: '6px',
+          cursor: loading ? 'wait' : 'pointer',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          background: bg,
+          border: border,
+          color: textColor,
+          boxShadow: boxShadow,
+          userSelect: 'none',
+          overflow: 'visible',
+        }}
       >
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label={`Cập nhật trạng thái ${labelText} cho ${customerName}`}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              if (!loading) setPopoverOpen((prev) => !prev);
-            }
-          }}
-          style={{
-            position: 'relative',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '28px',
-            height: '24px',
-            borderRadius: '6px',
-            cursor: loading ? 'wait' : 'pointer',
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-            background: bg,
-            border: border,
-            color: textColor,
-            boxShadow: boxShadow,
-            userSelect: 'none',
-            overflow: 'visible',
-          }}
-        >
-          {/* Main Status Icon */}
-          {renderPillIcon()}
+        {/* Main Status Icon */}
+        {renderPillIcon()}
 
-          {/* Top-Right Corner Diamond Badge */}
-          {hasReferredDiamond && (
-            <span
-              style={{
-                position: 'absolute',
-                top: '-6px',
-                right: '-6px',
-                fontSize: '11px',
-                lineHeight: 1,
-                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
-                zIndex: 2,
-              }}
-              title="Đã tư vấn Chương Trình Kim Cương"
-            >
-              💎
-            </span>
-          )}
+        {/* Top-Right Corner Diamond Badge */}
+        {hasReferredDiamond && (
+          <span
+            style={{
+              position: 'absolute',
+              top: '-6px',
+              right: '-6px',
+              fontSize: '11px',
+              lineHeight: 1,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+              zIndex: 2,
+            }}
+            title="Đã tư vấn Chương Trình Kim Cương"
+          >
+            💎
+          </span>
+        )}
 
-          {/* Bottom-Left Corner Note Indicator */}
-          {currentNote && (
-            <span
-              style={{
-                position: 'absolute',
-                bottom: '-4px',
-                left: '-4px',
-                fontSize: '9px',
-                lineHeight: 1,
-                color: isDark ? '#fbbf24' : '#d97706',
-                backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
-                borderRadius: '50%',
-                width: '12px',
-                height: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                zIndex: 2,
-              }}
-              title={`Ghi chú: ${currentNote}`}
-            >
-              <FileTextOutlined style={{ fontSize: '8px', color: isDark ? '#fbbf24' : '#d97706' }} />
-            </span>
-          )}
-        </div>
-      </Popover>
-    </Tooltip>
+        {/* Bottom-Left Corner Note Indicator */}
+        {currentNote && (
+          <span
+            style={{
+              position: 'absolute',
+              bottom: '-4px',
+              left: '-4px',
+              fontSize: '9px',
+              lineHeight: 1,
+              color: isDark ? '#fbbf24' : '#d97706',
+              backgroundColor: isDark ? '#1e293b' : '#ffffff',
+              border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
+              borderRadius: '50%',
+              width: '12px',
+              height: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+              zIndex: 2,
+            }}
+            title={`Ghi chú: ${currentNote}`}
+          >
+            <FileTextOutlined style={{ fontSize: '8px', color: isDark ? '#fbbf24' : '#d97706' }} />
+          </span>
+        )}
+      </div>
+    </Popover>
   );
 };

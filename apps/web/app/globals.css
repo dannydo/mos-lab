@@ -6018,12 +6018,21 @@ body {
 }
 
 .mos-header-avatar-action,
+.mos-header-icon-action,
 .dashboard-online-member-action {
   appearance: none;
   background: transparent;
   border: 0;
   color: inherit;
   cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Prevent inner SVG, image, or span elements from stealing pointer/click events from the button trigger */
+.mos-header-avatar-action *,
+.mos-header-icon-action *,
+.mos-header-action * {
+  pointer-events: none;
 }
 
 .mos-header-avatar,

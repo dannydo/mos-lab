@@ -16,9 +16,12 @@ export const SavedFilterDropdown: React.FC<SavedFilterDropdownProps> = ({
   applyFilter,
 }) => {
   const { token } = theme.useToken();
+  const [open, setOpen] = React.useState(false);
 
   return (
     <Dropdown
+      open={open}
+      onOpenChange={setOpen}
       menu={{
         items: [
           {
@@ -68,6 +71,7 @@ export const SavedFilterDropdown: React.FC<SavedFilterDropdownProps> = ({
           },
         ],
         onClick: (info) => {
+          setOpen(false);
           const preset = presetFilters.find((p) => p.id === info.key);
           if (preset) {
             applyFilter(preset);
@@ -81,8 +85,17 @@ export const SavedFilterDropdown: React.FC<SavedFilterDropdownProps> = ({
         },
       }}
       trigger={['click']}
+      getPopupContainer={(trigger) => trigger.parentElement || document.body}
     >
-      <Button className="customer-saved-filter-trigger" icon={<DownOutlined />}>
+      <Button
+        className="customer-saved-filter-trigger"
+        icon={<DownOutlined />}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
+      >
         Bộ lọc đã lưu
       </Button>
     </Dropdown>

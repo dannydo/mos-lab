@@ -414,6 +414,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
       placement="bottomRight"
       arrow={{ pointAtCenter: true }}
       popupRender={() => dropdownContent}
+      getPopupContainer={(trigger) => trigger.parentElement || document.body}
     >
       <button
         type="button"
@@ -421,11 +422,15 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         data-header-action="user-menu"
         aria-label="Mở menu người dùng"
         aria-haspopup="menu"
+        aria-expanded={open}
         title="Mở menu người dùng"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         <Avatar
           size={32}
-          className="mos-header-avatar"
+          className="mos-header-avatar pointer-events-none"
           src={avatarUrl}
           icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
           style={{

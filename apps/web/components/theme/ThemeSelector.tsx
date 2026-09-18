@@ -19,6 +19,7 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
   const canManageThemes = typeof isAdmin === 'boolean' ? isAdmin : contextCanManage;
 
   const [studioOpen, setStudioOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const currentThemeItem = availableCoreThemes.find((t) => t.id === themeId);
 
@@ -59,6 +60,7 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
           ),
           onClick: () => {
             setCoreThemeId(themeItem.id);
+            setDropdownOpen(false);
             message.success(`Đã kích hoạt theme "${themeItem.label}"`);
           },
         };
@@ -79,7 +81,10 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
           <span>Chuyển sang nền {themeMode === 'dark' ? 'Sáng' : 'Tối'}</span>
         </div>
       ),
-      onClick: toggleTheme,
+      onClick: () => {
+        toggleTheme();
+        setDropdownOpen(false);
+      },
     },
     ...(canManageThemes
       ? [
@@ -91,7 +96,10 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
                 <span>Theme Studio (Tự sửa / Dán màu)</span>
               </div>
             ),
-            onClick: () => setStudioOpen(true),
+            onClick: () => {
+              setDropdownOpen(false);
+              setStudioOpen(true);
+            },
           },
         ]
       : []),
@@ -99,17 +107,29 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
 
   return (
     <>
-      <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow trigger={['click']}>
+      <Dropdown
+        open={dropdownOpen}
+        onOpenChange={setDropdownOpen}
+        menu={{ items: menuItems }}
+        placement="bottomRight"
+        arrow
+        trigger={['click']}
+        getPopupContainer={(trigger) => trigger.parentElement || document.body}
+      >
         <button
           type="button"
           className="mos-header-icon-action flex items-center justify-center relative group p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title={`Giao diện hiện tại: ${currentThemeItem?.label || 'mOS Theme'}`}
           aria-label="Chọn Theme Giao Diện"
+          aria-expanded={dropdownOpen}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
         >
-          <Palette className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-amber-500 transition-colors" />
+          <Palette className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-amber-500 transition-colors pointer-events-none" />
           {/* Swatch indicator dot */}
           <span
-            className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full border border-white dark:border-slate-900 shadow-xs"
+            className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full border border-white dark:border-slate-900 shadow-xs pointer-events-none"
             style={{ backgroundColor: currentThemeItem?.colors.primary || '#d4a84b' }}
           />
         </button>

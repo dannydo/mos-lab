@@ -757,7 +757,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 />
 
                 {isMobileTier && (
-                  <Dropdown menu={mobileUtilityMenu} placement="bottomRight" arrow>
+                  <Dropdown menu={mobileUtilityMenu} placement="bottomRight" arrow trigger={['click']}>
                     <HeaderActionIndicator
                       variant="status"
                       active={pendingAllocationCount > 0}
@@ -765,6 +765,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       <HeaderIconButton
                         action="utilities"
+                        showTooltip={false}
                         label={
                           pendingAllocationCount > 0
                             ? `Thao tác phụ, ${pendingAllocationCount} đợt data chờ xác nhận`

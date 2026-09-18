@@ -658,59 +658,64 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
   };
 
   return (
-    <Tooltip title={popoverOpen ? '' : renderTooltip()} placement="top">
-      <Popover
-        content={popoverContent}
-        title={null}
-        trigger="click"
-        open={popoverOpen}
-        onOpenChange={(open) => {
+    <Popover
+      content={popoverContent}
+      title={null}
+      trigger="click"
+      open={popoverOpen}
+      onOpenChange={(open) => {
+        if (loading) return;
+        setPopoverOpen(open);
+      }}
+      placement="bottom"
+      destroyTooltipOnHide
+    >
+      <div
+        className={styles.touchpointTile}
+        role="button"
+        tabIndex={0}
+        aria-label={`Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}`}
+        title={!popoverOpen ? `Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}` : undefined}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           if (loading) return;
-          setPopoverOpen(open);
+          setPopoverOpen((prev) => !prev);
         }}
-        placement="bottom"
-        destroyTooltipOnHide
+        onKeyDown={handleCellKeyDown}
+        style={{
+          cursor: loading ? 'wait' : 'pointer',
+          background: bg,
+          border: border,
+          color: textColor,
+          boxShadow: boxShadow,
+        }}
       >
-        <div
-          className={styles.touchpointTile}
-          role="button"
-          tabIndex={0}
-          aria-label={`Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}`}
-          onKeyDown={handleCellKeyDown}
-          style={{
-            cursor: loading ? 'wait' : 'pointer',
-            background: bg,
-            border: border,
-            color: textColor,
-            boxShadow: boxShadow,
-          }}
-        >
-          {/* Main Status Icon */}
-          {renderPillIcon()}
+        {/* Main Status Icon */}
+        {renderPillIcon()}
 
-          {/* Top-Right Corner Diamond Badge */}
-          {hasReferredDiamond && (
-            <span className={styles.diamondBadge} title="Đã tư vấn Chương Trình Kim Cương">
-              💎
-            </span>
-          )}
+        {/* Top-Right Corner Diamond Badge */}
+        {hasReferredDiamond && (
+          <span className={styles.diamondBadge} title="Đã tư vấn Chương Trình Kim Cương">
+            💎
+          </span>
+        )}
 
-          {/* Bottom-Left Corner Note Indicator */}
-          {currentNote && (
-            <span
-              className={styles.noteBadge}
-              style={{
-                color: isDark ? '#fbbf24' : '#d97706',
-                backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
-              }}
-              title={`Ghi chú: ${currentNote}`}
-            >
-              <FileTextOutlined style={{ fontSize: '7px', color: isDark ? '#fbbf24' : '#d97706' }} />
-            </span>
-          )}
-        </div>
-      </Popover>
-    </Tooltip>
+        {/* Bottom-Left Corner Note Indicator */}
+        {currentNote && (
+          <span
+            className={styles.noteBadge}
+            style={{
+              color: isDark ? '#fbbf24' : '#d97706',
+              backgroundColor: isDark ? '#1e293b' : '#ffffff',
+              border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
+            }}
+            title={`Ghi chú: ${currentNote}`}
+          >
+            <FileTextOutlined style={{ fontSize: '7px', color: isDark ? '#fbbf24' : '#d97706' }} />
+          </span>
+        )}
+      </div>
+    </Popover>
   );
 };
