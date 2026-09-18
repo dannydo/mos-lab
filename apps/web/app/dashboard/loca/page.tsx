@@ -1165,7 +1165,7 @@ export default function LocaCampaignPage() {
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('ALL')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 cursor-pointer border select-none ${
                       bookingStatusFilter === 'ALL'
                         ? 'bg-blue-50 text-blue-600 border-blue-300 shadow-xs dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
@@ -1186,6 +1186,7 @@ export default function LocaCampaignPage() {
                   title="Đã book (Có lịch hẹn tương lai)"
                   placement="top"
                   arrow={false}
+                  align={{ points: ['bc', 'tc'], offset: [0, -8] }}
                   mouseEnterDelay={0.15}
                   overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
                   rootClassName="pointer-events-none"
@@ -1193,7 +1194,7 @@ export default function LocaCampaignPage() {
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('BOOKED')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 cursor-pointer border select-none ${
                       bookingStatusFilter === 'BOOKED'
                         ? 'bg-emerald-50 text-emerald-600 border-emerald-300 shadow-xs dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
@@ -1214,6 +1215,7 @@ export default function LocaCampaignPage() {
                   title="Chưa book (Chưa có lịch hẹn tương lai)"
                   placement="top"
                   arrow={false}
+                  align={{ points: ['bc', 'tc'], offset: [0, -8] }}
                   mouseEnterDelay={0.15}
                   overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
                   rootClassName="pointer-events-none"
@@ -1221,7 +1223,7 @@ export default function LocaCampaignPage() {
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('NOT_BOOKED')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 cursor-pointer border select-none ${
                       bookingStatusFilter === 'NOT_BOOKED'
                         ? 'bg-rose-50 text-rose-600 border-rose-300 shadow-xs dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'

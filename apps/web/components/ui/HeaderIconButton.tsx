@@ -90,6 +90,7 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
       title={label}
       placement="bottom"
       arrow={false}
+      align={{ points: ['tc', 'bc'], offset: [0, 8] }}
       mouseEnterDelay={0.15}
       overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
       rootClassName="pointer-events-none"

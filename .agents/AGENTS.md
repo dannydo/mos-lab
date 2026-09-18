@@ -24,6 +24,7 @@
 
 - **Chỉ phát âm thanh khi phản hồi trực tiếp cho câu hỏi của Danny**: Tuyệt đối không phát sinh lệnh `speak` khi chỉ nhận thông báo hệ thống `<SYSTEM_MESSAGE>` về việc background task (như task speak trước đó, compile, build, lint, cronjob) vừa hoàn thành mà Danny không gửi yêu cầu mới.
 - **Cơ chế Triệt tiêu Đè giọng (Barge-in Mutual Exclusion)**: Mọi lệnh `speak` trước khi phát audio bắt buộc phải kiểm tra và hủy mọi tiến trình `afplay.*antigravity_speech` đang chạy dở dang, đảm bảo trong bất kỳ thời điểm nào chỉ có DUY NHẤT 1 giọng nói phát ra loa máy tính.
+- **Kiến trúc & Sổ tay Vận hành Toàn diện**: Xem tài liệu kỹ thuật chi tiết tại [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md) (bản sao tại `~/.gemini/antigravity/docs/VOICE_SYSTEM_ARCHITECTURE.md`) về toàn bộ bản đồ 5 daemon nền, phân quyền macOS Accessibility / BTM, cơ chế mutex phần cứng microphone và các lệnh biên dịch, khởi động lại nhanh.
 
 ---
 

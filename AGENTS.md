@@ -17,6 +17,7 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
   - Chỉ gọi `speak` **1 lần duy nhất** khi kết thúc lượt trả lời trực tiếp cho câu hỏi hoặc yêu cầu của Danny.
   - **Tuyệt đối KHÔNG gọi `speak`** khi chỉ nhận thông báo hệ thống (`<SYSTEM_MESSAGE>`) về việc một background task (như task speak trước đó, compile, build, test, cronjob) vừa chạy xong mà Danny không hề gửi yêu cầu mới.
   - `speak_engine.py` tự động ngắt (`pkill -9 -f "afplay.*antigravity_speech"`) bất kỳ giọng nói nào đang đọc dở trước khi phát audio mới (Barge-in Mutual Exclusion), đảm bảo không bao giờ có 2 luồng âm thanh Hoài My đọc đè lên nhau.
+- **Kiến trúc & Sổ tay Vận hành Toàn diện**: Xem tài liệu kỹ thuật chi tiết tại [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md) (bản sao tại `~/.gemini/antigravity/docs/VOICE_SYSTEM_ARCHITECTURE.md`) về toàn bộ bản đồ 5 daemon nền, phân quyền macOS Accessibility / BTM, cơ chế mutex phần cứng microphone và các lệnh biên dịch, khởi động lại nhanh.
 
 ---
 

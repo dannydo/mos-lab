@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Avatar, Switch, Segmented, theme } from 'antd';
+import { Avatar, Switch, Segmented, theme, Tooltip } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { PhoneCall, Radio, MessageSquareWarning, BarChart3, ChevronRight, LogOut, UserRound } from 'lucide-react';
 import type { SafeAny } from '@mos-lab/shared';
@@ -428,38 +428,48 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 
   return (
     <div className="relative inline-flex items-center" ref={containerRef}>
-      <button
-        type="button"
-        className="mos-header-avatar-action cursor-pointer"
-        data-header-action="user-menu"
-        aria-label="Mở menu người dùng"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title="Mở menu người dùng"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((prev) => !prev);
-        }}
+      <Tooltip
+        title="Tài khoản cá nhân"
+        placement="bottom"
+        arrow={false}
+        align={{ points: ['tc', 'bc'], offset: [0, 8] }}
+        mouseEnterDelay={0.15}
+        open={open ? false : undefined}
+        overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+        rootClassName="pointer-events-none"
       >
-        <Avatar
-          size={32}
-          className="mos-header-avatar pointer-events-none"
-          src={avatarUrl}
-          icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
-          style={{
-            width: '32px',
-            height: '32px',
-            minWidth: '32px',
-            minHeight: '32px',
-            maxWidth: '32px',
-            maxHeight: '32px',
-            borderWidth: '2px',
-            borderStyle: 'solid',
-            borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
-            boxSizing: 'border-box',
+        <button
+          type="button"
+          className="mos-header-avatar-action cursor-pointer"
+          data-header-action="user-menu"
+          aria-label="Mở menu người dùng"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((prev) => !prev);
           }}
-        />
-      </button>
+        >
+          <Avatar
+            size={32}
+            className="mos-header-avatar pointer-events-none"
+            src={avatarUrl}
+            icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
+            style={{
+              width: '32px',
+              height: '32px',
+              minWidth: '32px',
+              minHeight: '32px',
+              maxWidth: '32px',
+              maxHeight: '32px',
+              borderWidth: '2px',
+              borderStyle: 'solid',
+              borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
+              boxSizing: 'border-box',
+            }}
+          />
+        </button>
+      </Tooltip>
 
       {open && (
         <div

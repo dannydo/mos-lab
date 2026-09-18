@@ -5954,6 +5954,7 @@ body {
 }
 
 .mos-header-action.ant-btn,
+.mos-header-icon-action,
 .mos-header-avatar-action,
 .dashboard-online-member-action {
   align-items: center;
@@ -5967,6 +5968,15 @@ body {
   min-width: var(--mos-control-height);
   padding: 0 !important;
   width: var(--mos-control-height);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease !important;
+}
+
+.mos-icon-button.ant-btn {
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease !important;
 }
 
 .mos-header-action.ant-btn .ant-btn-icon,
@@ -6006,13 +6016,13 @@ body {
 
 .mos-header-action--accent.ant-btn {
   background: var(--mos-header-action-bg);
-  border-color: var(--mos-header-action-border);
+  border: 1px solid var(--mos-header-action-border) !important;
   color: var(--mos-header-action-color);
 }
 
 .mos-header-action.ant-btn:not(.mos-header-action--accent) {
   background: var(--mos-header-action-bg);
-  border-color: var(--mos-header-action-border);
+  border: 1px solid var(--mos-header-action-border) !important;
   color: var(--mos-header-action-color);
 }
 
@@ -6049,6 +6059,8 @@ body {
    This guarantees that the trigger button is always the 100% unified target,
    completely eliminating rapid mouseenter / mouseleave flickering loops.
    =========================================================================== */
+.rc-trigger-popup:has(.ant-tooltip),
+.ant-tooltip-root,
 .ant-tooltip,
 .ant-tooltip *,
 .ant-tooltip-arrow,

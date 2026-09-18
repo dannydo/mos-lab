@@ -135,6 +135,7 @@ export function IconButton({
       title={label}
       placement="top"
       arrow={false}
+      align={{ points: ['bc', 'tc'], offset: [0, -8] }}
       mouseEnterDelay={0.15}
       overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
       rootClassName="pointer-events-none"
