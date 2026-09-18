@@ -129,16 +129,16 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
       const staffExprOs = `COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id)`;
 
-      // 2. Query Hourly Rates from staff_payroll
+      // 2. Query Hourly Rates from staff_payroll (Optimized with MAX(id) B-Tree scan)
       const hourlyRatesQuery = `
-        SELECT user_id, working_hour_rate 
-        FROM (
-          SELECT user_id, working_hour_rate,
-            ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY id DESC) as rn
+        SELECT sp.user_id, sp.working_hour_rate 
+        FROM \`staff_payroll\` sp
+        JOIN (
+          SELECT user_id, MAX(id) as max_id
           FROM \`staff_payroll\`
           WHERE user_id IN (${validStaffListStr}) AND working_hour_rate > 0
-        ) t
-        WHERE rn = 1
+          GROUP BY user_id
+        ) latest ON sp.id = latest.max_id
       `;
 
       // 3. Query Shift Hours from report_staff (real attendance data)

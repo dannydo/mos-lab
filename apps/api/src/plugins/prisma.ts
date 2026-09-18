@@ -3,6 +3,7 @@ import fp from 'fastify-plugin';
 import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client/index.js';
 import { PrismaClient as CrmPrismaClient } from '../generated/crm-client/index.js';
 import { isSafeDev } from '../safe-dev/runtime.js';
+import { SafeAny } from '@mos-lab/shared';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -20,6 +21,7 @@ const prismaPlugin: FastifyPluginAsync = fp(async (fastify: FastifyInstance) => 
         url: process.env.LEGACY_DATABASE_URL,
       },
     },
+    log: [{ emit: 'event', level: 'query' }] as SafeAny,
   });
 
   const crm = new CrmPrismaClient({
@@ -28,6 +30,7 @@ const prismaPlugin: FastifyPluginAsync = fp(async (fastify: FastifyInstance) => 
         url: process.env.CRM_DATABASE_URL,
       },
     },
+    log: [{ emit: 'event', level: 'query' }] as SafeAny,
   });
 
   // Connect on start

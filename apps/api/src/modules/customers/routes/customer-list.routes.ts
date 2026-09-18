@@ -1010,10 +1010,13 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         ${outerOrderBy}
       `;
 
-      // Count Query for Pagination using subquery
+      // Count Query for Pagination using subquery (without expensive inner ORDER BY)
       const countSql = `
         SELECT COUNT(*) as total FROM (
-          ${innerQuerySql}
+          SELECT u.id
+          FROM user u
+          ${innerJoins}
+          ${innerWhereString}
         ) as p
       `;
 

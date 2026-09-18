@@ -9,6 +9,7 @@ import compress from '@fastify/compress';
 import websocket from '@fastify/websocket';
 import dotenv from 'dotenv';
 import prismaPlugin from './plugins/prisma.js';
+import slowQueryLoggerPlugin from './plugins/slow-query-logger.js';
 import cachePlugin from './plugins/cache.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { payrollLedgerRoutes } from './modules/payroll-ledger/routes.js';
@@ -147,6 +148,9 @@ const start = async () => {
 
     // Register Prisma plugin
     await server.register(prismaPlugin);
+
+    // Register Slow Query Logger Plugin
+    await server.register(slowQueryLoggerPlugin);
 
     // Seed default roles if empty
     const roleCount = await server.prisma.crm.crmRole.count();

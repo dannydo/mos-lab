@@ -215,16 +215,16 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         fastify.log.warn('Could not parse CV_SENIORITY_BONUS_CONFIG, using default list.');
       }
 
-      // 2. Query Hourly Rates from staff_payroll
+      // 2. Query Hourly Rates from staff_payroll (Optimized with MAX(id) B-Tree scan)
       const hourlyRatesQuery = `
-        SELECT user_id, working_hour_rate 
-        FROM (
-          SELECT user_id, working_hour_rate,
-            ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY id DESC) as rn
+        SELECT sp.user_id, sp.working_hour_rate 
+        FROM \`staff_payroll\` sp
+        JOIN (
+          SELECT user_id, MAX(id) as max_id
           FROM \`staff_payroll\`
           WHERE user_id IN (${validStaffListStr}) AND working_hour_rate > 0
-        ) t
-        WHERE rn = 1
+          GROUP BY user_id
+        ) latest ON sp.id = latest.max_id
       `;
       // Calculate extended boundaries to query entire weeks
       const startDate = getLocalDate(startPart);
