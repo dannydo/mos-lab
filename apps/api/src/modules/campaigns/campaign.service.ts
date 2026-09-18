@@ -1239,11 +1239,14 @@ export class CampaignService {
       }),
       // Phase 3 Perf: Only fetch latest call log per user (not ALL historical logs)
       fastify.prisma.crm.$queryRawUnsafe<any[]>(`
-        SELECT cl.* FROM (
-          SELECT cl2.*, ROW_NUMBER() OVER (PARTITION BY cl2.legacy_user_id ORDER BY cl2.created_at DESC) AS rn
-          FROM crm_call_logs cl2
-          WHERE cl2.legacy_user_id IN (${idListStr})
-        ) cl WHERE cl.rn = 1
+        SELECT cl.*
+        FROM crm_call_logs cl
+        INNER JOIN (
+          SELECT MAX(id) as max_id
+          FROM crm_call_logs
+          WHERE legacy_user_id IN (${idListStr})
+          GROUP BY legacy_user_id
+        ) latest ON cl.id = latest.max_id
       `),
       fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
         SELECT 

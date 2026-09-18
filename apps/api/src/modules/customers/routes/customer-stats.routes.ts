@@ -724,26 +724,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const comboLiveUserIds = (
-        await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
-          `SELECT DISTINCT user_id
-           FROM user_service_balance
-           WHERE (normal_count + retain_count) > 0
-             AND (date_expired IS NULL OR date_expired > NOW())`
-        )
-      ).map((r) => Number(r.user_id));
-
-      // Phase 2 Optimization: Skip expensive getNewLoCaCustomerIds() UNION query.
-      // The is_new_loca flag will be computed inline via EXISTS subquery in SQL instead.
-      // comboLiveUserIds is sufficient for the base user set filtering.
-
-      if (allowedUserIds !== null) {
-        allowedUserIds = allowedUserIds.filter((id) => comboLiveUserIds.includes(id));
-      } else {
-        allowedUserIds = comboLiveUserIds;
-      }
-
-      if (allowedUserIds.length === 0) {
+      if (allowedUserIds !== null && allowedUserIds.length === 0) {
         return {
           tabs: {
             NEW_LOCA: 0,
@@ -759,7 +740,15 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         };
       }
 
-      const innerWhereClauses: string[] = ['COALESCE(up.is_deleted, 0) = 0'];
+      const innerWhereClauses: string[] = [
+        'COALESCE(up.is_deleted, 0) = 0',
+        `EXISTS (
+          SELECT 1 FROM user_service_balance usb
+          WHERE usb.user_id = u.id
+            AND (usb.normal_count + usb.retain_count) > 0
+            AND (usb.date_expired IS NULL OR usb.date_expired > NOW())
+        )`,
+      ];
       const innerParams: SafeAny[] = [];
 
       if (allowedUserIds !== null && allowedUserIds.length > 0) {

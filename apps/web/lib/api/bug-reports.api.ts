@@ -50,7 +50,7 @@ import type {
   TriageBugReportResponse,
 } from '@mos-lab/shared';
 
-import { api } from './base';
+import { api, dedupeApiGet } from './base';
 
 export const bugReportsApi = {
   bugReports: {
@@ -89,8 +89,7 @@ export const bugReportsApi = {
       return response.data;
     },
     mine: async (): Promise<MyBugReportsResponse> => {
-      const response = await api.get<MyBugReportsResponse>('/bug-reports/mine');
-      return response.data;
+      return dedupeApiGet<MyBugReportsResponse>('/bug-reports/mine', undefined, 10000);
     },
     review: async (id: number, data: ReviewBugReportRequest): Promise<ReviewBugReportResponse> => {
       const response = await api.patch<ReviewBugReportResponse>(`/bug-reports/${id}/review`, data);

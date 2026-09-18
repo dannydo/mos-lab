@@ -187,10 +187,10 @@ export async function runCrawler() {
           () => {
             const bodyText = document.body?.innerText || '';
             const isSessionLoading = bodyText.includes('Tải thông tin phiên đăng nhập');
-            const hasApp = Boolean(document.querySelector('.ant-layout-content'));
+            const hasApp = Boolean(document.querySelector('.ant-layout-content, main, #__next'));
             return hasApp && !isSessionLoading;
           },
-          { timeout: 20000 }
+          { timeout: 15000 }
         )
         .catch(() => {});
 
