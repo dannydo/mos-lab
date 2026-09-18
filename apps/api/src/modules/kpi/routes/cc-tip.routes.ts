@@ -16,48 +16,97 @@ async function getActiveCcIds(fastify: FastifyInstance): Promise<number[]> {
   return ids.length > 0 ? ids : [37790, 34295, 46092, 51659, 48026, 48997];
 }
 
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function normalizeDatePart(value: string | undefined, fallback: string): string {
+  const datePart = value?.includes('T') ? value.split('T')[0] : value;
+  return datePart && ISO_DATE_PATTERN.test(datePart) ? datePart : fallback;
+}
+
+function buildActualCheckinOrdersCte(): string {
+  return `
+    WITH filtered_orders AS (
+      SELECT ro.order_id AS orderId, ro.actual_booking_date_start AS checkinTime
+      FROM report_order ro
+      INNER JOIN \`order\` o ON o.id = ro.order_id
+      WHERE o.order_state = 'Completed'
+        AND ro.actual_booking_date_start >= ?
+        AND ro.actual_booking_date_start <= ?
+
+      UNION ALL
+
+      SELECT o.id AS orderId, o.booking_date_start AS checkinTime
+      FROM \`order\` o
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE o.order_state = 'Completed'
+        AND ro.actual_booking_date_start IS NULL
+        AND o.booking_date_start >= ?
+        AND o.booking_date_start <= ?
+    )
+  `;
+}
+
+function actualCheckinQueryParams(startPart: string, endPart: string): string[] {
+  const start = startPart.includes(' ') ? startPart : `${startPart} 00:00:00`;
+  const end = endPart.includes(' ') ? endPart : `${endPart} 23:59:59`;
+  return [start, end, start, end];
+}
+
 async function getCcTipSummaryForPeriod(
   fastify: FastifyInstance,
   options: { activeCcIds: number[]; dateFrom: string; endAt: string; storeId?: string }
 ) {
   const activeCcStr = options.activeCcIds.join(',') || '0';
-  const storeFilterClause =
-    options.storeId && options.storeId !== 'ALL' ? `AND csl.client_store_name LIKE '%${options.storeId}%'` : '';
+  let storeFilterClause = '';
+  const storeQueryParams: string[] = [];
+  if (options.storeId && options.storeId !== 'ALL') {
+    storeFilterClause = 'AND csl.client_store_name LIKE ?';
+    storeQueryParams.push(`%${options.storeId}%`);
+  }
+
+  const filteredOrdersCte = buildActualCheckinOrdersCte();
+  const dateQueryParams = actualCheckinQueryParams(options.dateFrom, options.endAt);
 
   const [summaryRows, ccBonusRows] = await Promise.all([
-    fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+    fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+      `
+      ${filteredOrdersCte}
       SELECT
-        COUNT(DISTINCT o.id) as totalVisits,
-        COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN o.id END) as totalTippedVisits,
+        COUNT(DISTINCT fo.orderId) as totalVisits,
+        COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN fo.orderId END) as totalTippedVisits,
         COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
-      FROM \`order\` o
-      LEFT JOIN report_order ro ON o.id = ro.order_id
+      FROM filtered_orders fo
+      JOIN \`order\` o ON o.id = fo.orderId
       JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
       LEFT JOIN (
         SELECT
-          order_id,
-          MAX(tip_amount) as tip_amount,
-          MAX(CASE WHEN tip_percentage > 0 THEN tip_amount / (tip_percentage / 100) ELSE 0 END) as customer_tip_100
-        FROM staff_tip
-        GROUP BY order_id
-      ) st ON st.order_id = o.id
-      WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${options.dateFrom} 00:00:00'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${options.endAt}'
-        AND o.order_state = 'Completed'
+          st.order_id,
+          MAX(st.tip_amount) as tip_amount,
+          MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE 0 END) as customer_tip_100
+        FROM staff_tip st
+        JOIN filtered_orders tip_orders ON tip_orders.orderId = st.order_id
+        GROUP BY st.order_id
+      ) st ON st.order_id = fo.orderId
+      WHERE 1 = 1
         ${storeFilterClause}
-    `),
-    fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+    `,
+      ...dateQueryParams,
+      ...storeQueryParams
+    ),
+    fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+      `
+      ${filteredOrdersCte}
       SELECT COALESCE(SUM(st.tip_amount), 0) as totalCcTipBonus
       FROM staff_tip st
-      JOIN \`order\` o ON o.id = st.order_id
-      LEFT JOIN report_order ro ON o.id = ro.order_id
+      JOIN filtered_orders fo ON fo.orderId = st.order_id
+      JOIN \`order\` o ON o.id = fo.orderId
       JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
       WHERE st.user_id IN (${activeCcStr})
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${options.dateFrom} 00:00:00'
-        AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${options.endAt}'
-        AND o.order_state = 'Completed'
         ${storeFilterClause}
-    `),
+    `,
+      ...dateQueryParams,
+      ...storeQueryParams
+    ),
   ]);
 
   const summary = summaryRows[0] || {};
@@ -79,11 +128,11 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
       comparisonMode?: ReportComparisonMode;
     };
 
-    const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = dateTo || new Date().toLocaleDateString('en-CA');
-
-    const startPart = startStr.includes('T') ? startStr.split('T')[0] : startStr;
-    const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
+    const startPart = normalizeDatePart(
+      dateFrom,
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA')
+    );
+    const endPart = normalizeDatePart(dateTo, new Date().toLocaleDateString('en-CA'));
 
     try {
       const activeCcIds = (await getActiveCcIds(fastify)) || [37790, 34295, 46092, 51659, 48026, 48997];
@@ -99,33 +148,39 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
         : null;
 
       let storeFilterClause = '';
+      const storeQueryParams: string[] = [];
       if (storeId && storeId !== 'ALL') {
-        storeFilterClause = `AND csl.client_store_name LIKE '%${storeId}%'`;
+        storeFilterClause = 'AND csl.client_store_name LIKE ?';
+        storeQueryParams.push(`%${storeId}%`);
       }
 
+      const filteredOrdersCte = buildActualCheckinOrdersCte();
+      const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
+
       const summarySql = `
+        ${filteredOrdersCte}
         SELECT 
-          COUNT(DISTINCT o.id) as totalVisits,
-          COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN o.id END) as totalTippedVisits,
+          COUNT(DISTINCT fo.orderId) as totalVisits,
+          COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN fo.orderId END) as totalTippedVisits,
           COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
-        FROM \`order\` o
-        LEFT JOIN report_order ro ON o.id = ro.order_id
+        FROM filtered_orders fo
+        JOIN \`order\` o ON o.id = fo.orderId
         JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         LEFT JOIN (
           SELECT 
-            order_id, 
-            MAX(tip_amount) as tip_amount,
-            MAX(CASE WHEN tip_percentage > 0 THEN tip_amount / (tip_percentage / 100) ELSE 0 END) as customer_tip_100
-          FROM staff_tip
-          GROUP BY order_id
-        ) st ON st.order_id = o.id
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND o.order_state = 'Completed'
+            st.order_id, 
+            MAX(st.tip_amount) as tip_amount,
+            MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE 0 END) as customer_tip_100
+          FROM staff_tip st
+          JOIN filtered_orders tip_orders ON tip_orders.orderId = st.order_id
+          GROUP BY st.order_id
+        ) st ON st.order_id = fo.orderId
+        WHERE 1 = 1
           ${storeFilterClause}
       `;
 
       const rawSql = `
+        ${filteredOrdersCte}
         SELECT 
           cc.user_id as staffId,
           up.full_name as displayName,
@@ -136,27 +191,30 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
           COALESCE(SUM(st.tip_amount), 0) as totalCcTipBonus,
           COALESCE(SUM(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE 0 END), 0) as totalCustomerTipAmount
         FROM (
-          SELECT DISTINCT check_in_staff_id as user_id, order_id FROM order_service WHERE check_in_staff_id IN (${activeCcStr})
+          SELECT DISTINCT os.check_in_staff_id as user_id, os.order_id 
+          FROM filtered_orders fo
+          JOIN order_service os ON os.order_id = fo.orderId
+          WHERE os.check_in_staff_id IN (${activeCcStr})
           UNION
-          SELECT DISTINCT check_out_staff_id as user_id, order_id FROM order_service WHERE check_out_staff_id IN (${activeCcStr})
+          SELECT DISTINCT os.check_out_staff_id as user_id, os.order_id 
+          FROM filtered_orders fo
+          JOIN order_service os ON os.order_id = fo.orderId
+          WHERE os.check_out_staff_id IN (${activeCcStr})
         ) cc
         JOIN user_profile up ON up.user_id = cc.user_id
         LEFT JOIN client_store cs ON cs.id = up.client_store_id
         JOIN \`order\` o ON o.id = cc.order_id
-        LEFT JOIN report_order ro ON o.id = ro.order_id
         JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         LEFT JOIN staff_tip st ON st.order_id = o.id AND st.user_id = cc.user_id
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND o.order_state = 'Completed'
+        WHERE 1 = 1
           ${storeFilterClause}
         GROUP BY cc.user_id, up.full_name, up.avatar, store
         ORDER BY totalCcTipBonus DESC
       `;
 
       const [summaryRows, dbRows] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(summarySql),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(rawSql),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(summarySql, ...dateQueryParams, ...storeQueryParams),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(rawSql, ...dateQueryParams, ...storeQueryParams),
       ]);
 
       const summaryRow = summaryRows[0] || {};
