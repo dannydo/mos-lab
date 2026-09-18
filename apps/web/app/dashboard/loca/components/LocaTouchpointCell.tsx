@@ -685,7 +685,6 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
         tabIndex={0}
         aria-label={`Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}`}
         title={!popoverOpen ? `Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}` : undefined}
-        onPointerDown={handleTileToggle}
         onClick={handleTileToggle}
         onKeyDown={handleCellKeyDown}
         style={{

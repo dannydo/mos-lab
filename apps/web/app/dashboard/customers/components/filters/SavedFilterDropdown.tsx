@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dropdown, Button, theme } from 'antd';
 import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
-import { usePointerTrigger } from '../../../../../hooks/usePointerTrigger';
+import type { SafeAny } from '@mos-lab/shared';
 
 interface SavedFilterDropdownProps {
   savedFilters: SafeAny[];
@@ -17,12 +17,9 @@ export const SavedFilterDropdown: React.FC<SavedFilterDropdownProps> = ({
   applyFilter,
 }) => {
   const { token } = theme.useToken();
-  const { open, setOpen, triggerProps } = usePointerTrigger();
 
   return (
     <Dropdown
-      open={open}
-      onOpenChange={setOpen}
       menu={{
         items: [
           {
@@ -72,7 +69,6 @@ export const SavedFilterDropdown: React.FC<SavedFilterDropdownProps> = ({
           },
         ],
         onClick: (info) => {
-          setOpen(false);
           const preset = presetFilters.find((p) => p.id === info.key);
           if (preset) {
             applyFilter(preset);
@@ -87,7 +83,7 @@ export const SavedFilterDropdown: React.FC<SavedFilterDropdownProps> = ({
       }}
       trigger={['click']}
     >
-      <Button className="customer-saved-filter-trigger" icon={<DownOutlined />} {...triggerProps}>
+      <Button className="customer-saved-filter-trigger" icon={<DownOutlined />}>
         Bộ lọc đã lưu
       </Button>
     </Dropdown>

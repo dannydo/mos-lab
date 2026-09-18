@@ -698,7 +698,6 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
         tabIndex={0}
         aria-label={`Cập nhật trạng thái ${labelText} cho ${customerName}`}
         title={!popoverOpen ? `Cập nhật trạng thái ${labelText} cho ${customerName}` : undefined}
-        onPointerDown={handleTileToggle}
         onClick={handleTileToggle}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {

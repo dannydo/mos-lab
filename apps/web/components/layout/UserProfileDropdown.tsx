@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Dropdown, Avatar, Switch, Segmented, theme } from 'antd';
+import React, { useState, useRef, useEffect } from 'react';
+import { Avatar, Switch, Segmented, theme } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { PhoneCall, Radio, MessageSquareWarning, BarChart3, ChevronRight, LogOut, UserRound } from 'lucide-react';
 import type { SafeAny } from '@mos-lab/shared';
@@ -9,7 +9,6 @@ import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { useTheme } from '../../context/ThemeContext';
-import { usePointerTrigger } from '../../hooks/usePointerTrigger';
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -147,7 +146,27 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   onOpenTelesalesDashboard,
   onLogout,
 }) => {
-  const { open, setOpen, triggerProps } = usePointerTrigger();
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDownOutside = (e: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDownOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDownOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
@@ -408,23 +427,19 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   );
 
   return (
-    <Dropdown
-      open={open}
-      onOpenChange={setOpen}
-      trigger={['click']}
-      placement="bottomRight"
-      arrow={{ pointAtCenter: true }}
-      popupRender={() => dropdownContent}
-    >
+    <div className="relative inline-flex items-center" ref={containerRef}>
       <button
         type="button"
-        className="mos-header-avatar-action"
+        className="mos-header-avatar-action cursor-pointer"
         data-header-action="user-menu"
         aria-label="Mở menu người dùng"
         aria-haspopup="menu"
         aria-expanded={open}
         title="Mở menu người dùng"
-        {...triggerProps}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
       >
         <Avatar
           size={32}
@@ -445,7 +460,16 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           }}
         />
       </button>
-    </Dropdown>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 z-[1050] animate-in fade-in zoom-in-95 duration-150"
+          style={{ transformOrigin: 'top right' }}
+        >
+          {dropdownContent}
+        </div>
+      )}
+    </div>
   );
 };
 

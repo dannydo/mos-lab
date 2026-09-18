@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Popover, Tooltip, ColorPicker as AntColorPicker, Button, theme } from 'antd';
 import { CheckOutlined, DownOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
-import { usePointerTrigger } from '../hooks/usePointerTrigger';
 
 // 10 Columns x 8 Rows = 80 Theme Colors (Exact Google Sheets Color Palette Matrix)
 export const GOOGLE_SHEETS_MATRIX: string[][] = [
@@ -47,7 +46,7 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
   size = 'small',
   defaultColor = '#2563eb',
 }) => {
-  const { open: popoverOpen, setOpen: setPopoverOpen, triggerProps } = usePointerTrigger();
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const [customColors, setCustomColors] = useState<string[]>(['#1e293b', '#0f766e']);
   const [customPickerOpen, setCustomPickerOpen] = useState(false);
 
@@ -333,7 +332,6 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
     >
       <button
         type="button"
-        {...triggerProps}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
