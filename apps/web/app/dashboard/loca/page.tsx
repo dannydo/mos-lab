@@ -501,7 +501,8 @@ export default function LocaCampaignPage() {
               placement="top"
               arrow={false}
               mouseEnterDelay={0.15}
-              align={{ offset: [0, -8] }}
+              overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+              rootClassName="pointer-events-none"
             >
               <Button
                 type="primary"
@@ -1158,7 +1159,8 @@ export default function LocaCampaignPage() {
                   placement="top"
                   arrow={false}
                   mouseEnterDelay={0.15}
-                  align={{ offset: [0, -8] }}
+                  overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+                  rootClassName="pointer-events-none"
                 >
                   <button
                     type="button"
@@ -1185,7 +1187,8 @@ export default function LocaCampaignPage() {
                   placement="top"
                   arrow={false}
                   mouseEnterDelay={0.15}
-                  align={{ offset: [0, -8] }}
+                  overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+                  rootClassName="pointer-events-none"
                 >
                   <button
                     type="button"
@@ -1212,7 +1215,8 @@ export default function LocaCampaignPage() {
                   placement="top"
                   arrow={false}
                   mouseEnterDelay={0.15}
-                  align={{ offset: [0, -8] }}
+                  overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+                  rootClassName="pointer-events-none"
                 >
                   <button
                     type="button"
@@ -1258,7 +1262,8 @@ export default function LocaCampaignPage() {
                 placement="top"
                 arrow={false}
                 mouseEnterDelay={0.15}
-                align={{ offset: [0, -8] }}
+                overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+                rootClassName="pointer-events-none"
               >
                 <Button
                   type="primary"

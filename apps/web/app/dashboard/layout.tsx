@@ -2,7 +2,7 @@
 
 import '../suppress-warnings';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import { Layout, Button, Avatar, Space, Dropdown, Drawer, theme, message, Tag } from 'antd';
+import { Layout, Button, Avatar, Space, Dropdown, Drawer, theme, message, Tag, Tooltip } from 'antd';
 import {
   TeamOutlined,
   CalendarOutlined,
@@ -537,7 +537,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="sidebar-toggle-container">
             <Button
               aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
-              title={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
               onClick={toggleSidebar}
               icon={
                 collapsed ? (
@@ -638,93 +637,101 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {onlineMembers.length > 0 && (
                   <div className="dashboard-online-member-stack dashboard-desktop-only">
                     {onlineMembers.map((m, idx) => (
-                      <button
+                      <Tooltip
                         key={m.id}
-                        type="button"
-                        className="dashboard-online-member-action"
-                        aria-label={`Mở KPI đội telesales của ${m.name}`}
                         title={m.name}
-                        onClick={() => {
-                          setSelectedMemberId(m.id || m.initials);
-                          setIsDashboardVisible(true);
-                        }}
-                        style={{
-                          position: 'relative',
-                          marginLeft: idx > 0 ? '-10px' : '0',
-                          zIndex: 20 - idx,
-                        }}
+                        placement="bottom"
+                        arrow={false}
+                        mouseEnterDelay={0.15}
+                        overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+                        rootClassName="pointer-events-none"
                       >
-                        <div
+                        <button
+                          type="button"
+                          className="dashboard-online-member-action"
+                          aria-label={`Mở KPI đội telesales của ${m.name}`}
+                          onClick={() => {
+                            setSelectedMemberId(m.id || m.initials);
+                            setIsDashboardVisible(true);
+                          }}
                           style={{
                             position: 'relative',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '32px',
-                            height: '32px',
+                            marginLeft: idx > 0 ? '-10px' : '0',
+                            zIndex: 20 - idx,
                           }}
                         >
                           <div
-                            className="dashboard-online-member-avatar avatar-breath select-none"
                             style={{
-                              width: '32px',
-                              height: '32px',
-                              minWidth: '32px',
-                              minHeight: '32px',
-                              maxWidth: '32px',
-                              maxHeight: '32px',
-                              borderRadius: '50%',
-                              overflow: 'hidden',
-                              WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-                              maskImage: 'radial-gradient(white, black)',
-                              WebkitTransform: 'translateZ(0)',
-                              transform: 'translateZ(0)',
                               position: 'relative',
-                              display: 'flex',
+                              display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '11px',
-                              fontWeight: 'bold',
-                              color: '#ffffff',
-                              background: m.color,
-                              borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
-                              borderWidth: '2px',
-                              borderStyle: 'solid',
-                              boxSizing: 'border-box',
+                              width: '32px',
+                              height: '32px',
                             }}
                           >
-                            {m.avatarUrl ? (
-                              <img
-                                src={m.avatarUrl}
-                                alt={m.name}
-                                style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover',
-                                  borderRadius: '50%',
-                                  display: 'block',
-                                }}
-                              />
-                            ) : (
-                              m.initials
-                            )}
+                            <div
+                              className="dashboard-online-member-avatar avatar-breath select-none"
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                minWidth: '32px',
+                                minHeight: '32px',
+                                maxWidth: '32px',
+                                maxHeight: '32px',
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+                                maskImage: 'radial-gradient(white, black)',
+                                WebkitTransform: 'translateZ(0)',
+                                transform: 'translateZ(0)',
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                color: '#ffffff',
+                                background: m.color,
+                                borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
+                                borderWidth: '2px',
+                                borderStyle: 'solid',
+                                boxSizing: 'border-box',
+                              }}
+                            >
+                              {m.avatarUrl ? (
+                                <img
+                                  src={m.avatarUrl}
+                                  alt={m.name}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: '50%',
+                                    display: 'block',
+                                  }}
+                                />
+                              ) : (
+                                m.initials
+                              )}
+                            </div>
+                            <span
+                              style={{
+                                position: 'absolute',
+                                bottom: '0px',
+                                right: '0px',
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#22c55e',
+                                borderRadius: '50%',
+                                border: `2px solid ${themeMode === 'dark' ? '#000000' : '#ffffff'}`,
+                                zIndex: 10,
+                                pointerEvents: 'none',
+                              }}
+                            />
                           </div>
-                          <span
-                            style={{
-                              position: 'absolute',
-                              bottom: '0px',
-                              right: '0px',
-                              width: '8px',
-                              height: '8px',
-                              backgroundColor: '#22c55e',
-                              borderRadius: '50%',
-                              border: `2px solid ${themeMode === 'dark' ? '#000000' : '#ffffff'}`,
-                              zIndex: 10,
-                              pointerEvents: 'none',
-                            }}
-                          />
-                        </div>
-                      </button>
+                        </button>
+                      </Tooltip>
                     ))}
                   </div>
                 )}

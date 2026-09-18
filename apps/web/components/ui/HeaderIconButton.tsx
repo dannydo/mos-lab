@@ -86,7 +86,14 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
   }
 
   return (
-    <Tooltip title={label} placement="bottom" arrow={false} mouseEnterDelay={0.15} align={{ offset: [0, 8] }}>
+    <Tooltip
+      title={label}
+      placement="bottom"
+      arrow={false}
+      mouseEnterDelay={0.15}
+      overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+      rootClassName="pointer-events-none"
+    >
       {button}
     </Tooltip>
   );

@@ -491,7 +491,8 @@ export const getLocaColumns = ({
               placement="top"
               arrow={false}
               mouseEnterDelay={0.15}
-              align={{ offset: [0, -8] }}
+              overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+              rootClassName="pointer-events-none"
             >
               <Button
                 type="text"
@@ -532,7 +533,8 @@ export const getLocaColumns = ({
               placement="top"
               arrow={false}
               mouseEnterDelay={0.15}
-              align={{ offset: [0, -8] }}
+              overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+              rootClassName="pointer-events-none"
             >
               <Button
                 type="text"
@@ -754,7 +756,8 @@ export const getNewLocaColumns = ({
               placement="top"
               arrow={false}
               mouseEnterDelay={0.15}
-              align={{ offset: [0, -8] }}
+              overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+              rootClassName="pointer-events-none"
             >
               <Button
                 type="text"
@@ -795,7 +798,8 @@ export const getNewLocaColumns = ({
               placement="top"
               arrow={false}
               mouseEnterDelay={0.15}
-              align={{ offset: [0, -8] }}
+              overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+              rootClassName="pointer-events-none"
             >
               <Button
                 type="text"

@@ -6040,35 +6040,35 @@ body {
   touch-action: manipulation;
 }
 
-/* Prevent inner SVG, image, or span elements from stealing pointer/click events from the button trigger */
-.mos-header-avatar-action *,
-.mos-header-icon-action *,
-.mos-header-action * {
-  pointer-events: none;
-}
-
 /* ===========================================================================
-   Ant Design Tooltip Anti-Flickering Invariant (Windows 10 Chrome / Fractional DPI)
+   Unified Button & Tooltip Anti-Flickering Invariant (Windows 10 Chrome / Fractional DPI)
    
-   Tooltips are informational overlays. They must NEVER intercept pointer
-   events. Setting pointer-events: none prevents the tooltip popup or arrow
-   from stealing hover from the trigger button, completely eliminating
-   rapid mouseenter / mouseleave flickering loops.
+   1. Tooltips are informational overlays: they must NEVER intercept pointer events.
+   2. Inner descendants of buttons (SVG, path, circle, span, icon) must NEVER
+      intercept pointer events independently from their parent <button> trigger.
+   This guarantees that the trigger button is always the 100% unified target,
+   completely eliminating rapid mouseenter / mouseleave flickering loops.
    =========================================================================== */
 .ant-tooltip,
+.ant-tooltip *,
 .ant-tooltip-arrow,
 .ant-tooltip-inner,
 .ant-tooltip-content {
   pointer-events: none !important;
 }
 
-/* Ensure icons inside Ant Design buttons and native buttons never capture pointer events independently */
+.mos-header-avatar-action *,
+.mos-header-icon-action *,
+.mos-header-action *,
+.mos-icon-button *,
+.dashboard-online-member-action *,
+.ant-btn *,
 .ant-btn-icon,
 .ant-btn-icon *,
 button > svg,
-button > span[aria-hidden],
-.ant-btn svg,
-.ant-btn span[aria-hidden] {
+button > svg *,
+button > span,
+button > span * {
   pointer-events: none !important;
 }
 

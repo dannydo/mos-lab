@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Tag, message, theme } from 'antd';
+import { Tag, message, theme, Tooltip } from 'antd';
 import { Palette, Sun, Moon, Check, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeStudioModal } from './ThemeStudioModal';
@@ -46,24 +46,33 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
   return (
     <>
       <div className="relative inline-flex items-center" ref={containerRef}>
-        <button
-          type="button"
-          className="mos-header-icon-action flex items-center justify-center relative group p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-          title={`Giao diện hiện tại: ${currentThemeItem?.label || 'mOS Theme'}`}
-          aria-label="Chọn Theme Giao Diện"
-          aria-expanded={dropdownOpen}
-          onClick={(e) => {
-            e.stopPropagation();
-            setDropdownOpen((prev) => !prev);
-          }}
+        <Tooltip
+          title={`Giao diện: ${currentThemeItem?.label || 'mOS Theme'}`}
+          placement="bottom"
+          arrow={false}
+          mouseEnterDelay={0.15}
+          open={dropdownOpen ? false : undefined}
+          overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+          rootClassName="pointer-events-none"
         >
-          <Palette className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-amber-500 transition-colors pointer-events-none" />
-          {/* Swatch indicator dot */}
-          <span
-            className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full border border-white dark:border-slate-900 shadow-xs pointer-events-none"
-            style={{ backgroundColor: currentThemeItem?.colors.primary || '#d4a84b' }}
-          />
-        </button>
+          <button
+            type="button"
+            className="mos-header-icon-action flex items-center justify-center relative group p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Chọn Theme Giao Diện"
+            aria-expanded={dropdownOpen}
+            onClick={(e) => {
+              e.stopPropagation();
+              setDropdownOpen((prev) => !prev);
+            }}
+          >
+            <Palette className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-amber-500 transition-colors pointer-events-none" />
+            {/* Swatch indicator dot */}
+            <span
+              className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full border border-white dark:border-slate-900 shadow-xs pointer-events-none"
+              style={{ backgroundColor: currentThemeItem?.colors.primary || '#d4a84b' }}
+            />
+          </button>
+        </Tooltip>
 
         {dropdownOpen && (
           <div

@@ -131,7 +131,14 @@ export function IconButton({
   );
 
   return tooltip ? (
-    <Tooltip title={label} placement="top" arrow={false} mouseEnterDelay={0.15} align={{ offset: [0, -8] }}>
+    <Tooltip
+      title={label}
+      placement="top"
+      arrow={false}
+      mouseEnterDelay={0.15}
+      overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+      rootClassName="pointer-events-none"
+    >
       {button}
     </Tooltip>
   ) : (
