@@ -872,6 +872,10 @@ export async function kpiRoutes(fastify: FastifyInstance) {
 
     const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 0);
 
+    const cacheKey = `kpi:leaderboard:${user.role}:${role || 'all'}:${staffIds || 'all'}:${startStr}:${endStr}`;
+    const cached = fastify.cache.get(cacheKey);
+    if (cached) return cached;
+
     try {
       if (role === 'oc' || role === 'consultant') {
         const salaries = await calculateConsultantSalaryStats(fastify, start, end);
@@ -928,6 +932,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         } else {
           leaderboard.sort((a, b) => b.totalCheckin - a.totalCheckin);
         }
+        const isPast = end < new Date();
+        fastify.cache.set(cacheKey, leaderboard, isPast ? 300 : 30);
         return leaderboard;
       }
 
@@ -996,61 +1002,54 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       const callStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
 
       if (crmStaffIds.length > 0) {
-        // 1. Fetch from crmCallLog (CRM Call Logs)
-        const crmCallLogs = await fastify.prisma.crm.crmCallLog.findMany({
-          where: {
-            staffId: { in: crmStaffIds },
-            createdAt: { gte: start, lte: end },
-          },
-          select: {
-            staffId: true,
-            callResult: true,
-            outcome: true,
-          },
-        });
+        const idList = crmStaffIds.join(',');
+        const [crmAggRows, omiAggRows] = await Promise.all([
+          fastify.prisma.crm.$queryRawUnsafe<
+            { staffId: number; totalCalled: number; totalAnswered: number; totalHappy: number }[]
+          >(
+            `SELECT 
+              staff_id as staffId,
+              COUNT(id) as totalCalled,
+              SUM(CASE WHEN UPPER(COALESCE(call_result, '')) IN ('ANSWERED', 'ANSWER', 'CONNECTED') THEN 1 ELSE 0 END) as totalAnswered,
+              SUM(CASE WHEN UPPER(COALESCE(outcome, '')) IN ('HAPPY', 'HAPPY_CALL', 'APPROVED') THEN 1 ELSE 0 END) as totalHappy
+            FROM crm_call_logs
+            WHERE staff_id IN (${idList}) AND created_at >= ? AND created_at <= ?
+            GROUP BY staff_id`,
+            start,
+            end
+          ),
+          fastify.prisma.crm.$queryRawUnsafe<
+            { staffId: number; totalCalled: number; totalAnswered: number; totalHappy: number }[]
+          >(
+            `SELECT 
+              staff_id as staffId,
+              COUNT(id) as totalCalled,
+              SUM(CASE WHEN UPPER(COALESCE(status, '')) = 'ANSWER' THEN 1 ELSE 0 END) as totalAnswered,
+              SUM(CASE WHEN UPPER(COALESCE(happy_call_status, '')) = 'APPROVED' THEN 1 ELSE 0 END) as totalHappy
+            FROM crm_omicall_logs
+            WHERE staff_id IN (${idList}) AND created_at >= ? AND created_at <= ? AND direction = 'outbound'
+            GROUP BY staff_id`,
+            start,
+            end
+          ),
+        ]);
 
         const crmStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
-        crmCallLogs.forEach((c: SafeAny) => {
-          const sid = Number(c.staffId);
-          const current = crmStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
-          current.totalCalled++;
-          const res = String(c.callResult || '').toUpperCase();
-          if (res === 'ANSWERED' || res === 'ANSWER' || res === 'CONNECTED') {
-            current.totalAnswered++;
-          }
-          const out = String(c.outcome || '').toUpperCase();
-          if (out === 'HAPPY' || out === 'HAPPY_CALL' || out === 'APPROVED') {
-            current.totalHappy++;
-          }
-          crmStatsMap.set(sid, current);
-        });
-
-        // 2. Fetch from crmOmicallLog (Raw OmiCall Webhook logs)
-        const omicallLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
-          where: {
-            staffId: { in: crmStaffIds },
-            createdAt: { gte: start, lte: end },
-            direction: 'outbound',
-          },
-          select: {
-            staffId: true,
-            status: true,
-            happyCallStatus: true,
-          },
+        crmAggRows.forEach((r: SafeAny) => {
+          crmStatsMap.set(Number(r.staffId), {
+            totalCalled: Number(r.totalCalled || 0),
+            totalAnswered: Number(r.totalAnswered || 0),
+            totalHappy: Number(r.totalHappy || 0),
+          });
         });
 
         const omiStatsMap = new Map<number, { totalCalled: number; totalAnswered: number; totalHappy: number }>();
-        omicallLogs.forEach((c: SafeAny) => {
-          const sid = Number(c.staffId);
-          const current = omiStatsMap.get(sid) || { totalCalled: 0, totalAnswered: 0, totalHappy: 0 };
-          current.totalCalled++;
-          if (String(c.status).toUpperCase() === 'ANSWER') {
-            current.totalAnswered++;
-          }
-          if (String(c.happyCallStatus).toUpperCase() === 'APPROVED') {
-            current.totalHappy++;
-          }
-          omiStatsMap.set(sid, current);
+        omiAggRows.forEach((r: SafeAny) => {
+          omiStatsMap.set(Number(r.staffId), {
+            totalCalled: Number(r.totalCalled || 0),
+            totalAnswered: Number(r.totalAnswered || 0),
+            totalHappy: Number(r.totalHappy || 0),
+          });
         });
 
         // 3. Combine with Math.max per staff ID
@@ -1153,6 +1152,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
       }
 
       leaderboard.sort(compareBookerProductivity);
+      const isPast = end < new Date();
+      fastify.cache.set(cacheKey, leaderboard, isPast ? 300 : 30);
       return leaderboard;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Leaderboard KPI error');

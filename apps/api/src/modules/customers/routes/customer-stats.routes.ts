@@ -1019,8 +1019,13 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       const innerWhereClauses: string[] = [
         'COALESCE(up.is_deleted, 0) = 0',
-        '(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)',
         'up.last_order_booking IS NOT NULL',
+        `NOT EXISTS (
+          SELECT 1 FROM user_service_balance usb
+          WHERE usb.user_id = u.id
+            AND (usb.normal_count + usb.retain_count) > 0
+            AND (usb.date_expired IS NULL OR usb.date_expired > NOW())
+        )`,
       ];
       const innerParams: SafeAny[] = [];
 
@@ -1115,18 +1120,6 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
             DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit
           FROM user u
           LEFT JOIN user_profile up ON u.id = up.user_id
-          LEFT JOIN (
-            SELECT 
-              user_id,
-              SUM(
-                CASE 
-                  WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
-                  ELSE 0 
-                END
-              ) as live_count
-            FROM user_service_balance
-            GROUP BY user_id
-          ) as usb_agg ON u.id = usb_agg.user_id
           ${innerWhereString}
         ) as nyc_base
       `;

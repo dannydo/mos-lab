@@ -16,7 +16,21 @@ import {
 function buildSearchCondition(search: string): { sql: string; params: string[] } {
   const rawSearch = search.trim();
   const cleanDigits = rawSearch.replace(/[\s.-]/g, '');
-  const isPotentialPhone = /^\+?[0-9]{4,15}$/.test(cleanDigits);
+  const isExactOrPrefixPhone = /^\+?[0-9]{8,15}$/.test(cleanDigits);
+
+  if (isExactOrPrefixPhone) {
+    const phonePrefix = `${cleanDigits}%`;
+    return {
+      sql: `EXISTS (
+        SELECT 1 
+        FROM user_contact uc 
+        WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND (uc.phone_number = ? OR uc.phone_number LIKE ?)
+      )`,
+      params: [cleanDigits, phonePrefix],
+    };
+  }
+
+  const isPotentialPhone = /^\+?[0-9]{4,7}$/.test(cleanDigits);
 
   if (isPotentialPhone) {
     const phonePrefix = `${cleanDigits}%`;
