@@ -9,6 +9,42 @@ import {
 import { TeamService } from '../../teams/team.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function normalizeDatePart(value: string | undefined, fallback: string): string {
+  const datePart = value?.includes('T') ? value.split('T')[0] : value;
+  return datePart && ISO_DATE_PATTERN.test(datePart) ? datePart : fallback;
+}
+
+function buildActualCheckinOrdersCte(): string {
+  return `
+    WITH filtered_orders AS (
+      SELECT ro.order_id AS orderId, ro.actual_booking_date_start AS checkinTime
+      FROM report_order ro
+      INNER JOIN \`order\` o ON o.id = ro.order_id
+      WHERE o.order_state = 'Completed'
+        AND ro.actual_booking_date_start >= ?
+        AND ro.actual_booking_date_start <= ?
+
+      UNION ALL
+
+      SELECT o.id AS orderId, o.booking_date_start AS checkinTime
+      FROM \`order\` o
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE o.order_state = 'Completed'
+        AND ro.actual_booking_date_start IS NULL
+        AND o.booking_date_start >= ?
+        AND o.booking_date_start <= ?
+    )
+  `;
+}
+
+function actualCheckinQueryParams(startPart: string, endPart: string): string[] {
+  const start = startPart.includes(' ') ? startPart : `${startPart} 00:00:00`;
+  const end = endPart.includes(' ') ? endPart : `${endPart} 23:59:59`;
+  return [start, end, start, end];
+}
+
 export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
   // GET /api/kpi/cc-paystub
   fastify.get('/kpi/cc-paystub', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -389,8 +425,12 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
       const staffExprOs = `COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id)`;
 
+      const filteredOrdersCte = buildActualCheckinOrdersCte();
+      const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
+
       // 2. Query daily shift work logs from report_staff (real check-in/out & exact working minutes)
       const shiftWorkLogsQuery = `
+        ${filteredOrdersCte}
         SELECT 
           DATE_FORMAT(rs.date, '%Y-%m-%d') as work_date,
           TIME_FORMAT(rs.check_in_date, '%H:%i:%s') as first_in,
@@ -400,44 +440,48 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         FROM \`report_staff\` rs
         LEFT JOIN (
           SELECT 
-            DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start)) as work_date,
+            DATE(fo.checkinTime) as work_date,
             COUNT(os.id) as service_count
-          FROM \`order\` o
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          JOIN \`order_service\` os ON os.order_id = o.id
-          WHERE o.order_state = 'Completed'
-            AND ${staffExprOs} = ${uid}
+          FROM filtered_orders fo
+          JOIN \`order\` o ON o.id = fo.orderId
+          JOIN \`order_service\` os ON os.order_id = fo.orderId
+          WHERE ${staffExprOs} = ?
           GROUP BY work_date
         ) srv ON srv.work_date = rs.date
-        WHERE rs.user_id = ${uid}
-          AND rs.date >= '${startPart}'
-          AND rs.date <= '${endPart}'
+        WHERE rs.user_id = ?
+          AND rs.date >= ?
+          AND rs.date <= ?
           AND rs.working_minute > 0
         ORDER BY rs.date DESC
       `;
 
-      let rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(shiftWorkLogsQuery);
+      let rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        shiftWorkLogsQuery,
+        ...dateQueryParams,
+        uid,
+        uid,
+        startPart,
+        endPart
+      );
 
       // Fallback to order check-in timestamps if staff_working_shift is empty
       if (!rows || rows.length === 0) {
         const fallbackQuery = `
+          ${filteredOrdersCte}
           SELECT 
-            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%Y-%m-%d') as work_date,
-            MIN(DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s')) as first_in,
-            MAX(DATE_FORMAT(COALESCE(o.booking_date_end, COALESCE(ro.actual_booking_date_start, o.booking_date_start)), '%H:%i:%s')) as last_out,
+            DATE_FORMAT(fo.checkinTime, '%Y-%m-%d') as work_date,
+            MIN(DATE_FORMAT(fo.checkinTime, '%H:%i:%s')) as first_in,
+            MAX(DATE_FORMAT(COALESCE(o.booking_date_end, fo.checkinTime), '%H:%i:%s')) as last_out,
             8.00 as total_hours,
             COUNT(os.id) as service_count
-          FROM \`order\` o
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          JOIN \`order_service\` os ON os.order_id = o.id
-          WHERE o.order_state = 'Completed'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-            AND ${staffExprOs} = ${uid}
+          FROM filtered_orders fo
+          JOIN \`order\` o ON o.id = fo.orderId
+          JOIN \`order_service\` os ON os.order_id = fo.orderId
+          WHERE ${staffExprOs} = ?
           GROUP BY work_date
           ORDER BY work_date DESC
         `;
-        rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(fallbackQuery);
+        rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(fallbackQuery, ...dateQueryParams, uid);
       }
 
       let totalWorkHours = 0;

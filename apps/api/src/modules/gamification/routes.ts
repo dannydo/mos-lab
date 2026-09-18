@@ -3,6 +3,42 @@ import { requireAuth } from '../../middlewares/auth.js';
 import { DailySalesBonusConfig, DailySalesBonusTransaction, isAdminOrSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
 
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function normalizeDatePart(value: string | undefined, fallback: string): string {
+  const datePart = value?.includes('T') ? value.split('T')[0] : value;
+  return datePart && ISO_DATE_PATTERN.test(datePart) ? datePart : fallback;
+}
+
+function buildActualCheckinOrdersCte(): string {
+  return `
+    WITH filtered_orders AS (
+      SELECT ro.order_id AS orderId, ro.actual_booking_date_start AS checkinTime
+      FROM report_order ro
+      INNER JOIN \`order\` o ON o.id = ro.order_id
+      WHERE o.order_state = 'Completed'
+        AND ro.actual_booking_date_start >= ?
+        AND ro.actual_booking_date_start <= ?
+
+      UNION ALL
+
+      SELECT o.id AS orderId, o.booking_date_start AS checkinTime
+      FROM \`order\` o
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE o.order_state = 'Completed'
+        AND ro.actual_booking_date_start IS NULL
+        AND o.booking_date_start >= ?
+        AND o.booking_date_start <= ?
+    )
+  `;
+}
+
+function actualCheckinQueryParams(startPart: string, endPart: string): string[] {
+  const start = startPart.includes(' ') ? startPart : `${startPart} 00:00:00`;
+  const end = endPart.includes(' ') ? endPart : `${endPart} 23:59:59`;
+  return [start, end, start, end];
+}
+
 const DEFAULT_CONFIG: DailySalesBonusConfig = {
   combo_unit_bonus: 200000,
   product_unit_bonus: 50000,
@@ -279,8 +315,13 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         staffFilterUdp = ` AND COALESCE(udp.created_staff_id, ud.user_debt_payment_staff_id, ud.created_staff_id) = ${uid}`;
       }
 
+      const datePart = normalizeDatePart(date, date);
+      const filteredOrdersCte = buildActualCheckinOrdersCte();
+      const dateQueryParams = actualCheckinQueryParams(datePart, datePart);
+
       // Query Combos (Net cash value subtracts unpaid debt) with 50/50 Split for CC IN != CC OUT
       const comboQuery = `
+        ${filteredOrdersCte}
         SELECT 
           sub.order_service_id,
           sub.order_id,
@@ -300,8 +341,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           -- CC IN != CC OUT -> 50% to CC IN (New Combo)
           SELECT 
             osc.id as order_service_id,
-            o.id as order_id,
-            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            fo.orderId as order_id,
+            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
@@ -314,28 +355,25 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             os.check_in_staff_id as staff_id,
             up_in.full_name as cc_in_name,
             up_out.full_name as cc_out_name
-          FROM \`order\` o
-          JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+          FROM filtered_orders fo
+          JOIN \`order\` o ON o.id = fo.orderId
+          JOIN \`order_service_combo\` osc ON osc.order_id = fo.orderId
           JOIN \`order_service\` os ON os.id = osc.order_service_id
           LEFT JOIN \`service_language\` sl ON sl.service_id = osc.service_id AND sl.language_id = 1
-          LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = fo.orderId AND ud.debt_amount > 0
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
           LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
-            AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
+          WHERE os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
 
           UNION ALL
 
           -- CC IN != CC OUT -> 50% to CC OUT (New Combo)
           SELECT 
             osc.id as order_service_id,
-            o.id as order_id,
-            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            fo.orderId as order_id,
+            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
@@ -348,28 +386,25 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             os.check_out_staff_id as staff_id,
             up_in.full_name as cc_in_name,
             up_out.full_name as cc_out_name
-          FROM \`order\` o
-          JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+          FROM filtered_orders fo
+          JOIN \`order\` o ON o.id = fo.orderId
+          JOIN \`order_service_combo\` osc ON osc.order_id = fo.orderId
           JOIN \`order_service\` os ON os.id = osc.order_service_id
           LEFT JOIN \`service_language\` sl ON sl.service_id = osc.service_id AND sl.language_id = 1
-          LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = fo.orderId AND ud.debt_amount > 0
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
           LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
-            AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
+          WHERE os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
 
           UNION ALL
 
           -- Same CC or single CC -> 100% to single staff (New Combo)
           SELECT 
             osc.id as order_service_id,
-            o.id as order_id,
-            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            fo.orderId as order_id,
+            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
@@ -388,30 +423,28 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             ) as staff_id,
             up_in.full_name as cc_in_name,
             up_out.full_name as cc_out_name
-          FROM \`order\` o
-          JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+          FROM filtered_orders fo
+          JOIN \`order\` o ON o.id = fo.orderId
+          JOIN \`order_service_combo\` osc ON osc.order_id = fo.orderId
           JOIN \`order_service\` os ON os.id = osc.order_service_id
           LEFT JOIN \`service_language\` sl ON sl.service_id = osc.service_id AND sl.language_id = 1
-          LEFT JOIN \`user_debt\` ud ON ud.order_id = o.id AND ud.debt_amount > 0
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = fo.orderId AND ud.debt_amount > 0
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
           LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
-            AND (os.check_in_staff_id IS NULL OR os.check_out_staff_id IS NULL OR os.check_in_staff_id = os.check_out_staff_id)
+          WHERE (os.check_in_staff_id IS NULL OR os.check_out_staff_id IS NULL OR os.check_in_staff_id = os.check_out_staff_id)
         ) sub
         ${subStaffFilter}
       `;
 
       // Query Products
       const productQuery = `
+        ${filteredOrdersCte}
         SELECT 
           op.id as order_service_id,
-          o.id as order_id,
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+          fo.orderId as order_id,
+          DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
           CONCAT('Sản Phẩm #', op.product_id, ' - ', COALESCE(pl.product_name, 'Sản Phẩm')) as item_title,
@@ -423,24 +456,23 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           0 as is_split,
           NULL as cc_in_name,
           NULL as cc_out_name
-        FROM \`order\` o
-        JOIN \`order_product\` op ON op.order_id = o.id
+        FROM filtered_orders fo
+        JOIN \`order\` o ON o.id = fo.orderId
+        JOIN \`order_product\` op ON op.order_id = fo.orderId
         LEFT JOIN \`product_language\` pl ON pl.product_id = op.product_id AND pl.language_id = 1
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
+        WHERE 1 = 1
           ${staffFilterOp}
       `;
 
       // Query Single Services (Exclude Combo Upgrades)
       const serviceQuery = `
+        ${filteredOrdersCte}
         SELECT 
           os.id as order_service_id,
-          o.id as order_id,
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+          fo.orderId as order_id,
+          DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
           CONCAT('DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
@@ -452,17 +484,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           0 as is_split,
           up_in.full_name as cc_in_name,
           up_out.full_name as cc_out_name
-        FROM \`order\` o
-        JOIN \`order_service\` os ON os.order_id = o.id
+        FROM filtered_orders fo
+        JOIN \`order\` o ON o.id = fo.orderId
+        JOIN \`order_service\` os ON os.order_id = fo.orderId
         LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
         LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-        WHERE o.order_state = 'Completed'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
+        WHERE 1 = 1
           ${staffFilterOs}
           AND COALESCE(os.upgrade_price, 0) = 0
           AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
@@ -472,6 +502,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
 
       // Query Combo Upgrades with 50/50 Split for CC IN != CC OUT
       const comboUpgradeQuery = `
+        ${filteredOrdersCte}
         SELECT 
           sub.order_service_id,
           sub.order_id,
@@ -491,8 +522,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           -- CC IN != CC OUT -> 50% to CC IN (Combo Upgrade)
           SELECT 
             os.id as order_service_id,
-            o.id as order_id,
-            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            fo.orderId as order_id,
+            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
@@ -505,18 +536,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             os.check_in_staff_id as staff_id,
             up_in.full_name as cc_in_name,
             up_out.full_name as cc_out_name
-          FROM \`order\` o
-          JOIN \`order_service\` os ON os.order_id = o.id
+          FROM filtered_orders fo
+          JOIN \`order\` o ON o.id = fo.orderId
+          JOIN \`order_service\` os ON os.order_id = fo.orderId
           LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
           LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
-            AND os.upgrade_price > 0
+          WHERE os.upgrade_price > 0
             AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
 
           UNION ALL
@@ -524,8 +552,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           -- CC IN != CC OUT -> 50% to CC OUT (Combo Upgrade)
           SELECT 
             os.id as order_service_id,
-            o.id as order_id,
-            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            fo.orderId as order_id,
+            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
@@ -538,18 +566,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             os.check_out_staff_id as staff_id,
             up_in.full_name as cc_in_name,
             up_out.full_name as cc_out_name
-          FROM \`order\` o
-          JOIN \`order_service\` os ON os.order_id = o.id
+          FROM filtered_orders fo
+          JOIN \`order\` o ON o.id = fo.orderId
+          JOIN \`order_service\` os ON os.order_id = fo.orderId
           LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
           LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
-            AND os.upgrade_price > 0
+          WHERE os.upgrade_price > 0
             AND os.check_in_staff_id IS NOT NULL AND os.check_out_staff_id IS NOT NULL AND os.check_in_staff_id != os.check_out_staff_id
 
           UNION ALL
@@ -557,8 +582,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           -- Same CC or single CC -> 100% to single staff (Combo Upgrade)
           SELECT 
             os.id as order_service_id,
-            o.id as order_id,
-            DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start), '%H:%i:%s') as order_time,
+            fo.orderId as order_id,
+            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
@@ -571,18 +596,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
             up_in.full_name as cc_in_name,
             up_out.full_name as cc_out_name
-          FROM \`order\` o
-          JOIN \`order_service\` os ON os.order_id = o.id
+          FROM filtered_orders fo
+          JOIN \`order\` o ON o.id = fo.orderId
+          JOIN \`order_service\` os ON os.order_id = fo.orderId
           LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
           LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${date} 00:00:00'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${date} 23:59:59'
-            AND os.upgrade_price > 0
+          WHERE os.upgrade_price > 0
             AND (os.check_in_staff_id IS NULL OR os.check_out_staff_id IS NULL OR os.check_in_staff_id = os.check_out_staff_id)
         ) sub
         ${subStaffFilter}
@@ -614,10 +636,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
       `;
 
       const [comboRows, comboUpgradeRows, productRows, serviceRows, debtPaymentRows] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboUpgradeQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productQuery),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(serviceQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboQuery, ...dateQueryParams),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboUpgradeQuery, ...dateQueryParams),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productQuery, ...dateQueryParams),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(serviceQuery, ...dateQueryParams),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentQuery),
       ]);
 
