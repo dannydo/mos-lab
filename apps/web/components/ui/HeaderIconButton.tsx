@@ -86,7 +86,7 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
   }
 
   return (
-    <Tooltip title={label} placement="bottom" arrow={{ pointAtCenter: true }}>
+    <Tooltip title={label} placement="bottom" arrow={false} mouseEnterDelay={0.15}>
       {button}
     </Tooltip>
   );

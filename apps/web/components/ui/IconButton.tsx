@@ -120,7 +120,7 @@ export function IconButton({
       danger={tone === 'danger' || dangerProp}
       style={{ ...semanticStyle, ...baseStyle, ...buttonStyle }}
       aria-label={label}
-      title={label}
+      title={tooltip ? undefined : label}
       className={['mos-icon-button', `mos-icon-button--${tone}`, className].filter(Boolean).join(' ')}
       icon={
         <span aria-hidden className="mos-icon-button__icon">
@@ -130,7 +130,13 @@ export function IconButton({
     />
   );
 
-  return tooltip ? <Tooltip title={label}>{button}</Tooltip> : button;
+  return tooltip ? (
+    <Tooltip title={label} arrow={false} mouseEnterDelay={0.15}>
+      {button}
+    </Tooltip>
+  ) : (
+    button
+  );
 }
 
 export default React.memo(IconButton);

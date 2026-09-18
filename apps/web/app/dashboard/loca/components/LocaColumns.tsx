@@ -486,7 +486,11 @@ export const getLocaColumns = ({
         const isAdding = addingIds.includes(record.id);
         return (
           <Space size={4} align="center" style={{ justifyContent: 'center' }}>
-            <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}>
+            <Tooltip
+              title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}
+              arrow={false}
+              mouseEnterDelay={0.15}
+            >
               <Button
                 type="text"
                 aria-label={isPlanned ? 'Đã lên lịch gọi' : 'Thêm vào kế hoạch gọi'}
@@ -521,7 +525,7 @@ export const getLocaColumns = ({
                 disabled={isPlanned || isAdding}
               />
             </Tooltip>
-            <Tooltip title="Gửi tin nhắn SMS">
+            <Tooltip title="Gửi tin nhắn SMS" arrow={false} mouseEnterDelay={0.15}>
               <Button
                 type="text"
                 aria-label="Gửi tin nhắn SMS"
@@ -737,7 +741,11 @@ export const getNewLocaColumns = ({
         const isAdding = addingIds.includes(record.id);
         return (
           <Space size={4} align="center" style={{ justifyContent: 'center' }}>
-            <Tooltip title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}>
+            <Tooltip
+              title={isPlanned ? 'Đã lên lịch gọi' : 'Lên lịch gọi vào KH ngày'}
+              arrow={false}
+              mouseEnterDelay={0.15}
+            >
               <Button
                 type="text"
                 aria-label={isPlanned ? 'Đã lên lịch gọi' : 'Thêm vào kế hoạch gọi'}
@@ -772,7 +780,7 @@ export const getNewLocaColumns = ({
                 disabled={isPlanned || isAdding}
               />
             </Tooltip>
-            <Tooltip title="Gửi tin nhắn SMS">
+            <Tooltip title="Gửi tin nhắn SMS" arrow={false} mouseEnterDelay={0.15}>
               <Button
                 type="text"
                 aria-label="Gửi tin nhắn SMS"

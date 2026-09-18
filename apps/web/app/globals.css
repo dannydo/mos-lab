@@ -6035,6 +6035,27 @@ body {
   pointer-events: none;
 }
 
+/* ===========================================================================
+   Ant Design Tooltip Anti-Flickering Invariant (Windows 10 Chrome / Fractional DPI)
+   
+   Tooltips are informational overlays. They must NEVER intercept pointer
+   events. Setting pointer-events: none prevents the tooltip popup or arrow
+   from stealing hover from the trigger button, completely eliminating
+   rapid mouseenter / mouseleave flickering loops.
+   =========================================================================== */
+.ant-tooltip,
+.ant-tooltip-arrow,
+.ant-tooltip-inner,
+.ant-tooltip-content {
+  pointer-events: none !important;
+}
+
+/* Ensure icons inside Ant Design buttons never capture pointer events independently */
+.ant-btn-icon,
+.ant-btn-icon * {
+  pointer-events: none;
+}
+
 .mos-header-avatar,
 .dashboard-online-member-avatar {
   border-radius: 50% !important;
