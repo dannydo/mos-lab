@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Popover, Input, Button, Tooltip, Space, DatePicker } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import {
@@ -142,6 +142,17 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
   const customerId = customer.legacyUserId || customer.id;
   const labelText = touchpoint.label || `Chạm ${touchpoint.key}`;
   const customerName = customer.customerName || customer.name || `Khách hàng #${customerId}`;
+
+  const lastToggleRef = useRef(0);
+  const handleTileToggle = (e: React.UIEvent) => {
+    if (loading) return;
+    const now = Date.now();
+    if (now - lastToggleRef.current < 250) return;
+    lastToggleRef.current = now;
+    e.preventDefault();
+    e.stopPropagation();
+    setPopoverOpen((prev) => !prev);
+  };
 
   const handleSelectStatus = (status: TouchpointStatus | null) => {
     setSelectedStatus(status);
@@ -687,17 +698,11 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
         tabIndex={0}
         aria-label={`Cập nhật trạng thái ${labelText} cho ${customerName}`}
         title={!popoverOpen ? `Cập nhật trạng thái ${labelText} cho ${customerName}` : undefined}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (loading) return;
-          setPopoverOpen((prev) => !prev);
-        }}
+        onPointerDown={handleTileToggle}
+        onClick={handleTileToggle}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!loading) setPopoverOpen((prev) => !prev);
+            handleTileToggle(e);
           }
         }}
         style={{

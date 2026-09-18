@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Popover, Input, Button, Tooltip, Space, DatePicker } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import {
@@ -121,11 +121,20 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     displayStatus = 'OVERDUE';
   }
 
+  const lastToggleRef = useRef(0);
+  const handleTileToggle = (e: React.UIEvent) => {
+    if (loading) return;
+    const now = Date.now();
+    if (now - lastToggleRef.current < 250) return;
+    lastToggleRef.current = now;
+    e.preventDefault();
+    e.stopPropagation();
+    setPopoverOpen((prev) => !prev);
+  };
+
   const handleCellKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    e.preventDefault();
-    if (loading) return;
-    setPopoverOpen((prev) => !prev);
+    handleTileToggle(e);
   };
 
   const handleSelectStatus = (status: TouchpointStatus | null) => {
@@ -676,12 +685,8 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
         tabIndex={0}
         aria-label={`Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}`}
         title={!popoverOpen ? `Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}` : undefined}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (loading) return;
-          setPopoverOpen((prev) => !prev);
-        }}
+        onPointerDown={handleTileToggle}
+        onClick={handleTileToggle}
         onKeyDown={handleCellKeyDown}
         style={{
           cursor: loading ? 'wait' : 'pointer',

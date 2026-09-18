@@ -5,6 +5,7 @@ import { Dropdown, Button, Space, Tag, message } from 'antd';
 import { Palette, Sun, Moon, Check, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeStudioModal } from './ThemeStudioModal';
+import { usePointerTrigger } from '../../hooks/usePointerTrigger';
 
 export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
   const {
@@ -19,7 +20,7 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
   const canManageThemes = typeof isAdmin === 'boolean' ? isAdmin : contextCanManage;
 
   const [studioOpen, setStudioOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { open: dropdownOpen, setOpen: setDropdownOpen, triggerProps } = usePointerTrigger();
 
   const currentThemeItem = availableCoreThemes.find((t) => t.id === themeId);
 
@@ -114,7 +115,6 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
         placement="bottomRight"
         arrow
         trigger={['click']}
-        getPopupContainer={(trigger) => trigger.parentElement || document.body}
       >
         <button
           type="button"
@@ -122,9 +122,7 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
           title={`Giao diện hiện tại: ${currentThemeItem?.label || 'mOS Theme'}`}
           aria-label="Chọn Theme Giao Diện"
           aria-expanded={dropdownOpen}
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
+          {...triggerProps}
         >
           <Palette className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-amber-500 transition-colors pointer-events-none" />
           {/* Swatch indicator dot */}

@@ -9,6 +9,7 @@ import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { useTheme } from '../../context/ThemeContext';
+import { usePointerTrigger } from '../../hooks/usePointerTrigger';
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -146,7 +147,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   onOpenTelesalesDashboard,
   onLogout,
 }) => {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, triggerProps } = usePointerTrigger();
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
@@ -414,7 +415,6 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
       placement="bottomRight"
       arrow={{ pointAtCenter: true }}
       popupRender={() => dropdownContent}
-      getPopupContainer={(trigger) => trigger.parentElement || document.body}
     >
       <button
         type="button"
@@ -424,9 +424,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         aria-haspopup="menu"
         aria-expanded={open}
         title="Mở menu người dùng"
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
+        {...triggerProps}
       >
         <Avatar
           size={32}
