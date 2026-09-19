@@ -3231,9 +3231,18 @@ body {
   min-height: 24px;
 }
 
-/* Ant Design pagination size changer is strictly a select dropdown, never an editable search input */
+/* Ant Design pagination size changer is strictly a select dropdown; keep search input in DOM for focus without visual search decorations */
 .ant-pagination .ant-select-selection-search {
-  display: none !important;
+  position: absolute !important;
+  inset: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.ant-pagination .ant-select-selection-search input {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  cursor: pointer !important;
 }
 
 /* Suppress WebKit search decorations (magnifying glass icon 🔍) inside any Ant Design select */
@@ -6151,19 +6160,28 @@ body {
    This guarantees that the trigger button is always the 100% unified target,
    completely eliminating rapid mouseenter / mouseleave flickering loops.
    =========================================================================== */
-.rc-trigger-popup:has(.ant-tooltip),
-.rc-trigger-popup:has(.ant-tooltip-inner),
-.rc-trigger-popup:has(.ant-tooltip-content),
-.rc-trigger-popup.ant-tooltip,
-.rc-trigger-popup.ant-tooltip-root,
-.rc-trigger-popup.pointer-events-none,
-.rc-trigger-popup[class*='ant-tooltip'],
 .ant-tooltip-root,
 .ant-tooltip,
 .ant-tooltip *,
 .ant-tooltip-arrow,
 .ant-tooltip-inner,
-.ant-tooltip-content {
+.ant-tooltip-content,
+.rc-trigger-popup.ant-tooltip,
+.rc-trigger-popup.ant-tooltip-root,
+.rc-trigger-popup[class*='ant-tooltip'] {
+  pointer-events: none !important;
+}
+
+/* Guarantee that open Ant Design Select, Dropdown, and AutoComplete popups always receive pointer events */
+.ant-select-dropdown:not(.ant-select-dropdown-hidden),
+.ant-select-dropdown:not(.ant-select-dropdown-hidden) *,
+.ant-dropdown:not(.ant-dropdown-hidden),
+.ant-dropdown:not(.ant-dropdown-hidden) * {
+  pointer-events: auto !important;
+}
+
+.ant-select-dropdown.ant-select-dropdown-hidden,
+.ant-dropdown.ant-dropdown-hidden {
   pointer-events: none !important;
 }
 
@@ -6172,13 +6190,12 @@ body {
 .mos-header-action *,
 .mos-icon-button *,
 .dashboard-online-member-action *,
-.ant-btn *,
 .ant-btn-icon,
 .ant-btn-icon *,
 button > svg,
 button > svg *,
-button > span,
-button > span * {
+button > span[aria-hidden],
+button > span[aria-hidden] * {
   pointer-events: none !important;
 }
 
