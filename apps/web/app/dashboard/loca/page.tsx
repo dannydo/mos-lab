@@ -67,7 +67,7 @@ const TableConfigDrawer = dynamic(
 const SMSModal = dynamic(() => import('../../../components/sms/SMSModal').then((m) => m.SMSModal), { ssr: false });
 import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 import { useTableConfig } from '../../../hooks/useTableConfig';
-import { canAccessLoca, Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/shared';
+import { canAccessLoca, Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useLocaData, TAB_KEYS } from './hooks/useLocaData';
 import { getLocaColumns, getNewLocaColumns } from './components/LocaColumns';
@@ -485,8 +485,7 @@ export default function LocaCampaignPage() {
               currentUser?.role === 'manager' ||
               currentUser?.role === 'super_admin') && (
               <Select
-                showSearch
-                filterOption={vietnameseSearchFilter}
+                virtual={false}
                 placeholder="Chọn Booker/Telesales"
                 value={assignedStaffId}
                 onChange={(val) => setAssignedStaffId(val)}

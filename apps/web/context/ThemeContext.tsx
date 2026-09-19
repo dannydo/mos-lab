@@ -354,6 +354,9 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
         pagination={{
           showSizeChanger: { showSearch: false },
         }}
+        select={{
+          showSearch: false,
+        }}
         theme={{
           algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
           token: {

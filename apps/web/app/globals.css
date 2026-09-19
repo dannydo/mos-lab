@@ -3231,7 +3231,9 @@ body {
   min-height: 24px;
 }
 
-/* Ant Design pagination size changer is strictly a select dropdown, never an editable textfield */
+/* Ant Design non-searchable select dropdowns and size changers are strictly clickable selectors, never editable textfields */
+.ant-select:not(.ant-select-show-search) .ant-select-selector,
+.ant-select:not(.ant-select-show-search) .ant-select-selection-search-input,
 .ant-pagination .ant-select-selection-search-input {
   caret-color: transparent !important;
   cursor: pointer !important;
