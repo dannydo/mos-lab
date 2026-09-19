@@ -432,11 +432,12 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         title="Tài khoản cá nhân"
         placement="bottom"
         arrow={false}
-        align={{ points: ['tc', 'bc'], offset: [0, 8] }}
         mouseEnterDelay={0.15}
+        mouseLeaveDelay={0.2}
         open={open ? false : undefined}
+        overlayClassName="pointer-events-none select-none"
         overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-        rootClassName="pointer-events-none"
+        rootClassName="pointer-events-none select-none"
       >
         <button
           type="button"

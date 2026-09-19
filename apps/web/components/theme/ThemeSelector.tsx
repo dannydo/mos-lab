@@ -50,11 +50,12 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
           title={`Giao diện: ${currentThemeItem?.label || 'mOS Theme'}`}
           placement="bottom"
           arrow={false}
-          align={{ points: ['tc', 'bc'], offset: [0, 8] }}
           mouseEnterDelay={0.15}
+          mouseLeaveDelay={0.2}
           open={dropdownOpen ? false : undefined}
+          overlayClassName="pointer-events-none select-none"
           overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-          rootClassName="pointer-events-none"
+          rootClassName="pointer-events-none select-none"
         >
           <button
             type="button"

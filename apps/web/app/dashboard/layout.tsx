@@ -50,6 +50,7 @@ import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
+import { safeStorage } from '../../lib/safe-storage';
 
 const { Header, Sider, Content } = Layout;
 
@@ -75,7 +76,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
   const [isDashboardVisible, setIsDashboardVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
-  const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>([]);
+  const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>(() => {
+    try {
+      const cached = safeStorage.getItem('mos_online_staff');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isDailyCallsOpen, setIsDailyCallsOpen] = useState(false);
   const [dailyCallsCount, setDailyCallsCount] = useState(0);
   const [user, setUser] = useState<SafeAny>(null);
@@ -85,7 +93,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
 
   const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
-  const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
+  const [pendingAllocationCount, setPendingAllocationCount] = useState<number>(() => {
+    try {
+      const cached = safeStorage.getItem('mos_pending_alloc_count');
+      return cached ? Number(cached) : 0;
+    } catch {
+      return 0;
+    }
+  });
 
   // Global CV Schedule Drawer state
   const [isCvDrawerOpen, setIsCvDrawerOpen] = useState(false);
@@ -137,7 +152,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchPendingAllocationsCount = useCallback(async () => {
     try {
       const list = await apiClient.allocation.getPendingBatches();
-      setPendingAllocationCount(list?.length || 0);
+      const count = list?.length || 0;
+      setPendingAllocationCount(count);
+      safeStorage.setItem('mos_pending_alloc_count', String(count));
     } catch (err) {
       console.error('Fetch pending allocations error:', err);
     }
@@ -233,6 +250,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       });
 
       setOnlineMembers(mapped);
+      safeStorage.setItem('mos_online_staff', JSON.stringify(mapped));
     } catch (err) {
       console.error('Fetch online staff error:', err);
     }

@@ -1,14 +1,13 @@
 'use client';
 
 import React, { forwardRef } from 'react';
-import { Button, Tooltip, theme } from 'antd';
-import type { ButtonProps } from 'antd';
+import { Tooltip, theme } from 'antd';
 import type { LucideIcon } from 'lucide-react';
 import { AppIcon } from './AppIcon';
 
 export type HeaderActionTone = 'quiet' | 'accent';
 
-export interface HeaderIconButtonProps extends Omit<ButtonProps, 'children' | 'icon' | 'shape' | 'size' | 'type'> {
+export interface HeaderIconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Stable hook for browser QA and analytics. */
   action: string;
   /** Required accessible name. Tooltips must never be the only label. */
@@ -35,6 +34,9 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
     showTooltip = true,
     className = '',
     style: buttonStyle,
+    onClick,
+    disabled,
+    type = 'button',
     ...buttonProps
   },
   ref
@@ -56,29 +58,30 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
   };
 
   const button = (
-    <Button
+    <button
       {...buttonProps}
       ref={ref}
-      type="text"
+      type={type}
+      disabled={disabled}
       aria-label={label}
       data-header-action={action}
+      onClick={onClick}
       style={{ ...semanticStyle, ...baseStyle, ...buttonStyle }}
       className={[
         'mos-header-action',
         `mos-header-action--${tone}`,
         hasDesktopLabel ? 'mos-header-action--labeled' : '',
+        'cursor-pointer select-none rounded-lg',
         className,
       ]
         .filter(Boolean)
         .join(' ')}
-      icon={
-        <span aria-hidden className="mos-header-action__icon">
-          <AppIcon icon={Icon} size="action" />
-        </span>
-      }
     >
-      {hasDesktopLabel ? <span className="mos-header-action__label">{desktopLabel}</span> : null}
-    </Button>
+      <span aria-hidden className="mos-header-action__icon pointer-events-none">
+        <AppIcon icon={Icon} size="action" className="pointer-events-none" />
+      </span>
+      {hasDesktopLabel ? <span className="mos-header-action__label pointer-events-none">{desktopLabel}</span> : null}
+    </button>
   );
 
   if (!showTooltip) {
@@ -90,10 +93,11 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
       title={label}
       placement="bottom"
       arrow={false}
-      align={{ points: ['tc', 'bc'], offset: [0, 8] }}
       mouseEnterDelay={0.15}
+      mouseLeaveDelay={0.2}
+      overlayClassName="pointer-events-none select-none"
       overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-      rootClassName="pointer-events-none"
+      rootClassName="pointer-events-none select-none"
     >
       {button}
     </Tooltip>

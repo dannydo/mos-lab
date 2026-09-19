@@ -20,6 +20,27 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="h-full" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var mode = localStorage.getItem('mos_theme');
+                  var supportDark = mode === 'dark' || (!mode && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                  if (supportDark) {
+                    document.documentElement.classList.add('dark-theme', 'dark');
+                    document.documentElement.classList.remove('light-theme');
+                  } else {
+                    document.documentElement.classList.add('light-theme');
+                    document.documentElement.classList.remove('dark-theme', 'dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="h-full m-0 p-0 antialiased" suppressHydrationWarning>
         <AntdRegistry>
           <ThemeProvider>
