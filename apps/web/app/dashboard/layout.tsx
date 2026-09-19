@@ -592,6 +592,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Header
               className="dashboard-header"
               style={{
+                position: 'relative',
+                zIndex: 1000,
                 backgroundColor: token.colorBgContainer,
                 backgroundImage: 'var(--mos-seasonal-header-gradient, none)',
                 display: 'flex',
