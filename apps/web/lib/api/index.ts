@@ -27,6 +27,10 @@ export const apiClient = {
   ...academyApi,
   ...qaShopApi,
   ...aiApi,
+  cs: {
+    ...telecomApi.cs,
+    ...kpiApi.cs,
+  },
 };
 
 export default apiClient;

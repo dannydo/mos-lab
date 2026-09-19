@@ -2000,14 +2000,16 @@ body {
 }
 
 .dashboard-main-tabs-card .cc-dashboard-tab-label,
-.dashboard-main-tabs-card .cv-dashboard-tab-label {
+.dashboard-main-tabs-card .cv-dashboard-tab-label,
+.dashboard-main-tabs-card .cs-dashboard-tab-label {
   align-items: center;
   display: inline-flex;
   gap: 6px;
 }
 
 .dashboard-main-tabs-card .cc-dashboard-tab-label .anticon,
-.dashboard-main-tabs-card .cv-dashboard-tab-label .anticon {
+.dashboard-main-tabs-card .cv-dashboard-tab-label .anticon,
+.dashboard-main-tabs-card .cs-dashboard-tab-label .anticon {
   margin-inline-end: 0 !important;
   font-size: 15px !important;
 }
@@ -5172,6 +5174,23 @@ body {
 .responsive-workspace .ant-select,
 .responsive-workspace .ant-input-affix-wrapper {
   min-width: 0;
+}
+
+/* Ensure DatePicker inside Space.Compact and CS salary filter bar perfectly aligns with adjacent arrow buttons */
+.ant-space-compact > .ant-picker,
+.cs-salary-period-compact > .ant-btn,
+.cs-salary-period-compact > .ant-picker {
+  box-sizing: border-box;
+  height: var(--mos-control-height) !important;
+  min-height: var(--mos-control-height);
+}
+
+.cs-salary-period-compact > .ant-btn {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  padding: 0 !important;
+  width: var(--mos-control-height);
 }
 
 .responsive-mobile-record-list {

@@ -185,7 +185,7 @@ export function getSidebarGroups(
     key: 'cs-hub',
     label: 'Trung Tâm CSKH',
     icon: <CustomerServiceOutlined />,
-    path: '/dashboard/cs',
+    path: '/dashboard/cskh',
   });
 
   // This is customer booking work, not internal staff scheduling.
@@ -384,6 +384,12 @@ export function getSidebarGroups(
         icon: <CalendarOutlined />,
         path: '/dashboard/bk',
       },
+      {
+        key: 'cs',
+        label: 'Báo Cáo CS',
+        icon: <CustomerServiceOutlined />,
+        path: '/dashboard/cs',
+      },
     ],
   };
   if (isSuperAdmin) {
@@ -548,6 +554,7 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/architecture')) return 'architecture';
   if (pathname.includes('/dashboard/design-system')) return 'design-system';
   if (pathname.includes('/dashboard/bug-reports')) return 'bug-reports';
-  if (pathname.includes('/dashboard/cs')) return 'cs-hub';
+  if (pathname.includes('/dashboard/cskh')) return 'cs-hub';
+  if (pathname.includes('/dashboard/cs')) return 'cs';
   return 'today';
 }

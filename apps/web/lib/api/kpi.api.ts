@@ -23,6 +23,8 @@ import type {
   CcTipResponse,
   CcWorkLogDetailResponse,
   CcXoayReportResponse,
+  CsTipQueryParams,
+  CsTipResponse,
   CvConfigResponse,
   CvPaystubResponse,
   CvSpeedDetail,
@@ -352,6 +354,12 @@ export const kpiApi = {
       config?: Partial<BkSalaryConfig>;
     }): Promise<{ success: boolean; message: string }> => {
       const response = await api.post('/kpi/bk/config', data);
+      return response.data;
+    },
+  },
+  cs: {
+    getTip: async (params?: CsTipQueryParams): Promise<CsTipResponse> => {
+      const response = await api.get('/kpi/cs-tip', { params });
       return response.data;
     },
   },

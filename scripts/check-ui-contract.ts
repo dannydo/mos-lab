@@ -129,6 +129,18 @@ function getSourceAtRef(baseRef: string, displayPath: string): string {
       stdio: ['ignore', 'pipe', 'ignore'],
     });
   } catch {
+    if (displayPath.startsWith('app/dashboard/cskh/')) {
+      try {
+        const legacyPath = displayPath.replace('app/dashboard/cskh/', 'app/dashboard/cs/');
+        return execFileSync('git', ['show', `${baseRef}:apps/web/${legacyPath}`], {
+          cwd: workspaceRoot,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
+      } catch {
+        return '';
+      }
+    }
     return '';
   }
 }

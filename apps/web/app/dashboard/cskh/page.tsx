@@ -3,55 +3,62 @@
 import '../../suppress-warnings';
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, Tabs, Button, DatePicker, Space, Segmented, Tooltip, Select } from 'antd';
-import { ChevronLeft, ChevronRight, Calendar, Store, DollarSign } from 'lucide-react';
+import { Card, theme, Tabs, Button, DatePicker, Space, Segmented, Tooltip, Tag, Spin } from 'antd';
+import {
+  DashboardOutlined,
+  PhoneOutlined,
+  AlertOutlined,
+  NotificationOutlined,
+  LeftOutlined,
+  RightOutlined,
+  CalendarOutlined,
+  FilterOutlined,
+  BookOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
-import { AppIcon, PageHeader } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
+import { PageHeader } from '../../../components/ui';
 
 dayjs.extend(isoWeek);
 
-// Lazy load Tab components
-const CsTipTab = dynamic(() => import('./components/CsTipTab'), {
-  ssr: false,
-  loading: () => <div className="p-12 text-center text-slate-500">Đang tải dữ liệu Báo Cáo CS...</div>,
-});
+const { RangePicker } = DatePicker;
+
+// Lazy load tabs
+const CsDashboardTab = dynamic(() => import('./components/CsDashboardTab'), { ssr: false });
+const HappyCallTab = dynamic(() => import('./components/HappyCallTab'), { ssr: false });
+const TicketTab = dynamic(() => import('./components/TicketTab'), { ssr: false });
+const CampaignTab = dynamic(() => import('./components/CampaignTab'), { ssr: false });
+const WorkflowTrainingTab = dynamic(() => import('./components/WorkflowTrainingTab'), { ssr: false });
 
 type DateMode = 'day' | 'week' | 'month' | 'custom';
 type PresetType =
   'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'stepper' | 'custom';
 
-function CsSalaryReportContent() {
+function CsContent() {
+  const { themeMode } = useTheme();
+  const { token } = theme.useToken();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tab active key
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const tabParam = searchParams?.get('tab');
-      const savedTab = localStorage.getItem('cs-salary-active-tab');
+      const savedTab = localStorage.getItem('cs-active-tab');
       const initialTab = tabParam || savedTab;
-      if (initialTab && ['tip'].includes(initialTab)) {
+      if (initialTab && ['dashboard', 'happy-call', 'tickets', 'campaigns', 'workflow-training'].includes(initialTab)) {
         return initialTab;
       }
     }
-    return 'tip';
-  });
-
-  // Store filter
-  const [selectedStore, setSelectedStore] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return searchParams?.get('store') || localStorage.getItem('cs-salary-store') || 'ALL';
-    }
-    return 'ALL';
+    return 'dashboard';
   });
 
   // Date filter states with F5 persistence
   const [preset, setPreset] = useState<PresetType>(() => {
     if (typeof window !== 'undefined') {
       const param = searchParams?.get('preset') as PresetType;
-      const saved = localStorage.getItem('cs-salary-preset') as PresetType;
+      const saved = localStorage.getItem('cs-date-preset') as PresetType;
       const initial = param || saved;
       if (
         initial &&
@@ -62,25 +69,25 @@ function CsSalaryReportContent() {
         return initial;
       }
     }
-    return 'this_month';
+    return 'today';
   });
 
   const [dateMode, setDateMode] = useState<DateMode>(() => {
     if (typeof window !== 'undefined') {
       const param = searchParams?.get('dateMode') as DateMode;
-      const saved = localStorage.getItem('cs-salary-date-mode') as DateMode;
+      const saved = localStorage.getItem('cs-date-mode') as DateMode;
       const initial = param || saved;
       if (initial && ['day', 'week', 'month', 'custom'].includes(initial)) {
         return initial;
       }
     }
-    return 'month';
+    return 'day';
   });
 
   const [anchorDate, setAnchorDate] = useState<dayjs.Dayjs>(() => {
     if (typeof window !== 'undefined') {
       const param = searchParams?.get('anchorDate');
-      const saved = localStorage.getItem('cs-salary-anchor-date');
+      const saved = localStorage.getItem('cs-anchor-date');
       const initial = param || saved;
       if (initial && dayjs(initial).isValid()) {
         return dayjs(initial);
@@ -93,8 +100,8 @@ function CsSalaryReportContent() {
     if (typeof window !== 'undefined') {
       const fromParam = searchParams?.get('from');
       const toParam = searchParams?.get('to');
-      const fromSaved = localStorage.getItem('cs-salary-from');
-      const toSaved = localStorage.getItem('cs-salary-to');
+      const fromSaved = localStorage.getItem('cs-custom-from');
+      const toSaved = localStorage.getItem('cs-custom-to');
       const from = fromParam || fromSaved;
       const to = toParam || toSaved;
       if (from && to && dayjs(from).isValid() && dayjs(to).isValid()) {
@@ -104,9 +111,11 @@ function CsSalaryReportContent() {
     return null;
   });
 
+  // Derived dateFrom & dateTo strings (YYYY-MM-DD)
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
 
+  // Recalculate dateFrom & dateTo based on mode, preset, anchorDate, or customRange
   useEffect(() => {
     let from = dayjs();
     let to = dayjs();
@@ -121,8 +130,8 @@ function CsSalaryReportContent() {
       from = dayjs().subtract(1, 'day');
       to = dayjs().subtract(1, 'day');
     } else if (preset === 'this_week') {
-      from = dayjs().startOf('isoWeek');
-      to = dayjs().endOf('isoWeek');
+      from = dayjs().startOf('isoWeek'); // Monday
+      to = dayjs().endOf('isoWeek'); // Sunday
     } else if (preset === 'last_week') {
       from = dayjs().subtract(1, 'week').startOf('isoWeek');
       to = dayjs().subtract(1, 'week').endOf('isoWeek');
@@ -133,6 +142,7 @@ function CsSalaryReportContent() {
       from = dayjs().subtract(1, 'month').startOf('month');
       to = dayjs().subtract(1, 'month').endOf('month');
     } else {
+      // Stepper navigation based on dateMode & anchorDate
       if (dateMode === 'day') {
         from = anchorDate;
         to = anchorDate;
@@ -151,22 +161,20 @@ function CsSalaryReportContent() {
     setDateTo(toStr);
   }, [preset, dateMode, anchorDate, customRange]);
 
-  // Persist states to localStorage and searchParams
+  // Persist all date filter states & activeTab on F5 / searchParams sync
   useEffect(() => {
     if (typeof window !== 'undefined' && dateFrom && dateTo) {
-      localStorage.setItem('cs-salary-active-tab', activeTab);
-      localStorage.setItem('cs-salary-store', selectedStore);
-      localStorage.setItem('cs-salary-preset', preset);
-      localStorage.setItem('cs-salary-date-mode', dateMode);
-      localStorage.setItem('cs-salary-anchor-date', anchorDate.format('YYYY-MM-DD'));
+      localStorage.setItem('cs-active-tab', activeTab);
+      localStorage.setItem('cs-date-preset', preset);
+      localStorage.setItem('cs-date-mode', dateMode);
+      localStorage.setItem('cs-anchor-date', anchorDate.format('YYYY-MM-DD'));
       if (customRange) {
-        localStorage.setItem('cs-salary-from', customRange[0].format('YYYY-MM-DD'));
-        localStorage.setItem('cs-salary-to', customRange[1].format('YYYY-MM-DD'));
+        localStorage.setItem('cs-custom-from', customRange[0].format('YYYY-MM-DD'));
+        localStorage.setItem('cs-custom-to', customRange[1].format('YYYY-MM-DD'));
       }
 
       const url = new URL(window.location.href);
       url.searchParams.set('tab', activeTab);
-      url.searchParams.set('store', selectedStore);
       url.searchParams.set('preset', preset);
       url.searchParams.set('dateMode', dateMode);
       url.searchParams.set('anchorDate', anchorDate.format('YYYY-MM-DD'));
@@ -174,7 +182,11 @@ function CsSalaryReportContent() {
       url.searchParams.set('to', dateTo);
       window.history.replaceState(null, '', url.pathname + url.search);
     }
-  }, [activeTab, selectedStore, preset, dateMode, anchorDate, customRange, dateFrom, dateTo]);
+  }, [activeTab, preset, dateMode, anchorDate, customRange, dateFrom, dateTo]);
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+  };
 
   const handleModeChange = (mode: DateMode) => {
     setDateMode(mode);
@@ -182,6 +194,7 @@ function CsSalaryReportContent() {
     setCustomRange(null);
   };
 
+  // Step backward/forward
   const handleStep = (direction: 'prev' | 'next') => {
     setPreset('stepper');
     setCustomRange(null);
@@ -224,35 +237,53 @@ function CsSalaryReportContent() {
 
   const tabItems = [
     {
-      key: 'tip',
-      label: (
-        <span className="cs-dashboard-tab-label inline-flex items-center gap-1.5 font-semibold text-sm">
-          <AppIcon icon={DollarSign} size="sm" />
-          <span>Tip Khách Hàng (Quỹ 3%)</span>
-        </span>
-      ),
-      children: <CsTipTab dateFrom={dateFrom} dateTo={dateTo} selectedStore={selectedStore} />,
+      key: 'dashboard',
+      icon: <DashboardOutlined />,
+      label: 'Tổng Quan',
+      children: activeTab === 'dashboard' ? <CsDashboardTab dateFrom={dateFrom} dateTo={dateTo} /> : null,
+    },
+    {
+      key: 'happy-call',
+      icon: <PhoneOutlined />,
+      label: 'Happy Call',
+      children: activeTab === 'happy-call' ? <HappyCallTab dateFrom={dateFrom} dateTo={dateTo} /> : null,
+    },
+    {
+      key: 'tickets',
+      icon: <AlertOutlined />,
+      label: 'Tickets',
+      children: activeTab === 'tickets' ? <TicketTab dateFrom={dateFrom} dateTo={dateTo} /> : null,
+    },
+    {
+      key: 'campaigns',
+      icon: <NotificationOutlined />,
+      label: 'Chiến Dịch',
+      children: activeTab === 'campaigns' ? <CampaignTab dateFrom={dateFrom} dateTo={dateTo} /> : null,
+    },
+    {
+      key: 'workflow-training',
+      icon: <BookOutlined />,
+      label: '📘 Quy Trình & Đào Tạo',
+      children: activeTab === 'workflow-training' ? <WorkflowTrainingTab /> : null,
     },
   ];
 
   return (
-    <div className="responsive-page responsive-workspace cs-salary-page space-y-4">
-      <PageHeader
-        title="Báo Cáo CS"
-        subtitle="💰 Bảng tính lương thưởng & Quỹ hoa hồng cho nhân sự CS (Customer Service)"
-      />
+    <div className="responsive-page responsive-workspace cs-page space-y-4">
+      <PageHeader title="Trung Tâm CSKH" subtitle="🎧 Chăm sóc khách hàng sau dịch vụ & Giám sát hiệu suất" />
 
-      {/* Global Filter Bar */}
+      {/* Global Date Filter Header Bar */}
       <Card
         variant="outlined"
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
         styles={{ body: { padding: '12px 16px' } }}
-        className="shadow-xs rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+        className="shadow-xs rounded-xl"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Mode Switcher + Stepper Controls */}
           <div className="flex items-center gap-2">
             <Segmented
-              value={dateMode === 'custom' ? 'month' : dateMode}
+              value={dateMode === 'custom' ? 'day' : dateMode}
               onChange={(val) => handleModeChange(val as DateMode)}
               options={[
                 { label: 'Ngày', value: 'day' },
@@ -261,9 +292,9 @@ function CsSalaryReportContent() {
               ]}
             />
 
-            <Space.Compact className="cs-salary-period-compact">
+            <Space.Compact>
               <Tooltip title="Kỳ trước">
-                <Button icon={<AppIcon icon={ChevronLeft} size="sm" />} onClick={() => handleStep('prev')} />
+                <Button icon={<LeftOutlined />} onClick={() => handleStep('prev')} />
               </Tooltip>
               {dateMode === 'day' ? (
                 <DatePicker
@@ -278,7 +309,7 @@ function CsSalaryReportContent() {
                     }
                   }}
                   format="DD/MM/YYYY"
-                  className="w-36"
+                  style={{ width: 140 }}
                 />
               ) : dateMode === 'week' ? (
                 <DatePicker
@@ -294,7 +325,7 @@ function CsSalaryReportContent() {
                     }
                   }}
                   format="[Tuần] ww (DD/MM)"
-                  className="w-44"
+                  style={{ width: 170 }}
                 />
               ) : dateMode === 'month' ? (
                 <DatePicker
@@ -310,73 +341,18 @@ function CsSalaryReportContent() {
                     }
                   }}
                   format="[Tháng] MM/YYYY"
-                  className="w-36"
+                  style={{ width: 150 }}
                 />
               ) : (
                 <Button className="font-semibold text-sky-600 dark:text-sky-400 tabular-nums">
-                  <AppIcon icon={Calendar} size="sm" className="mr-1" />
+                  <CalendarOutlined className="mr-1" />
                   {formatDateDisplay()}
                 </Button>
               )}
               <Tooltip title="Kỳ sau">
-                <Button icon={<AppIcon icon={ChevronRight} size="sm" />} onClick={() => handleStep('next')} />
+                <Button icon={<RightOutlined />} onClick={() => handleStep('next')} />
               </Tooltip>
             </Space.Compact>
-          </div>
-
-          {/* Preset Buttons + Store Selector */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="hidden sm:flex items-center gap-1">
-              <Button
-                size="small"
-                type={preset === 'today' ? 'primary' : 'default'}
-                onClick={() => handleApplyPreset('today')}
-              >
-                Hôm nay
-              </Button>
-              <Button
-                size="small"
-                type={preset === 'yesterday' ? 'primary' : 'default'}
-                onClick={() => handleApplyPreset('yesterday')}
-              >
-                Hôm qua
-              </Button>
-              <Button
-                size="small"
-                type={preset === 'this_week' ? 'primary' : 'default'}
-                onClick={() => handleApplyPreset('this_week')}
-              >
-                Tuần này
-              </Button>
-              <Button
-                size="small"
-                type={preset === 'this_month' ? 'primary' : 'default'}
-                onClick={() => handleApplyPreset('this_month')}
-              >
-                Tháng này
-              </Button>
-              <Button
-                size="small"
-                type={preset === 'last_month' ? 'primary' : 'default'}
-                onClick={() => handleApplyPreset('last_month')}
-              >
-                Tháng trước
-              </Button>
-            </div>
-
-            <Select
-              value={selectedStore}
-              onChange={setSelectedStore}
-              className="w-44"
-              suffixIcon={<AppIcon icon={Store} size="sm" />}
-              options={[
-                { label: 'Tất cả cơ sở', value: 'ALL' },
-                { label: 'Đề Thám (DT)', value: 'de-tham' },
-                { label: 'Estella Place (EP)', value: 'estella-place' },
-                { label: 'Phan Xích Long (PXL)', value: 'pxl' },
-                { label: 'Kỳ Đồng', value: 'ky-dong' },
-              ]}
-            />
           </div>
         </div>
       </Card>
@@ -384,19 +360,26 @@ function CsSalaryReportContent() {
       {/* Main Tabs Card */}
       <Card
         variant="outlined"
-        styles={{ body: { padding: '16px 20px' } }}
-        className="shadow-sm rounded-xl dashboard-main-tabs-card bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+        styles={{ body: { padding: '12px 16px 16px 16px' } }}
+        className="shadow-sm rounded-xl dashboard-main-tabs-card"
       >
-        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} size="large" destroyOnHidden />
+        <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" destroyOnHidden />
       </Card>
     </div>
   );
 }
 
-export default function CsSalaryReportPage() {
+export default function CsPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-slate-500">Đang tải Báo Cáo CS...</div>}>
-      <CsSalaryReportContent />
+    <Suspense
+      fallback={
+        <div className="p-8 text-center">
+          <Spin size="large" />
+        </div>
+      }
+    >
+      <CsContent />
     </Suspense>
   );
 }

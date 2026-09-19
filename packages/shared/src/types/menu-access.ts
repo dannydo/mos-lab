@@ -135,7 +135,7 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
     label: 'Trung tâm CSKH',
     groupKey: 'crm',
     groupLabel: 'Khách hàng & chiến dịch',
-    path: '/dashboard/cs',
+    path: '/dashboard/cskh',
   },
   {
     key: 'my-appointments',
@@ -249,6 +249,7 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
   { key: 'cc', label: 'Báo cáo CC', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/cc' },
   { key: 'cv', label: 'Báo cáo CV', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/cv' },
   { key: 'bk', label: 'Báo cáo BK', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/bk' },
+  { key: 'cs', label: 'Báo cáo CS', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/cs' },
 
   {
     key: 'staff-directory',
