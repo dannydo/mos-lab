@@ -3231,17 +3231,9 @@ body {
   min-height: 24px;
 }
 
-/* Ant Design pagination size changer is strictly a select dropdown; keep search input in DOM for focus without visual search decorations */
-.ant-pagination .ant-select-selection-search {
-  position: absolute !important;
-  inset: 0 !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-.ant-pagination .ant-select-selection-search input {
-  opacity: 0 !important;
-  pointer-events: none !important;
+/* Ant Design pagination size changer is strictly a select dropdown, never an editable textfield */
+.ant-pagination .ant-select-selection-search-input {
+  caret-color: transparent !important;
   cursor: pointer !important;
 }
 

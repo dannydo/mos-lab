@@ -352,7 +352,7 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
       <ConfigProvider
         locale={viVN}
         pagination={{
-          showSizeChanger: true,
+          showSizeChanger: { showSearch: false },
         }}
         theme={{
           algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,

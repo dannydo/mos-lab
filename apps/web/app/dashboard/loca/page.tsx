@@ -1301,6 +1301,15 @@ export default function LocaCampaignPage() {
             className="antd-custom-table loca-customer-table"
             scroll={{ x: 'max-content' }}
             onChange={(pagination, filters, sorter: SafeAny) => {
+              if (pagination) {
+                if (pagination.current && pagination.current !== currentPage) {
+                  setCurrentPage(pagination.current);
+                }
+                if (pagination.pageSize && pagination.pageSize !== pageSize) {
+                  setPageSize(pagination.pageSize);
+                  localStorage.setItem('mos_loca_pageSize', pagination.pageSize.toString());
+                }
+              }
               if (sorter && sorter.field) {
                 const field = sorter.field;
                 const order = sorter.order;
@@ -1321,7 +1330,7 @@ export default function LocaCampaignPage() {
               current: currentPage,
               pageSize: pageSize,
               total: total,
-              showSizeChanger: true,
+              showSizeChanger: { showSearch: false },
               pageSizeOptions: ['10', '20', '50', '100'],
               onChange: (page, size) => {
                 setCurrentPage(page);
