@@ -128,8 +128,8 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
     const storeBreakdownSql = `
       ${filteredOrdersCte}
       SELECT
-        COALESCE(cs.client_store_key, 'PXL') AS storeKey,
-        COALESCE(csl.client_store_name, 'Phan Xích Long') AS storeName,
+        COALESCE(cs.client_store_key, 'DT') AS storeKey,
+        COALESCE(csl.client_store_name, 'Đề Thám') AS storeName,
         COUNT(DISTINCT fo.orderId) AS totalVisits,
         COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) > 0 THEN fo.orderId END) AS totalTippedVisits,
         COALESCE(SUM(st.customer_tip), 0) AS totalCustomerTip,
@@ -219,8 +219,8 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         fo.checkinTime,
         COALESCE(up.full_name, 'Khách hàng') AS customerName,
         (SELECT uc.phone_number FROM user_contact uc WHERE uc.user_id = o.user_id AND uc.is_disabled = 0 ORDER BY uc.id DESC LIMIT 1) AS customerPhone,
-        COALESCE(csl.client_store_name, 'Phan Xích Long') AS storeName,
-        COALESCE(cs.client_store_key, 'PXL') AS storeKey,
+        COALESCE(csl.client_store_name, 'Đề Thám') AS storeName,
+        COALESCE(cs.client_store_key, 'DT') AS storeKey,
         CASE WHEN (${comboLiveSql}) THEN 1 ELSE 0 END AS isLoCa,
         COALESCE(st.customer_tip, 0) AS totalCustomerTip,
         staff_info.tech_name AS technicianName,
@@ -303,8 +303,8 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         const rowSingleTip = Math.round(Number(row.singleCustomerTip || 0));
 
         return {
-          storeKey: String(row.storeKey || 'PXL').toUpperCase(),
-          storeName: String(row.storeName || 'Phan Xích Long'),
+          storeKey: String(row.storeKey || 'DT').toUpperCase(),
+          storeName: String(row.storeName || 'Đề Thám'),
           totalVisits: Number(row.totalVisits || 0),
           totalTippedVisits: Number(row.totalTippedVisits || 0),
           totalCustomerTip: rowTotalTip,

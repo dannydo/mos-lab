@@ -642,7 +642,7 @@ export default function CatalogBranchTab({ onRegisterCreate }: CatalogBranchTabP
                         label="Tên Chi Nhánh (Tiếng Việt)"
                         rules={[{ required: true, message: 'Vui lòng nhập tên chi nhánh' }]}
                       >
-                        <Input placeholder="Ví dụ: Đề Thám, Phan Xích Long" />
+                        <Input placeholder="Ví dụ: Đề Thám, Estella Place" />
                       </Form.Item>
                     </Col>
                   </Row>

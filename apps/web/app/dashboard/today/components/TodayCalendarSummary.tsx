@@ -63,10 +63,9 @@ const HOURS = [
   '21:00',
 ];
 
-const BRANCH_CONFIG: Record<string, { name: string; key: 'detham' | 'pxl' | 'estella'; color: string }> = {
+const BRANCH_CONFIG: Record<string, { name: string; key: 'detham' | 'estella'; color: string }> = {
   detham: { name: 'Đề Thám', key: 'detham', color: '#faad14' },
-  pxl: { name: 'Phan Xích Long', key: 'pxl', color: '#1890ff' },
-  estella: { name: 'Estella', key: 'estella', color: '#eb2f96' },
+  estella: { name: 'Estella Place', key: 'estella', color: '#eb2f96' },
 };
 
 interface TodayCalendarSummaryProps {
@@ -74,8 +73,8 @@ interface TodayCalendarSummaryProps {
   token: SafeAny;
   allBookings: BookingData[];
   allComingList: ComingClientData[];
-  bookingBranch: 'all' | 'detham' | 'pxl' | 'estella';
-  setBookingBranch: (branch: 'all' | 'detham' | 'pxl' | 'estella') => void;
+  bookingBranch: 'all' | 'detham' | 'estella';
+  setBookingBranch: (branch: 'all' | 'detham' | 'estella') => void;
   selectedBooker: string | null;
   setSelectedBooker: (booker: string | null) => void;
   teamConfig?: BookerTeamConfig;
@@ -138,8 +137,7 @@ export default function TodayCalendarSummary({
   const handleRevenueCellClick = (branchKey: string, hour: string) => {
     const branchNames: Record<string, string> = {
       detham: 'Đề Thám',
-      pxl: 'Phan Xích Long',
-      estella: 'Estella',
+      estella: 'Estella Place',
     };
     setRevenueDetailContext({ hour, branchKey, branchName: branchNames[branchKey] || branchKey });
     setRevenueDetailOpen(true);
@@ -203,7 +201,6 @@ export default function TodayCalendarSummary({
     return (allBookings || []).filter((b) => {
       if (bookingBranch !== 'all') {
         if (bookingBranch === 'detham' && b.branchName !== 'Đề Thám') return false;
-        if (bookingBranch === 'pxl' && b.branchName !== 'PXL' && b.branchName !== 'Phan Xích Long') return false;
         if (bookingBranch === 'estella' && b.branchName !== 'Estella') return false;
       }
       if (!matchesBookerFilter(b.booker, selectedBooker)) {
@@ -265,14 +262,11 @@ export default function TodayCalendarSummary({
       // Branch breakdown for matrix
       const branchBreakdown: Record<string, { created: number; scheduled: number; missed: number; done: number }> = {
         detham: { created: 0, scheduled: 0, missed: 0, done: 0 },
-        pxl: { created: 0, scheduled: 0, missed: 0, done: 0 },
         estella: { created: 0, scheduled: 0, missed: 0, done: 0 },
       };
 
       createdItems.forEach((b) => {
-        let key = 'detham';
-        if (b.branchName === 'PXL' || b.branchName === 'Phan Xích Long') key = 'pxl';
-        else if (b.branchName === 'Estella') key = 'estella';
+        const key = b.branchName === 'Estella' ? 'estella' : 'detham';
         if (branchBreakdown[key]) branchBreakdown[key].created++;
       });
 
@@ -326,7 +320,6 @@ export default function TodayCalendarSummary({
     if (selectedSlot.branchKey) {
       created = created.filter((b) => {
         if (selectedSlot.branchKey === 'detham') return b.branchName === 'Đề Thám';
-        if (selectedSlot.branchKey === 'pxl') return b.branchName === 'PXL' || b.branchName === 'Phan Xích Long';
         if (selectedSlot.branchKey === 'estella') return b.branchName === 'Estella';
         return true;
       });

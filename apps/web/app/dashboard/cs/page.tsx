@@ -373,8 +373,6 @@ function CsSalaryReportContent() {
                 { label: 'Tất cả cơ sở', value: 'ALL' },
                 { label: 'Đề Thám (DT)', value: 'de-tham' },
                 { label: 'Estella Place (EP)', value: 'estella-place' },
-                { label: 'Phan Xích Long (PXL)', value: 'pxl' },
-                { label: 'Kỳ Đồng', value: 'ky-dong' },
               ]}
             />
           </div>

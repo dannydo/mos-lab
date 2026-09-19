@@ -130,7 +130,7 @@ interface TodayStatsProps {
   bookingsCombo: BookingData[];
   bookingsOc: BookingData[];
   bookingsOther: BookingData[];
-  bookingBranchCounts: { dt: number; pxl: number; ep: number; total: number };
+  bookingBranchCounts: { dt: number; ep: number; total: number };
   branchesData: Record<string, BranchDetail>;
   showTax: boolean;
   previousAllBookings?: BookingData[];
@@ -479,7 +479,6 @@ export default function TodayStats({
                   segments={[
                     { value: bookingBranchCounts.dt, color: '#722ED1', label: 'Đ.Thám' },
                     { value: bookingBranchCounts.ep, color: '#13C2C2', label: 'Estella' },
-                    { value: bookingBranchCounts.pxl, color: '#EB2F96', label: 'PXL' },
                   ]}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, overflow: 'hidden' }}>
@@ -513,22 +512,6 @@ export default function TodayStats({
                     EP:{' '}
                     <strong className="tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
                       {bookingBranchCounts.ep}
-                    </strong>
-                  </div>
-                  <div style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '6px',
-                        height: '6px',
-                        backgroundColor: '#EB2F96',
-                        borderRadius: '50%',
-                        marginRight: '4px',
-                      }}
-                    />
-                    PXL:{' '}
-                    <strong className="tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                      {bookingBranchCounts.pxl}
                     </strong>
                   </div>
                 </div>

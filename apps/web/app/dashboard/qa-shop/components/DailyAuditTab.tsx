@@ -419,8 +419,6 @@ export const DailyAuditTab: React.FC<DailyAuditTabProps> = ({ themeMode, onOpenI
                 options={[
                   { label: 'Đề Thám (DT)', value: 'DT' },
                   { label: 'Estella Place (EP)', value: 'EP' },
-                  { label: 'Quận 7 (Q7)', value: 'Q7' },
-                  { label: 'Tân Bình (TB)', value: 'TB' },
                 ]}
               />
             </div>

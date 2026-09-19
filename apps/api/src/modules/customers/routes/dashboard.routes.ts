@@ -801,8 +801,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
       const activeCcs = ccProfiles.flatMap((profile) => {
         const storeId = Number(profile.storeId);
-        const branch =
-          storeId === 2 ? 'pxl' : storeId === 16 ? 'estella' : storeId === 6 || storeId === 1 ? 'detham' : null;
+        const branch = storeId === 16 ? 'estella' : storeId === 6 || storeId === 1 ? 'detham' : null;
         if (!branch) return [];
         const id = Number(profile.userId);
         return [{ id, name: String(profile.fullName || staffMap.get(id) || `Staff #${id}`).trim(), branch }];
@@ -843,7 +842,6 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           cv: [],
           coming: [],
         },
-        pxl: { revLe: 0, revCombo: 0, revProduct: 0, netLe: 0, netCombo: 0, netProduct: 0, cc: [], cv: [], coming: [] },
         estella: {
           revLe: 0,
           revCombo: 0,
@@ -879,9 +877,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       });
 
       comingOrders.forEach((o, index) => {
-        let branchKey = 'detham';
-        if (o.client_store_id === 2) branchKey = 'pxl';
-        else if (o.client_store_id === 16) branchKey = 'estella';
+        const branchKey = o.client_store_id === 16 ? 'estella' : 'detham';
 
         const uProfile = profileMap.get(o.user_id);
         const phone = contactMap.get(o.user_id) || '';
@@ -1171,9 +1167,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         customerProfileMap: cvCustomerProfileMap,
       });
       cvAttendanceList.forEach((cv) => {
-        let bKey = 'estella';
-        if (cv.storeId === 6 || cv.storeId === 1) bKey = 'detham';
-        else if (cv.storeId === 2) bKey = 'pxl';
+        const bKey = cv.storeId === 16 ? 'estella' : 'detham';
 
         branchDetailMap[bKey].cv.push({
           id: cv.id,
@@ -1239,9 +1233,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
       // Calculate today's CC statistics from today's orders
       comingOrders.forEach((o) => {
-        let bKey = 'detham';
-        if (o.client_store_id === 2) bKey = 'pxl';
-        else if (o.client_store_id === 16) bKey = 'estella';
+        const bKey = o.client_store_id === 16 ? 'estella' : 'detham';
 
         const orderSvs = comingServicesByOrderId.get(Number(o.id)) || [];
         if (orderSvs.length === 0) return;
@@ -1447,7 +1439,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         return nameLower === filter.trim().toLowerCase();
       };
 
-      const branchKeyToStoreIdMap: Record<string, number> = { detham: 6, pxl: 2, estella: 16 };
+      const branchKeyToStoreIdMap: Record<string, number> = { detham: 6, estella: 16 };
       const targetStoreId = branchKey && branchKey !== 'all' ? branchKeyToStoreIdMap[branchKey] : null;
 
       const rawOrders: SafeAny[] = await fastify.prisma.legacy.$queryRawUnsafe(
@@ -1525,9 +1517,9 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       }
 
       // Branches config
-      const storeIdToBranchKey: Record<number, string> = { 6: 'detham', 2: 'pxl', 16: 'estella' };
-      const branchKeyToStoreId: Record<string, number> = { detham: 6, pxl: 2, estella: 16 };
-      const branchKeys = ['detham', 'pxl', 'estella'];
+      const storeIdToBranchKey: Record<number, string> = { 6: 'detham', 16: 'estella' };
+      const branchKeyToStoreId: Record<string, number> = { detham: 6, estella: 16 };
+      const branchKeys = ['detham', 'estella'];
 
       const branchesInit = () =>
         branchKeys.reduce((acc, key) => {
@@ -1766,7 +1758,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
       const start = dateFrom + ' 00:00:00';
       const end = dateTo + ' 23:59:59';
 
-      const branchKeyToStoreId: Record<string, number> = { detham: 6, pxl: 2, estella: 16 };
+      const branchKeyToStoreId: Record<string, number> = { detham: 6, estella: 16 };
       let branchFilter = '';
       if (branchKey && branchKeyToStoreId[branchKey]) {
         branchFilter = ` AND o.client_store_id = ${branchKeyToStoreId[branchKey]}`;

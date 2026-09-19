@@ -37,8 +37,8 @@ const getStoreColor = (store: string) => {
 
 interface TodayComingTableProps {
   activeComingList: ComingClientData[];
-  comingBranch: 'all' | 'detham' | 'pxl' | 'estella';
-  setComingBranch: (branch: 'all' | 'detham' | 'pxl' | 'estella') => void;
+  comingBranch: 'all' | 'detham' | 'estella';
+  setComingBranch: (branch: 'all' | 'detham' | 'estella') => void;
   comingCategory: 'all' | 'combo' | 'oc' | 'other';
   setComingCategory: (category: 'all' | 'combo' | 'oc' | 'other') => void;
   selectedBooker?: string | null;
@@ -139,7 +139,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
       key: 'branchName',
       render: (b: string) => {
         const branchName = b || 'Đề Thám';
-        const branchKey = branchName === 'Đề Thám' ? 'detham' : branchName === 'PXL' ? 'pxl' : 'estella';
+        const branchKey = branchName === 'Đề Thám' ? 'detham' : 'estella';
         return (
           <Tag
             color={getStoreColor(branchName)}
@@ -344,7 +344,7 @@ const TodayComingTable = React.memo(function TodayComingTable({
           <span className="text-slate-500 dark:text-slate-400 font-medium">Bộ lọc đang mở:</span>
           {comingBranch !== 'all' && (
             <Tag color="cyan" closable onClose={() => setComingBranch('all')} className="font-semibold text-xs py-0.5">
-              Chi nhánh: {comingBranch === 'detham' ? 'Đề Thám' : comingBranch === 'pxl' ? 'PXL' : 'Estella'}
+              Chi nhánh: {comingBranch === 'detham' ? 'Đề Thám' : 'Estella'}
             </Tag>
           )}
           {selectedBooker && (

@@ -168,7 +168,8 @@ export function ReadyKitsTab() {
               defaultValue="all"
               options={[
                 { value: 'all', label: 'Tất cả tiệm' },
-                { value: 'p1', label: 'Phan Xích Long' },
+                { value: 'dt', label: 'Đề Thám' },
+                { value: 'ep', label: 'Estella Place' },
               ]}
             />
           }
@@ -258,8 +259,8 @@ export function ReadyKitsTab() {
             <EntityFormField name="branch" label="Chi nhánh">
               <Select
                 options={[
-                  { value: 'p1', label: 'Phan Xích Long' },
-                  { value: 'q1', label: 'Quận 1' },
+                  { value: 'dt', label: 'Đề Thám (DT)' },
+                  { value: 'ep', label: 'Estella Place (EP)' },
                 ]}
               />
             </EntityFormField>

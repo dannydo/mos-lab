@@ -26,8 +26,7 @@ const { Text, Title } = Typography;
 
 const BRANCH_NAMES: Record<string, string> = {
   detham: 'Đề Thám',
-  pxl: 'Phan Xích Long',
-  estella: 'Estella',
+  estella: 'Estella Place',
 };
 
 type CommandCenterSnapshot = {
@@ -197,15 +196,17 @@ export default function DashboardPage() {
   const derived = useMemo(() => {
     if (!snapshot) return null;
 
-    const branches = Object.entries(snapshot.operations.branchesData).map(([key, branch]) => ({
-      key,
-      name: BRANCH_NAMES[key] || key,
-      branch,
-      revenue: branchRevenue(branch),
-      consultantsOnDuty: branch.cc.filter((staff) => staff.shift !== 'off').length,
-      techniciansOnDuty: branch.cv.filter((staff) => !staff.isOff).length,
-      availableTechnicians: branch.cv.filter((staff) => !staff.isOff && staff.status === 'available').length,
-    }));
+    const branches = Object.entries(snapshot.operations.branchesData)
+      .filter(([key]) => Boolean(BRANCH_NAMES[key]))
+      .map(([key, branch]) => ({
+        key,
+        name: BRANCH_NAMES[key] || key,
+        branch,
+        revenue: branchRevenue(branch),
+        consultantsOnDuty: branch.cc.filter((staff) => staff.shift !== 'off').length,
+        techniciansOnDuty: branch.cv.filter((staff) => !staff.isOff).length,
+        availableTechnicians: branch.cv.filter((staff) => !staff.isOff && staff.status === 'available').length,
+      }));
     const comingCustomers = branches.reduce((total, item) => total + item.branch.coming.length, 0);
     const onDutyStaff = branches.reduce((total, item) => total + item.consultantsOnDuty + item.techniciansOnDuty, 0);
     const availableTechnicians = branches.reduce((total, item) => total + item.availableTechnicians, 0);

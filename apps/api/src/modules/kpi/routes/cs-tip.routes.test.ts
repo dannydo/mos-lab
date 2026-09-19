@@ -35,8 +35,8 @@ test('CS Tip 3% bonus calculation and response formatting', async () => {
             // Store breakdown query
             return [
               {
-                storeKey: 'PXL',
-                storeName: 'Phan Xích Long',
+                storeKey: 'DT',
+                storeName: 'Đề Thám',
                 totalVisits: 60,
                 totalTippedVisits: 25,
                 totalCustomerTip: 6000000,
@@ -74,8 +74,8 @@ test('CS Tip 3% bonus calculation and response formatting', async () => {
               checkinTime: new Date('2026-09-19T10:00:00Z'),
               customerName: 'Nguyễn Thị A',
               customerPhone: '0901234567',
-              storeName: 'Phan Xích Long',
-              storeKey: 'PXL',
+              storeName: 'Đề Thám',
+              storeKey: 'DT',
               isLoCa: 1,
               totalCustomerTip: 100000,
               technicianName: 'Thợ A',
@@ -138,7 +138,7 @@ test('CS Tip 3% bonus calculation and response formatting', async () => {
 
   // Store breakdown
   assert.equal(sentPayload.storeBreakdown.length, 1);
-  assert.equal(sentPayload.storeBreakdown[0].storeKey, 'PXL');
+  assert.equal(sentPayload.storeBreakdown[0].storeKey, 'DT');
   assert.equal(sentPayload.storeBreakdown[0].totalCustomerTip, 6000000);
   assert.equal(sentPayload.storeBreakdown[0].totalCsTipBonus, 180000); // 3% of 6,000,000 = 180,000
 

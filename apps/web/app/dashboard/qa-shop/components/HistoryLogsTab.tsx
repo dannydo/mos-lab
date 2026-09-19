@@ -282,8 +282,6 @@ export const HistoryLogsTab: React.FC<HistoryLogsTabProps> = ({ themeMode, onRef
                   { value: 'ALL', label: 'Tất cả chi nhánh' },
                   { value: 'DT', label: 'Đề Thám (DT)' },
                   { value: 'EP', label: 'Estella Place (EP)' },
-                  { value: 'Q7', label: 'Quận 7 (Q7)' },
-                  { value: 'TB', label: 'Tân Bình (TB)' },
                 ]}
               />
             </div>

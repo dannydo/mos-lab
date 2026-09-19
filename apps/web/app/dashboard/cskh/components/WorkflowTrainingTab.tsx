@@ -311,7 +311,7 @@ export default function WorkflowTrainingTab() {
                   Mở Sub-task CV $\rightarrow$ Bấm <strong>&quot;📅 GĐ1: Đặt Lịch Hẹn Đến Shop 0đ&quot;</strong>.
                 </li>
                 <li>
-                  Chọn <strong>Chi nhánh Store</strong> (Đề Thám, Phan Xóm Lầu, Nguyễn Trãi, Thảo Điền) &amp;{' '}
+                  Chọn <strong>Chi nhánh Store</strong> (Đề Thám, Estella Place) &amp;{' '}
                   <strong>Ngày/Giờ hẹn đón khách</strong>.
                 </li>
                 <li>

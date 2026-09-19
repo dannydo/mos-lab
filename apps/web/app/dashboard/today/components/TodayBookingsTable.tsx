@@ -40,12 +40,12 @@ interface TodayBookingsTableProps {
   filteredBookings: BookingData[];
   bookingFilter: 'all' | 'combo' | 'oc' | 'other';
   setBookingFilter: (filter: 'all' | 'combo' | 'oc' | 'other') => void;
-  bookingBranch: 'all' | 'detham' | 'pxl' | 'estella';
-  setBookingBranch: (branch: 'all' | 'detham' | 'pxl' | 'estella') => void;
+  bookingBranch: 'all' | 'detham' | 'estella';
+  setBookingBranch: (branch: 'all' | 'detham' | 'estella') => void;
   selectedBooker?: string | null;
   setSelectedBooker?: (booker: string | null) => void;
   openCustomerDrawer: (record: SafeAny) => void;
-  bookingBranchCounts: { dt: number; pxl: number; ep: number; total: number };
+  bookingBranchCounts: { dt: number; ep: number; total: number };
   allBookings: BookingData[];
 }
 
@@ -72,7 +72,6 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
     const branchBookings = (allBookings || []).filter((b) => {
       if (bookingBranch !== 'all') {
         if (bookingBranch === 'detham' && b.branchName !== 'Đề Thám') return false;
-        if (bookingBranch === 'pxl' && b.branchName !== 'PXL') return false;
         if (bookingBranch === 'estella' && b.branchName !== 'Estella') return false;
       }
       return true;
@@ -203,7 +202,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
       key: 'branchName',
       render: (b: string) => {
         const branchName = b || 'Đề Thám';
-        const branchKey = branchName === 'Đề Thám' ? 'detham' : branchName === 'PXL' ? 'pxl' : 'estella';
+        const branchKey = branchName === 'Đề Thám' ? 'detham' : 'estella';
         return (
           <Tag
             color={getStoreColor(branchName)}
@@ -406,7 +405,7 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
           <span className="text-slate-500 dark:text-slate-400 font-medium">Bộ lọc đang mở:</span>
           {bookingBranch !== 'all' && (
             <Tag color="cyan" closable onClose={() => setBookingBranch('all')} className="font-semibold text-xs py-0.5">
-              Chi nhánh: {bookingBranch === 'detham' ? 'Đề Thám' : bookingBranch === 'pxl' ? 'PXL' : 'Estella'}
+              Chi nhánh: {bookingBranch === 'detham' ? 'Đề Thám' : 'Estella'}
             </Tag>
           )}
           {selectedBooker && (

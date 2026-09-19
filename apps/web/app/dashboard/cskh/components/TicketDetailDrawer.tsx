@@ -660,9 +660,7 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
             <Select
               options={[
                 { label: '🏪 Store Đề Thám (Quận 1)', value: 'Store Đề Thám (Quận 1)' },
-                { label: '🏪 Store Phan Xóm Lầu - PXL (Phú Nhuận)', value: 'Store Phan Xóm Lầu (PXL)' },
-                { label: '🏪 Store Nguyễn Trãi (Quận 5)', value: 'Store Nguyễn Trãi (Quận 5)' },
-                { label: '🏪 Store Thảo Điền (Quận 2)', value: 'Store Thảo Điền (Quận 2)' },
+                { label: '🏪 Store Estella Place (Quận 2)', value: 'Store Estella Place (Quận 2)' },
               ]}
             />
           </Form.Item>

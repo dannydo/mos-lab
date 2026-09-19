@@ -178,7 +178,8 @@ export function DensityStandards() {
                 defaultValue="all"
                 options={[
                   { value: 'all', label: 'Tất cả tiệm' },
-                  { value: 'p1', label: 'Phan Xích Long' },
+                  { value: 'dt', label: 'Đề Thám' },
+                  { value: 'ep', label: 'Estella Place' },
                 ]}
               />
             }

@@ -192,10 +192,10 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
   // Tabs states
   const [bookingFilter, setBookingFilter] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
-  const [bookingBranch, setBookingBranch] = useState<'all' | 'detham' | 'pxl' | 'estella'>('all');
-  const [comingBranch, setComingBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
+  const [bookingBranch, setBookingBranch] = useState<'all' | 'detham' | 'estella'>('all');
+  const [comingBranch, setComingBranch] = useState<'detham' | 'estella' | 'all'>('detham');
   const [comingCategory, setComingCategory] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
-  const [shopBranch, setShopBranch] = useState<'detham' | 'pxl' | 'estella' | 'all'>('detham');
+  const [shopBranch, setShopBranch] = useState<'detham' | 'estella' | 'all'>('detham');
   const [selectedBooker, setSelectedBooker] = useState<string | null>(null);
   const [teamConfig, setTeamConfig] = useState<BookerTeamConfig>(DEFAULT_BOOKER_TEAMS);
   const [teamModalVisible, setTeamModalVisible] = useState(false);
@@ -261,13 +261,13 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
       const urlBookingBranch = urlParams.get('bookingBranch');
       const persistedBookingBranch = urlBookingBranch || localStorage.getItem('today_booking_branch');
-      if (persistedBookingBranch && ['all', 'detham', 'pxl', 'estella'].includes(persistedBookingBranch)) {
+      if (persistedBookingBranch && ['all', 'detham', 'estella'].includes(persistedBookingBranch)) {
         setBookingBranch(persistedBookingBranch as SafeAny);
       }
 
       const urlComingBranch = urlParams.get('comingBranch');
       const persistedComingBranch = urlComingBranch || localStorage.getItem('today_coming_branch');
-      if (persistedComingBranch && ['detham', 'pxl', 'estella', 'all'].includes(persistedComingBranch)) {
+      if (persistedComingBranch && ['detham', 'estella', 'all'].includes(persistedComingBranch)) {
         setComingBranch(persistedComingBranch as SafeAny);
       }
 
@@ -279,7 +279,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
       const urlShopBranch = urlParams.get('shopBranch');
       const persistedShopBranch = urlShopBranch || localStorage.getItem('today_shop_branch');
-      if (persistedShopBranch && ['detham', 'pxl', 'estella', 'all'].includes(persistedShopBranch)) {
+      if (persistedShopBranch && ['detham', 'estella', 'all'].includes(persistedShopBranch)) {
         setShopBranch(persistedShopBranch as SafeAny);
       }
 
@@ -620,14 +620,12 @@ export function useTodayData(options?: UseTodayDataOptions) {
 
   const bookingBranchCounts = useMemo(() => {
     let dt = 0;
-    let pxl = 0;
     let ep = 0;
     allBookings.forEach((b) => {
       if (b.branchName === 'Đề Thám') dt++;
-      else if (b.branchName === 'PXL') pxl++;
       else if (b.branchName === 'Estella') ep++;
     });
-    return { dt, pxl, ep, total: allBookings.length };
+    return { dt, ep, total: allBookings.length };
   }, [allBookings]);
 
   const filteredBookings = useMemo(() => {
@@ -637,7 +635,6 @@ export function useTodayData(options?: UseTodayDataOptions) {
       }
       if (bookingBranch !== 'all') {
         if (bookingBranch === 'detham' && b.branchName !== 'Đề Thám') return false;
-        if (bookingBranch === 'pxl' && b.branchName !== 'PXL') return false;
         if (bookingBranch === 'estella' && b.branchName !== 'Estella') return false;
       }
       if (!matchesBookerFilter(b.booker, selectedBooker)) {
@@ -746,7 +743,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     }
   }, []);
 
-  const changeBookingBranch = useCallback((val: 'all' | 'detham' | 'pxl' | 'estella') => {
+  const changeBookingBranch = useCallback((val: 'all' | 'detham' | 'estella') => {
     setBookingBranch(val);
     if (typeof window !== 'undefined') {
       localStorage.setItem('today_booking_branch', val);
@@ -756,7 +753,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     }
   }, []);
 
-  const changeComingBranch = useCallback((val: 'detham' | 'pxl' | 'estella' | 'all') => {
+  const changeComingBranch = useCallback((val: 'detham' | 'estella' | 'all') => {
     setComingBranch(val);
     if (typeof window !== 'undefined') {
       localStorage.setItem('today_coming_branch', val);
@@ -776,7 +773,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     }
   }, []);
 
-  const changeShopBranch = useCallback((val: 'detham' | 'pxl' | 'estella' | 'all') => {
+  const changeShopBranch = useCallback((val: 'detham' | 'estella' | 'all') => {
     setShopBranch(val);
     if (typeof window !== 'undefined') {
       localStorage.setItem('today_shop_branch', val);
