@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, theme } from 'antd';
+import { Button, Tooltip, theme } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import type { LucideIcon } from 'lucide-react';
 import { AppIcon } from './AppIcon';
@@ -120,7 +120,7 @@ export function IconButton({
       danger={tone === 'danger' || dangerProp}
       style={{ ...semanticStyle, ...baseStyle, ...buttonStyle }}
       aria-label={label}
-      title={tooltip ? undefined : label}
+      title={label}
       className={['mos-icon-button', `mos-icon-button--${tone}`, className].filter(Boolean).join(' ')}
       icon={
         <span aria-hidden className="mos-icon-button__icon">
@@ -130,16 +130,7 @@ export function IconButton({
     />
   );
 
-  return tooltip ? (
-    <div className="mos-tooltip-wrapper">
-      {button}
-      <div role="tooltip" aria-hidden="true" className="mos-tooltip-popup mos-tooltip-popup--top">
-        {label}
-      </div>
-    </div>
-  ) : (
-    button
-  );
+  return tooltip ? <Tooltip title={label}>{button}</Tooltip> : button;
 }
 
 export default React.memo(IconButton);

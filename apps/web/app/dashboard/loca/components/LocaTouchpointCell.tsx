@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Popover, Input, Button, Tooltip, Space, DatePicker } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import {
@@ -121,20 +121,18 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
     displayStatus = 'OVERDUE';
   }
 
-  const lastToggleRef = useRef(0);
-  const handleTileToggle = (e: React.UIEvent) => {
-    if (loading) return;
-    const now = Date.now();
-    if (now - lastToggleRef.current < 250) return;
-    lastToggleRef.current = now;
-    e.preventDefault();
+  const handleCellClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (loading) return;
     setPopoverOpen((prev) => !prev);
   };
 
   const handleCellKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    handleTileToggle(e);
+    e.preventDefault();
+    e.stopPropagation();
+    if (loading) return;
+    setPopoverOpen((prev) => !prev);
   };
 
   const handleSelectStatus = (status: TouchpointStatus | null) => {
@@ -672,54 +670,51 @@ export const LocaTouchpointCell: React.FC<LocaTouchpointCellProps> = ({
       title={null}
       trigger="click"
       open={popoverOpen}
-      onOpenChange={(open) => {
-        if (loading) return;
-        setPopoverOpen(open);
-      }}
+      onOpenChange={setPopoverOpen}
       placement="bottom"
-      destroyTooltipOnHide
     >
-      <div
-        className={styles.touchpointTile}
-        role="button"
-        tabIndex={0}
-        aria-label={`Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}`}
-        title={!popoverOpen ? `Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}` : undefined}
-        onClick={handleTileToggle}
-        onKeyDown={handleCellKeyDown}
-        style={{
-          cursor: loading ? 'wait' : 'pointer',
-          background: bg,
-          border: border,
-          color: textColor,
-          boxShadow: boxShadow,
-        }}
-      >
-        {/* Main Status Icon */}
-        {renderPillIcon()}
+      <Tooltip title={popoverOpen ? '' : renderTooltip()} placement="top">
+        <div
+          className={styles.touchpointTile}
+          role="button"
+          tabIndex={0}
+          aria-label={`Cập nhật trạng thái ${label} cho ${customer.name || 'khách hàng'}`}
+          onClick={handleCellClick}
+          onKeyDown={handleCellKeyDown}
+          style={{
+            cursor: loading ? 'wait' : 'pointer',
+            background: bg,
+            border: border,
+            color: textColor,
+            boxShadow: boxShadow,
+          }}
+        >
+          {/* Main Status Icon */}
+          {renderPillIcon()}
 
-        {/* Top-Right Corner Diamond Badge */}
-        {hasReferredDiamond && (
-          <span className={styles.diamondBadge} title="Đã tư vấn Chương Trình Kim Cương">
-            💎
-          </span>
-        )}
+          {/* Top-Right Corner Diamond Badge */}
+          {hasReferredDiamond && (
+            <span className={styles.diamondBadge} title="Đã tư vấn Chương Trình Kim Cương">
+              💎
+            </span>
+          )}
 
-        {/* Bottom-Left Corner Note Indicator */}
-        {currentNote && (
-          <span
-            className={styles.noteBadge}
-            style={{
-              color: isDark ? '#fbbf24' : '#d97706',
-              backgroundColor: isDark ? '#1e293b' : '#ffffff',
-              border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
-            }}
-            title={`Ghi chú: ${currentNote}`}
-          >
-            <FileTextOutlined style={{ fontSize: '7px', color: isDark ? '#fbbf24' : '#d97706' }} />
-          </span>
-        )}
-      </div>
+          {/* Bottom-Left Corner Note Indicator */}
+          {currentNote && (
+            <span
+              className={styles.noteBadge}
+              style={{
+                color: isDark ? '#fbbf24' : '#d97706',
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
+              }}
+              title={`Ghi chú: ${currentNote}`}
+            >
+              <FileTextOutlined style={{ fontSize: '7px', color: isDark ? '#fbbf24' : '#d97706' }} />
+            </span>
+          )}
+        </div>
+      </Tooltip>
     </Popover>
   );
 };

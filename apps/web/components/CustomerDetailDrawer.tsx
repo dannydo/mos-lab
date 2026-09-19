@@ -625,7 +625,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         )
       }
       placement="right"
-      width={isCompactTier ? undefined : drawerWidth}
+      width={isCompactTier ? undefined : responsiveTier === 'desktop' ? drawerWidth : 'min(88vw, 1280px)'}
       open={open}
       onClose={onClose}
       styles={{
@@ -647,19 +647,14 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
             top: 0,
             left: 0,
             bottom: 0,
-            width: '10px',
-            cursor: 'col-resize',
+            width: '6px',
+            cursor: 'ew-resize',
             zIndex: 1000,
             background: isDragging ? '#D4A84B' : 'transparent',
             borderLeft: isDragging ? '2px solid #D4A84B' : 'none',
             transition: 'background 0.2s',
-            touchAction: 'none',
           }}
           onMouseDown={handleMouseDown}
-          onPointerDown={(e) => {
-            e.preventDefault();
-            handleMouseDown(e as SafeAny);
-          }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
           }}

@@ -241,19 +241,18 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
         <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-1.5">CUSTOM</div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {/* Custom Plus Button */}
-          <Tooltip title="Thêm màu mới">
-            <Popover
-              content={
-                <div className="p-1">
-                  <AntColorPicker size="small" onChangeComplete={handleAddCustomColor} showText />
-                </div>
-              }
-              trigger="click"
-              open={customPickerOpen}
-              onOpenChange={setCustomPickerOpen}
-              placement="bottom"
-              destroyTooltipOnHide
-            >
+          <Popover
+            content={
+              <div className="p-1">
+                <AntColorPicker size="small" onChangeComplete={handleAddCustomColor} showText />
+              </div>
+            }
+            trigger="click"
+            open={customPickerOpen}
+            onOpenChange={setCustomPickerOpen}
+            placement="bottom"
+          >
+            <Tooltip title="Thêm màu mới">
               <button
                 type="button"
                 style={{
@@ -271,8 +270,8 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
               >
                 <PlusOutlined style={{ fontSize: '10px' }} />
               </button>
-            </Popover>
-          </Tooltip>
+            </Tooltip>
+          </Popover>
 
           {/* User added custom color swatches */}
           {customColors.map((hex) => {
@@ -346,7 +345,6 @@ export const GoogleSheetColorPicker: React.FC<GoogleSheetColorPickerProps> = ({
           transition: 'all 0.15s',
           width: '100%',
           justifyContent: 'space-between',
-          touchAction: 'manipulation',
         }}
         className="hover:border-amber-400/70"
       >

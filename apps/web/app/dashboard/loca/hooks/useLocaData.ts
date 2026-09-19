@@ -6,7 +6,6 @@ import { apiClient } from '../../../../lib/api-client';
 import {
   Customer,
   isTelesalesRole,
-  isAdminOrSuperAdminRole,
   Staff,
   TouchpointStatus,
   LASH_TOUCHUP_SYSTEM_CONFIG,
@@ -518,7 +517,7 @@ export function useLocaData(options?: UseLocaDataOptions) {
   }, []);
 
   const fetchStaffList = useCallback(async () => {
-    if (!currentUser || (!isAdminOrSuperAdminRole(currentUser.role) && currentUser.role !== 'manager')) return;
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'manager')) return;
     try {
       const data = await apiClient.customers.getStaff({ role: 'cs' });
       setStaffList(data);

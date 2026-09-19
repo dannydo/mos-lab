@@ -67,7 +67,7 @@ const TableConfigDrawer = dynamic(
 const SMSModal = dynamic(() => import('../../../components/sms/SMSModal').then((m) => m.SMSModal), { ssr: false });
 import { ResizableHeaderCell } from '../../../components/ResizableHeaderCell';
 import { useTableConfig } from '../../../hooks/useTableConfig';
-import { canAccessLoca, Customer, CALL_RESULT_LABELS } from '@mos-lab/shared';
+import { canAccessLoca, Customer, CALL_RESULT_LABELS, vietnameseSearchFilter } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useLocaData, TAB_KEYS } from './hooks/useLocaData';
 import { getLocaColumns, getNewLocaColumns } from './components/LocaColumns';
@@ -272,8 +272,6 @@ export default function LocaCampaignPage() {
   const isLocaAllowed = canAccessLoca(currentUser?.role);
 
   const [smsModalVisible, setSmsModalVisible] = useState<boolean>(false);
-  const [bookerSelectOpen, setBookerSelectOpen] = useState(false);
-  const bookerOpenTimeRef = React.useRef(0);
 
   const handleOpenSmsModal = React.useCallback(
     (customer: Customer) => {
@@ -483,29 +481,13 @@ export default function LocaCampaignPage() {
 
         <div className="flex items-center gap-3 flex-wrap">
           <Space wrap>
-            {(currentUser?.role === 'admin' ||
-              currentUser?.role === 'manager' ||
-              currentUser?.role === 'super_admin') && (
+            {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
               <Select
-                open={bookerSelectOpen}
-                onDropdownVisibleChange={(visible) => {
-                  if (visible) {
-                    bookerOpenTimeRef.current = Date.now();
-                    setBookerSelectOpen(true);
-                  } else {
-                    if (Date.now() - bookerOpenTimeRef.current < 350) {
-                      return;
-                    }
-                    setBookerSelectOpen(false);
-                  }
-                }}
-                virtual={false}
+                showSearch
+                filterOption={vietnameseSearchFilter}
                 placeholder="Chọn Booker/Telesales"
                 value={assignedStaffId}
-                onChange={(val) => {
-                  setAssignedStaffId(val);
-                  setBookerSelectOpen(false);
-                }}
+                onChange={(val) => setAssignedStaffId(val)}
                 style={{ width: 200 }}
                 options={[
                   { value: 'ALL', label: 'All Bookers' },
@@ -514,18 +496,11 @@ export default function LocaCampaignPage() {
                 ]}
               />
             )}
-            <Tooltip
-              title="Đặt lịch mới"
-              placement="top"
-              arrow={false}
-              mouseEnterDelay={0.15}
-              overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-              rootClassName="pointer-events-none"
-            >
+            <Tooltip title="Đặt lịch mới">
               <Button
                 type="primary"
                 aria-label="Đặt lịch mới"
-                icon={<CalendarPlusIcon fontSize={18} className="pointer-events-none" />}
+                icon={<CalendarPlusIcon fontSize={18} />}
                 style={{
                   backgroundColor: '#D4A84B',
                   borderColor: '#D4A84B',
@@ -1172,25 +1147,17 @@ export default function LocaCampaignPage() {
 
               {/* Minimalist Booking Status Filter Buttons (Square Buttons matching Gear Button style) */}
               <div className="flex items-center gap-1.5">
-                <Tooltip
-                  title="Tất cả khách hàng (Cả đã book & chưa book)"
-                  placement="top"
-                  arrow={false}
-                  mouseEnterDelay={0.15}
-                  overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-                  rootClassName="pointer-events-none"
-                >
+                <Tooltip title="Tất cả khách hàng (Cả đã book & chưa book)">
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('ALL')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 cursor-pointer border select-none ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                       bookingStatusFilter === 'ALL'
                         ? 'bg-blue-50 text-blue-600 border-blue-300 shadow-xs dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                     }`}
                   >
                     <UnorderedListOutlined
-                      className="pointer-events-none"
                       style={{
                         fontSize: '14px',
                         color:
@@ -1200,26 +1167,17 @@ export default function LocaCampaignPage() {
                   </button>
                 </Tooltip>
 
-                <Tooltip
-                  title="Đã book (Có lịch hẹn tương lai)"
-                  placement="top"
-                  arrow={false}
-                  align={{ points: ['bc', 'tc'], offset: [0, -8] }}
-                  mouseEnterDelay={0.15}
-                  overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-                  rootClassName="pointer-events-none"
-                >
+                <Tooltip title="Đã book (Có lịch hẹn tương lai)">
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('BOOKED')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 cursor-pointer border select-none ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                       bookingStatusFilter === 'BOOKED'
                         ? 'bg-emerald-50 text-emerald-600 border-emerald-300 shadow-xs dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                     }`}
                   >
                     <CalendarOutlined
-                      className="pointer-events-none"
                       style={{
                         fontSize: '14px',
                         color:
@@ -1229,26 +1187,17 @@ export default function LocaCampaignPage() {
                   </button>
                 </Tooltip>
 
-                <Tooltip
-                  title="Chưa book (Chưa có lịch hẹn tương lai)"
-                  placement="top"
-                  arrow={false}
-                  align={{ points: ['bc', 'tc'], offset: [0, -8] }}
-                  mouseEnterDelay={0.15}
-                  overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-                  rootClassName="pointer-events-none"
-                >
+                <Tooltip title="Chưa book (Chưa có lịch hẹn tương lai)">
                   <button
                     type="button"
                     onClick={() => setBookingStatusFilter('NOT_BOOKED')}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 cursor-pointer border select-none ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                       bookingStatusFilter === 'NOT_BOOKED'
                         ? 'bg-rose-50 text-rose-600 border-rose-300 shadow-xs dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/40'
                         : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-400 border-slate-200/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-500 dark:border-slate-800/60'
                     }`}
                   >
                     <CloseCircleOutlined
-                      className="pointer-events-none"
                       style={{
                         fontSize: '14px',
                         color:
@@ -1277,19 +1226,10 @@ export default function LocaCampaignPage() {
               </div>
 
               {/* Action buttons (Settings) */}
-              <Tooltip
-                title="Cấu hình cột bảng"
-                placement="top"
-                arrow={false}
-                mouseEnterDelay={0.15}
-                overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-                rootClassName="pointer-events-none"
-              >
+              <Tooltip title="Cấu hình cột bảng">
                 <Button
                   type="primary"
-                  icon={
-                    <SettingOutlined className="pointer-events-none" style={{ color: '#ffffff', fontSize: '14px' }} />
-                  }
+                  icon={<SettingOutlined style={{ color: '#ffffff', fontSize: '14px' }} />}
                   onClick={openLocaConfig}
                   style={{
                     backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#2563eb',
@@ -1317,15 +1257,6 @@ export default function LocaCampaignPage() {
             className="antd-custom-table loca-customer-table"
             scroll={{ x: 'max-content' }}
             onChange={(pagination, filters, sorter: SafeAny) => {
-              if (pagination) {
-                if (pagination.current && pagination.current !== currentPage) {
-                  setCurrentPage(pagination.current);
-                }
-                if (pagination.pageSize && pagination.pageSize !== pageSize) {
-                  setPageSize(pagination.pageSize);
-                  localStorage.setItem('mos_loca_pageSize', pagination.pageSize.toString());
-                }
-              }
               if (sorter && sorter.field) {
                 const field = sorter.field;
                 const order = sorter.order;
@@ -1346,7 +1277,7 @@ export default function LocaCampaignPage() {
               current: currentPage,
               pageSize: pageSize,
               total: total,
-              showSizeChanger: { showSearch: false },
+              showSizeChanger: true,
               pageSizeOptions: ['10', '20', '50', '100'],
               onChange: (page, size) => {
                 setCurrentPage(page);

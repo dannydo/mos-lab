@@ -823,7 +823,7 @@ export const LocaStaffActivityTab: React.FC<LocaStaffActivityTabProps> = ({
             current: currentPage,
             pageSize: pageSize,
             total: total,
-            showSizeChanger: { showSearch: false },
+            showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (t, range) => `${range[0]}-${range[1]} của ${t} mục`,
             onChange: onPageChange,

@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Avatar, Switch, Segmented, theme } from 'antd';
+import React, { useState } from 'react';
+import { Dropdown, Avatar, Switch, Segmented, theme } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { PhoneCall, Radio, MessageSquareWarning, BarChart3, ChevronRight, LogOut, UserRound } from 'lucide-react';
 import type { SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
-import { useTheme } from '../../context/ThemeContext';
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -100,9 +99,9 @@ function getCallStatusInfo({
   if (callState === 'ringing') {
     return {
       text: 'Đang đổ chuông...',
-      dotClass: 'bg-sky-500 animate-pulse',
-      iconBg: 'bg-sky-500/15',
-      iconColor: '#0ea5e9',
+      dotClass: 'bg-amber-500 animate-bounce',
+      iconBg: 'bg-amber-500/15',
+      iconColor: '#f59e0b',
     };
   }
   if (callState === 'confirming') {
@@ -147,27 +146,6 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   onLogout,
 }) => {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handlePointerDownOutside = (e: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', handlePointerDownOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDownOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open]);
-
-  const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
   const isMobileTier = responsiveTier === 'mobile';
@@ -427,55 +405,29 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   );
 
   return (
-    <div className="relative inline-flex items-center" ref={containerRef}>
-      <div className="mos-tooltip-wrapper">
-        <button
-          type="button"
-          className="mos-header-avatar-action cursor-pointer"
-          data-header-action="user-menu"
-          aria-label="Mở menu người dùng"
-          aria-haspopup="menu"
-          aria-expanded={open}
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen((prev) => !prev);
-          }}
-        >
-          <Avatar
-            size={32}
-            className="mos-header-avatar pointer-events-none"
-            src={avatarUrl}
-            icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
-            style={{
-              width: '32px',
-              height: '32px',
-              minWidth: '32px',
-              minHeight: '32px',
-              maxWidth: '32px',
-              maxHeight: '32px',
-              borderWidth: '2px',
-              borderStyle: 'solid',
-              borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
-              boxSizing: 'border-box',
-            }}
-          />
-        </button>
-        {!open && (
-          <div role="tooltip" aria-hidden="true" className="mos-tooltip-popup mos-tooltip-popup--right">
-            Tài khoản cá nhân
-          </div>
-        )}
-      </div>
-
-      {open && (
-        <div
-          className="absolute right-0 top-full mt-2 z-[1050] animate-in fade-in zoom-in-95 duration-150"
-          style={{ transformOrigin: 'top right' }}
-        >
-          {dropdownContent}
-        </div>
-      )}
-    </div>
+    <Dropdown
+      open={open}
+      onOpenChange={setOpen}
+      trigger={['click']}
+      placement="bottomRight"
+      arrow={{ pointAtCenter: true }}
+      popupRender={() => dropdownContent}
+    >
+      <button
+        type="button"
+        className="mos-header-avatar-action"
+        data-header-action="user-menu"
+        aria-label="Mở menu người dùng"
+        aria-haspopup="menu"
+        title="Mở menu người dùng"
+      >
+        <Avatar
+          className="mos-header-avatar"
+          src={avatarUrl}
+          icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
+        />
+      </button>
+    </Dropdown>
   );
 };
 

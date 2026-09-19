@@ -361,7 +361,6 @@ export function useCustomerDetail(options: UseCustomerDetailProps) {
       const minWidth = 500;
       const maxWidth = viewportWidth * 0.95;
       const clampedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
-      widthRef.current = clampedWidth;
       setDrawerWidth(clampedWidth);
     };
 

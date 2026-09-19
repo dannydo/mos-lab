@@ -1,7 +1,6 @@
 import React from 'react';
 import { Dropdown, Button, theme } from 'antd';
 import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
-import type { SafeAny } from '@mos-lab/shared';
 
 interface SavedFilterDropdownProps {
   savedFilters: SafeAny[];

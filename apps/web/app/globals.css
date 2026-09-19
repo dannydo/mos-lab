@@ -3227,25 +3227,9 @@ body {
 
 /* WCAG 2.2 target-size minimum for Ant Design's compact pagination selector. */
 .ant-pagination .ant-select-single.ant-select-sm,
-.ant-pagination .ant-select-single.ant-select-sm .ant-select-selector {
+.ant-pagination .ant-select-single.ant-select-sm .ant-select-selector,
+.ant-pagination .ant-select-single.ant-select-sm .ant-select-selection-search-input {
   min-height: 24px;
-}
-
-/* Ant Design non-searchable select dropdowns and size changers are strictly clickable selectors, never editable textfields */
-.ant-select:not(.ant-select-show-search) .ant-select-selector,
-.ant-select:not(.ant-select-show-search) .ant-select-selection-search-input,
-.ant-pagination .ant-select-selection-search-input {
-  caret-color: transparent !important;
-  cursor: pointer !important;
-}
-
-/* Suppress WebKit search decorations (magnifying glass icon 🔍) inside any Ant Design select */
-.ant-select input[type='search']::-webkit-search-decoration,
-.ant-select input[type='search']::-webkit-search-cancel-button,
-.ant-select input[type='search']::-webkit-search-results-button,
-.ant-select input[type='search']::-webkit-search-results-decoration {
-  display: none !important;
-  -webkit-appearance: none !important;
 }
 
 /* Icon-only controls and the actual editable surfaces inside compound controls
@@ -3254,6 +3238,7 @@ body {
   min-width: 24px;
 }
 
+.ant-select .ant-select-selection-search-input,
 .ant-picker input:not([type='hidden']) {
   min-height: 24px;
 }
@@ -5823,8 +5808,6 @@ body {
 }
 
 .dashboard-header {
-  position: relative;
-  z-index: 1000;
   gap: 8px;
   height: var(--mos-header-height) !important;
   line-height: 1 !important;
@@ -5958,14 +5941,10 @@ body {
   }
 }
 
-.mos-header-action,
 .mos-header-action.ant-btn,
-.mos-header-icon-action,
 .mos-header-avatar-action,
 .dashboard-online-member-action {
   align-items: center;
-  appearance: none;
-  border: 0;
   box-sizing: border-box;
   display: inline-flex;
   flex: 0 0 var(--mos-control-height);
@@ -5975,18 +5954,7 @@ body {
   min-height: var(--mos-control-height);
   min-width: var(--mos-control-height);
   padding: 0 !important;
-  touch-action: manipulation;
   width: var(--mos-control-height);
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease !important;
-}
-
-.mos-icon-button,
-.mos-icon-button.ant-btn {
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease !important;
 }
 
 .mos-header-action.ant-btn .ant-btn-icon,
@@ -6006,7 +5974,6 @@ body {
   width: var(--mos-action-icon-size);
 }
 
-.mos-header-action--labeled,
 .mos-header-action--labeled.ant-btn {
   flex: 0 0 auto;
   gap: 6px;
@@ -6025,28 +5992,24 @@ body {
   white-space: nowrap;
 }
 
-.mos-header-action--accent,
 .mos-header-action--accent.ant-btn {
   background: var(--mos-header-action-bg);
-  border: 1px solid var(--mos-header-action-border) !important;
+  border-color: var(--mos-header-action-border);
   color: var(--mos-header-action-color);
 }
 
-.mos-header-action:not(.mos-header-action--accent),
 .mos-header-action.ant-btn:not(.mos-header-action--accent) {
-  background: var(--mos-header-action-bg, transparent);
-  border: 0 !important;
+  background: var(--mos-header-action-bg);
+  border-color: var(--mos-header-action-border);
   color: var(--mos-header-action-color);
 }
 
-.mos-header-action:hover:not(:disabled),
 .mos-header-action.ant-btn:hover:not(:disabled) {
   background: var(--mos-header-action-hover-bg) !important;
   border-color: var(--mos-header-action-hover-border) !important;
   color: var(--mos-header-action-hover-color) !important;
 }
 
-.mos-header-action:focus-visible,
 .mos-header-action.ant-btn:focus-visible,
 .mos-header-avatar-action:focus-visible,
 .dashboard-online-member-action:focus-visible {
@@ -6055,172 +6018,18 @@ body {
 }
 
 .mos-header-avatar-action,
-.mos-header-icon-action,
 .dashboard-online-member-action {
   appearance: none;
   background: transparent;
   border: 0;
   color: inherit;
   cursor: pointer;
-  touch-action: manipulation;
 }
 
-/* ===========================================================================
-   Rock-solid Pure CSS Tooltips for Header & Icon Actions
-   Eliminates all ResizeObserver, CSSMotion, and class-mutation jitter on Windows 10 Chrome.
-   =========================================================================== */
-.mos-tooltip-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.mos-header-avatar {
+  height: min(32px, calc(var(--mos-control-height) - 8px)) !important;
   line-height: 1;
-}
-
-.mos-tooltip-popup {
-  position: absolute;
-  top: 100%;
-  margin-top: 8px;
-  z-index: 1070;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  border-radius: 8px;
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.4;
-  pointer-events: none !important;
-  user-select: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-}
-
-.mos-tooltip-popup--right {
-  right: 0;
-  left: auto;
-}
-
-.mos-tooltip-popup--left {
-  left: 0;
-  right: auto;
-}
-
-.mos-tooltip-popup--center {
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-}
-
-.mos-tooltip-popup--top {
-  bottom: 100%;
-  top: auto;
-  margin-bottom: 8px;
-  margin-top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.dark-theme .mos-tooltip-popup {
-  background: rgba(30, 41, 59, 0.96);
-  color: #f1f5f9;
-  border: 1px solid rgba(71, 85, 105, 0.5);
-}
-
-.light-theme .mos-tooltip-popup {
-  background: rgba(15, 23, 42, 0.94);
-  color: #ffffff;
-  border: 1px solid rgba(51, 65, 85, 0.4);
-}
-
-.mos-tooltip-wrapper:hover > .mos-tooltip-popup,
-.mos-tooltip-wrapper:focus-within > .mos-tooltip-popup,
-.mos-tooltip-wrapper button:hover + .mos-tooltip-popup,
-.mos-tooltip-wrapper button:focus-visible + .mos-tooltip-popup,
-.mos-header-action:hover + .mos-tooltip-popup,
-.mos-header-icon-action:hover + .mos-tooltip-popup,
-.mos-header-avatar-action:hover + .mos-tooltip-popup,
-.dashboard-online-member-action:hover + .mos-tooltip-popup {
-  opacity: 1 !important;
-}
-
-/* ===========================================================================
-   Unified Button & Tooltip Anti-Flickering Invariant (Windows 10 Chrome / Fractional DPI)
-   
-   1. Tooltips are informational overlays: they must NEVER intercept pointer events.
-   2. Inner descendants of buttons (SVG, path, circle, span, icon) must NEVER
-      intercept pointer events independently from their parent <button> trigger.
-   This guarantees that the trigger button is always the 100% unified target,
-   completely eliminating rapid mouseenter / mouseleave flickering loops.
-   =========================================================================== */
-.ant-tooltip-root,
-.ant-tooltip,
-.ant-tooltip *,
-.ant-tooltip-arrow,
-.ant-tooltip-inner,
-.ant-tooltip-content,
-.rc-trigger-popup.ant-tooltip,
-.rc-trigger-popup.ant-tooltip-root,
-.rc-trigger-popup[class*='ant-tooltip'] {
-  pointer-events: none !important;
-}
-
-/* Guarantee that open Ant Design Select, Dropdown, and AutoComplete popups always receive pointer events and top z-index */
-.ant-select-dropdown:not(.ant-select-dropdown-hidden),
-.ant-select-dropdown:not(.ant-select-dropdown-hidden) *,
-.ant-dropdown:not(.ant-dropdown-hidden),
-.ant-dropdown:not(.ant-dropdown-hidden) * {
-  pointer-events: auto !important;
-}
-
-.ant-select-dropdown {
-  z-index: 1050 !important;
-}
-
-.ant-select-dropdown.ant-select-dropdown-hidden,
-.ant-dropdown.ant-dropdown-hidden {
-  pointer-events: none !important;
-}
-
-.mos-header-avatar-action *,
-.mos-header-icon-action *,
-.mos-header-action *,
-.mos-icon-button *,
-.dashboard-online-member-action *,
-.ant-btn-icon,
-.ant-btn-icon *,
-button > svg,
-button > svg *,
-button > span[aria-hidden],
-button > span[aria-hidden] * {
-  pointer-events: none !important;
-}
-
-.mos-header-avatar,
-.dashboard-online-member-avatar {
-  border-radius: 50% !important;
-  box-sizing: border-box !important;
-  height: 32px !important;
-  line-height: 1 !important;
-  max-height: 32px !important;
-  max-width: 32px !important;
-  min-height: 32px !important;
-  min-width: 32px !important;
-  width: 32px !important;
-}
-
-.dashboard-online-member-avatar img,
-.mos-header-avatar img {
-  border-radius: 50% !important;
-  display: block !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  max-width: 100% !important;
-  min-height: 100% !important;
-  min-width: 100% !important;
-  object-fit: cover !important;
-  width: 100% !important;
+  width: min(32px, calc(var(--mos-control-height) - 8px)) !important;
 }
 
 .mos-header-avatar__icon {

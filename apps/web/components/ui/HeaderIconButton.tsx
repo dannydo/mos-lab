@@ -1,13 +1,14 @@
 'use client';
 
 import React, { forwardRef } from 'react';
-import { theme } from 'antd';
+import { Button, Tooltip, theme } from 'antd';
+import type { ButtonProps } from 'antd';
 import type { LucideIcon } from 'lucide-react';
 import { AppIcon } from './AppIcon';
 
 export type HeaderActionTone = 'quiet' | 'accent';
 
-export interface HeaderIconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface HeaderIconButtonProps extends Omit<ButtonProps, 'children' | 'icon' | 'shape' | 'size' | 'type'> {
   /** Stable hook for browser QA and analytics. */
   action: string;
   /** Required accessible name. Tooltips must never be the only label. */
@@ -18,8 +19,6 @@ export interface HeaderIconButtonProps extends React.ButtonHTMLAttributes<HTMLBu
   tone?: HeaderActionTone;
   /** Set to false if action is wrapped by another popup/dropdown. Defaults to true. */
   showTooltip?: boolean;
-  /** Alignment of tooltip popup. Defaults to 'right' for header actions. */
-  tooltipAlign?: 'right' | 'center' | 'left';
 }
 
 /**
@@ -34,12 +33,8 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
     desktopLabel,
     tone = 'quiet',
     showTooltip = true,
-    tooltipAlign = 'right',
     className = '',
     style: buttonStyle,
-    onClick,
-    disabled,
-    type = 'button',
     ...buttonProps
   },
   ref
@@ -61,50 +56,39 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
   };
 
   const button = (
-    <button
+    <Button
       {...buttonProps}
       ref={ref}
-      type={type}
-      disabled={disabled}
+      type="text"
       aria-label={label}
       data-header-action={action}
-      onClick={onClick}
       style={{ ...semanticStyle, ...baseStyle, ...buttonStyle }}
       className={[
         'mos-header-action',
         `mos-header-action--${tone}`,
         hasDesktopLabel ? 'mos-header-action--labeled' : '',
-        'cursor-pointer select-none rounded-lg',
         className,
       ]
         .filter(Boolean)
         .join(' ')}
+      icon={
+        <span aria-hidden className="mos-header-action__icon">
+          <AppIcon icon={Icon} size="action" />
+        </span>
+      }
     >
-      <span aria-hidden className="mos-header-action__icon pointer-events-none">
-        <AppIcon icon={Icon} size="action" className="pointer-events-none" />
-      </span>
-      {hasDesktopLabel ? <span className="mos-header-action__label pointer-events-none">{desktopLabel}</span> : null}
-    </button>
+      {hasDesktopLabel ? <span className="mos-header-action__label">{desktopLabel}</span> : null}
+    </Button>
   );
 
   if (!showTooltip) {
     return button;
   }
 
-  const alignClass =
-    tooltipAlign === 'center'
-      ? 'mos-tooltip-popup--center'
-      : tooltipAlign === 'left'
-        ? 'mos-tooltip-popup--left'
-        : 'mos-tooltip-popup--right';
-
   return (
-    <div className="mos-tooltip-wrapper">
+    <Tooltip title={label} placement="bottom" arrow={{ pointAtCenter: true }}>
       {button}
-      <div role="tooltip" aria-hidden="true" className={`mos-tooltip-popup ${alignClass}`}>
-        {label}
-      </div>
-    </div>
+    </Tooltip>
   );
 });
 

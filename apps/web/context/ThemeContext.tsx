@@ -172,83 +172,6 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
     setMounted(true);
   }, []);
 
-  // Prevent premature dropdown closures on Windows 10 Chrome caused by IE-legacy unselectable="on"
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const sanitizeUnselectable = (node: Element) => {
-      if (node.hasAttribute && node.hasAttribute('unselectable')) {
-        node.removeAttribute('unselectable');
-      }
-      if (node.querySelectorAll) {
-        node.querySelectorAll('[unselectable]').forEach((el) => {
-          el.removeAttribute('unselectable');
-        });
-      }
-    };
-
-    // Initial pass
-    try {
-      document.querySelectorAll('[unselectable]').forEach((el) => {
-        el.removeAttribute('unselectable');
-      });
-    } catch (_) {}
-
-    // Event capture phase to immediately sanitize on pointer/mouse/focus interactions
-    const handleInteraction = (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      if (target.hasAttribute && target.hasAttribute('unselectable')) {
-        target.removeAttribute('unselectable');
-      }
-      const select = target.closest?.('.ant-select, .ant-pagination');
-      if (select) {
-        select.querySelectorAll('[unselectable]').forEach((inp) => {
-          inp.removeAttribute('unselectable');
-        });
-      }
-    };
-
-    window.addEventListener('pointerdown', handleInteraction, true);
-    window.addEventListener('mousedown', handleInteraction, true);
-    window.addEventListener('focusin', handleInteraction, true);
-
-    // MutationObserver to sanitize dynamically mounted select components
-    let observer: MutationObserver | null = null;
-    try {
-      observer = new MutationObserver((mutations) => {
-        for (const mutation of mutations) {
-          for (let i = 0; i < mutation.addedNodes.length; i++) {
-            const node = mutation.addedNodes[i];
-            if (node.nodeType === 1) {
-              sanitizeUnselectable(node as Element);
-            }
-          }
-          if (
-            mutation.type === 'attributes' &&
-            mutation.attributeName === 'unselectable' &&
-            mutation.target.nodeType === 1
-          ) {
-            (mutation.target as Element).removeAttribute('unselectable');
-          }
-        }
-      });
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['unselectable'],
-      });
-    } catch (_) {}
-
-    return () => {
-      window.removeEventListener('pointerdown', handleInteraction, true);
-      window.removeEventListener('mousedown', handleInteraction, true);
-      window.removeEventListener('focusin', handleInteraction, true);
-      observer?.disconnect();
-    };
-  }, []);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -429,7 +352,7 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
       <ConfigProvider
         locale={viVN}
         pagination={{
-          showSizeChanger: { showSearch: false },
+          showSizeChanger: true,
         }}
         theme={{
           algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,

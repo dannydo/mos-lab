@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Popover, Input, Button, Tooltip, Space, DatePicker } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import {
@@ -143,14 +143,9 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
   const labelText = touchpoint.label || `Chạm ${touchpoint.key}`;
   const customerName = customer.customerName || customer.name || `Khách hàng #${customerId}`;
 
-  const lastToggleRef = useRef(0);
-  const handleTileToggle = (e: React.UIEvent) => {
-    if (loading) return;
-    const now = Date.now();
-    if (now - lastToggleRef.current < 250) return;
-    lastToggleRef.current = now;
-    e.preventDefault();
+  const handleCellClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (loading) return;
     setPopoverOpen((prev) => !prev);
   };
 
@@ -686,90 +681,79 @@ export const CampaignTouchpointCell: React.FC<CampaignTouchpointCellProps> = ({
       title={null}
       trigger="click"
       open={popoverOpen}
-      onOpenChange={(open) => {
-        if (loading) return;
-        setPopoverOpen(open);
-      }}
+      onOpenChange={setPopoverOpen}
       placement="bottom"
-      destroyTooltipOnHide
     >
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={`Cập nhật trạng thái ${labelText} cho ${customerName}`}
-        title={!popoverOpen ? `Cập nhật trạng thái ${labelText} cho ${customerName}` : undefined}
-        onClick={handleTileToggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            handleTileToggle(e);
-          }
-        }}
-        style={{
-          position: 'relative',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '28px',
-          height: '24px',
-          borderRadius: '6px',
-          cursor: loading ? 'wait' : 'pointer',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          background: bg,
-          border: border,
-          color: textColor,
-          boxShadow: boxShadow,
-          userSelect: 'none',
-          overflow: 'visible',
-        }}
-      >
-        {/* Main Status Icon */}
-        {renderPillIcon()}
+      <Tooltip title={popoverOpen ? '' : renderTooltip()} placement="top">
+        <div
+          onClick={handleCellClick}
+          style={{
+            position: 'relative',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '28px',
+            height: '24px',
+            borderRadius: '6px',
+            cursor: loading ? 'wait' : 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            background: bg,
+            border: border,
+            color: textColor,
+            boxShadow: boxShadow,
+            userSelect: 'none',
+            overflow: 'visible',
+          }}
+        >
+          {/* Main Status Icon */}
+          {renderPillIcon()}
 
-        {/* Top-Right Corner Diamond Badge */}
-        {hasReferredDiamond && (
-          <span
-            style={{
-              position: 'absolute',
-              top: '-6px',
-              right: '-6px',
-              fontSize: '11px',
-              lineHeight: 1,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
-              zIndex: 2,
-            }}
-            title="Đã tư vấn Chương Trình Kim Cương"
-          >
-            💎
-          </span>
-        )}
+          {/* Top-Right Corner Diamond Badge */}
+          {hasReferredDiamond && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-6px',
+                fontSize: '11px',
+                lineHeight: 1,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+                zIndex: 2,
+              }}
+              title="Đã tư vấn Chương Trình Kim Cương"
+            >
+              💎
+            </span>
+          )}
 
-        {/* Bottom-Left Corner Note Indicator */}
-        {currentNote && (
-          <span
-            style={{
-              position: 'absolute',
-              bottom: '-4px',
-              left: '-4px',
-              fontSize: '9px',
-              lineHeight: 1,
-              color: isDark ? '#fbbf24' : '#d97706',
-              backgroundColor: isDark ? '#1e293b' : '#ffffff',
-              border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
-              borderRadius: '50%',
-              width: '12px',
-              height: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-              zIndex: 2,
-            }}
-            title={`Ghi chú: ${currentNote}`}
-          >
-            <FileTextOutlined style={{ fontSize: '8px', color: isDark ? '#fbbf24' : '#d97706' }} />
-          </span>
-        )}
-      </div>
+          {/* Bottom-Left Corner Note Indicator */}
+          {currentNote && (
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '-4px',
+                left: '-4px',
+                fontSize: '9px',
+                lineHeight: 1,
+                color: isDark ? '#fbbf24' : '#d97706',
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                border: isDark ? '1px solid #475569' : '1px solid #cbd5e1',
+                borderRadius: '50%',
+                width: '12px',
+                height: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                zIndex: 2,
+              }}
+              title={`Ghi chú: ${currentNote}`}
+            >
+              <FileTextOutlined style={{ fontSize: '8px', color: isDark ? '#fbbf24' : '#d97706' }} />
+            </span>
+          )}
+        </div>
+      </Tooltip>
     </Popover>
   );
 };

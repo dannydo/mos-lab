@@ -2,7 +2,7 @@
 
 import '../suppress-warnings';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import { Layout, Button, Avatar, Space, Dropdown, Drawer, theme, message, Tag, Tooltip } from 'antd';
+import { Layout, Button, Avatar, Space, Dropdown, Drawer, theme, message, Tag } from 'antd';
 import {
   TeamOutlined,
   CalendarOutlined,
@@ -50,7 +50,6 @@ import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
-import { safeStorage } from '../../lib/safe-storage';
 
 const { Header, Sider, Content } = Layout;
 
@@ -76,14 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
   const [isDashboardVisible, setIsDashboardVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
-  const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>(() => {
-    try {
-      const cached = safeStorage.getItem('mos_online_staff');
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [onlineMembers, setOnlineMembers] = useState<SafeAny[]>([]);
   const [isDailyCallsOpen, setIsDailyCallsOpen] = useState(false);
   const [dailyCallsCount, setDailyCallsCount] = useState(0);
   const [user, setUser] = useState<SafeAny>(null);
@@ -93,14 +85,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
 
   const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
-  const [pendingAllocationCount, setPendingAllocationCount] = useState<number>(() => {
-    try {
-      const cached = safeStorage.getItem('mos_pending_alloc_count');
-      return cached ? Number(cached) : 0;
-    } catch {
-      return 0;
-    }
-  });
+  const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
 
   // Global CV Schedule Drawer state
   const [isCvDrawerOpen, setIsCvDrawerOpen] = useState(false);
@@ -152,9 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchPendingAllocationsCount = useCallback(async () => {
     try {
       const list = await apiClient.allocation.getPendingBatches();
-      const count = list?.length || 0;
-      setPendingAllocationCount(count);
-      safeStorage.setItem('mos_pending_alloc_count', String(count));
+      setPendingAllocationCount(list?.length || 0);
     } catch (err) {
       console.error('Fetch pending allocations error:', err);
     }
@@ -250,7 +233,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       });
 
       setOnlineMembers(mapped);
-      safeStorage.setItem('mos_online_staff', JSON.stringify(mapped));
     } catch (err) {
       console.error('Fetch online staff error:', err);
     }
@@ -555,6 +537,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="sidebar-toggle-container">
             <Button
               aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
+              title={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
               onClick={toggleSidebar}
               icon={
                 collapsed ? (
@@ -592,8 +575,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Header
               className="dashboard-header"
               style={{
-                position: 'relative',
-                zIndex: 1000,
                 backgroundColor: token.colorBgContainer,
                 backgroundImage: 'var(--mos-seasonal-header-gradient, none)',
                 display: 'flex',
@@ -657,33 +638,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {onlineMembers.length > 0 && (
                   <div className="dashboard-online-member-stack dashboard-desktop-only">
                     {onlineMembers.map((m, idx) => (
-                      <div key={m.id} className="mos-tooltip-wrapper">
-                        <button
-                          type="button"
-                          className="dashboard-online-member-action"
-                          aria-label={`Mở KPI đội telesales của ${m.name}`}
-                          onClick={() => {
-                            setSelectedMemberId(m.id || m.initials);
-                            setIsDashboardVisible(true);
-                          }}
+                      <button
+                        key={m.id}
+                        type="button"
+                        className="dashboard-online-member-action"
+                        aria-label={`Mở KPI đội telesales của ${m.name}`}
+                        title={m.name}
+                        onClick={() => {
+                          setSelectedMemberId(m.id || m.initials);
+                          setIsDashboardVisible(true);
+                        }}
+                        style={{
+                          position: 'relative',
+                          marginLeft: idx > 0 ? '-10px' : '0',
+                          zIndex: 20 - idx,
+                        }}
+                      >
+                        <div
+                          className="dashboard-online-member-avatar avatar-breath select-none"
                           style={{
+                            width: '32px',
+                            height: '32px',
+                            minWidth: '32px',
+                            minHeight: '32px',
+                            maxWidth: '32px',
+                            maxHeight: '32px',
+                            borderRadius: '50%',
+                            overflow: 'hidden',
+                            WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+                            maskImage: 'radial-gradient(white, black)',
+                            WebkitTransform: 'translateZ(0)',
+                            transform: 'translateZ(0)',
                             position: 'relative',
-                            marginLeft: idx > 0 ? '-10px' : '0',
-                            zIndex: 20 - idx,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            color: '#ffffff',
+                            background: m.color,
+                            borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            boxSizing: 'border-box',
                           }}
                         >
-                          <div
-                            style={{
-                              position: 'relative',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              width: '32px',
-                              height: '32px',
-                            }}
-                          >
-                            <div
-                              className="dashboard-online-member-avatar avatar-breath select-none"
+                          {m.avatarUrl ? (
+                            <img
+                              src={m.avatarUrl}
+                              alt={m.name}
                               style={{
                                 width: '32px',
                                 height: '32px',
@@ -691,62 +694,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 minHeight: '32px',
                                 maxWidth: '32px',
                                 maxHeight: '32px',
+                                objectFit: 'cover',
                                 borderRadius: '50%',
-                                overflow: 'hidden',
-                                WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-                                maskImage: 'radial-gradient(white, black)',
-                                WebkitTransform: 'translateZ(0)',
-                                transform: 'translateZ(0)',
-                                position: 'relative',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '11px',
-                                fontWeight: 'bold',
-                                color: '#ffffff',
-                                background: m.color,
-                                borderColor: themeMode === 'dark' ? '#000000' : '#ffffff',
-                                borderWidth: '2px',
-                                borderStyle: 'solid',
-                                boxSizing: 'border-box',
-                              }}
-                            >
-                              {m.avatarUrl ? (
-                                <img
-                                  src={m.avatarUrl}
-                                  alt={m.name}
-                                  style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                    borderRadius: '50%',
-                                    display: 'block',
-                                  }}
-                                />
-                              ) : (
-                                m.initials
-                              )}
-                            </div>
-                            <span
-                              style={{
-                                position: 'absolute',
-                                bottom: '0px',
-                                right: '0px',
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#22c55e',
-                                borderRadius: '50%',
-                                border: `2px solid ${themeMode === 'dark' ? '#000000' : '#ffffff'}`,
-                                zIndex: 10,
-                                pointerEvents: 'none',
+                                display: 'block',
                               }}
                             />
-                          </div>
-                        </button>
-                        <div role="tooltip" aria-hidden="true" className="mos-tooltip-popup mos-tooltip-popup--center">
-                          {m.name}
+                          ) : (
+                            m.initials
+                          )}
                         </div>
-                      </div>
+                        <span
+                          style={{
+                            position: 'absolute',
+                            bottom: '0px',
+                            right: '0px',
+                            width: '8px',
+                            height: '8px',
+                            backgroundColor: '#22c55e',
+                            borderRadius: '50%',
+                            border: `2px solid ${themeMode === 'dark' ? '#000000' : '#ffffff'}`,
+                            zIndex: 10,
+                            pointerEvents: 'none',
+                          }}
+                        />
+                      </button>
                     ))}
                   </div>
                 )}
@@ -779,7 +750,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 />
 
                 {isMobileTier && (
-                  <Dropdown menu={mobileUtilityMenu} placement="bottomRight" arrow trigger={['click']}>
+                  <Dropdown menu={mobileUtilityMenu} placement="bottomRight" arrow>
                     <HeaderActionIndicator
                       variant="status"
                       active={pendingAllocationCount > 0}
@@ -787,7 +758,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       <HeaderIconButton
                         action="utilities"
-                        showTooltip={false}
                         label={
                           pendingAllocationCount > 0
                             ? `Thao tác phụ, ${pendingAllocationCount} đợt data chờ xác nhận`
