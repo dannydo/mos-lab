@@ -272,6 +272,8 @@ export default function LocaCampaignPage() {
   const isLocaAllowed = canAccessLoca(currentUser?.role);
 
   const [smsModalVisible, setSmsModalVisible] = useState<boolean>(false);
+  const [bookerSelectOpen, setBookerSelectOpen] = useState(false);
+  const bookerOpenTimeRef = React.useRef(0);
 
   const handleOpenSmsModal = React.useCallback(
     (customer: Customer) => {
@@ -485,10 +487,25 @@ export default function LocaCampaignPage() {
               currentUser?.role === 'manager' ||
               currentUser?.role === 'super_admin') && (
               <Select
+                open={bookerSelectOpen}
+                onDropdownVisibleChange={(visible) => {
+                  if (visible) {
+                    bookerOpenTimeRef.current = Date.now();
+                    setBookerSelectOpen(true);
+                  } else {
+                    if (Date.now() - bookerOpenTimeRef.current < 350) {
+                      return;
+                    }
+                    setBookerSelectOpen(false);
+                  }
+                }}
                 virtual={false}
                 placeholder="Chọn Booker/Telesales"
                 value={assignedStaffId}
-                onChange={(val) => setAssignedStaffId(val)}
+                onChange={(val) => {
+                  setAssignedStaffId(val);
+                  setBookerSelectOpen(false);
+                }}
                 style={{ width: 200 }}
                 options={[
                   { value: 'ALL', label: 'All Bookers' },

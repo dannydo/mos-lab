@@ -6166,12 +6166,16 @@ body {
   pointer-events: none !important;
 }
 
-/* Guarantee that open Ant Design Select, Dropdown, and AutoComplete popups always receive pointer events */
+/* Guarantee that open Ant Design Select, Dropdown, and AutoComplete popups always receive pointer events and top z-index */
 .ant-select-dropdown:not(.ant-select-dropdown-hidden),
 .ant-select-dropdown:not(.ant-select-dropdown-hidden) *,
 .ant-dropdown:not(.ant-dropdown-hidden),
 .ant-dropdown:not(.ant-dropdown-hidden) * {
   pointer-events: auto !important;
+}
+
+.ant-select-dropdown {
+  z-index: 1050 !important;
 }
 
 .ant-select-dropdown.ant-select-dropdown-hidden,
