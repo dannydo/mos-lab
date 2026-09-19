@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, Tooltip, theme } from 'antd';
+import { Button, theme } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import type { LucideIcon } from 'lucide-react';
 import { AppIcon } from './AppIcon';
@@ -131,18 +131,12 @@ export function IconButton({
   );
 
   return tooltip ? (
-    <Tooltip
-      title={label}
-      placement="top"
-      arrow={false}
-      mouseEnterDelay={0.15}
-      mouseLeaveDelay={0.2}
-      overlayClassName="pointer-events-none select-none"
-      overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-      rootClassName="pointer-events-none select-none"
-    >
+    <div className="mos-tooltip-wrapper">
       {button}
-    </Tooltip>
+      <div role="tooltip" aria-hidden="true" className="mos-tooltip-popup mos-tooltip-popup--top">
+        {label}
+      </div>
+    </div>
   ) : (
     button
   );

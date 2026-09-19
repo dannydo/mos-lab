@@ -6061,6 +6061,85 @@ body {
 }
 
 /* ===========================================================================
+   Rock-solid Pure CSS Tooltips for Header & Icon Actions
+   Eliminates all ResizeObserver, CSSMotion, and class-mutation jitter on Windows 10 Chrome.
+   =========================================================================== */
+.mos-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.mos-tooltip-popup {
+  position: absolute;
+  top: 100%;
+  margin-top: 8px;
+  z-index: 1070;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  pointer-events: none !important;
+  user-select: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.mos-tooltip-popup--right {
+  right: 0;
+  left: auto;
+}
+
+.mos-tooltip-popup--left {
+  left: 0;
+  right: auto;
+}
+
+.mos-tooltip-popup--center {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.mos-tooltip-popup--top {
+  bottom: 100%;
+  top: auto;
+  margin-bottom: 8px;
+  margin-top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dark-theme .mos-tooltip-popup {
+  background: rgba(30, 41, 59, 0.96);
+  color: #f1f5f9;
+  border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+.light-theme .mos-tooltip-popup {
+  background: rgba(15, 23, 42, 0.94);
+  color: #ffffff;
+  border: 1px solid rgba(51, 65, 85, 0.4);
+}
+
+.mos-tooltip-wrapper:hover > .mos-tooltip-popup,
+.mos-tooltip-wrapper:focus-within > .mos-tooltip-popup {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.1s;
+}
+
+/* ===========================================================================
    Unified Button & Tooltip Anti-Flickering Invariant (Windows 10 Chrome / Fractional DPI)
    
    1. Tooltips are informational overlays: they must NEVER intercept pointer events.

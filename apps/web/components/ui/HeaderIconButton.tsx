@@ -1,7 +1,7 @@
 'use client';
 
 import React, { forwardRef } from 'react';
-import { Tooltip, theme } from 'antd';
+import { theme } from 'antd';
 import type { LucideIcon } from 'lucide-react';
 import { AppIcon } from './AppIcon';
 
@@ -18,6 +18,8 @@ export interface HeaderIconButtonProps extends React.ButtonHTMLAttributes<HTMLBu
   tone?: HeaderActionTone;
   /** Set to false if action is wrapped by another popup/dropdown. Defaults to true. */
   showTooltip?: boolean;
+  /** Alignment of tooltip popup. Defaults to 'right' for header actions. */
+  tooltipAlign?: 'right' | 'center' | 'left';
 }
 
 /**
@@ -32,6 +34,7 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
     desktopLabel,
     tone = 'quiet',
     showTooltip = true,
+    tooltipAlign = 'right',
     className = '',
     style: buttonStyle,
     onClick,
@@ -88,19 +91,20 @@ export const HeaderIconButton = forwardRef<HTMLButtonElement, HeaderIconButtonPr
     return button;
   }
 
+  const alignClass =
+    tooltipAlign === 'center'
+      ? 'mos-tooltip-popup--center'
+      : tooltipAlign === 'left'
+        ? 'mos-tooltip-popup--left'
+        : 'mos-tooltip-popup--right';
+
   return (
-    <Tooltip
-      title={label}
-      placement="bottom"
-      arrow={false}
-      mouseEnterDelay={0.15}
-      mouseLeaveDelay={0.2}
-      overlayClassName="pointer-events-none select-none"
-      overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-      rootClassName="pointer-events-none select-none"
-    >
+    <div className="mos-tooltip-wrapper">
       {button}
-    </Tooltip>
+      <div role="tooltip" aria-hidden="true" className={`mos-tooltip-popup ${alignClass}`}>
+        {label}
+      </div>
+    </div>
   );
 });
 

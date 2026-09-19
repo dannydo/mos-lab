@@ -655,16 +655,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {onlineMembers.length > 0 && (
                   <div className="dashboard-online-member-stack dashboard-desktop-only">
                     {onlineMembers.map((m, idx) => (
-                      <Tooltip
-                        key={m.id}
-                        title={m.name}
-                        placement="bottom"
-                        arrow={false}
-                        align={{ points: ['tc', 'bc'], offset: [0, 8] }}
-                        mouseEnterDelay={0.15}
-                        overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-                        rootClassName="pointer-events-none"
-                      >
+                      <div key={m.id} className="mos-tooltip-wrapper">
                         <button
                           type="button"
                           className="dashboard-online-member-action"
@@ -750,7 +741,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             />
                           </div>
                         </button>
-                      </Tooltip>
+                        <div role="tooltip" aria-hidden="true" className="mos-tooltip-popup mos-tooltip-popup--center">
+                          {m.name}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Avatar, Switch, Segmented, theme, Tooltip } from 'antd';
+import { Avatar, Switch, Segmented, theme } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
 import { PhoneCall, Radio, MessageSquareWarning, BarChart3, ChevronRight, LogOut, UserRound } from 'lucide-react';
 import type { SafeAny } from '@mos-lab/shared';
@@ -428,17 +428,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 
   return (
     <div className="relative inline-flex items-center" ref={containerRef}>
-      <Tooltip
-        title="Tài khoản cá nhân"
-        placement="bottom"
-        arrow={false}
-        mouseEnterDelay={0.15}
-        mouseLeaveDelay={0.2}
-        open={open ? false : undefined}
-        overlayClassName="pointer-events-none select-none"
-        overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-        rootClassName="pointer-events-none select-none"
-      >
+      <div className="mos-tooltip-wrapper">
         <button
           type="button"
           className="mos-header-avatar-action cursor-pointer"
@@ -470,7 +460,12 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             }}
           />
         </button>
-      </Tooltip>
+        {!open && (
+          <div role="tooltip" aria-hidden="true" className="mos-tooltip-popup mos-tooltip-popup--right">
+            Tài khoản cá nhân
+          </div>
+        )}
+      </div>
 
       {open && (
         <div

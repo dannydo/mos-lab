@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Tag, message, theme, Tooltip } from 'antd';
+import { Tag, message, theme } from 'antd';
 import { Palette, Sun, Moon, Check, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeStudioModal } from './ThemeStudioModal';
@@ -46,17 +46,7 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
   return (
     <>
       <div className="relative inline-flex items-center" ref={containerRef}>
-        <Tooltip
-          title={`Giao diện: ${currentThemeItem?.label || 'mOS Theme'}`}
-          placement="bottom"
-          arrow={false}
-          mouseEnterDelay={0.15}
-          mouseLeaveDelay={0.2}
-          open={dropdownOpen ? false : undefined}
-          overlayClassName="pointer-events-none select-none"
-          overlayInnerStyle={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
-          rootClassName="pointer-events-none select-none"
-        >
+        <div className="mos-tooltip-wrapper">
           <button
             type="button"
             className="mos-header-icon-action flex items-center justify-center relative group p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
@@ -74,7 +64,12 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
               style={{ backgroundColor: currentThemeItem?.colors.primary || '#d4a84b' }}
             />
           </button>
-        </Tooltip>
+          {!dropdownOpen && (
+            <div role="tooltip" aria-hidden="true" className="mos-tooltip-popup mos-tooltip-popup--right">
+              {`Giao diện: ${currentThemeItem?.label || 'mOS Theme'}`}
+            </div>
+          )}
+        </div>
 
         {dropdownOpen && (
           <div
