@@ -35,5 +35,6 @@ export function assertSafeDevConfiguration(environment: SafeDevEnvironment = pro
 }
 
 export function runtimeListenHost(environment: SafeDevEnvironment = process.env): string {
+  if (environment.HOST) return environment.HOST;
   return isSafeDev(environment) ? '127.0.0.1' : '0.0.0.0';
 }
