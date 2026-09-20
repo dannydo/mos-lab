@@ -69,7 +69,11 @@ test('real Git content/parent/ancestry and fixed web marker are required, not a 
     process.chdir(cwd);
     if (marker === undefined) delete process.env.DEPLOY_COMMIT;
     else process.env.DEPLOY_COMMIT = marker;
-    await rm(directory, { recursive: true, force: true });
+    try {
+      await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      // Ignore transient cleanup ENOTEMPTY on CI runners
+    }
   }
 });
 
@@ -119,6 +123,10 @@ test('allows a non-overlapping control-plane hotfix between the reviewed base an
     process.chdir(cwd);
     if (marker === undefined) delete process.env.DEPLOY_COMMIT;
     else process.env.DEPLOY_COMMIT = marker;
-    await rm(directory, { recursive: true, force: true });
+    try {
+      await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      // Ignore transient cleanup ENOTEMPTY on CI runners
+    }
   }
 });
