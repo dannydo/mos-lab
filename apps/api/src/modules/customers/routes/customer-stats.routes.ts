@@ -446,11 +446,15 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       // 3. daysSinceLastVisit Filters
       if (daysSinceLastVisitMin !== undefined && daysSinceLastVisitMin !== '') {
-        innerWhereClauses.push('up.last_order_booking IS NOT NULL AND DATEDIFF(NOW(), up.last_order_booking) >= ?');
+        innerWhereClauses.push(
+          "up.last_order_booking IS NOT NULL AND up.last_order_booking <= CONCAT(DATE_SUB(CURDATE(), INTERVAL ? DAY), ' 23:59:59')"
+        );
         innerParams.push(parseInt(daysSinceLastVisitMin, 10));
       }
       if (daysSinceLastVisitMax !== undefined && daysSinceLastVisitMax !== '') {
-        innerWhereClauses.push('up.last_order_booking IS NOT NULL AND DATEDIFF(NOW(), up.last_order_booking) <= ?');
+        innerWhereClauses.push(
+          "up.last_order_booking IS NOT NULL AND up.last_order_booking >= CONCAT(DATE_SUB(CURDATE(), INTERVAL ? DAY), ' 00:00:00')"
+        );
         innerParams.push(parseInt(daysSinceLastVisitMax, 10));
       }
 
