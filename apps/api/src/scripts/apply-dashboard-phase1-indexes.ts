@@ -103,6 +103,11 @@ const phase1Indexes = [
     table: 'staff_bonus',
     columns: ['user_id', 'bonus_type', 'is_holding', 'is_academy', 'id', 'date_created'],
   },
+  {
+    name: 'idx_news_feed_sent_store_created',
+    table: 'news_feed',
+    columns: ['date_sent', 'from_client_store_id', 'from_user_id', 'date_created'],
+  },
 ] as const;
 
 const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
