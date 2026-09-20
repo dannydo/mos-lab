@@ -3460,7 +3460,7 @@ export class InboxImplementationService {
       }
 
       const fixedReport = await tx.crmBugReport.updateMany({
-        where: { id: reportId, status: 'IN_PROGRESS', implementationActiveJobId: job.id },
+        where: { id: reportId, status: { in: ['IN_PROGRESS', 'APPROVED'] }, implementationActiveJobId: job.id },
         data: {
           status: 'FIXED',
           statusSort: 0,
