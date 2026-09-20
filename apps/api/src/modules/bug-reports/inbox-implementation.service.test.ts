@@ -2039,3 +2039,80 @@ test('Antigravity (AG) task bridge claims provisioning exclusively for AG execut
     planVersion: 'plan-v2',
   });
 });
+
+test('approveImplementation is idempotent and creates only one IMPLEMENTATION_APPROVED audit for same source version', async () => {
+  let auditsCreated = 0;
+  let updatesCount = 0;
+  const mockReport = {
+    id: 28,
+    requestType: 'BUG',
+    title: 'Idempotency test for code approval',
+    description: 'Prevent duplicate IMPLEMENTATION_APPROVED audit.',
+    status: 'APPROVED',
+    priority: 'P1',
+    clarificationStatus: 'READY',
+    clarificationSummary: 'Scope is ready.',
+    businessContext: 'Do not allow duplicate approval audits.',
+    triageNote: null,
+    sourcePath: '/dashboard/bug-reports',
+    implementationApprovedAt: null as Date | null,
+    implementationApprovalSourceVersion: null as string | null,
+    implementationActiveJobId: null,
+    comments: [],
+    inboxPlanJobs: [],
+  };
+
+  const fastify = {
+    prisma: {
+      crm: {
+        $transaction: async (callback: (tx: unknown) => Promise<unknown>) => {
+          return callback({
+            $queryRaw: async () => [],
+            crmBugReport: {
+              findUnique: async () => mockReport,
+              update: async (args: {
+                data: { implementationApprovedAt: Date; implementationApprovalSourceVersion: string };
+              }) => {
+                updatesCount++;
+                mockReport.implementationApprovedAt = args.data.implementationApprovedAt;
+                mockReport.implementationApprovalSourceVersion = args.data.implementationApprovalSourceVersion;
+                return mockReport;
+              },
+            },
+            crmBugReportAudit: {
+              findFirst: async () => null,
+              create: async (args: { data: { action: string } }) => {
+                if (args.data.action === 'IMPLEMENTATION_APPROVED') {
+                  auditsCreated++;
+                }
+                return {};
+              },
+            },
+            crmInboxImplementationJob: {
+              findFirst: async () => null,
+            },
+          });
+        },
+        crmBugReport: {
+          findUnique: async () => mockReport,
+        },
+        crmInboxImplementationJob: {
+          findFirst: async () => null,
+          create: async () => ({ id: 'job-1' }),
+        },
+      },
+    },
+  };
+
+  // First approval call
+  const firstResult = await InboxImplementationService.approve(fastify as never, 28, 1, undefined, 'AG');
+  assert.equal(auditsCreated, 1);
+  assert.equal(updatesCount, 1);
+  assert.equal(firstResult.planRequested, true);
+
+  // Second repeated approval call with the exact same source version
+  const secondResult = await InboxImplementationService.approve(fastify as never, 28, 1, undefined, 'AG');
+  assert.equal(auditsCreated, 1, 'Should not create a second audit record');
+  assert.equal(updatesCount, 1, 'Should not update the report again');
+  assert.equal(secondResult.implementationQueued, true);
+});

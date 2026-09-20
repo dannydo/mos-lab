@@ -293,6 +293,40 @@ describe('BugReportDetailDrawer behavior', () => {
     );
   });
 
+  it('locks the code/test confirmation trigger while approval is in flight to prevent double activation', async () => {
+    let resolveApproval!: (receipt: unknown) => void;
+    const approvalPromise = new Promise((resolve) => {
+      resolveApproval = resolve;
+    });
+    const props = propsFor(
+      makeDetail({
+        status: 'APPROVED',
+        agentProgress: {
+          stage: 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL',
+          note: null,
+          updatedAt: capturedAt,
+        },
+      })
+    );
+    props.approveImplementation = vi.fn().mockReturnValue(approvalPromise);
+    render(<BugReportDetailDrawer {...props} />);
+    const trigger = await screen.findByRole('button', { name: 'Duyệt code/test' });
+    fireEvent.click(trigger);
+    await screen.findByText('Duyệt AI chạy code/test?');
+    const okBtn = screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!;
+    fireEvent.click(okBtn);
+
+    // Repeated clicks while in-flight do not trigger duplicate calls
+    fireEvent.click(okBtn);
+    expect(props.approveImplementation).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Đã duyệt · Đang xếp hàng code\/test/ })).toBeDisabled();
+    });
+    expect(props.approveImplementation).toHaveBeenCalledTimes(1);
+    resolveApproval({ reportId: props.reportId, implementationQueued: true, planRequested: false });
+  });
+
   it.each([
     ['AWAITING_DANNY_IMPLEMENTATION_APPROVAL', 'Duyệt code/test', 'approveImplementation'],
     ['AWAITING_DANNY_COMMIT_REVIEW', 'Duyệt commit', 'approveImplementationCommit'],

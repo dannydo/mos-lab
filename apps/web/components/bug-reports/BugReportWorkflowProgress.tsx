@@ -7,6 +7,7 @@ import {
   BUG_REPORT_WORKFLOW_STEPS,
   effectiveBugReportAgentProgress,
   getBugReportWorkflowStage,
+  type BugReportWorkflowStage,
 } from './bug-report-workflow';
 import styles from './BugReportWorkflowProgress.module.css';
 
@@ -20,6 +21,12 @@ export function BugReportWorkflowProgress({ report, compact = false }: BugReport
   const { token } = theme.useToken();
   const agentProgress = effectiveBugReportAgentProgress(report);
   const workflow = getBugReportWorkflowStage({ ...report, agentProgress });
+  const safeWorkflow: BugReportWorkflowStage = workflow ?? {
+    position: 1,
+    label: 'Đang xử lý',
+    detail: 'Trạng thái đang được cập nhật',
+    tone: 'info',
+  };
   const colorByTone = {
     warning: token.colorWarning,
     primary: token.colorPrimary,
@@ -27,15 +34,17 @@ export function BugReportWorkflowProgress({ report, compact = false }: BugReport
     success: token.colorSuccess,
     muted: token.colorTextSecondary,
   };
-  const tone = workflow?.tone ?? 'info';
+  const tone = safeWorkflow.tone ?? 'info';
   const workflowColor = colorByTone[tone] ?? token.colorInfo;
-  const isStopped = workflow.position === null;
-  const positionLabel = isStopped ? 'Dừng' : `Chặng ${workflow.position}/5`;
+  const isStopped = safeWorkflow.position === null;
+  const positionLabel = isStopped ? 'Dừng' : `Chặng ${safeWorkflow.position ?? 1}/5`;
   const route = BUG_REPORT_WORKFLOW_STEPS.join(' → ');
-  const ariaLabel = `${report.key}: ${positionLabel}, ${workflow.label}. ${workflow.detail}. Lộ trình ${route}.`;
+  const label = safeWorkflow.label || 'Đang xử lý';
+  const detail = safeWorkflow.detail || 'Trạng thái đang được cập nhật';
+  const ariaLabel = `${report.key}: ${positionLabel}, ${label}. ${detail}. Lộ trình ${route}.`;
 
   return (
-    <Tooltip title={`Lộ trình: ${route}. ${workflow.label} · ${workflow.detail}`}>
+    <Tooltip title={`Lộ trình: ${route}. ${label} · ${detail}`}>
       <div
         className={`${styles.root}${compact ? ` ${styles.compact}` : ''}${isStopped ? ` ${styles.stopped}` : ''}`}
         role="img"
@@ -44,20 +53,20 @@ export function BugReportWorkflowProgress({ report, compact = false }: BugReport
       >
         {compact ? (
           <>
-            <WorkflowTrack position={workflow.position} />
+            <WorkflowTrack position={safeWorkflow.position} />
             <div className={styles.compactSummary}>
               <span className={styles.position}>{positionLabel}</span>
-              <span className={styles.label}>{workflow.label}</span>
+              <span className={styles.label}>{label}</span>
             </div>
           </>
         ) : (
           <>
             <div className={styles.summary}>
               <span className={styles.position}>{positionLabel}</span>
-              <span className={styles.label}>{workflow.label}</span>
+              <span className={styles.label}>{label}</span>
             </div>
-            <WorkflowTrack position={workflow.position} />
-            <span className={styles.detail}>{workflow.detail}</span>
+            <WorkflowTrack position={safeWorkflow.position} />
+            <span className={styles.detail}>{detail}</span>
           </>
         )}
       </div>

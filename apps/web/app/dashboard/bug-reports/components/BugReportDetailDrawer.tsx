@@ -166,9 +166,15 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     }
                     okText="Duyệt code/test"
                     cancelText="Chưa duyệt"
+                    okButtonProps={{ loading: saving, disabled: saving || approvalReceived }}
                     onConfirm={() => void approveCodeExecution(selectedEngine)}
                   >
-                    <Button type="primary" loading={saving} icon={<AppIcon icon={Gavel} size="sm" />}>
+                    <Button
+                      type="primary"
+                      loading={saving}
+                      disabled={saving || approvalReceived}
+                      icon={<AppIcon icon={Gavel} size="sm" />}
+                    >
                       Duyệt code/test
                     </Button>
                   </Popconfirm>
