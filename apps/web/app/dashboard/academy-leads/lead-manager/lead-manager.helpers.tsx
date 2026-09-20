@@ -12,7 +12,7 @@ import type {
   UpdateAcademyTalentAssessmentRequest,
 } from '@mos-lab/shared';
 import { formatVND } from '../../../../lib/format-utils';
-import { AppIcon, StatusTag } from '../../../../components/ui';
+import { AppIcon, CopyPhoneButton, StatusTag } from '../../../../components/ui';
 import { toAcademyTalentWorkshopView } from '../components/academy-talent-workshop.adapter';
 import type { AcademyTalentDraft } from '../components/academy-talent-workshop.types';
 
@@ -259,8 +259,10 @@ export function leadMobileCard(
         <div className="flex items-start justify-between gap-2">
           <div>
             <strong>{record.name}</strong>
-            <div className="mt-1 text-xs opacity-70">
-              {record.phone || 'Chưa có SĐT'} · {record.owner?.displayName || 'Chưa giao'}
+            <div className="mt-1 text-xs opacity-70 flex items-center gap-1">
+              <span>{record.phone || 'Chưa có SĐT'}</span>
+              {record.phone && <CopyPhoneButton phone={record.phone} size="xs" as="span" />}
+              <span>· {record.owner?.displayName || 'Chưa giao'}</span>
             </div>
           </div>
           <StatusTag status={STATUS_TONES[record.status]} label={STATUS_LABELS[record.status]} />

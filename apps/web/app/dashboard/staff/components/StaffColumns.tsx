@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { TableIndexHeader, CopyPhoneButton } from '~/components/ui';
 
 import React from 'react';
 import { Space, Badge, Avatar, Typography, Tag, Switch, Tooltip, Popconfirm, Button } from 'antd';
@@ -128,6 +128,7 @@ export const getStaffColumns = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <PhoneOutlined style={{ color: '#888' }} />
               <Text>{record.phone}</Text>
+              <CopyPhoneButton phone={record.phone} size="xs" />
             </div>
           ) : null}
           {record.email ? (

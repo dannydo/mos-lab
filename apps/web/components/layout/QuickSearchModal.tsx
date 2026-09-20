@@ -8,6 +8,7 @@ import { apiClient } from '../../lib/api-client';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useTheme } from '../../context/ThemeContext';
 import type { Customer } from '@mos-lab/shared';
+import { CopyPhoneButton } from '../ui';
 
 const { Text } = Typography;
 
@@ -147,8 +148,9 @@ export default function QuickSearchModal({ open, onClose, onOpenCustomerDetail }
                         </Tag>
                       )}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
-                      {c.phone || 'Chưa có SĐT'}
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums flex items-center gap-1">
+                      <span>{c.phone || 'Chưa có SĐT'}</span>
+                      {c.phone && <CopyPhoneButton phone={c.phone} size="xs" />}
                     </div>
                   </div>
 

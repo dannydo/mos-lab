@@ -1,6 +1,7 @@
 'use client';
 
 import { formatOrGenerateCustomerPhone } from './booking/constants';
+import { CopyPhoneButton } from './ui';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
@@ -277,8 +278,12 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
                 <span className="hover:underline font-semibold" style={{ color: 'var(--client-name-color)' }}>
                   {record.customer.name}
                 </span>
-                <div style={{ fontSize: '11px', color: 'var(--client-phone-color)' }}>
-                  {formatOrGenerateCustomerPhone(record.customer)}
+                <div
+                  style={{ fontSize: '11px', color: 'var(--client-phone-color)' }}
+                  className="flex items-center gap-1"
+                >
+                  <span>{formatOrGenerateCustomerPhone(record.customer)}</span>
+                  <CopyPhoneButton phone={formatOrGenerateCustomerPhone(record.customer)} size="xs" />
                 </div>
               </div>
             </Space>
@@ -293,18 +298,21 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           const phone = record.customer?.phone;
           if (!phone) return '-';
           return (
-            <Button
-              type="link"
-              size="small"
-              icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
-              onClick={(e) => {
-                e.stopPropagation();
-                makeCall(phone, record.customer!.name, record.customer!.id, record.customer?.avatar || undefined);
-              }}
-              style={{ padding: 0, fontWeight: '600', color: 'var(--client-name-color)' }}
-            >
-              {phone}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                type="link"
+                size="small"
+                icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  makeCall(phone, record.customer!.name, record.customer!.id, record.customer?.avatar || undefined);
+                }}
+                style={{ padding: 0, fontWeight: '600', color: 'var(--client-name-color)' }}
+              >
+                {phone}
+              </Button>
+              <CopyPhoneButton phone={phone} size="xs" />
+            </div>
           );
         },
       },

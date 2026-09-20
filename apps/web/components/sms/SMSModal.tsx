@@ -20,6 +20,7 @@ import dayjs from 'dayjs';
 import { Customer, SmsTemplate, CustomerSmsHistoryItem, DEFAULT_SMS_VARIABLE_TAGS } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
+import { CopyPhoneButton } from '../ui';
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;
@@ -610,7 +611,10 @@ export const SMSModal: React.FC<SMSModalProps> = ({
           <div className="space-y-4">
             {/* Phone selection */}
             <div>
-              <Text className="text-xs font-bold block mb-1">Số điện thoại người nhận:</Text>
+              <div className="flex items-center justify-between mb-1">
+                <Text className="text-xs font-bold">Số điện thoại người nhận:</Text>
+                {selectedPhone && <CopyPhoneButton phone={selectedPhone} size="xs" tooltip="Sao chép SĐT người nhận" />}
+              </div>
               <Input
                 prefix={<PhoneOutlined style={{ color: token.colorPrimary }} />}
                 value={selectedPhone}

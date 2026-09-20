@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
 import { Avatar, Checkbox, Tag, Typography, Space, Tooltip, Button, theme } from 'antd';
@@ -242,14 +242,19 @@ const CustomerTable = React.memo(
                 {record.phone && (
                   <div
                     style={{ fontSize: '12px', color: themeMode === 'dark' ? '#D4A84B' : '#855b0e', fontWeight: '500' }}
-                    className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5 tabular-nums"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      makeCall(record.phone, record.name, record.id, record.avatar || undefined);
-                    }}
+                    className="flex items-center gap-1 mt-0.5 tabular-nums"
                   >
-                    <PhoneOutlined style={{ fontSize: '10px' }} />
-                    <span>{record.phone}</span>
+                    <span
+                      className="hover:underline cursor-pointer flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                      }}
+                    >
+                      <PhoneOutlined style={{ fontSize: '10px' }} />
+                      <span>{record.phone}</span>
+                    </span>
+                    <CopyPhoneButton phone={record.phone} size="xs" />
                   </div>
                 )}
                 {record.dob && (
@@ -567,7 +572,12 @@ const CustomerTable = React.memo(
                         <span>{record.name}</span>
                         {record.isForeign && <Tag color="purple">🌐 Nước ngoài</Tag>}
                       </div>
-                      {record.phone && <span className="customer-mobile-card-phone tabular-nums">{record.phone}</span>}
+                      {record.phone && (
+                        <div className="flex items-center gap-1">
+                          <span className="customer-mobile-card-phone tabular-nums">{record.phone}</span>
+                          <CopyPhoneButton phone={record.phone} size="xs" />
+                        </div>
+                      )}
                     </button>
                   </div>
                   <span className="customer-mobile-card-bucket">{record.bucket || 'Chưa phân loại'}</span>

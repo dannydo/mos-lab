@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
@@ -406,7 +406,10 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
                 <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
               </div>
               {r.clientPhone && (
-                <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap">{r.clientPhone}</div>
+                <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap flex items-center gap-1">
+                  <span>{r.clientPhone}</span>
+                  <CopyPhoneButton phone={r.clientPhone} size="xs" />
+                </div>
               )}
             </div>
           </div>

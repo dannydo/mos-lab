@@ -17,7 +17,7 @@ import {
   UserDeleteOutlined,
 } from '@ant-design/icons';
 import { SafeAny, removeVietnameseTones } from '@mos-lab/shared';
-import { AdaptiveDrawer } from '../../../../components/ui';
+import { AdaptiveDrawer, CopyPhoneButton } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -610,7 +610,18 @@ export const AssignmentHistoryDrawer: React.FC<AssignmentHistoryDrawerProps> = (
                                 title: 'Số điện thoại',
                                 dataIndex: 'phone',
                                 key: 'phone',
-                                render: (phone) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{phone}</span>,
+                                render: (phone) =>
+                                  phone ? (
+                                    <span
+                                      className="inline-flex items-center gap-1"
+                                      style={{ fontVariantNumeric: 'tabular-nums' }}
+                                    >
+                                      <span>{phone}</span>
+                                      <CopyPhoneButton phone={phone} size="xs" />
+                                    </span>
+                                  ) : (
+                                    '-'
+                                  ),
                               },
                               {
                                 title: 'Booker cũ',

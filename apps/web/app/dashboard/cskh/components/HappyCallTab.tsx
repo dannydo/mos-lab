@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Tag, Button, DatePicker, Select, Space, Tooltip, Input, theme, message, Avatar } from 'antd';
@@ -177,7 +177,10 @@ export default function HappyCallTab({ dateFrom, dateTo }: HappyCallTabProps) {
               <div className="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-sky-500 transition-colors underline-offset-2 group-hover:underline">
                 {name}
               </div>
-              <div className="text-xs text-slate-400 tabular-nums">{record.customerPhone || record.phone || '-'}</div>
+              <div className="text-xs text-slate-400 tabular-nums flex items-center gap-1">
+                <span>{record.customerPhone || record.phone || '-'}</span>
+                <CopyPhoneButton phone={record.customerPhone || record.phone} size="xs" />
+              </div>
             </div>
           </div>
         );

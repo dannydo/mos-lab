@@ -10,6 +10,7 @@ import { apiClient } from '../../../../lib/api-client';
 import { ComboLiveOwnerItem, ComboLiveResponse, ComboLiveSummaryItem } from '@mos-lab/shared';
 import {
   AppIcon,
+  CopyPhoneButton,
   DataSection,
   DataTable,
   FeatureToolbar,
@@ -145,9 +146,10 @@ export default function CatalogComboLiveTab() {
         key: 'customerPhone',
         render: (phone?: string) =>
           phone ? (
-            <span className={styles.phoneCell}>
+            <span className={`${styles.phoneCell} inline-flex items-center gap-1`}>
               <AppIcon icon={Phone} size="disclosure" />
               <span className="tabular-nums">{phone}</span>
+              <CopyPhoneButton phone={phone} size="xs" />
             </span>
           ) : (
             '-'

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Card, Tag } from 'antd';
 import { ShareAltOutlined, SketchOutlined } from '@ant-design/icons';
+import { CopyPhoneButton } from '../../ui';
 
 interface ReferralCardProps {
   data: SafeAny;
@@ -53,7 +54,10 @@ export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) =
               <div style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#4ade80' : '#389e0d' }}>
                 {data.referrer.name}
               </div>
-              <div style={{ color: mutedTextColor, marginTop: '2px' }}>SĐT: {data.referrer.phone}</div>
+              <div style={{ color: mutedTextColor, marginTop: '2px' }} className="flex items-center gap-1">
+                <span>SĐT: {data.referrer.phone}</span>
+                <CopyPhoneButton phone={data.referrer.phone} size="xs" />
+              </div>
             </div>
           ) : (
             <div style={{ fontSize: '12px', color: mutedTextColor, fontStyle: 'italic' }}>
@@ -95,8 +99,13 @@ export const ReferralCard: React.FC<ReferralCardProps> = ({ data, themeMode }) =
                     <div style={{ fontWeight: 'bold', color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>
                       {ru.name}
                     </div>
-                    <div style={{ fontSize: '11px', color: mutedTextColor, marginTop: '1px' }}>
-                      {ru.phone} {ru.dateCreated ? `• ${new Date(ru.dateCreated).toLocaleDateString('vi-VN')}` : ''}
+                    <div
+                      style={{ fontSize: '11px', color: mutedTextColor, marginTop: '1px' }}
+                      className="flex items-center gap-1"
+                    >
+                      <span>{ru.phone}</span>
+                      <CopyPhoneButton phone={ru.phone} size="xs" />
+                      {ru.dateCreated ? <span>• {new Date(ru.dateCreated).toLocaleDateString('vi-VN')}</span> : null}
                     </div>
                   </div>
                   {ru.rewardDiamonds > 0 ? (

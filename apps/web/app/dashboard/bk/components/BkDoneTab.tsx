@@ -1,6 +1,6 @@
 'use client';
 
-import { AppIcon, TableIndexHeader } from '~/components/ui';
+import { AppIcon, CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
@@ -410,8 +410,9 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
                 <span>{record.clientName || 'Khách hàng'}</span>
                 <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
               </div>
-              <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap">
-                {record.clientPhone || 'Chưa có SĐT'}
+              <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap flex items-center gap-1">
+                <span>{record.clientPhone || 'Chưa có SĐT'}</span>
+                {record.clientPhone && <CopyPhoneButton phone={record.clientPhone} size="xs" />}
               </div>
             </div>
           </div>

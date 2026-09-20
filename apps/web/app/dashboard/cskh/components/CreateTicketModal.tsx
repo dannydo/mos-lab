@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Select, Button, Form, Input, Avatar, Tag, message, Spin } from 'antd';
 import { UserOutlined, SearchOutlined } from '@ant-design/icons';
 import { apiClient } from '../../../../lib/api-client';
+import { CopyPhoneButton } from '~/components/ui';
 
 const { TextArea } = Input;
 
@@ -135,8 +136,10 @@ export default function CreateTicketModal({ open, onClose, onSuccess }: CreateTi
               <div className="font-semibold text-emerald-800 dark:text-emerald-300">
                 {selectedCustomer.name || selectedCustomer.fullName}
               </div>
-              <div className="text-xs text-emerald-600 dark:text-emerald-400">
-                SĐT: {selectedCustomer.phone || '-'} | Mã KH: #{selectedCustomer.id}
+              <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <span>SĐT: {selectedCustomer.phone || '-'}</span>
+                {selectedCustomer.phone && <CopyPhoneButton phone={selectedCustomer.phone} size="xs" />}
+                <span>| Mã KH: #{selectedCustomer.id}</span>
               </div>
             </div>
           </div>

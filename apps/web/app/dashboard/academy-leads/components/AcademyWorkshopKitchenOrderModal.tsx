@@ -11,7 +11,7 @@ import {
   type AcademyWorkshopMenuCategory,
   type AcademyWorkshopParticipant,
 } from '@mos-lab/shared';
-import { AdaptiveModal, AppIcon, MetricGrid, StatusTag } from '../../../../components/ui';
+import { AdaptiveModal, AppIcon, CopyPhoneButton, MetricGrid, StatusTag } from '../../../../components/ui';
 
 export interface AcademyWorkshopKitchenOrderModalProps {
   open: boolean;
@@ -282,7 +282,12 @@ export default function AcademyWorkshopKitchenOrderModal({
                   className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-800 dark:border-amber-900 dark:bg-slate-900 dark:text-slate-200 print:border-black"
                 >
                   {p.lead.name}
-                  {p.lead.phone ? <span className="opacity-60 tabular-nums">({p.lead.phone})</span> : null}
+                  {p.lead.phone ? (
+                    <>
+                      <span className="opacity-60 tabular-nums">({p.lead.phone})</span>
+                      <CopyPhoneButton phone={p.lead.phone} size="xs" />
+                    </>
+                  ) : null}
                 </span>
               ))}
             </div>

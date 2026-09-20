@@ -12,6 +12,7 @@ import {
   CalendarOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
+import { CopyPhoneButton } from './ui';
 
 const { Title, Text } = Typography;
 
@@ -112,6 +113,7 @@ export function UserProfile({ user, onEdit, onRefresh, className = '', compact =
                 <span className="inline-flex items-center gap-1">
                   <PhoneOutlined />
                   <span>{user.phone}</span>
+                  <CopyPhoneButton phone={user.phone} size="xs" />
                 </span>
               )}
               {user.joinDate && (

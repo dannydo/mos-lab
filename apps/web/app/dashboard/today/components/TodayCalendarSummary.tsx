@@ -43,6 +43,7 @@ import { RevenueKpiCards } from './RevenueKpiCards';
 import { RevenueHourlyChart } from './RevenueHourlyChart';
 import { RevenueBranchHeatmap } from './RevenueBranchHeatmap';
 import { RevenueDetailModal } from './RevenueDetailModal';
+import { CopyPhoneButton } from '~/components/ui';
 
 const { Text } = Typography;
 
@@ -1191,8 +1192,15 @@ export default function TodayCalendarSummary({
                       </Avatar>
                       <div>
                         <div style={{ fontWeight: 'bold' }}>{item.customer}</div>
-                        <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                          {item.phone} | Booker: <strong>{item.booker}</strong> | CV: {item.cv || '-'}
+                        <div
+                          style={{ fontSize: '11px', color: token.colorTextDescription }}
+                          className="flex items-center gap-1"
+                        >
+                          <span className="tabular-nums">{item.phone}</span>
+                          <CopyPhoneButton phone={item.phone} size="xs" />
+                          <span>
+                            | Booker: <strong>{item.booker}</strong> | CV: {item.cv || '-'}
+                          </span>
                         </div>
                       </div>
                     </Space>

@@ -31,7 +31,7 @@ import { apiClient } from '../../lib/api-client';
 import { Campaign, AddCustomerDetail, AddCampaignCustomersResponse } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
 import CampaignPlusIcon from '../icons/CampaignPlusIcon';
-import { AdaptiveModal } from '../ui';
+import { AdaptiveModal, CopyPhoneButton } from '../ui';
 
 const { Text, Paragraph } = Typography;
 
@@ -340,7 +340,10 @@ export function AddToCampaignModal({
           <div>
             <span className="font-semibold">{record.customerName}</span>
             {record.customerPhone && (
-              <span className="text-xs text-slate-400 block font-mono">{record.customerPhone}</span>
+              <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                <span>{record.customerPhone}</span>
+                <CopyPhoneButton phone={record.customerPhone} size="xs" />
+              </span>
             )}
           </div>
         ),

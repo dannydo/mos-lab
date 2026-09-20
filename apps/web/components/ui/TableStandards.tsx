@@ -7,6 +7,7 @@ import type { PaginationProps } from 'antd/es/pagination';
 import type { TablePaginationConfig } from 'antd/es/table';
 import { ListOrdered, Phone, Settings2, UserRound } from 'lucide-react';
 import { AppIcon } from './AppIcon';
+import { CopyPhoneButton } from './CopyPhoneButton';
 
 /** The one page-size contract used by every operational data table. */
 export const STANDARD_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
@@ -190,18 +191,21 @@ export function CustomerIdentityCell({
           {isForeign && <Tag color="purple">🌐 Nước ngoài</Tag>}
         </div>
         {phone ? (
-          <button
-            type="button"
-            className="customer-identity-cell-phone"
-            aria-label={onCall ? `Gọi ${phone}` : `Số điện thoại ${phone}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onCall?.();
-            }}
-          >
-            <AppIcon icon={Phone} size="disclosure" style={{ color: resolvedAccent }} />
-            <span>{phone}</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="customer-identity-cell-phone"
+              aria-label={onCall ? `Gọi ${phone}` : `Số điện thoại ${phone}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onCall?.();
+              }}
+            >
+              <AppIcon icon={Phone} size="disclosure" style={{ color: resolvedAccent }} />
+              <span>{phone}</span>
+            </button>
+            <CopyPhoneButton phone={phone} size="xs" />
+          </div>
         ) : (
           <span className="customer-identity-cell-phone customer-identity-cell-phone-empty">Chưa có SĐT</span>
         )}

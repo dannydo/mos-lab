@@ -14,6 +14,7 @@ import { CALL_RESULT_LABELS, CALL_OUTCOME_LABELS } from '@mos-lab/shared';
 import { useTheme } from '../context/ThemeContext';
 import { useOmiCall } from '../context/OmiCallContext';
 import { AdaptiveModal } from './ui/AdaptiveOverlay';
+import { CopyPhoneButton } from './ui';
 
 const { TextArea } = Input;
 
@@ -325,6 +326,7 @@ export default function CallLogModal({
               {activeCall.direction === 'outbound' ? '📞 Cuộc gọi đi' : '📥 Cuộc gọi đến'}
             </span>
             <span className="text-zinc-500 font-mono">({activeCall.phone})</span>
+            <CopyPhoneButton phone={activeCall.phone} size="xs" />
           </div>
           <div className="flex items-center gap-2">
             <span

@@ -7,6 +7,7 @@ import {
   PhoneOutlined,
   ExperimentOutlined,
 } from '@ant-design/icons';
+import { CopyPhoneButton } from '../../ui';
 
 interface CallConfirmingProps {
   currentCall: SafeAny;
@@ -64,9 +65,13 @@ export const CallConfirming: React.FC<CallConfirmingProps> = ({
         <h4 className="text-lg font-extrabold mt-1" style={{ color: textColor }}>
           {currentCall?.name}
         </h4>
-        <p className="text-sm font-semibold font-mono mt-0.5" style={{ color: descColor }}>
-          {currentCall?.phone}
-        </p>
+        <div
+          className="flex items-center justify-center gap-1 text-sm font-semibold font-mono mt-0.5"
+          style={{ color: descColor }}
+        >
+          <span>{currentCall?.phone}</span>
+          {currentCall?.phone && <CopyPhoneButton phone={currentCall.phone} size="xs" />}
+        </div>
       </div>
 
       {/* Mode Selector */}

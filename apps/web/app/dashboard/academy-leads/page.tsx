@@ -27,6 +27,7 @@ import {
 import { apiClient } from '../../../lib/api-client';
 import { formatVND } from '../../../lib/format-utils';
 import {
+  CopyPhoneButton,
   CustomerIdentityCell,
   DataSection,
   DataTable,
@@ -98,8 +99,10 @@ function leadMobileCard(record: AcademyLead, onOpen: (lead: AcademyLead) => void
       <div className="flex items-start justify-between gap-2">
         <div>
           <strong>{record.name}</strong>
-          <div className="mt-1 text-xs opacity-70">
-            {record.phone || 'Chưa có SĐT'} · {record.owner?.displayName || 'Chưa giao'}
+          <div className="mt-1 text-xs opacity-70 flex items-center gap-1">
+            <span>{record.phone || 'Chưa có SĐT'}</span>
+            {record.phone && <CopyPhoneButton phone={record.phone} size="xs" as="span" />}
+            <span>· {record.owner?.displayName || 'Chưa giao'}</span>
           </div>
         </div>
         <StatusTag status={STATUS_TONES[record.status]} label={STATUS_LABELS[record.status]} />

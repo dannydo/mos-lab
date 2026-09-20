@@ -20,6 +20,7 @@ import {
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
+import { CopyPhoneButton } from '../../../../components/ui';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -175,7 +176,10 @@ export default function MissedReasonModal({
             <div>
               <div className="font-semibold text-sm">{appointment.customerName}</div>
               <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                <span>SĐT: {appointment.customerPhone || 'Chưa có'}</span>
+                <span className="flex items-center gap-1">
+                  <span>SĐT: {appointment.customerPhone || 'Chưa có'}</span>
+                  {appointment.customerPhone && <CopyPhoneButton phone={appointment.customerPhone} size="xs" />}
+                </span>
                 <span>•</span>
                 <span>Chi nhánh: {appointment.branchName || 'Chi nhánh 1'}</span>
               </div>

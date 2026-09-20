@@ -21,6 +21,7 @@ import { SearchOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { LeaderboardEntry, removeVietnameseTones } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { CopyPhoneButton } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -670,8 +671,12 @@ export default function AppointmentsAuditDrawer({
                 render: (record: SafeAny) => (
                   <div>
                     <div style={{ fontWeight: '600', color: token.colorText }}>{record.clientName || 'N/A'}</div>
-                    <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                      {record.clientPhone || 'N/A'}
+                    <div
+                      style={{ fontSize: '11px', color: token.colorTextDescription }}
+                      className="flex items-center gap-1"
+                    >
+                      <span>{record.clientPhone || 'N/A'}</span>
+                      {record.clientPhone && <CopyPhoneButton phone={record.clientPhone} size="xs" />}
                     </div>
                   </div>
                 ),

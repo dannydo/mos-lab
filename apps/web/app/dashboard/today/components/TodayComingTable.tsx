@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
 import { Tabs, Select, Button, Space, Avatar, Tag, Tooltip, Typography, theme } from 'antd';
@@ -180,13 +180,16 @@ const TodayComingTable = React.memo(function TodayComingTable({
       key: 'phone',
       render: (t: string, record: SafeAny) =>
         t ? (
-          <span
-            className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-            onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
-            style={{ color: token.colorText, fontWeight: '600' }}
-          >
-            <PhoneOutlined style={{ color: goldText }} />
-            <span>{t}</span>
+          <span className="inline-flex items-center gap-1">
+            <span
+              className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text tabular-nums"
+              onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
+              style={{ color: token.colorText, fontWeight: '600' }}
+            >
+              <PhoneOutlined style={{ color: goldText }} />
+              <span>{t}</span>
+            </span>
+            <CopyPhoneButton phone={t} size="xs" />
           </span>
         ) : (
           <Text type="secondary">-</Text>

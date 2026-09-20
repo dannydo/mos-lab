@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
 import { Tag, Button, Space, Tooltip, Typography } from 'antd';
@@ -240,14 +240,17 @@ export default function ScheduleListView({
           <Space size="small">
             <span className="font-mono text-xs tabular-nums text-slate-700 dark:text-slate-200">{phone || '-'}</span>
             {phone && (
-              <Tooltip title="Gọi ngay qua OmiCall">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<PhoneOutlined className="text-emerald-500 hover:text-emerald-600" />}
-                  onClick={() => makeCall(phone, record.customerName || 'Khách hàng')}
-                />
-              </Tooltip>
+              <>
+                <Tooltip title="Gọi ngay qua OmiCall">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<PhoneOutlined className="text-emerald-500 hover:text-emerald-600" />}
+                    onClick={() => makeCall(phone, record.customerName || 'Khách hàng')}
+                  />
+                </Tooltip>
+                <CopyPhoneButton phone={phone} size="xs" />
+              </>
             )}
           </Space>
         );

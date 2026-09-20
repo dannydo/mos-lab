@@ -42,7 +42,7 @@ import { useOmiCall } from '../../../context/OmiCallContext';
 import { Customer, CustomerWeeklyProgress, BucketType } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
-import { DataTable } from '../../../components/ui';
+import { DataTable, CopyPhoneButton } from '../../../components/ui';
 
 const { Title, Text } = Typography;
 
@@ -288,7 +288,10 @@ export default function PlansPage() {
         render: (text: string, record: CustomerWeeklyProgress) => (
           <div>
             <div style={{ fontWeight: '600', color: token.colorText }}>{text}</div>
-            <div style={{ fontSize: '11px', color: token.colorTextDescription }}>{record.customer.phone}</div>
+            <div style={{ fontSize: '11px', color: token.colorTextDescription }} className="flex items-center gap-1">
+              <span>{record.customer.phone}</span>
+              {record.customer.phone && <CopyPhoneButton phone={record.customer.phone} size="xs" />}
+            </div>
           </div>
         ),
       },
@@ -534,9 +537,15 @@ export default function PlansPage() {
               <List.Item.Meta
                 title={<span style={{ color: token.colorText, fontWeight: '500', fontSize: '13px' }}>{cust.name}</span>}
                 description={
-                  <div style={{ fontSize: '11px', color: token.colorTextDescription }}>
-                    SĐT: {cust.phone} | Trễ:{' '}
-                    {cust.daysSinceLastVisit !== null ? `${cust.daysSinceLastVisit} ngày` : 'Chưa ghé'}
+                  <div
+                    style={{ fontSize: '11px', color: token.colorTextDescription }}
+                    className="flex items-center gap-1"
+                  >
+                    <span>SĐT: {cust.phone}</span>
+                    {cust.phone && <CopyPhoneButton phone={cust.phone} size="xs" />}
+                    <span>
+                      | Trễ: {cust.daysSinceLastVisit !== null ? `${cust.daysSinceLastVisit} ngày` : 'Chưa ghé'}
+                    </span>
                   </div>
                 }
               />

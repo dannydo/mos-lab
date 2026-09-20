@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from 'antd';
 import { AudioMutedOutlined, PauseOutlined } from '@ant-design/icons';
+import { CopyPhoneButton } from '../../ui';
 
 interface CallConnectedProps {
   currentCall: SafeAny;
@@ -54,7 +55,10 @@ export const CallConnected: React.FC<CallConnectedProps> = ({
       <div className="p-3 border rounded-xl" style={{ borderColor: borderColor, background: subBg }}>
         <div className="flex items-center justify-between text-xs font-semibold">
           <span>{currentCall?.name}</span>
-          <span className="font-mono text-zinc-500">{currentCall?.phone}</span>
+          <div className="flex items-center gap-1 font-mono text-zinc-500">
+            <span>{currentCall?.phone}</span>
+            {currentCall?.phone && <CopyPhoneButton phone={currentCall.phone} size="xs" />}
+          </div>
         </div>
         {isSimulated ? (
           <div

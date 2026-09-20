@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import { removeVietnameseTones } from '@mos-lab/shared';
-import { DataTable } from '../../../components/ui';
+import { CopyPhoneButton, DataTable } from '../../../components/ui';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 
@@ -197,8 +197,9 @@ export default function ReferralsPage() {
             >
               {record.referrerName}
             </span>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              SĐT: {record.referrerPhone}
+            <Text type="secondary" style={{ fontSize: '12px' }} className="inline-flex items-center gap-1">
+              <span>SĐT: {record.referrerPhone}</span>
+              {record.referrerPhone && <CopyPhoneButton phone={record.referrerPhone} size="xs" />}
             </Text>
           </Space>
         ),
@@ -266,6 +267,15 @@ export default function ReferralsPage() {
         title: 'Số điện thoại',
         dataIndex: 'phone',
         key: 'phone',
+        render: (phone: string) =>
+          phone ? (
+            <span className="tabular-nums font-mono inline-flex items-center gap-1">
+              <span>{phone}</span>
+              <CopyPhoneButton phone={phone} size="xs" />
+            </span>
+          ) : (
+            '-'
+          ),
       },
       {
         title: 'Ngày tham gia',

@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import { Store, Heart, User, Users, Zap, Search, RotateCw, Receipt, Coins, CircleSlash, XCircle } from 'lucide-react';
 import { CsTipQueryParams, CsTipRecord, CsTipResponse, CsTipStoreBreakdown } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
-import { AppIcon, CollapsibleSearchField, DataTable } from '~/components/ui';
+import { AppIcon, CollapsibleSearchField, CopyPhoneButton, DataTable } from '~/components/ui';
 import CsTipSummaryCards from './CsTipSummaryCards';
 
 interface CsTipTabProps {
@@ -198,7 +198,10 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
         <div>
           <div className="font-semibold text-slate-900 dark:text-white text-sm">{name}</div>
           {record.customerPhone && (
-            <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">{record.customerPhone}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 tabular-nums flex items-center gap-1 mt-0.5">
+              <span>{record.customerPhone}</span>
+              <CopyPhoneButton phone={record.customerPhone} size="xs" />
+            </div>
           )}
         </div>
       ),

@@ -20,6 +20,7 @@ import {
 import { apiClient } from '../../../../lib/api-client';
 import { UserOutlined, ClockCircleOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { CopyPhoneButton } from '~/components/ui';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -270,7 +271,12 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
             <Avatar icon={<UserOutlined />} />
             <div>
               <div className="font-semibold text-lg">{activeTicket.customerName || 'Khách hàng'}</div>
-              <div className="text-sm text-slate-500">{activeTicket.customerPhone || activeTicket.phone || '-'}</div>
+              <div className="text-sm text-slate-500 flex items-center gap-1">
+                <span>{activeTicket.customerPhone || activeTicket.phone || '-'}</span>
+                {(activeTicket.customerPhone || activeTicket.phone) && (
+                  <CopyPhoneButton phone={activeTicket.customerPhone || activeTicket.phone} size="xs" />
+                )}
+              </div>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-y-3 text-sm">

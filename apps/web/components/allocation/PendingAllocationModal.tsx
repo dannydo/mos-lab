@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Tag, message, Spin, Card } from 'antd';
@@ -230,9 +230,15 @@ export const PendingAllocationModal: React.FC<PendingAllocationModalProps> = ({ 
         title: 'Số điện thoại',
         dataIndex: 'customerPhone',
         key: 'customerPhone',
-        render: (phone: string) => (
-          <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{phone || 'Chưa cập nhật'}</span>
-        ),
+        render: (phone: string) =>
+          phone ? (
+            <span className="font-mono tabular-nums text-sm text-slate-700 dark:text-slate-300 inline-flex items-center gap-1">
+              <span>{phone}</span>
+              <CopyPhoneButton phone={phone} size="xs" />
+            </span>
+          ) : (
+            <span className="font-mono text-sm text-slate-400">Chưa cập nhật</span>
+          ),
       },
       {
         title: 'Trạng thái đợt',

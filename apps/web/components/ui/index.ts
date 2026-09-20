@@ -7,6 +7,9 @@ export type { AppIconProps, AppIconSize } from './AppIcon';
 export { IconButton } from './IconButton';
 export type { IconButtonProps, IconButtonTone } from './IconButton';
 
+export { CopyPhoneButton, extractCleanPhoneNumber } from './CopyPhoneButton';
+export type { CopyPhoneButtonProps } from './CopyPhoneButton';
+
 export { StatusTag } from './StatusTag';
 export type { StatusTagProps, StatusType } from './StatusTag';
 

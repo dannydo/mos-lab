@@ -1,6 +1,6 @@
 'use client';
 
-import { StandardPagination, TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, StandardPagination, TableIndexHeader } from '~/components/ui';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Table, Card, Tag, Input, Select, Button, Tooltip, Spin, Badge } from 'antd';
@@ -280,7 +280,15 @@ export const AllocationHistoryScreen: React.FC = () => {
       title: 'Số điện thoại',
       dataIndex: 'customerPhone',
       key: 'customerPhone',
-      render: (phone: string) => <span className="font-mono">{phone || '-'}</span>,
+      render: (phone: string) =>
+        phone ? (
+          <span className="font-mono tabular-nums inline-flex items-center gap-1">
+            <span>{phone}</span>
+            <CopyPhoneButton phone={phone} size="xs" />
+          </span>
+        ) : (
+          <span className="font-mono">-</span>
+        ),
     },
     {
       title: 'Trạng thái',

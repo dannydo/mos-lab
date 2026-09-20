@@ -16,6 +16,7 @@ import dayjs from 'dayjs';
 import { useTheme } from '../../../../context/ThemeContext';
 import { apiClient } from '../../../../lib/api-client';
 import { BookingAuditLog, BookingAuditSummary } from '@mos-lab/shared';
+import { CopyPhoneButton } from '../../../../components/ui';
 
 const { RangePicker } = DatePicker;
 
@@ -114,8 +115,14 @@ export const BookingAuditLogReportTab: React.FC = () => {
             {record.orderKey || `#${record.orderId}`}
           </div>
           {record.customerName && (
-            <div style={{ fontSize: '12px', color: isDark ? '#cbd5e1' : '#475569' }}>
-              {record.customerName} {record.customerPhone ? `(${record.customerPhone})` : ''}
+            <div
+              style={{ fontSize: '12px', color: isDark ? '#cbd5e1' : '#475569' }}
+              className="flex items-center gap-1"
+            >
+              <span>
+                {record.customerName} {record.customerPhone ? `(${record.customerPhone})` : ''}
+              </span>
+              {record.customerPhone && <CopyPhoneButton phone={record.customerPhone} size="xs" />}
             </div>
           )}
         </div>

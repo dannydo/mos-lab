@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React, { useState } from 'react';
 import {
@@ -253,13 +253,16 @@ export const LocaStaffActivityTab: React.FC<LocaStaffActivityTabProps> = ({
               >
                 {record.customerName}
               </Button>
-              <Text
-                type="secondary"
-                className="text-[11px] tabular-nums font-mono flex items-center justify-start gap-1 text-slate-400 text-left"
-              >
-                <PhoneOutlined className="text-[9px] text-slate-500" />
-                {record.customerPhone}
-              </Text>
+              <div className="flex items-center gap-1">
+                <Text
+                  type="secondary"
+                  className="text-[11px] tabular-nums font-mono flex items-center justify-start gap-1 text-slate-400 text-left"
+                >
+                  <PhoneOutlined className="text-[9px] text-slate-500" />
+                  {record.customerPhone}
+                </Text>
+                <CopyPhoneButton phone={record.customerPhone} size="xs" />
+              </div>
             </div>
           </div>
         );

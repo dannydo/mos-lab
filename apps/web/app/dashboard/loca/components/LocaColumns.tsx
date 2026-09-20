@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
 import { Space, Avatar, Typography, Tag, Tooltip, Button } from 'antd';
@@ -188,26 +188,29 @@ export const getLocaColumns = ({
               </span>
             </div>
             {record.phone && (
-              <div
-                style={{ fontSize: '12px', color: themeMode === 'dark' ? '#fbbf24' : '#d97706', fontWeight: '600' }}
-                className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5"
-                role="button"
-                tabIndex={0}
-                aria-label={`Gọi điện thoại cho ${record.name || 'khách hàng'}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  makeCall(record.phone, record.name, record.id, record.avatar || undefined);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+              <div className="flex items-center gap-1 mt-0.5">
+                <div
+                  style={{ fontSize: '12px', color: themeMode === 'dark' ? '#fbbf24' : '#d97706', fontWeight: '600' }}
+                  className="hover:underline cursor-pointer flex items-center gap-1 tabular-nums"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Gọi điện thoại cho ${record.name || 'khách hàng'}`}
+                  onClick={(e) => {
                     e.stopPropagation();
-                    e.preventDefault();
                     makeCall(record.phone, record.name, record.id, record.avatar || undefined);
-                  }
-                }}
-              >
-                <PhoneOutlined style={{ fontSize: '10px' }} />
-                <span>{record.phone}</span>
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                    }
+                  }}
+                >
+                  <PhoneOutlined style={{ fontSize: '10px' }} />
+                  <span>{record.phone}</span>
+                </div>
+                <CopyPhoneButton phone={record.phone} size="xs" />
               </div>
             )}
           </div>
@@ -609,26 +612,29 @@ export const getNewLocaColumns = ({
               {text}
             </div>
             {record.phone && (
-              <div
-                style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
-                className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5"
-                role="button"
-                tabIndex={0}
-                aria-label={`Gọi điện thoại cho ${record.name || 'khách hàng'}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  makeCall(record.phone, record.name, record.id, record.avatar || undefined);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+              <div className="flex items-center gap-1 mt-0.5">
+                <div
+                  style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
+                  className="hover:underline cursor-pointer flex items-center gap-1 tabular-nums"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Gọi điện thoại cho ${record.name || 'khách hàng'}`}
+                  onClick={(e) => {
                     e.stopPropagation();
-                    e.preventDefault();
                     makeCall(record.phone, record.name, record.id, record.avatar || undefined);
-                  }
-                }}
-              >
-                <PhoneOutlined style={{ fontSize: '10px' }} />
-                <span>{record.phone}</span>
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                    }
+                  }}
+                >
+                  <PhoneOutlined style={{ fontSize: '10px' }} />
+                  <span>{record.phone}</span>
+                </div>
+                <CopyPhoneButton phone={record.phone} size="xs" />
               </div>
             )}
           </div>

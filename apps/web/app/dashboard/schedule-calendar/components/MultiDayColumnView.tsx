@@ -25,6 +25,7 @@ import { formatVND } from '../../../../lib/format-utils';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 import { useTheme } from '../../../../context/ThemeContext';
 import { CvScheduleDrawer } from './CvScheduleDrawer';
+import { CopyPhoneButton } from '~/components/ui';
 
 const { Text, Title } = Typography;
 
@@ -575,7 +576,10 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
     <div className="p-1 max-w-[240px] space-y-2">
       <div className="border-b border-slate-100 dark:border-slate-800 pb-1.5">
         <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">{customerName}</div>
-        <div className="text-xs text-slate-400 tabular-nums">SĐT: {phone || '-'}</div>
+        <div className="text-xs text-slate-400 tabular-nums flex items-center gap-1">
+          <span>SĐT: {phone || '-'}</span>
+          {phone && <CopyPhoneButton phone={phone} size="xs" />}
+        </div>
       </div>
       <div className="text-xs space-y-1">
         <div>

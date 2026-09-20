@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React, { useState, useEffect } from 'react';
 import { Table, Tag, Button, Input, Select, Space, Tooltip, Avatar, theme, message } from 'antd';
@@ -189,7 +189,12 @@ export default function TicketTab({ dateFrom, dateTo }: TicketTabProps) {
             <div className="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-blue-500 transition-colors truncate">
               {text || 'Khách hàng'}
             </div>
-            {record.customerPhone && <div className="text-xs text-slate-400 tabular-nums">{record.customerPhone}</div>}
+            {record.customerPhone && (
+              <div className="text-xs text-slate-400 tabular-nums flex items-center gap-1">
+                <span>{record.customerPhone}</span>
+                <CopyPhoneButton phone={record.customerPhone} size="xs" />
+              </div>
+            )}
           </div>
         </div>
       ),

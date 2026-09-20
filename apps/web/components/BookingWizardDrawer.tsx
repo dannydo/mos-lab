@@ -41,6 +41,7 @@ import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerMod
 import { CvDatePicker } from './booking/CvDatePicker';
 import CreateCustomerModal from './CreateCustomerModal';
 import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
+import { CopyPhoneButton } from './ui';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
 import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
 
@@ -1017,8 +1018,14 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                     }}
                   >
                     <div style={{ fontWeight: 'bold', color: token.colorText }}>{selectedCustomer.name}</div>
-                    <div style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
-                      SĐT: {selectedCustomer.phone} | Phân loại: <Tag color="warning">{selectedCustomer.bucket}</Tag>
+                    <div
+                      style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}
+                      className="flex items-center gap-1"
+                    >
+                      <span>SĐT: {selectedCustomer.phone}</span>
+                      <CopyPhoneButton phone={selectedCustomer.phone} size="xs" />
+                      <span>| Phân loại:</span>
+                      <Tag color="warning">{selectedCustomer.bucket}</Tag>
                     </div>
                   </div>
                 )}
@@ -1583,7 +1590,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px' }}>
-              <div>
+              <div className="flex items-center gap-1 flex-wrap">
                 <span style={{ color: '#888' }}>Khách hàng:</span>{' '}
                 <strong>
                   {isNewLead
@@ -1592,7 +1599,15 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                       selectedCustomer?.customerName ||
                       `Khách hàng #${selectedCustomer?.id || selectedCustomer?.legacyUserId}`}
                 </strong>{' '}
-                {isNewLead ? `(${leadPhone})` : `(${selectedCustomer?.phone || selectedCustomer?.customerPhone || ''})`}
+                <span>
+                  {isNewLead
+                    ? `(${leadPhone})`
+                    : `(${selectedCustomer?.phone || selectedCustomer?.customerPhone || ''})`}
+                </span>
+                <CopyPhoneButton
+                  phone={isNewLead ? leadPhone : selectedCustomer?.phone || selectedCustomer?.customerPhone}
+                  size="xs"
+                />
               </div>
               <div>
                 <span style={{ color: '#888' }}>Chi nhánh:</span> <strong>{selectedCN?.name}</strong>
@@ -1626,8 +1641,9 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
                 </div>
               )}
               {referralPhone && (
-                <div>
+                <div className="flex items-center gap-1">
                   <span style={{ color: '#888' }}>Người giới thiệu:</span> <strong>{referralPhone}</strong>
+                  <CopyPhoneButton phone={referralPhone} size="xs" />
                 </div>
               )}
               {selectedService && selectedService.id !== 0 && (

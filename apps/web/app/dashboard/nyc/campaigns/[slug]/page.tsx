@@ -4,6 +4,7 @@ import {
   AdaptiveModal,
   AdaptiveOverlayFooter,
   CollapsibleSearchField,
+  CopyPhoneButton,
   ResponsiveFormGrid,
   TableIndexHeader,
 } from '~/components/ui';
@@ -1139,16 +1140,19 @@ export default function CampaignDetailPage() {
                 {name}
               </div>
               {phone && (
-                <div
-                  style={{ fontSize: '11px', color: '#D4A84B', fontWeight: '500', lineHeight: '1.2' }}
-                  className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5 tabular-nums font-mono"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    makeCall(phone);
-                  }}
-                >
-                  <PhoneOutlined style={{ fontSize: '9px' }} />
-                  <span>{phone}</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <div
+                    style={{ fontSize: '11px', color: '#D4A84B', fontWeight: '500', lineHeight: '1.2' }}
+                    className="hover:underline cursor-pointer flex items-center gap-1 tabular-nums font-mono"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      makeCall(phone);
+                    }}
+                  >
+                    <PhoneOutlined style={{ fontSize: '9px' }} />
+                    <span>{phone}</span>
+                  </div>
+                  <CopyPhoneButton phone={phone} size="xs" />
                 </div>
               )}
             </div>
@@ -1930,7 +1934,12 @@ export default function CampaignDetailPage() {
                 {customerName}
               </button>
               <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                {phone && <span className="tabular-nums">{phone}</span>}
+                {phone && (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="tabular-nums">{phone}</span>
+                    <CopyPhoneButton phone={phone} size="xs" />
+                  </span>
+                )}
                 <Tag color="cyan" className="m-0 text-[11px]">
                   {bookerName}
                 </Tag>

@@ -1,6 +1,6 @@
 'use client';
 
-import { IconButton, TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, IconButton, TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
 import { Space, Avatar, Typography, Tag, Tooltip } from 'antd';
@@ -105,16 +105,19 @@ export const getNycColumns = ({
               {text}
             </div>
             {record.phone && (
-              <div
-                style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
-                className="hover:underline cursor-pointer flex items-center gap-1 mt-0.5"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  makeCall(record.phone, record.name, record.id, record.avatar || undefined);
-                }}
-              >
-                <PhoneOutlined style={{ fontSize: '10px' }} />
-                <span>{record.phone}</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                <div
+                  style={{ fontSize: '12px', color: '#D4A84B', fontWeight: '500' }}
+                  className="hover:underline cursor-pointer flex items-center gap-1 tabular-nums"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                  }}
+                >
+                  <PhoneOutlined style={{ fontSize: '10px' }} />
+                  <span>{record.phone}</span>
+                </div>
+                <CopyPhoneButton phone={record.phone} size="xs" />
               </div>
             )}
           </div>

@@ -18,7 +18,7 @@ import {
 import dynamic from 'next/dynamic';
 import { useTheme } from '../context/ThemeContext';
 import { useOmiCall } from '../context/OmiCallContext';
-import { AdaptiveDrawer } from './ui';
+import { AdaptiveDrawer, CopyPhoneButton } from './ui';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
 import { BOOKING_HISTORY_UPDATED_EVENT, type BookingMutationEventDetail } from '../lib/booking-events';
 import { apiClient } from '../lib/api-client';
@@ -449,36 +449,41 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   >
                     {customer.phones && customer.phones.length > 0 ? (
                       customer.phones.map((phoneObj: SafeAny) => (
-                        <span
-                          key={phoneObj.id}
-                          className={`inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''}`}
-                          onClick={() =>
-                            !phoneObj.is_disabled &&
-                            makeCall(phoneObj.phone_number, customer.name, customer.id, customer.avatar || undefined)
-                          }
-                          style={{
-                            fontSize: '12px',
-                            color: phoneObj.is_disabled ? token.colorTextDisabled : token.colorText,
-                            fontWeight: phoneObj.is_disabled ? 'normal' : '600',
-                          }}
-                        >
-                          <PhoneOutlined style={{ color: phoneObj.is_disabled ? '#bbb' : '#D4A84B' }} />
-                          <span>
-                            {phoneObj.phone_number} {phoneObj.is_disabled && '(Vô hiệu hóa)'}
+                        <div key={phoneObj.id} className="inline-flex items-center gap-1">
+                          <span
+                            className={`inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''}`}
+                            onClick={() =>
+                              !phoneObj.is_disabled &&
+                              makeCall(phoneObj.phone_number, customer.name, customer.id, customer.avatar || undefined)
+                            }
+                            style={{
+                              fontSize: '12px',
+                              color: phoneObj.is_disabled ? token.colorTextDisabled : token.colorText,
+                              fontWeight: phoneObj.is_disabled ? 'normal' : '600',
+                            }}
+                          >
+                            <PhoneOutlined style={{ color: phoneObj.is_disabled ? '#bbb' : '#D4A84B' }} />
+                            <span>
+                              {phoneObj.phone_number} {phoneObj.is_disabled && '(Vô hiệu hóa)'}
+                            </span>
                           </span>
-                        </span>
+                          <CopyPhoneButton phone={phoneObj.phone_number} size="xs" />
+                        </div>
                       ))
                     ) : customer.phone ? (
-                      <span
-                        className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-                        onClick={() =>
-                          makeCall(customer.phone, customer.name, customer.id, customer.avatar || undefined)
-                        }
-                        style={{ fontSize: '12px', color: token.colorText, fontWeight: '600' }}
-                      >
-                        <PhoneOutlined style={{ color: '#D4A84B' }} />
-                        <span>{customer.phone}</span>
-                      </span>
+                      <div className="inline-flex items-center gap-1">
+                        <span
+                          className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
+                          onClick={() =>
+                            makeCall(customer.phone, customer.name, customer.id, customer.avatar || undefined)
+                          }
+                          style={{ fontSize: '12px', color: token.colorText, fontWeight: '600' }}
+                        >
+                          <PhoneOutlined style={{ color: '#D4A84B' }} />
+                          <span>{customer.phone}</span>
+                        </span>
+                        <CopyPhoneButton phone={customer.phone} size="xs" />
+                      </div>
                     ) : (
                       <span>
                         <PhoneOutlined /> -

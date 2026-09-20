@@ -42,6 +42,7 @@ import {
   SafeAny,
 } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import { CopyPhoneButton } from '../../../../components/ui';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../../components/CustomerDetailDrawer'), { ssr: false });
 
@@ -219,8 +220,12 @@ export const PackageAuditTab: React.FC = () => {
               {r.customerName}
             </div>
             {r.customerPhone && (
-              <div style={{ fontSize: '11px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
-                {r.customerPhone}
+              <div
+                style={{ fontSize: '11px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}
+                className="flex items-center gap-1"
+              >
+                <span>{r.customerPhone}</span>
+                <CopyPhoneButton phone={r.customerPhone} size="xs" />
               </div>
             )}
           </div>
@@ -461,8 +466,11 @@ export const PackageAuditTab: React.FC = () => {
                 fontSize: 13,
               }}
             >
-              <div>
-                Khách hàng: <strong>{selectedRecord.customerName}</strong> ({selectedRecord.customerPhone})
+              <div className="flex items-center gap-1">
+                <span>
+                  Khách hàng: <strong>{selectedRecord.customerName}</strong> ({selectedRecord.customerPhone})
+                </span>
+                <CopyPhoneButton phone={selectedRecord.customerPhone} size="xs" />
               </div>
               <div>
                 Gói dịch vụ: <strong>{selectedRecord.serviceName}</strong>

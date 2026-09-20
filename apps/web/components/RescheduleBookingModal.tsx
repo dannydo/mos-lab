@@ -35,6 +35,7 @@ import { TechnicianSelector } from './booking/TechnicianSelector';
 import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
 import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
+import { CopyPhoneButton } from './ui';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
 import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
 
@@ -883,9 +884,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             size="small"
             style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
           >
-            <div style={{ fontSize: '13px', color: token.colorText }}>
+            <div style={{ fontSize: '13px', color: token.colorText }} className="flex items-center gap-1">
               <span style={{ fontWeight: 'bold' }}>{booking?.customerName || 'Khách hàng'}</span> -{' '}
-              {formatOrGenerateCustomerPhone(booking)}
+              <span>{formatOrGenerateCustomerPhone(booking)}</span>
+              <CopyPhoneButton phone={formatOrGenerateCustomerPhone(booking)} size="xs" />
             </div>
           </Card>
 
@@ -1019,9 +1021,10 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px' }}>
-              <div>
+              <div className="flex items-center gap-1">
                 <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Khách hàng:</span>{' '}
                 <strong>{booking?.customerName}</strong> ({booking?.customerPhone})
+                <CopyPhoneButton phone={booking?.customerPhone} size="xs" />
               </div>
               <div>
                 <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Chi nhánh mới:</span>{' '}

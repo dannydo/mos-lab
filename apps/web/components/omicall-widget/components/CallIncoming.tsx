@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from 'antd';
 import { PhoneOutlined, CloseOutlined } from '@ant-design/icons';
+import { CopyPhoneButton } from '../../ui';
 
 interface CallIncomingProps {
   currentCall: SafeAny;
@@ -30,9 +31,10 @@ export const CallIncoming: React.FC<CallIncomingProps> = ({
       <div>
         <p className="text-xs uppercase tracking-widest font-semibold text-amber-500">Cuộc gọi đến...</p>
         <h4 className="text-base font-bold mt-1">{currentCall?.name}</h4>
-        <p className="text-xs font-mono" style={{ color: descColor }}>
-          {currentCall?.phone}
-        </p>
+        <div className="flex items-center justify-center gap-1 text-xs font-mono" style={{ color: descColor }}>
+          <span>{currentCall?.phone}</span>
+          {currentCall?.phone && <CopyPhoneButton phone={currentCall.phone} size="xs" />}
+        </div>
       </div>
       {children}
       <div className="flex justify-center gap-4">

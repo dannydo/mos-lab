@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
 import { Tabs, Select, Button, Space, Avatar, Tag, Tooltip, Typography, theme } from 'antd';
@@ -184,13 +184,16 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
       key: 'phone',
       render: (t: string, record: SafeAny) =>
         t ? (
-          <span
-            className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-            onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
-            style={{ color: token.colorText, fontWeight: '600' }}
-          >
-            <PhoneOutlined style={{ color: goldText }} />
-            <span>{t}</span>
+          <span className="inline-flex items-center gap-1">
+            <span
+              className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text tabular-nums"
+              onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
+              style={{ color: token.colorText, fontWeight: '600' }}
+            >
+              <PhoneOutlined style={{ color: goldText }} />
+              <span>{t}</span>
+            </span>
+            <CopyPhoneButton phone={t} size="xs" />
           </span>
         ) : (
           <Text type="secondary">-</Text>
@@ -465,8 +468,9 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <strong className="block truncate">{record.customer}</strong>
-                <span className="block text-xs text-slate-500 dark:text-slate-400">
-                  {record.phone || 'Chưa có số điện thoại'}
+                <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                  <span>{record.phone || 'Chưa có số điện thoại'}</span>
+                  {record.phone && <CopyPhoneButton phone={record.phone} size="xs" />}
                 </span>
               </div>
               <Tag className="!mr-0 shrink-0" color={getChannelColor(record.channel || '')}>

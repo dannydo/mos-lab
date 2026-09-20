@@ -1,6 +1,6 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
+import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
 import { Card, Table, Tag, Typography, Button, Space, Row, Col, Statistic, theme, Popconfirm } from 'antd';
@@ -68,7 +68,10 @@ export default function CatalogItemDetailPanel({
         <div>
           <div className="font-semibold text-xs text-slate-700 dark:text-slate-200">{name}</div>
           {record.customerPhone && (
-            <div className="tabular-nums text-[11px] text-slate-400">{record.customerPhone}</div>
+            <div className="tabular-nums text-[11px] text-slate-400 flex items-center gap-1">
+              <span>{record.customerPhone}</span>
+              <CopyPhoneButton phone={record.customerPhone} size="xs" />
+            </div>
           )}
         </div>
       ),
