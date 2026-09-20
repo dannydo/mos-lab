@@ -48,7 +48,7 @@ describe('frontend-observer', () => {
 
     expect(mockSendBeacon).toHaveBeenCalledTimes(1);
     const [url, blob] = mockSendBeacon.mock.calls[0];
-    expect(url).toBe('/api/telemetry/frontend-issues');
+    expect(url).toContain('/telemetry/frontend-issues');
     expect(blob).toBeInstanceOf(Blob);
   });
 });

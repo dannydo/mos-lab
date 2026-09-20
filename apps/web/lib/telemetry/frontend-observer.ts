@@ -4,6 +4,7 @@ import type {
   FrontendIssueType,
   UserBreadcrumb,
 } from '@mos-lab/shared';
+import { resolveApiBaseUrl } from '../api-base-url';
 
 const MAX_BREADCRUMBS = 25;
 const RAGE_CLICK_THRESHOLD = 3;
@@ -178,7 +179,7 @@ export function reportFrontendIssue(params: {
   // Dispatch via navigator.sendBeacon or non-blocking fetch
   try {
     const json = JSON.stringify(payload);
-    const url = '/api/telemetry/frontend-issues';
+    const url = `${resolveApiBaseUrl()}/telemetry/frontend-issues`;
     if (navigator.sendBeacon) {
       const blob = new Blob([json], { type: 'application/json' });
       navigator.sendBeacon(url, blob);
