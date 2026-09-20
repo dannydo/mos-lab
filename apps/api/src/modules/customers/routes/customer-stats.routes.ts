@@ -10,6 +10,7 @@ import {
   buildCompletedServiceUsageJoin,
   resolveEffectiveAssignedStaffId,
   createRouteHelpers,
+  buildSearchCondition,
 } from './helpers.js';
 
 export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
@@ -415,17 +416,11 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push(foreignFilterSqlStats);
       }
 
-      // 1. Filter by Search (Name or Phone using EXISTS for contact to avoid GROUP BY)
+      // 1. Filter by Search (Name or Phone using Phone Fast-Path)
       if (search && search.trim() !== '') {
-        const searchLike = `%${search.trim()}%`;
-        innerWhereClauses.push(`(
-          up.full_name LIKE ? OR EXISTS (
-            SELECT 1 
-            FROM user_contact uc 
-            WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
-          )
-        )`);
-        innerParams.push(searchLike, searchLike);
+        const { sql, params } = buildSearchCondition(search);
+        innerWhereClauses.push(sql);
+        innerParams.push(...params);
       }
 
       // 2. Filter by Bucket (Optimized using usb_agg joins)
@@ -834,14 +829,9 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       }
 
       if (search && search.trim() !== '') {
-        const searchLike = `%${search.trim()}%`;
-        innerWhereClauses.push(`(
-          up.full_name LIKE ? OR EXISTS (
-            SELECT 1 FROM user_contact uc 
-            WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
-          )
-        )`);
-        innerParams.push(searchLike, searchLike);
+        const { sql, params } = buildSearchCondition(search);
+        innerWhereClauses.push(sql);
+        innerParams.push(...params);
       }
 
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
@@ -1113,14 +1103,9 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       }
 
       if (search && search.trim() !== '') {
-        const searchLike = `%${search.trim()}%`;
-        innerWhereClauses.push(`(
-          up.full_name LIKE ? OR EXISTS (
-            SELECT 1 FROM user_contact uc 
-            WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number LIKE ?
-          )
-        )`);
-        innerParams.push(searchLike, searchLike);
+        const { sql, params } = buildSearchCondition(search);
+        innerWhereClauses.push(sql);
+        innerParams.push(...params);
       }
 
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';

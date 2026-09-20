@@ -54,3 +54,51 @@ export const createRouteHelpers = (fastify: FastifyInstance) => ({
     return false;
   },
 });
+
+export interface SearchConditionResult {
+  sql: string;
+  params: string[];
+}
+
+export function buildSearchCondition(search: string): SearchConditionResult {
+  const rawSearch = search.trim();
+  const cleanDigits = rawSearch.replace(/[\s.+()-]/g, '');
+  const hasLetters = /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(rawSearch);
+
+  // If search consists of at least 4 digits and contains NO letters,
+  // route to high-speed phone prefix & suffix search via index_merge (phone_number + phone_reverse).
+  if (cleanDigits.length >= 4 && !hasLetters) {
+    let phonePrefix = cleanDigits;
+    if (cleanDigits.startsWith('84') && cleanDigits.length >= 9) {
+      phonePrefix = '0' + cleanDigits.slice(2);
+    }
+    const phoneRev = cleanDigits.split('').reverse().join('');
+
+    return {
+      sql: `u.id IN (
+        SELECT uc.user_id 
+        FROM user_contact uc 
+        WHERE uc.is_disabled = 0 
+          AND (
+            uc.phone_number LIKE ? 
+            OR uc.phone_number LIKE ? 
+            OR uc.phone_reverse LIKE ?
+          )
+      )`,
+      params: [`${phonePrefix}%`, `${cleanDigits}%`, `${phoneRev}%`],
+    };
+  }
+
+  // Text/Name search:
+  const searchLike = `%${rawSearch}%`;
+  return {
+    sql: `(
+      up.full_name LIKE ? OR u.id IN (
+        SELECT uc.user_id 
+        FROM user_contact uc 
+        WHERE uc.is_disabled = 0 AND uc.phone_number LIKE ?
+      )
+    )`,
+    params: [searchLike, searchLike],
+  };
+}
