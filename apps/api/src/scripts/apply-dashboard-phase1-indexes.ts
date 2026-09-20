@@ -58,6 +58,21 @@ const phase1Indexes = [
     table: 'user_service_balance',
     columns: ['user_id', 'date_expired', 'normal_count', 'retain_count'],
   },
+  {
+    name: 'idx_osq_store_date_pos',
+    table: 'order_staff_queue',
+    columns: ['client_store_id', 'date_created', 'position'],
+  },
+  {
+    name: 'idx_report_order_booking_date_start',
+    table: 'report_order',
+    columns: ['booking_date_start'],
+  },
+  {
+    name: 'idx_ros_staff_order',
+    table: 'report_order_service',
+    columns: ['assigned_staff_id', 'order_id'],
+  },
 ] as const;
 
 const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
