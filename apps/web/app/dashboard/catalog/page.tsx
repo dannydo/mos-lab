@@ -72,6 +72,7 @@ import {
   SERVICE_GROUPS,
   SERVICE_TYPES,
   vietnameseSearchFilter,
+  isAdminOrSuperAdminRole,
 } from '@mos-lab/shared';
 
 dayjs.extend(isoWeek);
@@ -316,8 +317,9 @@ export default function CatalogPage() {
         const isDanhDo = Boolean(
           user?.username?.toLowerCase() === 'danhdo@gmail.com' || user?.email?.toLowerCase() === 'danhdo@gmail.com'
         );
-        setIsAdmin(user?.role === 'admin');
-        setIsCatalogAdmin(isDanhDo);
+        const hasAdminAccess = isAdminOrSuperAdminRole(user?.role) || isDanhDo;
+        setIsAdmin(hasAdminAccess);
+        setIsCatalogAdmin(hasAdminAccess);
       } catch {
         setIsAdmin(false);
         setIsCatalogAdmin(false);
@@ -1447,7 +1449,7 @@ export default function CatalogPage() {
           type="info"
           showIcon
           message="Phân quyền Quản lý Catalog"
-          description="Chỉ riêng tài khoản danhdo@gmail.com mới có quyền Thêm, Sửa, Xóa dữ liệu Catalog. Bạn đang xem ở chế độ Read-only."
+          description="Chỉ tài khoản Quản trị viên (Admin / Super Admin) mới có quyền Thêm, Sửa, Xóa dữ liệu Catalog. Bạn đang xem ở chế độ Read-only."
           className="mb-4 rounded-xl"
         />
       )}
