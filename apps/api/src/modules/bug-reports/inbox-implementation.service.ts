@@ -734,7 +734,7 @@ export class InboxImplementationService {
     const now = new Date();
     const candidate = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
       where: {
-        executionOwner: 'AG',
+        executionOwner: { in: ['AG', 'IDE', 'AUTO'] },
         status: 'PENDING',
         ideTaskId: null,
         ideHandoffRevokedAt: null,
@@ -762,6 +762,7 @@ export class InboxImplementationService {
         ],
       },
       data: {
+        executionOwner: 'AG',
         ideProvisioningState: 'LEASED',
         ideProvisioningLeaseToken: leaseToken,
         ideProvisioningLeaseExpiresAt: new Date(now.getTime() + IDE_PROVISIONING_LEASE_MS),
@@ -795,7 +796,7 @@ export class InboxImplementationService {
     const now = new Date();
     const candidate = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
       where: {
-        executionOwner: 'IDE',
+        executionOwner: { in: ['AG', 'IDE', 'AUTO'] },
         status: 'PENDING',
         ideTaskId: null,
         ideHandoffRevokedAt: null,
@@ -823,6 +824,7 @@ export class InboxImplementationService {
         ],
       },
       data: {
+        executionOwner: 'IDE',
         ideProvisioningState: 'LEASED',
         ideProvisioningLeaseToken: leaseToken,
         ideProvisioningLeaseExpiresAt: new Date(now.getTime() + IDE_PROVISIONING_LEASE_MS),
@@ -921,7 +923,7 @@ export class InboxImplementationService {
         : null;
       if (
         job &&
-        ['IDE', 'AG'].includes(job.executionOwner) &&
+        ['IDE', 'AG', 'AUTO'].includes(job.executionOwner) &&
         (expectedTaskId === undefined || job.ideTaskId === expectedTaskId) &&
         job.status === 'AWAITING_DEPLOY_REVIEW' &&
         job.executionPhase === 'AWAITING_DEPLOY_REVIEW' &&
@@ -933,7 +935,7 @@ export class InboxImplementationService {
       if (
         !report ||
         !job ||
-        !['IDE', 'AG'].includes(job.executionOwner) ||
+        !['IDE', 'AG', 'AUTO'].includes(job.executionOwner) ||
         (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId) ||
         job.status !== 'PENDING' ||
         job.executionPhase !== 'IDE_COMMIT_HANDOFF' ||
@@ -1112,7 +1114,7 @@ export class InboxImplementationService {
       const updated = await tx.crmInboxImplementationJob.updateMany({
         where: {
           id: report.implementationActiveJobId,
-          executionOwner: 'IDE',
+          executionOwner: { in: ['IDE', 'AG', 'AUTO'] },
           status: 'PENDING',
           ideHandoffRevokedAt: null,
         },
@@ -1161,7 +1163,7 @@ export class InboxImplementationService {
       if (
         !report ||
         !job ||
-        !['IDE', 'AG'].includes(job.executionOwner) ||
+        !['IDE', 'AG', 'AUTO'].includes(job.executionOwner) ||
         job.status !== 'PENDING' ||
         job.ideHandoffRevokedAt
       )
@@ -1230,7 +1232,7 @@ export class InboxImplementationService {
     });
     if (
       !job ||
-      !['IDE', 'AG'].includes(job.executionOwner) ||
+      !['IDE', 'AG', 'AUTO'].includes(job.executionOwner) ||
       job.status !== 'PENDING' ||
       !['IDE_HANDOFF_READY', 'IDE_COMMIT_HANDOFF'].includes(job.executionPhase || '') ||
       job.ideHandoffRevokedAt ||
@@ -1510,7 +1512,7 @@ export class InboxImplementationService {
     reportId: number,
     actorStaffId: number,
     expectedPlan?: BugReportPlanReviewCandidate,
-    executionOwner: InboxImplementationExecutionOwner = 'IDE'
+    executionOwner: InboxImplementationExecutionOwner = 'AUTO'
   ) {
     const approvalResult = await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
@@ -1579,7 +1581,9 @@ export class InboxImplementationService {
             note:
               executionOwner === 'AG'
                 ? 'Danny đã duyệt Antigravity (AG) chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.'
-                : 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
+                : executionOwner === 'AUTO'
+                  ? 'Danny đã duyệt AI tự động (Antigravity hoặc Codex) chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.'
+                  : 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
             beforeJson: snapshot(report),
             afterJson: snapshot({
               ...report,
@@ -1607,7 +1611,7 @@ export class InboxImplementationService {
   static async enqueueApproved(
     fastify: FastifyInstance,
     reportId: number,
-    executionOwner: InboxImplementationExecutionOwner = 'IDE'
+    executionOwner: InboxImplementationExecutionOwner = 'AUTO'
   ): Promise<boolean> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
@@ -1661,7 +1665,11 @@ export class InboxImplementationService {
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
           progressLabel:
-            executionOwner === 'AG' ? 'Chờ Antigravity tạo handoff cục bộ.' : 'Chờ Codex IDE tạo handoff cục bộ.',
+            executionOwner === 'AG'
+              ? 'Chờ Antigravity tạo handoff cục bộ.'
+              : executionOwner === 'AUTO'
+                ? 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.'
+                : 'Chờ Codex IDE tạo handoff cục bộ.',
           expiresAt: new Date(Date.now() + JOB_TTL_MS),
         },
       });
@@ -1736,10 +1744,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'IDE',
+          executionOwner: 'AUTO',
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
+          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -1836,10 +1844,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'IDE',
+          executionOwner: 'AUTO',
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
+          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -1934,10 +1942,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'IDE',
+          executionOwner: 'AUTO',
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
+          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2187,10 +2195,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'IDE',
+          executionOwner: 'AUTO',
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
+          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2285,10 +2293,10 @@ export class InboxImplementationService {
           retryOfJobId: failed.id,
           retrySequence: failed.retrySequence + 1,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'IDE',
+          executionOwner: 'AUTO',
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
+          progressLabel: 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.',
           expiresAt: new Date(now.getTime() + JOB_TTL_MS),
         },
       });
@@ -2366,7 +2374,7 @@ export class InboxImplementationService {
         'COMMIT_REVIEW_ARTIFACT_MISSING'
       );
     }
-    if (['IDE', 'AG'].includes(job.executionOwner)) {
+    if (['IDE', 'AG', 'AUTO'].includes(job.executionOwner)) {
       const now = new Date();
       return fastify.prisma.crm.$transaction(async (tx) => {
         const updated = await tx.crmInboxImplementationJob.updateMany({
@@ -3412,7 +3420,7 @@ export class InboxImplementationService {
     if (!job) {
       throw new InboxImplementationError('Không tìm thấy commit đang chờ Danny xác nhận deploy.', 409);
     }
-    if (report.status === 'APPROVED' && !['IDE', 'AG'].includes(job.executionOwner)) {
+    if (report.status === 'APPROVED' && !['IDE', 'AG', 'AUTO'].includes(job.executionOwner)) {
       throw new InboxImplementationError('Projection APPROVED chỉ hợp lệ cho commit IDE đã được duyệt.', 409);
     }
 

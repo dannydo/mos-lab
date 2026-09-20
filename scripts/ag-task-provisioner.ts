@@ -207,6 +207,7 @@ export function buildAgentPrompt(request: InboxIdeTaskProvisioningRequest, workt
 - **Plan Version**: ${request.planVersion}
 
 ## 📌 Quy trình Thực thi Chuẩn mOS Inbox Flow (Kinh Thánh mOS Điều răn UI-007):
+- **Bất biến cốt lõi**: TUYỆT ĐỐI KHÔNG commit vào nhánh main trực tiếp; chỉ làm việc trong worktree và nộp receipt qua bridge.
 1. **Chuyển thư mục công việc**: Làm việc trực tiếp bên trong worktree riêng biệt này:
    \`cd ${worktreePath}\`
 2. **Tiếp nhận Handoff ngay khi bắt đầu (Gate 1 Handshake)**:

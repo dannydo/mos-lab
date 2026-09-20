@@ -58,7 +58,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
   const [reviewedPlan, setReviewedPlan] = useState<BugReportPlanReviewCandidate | null>(null);
   const [planReason, setPlanReason] = useState('');
   const [retryConfirmationOpen, setRetryConfirmationOpen] = useState(false);
-  const [selectedEngine, setSelectedEngine] = useState<InboxImplementationExecutionOwner>('AG');
+  const [selectedEngine, setSelectedEngine] = useState<InboxImplementationExecutionOwner>('AUTO');
   const { reportId } = actions;
   const {
     messageContext,
@@ -145,30 +145,11 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   <Popconfirm
                     classNames={{ root: styles.confirmationPopup }}
                     title="Duyệt AI chạy code/test?"
-                    description={
-                      <div className="space-y-2 py-1">
-                        <div>
-                          AI chỉ làm trong worktree riêng. Không commit, push, merge, deploy hay chạy migration. Sau đó
-                          ticket sẽ chờ Danny duyệt commit.
-                        </div>
-                        <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                          <span className="text-xs font-semibold">Engine thực thi:</span>
-                          <Radio.Group
-                            size="small"
-                            value={selectedEngine}
-                            onChange={(e) => setSelectedEngine(e.target.value)}
-                            options={[
-                              { label: '⚡ Antigravity (AG)', value: 'AG' },
-                              { label: '💻 Codex IDE', value: 'IDE' },
-                            ]}
-                          />
-                        </div>
-                      </div>
-                    }
+                    description="AI chỉ làm trong worktree riêng; tự động gán cho Antigravity hoặc Codex IDE đang chạy. Sau đó ticket sẽ chờ Danny duyệt commit."
                     okText="Duyệt code/test"
                     cancelText="Chưa duyệt"
                     okButtonProps={{ loading: saving, disabled: saving || approvalReceived }}
-                    onConfirm={() => void approveCodeExecution(selectedEngine)}
+                    onConfirm={() => void approveCodeExecution('AUTO')}
                   >
                     <Button
                       type="primary"
@@ -474,19 +455,45 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
 
             {detail.implementation?.ideHandoff ? (
               <SectionCard
-                title={detail.implementation.executionOwner === 'AG' ? 'Handoff Antigravity (AG)' : 'Handoff Codex IDE'}
+                title={
+                  detail.implementation.executionOwner === 'AG'
+                    ? 'Handoff Antigravity (AG)'
+                    : detail.implementation.executionOwner === 'AUTO'
+                      ? 'Handoff Tự Động (AG / Codex)'
+                      : 'Handoff Codex IDE'
+                }
               >
                 <Alert
                   type="info"
                   showIcon
                   message={
                     detail.implementation.ideHandoff.taskId
-                      ? `Đã gán cho task ${detail.implementation.executionOwner === 'AG' ? 'Antigravity' : 'Codex IDE'}`
+                      ? `Đã gán cho task ${
+                          detail.implementation.executionOwner === 'AG'
+                            ? 'Antigravity'
+                            : detail.implementation.executionOwner === 'IDE'
+                              ? 'Codex IDE'
+                              : 'Worker'
+                        }`
                       : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_PENDING'
-                        ? `Chờ ${detail.implementation.executionOwner === 'AG' ? 'Antigravity' : 'Codex IDE'} tạo task`
+                        ? detail.implementation.executionOwner === 'AUTO'
+                          ? 'Đang chờ Worker (Antigravity hoặc Codex) nhận task'
+                          : `Chờ ${detail.implementation.executionOwner === 'AG' ? 'Antigravity' : 'Codex IDE'} tạo task`
                         : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_LEASED'
-                          ? `${detail.implementation.executionOwner === 'AG' ? 'Antigravity' : 'Codex IDE'} đang tạo task`
-                          : `Đang chờ ${detail.implementation.executionOwner === 'AG' ? 'Antigravity' : 'Codex IDE'} nhận handoff`
+                          ? `${
+                              detail.implementation.executionOwner === 'AG'
+                                ? 'Antigravity'
+                                : detail.implementation.executionOwner === 'IDE'
+                                  ? 'Codex IDE'
+                                  : 'Worker'
+                            } đang tạo task`
+                          : `Đang chờ ${
+                              detail.implementation.executionOwner === 'AG'
+                                ? 'Antigravity'
+                                : detail.implementation.executionOwner === 'IDE'
+                                  ? 'Codex IDE'
+                                  : 'Worker (AG / Codex)'
+                            } nhận handoff`
                   }
                   description={
                     <div className="space-y-1">
@@ -497,7 +504,11 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                       {detail.implementation.ideHandoff.taskId ? (
                         <div>
                           <Text strong>
-                            {detail.implementation.executionOwner === 'AG' ? 'Task Antigravity: ' : 'Task Codex IDE: '}
+                            {detail.implementation.executionOwner === 'AG'
+                              ? 'Task Antigravity: '
+                              : detail.implementation.executionOwner === 'IDE'
+                                ? 'Task Codex IDE: '
+                                : 'Task Worker: '}
                           </Text>
                           <Text code>{detail.implementation.ideHandoff.taskId}</Text>
                         </div>

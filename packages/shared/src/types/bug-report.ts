@@ -527,7 +527,7 @@ export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STAT
 
 /** Code, tests, commits and releases belong to a visible IDE task. The Mac
  * classifier worker is limited to clarification and planning work. */
-export const INBOX_IMPLEMENTATION_EXECUTION_OWNERS = ['IDE', 'AG'] as const;
+export const INBOX_IMPLEMENTATION_EXECUTION_OWNERS = ['IDE', 'AG', 'AUTO'] as const;
 export type InboxImplementationExecutionOwner = (typeof INBOX_IMPLEMENTATION_EXECUTION_OWNERS)[number];
 
 /** Safe, durable IDE task locator rendered by Inbox; never includes the receipt nonce. */

@@ -17,6 +17,7 @@ import {
   type ApproveBugReportImplementationRequest,
   type ApproveBugReportImplementationCommitRequest,
   type ApproveBugReportImplementationDeployRequest,
+  type InboxImplementationExecutionOwner,
   type RequestBugReportImplementationChangesRequest,
   type RequestBugReportPlanChangesRequest,
   type InboxIdeReleaseCheckpointMetadata,
@@ -745,7 +746,9 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi duyệt implementation.', 422);
         }
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-        const executionOwner = body.executionOwner === 'AG' ? 'AG' : 'IDE';
+        const rawOwner = body.executionOwner ? String(body.executionOwner).toUpperCase() : 'AUTO';
+        const executionOwner: InboxImplementationExecutionOwner =
+          rawOwner === 'AG' ? 'AG' : rawOwner === 'IDE' ? 'IDE' : 'AUTO';
         const outcome = await InboxImplementationService.approve(
           fastify,
           id,
@@ -765,7 +768,9 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           message: outcome.implementationQueued
             ? executionOwner === 'AG'
               ? 'Đã tạo Antigravity handoff. Hãy thực hiện code/test trong Antigravity.'
-              : 'Đã tạo IDE handoff. Hãy thực hiện code/test trong Codex IDE hiển thị.'
+              : executionOwner === 'AUTO'
+                ? 'Đã xếp hàng code/test tự động. Worker đang chạy (Antigravity hoặc Codex) sẽ tự nhận task.'
+                : 'Đã tạo IDE handoff. Hãy thực hiện code/test trong Codex IDE hiển thị.'
             : outcome.planRequested
               ? 'Đã lưu duyệt triển khai; worker đang tạo plan native khớp source hiện hành.'
               : 'Đã lưu duyệt triển khai.',

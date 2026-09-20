@@ -530,13 +530,16 @@ function implementationStateDto(
   const status = value.status as BugReportImplementationState['status'];
   return {
     status,
-    executionOwner: value.executionOwner === 'IDE' || value.executionOwner === 'AG' ? value.executionOwner : undefined,
+    executionOwner:
+      value.executionOwner === 'IDE' || value.executionOwner === 'AG' || value.executionOwner === 'AUTO'
+        ? value.executionOwner
+        : undefined,
     reviewCandidate:
       status === 'AWAITING_COMMIT_REVIEW' && value.id && value.sourceVersion && value.planVersion
         ? { jobId: value.id, sourceVersion: value.sourceVersion, planVersion: value.planVersion }
         : null,
     ideHandoff:
-      (value.executionOwner === 'IDE' || value.executionOwner === 'AG') && value.id
+      (value.executionOwner === 'IDE' || value.executionOwner === 'AG' || value.executionOwner === 'AUTO') && value.id
         ? {
             reference: value.id,
             // Retry records created during the first IDE rollout used QUEUED;
@@ -675,6 +678,7 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
   if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
     const agOwned = implementation.executionOwner === 'AG';
     const ideOwned = implementation.executionOwner === 'IDE';
+    const autoOwned = implementation.executionOwner === 'AUTO';
     return {
       stage:
         implementation.executionPhase === 'DEPLOY_APPROVED'
@@ -686,11 +690,13 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
         ? `Handoff Antigravity ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
         : ideOwned
           ? `Handoff Codex IDE ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
-          : implementation.executionPhase === 'DEPLOY_APPROVED'
-            ? 'Danny đã duyệt deploy; worker Mac đang chờ nhận đúng commit đã duyệt.'
-            : implementation.executionPhase === 'COMMIT_APPROVED'
-              ? 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.'
-              : 'Job code/test đã được ghi nhận và đang chờ worker nhận.',
+          : autoOwned
+            ? `Handoff tự động (Antigravity hoặc Codex) ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
+            : implementation.executionPhase === 'DEPLOY_APPROVED'
+              ? 'Danny đã duyệt deploy; worker Mac đang chờ nhận đúng commit đã duyệt.'
+              : implementation.executionPhase === 'COMMIT_APPROVED'
+                ? 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.'
+                : 'Job code/test đã được ghi nhận và đang chờ worker nhận.',
       updatedAt: implementation.updatedAt.toISOString(),
     };
   }
@@ -1008,8 +1014,9 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
   }
   if (implementation && ['PENDING', 'LEASED', 'RUNNING'].includes(implementation.status)) {
     const agOwned = implementation.executionOwner === 'AG';
-    const ideOwned = implementation.executionOwner === 'IDE' || agOwned;
-    const engineLabel = agOwned ? 'Antigravity' : 'Codex IDE';
+    const autoOwned = implementation.executionOwner === 'AUTO';
+    const ideOwned = implementation.executionOwner === 'IDE' || agOwned || autoOwned;
+    const engineLabel = agOwned ? 'Antigravity' : autoOwned ? 'Worker (AG/Codex)' : 'Codex IDE';
     const handoffReference = implementation.id
       ? `Handoff ${engineLabel} ${implementation.id}`
       : `Handoff ${engineLabel}`;

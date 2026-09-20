@@ -556,7 +556,7 @@ test('Danny retry creates a bounded linked chain and leaves terminal evidence un
   assert.equal(await InboxImplementationService.retryFailed(fastify as never, 16, 1), true);
   assert.equal(createdRows[0]?.retryOfJobId, 'terminal-job');
   assert.equal(createdRows[0]?.retrySequence, 2);
-  assert.equal(createdRows[0]?.executionOwner, 'IDE');
+  assert.equal(createdRows[0]?.executionOwner, 'AUTO');
   assert.equal(createdRows[0]?.executionPhase, 'IDE_PROVISIONING_PENDING');
   assert.match(String(createdRows[0]?.ideProvisioningRequestId || ''), /^[a-f0-9-]{36}$/i);
   assert.equal(createdRows[0]?.ideReceiptNonce, undefined);
@@ -2001,7 +2001,7 @@ test('IDE provisioning cannot bind a task after its local creation lease expires
   );
 });
 
-test('Antigravity (AG) task bridge claims provisioning exclusively for AG execution owner', async () => {
+test('Antigravity (AG) task bridge claims provisioning for eligible execution owner and adopts it to AG', async () => {
   const job = {
     id: 'ag-job-1',
     executionOwner: 'AG',
@@ -2012,12 +2012,12 @@ test('Antigravity (AG) task bridge claims provisioning exclusively for AG execut
     planVersion: 'plan-v2',
     report: { id: 28, requestType: 'FEATURE', title: 'Provision Antigravity task' },
   };
-  let claimedOwner: string | undefined;
+  let claimedOwner: unknown;
   const fastify = {
     prisma: {
       crm: {
         crmInboxImplementationJob: {
-          findFirst: async (args: { where: { executionOwner?: string } }) => {
+          findFirst: async (args: { where: { executionOwner?: unknown } }) => {
             claimedOwner = args.where.executionOwner;
             return job;
           },
@@ -2027,7 +2027,7 @@ test('Antigravity (AG) task bridge claims provisioning exclusively for AG execut
     },
   };
   const claimed = await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'antigravity-worker');
-  assert.equal(claimedOwner, 'AG');
+  assert.deepEqual(claimedOwner, { in: ['AG', 'IDE', 'AUTO'] });
   assert.deepEqual(claimed, {
     jobId: job.id,
     requestId: job.ideProvisioningRequestId,

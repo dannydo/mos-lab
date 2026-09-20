@@ -289,7 +289,7 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(props.approveImplementation).not.toHaveBeenCalled();
     fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
     await waitFor(() =>
-      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId, undefined, 'AG')
+      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId, undefined, 'AUTO')
     );
   });
 
