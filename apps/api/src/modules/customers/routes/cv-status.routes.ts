@@ -89,7 +89,14 @@ export async function registerCvStatusRoutes(fastify: FastifyInstance) {
 
       // 2. Query Day-Offs and Weekly-Offs today to exclude OFF staff
       const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND COALESCE(to_date, from_date) AND request_state = 'Approved'`,
+        `SELECT from_user_id FROM staff_day_off 
+         WHERE from_date >= DATE_SUB(?, INTERVAL 30 DAY)
+           AND from_date <= ?
+           AND request_state = 'Approved'
+           AND ? <= COALESCE(to_date, from_date)
+           AND from_user_id IN (${cvStaffIds.join(',')})`,
+        todayStr,
+        todayStr,
         todayStr
       );
       const offStaffUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));

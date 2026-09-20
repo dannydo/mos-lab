@@ -969,7 +969,13 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
 
       // Query KTVs who requested day-off
       const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT from_user_id FROM staff_day_off WHERE ? BETWEEN from_date AND COALESCE(to_date, from_date) AND request_state = 'Approved'`,
+        `SELECT from_user_id FROM staff_day_off 
+         WHERE from_date >= DATE_SUB(?, INTERVAL 30 DAY)
+           AND from_date <= ?
+           AND request_state = 'Approved'
+           AND ? <= COALESCE(to_date, from_date)`,
+        date,
+        date,
         date
       );
       const offUserIds = dayOffs.map((d) => Number(d.from_user_id));
