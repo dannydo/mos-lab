@@ -37,6 +37,7 @@ import {
   type MarkBugReportNotificationsReadRequest,
   type ReviewBugReportRequest,
   type TriageBugReportRequest,
+  type InboxExecutionDashboardQuery,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { BugReportError, BugReportService, parseBugReportKey } from './bug-report.service.js';
@@ -47,6 +48,7 @@ import { InboxFollowUpError, InboxFollowUpService } from './inbox-follow-up.serv
 import { InboxPlanError, InboxPlanService } from './inbox-plan.service.js';
 import { InboxImplementationError, InboxImplementationService } from './inbox-implementation.service.js';
 import { InboxIdeReleaseService } from './inbox-ide-release.service.js';
+import { InboxExecutionTimeService } from './inbox-execution-time.service.js';
 import {
   RequestClassifierWorkerHealthError,
   RequestClassifierWorkerHealthService,
@@ -639,6 +641,34 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  fastify.get(
+    '/bug-reports/timing/dashboard',
+    { preHandler: [requireAuth, requireBugInboxRead] },
+    async (request, reply) => {
+      try {
+        const timingService = new InboxExecutionTimeService(fastify);
+        const data = await timingService.getDashboardSummary(request.query as InboxExecutionDashboardQuery);
+        return reply.send({ data });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Get bug report timing dashboard failed');
+      }
+    }
+  );
+
+  fastify.get('/bug-reports/:id/timing', { preHandler: [requireAuth, requireBugInboxRead] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      const timingService = new InboxExecutionTimeService(fastify);
+      const timing = await timingService.getTicketTiming(id);
+      if (!timing) {
+        return reply.status(404).send({ error: 'NotFound', message: 'Không tìm thấy ticket.' });
+      }
+      return reply.send({ data: timing });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get bug report timing failed');
+    }
+  });
 
   fastify.get('/bug-reports/:id', { preHandler: [requireAuth, requireBugInboxRead] }, async (request, reply) => {
     try {

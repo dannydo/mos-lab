@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Bot,
   CircleHelp,
+  Clock,
   Gavel,
   Inbox,
   LoaderCircle,
@@ -40,6 +41,7 @@ import { useRequestClassifierWorkerHealth } from './hooks/useRequestClassifierWo
 import { ExperienceJournalDrawer } from './components/ExperienceJournalDrawer';
 import { FrontendTelemetryDrawer } from './components/FrontendTelemetryDrawer';
 import { BugReportDetailDrawer } from './components/BugReportDetailDrawer';
+import { BugReportExecutionDashboardDrawer } from './components/BugReportExecutionDashboardDrawer';
 import { apiClient } from '../../../lib/api-client';
 
 export default function BugReportsPage() {
@@ -50,6 +52,7 @@ export default function BugReportsPage() {
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [telemetryOpen, setTelemetryOpen] = useState(false);
+  const [timingDashboardOpen, setTimingDashboardOpen] = useState(false);
   const [canTriage, setCanTriage] = useState(false);
   const [canOpenJournal, setCanOpenJournal] = useState(false);
 
@@ -89,6 +92,14 @@ export default function BugReportsPage() {
           <Space size={4}>
             {canOpenJournal ? (
               <>
+                <Tooltip title="Báo cáo & Phân tích Thời gian Agent (UI-008)">
+                  <Button
+                    type="text"
+                    aria-label="Mở Báo cáo Thời gian Agent"
+                    icon={<AppIcon icon={Clock} size="sm" className="text-blue-500" />}
+                    onClick={() => setTimingDashboardOpen(true)}
+                  />
+                </Tooltip>
                 <Tooltip title="Hộp đen & Giám sát Trải nghiệm Frontend (Telemetry)">
                   <Button
                     type="text"
@@ -319,6 +330,14 @@ export default function BugReportsPage() {
             triage={(fingerprint, triageStatus) => apiClient.experienceJournal.triage(fingerprint, { triageStatus })}
           />
           <FrontendTelemetryDrawer open={telemetryOpen} onClose={() => setTelemetryOpen(false)} />
+          <BugReportExecutionDashboardDrawer
+            open={timingDashboardOpen}
+            onClose={() => setTimingDashboardOpen(false)}
+            onSelectTicket={(id) => {
+              setTimingDashboardOpen(false);
+              setSelectedId(id);
+            }}
+          />
         </>
       ) : null}
       <BugReportDetailDrawer

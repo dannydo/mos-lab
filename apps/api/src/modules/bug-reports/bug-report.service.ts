@@ -60,6 +60,7 @@ import {
   canRetryInboxImplementation,
   inboxPlanReviewCandidate,
 } from './inbox-implementation.service.js';
+import { calculateTicketExecutionTiming } from './inbox-execution-time.service.js';
 
 const AGENT_READABLE_STATUSES = new Set<BugReportStatus>(['NEW', 'APPROVED', 'IN_PROGRESS', 'FIXED']);
 const AGENT_FIX_STATUSES = new Set<BugReportStatus>(['APPROVED', 'IN_PROGRESS', 'FIXED']);
@@ -131,6 +132,7 @@ export function bugReportNextActorWhere(nextActor: unknown): Prisma.CrmBugReport
 
 const reportInclude = {
   inboxPlanJobs: { orderBy: { createdAt: 'desc' as const }, take: 12 },
+  inboxFollowUpJobs: { orderBy: { createdAt: 'desc' as const }, take: 10 },
   reporter: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
   approver: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
   duplicateOf: { select: { requestType: true } },
@@ -149,7 +151,7 @@ const reportInclude = {
   },
   inboxImplementationJobs: {
     orderBy: { createdAt: 'desc' as const },
-    take: 1,
+    take: 10,
     select: {
       id: true,
       status: true,
@@ -170,6 +172,9 @@ const reportInclude = {
       startedAt: true,
       completedAt: true,
       updatedAt: true,
+      createdAt: true,
+      leaseExpiresAt: true,
+      leaseHeartbeatAt: true,
     },
   },
 } satisfies Prisma.CrmBugReportInclude;
@@ -1368,6 +1373,7 @@ function detailDto(row: ReportWithRelations): BugReportDetail {
       after: safeJsonParse<Record<string, unknown> | null>(audit.afterJson, null),
       createdAt: audit.createdAt.toISOString(),
     })),
+    executionTiming: calculateTicketExecutionTiming(row),
   };
 }
 

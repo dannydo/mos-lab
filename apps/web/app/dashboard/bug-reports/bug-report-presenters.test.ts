@@ -3,6 +3,7 @@ import type { BugReportSummary } from '@mos-lab/shared';
 import {
   bugReportWorkerActivity,
   effectiveBugReportAgentProgress,
+  formatDurationSeconds,
   getBugReportWorkflowStage,
   needsReporterAttention,
 } from './bug-report-presenters';
@@ -199,5 +200,18 @@ describe('getBugReportWorkflowStage', () => {
         agentProgress: { ...baseReport.agentProgress, stage: 'REOPENED_BY_REPORTER' },
       })
     ).toMatchObject({ position: 1, label: 'Agent tái phân tích reopen' });
+  });
+});
+
+describe('formatDurationSeconds', () => {
+  it('formats seconds, minutes, hours, and days cleanly', () => {
+    expect(formatDurationSeconds(0)).toBe('0s');
+    expect(formatDurationSeconds(45)).toBe('45s');
+    expect(formatDurationSeconds(60)).toBe('1m');
+    expect(formatDurationSeconds(125)).toBe('2m 5s');
+    expect(formatDurationSeconds(3600)).toBe('1h');
+    expect(formatDurationSeconds(7320)).toBe('2h 2m');
+    expect(formatDurationSeconds(86400)).toBe('1d');
+    expect(formatDurationSeconds(90000)).toBe('1d 1h');
   });
 });
