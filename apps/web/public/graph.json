@@ -29693,8 +29693,8 @@
       "filePath": "apps/web/app/dashboard/architecture/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5249,
-        "lineCount": 163,
+        "sizeBytes": 5351,
+        "lineCount": 165,
         "ext": ".tsx"
       }
     },
@@ -49293,6 +49293,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/appointments/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/appointments/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/architecture/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/architecture/page.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -72218,7 +72225,7 @@
   ],
   "stats": {
     "totalNodes": 2563,
-    "totalEdges": 5535,
+    "totalEdges": 5536,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 138,
@@ -72234,7 +72241,7 @@
       "HANDLES_ROUTE": 536,
       "RENDERS": 239,
       "USES_TOKEN": 190,
-      "IMPORTS": 376,
+      "IMPORTS": 377,
       "QUERIES_MODEL": 344,
       "API_CALL": 2769
     },

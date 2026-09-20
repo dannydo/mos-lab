@@ -19,6 +19,7 @@
     "check:ui-contract": "pnpm exec tsx scripts/check-ui-contract.ts",
     "clean": "turbo run clean && rm -rf .turbo",
     "graph": "tsx scripts/generate-graph.ts",
+    "graph:auto-refresh": "node scripts/auto-refresh-graph.mjs",
     "bug:agent": "tsx scripts/bug-agent.ts",
     "ide-task-bridge": "tsx scripts/ide-task-bridge.ts",
     "ide-task-provisioner:once": "tsx scripts/ide-task-provisioner.ts",
