@@ -103,20 +103,28 @@ export function useBugReportDetail({
       }
       setSaving(true);
       try {
+        const nextNote = override?.note !== undefined ? override.note : note;
+        const nextBusinessContext =
+          override?.businessContext !== undefined ? override.businessContext : businessContext;
+        const nextPriority = override?.priority !== undefined ? override.priority : priority;
         const updated = await triage(detail.id, {
           status: nextStatus,
-          priority: override?.priority === undefined ? priority : override.priority,
-          businessContext,
-          note,
+          priority: nextPriority,
+          businessContext: nextBusinessContext,
+          note: nextNote,
           duplicateOfId,
         });
         hydrateForm(updated);
         messageApi.success(
-          nextStatus === 'APPROVED' && detail.status === 'NEW'
-            ? detail.requestType === 'FEATURE'
-              ? 'Đã duyệt yêu cầu vào hàng triển khai.'
-              : 'Đã approve ticket cho Agent.'
-            : 'Đã cập nhật ticket.'
+          nextStatus === 'REJECTED' && nextNote?.trim().startsWith('[Tạm hoãn]')
+            ? 'Đã tạm hoãn triển khai ticket.'
+            : detail.status === 'REJECTED' && nextStatus === 'NEW'
+              ? 'Đã mở lại ticket.'
+              : nextStatus === 'APPROVED' && detail.status === 'NEW'
+                ? detail.requestType === 'FEATURE'
+                  ? 'Đã duyệt yêu cầu vào hàng triển khai.'
+                  : 'Đã approve ticket cho Agent.'
+                : 'Đã cập nhật ticket.'
         );
       } catch (error) {
         const responseMessage =

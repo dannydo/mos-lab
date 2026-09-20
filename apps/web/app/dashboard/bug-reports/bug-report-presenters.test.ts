@@ -171,6 +171,17 @@ describe('getBugReportWorkflowStage', () => {
       position: null,
       label: 'Từ chối',
     });
+    expect(
+      getBugReportWorkflowStage({
+        ...baseReport,
+        status: 'REJECTED',
+        triageNote: '[Tạm hoãn] Chưa có kế hoạch triển khai trong vài tháng tới',
+      })
+    ).toMatchObject({
+      position: null,
+      label: 'Tạm hoãn',
+      tone: 'warning',
+    });
     expect(getBugReportWorkflowStage({ ...baseReport, status: 'DUPLICATE' })).toMatchObject({
       position: null,
       label: 'Trùng lặp',

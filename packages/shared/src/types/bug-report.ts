@@ -843,6 +843,7 @@ export interface BugReportSummary {
   description: string;
   status: BugReportStatus;
   priority: BugPriority | null;
+  triageNote?: string | null;
   sourcePath: string;
   overlay: string | null;
   attachmentCount: number;
@@ -1350,3 +1351,13 @@ export const INBOX_TIMING_PHASE_LABELS: Record<InboxTimingPhase, string> = {
   SYSTEM_QUEUE: 'Hàng đợi hệ thống (Queue)',
   BLOCKED: 'Tạm dừng / Bị chặn',
 };
+
+/**
+ * Checks whether a bug report / feature was deferred (Won't Do Now) rather than
+ * conventionally rejected as an invalid bug.
+ */
+export function isDeferredBugReport(report?: { status?: string | null; triageNote?: string | null } | null): boolean {
+  if (!report || report.status !== 'REJECTED') return false;
+  const note = String(report.triageNote || '').toLowerCase();
+  return note.includes('[tạm hoãn]') || note.includes('tạm hoãn') || note.includes("won't do");
+}

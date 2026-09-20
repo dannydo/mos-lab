@@ -16,13 +16,20 @@ import {
   Space,
   Typography,
 } from 'antd';
-import type { BugPriority, BugReportPlanReviewCandidate, InboxImplementationExecutionOwner } from '@mos-lab/shared';
-import { CheckCircle2, Gavel, RefreshCw, Send } from 'lucide-react';
+import {
+  type BugPriority,
+  type BugReportPlanReviewCandidate,
+  type InboxImplementationExecutionOwner,
+  isDeferredBugReport,
+} from '@mos-lab/shared';
+import { CheckCircle2, Clock, Gavel, RefreshCw, Send } from 'lucide-react';
 import { AdaptiveDrawer, AdaptiveModal, AppIcon, SectionCard, StatePanel } from '../../../../components/ui';
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
 import { BugReportExecutionTimingCard } from './BugReportExecutionTimingCard';
 import { FeatureRequestDetails } from './FeatureRequestDetails';
+import { BugReportDeferModal } from './BugReportDeferModal';
+import { BugReportDiagnosticsSection } from './BugReportDiagnosticsSection';
 import {
   AgentProgressTag,
   BugStatusTag,
@@ -51,6 +58,8 @@ type BugReportDetailDrawerProps = BugReportDetailOptions &
   };
 
 export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions }: BugReportDetailDrawerProps) {
+  const [deferOpen, setDeferOpen] = useState(false);
+  const [deferReason, setDeferReason] = useState('');
   const [changesOpen, setChangesOpen] = useState(false);
   const [changesReason, setChangesReason] = useState('');
   const [exceptionCloseOpen, setExceptionCloseOpen] = useState(false);
@@ -100,6 +109,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
   }));
 
   const context = detail?.context;
+  const isDeferred = detail ? isDeferredBugReport(detail) : false;
 
   return (
     <>
@@ -114,6 +124,32 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
         extra={
           detail ? (
             <Space wrap>
+              {canTriage && !isDeferred && ['NEW', 'APPROVED'].includes(detail.status) && (
+                <Button
+                  loading={saving}
+                  icon={<AppIcon icon={Clock} size="sm" />}
+                  onClick={() => {
+                    setDeferReason('');
+                    setDeferOpen(true);
+                  }}
+                >
+                  Tạm hoãn
+                </Button>
+              )}
+              {canTriage && isDeferred && (
+                <Popconfirm
+                  classNames={{ root: styles.confirmationPopup }}
+                  title="Mở lại ticket này?"
+                  description="Ticket sẽ được chuyển về trạng thái Mới (NEW) để Agent và Danny tiếp tục xử lý."
+                  okText="Mở lại"
+                  cancelText="Để sau"
+                  onConfirm={() => void save({ status: 'NEW', note: 'Mở lại ticket sau thời gian tạm hoãn' })}
+                >
+                  <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
+                    Mở lại ticket
+                  </Button>
+                </Popconfirm>
+              )}
               {canTriage && detail.status === 'NEW' && (
                 <Dropdown menu={{ items: approvalItems }} trigger={['click']}>
                   <Button
@@ -313,6 +349,18 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
           ) : undefined
         }
       >
+        <BugReportDeferModal
+          open={deferOpen}
+          saving={saving}
+          reason={deferReason}
+          onReasonChange={setDeferReason}
+          onCancel={() => setDeferOpen(false)}
+          onConfirm={async () => {
+            const formattedNote = `[Tạm hoãn] ${deferReason.trim()}`;
+            await save({ status: 'REJECTED', note: formattedNote });
+            setDeferOpen(false);
+          }}
+        />
         <AdaptiveModal
           title="Đóng ticket bằng ngoại lệ Admin?"
           open={exceptionCloseOpen}
@@ -401,6 +449,32 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
         )}
         {!loading && detail && context && (
           <div className="space-y-4">
+            {isDeferred && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Ticket đang ở trạng thái Tạm hoãn (Won't Do Now)"
+                description={
+                  <div className="space-y-2">
+                    <p>
+                      {detail.triageNote?.replace(/^\[Tạm hoãn\]\s*/, '') ||
+                        'Chưa có kế hoạch triển khai trong thời gian tới.'}
+                    </p>
+                    {canTriage && (
+                      <Button
+                        size="small"
+                        type="primary"
+                        loading={saving}
+                        icon={<AppIcon icon={RefreshCw} size="sm" />}
+                        onClick={() => void save({ status: 'NEW', note: 'Mở lại ticket sau thời gian tạm hoãn' })}
+                      >
+                        Mở lại ticket
+                      </Button>
+                    )}
+                  </div>
+                }
+              />
+            )}
             <section>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -417,6 +491,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                 <div className="flex flex-wrap items-center gap-2">
                   <BugStatusTag
                     status={detail.status}
+                    triageNote={detail.triageNote}
                     reporterName={detail.reporter.displayName}
                     agentProgress={effectiveBugReportAgentProgress(detail).stage}
                   />
@@ -632,87 +707,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
               </SectionCard>
             )}
 
-            <SectionCard title="Context tự động">
-              <Descriptions column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 2, xxl: 2 }} size="small" bordered>
-                <Descriptions.Item label="Trang">{context.path}</Descriptions.Item>
-                <Descriptions.Item label="Popup / drawer">
-                  {context.overlays.join(' → ') || 'Không có'}
-                </Descriptions.Item>
-                <Descriptions.Item label="Web commit">
-                  <Text code copyable>
-                    {context.webCommit || 'unknown'}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="API commit">
-                  <Text code copyable>
-                    {context.apiCommit || 'unknown'}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Theme">{context.themeMode}</Descriptions.Item>
-                <Descriptions.Item label="Viewport">
-                  {context.viewport.width} × {context.viewport.height} · DPR {context.viewport.devicePixelRatio}
-                </Descriptions.Item>
-                <Descriptions.Item label="Mạng">{context.online ? 'Online' : 'Offline'}</Descriptions.Item>
-                <Descriptions.Item label="Múi giờ">{context.timeZone}</Descriptions.Item>
-                <Descriptions.Item label="Trình duyệt" span={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 2, xxl: 2 }}>
-                  {context.userAgent}
-                </Descriptions.Item>
-              </Descriptions>
-            </SectionCard>
-
-            <SectionCard title={`API lỗi gần nhất (${context.recentApiFailures.length})`}>
-              {context.recentApiFailures.length === 0 ? (
-                <Text type="secondary">Không ghi nhận API lỗi gần đây.</Text>
-              ) : (
-                <List
-                  size="small"
-                  dataSource={context.recentApiFailures}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <div className="min-w-0">
-                        <Text code>{item.method}</Text> <Text>{item.url}</Text>
-                        <div>
-                          <Text type="secondary">
-                            {item.status ?? 'NETWORK'} · {item.message} · {formatDate(item.occurredAt)}
-                          </Text>
-                        </div>
-                      </div>
-                    </List.Item>
-                  )}
-                />
-              )}
-            </SectionCard>
-
-            <SectionCard title={`JavaScript lỗi gần nhất (${context.recentClientErrors.length})`}>
-              {context.recentClientErrors.length === 0 && !context.errorBoundary ? (
-                <Text type="secondary">Không ghi nhận JavaScript error gần đây.</Text>
-              ) : (
-                <List
-                  size="small"
-                  dataSource={[
-                    ...(context.errorBoundary ? [context.errorBoundary] : []),
-                    ...context.recentClientErrors,
-                  ]}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <div className="min-w-0">
-                        <Text strong>
-                          {item.name}: {item.message}
-                        </Text>
-                        {item.stack && (
-                          <Text
-                            type="secondary"
-                            className="mt-2 block max-h-40 overflow-auto whitespace-pre-wrap font-mono text-xs"
-                          >
-                            {item.stack}
-                          </Text>
-                        )}
-                      </div>
-                    </List.Item>
-                  )}
-                />
-              )}
-            </SectionCard>
+            <BugReportDiagnosticsSection context={context} />
 
             {canTriage ? (
               <SectionCard title={detail.requestType === 'FEATURE' ? 'Danny quyết định sản phẩm' : 'Danny triage'}>
@@ -722,7 +717,10 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     <Select
                       value={status}
                       onChange={setStatus}
-                      options={TRANSITIONS[detail.status].map((item) => ({ value: item, label: STATUS_LABELS[item] }))}
+                      options={TRANSITIONS[detail.status].map((item) => ({
+                        value: item,
+                        label: item === 'REJECTED' && isDeferred ? 'Tạm hoãn' : STATUS_LABELS[item],
+                      }))}
                       getPopupContainer={(node) => node.parentElement || document.body}
                       className="w-full"
                     />

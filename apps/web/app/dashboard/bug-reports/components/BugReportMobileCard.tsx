@@ -43,6 +43,7 @@ export function BugReportMobileCard({ report, onOpen }: BugReportMobileCardProps
               <PriorityTag priority={report.priority} />
               <BugStatusTag
                 status={report.status}
+                triageNote={report.triageNote}
                 reporterName={report.reporter.displayName}
                 agentProgress={effectiveBugReportAgentProgress(report).stage}
               />

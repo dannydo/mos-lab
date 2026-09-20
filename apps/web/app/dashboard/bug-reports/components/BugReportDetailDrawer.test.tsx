@@ -471,4 +471,64 @@ describe('BugReportDetailDrawer behavior', () => {
     );
     await screen.findByText('MOS-BUG-900001 · Đã nhận bình luận');
   });
+
+  it('allows deferring an active ticket with quick reasons and prefixes note with [Tạm hoãn]', async () => {
+    const props = propsFor(makeDetail({ status: 'NEW' }));
+    render(<BugReportDetailDrawer {...props} />);
+
+    const deferButton = await screen.findByRole('button', { name: 'Tạm hoãn' });
+    expect(deferButton).toBeVisible();
+
+    fireEvent.click(deferButton);
+
+    const submitButton = screen.getByRole('button', { name: 'Xác nhận tạm hoãn' });
+    expect(submitButton).toBeDisabled();
+
+    // Click quick reason chip
+    const quickChip = screen.getByRole('button', { name: 'Chưa có kế hoạch trong vài tháng tới' });
+    fireEvent.click(quickChip);
+
+    expect(submitButton).toBeEnabled();
+    fireEvent.click(submitButton);
+
+    await waitFor(() =>
+      expect(props.triage).toHaveBeenCalledWith(props.reportId, {
+        status: 'REJECTED',
+        priority: 'P1',
+        businessContext: 'Kết quả đúng đã được ghi nhận.',
+        note: '[Tạm hoãn] Chưa có kế hoạch trong vài tháng tới',
+        duplicateOfId: undefined,
+      })
+    );
+  });
+
+  it('displays deferred banner and allows reopening a deferred ticket', async () => {
+    const deferredDetail = makeDetail({
+      status: 'REJECTED',
+      triageNote: '[Tạm hoãn] Chưa có kế hoạch trong vài tháng tới',
+    });
+    const props = propsFor(deferredDetail);
+    render(<BugReportDetailDrawer {...props} />);
+
+    await screen.findByText("Ticket đang ở trạng thái Tạm hoãn (Won't Do Now)");
+    expect(screen.getByText('Chưa có kế hoạch trong vài tháng tới')).toBeInTheDocument();
+
+    const reopenButtons = screen.getAllByRole('button', { name: 'Mở lại ticket' });
+    expect(reopenButtons.length).toBeGreaterThanOrEqual(1);
+
+    // Click reopen header button and confirm
+    fireEvent.click(reopenButtons[0]);
+    const confirmButton = await screen.findByRole('button', { name: 'Mở lại' });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() =>
+      expect(props.triage).toHaveBeenCalledWith(props.reportId, {
+        status: 'NEW',
+        priority: 'P1',
+        businessContext: 'Kết quả đúng đã được ghi nhận.',
+        note: 'Mở lại ticket sau thời gian tạm hoãn',
+        duplicateOfId: undefined,
+      })
+    );
+  });
 });

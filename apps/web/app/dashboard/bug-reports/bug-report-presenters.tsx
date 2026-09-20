@@ -1,18 +1,19 @@
 'use client';
 
 import { Typography } from 'antd';
-import type {
-  BugPriority,
-  BugReportAgentProgress,
-  BugReportAgentProgressStage,
-  BugReportClarificationFilter,
-  BugReportClarificationStatus,
-  BugReportNextAction,
-  BugReportNextActor,
-  BugReportRequestType,
-  BugReportStatus,
-  BugReportSummary,
-  InboxTimingBucket,
+import {
+  type BugPriority,
+  type BugReportAgentProgress,
+  type BugReportAgentProgressStage,
+  type BugReportClarificationFilter,
+  type BugReportClarificationStatus,
+  type BugReportNextAction,
+  type BugReportNextActor,
+  type BugReportRequestType,
+  type BugReportStatus,
+  type BugReportSummary,
+  type InboxTimingBucket,
+  isDeferredBugReport,
 } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { StatusTag } from '../../../components/ui';
@@ -261,13 +262,17 @@ export function BugStatusTag({
   status,
   reporterName,
   agentProgress,
+  triageNote,
 }: {
   status: BugReportStatus;
   reporterName?: string | null;
   agentProgress?: BugReportAgentProgressStage;
+  triageNote?: string | null;
 }) {
-  const label =
-    agentProgress === 'AWAITING_DANNY_COMMIT_REVIEW'
+  const deferred = isDeferredBugReport({ status, triageNote });
+  const label = deferred
+    ? 'Tạm hoãn'
+    : agentProgress === 'AWAITING_DANNY_COMMIT_REVIEW'
       ? 'Chờ Danny duyệt commit'
       : agentProgress === 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL'
         ? 'Chờ Danny duyệt code/test'
@@ -282,8 +287,9 @@ export function BugStatusTag({
                 : status === 'FIXED'
                   ? `${reporterWaitingLabel(reporterName)} duyệt`
                   : STATUS_LABELS[status];
-  const tone =
-    agentProgress === 'IMPLEMENTATION_FAILED'
+  const tone = deferred
+    ? 'warning'
+    : agentProgress === 'IMPLEMENTATION_FAILED'
       ? 'error'
       : agentProgress === 'AWAITING_DANNY_COMMIT_REVIEW'
         ? 'warning'

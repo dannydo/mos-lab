@@ -1302,6 +1302,7 @@ function summaryDto(row: ReportWithRelations): BugReportSummary {
     description: row.description,
     status: row.status as BugReportStatus,
     priority: row.priority as BugPriority | null,
+    triageNote: row.triageNote,
     sourcePath: row.sourcePath,
     overlay: context.overlays[0] || null,
     attachmentCount: row.attachments.filter((attachment) => !attachment.deletedAt).length,

@@ -1,4 +1,5 @@
 import type { BugReportAgentProgress, BugReportAgentProgressStage, BugReportSummary } from '@mos-lab/shared';
+import { isDeferredBugReport } from '@mos-lab/shared';
 
 export const BUG_REPORT_WORKFLOW_STEPS = ['Tiếp nhận', 'Duyệt', 'Xử lý', 'Nghiệm thu', 'Hoàn tất'] as const;
 
@@ -157,8 +158,12 @@ export function effectiveBugReportAgentProgress(
 export function getBugReportWorkflowStage(
   report: Pick<BugReportSummary, 'status' | 'clarification' | 'agentProgress'> & {
     reporter?: Pick<BugReportSummary['reporter'], 'displayName'> | null;
+    triageNote?: string | null;
   }
 ): BugReportWorkflowStage {
+  if (isDeferredBugReport(report)) {
+    return { position: null, label: 'Tạm hoãn', detail: 'Lưu trữ backlog · chưa triển khai', tone: 'warning' };
+  }
   if (report.status === 'REJECTED') {
     return { position: null, label: 'Từ chối', detail: 'Ticket không triển khai', tone: 'muted' };
   }

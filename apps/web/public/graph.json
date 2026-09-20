@@ -25549,8 +25549,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 118997,
-        "lineCount": 2843,
+        "sizeBytes": 119029,
+        "lineCount": 2844,
         "ext": ".ts"
       }
     },
@@ -30385,8 +30385,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/bug-report-presenters.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8340,
-        "lineCount": 218,
+        "sizeBytes": 8646,
+        "lineCount": 229,
         "ext": ".ts"
       }
     },
@@ -30398,8 +30398,21 @@
       "filePath": "apps/web/app/dashboard/bug-reports/bug-report-presenters.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14461,
-        "lineCount": 416,
+        "sizeBytes": 14700,
+        "lineCount": 422,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/BugReportDeferModal.tsx",
+      "type": "File",
+      "label": "BugReportDeferModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDeferModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2126,
+        "lineCount": 70,
         "ext": ".tsx"
       }
     },
@@ -30411,8 +30424,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22685,
-        "lineCount": 475,
+        "sizeBytes": 25012,
+        "lineCount": 535,
         "ext": ".tsx"
       }
     },
@@ -30424,8 +30437,21 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39086,
-        "lineCount": 846,
+        "sizeBytes": 38538,
+        "lineCount": 844,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/BugReportDiagnosticsSection.tsx",
+      "type": "File",
+      "label": "BugReportDiagnosticsSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDiagnosticsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3795,
+        "lineCount": 96,
         "ext": ".tsx"
       }
     },
@@ -30489,8 +30515,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportMobileCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3640,
-        "lineCount": 96,
+        "sizeBytes": 3687,
+        "lineCount": 97,
         "ext": ".tsx"
       }
     },
@@ -30619,8 +30645,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18825,
-        "lineCount": 491,
+        "sizeBytes": 19378,
+        "lineCount": 499,
         "ext": ".ts"
       }
     },
@@ -33557,8 +33583,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 43134,
-        "lineCount": 1353,
+        "sizeBytes": 43647,
+        "lineCount": 1365,
         "ext": ".ts"
       }
     },
@@ -50298,6 +50324,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/BugReportDiagnosticsSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/BugReportDiagnosticsSection.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -73523,8 +73556,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 2612,
-    "totalEdges": 5632,
+    "totalNodes": 2614,
+    "totalEdges": 5633,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 139,
@@ -73533,14 +73566,14 @@
       "SharedType": 954,
       "DesignToken": 12,
       "UIComponent": 190,
-      "File": 717
+      "File": 719
     },
     "edgeTypeCounts": {
       "EXPORTS": 1105,
       "HANDLES_ROUTE": 546,
       "RENDERS": 241,
       "USES_TOKEN": 192,
-      "IMPORTS": 386,
+      "IMPORTS": 387,
       "QUERIES_MODEL": 346,
       "API_CALL": 2816
     },
