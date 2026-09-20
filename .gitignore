@@ -57,11 +57,14 @@ venv/
 *.pyc
 __pycache__/
 
-# Graphify Artifacts
-graph.html
-GRAPH_REPORT.md
-graph.json
+# Graphify Artifacts (root only; public assets are tracked for production)
+/graph.html
+/GRAPH_REPORT.md
+/graph.json
 .graph/
+!apps/web/public/graph.html
+!apps/web/public/graph.json
+
 
 # Local browser and performance audit artifacts
 /.playwright-cli/

@@ -12,9 +12,11 @@ apps/.venv-ads-portal/
 /.husky/
 /docs/
 /scripts/
-*.md
-*.docx
-*.html
+/*.md
+/*.docx
+/*.html
+!apps/web/public/graph.html
+!apps/web/public/graph.json
 
 # Local dependencies, caches, generated output, and reports.
 .git/

@@ -13,6 +13,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import { PageHeader } from '../../../components/ui';
 import { useRouter } from 'next/navigation';
+import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 
 export default function ArchitecturePage() {
   const { themeMode } = useTheme();
@@ -82,6 +83,7 @@ export default function ArchitecturePage() {
   const usernameStr = (user?.username || '').toLowerCase();
   const emailStr = (user?.email || '').toLowerCase();
   const isAdmin =
+    isAdminOrSuperAdminRole(user?.role) ||
     roleStr === 'admin' ||
     usernameStr === 'admin' ||
     usernameStr === 'danhdo@gmail.com' ||
