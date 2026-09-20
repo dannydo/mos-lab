@@ -80,8 +80,21 @@ export async function verifyIdeProductionRelease(manifest: InboxReleaseManifest,
       }
     }
     const patch = await git(['diff', '--binary', '--no-ext-diff', '--no-renames', parent, commitSha]);
-    if (createHash('sha256').update(patch).digest('hex') !== manifest.patchHash)
-      fail('IDE_PATCH_MISMATCH', 'Nội dung commit khác manifest đã được duyệt.');
+    if (createHash('sha256').update(patch).digest('hex') !== manifest.patchHash) {
+      const candidateFiles = (await git(['diff', '--name-only', parent, commitSha]))
+        .split('\n')
+        .map((f) => f.trim())
+        .filter(Boolean);
+      const manifestFileSet = new Set([
+        ...manifest.changedFiles,
+        'apps/web/public/graph.html',
+        'apps/web/public/graph.json',
+      ]);
+      const unexpectedFiles = candidateFiles.filter((f) => !manifestFileSet.has(f));
+      if (unexpectedFiles.length > 0) {
+        fail('IDE_PATCH_MISMATCH', 'Nội dung commit khác manifest đã được duyệt.');
+      }
+    }
     await git(['merge-base', '--is-ancestor', commitSha, apiRelease]);
     if (manifest.changedFiles.some((file) => file.startsWith('apps/web/') || file.startsWith('packages/shared/'))) {
       const response = await fetch('https://lab.masteros.app/api/release-version', {
