@@ -38,6 +38,7 @@ import {
   type ReviewBugReportRequest,
   type TriageBugReportRequest,
   type InboxExecutionDashboardQuery,
+  formatBugReportKey,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { BugReportError, BugReportService, parseBugReportKey } from './bug-report.service.js';
@@ -254,6 +255,50 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       return sendError(fastify, reply, error, 'Claim AG task provisioning failed');
     }
   });
+  fastify.get('/ag-task-bridge/deploy/next', { preHandler: [requireIdeTaskBridge] }, async (request, reply) => {
+    try {
+      const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: {
+          status: 'AWAITING_DEPLOY_REVIEW',
+          executionPhase: 'DEPLOY_APPROVED',
+          commitSha: { not: null },
+        },
+        include: {
+          report: { select: { id: true, requestType: true, title: true } },
+        },
+        orderBy: { updatedAt: 'asc' },
+      });
+      if (!job || !job.commitSha) {
+        return reply.send({ success: true, data: null });
+      }
+      return reply.send({
+        success: true,
+        data: {
+          jobId: job.id,
+          reportId: job.reportId,
+          ticketKey: formatBugReportKey(job.reportId, job.report?.requestType === 'FEATURE' ? 'FEATURE' : 'BUG'),
+          title: job.report?.title || '',
+          commitSha: job.commitSha,
+          branchName: job.branchName,
+        },
+      });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get next auto-deploy job failed');
+    }
+  });
+  fastify.get(
+    '/ag-task-bridge/reports/:reportId/release-preview',
+    { preHandler: [requireIdeTaskBridge] },
+    async (request, reply) => {
+      try {
+        const reportId = numericParam((request.params as { reportId: string }).reportId, 'Report ID');
+        const preview = await InboxIdeReleaseService.preview(fastify, reportId);
+        return reply.send({ success: true, data: { ...preview, reportId } });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Preview AG report release failed');
+      }
+    }
+  );
   fastify.post(
     '/ide-task-bridge/provisioning/:jobId/complete',
     { preHandler: [requireIdeTaskBridge] },

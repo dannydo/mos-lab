@@ -330,6 +330,151 @@ export async function runProvisionerOnce(deps: ProvisionerDeps): Promise<'IDLE' 
   }
 }
 
+export function readCheckpointToken(): string {
+  if (process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN) return process.env.MOS_IDE_RELEASE_CHECKPOINT_TOKEN.trim();
+  const envFiles = [resolve(homedir(), 'projects/mos-lab/apps/api/.env'), resolve(process.cwd(), 'apps/api/.env')];
+  for (const file of envFiles) {
+    if (existsSync(file)) {
+      const content = readFileSync(file, 'utf8');
+      const match = content.match(/^MOS_IDE_RELEASE_CHECKPOINT_TOKEN=(.+)$/m);
+      if (match && match[1]?.trim()) return match[1].trim();
+    }
+  }
+  return readToken();
+}
+
+export type AutoDeployJob = {
+  jobId: string;
+  reportId: number;
+  ticketKey: string;
+  title: string;
+  commitSha: string;
+  branchName: string;
+};
+
+export async function runAutoDeployWatcher(deps: {
+  apiUrl: string;
+  token: string;
+  repository: string;
+  notifyVoice?: (message: string) => Promise<void>;
+}): Promise<'IDLE' | 'DEPLOYED'> {
+  let res: Response;
+  try {
+    res = await fetch(`${deps.apiUrl}/ag-task-bridge/deploy/next`, {
+      headers: { Authorization: `Bearer ${deps.token}`, Accept: 'application/json' },
+    });
+  } catch {
+    return 'IDLE';
+  }
+  if (!res.ok) return 'IDLE';
+
+  const payload = (await res.json()) as { data?: AutoDeployJob | null };
+  const deployJob = payload?.data;
+  if (!deployJob || !deployJob.commitSha) return 'IDLE';
+
+  const mainRepo = resolve(deps.repository);
+  process.stdout.write(
+    `[${new Date().toISOString()}] [AutoDeploy] Danny deploy approval detected for ${deployJob.ticketKey} (${deployJob.commitSha.slice(0, 8)}). Starting pipeline...\n`
+  );
+
+  // 1. Merge into main if not already an ancestor
+  const isAncestor = await execFile('git', ['-C', mainRepo, 'merge-base', '--is-ancestor', deployJob.commitSha, 'main'])
+    .then(() => true)
+    .catch(() => false);
+
+  if (!isAncestor) {
+    process.stdout.write(`[AutoDeploy] Merging ${deployJob.commitSha.slice(0, 8)} into main...\n`);
+    await execFile('git', ['-C', mainRepo, 'checkout', 'main']);
+    await execFile('git', ['-C', mainRepo, 'pull', '--ff-only', 'origin', 'main']);
+    await execFile('git', [
+      '-C',
+      mainRepo,
+      'merge',
+      deployJob.commitSha,
+      '-m',
+      `deploy(inbox): merge ${deployJob.ticketKey} ${deployJob.title.replace(/"/g, '')}`,
+    ]);
+    await execFile('git', ['-C', mainRepo, 'push', 'origin', 'main']);
+  }
+
+  // 2. Deploy to VPS
+  process.stdout.write('[AutoDeploy] Deploying backend to VPS live-wings...\n');
+  await execFile('ssh', ['-o', 'BatchMode=yes', 'live-wings', 'bash /home/web/mos-lab/scripts/deploy-production.sh'], {
+    timeout: 180_000,
+  });
+
+  // 3. Poll release preview until eligible
+  process.stdout.write(`[AutoDeploy] Waiting for release verification for ticket ${deployJob.reportId}...\n`);
+  const verifyStart = Date.now();
+  let releaseToken: unknown = null;
+  while (Date.now() - verifyStart < 5 * 60 * 1000) {
+    try {
+      const previewRes = await fetch(`${deps.apiUrl}/ag-task-bridge/reports/${deployJob.reportId}/release-preview`, {
+        headers: { Authorization: `Bearer ${deps.token}`, Accept: 'application/json' },
+      });
+      if (previewRes.ok) {
+        const previewPayload = (await previewRes.json()) as {
+          data?: { eligible: boolean; token?: unknown };
+        };
+        if (previewPayload?.data?.eligible && previewPayload.data.token) {
+          releaseToken = previewPayload.data.token;
+          break;
+        }
+      }
+    } catch {
+      // Retry transient error
+    }
+    await new Promise((r) => setTimeout(r, 5_000));
+  }
+
+  if (!releaseToken) {
+    throw new Error(`Production release verification timed out for ticket ${deployJob.reportId}.`);
+  }
+
+  // 4. Post release checkpoint
+  process.stdout.write(`[AutoDeploy] Posting release checkpoint for ticket ${deployJob.reportId}...\n`);
+  const checkpointToken = readCheckpointToken();
+  const rawToken = releaseToken as {
+    jobId: string;
+    manifestDigest: string;
+    commitSha: string;
+    apiRelease: string;
+    webRelease: string | null;
+  };
+  const checkpointPayload = {
+    jobId: rawToken.jobId,
+    manifestDigest: rawToken.manifestDigest,
+    commitSha: rawToken.commitSha,
+    apiRelease: rawToken.apiRelease,
+    webRelease: rawToken.webRelease,
+  };
+  const checkpointRes = await fetch(`${deps.apiUrl}/ide-release-checkpoints/${deployJob.reportId}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${checkpointToken}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(checkpointPayload),
+  });
+
+  if (!checkpointRes.ok) {
+    throw new Error(`Release checkpoint failed (${checkpointRes.status}): ${await checkpointRes.text()}`);
+  }
+
+  process.stdout.write(
+    `[${new Date().toISOString()}] [AutoDeploy] Ticket ${deployJob.ticketKey} released and closed successfully!\n`
+  );
+
+  if (deps.notifyVoice) {
+    await deps.notifyVoice(
+      `Anh Danny ơi, em đã tự động deploy xong ticket ${deployJob.ticketKey} lên production và đóng ticket rồi ạ.`
+    );
+  }
+
+  return 'DEPLOYED';
+}
+
 export async function main() {
   const isDaemon = process.argv.includes('--daemon');
   const token = readToken();
@@ -354,6 +499,22 @@ export async function main() {
     } catch (err) {
       process.stderr.write(
         `[${new Date().toISOString()}] Provisioner error: ${err instanceof Error ? err.message : String(err)}\n`
+      );
+    }
+
+    try {
+      const deployResult = await runAutoDeployWatcher({
+        apiUrl: config.apiUrl,
+        token,
+        repository: config.repository,
+        notifyVoice,
+      });
+      if (deployResult === 'DEPLOYED') {
+        process.stdout.write(`[${new Date().toISOString()}] AutoDeploy completed successfully.\n`);
+      }
+    } catch (err) {
+      process.stderr.write(
+        `[${new Date().toISOString()}] AutoDeploy error: ${err instanceof Error ? err.message : String(err)}\n`
       );
     }
   };
