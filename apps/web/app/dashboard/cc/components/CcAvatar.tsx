@@ -18,7 +18,7 @@ export default function CcAvatar({ name = '', src, size = 36, isSelected, classN
   let formattedSrc: string | undefined = undefined;
   if (src && src.trim()) {
     let s = src.trim();
-    s = s.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
+    s = s.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com');
     if (s.startsWith('http://')) {
       s = s.replace('http://', 'https://');
     }

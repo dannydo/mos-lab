@@ -908,7 +908,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
               : `https://cdn.wingslashes.com${rawAvatar.startsWith('/') ? '' : '/'}${rawAvatar}`
             : null;
           if (avatarUrl) {
-            avatarUrl = avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
+            avatarUrl = avatarUrl.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com');
           }
 
           return {
@@ -1105,7 +1105,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
             : `https://cdn.wingslashes.com${rawAvatar.startsWith('/') ? '' : '/'}${rawAvatar}`
           : null;
         if (avatarUrl) {
-          avatarUrl = avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com');
+          avatarUrl = avatarUrl.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com');
         }
 
         const salary = salaries[staff.id] || {

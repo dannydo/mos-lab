@@ -89,7 +89,9 @@ function formatDateDisplay(d: Date | string | null | undefined): string {
 
 function formatAvatarUrl(avatar?: string | null, userId?: number): string | null {
   if (!avatar) return null;
-  if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+  if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+    return avatar.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com\//, 'https://cdn.wingslashes.com/');
+  }
   return `https://cdn.wingslashes.com/uploads/user/avatar/${userId}/thumbnail/${avatar}`;
 }
 

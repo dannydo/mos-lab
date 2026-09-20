@@ -779,7 +779,7 @@ export default function StaffPage() {
                 src={
                   selectedStaff.avatarUrl
                     ? selectedStaff.avatarUrl.replace(
-                        /^https?:\/\/(s|api)\.wingslashes\.com/,
+                        /^https?:\/\/(s|api|www)?\.?wingslashes\.com/,
                         'https://cdn.wingslashes.com'
                       )
                     : undefined

@@ -12,7 +12,7 @@ interface TelesalesAvatarProps {
 export function formatAvatarUrl(url?: string | null): string | undefined {
   if (!url || typeof url !== 'string' || !url.trim()) return undefined;
   let clean = url.trim();
-  clean = clean.replace(/^(https?:\/\/)?(s|api|cdn)\.wingslashes\.com\/?/, '');
+  clean = clean.replace(/^(https?:\/\/)?((s|api|cdn|www)\.)?wingslashes\.com\/?/, '');
   if (!clean.startsWith('http://') && !clean.startsWith('https://') && !clean.startsWith('data:')) {
     clean = `https://cdn.wingslashes.com/${clean.replace(/^\/+/, '')}`;
   }

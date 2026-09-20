@@ -165,7 +165,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   const callStatus = getCallStatusInfo({ isRegistered, omicallReady, callState });
 
   const avatarUrl = user?.avatarUrl
-    ? user.avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com')
+    ? user.avatarUrl.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com')
     : undefined;
 
   const handleTelesalesClick = () => {

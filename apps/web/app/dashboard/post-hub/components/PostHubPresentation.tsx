@@ -54,7 +54,7 @@ export function formatPostHubStaffAvatarUrl(avatarUrl?: string | null): string |
   if (!avatarUrl || typeof avatarUrl !== 'string' || !avatarUrl.trim()) return undefined;
 
   let normalized = avatarUrl.trim();
-  normalized = normalized.replace(/^(?:https?:)?\/\/(?:s|api|cdn)\.wingslashes\.com\/?/, '');
+  normalized = normalized.replace(/^(?:https?:)?\/\/(?:(?:s|api|cdn|www)\.)?wingslashes\.com\/?/, '');
   if (/^(?:https?:|data:)/i.test(normalized)) return normalized;
 
   return `https://cdn.wingslashes.com/${normalized.replace(/^\/+/, '')}`;

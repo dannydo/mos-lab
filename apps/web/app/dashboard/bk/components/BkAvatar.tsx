@@ -29,7 +29,7 @@ export default function BkAvatar({ name, src, size = 36, isSelected = false }: B
   let formattedSrc: string | undefined = undefined;
   if (src && typeof src === 'string' && src.trim()) {
     let s = src.trim();
-    s = s.replace(/^(https?:\/\/)?(s|api|cdn)\.wingslashes\.com\/?/, '');
+    s = s.replace(/^(https?:\/\/)?((s|api|cdn|www)\.)?wingslashes\.com\/?/, '');
     if (!s.startsWith('http://') && !s.startsWith('https://') && !s.startsWith('data:')) {
       formattedSrc = `https://cdn.wingslashes.com/${s.replace(/^\/+/, '')}`;
     } else {

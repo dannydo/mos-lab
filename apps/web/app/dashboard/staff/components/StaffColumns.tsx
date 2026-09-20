@@ -79,7 +79,10 @@ export const getStaffColumns = ({
               <Avatar
                 src={
                   record.avatarUrl
-                    ? record.avatarUrl.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com')
+                    ? record.avatarUrl.replace(
+                        /^https?:\/\/(s|api|www)?\.?wingslashes\.com/,
+                        'https://cdn.wingslashes.com'
+                      )
                     : undefined
                 }
                 icon={!record.avatarUrl ? <UserOutlined /> : undefined}

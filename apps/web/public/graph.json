@@ -7834,7 +7834,7 @@
         "path": "/api/customers/loca-staff-activity",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 98
+        "line": 100
       }
     },
     {
@@ -25767,8 +25767,8 @@
       "filePath": "apps/api/src/modules/customers/routes/loca-staff-activity.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18807,
-        "lineCount": 484,
+        "sizeBytes": 18906,
+        "lineCount": 486,
         "ext": ".ts"
       }
     },
@@ -26365,7 +26365,7 @@
       "filePath": "apps/api/src/modules/kpi/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 59924,
+        "sizeBytes": 59936,
         "lineCount": 1613,
         "ext": ".ts"
       }
@@ -29706,7 +29706,7 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkAvatar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1901,
+        "sizeBytes": 1908,
         "lineCount": 68,
         "ext": ".tsx"
       }
@@ -30239,7 +30239,7 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcAvatar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1877,
+        "sizeBytes": 1883,
         "lineCount": 55,
         "ext": ".tsx"
       }
@@ -31357,7 +31357,7 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 54952,
+        "sizeBytes": 54958,
         "lineCount": 1364,
         "ext": ".tsx"
       }
@@ -31604,7 +31604,7 @@
       "filePath": "apps/web/app/dashboard/post-hub/components/PostHubPresentation.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6114,
+        "sizeBytes": 6123,
         "lineCount": 183,
         "ext": ".tsx"
       }
@@ -31942,7 +31942,7 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16597,
+        "sizeBytes": 16603,
         "lineCount": 496,
         "ext": ".tsx"
       }
@@ -32007,7 +32007,7 @@
       "filePath": "apps/web/app/dashboard/staff/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41468,
+        "sizeBytes": 41474,
         "lineCount": 1137,
         "ext": ".tsx"
       }

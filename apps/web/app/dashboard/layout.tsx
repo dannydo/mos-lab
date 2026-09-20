@@ -233,7 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         const rawAvatar = m.avatarUrl || m.avatar || null;
         const formattedAvatar = rawAvatar
-          ? rawAvatar.replace(/^https?:\/\/(s|api)\.wingslashes\.com/, 'https://cdn.wingslashes.com')
+          ? rawAvatar.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com')
           : null;
 
         return {
