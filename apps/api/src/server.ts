@@ -41,6 +41,7 @@ import { uiExperienceRoutes } from './modules/ui-experiences/routes.js';
 import { experienceJournalRoutes } from './modules/experience-journal/routes.js';
 import { ExperienceJournalService } from './modules/experience-journal/experience-journal.service.js';
 import { bugReportRoutes } from './modules/bug-reports/routes.js';
+import { frontendTelemetryRoutes } from './modules/telemetry/routes.js';
 import { aiRoutes } from './modules/ai/routes.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { RequestClassificationService } from './modules/bug-reports/request-classification.service.js';
@@ -314,6 +315,7 @@ const start = async () => {
     await server.register(uiExperienceRoutes, { prefix: '/api' });
     await server.register(experienceJournalRoutes, { prefix: '/api' });
     await server.register(bugReportRoutes, { prefix: '/api' });
+    await server.register(frontendTelemetryRoutes, { prefix: '/api' });
     await server.register(aiRoutes, { prefix: '/api' });
 
     if (isSafeDev()) {

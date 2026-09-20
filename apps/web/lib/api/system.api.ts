@@ -23,11 +23,40 @@ import type {
   UiExperienceResolveParams,
   UiExperienceResolveResponse,
   UpdateMenuAccessPolicyRequest,
+  ConvertFrontendIssueToBugReportResponse,
+  FrontendIssueListQuery,
+  FrontendIssueListResponse,
+  FrontendIssueMetrics,
+  FrontendIssueRecord,
+  UpdateFrontendIssueStatusRequest,
 } from '@mos-lab/shared';
 
 import { api, dedupeInFlightApiGet } from './base';
 
 export const systemApi = {
+  frontendTelemetry: {
+    list: async (params?: FrontendIssueListQuery): Promise<FrontendIssueListResponse> => {
+      const response = await api.get<FrontendIssueListResponse>('/telemetry/frontend-issues', { params });
+      return response.data;
+    },
+    getMetrics: async (): Promise<FrontendIssueMetrics> => {
+      const response = await api.get<{ data: FrontendIssueMetrics }>('/telemetry/frontend-issues/metrics');
+      return response.data.data;
+    },
+    updateStatus: async (id: number, payload: UpdateFrontendIssueStatusRequest): Promise<FrontendIssueRecord> => {
+      const response = await api.patch<{ data: FrontendIssueRecord }>(
+        `/telemetry/frontend-issues/${id}/status`,
+        payload
+      );
+      return response.data.data;
+    },
+    convertToBugReport: async (id: number): Promise<ConvertFrontendIssueToBugReportResponse> => {
+      const response = await api.post<{ data: ConvertFrontendIssueToBugReportResponse }>(
+        `/telemetry/frontend-issues/${id}/convert-bug-report`
+      );
+      return response.data.data;
+    },
+  },
   experienceJournal: {
     list: async (params?: ExperienceJournalListQuery): Promise<ExperienceJournalListResponse> => {
       const response = await api.get<ExperienceJournalListResponse>('/experience-journal', { params });

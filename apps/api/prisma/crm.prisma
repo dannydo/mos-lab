@@ -81,6 +81,7 @@ model CrmStaff {
   requestConversations CrmRequestConversation[] @relation("RequestConversationReporter")
   impersonationAuditsStarted CrmImpersonationAudit[] @relation("ImpersonationAuditActor")
   impersonationAuditsTargeted CrmImpersonationAudit[] @relation("ImpersonationAuditTarget")
+  resolvedFrontendIssues CrmFrontendIssue[] @relation("FrontendIssueResolvedBy")
 
   @@map("crm_staff")
 }
@@ -3022,3 +3023,32 @@ model CrmExperienceJournalFingerprint {
   @@index([category, severity, lastOccurredAt])
   @@map("crm_experience_journal_fingerprints")
 }
+
+/// Long-term persistent records for frontend issues and friction points
+model CrmFrontendIssue {
+  id                Int       @id @default(autoincrement())
+  fingerprint       String    @unique @db.VarChar(191)
+  issueType         String    @map("issue_type") @db.VarChar(32)
+  path              String    @db.VarChar(500)
+  target            String?   @db.VarChar(255)
+  message           String    @db.Text
+  occurrenceCount   Int       @default(1) @map("occurrence_count")
+  firstSeenAt       DateTime  @default(now()) @map("first_seen_at") @db.DateTime(0)
+  lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.DateTime(0)
+  lastUserId        Int?      @map("last_user_id")
+  lastUserName      String?   @map("last_user_name") @db.VarChar(100)
+  status            String    @default("NEW") @db.VarChar(24)
+  resolvedAt        DateTime? @map("resolved_at") @db.DateTime(0)
+  resolvedByStaffId Int?      @map("resolved_by_staff_id")
+  resolutionNotes   String?   @map("resolution_notes") @db.Text
+  latestPayloadJson String?   @map("latest_payload_json") @db.LongText
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  resolvedByStaff   CrmStaff? @relation("FrontendIssueResolvedBy", fields: [resolvedByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([status, lastSeenAt])
+  @@index([issueType, status])
+  @@map("crm_frontend_issues")
+}
+

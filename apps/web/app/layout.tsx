@@ -30,9 +30,11 @@ export const metadata: Metadata = {
   },
 };
 
+import { Suspense } from 'react';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BugReportSurfacePortal } from '../components/bug-reports/BugReportSurfacePortal';
+import { FrontendTelemetryProvider } from '../components/telemetry/FrontendTelemetryProvider';
 
 export default function RootLayout({
   children,
@@ -44,6 +46,9 @@ export default function RootLayout({
       <body className="h-full m-0 p-0 antialiased" suppressHydrationWarning>
         <AntdRegistry>
           <ThemeProvider>
+            <Suspense fallback={null}>
+              <FrontendTelemetryProvider />
+            </Suspense>
             <ErrorBoundary>{children}</ErrorBoundary>
             <BugReportSurfacePortal />
           </ThemeProvider>

@@ -10,6 +10,7 @@ import type {
 } from '@mos-lab/shared';
 import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import {
+  Activity,
   CheckCircle2,
   Bot,
   CircleHelp,
@@ -37,6 +38,7 @@ import { CLARIFICATION_FILTER_LABELS, STATUS_LABELS } from './bug-report-present
 import { useBugReports } from './hooks/useBugReports';
 import { useRequestClassifierWorkerHealth } from './hooks/useRequestClassifierWorkerHealth';
 import { ExperienceJournalDrawer } from './components/ExperienceJournalDrawer';
+import { FrontendTelemetryDrawer } from './components/FrontendTelemetryDrawer';
 import { BugReportDetailDrawer } from './components/BugReportDetailDrawer';
 import { apiClient } from '../../../lib/api-client';
 
@@ -47,6 +49,7 @@ export default function BugReportsPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
+  const [telemetryOpen, setTelemetryOpen] = useState(false);
   const [canTriage, setCanTriage] = useState(false);
   const [canOpenJournal, setCanOpenJournal] = useState(false);
 
@@ -85,14 +88,24 @@ export default function BugReportsPage() {
         headerActions={
           <Space size={4}>
             {canOpenJournal ? (
-              <Tooltip title="Nhật ký Experience & Reliability (nội bộ)">
-                <Button
-                  type="text"
-                  aria-label="Mở Nhật ký Experience & Reliability"
-                  icon={<AppIcon icon={ShieldAlert} size="sm" />}
-                  onClick={() => setJournalOpen(true)}
-                />
-              </Tooltip>
+              <>
+                <Tooltip title="Hộp đen & Giám sát Trải nghiệm Frontend (Telemetry)">
+                  <Button
+                    type="text"
+                    aria-label="Mở Hộp đen & Giám sát Trải nghiệm"
+                    icon={<AppIcon icon={Activity} size="sm" className="text-amber-500" />}
+                    onClick={() => setTelemetryOpen(true)}
+                  />
+                </Tooltip>
+                <Tooltip title="Nhật ký Experience & Reliability (nội bộ)">
+                  <Button
+                    type="text"
+                    aria-label="Mở Nhật ký Experience & Reliability"
+                    icon={<AppIcon icon={ShieldAlert} size="sm" />}
+                    onClick={() => setJournalOpen(true)}
+                  />
+                </Tooltip>
+              </>
             ) : null}
             <Tooltip title="Xem workflow xử lý yêu cầu">
               <Button
@@ -298,12 +311,15 @@ export default function BugReportsPage() {
       </ResourceListPage>
       <BugReportWorkflowModal open={workflowOpen} onClose={() => setWorkflowOpen(false)} />
       {canOpenJournal ? (
-        <ExperienceJournalDrawer
-          open={journalOpen}
-          onClose={() => setJournalOpen(false)}
-          list={() => apiClient.experienceJournal.list()}
-          triage={(fingerprint, triageStatus) => apiClient.experienceJournal.triage(fingerprint, { triageStatus })}
-        />
+        <>
+          <ExperienceJournalDrawer
+            open={journalOpen}
+            onClose={() => setJournalOpen(false)}
+            list={() => apiClient.experienceJournal.list()}
+            triage={(fingerprint, triageStatus) => apiClient.experienceJournal.triage(fingerprint, { triageStatus })}
+          />
+          <FrontendTelemetryDrawer open={telemetryOpen} onClose={() => setTelemetryOpen(false)} />
+        </>
       ) : null}
       <BugReportDetailDrawer
         reportId={selectedId}

@@ -43,7 +43,7 @@
         "dbSource": "crm",
         "modelName": "CrmStaff",
         "tableName": "crm_staff",
-        "fieldCount": 69,
+        "fieldCount": 70,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -2240,6 +2240,24 @@
         "modelName": "CrmExperienceJournalFingerprint",
         "tableName": "crm_experience_journal_fingerprints",
         "fieldCount": 13,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmFrontendIssue",
+      "type": "PrismaModel",
+      "label": "crm.CrmFrontendIssue",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmFrontendIssue",
+        "tableName": "crm_frontend_issues",
+        "fieldCount": 19,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -9907,6 +9925,76 @@
         "module": "teams",
         "handler": "inlineHandler",
         "line": 143
+      }
+    },
+    {
+      "id": "route:POST:/api/telemetry/frontend-issues",
+      "type": "FastifyRoute",
+      "label": "POST /api/telemetry/frontend-issues",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/telemetry/frontend-issues",
+        "module": "telemetry",
+        "handler": "inlineHandler",
+        "line": 12
+      }
+    },
+    {
+      "id": "route:GET:/api/telemetry/frontend-issues",
+      "type": "FastifyRoute",
+      "label": "GET /api/telemetry/frontend-issues",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/telemetry/frontend-issues",
+        "module": "telemetry",
+        "handler": "inlineHandler",
+        "line": 44
+      }
+    },
+    {
+      "id": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "FastifyRoute",
+      "label": "GET /api/telemetry/frontend-issues/metrics",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/telemetry/frontend-issues/metrics",
+        "module": "telemetry",
+        "handler": "inlineHandler",
+        "line": 64
+      }
+    },
+    {
+      "id": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "FastifyRoute",
+      "label": "PATCH /api/telemetry/frontend-issues/:id/status",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "PATCH",
+        "path": "/api/telemetry/frontend-issues/:id/status",
+        "module": "telemetry",
+        "handler": "preHandler",
+        "line": 79
+      }
+    },
+    {
+      "id": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "FastifyRoute",
+      "label": "POST /api/telemetry/frontend-issues/:id/convert-bug-report",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/telemetry/frontend-issues/:id/convert-bug-report",
+        "module": "telemetry",
+        "handler": "preHandler",
+        "line": 119
       }
     },
     {
@@ -19193,6 +19281,162 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:FrontendIssueType",
+      "type": "SharedType",
+      "label": "FrontendIssueType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UserBreadcrumb",
+      "type": "SharedType",
+      "label": "UserBreadcrumb",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UserBreadcrumb",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueError",
+      "type": "SharedType",
+      "label": "FrontendIssueError",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueError",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueClientContext",
+      "type": "SharedType",
+      "label": "FrontendIssueClientContext",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueClientContext",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssuePayload",
+      "type": "SharedType",
+      "label": "FrontendIssuePayload",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssuePayload",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueSummary",
+      "type": "SharedType",
+      "label": "FrontendIssueSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueStatus",
+      "type": "SharedType",
+      "label": "FrontendIssueStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueRecord",
+      "type": "SharedType",
+      "label": "FrontendIssueRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueMetrics",
+      "type": "SharedType",
+      "label": "FrontendIssueMetrics",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueMetrics",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateFrontendIssueStatusRequest",
+      "type": "SharedType",
+      "label": "UpdateFrontendIssueStatusRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateFrontendIssueStatusRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueListQuery",
+      "type": "SharedType",
+      "label": "FrontendIssueListQuery",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueListQuery",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueListResponse",
+      "type": "SharedType",
+      "label": "FrontendIssueListResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueListResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ConvertFrontendIssueToBugReportResponse",
+      "type": "SharedType",
+      "label": "ConvertFrontendIssueToBugReportResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ConvertFrontendIssueToBugReportResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:HolidayPeriodStatus",
       "type": "SharedType",
       "label": "HolidayPeriodStatus",
@@ -23705,6 +23949,18 @@
       }
     },
     {
+      "id": "uicomp:FrontendTelemetryProvider",
+      "type": "UIComponent",
+      "label": "<FrontendTelemetryProvider />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telemetry/FrontendTelemetryProvider.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FrontendTelemetryProvider",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:TelesalesAvatar",
       "type": "UIComponent",
       "label": "<TelesalesAvatar />",
@@ -24389,8 +24645,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11130765,
-        "lineCount": 242597,
+        "sizeBytes": 11246694,
+        "lineCount": 244963,
         "ext": ".ts"
       }
     },
@@ -27385,6 +27641,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/telemetry/routes.ts",
+      "type": "File",
+      "label": "routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4744,
+        "lineCount": 151,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/telemetry/telemetry.service.test.ts",
+      "type": "File",
+      "label": "telemetry.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/telemetry.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3206,
+        "lineCount": 93,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/telemetry/telemetry.service.ts",
+      "type": "File",
+      "label": "telemetry.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/telemetry.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13937,
+        "lineCount": 430,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ui-experiences/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -28471,8 +28766,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14709,
-        "lineCount": 371,
+        "sizeBytes": 14854,
+        "lineCount": 373,
         "ext": ".ts"
       }
     },
@@ -29998,6 +30293,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
+      "type": "File",
+      "label": "FrontendTelemetryDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 24515,
+        "lineCount": 608,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/bug-reports/components/RequestClassifierWorkerHealthCard.tsx",
       "type": "File",
       "label": "RequestClassifierWorkerHealthCard.tsx",
@@ -30096,8 +30404,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13906,
-        "lineCount": 331,
+        "sizeBytes": 14708,
+        "lineCount": 350,
         "ext": ".tsx"
       }
     },
@@ -31942,8 +32250,8 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16603,
-        "lineCount": 496,
+        "sizeBytes": 16675,
+        "lineCount": 499,
         "ext": ".tsx"
       }
     },
@@ -32202,8 +32510,8 @@
       "filePath": "apps/web/app/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1526,
-        "lineCount": 55,
+        "sizeBytes": 1762,
+        "lineCount": 60,
         "ext": ".tsx"
       }
     },
@@ -32540,8 +32848,8 @@
       "filePath": "apps/web/lib/api/system.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8275,
-        "lineCount": 223,
+        "sizeBytes": 9545,
+        "lineCount": 255,
         "ext": ".ts"
       }
     },
@@ -32579,8 +32887,8 @@
       "filePath": "apps/web/lib/api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3199,
-        "lineCount": 92,
+        "sizeBytes": 5328,
+        "lineCount": 143,
         "ext": ".ts"
       }
     },
@@ -32728,6 +33036,32 @@
       }
     },
     {
+      "id": "file:apps/web/lib/telemetry/frontend-observer.test.ts",
+      "type": "File",
+      "label": "frontend-observer.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/telemetry/frontend-observer.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1786,
+        "lineCount": 51,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/telemetry/frontend-observer.ts",
+      "type": "File",
+      "label": "frontend-observer.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/telemetry/frontend-observer.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9514,
+        "lineCount": 303,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/utils/search.test.ts",
       "type": "File",
       "label": "search.test.ts",
@@ -32800,8 +33134,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2051,
-        "lineCount": 54,
+        "sizeBytes": 2098,
+        "lineCount": 55,
         "ext": ".ts"
       }
     },
@@ -33166,6 +33500,19 @@
       "metadata": {
         "sizeBytes": 2607,
         "lineCount": 71,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/frontend-telemetry.ts",
+      "type": "File",
+      "label": "frontend-telemetry.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 3082,
+        "lineCount": 132,
         "ext": ".ts"
       }
     },
@@ -34327,6 +34674,13 @@
     {
       "id": "edge:prisma:crm:CrmExperienceJournalFingerprint:ws:apps/api",
       "source": "prisma:crm:CrmExperienceJournalFingerprint",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmFrontendIssue:ws:apps/api",
+      "source": "prisma:crm:CrmFrontendIssue",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -38128,6 +38482,41 @@
     {
       "id": "edge:route:PUT:/api/teams/:id/members:ws:apps/api",
       "source": "route:PUT:/api/teams/:id/members",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/telemetry/frontend-issues:ws:apps/api",
+      "source": "route:POST:/api/telemetry/frontend-issues",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/telemetry/frontend-issues:ws:apps/api",
+      "source": "route:GET:/api/telemetry/frontend-issues",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/telemetry/frontend-issues/metrics:ws:apps/api",
+      "source": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PATCH:/api/telemetry/frontend-issues/:id/status:ws:apps/api",
+      "source": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report:ws:apps/api",
+      "source": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -43467,6 +43856,97 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UserBreadcrumb:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UserBreadcrumb",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueError:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueError",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueClientContext:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueClientContext",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssuePayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssuePayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueMetrics:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueMetrics",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateFrontendIssueStatusRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateFrontendIssueStatusRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueListQuery:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueListQuery",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueListResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueListResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ConvertFrontendIssueToBugReportResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ConvertFrontendIssueToBugReportResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:HolidayPeriodStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:HolidayPeriodStatus",
       "target": "ws:packages/shared",
@@ -47065,6 +47545,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:FrontendTelemetryProvider:ws:apps/web",
+      "source": "uicomp:FrontendTelemetryProvider",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FrontendTelemetryProvider:token:color:primary",
+      "source": "uicomp:FrontendTelemetryProvider",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:TelesalesAvatar:ws:apps/web",
       "source": "uicomp:TelesalesAvatar",
       "target": "ws:apps/web",
@@ -48703,6 +49197,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/telemetry/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/telemetry.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/telemetry.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/telemetry.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/telemetry.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ui-experiences/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ui-experiences/routes.ts",
       "target": "ws:packages/shared",
@@ -49426,6 +49941,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bug-reports/components/FeatureRequestDetails.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bug-reports/components/FeatureRequestDetails.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -50427,6 +50949,13 @@
     {
       "id": "edge:file:apps/web/lib/campaign-form-options.ts:ws:packages/shared",
       "source": "file:apps/web/lib/campaign-form-options.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/telemetry/frontend-observer.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/telemetry/frontend-observer.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -52696,6 +53225,13 @@
       "id": "edge:file:apps/api/src/modules/teams/team.service.ts:prisma:crm:CrmTeamMember",
       "source": "file:apps/api/src/modules/teams/team.service.ts",
       "target": "prisma:crm:CrmTeamMember",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/telemetry.service.ts:prisma:crm:CrmFrontendIssue",
+      "source": "file:apps/api/src/modules/telemetry/telemetry.service.ts",
+      "target": "prisma:crm:CrmFrontendIssue",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -56858,6 +57394,41 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/telemetry/frontend-issues/metrics",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "source": "page:/dashboard/architecture",
+      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/bug-reports:route:PATCH:/api/bug-reports/:id/triage",
       "source": "page:/dashboard/bug-reports",
       "target": "route:PATCH:/api/bug-reports/:id/triage",
@@ -58394,6 +58965,41 @@
       "id": "edge:page:/dashboard/design-system:route:PUT:/api/teams/:id/members",
       "source": "page:/dashboard/design-system",
       "target": "route:PUT:/api/teams/:id/members",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/telemetry/frontend-issues/metrics",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "source": "page:/dashboard/design-system",
+      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -62111,6 +62717,41 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/teams/:id/members",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:PUT:/api/teams/:id/members",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/telemetry/frontend-issues/metrics",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -65867,6 +66508,41 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/telemetry/frontend-issues/metrics",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ui-experiences/resolve",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/ui-experiences/resolve",
@@ -68397,6 +69073,41 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:PUT:/api/teams/:id/members",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:PUT:/api/teams/:id/members",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/telemetry/frontend-issues/metrics",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -72097,6 +72808,41 @@
       "label": "CALLS teams.list"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/telemetry/frontend-issues",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/telemetry/frontend-issues",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/telemetry/frontend-issues/metrics",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ui-experiences/resolve",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/ui-experiences/resolve",
@@ -72224,31 +72970,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2563,
-    "totalEdges": 5536,
+    "totalNodes": 2590,
+    "totalEdges": 5593,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 138,
-      "FastifyRoute": 536,
+      "PrismaModel": 139,
+      "FastifyRoute": 541,
       "Component": 51,
-      "SharedType": 931,
+      "SharedType": 944,
       "DesignToken": 12,
-      "UIComponent": 188,
-      "File": 704
+      "UIComponent": 189,
+      "File": 711
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1081,
-      "HANDLES_ROUTE": 536,
-      "RENDERS": 239,
-      "USES_TOKEN": 190,
-      "IMPORTS": 377,
-      "QUERIES_MODEL": 344,
-      "API_CALL": 2769
+      "EXPORTS": 1095,
+      "HANDLES_ROUTE": 541,
+      "RENDERS": 240,
+      "USES_TOKEN": 191,
+      "IMPORTS": 382,
+      "QUERIES_MODEL": 345,
+      "API_CALL": 2799
     },
-    "fastifyRouteCount": 541,
-    "prismaModelCount": 138,
+    "fastifyRouteCount": 546,
+    "prismaModelCount": 139,
     "nextPageCount": 51,
-    "sharedTypeCount": 931
+    "sharedTypeCount": 944
   },
   "routes": [
     {
@@ -75983,6 +76729,41 @@
       "moduleName": "teams"
     },
     {
+      "method": "POST",
+      "path": "/api/telemetry/frontend-issues",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "GET",
+      "path": "/api/telemetry/frontend-issues",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "GET",
+      "path": "/api/telemetry/frontend-issues/metrics",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/telemetry/frontend-issues/:id/status",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "POST",
+      "path": "/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "telemetry"
+    },
+    {
       "method": "GET",
       "path": "/api/ui-experiences/resolve",
       "filePath": "apps/api/src/modules/ui-experiences/routes.ts",
@@ -76044,7 +76825,7 @@
       "dbSource": "crm",
       "modelName": "CrmStaff",
       "tableName": "crm_staff",
-      "fieldCount": 69,
+      "fieldCount": 70,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
@@ -77143,6 +77924,15 @@
       "modelName": "CrmExperienceJournalFingerprint",
       "tableName": "crm_experience_journal_fingerprints",
       "fieldCount": 13,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmFrontendIssue",
+      "tableName": "crm_frontend_issues",
+      "fieldCount": 19,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

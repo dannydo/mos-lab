@@ -3,6 +3,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button, Result } from 'antd';
 import { openBugReport, recordClientError } from '../lib/bug-diagnostics';
+import { reportFrontendIssue } from '../lib/telemetry/frontend-observer';
 
 interface Props {
   children: ReactNode;
@@ -26,6 +27,17 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught client error:', error, errorInfo);
     recordClientError(error);
+    reportFrontendIssue({
+      issueType: 'REACT_CRASH',
+      error: {
+        name: error.name || 'ReactCrash',
+        message: error.message || 'React component crashed',
+        stack: error.stack || null,
+      },
+      metadata: {
+        componentStack: errorInfo.componentStack?.slice(0, 1000),
+      },
+    });
     if (
       typeof window !== 'undefined' &&
       (error?.name === 'ChunkLoadError' ||
