@@ -21,6 +21,7 @@ import { CheckCircle2, Gavel, RefreshCw, Send } from 'lucide-react';
 import { AdaptiveDrawer, AdaptiveModal, AppIcon, SectionCard, StatePanel } from '../../../../components/ui';
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
+import { BugReportExecutionTimingCard } from './BugReportExecutionTimingCard';
 import { FeatureRequestDetails } from './FeatureRequestDetails';
 import {
   AgentProgressTag,
@@ -603,6 +604,8 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
             </SectionCard>
 
             <BugReportResolutionTracking detail={detail} />
+
+            <BugReportExecutionTimingCard timing={detail.executionTiming} />
 
             {detail.attachments.some((item) => !item.deletedAt && !item.commentId) && (
               <SectionCard

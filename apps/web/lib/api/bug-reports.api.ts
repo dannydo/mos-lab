@@ -22,6 +22,9 @@ import type {
   CreateBugReportCommentResponse,
   CreateBugReportRequest,
   CreateBugReportResponse,
+  InboxTicketExecutionTiming,
+  InboxExecutionDashboardQuery,
+  InboxExecutionDashboardSummary,
   CreateRequestClassificationJobRequest,
   CreateRequestClassificationJobResponse,
   CreateRequestConversationRequest,
@@ -263,6 +266,16 @@ export const bugReportsApi = {
         responseType: 'blob',
       });
       return response.data;
+    },
+    timing: async (id: number): Promise<InboxTicketExecutionTiming> => {
+      const response = await api.get<{ data: InboxTicketExecutionTiming }>(`/bug-reports/${id}/timing`);
+      return response.data.data;
+    },
+    timingDashboard: async (query: InboxExecutionDashboardQuery = {}): Promise<InboxExecutionDashboardSummary> => {
+      const response = await api.get<{ data: InboxExecutionDashboardSummary }>('/bug-reports/timing/dashboard', {
+        params: query,
+      });
+      return response.data.data;
     },
   },
 };
