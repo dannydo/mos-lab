@@ -113,6 +113,16 @@ const phase1Indexes = [
     table: 'user_balance_transaction',
     columns: ['user_id', 'id'],
   },
+  {
+    name: 'idx_iwo_date_created',
+    table: 'inventory_warehouse_order',
+    columns: ['date_created'],
+  },
+  {
+    name: 'idx_item_client_type_item_user',
+    table: 'item_client',
+    columns: ['type', 'item_id', 'user_id'],
+  },
 ] as const;
 
 const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
