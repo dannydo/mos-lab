@@ -124,7 +124,7 @@ async function resolveEvidence(db: Prisma.TransactionClient, reportId: number, v
   if (
     !job ||
     job.reportId !== reportId ||
-    (report!.status === 'APPROVED' && job.executionOwner !== 'IDE') ||
+    (report!.status === 'APPROVED' && !['IDE', 'AG'].includes(job.executionOwner)) ||
     job.sourceVersion !== gate.sourceVersion ||
     job.planVersion !== gate.plan!.planVersion ||
     job.status !== 'AWAITING_DEPLOY_REVIEW' ||

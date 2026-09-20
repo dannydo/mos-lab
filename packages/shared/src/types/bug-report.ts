@@ -964,6 +964,7 @@ export interface TriageBugReportRequest {
 export interface ApproveBugReportImplementationRequest {
   acknowledged: true;
   planReview?: BugReportPlanReviewCandidate;
+  executionOwner?: InboxImplementationExecutionOwner;
 }
 
 export interface BugReportPlanReviewCandidate {

@@ -16,6 +16,7 @@ import {
   type RequestBugReportPlanChangesRequest,
   type BugReportPlanReviewCandidate,
   type InboxIdeReleaseToken,
+  type InboxImplementationExecutionOwner,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
@@ -1508,7 +1509,8 @@ export class InboxImplementationService {
     fastify: FastifyInstance,
     reportId: number,
     actorStaffId: number,
-    expectedPlan?: BugReportPlanReviewCandidate
+    expectedPlan?: BugReportPlanReviewCandidate,
+    executionOwner: InboxImplementationExecutionOwner = 'IDE'
   ) {
     const approvalResult = await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
@@ -1574,7 +1576,10 @@ export class InboxImplementationService {
             reportId,
             actorStaffId,
             action: 'IMPLEMENTATION_APPROVED',
-            note: 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
+            note:
+              executionOwner === 'AG'
+                ? 'Danny đã duyệt Antigravity (AG) chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.'
+                : 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
             beforeJson: snapshot(report),
             afterJson: snapshot({
               ...report,
@@ -1587,7 +1592,7 @@ export class InboxImplementationService {
       }
       return { sourceVersion, alreadyApproved };
     });
-    const queued = await this.enqueueApproved(fastify, reportId);
+    const queued = await this.enqueueApproved(fastify, reportId, executionOwner);
     const refreshed = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
       include: implementationReportInclude(),
@@ -1599,7 +1604,11 @@ export class InboxImplementationService {
   }
 
   /** Called only by a ticket event (approval or new native plan), never a poller. */
-  static async enqueueApproved(fastify: FastifyInstance, reportId: number): Promise<boolean> {
+  static async enqueueApproved(
+    fastify: FastifyInstance,
+    reportId: number,
+    executionOwner: InboxImplementationExecutionOwner = 'IDE'
+  ): Promise<boolean> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
       include: implementationReportInclude(),
@@ -1648,10 +1657,11 @@ export class InboxImplementationService {
           sourceVersion: gate.sourceVersion,
           planVersion,
           branchName: safeBranchName(ticketKey, id),
-          executionOwner: 'IDE',
+          executionOwner,
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
+          progressLabel:
+            executionOwner === 'AG' ? 'Chờ Antigravity tạo handoff cục bộ.' : 'Chờ Codex IDE tạo handoff cục bộ.',
           expiresAt: new Date(Date.now() + JOB_TTL_MS),
         },
       });

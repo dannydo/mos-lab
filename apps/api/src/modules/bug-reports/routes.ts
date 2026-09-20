@@ -226,13 +226,30 @@ function sendAttachment(reply: FastifyReply, value: Awaited<ReturnType<typeof Bu
 export async function bugReportRoutes(fastify: FastifyInstance) {
   fastify.get('/ide-task-bridge/provisioning/next', { preHandler: [requireIdeTaskBridge] }, async (request, reply) => {
     try {
-      const requestData = await InboxImplementationService.claimIdeTaskProvisioning(
-        fastify,
-        request.headers['x-ide-provisioner-id']
-      );
+      const engine = (request.headers['x-execution-engine'] || (request.query as { engine?: string })?.engine || '')
+        .toString()
+        .toUpperCase();
+      const requestData =
+        engine === 'AG'
+          ? await InboxImplementationService.claimAgTaskProvisioning(
+              fastify,
+              request.headers['x-ide-provisioner-id'] || request.headers['x-ag-provisioner-id']
+            )
+          : await InboxImplementationService.claimIdeTaskProvisioning(fastify, request.headers['x-ide-provisioner-id']);
       return reply.send({ success: true, data: requestData });
     } catch (error) {
       return sendError(fastify, reply, error, 'Claim IDE task provisioning failed');
+    }
+  });
+  fastify.get('/ag-task-bridge/provisioning/next', { preHandler: [requireIdeTaskBridge] }, async (request, reply) => {
+    try {
+      const requestData = await InboxImplementationService.claimAgTaskProvisioning(
+        fastify,
+        request.headers['x-ide-provisioner-id'] || request.headers['x-ag-provisioner-id']
+      );
+      return reply.send({ success: true, data: requestData });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Claim AG task provisioning failed');
     }
   });
   fastify.post(
@@ -652,7 +669,14 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           throw new InboxImplementationError('Cần xác nhận rõ ràng trước khi duyệt implementation.', 422);
         }
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-        const outcome = await InboxImplementationService.approve(fastify, id, request.user.id, body.planReview);
+        const executionOwner = body.executionOwner === 'AG' ? 'AG' : 'IDE';
+        const outcome = await InboxImplementationService.approve(
+          fastify,
+          id,
+          request.user.id,
+          body.planReview,
+          executionOwner
+        );
         if (outcome.planRequested && (await InboxPlanService.enqueue(fastify, id, 'IMPLEMENTATION_APPROVAL'))) {
           RequestClassifierWorkerHub.notify('inbox_plan_available');
         }
@@ -663,7 +687,9 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           // has already started, leaving the UI spinner stuck.
           data: { reportId: id, ...outcome },
           message: outcome.implementationQueued
-            ? 'Đã tạo IDE handoff. Hãy thực hiện code/test trong Codex IDE hiển thị.'
+            ? executionOwner === 'AG'
+              ? 'Đã tạo Antigravity handoff. Hãy thực hiện code/test trong Antigravity.'
+              : 'Đã tạo IDE handoff. Hãy thực hiện code/test trong Codex IDE hiển thị.'
             : outcome.planRequested
               ? 'Đã lưu duyệt triển khai; worker đang tạo plan native khớp source hiện hành.'
               : 'Đã lưu duyệt triển khai.',

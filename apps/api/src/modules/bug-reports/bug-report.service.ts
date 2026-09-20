@@ -525,17 +525,17 @@ function implementationStateDto(
   const status = value.status as BugReportImplementationState['status'];
   return {
     status,
-    executionOwner: value.executionOwner === 'IDE' ? 'IDE' : undefined,
+    executionOwner: value.executionOwner === 'IDE' || value.executionOwner === 'AG' ? value.executionOwner : undefined,
     reviewCandidate:
       status === 'AWAITING_COMMIT_REVIEW' && value.id && value.sourceVersion && value.planVersion
         ? { jobId: value.id, sourceVersion: value.sourceVersion, planVersion: value.planVersion }
         : null,
     ideHandoff:
-      value.executionOwner === 'IDE' && value.id
+      (value.executionOwner === 'IDE' || value.executionOwner === 'AG') && value.id
         ? {
             reference: value.id,
             // Retry records created during the first IDE rollout used QUEUED;
-            // their owner remains IDE and must not be presented as worker work.
+            // their owner remains IDE/AG and must not be presented as worker work.
             phase: value.executionPhase === 'QUEUED' ? 'IDE_HANDOFF_READY' : clipped(value.executionPhase, 32),
             taskId: clipped(value.ideTaskId, 160) || null,
           }
@@ -661,6 +661,7 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
     };
   }
   if (implementation.status === 'PENDING' || implementation.status === 'LEASED') {
+    const agOwned = implementation.executionOwner === 'AG';
     const ideOwned = implementation.executionOwner === 'IDE';
     return {
       stage:
@@ -669,13 +670,15 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
           : implementation.executionPhase === 'COMMIT_APPROVED'
             ? 'QUEUED_FOR_COMMIT'
             : 'QUEUED_FOR_FIX',
-      note: ideOwned
-        ? `Handoff Codex IDE ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
-        : implementation.executionPhase === 'DEPLOY_APPROVED'
-          ? 'Danny đã duyệt deploy; worker Mac đang chờ nhận đúng commit đã duyệt.'
-          : implementation.executionPhase === 'COMMIT_APPROVED'
-            ? 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.'
-            : 'Job code/test đã được ghi nhận và đang chờ worker nhận.',
+      note: agOwned
+        ? `Handoff Antigravity ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
+        : ideOwned
+          ? `Handoff Codex IDE ${implementation.id ?? 'đang chờ gán mã'} đã sẵn sàng; chỉ code/test theo scope đã duyệt.`
+          : implementation.executionPhase === 'DEPLOY_APPROVED'
+            ? 'Danny đã duyệt deploy; worker Mac đang chờ nhận đúng commit đã duyệt.'
+            : implementation.executionPhase === 'COMMIT_APPROVED'
+              ? 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.'
+              : 'Job code/test đã được ghi nhận và đang chờ worker nhận.',
       updatedAt: implementation.updatedAt.toISOString(),
     };
   }
@@ -992,8 +995,12 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
     );
   }
   if (implementation && ['PENDING', 'LEASED', 'RUNNING'].includes(implementation.status)) {
-    const ideOwned = implementation.executionOwner === 'IDE';
-    const handoffReference = implementation.id ? `Handoff Codex IDE ${implementation.id}` : 'Handoff Codex IDE';
+    const agOwned = implementation.executionOwner === 'AG';
+    const ideOwned = implementation.executionOwner === 'IDE' || agOwned;
+    const engineLabel = agOwned ? 'Antigravity' : 'Codex IDE';
+    const handoffReference = implementation.id
+      ? `Handoff ${engineLabel} ${implementation.id}`
+      : `Handoff ${engineLabel}`;
     return nextAction(
       'AGENT',
       implementation.status === 'PENDING' || implementation.status === 'LEASED'
@@ -1001,14 +1008,14 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
         : 'CONTINUE_IMPLEMENTATION',
       ideOwned && implementation.status !== 'RUNNING'
         ? implementation.executionPhase === 'IDE_PROVISIONING_PENDING'
-          ? 'Chờ Codex IDE tạo handoff'
+          ? `Chờ ${engineLabel} tạo handoff`
           : implementation.executionPhase === 'IDE_PROVISIONING_LEASED'
-            ? 'Codex IDE đang tạo task'
+            ? `${engineLabel} đang tạo task`
             : implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
-              ? 'Chờ Codex IDE ghi commit đã duyệt'
+              ? `Chờ ${engineLabel} ghi commit đã duyệt`
               : implementation.executionPhase === 'DEPLOY_APPROVED'
-                ? 'Chờ IDE xác minh release đã duyệt'
-                : 'Chờ Codex IDE nhận handoff'
+                ? `Chờ ${engineLabel} xác minh release đã duyệt`
+                : `Chờ ${engineLabel} nhận handoff`
         : implementation.executionPhase === 'DEPLOY_APPROVED'
           ? 'Chờ worker deploy'
           : implementation.executionPhase === 'COMMIT_APPROVED'
@@ -1022,9 +1029,9 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
                   : 'Chờ worker nhận',
       ideOwned && implementation.status !== 'RUNNING'
         ? implementation.executionPhase === 'IDE_PROVISIONING_PENDING'
-          ? `${handoffReference} đang chờ companion Codex IDE cục bộ tạo task/worktree. Không cấp nonce, lease thực thi, commit, push, merge, deploy hoặc migration.`
+          ? `${handoffReference} đang chờ companion ${engineLabel} cục bộ tạo task/worktree. Không cấp nonce, lease thực thi, commit, push, merge, deploy hoặc migration.`
           : implementation.executionPhase === 'IDE_PROVISIONING_LEASED'
-            ? `${handoffReference} đang được companion Codex IDE cục bộ tạo task/worktree. Nếu companion mất kết nối, request ID giữ nguyên để retry không tạo task thứ hai.`
+            ? `${handoffReference} đang được companion ${engineLabel} cục bộ tạo task/worktree. Nếu companion mất kết nối, request ID giữ nguyên để retry không tạo task thứ hai.`
             : implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
               ? `${handoffReference} đã sẵn sàng ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.`
               : implementation.executionPhase === 'DEPLOY_APPROVED'

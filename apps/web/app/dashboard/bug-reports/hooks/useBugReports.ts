@@ -20,6 +20,7 @@ import type {
   BugReportCommentCreateResult,
   CreateBugReportCommentRequest,
   TriageBugReportRequest,
+  InboxImplementationExecutionOwner,
 } from '@mos-lab/shared';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import { apiClient } from '../../../../lib/api-client';
@@ -218,8 +219,16 @@ export function useBugReports() {
   );
 
   const approveImplementation = useCallback(
-    async (id: number, planReview?: BugReportPlanReviewCandidate): Promise<ApproveBugReportImplementationResult> => {
-      const response = await apiClient.bugReports.approveImplementation(id, { acknowledged: true, planReview });
+    async (
+      id: number,
+      planReview?: BugReportPlanReviewCandidate,
+      executionOwner?: InboxImplementationExecutionOwner
+    ): Promise<ApproveBugReportImplementationResult> => {
+      const response = await apiClient.bugReports.approveImplementation(id, {
+        acknowledged: true,
+        planReview,
+        ...(executionOwner ? { executionOwner } : {}),
+      });
       if (!response.data) throw new Error('Máy chủ không trả về trạng thái duyệt implementation.');
       // Approval has already been recorded. Refresh the list in the background
       // so a slow list request can never keep the confirmation button spinning.

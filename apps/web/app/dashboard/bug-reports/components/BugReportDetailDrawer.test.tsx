@@ -288,7 +288,9 @@ describe('BugReportDetailDrawer behavior', () => {
     await screen.findByText('Duyệt AI chạy code/test?');
     expect(props.approveImplementation).not.toHaveBeenCalled();
     fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
-    await waitFor(() => expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId));
+    await waitFor(() =>
+      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId, undefined, 'AG')
+    );
   });
 
   it.each([

@@ -8,6 +8,7 @@ import type {
   BugReportPlanReviewCandidate,
   BugReportStatus,
   TriageBugReportRequest,
+  InboxImplementationExecutionOwner,
 } from '@mos-lab/shared';
 import { parseDuplicateKey } from '../bug-report-presenters';
 import type { useBugReports } from './useBugReports';
@@ -161,54 +162,66 @@ export function useBugReportDetail({
     [businessContext, confirmClose, detail, hydrateForm, messageApi, note]
   );
 
-  const approveCodeExecution = useCallback(async () => {
-    if (!detail || approvalPending.current || reviewPending.current || approvalReceived) return;
-    approvalPending.current = true;
-    setSaving(true);
-    setApprovalReceived(true);
-    try {
-      const outcome = detail.planReview
-        ? await approveImplementation(detail.id, detail.planReview)
-        : await approveImplementation(detail.id);
-      if (outcome.implementationQueued) {
-        setStatus('IN_PROGRESS');
+  const approveCodeExecution = useCallback(
+    async (executionOwner?: InboxImplementationExecutionOwner) => {
+      if (!detail || approvalPending.current || reviewPending.current || approvalReceived) return;
+      approvalPending.current = true;
+      setSaving(true);
+      setApprovalReceived(true);
+      try {
+        const outcome = executionOwner
+          ? await approveImplementation(detail.id, detail.planReview ?? undefined, executionOwner)
+          : detail.planReview
+            ? await approveImplementation(detail.id, detail.planReview)
+            : await approveImplementation(detail.id);
+        if (outcome.implementationQueued) {
+          setStatus('IN_PROGRESS');
+        }
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                agentProgress: {
+                  stage: 'QUEUED_FOR_FIX',
+                  note:
+                    executionOwner === 'AG'
+                      ? 'Đã duyệt cho Antigravity (AG); đang xếp hàng handoff.'
+                      : 'Đã duyệt code/test; đang xếp hàng cho worker/IDE.',
+                  updatedAt: new Date().toISOString(),
+                },
+              }
+            : current
+        );
+        // The rich ticket refresh is non-blocking. The durable receipt above is
+        // enough to stop the button spinner even if a later read is slow.
+        void getDetail(outcome.reportId)
+          .then(hydrateForm)
+          .catch(() => undefined);
+        messageApi.success(
+          outcome.implementationQueued
+            ? executionOwner === 'AG'
+              ? 'Đã tạo job code/test cho Antigravity (AG).'
+              : 'Đã tạo job code/test trong worktree riêng.'
+            : outcome.planRequested
+              ? 'Đã lưu duyệt; worker đang làm mới plan native trước khi chạy code.'
+              : 'Đã lưu duyệt implementation.'
+        );
+      } catch (error) {
+        setApprovalReceived(false);
+        const responseMessage =
+          error && typeof error === 'object' && 'response' in error
+            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+            : null;
+        messageApi.error(
+          responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt implementation.')
+        );
+      } finally {
+        approvalPending.current = false;
+        setSaving(false);
       }
-      setDetail((current) =>
-        current
-          ? {
-              ...current,
-              agentProgress: {
-                stage: 'QUEUED_FOR_FIX',
-                note: 'Đã duyệt code/test; đang xếp hàng cho worker/IDE.',
-                updatedAt: new Date().toISOString(),
-              },
-            }
-          : current
-      );
-      // The rich ticket refresh is non-blocking. The durable receipt above is
-      // enough to stop the button spinner even if a later read is slow.
-      void getDetail(outcome.reportId)
-        .then(hydrateForm)
-        .catch(() => undefined);
-      messageApi.success(
-        outcome.implementationQueued
-          ? 'Đã tạo job code/test trong worktree riêng.'
-          : outcome.planRequested
-            ? 'Đã lưu duyệt; worker đang làm mới plan native trước khi chạy code.'
-            : 'Đã lưu duyệt implementation.'
-      );
-    } catch (error) {
-      setApprovalReceived(false);
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt implementation.'));
-    } finally {
-      approvalPending.current = false;
-      setSaving(false);
-    }
-  }, [approvalReceived, approveImplementation, detail, getDetail, hydrateForm, messageApi]);
+    },
+    [approvalReceived, approveImplementation, detail, getDetail, hydrateForm, messageApi]
+  );
 
   const requestChanges = useCallback(
     async (reason: string): Promise<boolean> => {

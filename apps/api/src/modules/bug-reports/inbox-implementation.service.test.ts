@@ -2000,3 +2000,42 @@ test('IDE provisioning cannot bind a task after its local creation lease expires
     /stale hoặc bị thu hồi/i
   );
 });
+
+test('Antigravity (AG) task bridge claims provisioning exclusively for AG execution owner', async () => {
+  const job = {
+    id: 'ag-job-1',
+    executionOwner: 'AG',
+    ideProvisioningRequestId: 'ag-req-1',
+    reportId: 28,
+    branchName: 'task/mos-feat-28-antigravity',
+    sourceVersion: 'source-v2',
+    planVersion: 'plan-v2',
+    report: { id: 28, requestType: 'FEATURE', title: 'Provision Antigravity task' },
+  };
+  let claimedOwner: string | undefined;
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findFirst: async (args: { where: { executionOwner?: string } }) => {
+            claimedOwner = args.where.executionOwner;
+            return job;
+          },
+          updateMany: async () => ({ count: 1 }),
+        },
+      },
+    },
+  };
+  const claimed = await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'antigravity-worker');
+  assert.equal(claimedOwner, 'AG');
+  assert.deepEqual(claimed, {
+    jobId: job.id,
+    requestId: job.ideProvisioningRequestId,
+    reportId: 28,
+    ticketKey: 'MOS-FEAT-28',
+    title: job.report.title,
+    branchName: job.branchName,
+    sourceVersion: 'source-v2',
+    planVersion: 'plan-v2',
+  });
+});
