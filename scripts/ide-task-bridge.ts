@@ -179,6 +179,20 @@ async function handleWaitAndDeploy(
   // 5. Post release checkpoint
   process.stdout.write(`Posting official release checkpoint for ticket ${ticketId}...\n`);
   const checkpointToken = resolveCheckpointToken();
+  const tokenData = releaseToken as {
+    jobId: string;
+    manifestDigest: string;
+    commitSha: string;
+    apiRelease: string;
+    webRelease: string | null;
+  };
+  const checkpointPayload = {
+    jobId: tokenData.jobId,
+    manifestDigest: tokenData.manifestDigest,
+    commitSha: tokenData.commitSha,
+    apiRelease: tokenData.apiRelease,
+    webRelease: tokenData.webRelease,
+  };
   const checkpointRes = await fetch(`${apiUrl}/ide-release-checkpoints/${ticketId}`, {
     method: 'POST',
     headers: {
@@ -186,7 +200,7 @@ async function handleWaitAndDeploy(
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(releaseToken),
+    body: JSON.stringify(checkpointPayload),
   });
   if (!checkpointRes.ok) {
     throw new Error(`Release checkpoint failed (${checkpointRes.status}): ${await checkpointRes.text()}`);

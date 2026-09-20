@@ -18,7 +18,7 @@ import type { InboxIdeTaskProvisioningRequest } from '@mos-lab/shared';
 
 const execFile = promisify(execFileCallback);
 const REQUEST_TIMEOUT_MS = 20_000;
-const AGENTAPI_TIMEOUT_MS = 30_000;
+const AGENTAPI_TIMEOUT_MS = 90_000;
 
 export type ProvisioningLedger = Record<string, { taskId: string; worktreePath: string }>;
 
@@ -218,14 +218,13 @@ export function buildAgentPrompt(request: InboxIdeTaskProvisioningRequest, workt
    - Chuẩn bị tệp biên nhận \`/tmp/receipt-${request.reportId}.json\` gồm \`handoff\` (lấy từ tệp handoff ở bước 2), \`result\` (summary, tests - lưu ý cần có test Playwright visual QA PASSED nếu sửa \`apps/web/\`, risksAndRollback), \`changedFiles\`, \`diffStat\`, \`baseCommit\`, \`patchHash\`.
    - Nộp biên nhận: \`npx tsx scripts/ide-task-bridge.ts submit --receipt /tmp/receipt-${request.reportId}.json\`
    - Sau lệnh này, trạng thái ticket trên mOS Inbox tự động chuyển sang **\`AWAITING_DANNY_COMMIT_REVIEW\`** ("Chờ Danny duyệt commit") và hiển thị nút "Duyệt commit" trên web.
-6. **Lắng nghe Duyệt Web & Tự Động Commit (Single-Approval Web Workflow)**:
-   - Danny CHỈ DUYỆT 1 NƠI TRÊN WEB, tuyệt đối không yêu cầu Danny duyệt thêm trong chat.
-   - Ngay sau khi nộp receipt, chạy lệnh lắng nghe nền:
-     \`npx tsx scripts/ide-task-bridge.ts wait-and-commit --worktree ${worktreePath} --message "feat(${request.ticketKey.toLowerCase()}): ${request.title.replace(/"/g, '')}"\`
+6. **Lắng nghe Duyệt Web & Tự Động Toàn Bộ (Single-Approval Web Workflow)**:
+   - Danny CHỈ DUYỆT TRÊN WEB (Duyệt commit & Duyệt deploy), tuyệt đối không yêu cầu Danny duyệt thêm trong chat.
+   - Ngay sau khi nộp receipt, chạy lệnh lắng nghe nền kèm cờ \`--auto-deploy\`:
+     \`npx tsx scripts/ide-task-bridge.ts wait-and-commit --worktree ${worktreePath} --message "feat(${request.ticketKey.toLowerCase()}): ${request.title.replace(/"/g, '')}" --auto-deploy\`
    - Báo cáo trên chat và phát giọng nói qua \`/Users/dannydo/.gemini/antigravity/bin/speak\`.
-   - Ngay khi Danny bấm duyệt trên web, lệnh trên sẽ tự động commit và nộp commit receipt chuyển sang Cổng 3.
-7. **Bảo tồn 3 Cổng Kiểm soát**:
-   - TUYỆT ĐỐI KHÔNG commit vào nhánh main, không push, không merge, không deploy, không chạy migration production.
+   - Ngay khi Danny bấm "Duyệt commit" trên web, lệnh tự động commit và nộp commit receipt.
+   - Ngay khi Danny bấm "Duyệt deploy" trên web, lệnh tự động merge vào main, push lên origin, deploy lên VPS, kiểm chứng release markers và nộp checkpoint đóng ticket hoàn tất! Danny không cần mở AG can thiệp bất kỳ thao tác nào.
 `;
 }
 

@@ -63,7 +63,7 @@ Mỗi khi nhận nhiệm vụ từ mOS Inbox (ticket bug/feature qua worktree ri
    - **Danny chỉ duyệt 1 nơi duy nhất trên web**: Tuyệt đối không yêu cầu Danny duyệt thêm lần thứ hai trong chat.
    - Ngay sau khi nộp receipt, Agent khởi chạy lệnh nền lắng nghe sự kiện duyệt trên web:
      ```bash
-     npx tsx scripts/ide-task-bridge.ts wait-and-commit --worktree <worktreePath> --message "<commit-message>"
+     npx tsx scripts/ide-task-bridge.ts wait-and-commit --worktree <worktreePath> --message "<commit-message>" --auto-deploy
      ```
    - Báo cáo tóm tắt trên chat kèm liên kết `walkthrough.md` và phát giọng nói qua `speak`.
 5. **Cổng 3 Tự Động Kích Hoạt & Tự Động Merge/Deploy Pipeline (Gate 3 Auto-Deploy Invariant)**:
