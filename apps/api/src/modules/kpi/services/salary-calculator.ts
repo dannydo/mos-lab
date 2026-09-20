@@ -182,6 +182,8 @@ export async function calculateBookerSalaryStats(
           LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
           WHERE o.created_staff_id IN (${activeLegacyUserIds.join(',')})
             AND o.order_state = 'Completed'
+            AND o.booking_date_start >= DATE_SUB('${startStr}', INTERVAL 7 DAY)
+            AND o.booking_date_start <= DATE_ADD('${endStr}', INTERVAL 7 DAY)
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startStr}'
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endStr}'
         `),
