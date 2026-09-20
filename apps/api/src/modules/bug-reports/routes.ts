@@ -329,7 +329,8 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
             409,
             'IDE_TASK_HANDOFF_UNAVAILABLE'
           );
-        return reply.send({ success: true, data: await InboxIdeReleaseService.preview(fastify, job.reportId) });
+        const preview = await InboxIdeReleaseService.preview(fastify, job.reportId);
+        return reply.send({ success: true, data: { ...preview, reportId: job.reportId } });
       } catch (error) {
         return sendError(fastify, reply, error, 'Preview IDE task release failed');
       }

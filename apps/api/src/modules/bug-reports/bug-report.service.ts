@@ -654,6 +654,13 @@ function implementationStage(source: AgentProgressSource, fallbackAt: Date | nul
     };
   }
   if (implementation.status === 'AWAITING_DEPLOY_REVIEW') {
+    if (implementation.executionPhase === 'DEPLOY_APPROVED') {
+      return {
+        stage: 'QUEUED_FOR_DEPLOY',
+        note: 'Danny đã duyệt deploy; đang tự động merge main và triển khai production.',
+        updatedAt: implementation.updatedAt.toISOString(),
+      };
+    }
     return {
       stage: 'AWAITING_DANNY_DEPLOY_APPROVAL',
       note: 'Commit đã được tạo trong branch riêng; chưa push, merge hoặc deploy.',

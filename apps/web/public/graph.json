@@ -4954,7 +4954,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 338
+        "line": 339
       }
     },
     {
@@ -4968,7 +4968,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 354
+        "line": 355
       }
     },
     {
@@ -4982,7 +4982,7 @@
         "path": "/api/request-classifier/stream",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 371
+        "line": 372
       }
     },
     {
@@ -4996,7 +4996,7 @@
         "path": "/api/bug-reports/:id/implementation-schema-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 385
+        "line": 386
       }
     },
     {
@@ -5010,7 +5010,7 @@
         "path": "/api/bug-reports/:id/implementation-quality-gate-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 414
+        "line": 415
       }
     },
     {
@@ -5024,7 +5024,7 @@
         "path": "/api/bug-reports/:id/implementation-build-lock-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 446
+        "line": 447
       }
     },
     {
@@ -5038,7 +5038,7 @@
         "path": "/api/request-classifications",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 475
+        "line": 476
       }
     },
     {
@@ -5052,7 +5052,7 @@
         "path": "/api/request-classifications/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 493
+        "line": 494
       }
     },
     {
@@ -5066,7 +5066,7 @@
         "path": "/api/request-conversations",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 502
+        "line": 503
       }
     },
     {
@@ -5080,7 +5080,7 @@
         "path": "/api/request-conversations/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 515
+        "line": 516
       }
     },
     {
@@ -5094,7 +5094,7 @@
         "path": "/api/request-conversations/:id/replies",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 528
+        "line": 529
       }
     },
     {
@@ -5108,7 +5108,7 @@
         "path": "/api/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 543
+        "line": 544
       }
     },
     {
@@ -5122,7 +5122,7 @@
         "path": "/api/bug-reports/mine",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 561
+        "line": 562
       }
     },
     {
@@ -5136,7 +5136,7 @@
         "path": "/api/bug-reports/notifications/read",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 569
+        "line": 570
       }
     },
     {
@@ -5150,7 +5150,7 @@
         "path": "/api/bug-reports/:id/review",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 582
+        "line": 583
       }
     },
     {
@@ -5164,7 +5164,7 @@
         "path": "/api/bug-reports/:id/comments",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 599
+        "line": 600
       }
     },
     {
@@ -5178,7 +5178,7 @@
         "path": "/api/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 623
+        "line": 624
       }
     },
     {
@@ -5192,7 +5192,7 @@
         "path": "/api/bug-reports/worker-health",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 631
+        "line": 632
       }
     },
     {
@@ -5206,7 +5206,7 @@
         "path": "/api/bug-reports/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 643
+        "line": 644
       }
     },
     {
@@ -5220,7 +5220,7 @@
         "path": "/api/bug-reports/:id/triage",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 652
+        "line": 653
       }
     },
     {
@@ -5234,7 +5234,7 @@
         "path": "/api/bug-reports/:id/implementation-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 662
+        "line": 663
       }
     },
     {
@@ -5248,7 +5248,7 @@
         "path": "/api/bug-reports/:id/implementation-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 703
+        "line": 704
       }
     },
     {
@@ -5262,7 +5262,7 @@
         "path": "/api/bug-reports/:id/ide-implementation-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 727
+        "line": 728
       }
     },
     {
@@ -5276,7 +5276,7 @@
         "path": "/api/bug-reports/:id/ide-handoff-cancel",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 753
+        "line": 754
       }
     },
     {
@@ -5290,7 +5290,7 @@
         "path": "/api/bug-reports/:id/ide-commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 767
+        "line": 768
       }
     },
     {
@@ -5304,7 +5304,7 @@
         "path": "/api/bug-reports/:id/implementation-worker-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 793
+        "line": 794
       }
     },
     {
@@ -5318,7 +5318,7 @@
         "path": "/api/bug-reports/:id/implementation-commit-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 822
+        "line": 823
       }
     },
     {
@@ -5332,7 +5332,7 @@
         "path": "/api/bug-reports/:id/implementation-deploy-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 847
+        "line": 848
       }
     },
     {
@@ -5346,7 +5346,7 @@
         "path": "/api/bug-reports/:id/implementation-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 872
+        "line": 873
       }
     },
     {
@@ -5360,7 +5360,7 @@
         "path": "/api/bug-reports/:id/plan-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 896
+        "line": 897
       }
     },
     {
@@ -5374,7 +5374,7 @@
         "path": "/api/ide-release-checkpoints/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 920
+        "line": 921
       }
     },
     {
@@ -5388,7 +5388,7 @@
         "path": "/api/bug-reports/:id/implementation-acceptance",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 934
+        "line": 935
       }
     },
     {
@@ -5402,7 +5402,7 @@
         "path": "/api/bug-reports/:id/confirm-close",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 952
+        "line": 953
       }
     },
     {
@@ -5416,7 +5416,7 @@
         "path": "/api/bug-reports/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 971
+        "line": 972
       }
     },
     {
@@ -5430,7 +5430,7 @@
         "path": "/api/agent/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 989
+        "line": 990
       }
     },
     {
@@ -5444,7 +5444,7 @@
         "path": "/api/agent/bug-reports/:key",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 997
+        "line": 998
       }
     },
     {
@@ -5458,7 +5458,7 @@
         "path": "/api/agent/bug-reports/:key/clarification",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1006
+        "line": 1007
       }
     },
     {
@@ -5472,7 +5472,7 @@
         "path": "/api/agent/bug-reports/:key/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1025
+        "line": 1026
       }
     },
     {
@@ -5486,7 +5486,7 @@
         "path": "/api/agent/bug-reports/:key/fixed",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1039
+        "line": 1040
       }
     },
     {
@@ -5500,7 +5500,7 @@
         "path": "/api/agent/bug-reports/:key/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1049
+        "line": 1050
       }
     },
     {
@@ -5514,7 +5514,7 @@
         "path": "/api/request-classifier/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1067
+        "line": 1068
       }
     },
     {
@@ -5528,7 +5528,7 @@
         "path": "/api/request-classifier/health/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1079
+        "line": 1080
       }
     },
     {
@@ -5542,7 +5542,7 @@
         "path": "/api/request-classifier/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1092
+        "line": 1093
       }
     },
     {
@@ -5556,7 +5556,7 @@
         "path": "/api/request-classifier/conversations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1102
+        "line": 1103
       }
     },
     {
@@ -5570,7 +5570,7 @@
         "path": "/api/request-classifier/conversations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1115
+        "line": 1116
       }
     },
     {
@@ -5584,7 +5584,7 @@
         "path": "/api/request-classifier/conversations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1135
+        "line": 1136
       }
     },
     {
@@ -5598,7 +5598,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1154
+        "line": 1155
       }
     },
     {
@@ -5612,7 +5612,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1167
+        "line": 1168
       }
     },
     {
@@ -5626,7 +5626,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1196
+        "line": 1197
       }
     },
     {
@@ -5640,7 +5640,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1216
+        "line": 1217
       }
     },
     {
@@ -5654,7 +5654,7 @@
         "path": "/api/request-classifier/inbox-plans/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1234
+        "line": 1235
       }
     },
     {
@@ -5668,7 +5668,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1247
+        "line": 1248
       }
     },
     {
@@ -5682,7 +5682,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1271
+        "line": 1272
       }
     },
     {
@@ -5696,7 +5696,7 @@
         "path": "/api/request-classifier/inbox-implementations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1289
+        "line": 1290
       }
     },
     {
@@ -5710,7 +5710,7 @@
         "path": "/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1307
+        "line": 1308
       }
     },
     {
@@ -5724,7 +5724,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1318
+        "line": 1319
       }
     },
     {
@@ -5738,7 +5738,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/start",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1334
+        "line": 1335
       }
     },
     {
@@ -5752,7 +5752,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/renew",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1354
+        "line": 1355
       }
     },
     {
@@ -5766,7 +5766,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1377
+        "line": 1378
       }
     },
     {
@@ -5780,7 +5780,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/commit-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1408
+        "line": 1409
       }
     },
     {
@@ -5794,7 +5794,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/deploy-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1426
+        "line": 1427
       }
     },
     {
@@ -5808,7 +5808,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1443
+        "line": 1444
       }
     },
     {
@@ -5822,7 +5822,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/continue",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1474
+        "line": 1475
       }
     },
     {
@@ -5836,7 +5836,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1503
+        "line": 1504
       }
     },
     {
@@ -5850,7 +5850,7 @@
         "path": "/api/request-classifier/jobs/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1523
+        "line": 1524
       }
     },
     {
@@ -5864,7 +5864,7 @@
         "path": "/api/request-classifier/jobs/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1546
+        "line": 1547
       }
     },
     {
@@ -5878,7 +5878,7 @@
         "path": "/api/request-classifier/jobs/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1566
+        "line": 1567
       }
     },
     {
@@ -25373,8 +25373,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 117937,
-        "lineCount": 2823,
+        "sizeBytes": 118228,
+        "lineCount": 2830,
         "ext": ".ts"
       }
     },
@@ -25503,8 +25503,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 75630,
-        "lineCount": 2130,
+        "sizeBytes": 75612,
+        "lineCount": 2119,
         "ext": ".ts"
       }
     },
@@ -25516,8 +25516,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 148832,
-        "lineCount": 3747,
+        "sizeBytes": 149304,
+        "lineCount": 3759,
         "ext": ".ts"
       }
     },
@@ -25685,8 +25685,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 64418,
-        "lineCount": 1581,
+        "sizeBytes": 64482,
+        "lineCount": 1582,
         "ext": ".ts"
       }
     },
@@ -30209,8 +30209,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22151,
-        "lineCount": 462,
+        "sizeBytes": 22683,
+        "lineCount": 475,
         "ext": ".tsx"
       }
     },
@@ -30222,8 +30222,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38056,
-        "lineCount": 823,
+        "sizeBytes": 38541,
+        "lineCount": 832,
         "ext": ".tsx"
       }
     },
@@ -30378,8 +30378,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18451,
-        "lineCount": 479,
+        "sizeBytes": 18825,
+        "lineCount": 491,
         "ext": ".ts"
       }
     },

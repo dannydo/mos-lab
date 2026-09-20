@@ -33,6 +33,48 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
 
 ---
 
+## 📬 mOS Inbox Implementation & IDE Task Bridge Invariant (Kinh Thánh mOS Điều răn UI-007)
+
+Mỗi khi nhận nhiệm vụ từ mOS Inbox (ticket bug/feature qua worktree riêng `ag-*` hoặc `ide-*`), Agent **BẮT BUỘC** phải tuân thủ chuẩn xác chu trình 3 Cổng Kiểm Soát (Gate Control Flow) kết hợp với `ide-task-bridge`:
+
+1. **Tiếp nhận Handoff ngay khi bắt đầu (Gate 1 Handshake)**:
+   - Ngay khi bắt đầu làm việc trong worktree được cấp phát, Agent gọi bridge để nhận thông tin handoff nonce:
+     ```bash
+     npx tsx scripts/ide-task-bridge.ts receive --out /tmp/handoff-<reportId>.json
+     ```
+     _(Bridge tự động nhận diện token, API URL `https://api.lab.masteros.app/api`, và taskId từ `ANTIGRAVITY_CONVERSATION_ID`)._
+2. **Triển khai Code, Test & Xác minh**:
+   - Làm việc 100% bên trong thư mục worktree được chỉ định.
+   - Chạy kiểm chứng toàn diện: `pnpm verify:quick`, `pnpm check:ui-contract`.
+3. **Nộp Code/Test Receipt để Kích Hoạt Cổng 2 (Gate 2 Activation)**:
+   - Tuyệt đối không chỉ dừng lại ở chat mà quên nộp receipt lên server. Nếu không nộp receipt, mOS Inbox sẽ bị kẹt ở trạng thái _"Đang chờ Antigravity nhận handoff"_.
+   - Thu thập metadata thay đổi từ git:
+     - `changedFiles`: `git diff --name-only HEAD` (lưu ý dùng `git add -N .` trước để gom cả file mới tạo).
+     - `diffStat`: `git diff --stat HEAD`.
+     - `baseCommit`: `git rev-parse HEAD`.
+     - `patchHash`: `createHash('sha256').update(patch.trim()).digest('hex')`.
+     - `result`: `{ summary, tests, risksAndRollback }` (tests bắt buộc gồm test đã pass và Playwright visual QA PASSED nếu có sửa `apps/web/`).
+   - Chuẩn bị tệp JSON `/tmp/receipt-<reportId>.json` và nộp qua bridge:
+     ```bash
+     npx tsx scripts/ide-task-bridge.ts submit --receipt /tmp/receipt-<reportId>.json
+     ```
+   - Sau lệnh này, trạng thái ticket trên mOS Inbox tự động chuyển sang **`AWAITING_DANNY_COMMIT_REVIEW`** và nút **"Duyệt commit"** hiển thị sẵn trên web cho Danny.
+4. **Tự động Lắng nghe & Trình Duyệt Cổng 2 (Single-Approval Web Workflow)**:
+   - **Danny chỉ duyệt 1 nơi duy nhất trên web**: Tuyệt đối không yêu cầu Danny duyệt thêm lần thứ hai trong chat.
+   - Ngay sau khi nộp receipt, Agent khởi chạy lệnh nền lắng nghe sự kiện duyệt trên web:
+     ```bash
+     npx tsx scripts/ide-task-bridge.ts wait-and-commit --worktree <worktreePath> --message "<commit-message>"
+     ```
+   - Báo cáo tóm tắt trên chat kèm liên kết `walkthrough.md` và phát giọng nói qua `speak`.
+5. **Cổng 3 Tự Động Kích Hoạt & Tự Động Merge/Deploy Pipeline (Gate 3 Auto-Deploy Invariant)**:
+   - Ngay khi Danny bấm "Duyệt commit" trên web, lệnh `wait-and-commit` tự động bắt được sự kiện `IDE_COMMIT_HANDOFF`, tự động tạo git commit trên nhánh ticket, nộp commit receipt lên server, và chuyển trạng thái ticket sang `AWAITING_DANNY_DEPLOY_APPROVAL`.
+   - Khi Danny bấm "Duyệt deploy" trên web:
+     - Nút trên web **chuyển ngay sang màu xanh lá Emerald** (`Đã duyệt deploy · Đang triển khai...`) để phản hồi thị giác tức thì.
+     - Lệnh `wait-and-deploy` (hoặc cờ `--auto-deploy` trong `wait-and-commit`) tự động bắt được sự kiện duyệt deploy, tự động merge nhánh ticket vào `main`, push lên `origin main`, deploy lên VPS qua `deploy-production.sh`, kiểm chứng release markers sống trên API/Web, nộp release checkpoint lên server để chuyển ticket sang `AWAITING_REPORTER_ACCEPTANCE`, và phát âm thanh thông báo qua `speak`.
+     - Danny chỉ cần bấm 1 lần trên web, toàn bộ quy trình merge và deploy chạy hoàn toàn tự động khép kín!
+
+---
+
 ## 📖 Kinh Thánh mOS — Human-readable Business Canon
 
 - Registry hiển thị cho nhân viên và AI nằm tại `packages/shared/src/business-rules/mos-bible.ts`; quy ước biên soạn nằm tại `docs/kinh-thanh-mos/README.md`.

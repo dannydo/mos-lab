@@ -426,11 +426,23 @@ export function useBugReportDetail({
     try {
       const outcome = await approveImplementationDeploy(detail.id);
       if (!outcome.deploymentQueued) throw new Error('Checkpoint deploy đã thay đổi. Vui lòng tải lại ticket.');
+      setDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              agentProgress: {
+                ...prev.agentProgress,
+                stage: 'QUEUED_FOR_DEPLOY',
+                note: 'Danny đã duyệt deploy; đang tự động merge main và triển khai production.',
+              },
+            }
+          : null
+      );
       void getDetail(outcome.reportId)
         .then(hydrateForm)
         .catch(() => undefined);
       messageApi.success(
-        'Đã duyệt deploy. Worker Mac sẽ merge, push, chạy pipeline production và tự xác minh release.'
+        'Đã duyệt deploy. Hệ thống đang tự động merge main, push, chạy pipeline production và xác minh release.'
       );
     } catch (error) {
       const responseMessage =

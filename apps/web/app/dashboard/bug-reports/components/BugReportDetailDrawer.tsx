@@ -290,6 +290,15 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   )}
                 </>
               )}
+              {canTriage && detail.agentProgress.stage === 'QUEUED_FOR_DEPLOY' && (
+                <Button
+                  disabled
+                  className="!border-emerald-500 !text-emerald-600 dark:!text-emerald-400 !bg-emerald-50 dark:!bg-emerald-950/40 font-semibold cursor-default"
+                  icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                >
+                  Đã duyệt deploy · Đang triển khai...
+                </Button>
+              )}
               {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL' && (
                 <Popconfirm
                   classNames={{ root: styles.confirmationPopup }}

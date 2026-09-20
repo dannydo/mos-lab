@@ -406,6 +406,19 @@ describe('BugReportDetailDrawer behavior', () => {
     await waitFor(() => expect(props[action]).toHaveBeenCalledExactlyOnceWith(props.reportId));
   });
 
+  it('renders green in-progress button when stage is QUEUED_FOR_DEPLOY', async () => {
+    const props = propsFor(
+      makeDetail({
+        status: 'IN_PROGRESS',
+        agentProgress: { stage: 'QUEUED_FOR_DEPLOY', note: 'Đang triển khai...', updatedAt: capturedAt },
+      })
+    );
+    render(<BugReportDetailDrawer {...props} />);
+    const button = await screen.findByRole('button', { name: /Đã duyệt deploy · Đang triển khai/i });
+    expect(button).toBeInTheDocument();
+    expect(button).toBeDisabled();
+  });
+
   it('keeps reporter acceptance out of the administrative close exception', async () => {
     render(
       <BugReportDetailDrawer

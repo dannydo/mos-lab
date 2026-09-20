@@ -2466,7 +2466,15 @@ export class InboxImplementationService {
         const existing = await tx.crmBugReportAudit.findFirst({
           where: { reportId, actorStaffId, action: 'DANNY_DEPLOY_APPROVED', afterJson },
         });
-        if (existing) return true;
+        if (existing) {
+          if (unchanged.executionPhase !== 'DEPLOY_APPROVED') {
+            await tx.crmInboxImplementationJob.updateMany({
+              where: { id: job.id },
+              data: { executionPhase: 'DEPLOY_APPROVED', updatedAt: new Date() },
+            });
+          }
+          return true;
+        }
         await tx.crmBugReportAudit.create({
           data: {
             reportId,
@@ -2476,6 +2484,10 @@ export class InboxImplementationService {
             beforeJson: snapshot(report),
             afterJson,
           },
+        });
+        await tx.crmInboxImplementationJob.updateMany({
+          where: { id: job.id },
+          data: { executionPhase: 'DEPLOY_APPROVED', updatedAt: new Date() },
         });
         return true;
       });
