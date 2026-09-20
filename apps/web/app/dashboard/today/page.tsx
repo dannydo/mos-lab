@@ -348,8 +348,8 @@ export default function TodayDashboard() {
                     >
                       Phân Phối Doanh Thu Hôm Nay (Revenue Breakdown)
                     </div>
-                    <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-                      <Col xs={24} sm={12} md={6}>
+                    <Row gutter={[12, 12]} style={{ marginBottom: '24px' }}>
+                      <Col xs={12} sm={12} md={6}>
                         <Card
                           size="small"
                           style={{
@@ -367,7 +367,7 @@ export default function TodayDashboard() {
                         </Card>
                       </Col>
 
-                      <Col xs={24} sm={12} md={6}>
+                      <Col xs={12} sm={12} md={6}>
                         <Card
                           size="small"
                           style={{
@@ -392,7 +392,7 @@ export default function TodayDashboard() {
                         </Card>
                       </Col>
 
-                      <Col xs={24} sm={12} md={6}>
+                      <Col xs={12} sm={12} md={6}>
                         <Card
                           size="small"
                           style={{
@@ -417,7 +417,7 @@ export default function TodayDashboard() {
                         </Card>
                       </Col>
 
-                      <Col xs={24} sm={12} md={6}>
+                      <Col xs={12} sm={12} md={6}>
                         <Card
                           size="small"
                           style={{

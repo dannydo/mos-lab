@@ -110,7 +110,8 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       fastify,
       adminUser
     );
-    const cacheKey = `cust_stats:${adminUser?.id || 0}:${adminUser?.role || ''}:global-schedule-${hasGlobalRescheduleAccess}:${JSON.stringify(request.query)}`;
+    const dbVersion = await getStatsDbVersion(fastify);
+    const cacheKey = `cust_stats:${adminUser?.id || 0}:${adminUser?.role || ''}:${dbVersion}:global-schedule-${hasGlobalRescheduleAccess}:${JSON.stringify(request.query)}`;
     const cachedStats = fastify.cache.get(cacheKey);
     if (cachedStats) {
       return cachedStats;
@@ -149,51 +150,80 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       const needOrderCounts = needSpent || needVisits;
 
-      let statsInnerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
-      statsInnerJoins += ` LEFT JOIN (
-        SELECT 
-          user_id,
-          SUM(
-            CASE 
-              WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
-              ELSE 0 
-            END
-          ) as live_count,
-          SUM(normal_count) as normalCount,
-          SUM(retain_count) as retainCount,
-          MAX(date_expired) as expiryDate
-        FROM user_service_balance
-        GROUP BY user_id
-      ) as usb_agg ON u.id = usb_agg.user_id`;
-      if (needOrderCounts) {
-        statsInnerJoins += ` LEFT JOIN (
-          SELECT 
-            user_id, 
-            COALESCE(SUM(total_price), 0) as totalSpent, 
-            COUNT(*) as totalVisits
-          FROM \`order\`
-          WHERE order_state = 'Completed'
-          GROUP BY user_id
-        ) as order_counts ON u.id = order_counts.user_id`;
-      }
-      if (needServiceUsage) {
-        statsInnerJoins += buildCompletedServiceUsageJoin(selectedServiceIds);
-      }
-      if (needPromo) {
-        statsInnerJoins += ` LEFT JOIN (
-          SELECT user_id, COUNT(*) as totalPromotionsUsed
-          FROM \`order\`
-          WHERE order_state = 'Completed' AND (promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL)
-          GROUP BY user_id
-        ) as promo_counts ON u.id = promo_counts.user_id`;
-      }
-      if (needReferrals) {
-        statsInnerJoins += ` LEFT JOIN (
-          SELECT referrer_user_id, COUNT(*) as totalReferrals
-          FROM user_profile
-          WHERE referrer_user_id IS NOT NULL
-          GROUP BY referrer_user_id
-        ) as ref_counts ON u.id = ref_counts.referrer_user_id`;
+      const isDefaultView =
+        (!search || search.trim() === '') &&
+        (!bucket || bucket === 'ALL') &&
+        (!effectiveAssignedStaffId || effectiveAssignedStaffId === 'all') &&
+        (assignedDaysMin === undefined || assignedDaysMin === '') &&
+        (assignedDaysMax === undefined || assignedDaysMax === '') &&
+        (daysSinceLastVisitMin === undefined || daysSinceLastVisitMin === '') &&
+        (daysSinceLastVisitMax === undefined || daysSinceLastVisitMax === '') &&
+        !needSpent &&
+        !needVisits &&
+        !needServiceUsage &&
+        !needPromo &&
+        !needReferrals &&
+        (dobMonth === undefined || dobMonth === '' || dobMonth === 'ALL') &&
+        !birthdayPreset &&
+        (ageMin === undefined || ageMin === '') &&
+        (ageMax === undefined || ageMax === '') &&
+        (!callStatuses || callStatuses.trim() === '') &&
+        (lastCallDaysMin === undefined || lastCallDaysMin === '') &&
+        (lastCallDaysMax === undefined || lastCallDaysMax === '') &&
+        (!isForeign || isForeign === 'all') &&
+        retainedOnly !== 'true' &&
+        (!allocationBatchId || allocationBatchId.trim() === '') &&
+        (!ids || ids.trim() === '');
+
+      if (isDefaultView) {
+        const isTrash = trash === 'true';
+        const deletedFilter = isTrash ? 'up.is_deleted = 1' : 'COALESCE(up.is_deleted, 0) = 0';
+
+        const [totRows, usbRows] = await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT COUNT(*) as total 
+            FROM user u 
+            LEFT JOIN user_profile up ON u.id = up.user_id 
+            WHERE ${deletedFilter}
+          `),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT 
+              SUM(CASE WHEN live_count > 0 THEN 1 ELSE 0 END) as comboLive,
+              SUM(CASE WHEN live_count = 0 THEN 1 ELSE 0 END) as comboDead,
+              SUM(CASE WHEN live_count > 0 AND expiryDate IS NOT NULL AND DATEDIFF(expiryDate, NOW()) BETWEEN 0 AND 30 THEN 1 ELSE 0 END) as hsd30,
+              SUM(CASE WHEN live_count > 0 AND (COALESCE(normalCount, 0) + COALESCE(retainCount, 0)) = 1 THEN 1 ELSE 0 END) as lsd1
+            FROM (
+              SELECT 
+                usb.user_id,
+                SUM(CASE WHEN (usb.normal_count + usb.retain_count) > 0 AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) THEN 1 ELSE 0 END) as live_count,
+                SUM(usb.normal_count) as normalCount,
+                SUM(usb.retain_count) as retainCount,
+                MAX(usb.date_expired) as expiryDate
+              FROM user_service_balance usb
+              JOIN user_profile up ON up.user_id = usb.user_id AND ${deletedFilter}
+              GROUP BY usb.user_id
+            ) t
+          `),
+        ]);
+
+        const total = Number(totRows[0]?.total || 0);
+        const usb = usbRows[0] || {};
+        const comboLive = Number(usb.comboLive || 0);
+        const comboDead = Number(usb.comboDead || 0);
+        const single = Math.max(0, total - comboLive - comboDead);
+
+        const stats = {
+          total,
+          comboLive,
+          comboDead,
+          single,
+          notComboLive: total - comboLive,
+          hsd30: Number(usb.hsd30 || 0),
+          lsd1: Number(usb.lsd1 || 0),
+        };
+
+        fastify.cache.set(cacheKey, stats, 120000);
+        return stats;
       }
 
       let allowedUserIds: number[] | null = null;
@@ -310,6 +340,57 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
           single: 0,
           notComboLive: 0,
         };
+      }
+
+      const usbUserFilter =
+        allowedUserIds !== null && allowedUserIds.length > 0 ? `WHERE user_id IN (${allowedUserIds.join(',')})` : '';
+
+      let statsInnerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+      statsInnerJoins += ` LEFT JOIN (
+        SELECT 
+          user_id,
+          SUM(
+            CASE 
+              WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+              ELSE 0 
+            END
+          ) as live_count,
+          SUM(normal_count) as normalCount,
+          SUM(retain_count) as retainCount,
+          MAX(date_expired) as expiryDate
+        FROM user_service_balance
+        ${usbUserFilter}
+        GROUP BY user_id
+      ) as usb_agg ON u.id = usb_agg.user_id`;
+      if (needOrderCounts) {
+        statsInnerJoins += ` LEFT JOIN (
+          SELECT 
+            user_id, 
+            COALESCE(SUM(total_price), 0) as totalSpent, 
+            COUNT(*) as totalVisits
+          FROM \`order\`
+          WHERE order_state = 'Completed' ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : ''}
+          GROUP BY user_id
+        ) as order_counts ON u.id = order_counts.user_id`;
+      }
+      if (needServiceUsage) {
+        statsInnerJoins += buildCompletedServiceUsageJoin(selectedServiceIds);
+      }
+      if (needPromo) {
+        statsInnerJoins += ` LEFT JOIN (
+          SELECT user_id, COUNT(*) as totalPromotionsUsed
+          FROM \`order\`
+          WHERE order_state = 'Completed' AND (promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL) ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : ''}
+          GROUP BY user_id
+        ) as promo_counts ON u.id = promo_counts.user_id`;
+      }
+      if (needReferrals) {
+        statsInnerJoins += ` LEFT JOIN (
+          SELECT referrer_user_id, COUNT(*) as totalReferrals
+          FROM user_profile
+          WHERE referrer_user_id IS NOT NULL ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND referrer_user_id IN (${allowedUserIds.join(',')})` : ''}
+          GROUP BY referrer_user_id
+        ) as ref_counts ON u.id = ref_counts.referrer_user_id`;
       }
 
       const innerWhereClauses: string[] = [];
@@ -627,7 +708,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       stats.notComboLive = stats.total - stats.comboLive;
 
-      fastify.cache.set(cacheKey, stats, 15000);
+      fastify.cache.set(cacheKey, stats, 120000);
       return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get customers stats error:');
@@ -740,15 +821,9 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         };
       }
 
-      const innerWhereClauses: string[] = [
-        'COALESCE(up.is_deleted, 0) = 0',
-        `EXISTS (
-          SELECT 1 FROM user_service_balance usb
-          WHERE usb.user_id = u.id
-            AND (usb.normal_count + usb.retain_count) > 0
-            AND (usb.date_expired IS NULL OR usb.date_expired > NOW())
-        )`,
-      ];
+      // Driving from usb_agg (HAVING live_count > 0) already ensures active balance,
+      // eliminating the need for full-table scans and redundant EXISTS subqueries on user table.
+      const innerWhereClauses: string[] = ['COALESCE(up.is_deleted, 0) = 0'];
       const innerParams: SafeAny[] = [];
 
       if (allowedUserIds !== null && allowedUserIds.length > 0) {
@@ -842,7 +917,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       const usbFilterStr =
         allowedUserIds !== null && allowedUserIds.length > 0
-          ? `WHERE user_id IN (${allowedUserIds.join(',')})`
+          ? `WHERE user_id IN (${allowedUserIds.join(',')}) AND (normal_count + retain_count) > 0`
           : 'WHERE (normal_count + retain_count) > 0';
 
       const batchSql = `
@@ -859,7 +934,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         FROM (
           SELECT
             u.id,
-            (usb_agg.live_count IS NOT NULL AND usb_agg.live_count > 0) as is_combo_live,
+            1 as is_combo_live,
             CASE 
               WHEN usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30 THEN 1 
               ELSE 0 
@@ -899,9 +974,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
               WHERE ccl.legacy_user_id = u.id
             ) as has_contacted,
             ${newLocaExpr} as is_new_loca
-          FROM user u
-          LEFT JOIN user_profile up ON u.id = up.user_id
-          LEFT JOIN (
+          FROM (
             SELECT 
               user_id,
               SUM(
@@ -916,7 +989,10 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
             FROM user_service_balance
             ${usbFilterStr}
             GROUP BY user_id
-          ) as usb_agg ON u.id = usb_agg.user_id
+            HAVING live_count > 0
+          ) as usb_agg
+          JOIN user u ON u.id = usb_agg.user_id
+          LEFT JOIN user_profile up ON u.id = up.user_id
           ${innerWhereString}
         ) as loca_base
       `;

@@ -450,6 +450,15 @@ export default function CcDashboardPage() {
       </div>
 
       {/* 4 MAIN TABS */}
+      {responsiveTier === 'mobile' && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+          <span>💡</span>
+          <span>
+            <strong>Mẹo xem báo cáo:</strong> Xoay ngang điện thoại (Landscape) để xem bảng đối soát chi tiết hoặc xem
+            tóm tắt bên dưới.
+          </span>
+        </div>
+      )}
       <Card
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}

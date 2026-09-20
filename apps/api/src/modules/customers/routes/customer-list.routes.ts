@@ -370,13 +370,16 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         } else {
           allowedUserIds = newLocaUserIds;
         }
-      } else if (bucket === 'COMBO_LIVE' && allowedUserIds === null) {
+      } else if (bucket === 'COMBO_LIVE') {
+        const usbScopeFilter =
+          allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : '';
         const comboLiveUserIds = (
           await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
             `SELECT DISTINCT user_id
              FROM user_service_balance
              WHERE (normal_count + retain_count) > 0
-               AND (date_expired IS NULL OR date_expired > NOW())`
+               AND (date_expired IS NULL OR date_expired > NOW())
+               ${usbScopeFilter}`
           )
         ).map((r) => Number(r.user_id));
 
@@ -391,7 +394,23 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             },
           };
         }
-        allowedUserIds = comboLiveUserIds;
+        if (allowedUserIds !== null) {
+          const liveSet = new Set(comboLiveUserIds);
+          allowedUserIds = allowedUserIds.filter((id) => liveSet.has(id));
+          if (allowedUserIds.length === 0) {
+            return {
+              data: [],
+              pagination: {
+                total: 0,
+                page: pageNum,
+                limit: limitNum,
+                pages: 0,
+              },
+            };
+          }
+        } else {
+          allowedUserIds = comboLiveUserIds;
+        }
       }
 
       if (hsd30 === 'true') {
@@ -540,6 +559,17 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           ' LEFT JOIN mos_lab.crm_customer_assignments assignment_sort ON assignment_sort.legacy_user_id = u.id';
       }
       if (needServiceBalance) {
+        const isComboLive = bucket === 'COMBO_LIVE';
+        const liveCondition = '(normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW())';
+        const usbFilterClauses: string[] = [];
+        if (usbUserFilter) {
+          usbFilterClauses.push(usbUserFilter.replace(/^WHERE\s+/i, ''));
+        }
+        if (isComboLive) {
+          usbFilterClauses.push(liveCondition);
+        }
+        const finalUsbWhere = usbFilterClauses.length > 0 ? `WHERE ${usbFilterClauses.join(' AND ')}` : '';
+
         innerJoins += ` LEFT JOIN (
           SELECT 
             user_id,
@@ -554,7 +584,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             MAX(date_expired) as expiryDate,
             MAX(date_created) as max_date_created
           FROM user_service_balance
-          ${usbUserFilter}
+          ${finalUsbWhere}
           GROUP BY user_id
         ) as usb_agg ON u.id = usb_agg.user_id`;
       }
@@ -1652,6 +1682,11 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
       if (needServiceBalance) {
+        const isComboLive = bucket === 'COMBO_LIVE';
+        const liveFilter = isComboLive
+          ? 'WHERE (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW())'
+          : '';
+
         innerJoins += ` LEFT JOIN (
           SELECT 
             user_id,
@@ -1662,6 +1697,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
               END
             ) as live_count
           FROM user_service_balance
+          ${liveFilter}
           GROUP BY user_id
         ) as usb_agg ON u.id = usb_agg.user_id`;
       }

@@ -8,6 +8,7 @@ import { isCanonicalSuperAdminIdentity, isSuperAdminRole, SafeAny } from '@mos-l
 import { apiClient } from '../../lib/api-client';
 import { getSidebarGroups, getSelectedMenuKey, SidebarItemConfig } from '../../config/sidebar.config';
 import { AppIcon } from '../ui/AppIcon';
+import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 
 interface SidebarNavProps {
   collapsed: boolean;
@@ -296,6 +297,27 @@ export default function SidebarNav({
     bugInboxApprovalCount
   );
 
+  const tier = useResponsiveTier();
+  const isMobile = tier === 'mobile';
+
+  const displayedGroups = isMobile
+    ? sidebarGroups
+        .filter((group) => group.groupKey !== 'grp-system' && group.groupKey !== 'grp-diagrams')
+        .map((group) => ({
+          ...group,
+          items: group.items.filter(
+            (item) =>
+              item.key !== 'catalog' &&
+              item.key !== 'architecture' &&
+              item.key !== 'diagrams' &&
+              item.key !== 'menu-access' &&
+              item.key !== 'design-system' &&
+              item.key !== 'teams'
+          ),
+        }))
+        .filter((group) => group.items.length > 0)
+    : sidebarGroups;
+
   const createMenuItem = (item: SidebarItemConfig, depth = 0): SafeAny => {
     if (item.children && item.children.length > 0) {
       const childItems = item.children.map((child) => createMenuItem(child, depth + 1));
@@ -357,7 +379,7 @@ export default function SidebarNav({
     };
   };
 
-  const expandedMenuItems: SafeAny[] = sidebarGroups.map((group) => {
+  const expandedMenuItems: SafeAny[] = displayedGroups.map((group) => {
     const isGroupCollapsed = collapsedGroupKeys.includes(group.groupKey);
     const isAcademyGroup = group.groupKey === 'grp-academy';
     const collapseAction = isGroupCollapsed ? 'Mở rộng' : 'Thu gọn';
@@ -418,7 +440,7 @@ export default function SidebarNav({
     return (
       <nav aria-label="Main Navigation" className="sidebar-nav-container sidebar-compact-nav">
         <ul className="sidebar-compact-list" role="menu">
-          {sidebarGroups.map((group, groupIndex) => (
+          {displayedGroups.map((group, groupIndex) => (
             <React.Fragment key={group.groupKey}>
               {groupIndex > 0 && <li aria-hidden className="sidebar-rail-divider" role="separator" />}
               {group.items.map((item) => {

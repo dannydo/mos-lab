@@ -19,7 +19,18 @@ import {
   RocketOutlined,
   BgColorsOutlined,
 } from '@ant-design/icons';
-import { BookOpenCheck, CalendarPlus, Clock3, EllipsisVertical, Menu, Moon, Phone, Sun, UserRound } from 'lucide-react';
+import {
+  BookOpenCheck,
+  CalendarPlus,
+  Clock3,
+  EllipsisVertical,
+  Menu,
+  Moon,
+  Phone,
+  Search,
+  Sun,
+  UserRound,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -31,6 +42,7 @@ import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
 const CallLogModal = dynamic(() => import('../../components/CallLogModal'), { ssr: false });
+const QuickSearchModal = dynamic(() => import('../../components/layout/QuickSearchModal'), { ssr: false });
 const PendingAllocationModal = dynamic(
   () => import('../../components/allocation/PendingAllocationModal').then((m) => m.PendingAllocationModal),
   { ssr: false }
@@ -90,6 +102,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Global CV Schedule Drawer state
   const [isCvDrawerOpen, setIsCvDrawerOpen] = useState(false);
   const [isBookingWizardOpen, setIsBookingWizardOpen] = useState(false);
+  const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
   const [cvDrawerDate, setCvDrawerDate] = useState(() => dayjs());
   const [workingCvCount, setWorkingCvCount] = useState(0);
   const hasAuthenticatedUser = !loading && Boolean(user?.id);
@@ -589,6 +602,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {isMobileTier && (
                   <HeaderIconButton action="navigation" label="Mở điều hướng" icon={Menu} onClick={toggleSidebar} />
                 )}
+                {isMobileTier && (
+                  <HeaderIconButton
+                    action="quick-search"
+                    label="Tìm nhanh KH hoặc SĐT"
+                    icon={Search}
+                    onClick={() => setIsQuickSearchOpen(true)}
+                  />
+                )}
                 <HeaderLeftToolbar onOpenCvDrawer={() => setIsCvDrawerOpen(true)} workingCvCount={workingCvCount} />
                 <HeaderIconButton
                   action="book-appointment"
@@ -769,7 +790,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </Dropdown>
                 )}
 
-                <ThemeSelector isAdmin={isAdminOrSuperAdminRole(user?.role)} />
+                <div className="dashboard-desktop-only">
+                  <ThemeSelector isAdmin={isAdminOrSuperAdminRole(user?.role)} />
+                </div>
                 <HeaderIconButton
                   action="theme"
                   label={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
@@ -828,6 +851,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClose={() => setIsBookingWizardOpen(false)}
             onSuccess={() => setIsBookingWizardOpen(false)}
           />
+
+          <QuickSearchModal open={isQuickSearchOpen} onClose={() => setIsQuickSearchOpen(false)} />
 
           <MosBibleDrawer open={isMosBibleOpen} pathname={pathname} onClose={() => setIsMosBibleOpen(false)} />
 

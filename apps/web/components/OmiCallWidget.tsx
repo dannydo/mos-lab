@@ -237,17 +237,22 @@ export default function OmiCallWidget() {
         background: currentContainerBg,
         borderColor: borderColor,
         color: textColor,
-        width: isMobileTier
-          ? 'calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))'
-          : `${size.width}px`,
+        width: isMobileTier ? 'calc(100vw - 24px)' : `${size.width}px`,
         height: isMobileTier
-          ? 'min(620px, calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))'
+          ? 'min(580px, calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))'
           : `${size.height}px`,
-        left: !isMobileTier && position ? `${position.x}px` : undefined,
-        top: !isMobileTier && position ? `${position.y}px` : undefined,
-        right: !isMobileTier && position ? undefined : 'calc(var(--mos-floating-offset) + env(safe-area-inset-right))',
-        bottom:
-          !isMobileTier && position ? undefined : 'calc(var(--mos-floating-offset) + env(safe-area-inset-bottom))',
+        left: isMobileTier ? '12px' : position ? `${position.x}px` : undefined,
+        top: isMobileTier ? undefined : position ? `${position.y}px` : undefined,
+        right: isMobileTier
+          ? '12px'
+          : position
+            ? undefined
+            : 'calc(var(--mos-floating-offset) + env(safe-area-inset-right))',
+        bottom: isMobileTier
+          ? 'calc(12px + env(safe-area-inset-bottom))'
+          : position
+            ? undefined
+            : 'calc(var(--mos-floating-offset) + env(safe-area-inset-bottom))',
         zIndex: 10040,
         boxShadow: isDark
           ? '0 20px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
@@ -354,45 +359,49 @@ export default function OmiCallWidget() {
       </div>
 
       {/* Resize handles */}
-      {/* Bottom right handle */}
-      <div
-        style={{
-          position: 'absolute',
-          right: 0,
-          bottom: 0,
-          width: '12px',
-          height: '12px',
-          cursor: 'se-resize',
-          zIndex: 10040,
-        }}
-        onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
-      />
-      {/* Bottom left handle */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          bottom: 0,
-          width: '12px',
-          height: '12px',
-          cursor: 'sw-resize',
-          zIndex: 10040,
-        }}
-        onMouseDown={(e) => handleResizeStart(e, 'bottom-left')}
-      />
-      {/* Bottom edge handle */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '12px',
-          right: '12px',
-          bottom: 0,
-          height: '6px',
-          cursor: 's-resize',
-          zIndex: 10040,
-        }}
-        onMouseDown={(e) => handleResizeStart(e, 'bottom')}
-      />
+      {!isMobileTier && (
+        <>
+          {/* Bottom right handle */}
+          <div
+            style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+              width: '12px',
+              height: '12px',
+              cursor: 'se-resize',
+              zIndex: 10040,
+            }}
+            onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
+          />
+          {/* Bottom left handle */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              bottom: 0,
+              width: '12px',
+              height: '12px',
+              cursor: 'sw-resize',
+              zIndex: 10040,
+            }}
+            onMouseDown={(e) => handleResizeStart(e, 'bottom-left')}
+          />
+          {/* Bottom edge handle */}
+          <div
+            style={{
+              position: 'absolute',
+              left: '12px',
+              right: '12px',
+              bottom: 0,
+              height: '6px',
+              cursor: 's-resize',
+              zIndex: 10040,
+            }}
+            onMouseDown={(e) => handleResizeStart(e, 'bottom')}
+          />
+        </>
+      )}
     </div>
   );
 }

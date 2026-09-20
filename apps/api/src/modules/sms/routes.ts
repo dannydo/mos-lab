@@ -375,16 +375,34 @@ export async function smsRoutes(fastify: FastifyInstance) {
 
       const phoneNumbers = contacts.map((c) => c.phone_number).filter(Boolean);
 
-      // 2. Query user_sms records matching to_user_id OR to_phone_number
-      const smsRecords = await fastify.prisma.legacy.user_sms.findMany({
-        where: {
-          OR: [
-            { to_user_id: legacyUserId },
-            ...(phoneNumbers.length > 0 ? [{ to_phone_number: { in: phoneNumbers } }] : []),
-          ],
-        },
-        orderBy: { date_created: 'desc' },
-      });
+      // 2. Query user_sms records matching to_user_id and to_phone_number in parallel
+      // Avoids slow OR condition full-table scans when one branch lacks an index or optimizer rejects index-merge.
+      const queryPromises = [
+        fastify.prisma.legacy.user_sms.findMany({
+          where: { to_user_id: legacyUserId },
+          orderBy: { date_created: 'desc' },
+        }),
+      ];
+
+      if (phoneNumbers.length > 0) {
+        queryPromises.push(
+          fastify.prisma.legacy.user_sms.findMany({
+            where: { to_phone_number: { in: phoneNumbers } },
+            orderBy: { date_created: 'desc' },
+          })
+        );
+      }
+
+      const queryResults = await Promise.all(queryPromises);
+      const seenSmsIds = new Set<number>();
+      const smsRecords = queryResults
+        .flat()
+        .filter((record) => {
+          if (seenSmsIds.has(record.id)) return false;
+          seenSmsIds.add(record.id);
+          return true;
+        })
+        .sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
 
       // 3. Fetch staff names for created_staff_id
       const staffIds = Array.from(

@@ -6077,9 +6077,21 @@ body {
 }
 
 @media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
-  /* Floating-count safe rail: the icon remains centered in its 44px target. */
+  .dashboard-header {
+    padding-inline: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+
   .dashboard-header-left {
+    flex: 0 0 auto;
+    gap: 4px;
     overflow: visible;
+  }
+
+  .dashboard-header-right {
+    flex: 0 0 auto;
+    gap: 4px;
+    flex-wrap: nowrap;
   }
 
   .mos-header-action-indicator--count.mos-header-action-indicator--visible {
@@ -7567,4 +7579,45 @@ body {
 .dark-theme .today-staff-inactive > td {
   background: #0f172a !important;
   color: #cbd5e1 !important;
+}
+
+/* ==========================================================================
+   iPhone 12 Pro & Modern iOS WebKit Ergonomics Standards
+   ========================================================================== */
+
+@media screen and (max-width: 767px) {
+  /* Prevent iOS Safari from auto-zooming into inputs when font-size < 16px */
+  input,
+  select,
+  textarea,
+  .ant-input,
+  .ant-select-selector,
+  .ant-select-selection-search-input,
+  .ant-input-number-input,
+  .ant-picker-input > input {
+    font-size: 16px !important;
+  }
+
+  /* 44px minimum touch target for mobile primary actions */
+  .mobile-touch-target {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Safe Area paddings */
+  .safe-area-top {
+    padding-top: max(12px, env(safe-area-inset-top)) !important;
+  }
+  .safe-area-bottom {
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Smooth momentum scrolling for iOS */
+  .mobile-scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
 }

@@ -25,6 +25,11 @@ const benchmarkOptimizationIndexes = [
     table: 'order',
     columns: ['user_id', 'order_state', 'total_price', 'id'],
   },
+  {
+    name: 'idx_user_sms_to_phone_date',
+    table: 'user_sms',
+    columns: ['to_phone_number', 'date_created'],
+  },
 ] as const;
 
 const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;

@@ -8,6 +8,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 import { ReportPeriodNavigator, TableSettingsTrigger } from '../../../components/ui';
+import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
 
 dayjs.extend(isoWeek);
 
@@ -32,6 +33,7 @@ function CvTabLabel({ icon, title, children }: { icon: React.ReactNode; title: s
 export default function CvReportPage() {
   const { token } = theme.useToken();
   const router = useRouter();
+  const responsiveTier = useResponsiveTier();
   const [currentUser, setCurrentUser] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
@@ -198,6 +200,15 @@ export default function CvReportPage() {
       </div>
 
       {/* 3 MAIN TABS */}
+      {responsiveTier === 'mobile' && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+          <span>💡</span>
+          <span>
+            <strong>Mẹo xem báo cáo:</strong> Xoay ngang điện thoại (Landscape) để xem bảng đối soát chi tiết hoặc xem
+            tóm tắt bên dưới.
+          </span>
+        </div>
+      )}
       <Card
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
