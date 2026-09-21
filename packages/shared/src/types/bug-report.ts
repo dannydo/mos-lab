@@ -315,6 +315,27 @@ export interface RequestClassifierWorkerHealth {
   };
   latestTransition: RequestClassifierWorkerHealthTransition | null;
   thresholds: RequestClassifierWorkerHealthThresholds;
+  workers?: InboxDualWorkersHealth;
+}
+
+export interface InboxWorkerStatusSummary {
+  id: 'AG' | 'IDE';
+  name: string;
+  isOnline: boolean;
+  lastSeenAt: string | null;
+  activeTask: {
+    ticketId: number;
+    ticketKey: string;
+    title?: string;
+    phase: string;
+    startedAt: string | null;
+    lastProgressAt: string | null;
+  } | null;
+}
+
+export interface InboxDualWorkersHealth {
+  ag: InboxWorkerStatusSummary;
+  codex: InboxWorkerStatusSummary;
 }
 
 export type RequestClassifierWorkerHealthResponse = { data: RequestClassifierWorkerHealth };

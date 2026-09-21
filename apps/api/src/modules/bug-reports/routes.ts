@@ -55,6 +55,7 @@ import {
   RequestClassifierWorkerHealthError,
   RequestClassifierWorkerHealthService,
 } from './request-classifier-worker-health.service.js';
+import { InboxWorkerStatusService } from './inbox-worker-status.service.js';
 
 const WORKER_RATE_LIMIT_WINDOW_MS = 60_000;
 const WORKER_RATE_LIMIT_MAX_REQUESTS = 180;
@@ -233,6 +234,14 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
       const engine = (request.headers['x-execution-engine'] || (request.query as { engine?: string })?.engine || '')
         .toString()
         .toUpperCase();
+      const provisionerId = String(
+        request.headers['x-ide-provisioner-id'] || request.headers['x-ag-provisioner-id'] || ''
+      );
+      if (engine === 'AG') {
+        InboxWorkerStatusService.recordHeartbeat('AG', provisionerId, fastify);
+      } else {
+        InboxWorkerStatusService.recordHeartbeat('IDE', provisionerId, fastify);
+      }
       const requestData =
         engine === 'AG'
           ? await InboxImplementationService.claimAgTaskProvisioning(
@@ -247,6 +256,10 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
   });
   fastify.get('/ag-task-bridge/provisioning/next', { preHandler: [requireIdeTaskBridge] }, async (request, reply) => {
     try {
+      const provisionerId = String(
+        request.headers['x-ag-provisioner-id'] || request.headers['x-ide-provisioner-id'] || ''
+      );
+      InboxWorkerStatusService.recordHeartbeat('AG', provisionerId, fastify);
       const requestData = await InboxImplementationService.claimAgTaskProvisioning(
         fastify,
         request.headers['x-ide-provisioner-id'] || request.headers['x-ag-provisioner-id']
@@ -258,6 +271,10 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
   });
   fastify.get('/ag-task-bridge/deploy/next', { preHandler: [requireIdeTaskBridge] }, async (request, reply) => {
     try {
+      const provisionerId = String(
+        request.headers['x-ag-provisioner-id'] || request.headers['x-ide-provisioner-id'] || ''
+      );
+      InboxWorkerStatusService.recordHeartbeat('AG', provisionerId, fastify);
       const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: {
           status: 'AWAITING_DEPLOY_REVIEW',
@@ -682,7 +699,18 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     { preHandler: [requireAuth, requireBugInboxRead] },
     async (_request, reply) => {
       try {
-        return reply.send({ data: await RequestClassifierWorkerHealthService.read(fastify) });
+        const [health, dualWorkers] = await Promise.all([
+          RequestClassifierWorkerHealthService.read(fastify),
+          InboxWorkerStatusService.getDualWorkersStatus(fastify),
+        ]);
+        const overallState = dualWorkers.ag.isOnline || dualWorkers.codex.isOnline ? 'ONLINE' : health.state;
+        return reply.send({
+          data: {
+            ...health,
+            state: overallState,
+            workers: dualWorkers,
+          },
+        });
       } catch (error) {
         return sendError(fastify, reply, error, 'Read request classifier worker health failed');
       }
