@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { SafeAny } from '@mos-lab/shared';
+import { TeamService } from '../../teams/team.service.js';
 
 export interface UnifiedCvAttendanceItem {
   id: number;
@@ -45,10 +46,13 @@ export class CvAttendanceService {
     const normalizeName = (name: string) => (name || '').trim().toLowerCase();
 
     // 1. Fetch active CV staff (user_group_id = 4)
+    const configuredCvIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
+
     const activeCvs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
       SELECT user_id as userId, full_name as fullName, avatar, client_store_id as storeId
       FROM \`user_profile\`
       WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0
+        ${configuredCvIds.length > 0 ? `AND user_id IN (${configuredCvIds.join(',')})` : ''}
     `);
 
     if (!activeCvs || activeCvs.length === 0) {

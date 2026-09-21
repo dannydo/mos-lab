@@ -14,6 +14,7 @@ import { BookingSaleClassificationService } from '../services/booking-sale-class
 import { AllocationLedgerService } from '../../allocation/allocation-ledger.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';
 import { createRouteHelpers } from './helpers.js';
+import { TeamService } from '../../teams/team.service.js';
 
 export async function registerBookingRoutes(fastify: FastifyInstance) {
   const { ensureTelesalesCustomerAccess } = createRouteHelpers(fastify);
@@ -946,190 +947,228 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/customers/booking-slots
-  // Calculate slot available matrix based on core shift tables and wingsctrl_appointments
+  // Calculate slot available matrix based on core shift tables, weekly/requested day-offs, and live orders
   fastify.get('/customers/booking-slots', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { date, storeName, technicianId } = request.query as {
+    const {
+      date,
+      storeName,
+      storeId: queryStoreId,
+      technicianId,
+    } = request.query as {
       date?: string;
       storeName?: string;
+      storeId?: string | number;
       technicianId?: string;
     };
 
-    if (!date || !storeName) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'date and storeName are required' });
+    if (!date || (!storeName && !queryStoreId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'date and storeName/storeId are required' });
     }
 
     try {
-      const storeNameToIdMap: { [name: string]: number } = {
-        'De Tham': 6,
-        'Estella Place': 16,
-        'Phan Xích Long': 2,
-        PXL: 2,
-      };
-      const storeId = storeNameToIdMap[storeName] || 6;
-
-      // 1. Fetch Roster from core shift tables
-      let roster: SafeAny[] = [];
-      const dayOfWeek = new Date(date).getDay();
-      const weekdayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-
-      // Check if actual instantiated shifts exist for this date and store
-      const instantiatedShifts = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT sws.user_id, CAST(sws.start_time AS CHAR) as start_time_str, CAST(sws.end_time AS CHAR) as end_time_str, up.full_name
-         FROM staff_working_shift sws
-         JOIN user_profile up ON sws.user_id = up.user_id
-         WHERE sws.date = ? AND sws.client_store_id = ? AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0`,
-        date,
-        storeId
-      );
-
-      // Query KTVs who requested day-off
-      const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT from_user_id FROM staff_day_off 
-         WHERE from_date >= DATE_SUB(?, INTERVAL 30 DAY)
-           AND from_date <= ?
-           AND request_state = 'Approved'
-           AND ? <= COALESCE(to_date, from_date)`,
-        date,
-        date,
-        date
-      );
-      const offUserIds = dayOffs.map((d) => Number(d.from_user_id));
-
-      if (instantiatedShifts.length > 0) {
-        roster = instantiatedShifts
-          .filter((s) => !offUserIds.includes(Number(s.user_id)))
-          .map((s) => ({
-            staff_name: s.full_name,
-            shift_start: s.start_time_str,
-            shift_end: s.end_time_str,
-          }));
+      let storeId = 6;
+      if (queryStoreId) {
+        storeId = Number(queryStoreId);
       } else {
-        // Fall back to schedule templates
-        const schedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT s.user_id, s.type, s.type_value, CAST(s.start_time AS CHAR) as start_time_str, CAST(s.end_time AS CHAR) as end_time_str, up.full_name
-           FROM staff_working_shift_schedule s
-           JOIN user_profile up ON s.user_id = up.user_id
-           WHERE s.is_disabled = 0 
-             AND (s.client_store_id = ? OR ((s.client_store_id = 4 OR s.client_store_id IS NULL) AND up.client_store_id = ?))
-             AND up.provider = 'Staff' AND up.user_group_id = 4 AND up.is_disabled = 0 AND up.is_leaved = 0 AND up.is_deleted = 0`,
-          storeId,
-          storeId
-        );
-
-        // Filter schedules matching today's weekday / all days
-        const matchedSchedules = schedules.filter((s) => {
-          if (s.type === 'Day' && s.type_value === 'All') return true;
-          if (s.type === 'Weekday' && s.type_value === weekdayStr) return true;
-          return false;
-        });
-
-        roster = matchedSchedules
-          .filter((s) => !offUserIds.includes(Number(s.user_id)))
-          .map((s) => ({
-            staff_name: s.full_name,
-            shift_start: s.start_time_str,
-            shift_end: s.end_time_str,
-          }));
-      }
-
-      // If technicianId is provided, filter the roster to only contain that KTV
-      if (technicianId) {
-        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
-          parseInt(technicianId, 10)
-        );
-        if (ktvProfile.length > 0) {
-          const ktvFullName = ktvProfile[0].full_name;
-          roster = roster.filter((r) => r.staff_name === ktvFullName);
+        const storeLower = String(storeName || '')
+          .trim()
+          .toLowerCase();
+        if (storeLower.includes('estella') || storeLower === 'ep') {
+          storeId = 16;
+        } else if (storeLower.includes('phan xích long') || storeLower.includes('pxl')) {
+          storeId = 2;
         } else {
-          const staff = await fastify.prisma.crm.crmStaff.findUnique({
-            where: { id: parseInt(technicianId, 10) },
-          });
-          if (staff) {
-            roster = roster.filter((r) => r.staff_name === staff.displayName);
-          }
+          storeId = 6;
         }
       }
 
-      // 2. Fetch Appointments
-      let apptsQuery = `SELECT time_start, duration 
-                        FROM wingsctrl_appointments 
-                        WHERE store = ? AND DATE(time_start) = ? AND status != 'cancelled'`;
-      const apptsParams: SafeAny[] = [storeName, date];
-
-      if (technicianId) {
-        const ktvProfile = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT full_name FROM user_profile WHERE user_id = ? LIMIT 1`,
-          parseInt(technicianId, 10)
-        );
-        if (ktvProfile.length > 0) {
-          const ktvFullName = ktvProfile[0].full_name;
-          apptsQuery += ` AND specialist_name = ?`;
-          apptsParams.push(ktvFullName);
-        } else {
-          const staff = await fastify.prisma.crm.crmStaff.findUnique({
-            where: { id: parseInt(technicianId, 10) },
-          });
-          if (staff) {
-            apptsQuery += ` AND specialist_name = ?`;
-            apptsParams.push(staff.displayName);
-          }
-        }
+      // 1. Fetch active CV pool from TeamService / ACTIVE_CV_STAFF_CONFIG
+      const cvStaffIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
+      if (cvStaffIds.length === 0) {
+        return reply.send({});
       }
 
-      const appointments = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(apptsQuery, ...apptsParams);
+      // 2. Fetch CV profiles and store mappings
+      const cvProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id as id, full_name as name, client_store_id
+         FROM user_profile
+         WHERE user_id IN (${cvStaffIds.join(',')}) AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0`
+      );
 
-      // 3. Generate slots (09:00 to 20:00, every 15m)
-      const matrix: { [time: string]: { available: number; roster: number } } = {};
-      let current = new Date(`${date}T09:00:00Z`);
-      const end = new Date(`${date}T20:15:00Z`);
+      const dayOffStores = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT user_id, client_store_id
+         FROM staff_day_off_schedule
+         WHERE is_disabled = 0 AND user_id IN (${cvStaffIds.join(',')})
+         GROUP BY user_id`
+      );
 
-      while (current < end) {
-        const timeStr = current.toISOString().split('T')[1].slice(0, 5);
+      const cvProfileStoreMap = new Map<number, number>();
+      cvProfiles.forEach((p) => {
+        if (p.client_store_id) cvProfileStoreMap.set(Number(p.id), Number(p.client_store_id));
+      });
 
-        // Calculate active roster count at this slot time
+      // Filter active CVs belonging to this store
+      let activeStoreCvIds = cvStaffIds.filter((uid) => {
+        const schedStore = dayOffStores.find((s) => Number(s.user_id) === uid)?.client_store_id;
+        const finalStoreId = schedStore ? Number(schedStore) : cvProfileStoreMap.get(uid) || 6;
+        return finalStoreId === storeId;
+      });
+
+      if (technicianId) {
+        const techIdNum = parseInt(technicianId, 10);
+        activeStoreCvIds = activeStoreCvIds.filter((uid) => uid === techIdNum);
+      }
+
+      // 3. Weekly Offs & Date Leave Requests
+      const dayOfWeek = new Date(date).getDay();
+      const weekday = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+      // Check weekly recurring day-offs from staff_day_off_schedule
+      const weeklyOffs =
+        activeStoreCvIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT user_id FROM staff_day_off_schedule
+             WHERE is_disabled = 0 AND weekday = ? AND user_id IN (${activeStoreCvIds.join(',')})`,
+              weekday
+            )
+          : [];
+      const weeklyOffUserIds = new Set(weeklyOffs.map((w) => Number(w.user_id)));
+
+      // Check date-specific approved leave from staff_day_off
+      const dateOffs =
+        activeStoreCvIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT from_user_id FROM staff_day_off
+             WHERE from_date <= ? AND ? <= COALESCE(to_date, from_date)
+               AND request_state = 'Approved'
+               AND from_user_id IN (${activeStoreCvIds.join(',')})`,
+              date,
+              date
+            )
+          : [];
+      const leaveOffUserIds = new Set(dateOffs.map((l) => Number(l.from_user_id)));
+
+      const workingCvIds = activeStoreCvIds.filter((uid) => !weeklyOffUserIds.has(uid) && !leaveOffUserIds.has(uid));
+
+      // 4. Instantiated Shifts vs Schedule Templates
+      const instantiatedShifts =
+        workingCvIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT user_id, CAST(start_time AS CHAR) as start_time_str, CAST(end_time AS CHAR) as end_time_str
+             FROM staff_working_shift
+             WHERE date = ? AND user_id IN (${workingCvIds.join(',')})`,
+              date
+            )
+          : [];
+
+      const shiftScheduleRows =
+        workingCvIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT user_id, type, type_value, CAST(start_time AS CHAR) as start_time_str, CAST(end_time AS CHAR) as end_time_str
+             FROM staff_working_shift_schedule
+             WHERE is_disabled = 0 AND user_id IN (${workingCvIds.join(',')})
+             ORDER BY user_id, type DESC`
+            )
+          : [];
+
+      const roster = workingCvIds.map((uid) => {
+        const p = cvProfiles.find((cp) => Number(cp.id) === uid);
+        const inst = instantiatedShifts.find((s) => Number(s.user_id) === uid);
+
+        let shiftStart = '09:00';
+        let shiftEnd = '20:00';
+
+        if (inst?.start_time_str && inst?.end_time_str) {
+          shiftStart = inst.start_time_str.split(' ')[1]?.slice(0, 5) || inst.start_time_str.slice(0, 5);
+          shiftEnd = inst.end_time_str.split(' ')[1]?.slice(0, 5) || inst.end_time_str.slice(0, 5);
+        } else {
+          const userSchedules = shiftScheduleRows.filter((r) => Number(r.user_id) === uid);
+          const matched =
+            userSchedules.find((r) => String(r.type) === 'Weekday' && String(r.type_value) === String(weekday)) ||
+            userSchedules.find((r) => String(r.type) === 'Day' && String(r.type_value) === 'All');
+
+          if (matched?.start_time_str && matched?.end_time_str) {
+            shiftStart = matched.start_time_str.split(' ')[1]?.slice(0, 5) || matched.start_time_str.slice(0, 5);
+            shiftEnd = matched.end_time_str.split(' ')[1]?.slice(0, 5) || matched.end_time_str.slice(0, 5);
+          }
+        }
+
+        return {
+          userId: uid,
+          staff_name: p?.name || `CV #${uid}`,
+          shift_start: shiftStart,
+          shift_end: shiftEnd,
+        };
+      });
+
+      // 5. Fetch live active appointments from core `order` table
+      let orderQuery = `
+        SELECT 
+          o.id,
+          CAST(o.booking_date_start AS CHAR) as start_str,
+          COALESCE(o.booking_duration_minute, 90) as duration,
+          obdc.assigned_staff_id
+        FROM \`order\` o
+        LEFT JOIN (
+          SELECT order_id, assigned_staff_id 
+          FROM order_booking_date_change 
+          WHERE id IN (
+            SELECT MAX(id) FROM order_booking_date_change GROUP BY order_id
+          )
+        ) obdc ON o.id = obdc.order_id
+        WHERE o.client_store_id = ?
+          AND DATE(o.booking_date_start) = ?
+          AND o.order_state != 'Cancelled'
+      `;
+      const orderParams: SafeAny[] = [storeId, date];
+
+      if (technicianId) {
+        orderQuery += ` AND obdc.assigned_staff_id = ?`;
+        orderParams.push(parseInt(technicianId, 10));
+      }
+
+      const orders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderQuery, ...orderParams);
+
+      // 6. Generate 15-minute slot matrix (09:00 to 20:00)
+      const matrix: { [time: string]: { available: number; roster: number; booked: number } } = {};
+      let currentMin = 9 * 60; // 09:00
+      const endMin = 20 * 60 + 15; // 20:15
+
+      while (currentMin < endMin) {
+        const h = Math.floor(currentMin / 60);
+        const m = currentMin % 60;
+        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+        // Active roster count at this slot
         const activeRoster = roster.filter((r) => {
-          let rStart = '';
-          if (r.shift_start instanceof Date) {
-            rStart = r.shift_start.toISOString().split('T')[1].slice(0, 5);
-          } else if (typeof r.shift_start === 'string') {
-            rStart = r.shift_start.slice(0, 5);
-          } else if (r.shift_start && typeof r.shift_start.toISOString === 'function') {
-            rStart = r.shift_start.toISOString().split('T')[1].slice(0, 5);
-          }
-
-          let rEnd = '';
-          if (r.shift_end instanceof Date) {
-            rEnd = r.shift_end.toISOString().split('T')[1].slice(0, 5);
-          } else if (typeof r.shift_end === 'string') {
-            rEnd = r.shift_end.slice(0, 5);
-          } else if (r.shift_end && typeof r.shift_end.toISOString === 'function') {
-            rEnd = r.shift_end.toISOString().split('T')[1].slice(0, 5);
-          }
-
-          return rStart <= timeStr && timeStr < rEnd;
+          const [sh, sm] = r.shift_start.split(':').map(Number);
+          const [eh, em] = r.shift_end.split(':').map(Number);
+          const rStart = (sh || 9) * 60 + (sm || 0);
+          const rEnd = (eh || 20) * 60 + (em || 0);
+          return rStart <= currentMin && currentMin < rEnd;
         });
 
-        // Calculate active appointments at this slot time
-        const activeAppointments = appointments.filter((a) => {
-          const aStartStr = new Date(a.time_start).toISOString().split('T')[1].slice(0, 5);
-          const aStart = new Date(a.time_start);
-          const aEnd = new Date(aStart.getTime() + a.duration * 60000);
-          const aEndStr = aEnd.toISOString().split('T')[1].slice(0, 5);
-          return aStartStr <= timeStr && timeStr < aEndStr;
+        // Active appointments overlapping this slot
+        const activeOrders = orders.filter((o) => {
+          const timePart = o.start_str ? o.start_str.split(' ')[1] : '09:00';
+          const [oh, om] = (timePart || '09:00').split(':').map(Number);
+          const oStart = (oh || 0) * 60 + (om || 0);
+          const dur = Number(o.duration || 90);
+          const oEnd = oStart + dur;
+          return oStart <= currentMin && currentMin < oEnd;
         });
 
         const rosterCount = activeRoster.length;
-        const bookedCount = activeAppointments.length;
+        const bookedCount = activeOrders.length;
         const available = rosterCount - bookedCount;
 
         matrix[timeStr] = {
           available,
           roster: rosterCount,
+          booked: bookedCount,
         };
 
-        // Advance by 15 mins
-        current = new Date(current.getTime() + 15 * 60000);
+        currentMin += 15;
       }
 
       return matrix;
