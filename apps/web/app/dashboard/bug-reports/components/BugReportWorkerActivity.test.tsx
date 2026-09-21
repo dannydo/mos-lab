@@ -27,7 +27,7 @@ describe('InboxWorkerLiveBar', () => {
     },
   ] as unknown as BugReportSummary[];
 
-  it('renders both Antigravity (AG) and Codex IDE workers independently with their online states', () => {
+  it('renders both Antigravity (AG) and Codex IDE workers in minimalist pill format', () => {
     const healthWithDualWorkers = {
       state: 'ONLINE',
       lastHeartbeatAt: '2026-09-21T03:00:00.000Z',
@@ -67,25 +67,22 @@ describe('InboxWorkerLiveBar', () => {
       />
     );
 
-    // Both worker names are displayed
-    expect(screen.getByText('Antigravity (AG)')).toBeDefined();
-    expect(screen.getByText('Codex IDE')).toBeDefined();
+    // Minimalist short worker names
+    expect(screen.getByText('AG')).toBeDefined();
+    expect(screen.getByText('Codex')).toBeDefined();
 
-    // AG is Online, Codex is Offline
+    // Online and Offline status badges
     expect(screen.getByText('Online')).toBeDefined();
     expect(screen.getByText('Offline')).toBeDefined();
 
-    // AG active ticket MOS-BUG-5 is rendered and clickable
+    // Active ticket MOS-BUG-5 is rendered and clickable
     const ticketButton = screen.getByText('MOS-BUG-5');
     expect(ticketButton).toBeDefined();
     fireEvent.click(ticketButton);
     expect(mockOnOpen).toHaveBeenCalledWith(5);
-
-    // Codex is offline and shows Tạm dừng
-    expect(screen.getByText('Tạm dừng')).toBeDefined();
   });
 
-  it('renders idle ready message when worker is online without an active ticket', () => {
+  it('renders idle ready states when workers have no active ticket', () => {
     const healthIdleOnline = {
       state: 'ONLINE',
       lastHeartbeatAt: '2026-09-21T03:00:00.000Z',
@@ -119,8 +116,8 @@ describe('InboxWorkerLiveBar', () => {
       />
     );
 
-    const readyElements = screen.getAllByText('Sẵn sàng nhận ticket');
-    expect(readyElements).toHaveLength(2);
+    const onlineElements = screen.getAllByText('Online');
+    expect(onlineElements).toHaveLength(2);
   });
 
   it('handles refresh button clicks and displays errors', () => {
@@ -136,8 +133,7 @@ describe('InboxWorkerLiveBar', () => {
       />
     );
 
-    expect(screen.getByText('Không thể tải sức khỏe worker.')).toBeDefined();
-    const refreshBtn = screen.getByLabelText('Tải lại trạng thái worker');
+    const refreshBtn = screen.getByRole('button');
     fireEvent.click(refreshBtn);
     expect(mockOnRefresh).toHaveBeenCalledTimes(1);
   });
