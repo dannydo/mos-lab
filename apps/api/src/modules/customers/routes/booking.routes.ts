@@ -10,6 +10,7 @@ import {
 import { BookingAuditService } from '../services/booking-audit.service.js';
 import { CustomerCreationError, CustomerCreationService } from '../services/customer-creation.service.js';
 import { UserServiceTypeService } from '../services/user-service-type.service.js';
+import { BookingSaleClassificationService } from '../services/booking-sale-classification.service.js';
 import { AllocationLedgerService } from '../../allocation/allocation-ledger.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';
 import { createRouteHelpers } from './helpers.js';
@@ -168,7 +169,15 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         finalBookingNote = finalBookingNote ? `${finalBookingNote}\n${campaignPromotionTag}` : campaignPromotionTag;
       }
 
-      // 6. Create the booking order
+      // 6. Calculate booking sale classification (is_new and combo_sale_required)
+      const { isNew, comboSaleRequired } = await BookingSaleClassificationService.determineBookingSaleClassification(
+        fastify,
+        Number(finalCustomerId),
+        startDate,
+        serviceGroup
+      );
+
+      // 7. Create the booking order
       const orderKey = 'booking_' + Math.random().toString(36).substring(2, 12);
       await fastify.prisma.legacy.$executeRawUnsafe(
         `INSERT INTO \`order\` (
@@ -194,8 +203,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         Number(finalPrice) || 0,
         'New',
         0,
-        0,
-        1,
+        comboSaleRequired,
+        isNew,
         0,
         selectedPromoId ? Number(selectedPromoId) : null,
         selectedPromoId ? Number(selectedPromoId) : null,
