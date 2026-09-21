@@ -268,6 +268,29 @@ export interface BulkDeleteCustomersResponse {
   count: number;
 }
 
+/**
+ * Lash technical specifications (Dáng, Cong, Độ dày, Độ dài, Số sợi, Fan, Màu)
+ * for customer appointments.
+ */
+export interface LashSpecification {
+  serviceId?: number;
+  serviceName?: string;
+  /** Dáng mi (Design / Style) */
+  style?: string | null;
+  /** Độ cong (Curl: J, B, C, D, L, ...) */
+  curl?: string | null;
+  /** Độ dày mi (Thickness: 0.05, 0.07, 0.10, 0.12, 0.15, ...) */
+  thickness?: string | null;
+  /** Độ dài (Length: 6, 7, 8, 9, 10, 11, 12, 13, ...) */
+  length?: string | null;
+  /** Số sợi (Strand count: 30, 40, 50, ..., 200) */
+  strandCount?: string | null;
+  /** Fan / Volume (1D, 2D, 3D, 4D, 5D, 6D, ...) */
+  fan?: string | null;
+  /** Màu (Color: Đen, Nâu, Black, Brown, ...) */
+  color?: string | null;
+}
+
 export interface Appointment {
   id: number;
   orderKey: string;
@@ -286,6 +309,9 @@ export interface Appointment {
   serviceStatuses?: BookingServiceStatus[];
   /** Rule #21 source-of-truth combo state reconstructed at order creation time. */
   hasLiveComboAtBooking?: boolean;
+  /** Lash technical specifications (Dáng mi, Độ cong, Độ dày, Độ dài, Số sợi, Fan, Màu) for completed bookings */
+  lashSpecifications?: LashSpecification[];
+  lashSpecs?: LashSpecification[];
   servicePrice?: number;
   discountPercent?: number;
   promotionName?: string | null;

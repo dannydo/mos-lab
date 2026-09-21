@@ -21,7 +21,7 @@ import {
 import { CancelBookingModal } from '../../booking/CancelBookingModal';
 import { BookingAuditLogDrawer } from '../../booking/BookingAuditLogDrawer';
 import { UpdateBookingModal } from '../../UpdateBookingModal';
-import { SafeAny } from '@mos-lab/shared';
+import { LashSpecification, SafeAny } from '@mos-lab/shared';
 import CalendarRescheduleIcon from '../../icons/CalendarRescheduleIcon';
 
 interface BookingsTabProps {
@@ -516,6 +516,181 @@ export const BookingsTab: React.FC<
                       </span>
                     </div>
                   </div>
+
+                  {/* Thông số kỹ thuật bộ mi (Lash Technical Specifications) */}
+                  {(() => {
+                    const specs: LashSpecification[] = b.lashSpecifications || b.lashSpecs || [];
+                    if (!Array.isArray(specs) || specs.length === 0) return null;
+
+                    return (
+                      <div
+                        style={{
+                          background: themeMode === 'dark' ? 'rgba(30, 41, 59, 0.45)' : '#f8fafc',
+                          border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                          borderLeft: `3px solid ${themeMode === 'dark' ? '#38bdf8' : '#0284c7'}`,
+                          borderRadius: '6px',
+                          padding: '8px 12px',
+                          marginTop: '8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            color: themeMode === 'dark' ? '#38bdf8' : '#0284c7',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                          }}
+                        >
+                          <ControlOutlined style={{ fontSize: '12px' }} />
+                          <span>Thông số kỹ thuật bộ mi</span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {specs.map((spec, sIdx) => {
+                            const hasMulti = specs.length > 1;
+                            return (
+                              <div
+                                key={spec.serviceId || sIdx}
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '4px',
+                                  paddingTop: sIdx > 0 ? '6px' : '0',
+                                  borderTop:
+                                    sIdx > 0 ? `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}` : 'none',
+                                }}
+                              >
+                                {hasMulti && spec.serviceName && (
+                                  <div
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                                    }}
+                                  >
+                                    {spec.serviceName}:
+                                  </div>
+                                )}
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: '6px',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  {spec.style && (
+                                    <span
+                                      className="inline-flex items-center justify-center leading-none px-2 py-1 rounded text-[11px]"
+                                      style={{
+                                        background: themeMode === 'dark' ? 'rgba(56, 189, 248, 0.15)' : '#e0f2fe',
+                                        color: themeMode === 'dark' ? '#7dd3fc' : '#0369a1',
+                                        border: `1px solid ${themeMode === 'dark' ? 'rgba(56, 189, 248, 0.3)' : '#bae6fd'}`,
+                                      }}
+                                    >
+                                      <span style={{ opacity: 0.75, marginRight: '4px' }}>Dáng:</span>
+                                      <strong>{spec.style}</strong>
+                                    </span>
+                                  )}
+
+                                  {spec.curl && (
+                                    <span
+                                      className="inline-flex items-center justify-center leading-none px-2 py-1 rounded text-[11px]"
+                                      style={{
+                                        background: themeMode === 'dark' ? 'rgba(168, 85, 247, 0.15)' : '#f3e8ff',
+                                        color: themeMode === 'dark' ? '#c084fc' : '#7e22ce',
+                                        border: `1px solid ${themeMode === 'dark' ? 'rgba(168, 85, 247, 0.3)' : '#e9d5ff'}`,
+                                      }}
+                                    >
+                                      <span style={{ opacity: 0.75, marginRight: '4px' }}>Cong:</span>
+                                      <strong>{spec.curl}</strong>
+                                    </span>
+                                  )}
+
+                                  {spec.thickness && (
+                                    <span
+                                      className="inline-flex items-center justify-center leading-none px-2 py-1 rounded text-[11px] tabular-nums"
+                                      style={{
+                                        background: themeMode === 'dark' ? 'rgba(234, 179, 8, 0.15)' : '#fef9c3',
+                                        color: themeMode === 'dark' ? '#fde047' : '#a16207',
+                                        border: `1px solid ${themeMode === 'dark' ? 'rgba(234, 179, 8, 0.3)' : '#fef08a'}`,
+                                      }}
+                                    >
+                                      <span style={{ opacity: 0.75, marginRight: '4px' }}>Độ dày:</span>
+                                      <strong>{spec.thickness}</strong>
+                                    </span>
+                                  )}
+
+                                  {spec.length && (
+                                    <span
+                                      className="inline-flex items-center justify-center leading-none px-2 py-1 rounded text-[11px] tabular-nums"
+                                      style={{
+                                        background: themeMode === 'dark' ? 'rgba(34, 197, 94, 0.15)' : '#dcfce7',
+                                        color: themeMode === 'dark' ? '#86efac' : '#15803d',
+                                        border: `1px solid ${themeMode === 'dark' ? 'rgba(34, 197, 94, 0.3)' : '#bbf7d0'}`,
+                                      }}
+                                    >
+                                      <span style={{ opacity: 0.75, marginRight: '4px' }}>Dài:</span>
+                                      <strong>{spec.length} mm</strong>
+                                    </span>
+                                  )}
+
+                                  {spec.strandCount && (
+                                    <span
+                                      className="inline-flex items-center justify-center leading-none px-2 py-1 rounded text-[11px] tabular-nums"
+                                      style={{
+                                        background: themeMode === 'dark' ? 'rgba(249, 115, 22, 0.15)' : '#ffedd5',
+                                        color: themeMode === 'dark' ? '#fdba74' : '#c2410c',
+                                        border: `1px solid ${themeMode === 'dark' ? 'rgba(249, 115, 22, 0.3)' : '#fed7aa'}`,
+                                      }}
+                                    >
+                                      <span style={{ opacity: 0.75, marginRight: '4px' }}>Số sợi:</span>
+                                      <strong>{spec.strandCount}</strong>
+                                    </span>
+                                  )}
+
+                                  {spec.fan && (
+                                    <span
+                                      className="inline-flex items-center justify-center leading-none px-2 py-1 rounded text-[11px] tabular-nums"
+                                      style={{
+                                        background: themeMode === 'dark' ? 'rgba(236, 72, 153, 0.15)' : '#fce7f3',
+                                        color: themeMode === 'dark' ? '#f472b6' : '#be185d',
+                                        border: `1px solid ${themeMode === 'dark' ? 'rgba(236, 72, 153, 0.3)' : '#fbcfe8'}`,
+                                      }}
+                                    >
+                                      <span style={{ opacity: 0.75, marginRight: '4px' }}>Fan:</span>
+                                      <strong>{spec.fan}</strong>
+                                    </span>
+                                  )}
+
+                                  {spec.color && (
+                                    <span
+                                      className="inline-flex items-center justify-center leading-none px-2 py-1 rounded text-[11px]"
+                                      style={{
+                                        background: themeMode === 'dark' ? 'rgba(148, 163, 184, 0.15)' : '#f1f5f9',
+                                        color: themeMode === 'dark' ? '#cbd5e1' : '#475569',
+                                        border: `1px solid ${themeMode === 'dark' ? 'rgba(148, 163, 184, 0.3)' : '#e2e8f0'}`,
+                                      }}
+                                    >
+                                      <span style={{ opacity: 0.75, marginRight: '4px' }}>Màu:</span>
+                                      <strong>{spec.color}</strong>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {(hasBookingNote || hasAttachedNotes) && (
                     <div

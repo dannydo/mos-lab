@@ -5,6 +5,7 @@ import { resolveIsForeign } from '../services/foreign-customer.service.js';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';
 import { ComboRecognitionService } from '../services/combo-recognition.service.js';
+import { LashSpecificationService } from '../services/lash-specification.service.js';
 import { TeamService } from '../../teams/team.service.js';
 import { createRouteHelpers } from './helpers.js';
 
@@ -989,10 +990,11 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderCombosSql, customerId),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(orderProductsSql, customerId),
       ]);
-      const bookingComboLiveByOrderId = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
-        fastify,
-        bookingsRaw.map((booking) => Number(booking.id))
-      );
+      const detailBookingIds = bookingsRaw.map((booking) => Number(booking.id));
+      const [bookingComboLiveByOrderId, bookingLashSpecsByOrderId] = await Promise.all([
+        ComboRecognitionService.getBookingComboLiveStatesByOrderIds(fastify, detailBookingIds),
+        LashSpecificationService.getLashSpecsByOrderIds(fastify, detailBookingIds),
+      ]);
 
       const servicesByOrderIdDetail = new Map<number, { name: string; price: number }[]>();
       for (const os of orderServicesRaw) {
@@ -1174,6 +1176,8 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           services: servicesByOrderId.get(Number(b.id)) || [],
           serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],
           hasLiveComboAtBooking: bookingComboLiveByOrderId.get(Number(b.id)) || false,
+          lashSpecifications: bookingLashSpecsByOrderId.get(Number(b.id)) || [],
+          lashSpecs: bookingLashSpecsByOrderId.get(Number(b.id)) || [],
           auditLogCount: auditCountMap.get(Number(b.id)) || 0,
         };
       });
@@ -1801,10 +1805,10 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
       );
 
       const bookingIds = bookingsRaw.map((b) => Number(b.id));
-      const bookingComboLiveByOrderId = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
-        fastify,
-        bookingIds
-      );
+      const [bookingComboLiveByOrderId, bookingLashSpecsByOrderId] = await Promise.all([
+        ComboRecognitionService.getBookingComboLiveStatesByOrderIds(fastify, bookingIds),
+        LashSpecificationService.getLashSpecsByOrderIds(fastify, bookingIds),
+      ]);
       const servicesByOrderId = new Map<number, string[]>();
       const serviceStatusesByOrderId = new Map<number, { serviceName: string; userServiceType: string | null }[]>();
       let orderServicesDetails: SafeAny[] = [];
@@ -1946,6 +1950,8 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           services: servicesByOrderId.get(Number(b.id)) || [],
           serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],
           hasLiveComboAtBooking: bookingComboLiveByOrderId.get(Number(b.id)) || false,
+          lashSpecifications: bookingLashSpecsByOrderId.get(Number(b.id)) || [],
+          lashSpecs: bookingLashSpecsByOrderId.get(Number(b.id)) || [],
           auditLogCount: auditCountMap.get(Number(b.id)) || 0,
         };
       });
