@@ -19,6 +19,7 @@
     "allocation-ledger:backfill": "tsx src/scripts/backfill-allocation-ledger.ts",
     "post-hub:import-history": "tsx src/scripts/import-post-hub-sheet-history.ts",
     "legacy:indexes:phase1": "tsx src/scripts/apply-dashboard-phase1-indexes.ts",
+    "legacy:indexes:phase2": "tsx src/scripts/apply-legacy-query-perf-phase2-indexes.ts",
     "legacy:indexes:customers": "tsx src/scripts/apply-customer-query-perf-indexes.ts",
     "lint": "eslint src/ --max-warnings=-1",
     "typecheck": "pnpm prisma:generate && tsc --noEmit",

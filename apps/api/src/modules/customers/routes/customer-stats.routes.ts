@@ -723,7 +723,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
   async function getStatsDbVersion(fastify: FastifyInstance): Promise<string> {
     const now = Date.now();
-    if (lastStatsDbVersion && now - lastStatsDbVersionCheckedAt < 2000) {
+    if (lastStatsDbVersion && now - lastStatsDbVersionCheckedAt < 30_000) {
       return lastStatsDbVersion;
     }
     try {
@@ -756,13 +756,16 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       const effectiveScope =
         effectiveAssignedStaffId === 'me' ? `staff:${adminUser?.id || 0}` : effectiveAssignedStaffId || 'all';
-      const dbVersion = await getStatsDbVersion(fastify);
-      const cacheKey = `loca_stats:${effectiveScope}:${dbVersion}:${JSON.stringify(request.query)}`;
-      const cachedStats = fastify.cache.get<{ tabs: Record<string, number>; touchpoints: Record<string, number> }>(
-        cacheKey
-      );
-      if (cachedStats) {
-        return cachedStats;
+      const isRefresh =
+        request.query && ((request.query as SafeAny).refresh === 'true' || (request.query as SafeAny).refresh === true);
+      const cacheKey = `loca_stats:${effectiveScope}:${JSON.stringify(request.query)}`;
+      if (!isRefresh) {
+        const cachedStats = fastify.cache.get<{ tabs: Record<string, number>; touchpoints: Record<string, number> }>(
+          cacheKey
+        );
+        if (cachedStats) {
+          return cachedStats;
+        }
       }
 
       let allowedUserIds: number[] | null = null;
@@ -1015,7 +1018,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       });
 
       const stats = { tabs, touchpoints };
-      fastify.cache.set(cacheKey, stats, 300000); // 5 minutes TTL, auto-invalidated by dbVersion
+      fastify.cache.set(cacheKey, stats, 60_000); // 60 seconds fixed TTL
       return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get LoCa stats error:');
@@ -1041,13 +1044,16 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       const effectiveScope =
         effectiveAssignedStaffId === 'me' ? `staff:${adminUser?.id || 0}` : effectiveAssignedStaffId || 'all';
-      const dbVersion = await getStatsDbVersion(fastify);
-      const cacheKey = `nyc_stats:${effectiveScope}:${dbVersion}:${JSON.stringify(request.query)}`;
-      const cachedStats = fastify.cache.get<{ tabs: Record<string, number>; touchpoints: Record<string, number> }>(
-        cacheKey
-      );
-      if (cachedStats) {
-        return cachedStats;
+      const isRefresh =
+        request.query && ((request.query as SafeAny).refresh === 'true' || (request.query as SafeAny).refresh === true);
+      const cacheKey = `nyc_stats:${effectiveScope}:${JSON.stringify(request.query)}`;
+      if (!isRefresh) {
+        const cachedStats = fastify.cache.get<{ tabs: Record<string, number>; touchpoints: Record<string, number> }>(
+          cacheKey
+        );
+        if (cachedStats) {
+          return cachedStats;
+        }
       }
 
       let allowedUserIds: number[] | null = null;
@@ -1208,7 +1214,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       });
 
       const stats = { tabs, touchpoints };
-      fastify.cache.set(cacheKey, stats, 300000); // 5 minutes TTL, auto-invalidated by dbVersion
+      fastify.cache.set(cacheKey, stats, 60_000); // 60 seconds fixed TTL
       return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get NYC stats error:');
