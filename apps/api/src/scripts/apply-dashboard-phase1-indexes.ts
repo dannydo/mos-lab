@@ -138,6 +138,16 @@ const phase1Indexes = [
     table: 'user_profile',
     columns: ['referrer_user_id', 'is_deleted'],
   },
+  {
+    name: 'idx_order_created_staff_date_state',
+    table: 'order',
+    columns: ['created_staff_id', 'date_created', 'order_state'],
+  },
+  {
+    name: 'idx_slsi_user_service_type_date',
+    table: 'sales_lead_split_item',
+    columns: ['user_service_type', 'date_created'],
+  },
 ] as const;
 
 const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
