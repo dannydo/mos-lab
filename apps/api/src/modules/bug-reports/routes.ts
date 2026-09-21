@@ -391,7 +391,11 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const taskId = (request.params as { taskId: string }).taskId;
-        const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({ where: { ideTaskId: taskId } });
+        const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+          where: {
+            OR: [{ ideTaskId: taskId }, { id: taskId }],
+          },
+        });
         if (!job)
           throw new InboxImplementationError(
             'IDE task không có handoff đang hiệu lực.',

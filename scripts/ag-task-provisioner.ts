@@ -4,11 +4,13 @@ import {
   accessSync,
   chmodSync,
   constants,
+  copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
   readFileSync,
   renameSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
@@ -192,14 +194,51 @@ export async function prepareAgWorktree(request: InboxIdeTaskProvisioningRequest
     throw new Error('Provisioning branch name is invalid.');
   const worktreePath = resolve(root, `ag-${request.jobId}`);
   if (!worktreePath.startsWith(`${root}/`)) throw new Error('Provisioning worktree path escaped its root.');
-  if (existsSync(worktreePath)) {
-    return worktreePath;
+  if (!existsSync(worktreePath)) {
+    mkdirSync(root, { recursive: true, mode: 0o700 });
+    await execFile('git', ['-C', repository, 'fetch', 'origin', 'main'], { timeout: REQUEST_TIMEOUT_MS });
+    await execFile(
+      'git',
+      ['-C', repository, 'worktree', 'add', '-b', request.branchName, worktreePath, 'origin/main'],
+      {
+        timeout: REQUEST_TIMEOUT_MS,
+      }
+    );
   }
-  mkdirSync(root, { recursive: true, mode: 0o700 });
-  await execFile('git', ['-C', repository, 'fetch', 'origin', 'main'], { timeout: REQUEST_TIMEOUT_MS });
-  await execFile('git', ['-C', repository, 'worktree', 'add', '-b', request.branchName, worktreePath, 'origin/main'], {
-    timeout: REQUEST_TIMEOUT_MS,
-  });
+
+  // Link node_modules and shared dist so worktree is instantly functional
+  const linkTargets = [
+    'node_modules',
+    'apps/api/node_modules',
+    'apps/web/node_modules',
+    'packages/shared/node_modules',
+    'packages/shared/dist',
+  ];
+  for (const rel of linkTargets) {
+    const src = resolve(repository, rel);
+    const dest = resolve(worktreePath, rel);
+    if (existsSync(src) && !existsSync(dest)) {
+      try {
+        symlinkSync(src, dest);
+      } catch {
+        // non-blocking
+      }
+    }
+  }
+  // Copy env files if available
+  const envFiles = ['apps/api/.env', 'apps/web/.env'];
+  for (const rel of envFiles) {
+    const src = resolve(repository, rel);
+    const dest = resolve(worktreePath, rel);
+    if (existsSync(src) && !existsSync(dest)) {
+      try {
+        copyFileSync(src, dest);
+      } catch {
+        // non-blocking
+      }
+    }
+  }
+
   return worktreePath;
 }
 
@@ -219,29 +258,49 @@ export function buildAgentPrompt(request: InboxIdeTaskProvisioningRequest, workt
 1. **Chuyển thư mục công việc**: Làm việc trực tiếp bên trong worktree riêng biệt này:
    \`cd ${worktreePath}\`
 2. **Tiếp nhận Handoff ngay khi bắt đầu (Gate 1 Handshake)**:
-   \`npx tsx scripts/ide-task-bridge.ts receive --out /tmp/handoff-${request.reportId}.json\`
+   \`npx tsx scripts/ide-task-bridge.ts receive --task-id ${request.jobId} --out /tmp/handoff-${request.reportId}.json\`
 3. **Triển khai code và test**: Viết code và bổ sung các bài kiểm thử tương ứng theo đúng phương án đã duyệt.
 4. **Chạy kiểm chứng toàn diện**: Chạy \`pnpm verify:quick\`, \`pnpm check:ui-contract\` để đảm bảo không phát sinh regression.
 5. **Nộp Code/Test Receipt để kích hoạt Cổng 2 (Gate 2 Activation)**:
    - Thu thập \`changedFiles\`, \`diffStat\`, \`baseCommit\`, \`patchHash\` từ worktree.
    - Chuẩn bị tệp biên nhận \`/tmp/receipt-${request.reportId}.json\` gồm \`handoff\` (lấy từ tệp handoff ở bước 2), \`result\` (summary, tests - lưu ý cần có test Playwright visual QA PASSED nếu sửa \`apps/web/\`, risksAndRollback), \`changedFiles\`, \`diffStat\`, \`baseCommit\`, \`patchHash\`.
-   - Nộp biên nhận: \`npx tsx scripts/ide-task-bridge.ts submit --receipt /tmp/receipt-${request.reportId}.json\`
+   - Nộp biên nhận: \`npx tsx scripts/ide-task-bridge.ts submit --task-id ${request.jobId} --receipt /tmp/receipt-${request.reportId}.json\`
    - Sau lệnh này, trạng thái ticket trên mOS Inbox tự động chuyển sang **\`AWAITING_DANNY_COMMIT_REVIEW\`** ("Chờ Danny duyệt commit") và hiển thị nút "Duyệt commit" trên web.
 6. **Lắng nghe Duyệt Web & Tự Động Toàn Bộ (Single-Approval Web Workflow)**:
    - Danny CHỈ DUYỆT TRÊN WEB (Duyệt commit & Duyệt deploy), tuyệt đối không yêu cầu Danny duyệt thêm trong chat.
    - Ngay sau khi nộp receipt, chạy lệnh lắng nghe nền kèm cờ \`--auto-deploy\`:
-     \`npx tsx scripts/ide-task-bridge.ts wait-and-commit --worktree ${worktreePath} --message "feat(${request.ticketKey.toLowerCase()}): ${request.title.replace(/"/g, '')}" --auto-deploy\`
+     \`npx tsx scripts/ide-task-bridge.ts wait-and-commit --task-id ${request.jobId} --worktree ${worktreePath} --message "feat(${request.ticketKey.toLowerCase()}): ${request.title.replace(/"/g, '')}" --auto-deploy\`
    - Báo cáo trên chat và phát giọng nói qua \`/Users/dannydo/.gemini/antigravity/bin/speak\`.
    - Ngay khi Danny bấm "Duyệt commit" trên web, lệnh tự động commit và nộp commit receipt.
    - Ngay khi Danny bấm "Duyệt deploy" trên web, lệnh tự động merge vào main, push lên origin, deploy lên VPS, kiểm chứng release markers và nộp checkpoint đóng ticket hoàn tất! Danny không cần mở AG can thiệp bất kỳ thao tác nào.
 `;
 }
 
+export function detectAntigravityProjectId(): string {
+  if (process.env.ANTIGRAVITY_PROJECT_ID) return process.env.ANTIGRAVITY_PROJECT_ID;
+  try {
+    const glob = execSync(
+      'ls -t ~/.gemini/antigravity/brain/*/.system_generated/terminals/*.env 2>/dev/null | head -n 1',
+      { encoding: 'utf8', shell: '/bin/bash' }
+    ).trim();
+    if (glob && existsSync(glob)) {
+      const content = readFileSync(glob, 'utf8');
+      const m = content.match(/export ANTIGRAVITY_PROJECT_ID=([a-f0-9-]+)/);
+      if (m && m[1]) return m[1];
+    }
+  } catch {
+    // fallback
+  }
+  return 'd11eea1e-9cc3-4836-8438-73472d18e72f';
+}
+
 export function detectAntigravityLsEnv(): Record<string, string> {
+  const projectId = detectAntigravityProjectId();
   if (process.env.ANTIGRAVITY_LS_ADDRESS && process.env.ANTIGRAVITY_CSRF_TOKEN) {
     return {
       ANTIGRAVITY_LS_ADDRESS: process.env.ANTIGRAVITY_LS_ADDRESS,
       ANTIGRAVITY_CSRF_TOKEN: process.env.ANTIGRAVITY_CSRF_TOKEN,
+      ANTIGRAVITY_PROJECT_ID: projectId,
     };
   }
   try {
@@ -252,7 +311,11 @@ export function detectAntigravityLsEnv(): Record<string, string> {
     const pid = matchPid[1];
     const csrfToken = matchCsrf[1];
 
-    const lsof = execSync(`lsof -nP -p ${pid} | grep LISTEN`, { encoding: 'utf8' });
+    const lsofCmd = existsSync('/usr/sbin/lsof') ? '/usr/sbin/lsof' : 'lsof';
+    const lsof = execSync(`${lsofCmd} -nP -p ${pid} | grep LISTEN`, {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${process.env.PATH || ''}:/usr/sbin:/sbin:/usr/bin:/bin` },
+    });
     const ports: number[] = [];
     for (const line of lsof.split('\n')) {
       const m = line.match(/TCP\s+(?:127\.0\.0\.1|localhost|\*):(\d+)\s+\(LISTEN\)/);
@@ -263,6 +326,7 @@ export function detectAntigravityLsEnv(): Record<string, string> {
       return {
         ANTIGRAVITY_LS_ADDRESS: `localhost:${ports[0]}`,
         ANTIGRAVITY_CSRF_TOKEN: csrfToken,
+        ANTIGRAVITY_PROJECT_ID: projectId,
       };
     }
   } catch {

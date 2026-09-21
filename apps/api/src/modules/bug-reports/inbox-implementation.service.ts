@@ -924,7 +924,7 @@ export class InboxImplementationService {
       if (
         job &&
         ['IDE', 'AG', 'AUTO'].includes(job.executionOwner) &&
-        (expectedTaskId === undefined || job.ideTaskId === expectedTaskId) &&
+        (expectedTaskId === undefined || job.ideTaskId === expectedTaskId || job.id === expectedTaskId) &&
         job.status === 'AWAITING_DEPLOY_REVIEW' &&
         job.executionPhase === 'AWAITING_DEPLOY_REVIEW' &&
         job.commitSha === sha &&
@@ -936,7 +936,7 @@ export class InboxImplementationService {
         !report ||
         !job ||
         !['IDE', 'AG', 'AUTO'].includes(job.executionOwner) ||
-        (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId) ||
+        (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId && job.id !== expectedTaskId) ||
         job.status !== 'PENDING' ||
         job.executionPhase !== 'IDE_COMMIT_HANDOFF' ||
         job.ideHandoffRevokedAt ||
@@ -994,7 +994,7 @@ export class InboxImplementationService {
         !job ||
         !['IDE', 'AG'].includes(job.executionOwner) ||
         job.ideHandoffRevokedAt ||
-        (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId) ||
+        (expectedTaskId !== undefined && job.ideTaskId !== expectedTaskId && job.id !== expectedTaskId) ||
         input?.handoff?.jobId !== job.id ||
         input?.handoff?.sourceVersion !== job.sourceVersion ||
         input?.handoff?.planVersion !== job.planVersion
@@ -1073,9 +1073,13 @@ export class InboxImplementationService {
     const normalizedTaskId = String(taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{8,160}$/.test(normalizedTaskId))
       throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
-    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
-      where: { ideTaskId: normalizedTaskId },
-    });
+    const job =
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { ideTaskId: normalizedTaskId },
+      })) ||
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { id: normalizedTaskId },
+      }));
     if (!job)
       throw new InboxImplementationError(
         'IDE task không có handoff đang hiệu lực.',
@@ -1094,9 +1098,13 @@ export class InboxImplementationService {
     const normalizedTaskId = String(taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{8,160}$/.test(normalizedTaskId))
       throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
-    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
-      where: { ideTaskId: normalizedTaskId },
-    });
+    const job =
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { ideTaskId: normalizedTaskId },
+      })) ||
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { id: normalizedTaskId },
+      }));
     if (!job)
       throw new InboxImplementationError(
         'IDE task không có handoff đang hiệu lực.',
@@ -1227,9 +1235,13 @@ export class InboxImplementationService {
     const normalizedTaskId = String(taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{8,160}$/.test(normalizedTaskId))
       throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
-    const job = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
-      where: { ideTaskId: normalizedTaskId },
-    });
+    const job =
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { ideTaskId: normalizedTaskId },
+      })) ||
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { id: normalizedTaskId },
+      }));
     if (
       !job ||
       !['IDE', 'AG', 'AUTO'].includes(job.executionOwner) ||
