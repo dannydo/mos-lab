@@ -133,3 +133,49 @@ test('a staff member who created the booking order can reschedule', async () => 
   assert.equal(permission.allowed, true);
   assert.equal(permission.reason, 'ALLOWED');
 });
+
+test('case-insensitive role matching grants global reschedule access to Manager and CONTROL', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmTeamMember: { findFirst: async () => null },
+        crmCustomerAssignment: { findFirst: async () => null },
+      },
+    },
+  };
+
+  const managerPerm = await BookingReschedulePermissionService.evaluate(
+    fastify as never,
+    { id: 47, role: 'Manager' },
+    99999
+  );
+  assert.equal(managerPerm.allowed, true);
+  assert.equal(managerPerm.reason, 'ALLOWED');
+
+  const controlPerm = await BookingReschedulePermissionService.evaluate(
+    fastify as never,
+    { id: 48, role: 'CONTROL' },
+    99999
+  );
+  assert.equal(controlPerm.allowed, true);
+  assert.equal(controlPerm.reason, 'ALLOWED');
+});
+
+test('hasGlobalRescheduleAccess grants access to admin, super_admin, manager, and control', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmTeamMember: { findFirst: async () => null },
+        crmStaff: { findUnique: async () => ({ legacyStaffId: 0 }) },
+      },
+    },
+  };
+
+  assert.equal(await BookingReschedulePermissionService.hasGlobalRescheduleAccess(fastify as never, { id: 1, role: 'admin' }), true);
+  assert.equal(await BookingReschedulePermissionService.hasGlobalRescheduleAccess(fastify as never, { id: 2, role: 'super_admin' }), true);
+  assert.equal(await BookingReschedulePermissionService.hasGlobalRescheduleAccess(fastify as never, { id: 3, role: 'manager' }), true);
+  assert.equal(await BookingReschedulePermissionService.hasGlobalRescheduleAccess(fastify as never, { id: 4, role: 'control' }), true);
+  assert.equal(await BookingReschedulePermissionService.hasGlobalRescheduleAccess(fastify as never, { id: 5, role: 'telesales' }), false);
+  assert.equal(await BookingReschedulePermissionService.hasGlobalRescheduleAccess(fastify as never, { id: 6, role: 'booker' }), false);
+});
+

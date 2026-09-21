@@ -503,7 +503,7 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
   // Source selections used by the legacy-compatible standalone customer form.
   fastify.get('/customers/create-options', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string };
-    const allowedRoles = ['admin', 'manager', 'oc', 'cc', 'ls', 'telesales', 'booker'];
+    const allowedRoles = ['admin', 'manager', 'control', 'oc', 'cc', 'ls', 'telesales', 'booker'];
     if (!isAdminOrSuperAdminRole(user.role) && !allowedRoles.includes(user.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
     }
@@ -550,7 +550,7 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
   // and referral relationship supported by Wings Lashes legacy.
   fastify.post('/customers/create', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { id: number; role: string; displayName?: string };
-    const allowedRoles = ['admin', 'manager', 'oc', 'cc', 'ls', 'telesales', 'booker'];
+    const allowedRoles = ['admin', 'manager', 'control', 'oc', 'cc', 'ls', 'telesales', 'booker'];
     if (!isAdminOrSuperAdminRole(user.role) && !allowedRoles.includes(user.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
     }

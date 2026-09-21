@@ -22,7 +22,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   // Create a new booking (order and order_service) in the legacy core database
   fastify.post('/customers/booking', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    const allowedRoles = ['admin', 'manager', 'oc', 'cc', 'ls', 'telesales', 'booker'];
+    const allowedRoles = ['admin', 'manager', 'control', 'oc', 'cc', 'ls', 'telesales', 'booker'];
     if (!isAdminOrSuperAdminRole(user.role) && !allowedRoles.includes(user.role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
     }
@@ -405,8 +405,11 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   // GET /api/customers/booking/:id/promotions
   // A custom-campaign booking is deliberately scoped to the promotion list of its originating campaign.
   fastify.get('/customers/booking/:id/promotions', { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = request.user as { role: string };
-    if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'telesales' && user.role !== 'booker') {
+    const user = request.user as { role: string; id: number };
+    const canRescheduleAnyCustomer = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(fastify, user);
+    const role = String(user.role || '').toLowerCase();
+    const allowedRoles = ['telesales', 'booker', 'manager', 'control', 'cs', 'oc'];
+    if (!canRescheduleAnyCustomer && !isAdminOrSuperAdminRole(role) && !allowedRoles.includes(role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền xem ưu đãi của lịch hẹn này.' });
     }
 
@@ -427,7 +430,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
 
       const customerId = Number(order.user_id);
-      if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
 
       const currentPromotionId = Number(order.selected_promotion_id || order.promotion_id || 0) || null;
       return reply.send(
@@ -854,7 +857,10 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
   // Cancel a booking (soft delete by setting order_state = 'Cancelled')
   fastify.delete('/customers/booking/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as { role: string; id: number; displayName?: string };
-    if (!isAdminOrSuperAdminRole(user.role) && user.role !== 'telesales' && user.role !== 'booker') {
+    const canRescheduleAnyCustomer = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(fastify, user);
+    const role = String(user.role || '').toLowerCase();
+    const allowedRoles = ['telesales', 'booker', 'manager', 'control', 'cs', 'oc'];
+    if (!canRescheduleAnyCustomer && !isAdminOrSuperAdminRole(role) && !allowedRoles.includes(role)) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền thực hiện chức năng này.' });
     }
 
@@ -897,7 +903,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       const finalCustomerId = Number(order.user_id);
       const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
 
-      if (!(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
+      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
 
       const oldData = {
         bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,
