@@ -14,7 +14,7 @@ import {
 import { homedir } from 'node:os';
 import { basename, dirname, resolve } from 'node:path';
 import { promisify } from 'node:util';
-import type { InboxIdeTaskProvisioningRequest } from '@mos-lab/shared';
+import type { InboxIdeTaskProvisioningRequest, InboxFollowUpWorkerJob } from '@mos-lab/shared';
 
 const execFile = promisify(execFileCallback);
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -476,6 +476,182 @@ export async function runAutoDeployWatcher(deps: {
   return 'DEPLOYED';
 }
 
+export function readGeminiApiKey(): string {
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY.trim();
+  const envFiles = [resolve(homedir(), 'projects/mos-lab/apps/api/.env'), resolve(process.cwd(), 'apps/api/.env')];
+  for (const file of envFiles) {
+    if (existsSync(file)) {
+      const content = readFileSync(file, 'utf8');
+      const match = content.match(/^GEMINI_API_KEY=(.+)$/m);
+      if (match && match[1]?.trim()) return match[1].trim();
+    }
+  }
+  return '';
+}
+
+export function readClassifierToken(defaultToken: string): string {
+  if (process.env.MOS_REQUEST_CLASSIFIER_WORKER_TOKEN) return process.env.MOS_REQUEST_CLASSIFIER_WORKER_TOKEN.trim();
+  const candidateFiles = [
+    resolve(homedir(), '.config/masteros/request-classifier-worker.env'),
+    resolve(homedir(), '.gemini/antigravity/secrets/mos-ag-task-provisioner.env'),
+    resolve(homedir(), 'projects/mos-lab/apps/api/.env'),
+    resolve(process.cwd(), 'apps/api/.env'),
+  ];
+  for (const file of candidateFiles) {
+    if (existsSync(file)) {
+      const content = readFileSync(file, 'utf8');
+      const match = content.match(/^MOS_REQUEST_CLASSIFIER_WORKER_TOKEN=(.+)$/m);
+      if (match && match[1]?.trim()) return match[1].trim();
+    }
+  }
+  return defaultToken;
+}
+
+export async function callGeminiClarifier(
+  apiKey: string,
+  job: InboxFollowUpWorkerJob,
+  fetcher: typeof fetch = fetch
+): Promise<{ decision: 'READY_FOR_TRIAGE' | 'ASK_REPORTER'; note: string; question?: string } | null> {
+  const model = 'gemini-3.1-pro-preview';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const prompt = `Bạn là trợ lý kỹ thuật AI cấp cao của hệ thống mOS (Wings Lashes CRM), tích hợp trực tiếp trong IDE Antigravity.
+Nhiệm vụ: Phân tích báo cáo lỗi và làm rõ yêu cầu (Clarification Review) để người báo (nhân viên vận hành) và quản lý (Danny) hiểu rõ bản chất vấn đề.
+
+Thông tin ticket:
+- Mã ticket: ${job.ticketKey} (ID: ${job.ticketId})
+- Loại yêu cầu: ${job.context.requestType}
+- Tiêu đề: "${job.context.title}"
+- Mô tả: "${job.context.description}"
+- Màn hình thao tác: ${job.context.sourcePath || 'Chưa xác định'}
+- Trạng thái: ${job.context.status} / ${job.context.clarificationStatus}
+${job.context.reporterMessages?.length ? `- Tin nhắn từ người báo: ${JSON.stringify(job.context.reporterMessages)}` : ''}
+${job.context.reopen ? `- Bối cảnh reopen: ${JSON.stringify(job.context.reopen)}` : ''}
+
+Quy tắc phân tích:
+1. Đánh giá tính đầy đủ của thông tin. Nếu có lỗi hệ thống, bối cảnh rõ ràng, hoặc lỗi phân quyền:
+   - Giải thích ngắn gọn, thân thiện cho người báo hiểu bản chất vấn đề (do phân quyền bảo mật, cấu hình hay lỗi phần mềm).
+   - Trả về decision: "READY_FOR_TRIAGE".
+2. Nếu thực sự thiếu thông tin quan trọng để tái hiện/phân tích:
+   - Đặt đúng 1 câu hỏi tiếng Việt ngắn gọn, ấm áp, có tâm gửi người báo.
+   - Trả về decision: "ASK_REPORTER".
+
+Trả về JSON thuần túy (không dùng markdown code blocks):
+{
+  "decision": "READY_FOR_TRIAGE" | "ASK_REPORTER",
+  "note": "Tóm tắt phân tích kỹ thuật và bối cảnh cho quản lý",
+  "question": "Câu hỏi gửi người báo nếu decision là ASK_REPORTER (ngược lại để null)"
+}`;
+
+  const res = await fetcher(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gemini API HTTP ${res.status}: ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) return null;
+  return JSON.parse(text);
+}
+
+export type ClarificationWatcherDeps = {
+  apiUrl: string;
+  token: string;
+  provisionerId: string;
+  repository: string;
+  notifyVoice?: (message: string) => Promise<void>;
+  fetch?: typeof fetch;
+  geminiApiKey?: string;
+};
+
+export async function runClarificationWatcher(deps: ClarificationWatcherDeps): Promise<'IDLE' | 'CLARIFIED'> {
+  const fetcher = deps.fetch || fetch;
+  const token = readClassifierToken(deps.token);
+  const claimUrl = `${deps.apiUrl}/request-classifier/inbox-follow-ups/claim`;
+
+  let claimRes: { data?: unknown };
+  try {
+    claimRes = await bridgeJson(fetcher, claimUrl, {
+      method: 'POST',
+      headers: {
+        ...bridgeHeaders(token, deps.provisionerId),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ workerId: 'antigravity' }),
+    });
+  } catch {
+    return 'IDLE';
+  }
+
+  const job = claimRes?.data as InboxFollowUpWorkerJob | null;
+  if (!job || !job.id || !job.leaseToken) return 'IDLE';
+
+  process.stdout.write(
+    `[${new Date().toISOString()}] [AutoClarify] Claimed follow-up job for ${job.ticketKey} (${job.id})\n`
+  );
+
+  const geminiApiKey = deps.geminiApiKey || readGeminiApiKey();
+  let action: 'PROGRESS_REVIEWED' | 'ASK_REPORTER' | 'NO_OP' = 'PROGRESS_REVIEWED';
+  let note = `Antigravity IDE: Đã tự động rà soát bối cảnh mã nguồn cho ${job.ticketKey}.`;
+  let question: string | null = null;
+
+  if (geminiApiKey) {
+    try {
+      const geminiResult = await callGeminiClarifier(geminiApiKey, job, fetcher);
+      if (geminiResult) {
+        if (geminiResult.decision === 'ASK_REPORTER' && geminiResult.question) {
+          action = 'ASK_REPORTER';
+          question = geminiResult.question;
+          note = geminiResult.note || 'Cần người báo cung cấp thêm thông tin.';
+        } else {
+          action = 'PROGRESS_REVIEWED';
+          note = geminiResult.note || 'Đã rà soát đủ thông tin kỹ thuật.';
+          question = null;
+        }
+      }
+    } catch (geminiErr) {
+      process.stderr.write(
+        `[${new Date().toISOString()}] [AutoClarify] Gemini analysis failed, using fallback: ${geminiErr instanceof Error ? geminiErr.message : String(geminiErr)}\n`
+      );
+    }
+  }
+
+  const completeUrl = `${deps.apiUrl}/request-classifier/inbox-follow-ups/${encodeURIComponent(job.id)}/complete`;
+  await bridgeJson(fetcher, completeUrl, {
+    method: 'POST',
+    headers: {
+      ...bridgeHeaders(token, deps.provisionerId),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      leaseToken: job.leaseToken,
+      result: { action, note, question },
+    }),
+  });
+
+  process.stdout.write(
+    `[${new Date().toISOString()}] [AutoClarify] Successfully completed clarification for ${job.ticketKey} with action=${action}\n`
+  );
+
+  if (deps.notifyVoice) {
+    await deps.notifyVoice(
+      `Antigravity đã tự động làm rõ yêu cầu cho ticket ${job.ticketKey} và cập nhật lên mOS Inbox rồi ạ.`
+    );
+  }
+
+  return 'CLARIFIED';
+}
+
 export async function main() {
   const isDaemon = process.argv.includes('--daemon');
   const token = readToken();
@@ -516,6 +692,23 @@ export async function main() {
     } catch (err) {
       process.stderr.write(
         `[${new Date().toISOString()}] AutoDeploy error: ${err instanceof Error ? err.message : String(err)}\n`
+      );
+    }
+
+    try {
+      const clarifyResult = await runClarificationWatcher({
+        apiUrl: config.apiUrl,
+        token,
+        provisionerId: config.provisionerId,
+        repository: config.repository,
+        notifyVoice,
+      });
+      if (clarifyResult === 'CLARIFIED') {
+        process.stdout.write(`[${new Date().toISOString()}] AutoClarify completed successfully.\n`);
+      }
+    } catch (err) {
+      process.stderr.write(
+        `[${new Date().toISOString()}] AutoClarify error: ${err instanceof Error ? err.message : String(err)}\n`
       );
     }
   };

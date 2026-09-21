@@ -8,6 +8,7 @@ import {
   readManagedRuntimeConfig,
   readProvisioningLedger,
   runProvisionerOnce,
+  runClarificationWatcher,
 } from './ag-task-provisioner.js';
 
 const mockRequest = {
@@ -230,4 +231,68 @@ test('managed runtime config enforces 0600 permissions and parses keys', async (
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
+});
+
+test('runClarificationWatcher returns IDLE when no follow-up job is available', async () => {
+  const result = await runClarificationWatcher({
+    apiUrl: 'http://127.0.0.1:4001/api',
+    token: 'test-token-over-thirty-two-chars-long-example',
+    provisionerId: 'test-ag-desktop',
+    repository: '/tmp/repo',
+    fetch: async () => jsonResponse(null),
+  });
+  assert.equal(result, 'IDLE');
+});
+
+test('runClarificationWatcher claims and completes follow-up job successfully', async () => {
+  let completed = false;
+  let voiceNotified = false;
+
+  const mockJob = {
+    id: 'follow-up-uuid-1',
+    ticketId: 34,
+    ticketKey: 'MOS-BUG-34',
+    eventKind: 'CREATED',
+    leaseToken: 'lease-token-123',
+    context: {
+      requestType: 'BUG',
+      title: 'em không đổi lịch đặt sẵn được',
+      description: 'em không đổi lịch đặt sẵn được ở trên này',
+      status: 'NEW',
+      clarificationStatus: 'PENDING_AGENT',
+      sourcePath: '/dashboard/loca',
+    },
+  };
+
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/request-classifier/inbox-follow-ups/claim')) {
+      return jsonResponse(mockJob);
+    }
+    if (url.includes('/complete')) {
+      completed = true;
+      const body = JSON.parse(String(init?.body || '{}'));
+      assert.equal(body.leaseToken, 'lease-token-123');
+      assert.equal(body.result.action, 'PROGRESS_REVIEWED');
+      assert.match(body.result.note, /Antigravity IDE/);
+      return jsonResponse({ success: true });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+
+  const result = await runClarificationWatcher({
+    apiUrl: 'http://127.0.0.1:4001/api',
+    token: 'test-token-over-thirty-two-chars-long-example',
+    provisionerId: 'test-ag-desktop',
+    repository: '/tmp/repo',
+    fetch: fetcher,
+    notifyVoice: async (msg: string) => {
+      voiceNotified = true;
+      assert.match(msg, /MOS-BUG-34/);
+    },
+  });
+
+  assert.equal(result, 'CLARIFIED');
+  assert.equal(completed, true);
+  assert.equal(voiceNotified, true);
 });

@@ -286,6 +286,46 @@ export class InboxFollowUpService {
     });
   }
 
+  /**
+   * If a ticket is at PENDING_AGENT but its follow-up job failed or expired,
+   * reset it so an active worker (like Antigravity) can claim and clarify it.
+   */
+  private static async recoverStuckPendingAgentJobs(fastify: FastifyInstance): Promise<void> {
+    const failedJob = await fastify.prisma.crm.crmInboxFollowUpJob.findFirst({
+      where: {
+        status: 'FAILED',
+        report: {
+          is: {
+            clarificationStatus: 'PENDING_AGENT',
+            status: { notIn: ['CLOSED', 'REJECTED', 'DUPLICATE'] },
+          },
+        },
+      },
+      orderBy: { updatedAt: 'asc' },
+      select: { id: true, reportId: true },
+    });
+    if (!failedJob) return;
+    await fastify.prisma.crm.crmInboxFollowUpJob.update({
+      where: { id: failedJob.id },
+      data: {
+        status: 'PENDING',
+        attemptCount: 0,
+        leaseToken: null,
+        leasedBy: null,
+        leaseExpiresAt: null,
+        fallbackReason: null,
+        expiresAt: new Date(Date.now() + TTL),
+      },
+    });
+    await fastify.prisma.crm.crmBugReportAudit.create({
+      data: {
+        reportId: failedJob.reportId,
+        action: 'SYSTEM_CLARIFICATION_REQUEUED',
+        note: 'Đã tự động xếp hàng lại yêu cầu làm rõ cho Agent sau khi worker trước đó bị gián đoạn.',
+      },
+    });
+  }
+
   static async enqueue(
     fastify: FastifyInstance,
     reportId: number,
@@ -357,6 +397,7 @@ export class InboxFollowUpService {
     if (!safeWorker) throw new InboxFollowUpError('Worker ID không hợp lệ.');
     await this.recoverOneLegacyReopen(fastify).catch(() => undefined);
     await this.recoverOneUnchangedReopenQuestion(fastify).catch(() => undefined);
+    await this.recoverStuckPendingAgentJobs(fastify).catch(() => undefined);
     await fastify.prisma.crm.crmInboxFollowUpJob.updateMany({
       where: { status: 'LEASED', leaseExpiresAt: { lte: now }, expiresAt: { gt: now } },
       data: { status: 'PENDING', leaseToken: null, leasedBy: null, leaseExpiresAt: null },

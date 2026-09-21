@@ -166,13 +166,17 @@ async function requireAgent(request: FastifyRequest, reply: FastifyReply) {
 
 async function requireClassifierWorker(request: FastifyRequest, reply: FastifyReply) {
   const expected = classifierWorkerToken();
-  if (expected.length < 32) {
-    request.log.error('MOS_REQUEST_CLASSIFIER_WORKER_TOKEN is missing or shorter than 32 characters');
+  const bridgeToken = ideTaskBridgeToken();
+  if (expected.length < 32 && bridgeToken.length < 32) {
+    request.log.error('MOS_REQUEST_CLASSIFIER_WORKER_TOKEN and MOS_IDE_TASK_BRIDGE_TOKEN are missing or too short');
     return reply
       .status(503)
       .send({ error: 'Classifier Worker Unavailable', message: 'Worker phân loại chưa được cấu hình.' });
   }
-  if (!isValidAgentAuthorization(String(request.headers.authorization || ''), expected)) {
+  const auth = String(request.headers.authorization || '');
+  const isClassifierValid = expected.length >= 32 && isValidAgentAuthorization(auth, expected);
+  const isBridgeValid = bridgeToken.length >= 32 && isValidAgentAuthorization(auth, bridgeToken);
+  if (!isClassifierValid && !isBridgeValid) {
     return reply.status(401).send({ error: 'Unauthorized', message: 'Worker token không hợp lệ.' });
   }
   if (!consumeClassifierWorkerRateLimit(workerClientKey(request))) {
