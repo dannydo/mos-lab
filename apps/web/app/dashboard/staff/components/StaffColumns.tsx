@@ -15,7 +15,7 @@ import {
   UnlockOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { isAdminOrSuperAdminRole, isSuperAdminRole, Staff, Role } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isSuperAdminRole, calculateStaffSeniority, Staff, Role } from '@mos-lab/shared';
 
 import { ColumnsType } from 'antd/es/table';
 
@@ -96,10 +96,27 @@ export const getStaffColumns = ({
               </Avatar>
             </Badge>
             <div>
-              <Text style={{ fontWeight: 600, display: 'block', color: token.colorText }}>{record.displayName}</Text>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                {record.username}
-              </Text>
+              <div className="flex items-center gap-1.5">
+                <Text style={{ fontWeight: 600, color: token.colorText }}>{record.displayName}</Text>
+                {record.staffCode && (
+                  <Tag color="blue" className="text-[10px] leading-4 px-1 m-0 rounded font-semibold">
+                    {record.staffCode}
+                  </Tag>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Text type="secondary" className="text-xs">
+                  {record.username}
+                </Text>
+                {record.employmentStatus && record.employmentStatus !== 'ACTIVE' && (
+                  <Tag
+                    color={record.employmentStatus === 'ON_LEAVE' ? 'warning' : 'default'}
+                    className="text-[10px] leading-3.5 px-1 m-0"
+                  >
+                    {record.employmentStatus === 'ON_LEAVE' ? 'Tạm nghỉ' : 'Thôi việc'}
+                  </Tag>
+                )}
+              </div>
             </div>
           </Space>
         );
@@ -168,20 +185,8 @@ export const getStaffColumns = ({
             >
               {dayjs(date).format('DD/MM/YYYY')}
             </Text>
-            <Text type="secondary" style={{ fontSize: '11px', display: 'block', fontVariantNumeric: 'tabular-nums' }}>
-              {(() => {
-                const offset = record.seniorityOffset || 0;
-                const start = dayjs(date);
-                const now = dayjs();
-                const totalMonths = now.diff(start, 'month') + offset;
-                if (totalMonths <= 0) {
-                  const diffDays = now.diff(start, 'day');
-                  return `${diffDays} ngày`;
-                }
-                const years = Math.floor(totalMonths / 12);
-                const months = totalMonths % 12;
-                return years > 0 ? `${years} năm ${months} th` : `${months} tháng`;
-              })()}
+            <Text type="secondary" className="text-[11px] block tabular-nums font-medium">
+              {calculateStaffSeniority(date, record.seniorityOffset || 0).displayFormatted}
             </Text>
           </div>
         ) : (

@@ -16,8 +16,16 @@ import {
   Button,
   InputNumber,
 } from 'antd';
-import { UserOutlined, InfoCircleOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
-import { isAdminOrSuperAdminRole, isSuperAdminRole, Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
+import { UserOutlined, InfoCircleOutlined, LockOutlined, SolutionOutlined } from '@ant-design/icons';
+import {
+  isAdminOrSuperAdminRole,
+  isHrOrAdminRole,
+  isSuperAdminRole,
+  Staff,
+  Role,
+  vietnameseSearchFilter,
+} from '@mos-lab/shared';
+import StaffHrFormFields from '~/components/staff/StaffHrFormFields';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -43,7 +51,9 @@ export default function StaffTabsContent({
   currentUser: SafeAny;
 }) {
   const [activeTab, setActiveTab] = useState('account');
+  const form = Form.useFormInstance();
   const isAdmin = isAdminOrSuperAdminRole(currentUser?.role);
+  const isHrOrAdmin = isHrOrAdminRole(currentUser?.role);
   const isSuperAdmin = isSuperAdminRole(currentUser?.role);
   const assignableRoles = roles.filter((role) => role.key !== 'super_admin' || isSuperAdmin);
 
@@ -226,138 +236,7 @@ export default function StaffTabsContent({
           </Row>
         </div>
       ) : (
-        <div>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="email"
-                label={<Text style={{ color: token.colorText }}>Email liên hệ</Text>}
-                rules={[{ type: 'email', message: 'Định dạng email không hợp lệ!' }]}
-              >
-                <Input placeholder="email@domain.com" prefix={<MailOutlined style={{ color: '#888' }} />} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="phone" label={<Text style={{ color: token.colorText }}>Số điện thoại</Text>}>
-                <Input placeholder="0901234567" prefix={<PhoneOutlined style={{ color: '#888' }} />} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="joinedAt" label={<Text style={{ color: token.colorText }}>Ngày vào làm</Text>}>
-                <DatePicker style={{ width: '100%' }} placeholder="Chọn ngày" format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="birthDate" label={<Text style={{ color: token.colorText }}>Ngày sinh</Text>}>
-                <DatePicker style={{ width: '100%' }} placeholder="Chọn ngày" format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="gender" label={<Text style={{ color: token.colorText }}>Giới tính</Text>}>
-                <Select placeholder="Chọn giới tính">
-                  <Option value="Male">Nam</Option>
-                  <Option value="Female">Nữ</Option>
-                  <Option value="Other">Khác</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          {isAdmin && (
-            <>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item
-                    name="payBasis"
-                    label={<Text style={{ color: token.colorText }}>Hình thức trả lương</Text>}
-                    rules={[{ required: true, message: 'Chọn hình thức trả lương để tính lương lễ.' }]}
-                  >
-                    <Select placeholder="Chọn loại lương" allowClear>
-                      <Option value="HOURLY">Lương giờ</Option>
-                      <Option value="MONTHLY">Lương cứng tháng</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="baseSalary"
-                    label={<Text style={{ color: token.colorText }}>Lương cứng (Base Salary)</Text>}
-                  >
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      placeholder="Ví dụ: 5,500,000"
-                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
-                      addonAfter="đ"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    name="hourlyWage"
-                    label={<Text style={{ color: token.colorText }}>Lương giờ (Hourly Wage)</Text>}
-                  >
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      placeholder="Ví dụ: 30,000"
-                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
-                      addonAfter="đ/h"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="seniorityOffset"
-                    label={<Text style={{ color: token.colorText }}>Thâm niên cộng thêm (tháng)</Text>}
-                  >
-                    <InputNumber style={{ width: '100%' }} placeholder="Ví dụ: 12" min={0} addonAfter="tháng" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </>
-          )}
-
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item name="address" label={<Text style={{ color: token.colorText }}>Địa chỉ thường trú</Text>}>
-                <Input placeholder="Số nhà, Tên đường, Quận/Huyện, Tỉnh/TP" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="emergencyContact"
-                label={<Text style={{ color: token.colorText }}>Người liên hệ khẩn cấp</Text>}
-              >
-                <Input placeholder="Tên người thân / mối quan hệ" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="emergencyPhone"
-                label={<Text style={{ color: token.colorText }}>SĐT liên hệ khẩn cấp</Text>}
-              >
-                <Input placeholder="Số điện thoại liên hệ" prefix={<PhoneOutlined style={{ color: '#888' }} />} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item name="notes" label={<Text style={{ color: token.colorText }}>Ghi chú nhân sự</Text>}>
-                <TextArea rows={3} placeholder="Ghi chú về năng lực, đãi ngộ, thông tin hợp đồng,..." />
-              </Form.Item>
-            </Col>
-          </Row>
-        </div>
+        <StaffHrFormFields isHrOrAdmin={isHrOrAdmin} currentUser={currentUser} />
       )}
 
       <Divider style={{ margin: '24px 0 16px 0' }} />

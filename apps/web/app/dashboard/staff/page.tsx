@@ -49,11 +49,26 @@ import {
   StopOutlined,
   CloseOutlined,
   BranchesOutlined,
+  HistoryOutlined,
+  BankOutlined,
+  IdcardOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../../../context/ThemeContext';
-import { isAdminOrSuperAdminRole, isSuperAdminRole, Staff, Role, vietnameseSearchFilter } from '@mos-lab/shared';
+import {
+  isAdminOrSuperAdminRole,
+  isHrOrAdminRole,
+  isSuperAdminRole,
+  calculateStaffSeniority,
+  TELESALES_EXECUTIVE_STANDARDS,
+  StaffAuditLog,
+  Staff,
+  Role,
+  vietnameseSearchFilter,
+} from '@mos-lab/shared';
+import { apiClient } from '../../../lib/api-client';
 import { useStaffData } from './hooks/useStaffData';
+import StaffDetailDrawerContent from '~/components/staff/StaffDetailDrawerContent';
 import { getStaffColumns, getRoleColumns } from './components/StaffColumns';
 import { StaffDirectoryToolbar } from './components/StaffDirectoryToolbar';
 import StaffTabsContent from './components/StaffTabsContent';
@@ -61,6 +76,29 @@ import StaffTabsContent from './components/StaffTabsContent';
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+
+const FIELD_NAME_LABELS: Record<string, string> = {
+  staffCode: 'Mã nhân viên',
+  employmentStatus: 'Trạng thái nhân sự',
+  contractStatus: 'Tình trạng hợp đồng',
+  contractStartDate: 'Ngày bắt đầu HĐ',
+  contractEndDate: 'Ngày kết thúc HĐ',
+  joinedAt: 'Ngày vào làm',
+  birthDate: 'Ngày sinh',
+  seniorityOffset: 'Thâm niên cộng thêm',
+  nationalId: 'Số CCCD',
+  socialInsuranceNo: 'Mã số BHXH',
+  bankName: 'Tên ngân hàng',
+  bankAccountNumber: 'Số tài khoản ngân hàng',
+  baseSalary: 'Lương cứng (Base Salary)',
+  hourlyWage: 'Lương giờ (Hourly Wage)',
+  payBasis: 'Hình thức trả lương',
+  role: 'Vai trò / Nhóm quyền',
+  isActive: 'Trạng thái tài khoản',
+  address: 'Địa chỉ thường trú',
+  emergencyContact: 'Người liên hệ khẩn cấp',
+  emergencyPhone: 'SĐT khẩn cấp',
+};
 
 const PRESET_COLORS = [
   { value: 'red', label: 'Red (Admin)' },
@@ -150,8 +188,31 @@ export default function StaffPage() {
     onError: (msg) => message.error(msg),
   });
   const canManageStaff = isAdminOrSuperAdminRole(currentUser?.role);
+  const isHrOrAdmin = isHrOrAdminRole(currentUser?.role);
   const isSuperAdmin = isSuperAdminRole(currentUser?.role);
   const assignableRoles = roles.filter((role) => role.key !== 'super_admin' || isSuperAdmin);
+
+  const [auditLogs, setAuditLogs] = React.useState<StaffAuditLog[]>([]);
+  const [loadingAuditLogs, setLoadingAuditLogs] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isDrawerOpen && selectedStaff?.id) {
+      setLoadingAuditLogs(true);
+      apiClient.staff
+        .getAuditLogs(selectedStaff.id)
+        .then((res: SafeAny) => {
+          if (res?.success && Array.isArray(res?.data)) {
+            setAuditLogs(res.data);
+          } else {
+            setAuditLogs([]);
+          }
+        })
+        .catch(() => setAuditLogs([]))
+        .finally(() => setLoadingAuditLogs(false));
+    } else {
+      setAuditLogs([]);
+    }
+  }, [isDrawerOpen, selectedStaff?.id]);
 
   // Table columns for Staff Directory
   const staffColumns = getStaffColumns({
@@ -771,264 +832,16 @@ export default function StaffPage() {
         }}
       >
         {selectedStaff && (
-          <div>
-            {/* Header profile summary */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
-              <Avatar
-                size={80}
-                src={
-                  selectedStaff.avatarUrl
-                    ? selectedStaff.avatarUrl.replace(
-                        /^https?:\/\/(s|api|www)?\.?wingslashes\.com/,
-                        'https://cdn.wingslashes.com'
-                      )
-                    : undefined
-                }
-                icon={!selectedStaff.avatarUrl ? <UserOutlined /> : undefined}
-                style={{
-                  backgroundColor: token.colorPrimary,
-                  color: '#000',
-                  fontSize: '32px',
-                  fontWeight: 'bold',
-                  boxShadow: '0 4px 12px rgba(212, 168, 75, 0.25)',
-                }}
-              >
-                {selectedStaff.displayName
-                  ? selectedStaff.displayName
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .slice(0, 2)
-                      .toUpperCase()
-                  : '??'}
-              </Avatar>
-              <div>
-                <Title level={4} style={{ margin: 0, color: token.colorText }}>
-                  {selectedStaff.displayName}
-                </Title>
-                <Paragraph type="secondary" style={{ margin: '4px 0 8px 0', fontSize: '14px' }}>
-                  @{selectedStaff.username}
-                </Paragraph>
-                <Space>
-                  <Tag color={roles.find((r) => r.key === selectedStaff.role)?.color || 'default'}>
-                    {roles.find((r) => r.key === selectedStaff.role)?.name || selectedStaff.role}
-                  </Tag>
-                  <Tag color={selectedStaff.isActive ? 'success' : 'error'}>
-                    {selectedStaff.isActive ? 'Đang hoạt động' : 'Tài khoản khóa'}
-                  </Tag>
-                </Space>
-              </div>
-            </div>
-
-            <Divider style={{ margin: '16px 0' }} />
-
-            {/* General Info */}
-            <Descriptions
-              title={
-                <Text style={{ color: token.colorPrimary, fontSize: '15px', fontWeight: 'bold' }}>
-                  Thông tin cơ bản
-                </Text>
-              }
-              column={1}
-              bordered
-              size="small"
-              style={{ marginBottom: '24px' }}
-            >
-              <Descriptions.Item label="ID nhân sự">{selectedStaff.id}</Descriptions.Item>
-              <Descriptions.Item label="Họ và tên">{selectedStaff.displayName}</Descriptions.Item>
-              <Descriptions.Item label="Tên đăng nhập (Username)">
-                <Space>
-                  <Text>{selectedStaff.username}</Text>
-                  <Tooltip title="Đây là tài khoản hoặc tiền tố email để đăng nhập qua Google Auth">
-                    <InfoCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
-                  </Tooltip>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Email liên hệ">
-                {selectedStaff.email || (
-                  <Text type="secondary" italic>
-                    Chưa khai báo
-                  </Text>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">
-                {selectedStaff.phone || (
-                  <Text type="secondary" italic>
-                    Chưa khai báo
-                  </Text>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Tài khoản Wings Lashes">
-                {selectedStaff.legacyStaffId ? (
-                  <Text style={{ fontWeight: '500', color: token.colorPrimary }}>
-                    {legacyStaffList.find((s) => s.id === selectedStaff.legacyStaffId)?.name ||
-                      `ID: ${selectedStaff.legacyStaffId}`}
-                  </Text>
-                ) : (
-                  <Text type="secondary" italic>
-                    Chưa liên kết (Tự động đối khớp bằng tên)
-                  </Text>
-                )}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {/* HR specific data */}
-            <Descriptions
-              title={
-                <Text style={{ color: token.colorPrimary, fontSize: '15px', fontWeight: 'bold' }}>
-                  Thông tin nhân sự & Công việc
-                </Text>
-              }
-              column={1}
-              bordered
-              size="small"
-              style={{ marginBottom: '24px' }}
-            >
-              <Descriptions.Item label="Ngày bắt đầu làm việc">
-                {selectedStaff.joinedAt ? (
-                  <Space>
-                    <CalendarOutlined style={{ color: '#888' }} />
-                    <Text>{dayjs(selectedStaff.joinedAt).format('DD [tháng] MM, YYYY')}</Text>
-                  </Space>
-                ) : (
-                  <Text type="secondary" italic>
-                    Chưa thiết lập
-                  </Text>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Thâm niên làm việc">
-                {selectedStaff.joinedAt ? (
-                  <Space direction="vertical" size={0}>
-                    <Text style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
-                      {(() => {
-                        const offset = selectedStaff.seniorityOffset || 0;
-                        const start = dayjs(selectedStaff.joinedAt);
-                        const now = dayjs();
-                        const totalMonths = now.diff(start, 'month') + offset;
-                        if (totalMonths <= 0) {
-                          return `${now.diff(start, 'day')} ngày`;
-                        }
-                        const years = Math.floor(totalMonths / 12);
-                        const months = totalMonths % 12;
-                        return years > 0 ? `${years} năm ${months} tháng` : `${months} tháng`;
-                      })()}
-                    </Text>
-                    {canManageStaff &&
-                      selectedStaff.seniorityOffset !== undefined &&
-                      selectedStaff.seniorityOffset !== null &&
-                      selectedStaff.seniorityOffset > 0 && (
-                        <Text type="secondary" style={{ fontSize: '11px', fontStyle: 'italic' }}>
-                          (đã cộng thêm {selectedStaff.seniorityOffset} tháng thỏa thuận)
-                        </Text>
-                      )}
-                  </Space>
-                ) : (
-                  <Text type="secondary" italic>
-                    Chưa xác định
-                  </Text>
-                )}
-              </Descriptions.Item>
-              {canManageStaff && (
-                <>
-                  <Descriptions.Item label="Lương cứng (Base Salary)">
-                    {selectedStaff.baseSalary !== undefined && selectedStaff.baseSalary !== null ? (
-                      <Text style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
-                        {Math.round(selectedStaff.baseSalary).toLocaleString('vi-VN')} đ
-                      </Text>
-                    ) : (
-                      <Text type="secondary" italic>
-                        Chưa thiết lập
-                      </Text>
-                    )}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Lương giờ (Hourly Wage)">
-                    {selectedStaff.hourlyWage !== undefined && selectedStaff.hourlyWage !== null ? (
-                      <Text style={{ fontWeight: '500', fontVariantNumeric: 'tabular-nums' }}>
-                        {Math.round(selectedStaff.hourlyWage).toLocaleString('vi-VN')} đ/h
-                      </Text>
-                    ) : (
-                      <Text type="secondary" italic>
-                        Chưa thiết lập
-                      </Text>
-                    )}
-                  </Descriptions.Item>
-                </>
-              )}
-              <Descriptions.Item label="Ngày sinh">
-                {selectedStaff.birthDate ? (
-                  dayjs(selectedStaff.birthDate).format('DD/MM/YYYY')
-                ) : (
-                  <Text type="secondary" italic>
-                    Chưa thiết lập
-                  </Text>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Giới tính">
-                {selectedStaff.gender === 'Male' ? 'Nam' : selectedStaff.gender === 'Female' ? 'Nữ' : 'Khác'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Địa chỉ">
-                {selectedStaff.address ? (
-                  <span style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                    <EnvironmentOutlined style={{ color: '#888', marginTop: '3px' }} />
-                    <span>{selectedStaff.address}</span>
-                  </span>
-                ) : (
-                  <Text type="secondary" italic>
-                    Chưa cập nhật
-                  </Text>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày tạo tài khoản">
-                {dayjs(selectedStaff.createdAt).format('DD/MM/YYYY HH:mm')}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {/* Emergency Contact */}
-            <Descriptions
-              title={
-                <Text style={{ color: token.colorPrimary, fontSize: '15px', fontWeight: 'bold' }}>
-                  Liên hệ khẩn cấp
-                </Text>
-              }
-              column={1}
-              bordered
-              size="small"
-              style={{ marginBottom: '24px' }}
-            >
-              <Descriptions.Item label="Người liên hệ">
-                {selectedStaff.emergencyContact || (
-                  <Text type="secondary" italic>
-                    Chưa khai báo
-                  </Text>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại liên hệ">
-                {selectedStaff.emergencyPhone || (
-                  <Text type="secondary" italic>
-                    Chưa khai báo
-                  </Text>
-                )}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {/* Notes */}
-            {selectedStaff.notes && (
-              <Card
-                title={
-                  <Text style={{ color: token.colorPrimary, fontSize: '14px', fontWeight: 'bold' }}>
-                    Ghi chú nội bộ
-                  </Text>
-                }
-                size="small"
-                style={{
-                  background: token.colorBgContainer,
-                  border: `1px solid ${token.colorBorderSecondary}`,
-                }}
-              >
-                <Text style={{ whiteSpace: 'pre-wrap' }}>{selectedStaff.notes}</Text>
-              </Card>
-            )}
-          </div>
+          <StaffDetailDrawerContent
+            selectedStaff={selectedStaff}
+            roles={roles}
+            legacyStaffList={legacyStaffList}
+            currentUser={currentUser}
+            isHrOrAdmin={isHrOrAdmin}
+            canManageStaff={canManageStaff}
+            auditLogs={auditLogs}
+            loadingAuditLogs={loadingAuditLogs}
+          />
         )}
       </Drawer>
 

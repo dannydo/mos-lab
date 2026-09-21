@@ -37,6 +37,17 @@ model CrmStaff {
   payBasis         String?   @map("pay_basis") @db.VarChar(12)
   seniorityOffset  Int?      @default(0) @map("seniority_offset")
 
+  // Employment & Legal Info (HR Extensions - MOS-FEAT-26)
+  staffCode         String?   @map("staff_code") @db.VarChar(50)
+  employmentStatus  String    @default("ACTIVE") @map("employment_status") @db.VarChar(20)
+  contractStatus    String    @default("OFFICIAL") @map("contract_status") @db.VarChar(20)
+  contractStartDate DateTime? @map("contract_start_date") @db.Date
+  contractEndDate   DateTime? @map("contract_end_date") @db.Date
+  nationalId        String?   @map("national_id") @db.VarChar(50)
+  socialInsuranceNo String?   @map("social_insurance_no") @db.VarChar(50)
+  bankName          String?   @map("bank_name") @db.VarChar(100)
+  bankAccountNumber String?   @map("bank_account_number") @db.VarChar(50)
+
   customerAssignments CrmCustomerAssignment[]
   prevHistory         CrmAssignmentHistory[]  @relation("PrevStaffHistory")
   newHistory          CrmAssignmentHistory[]  @relation("NewStaffHistory")
@@ -82,8 +93,31 @@ model CrmStaff {
   impersonationAuditsStarted CrmImpersonationAudit[] @relation("ImpersonationAuditActor")
   impersonationAuditsTargeted CrmImpersonationAudit[] @relation("ImpersonationAuditTarget")
   resolvedFrontendIssues CrmFrontendIssue[] @relation("FrontendIssueResolvedBy")
+  staffAuditsReceived  CrmStaffAudit[] @relation("StaffAudited")
+  staffAuditsPerformed CrmStaffAudit[] @relation("StaffAuditActor")
 
   @@map("crm_staff")
+}
+
+/// Immutable audit log for changes to sensitive personnel data (MOS-FEAT-26)
+model CrmStaffAudit {
+  id           Int      @id @default(autoincrement())
+  staffId      Int      @map("staff_id")
+  actorStaffId Int?     @map("actor_staff_id")
+  action       String   @default("UPDATE_PROFILE") @db.VarChar(50)
+  fieldName    String   @map("field_name") @db.VarChar(50)
+  oldValue     String?  @map("old_value") @db.Text
+  newValue     String?  @map("new_value") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  staff CrmStaff  @relation("StaffAudited", fields: [staffId], references: [id], onDelete: Cascade)
+  actor CrmStaff? @relation("StaffAuditActor", fields: [actorStaffId], references: [id], onDelete: SetNull)
+
+  @@index([staffId])
+  @@index([actorStaffId])
+  @@index([fieldName])
+  @@index([createdAt])
+  @@map("crm_staff_audits")
 }
 
 /// Immutable security trail for privileged account-switch sessions. Identity

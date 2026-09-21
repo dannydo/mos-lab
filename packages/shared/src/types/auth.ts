@@ -2,7 +2,22 @@
 export type SafeAny = any;
 
 export type UserRole =
-  'telesales' | 'manager' | 'admin' | 'super_admin' | 'oc' | 'cc' | 'ls' | 'technician' | 'qa' | 'qc' | 'qa_qc';
+  'telesales' | 'manager' | 'admin' | 'super_admin' | 'oc' | 'cc' | 'ls' | 'technician' | 'qa' | 'qc' | 'qa_qc' | 'hr';
+
+export type EmploymentStatus = 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED';
+export type ContractStatus = 'PROBATION' | 'OFFICIAL' | 'TERMINATED';
+
+export interface StaffAuditLog {
+  id: number;
+  staffId: number;
+  actorStaffId?: number | null;
+  actorStaffName?: string | null;
+  action: string;
+  fieldName: string;
+  oldValue?: string | null;
+  newValue?: string | null;
+  createdAt: string;
+}
 
 /**
  * Super Admin is an explicit role, not an email-based bypass. The identities
@@ -24,6 +39,21 @@ export function isAdminOrSuperAdminRole(role?: string | null): boolean {
     .trim()
     .toLowerCase();
   return normalizedRole === 'admin' || normalizedRole === 'super_admin';
+}
+
+export function isHrRole(role?: string | null): boolean {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  return normalizedRole === 'hr';
+}
+
+/** Admin, Super Admin, and HR can manage and view sensitive HR personnel information. */
+export function isHrOrAdminRole(role?: string | null): boolean {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  return isAdminOrSuperAdminRole(normalizedRole) || normalizedRole === 'hr';
 }
 
 /** Roles allowed to allocate, recall, and audit Booker customer assignments. */
@@ -97,6 +127,16 @@ export interface Staff {
   hourlyWage?: number | null;
   payBasis?: import('./holiday-work.js').HolidayPayBasis | null;
   seniorityOffset?: number | null;
+  // Employment & Legal Info (HR Extensions - MOS-FEAT-26)
+  staffCode?: string | null;
+  employmentStatus?: EmploymentStatus;
+  contractStatus?: ContractStatus;
+  contractStartDate?: string | null;
+  contractEndDate?: string | null;
+  nationalId?: string | null;
+  socialInsuranceNo?: string | null;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
   offDays?: string[] | null;
   off_days?: string[] | null;
   offDaysList?: string[] | null;

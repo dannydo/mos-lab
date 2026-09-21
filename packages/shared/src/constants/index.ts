@@ -76,6 +76,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, { viewKPI: boolean; viewTeamKPI:
     viewTeamKPI: true,
     manageStaff: false,
   },
+  hr: {
+    viewKPI: true,
+    viewTeamKPI: true,
+    manageStaff: true,
+  },
 };
 
 export const CALL_RESULT_LABELS: Record<CallResult, string> = {

@@ -52,3 +52,5 @@ export * from './types/menu-access.js';
 export * from './types/mos-bible.js';
 export * from './business-rules/mos-bible.js';
 export * from './types/frontend-telemetry.js';
+export * from './utils/seniority.js';
+export * from './constants/telesales.js';

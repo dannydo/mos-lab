@@ -43,7 +43,25 @@
         "dbSource": "crm",
         "modelName": "CrmStaff",
         "tableName": "crm_staff",
-        "fieldCount": 70,
+        "fieldCount": 81,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmStaffAudit",
+      "type": "PrismaModel",
+      "label": "crm.CrmStaffAudit",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmStaffAudit",
+        "tableName": "crm_staff_audits",
+        "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -9714,7 +9732,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 38
+        "line": 133
       }
     },
     {
@@ -9728,7 +9746,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 109
+        "line": 218
       }
     },
     {
@@ -9742,7 +9760,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "preHandler",
-        "line": 176
+        "line": 298
       }
     },
     {
@@ -9756,7 +9774,35 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 292
+        "line": 443
+      }
+    },
+    {
+      "id": "route:GET:/api/staff/:id/audit-logs",
+      "type": "FastifyRoute",
+      "label": "GET /api/staff/:id/audit-logs",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/staff/:id/audit-logs",
+        "module": "staff",
+        "handler": "inlineHandler",
+        "line": 761
+      }
+    },
+    {
+      "id": "route:GET:/api/staff/roles/telesales-profile",
+      "type": "FastifyRoute",
+      "label": "GET /api/staff/roles/telesales-profile",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/staff/roles/telesales-profile",
+        "module": "staff",
+        "handler": "inlineHandler",
+        "line": 815
       }
     },
     {
@@ -9770,7 +9816,7 @@
         "path": "/api/staff/bulk-update",
         "module": "staff",
         "handler": "preHandler",
-        "line": 446
+        "line": 820
       }
     },
     {
@@ -9784,7 +9830,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "preHandler",
-        "line": 526
+        "line": 900
       }
     },
     {
@@ -9798,7 +9844,7 @@
         "path": "/api/staff/legacy",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 599
+        "line": 973
       }
     },
     {
@@ -9812,7 +9858,7 @@
         "path": "/api/staff/sync-legacy",
         "module": "staff",
         "handler": "preHandler",
-        "line": 630
+        "line": 1004
       }
     },
     {
@@ -9826,7 +9872,7 @@
         "path": "/api/staff/merge",
         "module": "staff",
         "handler": "preHandler",
-        "line": 812
+        "line": 1186
       }
     },
     {
@@ -9840,7 +9886,7 @@
         "path": "/api/staff/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 982
+        "line": 1356
       }
     },
     {
@@ -9854,7 +9900,7 @@
         "path": "/api/staff/:id/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1022
+        "line": 1396
       }
     },
     {
@@ -13827,6 +13873,42 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UserRole",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:EmploymentStatus",
+      "type": "SharedType",
+      "label": "EmploymentStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/auth.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "EmploymentStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ContractStatus",
+      "type": "SharedType",
+      "label": "ContractStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/auth.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ContractStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:StaffAuditLog",
+      "type": "SharedType",
+      "label": "StaffAuditLog",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/auth.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StaffAuditLog",
         "package": "@mos-lab/shared"
       }
     },
@@ -24187,6 +24269,30 @@
       }
     },
     {
+      "id": "uicomp:StaffDetailDrawerContent",
+      "type": "UIComponent",
+      "label": "<StaffDetailDrawerContent />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/staff/StaffDetailDrawerContent.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "StaffDetailDrawerContent",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:StaffHrFormFields",
+      "type": "UIComponent",
+      "label": "<StaffHrFormFields />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/staff/StaffHrFormFields.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "StaffHrFormFields",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:FrontendTelemetryProvider",
       "type": "UIComponent",
       "label": "<FrontendTelemetryProvider />",
@@ -24895,8 +25001,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11246694,
-        "lineCount": 244963,
+        "sizeBytes": 11495471,
+        "lineCount": 249612,
         "ext": ".ts"
       }
     },
@@ -26624,7 +26730,7 @@
       "filePath": "apps/api/src/modules/customers/services/lash-specification.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6301,
+        "sizeBytes": 6254,
         "lineCount": 155,
         "ext": ".ts"
       }
@@ -26637,8 +26743,8 @@
       "filePath": "apps/api/src/modules/customers/services/lash-specification.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7355,
-        "lineCount": 194,
+        "sizeBytes": 7366,
+        "lineCount": 196,
         "ext": ".ts"
       }
     },
@@ -27924,8 +28030,8 @@
       "filePath": "apps/api/src/modules/staff/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 37410,
-        "lineCount": 1046,
+        "sizeBytes": 51359,
+        "lineCount": 1420,
         "ext": ".ts"
       }
     },
@@ -27939,6 +28045,19 @@
       "metadata": {
         "sizeBytes": 11035,
         "lineCount": 279,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/staff/staff-hr.test.ts",
+      "type": "File",
+      "label": "staff-hr.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/staff/staff-hr.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6003,
+        "lineCount": 155,
         "ext": ".ts"
       }
     },
@@ -32695,8 +32814,8 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16675,
-        "lineCount": 499,
+        "sizeBytes": 17045,
+        "lineCount": 510,
         "ext": ".tsx"
       }
     },
@@ -32721,8 +32840,8 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffTabsContent.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14906,
-        "lineCount": 384,
+        "sizeBytes": 9355,
+        "lineCount": 269,
         "ext": ".tsx"
       }
     },
@@ -32734,8 +32853,8 @@
       "filePath": "apps/web/app/dashboard/staff/hooks/useStaffData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18868,
-        "lineCount": 558,
+        "sizeBytes": 19888,
+        "lineCount": 578,
         "ext": ".ts"
       }
     },
@@ -32760,8 +32879,8 @@
       "filePath": "apps/web/app/dashboard/staff/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41474,
-        "lineCount": 1137,
+        "sizeBytes": 32533,
+        "lineCount": 950,
         "ext": ".tsx"
       }
     },
@@ -33280,8 +33399,8 @@
       "filePath": "apps/web/lib/api/staff.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8324,
-        "lineCount": 211,
+        "sizeBytes": 8689,
+        "lineCount": 220,
         "ext": ".ts"
       }
     },
@@ -33566,8 +33685,8 @@
       "filePath": "packages/shared/src/constants/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2435,
-        "lineCount": 99,
+        "sizeBytes": 2513,
+        "lineCount": 104,
         "ext": ".ts"
       }
     },
@@ -33585,6 +33704,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/constants/telesales.ts",
+      "type": "File",
+      "label": "telesales.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/constants/telesales.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1176,
+        "lineCount": 33,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/index.ts",
       "type": "File",
       "label": "index.ts",
@@ -33592,8 +33724,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2098,
-        "lineCount": 55,
+        "sizeBytes": 2178,
+        "lineCount": 57,
         "ext": ".ts"
       }
     },
@@ -33709,8 +33841,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3882,
-        "lineCount": 137,
+        "sizeBytes": 5150,
+        "lineCount": 188,
         "ext": ".ts"
       }
     },
@@ -34261,6 +34393,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/utils/seniority.ts",
+      "type": "File",
+      "label": "seniority.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/utils/seniority.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 2655,
+        "lineCount": 102,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/utils/wheel-cap.ts",
       "type": "File",
       "label": "wheel-cap.ts",
@@ -34278,6 +34423,13 @@
     {
       "id": "edge:prisma:crm:CrmStaff:ws:apps/api",
       "source": "prisma:crm:CrmStaff",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmStaffAudit:ws:apps/api",
+      "source": "prisma:crm:CrmStaffAudit",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -38861,6 +39013,20 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/staff/:id/audit-logs:ws:apps/api",
+      "source": "route:GET:/api/staff/:id/audit-logs",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/staff/roles/telesales-profile:ws:apps/api",
+      "source": "route:GET:/api/staff/roles/telesales-profile",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:POST:/api/staff/bulk-update:ws:apps/api",
       "source": "route:POST:/api/staff/bulk-update",
       "target": "ws:apps/api",
@@ -41124,6 +41290,27 @@
     {
       "id": "edge:type:@mos-lab/shared:UserRole:ws:packages/shared",
       "source": "type:@mos-lab/shared:UserRole",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:EmploymentStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:EmploymentStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ContractStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ContractStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:StaffAuditLog:ws:packages/shared",
+      "source": "type:@mos-lab/shared:StaffAuditLog",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -48143,6 +48330,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:StaffDetailDrawerContent:ws:apps/web",
+      "source": "uicomp:StaffDetailDrawerContent",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:StaffDetailDrawerContent:token:color:primary",
+      "source": "uicomp:StaffDetailDrawerContent",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:StaffHrFormFields:ws:apps/web",
+      "source": "uicomp:StaffHrFormFields",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:StaffHrFormFields:token:color:primary",
+      "source": "uicomp:StaffHrFormFields",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:FrontendTelemetryProvider:ws:apps/web",
       "source": "uicomp:FrontendTelemetryProvider",
       "target": "ws:apps/web",
@@ -49811,6 +50026,13 @@
     {
       "id": "edge:file:apps/api/src/modules/staff/services/staff-off-day.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/staff/services/staff-off-day.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/staff/staff-hr.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/staff/staff-hr.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -53841,6 +54063,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/staff/routes.ts:prisma:crm:CrmStaffAudit",
+      "source": "file:apps/api/src/modules/staff/routes.ts",
+      "target": "prisma:crm:CrmStaffAudit",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/staff/routes.ts:prisma:crm:CrmDailyPlan",
       "source": "file:apps/api/src/modules/staff/routes.ts",
       "target": "prisma:crm:CrmDailyPlan",
@@ -53865,6 +54094,13 @@
       "id": "edge:file:apps/api/src/modules/staff/routes.ts:prisma:crm:CrmRole",
       "source": "file:apps/api/src/modules/staff/routes.ts",
       "target": "prisma:crm:CrmRole",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/staff/routes.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/staff/routes.ts",
+      "target": "prisma:crm:CrmTeamMember",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -63340,6 +63576,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/staff/:id/audit-logs",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/staff/:id/audit-logs",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/staff/roles/telesales-profile",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/staff/roles/telesales-profile",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/staff/bulk-update",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/staff/bulk-update",
@@ -67162,6 +67412,20 @@
       "label": "CALLS customers.getStaff"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/staff/:id/audit-logs",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/staff/:id/audit-logs",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/staff/roles/telesales-profile",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/staff/roles/telesales-profile",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/staff/bulk-update",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/staff/bulk-update",
@@ -67676,6 +67940,20 @@
       "id": "edge:page:/dashboard/omicall:route:PUT:/api/staff/:id",
       "source": "page:/dashboard/omicall",
       "target": "route:PUT:/api/staff/:id",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/:id/audit-logs",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/staff/:id/audit-logs",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/roles/telesales-profile",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/staff/roles/telesales-profile",
       "type": "API_CALL",
       "label": "CALLS staff.list"
     },
@@ -73511,6 +73789,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/staff/:id/audit-logs",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/staff/:id/audit-logs",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/staff/roles/telesales-profile",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/staff/roles/telesales-profile",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/staff/bulk-update",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/staff/bulk-update",
@@ -73792,31 +74084,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2626,
-    "totalEdges": 5645,
+    "totalNodes": 2637,
+    "totalEdges": 5666,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 139,
-      "FastifyRoute": 546,
+      "PrismaModel": 140,
+      "FastifyRoute": 548,
       "Component": 51,
-      "SharedType": 957,
+      "SharedType": 960,
       "DesignToken": 12,
-      "UIComponent": 191,
-      "File": 727
+      "UIComponent": 193,
+      "File": 730
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1108,
-      "HANDLES_ROUTE": 546,
-      "RENDERS": 242,
-      "USES_TOKEN": 193,
-      "IMPORTS": 392,
-      "QUERIES_MODEL": 348,
-      "API_CALL": 2816
+      "EXPORTS": 1112,
+      "HANDLES_ROUTE": 548,
+      "RENDERS": 244,
+      "USES_TOKEN": 195,
+      "IMPORTS": 393,
+      "QUERIES_MODEL": 350,
+      "API_CALL": 2824
     },
-    "fastifyRouteCount": 551,
-    "prismaModelCount": 139,
+    "fastifyRouteCount": 553,
+    "prismaModelCount": 140,
     "nextPageCount": 51,
-    "sharedTypeCount": 957
+    "sharedTypeCount": 960
   },
   "routes": [
     {
@@ -77467,6 +77759,20 @@
       "moduleName": "staff"
     },
     {
+      "method": "GET",
+      "path": "/api/staff/:id/audit-logs",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "staff"
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/roles/telesales-profile",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "staff"
+    },
+    {
       "method": "POST",
       "path": "/api/staff/bulk-update",
       "filePath": "apps/api/src/modules/staff/routes.ts",
@@ -77682,7 +77988,16 @@
       "dbSource": "crm",
       "modelName": "CrmStaff",
       "tableName": "crm_staff",
-      "fieldCount": 70,
+      "fieldCount": 81,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmStaffAudit",
+      "tableName": "crm_staff_audits",
+      "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

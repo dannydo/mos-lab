@@ -14,6 +14,7 @@ import type {
   HolidayRosterEntry,
   HolidayWorkspaceResponse,
   Staff,
+  StaffAuditLog,
   StaffPerformanceEvent,
   StaffPerformanceEventListResponse,
   StaffPerformanceEventQuery,
@@ -73,6 +74,14 @@ export const staffApi = {
       sourceStaffIds: number[];
     }): Promise<{ success: boolean; message: string }> => {
       const response = await api.post('/staff/merge', data);
+      return response.data;
+    },
+    getAuditLogs: async (id: number): Promise<StaffAuditLog[]> => {
+      const response = await api.get(`/staff/${id}/audit-logs`);
+      return response.data;
+    },
+    getTelesalesProfile: async (): Promise<Record<string, unknown>> => {
+      const response = await api.get('/staff/roles/telesales-profile');
       return response.data;
     },
   },

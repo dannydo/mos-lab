@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
-import { isAdminOrSuperAdminRole, isSuperAdminRole } from '@mos-lab/shared';
+import { isSuperAdminRole, isHrOrAdminRole, TELESALES_EXECUTIVE_STANDARDS, SafeAny } from '@mos-lab/shared';
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 import { StaffOffDayService } from './services/staff-off-day.service.js';
 import { AllocationLedgerService } from '../allocation/allocation-ledger.service.js';
@@ -27,14 +27,104 @@ interface CreateStaffInput {
   hourlyWage?: number | null;
   payBasis?: 'HOURLY' | 'MONTHLY' | null;
   seniorityOffset?: number | null;
+  // HR Extensions (MOS-FEAT-26)
+  staffCode?: string | null;
+  employmentStatus?: 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED';
+  contractStatus?: 'PROBATION' | 'OFFICIAL' | 'TERMINATED';
+  contractStartDate?: string | null;
+  contractEndDate?: string | null;
+  nationalId?: string | null;
+  socialInsuranceNo?: string | null;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
 }
 
 function mayManageSuperAdmin(actorRole: string, targetRole?: string | null): boolean {
   return !isSuperAdminRole(targetRole) || isSuperAdminRole(actorRole);
 }
 
+export async function getManagedStaffIdsForManager(
+  fastify: FastifyInstance,
+  currentUserId: number
+): Promise<Set<number>> {
+  const leaderMemberships = await fastify.prisma.crm.crmTeamMember.findMany({
+    where: {
+      crmStaffId: currentUserId,
+      isActive: true,
+      role: 'leader',
+    },
+    select: { teamId: true },
+  });
+
+  const teamIds = leaderMemberships.map((m) => m.teamId);
+  if (teamIds.length === 0) {
+    const anyMemberships = await fastify.prisma.crm.crmTeamMember.findMany({
+      where: {
+        crmStaffId: currentUserId,
+        isActive: true,
+      },
+      select: { teamId: true },
+    });
+    teamIds.push(...anyMemberships.map((m) => m.teamId));
+  }
+
+  if (teamIds.length === 0) {
+    return new Set<number>();
+  }
+
+  const teamMembers = await fastify.prisma.crm.crmTeamMember.findMany({
+    where: {
+      teamId: { in: teamIds },
+      isActive: true,
+      crmStaffId: { not: null },
+    },
+    select: { crmStaffId: true },
+  });
+
+  const managedIds = new Set<number>();
+  for (const tm of teamMembers) {
+    if (tm.crmStaffId) managedIds.add(tm.crmStaffId);
+  }
+  return managedIds;
+}
+
+export function maskStaffSensitiveData<T extends Record<string, SafeAny>>(
+  staff: T,
+  currentUser: { id: number; role: string },
+  managedStaffIds?: Set<number>
+): T {
+  // Admin, SuperAdmin, HR get full view
+  if (isHrOrAdminRole(currentUser.role)) {
+    return staff;
+  }
+
+  // Self gets full view of own record
+  if (currentUser.id === staff.id) {
+    return staff;
+  }
+
+  const isDirectManager = managedStaffIds?.has(staff.id) || false;
+  const masked: Record<string, SafeAny> = { ...staff };
+
+  // Legal and Payment info are strictly hidden from non-HR/Admin/Self
+  masked.nationalId = null;
+  masked.socialInsuranceNo = null;
+  masked.bankName = null;
+  masked.bankAccountNumber = null;
+
+  // Direct Manager can view salary/compensation of their team members; everyone else cannot
+  if (!isDirectManager) {
+    masked.baseSalary = null;
+    masked.hourlyWage = null;
+    masked.payBasis = null;
+    masked.seniorityOffset = null;
+  }
+
+  return masked as T;
+}
+
 export async function staffRoutes(fastify: FastifyInstance) {
-  // GET /api/staff - Get all staff members (Admin gets full fields, others get basic public fields)
+  // GET /api/staff - Get all staff members
   fastify.get('/staff', { preHandler: [requireAuth] }, async (request, reply) => {
     const { role, isActive, search } = request.query as {
       role?: string;
@@ -42,7 +132,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       search?: string;
     };
 
-    const currentUser = request.user as { role: string };
+    const currentUser = request.user as { id: number; role: string };
 
     try {
       const whereClause: Record<string, unknown> = {};
@@ -70,7 +160,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         omicallAutoInit: true,
       };
 
-      if (isAdminOrSuperAdminRole(currentUser.role)) {
+      if (isHrOrAdminRole(currentUser.role) || currentUser.role === 'manager') {
         selectFields.createdAt = true;
         selectFields.email = true;
         selectFields.phone = true;
@@ -87,15 +177,29 @@ export async function staffRoutes(fastify: FastifyInstance) {
         selectFields.hourlyWage = true;
         selectFields.payBasis = true;
         selectFields.seniorityOffset = true;
+        selectFields.staffCode = true;
+        selectFields.employmentStatus = true;
+        selectFields.contractStatus = true;
+        selectFields.contractStartDate = true;
+        selectFields.contractEndDate = true;
+        selectFields.nationalId = true;
+        selectFields.socialInsuranceNo = true;
+        selectFields.bankName = true;
+        selectFields.bankAccountNumber = true;
       }
 
-      const staff = await fastify.prisma.crm.crmStaff.findMany({
+      const rawStaffList = await fastify.prisma.crm.crmStaff.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' },
         select: selectFields,
       });
 
-      return staff;
+      let managedStaffIds: Set<number> | undefined;
+      if (currentUser.role === 'manager') {
+        managedStaffIds = await getManagedStaffIdsForManager(fastify, currentUser.id);
+      }
+
+      return rawStaffList.map((s) => maskStaffSensitiveData(s, currentUser, managedStaffIds));
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Fetch staff error:');
       return reply.status(500).send({
@@ -105,7 +209,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // GET /api/staff/:id - Get details of a single staff member (Admin or Self)
+  // GET /api/staff/:id - Get details of a single staff member
   fastify.get('/staff/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const targetId = parseInt(id, 10);
@@ -115,8 +219,16 @@ export async function staffRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID không hợp lệ' });
     }
 
-    // Only Admin or the staff member themselves can view details
-    if (!isAdminOrSuperAdminRole(currentUser.role) && currentUser.id !== targetId) {
+    let managedStaffIds: Set<number> | undefined;
+    if (currentUser.role === 'manager') {
+      managedStaffIds = await getManagedStaffIdsForManager(fastify, currentUser.id);
+    }
+    const isDirectManager = managedStaffIds?.has(targetId) || false;
+    const isHrOrAdmin = isHrOrAdminRole(currentUser.role);
+    const isSelf = currentUser.id === targetId;
+
+    // Allowed if HR/Admin, Self, or Direct Manager
+    if (!isHrOrAdmin && !isSelf && !isDirectManager) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'Bạn không có quyền xem thông tin nhân viên này',
@@ -147,14 +259,19 @@ export async function staffRoutes(fastify: FastifyInstance) {
           lastLoginAt: true,
           lastActiveAt: true,
           omicallAutoInit: true,
-          ...(isAdminOrSuperAdminRole(currentUser.role)
-            ? {
-                baseSalary: true,
-                hourlyWage: true,
-                payBasis: true,
-                seniorityOffset: true,
-              }
-            : {}),
+          baseSalary: true,
+          hourlyWage: true,
+          payBasis: true,
+          seniorityOffset: true,
+          staffCode: true,
+          employmentStatus: true,
+          contractStatus: true,
+          contractStartDate: true,
+          contractEndDate: true,
+          nationalId: true,
+          socialInsuranceNo: true,
+          bankName: true,
+          bankAccountNumber: true,
         },
       });
 
@@ -162,7 +279,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy nhân viên' });
       }
 
-      return staff;
+      return maskStaffSensitiveData(staff, currentUser, managedStaffIds);
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Fetch staff details error:');
       return reply.status(500).send({
@@ -172,8 +289,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /api/staff - Create a new staff member (Admin only)
-  fastify.post('/staff', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
+  // POST /api/staff - Create a new staff member (Admin & HR)
+  fastify.post('/staff', { preHandler: [requireAuth, requireRole(['admin', 'hr'])] }, async (request, reply) => {
     const {
       username,
       password,
@@ -196,6 +313,15 @@ export async function staffRoutes(fastify: FastifyInstance) {
       hourlyWage,
       payBasis,
       seniorityOffset,
+      staffCode,
+      employmentStatus,
+      contractStatus,
+      contractStartDate,
+      contractEndDate,
+      nationalId,
+      socialInsuranceNo,
+      bankName,
+      bankAccountNumber,
     } = request.body as CreateStaffInput;
 
     if (!username || !displayName) {
@@ -235,7 +361,6 @@ export async function staffRoutes(fastify: FastifyInstance) {
       }
 
       // Hash password
-      // If no password is provided (e.g. they will use Google Auth exclusively), generate a strong random hash
       const passwordToHash = password || Math.random().toString(36) + Math.random().toString(36);
       const passwordHash = await bcrypt.hash(passwordToHash, 10);
 
@@ -266,6 +391,27 @@ export async function staffRoutes(fastify: FastifyInstance) {
           hourlyWage: hourlyWage !== undefined && hourlyWage !== null ? Number(hourlyWage) : null,
           payBasis: payBasis || null,
           seniorityOffset: seniorityOffset !== undefined && seniorityOffset !== null ? Number(seniorityOffset) : 0,
+          staffCode: staffCode || null,
+          employmentStatus: employmentStatus || 'ACTIVE',
+          contractStatus: contractStatus || 'OFFICIAL',
+          contractStartDate: contractStartDate ? new Date(contractStartDate) : null,
+          contractEndDate: contractEndDate ? new Date(contractEndDate) : null,
+          nationalId: nationalId || null,
+          socialInsuranceNo: socialInsuranceNo || null,
+          bankName: bankName || null,
+          bankAccountNumber: bankAccountNumber || null,
+        },
+      });
+
+      // Initial audit log
+      await fastify.prisma.crm.crmStaffAudit.create({
+        data: {
+          staffId: staff.id,
+          actorStaffId: request.user.id,
+          action: 'CREATE_STAFF_PROFILE',
+          fieldName: 'profile',
+          oldValue: null,
+          newValue: `Tạo hồ sơ nhân viên ${staff.displayName} (${staff.username})`,
         },
       });
 
@@ -288,7 +434,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // PUT /api/staff/:id - Update staff member details (Admin or Self)
+  // PUT /api/staff/:id - Update staff member details (Admin, HR, Direct Manager, or Self)
   fastify.put('/staff/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const targetId = parseInt(id, 10);
@@ -298,8 +444,15 @@ export async function staffRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID không hợp lệ' });
     }
 
-    // Authorization checks
-    if (!isAdminOrSuperAdminRole(currentUser.role) && currentUser.id !== targetId) {
+    let managedStaffIds: Set<number> | undefined;
+    if (currentUser.role === 'manager') {
+      managedStaffIds = await getManagedStaffIdsForManager(fastify, currentUser.id);
+    }
+    const isDirectManager = managedStaffIds?.has(targetId) || false;
+    const isHrOrAdmin = isHrOrAdminRole(currentUser.role);
+    const isSelf = currentUser.id === targetId;
+
+    if (!isHrOrAdmin && !isDirectManager && !isSelf) {
       return reply.status(403).send({
         error: 'Forbidden',
         message: 'Bạn không có quyền sửa thông tin nhân viên này',
@@ -328,10 +481,18 @@ export async function staffRoutes(fastify: FastifyInstance) {
       hourlyWage,
       payBasis,
       seniorityOffset,
+      staffCode,
+      employmentStatus,
+      contractStatus,
+      contractStartDate,
+      contractEndDate,
+      nationalId,
+      socialInsuranceNo,
+      bankName,
+      bankAccountNumber,
     } = request.body as CreateStaffInput;
 
     try {
-      // Find the existing staff first
       const existingStaff = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: targetId },
       });
@@ -347,22 +508,22 @@ export async function staffRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Construct update payload
       const updateData: Record<string, unknown> = {};
+      const sensitiveAudits: Array<{ fieldName: string; oldValue: unknown; newValue: unknown }> = [];
 
-      // General properties that both Admin & Self can change
-      if (displayName !== undefined) updateData.displayName = displayName;
+      // 1. General Profile Fields: Editable by Admin, HR, OR Direct Manager
+      // (Self can edit phone, email, address, emergencyContact, emergencyPhone, avatarUrl)
+      if (displayName !== undefined && (isHrOrAdmin || isDirectManager)) updateData.displayName = displayName;
       if (email !== undefined) updateData.email = email;
       if (phone !== undefined) updateData.phone = phone;
-      if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
-      if (gender !== undefined) updateData.gender = gender;
+      if (gender !== undefined && (isHrOrAdmin || isDirectManager)) updateData.gender = gender;
       if (address !== undefined) updateData.address = address;
       if (emergencyContact !== undefined) updateData.emergencyContact = emergencyContact;
       if (emergencyPhone !== undefined) updateData.emergencyPhone = emergencyPhone;
       if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
-      if (notes !== undefined) updateData.notes = notes;
-      if (omicallAutoInit !== undefined) updateData.omicallAutoInit = omicallAutoInit;
-      if (legacyStaffId !== undefined) {
+      if (notes !== undefined && (isHrOrAdmin || isDirectManager)) updateData.notes = notes;
+      if (omicallAutoInit !== undefined && isHrOrAdmin) updateData.omicallAutoInit = omicallAutoInit;
+      if (legacyStaffId !== undefined && isHrOrAdmin) {
         updateData.legacyStaffId = legacyStaffId
           ? typeof legacyStaffId === 'number'
             ? legacyStaffId
@@ -370,13 +531,47 @@ export async function staffRoutes(fastify: FastifyInstance) {
           : null;
       }
 
-      // Handle password update if supplied
-      if (password) {
-        updateData.passwordHash = await bcrypt.hash(password, 10);
+      // 2. Manager and HR can edit birthDate and joinedAt
+      if (birthDate !== undefined && (isHrOrAdmin || isDirectManager)) {
+        const newBirthDate = birthDate ? new Date(birthDate) : null;
+        const oldBirthDateStr = existingStaff.birthDate ? existingStaff.birthDate.toISOString().slice(0, 10) : null;
+        const newBirthDateStr = newBirthDate ? newBirthDate.toISOString().slice(0, 10) : null;
+        if (oldBirthDateStr !== newBirthDateStr) {
+          sensitiveAudits.push({
+            fieldName: 'birthDate',
+            oldValue: oldBirthDateStr,
+            newValue: newBirthDateStr,
+          });
+        }
+        updateData.birthDate = newBirthDate;
       }
 
-      // Admin-only fields
-      if (isAdminOrSuperAdminRole(currentUser.role)) {
+      if (joinedAt !== undefined && (isHrOrAdmin || isDirectManager)) {
+        const newJoinedAt = joinedAt ? new Date(joinedAt) : null;
+        const oldJoinedAtStr = existingStaff.joinedAt ? existingStaff.joinedAt.toISOString().slice(0, 10) : null;
+        const newJoinedAtStr = newJoinedAt ? newJoinedAt.toISOString().slice(0, 10) : null;
+        if (oldJoinedAtStr !== newJoinedAtStr) {
+          sensitiveAudits.push({
+            fieldName: 'joinedAt',
+            oldValue: oldJoinedAtStr,
+            newValue: newJoinedAtStr,
+          });
+        }
+        updateData.joinedAt = newJoinedAt;
+      }
+
+      // Password update (Self or Admin/HR)
+      if (password && (isHrOrAdmin || isSelf)) {
+        updateData.passwordHash = await bcrypt.hash(password, 10);
+        sensitiveAudits.push({
+          fieldName: 'password',
+          oldValue: '***',
+          newValue: '*** (Đổi mật khẩu)',
+        });
+      }
+
+      // 3. Admin & HR only fields (Sensitive HR & Compensation)
+      if (isHrOrAdmin) {
         if (role !== undefined) {
           if (!mayManageSuperAdmin(currentUser.role, role)) {
             return reply.status(403).send({
@@ -388,23 +583,147 @@ export async function staffRoutes(fastify: FastifyInstance) {
           if (!roleRecord) {
             return reply.status(400).send({ error: 'Bad Request', message: `Vai trò "${role}" không tồn tại.` });
           }
+          if (existingStaff.role !== role) {
+            sensitiveAudits.push({ fieldName: 'role', oldValue: existingStaff.role, newValue: role });
+          }
           updateData.role = role;
         }
-        if (isActive !== undefined) updateData.isActive = isActive;
-        if (joinedAt !== undefined) updateData.joinedAt = joinedAt ? new Date(joinedAt) : null;
-        if (baseSalary !== undefined) updateData.baseSalary = baseSalary !== null ? Number(baseSalary) : null;
-        if (hourlyWage !== undefined) updateData.hourlyWage = hourlyWage !== null ? Number(hourlyWage) : null;
+
+        if (isActive !== undefined) {
+          if (existingStaff.isActive !== isActive) {
+            sensitiveAudits.push({ fieldName: 'isActive', oldValue: existingStaff.isActive, newValue: isActive });
+          }
+          updateData.isActive = isActive;
+        }
+
+        if (baseSalary !== undefined) {
+          const val = baseSalary !== null ? Number(baseSalary) : null;
+          if (existingStaff.baseSalary !== val) {
+            sensitiveAudits.push({ fieldName: 'baseSalary', oldValue: existingStaff.baseSalary, newValue: val });
+          }
+          updateData.baseSalary = val;
+        }
+
+        if (hourlyWage !== undefined) {
+          const val = hourlyWage !== null ? Number(hourlyWage) : null;
+          if (existingStaff.hourlyWage !== val) {
+            sensitiveAudits.push({ fieldName: 'hourlyWage', oldValue: existingStaff.hourlyWage, newValue: val });
+          }
+          updateData.hourlyWage = val;
+        }
+
         if (payBasis !== undefined) {
           if (payBasis !== null && !['HOURLY', 'MONTHLY'].includes(payBasis)) {
             return reply.status(400).send({ error: 'Bad Request', message: 'Hình thức trả lương không hợp lệ.' });
           }
+          if (existingStaff.payBasis !== payBasis) {
+            sensitiveAudits.push({ fieldName: 'payBasis', oldValue: existingStaff.payBasis, newValue: payBasis });
+          }
           updateData.payBasis = payBasis;
         }
-        if (seniorityOffset !== undefined)
-          updateData.seniorityOffset = seniorityOffset !== null ? Number(seniorityOffset) : 0;
+
+        if (seniorityOffset !== undefined) {
+          const val = seniorityOffset !== null ? Number(seniorityOffset) : 0;
+          if (existingStaff.seniorityOffset !== val) {
+            sensitiveAudits.push({
+              fieldName: 'seniorityOffset',
+              oldValue: existingStaff.seniorityOffset,
+              newValue: val,
+            });
+          }
+          updateData.seniorityOffset = val;
+        }
+
+        if (staffCode !== undefined) {
+          if (existingStaff.staffCode !== staffCode) {
+            sensitiveAudits.push({ fieldName: 'staffCode', oldValue: existingStaff.staffCode, newValue: staffCode });
+          }
+          updateData.staffCode = staffCode;
+        }
+
+        if (employmentStatus !== undefined) {
+          if (existingStaff.employmentStatus !== employmentStatus) {
+            sensitiveAudits.push({
+              fieldName: 'employmentStatus',
+              oldValue: existingStaff.employmentStatus,
+              newValue: employmentStatus,
+            });
+          }
+          updateData.employmentStatus = employmentStatus;
+        }
+
+        if (contractStatus !== undefined) {
+          if (existingStaff.contractStatus !== contractStatus) {
+            sensitiveAudits.push({
+              fieldName: 'contractStatus',
+              oldValue: existingStaff.contractStatus,
+              newValue: contractStatus,
+            });
+          }
+          updateData.contractStatus = contractStatus;
+        }
+
+        if (contractStartDate !== undefined) {
+          const dateVal = contractStartDate ? new Date(contractStartDate) : null;
+          const oldStr = existingStaff.contractStartDate
+            ? existingStaff.contractStartDate.toISOString().slice(0, 10)
+            : null;
+          const newStr = dateVal ? dateVal.toISOString().slice(0, 10) : null;
+          if (oldStr !== newStr) {
+            sensitiveAudits.push({ fieldName: 'contractStartDate', oldValue: oldStr, newValue: newStr });
+          }
+          updateData.contractStartDate = dateVal;
+        }
+
+        if (contractEndDate !== undefined) {
+          const dateVal = contractEndDate ? new Date(contractEndDate) : null;
+          const oldStr = existingStaff.contractEndDate
+            ? existingStaff.contractEndDate.toISOString().slice(0, 10)
+            : null;
+          const newStr = dateVal ? dateVal.toISOString().slice(0, 10) : null;
+          if (oldStr !== newStr) {
+            sensitiveAudits.push({ fieldName: 'contractEndDate', oldValue: oldStr, newValue: newStr });
+          }
+          updateData.contractEndDate = dateVal;
+        }
+
+        if (nationalId !== undefined) {
+          if (existingStaff.nationalId !== nationalId) {
+            sensitiveAudits.push({ fieldName: 'nationalId', oldValue: existingStaff.nationalId, newValue: nationalId });
+          }
+          updateData.nationalId = nationalId;
+        }
+
+        if (socialInsuranceNo !== undefined) {
+          if (existingStaff.socialInsuranceNo !== socialInsuranceNo) {
+            sensitiveAudits.push({
+              fieldName: 'socialInsuranceNo',
+              oldValue: existingStaff.socialInsuranceNo,
+              newValue: socialInsuranceNo,
+            });
+          }
+          updateData.socialInsuranceNo = socialInsuranceNo;
+        }
+
+        if (bankName !== undefined) {
+          if (existingStaff.bankName !== bankName) {
+            sensitiveAudits.push({ fieldName: 'bankName', oldValue: existingStaff.bankName, newValue: bankName });
+          }
+          updateData.bankName = bankName;
+        }
+
+        if (bankAccountNumber !== undefined) {
+          if (existingStaff.bankAccountNumber !== bankAccountNumber) {
+            sensitiveAudits.push({
+              fieldName: 'bankAccountNumber',
+              oldValue: existingStaff.bankAccountNumber,
+              newValue: bankAccountNumber,
+            });
+          }
+          updateData.bankAccountNumber = bankAccountNumber;
+        }
 
         if (username !== undefined && username !== existingStaff.username) {
-          // Check for duplicate username
           const duplicate = await fastify.prisma.crm.crmStaff.findUnique({
             where: { username },
           });
@@ -414,6 +733,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
               message: 'Tên đăng nhập (Email / Prefix) đã được sử dụng bởi nhân sự khác',
             });
           }
+          sensitiveAudits.push({ fieldName: 'username', oldValue: existingStaff.username, newValue: username });
           updateData.username = username;
         }
       }
@@ -422,6 +742,20 @@ export async function staffRoutes(fastify: FastifyInstance) {
         where: { id: targetId },
         data: updateData,
       });
+
+      // Write audits if any sensitive fields changed
+      if (sensitiveAudits.length > 0) {
+        await fastify.prisma.crm.crmStaffAudit.createMany({
+          data: sensitiveAudits.map((a) => ({
+            staffId: targetId,
+            actorStaffId: currentUser.id,
+            action: 'UPDATE_SENSITIVE_INFO',
+            fieldName: a.fieldName,
+            oldValue: a.oldValue !== null && a.oldValue !== undefined ? String(a.oldValue) : null,
+            newValue: a.newValue !== null && a.newValue !== undefined ? String(a.newValue) : null,
+          })),
+        });
+      }
 
       return {
         message: 'Cập nhật thông tin nhân viên thành công',
@@ -440,6 +774,65 @@ export async function staffRoutes(fastify: FastifyInstance) {
         message: 'Lỗi hệ thống khi cập nhật thông tin nhân viên',
       });
     }
+  });
+
+  // GET /api/staff/:id/audit-logs - Get audit logs of sensitive changes (Admin, HR, or Self)
+  fastify.get('/staff/:id/audit-logs', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const targetId = parseInt(id, 10);
+    const currentUser = request.user;
+
+    if (isNaN(targetId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID không hợp lệ' });
+    }
+
+    if (!isHrOrAdminRole(currentUser.role) && currentUser.id !== targetId) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Bạn không có quyền xem lịch sử kiểm toán của nhân viên này',
+      });
+    }
+
+    try {
+      const audits = await fastify.prisma.crm.crmStaffAudit.findMany({
+        where: { staffId: targetId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          actor: {
+            select: {
+              id: true,
+              displayName: true,
+              username: true,
+              role: true,
+            },
+          },
+        },
+        take: 100,
+      });
+
+      return audits.map((a) => ({
+        id: a.id,
+        staffId: a.staffId,
+        actorStaffId: a.actorStaffId,
+        actorStaffName: a.actor?.displayName || (a.actorStaffId ? `Staff #${a.actorStaffId}` : 'Hệ thống'),
+        action: a.action,
+        fieldName: a.fieldName,
+        oldValue: a.oldValue,
+        newValue: a.newValue,
+        createdAt: a.createdAt.toISOString(),
+      }));
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Fetch staff audit logs error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Lỗi hệ thống khi lấy lịch sử kiểm toán nhân viên',
+      });
+    }
+  });
+
+  // GET /api/staff/roles/telesales-profile - Get Telesales Executive standard role profile
+  fastify.get('/staff/roles/telesales-profile', { preHandler: [requireAuth] }, async (_request, _reply) => {
+    return TELESALES_EXECUTIVE_STANDARDS;
   });
 
   // POST /api/staff/bulk-update - Bulk update staff attributes (Admin only)

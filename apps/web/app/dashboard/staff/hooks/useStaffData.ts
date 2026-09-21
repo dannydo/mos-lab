@@ -182,6 +182,15 @@ export function useStaffData(options?: UseStaffDataOptions) {
         payBasis: staff.payBasis || null,
         seniorityOffset:
           staff.seniorityOffset !== undefined && staff.seniorityOffset !== null ? staff.seniorityOffset : 0,
+        staffCode: staff.staffCode || '',
+        employmentStatus: staff.employmentStatus || 'ACTIVE',
+        contractStatus: staff.contractStatus || 'OFFICIAL',
+        contractStartDate: staff.contractStartDate ? dayjs(staff.contractStartDate) : null,
+        contractEndDate: staff.contractEndDate ? dayjs(staff.contractEndDate) : null,
+        nationalId: staff.nationalId || '',
+        socialInsuranceNo: staff.socialInsuranceNo || '',
+        bankName: staff.bankName || '',
+        bankAccountNumber: staff.bankAccountNumber || '',
       });
     } else {
       staffForm?.resetFields();
@@ -195,6 +204,15 @@ export function useStaffData(options?: UseStaffDataOptions) {
         hourlyWage: null,
         payBasis: null,
         seniorityOffset: 0,
+        staffCode: '',
+        employmentStatus: 'ACTIVE',
+        contractStatus: 'PROBATION',
+        contractStartDate: null,
+        contractEndDate: null,
+        nationalId: '',
+        socialInsuranceNo: '',
+        bankName: '',
+        bankAccountNumber: '',
       });
     }
     setIsStaffModalOpen(true);
@@ -207,6 +225,8 @@ export function useStaffData(options?: UseStaffDataOptions) {
         ...values,
         joinedAt: values.joinedAt ? values.joinedAt.format('YYYY-MM-DD') : null,
         birthDate: values.birthDate ? values.birthDate.format('YYYY-MM-DD') : null,
+        contractStartDate: values.contractStartDate ? values.contractStartDate.format('YYYY-MM-DD') : null,
+        contractEndDate: values.contractEndDate ? values.contractEndDate.format('YYYY-MM-DD') : null,
         omicallAutoInit:
           values.omicallAutoInit === 'inherit'
             ? null
