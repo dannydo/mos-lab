@@ -296,3 +296,49 @@ test('runClarificationWatcher claims and completes follow-up job successfully', 
   assert.equal(completed, true);
   assert.equal(voiceNotified, true);
 });
+
+test('runClarificationWatcher submits REANALYSIS_CONFIRMED for REPORTER_REOPENED events', async () => {
+  let completed = false;
+
+  const mockJob = {
+    id: 'follow-up-uuid-reopen',
+    ticketId: 9,
+    ticketKey: 'MOS-BUG-9',
+    eventKind: 'REPORTER_REOPENED',
+    leaseToken: 'lease-token-reopen',
+    context: {
+      requestType: 'BUG',
+      title: 'Lỗi vẫn chưa hết',
+      description: 'Em đã thử lại nhưng vẫn bị văng lỗi',
+      status: 'IN_PROGRESS',
+      clarificationStatus: 'PENDING_AGENT',
+      sourcePath: '/dashboard/salary',
+    },
+  };
+
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/request-classifier/inbox-follow-ups/claim')) {
+      return jsonResponse(mockJob);
+    }
+    if (url.includes('/complete')) {
+      completed = true;
+      const body = JSON.parse(String(init?.body || '{}'));
+      assert.equal(body.leaseToken, 'lease-token-reopen');
+      assert.equal(body.result.action, 'REANALYSIS_CONFIRMED');
+      return jsonResponse({ success: true });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+
+  const result = await runClarificationWatcher({
+    apiUrl: 'http://127.0.0.1:4001/api',
+    token: 'test-token-over-thirty-two-chars-long-example',
+    provisionerId: 'test-ag-desktop',
+    repository: '/tmp/repo',
+    fetch: fetcher,
+  });
+
+  assert.equal(result, 'CLARIFIED');
+  assert.equal(completed, true);
+});

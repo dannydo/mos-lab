@@ -171,7 +171,10 @@ function bridgeHeaders(token: string, provisionerId?: string) {
 
 async function bridgeJson(fetcher: typeof fetch, url: string, init: RequestInit) {
   const response = await fetcher(url, init);
-  if (!response.ok) throw new Error(`Antigravity task bridge rejected request (${response.status}).`);
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    throw new Error(`Antigravity task bridge rejected request (${response.status}): ${errorBody}`);
+  }
   return (await response.json()) as { data?: unknown };
 }
 
@@ -601,7 +604,8 @@ export async function runClarificationWatcher(deps: ClarificationWatcherDeps): P
   );
 
   const geminiApiKey = deps.geminiApiKey || readGeminiApiKey();
-  let action: 'PROGRESS_REVIEWED' | 'ASK_REPORTER' | 'NO_OP' = 'PROGRESS_REVIEWED';
+  const defaultAction = job.eventKind === 'REPORTER_REOPENED' ? 'REANALYSIS_CONFIRMED' : 'PROGRESS_REVIEWED';
+  let action: 'PROGRESS_REVIEWED' | 'REANALYSIS_CONFIRMED' | 'ASK_REPORTER' | 'NO_OP' = defaultAction;
   let note = `Antigravity IDE: Đã tự động rà soát bối cảnh mã nguồn cho ${job.ticketKey}.`;
   let question: string | null = null;
 
@@ -614,7 +618,7 @@ export async function runClarificationWatcher(deps: ClarificationWatcherDeps): P
           question = geminiResult.question;
           note = geminiResult.note || 'Cần người báo cung cấp thêm thông tin.';
         } else {
-          action = 'PROGRESS_REVIEWED';
+          action = defaultAction;
           note = geminiResult.note || 'Đã rà soát đủ thông tin kỹ thuật.';
           question = null;
         }
