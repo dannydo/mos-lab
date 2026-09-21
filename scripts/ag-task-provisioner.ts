@@ -3,12 +3,16 @@ import { spawn, execFile as execFileCallback, execSync } from 'node:child_proces
 import {
   accessSync,
   chmodSync,
+  closeSync,
   constants,
   copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
+  openSync,
   readFileSync,
+  readSync,
+  readdirSync,
   renameSync,
   symlinkSync,
   writeFileSync,
@@ -30,7 +34,10 @@ const AGENTAPI_TIMEOUT_MS = 90_000;
 export type ProvisioningLedger = Record<string, { taskId: string; worktreePath: string }>;
 
 export type ProvisionerDeps = {
-  createTask: (request: InboxIdeTaskProvisioningRequest, worktreePath: string) => Promise<string>;
+  createTask: (
+    request: InboxIdeTaskProvisioningRequest,
+    worktreePath: string
+  ) => Promise<string | { taskId: string; isNew: boolean }>;
   prepareWorktree: (request: InboxIdeTaskProvisioningRequest) => Promise<string>;
   notifyVoice?: (message: string) => Promise<void>;
   fetch: typeof fetch;
@@ -74,6 +81,94 @@ export function resolveAgentApiCommand(env: NodeJS.ProcessEnv = process.env): st
 
 export function runtimePath(): string {
   return resolve(homedir(), '.gemini/antigravity/runtime/mos-ag-task-provisioner-state.json');
+}
+
+export type TicketSessionRecord = {
+  ticketKey: string;
+  reportId: number;
+  conversationId: string;
+  worktreePath: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export function ticketSessionsPath(): string {
+  return resolve(homedir(), '.gemini/antigravity/runtime/mos-ticket-sessions.json');
+}
+
+export function readTicketSessions(path = ticketSessionsPath()): Record<string, TicketSessionRecord> {
+  if (!existsSync(path)) return {};
+  try {
+    const raw = readFileSync(path, 'utf8');
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, TicketSessionRecord>;
+    }
+  } catch {
+    // fallback
+  }
+  return {};
+}
+
+export function writeTicketSessions(sessions: Record<string, TicketSessionRecord>, path = ticketSessionsPath()) {
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  const temporary = `${path}.${randomUUID()}.tmp`;
+  writeFileSync(temporary, `${JSON.stringify(sessions, null, 2)}\n`, { mode: 0o600 });
+  chmodSync(temporary, 0o600);
+  renameSync(temporary, path);
+  chmodSync(path, 0o600);
+}
+
+export function findExistingSessionForTicket(
+  ticketKey: string,
+  reportId: number,
+  sessionsPath = ticketSessionsPath()
+): TicketSessionRecord | null {
+  const sessions = readTicketSessions(sessionsPath);
+  const candidate = sessions[ticketKey] || sessions[String(reportId)];
+  if (candidate && candidate.conversationId) {
+    const brainDir = resolve(homedir(), '.gemini/antigravity/brain', candidate.conversationId);
+    if (existsSync(brainDir)) {
+      return candidate;
+    }
+  }
+
+  // Auto-discovery from brain logs: find conversation whose transcript contains ticketKey or reportId
+  try {
+    const brainRoot = resolve(homedir(), '.gemini/antigravity/brain');
+    if (existsSync(brainRoot)) {
+      const entries = readdirSync(brainRoot, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+        const transcriptPath = resolve(brainRoot, entry.name, '.system_generated/logs/transcript.jsonl');
+        if (existsSync(transcriptPath)) {
+          const buffer = Buffer.alloc(4096);
+          const fd = openSync(transcriptPath, 'r');
+          const bytesRead = readSync(fd, buffer, 0, 4096, 0);
+          closeSync(fd);
+          const chunk = buffer.toString('utf8', 0, bytesRead);
+          if (chunk.includes(`[${ticketKey}]`) || chunk.includes(`Ticket ID: ${reportId}`)) {
+            const discovered: TicketSessionRecord = {
+              ticketKey,
+              reportId,
+              conversationId: entry.name,
+              worktreePath: candidate?.worktreePath || '',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            sessions[ticketKey] = discovered;
+            sessions[String(reportId)] = discovered;
+            writeTicketSessions(sessions, sessionsPath);
+            return discovered;
+          }
+        }
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  return null;
 }
 
 export function tokenPath(): string {
@@ -192,6 +287,12 @@ export async function prepareAgWorktree(request: InboxIdeTaskProvisioningRequest
   if (!existsSync(repository)) throw new Error('Repository is unavailable for worktree creation.');
   if (!/^[A-Za-z0-9._/-]{1,160}$/.test(request.branchName) || request.branchName.includes('..'))
     throw new Error('Provisioning branch name is invalid.');
+
+  const existingSession = findExistingSessionForTicket(request.ticketKey, request.reportId);
+  if (existingSession?.worktreePath && existsSync(existingSession.worktreePath)) {
+    return existingSession.worktreePath;
+  }
+
   const worktreePath = resolve(root, `ag-${request.jobId}`);
   if (!worktreePath.startsWith(`${root}/`)) throw new Error('Provisioning worktree path escaped its root.');
   if (!existsSync(worktreePath)) {
@@ -382,6 +483,74 @@ export async function spawnAntigravitySession(
   }
 }
 
+export async function sendMessageToAntigravitySession(
+  conversationId: string,
+  content: string,
+  title?: string
+): Promise<void> {
+  const command = resolveAgentApiCommand();
+  const titleArg = title ? [`--title=${title}`] : [];
+  const args = command.endsWith('language_server')
+    ? ['agentapi', 'send-message', ...titleArg, conversationId, content]
+    : ['send-message', ...titleArg, conversationId, content];
+
+  const detectedEnv = detectAntigravityLsEnv();
+  const env = {
+    ...process.env,
+    ...detectedEnv,
+  };
+
+  await execFile(command, args, { timeout: AGENTAPI_TIMEOUT_MS, env });
+}
+
+export async function getOrCreateAntigravitySession(
+  request: InboxIdeTaskProvisioningRequest,
+  worktreePath: string
+): Promise<{ taskId: string; isNew: boolean }> {
+  const existing = findExistingSessionForTicket(request.ticketKey, request.reportId);
+  if (existing) {
+    process.stdout.write(
+      `[Provisioner] Ticket ${request.ticketKey} already has active session ${existing.conversationId}. Reusing session (1 ticket -> 1 session).\n`
+    );
+    const prompt = buildAgentPrompt(request, worktreePath);
+    try {
+      await sendMessageToAntigravitySession(
+        existing.conversationId,
+        `🔔 [mOS Inbox Cập nhật]: Ticket ${request.ticketKey} có yêu cầu thực thi mới (Job: ${request.jobId}):\n\n${prompt}`,
+        `Cập nhật [${request.ticketKey}]`
+      );
+    } catch (err) {
+      process.stderr.write(
+        `[Provisioner] Failed to notify existing session ${existing.conversationId}: ${err instanceof Error ? err.message : String(err)}\n`
+      );
+    }
+    if (worktreePath && worktreePath !== existing.worktreePath) {
+      existing.worktreePath = worktreePath;
+      existing.updatedAt = new Date().toISOString();
+      const sessions = readTicketSessions();
+      sessions[request.ticketKey] = existing;
+      sessions[String(request.reportId)] = existing;
+      writeTicketSessions(sessions);
+    }
+    return { taskId: existing.conversationId, isNew: false };
+  }
+
+  const conversationId = await spawnAntigravitySession(request, worktreePath);
+  const record: TicketSessionRecord = {
+    ticketKey: request.ticketKey,
+    reportId: request.reportId,
+    conversationId,
+    worktreePath,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const sessions = readTicketSessions();
+  sessions[request.ticketKey] = record;
+  sessions[String(request.reportId)] = record;
+  writeTicketSessions(sessions);
+  return { taskId: conversationId, isNew: true };
+}
+
 export async function notifyVoice(message: string): Promise<void> {
   const speakBin = resolve(homedir(), '.gemini/antigravity/bin/speak');
   if (existsSync(speakBin)) {
@@ -404,10 +573,13 @@ export async function runProvisionerOnce(deps: ProvisionerDeps): Promise<'IDLE' 
 
   const ledger = readProvisioningLedger(deps.ledgerPath);
   let existing = ledger[request.requestId];
+  let isNewSession = false;
   try {
     if (!existing) {
       const worktreePath = await deps.prepareWorktree(request);
-      const taskId = await deps.createTask(request, worktreePath);
+      const sessionResult = await deps.createTask(request, worktreePath);
+      const taskId = typeof sessionResult === 'string' ? sessionResult : sessionResult.taskId;
+      isNewSession = typeof sessionResult === 'object' ? sessionResult.isNew : false;
       existing = { taskId, worktreePath };
       ledger[request.requestId] = existing;
       writeProvisioningLedger(deps.ledgerPath, ledger);
@@ -427,9 +599,10 @@ export async function runProvisionerOnce(deps: ProvisionerDeps): Promise<'IDLE' 
     writeProvisioningLedger(deps.ledgerPath, ledger);
 
     if (deps.notifyVoice) {
-      await deps.notifyVoice(
-        `Antigravity đã nhận ticket ${request.ticketKey} và mở session mới để code và test cho anh.`
-      );
+      const voiceMessage = isNewSession
+        ? `Antigravity đã nhận ticket ${request.ticketKey} và mở session để code và test cho anh.`
+        : `Antigravity đã nhận cập nhật cho ticket ${request.ticketKey} và tiếp tục xử lý trong session hiện tại của anh.`;
+      await deps.notifyVoice(voiceMessage);
     }
 
     return 'BOUND';
@@ -475,7 +648,26 @@ export type AutoDeployJob = {
   branchName: string;
 };
 
+let isAutoDeployRunning = false;
+
 export async function runAutoDeployWatcher(deps: {
+  apiUrl: string;
+  token: string;
+  repository: string;
+  notifyVoice?: (message: string) => Promise<void>;
+}): Promise<'IDLE' | 'DEPLOYED'> {
+  if (isAutoDeployRunning) {
+    return 'IDLE';
+  }
+  isAutoDeployRunning = true;
+  try {
+    return await runAutoDeployWatcherInternal(deps);
+  } finally {
+    isAutoDeployRunning = false;
+  }
+}
+
+async function runAutoDeployWatcherInternal(deps: {
   apiUrl: string;
   token: string;
   repository: string;
@@ -923,7 +1115,7 @@ export async function main() {
   const run = async () => {
     try {
       const result = await runProvisionerOnce({
-        createTask: spawnAntigravitySession,
+        createTask: getOrCreateAntigravitySession,
         prepareWorktree: prepareAgWorktree,
         notifyVoice,
         fetch,
@@ -1000,8 +1192,10 @@ export async function main() {
   process.stdout.write(
     `[${new Date().toISOString()}] Antigravity inbox provisioner daemon started. Polling every 15s...\n`
   );
-  await run();
-  setInterval(() => void run(), 15_000);
+  while (true) {
+    await run();
+    await new Promise((resolve) => setTimeout(resolve, 15_000));
+  }
 }
 
 if (process.argv[1] && basename(process.argv[1]) === 'ag-task-provisioner.ts') {

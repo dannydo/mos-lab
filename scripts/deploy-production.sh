@@ -13,6 +13,14 @@ trap on_error ERR
 
 cd /home/web/mos-lab
 
+# Prevent concurrent overlapping deployments on VPS
+exec 200>/tmp/deploy-production.lock
+if ! flock -n 200; then
+  echo "[VPS] Another production deployment is already in progress. Waiting for lock..."
+  flock 200
+  echo "[VPS] Acquired deployment lock. Proceeding..."
+fi
+
 echo '[VPS] Pulling approved main commit...'
 git pull --ff-only
 DEPLOY_COMMIT="$(git rev-parse HEAD)"

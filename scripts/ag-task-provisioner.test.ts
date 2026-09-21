@@ -10,6 +10,8 @@ import {
   runProvisionerOnce,
   runClarificationWatcher,
   runPlanWatcher,
+  findExistingSessionForTicket,
+  writeTicketSessions,
 } from './ag-task-provisioner.js';
 
 const mockRequest = {
@@ -400,4 +402,22 @@ test('runPlanWatcher claims and completes plan job successfully', async () => {
   assert.equal(result, 'PLANNED');
   assert.equal(completed, true);
   assert.equal(voiceNotified, true);
+});
+
+test('1 ticket -> 1 session: findExistingSessionForTicket finds existing session and reuses it', () => {
+  const temporary = join(tmpdir(), `ag-sessions-test-${Date.now()}.json`);
+  const sessions = {
+    'MOS-BUG-34': {
+      ticketKey: 'MOS-BUG-34',
+      reportId: 34,
+      conversationId: 'a3a66163-9b9a-4df4-90c8-d6ed866be2ed',
+      worktreePath: '/tmp/worktree-34',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  };
+  writeTicketSessions(sessions, temporary);
+  const found = findExistingSessionForTicket('MOS-BUG-34', 34, temporary);
+  assert.equal(found?.conversationId, 'a3a66163-9b9a-4df4-90c8-d6ed866be2ed');
+  assert.equal(found?.worktreePath, '/tmp/worktree-34');
 });
