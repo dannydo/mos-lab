@@ -108,6 +108,7 @@ export default function BkDashboardPage() {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
+  const [isCustomRange, setIsCustomRange] = useState(false);
   // BK reports are always cross-store; no toolbar filter can silently narrow the data.
   const selectedStore = 'ALL';
   const selectedBooker = 'ALL';
@@ -143,6 +144,7 @@ export default function BkDashboardPage() {
 
   // Update date range when viewMode or referenceDate changes
   useEffect(() => {
+    if (isCustomRange) return;
     if (viewMode === 'month') {
       setDateRange([referenceDate.startOf('month'), referenceDate.endOf('month')]);
     } else if (viewMode === 'week') {
@@ -150,10 +152,27 @@ export default function BkDashboardPage() {
     } else {
       setDateRange([referenceDate.startOf('day'), referenceDate.endOf('day')]);
     }
-  }, [viewMode, referenceDate]);
+  }, [viewMode, referenceDate, isCustomRange]);
+
+  const handleRangeChange = (dates: [Dayjs, Dayjs]) => {
+    setIsCustomRange(true);
+    setDateRange(dates);
+    setReferenceDate(dates[0]);
+  };
+
+  const handleViewModeChange = (mode: 'month' | 'week' | 'day') => {
+    setIsCustomRange(false);
+    setViewMode(mode);
+  };
+
+  const handleValueChange = (date: Dayjs) => {
+    setIsCustomRange(false);
+    setReferenceDate(date);
+  };
 
   // Navigate date backward / forward
   const handleNavigate = (direction: number) => {
+    setIsCustomRange(false);
     if (viewMode === 'month') {
       setReferenceDate((prev) => prev.add(direction, 'month'));
     } else if (viewMode === 'week') {
@@ -165,6 +184,12 @@ export default function BkDashboardPage() {
 
   // Format label for date button
   const getPeriodLabel = () => {
+    if (isCustomRange) {
+      if (dateRange[0].isSame(dateRange[1], 'day')) {
+        return dateRange[0].format('DD/MM/YYYY');
+      }
+      return `${dateRange[0].format('DD/MM/YYYY')} - ${dateRange[1].format('DD/MM/YYYY')}`;
+    }
     if (viewMode === 'month') {
       return `Tháng ${referenceDate.format('MM/YYYY')}`;
     } else if (viewMode === 'week') {
@@ -285,12 +310,12 @@ export default function BkDashboardPage() {
               mode={viewMode}
               value={referenceDate}
               label={getPeriodLabel()}
-              onModeChange={setViewMode}
+              onModeChange={handleViewModeChange}
               onPrevious={() => handleNavigate(-1)}
               onNext={() => handleNavigate(1)}
-              onValueChange={setReferenceDate}
+              onValueChange={handleValueChange}
               rangeValue={dateRange}
-              onRangeChange={setDateRange}
+              onRangeChange={handleRangeChange}
               className="bk-report-period"
             />
 

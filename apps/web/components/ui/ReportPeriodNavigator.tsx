@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button, DatePicker, Drawer, Space, Tooltip } from 'antd';
 import {
   Calendar,
@@ -70,19 +70,44 @@ export function ReportPeriodNavigator({
   className = '',
 }: ReportPeriodNavigatorProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const rangePickerRef = useRef<any>(null);
+  const datePickerRef = useRef<any>(null);
   const responsiveTier = useResponsiveTier();
   const usesRangePicker = Boolean(rangeValue && onRangeChange);
   const usesMobileMonthSheet = responsiveTier === 'mobile' && mode === 'month' && !usesRangePicker;
   const [mobilePickerYear, setMobilePickerYear] = useState(() => value.year());
-  const displayLabel = mode === 'month' ? label.replace(/^Tháng\s+/i, '') : label;
-  const pickerLabel =
-    responsiveTier === 'mobile'
-      ? mode === 'day'
-        ? value.format('DD/MM')
+
+  const isCustomRange = Boolean(
+    rangeValue &&
+      (mode === 'month'
+        ? !rangeValue[0].isSame(value.startOf('month'), 'day') || !rangeValue[1].isSame(value.endOf('month'), 'day')
         : mode === 'week'
-          ? (label.match(/^Tuần\s+\d+/i)?.[0] ?? displayLabel)
-          : displayLabel
-      : displayLabel;
+          ? !rangeValue[0].isSame(value.startOf('isoWeek'), 'day') || !rangeValue[1].isSame(value.endOf('isoWeek'), 'day')
+          : !rangeValue[0].isSame(value.startOf('day'), 'day') || !rangeValue[1].isSame(value.endOf('day'), 'day'))
+  );
+
+  const formattedCustomRange = rangeValue
+    ? rangeValue[0].isSame(rangeValue[1], 'day')
+      ? rangeValue[0].format('DD/MM/YYYY')
+      : `${rangeValue[0].format('DD/MM/YYYY')} - ${rangeValue[1].format('DD/MM/YYYY')}`
+    : '';
+
+  const displayLabel = isCustomRange
+    ? formattedCustomRange
+    : mode === 'month'
+      ? label.replace(/^Tháng\s+/i, '')
+      : label;
+
+  const pickerLabel =
+    isCustomRange
+      ? formattedCustomRange
+      : responsiveTier === 'mobile'
+        ? mode === 'day'
+          ? value.format('DD/MM')
+          : mode === 'week'
+            ? (label.match(/^Tuần\s+\d+/i)?.[0] ?? displayLabel)
+            : displayLabel
+        : displayLabel;
 
   const handleModeKeyDown = (event: React.KeyboardEvent<HTMLElement>, modeIndex: number) => {
     const lastIndex = REPORT_PERIOD_MODES.length - 1;
@@ -106,8 +131,17 @@ export function ReportPeriodNavigator({
   };
 
   const openPicker = () => {
-    if (usesMobileMonthSheet) setMobilePickerYear(value.year());
+    if (usesMobileMonthSheet) {
+      setMobilePickerYear(value.year());
+      setPickerOpen(true);
+      return;
+    }
     setPickerOpen(true);
+    if (usesRangePicker) {
+      rangePickerRef.current?.focus();
+    } else {
+      datePickerRef.current?.focus();
+    }
   };
 
   const handleMobileMonthSelect = (month: number) => {
@@ -229,6 +263,7 @@ export function ReportPeriodNavigator({
               </Drawer>
             ) : usesRangePicker ? (
               <DatePicker.RangePicker
+                ref={rangePickerRef}
                 value={rangeValue}
                 format="DD/MM/YYYY"
                 open={pickerOpen}
@@ -243,6 +278,7 @@ export function ReportPeriodNavigator({
               />
             ) : (
               <DatePicker
+                ref={datePickerRef}
                 value={value}
                 picker={mode === 'month' ? 'month' : mode === 'week' ? 'week' : 'date'}
                 open={pickerOpen}

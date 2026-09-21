@@ -124,6 +124,7 @@ export default function CcDashboardPage() {
     }
     return [dayjs().startOf('month'), dayjs().endOf('month')];
   });
+  const [isCustomRange, setIsCustomRange] = useState(false);
   const [ccBonusConfigOpen, setCcBonusConfigOpen] = useState(false);
   const [ccBonusConfigVersion, setCcBonusConfigVersion] = useState(0);
 
@@ -202,6 +203,7 @@ export default function CcDashboardPage() {
 
   // Update date range when viewMode or referenceDate changes
   useEffect(() => {
+    if (isCustomRange) return;
     let nextRange: [Dayjs, Dayjs];
     if (viewMode === 'month') {
       nextRange = [referenceDate.startOf('month'), referenceDate.endOf('month')];
@@ -218,7 +220,7 @@ export default function CcDashboardPage() {
         ? currentRange
         : nextRange
     );
-  }, [viewMode, referenceDate]);
+  }, [viewMode, referenceDate, isCustomRange]);
 
   // Xoay and its leaderboard are expensive report queries. They are only
   // needed by the Xoay tab, so defer them until that tab is visible and
@@ -280,8 +282,25 @@ export default function CcDashboardPage() {
     void fetchCcData();
   }, [activeTab, fetchCcData]);
 
+  const handleRangeChange = (dates: [Dayjs, Dayjs]) => {
+    setIsCustomRange(true);
+    setDateRange(dates);
+    setReferenceDate(dates[0]);
+  };
+
+  const handleViewModeChange = (mode: 'month' | 'week' | 'day') => {
+    setIsCustomRange(false);
+    setViewMode(mode);
+  };
+
+  const handleValueChange = (date: Dayjs) => {
+    setIsCustomRange(false);
+    setReferenceDate(date);
+  };
+
   // Navigate date backward / forward
   const handleNavigate = (direction: number) => {
+    setIsCustomRange(false);
     if (viewMode === 'month') {
       setReferenceDate((prev) => prev.add(direction, 'month'));
     } else if (viewMode === 'week') {
@@ -293,6 +312,12 @@ export default function CcDashboardPage() {
 
   // Format label for date button
   const getPeriodLabel = () => {
+    if (isCustomRange) {
+      if (dateRange[0].isSame(dateRange[1], 'day')) {
+        return dateRange[0].format('DD/MM/YYYY');
+      }
+      return `${dateRange[0].format('DD/MM/YYYY')} - ${dateRange[1].format('DD/MM/YYYY')}`;
+    }
     if (viewMode === 'month') {
       return `Tháng ${referenceDate.format('MM/YYYY')}`;
     }
@@ -408,12 +433,12 @@ export default function CcDashboardPage() {
             mode={viewMode}
             value={referenceDate}
             label={getPeriodLabel()}
-            onModeChange={setViewMode}
+            onModeChange={handleViewModeChange}
             onPrevious={() => handleNavigate(-1)}
             onNext={() => handleNavigate(1)}
-            onValueChange={setReferenceDate}
+            onValueChange={handleValueChange}
             rangeValue={dateRange}
-            onRangeChange={setDateRange}
+            onRangeChange={handleRangeChange}
             className="cc-report-period"
           />
           <div className="cc-toolbar-filter-cluster" aria-label="Bộ lọc báo cáo CC">
