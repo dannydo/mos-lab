@@ -113,6 +113,18 @@ async function handleWaitAndDeploy(
         if (payload?.data?.code === 'IDE_RELEASE_UNVERIFIED' || payload?.data?.eligible) {
           deployApproved = true;
           process.stdout.write("Danny's deploy approval detected on web! Starting automatic merge & deploy...\n");
+          const speakBin = resolve(homedir(), '.gemini/antigravity/bin/speak');
+          if (existsSync(speakBin)) {
+            try {
+              execFileSync(
+                speakBin,
+                ['Anh Danny đã duyệt deploy trên mOS Inbox. Em đang tự động merge và triển khai lên máy chủ rồi ạ.'],
+                { timeout: 10_000 }
+              );
+            } catch {
+              // non-blocking
+            }
+          }
           break;
         }
       }
@@ -128,14 +140,36 @@ async function handleWaitAndDeploy(
   const mainRepo = resolve(homedir(), 'projects/mos-lab');
   process.stdout.write(`Merging ${commitSha} into main at ${mainRepo}...\n`);
   execFileSync('git', ['-C', mainRepo, 'checkout', 'main'], { stdio: 'inherit' });
-  execFileSync('git', ['-C', mainRepo, 'pull', '--ff-only', 'origin', 'main'], { stdio: 'inherit' });
-  execFileSync('git', ['-C', mainRepo, 'merge', commitSha, '-m', `deploy(inbox): merge ${ticketBranch}`], {
-    stdio: 'inherit',
-  });
+  try {
+    execFileSync('git', ['-C', mainRepo, 'pull', '--ff-only'], { stdio: 'inherit' });
+  } catch {
+    try {
+      execFileSync('git', ['-C', mainRepo, 'fetch', 'origin', 'main'], { stdio: 'inherit' });
+      execFileSync('git', ['-C', mainRepo, 'merge', '--ff-only', 'origin/main'], { stdio: 'inherit' });
+    } catch {
+      // continue if already up to date
+    }
+  }
 
-  // 2. Push to origin main
-  process.stdout.write('Pushing main to origin...\n');
-  execFileSync('git', ['-C', mainRepo, 'push', 'origin', 'main'], { stdio: 'inherit' });
+  let isAlreadyMerged = false;
+  try {
+    execFileSync('git', ['-C', mainRepo, 'merge-base', '--is-ancestor', commitSha, 'HEAD']);
+    isAlreadyMerged = true;
+  } catch {
+    isAlreadyMerged = false;
+  }
+
+  if (!isAlreadyMerged) {
+    execFileSync('git', ['-C', mainRepo, 'merge', commitSha, '-m', `deploy(inbox): merge ${ticketBranch}`], {
+      stdio: 'inherit',
+    });
+
+    // 2. Push to origin main
+    process.stdout.write('Pushing main to origin...\n');
+    execFileSync('git', ['-C', mainRepo, 'push', 'origin', 'main'], { stdio: 'inherit' });
+  } else {
+    process.stdout.write(`Commit ${commitSha} is already merged into main.\n`);
+  }
 
   // 3. Deploy to VPS
   process.stdout.write('Deploying backend to VPS live-wings...\n');

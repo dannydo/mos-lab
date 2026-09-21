@@ -86,8 +86,11 @@ Mỗi khi nhận nhiệm vụ từ mOS Inbox (ticket bug/feature qua worktree ri
 - Ngay khi Danny bấm "Duyệt commit" trên web, lệnh `wait-and-commit` tự động bắt được sự kiện `IDE_COMMIT_HANDOFF`, tự động tạo git commit trên nhánh ticket, nộp commit receipt lên server, và chuyển trạng thái ticket sang `AWAITING_DANNY_DEPLOY_APPROVAL`.
 - Khi Danny bấm "Duyệt deploy" trên web:
   - Nút trên web **chuyển ngay sang màu xanh lá Emerald** (`Đã duyệt deploy · Đang triển khai...`) để phản hồi thị giác tức thì.
-  - Lệnh `wait-and-deploy` (hoặc cờ `--auto-deploy` trong `wait-and-commit`) tự động bắt được sự kiện duyệt deploy, tự động merge nhánh ticket vào `main`, push lên `origin main`, deploy lên VPS qua `deploy-production.sh`, kiểm chứng release markers sống trên API/Web, nộp release checkpoint lên server để chuyển ticket sang `AWAITING_REPORTER_ACCEPTANCE`, và phát âm thanh thông báo qua `speak`.
-  - Danny chỉ cần bấm 1 lần trên web, toàn bộ quy trình merge và deploy chạy hoàn toàn tự động khép kín!
+  - Lệnh `wait-and-deploy` (hoặc cờ `--auto-deploy` trong `wait-and-commit`) tự động bắt được sự kiện duyệt deploy:
+    - **Phát thông báo giọng nói tức thì**: `"Anh Danny đã duyệt deploy trên mOS Inbox. Em đang tự động merge và triển khai lên máy chủ rồi ạ."`
+    - Tự động merge nhánh ticket vào `main`, push lên `origin main`, deploy lên VPS qua `deploy-production.sh`, kiểm chứng release markers sống trên API/Web, và nộp release checkpoint lên server để chuyển ticket sang `AWAITING_REPORTER_ACCEPTANCE`.
+    - **Phát thông báo giọng nói hoàn tất**: `"Anh Danny ơi, em đã tự động merge commit vào main và deploy xong lên production rồi ạ. Ticket đã chuyển sang chờ nghiệm thu."`
+  - Danny chỉ cần bấm trên web, toàn bộ quy trình merge, deploy và thông báo chạy hoàn toàn tự động khép kín!
 
 ---
 
