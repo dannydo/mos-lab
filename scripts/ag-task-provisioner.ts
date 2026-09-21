@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { spawn, execFile as execFileCallback } from 'node:child_process';
+import { spawn, execFile as execFileCallback, execSync } from 'node:child_process';
 import {
   accessSync,
   chmodSync,
@@ -14,7 +14,12 @@ import {
 import { homedir } from 'node:os';
 import { basename, dirname, resolve } from 'node:path';
 import { promisify } from 'node:util';
-import type { InboxIdeTaskProvisioningRequest, InboxFollowUpWorkerJob } from '@mos-lab/shared';
+import type {
+  InboxIdeTaskProvisioningRequest,
+  InboxFollowUpWorkerJob,
+  InboxPlanWorkerJob,
+  InboxPlanDraft,
+} from '@mos-lab/shared';
 
 const execFile = promisify(execFileCallback);
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -232,6 +237,40 @@ export function buildAgentPrompt(request: InboxIdeTaskProvisioningRequest, workt
 `;
 }
 
+export function detectAntigravityLsEnv(): Record<string, string> {
+  if (process.env.ANTIGRAVITY_LS_ADDRESS && process.env.ANTIGRAVITY_CSRF_TOKEN) {
+    return {
+      ANTIGRAVITY_LS_ADDRESS: process.env.ANTIGRAVITY_LS_ADDRESS,
+      ANTIGRAVITY_CSRF_TOKEN: process.env.ANTIGRAVITY_CSRF_TOKEN,
+    };
+  }
+  try {
+    const ps = execSync('ps aux | grep "[l]anguage_server.*antigravity"', { encoding: 'utf8' });
+    const matchPid = ps.match(/^\S+\s+(\d+)/);
+    const matchCsrf = ps.match(/--csrf_token\s+([a-f0-9-]+)/i);
+    if (!matchPid || !matchCsrf) return {};
+    const pid = matchPid[1];
+    const csrfToken = matchCsrf[1];
+
+    const lsof = execSync(`lsof -nP -p ${pid} | grep LISTEN`, { encoding: 'utf8' });
+    const ports: number[] = [];
+    for (const line of lsof.split('\n')) {
+      const m = line.match(/TCP\s+(?:127\.0\.0\.1|localhost|\*):(\d+)\s+\(LISTEN\)/);
+      if (m) ports.push(parseInt(m[1], 10));
+    }
+    ports.sort((a, b) => b - a);
+    if (ports.length > 0) {
+      return {
+        ANTIGRAVITY_LS_ADDRESS: `localhost:${ports[0]}`,
+        ANTIGRAVITY_CSRF_TOKEN: csrfToken,
+      };
+    }
+  } catch {
+    // Best-effort detection
+  }
+  return {};
+}
+
 export async function spawnAntigravitySession(
   request: InboxIdeTaskProvisioningRequest,
   worktreePath: string
@@ -244,7 +283,23 @@ export async function spawnAntigravitySession(
     ? ['agentapi', 'new-conversation', `--title=${title}`, prompt]
     : ['new-conversation', `--title=${title}`, prompt];
 
-  const { stdout } = await execFile(command, args, { timeout: AGENTAPI_TIMEOUT_MS });
+  const detectedEnv = detectAntigravityLsEnv();
+  const env = {
+    ...process.env,
+    ...detectedEnv,
+  };
+
+  let stdout = '';
+  try {
+    const result = await execFile(command, args, { timeout: AGENTAPI_TIMEOUT_MS, env });
+    stdout = result.stdout;
+  } catch (err: unknown) {
+    const execErr = err as { message?: string; stdout?: string; stderr?: string };
+    const stdoutInfo = execErr?.stdout ? ` (stdout: ${execErr.stdout.trim()})` : '';
+    const stderrInfo = execErr?.stderr ? ` (stderr: ${execErr.stderr.trim()})` : '';
+    throw new Error(`Command failed: ${execErr?.message || String(err)}${stdoutInfo}${stderrInfo}`);
+  }
+
   try {
     const parsed = JSON.parse(stdout) as {
       response?: {
@@ -656,6 +711,145 @@ export async function runClarificationWatcher(deps: ClarificationWatcherDeps): P
   return 'CLARIFIED';
 }
 
+export async function callGeminiPlanner(
+  apiKey: string,
+  job: InboxPlanWorkerJob,
+  fetcher: typeof fetch = fetch
+): Promise<InboxPlanDraft | null> {
+  const model = 'gemini-3.1-pro-preview';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const prompt = `Bạn là kỹ sư phần mềm AI cấp cao của mOS (Wings Lashes CRM), tích hợp trong IDE Antigravity.
+Nhiệm vụ: Lập kế hoạch triển khai (Implementation Plan) cho ticket sau:
+- Mã ticket: ${job.ticketKey} (ID: ${job.ticketId})
+- Loại yêu cầu: ${job.context.requestType}
+- Tiêu đề: "${job.context.title}"
+- Mô tả: "${job.context.description}"
+- Màn hình thao tác: ${job.context.sourcePath || 'Chưa xác định'}
+${job.context.clarificationSummary ? `- Tóm tắt làm rõ: "${job.context.clarificationSummary}"` : ''}
+${job.context.businessContext ? `- Bối cảnh nghiệp vụ: "${job.context.businessContext}"` : ''}
+${job.context.reopen ? `- Lý do reopen: "${job.context.reopen.reason}"` : ''}
+
+Hãy lập kế hoạch triển khai rõ ràng, an toàn, súc tích tuân thủ các Điều răn mOS.
+Trả về JSON thuần túy theo schema:
+{
+  "evidence": "Bằng chứng hoặc giả thuyết có giới hạn",
+  "expectedOutcome": "Kết quả mong đợi sau khi sửa",
+  "scope": "Phạm vi tệp tin / module cần can thiệp",
+  "steps": ["Bước 1...", "Bước 2...", "Bước 3..."],
+  "verification": "Cách kiểm thử và xác minh (unit tests, UI contract, Playwright nếu có web)",
+  "risksAndRollback": "Rủi ro tiềm ẩn và phương án rollback nếu có sự cố",
+  "approvalRequest": "Quyết định cụ thể cần Danny phê duyệt"
+}`;
+
+  const res = await fetcher(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gemini API HTTP ${res.status}: ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) return null;
+  return JSON.parse(text) as InboxPlanDraft;
+}
+
+export async function runPlanWatcher(deps: {
+  apiUrl: string;
+  token: string;
+  provisionerId: string;
+  repository: string;
+  fetch?: typeof fetch;
+  geminiApiKey?: string;
+  notifyVoice?: (message: string) => Promise<void>;
+}): Promise<'IDLE' | 'PLANNED'> {
+  const fetcher = deps.fetch || fetch;
+  const token = deps.token;
+  const claimUrl = `${deps.apiUrl}/request-classifier/inbox-plans/claim`;
+
+  let claimRes: { data?: unknown };
+  try {
+    claimRes = await bridgeJson(fetcher, claimUrl, {
+      method: 'POST',
+      headers: {
+        ...bridgeHeaders(token, deps.provisionerId),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ workerId: 'antigravity' }),
+    });
+  } catch {
+    return 'IDLE';
+  }
+
+  const job = claimRes?.data as InboxPlanWorkerJob | null;
+  if (!job || !job.id || !job.leaseToken) return 'IDLE';
+
+  process.stdout.write(`[${new Date().toISOString()}] [AutoPlan] Claimed plan job for ${job.ticketKey} (${job.id})\n`);
+
+  const geminiApiKey = deps.geminiApiKey || readGeminiApiKey();
+  const action: 'POST_PLAN' | 'NO_OP' | 'INSUFFICIENT_INFORMATION' = 'POST_PLAN';
+  let note = `Antigravity IDE: Kế hoạch triển khai cho ${job.ticketKey}.`;
+  let plan: InboxPlanDraft | null = {
+    evidence: job.context.clarificationSummary || job.context.description || job.context.title,
+    expectedOutcome: `Xử lý triệt để yêu cầu ${job.ticketKey}.`,
+    scope: job.context.sourcePath || 'apps/api, apps/web',
+    steps: [
+      'Rà soát mã nguồn liên quan theo đúng bối cảnh được báo.',
+      'Triển khai chỉnh sửa tối thiểu và an toàn trong worktree riêng.',
+      'Chạy kiểm chứng pnpm verify:quick và bàn giao receipt.',
+    ],
+    verification: 'pnpm verify:quick',
+    risksAndRollback: 'Rủi ro thấp, cô lập hoàn toàn trong worktree ticket.',
+    approvalRequest: 'Duyệt triển khai code và kiểm thử.',
+  };
+
+  if (geminiApiKey) {
+    try {
+      const geminiPlan = await callGeminiPlanner(geminiApiKey, job, fetcher);
+      if (geminiPlan) {
+        plan = geminiPlan;
+        note = `Antigravity IDE: Đã tự động lập kế hoạch chi tiết cho ${job.ticketKey}.`;
+      }
+    } catch (geminiErr) {
+      process.stderr.write(
+        `[${new Date().toISOString()}] [AutoPlan] Gemini planning failed, using fallback: ${geminiErr instanceof Error ? geminiErr.message : String(geminiErr)}\n`
+      );
+    }
+  }
+
+  const completeUrl = `${deps.apiUrl}/request-classifier/inbox-plans/${encodeURIComponent(job.id)}/complete`;
+  await bridgeJson(fetcher, completeUrl, {
+    method: 'POST',
+    headers: {
+      ...bridgeHeaders(token, deps.provisionerId),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      leaseToken: job.leaseToken,
+      result: { action, note, plan },
+    }),
+  });
+
+  process.stdout.write(`[${new Date().toISOString()}] [AutoPlan] Successfully completed plan for ${job.ticketKey}\n`);
+
+  if (deps.notifyVoice) {
+    await deps.notifyVoice(
+      `Antigravity đã tự động lập kế hoạch triển khai cho ticket ${job.ticketKey} và cập nhật lên mOS Inbox rồi ạ.`
+    );
+  }
+
+  return 'PLANNED';
+}
+
 export async function main() {
   const isDaemon = process.argv.includes('--daemon');
   const token = readToken();
@@ -713,6 +907,23 @@ export async function main() {
     } catch (err) {
       process.stderr.write(
         `[${new Date().toISOString()}] AutoClarify error: ${err instanceof Error ? err.message : String(err)}\n`
+      );
+    }
+
+    try {
+      const planResult = await runPlanWatcher({
+        apiUrl: config.apiUrl,
+        token,
+        provisionerId: config.provisionerId,
+        repository: config.repository,
+        notifyVoice,
+      });
+      if (planResult === 'PLANNED') {
+        process.stdout.write(`[${new Date().toISOString()}] AutoPlan completed successfully.\n`);
+      }
+    } catch (err) {
+      process.stderr.write(
+        `[${new Date().toISOString()}] AutoPlan error: ${err instanceof Error ? err.message : String(err)}\n`
       );
     }
   };

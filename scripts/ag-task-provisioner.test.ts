@@ -9,6 +9,7 @@ import {
   readProvisioningLedger,
   runProvisionerOnce,
   runClarificationWatcher,
+  runPlanWatcher,
 } from './ag-task-provisioner.js';
 
 const mockRequest = {
@@ -341,4 +342,62 @@ test('runClarificationWatcher submits REANALYSIS_CONFIRMED for REPORTER_REOPENED
 
   assert.equal(result, 'CLARIFIED');
   assert.equal(completed, true);
+});
+
+test('runPlanWatcher claims and completes plan job successfully', async () => {
+  let completed = false;
+  let voiceNotified = false;
+
+  const mockJob = {
+    id: 'plan-job-uuid-1',
+    ticketId: 34,
+    ticketKey: 'MOS-BUG-34',
+    eventKind: 'IMPLEMENTATION_APPROVAL',
+    eventVersion: 'v1:abc',
+    leaseToken: 'lease-token-plan-1',
+    context: {
+      requestType: 'BUG',
+      title: 'em không đổi lịch đặt sẵn được ở trên này',
+      description: 'em không đổi lịch đặt sẵn được ở trên này',
+      status: 'APPROVED',
+      clarificationSummary: 'Đã phân tích 403 do role Manager.',
+      businessContext: 'Manager can reschedule.',
+      sourcePath: '/dashboard/loca',
+      reporterMessages: [],
+      reopen: null,
+    },
+  };
+
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/request-classifier/inbox-plans/claim')) {
+      return jsonResponse(mockJob);
+    }
+    if (url.includes('/complete')) {
+      completed = true;
+      const body = JSON.parse(String(init?.body || '{}'));
+      assert.equal(body.leaseToken, 'lease-token-plan-1');
+      assert.equal(body.result.action, 'POST_PLAN');
+      assert.ok(body.result.plan);
+      assert.ok(body.result.plan.steps.length > 0);
+      return jsonResponse({ success: true });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+
+  const result = await runPlanWatcher({
+    apiUrl: 'http://127.0.0.1:4001/api',
+    token: 'test-token-over-thirty-two-chars-long-example',
+    provisionerId: 'test-ag-desktop',
+    repository: '/tmp/repo',
+    fetch: fetcher,
+    notifyVoice: async (msg: string) => {
+      voiceNotified = true;
+      assert.match(msg, /MOS-BUG-34/);
+    },
+  });
+
+  assert.equal(result, 'PLANNED');
+  assert.equal(completed, true);
+  assert.equal(voiceNotified, true);
 });
