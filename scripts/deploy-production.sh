@@ -26,6 +26,12 @@ git pull --ff-only
 DEPLOY_COMMIT="$(git rev-parse HEAD)"
 echo "[VPS] Deploying ${DEPLOY_COMMIT}"
 
+LAST_DEPLOYED_COMMIT="$(cat /tmp/last-deployed-commit 2>/dev/null || true)"
+if [[ "${FORCE_DEPLOY:-false}" != 'true' && -n "${LAST_DEPLOYED_COMMIT}" && "${LAST_DEPLOYED_COMMIT}" == "${DEPLOY_COMMIT}" ]]; then
+  echo "[VPS] Commit ${DEPLOY_COMMIT} is already deployed and active. Skipping redundant rebuild."
+  exit 0
+fi
+
 echo '[VPS] Ensuring private Bug Inbox media directory exists...'
 install -d -m 700 /home/web/mos-data/bug-reports
 
@@ -75,5 +81,6 @@ DEPLOYED_AT="$(TZ=Asia/Ho_Chi_Minh date -Iseconds)"
 DEPLOYED_AT="${DEPLOYED_AT}" DEPLOY_COMMIT="${DEPLOY_COMMIT}" \
   pm2 startOrRestart ecosystem.config.cjs --only mos-lab-api --update-env
 echo "[VPS] Release marker updated: ${DEPLOYED_AT}"
+echo "${DEPLOY_COMMIT}" > /tmp/last-deployed-commit
 
 echo '[VPS] Production backend deployment completed.'
