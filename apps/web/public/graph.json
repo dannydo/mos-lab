@@ -30424,8 +30424,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25012,
-        "lineCount": 535,
+        "sizeBytes": 26335,
+        "lineCount": 570,
         "ext": ".tsx"
       }
     },
@@ -30437,8 +30437,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38538,
-        "lineCount": 844,
+        "sizeBytes": 38726,
+        "lineCount": 847,
         "ext": ".tsx"
       }
     },
@@ -33583,8 +33583,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 43647,
-        "lineCount": 1365,
+        "sizeBytes": 43646,
+        "lineCount": 1364,
         "ext": ".ts"
       }
     },

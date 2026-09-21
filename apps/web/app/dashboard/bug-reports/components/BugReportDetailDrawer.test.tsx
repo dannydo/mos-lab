@@ -94,6 +94,41 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(props.confirmClose).not.toHaveBeenCalled();
   });
 
+  it('displays code/test approval for reopened ticket with past settled implementation', async () => {
+    const detail = makeDetail({
+      status: 'APPROVED',
+      priority: 'P1',
+      clarification: { status: 'READY', summary: 'Đủ rõ', clarifiedAt: capturedAt },
+      agentProgress: { stage: 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL', note: null, updatedAt: capturedAt },
+      implementation: {
+        status: 'RELEASED',
+        executionOwner: 'IDE',
+        phase: 'REOPENED_BY_REPORTER',
+        reviewCandidate: null,
+        ideHandoff: null,
+        progressLabel: null,
+        lastProgressAt: null,
+        progressCount: 0,
+        checkpointCount: 0,
+        failureCode: null,
+        deploymentLane: null,
+        retrySequence: 0,
+        canRetryImplementation: false,
+        canAuthorizeWorkerRecoveryRetry: false,
+        canAuthorizeSchemaRecoveryRetry: false,
+        canAuthorizeQualityGateRecoveryRetry: false,
+        canAuthorizeBuildLockRecoveryRetry: false,
+        failure: null,
+        hasRetainedDraft: false,
+        startedAt: capturedAt,
+        completedAt: capturedAt,
+        updatedAt: capturedAt,
+      },
+    });
+    render(<BugReportDetailDrawer {...propsFor(detail)} />);
+    expect(await screen.findByRole('button', { name: 'Duyệt code/test' })).toBeVisible();
+  });
+
   it.each([false, true])('hides plan revision without server eligibility (viewer=%s)', async (canTriage) => {
     const detail = makeDetail({ planReview: null });
     render(<BugReportDetailDrawer {...propsFor(detail, canTriage)} />);
