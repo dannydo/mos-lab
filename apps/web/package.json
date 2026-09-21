@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 4000",
+    "dev": "next dev --webpack --port 4000",
     "build": "node scripts/next-build-with-lock.mjs",
     "clean": "rm -rf .next .next-performance .next-qa out",
     "start": "next start",

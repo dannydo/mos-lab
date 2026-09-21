@@ -258,6 +258,8 @@ export interface BkPaystubRecord extends HolidayPayBreakdown {
   monthlyBaseSalary: number;
   standardWorkDays: number;
   actualWorkDays: number;
+  actualCheckInDays?: number;
+  workDaysAdjustment?: number;
   calculatedBaseSalary: number;
   doneBonus: number;
   tipBonus: number;
@@ -306,10 +308,46 @@ export interface BkSalaryConfig {
   doneBonusTiers: Array<{ minCount: number; bonus: number }>;
   missedBonusTiers: Array<{ maxRate: number; bonus: number }>;
   revBonusTiers: Array<{ minRev: number; rate: number }>;
+  workDaysOverrides?: Record<string, number>;
 }
 
 export interface BkConfigResponse {
   activeBkIds: number[];
   config: BkSalaryConfig;
   allStaffOptions: BkStaffOption[];
+}
+
+export interface BkWorkLogRecord {
+  workDate: string;
+  dayOfWeek: string;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  firstIn: string | null;
+  lastOut: string | null;
+  workingMinute: number;
+  totalHours: number;
+  isCheckIn: boolean;
+  status: 'VALID' | 'OFF' | 'ADJUSTED';
+  dailySalary: number;
+}
+
+export interface BkWorkLogResponse {
+  staffId: number;
+  staffName: string;
+  avatar?: string | null;
+  store: string;
+  monthlyBaseSalary: number;
+  standardWorkDays: number;
+  actualWorkDays: number;
+  actualCheckInDays: number;
+  workDaysAdjustment: number;
+  calculatedBaseSalary: number;
+  summary: {
+    totalDaysInRange: number;
+    totalCheckInDays: number;
+    totalWorkingMinutes: number;
+    totalWorkingHours: number;
+    totalDailySalary: number;
+  };
+  data: BkWorkLogRecord[];
 }

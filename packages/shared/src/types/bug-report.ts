@@ -735,6 +735,7 @@ export interface InboxImplementationWorkerResult {
   summary: string;
   tests: InboxImplementationTestResult[];
   risksAndRollback: string;
+  releaseUrl?: string | null;
 }
 
 export type CreateRequestConversationResponse = ActionResponse<RequestConversation>;
@@ -1055,6 +1056,7 @@ export interface ReleaseBugReportImplementationRequest {
   acknowledged: true;
   /** Omitted by the Inbox UI once the trusted worker has recorded the approved commit. */
   commitSha?: string;
+  releaseUrl?: string | null;
 }
 
 /** Trusted worker-captured content, subsequently bound by native approval audits. */
@@ -1078,6 +1080,7 @@ export interface InboxIdeReleaseToken {
   apiRelease: string;
   webRelease: string | null;
   approvalAuditIds: number[];
+  releaseUrl?: string | null;
 }
 
 /**
@@ -1091,6 +1094,7 @@ export interface InboxIdeReleaseCheckpointMetadata {
   commitSha: string;
   apiRelease: string;
   webRelease: string | null;
+  releaseUrl?: string | null;
 }
 
 export interface InboxIdeReleasePreview {

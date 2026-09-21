@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { BkSalaryConfig, BkPaystubRecord, SafeAny } from '@mos-lab/shared';
+import { BkSalaryConfig, BkPaystubRecord, BkWorkLogRecord, BkWorkLogResponse, SafeAny } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 
@@ -212,6 +212,7 @@ export async function getBkCallMetricsByLegacyStaffIds(
 }
 
 export async function getBkSalaryConfig(fastify: FastifyInstance): Promise<BkSalaryConfig> {
+  const workDaysOverrides = await getBkWorkDaysOverrides(fastify);
   try {
     const configRecord = await fastify.prisma.crm.crmConfig.findUnique({
       where: { key: 'BK_SALARY_CONFIG' },
@@ -222,6 +223,7 @@ export async function getBkSalaryConfig(fastify: FastifyInstance): Promise<BkSal
       return {
         ...DEFAULT_BK_CONFIG,
         ...parsed,
+        workDaysOverrides,
         activeBkIds: await getActiveBkIds(fastify),
       };
     }
@@ -230,6 +232,7 @@ export async function getBkSalaryConfig(fastify: FastifyInstance): Promise<BkSal
   }
   return {
     ...DEFAULT_BK_CONFIG,
+    workDaysOverrides,
     activeBkIds: await getActiveBkIds(fastify),
   };
 }
@@ -596,6 +599,73 @@ export async function computeBkOrderCheckins(
   return { clientBonusMap, orderCheckinMap };
 }
 
+export function calculateStandardWorkDays(startDateStr: string, endDateStr: string): number {
+  const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
+  const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number);
+
+  const cur = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+  const end = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+
+  let standardDays = 0;
+  while (cur <= end) {
+    const dayOfWeek = cur.getUTCDay(); // 0 is Sunday
+    if (dayOfWeek !== 0) {
+      standardDays++;
+    }
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return standardDays;
+}
+
+export async function fetchBkAttendanceMap(
+  fastify: FastifyInstance,
+  startPart: string,
+  endPart: string,
+  bkStaffIds: number[]
+): Promise<Map<number, number>> {
+  const map = new Map<number, number>();
+  if (bkStaffIds.length === 0) return map;
+
+  const bkIdsStr = bkStaffIds.join(',');
+  const sql = `
+    SELECT 
+      user_id as staffId,
+      COUNT(DISTINCT CASE WHEN (check_in_date IS NOT NULL OR working_minute > 0) THEN \`date\` END) as checkinDays
+    FROM \`report_staff\`
+    WHERE user_id IN (${bkIdsStr})
+      AND \`date\` >= '${startPart}' AND \`date\` <= '${endPart}'
+    GROUP BY user_id
+  `;
+
+  try {
+    const rows =
+      await fastify.prisma.legacy.$queryRawUnsafe<Array<{ staffId: number | bigint; checkinDays: number | bigint }>>(
+        sql
+      );
+    for (const r of rows) {
+      map.set(Number(r.staffId), Number(r.checkinDays || 0));
+    }
+  } catch (err) {
+    fastify.log.error(err as SafeAny, 'Error fetching BK attendance from report_staff');
+  }
+
+  return map;
+}
+
+export async function getBkWorkDaysOverrides(fastify: FastifyInstance): Promise<Record<string, number>> {
+  try {
+    const cfg = await fastify.prisma.crm.crmConfig.findUnique({
+      where: { key: 'BK_WORK_DAYS_OVERRIDE' },
+    });
+    if (cfg?.value) {
+      return JSON.parse(cfg.value) as Record<string, number>;
+    }
+  } catch (err) {
+    fastify.log.error(err as SafeAny, 'Error reading BK_WORK_DAYS_OVERRIDE config');
+  }
+  return {};
+}
+
 export interface BkPaystubDetail {
   staffId: number;
   staffName: string;
@@ -604,6 +674,8 @@ export interface BkPaystubDetail {
   monthlyBaseSalary: number;
   standardWorkDays: number;
   actualWorkDays: number;
+  actualCheckInDays?: number;
+  workDaysAdjustment?: number;
   calculatedBaseSalary: number;
   basicCheckinBonus: number;
   milestoneBonus: number;
@@ -693,10 +765,13 @@ export async function getBkPaystubData(
 
   const bkIdsStr = activeBkIds.join(',');
 
-  const [{ clientBonusMap, orderCheckinMap }, holidayBreakdownMap] = await Promise.all([
-    computeBkOrderCheckins(fastify, startPart, endPart, activeBkIds, storeFilter),
-    HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, activeBkIds, startPart, endPart),
-  ]);
+  const [{ clientBonusMap, orderCheckinMap }, holidayBreakdownMap, attendanceMap, workDaysOverrides] =
+    await Promise.all([
+      computeBkOrderCheckins(fastify, startPart, endPart, activeBkIds, storeFilter),
+      HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, activeBkIds, startPart, endPart),
+      fetchBkAttendanceMap(fastify, startPart, endPart, activeBkIds),
+      getBkWorkDaysOverrides(fastify),
+    ]);
 
   const sql = `
     SELECT 
@@ -763,10 +838,17 @@ export async function getBkPaystubData(
     const totalRevenue = Number(r.totalRevenue || 0);
     const totalCustomerTip = Number(r.totalCustomerTip || 0);
 
-    const actualWorkDays = 26; // Default full month
+    const actualCheckInDays = attendanceMap.get(staffId) || 0;
+    const monthKey = startPart.slice(0, 7);
+    const overrideKeyWithMonth = `${staffId}_${monthKey}`;
+    const overrideVal = workDaysOverrides[overrideKeyWithMonth] ?? workDaysOverrides[String(staffId)];
+    const actualWorkDays = typeof overrideVal === 'number' ? overrideVal : actualCheckInDays;
+    const workDaysAdjustment = actualWorkDays - actualCheckInDays;
+
     const monthlyBaseSalary = config.baseSalary;
-    const standardWorkDays = 26;
-    const calculatedBaseSalary = Math.round((monthlyBaseSalary / standardWorkDays) * actualWorkDays);
+    const standardWorkDays = calculateStandardWorkDays(startPart, endPart);
+    const calculatedBaseSalary =
+      standardWorkDays > 0 ? Math.round((monthlyBaseSalary / standardWorkDays) * actualWorkDays) : 0;
 
     const basicCheckinBonus = clientBonusMap.get(staffId) || 0;
     const { bonus: milestoneBonus, doneLevelCount } = getMilestoneBonusInfo(doneCount, config.doneBonusTiers);
@@ -803,6 +885,8 @@ export async function getBkPaystubData(
       monthlyBaseSalary,
       standardWorkDays,
       actualWorkDays,
+      actualCheckInDays,
+      workDaysAdjustment,
       calculatedBaseSalary,
       basicCheckinBonus,
       milestoneBonus,
@@ -833,6 +917,8 @@ export async function getBkPaystubData(
       monthlyBaseSalary,
       standardWorkDays,
       actualWorkDays,
+      actualCheckInDays,
+      workDaysAdjustment,
       calculatedBaseSalary,
       doneBonus,
       tipBonus,
@@ -862,5 +948,118 @@ export async function getBkPaystubData(
     },
     detailsMap,
     orderCheckinMap,
+  };
+}
+
+export async function getBkWorkLogs(
+  fastify: FastifyInstance,
+  staffId: number,
+  startPart: string,
+  endPart: string
+): Promise<BkWorkLogResponse | null> {
+  const config = await getBkSalaryConfig(fastify);
+  const workDaysOverrides = await getBkWorkDaysOverrides(fastify);
+
+  // Fetch staff profile
+  const profiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+    SELECT 
+      up.user_id as staffId,
+      up.full_name as staffName,
+      up.avatar as avatar,
+      UPPER(COALESCE(cs.client_store_key, 'PXL')) as store
+    FROM \`user_profile\` up
+    LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
+    WHERE up.user_id = ${staffId}
+    LIMIT 1
+  `);
+
+  if (profiles.length === 0) return null;
+  const profile = profiles[0];
+
+  // Fetch daily attendance from report_staff
+  const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+    SELECT 
+      DATE_FORMAT(rs.date, '%Y-%m-%d') as workDate,
+      DAYNAME(rs.date) as dayName,
+      TIME_FORMAT(rs.working_shift_start_time, '%H:%i') as scheduledStart,
+      TIME_FORMAT(rs.working_shift_end_time, '%H:%i') as scheduledEnd,
+      TIME_FORMAT(rs.check_in_date, '%H:%i:%s') as firstIn,
+      TIME_FORMAT(rs.check_out_date, '%H:%i:%s') as lastOut,
+      rs.working_minute as workingMinute
+    FROM \`report_staff\` rs
+    WHERE rs.user_id = ${staffId}
+      AND rs.date >= '${startPart}' AND rs.date <= '${endPart}'
+    ORDER BY rs.date ASC
+  `);
+
+  const standardWorkDays = calculateStandardWorkDays(startPart, endPart);
+  const monthlyBaseSalary = config.baseSalary;
+  const dailySalaryRate = standardWorkDays > 0 ? Math.round(monthlyBaseSalary / standardWorkDays) : 0;
+
+  const monthKey = startPart.slice(0, 7);
+  const overrideKeyWithMonth = `${staffId}_${monthKey}`;
+  const overrideVal = workDaysOverrides[overrideKeyWithMonth] ?? workDaysOverrides[String(staffId)];
+
+  let totalCheckInDays = 0;
+  let totalWorkingMinutes = 0;
+
+  const dayOfWeekMap: Record<string, string> = {
+    Monday: 'Thứ Hai',
+    Tuesday: 'Thứ Ba',
+    Wednesday: 'Thứ Tư',
+    Thursday: 'Thứ Năm',
+    Friday: 'Thứ Sáu',
+    Saturday: 'Thứ Bảy',
+    Sunday: 'Chủ Nhật',
+  };
+
+  const logs: BkWorkLogRecord[] = rows.map((r) => {
+    const isCheckIn = !!(r.firstIn || Number(r.workingMinute || 0) > 0);
+    const minute = Number(r.workingMinute || 0);
+    if (isCheckIn) {
+      totalCheckInDays++;
+      totalWorkingMinutes += minute;
+    }
+
+    return {
+      workDate: String(r.workDate),
+      dayOfWeek: dayOfWeekMap[String(r.dayName)] || String(r.dayName),
+      scheduledStart: r.scheduledStart ? String(r.scheduledStart) : null,
+      scheduledEnd: r.scheduledEnd ? String(r.scheduledEnd) : null,
+      firstIn: r.firstIn ? String(r.firstIn) : null,
+      lastOut: r.lastOut ? String(r.lastOut) : null,
+      workingMinute: minute,
+      totalHours: Number((minute / 60).toFixed(2)),
+      isCheckIn,
+      status: isCheckIn ? 'VALID' : 'OFF',
+      dailySalary: isCheckIn ? dailySalaryRate : 0,
+    };
+  });
+
+  const actualCheckInDays = totalCheckInDays;
+  const actualWorkDays = typeof overrideVal === 'number' ? overrideVal : actualCheckInDays;
+  const workDaysAdjustment = actualWorkDays - actualCheckInDays;
+  const calculatedBaseSalary =
+    standardWorkDays > 0 ? Math.round((monthlyBaseSalary / standardWorkDays) * actualWorkDays) : 0;
+
+  return {
+    staffId,
+    staffName: String(profile.staffName || `BK #${staffId}`),
+    avatar: profile.avatar ? String(profile.avatar) : null,
+    store: String(profile.store || 'PXL'),
+    monthlyBaseSalary,
+    standardWorkDays,
+    actualWorkDays,
+    actualCheckInDays,
+    workDaysAdjustment,
+    calculatedBaseSalary,
+    summary: {
+      totalDaysInRange: rows.length,
+      totalCheckInDays,
+      totalWorkingMinutes,
+      totalWorkingHours: Number((totalWorkingMinutes / 60).toFixed(2)),
+      totalDailySalary: calculatedBaseSalary,
+    },
+    data: logs,
   };
 }

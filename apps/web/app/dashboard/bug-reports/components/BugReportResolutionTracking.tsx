@@ -4,6 +4,7 @@ import type { BugReportDetail } from '@mos-lab/shared';
 import { Button, Descriptions, Timeline, Typography } from 'antd';
 import { ExternalLink } from 'lucide-react';
 import { AppIcon, SectionCard } from '../../../../components/ui';
+import { resolveFeatureUrl } from '../../../../components/bug-reports/MyBugReportsPanel';
 import { durationBetween, formatDate, formatElapsed } from '../bug-report-presenters';
 
 const { Text } = Typography;
@@ -88,19 +89,31 @@ export function BugReportResolutionTracking({ detail }: { detail: BugReportDetai
                 {detail.resolution.commitSha || 'unknown'}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="Link bản sửa">
-              {detail.resolution.releaseUrl ? (
-                <Button
-                  type="link"
-                  href={detail.resolution.releaseUrl}
-                  target="_blank"
-                  icon={<AppIcon icon={ExternalLink} size="sm" />}
-                >
-                  Mở bản đã sửa
-                </Button>
-              ) : (
-                'Chưa có'
-              )}
+            <Descriptions.Item label="Kết quả triển khai">
+              {(() => {
+                const featureUrl = resolveFeatureUrl(detail);
+                return featureUrl ? (
+                  <Button
+                    type="link"
+                    href={featureUrl}
+                    target="_blank"
+                    icon={<AppIcon icon={ExternalLink} size="sm" />}
+                  >
+                    Mở kết quả
+                  </Button>
+                ) : detail.resolution.releaseUrl && !detail.resolution.releaseUrl.includes('/dashboard/bug-reports') ? (
+                  <Button
+                    type="link"
+                    href={detail.resolution.releaseUrl}
+                    target="_blank"
+                    icon={<AppIcon icon={ExternalLink} size="sm" />}
+                  >
+                    Mở kết quả
+                  </Button>
+                ) : (
+                  'Không có giao diện (backend / nội bộ)'
+                );
+              })()}
             </Descriptions.Item>
             <Descriptions.Item label="Files">
               {detail.resolution.changedFiles.length

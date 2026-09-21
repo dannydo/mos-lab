@@ -7156,7 +7156,7 @@
         "path": "/api/customers/booking",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 23
+        "line": 24
       }
     },
     {
@@ -7170,7 +7170,7 @@
         "path": "/api/customers/booking/:id/promotions",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 407
+        "line": 408
       }
     },
     {
@@ -7184,7 +7184,7 @@
         "path": "/api/customers/booking/:id/reschedule-eligibility",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 454
+        "line": 455
       }
     },
     {
@@ -7198,7 +7198,7 @@
         "path": "/api/customers/booking/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 486
+        "line": 487
       }
     },
     {
@@ -7212,7 +7212,7 @@
         "path": "/api/customers/booking/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 858
+        "line": 859
       }
     },
     {
@@ -7226,7 +7226,7 @@
         "path": "/api/customers/booking-slots",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 950
+        "line": 951
       }
     },
     {
@@ -7772,7 +7772,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1031
+        "line": 1034
       }
     },
     {
@@ -8402,7 +8402,7 @@
         "path": "/api/kpi/bk/booking/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 37
+        "line": 38
       }
     },
     {
@@ -8416,7 +8416,7 @@
         "path": "/api/kpi/bk/booking/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 161
+        "line": 162
       }
     },
     {
@@ -8430,7 +8430,7 @@
         "path": "/api/kpi/bk/done/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 330
+        "line": 331
       }
     },
     {
@@ -8444,7 +8444,7 @@
         "path": "/api/kpi/bk/done/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 458
+        "line": 459
       }
     },
     {
@@ -8458,7 +8458,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 648
+        "line": 649
       }
     },
     {
@@ -8472,7 +8472,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 761
+        "line": 762
       }
     },
     {
@@ -8486,7 +8486,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 865
+        "line": 866
       }
     },
     {
@@ -8500,7 +8500,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 965
+        "line": 966
       }
     },
     {
@@ -8514,7 +8514,21 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1061
+        "line": 1062
+      }
+    },
+    {
+      "id": "route:GET:/api/kpi/bk/work-logs",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/bk/work-logs",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/bk/work-logs",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 1095
       }
     },
     {
@@ -8528,7 +8542,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1094
+        "line": 1129
       }
     },
     {
@@ -8542,7 +8556,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1139
+        "line": 1174
       }
     },
     {
@@ -9732,7 +9746,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 133
+        "line": 128
       }
     },
     {
@@ -9746,7 +9760,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 218
+        "line": 213
       }
     },
     {
@@ -9760,7 +9774,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "preHandler",
-        "line": 298
+        "line": 293
       }
     },
     {
@@ -9774,7 +9788,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 443
+        "line": 438
       }
     },
     {
@@ -9788,7 +9802,7 @@
         "path": "/api/staff/:id/audit-logs",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 761
+        "line": 780
       }
     },
     {
@@ -9802,7 +9816,7 @@
         "path": "/api/staff/roles/telesales-profile",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 815
+        "line": 834
       }
     },
     {
@@ -9816,7 +9830,7 @@
         "path": "/api/staff/bulk-update",
         "module": "staff",
         "handler": "preHandler",
-        "line": 820
+        "line": 839
       }
     },
     {
@@ -9830,7 +9844,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "preHandler",
-        "line": 900
+        "line": 919
       }
     },
     {
@@ -9844,7 +9858,7 @@
         "path": "/api/staff/legacy",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 973
+        "line": 992
       }
     },
     {
@@ -9858,7 +9872,7 @@
         "path": "/api/staff/sync-legacy",
         "module": "staff",
         "handler": "preHandler",
-        "line": 1004
+        "line": 1023
       }
     },
     {
@@ -9872,7 +9886,7 @@
         "path": "/api/staff/merge",
         "module": "staff",
         "handler": "preHandler",
-        "line": 1186
+        "line": 1205
       }
     },
     {
@@ -9886,7 +9900,7 @@
         "path": "/api/staff/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1356
+        "line": 1375
       }
     },
     {
@@ -9900,7 +9914,7 @@
         "path": "/api/staff/:id/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1396
+        "line": 1415
       }
     },
     {
@@ -14269,6 +14283,30 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BkConfigResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkWorkLogRecord",
+      "type": "SharedType",
+      "label": "BkWorkLogRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkWorkLogRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkWorkLogResponse",
+      "type": "SharedType",
+      "label": "BkWorkLogResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkWorkLogResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -25703,7 +25741,7 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 119029,
+        "sizeBytes": 119036,
         "lineCount": 2844,
         "ext": ".ts"
       }
@@ -25859,8 +25897,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 75646,
-        "lineCount": 2119,
+        "sizeBytes": 78207,
+        "lineCount": 2183,
         "ext": ".ts"
       }
     },
@@ -25872,8 +25910,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 150534,
-        "lineCount": 3779,
+        "sizeBytes": 153554,
+        "lineCount": 3861,
         "ext": ".ts"
       }
     },
@@ -26294,6 +26332,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/customers/routes/booking-slots.test.ts",
+      "type": "File",
+      "label": "booking-slots.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/booking-slots.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6253,
+        "lineCount": 154,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/customers/routes/booking.routes.ts",
       "type": "File",
       "label": "booking.routes.ts",
@@ -26301,8 +26352,8 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 48329,
-        "lineCount": 1142,
+        "sizeBytes": 49633,
+        "lineCount": 1181,
         "ext": ".ts"
       }
     },
@@ -26379,8 +26430,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49474,
-        "lineCount": 1222,
+        "sizeBytes": 49664,
+        "lineCount": 1228,
         "ext": ".ts"
       }
     },
@@ -26691,8 +26742,8 @@
       "filePath": "apps/api/src/modules/customers/services/cv-attendance.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17678,
-        "lineCount": 445,
+        "sizeBytes": 17949,
+        "lineCount": 449,
         "ext": ".ts"
       }
     },
@@ -26925,8 +26976,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 46536,
-        "lineCount": 1176,
+        "sizeBytes": 48468,
+        "lineCount": 1221,
         "ext": ".ts"
       }
     },
@@ -27120,8 +27171,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6636,
-        "lineCount": 205,
+        "sizeBytes": 8633,
+        "lineCount": 268,
         "ext": ".ts"
       }
     },
@@ -27133,8 +27184,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 31616,
-        "lineCount": 867,
+        "sizeBytes": 38491,
+        "lineCount": 1061,
         "ext": ".ts"
       }
     },
@@ -28030,8 +28081,8 @@
       "filePath": "apps/api/src/modules/staff/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51359,
-        "lineCount": 1420,
+        "sizeBytes": 51673,
+        "lineCount": 1439,
         "ext": ".ts"
       }
     },
@@ -28448,6 +28499,19 @@
       "metadata": {
         "sizeBytes": 6603,
         "lineCount": 198,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/scripts/apply-legacy-query-perf-phase2-indexes.ts",
+      "type": "File",
+      "label": "apply-legacy-query-perf-phase2-indexes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase2-indexes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2377,
+        "lineCount": 70,
         "ext": ".ts"
       }
     },
@@ -30591,8 +30655,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23231,
-        "lineCount": 561,
+        "sizeBytes": 36963,
+        "lineCount": 835,
         "ext": ".tsx"
       }
     },
@@ -30643,8 +30707,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/bug-report-presenters.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8646,
-        "lineCount": 229,
+        "sizeBytes": 11186,
+        "lineCount": 301,
         "ext": ".ts"
       }
     },
@@ -30799,8 +30863,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportResolutionTracking.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4781,
-        "lineCount": 120,
+        "sizeBytes": 5435,
+        "lineCount": 133,
         "ext": ".tsx"
       }
     },
@@ -32814,8 +32878,8 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17045,
-        "lineCount": 510,
+        "sizeBytes": 16945,
+        "lineCount": 504,
         "ext": ".tsx"
       }
     },
@@ -32840,8 +32904,8 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffTabsContent.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9355,
-        "lineCount": 269,
+        "sizeBytes": 9345,
+        "lineCount": 263,
         "ext": ".tsx"
       }
     },
@@ -33360,8 +33424,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13962,
-        "lineCount": 367,
+        "sizeBytes": 14234,
+        "lineCount": 376,
         "ext": ".ts"
       }
     },
@@ -33841,8 +33905,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5150,
-        "lineCount": 188,
+        "sizeBytes": 5126,
+        "lineCount": 177,
         "ext": ".ts"
       }
     },
@@ -33854,8 +33918,8 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7926,
-        "lineCount": 316,
+        "sizeBytes": 8857,
+        "lineCount": 355,
         "ext": ".ts"
       }
     },
@@ -33867,8 +33931,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 44104,
-        "lineCount": 1385,
+        "sizeBytes": 44224,
+        "lineCount": 1389,
         "ext": ".ts"
       }
     },
@@ -34400,8 +34464,8 @@
       "filePath": "packages/shared/src/utils/seniority.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2655,
-        "lineCount": 102,
+        "sizeBytes": 2651,
+        "lineCount": 101,
         "ext": ".ts"
       }
     },
@@ -38383,6 +38447,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/kpi/bk/work-logs:ws:apps/api",
+      "source": "route:GET:/api/kpi/bk/work-logs",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/kpi/bk/config:ws:apps/api",
       "source": "route:GET:/api/kpi/bk/config",
       "target": "ws:apps/api",
@@ -41521,6 +41592,20 @@
     {
       "id": "edge:type:@mos-lab/shared:BkConfigResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:BkConfigResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkWorkLogRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkWorkLogRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkWorkLogResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkWorkLogResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -49480,6 +49565,13 @@
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/booking-audit.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/booking-audit.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/booking-slots.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/booking-slots.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -58697,6 +58789,13 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/bk/work-logs",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/bk/work-logs",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/bk/config",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/bk/config",
@@ -62946,6 +63045,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/bk/work-logs",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/bk/work-logs",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/bk/config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/bk/config",
@@ -66778,6 +66884,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/bk/paystub",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/bk/paystub",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/bk/work-logs",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/bk/work-logs",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -73159,6 +73272,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/bk/work-logs",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/bk/work-logs",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/bk/config",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/bk/config",
@@ -74084,31 +74204,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2637,
-    "totalEdges": 5666,
+    "totalNodes": 2642,
+    "totalEdges": 5674,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 140,
-      "FastifyRoute": 548,
+      "FastifyRoute": 549,
       "Component": 51,
-      "SharedType": 960,
+      "SharedType": 962,
       "DesignToken": 12,
       "UIComponent": 193,
-      "File": 730
+      "File": 732
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1112,
-      "HANDLES_ROUTE": 548,
+      "EXPORTS": 1114,
+      "HANDLES_ROUTE": 549,
       "RENDERS": 244,
       "USES_TOKEN": 195,
-      "IMPORTS": 393,
+      "IMPORTS": 394,
       "QUERIES_MODEL": 350,
-      "API_CALL": 2824
+      "API_CALL": 2828
     },
-    "fastifyRouteCount": 553,
+    "fastifyRouteCount": 554,
     "prismaModelCount": 140,
     "nextPageCount": 51,
-    "sharedTypeCount": 960
+    "sharedTypeCount": 962
   },
   "routes": [
     {
@@ -77089,6 +77209,13 @@
     {
       "method": "GET",
       "path": "/api/kpi/bk/paystub",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/bk/work-logs",
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"

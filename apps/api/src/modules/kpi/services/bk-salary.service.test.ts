@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import { computeBkOrderCheckins, getActiveBkTelesalesIds, resolveBkTelesalesStaffScope } from './bk-salary.service.js';
+import {
+  calculateStandardWorkDays,
+  computeBkOrderCheckins,
+  fetchBkAttendanceMap,
+  getActiveBkTelesalesIds,
+  getBkWorkDaysOverrides,
+  resolveBkTelesalesStaffScope,
+} from './bk-salary.service.js';
 
 test('BK Done scope uses only active BK_TELESALES members', async () => {
   const inspectedTeamCodes: string[] = [];
@@ -201,4 +208,59 @@ test('BK check-ins retain Combo Live bonuses while fetching only required legacy
     retain_count: true,
   });
   assert.deepEqual(serviceLanguageSelect, { service_id: true, service_name: true });
+});
+
+test('calculateStandardWorkDays calculates non-Sunday working days correctly', () => {
+  // August 2026: 31 days - 5 Sundays (Aug 2, 9, 16, 23, 30) = 26 standard days
+  assert.equal(calculateStandardWorkDays('2026-08-01', '2026-08-31'), 26);
+
+  // September 2026: 30 days - 4 Sundays (Sep 6, 13, 20, 27) = 26 standard days
+  assert.equal(calculateStandardWorkDays('2026-09-01', '2026-09-30'), 26);
+
+  // Partial range: 2026-08-01 (Sat) to 2026-08-07 (Fri) = 7 days - 1 Sunday (Aug 2) = 6 standard days
+  assert.equal(calculateStandardWorkDays('2026-08-01', '2026-08-07'), 6);
+});
+
+test('fetchBkAttendanceMap returns attendance counts grouped by staffId', async () => {
+  let executedSql = '';
+  const fastify = {
+    log: { error: () => undefined },
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          executedSql = sql;
+          return [
+            { staffId: 50670, checkinDays: 18 },
+            { staffId: 32268, checkinDays: 16 },
+          ];
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  const result = await fetchBkAttendanceMap(fastify, '2026-08-01', '2026-08-31', [50670, 32268]);
+  assert.equal(result.get(50670), 18);
+  assert.equal(result.get(32268), 16);
+  assert.ok(executedSql.includes('FROM `report_staff`'));
+});
+
+test('getBkWorkDaysOverrides reads overrides from crmConfig', async () => {
+  const fastify = {
+    log: { error: () => undefined },
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: { where: { key: string } }) => {
+            if (where.key === 'BK_WORK_DAYS_OVERRIDE') {
+              return { value: JSON.stringify({ '50670_2026-08': 23 }) };
+            }
+            return null;
+          },
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  const overrides = await getBkWorkDaysOverrides(fastify);
+  assert.deepEqual(overrides, { '50670_2026-08': 23 });
 });

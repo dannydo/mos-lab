@@ -103,6 +103,79 @@ function requestTypeLabel(report: MyBugReportItem): string {
   return report.requestType === 'FEATURE' ? 'Cải thiện' : 'Báo lỗi';
 }
 
+export function resolveFeatureUrl(item: {
+  id?: number;
+  key?: string;
+  title?: string;
+  description?: string | null;
+  sourcePath?: string | null;
+  resolution?: {
+    releaseUrl?: string | null;
+    changedFiles?: string[];
+  } | null;
+}): string | null {
+  const rawReleaseUrl = item.resolution?.releaseUrl?.trim() || null;
+  if (rawReleaseUrl) {
+    try {
+      const parsed = rawReleaseUrl.startsWith('http')
+        ? new URL(rawReleaseUrl)
+        : new URL(rawReleaseUrl, 'https://lab.masteros.app');
+      const path = parsed.pathname;
+      if (path !== '/dashboard/bug-reports' && path !== '/dashboard/inbox' && path !== '/dashboard' && path !== '/') {
+        return rawReleaseUrl;
+      }
+    } catch {
+      if (!rawReleaseUrl.includes('/dashboard/bug-reports') && !rawReleaseUrl.includes('/dashboard/inbox')) {
+        return rawReleaseUrl;
+      }
+    }
+  }
+
+  // Next: check if title or description contains a specific feature route
+  const textToScan = `${item.title || ''} ${item.description || ''}`;
+  const routeMatch = textToScan.match(/(?:https?:\/\/[^\s"'`]+)?(\/dashboard\/[a-zA-Z0-9_\-/?=&#.]+)/i);
+  if (routeMatch && routeMatch[1]) {
+    const matchedPath = routeMatch[1].replace(/[.,;!?)]+$/, '');
+    if (
+      !matchedPath.startsWith('/dashboard/bug-reports') &&
+      !matchedPath.startsWith('/dashboard/inbox') &&
+      matchedPath !== '/dashboard'
+    ) {
+      return matchedPath;
+    }
+  }
+
+  // Next: check sourcePath
+  if (
+    item.sourcePath &&
+    item.sourcePath.startsWith('/') &&
+    !item.sourcePath.startsWith('/dashboard/bug-reports') &&
+    !item.sourcePath.startsWith('/dashboard/inbox') &&
+    item.sourcePath !== '/'
+  ) {
+    return item.sourcePath;
+  }
+
+  // Next: check changedFiles
+  if (item.resolution?.changedFiles && item.resolution.changedFiles.length > 0) {
+    for (const file of item.resolution.changedFiles) {
+      const match = file.match(/apps\/web\/app\/dashboard\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1] && match[1] !== 'bug-reports' && match[1] !== 'inbox') {
+        const moduleName = match[1];
+        if (moduleName === 'bk') {
+          if (file.toLowerCase().includes('game') || textToScan.toLowerCase().includes('game')) {
+            return '/dashboard/bk?tab=game';
+          }
+          return '/dashboard/bk';
+        }
+        return `/dashboard/${moduleName}`;
+      }
+    }
+  }
+
+  return null;
+}
+
 interface MyBugReportsPanelProps {
   reports: MyBugReportItem[];
   notifications: BugReportNotification[];
@@ -457,26 +530,41 @@ export function MyBugReportsPanel({
                   </div>
                 ) : null}
               </InfoBlock>
-              {selected.resolution ? (
-                <InfoBlock
-                  icon={CheckCircle2}
-                  title="Kết quả"
-                  accent={token.colorSuccess}
-                  background={token.colorSuccessBg}
-                >
-                  {selected.resolution.solutionSummary}
-                  {selected.resolution.releaseUrl ? (
-                    <Button
-                      className="mt-3"
-                      href={selected.resolution.releaseUrl}
-                      target="_blank"
-                      icon={<AppIcon icon={ExternalLink} size="sm" />}
-                    >
-                      Mở kết quả
-                    </Button>
-                  ) : null}
-                </InfoBlock>
-              ) : null}
+              {selected.resolution
+                ? (() => {
+                    const featureUrl = resolveFeatureUrl(selected);
+                    const ticketUrl = `/dashboard/bug-reports?selected=${encodeURIComponent(selected.key)}`;
+                    return (
+                      <InfoBlock
+                        icon={CheckCircle2}
+                        title="Kết quả"
+                        accent={token.colorSuccess}
+                        background={token.colorSuccessBg}
+                      >
+                        <div className="text-sm leading-relaxed">{selected.resolution.solutionSummary}</div>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          {featureUrl ? (
+                            <Button
+                              type="primary"
+                              href={featureUrl}
+                              target="_blank"
+                              icon={<AppIcon icon={ExternalLink} size="sm" />}
+                              style={{
+                                backgroundColor: token.colorSuccess,
+                                borderColor: token.colorSuccess,
+                              }}
+                            >
+                              Mở kết quả
+                            </Button>
+                          ) : null}
+                          <Button href={ticketUrl} target="_blank" icon={<AppIcon icon={FileText} size="sm" />}>
+                            Mở ticket
+                          </Button>
+                        </div>
+                      </InfoBlock>
+                    );
+                  })()
+                : null}
 
               <section
                 className="rounded-xl border p-4"

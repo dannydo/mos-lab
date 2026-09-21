@@ -24,6 +24,7 @@ import { InboxPlanService } from './inbox-plan.service.js';
 import { ExperienceJournalService } from '../experience-journal/experience-journal.service.js';
 import { Prisma } from '../../generated/crm-client/index.js';
 import { makeReleaseManifest, readReleaseManifest, matchesReleaseManifest } from './inbox-release-manifest.js';
+import { cleanReleaseUrl } from './bug-report.service.js';
 
 const LEASE_MS = 12 * 60 * 1000;
 const IDE_PROVISIONING_LEASE_MS = 2 * 60 * 1000;
@@ -563,6 +564,82 @@ function safeJsonValue(value: string | null): unknown {
   } catch {
     return null;
   }
+}
+
+export function resolveInboxReleaseUrl(options: {
+  explicitUrl?: string | null;
+  report: {
+    id: number;
+    title: string;
+    sourcePath?: string | null;
+    description?: string | null;
+    requestType?: string;
+  };
+  job?: {
+    summary?: string | null;
+    changedFilesJson?: string | null;
+  } | null;
+  changedFiles?: string[];
+}): string | null {
+  // 1. Explicit releaseUrl from caller or worker receipt
+  const rawExplicit = options.explicitUrl?.trim() || null;
+  if (rawExplicit) {
+    const cleaned = cleanReleaseUrl(rawExplicit);
+    if (cleaned && !cleaned.endsWith('/dashboard/bug-reports') && !cleaned.endsWith('/dashboard/inbox')) {
+      return cleaned.startsWith('/') ? `https://lab.masteros.app${cleaned}` : cleaned;
+    }
+  }
+
+  // 2. Scan route in title, description, or job summary
+  const textToScan = `${options.report.title || ''} ${options.report.description || ''} ${options.job?.summary || ''}`;
+  const routeMatch = textToScan.match(/(?:https?:\/\/[^\s"'`]+)?(\/dashboard\/[a-zA-Z0-9_\-/?=&#.]+)/i);
+  if (routeMatch && routeMatch[1]) {
+    const matchedPath = routeMatch[1].replace(/[.,;!?)]+$/, '');
+    if (
+      !matchedPath.startsWith('/dashboard/bug-reports') &&
+      !matchedPath.startsWith('/dashboard/inbox') &&
+      matchedPath !== '/dashboard'
+    ) {
+      return `https://lab.masteros.app${matchedPath}`;
+    }
+  }
+
+  // 3. Use report.sourcePath if valid feature route
+  const sourcePath = options.report.sourcePath?.trim() || '';
+  if (
+    sourcePath.startsWith('/') &&
+    !sourcePath.startsWith('/dashboard/bug-reports') &&
+    !sourcePath.startsWith('/dashboard/inbox') &&
+    sourcePath !== '/'
+  ) {
+    return `https://lab.masteros.app${sourcePath}`;
+  }
+
+  // 4. Infer from changed files
+  const files = options.changedFiles || safeFileList(safeJsonValue(options.job?.changedFilesJson ?? null));
+  for (const file of files) {
+    const match = file.match(/apps\/web\/app\/dashboard\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1] && match[1] !== 'bug-reports' && match[1] !== 'inbox') {
+      const moduleName = match[1];
+      if (moduleName === 'bk') {
+        if (file.toLowerCase().includes('game') || textToScan.toLowerCase().includes('game')) {
+          return 'https://lab.masteros.app/dashboard/bk?tab=game';
+        }
+        return 'https://lab.masteros.app/dashboard/bk';
+      }
+      return `https://lab.masteros.app/dashboard/${moduleName}`;
+    }
+  }
+
+  // 5. If it specifically modified bug-reports / inbox UI:
+  const isInboxFeature =
+    (sourcePath.startsWith('/dashboard/bug-reports') || sourcePath.startsWith('/dashboard/inbox')) &&
+    files.some((f) => f.includes('dashboard/bug-reports') || f.includes('apps/web/components/bug-reports'));
+  if (isInboxFeature) {
+    return 'https://lab.masteros.app/dashboard/bug-reports';
+  }
+
+  return null;
 }
 
 export type InboxImplementationQualityGate = {
@@ -3463,7 +3540,12 @@ export class InboxImplementationService {
     const resolutionSearch = removeVietnameseTones(
       `${report.title} ${report.sourcePath} ${problemSummary} ${changedFiles.join(' ')}`
     );
-    const releaseUrl = 'https://lab.masteros.app/dashboard/bug-reports';
+    const releaseUrl = resolveInboxReleaseUrl({
+      explicitUrl: input.releaseUrl || (ide?.evidence as { releaseUrl?: string | null })?.releaseUrl,
+      report,
+      job,
+      changedFiles,
+    });
 
     const writeCheckpoint = async (tx: Prisma.TransactionClient) => {
       const releasedJob = await tx.crmInboxImplementationJob.updateMany({

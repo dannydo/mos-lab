@@ -7,6 +7,7 @@ import {
   getBugReportWorkflowStage,
   needsReporterAttention,
 } from './bug-report-presenters';
+import { resolveFeatureUrl } from '../../../components/bug-reports/MyBugReportsPanel';
 
 const baseReport = {
   status: 'IN_PROGRESS',
@@ -224,5 +225,76 @@ describe('formatDurationSeconds', () => {
     expect(formatDurationSeconds(7320)).toBe('2h 2m');
     expect(formatDurationSeconds(86400)).toBe('1d');
     expect(formatDurationSeconds(90000)).toBe('1d 1h');
+  });
+});
+
+describe('resolveFeatureUrl', () => {
+  it('extracts feature route from title like Ticket 30 even when DB has bug-reports releaseUrl', () => {
+    const result = resolveFeatureUrl({
+      id: 30,
+      key: 'MOS-FEAT-30',
+      title:
+        'Bỏ mục sidebar trái ‘Game BK’, giữ mục ‘Báo Cáo BK’. Giữ nguyên tab Game BK bên trong BK Leaderboard và URL /dashboard/bk?tab=game.',
+      sourcePath: '/dashboard/bug-reports',
+      resolution: {
+        releaseUrl: 'https://lab.masteros.app/dashboard/bug-reports',
+        changedFiles: ['apps/web/config/sidebar.config.tsx'],
+      },
+    });
+    expect(result).toBe('/dashboard/bk?tab=game');
+  });
+
+  it('uses sourcePath when valid feature page and ignores bug-reports releaseUrl', () => {
+    const result = resolveFeatureUrl({
+      id: 34,
+      key: 'MOS-BUG-34',
+      title: 'em không đổi lịch đặt sẵn được ở trên này',
+      sourcePath: '/dashboard/loca',
+      resolution: {
+        releaseUrl: 'https://lab.masteros.app/dashboard/bug-reports',
+      },
+    });
+    expect(result).toBe('/dashboard/loca');
+  });
+
+  it('respects real feature releaseUrl when valid', () => {
+    const result = resolveFeatureUrl({
+      id: 8,
+      key: 'MOS-BUG-8',
+      title: 'Báo lỗi',
+      sourcePath: '/dashboard/customers',
+      resolution: {
+        releaseUrl: 'https://lab.masteros.app/dashboard/customers?assignedStaffId=all',
+      },
+    });
+    expect(result).toBe('https://lab.masteros.app/dashboard/customers?assignedStaffId=all');
+  });
+
+  it('infers route from changedFiles if available', () => {
+    const result = resolveFeatureUrl({
+      id: 26,
+      key: 'MOS-FEAT-26',
+      title: 'Hồ sơ nhân sự',
+      sourcePath: '/dashboard/bug-reports',
+      resolution: {
+        releaseUrl: 'https://lab.masteros.app/dashboard/bug-reports',
+        changedFiles: ['apps/web/app/dashboard/staff/page.tsx'],
+      },
+    });
+    expect(result).toBe('/dashboard/staff');
+  });
+
+  it('returns null for pure backend fixes without UI route', () => {
+    const result = resolveFeatureUrl({
+      id: 24,
+      key: 'MOS-FEAT-24',
+      title: 'Tách luồng deploy theo phạm vi thay đổi',
+      sourcePath: '/dashboard/bug-reports',
+      resolution: {
+        releaseUrl: 'https://lab.masteros.app/dashboard/bug-reports',
+        changedFiles: ['packages/shared/src/types/deploy-lane.ts'],
+      },
+    });
+    expect(result).toBeNull();
   });
 });

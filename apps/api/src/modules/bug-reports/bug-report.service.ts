@@ -1536,7 +1536,7 @@ export function assertBugReportTransition(input: {
   }
 }
 
-function cleanReleaseUrl(value: unknown): string | null {
+export function cleanReleaseUrl(value: unknown): string | null {
   const raw = clipped(value, 500);
   if (!raw) return null;
   if (raw.startsWith('/') && !raw.startsWith('//')) return raw;

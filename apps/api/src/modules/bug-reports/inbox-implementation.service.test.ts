@@ -15,6 +15,7 @@ import {
   qualityTestsForCheckpointApproval,
   recoverLegacyDeployQualityEvidence,
   testsAfterOperationalCheckpointFailure,
+  resolveInboxReleaseUrl,
 } from './inbox-implementation.service.js';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 
@@ -2115,4 +2116,68 @@ test('approveImplementation is idempotent and creates only one IMPLEMENTATION_AP
   assert.equal(auditsCreated, 1, 'Should not create a second audit record');
   assert.equal(updatesCount, 1, 'Should not update the report again');
   assert.equal(secondResult.implementationQueued, true);
+});
+
+test('resolveInboxReleaseUrl prioritizes explicit feature URL and ignores bug-reports path', () => {
+  const url = resolveInboxReleaseUrl({
+    explicitUrl: 'https://lab.masteros.app/dashboard/customers?tab=history',
+    report: { id: 1, title: 'Test', sourcePath: '/dashboard/bug-reports' },
+  });
+  assert.equal(url, 'https://lab.masteros.app/dashboard/customers?tab=history');
+
+  // Should ignore if explicitUrl is just bug-reports or inbox
+  const ignoredUrl = resolveInboxReleaseUrl({
+    explicitUrl: 'https://lab.masteros.app/dashboard/bug-reports',
+    report: { id: 1, title: 'Fix bug on customers', sourcePath: '/dashboard/customers' },
+  });
+  assert.equal(ignoredUrl, 'https://lab.masteros.app/dashboard/customers');
+});
+
+test('resolveInboxReleaseUrl extracts route from title like Ticket 30 Game BK', () => {
+  const url = resolveInboxReleaseUrl({
+    report: {
+      id: 30,
+      title:
+        'Bỏ mục sidebar trái ‘Game BK’, giữ mục ‘Báo Cáo BK’. Giữ nguyên tab Game BK bên trong BK Leaderboard và URL /dashboard/bk?tab=game.',
+      sourcePath: '/dashboard/bug-reports',
+    },
+    changedFiles: ['apps/web/config/sidebar.config.tsx'],
+  });
+  assert.equal(url, 'https://lab.masteros.app/dashboard/bk?tab=game');
+});
+
+test('resolveInboxReleaseUrl uses report sourcePath when valid feature page', () => {
+  const url = resolveInboxReleaseUrl({
+    report: {
+      id: 34,
+      title: 'em không đổi lịch đặt sẵn được ở trên này',
+      sourcePath: '/dashboard/loca',
+    },
+    changedFiles: ['apps/api/src/modules/customers/routes/booking.routes.ts'],
+  });
+  assert.equal(url, 'https://lab.masteros.app/dashboard/loca');
+});
+
+test('resolveInboxReleaseUrl infers dashboard module from changed web files', () => {
+  const url = resolveInboxReleaseUrl({
+    report: {
+      id: 26,
+      title: 'Yêu cầu chỉnh sửa: Hồ sơ nhân sự vai trò Telesales Executive',
+      sourcePath: '/dashboard/bug-reports',
+    },
+    changedFiles: ['apps/web/app/dashboard/staff/page.tsx', 'apps/api/src/modules/staff/routes.ts'],
+  });
+  assert.equal(url, 'https://lab.masteros.app/dashboard/staff');
+});
+
+test('resolveInboxReleaseUrl returns null for pure backend changes with no web UI', () => {
+  const url = resolveInboxReleaseUrl({
+    report: {
+      id: 24,
+      title: 'Tách luồng deploy theo phạm vi thay đổi',
+      sourcePath: '/dashboard/bug-reports',
+    },
+    changedFiles: ['apps/api/src/modules/bug-reports/deploy-lane.ts'],
+  });
+  assert.equal(url, null);
 });

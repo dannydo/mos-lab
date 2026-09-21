@@ -20,6 +20,7 @@ import {
   getRevCommissionRate,
   computeBkOrderCheckins,
   getBkPaystubData,
+  getBkWorkLogs,
   getCustomerTipAmountByOrderIds,
   getBkCallMetricsByLegacyStaffIds,
   resolveBkTelesalesStaffScope,
@@ -1090,6 +1091,40 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // 5.1 Work Logs Daily (IN/OUT detail)
+  fastify.get('/kpi/bk/work-logs', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { staffId, dateFrom, dateTo } = request.query as {
+      staffId?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    };
+
+    if (!staffId) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu tham số staffId.' });
+    }
+
+    const sid = Number(staffId);
+    if (isNaN(sid)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'staffId không hợp lệ.' });
+    }
+
+    const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+    const endStr = dateTo || new Date().toLocaleDateString('en-CA');
+    const startPart = startStr.includes('T') ? startStr.split('T')[0] : startStr;
+    const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
+
+    try {
+      const res = await getBkWorkLogs(fastify, sid, startPart, endPart);
+      if (!res) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy nhân viên hoặc dữ liệu ca làm.' });
+      }
+      return res;
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Error fetching BK work logs');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi tải chi tiết ca làm việc BK.' });
+    }
+  });
+
   // 6. Config GET & POST
   fastify.get('/kpi/bk/config', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
@@ -1137,9 +1172,10 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/kpi/bk/config', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { activeBkIds, config } = request.body as {
+    const { activeBkIds, config, workDaysOverrides } = request.body as {
       activeBkIds?: number[];
       config?: Partial<BkSalaryConfig>;
+      workDaysOverrides?: Record<string, number>;
     };
 
     try {
@@ -1153,6 +1189,15 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           where: { key: 'ACTIVE_BK_STAFF_CONFIG' },
           update: { value: JSON.stringify(activeBkIds) },
           create: { key: 'ACTIVE_BK_STAFF_CONFIG', value: JSON.stringify(activeBkIds) },
+        });
+      }
+
+      const effectiveOverrides = workDaysOverrides ?? config?.workDaysOverrides;
+      if (effectiveOverrides && typeof effectiveOverrides === 'object') {
+        await fastify.prisma.crm.crmConfig.upsert({
+          where: { key: 'BK_WORK_DAYS_OVERRIDE' },
+          update: { value: JSON.stringify(effectiveOverrides) },
+          create: { key: 'BK_WORK_DAYS_OVERRIDE', value: JSON.stringify(effectiveOverrides) },
         });
       }
 

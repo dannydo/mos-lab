@@ -12,6 +12,7 @@ import type {
   BkSalaryConfig,
   BkTipLeaderboardResponse,
   BkTipResponse,
+  BkWorkLogResponse,
   CcConfigResponse,
   CcDiamondDetailsResponse,
   CcDiamondResponse,
@@ -343,6 +344,14 @@ export const kpiApi = {
     },
     getPaystub: async (params?: Record<string, unknown>): Promise<BkPaystubResponse> => {
       const response = await api.get('/kpi/bk/paystub', { params });
+      return response.data;
+    },
+    getWorkLogs: async (params: {
+      staffId: number;
+      dateFrom?: string;
+      dateTo?: string;
+    }): Promise<BkWorkLogResponse> => {
+      const response = await api.get('/kpi/bk/work-logs', { params });
       return response.data;
     },
     getConfig: async (): Promise<BkConfigResponse> => {
