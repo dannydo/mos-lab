@@ -3162,3 +3162,34 @@ model CrmBkGameParticipant {
   @@map("crm_bk_game_participants")
 }
 
+// AI Assistant Private Workspace (MOS-FEAT-47)
+model CrmAiChatSession {
+  id           String             @id @default(uuid()) @db.VarChar(36)
+  staffId      Int                @map("staff_id")
+  title        String             @db.VarChar(255)
+  scope        String             @default("customers") @db.VarChar(50)
+  metadataJson String?            @map("metadata_json") @db.LongText
+  createdAt    DateTime           @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.DateTime(0)
+  messages     CrmAiChatMessage[]
+
+  @@index([staffId, scope])
+  @@index([createdAt])
+  @@map("crm_ai_chat_sessions")
+}
+
+model CrmAiChatMessage {
+  id                  String           @id @default(uuid()) @db.VarChar(36)
+  sessionId           String           @map("session_id") @db.VarChar(36)
+  role                String           @db.VarChar(20)
+  content             String           @db.LongText
+  thinking            String?          @db.LongText
+  suggestedActionJson String?          @map("suggested_action_json") @db.LongText
+  createdAt           DateTime         @default(now()) @map("created_at") @db.DateTime(0)
+  session             CrmAiChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("crm_ai_chat_messages")
+}
+
+

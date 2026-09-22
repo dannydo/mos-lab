@@ -1,5 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import axios from 'axios';
+import { requireAuth } from '../../middlewares/auth.js';
+import { AiAssistantService } from './ai.service.js';
+import type { AiAssistantChatRequest, CreateAiSessionRequest } from '@mos-lab/shared';
 
 const SYSTEM_PROMPT = `Bạn là mOS Voice Copilot — Trợ lý điều hành AI bằng giọng nói của hệ thống mOS Lab (chuỗi salon Wings Lashes).
 
@@ -150,4 +153,79 @@ export async function aiRoutes(fastify: FastifyInstance) {
       });
     }
   });
+
+  // AI Assistant Private Workspace (MOS-FEAT-47)
+  fastify.get<{ Querystring: { scope?: string } }>(
+    '/ai/chat/sessions',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const staffId = request.user.id;
+      const scope = request.query?.scope || 'customers';
+      const sessions = await AiAssistantService.listSessions(fastify.prisma.crm, staffId, scope);
+      return reply.send({ sessions });
+    }
+  );
+
+  fastify.post<{ Body: CreateAiSessionRequest }>(
+    '/ai/chat/sessions',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const staffId = request.user.id;
+      const session = await AiAssistantService.createSession(fastify.prisma.crm, staffId, request.body || {});
+      return reply.status(201).send({ session });
+    }
+  );
+
+  fastify.get<{ Params: { id: string } }>(
+    '/ai/chat/sessions/:id',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const staffId = request.user.id;
+      const result = await AiAssistantService.getSession(fastify.prisma.crm, request.params.id, staffId);
+      if (!result) {
+        return reply.status(404).send({ error: 'Session not found or unauthorized' });
+      }
+      return reply.send(result);
+    }
+  );
+
+  fastify.delete<{ Params: { id: string } }>(
+    '/ai/chat/sessions/:id',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const staffId = request.user.id;
+      const deleted = await AiAssistantService.deleteSession(fastify.prisma.crm, request.params.id, staffId);
+      return reply.send({ success: deleted });
+    }
+  );
+
+  fastify.post<{ Body: AiAssistantChatRequest }>(
+    '/ai/chat/message',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const staffId = request.user.id;
+      const { message, sessionId, scope, context } = request.body || {};
+
+      if (!message || typeof message !== 'string' || !message.trim()) {
+        return reply.status(400).send({
+          error: 'Vui lòng cung cấp nội dung tin nhắn (message)',
+        });
+      }
+
+      const response = await AiAssistantService.sendMessage(fastify.prisma.crm, staffId, {
+        sessionId,
+        message,
+        scope,
+        context: {
+          ...context,
+          myStaffId: staffId,
+          userName: request.user.displayName || request.user.username,
+          myRole: request.user.role,
+        },
+      });
+
+      return reply.send(response);
+    }
+  );
 }
+
