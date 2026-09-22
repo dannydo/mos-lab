@@ -36,6 +36,13 @@ export interface BkBookingLeaderboardEntry {
   pickupRate: number;
 }
 
+export interface BkBookingLeaderboardParams {
+  dateFrom?: string;
+  dateTo?: string;
+  storeId?: string;
+  gameId?: number;
+}
+
 export interface BkBookingLeaderboardResponse {
   leaderboard: BkBookingLeaderboardEntry[];
   summary: {
@@ -56,6 +63,7 @@ export interface BkBookingDetailsParams {
   dateTo?: string;
   storeId?: string;
   status?: BkBookingDetailsFilter;
+  gameId?: number;
 }
 
 export interface BkBookingResponse {

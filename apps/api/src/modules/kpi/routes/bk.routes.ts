@@ -14,7 +14,7 @@ import {
   BkGameFinalizeInput,
   SafeAny,
 } from '@mos-lab/shared';
-import { BkGameService } from '../services/bk-game.service.js';
+import { BkGameService, formatIctDateTime, formatIctDate } from '../services/bk-game.service.js';
 import {
   getActiveBkTelesalesIds,
   getBkSalaryConfig,
@@ -39,18 +39,54 @@ import {
 export async function registerBkRoutes(fastify: FastifyInstance) {
   // 1. Booking Leaderboard
   fastify.get('/kpi/bk/booking/leaderboard', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { dateFrom, dateTo, storeId } = request.query as {
+    const { dateFrom, dateTo, storeId, gameId } = request.query as {
       dateFrom?: string;
       dateTo?: string;
       storeId?: string;
+      gameId?: string | number;
     };
 
-    const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = dateTo || new Date().toLocaleDateString('en-CA');
-    const startPart = startStr.includes('T') ? startStr.split('T')[0] : startStr;
-    const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
+    let startPart = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+    let endPart = dateTo || new Date().toLocaleDateString('en-CA');
+    if (startPart.includes('T') && startPart.length === 10) startPart = startPart.split('T')[0];
+    if (endPart.includes('T') && endPart.length === 10) endPart = endPart.split('T')[0];
+
+    let startDateTimeStr = `${startPart.split('T')[0]} 00:00:00`;
+    let endDateTimeStr = `${endPart.split('T')[0]} 23:59:59`;
+    let callStartDateStr = startPart.split('T')[0];
+    let callEndDateStr = endPart.split('T')[0];
 
     try {
+      if (gameId) {
+        const parsedGameId = Number(gameId);
+        if (!isNaN(parsedGameId) && parsedGameId > 0) {
+          const game = await fastify.prisma.crm.crmBkGame.findUnique({
+            where: { id: parsedGameId },
+          });
+          if (game) {
+            startDateTimeStr = formatIctDateTime(game.startDate);
+            endDateTimeStr = formatIctDateTime(game.endDate);
+            callStartDateStr = formatIctDate(game.startDate);
+            callEndDateStr = formatIctDate(game.endDate);
+          }
+        }
+      } else {
+        if (dateFrom && (dateFrom.includes(' ') || (dateFrom.includes('T') && dateFrom.length > 10))) {
+          const d = new Date(dateFrom);
+          if (!isNaN(d.getTime())) {
+            startDateTimeStr = formatIctDateTime(d);
+            callStartDateStr = formatIctDate(d);
+          }
+        }
+        if (dateTo && (dateTo.includes(' ') || (dateTo.includes('T') && dateTo.length > 10))) {
+          const d = new Date(dateTo);
+          if (!isNaN(d.getTime())) {
+            endDateTimeStr = formatIctDateTime(d);
+            callEndDateStr = formatIctDate(d);
+          }
+        }
+      }
+
       const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
       if (activeTelesalesIds.length === 0) {
         return reply.send({
@@ -86,8 +122,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         FROM \`user_profile\` up
         LEFT JOIN \`client_store\` cs_staff ON cs_staff.id = up.client_store_id
         LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
-          AND o.date_created >= '${startPart} 00:00:00' 
-          AND o.date_created <= '${endPart} 23:59:59'
+          AND o.date_created >= '${startDateTimeStr}' 
+          AND o.date_created <= '${endDateTimeStr}'
           ${storeFilter}
         WHERE up.user_id IN (${bkIdsStr})
         GROUP BY up.user_id, up.full_name, up.avatar, cs_staff.client_store_key
@@ -97,8 +133,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
       const callMetricsByBooker = await getBkCallMetricsByLegacyStaffIds(
         fastify,
-        startPart,
-        endPart,
+        callStartDateStr,
+        callEndDateStr,
         activeTelesalesIds
       );
 
@@ -163,20 +199,56 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
   // 1.2 Booking Details
   fastify.get('/kpi/bk/booking/details', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { bookerId, dateFrom, dateTo, storeId, status } = request.query as {
+    const { bookerId, dateFrom, dateTo, storeId, status, gameId } = request.query as {
       bookerId?: string;
       dateFrom?: string;
       dateTo?: string;
       storeId?: string;
       status?: string;
+      gameId?: string | number;
     };
 
-    const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = dateTo || new Date().toLocaleDateString('en-CA');
-    const startPart = startStr.includes('T') ? startStr.split('T')[0] : startStr;
-    const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
+    let startPart = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+    let endPart = dateTo || new Date().toLocaleDateString('en-CA');
+    if (startPart.includes('T') && startPart.length === 10) startPart = startPart.split('T')[0];
+    if (endPart.includes('T') && endPart.length === 10) endPart = endPart.split('T')[0];
+
+    let startDateTimeStr = `${startPart.split('T')[0]} 00:00:00`;
+    let endDateTimeStr = `${endPart.split('T')[0]} 23:59:59`;
+    let callStartDateStr = startPart.split('T')[0];
+    let callEndDateStr = endPart.split('T')[0];
 
     try {
+      if (gameId) {
+        const parsedGameId = Number(gameId);
+        if (!isNaN(parsedGameId) && parsedGameId > 0) {
+          const game = await fastify.prisma.crm.crmBkGame.findUnique({
+            where: { id: parsedGameId },
+          });
+          if (game) {
+            startDateTimeStr = formatIctDateTime(game.startDate);
+            endDateTimeStr = formatIctDateTime(game.endDate);
+            callStartDateStr = formatIctDate(game.startDate);
+            callEndDateStr = formatIctDate(game.endDate);
+          }
+        }
+      } else {
+        if (dateFrom && (dateFrom.includes(' ') || (dateFrom.includes('T') && dateFrom.length > 10))) {
+          const d = new Date(dateFrom);
+          if (!isNaN(d.getTime())) {
+            startDateTimeStr = formatIctDateTime(d);
+            callStartDateStr = formatIctDate(d);
+          }
+        }
+        if (dateTo && (dateTo.includes(' ') || (dateTo.includes('T') && dateTo.length > 10))) {
+          const d = new Date(dateTo);
+          if (!isNaN(d.getTime())) {
+            endDateTimeStr = formatIctDateTime(d);
+            callEndDateStr = formatIctDate(d);
+          }
+        }
+      }
+
       const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
       if (activeTelesalesIds.length === 0) {
         return reply.send({
@@ -231,8 +303,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           COUNT(DISTINCT CASE WHEN ${bookingMissedSqlCondition('o')} THEN o.id END) as missedBookings
         FROM \`order\` o
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        WHERE o.date_created >= '${startPart} 00:00:00'
-          AND o.date_created <= '${endPart} 23:59:59'
+        WHERE o.date_created >= '${startDateTimeStr}'
+          AND o.date_created <= '${endDateTimeStr}'
           ${bookerFilter}
           ${storeFilter}
           AND ${bookingStatusFilter}
@@ -265,8 +337,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         ) uc_c ON uc_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        WHERE o.date_created >= '${startPart} 00:00:00' 
-          AND o.date_created <= '${endPart} 23:59:59'
+        WHERE o.date_created >= '${startDateTimeStr}' 
+          AND o.date_created <= '${endDateTimeStr}'
           ${bookerFilter}
           ${storeFilter}
           AND ${bookingStatusFilter}
@@ -278,7 +350,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(summarySql),
       ]);
-      const callMetricsByBooker = await getBkCallMetricsByLegacyStaffIds(fastify, startPart, endPart, scopedBookerIds);
+      const callMetricsByBooker = await getBkCallMetricsByLegacyStaffIds(
+        fastify,
+        callStartDateStr,
+        callEndDateStr,
+        scopedBookerIds
+      );
 
       const totalBookings = Number(summaryRows[0]?.totalBookings || 0);
       const doneBookings = Number(summaryRows[0]?.doneBookings || 0);

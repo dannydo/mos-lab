@@ -1,5 +1,6 @@
 import type {
   BkBookingDetailsParams,
+  BkBookingLeaderboardParams,
   BkBookingLeaderboardResponse,
   BkBookingResponse,
   BkConfigResponse,
@@ -315,7 +316,7 @@ export const kpiApi = {
       const response = await api.post('/customers/booking', data);
       return response.data;
     },
-    getBookingLeaderboard: async (params?: Record<string, unknown>): Promise<BkBookingLeaderboardResponse> => {
+    getBookingLeaderboard: async (params?: BkBookingLeaderboardParams): Promise<BkBookingLeaderboardResponse> => {
       const response = await api.get('/kpi/bk/booking/leaderboard', { params });
       return response.data;
     },

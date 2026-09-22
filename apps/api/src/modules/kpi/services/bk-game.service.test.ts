@@ -92,3 +92,21 @@ test('Game BK formatIctDateTime correctly converts UTC timestamps to Vietnam tim
   assert.equal(formatIctDateTime(midDay), '2026-09-22 17:09:24');
   assert.equal(formatIctDate(midDay), '2026-09-22');
 });
+
+test('Game BK query parameters resolve exact campaign start and end datetimes', () => {
+  const game = {
+    id: 42,
+    startDate: new Date('2026-09-18T01:00:00.000Z'), // 08:00:00 ICT
+    endDate: new Date('2026-09-21T16:59:59.000Z'), // 23:59:59 ICT
+  };
+
+  const startDateTimeStr = formatIctDateTime(game.startDate);
+  const endDateTimeStr = formatIctDateTime(game.endDate);
+  const callStartDateStr = formatIctDate(game.startDate);
+  const callEndDateStr = formatIctDate(game.endDate);
+
+  assert.equal(startDateTimeStr, '2026-09-18 08:00:00');
+  assert.equal(endDateTimeStr, '2026-09-21 23:59:59');
+  assert.equal(callStartDateStr, '2026-09-18');
+  assert.equal(callEndDateStr, '2026-09-21');
+});
