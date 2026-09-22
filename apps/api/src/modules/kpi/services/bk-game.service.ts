@@ -322,6 +322,35 @@ export class BkGameService {
       staffMap.set(Number(row.staffId), row);
     }
 
+    // Resolve any participant IDs not found in legacy user table from crmStaff
+    const missingStaffIds = participantStaffIds.filter((sid) => !staffMap.has(sid));
+    if (missingStaffIds.length > 0) {
+      const crmProfiles = await fastify.prisma.crm.crmStaff.findMany({
+        where: {
+          OR: [
+            { id: { in: missingStaffIds } },
+            { legacyStaffId: { in: missingStaffIds } },
+          ],
+        },
+        select: { id: true, legacyStaffId: true, displayName: true, avatarUrl: true },
+      });
+      for (const cp of crmProfiles) {
+        const legacyId = cp.legacyStaffId ? Number(cp.legacyStaffId) : null;
+        const matchingId = missingStaffIds.includes(cp.id)
+          ? cp.id
+          : legacyId && missingStaffIds.includes(legacyId)
+            ? legacyId
+            : null;
+        if (matchingId && !staffMap.has(matchingId)) {
+          staffMap.set(matchingId, {
+            staffId: matchingId,
+            fullName: cp.displayName,
+            avatar: cp.avatarUrl,
+          });
+        }
+      }
+    }
+
     const entryFee = input.entryFee || 0;
     const baseRewardPool = input.rewardPool || 0;
     const totalRewardPool = baseRewardPool + entryFee * participantStaffIds.length;
@@ -363,7 +392,7 @@ export class BkGameService {
               data: {
                 gameId: g.id,
                 staffId: sid,
-                staffName: profile?.fullName || `BK #${sid}`,
+                staffName: profile?.fullName || `Nhân viên #${sid}`,
                 avatar: profile?.avatar || null,
                 teamId: createdTeam.id,
                 betAmount: entryFee,
@@ -380,7 +409,7 @@ export class BkGameService {
             data: {
               gameId: g.id,
               staffId: sid,
-              staffName: profile?.fullName || `BK #${sid}`,
+              staffName: profile?.fullName || `Nhân viên #${sid}`,
               avatar: profile?.avatar || null,
               betAmount: entryFee,
               score: 0,

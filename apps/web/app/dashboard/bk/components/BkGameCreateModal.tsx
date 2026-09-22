@@ -1,10 +1,21 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { Button, DatePicker, Form, Input, InputNumber, Radio, Segmented, Select, Typography, message } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Avatar,
+  Button,
+  DatePicker,
+  Form,
+  Input,
+  InputNumber,
+  Radio,
+  Segmented,
+  Select,
+  Typography,
+  message,
+} from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
-import { Trophy, Users, Award, ShieldAlert, Sparkles } from 'lucide-react';
-import type { BkGame, BkGameCreateInput, BkGameMetricType, BkGameType } from '@mos-lab/shared';
+import { Trophy, Users, Award, ShieldAlert, Sparkles, Filter, Trash2, Plus } from 'lucide-react';
+import type { BkGame, BkGameCreateInput, BkGameMetricType, BkGameType, Staff, TeamListResponse } from '@mos-lab/shared';
+import { removeVietnameseTones } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
 
@@ -14,36 +25,185 @@ interface BkGameCreateModalProps {
   onSuccess: (newGame: BkGame) => void;
 }
 
-interface StaffOption {
-  value: number;
-  label: string;
+export interface StaffProfileOption {
+  staffId: number;
+  crmStaffId?: number;
+  displayName: string;
+  avatarUrl?: string | null;
+  roleKey?: string;
+  roleName?: string;
+  departmentCode?: string;
+  departmentName?: string;
+  teamCode?: string;
+  teamName?: string;
+  isDefaultBk?: boolean;
 }
 
 export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCreateModalProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [gameType, setGameType] = useState<BkGameType>('INDIVIDUAL');
-  const [staffOptions, setStaffOptions] = useState<StaffOption[]>([]);
+  const [allStaffList, setAllStaffList] = useState<StaffProfileOption[]>([]);
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('ALL');
+  const [staffLoading, setStaffLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    // Load active Telesales staff
     const fetchStaff = async () => {
+      setStaffLoading(true);
       try {
-        const configRes = await apiClient.bk.getConfig();
-        const activeIds = configRes.activeBkIds || [];
-        const opts = (configRes.allStaffOptions || [])
-          .filter((s) => activeIds.includes(s.staffId))
-          .map((s) => ({
-            value: s.staffId,
-            label: s.displayName || `BK #${s.staffId}`,
-          }));
-        setStaffOptions(opts);
-        form.setFieldsValue({
-          participantIds: opts.map((o) => o.value),
+        const [configRes, staffRes, teamsRes, rolesRes] = await Promise.all([
+          apiClient.bk.getConfig().catch(() => null),
+          apiClient.staff.list({ isActive: true }).catch(() => [] as Staff[]),
+          apiClient.teams.list().catch(() => null as TeamListResponse | null),
+          apiClient.roles.list().catch(() => [] as Array<{ key: string; name: string }>),
+        ]);
+
+        const activeBkIds = configRes?.activeBkIds || [];
+        const roleNameMap = new Map<string, string>();
+        ((rolesRes as Array<{ key?: string; name?: string }>) || []).forEach((r) => {
+          if (r && r.key && r.name) {
+            roleNameMap.set(r.key, r.name);
+          }
         });
+
+        const getRoleName = (key?: string) => {
+          if (!key) return 'Nhân viên';
+          if (roleNameMap.has(key)) return roleNameMap.get(key)!;
+          switch (key) {
+            case 'telesales':
+              return 'Telesales';
+            case 'cc':
+              return 'Tư vấn viên (CC)';
+            case 'lt':
+            case 'technician':
+              return 'Kỹ thuật viên';
+            case 'ht':
+              return 'Head Teacher';
+            case 'teacher':
+              return 'Giáo viên';
+            case 'coca':
+              return 'Combo Care';
+            case 'oc':
+              return 'Điều phối (OC)';
+            case 'qa_qc':
+              return 'QA & QC';
+            case 'manager':
+              return 'Quản lý';
+            case 'admin':
+            case 'super_admin':
+              return 'Admin';
+            default:
+              return key;
+          }
+        };
+
+        interface StaffTeamMeta {
+          teamCode?: string;
+          teamName?: string;
+          departmentCode?: string;
+          departmentName?: string;
+        }
+        const staffTeamMetaMap = new Map<number, StaffTeamMeta>();
+
+        if (teamsRes && Array.isArray(teamsRes.teams)) {
+          teamsRes.teams.forEach((t) => {
+            const dep = t.department;
+            const meta: StaffTeamMeta = {
+              teamCode: t.code,
+              teamName: t.name,
+              departmentCode: dep?.code,
+              departmentName: dep?.name,
+            };
+            if (Array.isArray(t.activeStaffIds)) {
+              t.activeStaffIds.forEach((sid) => {
+                if (sid && !staffTeamMetaMap.has(sid)) {
+                  staffTeamMetaMap.set(sid, meta);
+                }
+              });
+            }
+          });
+        }
+
+        const staffMap = new Map<number, StaffProfileOption>();
+
+        // 1. Add from crmStaff list (all active employees)
+        (staffRes || []).forEach((s) => {
+          const sid = s.legacyStaffId || s.id;
+          const meta = staffTeamMetaMap.get(sid) || (s.legacyStaffId ? staffTeamMetaMap.get(s.legacyStaffId) : undefined);
+
+          let depCode = meta?.departmentCode;
+          let depName = meta?.departmentName;
+          if (!depCode) {
+            if (s.role === 'telesales') {
+              depCode = 'GROWTH';
+              depName = 'Growth & Booking';
+            } else if (['cc', 'lt', 'technician', 'coca'].includes(s.role || '')) {
+              depCode = 'SHOP';
+              depName = 'Shop Operations';
+            } else if (['teacher', 'ht'].includes(s.role || '')) {
+              depCode = 'ACADEMY';
+              depName = 'Academy';
+            } else {
+              depCode = 'BACK_OFFICE';
+              depName = 'Back Office';
+            }
+          }
+
+          staffMap.set(sid, {
+            staffId: sid,
+            crmStaffId: s.id,
+            displayName: s.displayName,
+            avatarUrl: s.avatarUrl,
+            roleKey: s.role,
+            roleName: getRoleName(s.role),
+            departmentCode: depCode,
+            departmentName: depName,
+            teamCode: meta?.teamCode,
+            teamName: meta?.teamName || getRoleName(s.role),
+            isDefaultBk: activeBkIds.includes(sid),
+          });
+        });
+
+        // 2. Add from BK config allStaffOptions if missing
+        if (configRes && Array.isArray(configRes.allStaffOptions)) {
+          configRes.allStaffOptions.forEach((bs) => {
+            if (!staffMap.has(bs.staffId)) {
+              staffMap.set(bs.staffId, {
+                staffId: bs.staffId,
+                displayName: bs.displayName || `BK #${bs.staffId}`,
+                roleKey: 'telesales',
+                roleName: 'Telesales',
+                departmentCode: 'GROWTH',
+                departmentName: 'Growth & Booking',
+                teamCode: 'BK_TELESALES',
+                teamName: 'Telesales',
+                isDefaultBk: activeBkIds.includes(bs.staffId),
+              });
+            }
+          });
+        }
+
+        const staffList = Array.from(staffMap.values()).sort((a, b) => {
+          if (a.isDefaultBk && !b.isDefaultBk) return -1;
+          if (!a.isDefaultBk && b.isDefaultBk) return 1;
+          return a.displayName.localeCompare(b.displayName, 'vi');
+        });
+
+        setAllStaffList(staffList);
+
+        // Preselect active BKs by default if participantIds is empty
+        const defaultSelected = staffList.filter((s) => s.isDefaultBk).map((s) => s.staffId);
+        const currentParticipants = form.getFieldValue('participantIds');
+        if (!currentParticipants || currentParticipants.length === 0) {
+          form.setFieldsValue({
+            participantIds: defaultSelected.length > 0 ? defaultSelected : staffList.slice(0, 5).map((s) => s.staffId),
+          });
+        }
       } catch {
-        // Fallback
+        // Fallback safely
+      } finally {
+        setStaffLoading(false);
       }
     };
     void fetchStaff();
@@ -112,6 +272,217 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
     } finally {
       setLoading(false);
     }
+  };
+
+  // 1. Role / Department Filter Options
+  const roleFilterOptions = useMemo(() => {
+    if (allStaffList.length === 0) return [];
+
+    const depCounts: Record<string, number> = {};
+    const teamCounts: Record<string, number> = {};
+
+    allStaffList.forEach((s) => {
+      if (s.departmentCode) {
+        depCounts[s.departmentCode] = (depCounts[s.departmentCode] || 0) + 1;
+      }
+      const tKey = s.teamCode || s.roleKey || 'OTHER';
+      teamCounts[tKey] = (teamCounts[tKey] || 0) + 1;
+    });
+
+    const telesalesCount = (teamCounts['BK_TELESALES'] || 0) + (teamCounts['telesales'] || 0);
+    const ccCount = (teamCounts['CC'] || 0) + (teamCounts['cc'] || 0);
+    const cvCount = (teamCounts['CV'] || 0) + (teamCounts['technician'] || 0) + (teamCounts['lt'] || 0);
+    const csCount = teamCounts['BK_CS'] || 0;
+    const controlCount = teamCounts['BK_CONTROL'] || 0;
+    const academyCount = (teamCounts['ACADEMY'] || 0) + (teamCounts['teacher'] || 0) + (teamCounts['ht'] || 0);
+    const marketingCount = teamCounts['MARKETING_SALES'] || 0;
+    const qaCount =
+      (teamCounts['QA_QC'] || 0) +
+      (teamCounts['QA_QC_SHOP'] || 0) +
+      (teamCounts['QA_QC_TECHNICIAN'] || 0) +
+      (teamCounts['QA_QC_CX'] || 0) +
+      (teamCounts['qa_qc'] || 0);
+    const mgmtCount = (teamCounts['admin'] || 0) + (teamCounts['manager'] || 0) + (teamCounts['super_admin'] || 0);
+
+    return [
+      {
+        value: 'ALL',
+        label: `Tất cả vai trò & bộ phận (${allStaffList.length})`,
+      },
+      {
+        label: 'Theo Bộ Phận',
+        options: [
+          { value: 'DEP:GROWTH', label: `Growth & Booking (${depCounts['GROWTH'] || 0})` },
+          { value: 'DEP:SHOP', label: `Shop Operations (${depCounts['SHOP'] || 0})` },
+          { value: 'DEP:ACADEMY', label: `Academy / Đào tạo (${depCounts['ACADEMY'] || 0})` },
+          { value: 'DEP:BACK_OFFICE', label: `Back Office / Quản trị (${depCounts['BACK_OFFICE'] || 0})` },
+        ].filter((o) => (depCounts[o.value.replace('DEP:', '')] || 0) > 0),
+      },
+      {
+        label: 'Theo Vai trò / Đội nhóm',
+        options: [
+          { value: 'TEAM:BK_TELESALES', label: `Telesales (${telesalesCount})`, count: telesalesCount },
+          { value: 'TEAM:CC', label: `Client Consultant - CC (${ccCount})`, count: ccCount },
+          { value: 'TEAM:CV', label: `Chuyên viên / KTV (${cvCount})`, count: cvCount },
+          { value: 'TEAM:BK_CS', label: `Customer Service - CS (${csCount})`, count: csCount },
+          { value: 'TEAM:BK_CONTROL', label: `Control (${controlCount})`, count: controlCount },
+          { value: 'TEAM:ACADEMY', label: `Đào tạo / Giảng viên (${academyCount})`, count: academyCount },
+          { value: 'TEAM:MARKETING_SALES', label: `Marketing & Sales (${marketingCount})`, count: marketingCount },
+          { value: 'TEAM:QA_QC', label: `QA / QC (${qaCount})`, count: qaCount },
+          { value: 'ROLE:MANAGEMENT', label: `Quản lý / Admin (${mgmtCount})`, count: mgmtCount },
+        ]
+          .filter((o) => o.count > 0)
+          .map(({ count: _c, ...rest }) => rest),
+      },
+    ];
+  }, [allStaffList]);
+
+  // 2. Filtered Staff based on current Role/Department filter
+  const filteredStaffList = useMemo(() => {
+    if (selectedRoleFilter === 'ALL') return allStaffList;
+
+    if (selectedRoleFilter.startsWith('DEP:')) {
+      const depCode = selectedRoleFilter.replace('DEP:', '');
+      return allStaffList.filter((s) => s.departmentCode === depCode);
+    }
+
+    if (selectedRoleFilter.startsWith('TEAM:')) {
+      const teamCode = selectedRoleFilter.replace('TEAM:', '');
+      if (teamCode === 'BK_TELESALES') {
+        return allStaffList.filter((s) => s.teamCode === 'BK_TELESALES' || s.roleKey === 'telesales' || s.isDefaultBk);
+      }
+      if (teamCode === 'CC') {
+        return allStaffList.filter((s) => s.teamCode === 'CC' || s.roleKey === 'cc');
+      }
+      if (teamCode === 'CV') {
+        return allStaffList.filter((s) => s.teamCode === 'CV' || ['technician', 'lt'].includes(s.roleKey || ''));
+      }
+      if (teamCode === 'BK_CS') {
+        return allStaffList.filter((s) => s.teamCode === 'BK_CS');
+      }
+      if (teamCode === 'BK_CONTROL') {
+        return allStaffList.filter((s) => s.teamCode === 'BK_CONTROL');
+      }
+      if (teamCode === 'ACADEMY') {
+        return allStaffList.filter((s) => s.teamCode === 'ACADEMY' || ['teacher', 'ht'].includes(s.roleKey || ''));
+      }
+      if (teamCode === 'MARKETING_SALES') {
+        return allStaffList.filter((s) => s.teamCode === 'MARKETING_SALES');
+      }
+      if (teamCode === 'QA_QC') {
+        return allStaffList.filter((s) => s.teamCode?.startsWith('QA_QC') || s.roleKey === 'qa_qc');
+      }
+      return allStaffList.filter((s) => s.teamCode === teamCode);
+    }
+
+    if (selectedRoleFilter === 'ROLE:MANAGEMENT') {
+      return allStaffList.filter((s) => ['admin', 'super_admin', 'manager'].includes(s.roleKey || ''));
+    }
+
+    return allStaffList;
+  }, [allStaffList, selectedRoleFilter]);
+
+  // Form watchers for dynamic selection state
+  const selectedParticipantIds = Form.useWatch('participantIds', form) || [];
+  const selectedTeam1Ids = Form.useWatch('team1Members', form) || [];
+  const selectedTeam2Ids = Form.useWatch('team2Members', form) || [];
+
+  // Helper to build options preserving already selected staff outside current filter
+  const buildSelectableOptions = (currentlySelected: number[]) => {
+    const selectedIdsSet = new Set<number>(currentlySelected);
+    const inFilterIdsSet = new Set<number>(filteredStaffList.map((s) => s.staffId));
+
+    const combined = [...filteredStaffList];
+    allStaffList.forEach((s) => {
+      if (selectedIdsSet.has(s.staffId) && !inFilterIdsSet.has(s.staffId)) {
+        combined.push(s);
+      }
+    });
+
+    return combined.map((s) => ({
+      value: s.staffId,
+      label: s.displayName,
+      staff: s,
+    }));
+  };
+
+  const participantOptions = useMemo(
+    () => buildSelectableOptions(selectedParticipantIds),
+    [filteredStaffList, selectedParticipantIds, allStaffList]
+  );
+
+  const team1Options = useMemo(
+    () => buildSelectableOptions(selectedTeam1Ids),
+    [filteredStaffList, selectedTeam1Ids, allStaffList]
+  );
+
+  const team2Options = useMemo(
+    () => buildSelectableOptions(selectedTeam2Ids),
+    [filteredStaffList, selectedTeam2Ids, allStaffList]
+  );
+
+  // Quick action buttons
+  const handleAddAllFiltered = (field: 'participantIds' | 'team1Members' | 'team2Members' = 'participantIds') => {
+    const current = form.getFieldValue(field) || [];
+    const newIds = filteredStaffList.map((s) => s.staffId);
+    const merged = Array.from(new Set([...current, ...newIds]));
+    form.setFieldsValue({ [field]: merged });
+  };
+
+  const handleClearField = (field: 'participantIds' | 'team1Members' | 'team2Members' = 'participantIds') => {
+    form.setFieldsValue({ [field]: [] });
+  };
+
+  // Option renderer with Avatar and Role badge
+  const renderOptionItem = (option: { label: string; staff?: StaffProfileOption }) => {
+    const s = option.staff;
+    const tagBgClass =
+      s?.departmentCode === 'GROWTH'
+        ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+        : s?.departmentCode === 'SHOP'
+          ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800'
+          : s?.departmentCode === 'ACADEMY'
+            ? 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800'
+            : 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+
+    return (
+      <div className="flex items-center justify-between py-1 w-full gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {s?.avatarUrl ? (
+            <Avatar src={s.avatarUrl} size={22} className="flex-shrink-0" />
+          ) : (
+            <Avatar size={22} className="!bg-emerald-600 !text-white flex-shrink-0 text-xs leading-none">
+              {(s?.displayName || option.label || 'U').slice(0, 1).toUpperCase()}
+            </Avatar>
+          )}
+          <span className="font-medium text-sm text-slate-800 dark:text-slate-100 truncate">
+            {option.label}
+          </span>
+        </div>
+        <span
+          className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[11px] font-medium border leading-none flex-shrink-0 ${tagBgClass}`}
+        >
+          {s?.teamName || s?.roleName || 'Nhân viên'}
+        </span>
+      </div>
+    );
+  };
+
+  // Tone-insensitive and role-aware search filter
+  const customFilterOption = (input: string, option?: { label?: unknown; staff?: StaffProfileOption }) => {
+    if (!input || !option) return true;
+    const rawInput = removeVietnameseTones(input.toLowerCase().trim());
+    const labelStr = typeof option.label === 'string' ? option.label : '';
+    const rawLabel = removeVietnameseTones(labelStr.toLowerCase());
+    const rawRole = removeVietnameseTones((option.staff?.roleName || '').toLowerCase());
+    const rawTeam = removeVietnameseTones((option.staff?.teamName || '').toLowerCase());
+    const staffIdStr = String(option.staff?.staffId || '');
+    return (
+      rawLabel.includes(rawInput) ||
+      rawRole.includes(rawInput) ||
+      rawTeam.includes(rawInput) ||
+      staffIdStr.includes(rawInput)
+    );
   };
 
   return (
@@ -272,18 +643,72 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
           </Form.Item>
         </div>
 
+        {/* Bộ lọc vai trò & bộ phận */}
+        <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <AppIcon icon={Filter} size="sm" className="text-emerald-600" />
+              <span>1. Bộ lọc Vai trò / Bộ phận</span>
+            </div>
+            {gameType === 'INDIVIDUAL' && (
+              <div className="flex items-center gap-1.5 text-xs">
+                <Button
+                  size="small"
+                  type="text"
+                  icon={<AppIcon icon={Plus} size="sm" />}
+                  className="!text-emerald-600 hover:!bg-emerald-50 dark:hover:!bg-emerald-950/30 !px-2 !py-0 !h-6"
+                  onClick={() => handleAddAllFiltered('participantIds')}
+                  disabled={filteredStaffList.length === 0}
+                >
+                  + Thêm tất cả ({filteredStaffList.length})
+                </Button>
+                <Button
+                  size="small"
+                  type="text"
+                  icon={<AppIcon icon={Trash2} size="sm" />}
+                  className="!text-rose-500 hover:!bg-rose-50 dark:hover:!bg-rose-950/30 !px-2 !py-0 !h-6"
+                  onClick={() => handleClearField('participantIds')}
+                  disabled={selectedParticipantIds.length === 0}
+                >
+                  Xóa hết
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <Select
+            value={selectedRoleFilter}
+            onChange={(val) => setSelectedRoleFilter(val)}
+            options={roleFilterOptions}
+            loading={staffLoading}
+            className="w-full"
+            placeholder="Chọn bộ phận hoặc vai trò để lọc danh sách nhân viên"
+          />
+        </div>
+
         {gameType === 'INDIVIDUAL' ? (
           <Form.Item
             name="participantIds"
-            label={<span className="font-medium">Danh sách thành viên tham gia</span>}
+            label={
+              <div className="flex items-center justify-between w-full">
+                <span className="font-medium">2. Danh sách nhân viên tham gia ({selectedParticipantIds.length})</span>
+                <span className="text-xs text-slate-400 font-normal">
+                  Hiển thị {filteredStaffList.length} / {allStaffList.length} nhân sự
+                </span>
+              </div>
+            }
             rules={[{ required: true, message: 'Chọn ít nhất một thành viên' }]}
           >
             <Select
               mode="multiple"
-              placeholder="Chọn các thành viên thi đấu"
-              options={staffOptions}
+              placeholder="Tìm kiếm và chọn nhân viên thi đấu..."
+              options={participantOptions}
+              optionRender={(opt) => renderOptionItem(opt.data as { label: string; staff?: StaffProfileOption })}
+              filterOption={customFilterOption}
               size="large"
               className="w-full"
+              loading={staffLoading}
+              maxTagCount="responsive"
             />
           </Form.Item>
         ) : (
@@ -302,10 +727,31 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
                 </Form.Item>
                 <Form.Item
                   name="team1Members"
-                  label="Thành viên Đội 1"
+                  label={
+                    <div className="flex items-center justify-between w-full">
+                      <span>Thành viên Đội 1 ({selectedTeam1Ids.length})</span>
+                      <Button
+                        size="small"
+                        type="link"
+                        className="!p-0 !h-auto !text-xs !text-blue-600"
+                        onClick={() => handleAddAllFiltered('team1Members')}
+                        disabled={filteredStaffList.length === 0}
+                      >
+                        + Thêm nhóm ({filteredStaffList.length})
+                      </Button>
+                    </div>
+                  }
                   rules={[{ required: true, message: 'Chọn thành viên Đội 1' }]}
                 >
-                  <Select mode="multiple" placeholder="Chọn thành viên" options={staffOptions} className="w-full" />
+                  <Select
+                    mode="multiple"
+                    placeholder="Chọn thành viên"
+                    options={team1Options}
+                    optionRender={(opt) => renderOptionItem(opt.data as { label: string; staff?: StaffProfileOption })}
+                    filterOption={customFilterOption}
+                    className="w-full"
+                    maxTagCount="responsive"
+                  />
                 </Form.Item>
               </div>
 
@@ -319,10 +765,31 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
                 </Form.Item>
                 <Form.Item
                   name="team2Members"
-                  label="Thành viên Đội 2"
+                  label={
+                    <div className="flex items-center justify-between w-full">
+                      <span>Thành viên Đội 2 ({selectedTeam2Ids.length})</span>
+                      <Button
+                        size="small"
+                        type="link"
+                        className="!p-0 !h-auto !text-xs !text-red-600"
+                        onClick={() => handleAddAllFiltered('team2Members')}
+                        disabled={filteredStaffList.length === 0}
+                      >
+                        + Thêm nhóm ({filteredStaffList.length})
+                      </Button>
+                    </div>
+                  }
                   rules={[{ required: true, message: 'Chọn thành viên Đội 2' }]}
                 >
-                  <Select mode="multiple" placeholder="Chọn thành viên" options={staffOptions} className="w-full" />
+                  <Select
+                    mode="multiple"
+                    placeholder="Chọn thành viên"
+                    options={team2Options}
+                    optionRender={(opt) => renderOptionItem(opt.data as { label: string; staff?: StaffProfileOption })}
+                    filterOption={customFilterOption}
+                    className="w-full"
+                    maxTagCount="responsive"
+                  />
                 </Form.Item>
               </div>
             </div>
