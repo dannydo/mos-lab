@@ -132,7 +132,6 @@ export function bugReportNextActorWhere(nextActor: unknown): Prisma.CrmBugReport
 
 const reportInclude = {
   inboxPlanJobs: { orderBy: { createdAt: 'desc' as const }, take: 12 },
-  inboxFollowUpJobs: { orderBy: { createdAt: 'desc' as const }, take: 10 },
   reporter: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
   approver: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
   duplicateOf: { select: { requestType: true } },
@@ -179,7 +178,63 @@ const reportInclude = {
   },
 } satisfies Prisma.CrmBugReportInclude;
 
+const mineReportInclude = {
+  inboxPlanJobs: { orderBy: { createdAt: 'desc' as const }, take: 2 },
+  reporter: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
+  resolution: true,
+  attachments: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'asc' as const },
+  },
+  comments: {
+    orderBy: { createdAt: 'asc' as const },
+    include: {
+      author: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
+      attachments: { orderBy: { createdAt: 'asc' as const } },
+    },
+  },
+  audits: {
+    orderBy: { createdAt: 'asc' as const },
+    select: {
+      id: true,
+      action: true,
+      note: true,
+      afterJson: true,
+      createdAt: true,
+    },
+  },
+  inboxImplementationJobs: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+    select: {
+      id: true,
+      status: true,
+      executionOwner: true,
+      ideTaskId: true,
+      executionPhase: true,
+      sourceVersion: true,
+      planVersion: true,
+      progressLabel: true,
+      lastProgressAt: true,
+      progressCount: true,
+      checkpointCount: true,
+      failureCode: true,
+      retrySequence: true,
+      testsJson: true,
+      changedFilesJson: true,
+      retainUntil: true,
+      startedAt: true,
+      completedAt: true,
+      updatedAt: true,
+      createdAt: true,
+      leaseExpiresAt: true,
+      leaseHeartbeatAt: true,
+    },
+  },
+} satisfies Prisma.CrmBugReportInclude;
+
 type ReportWithRelations = Prisma.CrmBugReportGetPayload<{ include: typeof reportInclude }>;
+type MyReportWithRelations = Prisma.CrmBugReportGetPayload<{ include: typeof mineReportInclude }>;
 
 export class BugReportError extends Error {
   constructor(
@@ -1261,7 +1316,7 @@ export function assertAgentProgressUpdateAllowed(input: {
   }
 }
 
-function summaryDto(row: ReportWithRelations): BugReportSummary {
+function summaryDto(row: ReportWithRelations | MyReportWithRelations): BugReportSummary {
   // Older/manual records can contain valid JSON that is only a partial context.
   // Normalize after parsing so one incomplete ticket cannot break the whole Inbox.
   const context = sanitizeBugReportContext(safeJsonParse<unknown>(row.contextJson, {}));
@@ -1396,7 +1451,7 @@ function reviewUrl(reportId: number, requestType: BugReportRequestType): string 
   return `/dashboard?bugReview=${encodeURIComponent(formatBugReportKey(reportId, requestType))}`;
 }
 
-function myReportDto(row: ReportWithRelations): MyBugReportItem {
+function myReportDto(row: MyReportWithRelations | ReportWithRelations): MyBugReportItem {
   return {
     ...summaryDto(row),
     resolution: resolutionDto(row.resolution),
@@ -2004,7 +2059,7 @@ export class BugReportService {
     const [rows, notifications, unreadCount, actionRequiredCount] = await fastify.prisma.crm.$transaction([
       fastify.prisma.crm.crmBugReport.findMany({
         where: { reporterStaffId },
-        include: reportInclude,
+        include: mineReportInclude,
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),

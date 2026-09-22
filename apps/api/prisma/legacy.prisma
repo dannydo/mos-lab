@@ -114,6 +114,9 @@ model order_service {
   extra_price_tracking_key                                                                                             String?                            @db.VarChar(1000)
   date_created                                                                                                         DateTime                           @db.DateTime(0)
 
+  @@index([order_id], map: "idx_order_service_order")
+  @@index([user_id, service_group], map: "idx_order_service_user_svcgroup")
+  @@index([assigned_staff_id, order_id], map: "idx_order_service_assigned_order")
 }
 
 model service {

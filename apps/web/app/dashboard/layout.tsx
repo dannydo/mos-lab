@@ -256,7 +256,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchOnlineStaff();
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchOnlineStaff();
-    }, 25000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchOnlineStaff, hasAuthenticatedUser]);
 

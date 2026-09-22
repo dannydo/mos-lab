@@ -254,6 +254,18 @@ export async function callRoutes(fastify: FastifyInstance) {
         orderBy: {
           createdAt: 'desc',
         },
+        select: {
+          id: true,
+          legacyUserId: true,
+          staffId: true,
+          callType: true,
+          callResult: true,
+          durationSec: true,
+          note: true,
+          outcome: true,
+          callUuid: true,
+          createdAt: true,
+        },
       });
 
       if (CustomerAccessService.isTelesales(user)) {
@@ -363,7 +375,8 @@ export async function callRoutes(fastify: FastifyInstance) {
       // Fetch customer assignments from CRM
       const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: { legacyUserId: { in: legacyUserIds } },
-        include: {
+        select: {
+          legacyUserId: true,
           staff: {
             select: { id: true, displayName: true },
           },

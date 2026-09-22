@@ -46,7 +46,7 @@ import type {
   UpdateBookingRequest,
 } from '@mos-lab/shared';
 
-import { api, dedupeApiGet, dedupeInFlightApiGet } from './base';
+import { api, dedupeApiGet, dedupeInFlightApiGet, invalidateApiGetCache } from './base';
 
 export const customersApi = {
   customers: {
@@ -355,6 +355,7 @@ export const customersApi = {
   calls: {
     create: async (data: CreateCallRequest): Promise<CallLog> => {
       const response = await api.post('/calls', data);
+      invalidateApiGetCache(['/calls/daily']);
       return response.data;
     },
     listByCustomer: async (customerId: number): Promise<CallLog[]> => {
@@ -366,7 +367,7 @@ export const customersApi = {
       scope: 'all' | 'me' | 'nyc';
       staffId?: string;
     }): Promise<DailyCallEntry[]> => {
-      const data = await dedupeApiGet<DailyCallEntry[]>('/calls/daily', params as Record<string, unknown>, 5000);
+      const data = await dedupeApiGet<DailyCallEntry[]>('/calls/daily', params as Record<string, unknown>, 30000);
       return data;
     },
   },
