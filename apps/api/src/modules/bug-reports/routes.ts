@@ -653,22 +653,31 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.patch('/bug-reports/:id/review', { preHandler: [requireAuth] }, async (request, reply) => {
-    try {
-      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
-      const data = await BugReportService.review(fastify, request.user.id, id, request.body as ReviewBugReportRequest);
-      if (
-        (request.body as ReviewBugReportRequest)?.decision === 'REOPEN' &&
-        (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_REOPENED', data.updatedAt))
-      )
-        RequestClassifierWorkerHub.notify('inbox_follow_up_available');
-      if (await InboxPlanService.enqueue(fastify, id, 'REPORTER_COMMENT'))
-        RequestClassifierWorkerHub.notify('inbox_plan_available');
-      return reply.send({ success: true, data, message: 'Đã ghi nhận phản hồi bản sửa.' });
-    } catch (error) {
-      return sendError(fastify, reply, error, 'Review fixed bug report failed');
+  fastify.patch(
+    '/bug-reports/:id/review',
+    { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+        const data = await BugReportService.review(
+          fastify,
+          request.user.id,
+          id,
+          request.body as ReviewBugReportRequest
+        );
+        if (
+          (request.body as ReviewBugReportRequest)?.decision === 'REOPEN' &&
+          (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_REOPENED', data.updatedAt))
+        )
+          RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+        if (await InboxPlanService.enqueue(fastify, id, 'REPORTER_COMMENT'))
+          RequestClassifierWorkerHub.notify('inbox_plan_available');
+        return reply.send({ success: true, data, message: 'Đã ghi nhận phản hồi bản sửa.' });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Review fixed bug report failed');
+      }
     }
-  });
+  );
 
   fastify.post(
     '/bug-reports/:id/comments',

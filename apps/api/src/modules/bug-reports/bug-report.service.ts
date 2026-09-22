@@ -2207,6 +2207,7 @@ export class BugReportService {
     if (!existing) throw new BugReportError('Không tìm thấy ticket của bạn.', 404, 'BUG_NOT_FOUND');
     const decision = input?.decision;
     if (decision !== 'APPROVE' && decision !== 'REOPEN') throw new BugReportError('Quyết định duyệt không hợp lệ.');
+    const attachments = normalizedAttachments(input?.attachments);
     const reopenUnchanged = decision === 'REOPEN' && input?.reopenIntent === 'UNCHANGED';
     const couldResumeKnownReopen =
       reopenUnchanged && existing.status === 'NEW' && existing.clarificationStatus === 'WAITING_REPORTER';
@@ -2227,14 +2228,31 @@ export class BugReportService {
     const note = reopenUnchanged
       ? 'Vẫn chưa được giải quyết; biểu hiện vẫn giống bằng chứng ban đầu.'
       : clipped(input?.note, 2000) || null;
-    if (decision === 'REOPEN' && !note)
-      throw new BugReportError('Vui lòng mô tả điểm vẫn chưa đúng để Agent sửa tiếp.');
+    if (decision === 'REOPEN' && !note && !attachments.length) {
+      throw new BugReportError('Vui lòng mô tả điểm vẫn chưa đúng hoặc đính kèm ảnh để Agent sửa tiếp.');
+    }
+    const effectiveNote =
+      note ?? (attachments.length ? `Đính kèm ${attachments.length} ảnh phản hồi chưa đúng.` : null);
     const now = new Date();
     // A reporter's rejection is new evidence, not an implementation lease. Return
     // the ticket to Agent analysis so the UI never claims code/test is running
     // before a fresh, explicitly approved implementation job exists.
     const nextStatus: BugReportStatus = decision === 'APPROVE' ? 'CLOSED' : 'NEW';
     const completed = await fastify.prisma.crm.$transaction(async (tx) => {
+      let commentId: number | undefined;
+      if (decision === 'REOPEN') {
+        const comment = await tx.crmBugReportComment.create({
+          data: {
+            reportId: id,
+            authorStaffId: reporterStaffId,
+            authorType: 'STAFF',
+            kind: 'COMMENT',
+            body: effectiveNote || 'Người báo từ chối nghiệm thu và gửi hình ảnh phản hồi.',
+          },
+        });
+        commentId = comment.id;
+      }
+
       const row = await tx.crmBugReport.update({
         where: { id },
         data: {
@@ -2253,7 +2271,7 @@ export class BugReportService {
           startedAt: decision === 'APPROVE' ? (existing.startedAt ?? now) : null,
           resolvedAt: decision === 'APPROVE' ? existing.resolvedAt : null,
           closedAt: decision === 'APPROVE' ? now : null,
-          triageNote: note ?? existing.triageNote,
+          triageNote: effectiveNote ?? existing.triageNote,
           clarificationStatus: decision === 'REOPEN' ? 'PENDING_AGENT' : existing.clarificationStatus,
           clarificationSummary: decision === 'REOPEN' ? null : existing.clarificationSummary,
           clarifiedAt: decision === 'REOPEN' ? null : existing.clarifiedAt,
@@ -2274,7 +2292,7 @@ export class BugReportService {
           reportId: id,
           actorStaffId: reporterStaffId,
           action: decision === 'APPROVE' ? 'REPORTER_APPROVED' : 'REPORTER_REOPENED',
-          note: note ?? 'Người báo xác nhận bản sửa đúng.',
+          note: effectiveNote ?? 'Người báo xác nhận bản sửa đúng.',
           beforeJson: serialize(stateSnapshot(existing)),
           afterJson: serialize(
             decision === 'REOPEN'
@@ -2287,9 +2305,13 @@ export class BugReportService {
         where: { reportId: id, recipientStaffId: reporterStaffId, readAt: null },
         data: { readAt: now },
       });
-      return row;
+      return { row, commentId };
     });
-    return this.detail(fastify, completed.id);
+
+    if (decision === 'REOPEN' && attachments.length) {
+      await saveAttachments(fastify, id, attachments, completed.commentId);
+    }
+    return this.detail(fastify, completed.row.id);
   }
 
   static async triage(fastify: FastifyInstance, actorStaffId: number, id: number, input: TriageBugReportRequest) {

@@ -29,6 +29,7 @@ import type { LucideIcon } from 'lucide-react';
 import { AppIcon, StatePanel, StatusTag } from '../ui';
 import { BugReportConversation } from './BugReportConversation';
 import { BugReportAttachmentPreview } from './BugReportAttachmentPreview';
+import { BugReportRejectionModal } from './BugReportRejectionModal';
 
 const { Text } = Typography;
 
@@ -209,6 +210,8 @@ export function MyBugReportsPanel({
   const [search, setSearch] = React.useState('');
   const [technicalHistoryOpen, setTechnicalHistoryOpen] = React.useState(false);
 
+  const [rejectionModalOpen, setRejectionModalOpen] = React.useState(false);
+
   const visualForTone = React.useCallback(
     (tone: ReporterTone) => {
       if (tone === 'attention')
@@ -226,16 +229,19 @@ export function MyBugReportsPanel({
     [token]
   );
 
-  const submitReview = async (decision: ReviewBugReportRequest['decision'], reopenIntent?: 'UNCHANGED') => {
+  const submitReview = async (payload: ReviewBugReportRequest) => {
     const selected = reports.find((item) => item.key === selectedKey) ?? reports[0];
     if (!selected) return;
     setSaving(true);
     try {
-      await onReview(selected.id, reopenIntent ? { decision, reopenIntent } : { decision });
+      await onReview(selected.id, payload);
       messageApi.success(
-        decision === 'APPROVE' ? 'Cảm ơn bạn đã kiểm tra kết quả.' : 'mOS sẽ kiểm tra lại từ thông tin đã có.'
+        payload.decision === 'APPROVE'
+          ? 'Cảm ơn bạn đã kiểm tra kết quả.'
+          : 'Đã gửi phản hồi. mOS sẽ kiểm tra và sửa lại theo yêu cầu của bạn.'
       );
-      if (decision === 'APPROVE' && onClose) {
+      setRejectionModalOpen(false);
+      if (payload.decision === 'APPROVE' && onClose) {
         window.setTimeout(() => onClose(), 500);
       }
     } catch (caught) {
@@ -620,24 +626,25 @@ export function MyBugReportsPanel({
                     style={{ borderColor: selectedVisual.border }}
                   >
                     <Text type="secondary" className="max-w-md text-xs">
-                      Nếu vẫn chưa đúng, mOS sẽ dùng lại thông tin bạn đã gửi trước đó.
+                      {selected.canReview
+                        ? 'Nếu vẫn chưa đúng ý, bạn có thể gửi phản hồi kèm hình ảnh để Agent sửa lại.'
+                        : 'Nếu vẫn chưa đúng, mOS sẽ dùng lại thông tin bạn đã gửi trước đó.'}
                     </Text>
                     <div className="flex flex-wrap gap-2">
-                      {selected.canReopenUnchanged ? (
-                        <Button
-                          loading={saving}
-                          icon={<AppIcon icon={RotateCcw} size="sm" />}
-                          onClick={() => void submitReview('REOPEN', 'UNCHANGED')}
-                        >
-                          Vẫn như cũ
-                        </Button>
-                      ) : null}
+                      <Button
+                        danger
+                        loading={saving}
+                        icon={<AppIcon icon={RotateCcw} size="sm" />}
+                        onClick={() => setRejectionModalOpen(true)}
+                      >
+                        Cần sửa lại
+                      </Button>
                       {selected.canReview ? (
                         <Button
                           type="primary"
                           loading={saving}
                           icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                          onClick={() => void submitReview('APPROVE')}
+                          onClick={() => void submitReview({ decision: 'APPROVE' })}
                         >
                           Đã đúng
                         </Button>
@@ -685,6 +692,24 @@ export function MyBugReportsPanel({
           </section>
         ) : null}
       </div>
+
+      {selected ? (
+        <BugReportRejectionModal
+          open={rejectionModalOpen}
+          reportKey={selected.key}
+          reportTitle={selected.title}
+          submitting={saving}
+          onCancel={() => setRejectionModalOpen(false)}
+          onSubmit={async (data) => {
+            await submitReview({
+              decision: 'REOPEN',
+              note: data.note,
+              reopenIntent: data.reopenIntent,
+              attachments: data.attachments,
+            });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

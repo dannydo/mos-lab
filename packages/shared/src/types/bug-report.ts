@@ -1149,8 +1149,9 @@ export interface ConfirmCloseBugReportRequest {
 export interface ReviewBugReportRequest {
   decision: 'APPROVE' | 'REOPEN';
   note?: string | null;
-  /** One-tap reporter feedback: the defect remains as originally reported. */
-  reopenIntent?: 'UNCHANGED';
+  /** One-tap reporter feedback: the defect remains as originally reported, or full detailed feedback. */
+  reopenIntent?: 'UNCHANGED' | 'DETAILS';
+  attachments?: CreateBugReportAttachmentRequest[];
 }
 
 export interface CreateBugReportCommentRequest {
