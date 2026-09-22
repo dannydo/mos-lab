@@ -332,10 +332,12 @@ export const academyApi = {
     },
     createCourse: async (dto: UpsertAcademyCourseRequest) => {
       const response = await api.post('/academy-sales/courses', dto);
+      invalidateAcademySalesReadCache();
       return response.data;
     },
     updateCourse: async (id: number, dto: UpsertAcademyCourseRequest) => {
       const response = await api.put(`/academy-sales/courses/${id}`, dto);
+      invalidateAcademySalesReadCache();
       return response.data;
     },
     importSupabase: async (dryRun = true): Promise<{ success: true; data: AcademyImportReport; message: string }> => {
