@@ -158,8 +158,20 @@ export async function getBkCallMetricsByLegacyStaffIds(
   const crmStaffIds = Array.from(legacyStaffIdByCrmStaffId.keys());
   if (crmStaffIds.length === 0) return metricsByLegacyStaffId;
 
-  const start = new Date(`${startPart}T00:00:00.000Z`);
-  const end = new Date(`${endPart}T23:59:59.999Z`);
+  const startIso =
+    startPart.includes('+') || startPart.endsWith('Z')
+      ? startPart
+      : startPart.includes('T')
+        ? `${startPart}+07:00`
+        : `${startPart}T00:00:00+07:00`;
+  const endIso =
+    endPart.includes('+') || endPart.endsWith('Z')
+      ? endPart
+      : endPart.includes('T')
+        ? `${endPart}+07:00`
+        : `${endPart}T23:59:59.999+07:00`;
+  const start = new Date(startIso);
+  const end = new Date(endIso);
   const [crmLogs, omicallLogs] = await Promise.all([
     fastify.prisma.crm.crmCallLog.findMany({
       where: { staffId: { in: crmStaffIds }, createdAt: { gte: start, lte: end } },

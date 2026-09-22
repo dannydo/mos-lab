@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BkGameParticipant } from '@mos-lab/shared';
+import { formatIctDateTime, formatIctDate } from './bk-game.service.js';
 
 test('Game BK target progress calculates accurately with a 100% cap', () => {
   const calcProgress = (score: number, target?: number | null): number => {
@@ -73,4 +74,21 @@ test('Game BK TOP_3 distribution splits reward pool 60 / 30 / 10', () => {
   assert.equal(secondReward, 300000);
   assert.equal(thirdReward, 100000);
   assert.equal(firstReward + secondReward + thirdReward, pool);
+});
+
+test('Game BK formatIctDateTime correctly converts UTC timestamps to Vietnam time strings', () => {
+  // Midnight on Sept 22 in Vietnam (UTC+7) is 17:00 on Sept 21 UTC
+  const startUtc = new Date('2026-09-21T17:00:00.000Z');
+  assert.equal(formatIctDateTime(startUtc), '2026-09-22 00:00:00');
+  assert.equal(formatIctDate(startUtc), '2026-09-22');
+
+  // 23:59:59 on Sept 30 in Vietnam (UTC+7) is 16:59:59 on Sept 30 UTC
+  const endUtc = new Date('2026-09-30T16:59:59.000Z');
+  assert.equal(formatIctDateTime(endUtc), '2026-09-30 23:59:59');
+  assert.equal(formatIctDate(endUtc), '2026-09-30');
+
+  // Daytime check: 10:09:24 UTC is 17:09:24 Vietnam
+  const midDay = new Date('2026-09-22T10:09:24.000Z');
+  assert.equal(formatIctDateTime(midDay), '2026-09-22 17:09:24');
+  assert.equal(formatIctDate(midDay), '2026-09-22');
 });

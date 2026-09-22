@@ -19,6 +19,29 @@ interface LegacyStaffRow {
   avatar: string | null;
 }
 
+/**
+ * Formats a Date into Vietnam (ICT, UTC+7) datetime string 'YYYY-MM-DD HH:mm:ss'
+ * for querying MySQL columns stored in local Vietnam time.
+ */
+export function formatIctDateTime(date: Date): string {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    return '';
+  }
+  const datePart = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const timePart = date.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false });
+  return `${datePart} ${timePart}`;
+}
+
+/**
+ * Formats a Date into Vietnam (ICT, UTC+7) date string 'YYYY-MM-DD'.
+ */
+export function formatIctDate(date: Date): string {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+}
+
 export class BkGameService {
   /**
    * Retrieves all Telesales games, optionally filtered by status.
@@ -135,10 +158,10 @@ export class BkGameService {
     // If game is ACTIVE, compute live scores from the database
     if (game.status === 'ACTIVE' && participants.length > 0) {
       const staffIds = participants.map((p) => p.staffId);
-      const startIso = game.startDate.toISOString();
-      const endIso = game.endDate.toISOString();
-      const startDateStr = startIso.split('T')[0];
-      const endDateStr = endIso.split('T')[0];
+      const startIctDateTime = formatIctDateTime(game.startDate);
+      const endIctDateTime = formatIctDateTime(game.endDate);
+      const startDateStr = formatIctDate(game.startDate);
+      const endDateStr = formatIctDate(game.endDate);
 
       const scoreMap = new Map<number, number>();
 
@@ -149,8 +172,8 @@ export class BkGameService {
             COUNT(DISTINCT o.id) AS metricCount
           FROM \`order\` o
           WHERE o.created_staff_id IN (${staffIds.join(',')})
-            AND o.date_created >= '${startIso.replace('T', ' ').slice(0, 19)}'
-            AND o.date_created <= '${endIso.replace('T', ' ').slice(0, 19)}'
+            AND o.date_created >= '${startIctDateTime}'
+            AND o.date_created <= '${endIctDateTime}'
             AND o.order_state != 'Cancelled'
           GROUP BY o.created_staff_id
         `);
@@ -164,8 +187,8 @@ export class BkGameService {
             COUNT(DISTINCT o.id) AS metricCount
           FROM \`order\` o
           WHERE o.created_staff_id IN (${staffIds.join(',')})
-            AND o.booking_date_start >= '${startDateStr} 00:00:00'
-            AND o.booking_date_start <= '${endDateStr} 23:59:59'
+            AND o.booking_date_start >= '${startIctDateTime}'
+            AND o.booking_date_start <= '${endIctDateTime}'
             AND o.order_state = 'Completed'
           GROUP BY o.created_staff_id
         `);
@@ -187,17 +210,17 @@ export class BkGameService {
             COUNT(DISTINCT o.id) AS metricCount
           FROM \`order\` o
           WHERE o.created_staff_id IN (${staffIds.join(',')})
-            AND o.date_created >= '${startIso.replace('T', ' ').slice(0, 19)}'
-            AND o.date_created <= '${endIso.replace('T', ' ').slice(0, 19)}'
+            AND o.date_created >= '${startIctDateTime}'
+            AND o.date_created <= '${endIctDateTime}'
             AND o.order_state != 'Cancelled'
           GROUP BY o.created_staff_id
         `);
         const callMetrics = await getBkCallMetricsByLegacyStaffIds(fastify, startDateStr, endDateStr, staffIds);
-        for (const r of bookingRows) {
-          const sid = Number(r.staffId);
-          const bCount = Number(r.metricCount || 0);
-          const cCount = callMetrics.get(sid)?.callCount || 0;
-          scoreMap.set(sid, bCount * 10 + cCount);
+        for (const staffId of staffIds) {
+          const bookingRow = bookingRows.find((r) => Number(r.staffId) === staffId);
+          const bCount = Number(bookingRow?.metricCount || 0);
+          const cCount = callMetrics.get(staffId)?.callCount || 0;
+          scoreMap.set(staffId, bCount * 10 + cCount);
         }
       }
 
