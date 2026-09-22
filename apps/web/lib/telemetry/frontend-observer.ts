@@ -212,17 +212,104 @@ function getElementDescriptor(element: HTMLElement | null): string {
   return `${tag}${desc ? `[${desc}]` : ''}`;
 }
 
+export const CHUNK_RELOAD_STORAGE_KEY = 'mos_chunk_reload_ts';
+export const CHUNK_RELOAD_COOLDOWN_MS = 15000;
+
+export function isChunkLoadError(error: unknown): boolean {
+  if (!error) return false;
+  const errObj = error as { name?: string; message?: string; reason?: unknown };
+  const name = String(errObj.name || (errObj.reason && (errObj.reason as { name?: string }).name) || '');
+  const message = String(
+    errObj.message ||
+      (errObj.reason && (errObj.reason as { message?: string }).message) ||
+      errObj.reason ||
+      error
+  );
+  const combined = `${name} ${message}`;
+  return (
+    /ChunkLoadError/i.test(combined) ||
+    /Loading chunk [\w-]+ failed/i.test(combined) ||
+    /Failed to load chunk/i.test(combined) ||
+    /CSS_CHUNK_LOAD_FAILED/i.test(combined) ||
+    /Failed to fetch dynamically imported module/i.test(combined) ||
+    /Loading CSS chunk/i.test(combined)
+  );
+}
+
+export function handleAutoChunkReload(error: unknown): boolean {
+  if (typeof window === 'undefined') return false;
+  if (!isChunkLoadError(error)) return false;
+
+  const win = window as unknown as { __mos_chunk_reloading?: boolean };
+  if (win.__mos_chunk_reloading) return true;
+
+  try {
+    const lastReloadStr = window.sessionStorage?.getItem(CHUNK_RELOAD_STORAGE_KEY);
+    const now = Date.now();
+    if (lastReloadStr) {
+      const lastReload = parseInt(lastReloadStr, 10);
+      if (!isNaN(lastReload) && now - lastReload < CHUNK_RELOAD_COOLDOWN_MS) {
+        console.warn(
+          '[ChunkReloader] ChunkLoadError detected, but reload cooldown is active. Skipping infinite reload loop.'
+        );
+        return false;
+      }
+    }
+
+    window.sessionStorage?.setItem(CHUNK_RELOAD_STORAGE_KEY, String(now));
+    win.__mos_chunk_reloading = true;
+    console.warn('[ChunkReloader] Obsolete chunk detected. Automatically reloading page once to fetch latest build...');
+    window.location.reload();
+    return true;
+  } catch (e) {
+    console.error('[ChunkReloader] Auto-reload failed:', e);
+    return false;
+  }
+}
+
 function handleClick(event: MouseEvent): void {
   const target = event.target as HTMLElement | null;
   if (!target) return;
 
   // Find clickable parent if clicked on svg/icon/span
-  const clickable = target.closest('button, a, [role="button"], input[type="submit"], .ant-btn, .ant-tabs-tab');
-  const descriptor = getElementDescriptor((clickable as HTMLElement) || target);
+  const clickable = target.closest<HTMLElement>(
+    'button, a, [role="button"], input[type="submit"], input[type="button"], .ant-btn, .ant-tabs-tab, .clickable-action'
+  );
+
+  // Active micro-interaction tactile feedback (MOS-BUG-46)
+  if (clickable && !clickable.hasAttribute('disabled') && !clickable.getAttribute('aria-disabled')) {
+    clickable.classList.remove('mos-active-tap');
+    // Force reflow to restart CSS pulse animation if clicked in rapid succession
+    void clickable.offsetWidth;
+    clickable.classList.add('mos-active-tap');
+    setTimeout(() => {
+      clickable.classList.remove('mos-active-tap');
+    }, 350);
+  }
+
+  const descriptor = getElementDescriptor(clickable || target);
 
   recordBreadcrumb('ui', 'click', descriptor);
 
-  // Rage Click Heuristics
+  // Exclude non-action targets from rage-click detection:
+  // 1. Text/search inputs where double/triple click is standard for text selection
+  // 2. Numeric steppers/handlers where rapid clicking is intended to increase/decrease values
+  const isTextInput =
+    target instanceof HTMLInputElement &&
+    ['text', 'search', 'password', 'email', 'number', 'tel', 'url'].includes(target.type);
+  const isTextArea = target instanceof HTMLTextAreaElement || target.isContentEditable;
+  const isStepperHandler =
+    Boolean(target.closest('.ant-input-number-handler, .ant-input-number-handler-up, .ant-input-number-handler-down')) ||
+    /decrease|increase|stepper/i.test(descriptor);
+
+  if (isTextInput || isTextArea || isStepperHandler) {
+    lastClickTarget = descriptor;
+    clickCountInWindow = 1;
+    lastClickTime = Date.now();
+    return;
+  }
+
+  // Rage Click Heuristics for action elements
   const now = Date.now();
   if (descriptor === lastClickTarget && now - lastClickTime < RAGE_CLICK_WINDOW_MS) {
     clickCountInWindow++;
@@ -249,6 +336,25 @@ function handleWindowError(event: ErrorEvent): void {
     return;
   }
 
+  // Check for failed resource chunk loads (e.g. <script> or <link>)
+  const target = event.target as HTMLElement | null;
+  if (target && target !== (window as unknown as HTMLElement)) {
+    const tagName = target.tagName?.toUpperCase();
+    const src = target.getAttribute?.('src') || target.getAttribute?.('href') || '';
+    if ((tagName === 'SCRIPT' || tagName === 'LINK') && src.includes('/_next/static/')) {
+      recordBreadcrumb('network', 'error', 'Script/Link chunk load failed', { src });
+      handleAutoChunkReload(`Failed to load chunk asset: ${src}`);
+      return;
+    }
+  }
+
+  // Check if standard error event is a ChunkLoadError
+  const errorObj = event.error || event.message;
+  if (isChunkLoadError(errorObj)) {
+    recordBreadcrumb('console', 'error', 'Window ChunkLoadError', { message: event.message });
+    handleAutoChunkReload(errorObj);
+  }
+
   recordBreadcrumb('console', 'error', 'Window Error', { message: event.message });
 
   reportFrontendIssue({
@@ -264,6 +370,11 @@ function handleWindowError(event: ErrorEvent): void {
 function handleUnhandledRejection(event: PromiseRejectionEvent): void {
   const reason = event.reason;
   const message = reason instanceof Error ? reason.message : String(reason);
+
+  if (isChunkLoadError(reason)) {
+    recordBreadcrumb('console', 'error', 'Unhandled Promise ChunkLoadError', { message });
+    handleAutoChunkReload(reason);
+  }
 
   recordBreadcrumb('console', 'error', 'Unhandled Promise Rejection', { message });
 
@@ -291,12 +402,12 @@ export function initFrontendObserver(): () => void {
 
   // Attach global listeners with capture to ensure we see events before propagation stops
   window.addEventListener('click', handleClick, { capture: true, passive: true });
-  window.addEventListener('error', handleWindowError);
+  window.addEventListener('error', handleWindowError, true);
   window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
   return () => {
     window.removeEventListener('click', handleClick, { capture: true });
-    window.removeEventListener('error', handleWindowError);
+    window.removeEventListener('error', handleWindowError, true);
     window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     isInitialized = false;
   };
