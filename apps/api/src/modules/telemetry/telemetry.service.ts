@@ -422,6 +422,17 @@ export class FrontendTelemetryService {
       ];
     }
 
+    if (query.userName && query.userName !== 'ALL') {
+      where.lastUserName = query.userName;
+    }
+
+    let orderBy: Prisma.CrmFrontendIssueOrderByWithRelationInput[] = [{ lastSeenAt: 'desc' }];
+    if (query.sortBy === 'occurrences') {
+      orderBy = [{ occurrenceCount: 'desc' }, { lastSeenAt: 'desc' }];
+    } else if (query.sortBy === 'id') {
+      orderBy = [{ id: 'desc' }];
+    }
+
     const [total, rows, metrics] = await Promise.all([
       fastify.prisma.crm.crmFrontendIssue.count({ where }),
       fastify.prisma.crm.crmFrontendIssue.findMany({
@@ -431,7 +442,7 @@ export class FrontendTelemetryService {
             select: { displayName: true },
           },
         },
-        orderBy: [{ lastSeenAt: 'desc' }],
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -468,6 +479,7 @@ export class FrontendTelemetryService {
         totalOccurrences: 0,
         extinguishedOccurrences: 0,
         trafficExtinguishmentRate: 0,
+        userStats: [],
       };
       return {
         syncedIssuesCount: 0,
@@ -622,6 +634,7 @@ export class FrontendTelemetryService {
         totalOccurrences: 0,
         extinguishedOccurrences: 0,
         trafficExtinguishmentRate: 0,
+        userStats: [],
       };
     }
 
@@ -634,7 +647,7 @@ export class FrontendTelemetryService {
       }
     }
 
-    const [counts, aggregateHits, resolvedHits, clusterBugReports] = await Promise.all([
+    const [counts, aggregateHits, resolvedHits, clusterBugReports, userGroups] = await Promise.all([
       fastify.prisma.crm.crmFrontendIssue.groupBy({
         by: ['status'],
         _count: { id: true },
@@ -656,6 +669,12 @@ export class FrontendTelemetryService {
           status: true,
         },
         orderBy: { id: 'desc' },
+      }),
+      fastify.prisma.crm.crmFrontendIssue.groupBy({
+        by: ['lastUserName'],
+        _count: { id: true },
+        _sum: { occurrenceCount: true },
+        orderBy: { _sum: { occurrenceCount: 'desc' } },
       }),
     ]);
 
@@ -705,6 +724,14 @@ export class FrontendTelemetryService {
     const trafficExtinguishmentRate =
       totalOccurrences > 0 ? Math.round((extinguishedOccurrences / totalOccurrences) * 100) : 0;
 
+    const userStats = userGroups
+      .filter((g) => g.lastUserName)
+      .map((g) => ({
+        userName: g.lastUserName!,
+        issueCount: g._count.id,
+        occurrenceCount: g._sum.occurrenceCount || 0,
+      }));
+
     return {
       totalCount,
       newCount,
@@ -721,6 +748,7 @@ export class FrontendTelemetryService {
       totalOccurrences,
       extinguishedOccurrences,
       trafficExtinguishmentRate,
+      userStats,
     };
   }
 

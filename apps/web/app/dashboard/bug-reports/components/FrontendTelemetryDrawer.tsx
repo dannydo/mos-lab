@@ -133,6 +133,8 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
   // Filters
   const [statusFilter, setStatusFilter] = useState<FrontendIssueStatus | 'ALL'>('ALL');
   const [typeFilter, setTypeFilter] = useState<FrontendIssueType | 'ALL'>('ALL');
+  const [userFilter, setUserFilter] = useState<string | 'ALL'>('ALL');
+  const [sortBy, setSortBy] = useState<'occurrences' | 'lastSeen'>('occurrences');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Replay / Detail modal state
@@ -246,6 +248,8 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
         limit: pageSize,
         status: statusFilter,
         issueType: typeFilter,
+        userName: userFilter === 'ALL' ? undefined : userFilter,
+        sortBy,
         search: searchQuery.trim() || undefined,
       };
 
@@ -258,7 +262,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, statusFilter, typeFilter, searchQuery]);
+  }, [page, pageSize, statusFilter, typeFilter, userFilter, sortBy, searchQuery]);
 
   useEffect(() => {
     if (open) {
@@ -384,9 +388,13 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
             {record.message}
           </Paragraph>
           {record.lastUserName ? (
-            <Text type="secondary" className="text-xs flex items-center gap-1">
-              <AppIcon icon={User} size="sm" /> Gần nhất: {record.lastUserName}
-            </Text>
+            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <AppIcon icon={User} size="sm" className="text-purple-500" />
+              <span>Gặp bởi:</span>
+              <span className="font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800/40">
+                {record.lastUserName}
+              </span>
+            </div>
           ) : null}
         </div>
       ),
@@ -910,6 +918,59 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                 ),
                 children: (
                   <div className="space-y-4 pt-1">
+                    {/* Top Frustrated Users Quick Filter Bar */}
+                    {(metrics?.userStats || []).length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 p-2.5 bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-purple-500/10 border border-amber-200/80 dark:border-amber-800/40 rounded-lg text-xs">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 mr-1">
+                          <AppIcon icon={User} size="sm" className="text-amber-500" />
+                          <span>Top gặp sự cố:</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserFilter('ALL');
+                            setPage(1);
+                          }}
+                          className={`px-2.5 py-1 rounded-full font-medium transition-colors ${
+                            userFilter === 'ALL'
+                              ? 'bg-purple-600 text-white shadow-sm'
+                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          Tất cả ({metrics?.totalOccurrences?.toLocaleString('vi-VN') ?? 0} lượt)
+                        </button>
+                        {metrics?.userStats?.slice(0, 6).map((u, idx) => {
+                          const isSelected = userFilter === u.userName;
+                          const rankBadge = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                          return (
+                            <button
+                              key={u.userName}
+                              type="button"
+                              onClick={() => {
+                                setUserFilter(isSelected ? 'ALL' : u.userName);
+                                setPage(1);
+                              }}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-medium transition-colors ${
+                                isSelected
+                                  ? 'bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-sm'
+                                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              <span>{rankBadge}</span>
+                              <span className="font-semibold">{u.userName}</span>
+                              <span
+                                className={`text-[11px] tabular-nums ${
+                                  isSelected ? 'text-white/90' : 'text-rose-600 dark:text-rose-400 font-bold'
+                                }`}
+                              >
+                                {u.occurrenceCount.toLocaleString('vi-VN')} lượt
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {/* Search & Filters */}
                     <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
                       <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
@@ -923,7 +984,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                             void fetchData();
                           }}
                           allowClear
-                          className="max-w-[240px]"
+                          className="max-w-[200px]"
                         />
                         <Select
                           value={statusFilter}
@@ -931,7 +992,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                             setStatusFilter(val);
                             setPage(1);
                           }}
-                          className="min-w-[140px]"
+                          className="min-w-[130px]"
                           options={[
                             { value: 'ALL', label: 'Mọi trạng thái' },
                             ...FRONTEND_ISSUE_STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label })),
@@ -943,10 +1004,41 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                             setTypeFilter(val);
                             setPage(1);
                           }}
-                          className="min-w-[160px]"
+                          className="min-w-[145px]"
                           options={[
                             { value: 'ALL', label: 'Mọi loại sự cố' },
                             ...FRONTEND_ISSUE_TYPES.map((t) => ({ value: t, label: ISSUE_TYPE_CONFIG[t].label })),
+                          ]}
+                        />
+                        <Select
+                          value={userFilter}
+                          onChange={(val) => {
+                            setUserFilter(val);
+                            setPage(1);
+                          }}
+                          className="min-w-[210px]"
+                          showSearch
+                          filterOption={(input, option) =>
+                            ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
+                          }
+                          options={[
+                            { value: 'ALL', label: '👤 Mọi nhân sự (Tất cả)' },
+                            ...(metrics?.userStats || []).map((u) => ({
+                              value: u.userName,
+                              label: `👤 ${u.userName} (${u.occurrenceCount.toLocaleString('vi-VN')} lượt · ${u.issueCount} lỗi)`,
+                            })),
+                          ]}
+                        />
+                        <Select
+                          value={sortBy}
+                          onChange={(val) => {
+                            setSortBy(val);
+                            setPage(1);
+                          }}
+                          className="min-w-[160px]"
+                          options={[
+                            { value: 'occurrences', label: '🔥 Nhiều lượt gặp nhất' },
+                            { value: 'lastSeen', label: '🕒 Thời gian gần nhất' },
                           ]}
                         />
                       </div>

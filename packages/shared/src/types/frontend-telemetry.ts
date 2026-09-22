@@ -87,6 +87,12 @@ export interface FrontendIssueRecord {
   updatedAt: string;
 }
 
+export interface FrontendIssueUserStat {
+  userName: string;
+  issueCount: number;
+  occurrenceCount: number;
+}
+
 export interface FrontendIssueMetrics {
   totalCount: number;
   newCount: number;
@@ -103,6 +109,7 @@ export interface FrontendIssueMetrics {
   totalOccurrences?: number;
   extinguishedOccurrences?: number;
   trafficExtinguishmentRate?: number; // 0 - 100 percentage
+  userStats?: FrontendIssueUserStat[];
 }
 
 export interface UpdateFrontendIssueStatusRequest {
@@ -113,6 +120,8 @@ export interface UpdateFrontendIssueStatusRequest {
 export interface FrontendIssueListQuery {
   status?: FrontendIssueStatus | 'ALL';
   issueType?: FrontendIssueType | 'ALL';
+  userName?: string | 'ALL';
+  sortBy?: 'occurrences' | 'lastSeen' | 'id';
   search?: string;
   page?: number;
   limit?: number;

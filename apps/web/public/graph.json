@@ -20135,6 +20135,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:FrontendIssueUserStat",
+      "type": "SharedType",
+      "label": "FrontendIssueUserStat",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueUserStat",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:FrontendIssueMetrics",
       "type": "SharedType",
       "label": "FrontendIssueMetrics",
@@ -25559,8 +25571,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11705123,
-        "lineCount": 255048,
+        "sizeBytes": 11707177,
+        "lineCount": 255084,
         "ext": ".ts"
       }
     },
@@ -28744,8 +28756,8 @@
       "filePath": "apps/api/src/modules/telemetry/telemetry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 63361,
-        "lineCount": 1633,
+        "sizeBytes": 64247,
+        "lineCount": 1661,
         "ext": ".ts"
       }
     },
@@ -31604,8 +31616,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 66084,
-        "lineCount": 1360,
+        "sizeBytes": 71479,
+        "lineCount": 1449,
         "ext": ".tsx"
       }
     },
@@ -34880,8 +34892,8 @@
       "filePath": "packages/shared/src/types/frontend-telemetry.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5549,
-        "lineCount": 226,
+        "sizeBytes": 5776,
+        "lineCount": 235,
         "ext": ".ts"
       }
     },
@@ -45695,6 +45707,13 @@
     {
       "id": "edge:type:@mos-lab/shared:FrontendIssueRecord:ws:packages/shared",
       "source": "type:@mos-lab/shared:FrontendIssueRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueUserStat:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueUserStat",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -75983,20 +76002,20 @@
     }
   ],
   "stats": {
-    "totalNodes": 2697,
-    "totalEdges": 5826,
+    "totalNodes": 2698,
+    "totalEdges": 5827,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 143,
       "FastifyRoute": 560,
       "Component": 53,
-      "SharedType": 985,
+      "SharedType": 986,
       "DesignToken": 12,
       "UIComponent": 194,
       "File": 747
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1140,
+      "EXPORTS": 1141,
       "HANDLES_ROUTE": 560,
       "RENDERS": 247,
       "USES_TOKEN": 196,
@@ -76007,7 +76026,7 @@
     "fastifyRouteCount": 565,
     "prismaModelCount": 143,
     "nextPageCount": 53,
-    "sharedTypeCount": 985
+    "sharedTypeCount": 986
   },
   "routes": [
     {
