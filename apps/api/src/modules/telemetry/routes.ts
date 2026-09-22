@@ -1,5 +1,10 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { FrontendIssueListQuery, FrontendIssuePayload, UpdateFrontendIssueStatusRequest } from '@mos-lab/shared';
+import type {
+  FrontendIssueClusterKey,
+  FrontendIssueListQuery,
+  FrontendIssuePayload,
+  UpdateFrontendIssueStatusRequest,
+} from '@mos-lab/shared';
 import { requireAuth } from '../../middlewares/auth.js';
 import { FrontendTelemetryService } from './telemetry.service.js';
 
@@ -135,6 +140,142 @@ export async function frontendTelemetryRoutes(fastify: FastifyInstance) {
         const error = err as { statusCode?: number; message?: string };
         return reply.status(error.statusCode || 500).send({
           error: error.message || 'Không thể chuyển thành Bug Report',
+        });
+      }
+    }
+  );
+
+  // Auto-analyze issue with AG AI
+  fastify.post(
+    '/telemetry/frontend-issues/:id/ag-analyze',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        description: 'Auto-analyze a frontend telemetry issue using AG engine',
+        tags: ['Telemetry'],
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId)) {
+        return reply.status(400).send({ error: 'ID sự cố không hợp lệ' });
+      }
+
+      try {
+        const result = await FrontendTelemetryService.agAnalyze(fastify, parsedId);
+        return reply.status(200).send({ data: result });
+      } catch (err: unknown) {
+        const error = err as { statusCode?: number; message?: string };
+        return reply.status(error.statusCode || 500).send({
+          error: error.message || 'Không thể phân tích sự cố bằng AG',
+        });
+      }
+    }
+  );
+
+  // Approve and dispatch issue to AG via mOS Inbox workflow
+  fastify.post(
+    '/telemetry/frontend-issues/:id/ag-dispatch',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        description: 'Approve and dispatch frontend issue to Antigravity via mOS Inbox',
+        tags: ['Telemetry'],
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId)) {
+        return reply.status(400).send({ error: 'ID sự cố không hợp lệ' });
+      }
+
+      try {
+        const result = await FrontendTelemetryService.agDispatch(fastify, parsedId, request.user.id);
+        return reply.status(201).send({ data: result });
+      } catch (err: unknown) {
+        const error = err as { statusCode?: number; message?: string };
+        return reply.status(error.statusCode || 500).send({
+          error: error.message || 'Không thể duyệt và giao cho AG xử lý',
+        });
+      }
+    }
+  );
+
+  // Get clustered telemetry issues
+  fastify.get(
+    '/telemetry/frontend-issues/clusters',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        description: 'Get telemetry issues grouped into smart root-cause clusters',
+        tags: ['Telemetry'],
+      },
+    },
+    async (_request, reply) => {
+      try {
+        const result = await FrontendTelemetryService.getClusters(fastify);
+        return reply.status(200).send({ data: result });
+      } catch (err: unknown) {
+        const error = err as { statusCode?: number; message?: string };
+        return reply.status(error.statusCode || 500).send({
+          error: error.message || 'Không thể lấy danh sách cụm sự cố',
+        });
+      }
+    }
+  );
+
+  // Approve and dispatch entire cluster to AG (creates 1 ticket)
+  fastify.post(
+    '/telemetry/frontend-issues/clusters/:clusterKey/dispatch',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        description: 'Approve and dispatch entire issue cluster to Antigravity as 1 ticket',
+        tags: ['Telemetry'],
+      },
+    },
+    async (request, reply) => {
+      const { clusterKey } = request.params as { clusterKey: string };
+      if (!clusterKey) {
+        return reply.status(400).send({ error: 'Mã cụm sự cố không hợp lệ' });
+      }
+
+      try {
+        const result = await FrontendTelemetryService.dispatchCluster(
+          fastify,
+          clusterKey as FrontendIssueClusterKey,
+          request.user.id
+        );
+        return reply.status(201).send({ data: result });
+      } catch (err: unknown) {
+        const error = err as { statusCode?: number; message?: string };
+        return reply.status(error.statusCode || 500).send({
+          error: error.message || 'Không thể phê duyệt cụm sự cố cho AG',
+        });
+      }
+    }
+  );
+
+  // Batch dispatch priority clusters (P0/P1) in one click
+  fastify.post(
+    '/telemetry/frontend-issues/clusters/batch-dispatch-priority',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        description: 'Batch dispatch all high-priority clusters to Antigravity',
+        tags: ['Telemetry'],
+      },
+    },
+    async (request, reply) => {
+      try {
+        const results = await FrontendTelemetryService.batchDispatchPriorityClusters(fastify, request.user.id);
+        return reply.status(201).send({ data: results });
+      } catch (err: unknown) {
+        const error = err as { statusCode?: number; message?: string };
+        return reply.status(error.statusCode || 500).send({
+          error: error.message || 'Không thể phê duyệt hàng loạt các cụm trọng tâm',
         });
       }
     }

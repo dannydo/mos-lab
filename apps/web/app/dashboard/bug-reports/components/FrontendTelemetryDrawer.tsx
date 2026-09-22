@@ -14,6 +14,7 @@ import {
   Row,
   Select,
   Space,
+  Tabs,
   Timeline,
   Tooltip,
   Typography,
@@ -24,21 +25,36 @@ import {
   Activity,
   AlertOctagon,
   AlertTriangle,
+  Bot,
   Bug,
+  Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   ExternalLink,
+  FileCode2,
   Flame,
+  Layers,
+  ListFilter,
   MousePointerClick,
   PlayCircle,
   RefreshCw,
   Search,
+  ShieldCheck,
+  Sparkles,
   User,
   Zap,
 } from 'lucide-react';
 import {
   FRONTEND_ISSUE_STATUSES,
   FRONTEND_ISSUE_TYPES,
+  type FrontendIssueAgAnalysis,
+  type FrontendIssueAgDispatchResponse,
+  type FrontendIssueCluster,
+  type FrontendIssueClusterDispatchResponse,
+  type FrontendIssueClusterKey,
+  type FrontendIssueClusterListResponse,
   type FrontendIssueListQuery,
   type FrontendIssueListResponse,
   type FrontendIssueMetrics,
@@ -126,6 +142,69 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
   const [statusForm] = Form.useForm();
   const [convertingBug, setConvertingBug] = useState(false);
 
+  // AG Analysis & Dispatch state
+  const [agAnalysis, setAgAnalysis] = useState<FrontendIssueAgAnalysis | null>(null);
+  const [analyzingAg, setAnalyzingAg] = useState(false);
+  const [dispatchingAg, setDispatchingAg] = useState(false);
+  const [dispatchResult, setDispatchResult] = useState<FrontendIssueAgDispatchResponse | null>(null);
+  const [fleetAnalysisOpen, setFleetAnalysisOpen] = useState(false);
+
+  // Smart Clustering state
+  const [activeTab, setActiveTab] = useState<'clusters' | 'issues'>('clusters');
+  const [clustersLoading, setClustersLoading] = useState(false);
+  const [clusterData, setClusterData] = useState<FrontendIssueClusterListResponse | null>(null);
+  const [dispatchingClusterKey, setDispatchingClusterKey] = useState<FrontendIssueClusterKey | null>(null);
+  const [batchDispatching, setBatchDispatching] = useState(false);
+  const [expandedClusterKeys, setExpandedClusterKeys] = useState<Record<string, boolean>>({
+    POLLING_SLOW_API: true,
+    RAGE_CLICK_CALL_LOG: true,
+    WEBRTC_SDK_CRASH: true,
+  });
+
+  const toggleClusterExpand = (key: string) => {
+    setExpandedClusterKeys((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const fetchClusters = useCallback(async () => {
+    setClustersLoading(true);
+    try {
+      const res = await apiClient.frontendTelemetry.getClusters();
+      setClusterData(res);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Không thể tải danh sách cụm sự cố.');
+    } finally {
+      setClustersLoading(false);
+    }
+  }, []);
+
+  const handleDispatchCluster = async (clusterKey: FrontendIssueClusterKey) => {
+    setDispatchingClusterKey(clusterKey);
+    try {
+      const res = await apiClient.frontendTelemetry.dispatchCluster(clusterKey);
+      message.success(res.message);
+      void fetchClusters();
+      void fetchData();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Lỗi khi duyệt cụm sự cố');
+    } finally {
+      setDispatchingClusterKey(null);
+    }
+  };
+
+  const handleBatchDispatchPriority = async () => {
+    setBatchDispatching(true);
+    try {
+      const results = await apiClient.frontendTelemetry.batchDispatchPriorityClusters();
+      message.success(`Đã phê duyệt ${results.length} cụm sự cố trọng tâm cho AG thành công!`);
+      void fetchClusters();
+      void fetchData();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Lỗi khi duyệt hàng loạt');
+    } finally {
+      setBatchDispatching(false);
+    }
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -150,17 +229,48 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
 
   useEffect(() => {
     if (open) {
+      void fetchClusters();
       void fetchData();
     }
-  }, [open, fetchData]);
+  }, [open, fetchClusters, fetchData]);
+
+  const fetchAgAnalysis = useCallback(async (issueId: number) => {
+    setAnalyzingAg(true);
+    try {
+      const res = await apiClient.frontendTelemetry.agAnalyze(issueId);
+      setAgAnalysis(res);
+    } catch (err) {
+      console.error('Không thể phân tích sự cố bằng AG:', err);
+    } finally {
+      setAnalyzingAg(false);
+    }
+  }, []);
 
   const handleOpenDetail = (issue: FrontendIssueRecord) => {
     setActiveIssue(issue);
+    setAgAnalysis(null);
+    setDispatchResult(null);
     statusForm.setFieldsValue({
       status: issue.status,
       resolutionNotes: issue.resolutionNotes || '',
     });
     setDetailDrawerOpen(true);
+    void fetchAgAnalysis(issue.id);
+  };
+
+  const handleAgDispatch = async () => {
+    if (!activeIssue) return;
+    setDispatchingAg(true);
+    try {
+      const res = await apiClient.frontendTelemetry.agDispatch(activeIssue.id);
+      setDispatchResult(res);
+      message.success(res.message);
+      void fetchData();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Lỗi khi duyệt và giao cho AG.');
+    } finally {
+      setDispatchingAg(false);
+    }
   };
 
   const handleUpdateStatus = async (values: { status: FrontendIssueStatus; resolutionNotes: string }) => {
@@ -353,68 +463,336 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
             </Col>
           </Row>
 
-          {/* Search & Filters */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-            <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
-              <Input
-                prefix={<AppIcon icon={Search} size="sm" />}
-                placeholder="Tìm URL, nút bấm, thông điệp..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onPressEnter={() => {
-                  setPage(1);
-                  void fetchData();
-                }}
-                allowClear
-                className="max-w-[240px]"
-              />
-              <Select
-                value={statusFilter}
-                onChange={(val) => {
-                  setStatusFilter(val);
-                  setPage(1);
-                }}
-                className="min-w-[140px]"
-                options={[
-                  { value: 'ALL', label: 'Mọi trạng thái' },
-                  ...FRONTEND_ISSUE_STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label })),
-                ]}
-              />
-              <Select
-                value={typeFilter}
-                onChange={(val) => {
-                  setTypeFilter(val);
-                  setPage(1);
-                }}
-                className="min-w-[160px]"
-                options={[
-                  { value: 'ALL', label: 'Mọi loại sự cố' },
-                  ...FRONTEND_ISSUE_TYPES.map((t) => ({ value: t, label: ISSUE_TYPE_CONFIG[t].label })),
-                ]}
-              />
-            </div>
-            <Button icon={<AppIcon icon={RefreshCw} size="sm" />} loading={loading} onClick={() => void fetchData()}>
-              Làm mới
-            </Button>
-          </div>
+          {/* Tabs: Smart Clusters vs Raw Issues */}
+          <Tabs
+            activeKey={activeTab}
+            onChange={(k) => setActiveTab(k as 'clusters' | 'issues')}
+            className="telemetry-tabs"
+            items={[
+              {
+                key: 'clusters',
+                label: (
+                  <span className="flex items-center gap-1.5 font-semibold text-sm">
+                    <AppIcon icon={Layers} size="sm" />
+                    <span>🗂️ Gom Cụm Thông Minh ({clusterData?.summary.totalClusters ?? 5} Cụm Vấn Đề)</span>
+                  </span>
+                ),
+                children: (
+                  <div className="space-y-4 pt-1">
+                    {/* Cluster Summary Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border border-purple-200 dark:border-purple-800/50 rounded-xl">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                          <AppIcon icon={Bot} size="md" className="text-purple-600 dark:text-purple-400" />
+                          <span>Gom Cụm Thông Minh Theo Nguyên Nhân Gốc (5 Cụm Vấn Đề)</span>
+                          <BadgeTag color="purple">
+                            {clusterData?.summary.dispatchedClusters ?? 0} / {clusterData?.summary.totalClusters ?? 5}{' '}
+                            Đã Duyệt
+                          </BadgeTag>
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          Toàn bộ <strong>{clusterData?.summary.totalIssuesClustered ?? 0} sự cố</strong> (
+                          {clusterData?.summary.totalOccurrences.toLocaleString('vi-VN') ?? 0} lượt gặp phải) được quy
+                          về 5 nguyên nhân gốc rễ. Bạn chỉ cần duyệt theo từng cụm thay vì tạo hàng trăm ticket!
+                        </div>
+                      </div>
 
-          {/* Data Table */}
-          <DataTable<FrontendIssueRecord>
-            rowKey="id"
-            loading={loading}
-            dataSource={data}
-            columns={columns}
-            pagination={{
-              current: page,
-              pageSize,
-              total,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '25', '50'],
-              onChange: (newPage, newPageSize) => {
-                setPage(newPage);
-                setPageSize(newPageSize);
+                      <div className="flex items-center gap-2">
+                        <Button
+                          icon={<AppIcon icon={RefreshCw} size="sm" />}
+                          loading={clustersLoading}
+                          onClick={() => void fetchClusters()}
+                          size="small"
+                        >
+                          Làm mới
+                        </Button>
+                        <Button
+                          type="primary"
+                          icon={<AppIcon icon={Sparkles} size="sm" />}
+                          loading={batchDispatching}
+                          onClick={() => void handleBatchDispatchPriority()}
+                          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border-none text-white font-medium"
+                          size="small"
+                        >
+                          ⚡ Duyệt Nhanh 3 Cụm Trọng Tâm (P0)
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* 5 Cluster Cards */}
+                    <div className="space-y-3">
+                      {clusterData?.clusters.map((cluster) => {
+                        const isExpanded = !!expandedClusterKeys[cluster.clusterKey];
+                        const isDispatching = dispatchingClusterKey === cluster.clusterKey;
+                        const isDispatched = !!cluster.dispatchedBugReport;
+
+                        const severityColor =
+                          cluster.severity === 'P0' ? 'red' : cluster.severity === 'P1' ? 'gold' : 'blue';
+
+                        return (
+                          <div
+                            key={cluster.clusterKey}
+                            className={`border rounded-xl transition-all ${
+                              isDispatched
+                                ? 'border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/20 dark:bg-emerald-950/10'
+                                : cluster.severity === 'P0'
+                                  ? 'border-red-200 dark:border-red-900/40 bg-white dark:bg-slate-900 shadow-sm'
+                                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm'
+                            }`}
+                          >
+                            {/* Header */}
+                            <div className="p-3.5 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800/60">
+                              <div className="flex items-start gap-3 flex-1 min-w-[280px]">
+                                <div className="mt-0.5">
+                                  <BadgeTag color={severityColor}>
+                                    {cluster.severity === 'P0'
+                                      ? 'P0 - Nghiêm trọng'
+                                      : cluster.severity === 'P1'
+                                        ? 'P1 - Cần thiết'
+                                        : 'P2 - Cải thiện'}
+                                  </BadgeTag>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+                                    <span>{cluster.title}</span>
+                                    <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-purple-600 dark:text-purple-400 font-mono">
+                                      {cluster.clusterKey}
+                                    </code>
+                                  </div>
+                                  <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-3">
+                                    <span>
+                                      Quy mô:{' '}
+                                      <strong className="text-slate-800 dark:text-slate-200 tabular-nums">
+                                        {cluster.issueCount} sự cố
+                                      </strong>
+                                    </span>
+                                    <span>•</span>
+                                    <span>
+                                      Lượt gặp phải:{' '}
+                                      <strong className="text-rose-600 dark:text-rose-400 tabular-nums font-bold">
+                                        {cluster.totalOccurrences.toLocaleString('vi-VN')} hits
+                                      </strong>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Action button */}
+                              <div>
+                                {isDispatched ? (
+                                  <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                    <AppIcon icon={CheckCircle2} size="sm" className="text-emerald-500" />
+                                    <span>
+                                      Đã duyệt: {cluster.dispatchedBugReport?.key} (
+                                      {cluster.dispatchedBugReport?.status})
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    type="primary"
+                                    icon={<AppIcon icon={Bot} size="sm" />}
+                                    loading={isDispatching}
+                                    onClick={() => void handleDispatchCluster(cluster.clusterKey)}
+                                    className="bg-purple-600 hover:bg-purple-500 border-none font-medium shadow-sm"
+                                  >
+                                    ⚡ Duyệt Cụm Này (Tạo 1 Ticket Cho AG)
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Content Body */}
+                            <div className="p-3.5 space-y-3 text-xs">
+                              {/* Description & Root Cause */}
+                              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200/60 dark:border-slate-800 space-y-1.5">
+                                <div className="text-slate-700 dark:text-slate-300 font-medium">
+                                  {cluster.description}
+                                </div>
+                                <div className="text-slate-500 dark:text-slate-400">
+                                  <strong className="text-slate-700 dark:text-slate-300">🔍 Nguyên nhân gốc:</strong>{' '}
+                                  {cluster.rootCause}
+                                </div>
+                              </div>
+
+                              {/* Affected Files & Plan */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                  <div className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                    <AppIcon icon={FileCode2} size="sm" className="text-blue-500" />
+                                    <span>Tệp tin phạm vi xử lý ({cluster.affectedFiles.length}):</span>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {cluster.affectedFiles.map((file) => (
+                                      <code
+                                        key={file}
+                                        className="block text-[11px] bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded text-blue-600 dark:text-blue-400 font-mono truncate"
+                                      >
+                                        {file}
+                                      </code>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                  <div className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                    <AppIcon icon={Sparkles} size="sm" className="text-amber-500" />
+                                    <span>Kế hoạch khắc phục đề xuất:</span>
+                                  </div>
+                                  <ul className="space-y-1 list-none pl-0 mb-0">
+                                    {cluster.proposedFixSteps.map((step, idx) => (
+                                      <li
+                                        key={idx}
+                                        className="text-slate-600 dark:text-slate-400 flex items-start gap-1.5 leading-relaxed"
+                                      >
+                                        <span className="text-purple-600 dark:text-purple-400 font-bold tabular-nums">
+                                          {idx + 1}.
+                                        </span>
+                                        <span>{step}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+
+                              {/* Collapsible Sample Issues */}
+                              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  onClick={() => toggleClusterExpand(cluster.clusterKey)}
+                                  className="p-0 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs flex items-center gap-1 font-medium"
+                                >
+                                  <AppIcon icon={isExpanded ? ChevronDown : ChevronRight} size="sm" />
+                                  <span>
+                                    {isExpanded ? 'Thu gọn' : 'Xem'} danh sách sự cố mẫu trong cụm (
+                                    {cluster.sampleIssues.length}/{cluster.issueCount} sự cố)
+                                  </span>
+                                </Button>
+
+                                {isExpanded && (
+                                  <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-purple-200 dark:border-purple-800/40">
+                                    {cluster.sampleIssues.map((sample) => (
+                                      <div
+                                        key={sample.id}
+                                        className="bg-slate-50 dark:bg-slate-800/40 p-2 rounded border border-slate-200/50 dark:border-slate-800 flex items-center justify-between gap-2"
+                                      >
+                                        <div className="space-y-0.5 flex-1 min-w-0">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                              #{sample.id}
+                                            </span>
+                                            <code className="text-[11px] bg-slate-200/60 dark:bg-slate-700 px-1 rounded text-blue-600 dark:text-blue-300">
+                                              {sample.path}
+                                            </code>
+                                            {sample.target && (
+                                              <span className="text-[11px] text-slate-400 truncate max-w-[200px]">
+                                                ↳ {sample.target}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="text-[11.5px] text-slate-600 dark:text-slate-400 truncate">
+                                            {sample.message}
+                                          </div>
+                                        </div>
+                                        <div className="text-right whitespace-nowrap">
+                                          <span className="text-xs font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                                            {sample.occurrenceCount} hits
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ),
               },
-            }}
+              {
+                key: 'issues',
+                label: (
+                  <span className="flex items-center gap-1.5 font-semibold text-sm">
+                    <AppIcon icon={ListFilter} size="sm" />
+                    <span>📋 Danh Sách Rời Rạc ({total} Sự Cố)</span>
+                  </span>
+                ),
+                children: (
+                  <div className="space-y-4 pt-1">
+                    {/* Search & Filters */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+                        <Input
+                          prefix={<AppIcon icon={Search} size="sm" />}
+                          placeholder="Tìm URL, nút bấm, thông điệp..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onPressEnter={() => {
+                            setPage(1);
+                            void fetchData();
+                          }}
+                          allowClear
+                          className="max-w-[240px]"
+                        />
+                        <Select
+                          value={statusFilter}
+                          onChange={(val) => {
+                            setStatusFilter(val);
+                            setPage(1);
+                          }}
+                          className="min-w-[140px]"
+                          options={[
+                            { value: 'ALL', label: 'Mọi trạng thái' },
+                            ...FRONTEND_ISSUE_STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label })),
+                          ]}
+                        />
+                        <Select
+                          value={typeFilter}
+                          onChange={(val) => {
+                            setTypeFilter(val);
+                            setPage(1);
+                          }}
+                          className="min-w-[160px]"
+                          options={[
+                            { value: 'ALL', label: 'Mọi loại sự cố' },
+                            ...FRONTEND_ISSUE_TYPES.map((t) => ({ value: t, label: ISSUE_TYPE_CONFIG[t].label })),
+                          ]}
+                        />
+                      </div>
+                      <Button
+                        icon={<AppIcon icon={RefreshCw} size="sm" />}
+                        loading={loading}
+                        onClick={() => void fetchData()}
+                      >
+                        Làm mới
+                      </Button>
+                    </div>
+
+                    {/* Data Table */}
+                    <DataTable<FrontendIssueRecord>
+                      rowKey="id"
+                      loading={loading}
+                      dataSource={data}
+                      columns={columns}
+                      pagination={{
+                        current: page,
+                        pageSize,
+                        total,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '25', '50'],
+                        onChange: (newPage, newPageSize) => {
+                          setPage(newPage);
+                          setPageSize(newPageSize);
+                        },
+                      }}
+                    />
+                  </div>
+                ),
+              },
+            ]}
           />
         </Space>
       </AdaptiveDrawer>
@@ -484,6 +862,173 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                 </div>
               </div>
             </div>
+
+            {/* Antigravity AI Auto-Analysis & 1-Click Dispatch Card */}
+            <Card
+              size="small"
+              className="border-purple-200 dark:border-purple-800/50 bg-gradient-to-br from-purple-50/40 via-white to-indigo-50/30 dark:from-purple-950/20 dark:via-slate-900 dark:to-indigo-950/20 shadow-sm"
+              title={
+                <div className="flex items-center justify-between w-full pr-2">
+                  <span className="text-sm font-semibold flex items-center gap-1.5 text-purple-900 dark:text-purple-200">
+                    <AppIcon icon={Sparkles} size="sm" className="text-purple-600 dark:text-purple-400" />
+                    <span>Antigravity AI — Phân tích Nguyên nhân &amp; Giải pháp</span>
+                  </span>
+                  {agAnalysis && (
+                    <div className="flex items-center gap-1.5">
+                      <BadgeTag
+                        color={agAnalysis.severity === 'P0' ? 'red' : agAnalysis.severity === 'P1' ? 'orange' : 'blue'}
+                      >
+                        {agAnalysis.severity}
+                      </BadgeTag>
+                      <BadgeTag color="purple">{agAnalysis.category}</BadgeTag>
+                    </div>
+                  )}
+                </div>
+              }
+              extra={
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<AppIcon icon={RefreshCw} size="sm" />}
+                  loading={analyzingAg}
+                  onClick={() => activeIssue && void fetchAgAnalysis(activeIssue.id)}
+                  title="Phân tích lại bằng AG"
+                />
+              }
+            >
+              {analyzingAg ? (
+                <div className="py-6 flex flex-col items-center justify-center gap-2 text-purple-600 dark:text-purple-400">
+                  <AppIcon icon={RefreshCw} size="md" className="animate-spin" />
+                  <div className="text-xs font-medium">
+                    Antigravity đang phân tích hộp đen telemetry và đối chiếu codebase...
+                  </div>
+                </div>
+              ) : agAnalysis ? (
+                <div className="space-y-4">
+                  {/* Root Cause Analysis Highlight */}
+                  <div className="bg-purple-50/60 dark:bg-purple-950/30 p-3 rounded-lg border border-purple-200/70 dark:border-purple-800/50 space-y-1.5">
+                    <div className="text-xs font-semibold text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
+                      <AppIcon icon={Bot} size="sm" className="text-purple-600 dark:text-purple-400" />
+                      {agAnalysis.title}
+                    </div>
+                    <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {agAnalysis.rootCause}
+                    </div>
+                  </div>
+
+                  {/* Affected Files in Codebase */}
+                  <div>
+                    <div className="text-xs text-slate-500 font-medium mb-1.5 flex items-center gap-1">
+                      <AppIcon icon={FileCode2} size="sm" /> Tệp mã nguồn liên quan trong codebase:
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {agAnalysis.affectedFiles.map((f, i) => (
+                        <code
+                          key={i}
+                          className="text-[11px] bg-white dark:bg-slate-950 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800 text-blue-600 dark:text-blue-400 font-mono"
+                        >
+                          {f}
+                        </code>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Step by step action plan */}
+                  <div>
+                    <div className="text-xs text-slate-500 font-medium mb-1.5 flex items-center gap-1">
+                      <AppIcon icon={ShieldCheck} size="sm" /> Kế hoạch Khắc phục Kỹ thuật đề xuất:
+                    </div>
+                    <div className="space-y-1 text-xs text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-slate-950/60 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                      {agAnalysis.proposedFix.map((step, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5">
+                          <span className="font-bold text-purple-600 dark:text-purple-400 tabular-nums">
+                            {idx + 1}.
+                          </span>
+                          <span>{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Impact & Risk */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div>
+                      <span>Đánh giá rủi ro: </span>
+                      <strong className="text-slate-700 dark:text-slate-300">{agAnalysis.riskAssessment}</strong>
+                    </div>
+                    <div>
+                      <span>Ước tính thời gian: </span>
+                      <strong className="text-slate-700 dark:text-slate-300">{agAnalysis.estimatedEffort}</strong>
+                    </div>
+                  </div>
+
+                  {/* Dispatch / Approval Action Area */}
+                  {dispatchResult || activeIssue.resolutionNotes?.includes('BUG-') ? (
+                    <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs">
+                          <AppIcon icon={CheckCircle2} size="sm" className="text-emerald-600 dark:text-emerald-400" />
+                          <span>Đã duyệt &amp; Sẵn sàng cho Antigravity (AG)</span>
+                        </div>
+                        <BadgeTag color="success">AWAITING_IDE_HANDOFF</BadgeTag>
+                      </div>
+                      <div className="text-xs text-emerald-700 dark:text-emerald-400">
+                        Ticket{' '}
+                        <strong>{dispatchResult?.key || activeIssue.resolutionNotes?.match(/BUG-\d+/)?.[0]}</strong> đã
+                        được cấp quyền implementation. AG đang tự động nhận task và xử lý theo chu trình mOS Inbox.
+                      </div>
+                      <div className="pt-1">
+                        <Button
+                          type="link"
+                          size="small"
+                          className="p-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1"
+                          onClick={() => {
+                            const key = dispatchResult?.key || activeIssue.resolutionNotes?.match(/BUG-\d+/)?.[0];
+                            window.open(`/dashboard/bug-reports?search=${key || ''}`, '_blank');
+                          }}
+                        >
+                          Mở Ticket trong mOS Inbox <AppIcon icon={ExternalLink} size="sm" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800">
+                      <div className="text-xs text-slate-500">
+                        Bấm duyệt để AG tự động mở ticket mOS Inbox, nhận handoff và giải quyết vấn đề.
+                      </div>
+                      <Popconfirm
+                        title="Duyệt &amp; Kích hoạt AG Xử lý Tự động?"
+                        description="AG sẽ tự động tạo ticket trong mOS Inbox, duyệt implementation và sẵn sàng nhận handoff để sửa code &amp; chạy test."
+                        onConfirm={handleAgDispatch}
+                        okText="Duyệt cho AG"
+                        cancelText="Hủy"
+                      >
+                        <Button
+                          type="primary"
+                          icon={<AppIcon icon={Zap} size="sm" />}
+                          loading={dispatchingAg}
+                          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border-0 shadow-sm font-medium"
+                        >
+                          ⚡ Duyệt &amp; Giao AG Xử lý Tự động
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-4 text-center text-xs text-slate-500">
+                  Chưa có phân tích cho sự cố này.{' '}
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => activeIssue && void fetchAgAnalysis(activeIssue.id)}
+                    className="p-0"
+                  >
+                    Bấm để AG phân tích ngay
+                  </Button>
+                </div>
+              )}
+            </Card>
 
             {/* Quick Actions & Status Update */}
             <Card

@@ -88,6 +88,7 @@ async function handleWaitAndDeploy(
     try {
       const response = await fetch(`${apiUrl}/ide-task-bridge/tasks/${encodeURIComponent(taskId)}/release-preview`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        signal: AbortSignal.timeout(10_000),
       });
       if (response.ok) {
         const payload = (await response.json()) as {
@@ -185,6 +186,7 @@ async function handleWaitAndDeploy(
     try {
       const response = await fetch(`${apiUrl}/ide-task-bridge/tasks/${encodeURIComponent(taskId)}/release-preview`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        signal: AbortSignal.timeout(10_000),
       });
       if (response.ok) {
         const payload = (await response.json()) as {
@@ -198,6 +200,15 @@ async function handleWaitAndDeploy(
           releaseToken = payload.data.token;
           process.stdout.write('Production release verified successfully!\n');
           break;
+        }
+
+        // Terminal state detection: If ticket was already settled or release checkpoint already recorded
+        if (
+          payload?.data?.code === 'IDE_RELEASE_ALREADY_RECORDED' ||
+          payload?.data?.code === 'IDE_CURRENT_APPROVAL_MISSING'
+        ) {
+          process.stdout.write('Production release already recorded or settled on server. Exiting cleanly.\n');
+          process.exit(0);
         }
       }
     } catch {
@@ -235,6 +246,7 @@ async function handleWaitAndDeploy(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(checkpointPayload),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!checkpointRes.ok) {
     throw new Error(`Release checkpoint failed (${checkpointRes.status}): ${await checkpointRes.text()}`);
@@ -256,6 +268,8 @@ async function handleWaitAndDeploy(
       // non-blocking
     }
   }
+
+  process.exit(0);
 }
 
 async function main() {
@@ -278,6 +292,7 @@ async function main() {
   if (command === 'receive') {
     const response = await fetch(`${apiUrl}/ide-task-bridge/tasks/${encodeURIComponent(taskId)}/handoff`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      signal: AbortSignal.timeout(15_000),
     });
     if (!response.ok) throw new Error(`IDE task handoff unavailable (${response.status}).`);
     const payload = await response.json();
@@ -314,6 +329,7 @@ async function main() {
       try {
         const response = await fetch(`${apiUrl}/ide-task-bridge/tasks/${encodeURIComponent(taskId)}/handoff`, {
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+          signal: AbortSignal.timeout(10_000),
         });
         if (response.ok) {
           const payload = (await response.json()) as {
@@ -355,6 +371,7 @@ async function main() {
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ receipt: commitReceipt }),
+                signal: AbortSignal.timeout(15_000),
               }
             );
             if (!submitRes.ok) throw new Error(`Commit receipt submission failed (${submitRes.status}).`);
@@ -382,7 +399,7 @@ async function main() {
               process.stdout.write('Auto-deploy enabled: continuing to listen for Gate 3 (deploy approval)...\n');
               await handleWaitAndDeploy(apiUrl, token, taskId, worktreePath);
             }
-            return;
+            process.exit(0);
           }
         }
       } catch {
@@ -400,6 +417,7 @@ async function main() {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({ receipt }),
+      signal: AbortSignal.timeout(15_000),
     }
   );
   if (!response.ok) throw new Error(`IDE task receipt rejected (${response.status}).`);
@@ -408,4 +426,11 @@ async function main() {
   );
 }
 
-void main();
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    process.exit(1);
+  });

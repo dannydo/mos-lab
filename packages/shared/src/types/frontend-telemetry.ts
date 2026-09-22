@@ -122,3 +122,83 @@ export interface ConvertFrontendIssueToBugReportResponse {
   bugReportId: number;
   key: string;
 }
+
+export interface FrontendIssueAgAnalysis {
+  issueId: number;
+  title: string;
+  severity: 'P0' | 'P1' | 'P2';
+  category: string;
+  rootCause: string;
+  affectedComponents: string[];
+  affectedFiles: string[];
+  proposedFix: string[];
+  riskAssessment: string;
+  estimatedEffort: string;
+  confidenceScore: number;
+}
+
+export interface FrontendIssueAgDispatchResponse {
+  bugReportId: number;
+  key: string;
+  status: string;
+  progressStage: string;
+  handoffReference?: string | null;
+  message: string;
+}
+
+export const FRONTEND_ISSUE_CLUSTER_KEYS = [
+  'POLLING_SLOW_API',
+  'RAGE_CLICK_CALL_LOG',
+  'WEBRTC_SDK_CRASH',
+  'OTHER_SLOW_INTERACTION',
+  'OTHER_UI_RAGE_CLICK',
+] as const;
+
+export type FrontendIssueClusterKey = (typeof FRONTEND_ISSUE_CLUSTER_KEYS)[number];
+
+export interface FrontendIssueClusterSampleIssue {
+  id: number;
+  message: string;
+  path: string;
+  target?: string | null;
+  occurrenceCount: number;
+}
+
+export interface FrontendIssueCluster {
+  clusterKey: FrontendIssueClusterKey;
+  title: string;
+  severity: 'P0' | 'P1' | 'P2';
+  description: string;
+  rootCause: string;
+  affectedFiles: string[];
+  proposedFixSteps: string[];
+  issueCount: number;
+  totalOccurrences: number;
+  issueIds: number[];
+  sampleIssues: FrontendIssueClusterSampleIssue[];
+  dispatchedBugReport?: {
+    id: number;
+    key: string;
+    status: string;
+  } | null;
+}
+
+export interface FrontendIssueClusterListResponse {
+  clusters: FrontendIssueCluster[];
+  summary: {
+    totalClusters: number;
+    totalIssuesClustered: number;
+    totalOccurrences: number;
+    dispatchedClusters: number;
+  };
+}
+
+export interface FrontendIssueClusterDispatchResponse {
+  clusterKey: FrontendIssueClusterKey;
+  bugReportId: number;
+  key: string;
+  status: string;
+  progressStage: string;
+  dispatchedIssueCount: number;
+  message: string;
+}

@@ -24,6 +24,12 @@ import type {
   UiExperienceResolveResponse,
   UpdateMenuAccessPolicyRequest,
   ConvertFrontendIssueToBugReportResponse,
+  FrontendIssueAgAnalysis,
+  FrontendIssueAgDispatchResponse,
+  FrontendIssueCluster,
+  FrontendIssueClusterDispatchResponse,
+  FrontendIssueClusterKey,
+  FrontendIssueClusterListResponse,
   FrontendIssueListQuery,
   FrontendIssueListResponse,
   FrontendIssueMetrics,
@@ -53,6 +59,32 @@ export const systemApi = {
     convertToBugReport: async (id: number): Promise<ConvertFrontendIssueToBugReportResponse> => {
       const response = await api.post<{ data: ConvertFrontendIssueToBugReportResponse }>(
         `/telemetry/frontend-issues/${id}/convert-bug-report`
+      );
+      return response.data.data;
+    },
+    agAnalyze: async (id: number): Promise<FrontendIssueAgAnalysis> => {
+      const response = await api.post<{ data: FrontendIssueAgAnalysis }>(`/telemetry/frontend-issues/${id}/ag-analyze`);
+      return response.data.data;
+    },
+    agDispatch: async (id: number): Promise<FrontendIssueAgDispatchResponse> => {
+      const response = await api.post<{ data: FrontendIssueAgDispatchResponse }>(
+        `/telemetry/frontend-issues/${id}/ag-dispatch`
+      );
+      return response.data.data;
+    },
+    getClusters: async (): Promise<FrontendIssueClusterListResponse> => {
+      const response = await api.get<{ data: FrontendIssueClusterListResponse }>('/telemetry/frontend-issues/clusters');
+      return response.data.data;
+    },
+    dispatchCluster: async (clusterKey: FrontendIssueClusterKey): Promise<FrontendIssueClusterDispatchResponse> => {
+      const response = await api.post<{ data: FrontendIssueClusterDispatchResponse }>(
+        `/telemetry/frontend-issues/clusters/${clusterKey}/dispatch`
+      );
+      return response.data.data;
+    },
+    batchDispatchPriorityClusters: async (): Promise<FrontendIssueClusterDispatchResponse[]> => {
+      const response = await api.post<{ data: FrontendIssueClusterDispatchResponse[] }>(
+        '/telemetry/frontend-issues/clusters/batch-dispatch-priority'
       );
       return response.data.data;
     },

@@ -10192,7 +10192,7 @@
         "path": "/api/telemetry/frontend-issues",
         "module": "telemetry",
         "handler": "inlineHandler",
-        "line": 8
+        "line": 13
       }
     },
     {
@@ -10206,7 +10206,7 @@
         "path": "/api/telemetry/frontend-issues",
         "module": "telemetry",
         "handler": "inlineHandler",
-        "line": 40
+        "line": 45
       }
     },
     {
@@ -10220,7 +10220,7 @@
         "path": "/api/telemetry/frontend-issues/metrics",
         "module": "telemetry",
         "handler": "inlineHandler",
-        "line": 60
+        "line": 65
       }
     },
     {
@@ -10234,7 +10234,7 @@
         "path": "/api/telemetry/frontend-issues/:id/status",
         "module": "telemetry",
         "handler": "preHandler",
-        "line": 75
+        "line": 80
       }
     },
     {
@@ -10248,7 +10248,77 @@
         "path": "/api/telemetry/frontend-issues/:id/convert-bug-report",
         "module": "telemetry",
         "handler": "preHandler",
-        "line": 115
+        "line": 120
+      }
+    },
+    {
+      "id": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "FastifyRoute",
+      "label": "POST /api/telemetry/frontend-issues/:id/ag-analyze",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/telemetry/frontend-issues/:id/ag-analyze",
+        "module": "telemetry",
+        "handler": "preHandler",
+        "line": 149
+      }
+    },
+    {
+      "id": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "FastifyRoute",
+      "label": "POST /api/telemetry/frontend-issues/:id/ag-dispatch",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/telemetry/frontend-issues/:id/ag-dispatch",
+        "module": "telemetry",
+        "handler": "preHandler",
+        "line": 178
+      }
+    },
+    {
+      "id": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "FastifyRoute",
+      "label": "GET /api/telemetry/frontend-issues/clusters",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/telemetry/frontend-issues/clusters",
+        "module": "telemetry",
+        "handler": "preHandler",
+        "line": 207
+      }
+    },
+    {
+      "id": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "FastifyRoute",
+      "label": "POST /api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+        "module": "telemetry",
+        "handler": "preHandler",
+        "line": 230
+      }
+    },
+    {
+      "id": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "FastifyRoute",
+      "label": "POST /api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+        "module": "telemetry",
+        "handler": "preHandler",
+        "line": 262
       }
     },
     {
@@ -20087,6 +20157,90 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:FrontendIssueAgAnalysis",
+      "type": "SharedType",
+      "label": "FrontendIssueAgAnalysis",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueAgAnalysis",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueAgDispatchResponse",
+      "type": "SharedType",
+      "label": "FrontendIssueAgDispatchResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueAgDispatchResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueClusterKey",
+      "type": "SharedType",
+      "label": "FrontendIssueClusterKey",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueClusterKey",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueClusterSampleIssue",
+      "type": "SharedType",
+      "label": "FrontendIssueClusterSampleIssue",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueClusterSampleIssue",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueCluster",
+      "type": "SharedType",
+      "label": "FrontendIssueCluster",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueCluster",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueClusterListResponse",
+      "type": "SharedType",
+      "label": "FrontendIssueClusterListResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueClusterListResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FrontendIssueClusterDispatchResponse",
+      "type": "SharedType",
+      "label": "FrontendIssueClusterDispatchResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueClusterDispatchResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:HolidayPeriodStatus",
       "type": "SharedType",
       "label": "HolidayPeriodStatus",
@@ -26487,8 +26641,8 @@
       "filePath": "apps/api/src/modules/catalog/services/branch.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21337,
-        "lineCount": 572,
+        "sizeBytes": 21314,
+        "lineCount": 566,
         "ext": ".ts"
       }
     },
@@ -28502,8 +28656,8 @@
       "filePath": "apps/api/src/modules/telemetry/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4697,
-        "lineCount": 143,
+        "sizeBytes": 9396,
+        "lineCount": 288,
         "ext": ".ts"
       }
     },
@@ -28515,8 +28669,8 @@
       "filePath": "apps/api/src/modules/telemetry/telemetry.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3206,
-        "lineCount": 93,
+        "sizeBytes": 7418,
+        "lineCount": 218,
         "ext": ".ts"
       }
     },
@@ -28528,8 +28682,8 @@
       "filePath": "apps/api/src/modules/telemetry/telemetry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13991,
-        "lineCount": 439,
+        "sizeBytes": 54692,
+        "lineCount": 1432,
         "ext": ".ts"
       }
     },
@@ -31076,8 +31230,8 @@
       "filePath": "apps/web/app/dashboard/branches/components/BranchDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9946,
-        "lineCount": 246,
+        "sizeBytes": 10040,
+        "lineCount": 244,
         "ext": ".tsx"
       }
     },
@@ -31089,8 +31243,8 @@
       "filePath": "apps/web/app/dashboard/branches/components/BranchFormDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4472,
-        "lineCount": 154,
+        "sizeBytes": 4402,
+        "lineCount": 132,
         "ext": ".tsx"
       }
     },
@@ -31102,8 +31256,8 @@
       "filePath": "apps/web/app/dashboard/branches/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30577,
-        "lineCount": 828,
+        "sizeBytes": 30941,
+        "lineCount": 804,
         "ext": ".tsx"
       }
     },
@@ -31349,8 +31503,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24967,
-        "lineCount": 624,
+        "sizeBytes": 54865,
+        "lineCount": 1157,
         "ext": ".tsx"
       }
     },
@@ -33897,8 +34051,8 @@
       "filePath": "apps/web/lib/api/system.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9527,
-        "lineCount": 252,
+        "sizeBytes": 11125,
+        "lineCount": 290,
         "ext": ".ts"
       }
     },
@@ -34599,8 +34753,8 @@
       "filePath": "packages/shared/src/types/frontend-telemetry.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3068,
-        "lineCount": 125,
+        "sizeBytes": 4907,
+        "lineCount": 206,
         "ext": ".ts"
       }
     },
@@ -39737,6 +39891,41 @@
     {
       "id": "edge:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report:ws:apps/api",
       "source": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze:ws:apps/api",
+      "source": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch:ws:apps/api",
+      "source": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/telemetry/frontend-issues/clusters:ws:apps/api",
+      "source": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch:ws:apps/api",
+      "source": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority:ws:apps/api",
+      "source": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -45393,6 +45582,55 @@
     {
       "id": "edge:type:@mos-lab/shared:ConvertFrontendIssueToBugReportResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:ConvertFrontendIssueToBugReportResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueAgAnalysis:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueAgAnalysis",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueAgDispatchResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueAgDispatchResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueClusterKey:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueClusterKey",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueClusterSampleIssue:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueClusterSampleIssue",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueCluster:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueCluster",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueClusterListResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueClusterListResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueClusterDispatchResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueClusterDispatchResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -54918,6 +55156,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/telemetry/telemetry.service.ts:prisma:crm:CrmBugReport",
+      "source": "file:apps/api/src/modules/telemetry/telemetry.service.ts",
+      "target": "prisma:crm:CrmBugReport",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/telemetry/telemetry.service.ts:prisma:crm:CrmFrontendIssue",
       "source": "file:apps/api/src/modules/telemetry/telemetry.service.ts",
       "target": "prisma:crm:CrmFrontendIssue",
@@ -59153,6 +59398,41 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/telemetry/frontend-issues/clusters",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/branches",
       "target": "route:GET:/api/catalog/groups",
@@ -61004,6 +61284,41 @@
       "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
       "source": "page:/dashboard/design-system",
       "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/telemetry/frontend-issues/clusters",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -64847,6 +65162,41 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/telemetry/frontend-issues/clusters",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -68729,6 +69079,41 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/telemetry/frontend-issues/clusters",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ui-experiences/resolve",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/ui-experiences/resolve",
@@ -71357,6 +71742,41 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/telemetry/frontend-issues/clusters",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -75183,6 +75603,41 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/telemetry/frontend-issues/clusters",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ui-experiences/resolve",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/ui-experiences/resolve",
@@ -75310,31 +75765,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2675,
-    "totalEdges": 5770,
+    "totalNodes": 2687,
+    "totalEdges": 5813,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 143,
-      "FastifyRoute": 554,
+      "FastifyRoute": 559,
       "Component": 53,
-      "SharedType": 975,
+      "SharedType": 982,
       "DesignToken": 12,
       "UIComponent": 193,
       "File": 742
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1130,
-      "HANDLES_ROUTE": 554,
+      "EXPORTS": 1137,
+      "HANDLES_ROUTE": 559,
       "RENDERS": 246,
       "USES_TOKEN": 195,
       "IMPORTS": 401,
-      "QUERIES_MODEL": 352,
-      "API_CALL": 2892
+      "QUERIES_MODEL": 353,
+      "API_CALL": 2922
     },
-    "fastifyRouteCount": 559,
+    "fastifyRouteCount": 564,
     "prismaModelCount": 143,
     "nextPageCount": 53,
-    "sharedTypeCount": 975
+    "sharedTypeCount": 982
   },
   "routes": [
     {
@@ -79190,6 +79645,41 @@
     {
       "method": "POST",
       "path": "/api/telemetry/frontend-issues/:id/convert-bug-report",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "POST",
+      "path": "/api/telemetry/frontend-issues/:id/ag-analyze",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "POST",
+      "path": "/api/telemetry/frontend-issues/:id/ag-dispatch",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "GET",
+      "path": "/api/telemetry/frontend-issues/clusters",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "POST",
+      "path": "/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "POST",
+      "path": "/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
       "filePath": "apps/api/src/modules/telemetry/routes.ts",
       "handler": "preHandler",
       "moduleName": "telemetry"

@@ -30,6 +30,9 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
 3. **Workspace Anchoring & Absolute Config Paths (Neo thư mục gốc chuẩn xác)**: Luôn neo `Cwd` tại thư mục gốc workspace (`/Users/dannydo/projects/mos-lab`). Các đường dẫn tệp cấu hình môi trường (.env) bắt buộc dùng đường dẫn tuyệt đối hoặc tính từ root để tránh lỗi nhân đôi path (`apps/api/apps/api/.env`).
 4. **Pre-edit Context Freshness (Làm tươi ngữ cảnh trước khi sửa tệp)**: Trước khi gọi `replace_file_content`, nếu tệp vừa được chỉnh sửa ở các bước trước, bắt buộc `view_file` lại 15-20 dòng xung quanh để đảm bảo khớp 100% từng ký tự, tránh lỗi `target content not found`.
 5. **Tool Scope Discipline (Tuân thủ phạm vi công cụ)**: `write_to_file` chỉ dùng cho Artifacts (`brain/...`) và Code dự án (`projects/mos-lab/...`). Đối với các tệp cấu hình hệ thống ngoài workspace (`~/.gemini/antigravity/...`), luôn dùng Python inline hoặc Bash script để không vi phạm sandbox boundary.
+6. **Zero Lingering Background Tasks & Graceful Self-Termination (Tiêu chuẩn Tự kết thúc Sạch sẽ)**:
+   - Mọi script nền, bridge daemon (`ide-task-bridge.ts`), và worker bắt buộc phải có cơ chế tự kết thúc tường minh (`process.exit(0)`), gắn timeout cho mọi network call (`AbortSignal.timeout(10_000)`), và nhận diện trạng thái hoàn tất (terminal state: `FIXED`, `AWAITING_REPORTER_ACCEPTANCE`, đã chốt release) để tự thoát ngay khi hết việc, tuyệt đối không để rò rỉ socket hay loop vô tận.
+   - Khi thực thi lệnh kiểm tra DB hoặc node một lần (one-liner) qua SSH/shell, bắt buộc bọc trong `try ... finally { await conn.end(); process.exit(0); }` để không làm treo kênh SSH hay Event Loop.
 
 ---
 
