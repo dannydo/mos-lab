@@ -112,12 +112,18 @@ export class BranchService {
 
     const whereClause: any = {};
 
-    if (params.onlyHidden) {
+    if (params.includeAll) {
+      // Return all branches regardless of isActive
+    } else if (params.onlyHidden) {
       whereClause.isActive = false;
     } else if (params.isActive !== undefined) {
       whereClause.isActive = params.isActive;
     } else {
       whereClause.isActive = true;
+    }
+
+    if (params.storeType) {
+      whereClause.storeType = params.storeType;
     }
 
     if (params.search && params.search.trim()) {
@@ -301,11 +307,15 @@ export class BranchService {
   async getBranchStats(): Promise<BranchStats> {
     await this.seedFromLegacyIfNeeded();
 
-    const [totalBranches, activeBranches, inactiveBranches] = await Promise.all([
-      this.fastify.prisma.crm.crmStore.count(),
-      this.fastify.prisma.crm.crmStore.count({ where: { isActive: true } }),
-      this.fastify.prisma.crm.crmStore.count({ where: { isActive: false } }),
-    ]);
+    const [totalBranches, activeBranches, inactiveBranches, totalSalons, totalAcademies, totalOffices] =
+      await Promise.all([
+        this.fastify.prisma.crm.crmStore.count(),
+        this.fastify.prisma.crm.crmStore.count({ where: { isActive: true } }),
+        this.fastify.prisma.crm.crmStore.count({ where: { isActive: false } }),
+        this.fastify.prisma.crm.crmStore.count({ where: { storeType: 'SALON', isActive: true } }),
+        this.fastify.prisma.crm.crmStore.count({ where: { storeType: 'ACADEMY', isActive: true } }),
+        this.fastify.prisma.crm.crmStore.count({ where: { storeType: 'OFFICE', isActive: true } }),
+      ]);
 
     let totalStaff = 0;
     let totalCustomers = 0;
@@ -338,6 +348,9 @@ export class BranchService {
       totalBranches,
       activeBranches,
       inactiveBranches,
+      totalSalons,
+      totalAcademies,
+      totalOffices,
       totalStaff,
       totalCustomers,
       totalCompletedOrders,

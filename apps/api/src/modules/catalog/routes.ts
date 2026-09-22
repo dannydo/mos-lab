@@ -1968,14 +1968,21 @@ export async function catalogRoutes(fastify: FastifyInstance) {
       search?: string;
       isActive?: string;
       onlyHidden?: string;
+      storeType?: string;
+      includeAll?: string;
     };
   }>('/catalog/branches', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       const page = request.query.page ? parseInt(request.query.page, 10) : 1;
       const pageSize = request.query.pageSize ? parseInt(request.query.pageSize, 10) : 20;
       const search = request.query.search;
-      const isActive = request.query.isActive !== undefined ? request.query.isActive === 'true' : undefined;
+      const includeAll = request.query.includeAll === 'true' || request.query.isActive === 'all';
+      const isActive =
+        request.query.isActive !== undefined && request.query.isActive !== 'all'
+          ? request.query.isActive === 'true'
+          : undefined;
       const onlyHidden = request.query.onlyHidden === 'true';
+      const storeType = request.query.storeType as any;
 
       const result = await branchService.listBranches({
         page,
@@ -1983,6 +1990,8 @@ export async function catalogRoutes(fastify: FastifyInstance) {
         search,
         isActive,
         onlyHidden,
+        storeType,
+        includeAll,
       });
 
       return result;

@@ -6818,7 +6818,7 @@
         "path": "/api/catalog/branches/stats",
         "module": "catalog",
         "handler": "inlineHandler",
-        "line": 1998
+        "line": 2007
       }
     },
     {
@@ -10416,6 +10416,18 @@
       }
     },
     {
+      "id": "page:/branches",
+      "type": "Component",
+      "label": "App Page: /branches",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/branches/page.tsx",
+      "metadata": {
+        "routePath": "/branches",
+        "apiCallsCount": 0,
+        "apiCalls": []
+      }
+    },
+    {
       "id": "page:/campaigns/[slug]",
       "type": "Component",
       "label": "App Page: /campaigns/[slug]",
@@ -10616,6 +10628,18 @@
         "routePath": "/dashboard/bk",
         "apiCallsCount": 0,
         "apiCalls": []
+      }
+    },
+    {
+      "id": "page:/dashboard/branches",
+      "type": "Component",
+      "label": "App Page: /dashboard/branches",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/branches/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/branches",
+        "apiCallsCount": 1,
+        "apiCalls": ["catalog.branches"]
       }
     },
     {
@@ -26450,8 +26474,8 @@
       "filePath": "apps/api/src/modules/catalog/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 83505,
-        "lineCount": 2115,
+        "sizeBytes": 83815,
+        "lineCount": 2124,
         "ext": ".ts"
       }
     },
@@ -26463,8 +26487,8 @@
       "filePath": "apps/api/src/modules/catalog/services/branch.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20725,
-        "lineCount": 553,
+        "sizeBytes": 21337,
+        "lineCount": 572,
         "ext": ".ts"
       }
     },
@@ -27451,8 +27475,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2164,
-        "lineCount": 77,
+        "sizeBytes": 3064,
+        "lineCount": 95,
         "ext": ".ts"
       }
     },
@@ -27464,8 +27488,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18368,
-        "lineCount": 545,
+        "sizeBytes": 19132,
+        "lineCount": 565,
         "ext": ".ts"
       }
     },
@@ -27490,8 +27514,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38536,
-        "lineCount": 1066,
+        "sizeBytes": 38878,
+        "lineCount": 1078,
         "ext": ".ts"
       }
     },
@@ -29810,6 +29834,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/branches/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/branches/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 131,
+        "lineCount": 6,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/campaigns/[slug]/loading.tsx",
       "type": "File",
       "label": "loading.tsx",
@@ -30909,8 +30946,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5059,
-        "lineCount": 136,
+        "sizeBytes": 5200,
+        "lineCount": 154,
         "ext": ".tsx"
       }
     },
@@ -30922,8 +30959,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 34871,
-        "lineCount": 864,
+        "sizeBytes": 34850,
+        "lineCount": 869,
         "ext": ".tsx"
       }
     },
@@ -30961,8 +30998,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41710,
-        "lineCount": 859,
+        "sizeBytes": 41914,
+        "lineCount": 868,
         "ext": ".tsx"
       }
     },
@@ -31028,6 +31065,45 @@
       "metadata": {
         "sizeBytes": 11098,
         "lineCount": 366,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/components/BranchDetailDrawer.tsx",
+      "type": "File",
+      "label": "BranchDetailDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/components/BranchDetailDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9946,
+        "lineCount": 246,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/components/BranchFormDrawer.tsx",
+      "type": "File",
+      "label": "BranchFormDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/components/BranchFormDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4472,
+        "lineCount": 154,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 30577,
+        "lineCount": 828,
         "ext": ".tsx"
       }
     },
@@ -34263,8 +34339,8 @@
       "filePath": "packages/shared/src/types/bk-game.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5735,
-        "lineCount": 168,
+        "sizeBytes": 5746,
+        "lineCount": 169,
         "ext": ".ts"
       }
     },
@@ -34328,8 +34404,8 @@
       "filePath": "packages/shared/src/types/catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12685,
-        "lineCount": 453,
+        "sizeBytes": 12811,
+        "lineCount": 458,
         "ext": ".ts"
       }
     },
@@ -39750,6 +39826,13 @@
       "label": "PAGE_OF"
     },
     {
+      "id": "edge:page:/branches:ws:apps/web",
+      "source": "page:/branches",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
       "id": "edge:page:/campaigns/[slug]:ws:apps/web",
       "source": "page:/campaigns/[slug]",
       "target": "ws:apps/web",
@@ -39843,6 +39926,13 @@
     {
       "id": "edge:page:/dashboard/bk:ws:apps/web",
       "source": "page:/dashboard/bk",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:ws:apps/web",
+      "source": "page:/dashboard/branches",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -51363,6 +51453,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/branches/components/BranchDetailDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/components/BranchDetailDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/branches/components/BranchFormDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/components/BranchFormDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/branches/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/bug-reports/__tests__/detail-fixtures.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bug-reports/__tests__/detail-fixtures.ts",
       "target": "ws:packages/shared",
@@ -59040,6 +59151,209 @@
       "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
       "type": "API_CALL",
       "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/groups",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/groups",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/types",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/types",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/services",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/services",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/services/select",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/services/select",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/services/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/services/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/services",
+      "source": "page:/dashboard/branches",
+      "target": "route:POST:/api/catalog/services",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/services/:id/live-combo-check",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/services/:id/live-combo-check",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:PUT:/api/catalog/services/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:PUT:/api/catalog/services/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:PATCH:/api/catalog/services/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:PATCH:/api/catalog/services/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:DELETE:/api/catalog/services/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:DELETE:/api/catalog/services/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/services/:id/restore",
+      "source": "page:/dashboard/branches",
+      "target": "route:POST:/api/catalog/services/:id/restore",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/services/reorder",
+      "source": "page:/dashboard/branches",
+      "target": "route:POST:/api/catalog/services/reorder",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/services/bulk-status",
+      "source": "page:/dashboard/branches",
+      "target": "route:POST:/api/catalog/services/bulk-status",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/combos",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/combos",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/combo-live",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/combo-live",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/combos/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/combos/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/combos",
+      "source": "page:/dashboard/branches",
+      "target": "route:POST:/api/catalog/combos",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:PUT:/api/catalog/combos/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:PUT:/api/catalog/combos/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:DELETE:/api/catalog/combos/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:DELETE:/api/catalog/combos/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/products",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/products",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/products/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/products/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/products",
+      "source": "page:/dashboard/branches",
+      "target": "route:POST:/api/catalog/products",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:PUT:/api/catalog/products/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:PUT:/api/catalog/products/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:DELETE:/api/catalog/products/:id",
+      "source": "page:/dashboard/branches",
+      "target": "route:DELETE:/api/catalog/products/:id",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/stats-summary",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/stats-summary",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/item-history",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/item-history",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/lash-benchmarks",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/lash-benchmarks",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/lash-benchmarks/seed",
+      "source": "page:/dashboard/branches",
+      "target": "route:POST:/api/catalog/lash-benchmarks/seed",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/branches/stats",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/catalog/branches/stats",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
     },
     {
       "id": "edge:page:/dashboard/bug-reports:route:PATCH:/api/bug-reports/:id/triage",
@@ -74996,30 +75310,30 @@
     }
   ],
   "stats": {
-    "totalNodes": 2669,
-    "totalEdges": 5736,
+    "totalNodes": 2675,
+    "totalEdges": 5770,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 143,
       "FastifyRoute": 554,
-      "Component": 51,
+      "Component": 53,
       "SharedType": 975,
       "DesignToken": 12,
       "UIComponent": 193,
-      "File": 738
+      "File": 742
     },
     "edgeTypeCounts": {
       "EXPORTS": 1130,
       "HANDLES_ROUTE": 554,
-      "RENDERS": 244,
+      "RENDERS": 246,
       "USES_TOKEN": 195,
-      "IMPORTS": 398,
+      "IMPORTS": 401,
       "QUERIES_MODEL": 352,
-      "API_CALL": 2863
+      "API_CALL": 2892
     },
     "fastifyRouteCount": 559,
     "prismaModelCount": 143,
-    "nextPageCount": 51,
+    "nextPageCount": 53,
     "sharedTypeCount": 975
   },
   "routes": [

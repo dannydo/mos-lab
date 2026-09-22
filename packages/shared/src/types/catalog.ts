@@ -440,12 +440,17 @@ export interface BranchFilterParams {
   search?: string;
   isActive?: boolean;
   onlyHidden?: boolean;
+  storeType?: BranchType;
+  includeAll?: boolean;
 }
 
 export interface BranchStats {
   totalBranches: number;
   activeBranches: number;
   inactiveBranches: number;
+  totalSalons?: number;
+  totalAcademies?: number;
+  totalOffices?: number;
   totalStaff: number;
   totalCustomers: number;
   totalCompletedOrders: number;

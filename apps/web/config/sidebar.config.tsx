@@ -93,6 +93,12 @@ export function getSidebarGroups(
         icon: <CalendarOutlined />,
         path: '/dashboard/schedule-calendar',
       },
+      {
+        key: 'branches',
+        label: 'Chi nhánh',
+        icon: <ShopOutlined />,
+        path: '/dashboard/branches',
+      },
     ],
   };
 
@@ -506,6 +512,7 @@ export function getSelectedMenuKey(
 ): string {
   if (pathname === '/dashboard') return 'dashboard';
   if (pathname.includes('/dashboard/today')) return 'today';
+  if (pathname.includes('/dashboard/branches') || pathname.includes('/branches')) return 'branches';
   if (pathname.includes('/dashboard/fal')) return 'fal-control-tower';
   if (pathname.includes('/dashboard/holiday-work')) return 'holiday-work';
   if (pathname.includes('/dashboard/customers')) {
