@@ -4744,6 +4744,20 @@
       }
     },
     {
+      "id": "route:GET:/api/ag-task-bridge/chat/next",
+      "type": "FastifyRoute",
+      "label": "GET /api/ag-task-bridge/chat/next",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/ag-task-bridge/chat/next",
+        "module": "ai",
+        "handler": "inlineHandler",
+        "line": 238
+      }
+    },
+    {
       "id": "route:POST:/api/allocation/batch",
       "type": "FastifyRoute",
       "label": "POST /api/allocation/batch",
@@ -26239,6 +26253,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ai/ag-chat-bridge.service.ts",
+      "type": "File",
+      "label": "ag-chat-bridge.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13671,
+        "lineCount": 410,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ai/ai.service.ts",
       "type": "File",
       "label": "ai.service.ts",
@@ -26246,8 +26273,21 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23719,
-        "lineCount": 580,
+        "sizeBytes": 27190,
+        "lineCount": 657,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/live-customer-context.service.ts",
+      "type": "File",
+      "label": "live-customer-context.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/live-customer-context.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3571,
+        "lineCount": 99,
         "ext": ".ts"
       }
     },
@@ -26272,8 +26312,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9218,
-        "lineCount": 232,
+        "sizeBytes": 11299,
+        "lineCount": 283,
         "ext": ".ts"
       }
     },
@@ -31719,7 +31759,7 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportMobileCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4144,
+        "sizeBytes": 4146,
         "lineCount": 102,
         "ext": ".tsx"
       }
@@ -31836,7 +31876,7 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/useBugReportInboxColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4992,
+        "sizeBytes": 4994,
         "lineCount": 146,
         "ext": ".tsx"
       }
@@ -32421,8 +32461,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27360,
-        "lineCount": 625,
+        "sizeBytes": 28172,
+        "lineCount": 632,
         "ext": ".tsx"
       }
     },
@@ -34813,8 +34853,8 @@
       "filePath": "packages/shared/src/types/ai-assistant.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1448,
-        "lineCount": 69,
+        "sizeBytes": 1537,
+        "lineCount": 71,
         "ext": ".ts"
       }
     },
@@ -37505,6 +37545,13 @@
     {
       "id": "edge:route:POST:/api/academy-sales/workshops/:workshopId/bonuses/:bonusId:ws:apps/api",
       "source": "route:POST:/api/academy-sales/workshops/:workshopId/bonuses/:bonusId",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/ag-task-bridge/chat/next:ws:apps/api",
+      "source": "route:GET:/api/ag-task-bridge/chat/next",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -50712,6 +50759,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ai/live-customer-context.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/live-customer-context.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ai/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ai/routes.ts",
       "target": "ws:packages/shared",
@@ -62969,6 +63023,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/ag-task-bridge/chat/next",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/ag-task-bridge/chat/next",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/allocation/batch",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/allocation/batch",
@@ -66885,6 +66946,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/workshops/:workshopId/bonuses/:bonusId",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/academy-sales/workshops/:workshopId/bonuses/:bonusId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ag-task-bridge/chat/next",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/ag-task-bridge/chat/next",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -73427,6 +73495,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ag-task-bridge/chat/next",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/ag-task-bridge/chat/next",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/allocation/batch",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/allocation/batch",
@@ -76368,28 +76443,28 @@
     }
   ],
   "stats": {
-    "totalNodes": 2716,
-    "totalEdges": 5846,
+    "totalNodes": 2719,
+    "totalEdges": 5851,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 145,
-      "FastifyRoute": 560,
+      "FastifyRoute": 561,
       "Component": 53,
       "SharedType": 995,
       "DesignToken": 12,
       "UIComponent": 196,
-      "File": 752
+      "File": 754
     },
     "edgeTypeCounts": {
       "EXPORTS": 1152,
-      "HANDLES_ROUTE": 560,
+      "HANDLES_ROUTE": 561,
       "RENDERS": 249,
       "USES_TOKEN": 198,
-      "IMPORTS": 405,
+      "IMPORTS": 406,
       "QUERIES_MODEL": 354,
-      "API_CALL": 2928
+      "API_CALL": 2931
     },
-    "fastifyRouteCount": 565,
+    "fastifyRouteCount": 566,
     "prismaModelCount": 145,
     "nextPageCount": 53,
     "sharedTypeCount": 995
@@ -77444,6 +77519,13 @@
       "filePath": "apps/api/src/modules/academy-workshops/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-workshops"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ag-task-bridge/chat/next",
+      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ai"
     },
     {
       "method": "POST",

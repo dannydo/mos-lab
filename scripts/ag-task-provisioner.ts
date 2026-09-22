@@ -27,6 +27,7 @@ import type {
   InboxPlanWorkerJob,
   InboxPlanDraft,
 } from '@mos-lab/shared';
+import { AgChatBridgeService, type AgChatBridgeJob } from '../apps/api/src/modules/ai/ag-chat-bridge.service.ts';
 
 const execFile = promisify(execFileCallback);
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -1151,6 +1152,52 @@ export async function runPlanWatcher(deps: {
   return 'PLANNED';
 }
 
+export async function runAgChatWatcher(deps: { apiUrl: string; token: string }): Promise<'IDLE' | 'ANSWERED'> {
+  let res: Response;
+  try {
+    res = await fetch(`${deps.apiUrl}/ag-task-bridge/chat/next`, {
+      headers: {
+        Authorization: `Bearer ${deps.token}`,
+        Accept: 'application/json',
+      },
+    });
+  } catch {
+    return 'IDLE';
+  }
+  if (!res.ok) return 'IDLE';
+
+  try {
+    const payload = (await res.json()) as { success?: boolean; data?: AgChatBridgeJob | null };
+    const job = payload?.data;
+    if (!job || !job.id || !job.prompt) return 'IDLE';
+
+    process.stdout.write(
+      `[${new Date().toISOString()}] [AgChatBridge] Received chat request (${job.id}). Executing via local Antigravity...\n`
+    );
+
+    const agResult = await AgChatBridgeService.executeLocalAgPrompt(job.conversationId, job.prompt, job.title);
+
+    await fetch(`${deps.apiUrl}/ag-task-bridge/chat/${encodeURIComponent(job.id)}/complete`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${deps.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(agResult),
+    });
+
+    process.stdout.write(
+      `[${new Date().toISOString()}] [AgChatBridge] Successfully completed chat request (${job.id})\n`
+    );
+    return 'ANSWERED';
+  } catch (err) {
+    process.stderr.write(
+      `[${new Date().toISOString()}] [AgChatBridge] Error executing chat: ${err instanceof Error ? err.message : String(err)}\n`
+    );
+    return 'IDLE';
+  }
+}
+
 export async function main() {
   const isDaemon = process.argv.includes('--daemon');
   const token = readToken();
@@ -1227,12 +1274,29 @@ export async function main() {
         `[${new Date().toISOString()}] AutoPlan error: ${err instanceof Error ? err.message : String(err)}\n`
       );
     }
+
+    try {
+      await runAgChatWatcher({ apiUrl: config.apiUrl, token });
+    } catch {
+      // non-blocking
+    }
   };
 
   if (!isDaemon) {
     await run();
     return;
   }
+
+  // Start low-latency continuous chat bridge listener in background
+  (async () => {
+    while (true) {
+      try {
+        await runAgChatWatcher({ apiUrl: config.apiUrl, token });
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 2_000));
+      }
+    }
+  })();
 
   process.stdout.write(
     `[${new Date().toISOString()}] Antigravity inbox provisioner daemon started. Polling every 15s...\n`

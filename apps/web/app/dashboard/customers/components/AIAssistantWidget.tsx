@@ -18,11 +18,7 @@ import {
   RefreshCw,
   Lightbulb,
 } from 'lucide-react';
-import type {
-  AiChatSession,
-  AiChatMessage,
-  AiChatAction,
-} from '@mos-lab/shared';
+import type { AiChatSession, AiChatMessage, AiChatAction } from '@mos-lab/shared';
 import { AdaptiveDrawer } from '../../../../components/ui';
 import { aiApi } from '../../../../lib/api/ai.api';
 
@@ -45,7 +41,8 @@ const QUICK_PROMPTS = [
   },
   {
     label: 'Lọc khách NYC 60 chi tiêu > 1tr',
-    prompt: 'Lọc giúp tôi các khách hàng NYC 60 (31 đến 60 ngày chưa ghé) có tổng chi tiêu trên 1 triệu đồng để gọi nhắc dặm mi.',
+    prompt:
+      'Lọc giúp tôi các khách hàng NYC 60 (31 đến 60 ngày chưa ghé) có tổng chi tiêu trên 1 triệu đồng để gọi nhắc dặm mi.',
   },
   {
     label: 'Khách hàng được giao cho tôi',
@@ -57,11 +54,7 @@ const QUICK_PROMPTS = [
   },
 ];
 
-export function AIAssistantWidget({
-  currentFilterCriteria,
-  onApplyFilter,
-  currentUser,
-}: AIAssistantWidgetProps) {
+export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, currentUser }: AIAssistantWidgetProps) {
   const [open, setOpen] = useState(false);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -125,14 +118,12 @@ export function AIAssistantWidget({
     }
   }, [open]);
 
-
   // Auto scroll to bottom when messages update
   useEffect(() => {
     if (open && messages.length > 0) {
       scrollToBottom();
     }
   }, [messages, open]);
-
 
   // Create new session
   const handleNewSession = async () => {
@@ -210,11 +201,7 @@ export function AIAssistantWidget({
         // Replace temp message and append assistant message
         setMessages((prev) => {
           const filtered = prev.filter((m) => m.id !== tempUserMsg.id);
-          return [
-            ...filtered,
-            { ...tempUserMsg, sessionId: res.sessionId },
-            res.message,
-          ];
+          return [...filtered, { ...tempUserMsg, sessionId: res.sessionId }, res.message];
         });
 
         // Expand thinking for assistant message
@@ -279,13 +266,15 @@ export function AIAssistantWidget({
                 <Bot className="w-4 h-4" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-900 dark:text-slate-100 text-base">
-                    mOS Copilot
-                  </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-base">mOS Copilot</span>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
                     <ShieldCheck className="w-3 h-3" />
                     Private Workspace
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/60 dark:to-purple-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs">
+                    <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" />
+                    Powered by Antigravity (AG)
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -321,14 +310,10 @@ export function AIAssistantWidget({
           <div className="px-4 py-2 bg-indigo-50/80 dark:bg-indigo-950/40 border-b border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-300">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
-              <span>
-                Toàn bộ thảo luận & bộ lọc chỉ áp dụng trên màn hình cá nhân của bạn.
-              </span>
+              <span>Toàn bộ thảo luận & bộ lọc chỉ áp dụng trên màn hình cá nhân của bạn.</span>
             </div>
             {sessions.length > 0 && (
-              <span className="text-[11px] font-medium opacity-80">
-                {sessions.length} phiên đã lưu
-              </span>
+              <span className="text-[11px] font-medium opacity-80">{sessions.length} phiên đã lưu</span>
             )}
           </div>
 
@@ -405,7 +390,8 @@ export function AIAssistantWidget({
                   Không Gian Làm Việc Trợ Lý AI
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-6 leading-relaxed">
-                  Tôi có thể giúp bạn giải đáp cấu trúc khách hàng, tư duy tối ưu luồng CSKH và tự động lọc dữ liệu trên màn hình của bạn.
+                  Tôi có thể giúp bạn giải đáp cấu trúc khách hàng, tư duy tối ưu luồng CSKH và tự động lọc dữ liệu trên
+                  màn hình của bạn.
                 </p>
 
                 {/* Quick Prompts */}
@@ -437,10 +423,7 @@ export function AIAssistantWidget({
                 const isActionApplied = appliedActions[msg.id];
 
                 return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-                  >
+                  <div key={msg.id} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
                     {/* User / Bot Avatar & Badge */}
                     <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] text-slate-400 dark:text-slate-500">
                       {isUser ? (
@@ -451,8 +434,9 @@ export function AIAssistantWidget({
                       ) : (
                         <>
                           <Bot className="w-3 h-3 text-indigo-500" />
-                          <span className="font-medium text-slate-600 dark:text-slate-300">
-                            mOS Copilot
+                          <span className="font-medium text-slate-600 dark:text-slate-300">mOS Copilot</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                            {msg.source === 'ag' ? 'AG Engine' : 'Live Copilot'}
                           </span>
                         </>
                       )}
@@ -470,11 +454,7 @@ export function AIAssistantWidget({
                             <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                             <span>Tư duy & Phân tích logic</span>
                           </div>
-                          {isExpanded ? (
-                            <ChevronUp className="w-3.5 h-3.5" />
-                          ) : (
-                            <ChevronDown className="w-3.5 h-3.5" />
-                          )}
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </button>
                         {isExpanded && (
                           <div className="px-3 py-2 text-[11px] text-slate-600 dark:text-slate-300 font-mono leading-relaxed border-t border-amber-200/60 dark:border-amber-900/40 bg-white/40 dark:bg-black/20 whitespace-pre-wrap">
@@ -548,7 +528,7 @@ export function AIAssistantWidget({
             {sending && (
               <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
                 <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
-                <span>Copilot đang tư duy và phân tích...</span>
+                <span>Antigravity đang tư duy và phân tích dữ liệu...</span>
               </div>
             )}
             <div ref={chatBottomRef} />
@@ -605,11 +585,7 @@ export function AIAssistantWidget({
                 onClick={() => handleSendMessage()}
                 className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white transition-colors flex-shrink-0"
               >
-                {sending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
             </div>
             <div className="flex items-center justify-between mt-1 px-1 text-[10px] text-slate-400">

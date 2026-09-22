@@ -41,7 +41,7 @@ flowchart TD
 
     subgraph VoiceArbitration["3. Audio Output Arbitration (Barge-in)"]
         L[Agent gọi speak script] --> M[pkill -9 afplay.*antigravity_speech]
-        M --> N[Phát âm thanh mới bằng giọng Hoài My]
+        M --> N[Phát âm thanh mới bằng giọng Siri Neural macOS 27]
     end
 ```
 
@@ -63,7 +63,7 @@ flowchart TD
 ### 2.3. Chống Đè Giọng Nói (Barge-in Mutual Exclusion)
 
 - Mọi lệnh phát âm thanh giọng nói qua script `~/.gemini/antigravity/bin/speak` tự động ngắt bất kỳ tiến trình âm thanh `afplay` nào đang phát dở trước khi đọc câu mới.
-- Không bao giờ xảy ra tình trạng 2 giọng đọc Hoài My nói chồng lên nhau.
+- Không bao giờ xảy ra tình trạng 2 giọng đọc nói chồng lên nhau. Giọng đọc chuẩn mặc định toàn hệ thống là **Apple Siri Neural 48kHz của macOS 27** (chạy offline 100% trên chip Apple Silicon).
 
 ---
 
@@ -178,7 +178,7 @@ tail -f ~/.gemini/antigravity/logs/voice-pilot.log
 │   ├── VoicePilot Mic Toggle           # Symlink ➔ double-fn-listener
 │   ├── double-fn-listener.swift        # Mã nguồn bộ lắng nghe đúp Option/Fn
 │   ├── VoicePilot Core Daemon          # Script chạy live-daemon.js
-│   └── speak                           # Binary phát âm thanh TTS Hoài My
+│   └── speak                           # Binary phát âm thanh TTS Siri Neural macOS 27
 ├── src/voice-pilot/
 │   ├── VoicePilot.swift                # Mã nguồn giao diện nổi Hột Mít (Cocoa HUD)
 │   ├── live-daemon.js                  # Engine trung tâm xử lý STT & AI

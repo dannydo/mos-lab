@@ -2,7 +2,8 @@ import { FastifyInstance } from 'fastify';
 import axios from 'axios';
 import { requireAuth } from '../../middlewares/auth.js';
 import { AiAssistantService } from './ai.service.js';
-import type { AiAssistantChatRequest, CreateAiSessionRequest } from '@mos-lab/shared';
+import { AgChatBridgeService } from './ag-chat-bridge.service.js';
+import type { AiAssistantChatRequest, CreateAiSessionRequest, SafeAny } from '@mos-lab/shared';
 
 const SYSTEM_PROMPT = `Bạn là mOS Voice Copilot — Trợ lý điều hành AI bằng giọng nói của hệ thống mOS Lab (chuỗi salon Wings Lashes).
 
@@ -212,20 +213,66 @@ export async function aiRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const response = await AiAssistantService.sendMessage(fastify.prisma.crm, staffId, {
-        sessionId,
-        message,
-        scope,
-        context: {
-          ...context,
-          myStaffId: staffId,
-          userName: request.user.displayName || request.user.username,
-          myRole: request.user.role,
+      const response = await AiAssistantService.sendMessage(
+        fastify.prisma.crm,
+        staffId,
+        {
+          sessionId,
+          message,
+          scope,
+          context: {
+            ...context,
+            myStaffId: staffId,
+            userName: request.user.displayName || request.user.username,
+            myRole: request.user.role,
+          },
         },
-      });
+        fastify.prisma.legacy
+      );
 
       return reply.send(response);
     }
   );
-}
 
+  // AG Task Bridge: Long-polling endpoint for Danny's Mac daemon to claim pending chat jobs
+  fastify.get('/ag-task-bridge/chat/next', async (request, reply) => {
+    const bridgeToken = (process.env.MOS_AG_TASK_BRIDGE_TOKEN || process.env.MOS_IDE_TASK_BRIDGE_TOKEN || '').trim();
+    const auth = String(request.headers.authorization || '');
+    if (bridgeToken.length >= 32 && auth.startsWith('Bearer ') && auth.slice(7).trim() === bridgeToken) {
+      const job = await AgChatBridgeService.getNextRemoteChatJob(20_000);
+      return reply.send({ success: true, data: job });
+    }
+    return reply.status(401).send({ error: 'Unauthorized', message: 'Bridge token không hợp lệ' });
+  });
+
+  // AG Task Bridge: Danny's Mac daemon completes the chat job
+  fastify.post<{
+    Params: { jobId: string };
+    Body: {
+      conversationId: string;
+      response: { content: string; thinking?: string | null; suggestedAction?: SafeAny };
+    };
+  }>('/ag-task-bridge/chat/:jobId/complete', async (request, reply) => {
+    const bridgeToken = (process.env.MOS_AG_TASK_BRIDGE_TOKEN || process.env.MOS_IDE_TASK_BRIDGE_TOKEN || '').trim();
+    const auth = String(request.headers.authorization || '');
+    if (
+      !bridgeToken ||
+      bridgeToken.length < 32 ||
+      !auth.startsWith('Bearer ') ||
+      auth.slice(7).trim() !== bridgeToken
+    ) {
+      return reply.status(401).send({ error: 'Unauthorized', message: 'Bridge token không hợp lệ' });
+    }
+    const { jobId } = request.params;
+    const { conversationId, response } = request.body || {};
+    const ok = AgChatBridgeService.completeRemoteChatJob(jobId, {
+      conversationId: conversationId || '',
+      response: {
+        content: response?.content || '',
+        thinking: response?.thinking || null,
+        suggestedAction: response?.suggestedAction || null,
+      },
+    });
+    return reply.send({ success: ok });
+  });
+}

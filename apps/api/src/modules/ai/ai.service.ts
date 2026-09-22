@@ -9,6 +9,9 @@ import type {
 } from '@mos-lab/shared';
 
 import type { PrismaClient as CrmPrismaClient } from '../../generated/crm-client/index.js';
+import type { PrismaClient as LegacyPrismaClient } from '../../generated/legacy-client/index.js';
+import { LiveCustomerContextService } from './live-customer-context.service.js';
+import { AgChatBridgeService } from './ag-chat-bridge.service.js';
 
 export const SYSTEM_PROMPT_ASSISTANT = `Bạn là mOS Copilot — Trợ lý AI Đa Nhiệm (Trò chuyện, Tư duy & Phân tích) của hệ thống điều hành mOS Lab (chuỗi salon Wings Lashes), hoạt động trong Không gian làm việc cá nhân (Private Workspace) của nhân sự.
 
@@ -204,10 +207,9 @@ export function generateAssistantFallback(userMessage: string, context?: AiChatC
     };
 
     return {
-      thinking:
-        `Phân tích yêu cầu lọc khách: Nhận diện tiêu chí số ngày chưa ghé [${daysMin ?? 'auto'} - ${
-          daysMax ?? 'auto'
-        }], mức chi tiêu [${spentMin ?? 'không giới hạn'}]. Đề xuất cấu hình bộ lọc áp dụng cục bộ vào bảng dữ liệu cá nhân của người dùng.`,
+      thinking: `Phân tích yêu cầu lọc khách: Nhận diện tiêu chí số ngày chưa ghé [${daysMin ?? 'auto'} - ${
+        daysMax ?? 'auto'
+      }], mức chi tiêu [${spentMin ?? 'không giới hạn'}]. Đề xuất cấu hình bộ lọc áp dụng cục bộ vào bảng dữ liệu cá nhân của người dùng.`,
       content:
         `Tôi đã phân tích yêu cầu của bạn và thiết lập cấu hình bộ lọc tương ứng:\n\n` +
         `- **Nhóm khách (Tab)**: \`${tab}\`\n` +
@@ -225,7 +227,12 @@ export function generateAssistantFallback(userMessage: string, context?: AiChatC
   }
 
   // 4. Personal customer scope
-  if (lower.includes('của tôi') || lower.includes('tôi quản lý') || lower.includes('cá nhân') || lower.includes('được giao')) {
+  if (
+    lower.includes('của tôi') ||
+    lower.includes('tôi quản lý') ||
+    lower.includes('cá nhân') ||
+    lower.includes('được giao')
+  ) {
     return {
       thinking:
         'Nhận diện yêu cầu truy vấn tệp khách hàng cá nhân. Tạo action cấu hình assignedStaffId: "me" để giới hạn dữ liệu trong phạm vi quản lý của người dùng.',
@@ -244,7 +251,12 @@ export function generateAssistantFallback(userMessage: string, context?: AiChatC
   }
 
   // 5. Workflow advice
-  if (lower.includes('quy trình') || lower.includes('workflow') || lower.includes('kịch bản') || lower.includes('chăm sóc')) {
+  if (
+    lower.includes('quy trình') ||
+    lower.includes('workflow') ||
+    lower.includes('kịch bản') ||
+    lower.includes('chăm sóc')
+  ) {
     return {
       thinking:
         'Người dùng cần tư vấn về quy trình CSKH và kịch bản chăm sóc khách dặm mi tối ưu. Cung cấp quy trình 3 mốc thời gian chuẩn của chuỗi Wings Lashes.',
@@ -289,7 +301,11 @@ export class AiAssistantService {
   /**
    * List sessions for a staff member (strictly isolated by staffId)
    */
-  static async listSessions(crm: CrmPrismaClient, staffId: number, scope: string = 'customers'): Promise<AiChatSession[]> {
+  static async listSessions(
+    crm: CrmPrismaClient,
+    staffId: number,
+    scope: string = 'customers'
+  ): Promise<AiChatSession[]> {
     const sessions = await crm.crmAiChatSession.findMany({
       where: {
         staffId,
@@ -328,7 +344,11 @@ export class AiAssistantService {
   /**
    * Get single session with its messages (strictly verifies staffId)
    */
-  static async getSession(crm: CrmPrismaClient, sessionId: string, staffId: number): Promise<{
+  static async getSession(
+    crm: CrmPrismaClient,
+    sessionId: string,
+    staffId: number
+  ): Promise<{
     session: AiChatSession;
     messages: AiChatMessage[];
   } | null> {
@@ -433,7 +453,8 @@ export class AiAssistantService {
       message: string;
       scope?: string;
       context?: AiChatContext;
-    }
+    },
+    legacyPrisma?: LegacyPrismaClient
   ): Promise<AiAssistantChatResponse> {
     const { message, scope = 'customers', context } = params;
     const trimmedMessage = message.trim();
@@ -441,7 +462,6 @@ export class AiAssistantService {
     // 1. Resolve or create session
     const sessionId = params.sessionId;
     let session = sessionId
-
       ? await crm.crmAiChatSession.findFirst({
           where: { id: sessionId, staffId },
         })
@@ -460,6 +480,18 @@ export class AiAssistantService {
       });
     }
 
+    const sessionMetadata: Record<string, unknown> = session.metadataJson
+      ? (() => {
+          try {
+            return JSON.parse(session.metadataJson);
+          } catch {
+            return {};
+          }
+        })()
+      : {};
+    let agConversationId =
+      typeof sessionMetadata.agConversationId === 'string' ? sessionMetadata.agConversationId : undefined;
+
     // 2. Save user message to database
     await crm.crmAiChatMessage.create({
       data: {
@@ -476,67 +508,124 @@ export class AiAssistantService {
       take: 10,
     });
 
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    let parsedResponse: ParsedAiResponse;
-    let source: 'gemini' | 'fallback';
+    // 4. Fetch live customer context from database for 100% data accuracy
+    const liveCustomerText = await LiveCustomerContextService.getLiveCustomerSummary(legacyPrisma, crm, staffId);
 
-    if (geminiApiKey) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    let parsedResponse: ParsedAiResponse | null = null;
+    let source: 'ag' | 'gemini' | 'fallback' = 'fallback';
 
-        const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+    // 5. PRIMARY ENGINE: Route through Antigravity (AG) Desktop Bridge
+    try {
+      const agContextInfo = `[Ngữ cảnh màn hình: Trang=${context?.page || context?.pathname || 'customers'}, Bộ lọc hiện tại=${JSON.stringify(
+        context?.currentFilter || {}
+      )}, Số khách đang chọn=${context?.selectedCustomerCount || 0}]
+[Người dùng: ${context?.userName || 'Danny'} (ID: ${staffId}, Role: ${context?.myRole || 'staff'})]`;
 
-        // Build history
-        for (const m of recentMessages) {
-          const role = m.role === 'assistant' ? 'model' : 'user';
-          contents.push({
-            role,
-            parts: [{ text: m.content }],
+      const promptForAg = `${SYSTEM_PROMPT_ASSISTANT}
+
+${liveCustomerText ? `${liveCustomerText}\n` : ''}${agContextInfo}
+
+[Yêu cầu]:
+${trimmedMessage}
+
+Quy định phản hồi:
+- Hãy suy luận và phân tích kỹ lưỡng. Đặt quá trình tư duy trong thẻ <thinking>...</thinking>.
+- Nếu người dùng cần lọc tệp khách hàng, hãy đề xuất cấu hình bộ lọc cụ thể trong thẻ <action type="APPLY_FILTER" label="...">JSON_FILTER_PAYLOAD</action>.
+- Trả lời bằng tiếng Việt thân thiện, súc tích và chuẩn xác.`;
+
+      const agTitle = `[mOS Copilot] ${trimmedMessage.slice(0, 40)}`;
+
+      if (await AgChatBridgeService.isLocalAgAvailable()) {
+        const agResult = await AgChatBridgeService.executeLocalAgPrompt(agConversationId, promptForAg, agTitle);
+        if (agResult?.response?.content) {
+          parsedResponse = agResult.response;
+          agConversationId = agResult.conversationId;
+          source = 'ag';
+        }
+      } else {
+        // Try remote bridge queue (when API is running on VPS and Danny's Mac daemon is polling)
+        try {
+          const agResult = await AgChatBridgeService.enqueueRemoteChatJob(
+            agConversationId,
+            promptForAg,
+            agTitle,
+            30_000
+          );
+          if (agResult?.response?.content) {
+            parsedResponse = agResult.response;
+            agConversationId = agResult.conversationId;
+            source = 'ag';
+          }
+        } catch {
+          // Remote bridge timed out or no agent connected; will fall back below
+        }
+      }
+    } catch {
+      // Antigravity bridge execution failed, proceed to fallback
+    }
+
+    // 6. SECONDARY ENGINE FALLBACK: Gemini 2.5 Flash / Smart Domain Fallback
+    if (!parsedResponse) {
+      const geminiApiKey = process.env.GEMINI_API_KEY;
+
+      if (geminiApiKey) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+
+          const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+
+          // Build history
+          for (const m of recentMessages) {
+            const role = m.role === 'assistant' ? 'model' : 'user';
+            contents.push({
+              role,
+              parts: [{ text: m.content }],
+            });
+          }
+
+          // Add current context and live customer metrics
+          const contextStr = `\n${liveCustomerText ? `${liveCustomerText}\n` : ''}[Ngữ cảnh màn hình: Trang=${
+            context?.page || context?.pathname || 'customers'
+          }, Bộ lọc hiện tại=${JSON.stringify(context?.currentFilter || {})}, Số khách đang chọn=${
+            context?.selectedCustomerCount || 0
+          }]`;
+
+          contents[contents.length - 1].parts[0].text += contextStr;
+
+          const payload = {
+            systemInstruction: {
+              parts: [{ text: SYSTEM_PROMPT_ASSISTANT }],
+            },
+            contents,
+            generationConfig: {
+              temperature: 0.6,
+              maxOutputTokens: 1024,
+            },
+          };
+
+          const response = await axios.post(payload as SafeAny, geminiUrl, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 20_000,
           });
+
+          const replyRaw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+          if (replyRaw) {
+            parsedResponse = extractThinkingAndAction(replyRaw);
+            source = 'gemini';
+          } else {
+            throw new Error('Empty Gemini response');
+          }
+        } catch {
+          parsedResponse = generateAssistantFallback(trimmedMessage, context);
+          source = 'fallback';
         }
-
-        // Add current context
-        const contextStr = context
-          ? `\n[Ngữ cảnh màn hình: Trang=${context.page || context.pathname || 'customers'}, Bộ lọc hiện tại=${JSON.stringify(
-              context.currentFilter || {}
-            )}, Số khách đang chọn=${context.selectedCustomerCount || 0}]`
-          : '';
-
-        contents[contents.length - 1].parts[0].text += contextStr;
-
-        const payload = {
-          systemInstruction: {
-            parts: [{ text: SYSTEM_PROMPT_ASSISTANT }],
-          },
-          contents,
-          generationConfig: {
-            temperature: 0.6,
-            maxOutputTokens: 1024,
-          },
-        };
-
-        const response = await axios.post(payload as SafeAny, geminiUrl, {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 20_000,
-        });
-
-        const replyRaw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (replyRaw) {
-          parsedResponse = extractThinkingAndAction(replyRaw);
-          source = 'gemini';
-        } else {
-          throw new Error('Empty Gemini response');
-        }
-      } catch {
+      } else {
         parsedResponse = generateAssistantFallback(trimmedMessage, context);
         source = 'fallback';
       }
-    } else {
-      parsedResponse = generateAssistantFallback(trimmedMessage, context);
-      source = 'fallback';
     }
 
-    // 4. Save assistant response to database
+    // 7. Save assistant response to database
     const assistantMessageRecord = await crm.crmAiChatMessage.create({
       data: {
         sessionId: session.id,
@@ -547,21 +636,31 @@ export class AiAssistantService {
       },
     });
 
-    // Touch session updatedAt
+    // Touch session updatedAt and persist agConversationId
+    const updatedMetadata = {
+      ...sessionMetadata,
+      ...(agConversationId ? { agConversationId } : {}),
+      lastEngine: source,
+    };
+
     await crm.crmAiChatSession.update({
       where: { id: session.id },
-      data: { updatedAt: new Date() },
+      data: {
+        updatedAt: new Date(),
+        metadataJson: JSON.stringify(updatedMetadata),
+      },
     });
 
     return {
       sessionId: session.id,
       source,
+      engine: source,
       session: {
         id: session.id,
         staffId: session.staffId,
         title: session.title,
         scope: session.scope,
-        metadata: session.metadataJson ? JSON.parse(session.metadataJson) : null,
+        metadata: updatedMetadata,
         createdAt: session.createdAt.toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -572,6 +671,7 @@ export class AiAssistantService {
         content: assistantMessageRecord.content,
         thinking: assistantMessageRecord.thinking,
         suggestedAction: parsedResponse.suggestedAction,
+        source,
         createdAt: assistantMessageRecord.createdAt.toISOString(),
       },
     };

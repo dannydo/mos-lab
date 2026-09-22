@@ -12,6 +12,7 @@ export interface AiChatMessage {
   content: string;
   thinking?: string | null;
   suggestedAction?: AiChatAction | null;
+  source?: 'ag' | 'gemini' | 'fallback';
   createdAt: string;
 }
 
@@ -49,7 +50,8 @@ export interface AiAssistantChatResponse {
   sessionId: string;
   message: AiChatMessage;
   session: AiChatSession;
-  source: 'gemini' | 'fallback';
+  source: 'ag' | 'gemini' | 'fallback';
+  engine?: 'ag' | 'gemini' | 'fallback';
 }
 
 export interface CreateAiSessionRequest {
