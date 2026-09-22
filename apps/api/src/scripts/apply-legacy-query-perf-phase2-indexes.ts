@@ -25,6 +25,11 @@ const phase2Indexes = [
     table: 'sales_lead',
     columns: ['type', 'date_created'],
   },
+  {
+    name: 'idx_user_notification_user_template',
+    table: 'user_notification',
+    columns: ['to_user_id', 'template_id', 'date_created'],
+  },
 ] as const;
 
 const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
@@ -65,8 +70,8 @@ async function main() {
     }
 
     // Run ANALYZE TABLE to refresh optimizer stats
-    console.log('Refreshing optimizer statistics for user_call, user_ticket, and sales_lead...');
-    await legacy.$executeRawUnsafe('ANALYZE TABLE `user_call`, `user_ticket`, `sales_lead`;');
+    console.log('Refreshing optimizer statistics for user_call, user_ticket, sales_lead, and user_notification...');
+    await legacy.$executeRawUnsafe('ANALYZE TABLE `user_call`, `user_ticket`, `sales_lead`, `user_notification`;');
     console.log('Optimizer statistics refreshed successfully.');
   } finally {
     await legacy.$disconnect();
