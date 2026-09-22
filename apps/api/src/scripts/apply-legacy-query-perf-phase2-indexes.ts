@@ -11,9 +11,19 @@ const phase2Indexes = [
     columns: ['from_phone_number', 'from_user_id'],
   },
   {
+    name: 'idx_user_call_to_phone',
+    table: 'user_call',
+    columns: ['to_phone_number', 'to_user_id'],
+  },
+  {
     name: 'idx_user_ticket_type_date',
     table: 'user_ticket',
     columns: ['ticket_type_attribute_option_id', 'date_created_only'],
+  },
+  {
+    name: 'idx_sales_lead_type_date',
+    table: 'sales_lead',
+    columns: ['type', 'date_created'],
   },
 ] as const;
 
@@ -55,8 +65,8 @@ async function main() {
     }
 
     // Run ANALYZE TABLE to refresh optimizer stats
-    console.log('Refreshing optimizer statistics for user_call and user_ticket...');
-    await legacy.$executeRawUnsafe('ANALYZE TABLE `user_call`, `user_ticket`;');
+    console.log('Refreshing optimizer statistics for user_call, user_ticket, and sales_lead...');
+    await legacy.$executeRawUnsafe('ANALYZE TABLE `user_call`, `user_ticket`, `sales_lead`;');
     console.log('Optimizer statistics refreshed successfully.');
   } finally {
     await legacy.$disconnect();
