@@ -70,6 +70,17 @@ function legacySyllabusToHtml(course: AcademyCourse) {
     .join('');
 }
 
+export function formatVndInput(value?: number | string | null): string {
+  if (value === undefined || value === null || value === '') return '';
+  return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' đ';
+}
+
+export function parseVndInput(value?: string | number | null) {
+  if (value === undefined || value === null || value === '') return '';
+  const digits = String(value).replace(/\D/g, '');
+  return digits ? (digits as SafeAny) : '';
+}
+
 function courseMobileCard(course: AcademyCourse, onOpen: (course: AcademyCourse) => void) {
   return (
     <button
@@ -485,7 +496,8 @@ export default function AcademyCoursesPage() {
               min={0}
               step={100000}
               className="w-full"
-              formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+              formatter={formatVndInput}
+              parser={parseVndInput}
             />
           </EntityFormField>
           <EntityFormField label="Học phí ưu đãi (VNĐ)" name="promoPriceVnd" rules={[{ required: true }]}>
@@ -493,7 +505,8 @@ export default function AcademyCoursesPage() {
               min={0}
               step={100000}
               className="w-full"
-              formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+              formatter={formatVndInput}
+              parser={parseVndInput}
             />
           </EntityFormField>
           <EntityFormField
@@ -507,7 +520,8 @@ export default function AcademyCoursesPage() {
               precision={0}
               step={100000}
               className="w-full"
-              formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+              formatter={formatVndInput}
+              parser={parseVndInput}
             />
           </EntityFormField>
           <EntityFormField label="Kit học viên" name="kitName">
@@ -522,7 +536,8 @@ export default function AcademyCoursesPage() {
               min={0}
               step={100000}
               className="w-full"
-              formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+              formatter={formatVndInput}
+              parser={parseVndInput}
             />
           </EntityFormField>
           <EntityFormField label="Link kit" name="kitUrl" rules={[{ type: 'url', message: 'Link kit chưa hợp lệ' }]}>
@@ -537,7 +552,8 @@ export default function AcademyCoursesPage() {
               min={0}
               step={50000}
               className="w-full"
-              formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+              formatter={formatVndInput}
+              parser={parseVndInput}
             />
           </EntityFormField>
           <EntityFormField
