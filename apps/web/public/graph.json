@@ -2338,6 +2338,42 @@
       }
     },
     {
+      "id": "prisma:crm:CrmAiChatSession",
+      "type": "PrismaModel",
+      "label": "crm.CrmAiChatSession",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmAiChatSession",
+        "tableName": "crm_ai_chat_sessions",
+        "fieldCount": 8,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmAiChatMessage",
+      "type": "PrismaModel",
+      "label": "crm.CrmAiChatMessage",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmAiChatMessage",
+        "tableName": "crm_ai_chat_messages",
+        "fieldCount": 8,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["sessionId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -13927,6 +13963,114 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyWorkshopResourcesResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiChatAction",
+      "type": "SharedType",
+      "label": "AiChatAction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiChatAction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiChatMessage",
+      "type": "SharedType",
+      "label": "AiChatMessage",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiChatMessage",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiChatSession",
+      "type": "SharedType",
+      "label": "AiChatSession",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiChatSession",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiChatContext",
+      "type": "SharedType",
+      "label": "AiChatContext",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiChatContext",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiAssistantChatRequest",
+      "type": "SharedType",
+      "label": "AiAssistantChatRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiAssistantChatRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AiAssistantChatResponse",
+      "type": "SharedType",
+      "label": "AiAssistantChatResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AiAssistantChatResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateAiSessionRequest",
+      "type": "SharedType",
+      "label": "CreateAiSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateAiSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ListAiSessionsResponse",
+      "type": "SharedType",
+      "label": "ListAiSessionsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ListAiSessionsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:GetAiSessionResponse",
+      "type": "SharedType",
+      "label": "GetAiSessionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "GetAiSessionResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -25595,8 +25739,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11707177,
-        "lineCount": 255084,
+        "sizeBytes": 11814100,
+        "lineCount": 257868,
         "ext": ".ts"
       }
     },
@@ -26095,6 +26239,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ai/ai.service.ts",
+      "type": "File",
+      "label": "ai.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ai.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 23719,
+        "lineCount": 580,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ai/routes.test.ts",
       "type": "File",
       "label": "routes.test.ts",
@@ -26102,8 +26259,8 @@
       "filePath": "apps/api/src/modules/ai/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1713,
-        "lineCount": 64,
+        "sizeBytes": 8367,
+        "lineCount": 240,
         "ext": ".ts"
       }
     },
@@ -26115,8 +26272,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6581,
-        "lineCount": 154,
+        "sizeBytes": 9218,
+        "lineCount": 232,
         "ext": ".ts"
       }
     },
@@ -26297,8 +26454,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 121969,
-        "lineCount": 2930,
+        "sizeBytes": 122149,
+        "lineCount": 2932,
         "ext": ".ts"
       }
     },
@@ -26453,8 +26610,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 78215,
-        "lineCount": 2184,
+        "sizeBytes": 80423,
+        "lineCount": 2240,
         "ext": ".ts"
       }
     },
@@ -26466,8 +26623,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 155194,
-        "lineCount": 3900,
+        "sizeBytes": 155702,
+        "lineCount": 3911,
         "ext": ".ts"
       }
     },
@@ -30977,8 +31134,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27487,
-        "lineCount": 741,
+        "sizeBytes": 27444,
+        "lineCount": 737,
         "ext": ".tsx"
       }
     },
@@ -30990,8 +31147,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23541,
-        "lineCount": 589,
+        "sizeBytes": 23535,
+        "lineCount": 584,
         "ext": ".tsx"
       }
     },
@@ -31432,8 +31589,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/bug-report-presenters.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11193,
-        "lineCount": 301,
+        "sizeBytes": 11533,
+        "lineCount": 311,
         "ext": ".ts"
       }
     },
@@ -31445,8 +31602,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/bug-report-presenters.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14700,
-        "lineCount": 422,
+        "sizeBytes": 14889,
+        "lineCount": 425,
         "ext": ".tsx"
       }
     },
@@ -31562,8 +31719,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportMobileCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3937,
-        "lineCount": 100,
+        "sizeBytes": 4144,
+        "lineCount": 102,
         "ext": ".tsx"
       }
     },
@@ -31679,8 +31836,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/useBugReportInboxColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4786,
-        "lineCount": 144,
+        "sizeBytes": 4992,
+        "lineCount": 146,
         "ext": ".tsx"
       }
     },
@@ -32257,6 +32414,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
+      "type": "File",
+      "label": "AIAssistantWidget.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 27360,
+        "lineCount": 625,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/customers/components/AllocationBatchHeader.tsx",
       "type": "File",
       "label": "AllocationBatchHeader.tsx",
@@ -32370,6 +32540,19 @@
       "metadata": {
         "sizeBytes": 4063,
         "lineCount": 132,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
+      "type": "File",
+      "label": "AIAssistantWidget.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6434,
+        "lineCount": 211,
         "ext": ".tsx"
       }
     },
@@ -32537,8 +32720,8 @@
       "filePath": "apps/web/app/dashboard/customers/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22264,
-        "lineCount": 602,
+        "sizeBytes": 22719,
+        "lineCount": 616,
         "ext": ".tsx"
       }
     },
@@ -34084,8 +34267,8 @@
       "filePath": "apps/web/lib/api/ai.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 593,
-        "lineCount": 30,
+        "sizeBytes": 1866,
+        "lineCount": 58,
         "ext": ".ts"
       }
     },
@@ -34539,8 +34722,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2214,
-        "lineCount": 58,
+        "sizeBytes": 2255,
+        "lineCount": 59,
         "ext": ".ts"
       }
     },
@@ -34619,6 +34802,19 @@
       "metadata": {
         "sizeBytes": 37241,
         "lineCount": 1176,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/ai-assistant.ts",
+      "type": "File",
+      "label": "ai-assistant.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/ai-assistant.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1448,
+        "lineCount": 69,
         "ext": ".ts"
       }
     },
@@ -36140,6 +36336,20 @@
     {
       "id": "edge:prisma:crm:CrmBkGameParticipant:ws:apps/api",
       "source": "prisma:crm:CrmBkGameParticipant",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmAiChatSession:ws:apps/api",
+      "source": "prisma:crm:CrmAiChatSession",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmAiChatMessage:ws:apps/api",
+      "source": "prisma:crm:CrmAiChatMessage",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -42125,6 +42335,69 @@
     {
       "id": "edge:type:@mos-lab/shared:AcademyWorkshopResourcesResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:AcademyWorkshopResourcesResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiChatAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiChatAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiChatMessage:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiChatMessage",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiChatSession:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiChatSession",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiChatContext:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiChatContext",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiAssistantChatRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiAssistantChatRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AiAssistantChatResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AiAssistantChatResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateAiSessionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateAiSessionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ListAiSessionsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ListAiSessionsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:GetAiSessionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:GetAiSessionResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -50432,6 +50705,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ai/ai.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/ai.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/allocation/allocation.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/allocation/allocation.service.ts",
       "target": "ws:packages/shared",
@@ -52280,6 +52567,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/customers/components/AllocationBatchHeader.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/customers/components/AllocationBatchHeader.tsx",
       "target": "ws:packages/shared",
@@ -52989,6 +53283,13 @@
     {
       "id": "edge:file:apps/web/lib/api/academy.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/academy.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/ai.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/ai.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -76067,31 +76368,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2701,
-    "totalEdges": 5831,
+    "totalNodes": 2716,
+    "totalEdges": 5846,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 143,
+      "PrismaModel": 145,
       "FastifyRoute": 560,
       "Component": 53,
-      "SharedType": 986,
+      "SharedType": 995,
       "DesignToken": 12,
       "UIComponent": 196,
-      "File": 748
+      "File": 752
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1141,
+      "EXPORTS": 1152,
       "HANDLES_ROUTE": 560,
       "RENDERS": 249,
       "USES_TOKEN": 198,
-      "IMPORTS": 401,
+      "IMPORTS": 405,
       "QUERIES_MODEL": 354,
       "API_CALL": 2928
     },
     "fastifyRouteCount": 565,
-    "prismaModelCount": 143,
+    "prismaModelCount": 145,
     "nextPageCount": 53,
-    "sharedTypeCount": 986
+    "sharedTypeCount": 995
   },
   "routes": [
     {
@@ -81202,6 +81503,24 @@
       "readOnly": false,
       "isCatalogException": false,
       "relations": ["gameId", "teamId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmAiChatSession",
+      "tableName": "crm_ai_chat_sessions",
+      "fieldCount": 8,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmAiChatMessage",
+      "tableName": "crm_ai_chat_messages",
+      "fieldCount": 8,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["sessionId"]
     },
     {
       "dbSource": "legacy",

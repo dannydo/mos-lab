@@ -97,6 +97,16 @@ describe('bugReportWorkerActivity', () => {
     });
     expect(review).toMatchObject({ headline: 'Code/test xong · chờ duyệt commit', active: false });
 
+    const deployApproved = bugReportWorkerActivity({
+      ...baseReport,
+      implementation: {
+        ...reviewImplementation,
+        status: 'AWAITING_DEPLOY_REVIEW',
+        phase: 'DEPLOY_APPROVED',
+      },
+    });
+    expect(deployApproved).toMatchObject({ headline: 'Đã duyệt deploy · Đang triển khai', active: true });
+
     const failed = bugReportWorkerActivity({
       ...baseReport,
       agentProgress: { ...baseReport.agentProgress, note: 'Quality gate chưa đạt.' },

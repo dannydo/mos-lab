@@ -1,7 +1,19 @@
 import { mkdirSync, readFileSync, writeFileSync, chmodSync, existsSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { homedir } from 'node:os';
+
+function speakAsync(message: string): void {
+  const speakBin = resolve(homedir(), '.gemini/antigravity/bin/speak');
+  if (existsSync(speakBin)) {
+    try {
+      const child = spawn(speakBin, [message], { detached: true, stdio: 'ignore' });
+      child.unref();
+    } catch {
+      // non-blocking
+    }
+  }
+}
 
 function resolveToken(): string {
   const candidates = [
@@ -114,18 +126,9 @@ async function handleWaitAndDeploy(
         if (payload?.data?.code === 'IDE_RELEASE_UNVERIFIED' || payload?.data?.eligible) {
           deployApproved = true;
           process.stdout.write("Danny's deploy approval detected on web! Starting automatic merge & deploy...\n");
-          const speakBin = resolve(homedir(), '.gemini/antigravity/bin/speak');
-          if (existsSync(speakBin)) {
-            try {
-              execFileSync(
-                speakBin,
-                ['Anh Danny đã duyệt deploy trên mOS Inbox. Em đang tự động merge và triển khai lên máy chủ rồi ạ.'],
-                { timeout: 10_000 }
-              );
-            } catch {
-              // non-blocking
-            }
-          }
+          speakAsync(
+            'Anh Danny đã duyệt deploy trên mOS Inbox. Em đang tự động merge và triển khai lên máy chủ rồi ạ.'
+          );
           break;
         }
       }
@@ -140,36 +143,60 @@ async function handleWaitAndDeploy(
   // 1. Merge into main
   const mainRepo = resolve(homedir(), 'projects/mos-lab');
   process.stdout.write(`Merging ${commitSha} into main at ${mainRepo}...\n`);
-  execFileSync('git', ['-C', mainRepo, 'checkout', 'main'], { stdio: 'inherit' });
+
+  let stashed = false;
   try {
-    execFileSync('git', ['-C', mainRepo, 'pull', '--ff-only'], { stdio: 'inherit' });
-  } catch {
-    try {
-      execFileSync('git', ['-C', mainRepo, 'fetch', 'origin', 'main'], { stdio: 'inherit' });
-      execFileSync('git', ['-C', mainRepo, 'merge', '--ff-only', 'origin/main'], { stdio: 'inherit' });
-    } catch {
-      // continue if already up to date
+    const status = execFileSync('git', ['-C', mainRepo, 'status', '--porcelain'], { encoding: 'utf8' });
+    if (status.trim().length > 0) {
+      execFileSync('git', ['-C', mainRepo, 'stash', 'push', '-u', '-m', `ag-auto-stash-before-deploy-${Date.now()}`], {
+        stdio: 'inherit',
+      });
+      stashed = true;
     }
-  }
-
-  let isAlreadyMerged = false;
-  try {
-    execFileSync('git', ['-C', mainRepo, 'merge-base', '--is-ancestor', commitSha, 'HEAD']);
-    isAlreadyMerged = true;
   } catch {
-    isAlreadyMerged = false;
+    // continue
   }
 
-  if (!isAlreadyMerged) {
-    execFileSync('git', ['-C', mainRepo, 'merge', commitSha, '-m', `deploy(inbox): merge ${ticketBranch}`], {
-      stdio: 'inherit',
-    });
+  try {
+    execFileSync('git', ['-C', mainRepo, 'checkout', 'main'], { stdio: 'inherit' });
+    try {
+      execFileSync('git', ['-C', mainRepo, 'pull', '--ff-only'], { stdio: 'inherit' });
+    } catch {
+      try {
+        execFileSync('git', ['-C', mainRepo, 'fetch', 'origin', 'main'], { stdio: 'inherit' });
+        execFileSync('git', ['-C', mainRepo, 'merge', '--ff-only', 'origin/main'], { stdio: 'inherit' });
+      } catch {
+        // continue if already up to date
+      }
+    }
 
-    // 2. Push to origin main
-    process.stdout.write('Pushing main to origin...\n');
-    execFileSync('git', ['-C', mainRepo, 'push', 'origin', 'main'], { stdio: 'inherit' });
-  } else {
-    process.stdout.write(`Commit ${commitSha} is already merged into main.\n`);
+    let isAlreadyMerged = false;
+    try {
+      execFileSync('git', ['-C', mainRepo, 'merge-base', '--is-ancestor', commitSha, 'HEAD']);
+      isAlreadyMerged = true;
+    } catch {
+      isAlreadyMerged = false;
+    }
+
+    if (!isAlreadyMerged) {
+      execFileSync('git', ['-C', mainRepo, 'merge', commitSha, '-m', `deploy(inbox): merge ${ticketBranch}`], {
+        stdio: 'inherit',
+      });
+
+      // 2. Push to origin main
+      process.stdout.write('Pushing main to origin...\n');
+      execFileSync('git', ['-C', mainRepo, 'push', 'origin', 'main'], { stdio: 'inherit' });
+    } else {
+      process.stdout.write(`Commit ${commitSha} is already merged into main.\n`);
+    }
+  } finally {
+    if (stashed) {
+      try {
+        execFileSync('git', ['-C', mainRepo, 'stash', 'pop'], { stdio: 'inherit' });
+      } catch {
+        process.stderr.write('Warning: Failed to pop git stash in mainRepo. Stash preserved in git stash list.\n');
+      }
+    }
   }
 
   // 3. Deploy to VPS
@@ -254,20 +281,9 @@ async function handleWaitAndDeploy(
 
   process.stdout.write(`Ticket ${ticketId} released and transitioned to AWAITING_REPORTER_ACCEPTANCE!\n`);
 
-  const speakBin = resolve(homedir(), '.gemini/antigravity/bin/speak');
-  if (existsSync(speakBin)) {
-    try {
-      execFileSync(
-        speakBin,
-        [
-          'Anh Danny ơi, em đã tự động merge commit vào main và deploy xong lên production rồi ạ. Ticket đã chuyển sang chờ nghiệm thu.',
-        ],
-        { timeout: 10_000 }
-      );
-    } catch {
-      // non-blocking
-    }
-  }
+  speakAsync(
+    'Anh Danny ơi, em đã tự động merge commit vào main và deploy xong lên production rồi ạ. Ticket đã chuyển sang chờ nghiệm thu.'
+  );
 
   process.exit(0);
 }
@@ -380,20 +396,9 @@ async function main() {
               `IDE commit ${commitSha} recorded successfully. Ticket transitioned to Gate 3 (AWAITING_DANNY_DEPLOY_APPROVAL).\n`
             );
 
-            const speakBin = resolve(homedir(), '.gemini/antigravity/bin/speak');
-            if (existsSync(speakBin)) {
-              try {
-                execFileSync(
-                  speakBin,
-                  [
-                    'Anh Danny đã duyệt commit trên mOS Inbox. Em đã tự động commit và chuyển sang Cổng 3 cho anh rồi ạ.',
-                  ],
-                  { timeout: 10_000 }
-                );
-              } catch {
-                // voice notification is non-blocking
-              }
-            }
+            speakAsync(
+              'Anh Danny đã duyệt commit trên mOS Inbox. Em đã tự động commit và chuyển sang Cổng 3 cho anh rồi ạ.'
+            );
 
             if (autoDeploy) {
               process.stdout.write('Auto-deploy enabled: continuing to listen for Gate 3 (deploy approval)...\n');

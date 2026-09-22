@@ -2594,6 +2594,8 @@ export class InboxImplementationService {
       throw new InboxImplementationError('Không có commit đã duyệt để deploy.', 409, 'DEPLOY_COMMIT_MISSING');
     }
     if (['IDE', 'AG'].includes(job.executionOwner)) {
+      const engineLabel = job.executionOwner === 'AG' ? 'Antigravity' : 'Codex IDE';
+      const deployProgressLabel = `${engineLabel} đang tự động merge main và triển khai production...`;
       return fastify.prisma.crm.$transaction(async (tx) => {
         await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
         const unchanged = await tx.crmInboxImplementationJob.findUnique({ where: { id: job.id } });
@@ -2606,7 +2608,11 @@ export class InboxImplementationService {
           if (unchanged.executionPhase !== 'DEPLOY_APPROVED') {
             await tx.crmInboxImplementationJob.updateMany({
               where: { id: job.id },
-              data: { executionPhase: 'DEPLOY_APPROVED', updatedAt: new Date() },
+              data: {
+                executionPhase: 'DEPLOY_APPROVED',
+                progressLabel: deployProgressLabel,
+                updatedAt: new Date(),
+              },
             });
           }
           return true;
@@ -2616,14 +2622,18 @@ export class InboxImplementationService {
             reportId,
             actorStaffId,
             action: 'DANNY_DEPLOY_APPROVED',
-            note: 'Danny đã duyệt deploy do Codex IDE thực hiện. Inbox chỉ chờ release receipt đã xác minh.',
+            note: `Danny đã duyệt deploy do ${engineLabel} thực hiện. Inbox đang tự động merge và chờ release receipt đã xác minh.`,
             beforeJson: snapshot(report),
             afterJson,
           },
         });
         await tx.crmInboxImplementationJob.updateMany({
           where: { id: job.id },
-          data: { executionPhase: 'DEPLOY_APPROVED', updatedAt: new Date() },
+          data: {
+            executionPhase: 'DEPLOY_APPROVED',
+            progressLabel: deployProgressLabel,
+            updatedAt: new Date(),
+          },
         });
         return true;
       });
@@ -2660,6 +2670,7 @@ export class InboxImplementationService {
         data: {
           status: 'PENDING',
           executionPhase: 'DEPLOY_APPROVED',
+          progressLabel: 'Worker Mac đang tự động merge main và triển khai production...',
           failureCode: null,
           testsJson: JSON.stringify(qualityTests),
           leaseToken: null,

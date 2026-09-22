@@ -1838,7 +1838,63 @@ test('deploy approval requeues only the recorded implementation commit for the M
   assert.equal(await InboxImplementationService.approveDeploy(fastify as never, 16, 1), true);
   assert.equal(updates[0]?.status, 'PENDING');
   assert.equal(updates[0]?.executionPhase, 'DEPLOY_APPROVED');
+  assert.equal(updates[0]?.progressLabel, 'Worker Mac đang tự động merge main và triển khai production...');
   assert.equal((audits[0]?.data as { action?: string }).action, 'DANNY_DEPLOY_APPROVED');
+});
+
+test('deploy approval for AG owned job immediately sets active progressLabel', async () => {
+  const readySource = source({
+    status: 'IN_PROGRESS',
+    implementationActiveJobId: 'ag-deploy-job',
+    inboxPlanJobs: [
+      {
+        id: 'plan-job-ag',
+        status: 'COMPLETED',
+        resultAction: 'POST_PLAN',
+        sourceVersion: inboxImplementationSourceVersion(source()),
+        planVersion: 'v1:plan',
+      },
+    ],
+  });
+  const agJob = {
+    id: 'ag-deploy-job',
+    reportId: 17,
+    executionOwner: 'AG',
+    status: 'AWAITING_DEPLOY_REVIEW',
+    sourceVersion: inboxImplementationSourceVersion(readySource),
+    planVersion: 'v1:plan',
+    commitSha: 'fb757616e4a48f1fdb2f4b236b20bee68ae65717',
+    changedFilesJson: JSON.stringify(['apps/api/src/modules/bug-reports/inbox-implementation.service.ts']),
+    testsJson: JSON.stringify([{ command: 'pnpm --filter @mos-lab/api typecheck', status: 'PASSED' }]),
+    updatedAt: new Date('2026-09-04T00:00:00.000Z'),
+  };
+  const updates: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => readySource },
+        crmInboxImplementationJob: { findFirst: async () => agJob },
+        $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
+          callback({
+            $queryRaw: async () => [],
+            crmInboxImplementationJob: {
+              findUnique: async () => agJob,
+              updateMany: async (input: { data: Record<string, unknown> }) => {
+                updates.push(input.data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: {
+              findFirst: async () => null,
+              create: async () => ({ id: 1 }),
+            },
+          }),
+      },
+    },
+  };
+  assert.equal(await InboxImplementationService.approveDeploy(fastify as never, 17, 1), true);
+  assert.equal(updates[0]?.executionPhase, 'DEPLOY_APPROVED');
+  assert.equal(updates[0]?.progressLabel, 'Antigravity đang tự động merge main và triển khai production...');
 });
 
 test('reporter acceptance closes a released ticket without queuing more implementation', async () => {

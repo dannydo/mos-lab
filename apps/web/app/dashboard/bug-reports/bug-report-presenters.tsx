@@ -63,7 +63,7 @@ export const AGENT_PROGRESS_LABELS: Record<BugReportAgentProgressStage, string> 
   AWAITING_IDE_HANDOFF: 'Chờ thực hiện trong Codex IDE',
   QUEUED_FOR_FIX: 'Đã nhận · chờ sửa',
   QUEUED_FOR_COMMIT: 'Đã duyệt commit · chờ worker',
-  QUEUED_FOR_DEPLOY: 'Đã duyệt deploy · chờ worker',
+  QUEUED_FOR_DEPLOY: 'Đã duyệt deploy · Đang triển khai',
   IMPLEMENTING: 'Đang sửa',
   COMMITTING: 'Đang tạo commit',
   DEPLOYING: 'Đang deploy',
@@ -209,7 +209,7 @@ export function bugReportWorkerActivity(
       implementation.phase === 'COMMIT_APPROVED'
         ? 'Chờ Worker Mac tạo commit'
         : implementation.phase === 'DEPLOY_APPROVED'
-          ? 'Chờ Worker Mac deploy'
+          ? 'Đã duyệt deploy · Đang triển khai'
           : 'Chờ Worker Mac nhận code/test';
     return { headline, elapsed: null, evidence, active: true };
   }
@@ -217,6 +217,9 @@ export function bugReportWorkerActivity(
     return { headline: 'Code/test xong · chờ duyệt commit', elapsed, evidence, active: false };
   }
   if (implementation.status === 'AWAITING_DEPLOY_REVIEW') {
+    if (implementation.phase === 'DEPLOY_APPROVED') {
+      return { headline: 'Đã duyệt deploy · Đang triển khai', elapsed, evidence, active: true };
+    }
     return { headline: 'Commit xong · chờ duyệt deploy', elapsed, evidence, active: false };
   }
   if (implementation.status === 'RELEASED') {

@@ -83,8 +83,8 @@ const WORKFLOW_STAGE_BY_AGENT_PROGRESS: Record<BugReportAgentProgressStage, BugR
   },
   QUEUED_FOR_DEPLOY: {
     position: 4,
-    label: 'Đã duyệt deploy · chờ worker',
-    detail: 'Worker Mac sẽ merge commit đã duyệt và chạy pipeline production',
+    label: 'Đã duyệt deploy · Đang triển khai',
+    detail: 'Hệ thống đang tự động merge commit đã duyệt và chạy pipeline production',
     tone: 'info',
   },
   IMPLEMENTING: { position: 3, label: 'Đang xử lý', detail: 'Đang thực hiện thay đổi', tone: 'info' },

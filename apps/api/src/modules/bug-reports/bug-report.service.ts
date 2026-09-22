@@ -1091,12 +1091,12 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
             : implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
               ? `Chờ ${engineLabel} ghi commit đã duyệt`
               : implementation.executionPhase === 'DEPLOY_APPROVED'
-                ? `Chờ ${engineLabel} xác minh release đã duyệt`
+                ? `${engineLabel} đang merge & triển khai production`
                 : implementation.ideTaskId
                   ? `${engineLabel} đang code & kiểm thử`
                   : `Chờ ${engineLabel} nhận handoff`
         : implementation.executionPhase === 'DEPLOY_APPROVED'
-          ? 'Chờ worker deploy'
+          ? 'Đang triển khai production'
           : implementation.executionPhase === 'COMMIT_APPROVED'
             ? 'Chờ worker tạo commit'
             : implementation.executionPhase === 'COMMITTING'
@@ -1114,13 +1114,15 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
             : implementation.executionPhase === 'IDE_COMMIT_HANDOFF'
               ? `${handoffReference} đã sẵn sàng ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.`
               : implementation.executionPhase === 'DEPLOY_APPROVED'
-                ? `${handoffReference} đang chờ release marker Production đã xác minh. Deploy approval đã được khóa; không có thao tác deploy hoặc click lặp.`
+                ? `${handoffReference} đã nhận lệnh duyệt deploy; ${engineLabel} đang tự động merge main, push và triển khai lên máy chủ Production.`
                 : implementation.ideTaskId
                   ? `${handoffReference} đang được ${engineLabel} trực tiếp triển khai code và kiểm thử trong worktree riêng.`
                   : `${handoffReference} đã sẵn sàng cho code/test theo scope được duyệt. Không cấp lease thực thi nào.`
         : implementation.status === 'RUNNING'
           ? implementationProgressNote(implementation, 'Worker đang xử lý trong worktree riêng.')
-          : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',
+          : implementation.executionPhase === 'DEPLOY_APPROVED'
+            ? 'Đã nhận lệnh duyệt deploy; hệ thống đang triển khai lên máy chủ Production.'
+            : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',
       implementation.ideTaskId
         ? (implementation.startedAt ?? implementation.ideTaskBoundAt ?? implementation.updatedAt)
         : implementation.updatedAt
