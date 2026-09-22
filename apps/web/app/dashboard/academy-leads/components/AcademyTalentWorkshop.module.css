@@ -679,7 +679,7 @@
 
 .strandsScoreCard > strong {
   color: var(--academy-talent-gold);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: clamp(48px, 4.5vw, 72px);
   line-height: 1;
   margin: 3px 0 0;
@@ -722,7 +722,7 @@
 .rankCard > strong {
   color: var(--academy-talent-gold);
   display: block;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: clamp(22px, 2.2vw, 32px);
   letter-spacing: 0.04em;
   line-height: 1.08;
@@ -1165,7 +1165,7 @@
   align-items: center;
   color: #ffdc7e;
   display: flex;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: 25px;
   font-weight: 700;
   gap: 9px;
@@ -3524,7 +3524,7 @@
 
 .invoiceHeader h2 {
   color: var(--academy-talent-text);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: clamp(22px, 2.4vw, 34px);
   margin: 8px 0 4px;
 }
@@ -3806,10 +3806,10 @@
 }
 .invoicePaymentFocusHead h3 {
   color: #1e4937;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: 24px;
   font-weight: 500;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.01em;
   line-height: 1.06;
   margin: 7px 0 4px;
 }
@@ -4309,7 +4309,7 @@
 }
 .followUpPaymentSlipHeader h2 {
   color: #1f503a;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: 30px;
   font-weight: 500;
   line-height: 1.12;
@@ -4616,7 +4616,7 @@
   align-items: center;
   color: #ffdc7e;
   display: flex;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: 13px;
   font-weight: 700;
   gap: 7px;
