@@ -628,7 +628,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
           </Form.Item>
         </div>
 
-        {(watchedMetricType === 'BOOKINGS' || watchedMetricType === 'DONE') && (
+        {(watchedMetricType === 'BOOKINGS' || watchedMetricType === 'DONE' || watchedMetricType === 'COMPOSITE') && (
           <Form.Item
             name="allowedBookingChannels"
             label={
