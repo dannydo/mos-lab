@@ -107,7 +107,10 @@ export function useBugReportInboxColumns(onOpen: (id: number) => void) {
               </Tooltip>
               <div>
                 <Text type="secondary" className="tabular-nums">
-                  Chờ {formatElapsed(row.nextAction.waitingSince)}
+                  {row.nextAction.actor === 'AGENT' &&
+                  (row.implementation?.ideHandoff?.taskId || row.implementation?.status === 'RUNNING')
+                    ? `Thực hiện ${formatElapsed(row.nextAction.waitingSince)}`
+                    : `Chờ ${formatElapsed(row.nextAction.waitingSince)}`}
                 </Text>
               </div>
               <Text type="secondary" ellipsis={{ tooltip: row.nextAction.detail }}>

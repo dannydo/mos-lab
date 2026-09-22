@@ -74,7 +74,10 @@ export function BugReportMobileCard({ report, onOpen }: BugReportMobileCardProps
               </Badge>
             </Tooltip>
             <Text type="secondary" className="tabular-nums text-xs">
-              Chờ {formatElapsed(report.nextAction.waitingSince)}
+              {report.nextAction.actor === 'AGENT' &&
+              (report.implementation?.ideHandoff?.taskId || report.implementation?.status === 'RUNNING')
+                ? `Thực hiện ${formatElapsed(report.nextAction.waitingSince)}`
+                : `Chờ ${formatElapsed(report.nextAction.waitingSince)}`}
             </Text>
           </div>
           <Text type="secondary">{report.reporter.displayName}</Text>

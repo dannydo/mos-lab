@@ -525,8 +525,11 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   <Text>{detail.nextAction.detail}</Text>
                 </div>
                 <Text type="secondary" className="tabular-nums">
-                  Đang chờ {formatElapsed(detail.nextAction.waitingSince)} · từ{' '}
-                  {formatDate(detail.nextAction.waitingSince)}
+                  {detail.nextAction.actor === 'AGENT' &&
+                  (detail.implementation?.ideHandoff?.taskId || detail.implementation?.status === 'RUNNING')
+                    ? `Đang thực hiện ${formatElapsed(detail.nextAction.waitingSince)}`
+                    : `Đang chờ ${formatElapsed(detail.nextAction.waitingSince)}`}{' '}
+                  · từ {formatDate(detail.nextAction.waitingSince)}
                 </Text>
               </div>
             </SectionCard>
@@ -546,13 +549,13 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   showIcon
                   message={
                     detail.implementation.ideHandoff.taskId
-                      ? `Đã gán cho task ${
+                      ? `${
                           detail.implementation.executionOwner === 'AG'
                             ? 'Antigravity'
                             : detail.implementation.executionOwner === 'IDE'
                               ? 'Codex IDE'
                               : 'Worker'
-                        }`
+                        } đang thực thi code & kiểm thử`
                       : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_PENDING'
                         ? detail.implementation.executionOwner === 'AUTO'
                           ? 'Đang chờ Worker (Antigravity hoặc Codex) nhận task'
@@ -598,7 +601,9 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                             ? 'Companion cục bộ đang tạo task/worktree với request ID bền vững. Mất kết nối sẽ retry cùng request, không tạo task thứ hai.'
                             : detail.implementation.ideHandoff.phase === 'IDE_COMMIT_HANDOFF'
                               ? 'Chỉ ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.'
-                              : 'Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc migration.'}
+                              : detail.implementation.ideHandoff.taskId
+                                ? 'Agent đang trực tiếp thực thi code & kiểm thử trong worktree riêng.'
+                                : 'Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc migration.'}
                       </Text>
                     </div>
                   }

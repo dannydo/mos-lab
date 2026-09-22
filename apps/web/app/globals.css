@@ -2173,6 +2173,11 @@ body {
   display: none;
 }
 
+.academy-lead-manager-table .ant-table-cell {
+  padding: 8px 12px !important;
+  vertical-align: middle;
+}
+
 /* Campaign setup is a short workflow rather than one tall configuration form.
    The layout uses semantic mOS/Ant tokens so it remains legible in both themes. */
 .academy-campaign-form-steps {
@@ -7696,12 +7701,14 @@ body {
 /* Active scale and tactile feedback for buttons and clickable actions */
 button:not(:disabled):not(.ant-btn-loading):active,
 .ant-btn:not(:disabled):not(.ant-btn-loading):active,
-[role="button"]:not([aria-disabled="true"]):active,
+[role='button']:not([aria-disabled='true']):active,
 .ant-tabs-tab:active,
 .clickable-action:active {
   transform: scale(0.96) !important;
   filter: brightness(0.95);
-  transition: transform 0.06s cubic-bezier(0.2, 0, 0, 1), filter 0.06s ease-out !important;
+  transition:
+    transform 0.06s cubic-bezier(0.2, 0, 0, 1),
+    filter 0.06s ease-out !important;
 }
 
 /* Subtle tap pulse animation on click for immediate visual acknowledgement */

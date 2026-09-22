@@ -1363,6 +1363,14 @@ export class InboxImplementationService {
         409,
         'IDE_TASK_HANDOFF_UNAVAILABLE'
       );
+    await fastify.prisma.crm.crmInboxImplementationJob.update({
+      where: { id: job.id },
+      data: {
+        startedAt: job.startedAt || new Date(),
+        lastProgressAt: new Date(),
+        progressLabel: `${job.executionOwner === 'AG' ? 'Antigravity' : 'Codex'} đang triển khai code và kiểm thử`,
+      },
+    });
     return {
       phase: job.executionPhase as 'IDE_HANDOFF_READY' | 'IDE_COMMIT_HANDOFF',
       reportId: job.reportId,

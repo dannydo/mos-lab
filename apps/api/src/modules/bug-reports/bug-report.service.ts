@@ -156,6 +156,7 @@ const reportInclude = {
       status: true,
       executionOwner: true,
       ideTaskId: true,
+      ideTaskBoundAt: true,
       executionPhase: true,
       sourceVersion: true,
       planVersion: true,
@@ -211,6 +212,7 @@ const mineReportInclude = {
       status: true,
       executionOwner: true,
       ideTaskId: true,
+      ideTaskBoundAt: true,
       executionPhase: true,
       sourceVersion: true,
       planVersion: true,
@@ -483,6 +485,7 @@ type ImplementationProgressSnapshot = {
   status: string;
   executionOwner?: string;
   ideTaskId?: string | null;
+  ideTaskBoundAt?: Date | null;
   retrySequence?: number;
   executionPhase: string;
   progressLabel: string | null;
@@ -1089,7 +1092,9 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
               ? `Chờ ${engineLabel} ghi commit đã duyệt`
               : implementation.executionPhase === 'DEPLOY_APPROVED'
                 ? `Chờ ${engineLabel} xác minh release đã duyệt`
-                : `Chờ ${engineLabel} nhận handoff`
+                : implementation.ideTaskId
+                  ? `${engineLabel} đang code & kiểm thử`
+                  : `Chờ ${engineLabel} nhận handoff`
         : implementation.executionPhase === 'DEPLOY_APPROVED'
           ? 'Chờ worker deploy'
           : implementation.executionPhase === 'COMMIT_APPROVED'
@@ -1110,11 +1115,15 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
               ? `${handoffReference} đã sẵn sàng ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.`
               : implementation.executionPhase === 'DEPLOY_APPROVED'
                 ? `${handoffReference} đang chờ release marker Production đã xác minh. Deploy approval đã được khóa; không có thao tác deploy hoặc click lặp.`
-                : `${handoffReference} đã sẵn sàng cho code/test theo scope được duyệt. Không cấp lease thực thi nào.`
+                : implementation.ideTaskId
+                  ? `${handoffReference} đang được ${engineLabel} trực tiếp triển khai code và kiểm thử trong worktree riêng.`
+                  : `${handoffReference} đã sẵn sàng cho code/test theo scope được duyệt. Không cấp lease thực thi nào.`
         : implementation.status === 'RUNNING'
           ? implementationProgressNote(implementation, 'Worker đang xử lý trong worktree riêng.')
           : 'Job đã bền vững trong hàng đợi; worker sẽ nhận khi permit trống.',
-      implementation.updatedAt
+      implementation.ideTaskId
+        ? (implementation.startedAt ?? implementation.ideTaskBoundAt ?? implementation.updatedAt)
+        : implementation.updatedAt
     );
   }
 

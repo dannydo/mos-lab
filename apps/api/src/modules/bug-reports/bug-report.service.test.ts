@@ -545,6 +545,32 @@ test('derives one canonical next owner and action for every workflow gate', () =
   assert.equal(ideHandoff.label, 'Chờ Codex IDE nhận handoff');
   assert.match(ideHandoff.detail, /Handoff Codex IDE ide-handoff-job-30/);
   assert.doesNotMatch(ideHandoff.detail, /worker/i);
+
+  const ideBoundActive = bugReportNextAction(
+    progressSource({
+      status: 'APPROVED',
+      clarificationStatus: 'READY',
+      implementation: {
+        id: 'ide-handoff-job-30',
+        status: 'PENDING',
+        executionOwner: 'IDE',
+        executionPhase: 'IDE_HANDOFF_READY',
+        ideTaskId: 'ag-session-1234',
+        progressLabel: null,
+        lastProgressAt: null,
+        progressCount: 0,
+        checkpointCount: 0,
+        failureCode: null,
+        retainUntil: null,
+        startedAt: null,
+        completedAt: null,
+        updatedAt: new Date('2026-08-31T01:10:00.000Z'),
+      },
+    })
+  );
+  assert.equal(ideBoundActive.label, 'Codex IDE đang code & kiểm thử');
+  assert.match(ideBoundActive.detail, /đang được Codex IDE trực tiếp triển khai code và kiểm thử/);
+
   const ideCommitHandoff = bugReportNextAction(
     progressSource({
       status: 'APPROVED',

@@ -1,17 +1,14 @@
 'use client';
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, DatePicker, Select, Space, Tabs, Tooltip, message } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Button, Select, Space, Tabs, Tooltip, message } from 'antd';
 import {
   CalendarDays,
   CircleCheck,
   CircleX,
   Flame,
   LayoutGrid,
-  Link,
   List,
-  MessageSquare,
   Phone,
   Plus,
   RefreshCw,
@@ -19,25 +16,17 @@ import {
   UserRoundPlus,
 } from 'lucide-react';
 import dayjs from 'dayjs';
-import {
-  type AcademyLead,
-  type AcademyLeadStatus,
-  type AcademyTalentAssessment,
-  removeVietnameseTones,
-} from '@mos-lab/shared';
+import { type AcademyLead, type AcademyLeadStatus, type AcademyTalentAssessment } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import {
   AppIcon,
-  CustomerIdentityCell,
   DataSection,
   DataTable,
   FeaturePage,
-  MetricGrid,
   PagePrimaryIconAction,
   SearchField,
   StatePanel,
   StatusTag,
-  TableIndexHeader,
 } from '../../../../components/ui';
 import AcademyLeadDrawer from '../components/AcademyLeadDrawer';
 import { useAcademyAccess } from '../components/AcademyAccessGate';
@@ -49,18 +38,11 @@ import type { AcademyTalentAssessmentView, AcademyTalentDraft } from '../compone
 import { useAcademySalesWorkspace } from '../hooks/useAcademySalesWorkspace';
 import { useAcademyTalentResources } from './useAcademyTalentResources';
 import {
-  InlineTextCell,
-  InlineVndCell,
-  STATUS_LABELS,
-  STATUS_TONES,
-  buildCourseOptions,
-  buildOwnerOptions,
+  LeadManagerMetricStrip,
+  buildLeadColumns,
   buildTalentSessions,
-  dateLabel,
-  followUpLabel,
   leadMobileCard,
   pipelineTabLabel,
-  statusOptionsFor,
   talentAssessmentRequest,
   talentWorkshopView,
   userRole,
@@ -82,6 +64,17 @@ export default function AcademyLeadManagerPage() {
   const talentLoadVersionRef = React.useRef(0);
   const talentLaunchRef = React.useRef<string | null>(null);
   const talentAssessmentIdRef = React.useRef<number | null>(null);
+  const [quickFilter, setQuickFilter] = React.useState<'ALL' | 'HOT' | 'TODAY_SCHEDULE'>('ALL');
+
+  const displayedLeads = React.useMemo(() => {
+    if (quickFilter === 'HOT') {
+      return workspace.leads.filter((lead) => lead.isHot);
+    }
+    if (quickFilter === 'TODAY_SCHEDULE') {
+      return workspace.leads.filter((lead) => lead.scheduledAt && dayjs(lead.scheduledAt).isSame(dayjs(), 'day'));
+    }
+    return workspace.leads;
+  }, [quickFilter, workspace.leads]);
 
   React.useEffect(() => setRole(userRole()), []);
 
@@ -177,8 +170,6 @@ export default function AcademyLeadManagerPage() {
     },
     [workspace]
   );
-  const courseOptions = React.useMemo(() => buildCourseOptions(courses), [courses]);
-  const ownerOptions = React.useMemo(() => buildOwnerOptions(workspace.staff), [workspace.staff]);
   const quickUpdate = React.useCallback(
     async (
       lead: AcademyLead,
@@ -197,16 +188,6 @@ export default function AcademyLeadManagerPage() {
       }
     },
     [workspace]
-  );
-  const assignCourse = React.useCallback(
-    async (lead: AcademyLead, course: string | null) => {
-      await quickUpdate(
-        lead,
-        { course },
-        course ? `Đã chọn ${course} cho ${lead.name}.` : `Đã bỏ khóa học của ${lead.name}.`
-      );
-    },
-    [quickUpdate]
   );
   const selectedTalentAssessment = React.useMemo(
     () => talentAssessments.find((item) => item.id === talentAssessmentId) ?? null,
@@ -319,314 +300,23 @@ export default function AcademyLeadManagerPage() {
   }, []);
   const talentCourseRules = React.useMemo(() => academyTalentCourseSelectionRules(courses), [courses]);
 
-  const leadColumns = React.useMemo<ColumnsType<AcademyLead>>(
-    () => [
-      {
-        title: <TableIndexHeader />,
-        key: 'stt',
-        width: 52,
-        align: 'center',
-        render: (_value, _lead, index) => (
-          <span className="tabular-nums font-medium">{(workspace.page - 1) * workspace.pageSize + index + 1}</span>
-        ),
-      },
-      {
-        key: 'lead',
-        title: 'Khách hàng',
-        width: 240,
-        render: (_, lead) => (
-          <CustomerIdentityCell
-            name={lead.name}
-            phone={lead.phone}
-            avatar={lead.avatarUrl}
-            onOpen={() => openLead(lead)}
-          />
-        ),
-      },
-      {
-        key: 'status',
-        title: 'Pipeline',
-        width: 160,
-        render: (_, lead) => (
-          <Select
-            size="small"
-            aria-label={`Pipeline của ${lead.name}`}
-            value={lead.status}
-            disabled={updatingLeadId === lead.id}
-            className="academy-inline-select"
-            options={statusOptionsFor(lead.status)}
-            optionRender={(option) => (
-              <StatusTag status={STATUS_TONES[option.value as AcademyLeadStatus]} label={String(option.label)} />
-            )}
-            labelRender={(option) => (
-              <StatusTag
-                status={STATUS_TONES[option.value as AcademyLeadStatus]}
-                label={STATUS_LABELS[option.value as AcademyLeadStatus]}
-              />
-            )}
-            onChange={(status) =>
-              void quickUpdate(
-                lead,
-                { status },
-                `Đã chuyển ${lead.name} sang ${STATUS_LABELS[status as AcademyLeadStatus]}.`
-              )
-            }
-          />
-        ),
-      },
-      {
-        key: 'course',
-        title: 'Khóa học',
-        width: 230,
-        render: (_, lead) => {
-          const legacyCourseOption =
-            lead.course && !courseOptions.some((option) => option.value === lead.course)
-              ? [{ value: lead.course, label: `${lead.course} · dữ liệu cũ` }]
-              : [];
-          return (
-            <Select
-              allowClear
-              showSearch
-              aria-label={`Khóa học của ${lead.name}`}
-              value={lead.course || undefined}
-              loading={updatingLeadId === lead.id}
-              disabled={updatingLeadId === lead.id}
-              placeholder="Chưa chọn khóa"
-              className="w-full academy-inline-select"
-              options={[...legacyCourseOption, ...courseOptions]}
-              filterOption={(input, option) =>
-                removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))
-              }
-              onChange={(value) => void assignCourse(lead, value || null)}
-            />
-          );
-        },
-      },
-      {
-        key: 'goal',
-        title: 'Mục tiêu',
-        width: 210,
-        render: (_, lead) => (
-          <InlineTextCell
-            ariaLabel={`Cập nhật mục tiêu của ${lead.name}`}
-            value={lead.goal}
-            placeholder="Chưa có mục tiêu"
-            disabled={updatingLeadId === lead.id}
-            onSave={(goal) => quickUpdate(lead, { goal }, `Đã cập nhật mục tiêu của ${lead.name}.`)}
-          />
-        ),
-      },
-      {
-        key: 'owner',
-        title: 'Phụ trách',
-        width: 170,
-        render: (_, lead) => (
-          <Select
-            allowClear
-            size="small"
-            aria-label={`Người phụ trách của ${lead.name}`}
-            value={lead.owner?.id ?? 'UNASSIGNED'}
-            disabled={updatingLeadId === lead.id}
-            className="academy-inline-select"
-            options={ownerOptions}
-            onChange={(ownerStaffId) =>
-              void quickUpdate(
-                lead,
-                { ownerStaffId: ownerStaffId === 'UNASSIGNED' || !ownerStaffId ? null : Number(ownerStaffId) },
-                ownerStaffId === 'UNASSIGNED' || !ownerStaffId
-                  ? `Đã bỏ người phụ trách của ${lead.name}.`
-                  : `Đã giao ${lead.name} cho ${ownerOptions.find((item) => item.value === ownerStaffId)?.label || 'nhân sự mới'}.`
-              )
-            }
-          />
-        ),
-      },
-      {
-        key: 'schedule',
-        title: 'Lịch test',
-        width: 180,
-        render: (_, lead) => (
-          <DatePicker
-            allowClear
-            showTime={{ format: 'HH:mm' }}
-            format="DD/MM/YYYY HH:mm"
-            placeholder="Chưa hẹn test"
-            value={lead.scheduledAt ? dayjs(lead.scheduledAt) : null}
-            disabled={updatingLeadId === lead.id}
-            className="w-full academy-inline-date-picker"
-            aria-label={`Lịch test của ${lead.name}`}
-            onChange={(value) =>
-              void quickUpdate(
-                lead,
-                { scheduledAt: value?.toISOString() || null },
-                value ? `Đã cập nhật lịch test của ${lead.name}.` : `Đã xóa lịch test của ${lead.name}.`
-              )
-            }
-          />
-        ),
-      },
-      {
-        key: 'flightDate',
-        title: 'Ngày bay',
-        width: 140,
-        render: (_, lead) => (
-          <DatePicker
-            allowClear
-            format="DD/MM/YYYY"
-            placeholder="Chưa có"
-            value={lead.flightDate ? dayjs(lead.flightDate) : null}
-            disabled={updatingLeadId === lead.id}
-            className="w-full academy-inline-date-picker"
-            aria-label={`Ngày bay của ${lead.name}`}
-            onChange={(value) =>
-              void quickUpdate(
-                lead,
-                { flightDate: value?.format('YYYY-MM-DD') || null },
-                value ? `Đã cập nhật ngày bay của ${lead.name}.` : `Đã xóa ngày bay của ${lead.name}.`
-              )
-            }
-          />
-        ),
-      },
-      {
-        key: 'hot',
-        title: 'Ưu tiên',
-        width: 124,
-        render: (_, lead) => (
-          <Button
-            size="small"
-            type={lead.isHot ? 'primary' : 'text'}
-            danger={lead.isHot}
-            className="academy-hot-toggle"
-            icon={<AppIcon icon={Flame} />}
-            loading={updatingLeadId === lead.id}
-            onClick={() =>
-              void quickUpdate(
-                lead,
-                { isHot: !lead.isHot },
-                !lead.isHot ? `Đã đánh dấu ${lead.name} là Hot.` : `Đã bỏ ưu tiên Hot cho ${lead.name}.`
-              )
-            }
-          >
-            {lead.isHot ? 'Hot' : 'Đánh dấu'}
-          </Button>
-        ),
-      },
-      {
-        key: 'source',
-        title: 'Nguồn',
-        width: 165,
-        render: (_, lead) => (
-          <Space size={2} className="w-full">
-            <InlineTextCell
-              ariaLabel={`Cập nhật nguồn của ${lead.name}`}
-              value={lead.source}
-              placeholder="Chưa rõ nguồn"
-              disabled={updatingLeadId === lead.id}
-              onSave={(source) =>
-                quickUpdate(lead, { source: source || 'Manual' }, `Đã cập nhật nguồn của ${lead.name}.`)
-              }
-            />
-            {lead.facebookChatLink && (
-              <Tooltip title="Mở hội thoại Pancake/Facebook">
-                <a
-                  className="academy-inline-link"
-                  href={lead.facebookChatLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Mở chat của ${lead.name}`}
-                >
-                  <AppIcon icon={Link} />
-                </a>
-              </Tooltip>
-            )}
-          </Space>
-        ),
-      },
-      {
-        key: 'revenue',
-        title: 'Tiền cọc / doanh thu',
-        width: 175,
-        render: (_, lead) => (
-          <InlineVndCell
-            value={lead.revenueVnd}
-            ariaLabel={`Cập nhật tiền cọc hoặc doanh thu của ${lead.name}`}
-            disabled={updatingLeadId === lead.id}
-            onSave={(revenueVnd) => quickUpdate(lead, { revenueVnd }, `Đã cập nhật doanh thu của ${lead.name}.`)}
-          />
-        ),
-      },
-      {
-        key: 'followUp',
-        title: 'Follow-up tiếp theo',
-        width: 230,
-        render: (_, lead) => (
-          <Tooltip title={lead.nextFollowUp?.content || 'Tạo task follow-up trong hồ sơ khách hàng'}>
-            <Button
-              size="small"
-              type="text"
-              className="academy-follow-up-cell"
-              icon={<AppIcon icon={MessageSquare} />}
-              onClick={() => openLead(lead)}
-            >
-              <span>{followUpLabel(lead)}</span>
-              {lead.pendingFollowUpCount > 1 && <span className="tabular-nums">+{lead.pendingFollowUpCount - 1}</span>}
-            </Button>
-          </Tooltip>
-        ),
-      },
-      {
-        key: 'updatedAt',
-        title: 'Cập nhật',
-        width: 145,
-        render: (_, lead) => dateLabel(lead.updatedAt),
-      },
-      {
-        key: 'actions',
-        title: 'Tác vụ',
-        width: 278,
-        render: (_, lead) => (
-          <Space size={4} wrap>
-            <Button size="small" icon={<AppIcon icon={Trophy} />} onClick={() => void openTalentWorkshop(lead)}>
-              Tố Chất
-            </Button>
-            {lead.scheduledAt ? (
-              <>
-                <Button
-                  size="small"
-                  icon={<AppIcon icon={CircleCheck} />}
-                  loading={updatingLeadId === lead.id}
-                  onClick={() => void markTested(lead)}
-                >
-                  Đã test
-                </Button>
-                <Button
-                  size="small"
-                  danger
-                  icon={<AppIcon icon={CircleX} />}
-                  loading={updatingLeadId === lead.id}
-                  onClick={() => void markNoShow(lead)}
-                >
-                  Không đến
-                </Button>
-              </>
-            ) : (
-              <Button size="small" type="link" onClick={() => openLead(lead)}>
-                Hẹn lại
-              </Button>
-            )}
-          </Space>
-        ),
-      },
-    ],
+  const leadColumns = React.useMemo(
+    () =>
+      buildLeadColumns({
+        page: workspace.page,
+        pageSize: workspace.pageSize,
+        updatingLeadId,
+        onOpenLead: openLead,
+        onOpenTalent: (lead) => void openTalentWorkshop(lead),
+        onQuickUpdate: quickUpdate,
+        onMarkTested: markTested,
+        onMarkNoShow: markNoShow,
+      }),
     [
-      assignCourse,
-      courseOptions,
       markNoShow,
       markTested,
       openLead,
       openTalentWorkshop,
-      ownerOptions,
       quickUpdate,
       updatingLeadId,
       workspace.page,
@@ -670,13 +360,42 @@ export default function AcademyLeadManagerPage() {
       }
       toolbar={{
         primary: !isCalendar ? (
-          <SearchField
-            behavior="filter"
-            value={workspace.search}
-            onChange={(event) => workspace.setSearch(event.target.value)}
-            placeholder="Tìm lead, khách hàng hoặc khóa học không dấu…"
-            allowClear
-          />
+          <div className="flex items-center gap-2 flex-1 flex-wrap">
+            <div className="w-full sm:w-72">
+              <SearchField
+                behavior="filter"
+                value={workspace.search}
+                onChange={(event) => workspace.setSearch(event.target.value)}
+                placeholder="Tìm lead, khách hàng hoặc khóa học không dấu…"
+                allowClear
+              />
+            </div>
+            <Space size={6} wrap>
+              <Button
+                size="small"
+                type={quickFilter === 'HOT' ? 'primary' : 'default'}
+                danger={quickFilter === 'HOT'}
+                icon={<AppIcon icon={Flame} className="w-3.5 h-3.5" />}
+                onClick={() => setQuickFilter((prev) => (prev === 'HOT' ? 'ALL' : 'HOT'))}
+              >
+                Hot ({workspace.leads.filter((l) => l.isHot).length})
+              </Button>
+              <Button
+                size="small"
+                type={quickFilter === 'TODAY_SCHEDULE' ? 'primary' : 'default'}
+                icon={<AppIcon icon={CalendarDays} className="w-3.5 h-3.5" />}
+                onClick={() => setQuickFilter((prev) => (prev === 'TODAY_SCHEDULE' ? 'ALL' : 'TODAY_SCHEDULE'))}
+              >
+                Hẹn hôm nay (
+                {workspace.leads.filter((l) => l.scheduledAt && dayjs(l.scheduledAt).isSame(dayjs(), 'day')).length})
+              </Button>
+              {quickFilter !== 'ALL' && (
+                <Button size="small" type="link" onClick={() => setQuickFilter('ALL')}>
+                  Xóa lọc nhanh
+                </Button>
+              )}
+            </Space>
+          </div>
         ) : undefined,
         filters: (
           <Select
@@ -691,43 +410,10 @@ export default function AcademyLeadManagerPage() {
           />
         ),
         filterTitle: 'Bộ lọc Lead Manager',
-        activeFilterCount: workspace.activeFilterCount,
+        activeFilterCount: workspace.activeFilterCount + (quickFilter !== 'ALL' ? 1 : 0),
       }}
     >
-      <MetricGrid
-        columns={4}
-        className="lead-manager-metric-grid"
-        items={[
-          {
-            key: 'all',
-            title: 'Tổng lead',
-            value: workspace.summary.total,
-            format: 'number',
-            icon: <AppIcon icon={CalendarDays} />,
-          },
-          {
-            key: 'scheduled',
-            title: 'Đã hẹn test',
-            value: workspace.summary.scheduledCount,
-            format: 'number',
-            icon: <AppIcon icon={CalendarDays} />,
-          },
-          {
-            key: 'revenue',
-            title: 'Doanh thu đã chốt',
-            value: workspace.summary.wonRevenueVnd,
-            format: 'vnd',
-            icon: <AppIcon icon={CircleCheck} />,
-          },
-          {
-            key: 'hot',
-            title: 'Hot dưới 72 giờ',
-            value: workspace.summary.hotCount,
-            format: 'number',
-            icon: <AppIcon icon={Flame} />,
-          },
-        ]}
-      />
+      <LeadManagerMetricStrip summary={workspace.summary} />
 
       <Tabs
         size="small"
@@ -806,11 +492,14 @@ export default function AcademyLeadManagerPage() {
           title="Pipeline lead Academy"
           extra={
             <Space size={12}>
-              <span className="hidden text-xs opacity-60 lg:inline">↔ Kéo ngang để xem thêm cột</span>
-              <span className="tabular-nums opacity-70">{workspace.total.toLocaleString('vi-VN')} bản ghi</span>
+              <span className="tabular-nums opacity-70">
+                {displayedLeads.length !== workspace.total
+                  ? `${displayedLeads.length} / ${workspace.total.toLocaleString('vi-VN')} bản ghi`
+                  : `${workspace.total.toLocaleString('vi-VN')} bản ghi`}
+              </span>
             </Space>
           }
-          state={sectionState || (workspace.leads.length === 0 ? 'empty' : undefined)}
+          state={sectionState || (displayedLeads.length === 0 ? 'empty' : undefined)}
           stateTitle={workspace.error || 'Chưa có lead theo bộ lọc'}
           stateDescription={workspace.error ? 'Hãy thử làm mới dữ liệu.' : undefined}
           stateExtra={workspace.error ? <Button onClick={() => void workspace.refresh()}>Thử lại</Button> : undefined}
@@ -819,31 +508,29 @@ export default function AcademyLeadManagerPage() {
             className="academy-lead-manager-table"
             rowKey="id"
             columns={leadColumns}
-            dataSource={workspace.leads}
+            dataSource={displayedLeads}
             loading={workspace.loading}
-            scroll={{ x: 2480 }}
+            scroll={{ x: 1200 }}
+            sticky
             stickyPrimaryColumn
+            onRow={(lead) => ({
+              onClick: () => openLead(lead),
+              className: 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors',
+            })}
             columnPriority={{
               stt: 'secondary',
-              lead: 'primary',
-              status: 'primary',
-              course: 'primary',
-              goal: 'secondary',
-              owner: 'secondary',
-              schedule: 'primary',
-              flightDate: 'secondary',
-              hot: 'secondary',
-              source: 'tertiary',
-              revenue: 'secondary',
-              followUp: 'secondary',
-              updatedAt: 'tertiary',
+              customer: 'primary',
+              pipeline: 'primary',
+              course: 'secondary',
+              schedule: 'secondary',
+              revenue: 'tertiary',
               actions: 'primary',
             }}
             mobileRenderer={(lead) => leadMobileCard(lead, openLead, openTalentWorkshop)}
             pagination={{
               current: workspace.page,
               pageSize: workspace.pageSize,
-              total: workspace.total,
+              total: quickFilter !== 'ALL' ? displayedLeads.length : workspace.total,
               onChange: (page, pageSize) => {
                 workspace.setPage(page);
                 if (pageSize !== workspace.pageSize) workspace.setPageSize(pageSize);

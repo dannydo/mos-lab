@@ -12,6 +12,8 @@ import {
   runPlanWatcher,
   findExistingSessionForTicket,
   writeTicketSessions,
+  probeIsAntigravityPort,
+  detectAntigravityLsEnv,
 } from './ag-task-provisioner.js';
 
 const mockRequest = {
@@ -420,4 +422,41 @@ test('1 ticket -> 1 session: findExistingSessionForTicket finds existing session
   const found = findExistingSessionForTicket('MOS-BUG-34', 34, temporary);
   assert.equal(found?.conversationId, 'a3a66163-9b9a-4df4-90c8-d6ed866be2ed');
   assert.equal(found?.worktreePath, '/tmp/worktree-34');
+});
+
+test('probeIsAntigravityPort identifies genuine Antigravity port and extracts csrfToken', async () => {
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(
+      '<!doctype html><html><head><script>window.__APP_CONFIG__ = {"productName":"antigravity","csrfToken":"mock-csrf-token-1234"};</script></head><body></body></html>'
+    );
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : 0;
+  try {
+    const probe = await probeIsAntigravityPort(port);
+    assert.equal(probe?.ok, true);
+    assert.equal(probe?.csrfToken, 'mock-csrf-token-1234');
+  } finally {
+    server.close();
+  }
+});
+
+test('probeIsAntigravityPort rejects non-antigravity HTTP ports', async () => {
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('This is an explicit proxy server. Does not respond to relative URIs.');
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : 0;
+  try {
+    const probe = await probeIsAntigravityPort(port);
+    assert.equal(probe, null);
+  } finally {
+    server.close();
+  }
 });
