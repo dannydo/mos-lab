@@ -1,6 +1,8 @@
 import './types';
 import { getOmiCallSdkUid, describeOmiCallPeerConnections, summarizeMediaTrack } from './peerConnectionTracker';
 import { getLiveAudioTracks, getMicrophoneConstraints, hasUsableMicrophoneStream } from './microphoneUtils';
+import { ensureOmiCallMediaBridge } from './mediaBridge';
+import { getAudioWarningKeys } from './audioWarningState';
 
 const dispatchOmiCallNotification = (
   type: 'success' | 'error' | 'warning' | 'info',
@@ -178,10 +180,10 @@ export const hasRemoteAudioReceiver = (diagnostics: SafeAny) => {
   });
 };
 
-const audioHealthWarningKeys = new Set<string>();
-
 export const warnOmiCallAudioHealth = (diagnostics: SafeAny) => {
   if (!diagnostics?.stage?.startsWith('accepted+')) return;
+
+  const audioHealthWarningKeys = getAudioWarningKeys();
 
   const callKey = diagnostics.uuid || diagnostics.uid || 'active-call';
   const local = diagnostics.streams?.local;
@@ -251,8 +253,6 @@ export const warnOmiCallAudioHealth = (diagnostics: SafeAny) => {
 export const recordOmiCallAudioDiagnostics = async (call: SafeAny, stage: string) => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ensureOmiCallMediaBridge } = require('./mediaBridge');
   ensureOmiCallMediaBridge(call);
 
   const activeCall = call || (window as SafeAny).activeCall;
@@ -283,8 +283,6 @@ export const recordOmiCallAudioDiagnostics = async (call: SafeAny, stage: string
 export const auditActiveCallAudio = () => {
   if (typeof window === 'undefined') return;
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ensureOmiCallMediaBridge } = require('./mediaBridge');
   const activeCall = (window as SafeAny).activeCall;
   ensureOmiCallMediaBridge(activeCall);
   void recordOmiCallAudioDiagnostics(activeCall, 'audit');
@@ -304,4 +302,4 @@ export const auditActiveCallAudio = () => {
   }
 };
 
-export const getAudioWarningKeys = () => audioHealthWarningKeys;
+export { getAudioWarningKeys } from './audioWarningState';

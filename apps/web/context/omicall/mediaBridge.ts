@@ -2,7 +2,7 @@ import './types';
 import { applyOmiCallAudioOutputDevice, applyOmiCallAudioOutputToActiveMedia } from './useAudioManager';
 import { getOmiCallSdkUid, getActiveOmiCallPeerConnection } from './peerConnectionTracker';
 import { hasUsableMicrophoneStream, stopMediaStream } from './microphoneUtils';
-import { getAudioWarningKeys } from './audioDiagnostics';
+import { clearAudioWarningKeys } from './audioWarningState';
 
 // Forward declaration or direct import of stream sync
 import { syncOmiCallRemoteStreamFromReceiver } from './callStreamSync';
@@ -152,27 +152,35 @@ export const scheduleOmiCallMediaBridgeSync = (call: SafeAny) => {
 export const cleanupOmiCallMediaBridge = (call: SafeAny) => {
   if (typeof document === 'undefined') return;
 
-  getAudioWarningKeys().clear();
-
-  if (isMediaStream(call?.__mosMicrophoneStream)) {
-    stopMediaStream(call.__mosMicrophoneStream);
-    call.__mosMicrophoneStream = null;
-  }
-  call?.__mosPreparedMicrophonePatch?.releaseIfUnused?.();
-  if (call?.__mosPreparedMicrophonePatch) {
-    call.__mosPreparedMicrophonePatch = null;
+  try {
+    clearAudioWarningKeys();
+  } catch (e) {
+    console.warn('[OmiCallContext] Error clearing audio warning keys:', e);
   }
 
-  const uid = getOmiCallSdkUid(call);
-  if (!uid) return;
+  try {
+    if (isMediaStream(call?.__mosMicrophoneStream)) {
+      stopMediaStream(call.__mosMicrophoneStream);
+      call.__mosMicrophoneStream = null;
+    }
+    call?.__mosPreparedMicrophonePatch?.releaseIfUnused?.();
+    if (call?.__mosPreparedMicrophonePatch) {
+      call.__mosPreparedMicrophonePatch = null;
+    }
 
-  [`${uid}-remote`, `${uid}-local`].forEach((id) => {
-    const el = document.getElementById(id) as HTMLMediaElement | null;
-    if (!el) return;
-    try {
-      el.pause();
-      el.srcObject = null;
-    } catch (e) {}
-    el.remove();
-  });
+    const uid = getOmiCallSdkUid(call);
+    if (!uid) return;
+
+    [`${uid}-remote`, `${uid}-local`].forEach((id) => {
+      const el = document.getElementById(id) as HTMLMediaElement | null;
+      if (!el) return;
+      try {
+        el.pause();
+        el.srcObject = null;
+      } catch (e) {}
+      el.remove();
+    });
+  } catch (err) {
+    console.warn('[OmiCallContext] Error during cleanupOmiCallMediaBridge:', err);
+  }
 };

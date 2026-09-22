@@ -2,6 +2,10 @@ import './types';
 
 export const ensureOmiCallSwitchboardOnline = async () => {
   if (typeof window === 'undefined' || !window.OMICallSDK) return true;
+  if (!(window as SafeAny).__omicall_initialized) {
+    console.warn('[OmiCallContext] SDK not initialized yet when checking switchboard');
+    return false;
+  }
 
   const sdk = window.OMICallSDK;
   const onlineState = window.OMICallSDK.SB_STATE?.ONLINE;
@@ -39,22 +43,34 @@ export const ensureOmiCallSwitchboardOnline = async () => {
   try {
     const currentState = sdk.getSbState?.();
     if (currentState === onlineState && sdk.validateSb?.()) {
-      sdk.sbKeepAlive?.();
+      try {
+        sdk.sbKeepAlive?.();
+      } catch (e) {}
       return true;
     }
 
     let connected = false;
     if (typeof sdk.reregister === 'function') {
       const connectedPromise = waitForConnected();
-      sdk.reregister(onlineState);
+      try {
+        sdk.reregister(onlineState);
+      } catch (err) {
+        console.warn('[OmiCallContext] Error invoking sdk.reregister:', err);
+      }
       connected = await connectedPromise;
     }
 
     if (typeof sdk.syncRegister === 'function') {
-      await sdk.syncRegister(onlineState);
+      try {
+        await sdk.syncRegister(onlineState);
+      } catch (err) {
+        console.warn('[OmiCallContext] Error invoking sdk.syncRegister:', err);
+      }
     }
 
-    sdk.sbKeepAlive?.();
+    try {
+      sdk.sbKeepAlive?.();
+    } catch (e) {}
 
     return connected || sdk.validateSb?.() === true;
   } catch (err) {

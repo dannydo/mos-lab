@@ -48,7 +48,6 @@ export {
   shouldMuteOmiCallStream,
   ensureOmiCallMediaBridge,
   scheduleOmiCallMediaBridgeSync,
-  cleanupOmiCallMediaBridge,
 } from './mediaBridge';
 
 export {

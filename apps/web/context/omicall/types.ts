@@ -27,6 +27,7 @@ export interface CurrentCall {
 
 export interface OmiCallContextType {
   sdkLoaded: boolean;
+  isSdkReady: boolean;
   sdkError: boolean;
   isRegistered: boolean;
   isTabMuted: boolean;
