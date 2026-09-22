@@ -53,7 +53,7 @@ import type {
   TriageBugReportResponse,
 } from '@mos-lab/shared';
 
-import { api, dedupeApiGet } from './base';
+import { api, dedupeApiGet, invalidateApiGetCache } from './base';
 
 export const bugReportsApi = {
   bugReports: {
@@ -85,27 +85,32 @@ export const bugReportsApi = {
         `/request-conversations/${encodeURIComponent(id)}/replies`,
         data
       );
+      invalidateApiGetCache(['/bug-reports/mine']);
       return response.data;
     },
     create: async (data: CreateBugReportRequest): Promise<CreateBugReportResponse> => {
       const response = await api.post<CreateBugReportResponse>('/bug-reports', data);
+      invalidateApiGetCache(['/bug-reports/mine']);
       return response.data;
     },
     mine: async (): Promise<MyBugReportsResponse> => {
-      return dedupeApiGet<MyBugReportsResponse>('/bug-reports/mine', undefined, 10000);
+      return dedupeApiGet<MyBugReportsResponse>('/bug-reports/mine', undefined, 30000);
     },
     review: async (id: number, data: ReviewBugReportRequest): Promise<ReviewBugReportResponse> => {
       const response = await api.patch<ReviewBugReportResponse>(`/bug-reports/${id}/review`, data);
+      invalidateApiGetCache(['/bug-reports/mine']);
       return response.data;
     },
     comment: async (id: number, data: CreateBugReportCommentRequest): Promise<CreateBugReportCommentResponse> => {
       const response = await api.post<CreateBugReportCommentResponse>(`/bug-reports/${id}/comments`, data);
+      invalidateApiGetCache(['/bug-reports/mine']);
       return response.data;
     },
     markNotificationsRead: async (
       data: MarkBugReportNotificationsReadRequest
     ): Promise<MarkBugReportNotificationsReadResponse> => {
       const response = await api.patch<MarkBugReportNotificationsReadResponse>('/bug-reports/notifications/read', data);
+      invalidateApiGetCache(['/bug-reports/mine']);
       return response.data;
     },
     list: async (params: BugReportListQuery): Promise<BugReportListResponse> => {
@@ -122,6 +127,7 @@ export const bugReportsApi = {
     },
     triage: async (id: number, data: TriageBugReportRequest): Promise<TriageBugReportResponse> => {
       const response = await api.patch<TriageBugReportResponse>(`/bug-reports/${id}/triage`, data);
+      invalidateApiGetCache(['/bug-reports/mine']);
       return response.data;
     },
     approveImplementation: async (
@@ -255,10 +261,12 @@ export const bugReportsApi = {
         `/bug-reports/${id}/implementation-acceptance`,
         data
       );
+      invalidateApiGetCache(['/bug-reports/mine']);
       return response.data;
     },
     confirmClose: async (id: number, data: ConfirmCloseBugReportRequest): Promise<ConfirmCloseBugReportResponse> => {
       const response = await api.patch<ConfirmCloseBugReportResponse>(`/bug-reports/${id}/confirm-close`, data);
+      invalidateApiGetCache(['/bug-reports/mine']);
       return response.data;
     },
     attachment: async (reportId: number, attachmentId: number): Promise<Blob> => {

@@ -29,13 +29,13 @@ import type {
   UpsertTeamRequest,
 } from '@mos-lab/shared';
 
-import { api, dedupeApiGet } from './base';
+import { api, dedupeApiGet, invalidateApiGetCache } from './base';
 
 export const staffApi = {
   staff: {
     list: async (params?: Record<string, unknown>): Promise<Staff[]> => {
       try {
-        const data = await dedupeApiGet<Staff[]>('/staff', params, 10000);
+        const data = await dedupeApiGet<Staff[]>('/staff', params, 30000);
         return Array.isArray(data) ? data : [];
       } catch (_err) {
         return [];
@@ -47,18 +47,22 @@ export const staffApi = {
     },
     syncLegacy: async (): Promise<{ success: boolean; count: number; message: string }> => {
       const response = await api.post('/staff/sync-legacy');
+      invalidateApiGetCache(['/staff']);
       return response.data;
     },
     create: async (data: Record<string, unknown>): Promise<Staff> => {
       const response = await api.post('/staff', data);
+      invalidateApiGetCache(['/staff']);
       return response.data;
     },
     update: async (id: number, data: Record<string, unknown>): Promise<Staff> => {
       const response = await api.put(`/staff/${id}`, data);
+      invalidateApiGetCache(['/staff']);
       return response.data;
     },
     delete: async (id: number): Promise<{ success: boolean }> => {
       const response = await api.delete(`/staff/${id}`);
+      invalidateApiGetCache(['/staff']);
       return response.data;
     },
     bulkUpdate: async (data: {
@@ -67,6 +71,7 @@ export const staffApi = {
       isActive?: boolean;
     }): Promise<{ success: boolean; count: number; message: string }> => {
       const response = await api.post('/staff/bulk-update', data);
+      invalidateApiGetCache(['/staff']);
       return response.data;
     },
     merge: async (data: {
@@ -74,6 +79,7 @@ export const staffApi = {
       sourceStaffIds: number[];
     }): Promise<{ success: boolean; message: string }> => {
       const response = await api.post('/staff/merge', data);
+      invalidateApiGetCache(['/staff']);
       return response.data;
     },
     getAuditLogs: async (id: number): Promise<StaffAuditLog[]> => {

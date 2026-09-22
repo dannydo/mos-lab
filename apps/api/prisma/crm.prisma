@@ -2646,6 +2646,7 @@ model CrmBugReport {
   @@index([requestType, statusSort, prioritySort, createdAt], map: "bug_request_type_status_idx")
   @@index([status, priority, createdAt])
   @@index([reporterStaffId, createdAt])
+  @@index([reporterStaffId, status, createdAt], map: "bug_reporter_status_created_idx")
   @@index([duplicateOfId])
   @@map("crm_bug_reports")
 }
