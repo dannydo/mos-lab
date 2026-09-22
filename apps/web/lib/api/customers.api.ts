@@ -46,15 +46,15 @@ import type {
   UpdateBookingRequest,
 } from '@mos-lab/shared';
 
-import { api, dedupeApiGet, dedupeInFlightApiGet, invalidateApiGetCache } from './base';
+import { api, dedupeApiGet, dedupeInFlightApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
 export const customersApi = {
   customers: {
-    list: async (params: ListCustomersParams): Promise<ListCustomersResponse> => {
-      return dedupeInFlightApiGet<ListCustomersResponse>('/customers', params);
+    list: async (params: ListCustomersParams, options?: ApiRequestOptions): Promise<ListCustomersResponse> => {
+      return dedupeInFlightApiGet<ListCustomersResponse>('/customers', params, options);
     },
-    getStats: async (params: ListCustomersParams): Promise<CustomerStatsResponse> => {
-      return dedupeInFlightApiGet<CustomerStatsResponse>('/customers/stats', params);
+    getStats: async (params: ListCustomersParams, options?: ApiRequestOptions): Promise<CustomerStatsResponse> => {
+      return dedupeInFlightApiGet<CustomerStatsResponse>('/customers/stats', params, options);
     },
     getCreationOptions: async (): Promise<CustomerCreationOptionsResponse> => {
       return dedupeInFlightApiGet<CustomerCreationOptionsResponse>('/customers/create-options');
@@ -73,12 +73,19 @@ export const customersApi = {
       return response.data;
     },
     getNycStats: async (
-      params?: Record<string, unknown>
+      params?: Record<string, unknown>,
+      options?: ApiRequestOptions
     ): Promise<{
       tabs: Record<string, number>;
       touchpoints: Record<string, number>;
     }> => {
-      const response = await api.get('/customers/nyc-stats', { params });
+      const response = await api.get('/customers/nyc-stats', {
+        params,
+        signal: options?.signal,
+        isPolling: options?.isPolling,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
       return response.data;
     },
     getDetails: async (id: number): Promise<Customer> => {
@@ -196,8 +203,17 @@ export const customersApi = {
       const data = await dedupeApiGet<ListAppointmentsResponse>('/customers/appointments', params, 2000);
       return data;
     },
-    getCvRealtimeStatus: async (params?: { countOnly?: boolean | string }): Promise<CvRealtimeStatusResponse> => {
-      const response = await api.get('/customers/cv-realtime-status', { params });
+    getCvRealtimeStatus: async (
+      params?: { countOnly?: boolean | string },
+      options?: ApiRequestOptions
+    ): Promise<CvRealtimeStatusResponse> => {
+      const response = await api.get('/customers/cv-realtime-status', {
+        params,
+        signal: options?.signal,
+        isPolling: options?.isPolling,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
       return response.data;
     },
     getCvScheduleRoster: async (date: string): Promise<CvScheduleRosterResponse> => {
@@ -362,12 +378,20 @@ export const customersApi = {
       const response = await api.get(`/calls/${customerId}`);
       return response.data;
     },
-    listDaily: async (params: {
-      date: string;
-      scope: 'all' | 'me' | 'nyc';
-      staffId?: string;
-    }): Promise<DailyCallEntry[]> => {
-      const data = await dedupeApiGet<DailyCallEntry[]>('/calls/daily', params as Record<string, unknown>, 30000);
+    listDaily: async (
+      params: {
+        date: string;
+        scope: 'all' | 'me' | 'nyc';
+        staffId?: string;
+      },
+      options?: ApiRequestOptions
+    ): Promise<DailyCallEntry[]> => {
+      const data = await dedupeApiGet<DailyCallEntry[]>(
+        '/calls/daily',
+        params as Record<string, unknown>,
+        30000,
+        options
+      );
       return data;
     },
   },
@@ -408,8 +432,8 @@ export const customersApi = {
       const response = await api.post('/allocation/batch', data);
       return response.data;
     },
-    getPendingBatches: async (): Promise<CustomerAllocationBatch[]> => {
-      const data = await dedupeApiGet<CustomerAllocationBatch[]>('/allocation/pending', undefined, 5000);
+    getPendingBatches: async (options?: ApiRequestOptions): Promise<CustomerAllocationBatch[]> => {
+      const data = await dedupeApiGet<CustomerAllocationBatch[]>('/allocation/pending', undefined, 5000, options);
       return data;
     },
     getMyBatches: async (): Promise<BookerAllocationBatchSummary[]> => {

@@ -29,13 +29,13 @@ import type {
   UpsertTeamRequest,
 } from '@mos-lab/shared';
 
-import { api, dedupeApiGet, invalidateApiGetCache } from './base';
+import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
 export const staffApi = {
   staff: {
-    list: async (params?: Record<string, unknown>): Promise<Staff[]> => {
+    list: async (params?: Record<string, unknown>, options?: ApiRequestOptions): Promise<Staff[]> => {
       try {
-        const data = await dedupeApiGet<Staff[]>('/staff', params, 30000);
+        const data = await dedupeApiGet<Staff[]>('/staff', params, 30000, options);
         return Array.isArray(data) ? data : [];
       } catch (_err) {
         return [];

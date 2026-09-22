@@ -38,7 +38,7 @@ import type {
   UpdateFrontendIssueStatusRequest,
 } from '@mos-lab/shared';
 
-import { api, dedupeInFlightApiGet } from './base';
+import { api, dedupeInFlightApiGet, ApiRequestOptions } from './base';
 
 export const systemApi = {
   frontendTelemetry: {
@@ -179,8 +179,13 @@ export const systemApi = {
     },
   },
   release: {
-    get: async (): Promise<{ deployedAt: string | null; commitSha: string | null }> => {
-      const response = await api.get('/release');
+    get: async (options?: ApiRequestOptions): Promise<{ deployedAt: string | null; commitSha: string | null }> => {
+      const response = await api.get('/release', {
+        signal: options?.signal,
+        isPolling: options?.isPolling,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
       return response.data;
     },
   },

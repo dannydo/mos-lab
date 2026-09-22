@@ -2293,7 +2293,7 @@
         "dbSource": "crm",
         "modelName": "CrmBkGame",
         "tableName": "crm_bk_games",
-        "fieldCount": 20,
+        "fieldCount": 21,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -8456,7 +8456,7 @@
         "path": "/api/kpi/bk/booking/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 41
+        "line": 47
       }
     },
     {
@@ -8470,7 +8470,7 @@
         "path": "/api/kpi/bk/booking/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 201
+        "line": 211
       }
     },
     {
@@ -8484,7 +8484,7 @@
         "path": "/api/kpi/bk/done/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 411
+        "line": 426
       }
     },
     {
@@ -8498,7 +8498,7 @@
         "path": "/api/kpi/bk/done/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 539
+        "line": 554
       }
     },
     {
@@ -8512,7 +8512,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 729
+        "line": 744
       }
     },
     {
@@ -8526,7 +8526,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 842
+        "line": 857
       }
     },
     {
@@ -8540,7 +8540,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 946
+        "line": 961
       }
     },
     {
@@ -8554,7 +8554,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1046
+        "line": 1061
       }
     },
     {
@@ -8568,7 +8568,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1142
+        "line": 1157
       }
     },
     {
@@ -8582,7 +8582,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1175
+        "line": 1190
       }
     },
     {
@@ -8596,7 +8596,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1209
+        "line": 1224
       }
     },
     {
@@ -8610,7 +8610,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1254
+        "line": 1269
       }
     },
     {
@@ -8624,7 +8624,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1306
+        "line": 1321
       }
     },
     {
@@ -8638,7 +8638,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1318
+        "line": 1333
       }
     },
     {
@@ -8652,7 +8652,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1339
+        "line": 1354
       }
     },
     {
@@ -8666,7 +8666,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1357
+        "line": 1372
       }
     },
     {
@@ -8680,7 +8680,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1378
+        "line": 1393
       }
     },
     {
@@ -14371,6 +14371,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BkGameScoringRule",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkBookingChannel",
+      "type": "SharedType",
+      "label": "BkBookingChannel",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkBookingChannel",
         "package": "@mos-lab/shared"
       }
     },
@@ -25547,8 +25559,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11705123,
-        "lineCount": 255048,
+        "sizeBytes": 11707177,
+        "lineCount": 255084,
         "ext": ".ts"
       }
     },
@@ -27484,8 +27496,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 55537,
-        "lineCount": 1394,
+        "sizeBytes": 56135,
+        "lineCount": 1409,
         "ext": ".ts"
       }
     },
@@ -27679,8 +27691,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3767,
-        "lineCount": 113,
+        "sizeBytes": 6795,
+        "lineCount": 192,
         "ext": ".ts"
       }
     },
@@ -27692,8 +27704,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19132,
-        "lineCount": 565,
+        "sizeBytes": 21697,
+        "lineCount": 633,
         "ext": ".ts"
       }
     },
@@ -28732,8 +28744,8 @@
       "filePath": "apps/api/src/modules/telemetry/telemetry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 63373,
-        "lineCount": 1636,
+        "sizeBytes": 63361,
+        "lineCount": 1633,
         "ext": ".ts"
       }
     },
@@ -28810,8 +28822,8 @@
       "filePath": "apps/api/src/plugins/prisma.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2375,
-        "lineCount": 73,
+        "sizeBytes": 3194,
+        "lineCount": 97,
         "ext": ".ts"
       }
     },
@@ -30851,8 +30863,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/courses/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21315,
-        "lineCount": 577,
+        "sizeBytes": 20987,
+        "lineCount": 553,
         "ext": ".tsx"
       }
     },
@@ -31202,8 +31214,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 34850,
-        "lineCount": 869,
+        "sizeBytes": 36835,
+        "lineCount": 908,
         "ext": ".tsx"
       }
     },
@@ -31241,8 +31253,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41914,
-        "lineCount": 872,
+        "sizeBytes": 42656,
+        "lineCount": 885,
         "ext": ".tsx"
       }
     },
@@ -31592,8 +31604,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 62424,
-        "lineCount": 1291,
+        "sizeBytes": 62744,
+        "lineCount": 1301,
         "ext": ".tsx"
       }
     },
@@ -32437,8 +32449,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerList.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12589,
-        "lineCount": 294,
+        "sizeBytes": 13977,
+        "lineCount": 333,
         "ext": ".ts"
       }
     },
@@ -32957,8 +32969,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 54958,
-        "lineCount": 1364,
+        "sizeBytes": 55941,
+        "lineCount": 1386,
         "ext": ".tsx"
       }
     },
@@ -33074,8 +33086,8 @@
       "filePath": "apps/web/app/dashboard/nyc/hooks/useNycData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18574,
-        "lineCount": 540,
+        "sizeBytes": 19948,
+        "lineCount": 578,
         "ext": ".ts"
       }
     },
@@ -34036,8 +34048,8 @@
       "filePath": "apps/web/lib/api/base.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3814,
-        "lineCount": 111,
+        "sizeBytes": 5886,
+        "lineCount": 198,
         "ext": ".ts"
       }
     },
@@ -34088,8 +34100,8 @@
       "filePath": "apps/web/lib/api/customers.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18004,
-        "lineCount": 459,
+        "sizeBytes": 18639,
+        "lineCount": 483,
         "ext": ".ts"
       }
     },
@@ -34153,7 +34165,7 @@
       "filePath": "apps/web/lib/api/staff.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8958,
+        "sizeBytes": 9015,
         "lineCount": 226,
         "ext": ".ts"
       }
@@ -34166,8 +34178,8 @@
       "filePath": "apps/web/lib/api/system.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11343,
-        "lineCount": 291,
+        "sizeBytes": 11528,
+        "lineCount": 294,
         "ext": ".ts"
       }
     },
@@ -34218,8 +34230,8 @@
       "filePath": "apps/web/lib/api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4843,
-        "lineCount": 129,
+        "sizeBytes": 5729,
+        "lineCount": 159,
         "ext": ".ts"
       }
     },
@@ -34608,8 +34620,8 @@
       "filePath": "packages/shared/src/types/bk-game.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5746,
-        "lineCount": 169,
+        "sizeBytes": 6381,
+        "lineCount": 187,
         "ext": ".ts"
       }
     },
@@ -42323,6 +42335,13 @@
     {
       "id": "edge:type:@mos-lab/shared:BkGameScoringRule:ws:packages/shared",
       "source": "type:@mos-lab/shared:BkGameScoringRule",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkBookingChannel:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkBookingChannel",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -75964,20 +75983,20 @@
     }
   ],
   "stats": {
-    "totalNodes": 2696,
-    "totalEdges": 5825,
+    "totalNodes": 2697,
+    "totalEdges": 5826,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 143,
       "FastifyRoute": 560,
       "Component": 53,
-      "SharedType": 984,
+      "SharedType": 985,
       "DesignToken": 12,
       "UIComponent": 194,
       "File": 747
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1139,
+      "EXPORTS": 1140,
       "HANDLES_ROUTE": 560,
       "RENDERS": 247,
       "USES_TOKEN": 196,
@@ -75988,7 +76007,7 @@
     "fastifyRouteCount": 565,
     "prismaModelCount": 143,
     "nextPageCount": 53,
-    "sharedTypeCount": 984
+    "sharedTypeCount": 985
   },
   "routes": [
     {
@@ -81077,7 +81096,7 @@
       "dbSource": "crm",
       "modelName": "CrmBkGame",
       "tableName": "crm_bk_games",
-      "fieldCount": 20,
+      "fieldCount": 21,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

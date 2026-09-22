@@ -6,11 +6,20 @@ import { recordBreadcrumb, reportFrontendIssue } from './telemetry/frontend-obse
 import { resolveApiBaseUrl } from './api-base-url';
 export { resolveApiBaseUrl };
 
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    isPolling?: boolean;
+    priority?: 'high' | 'low' | 'auto';
+    _requestStartTime?: number;
+  }
+}
+
 const api = axios.create({
   baseURL: resolveApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000,
 });
 
 // Auto attach token if available in storage (client-side only)
@@ -18,6 +27,23 @@ api.interceptors.request.use(
   (config) => {
     (config as unknown as Record<string, unknown>)._requestStartTime = Date.now();
     recordBreadcrumb('network', 'api_request', `${(config.method || 'GET').toUpperCase()} ${config.url || ''}`);
+
+    if (config.isPolling) {
+      if (!config.timeout) {
+        config.timeout = 15000;
+      }
+      config.headers = config.headers || {};
+      config.headers['Priority'] = 'u=7, i';
+    } else if (config.priority === 'high') {
+      config.headers = config.headers || {};
+      config.headers['Priority'] = 'u=1';
+    } else if (config.priority === 'low') {
+      config.headers = config.headers || {};
+      config.headers['Priority'] = 'u=6';
+      if (!config.timeout) {
+        config.timeout = 20000;
+      }
+    }
 
     if (typeof window !== 'undefined') {
       const token = safeStorage.getItem('mos_token');
@@ -46,7 +72,7 @@ api.interceptors.response.use(
         durationMs,
       }
     );
-    if (durationMs && durationMs > 3000) {
+    if (durationMs && durationMs > 3000 && !response.config.isPolling) {
       reportFrontendIssue({
         issueType: 'SLOW_INTERACTION',
         target: `${(response.config.method || 'GET').toUpperCase()} ${response.config.url || ''}`,
@@ -57,6 +83,10 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (axios.isCancel(error) || error?.name === 'CanceledError' || error?.name === 'AbortError') {
+      return Promise.reject(error);
+    }
+
     recordApiFailure(error);
     const startTime = (error.config as unknown as Record<string, unknown>)?._requestStartTime as number | undefined;
     const durationMs = startTime ? Date.now() - startTime : undefined;

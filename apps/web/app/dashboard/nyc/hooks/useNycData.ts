@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useDeferredValue, useRef } from 'react';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 import { Customer, SafeAny, Staff } from '@mos-lab/shared';
@@ -133,6 +134,19 @@ export function useNycData(options?: UseNycDataOptions) {
   const [addingIds, setAddingIds] = useState<number[]>([]);
   const lastCustomerRequestIdRef = useRef(0);
   const lastStatsRequestIdRef = useRef(0);
+  const customerAbortControllerRef = useRef<AbortController | null>(null);
+  const statsAbortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (customerAbortControllerRef.current) {
+        customerAbortControllerRef.current.abort('UNMOUNT');
+      }
+      if (statsAbortControllerRef.current) {
+        statsAbortControllerRef.current.abort('UNMOUNT');
+      }
+    };
+  }, []);
 
   const setSortField = useCallback((nextSortField: string) => {
     const resolvedSortField = NYC_SORT_FIELDS.has(nextSortField) ? nextSortField : DEFAULT_NYC_SORT_FIELD;
@@ -220,6 +234,11 @@ export function useNycData(options?: UseNycDataOptions) {
   // Fetch Touchpoint & Tab Counts via 1 single Batch Stats API call
   const fetchTouchpointCounts = useCallback(async () => {
     const requestId = ++lastStatsRequestIdRef.current;
+    if (statsAbortControllerRef.current) {
+      statsAbortControllerRef.current.abort('NEW_NYC_STATS');
+    }
+    const abortController = new AbortController();
+    statsAbortControllerRef.current = abortController;
     try {
       const params = {
         search: deferredSearchQuery || undefined,
@@ -227,7 +246,7 @@ export function useNycData(options?: UseNycDataOptions) {
           assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
       };
 
-      const nycStats = await apiClient.customers.getNycStats(params as SafeAny);
+      const nycStats = await apiClient.customers.getNycStats(params as SafeAny, { signal: abortController.signal });
 
       if (nycStats && requestId === lastStatsRequestIdRef.current) {
         const activeTabConfig = configs[activeTab] || [];
@@ -242,6 +261,13 @@ export function useNycData(options?: UseNycDataOptions) {
         setTabCounts(nycStats.tabs || {});
       }
     } catch (err) {
+      if (
+        axios.isCancel(err) ||
+        (err as { name?: string }).name === 'CanceledError' ||
+        (err as { name?: string }).name === 'AbortError'
+      ) {
+        return;
+      }
       if (requestId === lastStatsRequestIdRef.current) {
         console.error('Failed to load touchpoint counts:', err);
       }
@@ -256,6 +282,11 @@ export function useNycData(options?: UseNycDataOptions) {
 
   const fetchCustomerList = useCallback(async () => {
     const requestId = ++lastCustomerRequestIdRef.current;
+    if (customerAbortControllerRef.current) {
+      customerAbortControllerRef.current.abort('NEW_NYC_CUSTOMER_LIST');
+    }
+    const abortController = new AbortController();
+    customerAbortControllerRef.current = abortController;
     setLoading(true);
     try {
       const activeTabConfig = configs[activeTab] || [];
@@ -283,12 +314,19 @@ export function useNycData(options?: UseNycDataOptions) {
           assignedStaffId === 'ALL' ? undefined : assignedStaffId === 'me' ? currentUser?.id : assignedStaffId,
       };
 
-      const data = await apiClient.customers.list(params as SafeAny);
+      const data = await apiClient.customers.list(params as SafeAny, { signal: abortController.signal });
       if (requestId === lastCustomerRequestIdRef.current) {
         setCustomers(data.data);
         setTotal(data.pagination.total);
       }
     } catch (err) {
+      if (
+        axios.isCancel(err) ||
+        (err as { name?: string }).name === 'CanceledError' ||
+        (err as { name?: string }).name === 'AbortError'
+      ) {
+        return;
+      }
       if (requestId === lastCustomerRequestIdRef.current) {
         console.error('Failed to load customer list:', err);
         optionsRef.current?.onError?.('Không thể tải danh sách khách hàng.');

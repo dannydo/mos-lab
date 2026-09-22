@@ -14,11 +14,35 @@ declare module 'fastify' {
   }
 }
 
+function configureDatabasePoolUrl(
+  rawUrl: string | undefined,
+  connectionLimit: number,
+  poolTimeoutSec: number = 20
+): string | undefined {
+  if (!rawUrl) return rawUrl;
+  try {
+    const parsed = new URL(rawUrl);
+    if (!parsed.searchParams.has('connection_limit')) {
+      parsed.searchParams.set('connection_limit', String(connectionLimit));
+    }
+    if (!parsed.searchParams.has('pool_timeout')) {
+      parsed.searchParams.set('pool_timeout', String(poolTimeoutSec));
+    }
+    return parsed.toString();
+  } catch {
+    const separator = rawUrl.includes('?') ? '&' : '?';
+    return `${rawUrl}${separator}connection_limit=${connectionLimit}&pool_timeout=${poolTimeoutSec}`;
+  }
+}
+
 const prismaPlugin: FastifyPluginAsync = fp(async (fastify: FastifyInstance) => {
+  const legacyUrl = configureDatabasePoolUrl(process.env.LEGACY_DATABASE_URL, 25, 20);
+  const crmUrl = configureDatabasePoolUrl(process.env.CRM_DATABASE_URL, 15, 20);
+
   const legacy = new LegacyPrismaClient({
     datasources: {
       db: {
-        url: process.env.LEGACY_DATABASE_URL,
+        url: legacyUrl,
       },
     },
     log: [{ emit: 'event', level: 'query' }] as SafeAny,
@@ -27,7 +51,7 @@ const prismaPlugin: FastifyPluginAsync = fp(async (fastify: FastifyInstance) => 
   const crm = new CrmPrismaClient({
     datasources: {
       db: {
-        url: process.env.CRM_DATABASE_URL,
+        url: crmUrl,
       },
     },
     log: [{ emit: 'event', level: 'query' }] as SafeAny,

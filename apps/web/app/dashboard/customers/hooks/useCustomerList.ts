@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { apiClient } from '../../../../lib/api-client';
 import { Customer, ListCustomersParams } from '@mos-lab/shared';
 
@@ -30,8 +31,27 @@ export const useCustomerList = (
     notComboLive: 0,
   });
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const statsAbortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort('UNMOUNT');
+      }
+      if (statsAbortControllerRef.current) {
+        statsAbortControllerRef.current.abort('UNMOUNT');
+      }
+    };
+  }, []);
+
   const fetchStats = useCallback(
     async (overrideSearchVal?: string) => {
+      if (statsAbortControllerRef.current) {
+        statsAbortControllerRef.current.abort('NEW_STATS_REQUEST');
+      }
+      const abortController = new AbortController();
+      statsAbortControllerRef.current = abortController;
       try {
         const params: ListCustomersParams = {
           search: overrideSearchVal !== undefined ? overrideSearchVal : filterParams.searchQuery,
@@ -102,9 +122,16 @@ export const useCustomerList = (
         if (filterParams.lastCallDaysMax !== undefined)
           params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
 
-        const data = await apiClient.customers.getStats(params);
+        const data = await apiClient.customers.getStats(params, { signal: abortController.signal });
         setStats(data);
       } catch (error) {
+        if (
+          axios.isCancel(error) ||
+          (error as { name?: string }).name === 'CanceledError' ||
+          (error as { name?: string }).name === 'AbortError'
+        ) {
+          return;
+        }
         console.error('Fetch stats error:', error);
       }
     },
@@ -116,6 +143,11 @@ export const useCustomerList = (
   const fetchCustomers = useCallback(
     async (page: number, limit: number, overrideIds?: number[]) => {
       const currentFetchId = ++fetchIdRef.current;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort('NEW_SEARCH_OR_PAGE');
+      }
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
       setLoading(true);
       try {
         const params: ListCustomersParams = {
@@ -199,7 +231,7 @@ export const useCustomerList = (
         if (filterParams.lastCallDaysMax !== undefined)
           params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
 
-        const data = await apiClient.customers.list(params);
+        const data = await apiClient.customers.list(params, { signal: abortController.signal });
 
         // Ignore stale response if a newer fetch was initiated
         if (currentFetchId !== fetchIdRef.current) return;
@@ -212,6 +244,13 @@ export const useCustomerList = (
           setTotal(data.pagination.total);
         }
       } catch (error) {
+        if (
+          axios.isCancel(error) ||
+          (error as { name?: string }).name === 'CanceledError' ||
+          (error as { name?: string }).name === 'AbortError'
+        ) {
+          return;
+        }
         if (currentFetchId !== fetchIdRef.current) return;
         console.error('Fetch customers error:', error);
         optionsRef.current?.onError?.(

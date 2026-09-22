@@ -54,6 +54,7 @@ const CvScheduleDrawer = dynamic(
 const BookingWizardDrawer = dynamic(() => import('../../components/BookingWizardDrawer'), { ssr: false });
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
+import { pollWithAbort, pollingCoordinator } from '../../lib/api/base';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
 import UserProfileDropdown from '../../components/layout/UserProfileDropdown';
@@ -110,16 +111,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isDocumentVisible = () => typeof document === 'undefined' || document.visibilityState === 'visible';
 
   const fetchWorkingCvCount = useCallback(async () => {
-    try {
-      const res = await apiClient.customers.getCvRealtimeStatus({ countOnly: true });
+    await pollWithAbort('layout:workingCv', async (signal) => {
+      const res = await apiClient.customers.getCvRealtimeStatus({ countOnly: true }, { signal, isPolling: true });
       if (res?.workingCvCount !== undefined) {
         setWorkingCvCount(res.workingCvCount);
       } else if (res?.staffStatuses) {
         setWorkingCvCount(res.staffStatuses.length);
       }
-    } catch (err) {
-      console.warn('Fetch working CV count error:', err);
-    }
+      return res;
+    });
   }, []);
 
   useEffect(() => {
@@ -131,29 +131,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => clearInterval(interval);
   }, [fetchWorkingCvCount, hasAuthenticatedUser]);
 
+  const fetchReleaseMarker = useCallback(async () => {
+    await pollWithAbort('layout:releaseMarker', async (signal) => {
+      const release = await apiClient.release.get({ signal, isPolling: true });
+      setDeployedAt(release.deployedAt);
+      return release;
+    });
+  }, []);
+
   useEffect(() => {
     if (!hasAuthenticatedUser) return;
-
-    const fetchReleaseMarker = () => {
-      if (!isDocumentVisible()) return;
-      apiClient.release
-        .get()
-        .then((release) => setDeployedAt(release.deployedAt))
-        .catch(() => setDeployedAt(null));
-    };
-
     fetchReleaseMarker();
-    const interval = setInterval(fetchReleaseMarker, 60_000);
+    const interval = setInterval(() => {
+      if (isDocumentVisible()) fetchReleaseMarker();
+    }, 60000);
     return () => clearInterval(interval);
-  }, [hasAuthenticatedUser]);
+  }, [fetchReleaseMarker, hasAuthenticatedUser]);
 
   const fetchPendingAllocationsCount = useCallback(async () => {
-    try {
-      const list = await apiClient.allocation.getPendingBatches();
+    await pollWithAbort('layout:pendingAllocations', async (signal) => {
+      const list = await apiClient.allocation.getPendingBatches({ signal, isPolling: true });
       setPendingAllocationCount(list?.length || 0);
-    } catch (err) {
-      console.error('Fetch pending allocations error:', err);
-    }
+      return list;
+    });
   }, []);
 
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchPendingAllocationsCount();
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchPendingAllocationsCount();
-    }, 30000);
+    }, 35000);
     return () => clearInterval(interval);
   }, [fetchPendingAllocationsCount, hasAuthenticatedUser]);
 
@@ -175,13 +175,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   const fetchDailyCallsCount = useCallback(async () => {
-    try {
+    await pollWithAbort('layout:dailyCalls', async (signal) => {
       const todayStr = dayjs().format('YYYY-MM-DD');
-      const res = await apiClient.calls.listDaily({ date: todayStr, scope: 'me' });
-      setDailyCallsCount(res.length);
-    } catch (err) {
-      console.error('Fetch daily calls count error:', err);
-    }
+      const res = await apiClient.calls.listDaily({ date: todayStr, scope: 'me' }, { signal, isPolling: true });
+      setDailyCallsCount(res?.length || 0);
+      return res;
+    });
   }, []);
 
   useEffect(() => {
@@ -189,14 +188,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchDailyCallsCount();
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchDailyCallsCount();
-    }, 30000);
+    }, 40000);
     return () => clearInterval(interval);
   }, [fetchDailyCallsCount, hasAuthenticatedUser]);
 
   const fetchOnlineStaff = useCallback(async () => {
-    try {
-      const list = await apiClient.staff.list();
-      if (!Array.isArray(list)) return;
+    await pollWithAbort('layout:onlineStaff', async (signal) => {
+      const list = await apiClient.staff.list(undefined, { signal, isPolling: true });
+      if (!Array.isArray(list)) return [];
       const now = dayjs();
       const storedUserStr = typeof window !== 'undefined' ? localStorage.getItem('mos_user') : null;
       let currentUserId = '';
@@ -246,9 +245,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       });
 
       setOnlineMembers(mapped);
-    } catch (err) {
-      console.error('Fetch online staff error:', err);
-    }
+      return mapped;
+    });
   }, []);
 
   useEffect(() => {
@@ -256,22 +254,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchOnlineStaff();
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchOnlineStaff();
-    }, 30000);
+    }, 45000);
     return () => clearInterval(interval);
   }, [fetchOnlineStaff, hasAuthenticatedUser]);
 
   useEffect(() => {
     if (!hasAuthenticatedUser) return;
     const handleVisibilityChange = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      if (typeof document === 'undefined') return;
+      if (document.visibilityState === 'hidden') {
+        pollingCoordinator.abortAll('TAB_HIDDEN');
+      } else if (document.visibilityState === 'visible') {
+        // Stagger requests to avoid connection pool congestion
         fetchWorkingCvCount();
-        fetchPendingAllocationsCount();
-        fetchDailyCallsCount();
-        fetchOnlineStaff();
+        const t1 = setTimeout(() => {
+          if (isDocumentVisible()) fetchPendingAllocationsCount();
+        }, 200);
+        const t2 = setTimeout(() => {
+          if (isDocumentVisible()) fetchDailyCallsCount();
+        }, 400);
+        const t3 = setTimeout(() => {
+          if (isDocumentVisible()) fetchOnlineStaff();
+        }, 600);
+        return () => {
+          clearTimeout(t1);
+          clearTimeout(t2);
+          clearTimeout(t3);
+        };
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      pollingCoordinator.abortAll('UNMOUNT');
+    };
   }, [fetchWorkingCvCount, fetchPendingAllocationsCount, fetchDailyCallsCount, fetchOnlineStaff, hasAuthenticatedUser]);
 
   useEffect(() => {

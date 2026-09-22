@@ -1,4 +1,12 @@
+import axios from 'axios';
 import api, { resolveApiBaseUrl } from '../api';
+
+export interface ApiRequestOptions {
+  signal?: AbortSignal;
+  isPolling?: boolean;
+  priority?: 'high' | 'low' | 'auto';
+  timeout?: number;
+}
 
 // In-flight request deduplication & short-term cache map for GET endpoints.
 // Keep this bounded: list filters can generate a large number of distinct keys
@@ -36,7 +44,12 @@ function pruneShortLivedGetCache(now: number): void {
   }
 }
 
-export async function dedupeApiGet<T>(url: string, params?: Record<string, unknown>, ttlMs: number = 3000): Promise<T> {
+export async function dedupeApiGet<T>(
+  url: string,
+  params?: Record<string, unknown>,
+  ttlMs: number = 3000,
+  options?: ApiRequestOptions
+): Promise<T> {
   const cacheKey = stableCacheKey(url, params);
   const now = Date.now();
   pruneShortLivedGetCache(now);
@@ -48,7 +61,13 @@ export async function dedupeApiGet<T>(url: string, params?: Record<string, unkno
 
   const promise = (async () => {
     try {
-      const response = await api.get(url, { params });
+      const response = await api.get(url, {
+        params,
+        signal: options?.signal,
+        isPolling: options?.isPolling,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
       return response.data as T;
     } catch (err) {
       inFlightRequests.delete(cacheKey);
@@ -81,14 +100,23 @@ export function invalidateAcademySalesReadCache(): void {
 // Coalesce concurrent reads without retaining completed data. This is safe for
 // mutation follow-ups that must always fetch fresh results, while avoiding
 // duplicate requests caused by React Strict Mode during page initialization.
-export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<T> {
+export function dedupeInFlightApiGet<T>(url: string, params?: unknown, options?: ApiRequestOptions): Promise<T> {
   const cacheKey = stableCacheKey(url, params);
   const existing = inFlightOnlyRequests.get(cacheKey);
   if (existing) {
     return existing as Promise<T>;
   }
 
-  const promise = api.get(url, { params }).then((response) => response.data as T);
+  const promise = api
+    .get(url, {
+      params,
+      signal: options?.signal,
+      isPolling: options?.isPolling,
+      priority: options?.priority,
+      timeout: options?.timeout,
+    })
+    .then((response) => response.data as T);
+
   inFlightOnlyRequests.set(cacheKey, promise);
   promise.then(
     () => {
@@ -104,6 +132,58 @@ export function dedupeInFlightApiGet<T>(url: string, params?: unknown): Promise<
   );
 
   return promise;
+}
+
+class PollingCoordinator {
+  private controllers = new Map<string, AbortController>();
+
+  getSignal(key: string): AbortSignal {
+    const existing = this.controllers.get(key);
+    if (existing) {
+      existing.abort(new DOMException('Superceded by newer polling cycle', 'AbortError'));
+    }
+    const next = new AbortController();
+    this.controllers.set(key, next);
+    return next.signal;
+  }
+
+  abort(key: string, reason?: string): void {
+    const existing = this.controllers.get(key);
+    if (existing) {
+      existing.abort(new DOMException(reason || 'Polling aborted', 'AbortError'));
+      this.controllers.delete(key);
+    }
+  }
+
+  abortAll(reason?: string): void {
+    for (const controller of this.controllers.values()) {
+      controller.abort(new DOMException(reason || 'All polling aborted', 'AbortError'));
+    }
+    this.controllers.clear();
+  }
+}
+
+export const pollingCoordinator = new PollingCoordinator();
+
+export async function pollWithAbort<T>(
+  key: string,
+  fetcher: (signal: AbortSignal) => Promise<T>,
+  onSuccess?: (data: T) => void
+): Promise<T | undefined> {
+  const signal = pollingCoordinator.getSignal(key);
+  try {
+    const data = await fetcher(signal);
+    if (!signal.aborted) {
+      onSuccess?.(data);
+      return data;
+    }
+  } catch (err: unknown) {
+    if (axios.isCancel(err) || (err instanceof Error && (err.name === 'AbortError' || err.name === 'CanceledError'))) {
+      return undefined;
+    }
+    throw err;
+  }
+  return undefined;
 }
 
 export { api, resolveApiBaseUrl };
