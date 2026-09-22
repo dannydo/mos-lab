@@ -55,3 +55,4 @@ export * from './types/frontend-telemetry.js';
 export * from './utils/seniority.js';
 export * from './constants/telesales.js';
 export * from './types/bk-game.js';
+export * from './types/ai-assistant.js';
