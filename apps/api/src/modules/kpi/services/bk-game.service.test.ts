@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BkGameParticipant } from '@mos-lab/shared';
-import { formatIctDateTime, formatIctDate } from './bk-game.service.js';
+import {
+  formatIctDateTime,
+  formatIctDate,
+  parseAllowedBookingChannels,
+  buildBookingChannelFilter,
+} from './bk-game.service.js';
 
 test('Game BK target progress calculates accurately with a 100% cap', () => {
   const calcProgress = (score: number, target?: number | null): number => {
@@ -109,4 +114,78 @@ test('Game BK query parameters resolve exact campaign start and end datetimes', 
   assert.equal(endDateTimeStr, '2026-09-21 23:59:59');
   assert.equal(callStartDateStr, '2026-09-18');
   assert.equal(callEndDateStr, '2026-09-21');
+});
+
+test('parseAllowedBookingChannels parses JSON string, array, CSV and trims case-insensitively', () => {
+  // JSON array string
+  assert.deepEqual(parseAllowedBookingChannels('["GB"]'), ['GB']);
+  assert.deepEqual(parseAllowedBookingChannels('["gb", "fb"]'), ['GB', 'FB']);
+
+  // Plain array
+  assert.deepEqual(parseAllowedBookingChannels(['GB', 'zalo']), ['GB', 'ZALO']);
+
+  // CSV string fallback
+  assert.deepEqual(parseAllowedBookingChannels('GB, FB, Zalo'), ['GB', 'FB', 'ZALO']);
+
+  // Single string
+  assert.deepEqual(parseAllowedBookingChannels('GB'), ['GB']);
+
+  // Empty / null cases
+  assert.equal(parseAllowedBookingChannels(null), null);
+  assert.equal(parseAllowedBookingChannels(undefined), null);
+  assert.equal(parseAllowedBookingChannels(''), null);
+  assert.equal(parseAllowedBookingChannels('[]'), null);
+  assert.equal(parseAllowedBookingChannels([]), null);
+});
+
+test('buildBookingChannelFilter builds sanitized SQL clause or empty string', () => {
+  // Single allowed channel (User request: only GB allowed)
+  assert.equal(
+    buildBookingChannelFilter(['GB'], 'o.booking_channels'),
+    "AND UPPER(o.booking_channels) IN ('GB')"
+  );
+
+  // Multiple allowed channels
+  assert.equal(
+    buildBookingChannelFilter(['GB', 'FB'], 'o.booking_channels'),
+    "AND UPPER(o.booking_channels) IN ('GB', 'FB')"
+  );
+
+  // Empty or null returns empty string (backward compatible)
+  assert.equal(buildBookingChannelFilter(null, 'o.booking_channels'), '');
+  assert.equal(buildBookingChannelFilter([], 'o.booking_channels'), '');
+
+  // Sanitizes special characters to prevent SQL injection
+  assert.equal(
+    buildBookingChannelFilter(["GB'; DROP TABLE order; --"], 'o.booking_channels'),
+    "AND UPPER(o.booking_channels) IN ('GBDROPTABLEORDER--')"
+  );
+});
+
+test('Fair-play Game scenario: Only GB bookings count towards points when allowedBookingChannels=[GB]', () => {
+  const allowedChannels = parseAllowedBookingChannels('["GB"]');
+  assert.deepEqual(allowedChannels, ['GB']);
+
+  // Mock booking data
+  const bookings = [
+    { id: 1, staffId: 101, channel: 'GB' },     // Player A
+    { id: 2, staffId: 102, channel: 'GB' },     // Player B
+    { id: 3, staffId: 102, channel: 'FB' },     // Player B (excluded)
+    { id: 4, staffId: 102, channel: 'ZALO' },   // Player B (excluded)
+  ];
+
+  const filterSql = buildBookingChannelFilter(allowedChannels, 'booking_channels');
+  assert.equal(filterSql, "AND UPPER(booking_channels) IN ('GB')");
+
+  // Filter in-memory matching the SQL condition
+  const qualifiedBookings = bookings.filter((b) =>
+    allowedChannels ? allowedChannels.includes(b.channel.toUpperCase()) : true
+  );
+
+  // Both players have exactly 1 qualified booking from GB (ensuring fair play!)
+  const playerAScore = qualifiedBookings.filter((b) => b.staffId === 101).length;
+  const playerBScore = qualifiedBookings.filter((b) => b.staffId === 102).length;
+
+  assert.equal(playerAScore, 1);
+  assert.equal(playerBScore, 1);
 });

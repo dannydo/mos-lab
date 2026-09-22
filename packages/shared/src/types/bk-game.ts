@@ -51,6 +51,7 @@ export interface BkGame {
   penaltyDescription?: string | null;
   winnerCriteria: BkGameWinnerCriteria;
   announcedResults?: string | null;
+  allowedBookingChannels?: string[] | null;
   createdByStaffId: number;
   createdAt: string;
   updatedAt: string;
@@ -63,6 +64,7 @@ export interface BkGameCreateInput {
   description?: string;
   gameType: BkGameType;
   metricType: BkGameMetricType;
+  allowedBookingChannels?: string[];
   targetScore?: number;
   startDate: string;
   endDate: string;
@@ -166,3 +168,19 @@ export const BK_GAME_SCORING_RULES: Record<BkGameMetricType, BkGameScoringRule> 
     notes: 'Mỗi booking hợp lệ = 10 điểm, mỗi cuộc gọi = 1 điểm.',
   },
 };
+
+export const BK_BOOKING_CHANNELS = [
+  { value: 'GB', label: 'GB (Google Business)' },
+  { value: 'FB', label: 'FB (Facebook)' },
+  { value: 'ZALO', label: 'Zalo' },
+  { value: 'WA', label: 'WhatsApp' },
+  { value: 'HOTLINE', label: 'Hotline' },
+  { value: 'TELE', label: 'Telesales' },
+  { value: 'WEB', label: 'Website' },
+  { value: 'SMS', label: 'SMS' },
+  { value: 'VL', label: 'Vãng lai (Walk-in)' },
+  { value: 'FR', label: 'Giới thiệu (Friend)' },
+] as const;
+
+export type BkBookingChannel = (typeof BK_BOOKING_CHANNELS)[number]['value'];
+

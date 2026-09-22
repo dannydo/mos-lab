@@ -3095,9 +3095,10 @@ model CrmBkGame {
   id                 Int       @id @default(autoincrement())
   title              String    @db.VarChar(255)
   description        String?   @db.Text
-  gameType           String    @default("INDIVIDUAL") @map("game_type") @db.VarChar(30)
-  metricType         String    @default("BOOKINGS") @map("metric_type") @db.VarChar(50)
-  targetScore        Int?      @map("target_score")
+  gameType               String    @default("INDIVIDUAL") @map("game_type") @db.VarChar(30)
+  metricType             String    @default("BOOKINGS") @map("metric_type") @db.VarChar(50)
+  allowedBookingChannels String?   @map("allowed_booking_channels") @db.VarChar(255)
+  targetScore            Int?      @map("target_score")
   startDate          DateTime  @map("start_date") @db.DateTime(0)
   endDate            DateTime  @map("end_date") @db.DateTime(0)
   status             String    @default("ACTIVE") @db.VarChar(30)

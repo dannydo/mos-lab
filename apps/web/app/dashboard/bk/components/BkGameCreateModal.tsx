@@ -24,7 +24,7 @@ import type {
   TeamListResponse,
   BkGameScoringRule,
 } from '@mos-lab/shared';
-import { removeVietnameseTones, BK_GAME_SCORING_RULES } from '@mos-lab/shared';
+import { removeVietnameseTones, BK_GAME_SCORING_RULES, BK_BOOKING_CHANNELS } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
 
@@ -227,6 +227,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
     description?: string;
     gameType: BkGameType;
     metricType: BkGameMetricType;
+    allowedBookingChannels?: string[];
     dateRange: [Dayjs, Dayjs];
     targetScore?: number;
     entryFee?: number;
@@ -247,6 +248,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
         description: values.description,
         gameType: values.gameType,
         metricType: values.metricType,
+        allowedBookingChannels: values.allowedBookingChannels,
         targetScore: values.targetScore,
         startDate: start.toISOString(),
         endDate: end.toISOString(),
@@ -625,6 +627,43 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
             <InputNumber min={1} className="w-full" size="large" placeholder="Ví dụ: 50" />
           </Form.Item>
         </div>
+
+        {(watchedMetricType === 'BOOKINGS' || watchedMetricType === 'DONE') && (
+          <Form.Item
+            name="allowedBookingChannels"
+            label={
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium">Kênh tiếp nhận đặt lịch (Booking Channel)</span>
+                <Tooltip title="Chọn các kênh tiếp nhận booking được ghi nhận tính điểm cho game (ví dụ: chỉ kênh GB). Để trống để tính tất cả các kênh (Facebook, Zalo, GB, Hotline...).">
+                  <span
+                    tabIndex={0}
+                    role="button"
+                    aria-label="Hướng dẫn chọn kênh tiếp nhận"
+                    className="inline-flex items-center cursor-pointer text-slate-400 hover:text-blue-500 transition-colors"
+                  >
+                    <AppIcon icon={Info} size="sm" />
+                  </span>
+                </Tooltip>
+              </div>
+            }
+            extra={
+              <span className="text-[12px] text-slate-500 dark:text-slate-400">
+                🎯 <strong>Fair-play:</strong> Giới hạn kênh tiếp nhận (ví dụ: <code>GB</code>) giúp đảm bảo công bằng cho người chơi chỉ phụ trách kênh đó, không bị chênh lệch với người chơi nhận nhiều nguồn (FB, Zalo, WA). Để trống = tính tất cả kênh.
+              </span>
+            }
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Tất cả các kênh (mặc định) hoặc chọn: GB, FB, Zalo..."
+              size="large"
+              options={BK_BOOKING_CHANNELS.map((c) => ({
+                value: c.value,
+                label: c.label,
+              }))}
+            />
+          </Form.Item>
+        )}
 
         {/* Khối hiển thị trực quan công thức & quy tắc tính điểm cho chỉ số đang chọn */}
         <div
