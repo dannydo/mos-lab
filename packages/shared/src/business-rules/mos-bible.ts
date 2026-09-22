@@ -517,26 +517,28 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   {
     id: 'PEOPLE-003',
     book: 'PEOPLE',
-    title: 'Ngoại lệ nhân sự phải đúng người, đúng nhóm',
-    summary: 'Picker đội nhóm giữ nguyên tập nhân sự hợp lệ; ngoại lệ không được mở rộng thành toàn bộ hồ sơ Staff.',
+    title: 'Ứng viên đội nhóm chuẩn hoá tự động cho nhân sự mới',
+    summary:
+      'Picker đội nhóm giữ nguyên tập nhân sự hợp lệ, tự động công nhận nhân sự mới từ crm_staff và auto-provision staff_profile.',
     commandments: [
-      'Danh sách mặc định vẫn yêu cầu user_profile liên kết staff_profile, provider = Staff và is_disabled = 0.',
-      'Chỉ BK_TELESALES được bổ sung legacy #52598 khi CRM #70 còn active, role telesales và liên kết chính xác tới #52598.',
-      'Ngoại lệ vẫn phải thỏa provider Staff, không bị vô hiệu hóa; không đổi tên hoặc gộp với nhân sự #47530.',
-      'Hiển thị ứng viên không tự thêm người vào team; các nhóm khác không nhận ngoại lệ này.',
+      'Danh sách nhân sự legacy hợp lệ yêu cầu provider = Staff, is_disabled = 0 và liên kết staff_profile (cô lập triệt để 50.800 khách hàng mang nhầm provider Staff).',
+      'Đội nhóm tự động công nhận tất cả các tài khoản crm_staff đang active có vai trò tương ứng (telesales cho BK_TELESALES, cc cho CC, technician cho CV) và có liên kết legacyStaffId hợp lệ.',
+      'Khi nhân sự được thêm vào đội nhóm hoặc đồng bộ trên hệ thống, nếu legacy DB còn thiếu bản ghi staff_profile, hệ thống tự động khởi tạo (auto-provision) staff_profile mặc định.',
+      'Hiển thị ứng viên không tự thêm người vào team; chỉ phân quyền đúng đối tượng vào đúng nhóm nghiệp vụ.',
     ],
-    rationale: 'Nhiều hồ sơ khách legacy cũng mang provider Staff; chỉ bỏ JOIN sẽ đưa sai đối tượng vào picker.',
+    rationale:
+      'Hơn 50.800 khách hàng legacy mang provider Staff; việc liên kết staff_profile kết hợp tự động nhận diện từ crm_staff active giúp nhân sự mới luôn hiển thị ngay lập tức mà vẫn cô lập triệt để tệp khách hàng.',
     exceptions: [
-      'Ngoại lệ cá nhân Thanh Vũ do Danny duyệt ngày 07/09/2026; không phải chính sách nhập nhân sự đại trà.',
+      'Áp dụng cơ chế nhận diện tự động cho toàn bộ nhân sự mới gia nhập đội nhóm, mở rộng từ tiền lệ Thanh Vũ (#52598) và Thuý Kiều (#52648).',
     ],
-    tags: ['nhân sự', 'BK', 'Telesales', 'nhóm', 'ngoại lệ'],
+    tags: ['nhân sự', 'BK', 'Telesales', 'nhóm', 'staff_profile', 'auto-provision'],
     routeScopes: ['/dashboard/staff/teams'],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-09-07',
+    version: '2.0.0',
+    effectiveFrom: '2026-09-22',
     sources: [
-      { label: 'Điều kiện ứng viên và ngoại lệ', reference: 'apps/api/src/modules/teams/team.service.ts' },
-      { label: 'Kiểm thử phạm vi ngoại lệ', reference: 'apps/api/src/modules/teams/team.service.test.ts' },
+      { label: 'Điều kiện ứng viên và auto-provision', reference: 'apps/api/src/modules/teams/team.service.ts' },
+      { label: 'Kiểm thử phạm vi ứng viên đội nhóm', reference: 'apps/api/src/modules/teams/team.service.test.ts' },
     ],
   },
   {

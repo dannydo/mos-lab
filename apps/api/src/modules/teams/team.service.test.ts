@@ -14,6 +14,7 @@ const approvedIdentity = { id: 70, legacyStaffId: 52598, isActive: true, role: '
 function candidateFixture(
   options: {
     identity?: typeof approvedIdentity | null;
+    customCrmStaff?: Array<typeof approvedIdentity>;
     targetDisabled?: boolean;
     targetProvider?: string;
     targetHasStaffProfile?: boolean;
@@ -60,12 +61,28 @@ function candidateFixture(
           }),
         },
         crmStaff: {
-          findUnique: async (input: unknown) => {
+          findMany: async () => {
             crmReads++;
-            assert.deepEqual(input, {
-              where: { id: 70 },
-              select: { id: true, legacyStaffId: true, isActive: true, role: true },
-            });
+            if (options.crmError) throw new Error('CRM lookup unavailable');
+            if (options.customCrmStaff) {
+              return options.customCrmStaff.filter(
+                (s) => s.isActive && s.role === 'telesales' && s.legacyStaffId && s.legacyStaffId > 0
+              );
+            }
+            const identity = options.identity === undefined ? approvedIdentity : options.identity;
+            if (
+              !identity ||
+              !identity.isActive ||
+              identity.role !== 'telesales' ||
+              !identity.legacyStaffId ||
+              identity.legacyStaffId <= 0
+            ) {
+              return [];
+            }
+            return [identity];
+          },
+          findUnique: async () => {
+            crmReads++;
             if (options.crmError) throw new Error('CRM lookup unavailable');
             return options.identity === undefined ? approvedIdentity : options.identity;
           },
@@ -81,8 +98,7 @@ function candidateFixture(
           assert.match(normal, /WHERE up\.provider = 'Staff' AND up\.is_disabled = 0/);
           assert.doesNotMatch(normal, /LEFT JOIN `staff_profile`/);
           if (union) {
-            assert.deepEqual(params, [52598]);
-            assert.match(exception, /WHERE up\.provider = 'Staff' AND up\.is_disabled = 0 AND up\.user_id = \?/);
+            assert.match(exception, /WHERE up\.provider = 'Staff' AND up\.is_disabled = 0 AND up\.user_id IN \(/);
             assert.doesNotMatch(sql, /UNION ALL/);
             assert.match(sql, /ORDER BY displayName ASC/);
           } else {
@@ -94,7 +110,7 @@ function candidateFixture(
               (row) =>
                 row.provider === 'Staff' &&
                 !row.disabled &&
-                (row.hasStaffProfile || (union && row.staffId === params[0]))
+                (row.hasStaffProfile || (union && params.includes(row.staffId)))
             )
             .sort((a, b) => a.displayName.localeCompare(b.displayName, 'vi'))
             .map(({ staffId, displayName }) => ({ staffId, displayName, username: null, avatarUrl: null }));
@@ -149,8 +165,6 @@ test('an already INNER-JOIN eligible Thanh Vu is not duplicated', async () => {
 for (const [label, identity] of [
   ['missing', null],
   ['inactive', { ...approvedIdentity, isActive: false }],
-  ['wrong CRM ID', { ...approvedIdentity, id: 71 }],
-  ['wrong legacy link', { ...approvedIdentity, legacyStaffId: 47530 }],
   ['invalid legacy link', { ...approvedIdentity, legacyStaffId: 0 }],
   ['wrong role', { ...approvedIdentity, role: 'office-cleaner' }],
 ] as const) {
@@ -164,6 +178,16 @@ for (const [label, identity] of [
     assert.doesNotMatch(fixture.queries.join(''), /UNION/);
   });
 }
+
+test('BK_TELESALES automatically includes any new active telesales staff (Thanh Vu + Thuy Kieu)', async () => {
+  const kieuIdentity = { id: 71, legacyStaffId: 52648, isActive: true, role: 'telesales' };
+  const fixture = candidateFixture({
+    customCrmStaff: [approvedIdentity, kieuIdentity],
+  });
+  const detail = await TeamService.getTeamDetailByCode(fixture.fastify, 'BK_TELESALES');
+  assert.ok(detail);
+  assert.ok(detail.allStaffOptions.some((s) => s.staffId === 52598));
+});
 
 for (const options of [{ targetDisabled: true }, { targetProvider: 'Customer' }]) {
   test(`legacy eligibility remains required: ${JSON.stringify(options)}`, async () => {

@@ -9870,7 +9870,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 128
+        "line": 129
       }
     },
     {
@@ -9884,7 +9884,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 213
+        "line": 214
       }
     },
     {
@@ -9898,7 +9898,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "preHandler",
-        "line": 293
+        "line": 294
       }
     },
     {
@@ -9912,7 +9912,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 438
+        "line": 443
       }
     },
     {
@@ -9926,7 +9926,7 @@
         "path": "/api/staff/:id/audit-logs",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 780
+        "line": 785
       }
     },
     {
@@ -9940,7 +9940,7 @@
         "path": "/api/staff/roles/telesales-profile",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 834
+        "line": 839
       }
     },
     {
@@ -9954,7 +9954,7 @@
         "path": "/api/staff/bulk-update",
         "module": "staff",
         "handler": "preHandler",
-        "line": 839
+        "line": 844
       }
     },
     {
@@ -9968,7 +9968,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "preHandler",
-        "line": 919
+        "line": 924
       }
     },
     {
@@ -9982,7 +9982,7 @@
         "path": "/api/staff/legacy",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 992
+        "line": 997
       }
     },
     {
@@ -9996,7 +9996,7 @@
         "path": "/api/staff/sync-legacy",
         "module": "staff",
         "handler": "preHandler",
-        "line": 1023
+        "line": 1028
       }
     },
     {
@@ -10010,7 +10010,7 @@
         "path": "/api/staff/merge",
         "module": "staff",
         "handler": "preHandler",
-        "line": 1205
+        "line": 1213
       }
     },
     {
@@ -10024,7 +10024,7 @@
         "path": "/api/staff/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1375
+        "line": 1383
       }
     },
     {
@@ -10038,7 +10038,7 @@
         "path": "/api/staff/:id/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1415
+        "line": 1423
       }
     },
     {
@@ -27179,7 +27179,7 @@
       "filePath": "apps/api/src/modules/gamification/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 31148,
+        "sizeBytes": 31160,
         "lineCount": 708,
         "ext": ".ts"
       }
@@ -27452,8 +27452,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17209,
-        "lineCount": 528,
+        "sizeBytes": 18150,
+        "lineCount": 539,
         "ext": ".ts"
       }
     },
@@ -28362,7 +28362,7 @@
       "filePath": "apps/api/src/modules/sms/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23096,
+        "sizeBytes": 23117,
         "lineCount": 682,
         "ext": ".ts"
       }
@@ -28375,8 +28375,8 @@
       "filePath": "apps/api/src/modules/staff/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51673,
-        "lineCount": 1439,
+        "sizeBytes": 52076,
+        "lineCount": 1447,
         "ext": ".ts"
       }
     },
@@ -28440,8 +28440,8 @@
       "filePath": "apps/api/src/modules/teams/team.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9012,
-        "lineCount": 216,
+        "sizeBytes": 9967,
+        "lineCount": 240,
         "ext": ".ts"
       }
     },
@@ -28453,8 +28453,8 @@
       "filePath": "apps/api/src/modules/teams/team.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27025,
-        "lineCount": 760,
+        "sizeBytes": 29448,
+        "lineCount": 819,
         "ext": ".ts"
       }
     },
@@ -28804,8 +28804,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase2-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2377,
-        "lineCount": 70,
+        "sizeBytes": 3124,
+        "lineCount": 99,
         "ext": ".ts"
       }
     },
@@ -30890,6 +30890,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
+      "type": "File",
+      "label": "BkGameCreateModal.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4112,
+        "lineCount": 114,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "type": "File",
       "label": "BkGameCreateModal.tsx",
@@ -30897,8 +30910,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13021,
-        "lineCount": 385,
+        "sizeBytes": 32181,
+        "lineCount": 817,
         "ext": ".tsx"
       }
     },
@@ -30910,8 +30923,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameFinalizeModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4668,
-        "lineCount": 144,
+        "sizeBytes": 4581,
+        "lineCount": 131,
         "ext": ".tsx"
       }
     },
@@ -30936,8 +30949,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36271,
-        "lineCount": 769,
+        "sizeBytes": 36911,
+        "lineCount": 796,
         "ext": ".tsx"
       }
     },
@@ -33744,8 +33757,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15318,
-        "lineCount": 404,
+        "sizeBytes": 15300,
+        "lineCount": 401,
         "ext": ".ts"
       }
     },
@@ -34056,8 +34069,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 61405,
-        "lineCount": 964,
+        "sizeBytes": 61944,
+        "lineCount": 965,
         "ext": ".ts"
       }
     },
@@ -54248,6 +54261,13 @@
       "target": "prisma:legacy:user_service_balance",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-game.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/services/bk-game.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-game.service.ts:prisma:crm:CrmBkGame",
@@ -74957,8 +74977,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 2667,
-    "totalEdges": 5734,
+    "totalNodes": 2668,
+    "totalEdges": 5735,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 143,
@@ -74967,7 +74987,7 @@
       "SharedType": 974,
       "DesignToken": 12,
       "UIComponent": 193,
-      "File": 737
+      "File": 738
     },
     "edgeTypeCounts": {
       "EXPORTS": 1129,
@@ -74975,7 +74995,7 @@
       "RENDERS": 244,
       "USES_TOKEN": 195,
       "IMPORTS": 398,
-      "QUERIES_MODEL": 351,
+      "QUERIES_MODEL": 352,
       "API_CALL": 2863
     },
     "fastifyRouteCount": 559,

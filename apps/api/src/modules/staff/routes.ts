@@ -4,6 +4,7 @@ import { isSuperAdminRole, isHrOrAdminRole, TELESALES_EXECUTIVE_STANDARDS, SafeA
 import { requireAuth, requireRole } from '../../middlewares/auth.js';
 import { StaffOffDayService } from './services/staff-off-day.service.js';
 import { AllocationLedgerService } from '../allocation/allocation-ledger.service.js';
+import { TeamService } from '../teams/team.service.js';
 
 interface CreateStaffInput {
   username?: string;
@@ -414,6 +415,10 @@ export async function staffRoutes(fastify: FastifyInstance) {
           newValue: `Tạo hồ sơ nhân viên ${staff.displayName} (${staff.username})`,
         },
       });
+
+      if (staff.legacyStaffId && Number(staff.legacyStaffId) > 0) {
+        await TeamService.ensureLegacyStaffProfile(fastify, Number(staff.legacyStaffId));
+      }
 
       return {
         message: 'Tạo nhân viên thành công',
@@ -1185,6 +1190,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
           });
           importedCount++;
         }
+
+        // Ensure legacy staff_profile exists so the staff member is immediately eligible for teams and reporting
+        await TeamService.ensureLegacyStaffProfile(fastify, id);
       }
 
       return {
