@@ -70,6 +70,30 @@ const nextConfig: NextConfig = {
     const apiOrigin = process.env.PERFORMANCE_QA_API_ORIGIN || 'http://localhost:4001';
     return [{ source: '/api/:path*', destination: `${apiOrigin}/api/:path*` }];
   },
+  async headers() {
+    return [
+      {
+        // Static assets have content hashes in their filename and are safe to cache immutably
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Ensure HTML pages revalidate so users fetch the latest chunk hashes after deployment
+        source: '/((?!_next/static|_next/image|favicon.ico).*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withBundleAnalyzer({

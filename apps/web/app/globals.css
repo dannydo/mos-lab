@@ -7688,3 +7688,38 @@ body {
     overscroll-behavior-y: contain;
   }
 }
+
+/* ==========================================================================
+   Tactile Feedback & Active Micro-Interactions (Prevents Rage Clicks - MOS-BUG-46)
+   ========================================================================== */
+
+/* Active scale and tactile feedback for buttons and clickable actions */
+button:not(:disabled):not(.ant-btn-loading):active,
+.ant-btn:not(:disabled):not(.ant-btn-loading):active,
+[role="button"]:not([aria-disabled="true"]):active,
+.ant-tabs-tab:active,
+.clickable-action:active {
+  transform: scale(0.96) !important;
+  filter: brightness(0.95);
+  transition: transform 0.06s cubic-bezier(0.2, 0, 0, 1), filter 0.06s ease-out !important;
+}
+
+/* Subtle tap pulse animation on click for immediate visual acknowledgement */
+@keyframes mos-tap-pulse {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.45);
+  }
+  50% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 5px rgba(59, 130, 246, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.mos-active-tap {
+  animation: mos-tap-pulse 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}

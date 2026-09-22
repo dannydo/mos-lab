@@ -3,7 +3,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button, Result } from 'antd';
 import { openBugReport, recordClientError } from '../lib/bug-diagnostics';
-import { reportFrontendIssue } from '../lib/telemetry/frontend-observer';
+import { handleAutoChunkReload, reportFrontendIssue } from '../lib/telemetry/frontend-observer';
 
 interface Props {
   children: ReactNode;
@@ -38,15 +38,8 @@ export class ErrorBoundary extends Component<Props, State> {
         componentStack: errorInfo.componentStack?.slice(0, 1000),
       },
     });
-    if (
-      typeof window !== 'undefined' &&
-      (error?.name === 'ChunkLoadError' ||
-        error?.message?.includes('Failed to load chunk') ||
-        error?.message?.includes('Loading chunk') ||
-        error?.message?.includes('CSS_CHUNK_LOAD_FAILED'))
-    ) {
-      console.warn('[ErrorBoundary] ChunkLoadError detected. Reloading page to fetch latest assets...');
-      window.location.reload();
+    if (typeof window !== 'undefined' && handleAutoChunkReload(error)) {
+      return;
     }
   }
 
