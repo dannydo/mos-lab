@@ -13,6 +13,11 @@ import type {
   BkTipLeaderboardResponse,
   BkTipResponse,
   BkWorkLogResponse,
+  BkGame,
+  BkGameCreateInput,
+  BkGameDetailResponse,
+  BkGameFinalizeInput,
+  BkGameListResponse,
   CcConfigResponse,
   CcDiamondDetailsResponse,
   CcDiamondResponse,
@@ -363,6 +368,26 @@ export const kpiApi = {
       config?: Partial<BkSalaryConfig>;
     }): Promise<{ success: boolean; message: string }> => {
       const response = await api.post('/kpi/bk/config', data);
+      return response.data;
+    },
+    getGames: async (params?: { status?: string }): Promise<BkGameListResponse> => {
+      const response = await api.get('/kpi/bk/games', { params });
+      return response.data;
+    },
+    getGameDetail: async (id: number): Promise<BkGameDetailResponse> => {
+      const response = await api.get(`/kpi/bk/games/${id}`);
+      return response.data;
+    },
+    createGame: async (data: BkGameCreateInput): Promise<{ success: boolean; game: BkGame }> => {
+      const response = await api.post('/kpi/bk/games', data);
+      return response.data;
+    },
+    finalizeGame: async (id: number, data?: BkGameFinalizeInput): Promise<{ success: boolean; game: BkGame }> => {
+      const response = await api.post(`/kpi/bk/games/${id}/finalize`, data);
+      return response.data;
+    },
+    cancelGame: async (id: number): Promise<{ success: boolean; message: string }> => {
+      const response = await api.delete(`/kpi/bk/games/${id}`);
       return response.data;
     },
   },

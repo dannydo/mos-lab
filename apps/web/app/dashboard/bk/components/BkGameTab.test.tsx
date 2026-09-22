@@ -85,4 +85,9 @@ describe('BkGameTab', () => {
     expect(screen.getByTestId('booker-avatar')).toHaveAttribute('data-src', 'avatars/ngoc-diep.jpg');
     expect(screen.getAllByText('8').length).toBeGreaterThan(0);
   });
+
+  it('renders the Tạo Game Mới action button for managers', () => {
+    render(<BkGameTab dateRange={[dayjs('2026-09-05'), dayjs('2026-09-05')]} comparisonMode="day" />);
+    expect(screen.getByRole('button', { name: /Tạo Game Mới/i })).toBeInTheDocument();
+  });
 });

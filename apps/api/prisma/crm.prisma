@@ -3086,3 +3086,77 @@ model CrmFrontendIssue {
   @@map("crm_frontend_issues")
 }
 
+// ═══════════════════════════════════════════
+// Game BK Module (Gamification for Telesales)
+// ═══════════════════════════════════════════
+
+model CrmBkGame {
+  id                 Int       @id @default(autoincrement())
+  title              String    @db.VarChar(255)
+  description        String?   @db.Text
+  gameType           String    @default("INDIVIDUAL") @map("game_type") @db.VarChar(30)
+  metricType         String    @default("BOOKINGS") @map("metric_type") @db.VarChar(50)
+  targetScore        Int?      @map("target_score")
+  startDate          DateTime  @map("start_date") @db.DateTime(0)
+  endDate            DateTime  @map("end_date") @db.DateTime(0)
+  status             String    @default("ACTIVE") @db.VarChar(30)
+  entryFee           Int       @default(0) @map("entry_fee")
+  rewardPool         Int       @default(0) @map("reward_pool")
+  rewardDescription  String?   @map("reward_description") @db.Text
+  penaltyDescription String?   @map("penalty_description") @db.Text
+  winnerCriteria     String    @default("TOP_1") @map("winner_criteria") @db.VarChar(50)
+  announcedResults   String?   @map("announced_results") @db.LongText
+  createdByStaffId   Int       @map("created_by_staff_id")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  participants       CrmBkGameParticipant[]
+  teams              CrmBkGameTeam[]
+
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("crm_bk_games")
+}
+
+model CrmBkGameTeam {
+  id         Int       @id @default(autoincrement())
+  gameId     Int       @map("game_id")
+  teamName   String    @map("team_name") @db.VarChar(100)
+  color      String?   @db.VarChar(30)
+  score      Int       @default(0)
+  rank       Int?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  game         CrmBkGame              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  participants CrmBkGameParticipant[]
+
+  @@index([gameId])
+  @@map("crm_bk_game_teams")
+}
+
+model CrmBkGameParticipant {
+  id           Int       @id @default(autoincrement())
+  gameId       Int       @map("game_id")
+  staffId      Int       @map("staff_id")
+  staffName    String    @map("staff_name") @db.VarChar(100)
+  avatar       String?   @db.VarChar(255)
+  teamId       Int?      @map("team_id")
+  betAmount    Int       @default(0) @map("bet_amount")
+  score        Int       @default(0)
+  rank         Int?
+  rewardAmount Int       @default(0) @map("reward_amount")
+  penaltyNote  String?   @map("penalty_note") @db.VarChar(255)
+  status       String    @default("ACTIVE") @db.VarChar(30)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  game CrmBkGame       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  team CrmBkGameTeam?  @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@unique([gameId, staffId])
+  @@index([gameId])
+  @@index([staffId])
+  @@map("crm_bk_game_participants")
+}
+
