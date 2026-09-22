@@ -212,5 +212,21 @@ describe('FrontendTelemetryService', () => {
     const otherUiCluster = res.clusters.find((c) => c.clusterKey === 'OTHER_UI_RAGE_CLICK');
     assert.ok(otherUiCluster);
     assert.equal(otherUiCluster.issueCount, 1);
+    assert.equal(typeof res.summary.resolvedClusters, 'number');
+    assert.equal(typeof res.summary.extinguishmentRate, 'number');
+  });
+
+  test('syncResolvedClusters and getMetrics compute cluster resolution and extinguishment metrics', async () => {
+    const fakeFastify = {} as FastifyInstance;
+    const syncRes = await FrontendTelemetryService.syncResolvedClusters(fakeFastify);
+    assert.equal(syncRes.syncedIssuesCount, 0);
+    assert.equal(syncRes.resolvedClustersCount, 0);
+    assert.equal(syncRes.metrics.totalClusters, 5);
+    assert.equal(syncRes.metrics.clusterResolutionRate, 0);
+
+    const metrics = await FrontendTelemetryService.getMetrics(fakeFastify);
+    assert.equal(metrics.totalClusters, 5);
+    assert.equal(metrics.resolvedClusters, 0);
+    assert.equal(metrics.trafficExtinguishmentRate, 0);
   });
 });

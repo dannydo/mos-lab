@@ -280,4 +280,27 @@ export async function frontendTelemetryRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  // Sync resolved clusters and update child issues to RESOLVED
+  fastify.post(
+    '/telemetry/frontend-issues/sync',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        description: 'Sync resolved bug reports with child telemetry issues',
+        tags: ['Telemetry'],
+      },
+    },
+    async (_request, reply) => {
+      try {
+        const result = await FrontendTelemetryService.syncResolvedClusters(fastify);
+        return reply.status(200).send({ data: result });
+      } catch (err: unknown) {
+        const error = err as { statusCode?: number; message?: string };
+        return reply.status(error.statusCode || 500).send({
+          error: error.message || 'Không thể đồng bộ trạng thái telemetry',
+        });
+      }
+    }
+  );
 }

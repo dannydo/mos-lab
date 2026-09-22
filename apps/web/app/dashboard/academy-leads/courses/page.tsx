@@ -26,6 +26,7 @@ import {
   TableIndexHeader,
 } from '../../../../components/ui';
 import CourseRichTextEditor from './components/CourseRichTextEditor';
+import { formatVndInput, parseVndInput } from './utils';
 
 const PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 const PAGE_STORAGE_KEY = 'academy-course-manager:page';
@@ -68,17 +69,6 @@ function legacySyllabusToHtml(course: AcademyCourse) {
       return `<h3>Buổi ${number}: ${title}</h3>${description}`;
     })
     .join('');
-}
-
-export function formatVndInput(value?: number | string | null): string {
-  if (value === undefined || value === null || value === '') return '';
-  return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' đ';
-}
-
-export function parseVndInput(value?: string | number | null) {
-  if (value === undefined || value === null || value === '') return '';
-  const digits = String(value).replace(/\D/g, '');
-  return digits ? (digits as SafeAny) : '';
 }
 
 function courseMobileCard(course: AcademyCourse, onOpen: (course: AcademyCourse) => void) {
@@ -492,22 +482,10 @@ export default function AcademyCoursesPage() {
             <InputNumber min={0} step={1} precision={0} className="w-full" />
           </EntityFormField>
           <EntityFormField label="Học phí niêm yết (VNĐ)" name="listPriceVnd" rules={[{ required: true }]}>
-            <InputNumber
-              min={0}
-              step={100000}
-              className="w-full"
-              formatter={formatVndInput}
-              parser={parseVndInput}
-            />
+            <InputNumber min={0} step={100000} className="w-full" formatter={formatVndInput} parser={parseVndInput} />
           </EntityFormField>
           <EntityFormField label="Học phí ưu đãi (VNĐ)" name="promoPriceVnd" rules={[{ required: true }]}>
-            <InputNumber
-              min={0}
-              step={100000}
-              className="w-full"
-              formatter={formatVndInput}
-              parser={parseVndInput}
-            />
+            <InputNumber min={0} step={100000} className="w-full" formatter={formatVndInput} parser={parseVndInput} />
           </EntityFormField>
           <EntityFormField
             label="Thưởng giáo viên khi chốt (VNĐ)"
@@ -532,13 +510,7 @@ export default function AcademyCoursesPage() {
             name="kitPriceVnd"
             extra="Tùy chọn trong Tố Chất; máy chủ áp dụng ưu đãi khi được chọn."
           >
-            <InputNumber
-              min={0}
-              step={100000}
-              className="w-full"
-              formatter={formatVndInput}
-              parser={parseVndInput}
-            />
+            <InputNumber min={0} step={100000} className="w-full" formatter={formatVndInput} parser={parseVndInput} />
           </EntityFormField>
           <EntityFormField label="Link kit" name="kitUrl" rules={[{ type: 'url', message: 'Link kit chưa hợp lệ' }]}>
             <Input placeholder="https://…" />
@@ -548,13 +520,7 @@ export default function AcademyCoursesPage() {
             name="samplePriceVnd"
             extra="Tùy chọn trong Tố Chất; số mẫu thực tế lấy từ 'Số mẫu nối mi cần'."
           >
-            <InputNumber
-              min={0}
-              step={50000}
-              className="w-full"
-              formatter={formatVndInput}
-              parser={parseVndInput}
-            />
+            <InputNumber min={0} step={50000} className="w-full" formatter={formatVndInput} parser={parseVndInput} />
           </EntityFormField>
           <EntityFormField
             fullWidth

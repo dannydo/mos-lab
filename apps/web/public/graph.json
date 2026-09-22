@@ -8484,7 +8484,7 @@
         "path": "/api/kpi/bk/done/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 406
+        "line": 411
       }
     },
     {
@@ -8498,7 +8498,7 @@
         "path": "/api/kpi/bk/done/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 534
+        "line": 539
       }
     },
     {
@@ -8512,7 +8512,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 724
+        "line": 729
       }
     },
     {
@@ -8526,7 +8526,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 837
+        "line": 842
       }
     },
     {
@@ -8540,7 +8540,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 941
+        "line": 946
       }
     },
     {
@@ -8554,7 +8554,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1041
+        "line": 1046
       }
     },
     {
@@ -8568,7 +8568,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1137
+        "line": 1142
       }
     },
     {
@@ -8582,7 +8582,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1170
+        "line": 1175
       }
     },
     {
@@ -8596,7 +8596,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1204
+        "line": 1209
       }
     },
     {
@@ -8610,7 +8610,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1249
+        "line": 1254
       }
     },
     {
@@ -8624,7 +8624,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1301
+        "line": 1306
       }
     },
     {
@@ -8638,7 +8638,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1313
+        "line": 1318
       }
     },
     {
@@ -8652,7 +8652,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1334
+        "line": 1339
       }
     },
     {
@@ -8666,7 +8666,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1352
+        "line": 1357
       }
     },
     {
@@ -8680,7 +8680,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1373
+        "line": 1378
       }
     },
     {
@@ -10319,6 +10319,20 @@
         "module": "telemetry",
         "handler": "preHandler",
         "line": 262
+      }
+    },
+    {
+      "id": "route:POST:/api/telemetry/frontend-issues/sync",
+      "type": "FastifyRoute",
+      "label": "POST /api/telemetry/frontend-issues/sync",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/telemetry/frontend-issues/sync",
+        "module": "telemetry",
+        "handler": "preHandler",
+        "line": 285
       }
     },
     {
@@ -20253,6 +20267,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:FrontendIssueSyncResponse",
+      "type": "SharedType",
+      "label": "FrontendIssueSyncResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/frontend-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FrontendIssueSyncResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:HolidayPeriodStatus",
       "type": "SharedType",
       "label": "HolidayPeriodStatus",
@@ -23129,6 +23155,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "BookingWizardDrawer",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CallLogModal.test",
+      "type": "UIComponent",
+      "label": "<CallLogModal.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/CallLogModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CallLogModal.test",
         "isPrimitive": false
       }
     },
@@ -27446,8 +27484,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 55497,
-        "lineCount": 1389,
+        "sizeBytes": 55537,
+        "lineCount": 1394,
         "ext": ".ts"
       }
     },
@@ -27641,7 +27679,7 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3769,
+        "sizeBytes": 3767,
         "lineCount": 113,
         "ext": ".ts"
       }
@@ -28668,8 +28706,8 @@
       "filePath": "apps/api/src/modules/telemetry/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9365,
-        "lineCount": 284,
+        "sizeBytes": 10131,
+        "lineCount": 307,
         "ext": ".ts"
       }
     },
@@ -28681,8 +28719,8 @@
       "filePath": "apps/api/src/modules/telemetry/telemetry.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7417,
-        "lineCount": 217,
+        "sizeBytes": 8239,
+        "lineCount": 233,
         "ext": ".ts"
       }
     },
@@ -28694,8 +28732,8 @@
       "filePath": "apps/api/src/modules/telemetry/telemetry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 54307,
-        "lineCount": 1382,
+        "sizeBytes": 63373,
+        "lineCount": 1636,
         "ext": ".ts"
       }
     },
@@ -30247,6 +30285,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/AcademyTalentInvoice.test.tsx",
+      "type": "File",
+      "label": "AcademyTalentInvoice.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyTalentInvoice.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5513,
+        "lineCount": 153,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/academy-leads/components/AcademyTalentInvoice.tsx",
       "type": "File",
       "label": "AcademyTalentInvoice.tsx",
@@ -30767,6 +30818,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/academy-leads/courses/CoursesPage.test.tsx",
+      "type": "File",
+      "label": "CoursesPage.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/courses/CoursesPage.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4329,
+        "lineCount": 113,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/academy-leads/courses/components/CourseRichTextEditor.tsx",
       "type": "File",
       "label": "CourseRichTextEditor.tsx",
@@ -30787,9 +30851,22 @@
       "filePath": "apps/web/app/dashboard/academy-leads/courses/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21308,
-        "lineCount": 571,
+        "sizeBytes": 21315,
+        "lineCount": 577,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/courses/utils.ts",
+      "type": "File",
+      "label": "utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/courses/utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 469,
+        "lineCount": 13,
+        "ext": ".ts"
       }
     },
     {
@@ -31164,8 +31241,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41900,
-        "lineCount": 871,
+        "sizeBytes": 41914,
+        "lineCount": 872,
         "ext": ".tsx"
       }
     },
@@ -31515,8 +31592,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 55194,
-        "lineCount": 1169,
+        "sizeBytes": 62424,
+        "lineCount": 1291,
         "ext": ".tsx"
       }
     },
@@ -33562,6 +33639,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/telesales/components/CallHistoryDrawer.tsx",
+      "type": "File",
+      "label": "CallHistoryDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesales/components/CallHistoryDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 124,
+        "lineCount": 3,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesales/components/CallLogModal.tsx",
+      "type": "File",
+      "label": "CallLogModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesales/components/CallLogModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 116,
+        "lineCount": 3,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/today/components/BookerTeamConfigModal.tsx",
       "type": "File",
       "label": "BookerTeamConfigModal.tsx",
@@ -33907,8 +34010,8 @@
       "filePath": "apps/web/lib/api/academy.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 54823,
-        "lineCount": 1310,
+        "sizeBytes": 54905,
+        "lineCount": 1312,
         "ext": ".ts"
       }
     },
@@ -34063,8 +34166,8 @@
       "filePath": "apps/web/lib/api/system.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11081,
-        "lineCount": 284,
+        "sizeBytes": 11343,
+        "lineCount": 291,
         "ext": ".ts"
       }
     },
@@ -34765,8 +34868,8 @@
       "filePath": "packages/shared/src/types/frontend-telemetry.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 4906,
-        "lineCount": 205,
+        "sizeBytes": 5549,
+        "lineCount": 226,
         "ext": ".ts"
       }
     },
@@ -39938,6 +40041,13 @@
     {
       "id": "edge:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority:ws:apps/api",
       "source": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/telemetry/frontend-issues/sync:ws:apps/api",
+      "source": "route:POST:/api/telemetry/frontend-issues/sync",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -45655,6 +45765,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:FrontendIssueSyncResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FrontendIssueSyncResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:HolidayPeriodStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:HolidayPeriodStatus",
       "target": "ws:packages/shared",
@@ -47344,6 +47461,20 @@
     {
       "id": "edge:uicomp:BookingWizardDrawer:token:color:primary",
       "source": "uicomp:BookingWizardDrawer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CallLogModal.test:ws:apps/web",
+      "source": "uicomp:CallLogModal.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CallLogModal.test:token:color:primary",
+      "source": "uicomp:CallLogModal.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -59459,6 +59590,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/telemetry/frontend-issues/sync",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/telemetry/frontend-issues/sync",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/branches",
       "target": "route:GET:/api/catalog/groups",
@@ -61345,6 +61483,13 @@
       "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
       "source": "page:/dashboard/design-system",
       "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/sync",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/telemetry/frontend-issues/sync",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -65223,6 +65368,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/telemetry/frontend-issues/sync",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/telemetry/frontend-issues/sync",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -69140,6 +69292,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/telemetry/frontend-issues/sync",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/telemetry/frontend-issues/sync",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ui-experiences/resolve",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/ui-experiences/resolve",
@@ -71803,6 +71962,13 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/telemetry/frontend-issues/sync",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/telemetry/frontend-issues/sync",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -75664,6 +75830,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/telemetry/frontend-issues/sync",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/telemetry/frontend-issues/sync",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ui-experiences/resolve",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/ui-experiences/resolve",
@@ -75791,31 +75964,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2688,
-    "totalEdges": 5815,
+    "totalNodes": 2696,
+    "totalEdges": 5825,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 143,
-      "FastifyRoute": 559,
+      "FastifyRoute": 560,
       "Component": 53,
-      "SharedType": 983,
+      "SharedType": 984,
       "DesignToken": 12,
-      "UIComponent": 193,
-      "File": 742
+      "UIComponent": 194,
+      "File": 747
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1138,
-      "HANDLES_ROUTE": 559,
-      "RENDERS": 246,
-      "USES_TOKEN": 195,
+      "EXPORTS": 1139,
+      "HANDLES_ROUTE": 560,
+      "RENDERS": 247,
+      "USES_TOKEN": 196,
       "IMPORTS": 401,
       "QUERIES_MODEL": 354,
-      "API_CALL": 2922
+      "API_CALL": 2928
     },
-    "fastifyRouteCount": 564,
+    "fastifyRouteCount": 565,
     "prismaModelCount": 143,
     "nextPageCount": 53,
-    "sharedTypeCount": 983
+    "sharedTypeCount": 984
   },
   "routes": [
     {
@@ -79706,6 +79879,13 @@
     {
       "method": "POST",
       "path": "/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
+      "filePath": "apps/api/src/modules/telemetry/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "telemetry"
+    },
+    {
+      "method": "POST",
+      "path": "/api/telemetry/frontend-issues/sync",
       "filePath": "apps/api/src/modules/telemetry/routes.ts",
       "handler": "preHandler",
       "moduleName": "telemetry"

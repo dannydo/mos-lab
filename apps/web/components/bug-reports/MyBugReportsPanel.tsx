@@ -187,6 +187,7 @@ interface MyBugReportsPanelProps {
   onRefresh: () => Promise<void>;
   onReview: (id: number, request: ReviewBugReportRequest) => Promise<unknown>;
   onComment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
+  onClose?: () => void;
 }
 
 export function MyBugReportsPanel({
@@ -200,6 +201,7 @@ export function MyBugReportsPanel({
   onRefresh,
   onReview,
   onComment,
+  onClose,
 }: MyBugReportsPanelProps) {
   const { token } = theme.useToken();
   const [messageApi, messageContext] = message.useMessage();
@@ -233,12 +235,25 @@ export function MyBugReportsPanel({
       messageApi.success(
         decision === 'APPROVE' ? 'Cảm ơn bạn đã kiểm tra kết quả.' : 'mOS sẽ kiểm tra lại từ thông tin đã có.'
       );
+      if (decision === 'APPROVE' && onClose) {
+        window.setTimeout(() => onClose(), 500);
+      }
     } catch (caught) {
       const responseMessage =
         caught && typeof caught === 'object' && 'response' in caught
           ? (caught as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      messageApi.error(responseMessage || (caught instanceof Error ? caught.message : 'Không thể gửi phản hồi.'));
+      const rawMessage = responseMessage || (caught instanceof Error ? caught.message : '');
+      const isAlreadyResolved =
+        rawMessage.includes('Chỉ bản sửa đang chờ xác nhận mới có thể duyệt') ||
+        rawMessage.includes('BUG_NOT_AWAITING_REVIEW');
+
+      if (isAlreadyResolved && onClose) {
+        messageApi.info('Yêu cầu này đã được xác nhận hoàn tất trước đó.');
+        window.setTimeout(() => onClose(), 500);
+      } else {
+        messageApi.error(rawMessage || 'Không thể gửi phản hồi.');
+      }
     } finally {
       setSaving(false);
     }

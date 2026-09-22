@@ -155,6 +155,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
   const [clusterData, setClusterData] = useState<FrontendIssueClusterListResponse | null>(null);
   const [dispatchingClusterKey, setDispatchingClusterKey] = useState<FrontendIssueClusterKey | null>(null);
   const [batchDispatching, setBatchDispatching] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [expandedClusterKeys, setExpandedClusterKeys] = useState<Record<string, boolean>>({
     POLLING_SLOW_API: true,
     RAGE_CLICK_CALL_LOG: true,
@@ -202,6 +203,20 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
       message.error(err instanceof Error ? err.message : 'Lỗi khi duyệt hàng loạt');
     } finally {
       setBatchDispatching(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await apiClient.frontendTelemetry.syncStatus();
+      message.success(res.message);
+      void fetchClusters();
+      void fetchData();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Lỗi khi đồng bộ dữ liệu telemetry.');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -413,51 +428,124 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
         destroyOnHidden
         intent="data"
         title={
-          <div className="flex items-center gap-2">
-            <AppIcon icon={Zap} size="md" className="text-amber-500" />
-            <span>Giám sát Trải nghiệm Frontend & Hộp đen (Telemetry)</span>
+          <div className="flex items-center justify-between w-full pr-4">
+            <div className="flex items-center gap-2">
+              <AppIcon icon={Zap} size="md" className="text-amber-500" />
+              <span>Giám sát Trải nghiệm Frontend & Hộp đen (Telemetry)</span>
+            </div>
+            <Tooltip title="Quét đối soát và tự động đồng bộ trạng thái các sự cố con theo Ticket mOS Inbox đã giải quyết">
+              <Button
+                icon={<AppIcon icon={RefreshCw} size="sm" className={syncing ? 'animate-spin text-purple-600' : ''} />}
+                loading={syncing}
+                onClick={() => void handleSync()}
+                size="small"
+                className="text-xs font-semibold border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 bg-purple-50/50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40"
+              >
+                Đồng bộ ngay
+              </Button>
+            </Tooltip>
           </div>
         }
       >
         <Space direction="vertical" size="large" className="w-full">
-          {/* KPI Metrics Cards */}
+          {/* Executive KPI Metrics Cards */}
           <Row gutter={[12, 12]}>
+            {/* Card 1: Cụm Vấn Đề Gốc */}
             <Col xs={12} sm={6}>
               <Card
                 size="small"
-                className="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40"
+                className="bg-gradient-to-br from-purple-50 to-indigo-50/40 dark:from-purple-950/30 dark:to-indigo-950/20 border-purple-200 dark:border-purple-800/40 shadow-sm"
               >
-                <div className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Đã giải quyết</div>
-                <div className="text-2xl font-bold text-emerald-800 dark:text-emerald-300 tabular-nums">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-1">
+                    <AppIcon icon={Layers} size="sm" />
+                    Cụm Đã Khắc Phục
+                  </span>
+                  <BadgeTag color="purple">Vĩ mô</BadgeTag>
+                </div>
+                <div className="text-2xl font-bold text-purple-900 dark:text-purple-200 tabular-nums mt-1">
+                  {metrics?.resolvedClusters ?? clusterData?.summary.resolvedClusters ?? 0}
+                  <span className="text-base font-medium opacity-70"> / {metrics?.totalClusters ?? 5} Cụm</span>
+                  <span className="text-xs font-normal ml-2 text-purple-600 dark:text-purple-400">
+                    ({metrics?.clusterResolutionRate ?? 0}%)
+                  </span>
+                </div>
+                <div className="text-[11px] text-purple-600 dark:text-purple-400 mt-0.5 truncate">
+                  Tiến độ dập tắt theo cụm gốc
+                </div>
+              </Card>
+            </Col>
+
+            {/* Card 2: Lưu Lượng Lỗi Đã Dập Tắt */}
+            <Col xs={12} sm={6}>
+              <Card
+                size="small"
+                className="bg-gradient-to-br from-emerald-50 to-teal-50/40 dark:from-emerald-950/30 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1">
+                    <AppIcon icon={CheckCircle2} size="sm" />
+                    Lưu Lượng Đã Dập
+                  </span>
+                  <BadgeTag color="success">Tác động</BadgeTag>
+                </div>
+                <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 tabular-nums mt-1">
+                  {(metrics?.extinguishedOccurrences ?? 0).toLocaleString('vi-VN')}
+                  <span className="text-xs font-normal ml-1.5 text-emerald-600 dark:text-emerald-400">
+                    ({metrics?.trafficExtinguishmentRate ?? 0}%)
+                  </span>
+                </div>
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 truncate">
+                  / {(metrics?.totalOccurrences ?? 0).toLocaleString('vi-VN')} lượt gặp phải
+                </div>
+              </Card>
+            </Col>
+
+            {/* Card 3: Sự Cố Con Đã Giải Quyết */}
+            <Col xs={12} sm={6}>
+              <Card
+                size="small"
+                className="bg-gradient-to-br from-blue-50 to-sky-50/40 dark:from-blue-950/30 dark:to-sky-950/20 border-blue-200 dark:border-blue-800/40 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-1">
+                    <AppIcon icon={ShieldCheck} size="sm" />
+                    Sự Cố Con Đã Đóng
+                  </span>
+                  <BadgeTag color="blue">Vi mô</BadgeTag>
+                </div>
+                <div className="text-2xl font-bold text-blue-900 dark:text-blue-200 tabular-nums mt-1">
                   {metrics?.resolvedCount ?? 0}
-                  <span className="text-xs font-normal ml-1.5 opacity-80">({metrics?.resolutionRate ?? 100}%)</span>
+                  <span className="text-base font-medium opacity-70"> / {metrics?.totalCount ?? 0}</span>
+                  <span className="text-xs font-normal ml-2 text-blue-600 dark:text-blue-400">
+                    ({metrics?.resolutionRate ?? 0}%)
+                  </span>
+                </div>
+                <div className="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5 truncate">
+                  Đồng bộ theo Ticket cụm & đơn
                 </div>
               </Card>
             </Col>
-            <Col xs={12} sm={6}>
-              <Card size="small" className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/40">
-                <div className="text-xs text-red-700 dark:text-red-400 font-medium">Cần xử lý ngay</div>
-                <div className="text-2xl font-bold text-red-800 dark:text-red-300 tabular-nums">
-                  {metrics?.newCount ?? 0}
-                </div>
-              </Card>
-            </Col>
-            <Col xs={12} sm={6}>
-              <Card size="small" className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40">
-                <div className="text-xs text-amber-700 dark:text-amber-400 font-medium">Đang điều tra</div>
-                <div className="text-2xl font-bold text-amber-800 dark:text-amber-300 tabular-nums">
-                  {metrics?.investigatingCount ?? 0}
-                </div>
-              </Card>
-            </Col>
+
+            {/* Card 4: Cụm Cần Xử Lý Tiếp */}
             <Col xs={12} sm={6}>
               <Card
                 size="small"
-                className="bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/40"
+                className="bg-gradient-to-br from-amber-50 to-orange-50/40 dark:from-amber-950/30 dark:to-orange-950/20 border-amber-200 dark:border-amber-800/40 shadow-sm"
               >
-                <div className="text-xs text-purple-700 dark:text-purple-400 font-medium">Tái phát (Reopened)</div>
-                <div className="text-2xl font-bold text-purple-800 dark:text-purple-300 tabular-nums">
-                  {metrics?.reopenedCount ?? 0}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1">
+                    <AppIcon icon={AlertTriangle} size="sm" />
+                    Cụm Cần Xử Lý Tiếp
+                  </span>
+                  <BadgeTag color="warning">Tồn đọng</BadgeTag>
+                </div>
+                <div className="text-2xl font-bold text-amber-900 dark:text-amber-200 tabular-nums mt-1">
+                  {metrics?.openClusters ?? 0}
+                  <span className="text-base font-medium opacity-70"> Cụm</span>
+                </div>
+                <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 truncate">
+                  {(metrics?.newCount ?? 0) + (metrics?.investigatingCount ?? 0)} sự cố chưa dập tắt
                 </div>
               </Card>
             </Col>
@@ -485,26 +573,39 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                         <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                           <AppIcon icon={Bot} size="md" className="text-purple-600 dark:text-purple-400" />
                           <span>Gom Cụm Thông Minh Theo Nguyên Nhân Gốc (5 Cụm Vấn Đề)</span>
-                          <BadgeTag color="purple">
-                            {clusterData?.summary.dispatchedClusters ?? 0} / {clusterData?.summary.totalClusters ?? 5}{' '}
-                            Đã Duyệt
+                          <BadgeTag color="success">
+                            {clusterData?.summary.resolvedClusters ?? metrics?.resolvedClusters ?? 0} /{' '}
+                            {clusterData?.summary.totalClusters ?? 5} Cụm Đã Dập Tắt
                           </BadgeTag>
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                           Toàn bộ <strong>{clusterData?.summary.totalIssuesClustered ?? 0} sự cố</strong> (
-                          {clusterData?.summary.totalOccurrences.toLocaleString('vi-VN') ?? 0} lượt gặp phải) được quy
-                          về 5 nguyên nhân gốc rễ. Bạn chỉ cần duyệt theo từng cụm thay vì tạo hàng trăm ticket!
+                          {(clusterData?.summary.totalOccurrences ?? 0).toLocaleString('vi-VN')} lượt gặp phải). Đã dập
+                          tắt{' '}
+                          <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                            {(
+                              clusterData?.summary.extinguishedOccurrences ??
+                              metrics?.extinguishedOccurrences ??
+                              0
+                            ).toLocaleString('vi-VN')}{' '}
+                            lượt
+                          </strong>{' '}
+                          ({clusterData?.summary.extinguishmentRate ?? metrics?.trafficExtinguishmentRate ?? 0}% lưu
+                          lượng lỗi)!
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <Button
-                          icon={<AppIcon icon={RefreshCw} size="sm" />}
-                          loading={clustersLoading}
-                          onClick={() => void fetchClusters()}
+                          icon={<AppIcon icon={RefreshCw} size="sm" className={syncing ? 'animate-spin' : ''} />}
+                          loading={clustersLoading || syncing}
+                          onClick={() => {
+                            void fetchClusters();
+                            void handleSync();
+                          }}
                           size="small"
                         >
-                          Làm mới
+                          Đồng bộ & Làm mới
                         </Button>
                         <Button
                           type="primary"
@@ -525,6 +626,11 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                         const isExpanded = !!expandedClusterKeys[cluster.clusterKey];
                         const isDispatching = dispatchingClusterKey === cluster.clusterKey;
                         const isDispatched = !!cluster.dispatchedBugReport;
+                        const isResolved =
+                          !!cluster.isResolved ||
+                          ['CLOSED', 'RESOLVED', 'AWAITING_REPORTER_ACCEPTANCE'].includes(
+                            cluster.dispatchedBugReport?.status || ''
+                          );
 
                         const severityColor =
                           cluster.severity === 'P0' ? 'red' : cluster.severity === 'P1' ? 'gold' : 'blue';
@@ -533,11 +639,13 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                           <div
                             key={cluster.clusterKey}
                             className={`border rounded-xl transition-all ${
-                              isDispatched
-                                ? 'border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/20 dark:bg-emerald-950/10'
-                                : cluster.severity === 'P0'
-                                  ? 'border-red-200 dark:border-red-900/40 bg-white dark:bg-slate-900 shadow-sm'
-                                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm'
+                              isResolved
+                                ? 'border-emerald-500/80 bg-emerald-50/30 dark:bg-emerald-950/20 dark:border-emerald-600/70 shadow-sm'
+                                : isDispatched
+                                  ? 'border-purple-300 dark:border-purple-800/60 bg-purple-50/20 dark:bg-purple-950/10'
+                                  : cluster.severity === 'P0'
+                                    ? 'border-red-200 dark:border-red-900/40 bg-white dark:bg-slate-900 shadow-sm'
+                                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm'
                             }`}
                           >
                             {/* Header */}
@@ -558,6 +666,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                                     <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-purple-600 dark:text-purple-400 font-mono">
                                       {cluster.clusterKey}
                                     </code>
+                                    {isResolved && <BadgeTag color="success">ĐÃ DẬP TẮT HOÀN TOÀN</BadgeTag>}
                                   </div>
                                   <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-3">
                                     <span>
@@ -569,9 +678,20 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                                     <span>•</span>
                                     <span>
                                       Lượt gặp phải:{' '}
-                                      <strong className="text-rose-600 dark:text-rose-400 tabular-nums font-bold">
+                                      <strong
+                                        className={`${
+                                          isResolved
+                                            ? 'text-emerald-700 dark:text-emerald-400'
+                                            : 'text-rose-600 dark:text-rose-400'
+                                        } tabular-nums font-bold`}
+                                      >
                                         {cluster.totalOccurrences.toLocaleString('vi-VN')} hits
                                       </strong>
+                                      {isResolved && (
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-medium ml-1">
+                                          (Đã triệt tiêu)
+                                        </span>
+                                      )}
                                     </span>
                                   </div>
                                 </div>
@@ -579,11 +699,23 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
 
                               {/* Action button */}
                               <div>
-                                {isDispatched ? (
-                                  <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 px-3 py-1.5 rounded-lg text-xs font-semibold">
-                                    <AppIcon icon={CheckCircle2} size="sm" className="text-emerald-500" />
+                                {isResolved ? (
+                                  <div className="flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-400 dark:border-emerald-600 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                    <AppIcon
+                                      icon={CheckCircle2}
+                                      size="sm"
+                                      className="text-emerald-600 dark:text-emerald-400"
+                                    />
                                     <span>
-                                      Đã duyệt: {cluster.dispatchedBugReport?.key} (
+                                      ĐÃ DẬP TẮT ({cluster.dispatchedBugReport?.key}) ·{' '}
+                                      {cluster.resolvedIssueCount ?? cluster.issueCount} sự cố đã đóng
+                                    </span>
+                                  </div>
+                                ) : isDispatched ? (
+                                  <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700/60 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                    <AppIcon icon={Bot} size="sm" className="text-purple-500" />
+                                    <span>
+                                      Đang xử lý: {cluster.dispatchedBugReport?.key} (
                                       {cluster.dispatchedBugReport?.status})
                                     </span>
                                   </div>

@@ -407,6 +407,13 @@ export function BugReportSurface() {
   const closeReporter = React.useCallback(() => {
     if (submitting) return;
     setOpen(false);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('bugReview')) {
+        url.searchParams.delete('bugReview');
+        window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+      }
+    }
     window.setTimeout(() => previousFocusRef.current?.focus?.(), 0);
   }, [submitting]);
 
@@ -629,7 +636,7 @@ export function BugReportSurface() {
         title="Phản hồi mOS"
         open={open}
         onCancel={closeReporter}
-        maskClosable={false}
+        maskClosable={!submitting}
         keyboard={!submitting}
         zIndex={12010}
         destroyOnHidden
@@ -713,6 +720,7 @@ export function BugReportSurface() {
             onRefresh={myBugs.refresh}
             onReview={myBugs.review}
             onComment={myBugs.comment}
+            onClose={closeReporter}
           />
         ) : (
           <div

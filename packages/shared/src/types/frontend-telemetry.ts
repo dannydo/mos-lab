@@ -95,6 +95,14 @@ export interface FrontendIssueMetrics {
   reopenedCount: number;
   ignoredCount: number;
   resolutionRate: number; // 0 - 100 percentage
+  totalClusters?: number;
+  resolvedClusters?: number;
+  dispatchedClusters?: number;
+  openClusters?: number;
+  clusterResolutionRate?: number; // 0 - 100 percentage
+  totalOccurrences?: number;
+  extinguishedOccurrences?: number;
+  trafficExtinguishmentRate?: number; // 0 - 100 percentage
 }
 
 export interface UpdateFrontendIssueStatusRequest {
@@ -181,6 +189,9 @@ export interface FrontendIssueCluster {
     key: string;
     status: string;
   } | null;
+  isResolved?: boolean;
+  resolvedIssueCount?: number;
+  resolvedOccurrences?: number;
 }
 
 export interface FrontendIssueClusterListResponse {
@@ -190,6 +201,9 @@ export interface FrontendIssueClusterListResponse {
     totalIssuesClustered: number;
     totalOccurrences: number;
     dispatchedClusters: number;
+    resolvedClusters?: number;
+    extinguishedOccurrences?: number;
+    extinguishmentRate?: number;
   };
 }
 
@@ -201,4 +215,11 @@ export interface FrontendIssueClusterDispatchResponse {
   progressStage: string;
   dispatchedIssueCount: number;
   message: string;
+}
+
+export interface FrontendIssueSyncResponse {
+  syncedIssuesCount: number;
+  resolvedClustersCount: number;
+  message: string;
+  metrics: FrontendIssueMetrics;
 }

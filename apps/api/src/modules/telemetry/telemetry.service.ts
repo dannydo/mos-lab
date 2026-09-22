@@ -20,6 +20,7 @@ import {
   type FrontendIssueRecord,
   type FrontendIssueStatus,
   type FrontendIssueSummary,
+  type FrontendIssueSyncResponse,
   type FrontendIssueType,
   type InboxPlanDraft,
 } from '@mos-lab/shared';
@@ -446,7 +447,164 @@ export class FrontendTelemetryService {
     };
   }
 
-  public static async getMetrics(fastify: FastifyInstance): Promise<FrontendIssueMetrics> {
+  public static async syncResolvedClusters(
+    fastify: FastifyInstance,
+    skipMetricsFetch = false
+  ): Promise<FrontendIssueSyncResponse> {
+    if (!fastify.prisma?.crm) {
+      const fallbackMetrics: FrontendIssueMetrics = {
+        totalCount: inMemoryIssuesByFingerprint.size,
+        newCount: inMemoryIssuesByFingerprint.size,
+        investigatingCount: 0,
+        resolvedCount: 0,
+        reopenedCount: 0,
+        ignoredCount: 0,
+        resolutionRate: 0,
+        totalClusters: FRONTEND_ISSUE_CLUSTER_KEYS.length,
+        resolvedClusters: 0,
+        dispatchedClusters: 0,
+        openClusters: FRONTEND_ISSUE_CLUSTER_KEYS.length,
+        clusterResolutionRate: 0,
+        totalOccurrences: 0,
+        extinguishedOccurrences: 0,
+        trafficExtinguishmentRate: 0,
+      };
+      return {
+        syncedIssuesCount: 0,
+        resolvedClustersCount: 0,
+        message: 'Database CRM không khả dụng',
+        metrics: fallbackMetrics,
+      };
+    }
+
+    // 1. Find all closed/resolved bug reports that correspond to clusters
+    const clusterSourcePaths = FRONTEND_ISSUE_CLUSTER_KEYS.map((k) => `cluster:${k}`);
+    const resolvedClusterReports = await fastify.prisma.crm.crmBugReport.findMany({
+      where: {
+        sourcePath: { in: clusterSourcePaths },
+        status: { in: ['CLOSED', 'RESOLVED', 'AWAITING_REPORTER_ACCEPTANCE'] },
+      },
+      select: {
+        id: true,
+        sourcePath: true,
+        status: true,
+      },
+      orderBy: { id: 'desc' },
+    });
+
+    const resolvedClusterKeys = new Set<FrontendIssueClusterKey>();
+    const clusterReportKeyMap = new Map<FrontendIssueClusterKey, string>();
+    for (const report of resolvedClusterReports) {
+      const key = report.sourcePath.replace('cluster:', '') as FrontendIssueClusterKey;
+      if (FRONTEND_ISSUE_CLUSTER_KEYS.includes(key) && !resolvedClusterKeys.has(key)) {
+        resolvedClusterKeys.add(key);
+        clusterReportKeyMap.set(key, formatBugReportKey(report.id));
+      }
+    }
+
+    // 2. Query all frontend issues not yet RESOLVED
+    const unresolvedIssues = await fastify.prisma.crm.crmFrontendIssue.findMany({
+      where: {
+        status: { not: 'RESOLVED' },
+      },
+      select: {
+        id: true,
+        issueType: true,
+        path: true,
+        target: true,
+        message: true,
+        resolutionNotes: true,
+      },
+    });
+
+    const issueIdsToResolve: number[] = [];
+    const issueMapNotes: { id: number; note: string }[] = [];
+    const now = new Date();
+
+    for (const issue of unresolvedIssues) {
+      const clusterKey = classifyIssueIntoCluster(issue);
+      if (resolvedClusterKeys.has(clusterKey)) {
+        const ticketKey = clusterReportKeyMap.get(clusterKey) || 'MOS-BUG';
+        issueIdsToResolve.push(issue.id);
+        issueMapNotes.push({
+          id: issue.id,
+          note: `Đã dập tắt theo Ticket Cụm ${ticketKey} (${clusterKey})`,
+        });
+      }
+    }
+
+    // Check standalone issues referencing closed tickets (e.g. MOS-BUG-12)
+    const standaloneIssues = unresolvedIssues.filter(
+      (i) => !issueIdsToResolve.includes(i.id) && i.resolutionNotes?.includes('MOS-BUG-')
+    );
+
+    if (standaloneIssues.length > 0) {
+      const ticketMap = new Map<number, number>();
+      for (const issue of standaloneIssues) {
+        const match = issue.resolutionNotes?.match(/MOS-BUG-(\d+)/);
+        if (match && match[1]) {
+          ticketMap.set(issue.id, parseInt(match[1], 10));
+        }
+      }
+
+      if (ticketMap.size > 0) {
+        const reportIds = Array.from(new Set(ticketMap.values()));
+        const closedReports = await fastify.prisma.crm.crmBugReport.findMany({
+          where: {
+            id: { in: reportIds },
+            status: { in: ['CLOSED', 'RESOLVED', 'AWAITING_REPORTER_ACCEPTANCE'] },
+          },
+          select: { id: true },
+        });
+        const closedSet = new Set(closedReports.map((r) => r.id));
+        for (const [issueId, reportId] of ticketMap.entries()) {
+          if (closedSet.has(reportId)) {
+            issueIdsToResolve.push(issueId);
+            issueMapNotes.push({
+              id: issueId,
+              note: `Đã dập tắt theo Ticket đơn lẻ ${formatBugReportKey(reportId)}`,
+            });
+          }
+        }
+      }
+    }
+
+    if (issueIdsToResolve.length > 0) {
+      const CHUNK_SIZE = 100;
+      for (let i = 0; i < issueIdsToResolve.length; i += CHUNK_SIZE) {
+        const chunk = issueIdsToResolve.slice(i, i + CHUNK_SIZE);
+        await fastify.prisma.crm.crmFrontendIssue.updateMany({
+          where: { id: { in: chunk } },
+          data: {
+            status: 'RESOLVED',
+            resolvedAt: now,
+          },
+        });
+      }
+
+      for (const item of issueMapNotes) {
+        await fastify.prisma.crm.crmFrontendIssue
+          .update({
+            where: { id: item.id },
+            data: { resolutionNotes: item.note },
+          })
+          .catch(() => {});
+      }
+    }
+
+    const metrics = skipMetricsFetch ? ({} as FrontendIssueMetrics) : await this.getMetrics(fastify, true);
+    const syncedIssuesCount = issueIdsToResolve.length;
+    const resolvedClustersCount = resolvedClusterKeys.size;
+
+    return {
+      syncedIssuesCount,
+      resolvedClustersCount,
+      message: `Đã đồng bộ thành công ${syncedIssuesCount} sự cố con thuộc ${resolvedClustersCount} cụm đã giải quyết.`,
+      metrics,
+    };
+  }
+
+  public static async getMetrics(fastify: FastifyInstance, skipAutoSync = false): Promise<FrontendIssueMetrics> {
     if (!fastify.prisma?.crm) {
       return {
         totalCount: inMemoryIssuesByFingerprint.size,
@@ -456,13 +614,50 @@ export class FrontendTelemetryService {
         reopenedCount: 0,
         ignoredCount: 0,
         resolutionRate: 0,
+        totalClusters: FRONTEND_ISSUE_CLUSTER_KEYS.length,
+        resolvedClusters: 0,
+        dispatchedClusters: 0,
+        openClusters: FRONTEND_ISSUE_CLUSTER_KEYS.length,
+        clusterResolutionRate: 0,
+        totalOccurrences: 0,
+        extinguishedOccurrences: 0,
+        trafficExtinguishmentRate: 0,
       };
     }
 
-    const counts = await fastify.prisma.crm.crmFrontendIssue.groupBy({
-      by: ['status'],
-      _count: { id: true },
-    });
+    // Auto-sync resolved clusters on metrics retrieval to ensure 100% data freshness
+    if (!skipAutoSync) {
+      try {
+        await this.syncResolvedClusters(fastify, true);
+      } catch (err) {
+        fastify.log.warn({ err }, 'Auto-syncing resolved clusters in getMetrics failed non-fatally');
+      }
+    }
+
+    const [counts, aggregateHits, resolvedHits, clusterBugReports] = await Promise.all([
+      fastify.prisma.crm.crmFrontendIssue.groupBy({
+        by: ['status'],
+        _count: { id: true },
+      }),
+      fastify.prisma.crm.crmFrontendIssue.aggregate({
+        _sum: { occurrenceCount: true },
+      }),
+      fastify.prisma.crm.crmFrontendIssue.aggregate({
+        where: { status: 'RESOLVED' },
+        _sum: { occurrenceCount: true },
+      }),
+      fastify.prisma.crm.crmBugReport.findMany({
+        where: {
+          sourcePath: { in: FRONTEND_ISSUE_CLUSTER_KEYS.map((k) => `cluster:${k}`) },
+          status: { not: 'REJECTED' },
+        },
+        select: {
+          sourcePath: true,
+          status: true,
+        },
+        orderBy: { id: 'desc' },
+      }),
+    ]);
 
     const statusCounts: Record<string, number> = {};
     let totalCount = 0;
@@ -479,6 +674,37 @@ export class FrontendTelemetryService {
     const ignoredCount = statusCounts['IGNORED'] || 0;
     const resolutionRate = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 100;
 
+    // Cluster resolution calculation
+    const clusterStatusMap = new Map<string, string>();
+    for (const br of clusterBugReports) {
+      const clusterKey = br.sourcePath.replace('cluster:', '');
+      if (!clusterStatusMap.has(clusterKey)) {
+        clusterStatusMap.set(clusterKey, br.status);
+      }
+    }
+
+    const totalClusters = FRONTEND_ISSUE_CLUSTER_KEYS.length;
+    let resolvedClusters = 0;
+    let dispatchedClusters = 0;
+
+    for (const key of FRONTEND_ISSUE_CLUSTER_KEYS) {
+      const status = clusterStatusMap.get(key);
+      if (status) {
+        dispatchedClusters++;
+        if (['CLOSED', 'RESOLVED', 'AWAITING_REPORTER_ACCEPTANCE'].includes(status)) {
+          resolvedClusters++;
+        }
+      }
+    }
+
+    const openClusters = totalClusters - resolvedClusters;
+    const clusterResolutionRate = totalClusters > 0 ? Math.round((resolvedClusters / totalClusters) * 100) : 0;
+
+    const totalOccurrences = aggregateHits._sum.occurrenceCount || 0;
+    const extinguishedOccurrences = resolvedHits._sum.occurrenceCount || 0;
+    const trafficExtinguishmentRate =
+      totalOccurrences > 0 ? Math.round((extinguishedOccurrences / totalOccurrences) * 100) : 0;
+
     return {
       totalCount,
       newCount,
@@ -487,6 +713,14 @@ export class FrontendTelemetryService {
       reopenedCount,
       ignoredCount,
       resolutionRate,
+      totalClusters,
+      resolvedClusters,
+      dispatchedClusters,
+      openClusters,
+      clusterResolutionRate,
+      totalOccurrences,
+      extinguishedOccurrences,
+      trafficExtinguishmentRate,
     };
   }
 
@@ -774,7 +1008,7 @@ ${analysis.proposedFix.map((s, idx) => `${idx + 1}. ${s}`).join('\n')}
       message: string;
       occurrenceCount: number;
       status: string;
-    }> = [];
+    }>;
 
     if (fastify.prisma?.crm) {
       issues = await fastify.prisma.crm.crmFrontendIssue.findMany({
@@ -857,6 +1091,13 @@ ${analysis.proposedFix.map((s, idx) => `${idx + 1}. ${s}`).join('\n')}
       }));
 
       const dispatchedBugReport = dispatchedReportsByClusterKey.get(key) || null;
+      const isResolved = dispatchedBugReport
+        ? ['CLOSED', 'RESOLVED', 'AWAITING_REPORTER_ACCEPTANCE'].includes(dispatchedBugReport.status)
+        : false;
+      const resolvedIssueCount = clusterIssues.filter((item) => item.status === 'RESOLVED').length;
+      const resolvedOccurrences = clusterIssues
+        .filter((item) => item.status === 'RESOLVED')
+        .reduce((sum, item) => sum + item.occurrenceCount, 0);
 
       return {
         clusterKey: key,
@@ -871,12 +1112,19 @@ ${analysis.proposedFix.map((s, idx) => `${idx + 1}. ${s}`).join('\n')}
         issueIds,
         sampleIssues,
         dispatchedBugReport,
+        isResolved,
+        resolvedIssueCount,
+        resolvedOccurrences,
       };
     });
 
     const totalIssuesClustered = issues.length;
     const totalOccurrences = clusters.reduce((sum, c) => sum + c.totalOccurrences, 0);
     const dispatchedClusters = clusters.filter((c) => c.dispatchedBugReport !== null).length;
+    const resolvedClusters = clusters.filter((c) => c.isResolved).length;
+    const extinguishedOccurrences = clusters.reduce((sum, c) => sum + (c.resolvedOccurrences || 0), 0);
+    const extinguishmentRate =
+      totalOccurrences > 0 ? Math.round((extinguishedOccurrences / totalOccurrences) * 100) : 0;
 
     return {
       clusters,
@@ -885,6 +1133,9 @@ ${analysis.proposedFix.map((s, idx) => `${idx + 1}. ${s}`).join('\n')}
         totalIssuesClustered,
         totalOccurrences,
         dispatchedClusters,
+        resolvedClusters,
+        extinguishedOccurrences,
+        extinguishmentRate,
       },
     };
   }

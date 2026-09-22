@@ -34,6 +34,7 @@ import type {
   FrontendIssueListResponse,
   FrontendIssueMetrics,
   FrontendIssueRecord,
+  FrontendIssueSyncResponse,
   UpdateFrontendIssueStatusRequest,
 } from '@mos-lab/shared';
 
@@ -86,6 +87,10 @@ export const systemApi = {
       const response = await api.post<{ data: FrontendIssueClusterDispatchResponse[] }>(
         '/telemetry/frontend-issues/clusters/batch-dispatch-priority'
       );
+      return response.data.data;
+    },
+    syncStatus: async (): Promise<FrontendIssueSyncResponse> => {
+      const response = await api.post<{ data: FrontendIssueSyncResponse }>('/telemetry/frontend-issues/sync');
       return response.data.data;
     },
   },

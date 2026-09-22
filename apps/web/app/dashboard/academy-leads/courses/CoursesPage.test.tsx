@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Form, InputNumber } from 'antd';
-import { formatVndInput, parseVndInput } from './page';
+import { formatVndInput, parseVndInput } from './utils';
 
 describe('Academy Courses Price Input Formatting and Parsing', () => {
   describe('formatVndInput', () => {
