@@ -109,7 +109,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
                     date: { type: 'string' },
                     user_id: { type: 'number' },
                     consultant_name: { type: 'string' },
-                    avatar: { type: ['string', 'null'] },
+                    avatar: { type: 'string', nullable: true },
                     store_code: { type: 'string' },
                     single_sales: { type: 'number' },
                     combo_sales: { type: 'number' },
@@ -164,7 +164,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
                   properties: {
                     userId: { type: 'number' },
                     displayName: { type: 'string' },
-                    avatar: { type: ['string', 'null'] },
+                    avatar: { type: 'string', nullable: true },
                   },
                 },
               },

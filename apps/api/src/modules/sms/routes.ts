@@ -489,7 +489,7 @@ export async function smsRoutes(fastify: FastifyInstance) {
             legacyUserId: { type: 'integer' },
             toPhoneNumber: { type: 'string' },
             body: { type: 'string' },
-            templateId: { type: ['string', 'number'] },
+            templateId: { anyOf: [{ type: 'string' }, { type: 'number' }] },
             planId: { type: 'integer' },
           },
         },
