@@ -14,7 +14,13 @@ import {
   BkGameFinalizeInput,
   SafeAny,
 } from '@mos-lab/shared';
-import { BkGameService, formatIctDateTime, formatIctDate } from '../services/bk-game.service.js';
+import {
+  BkGameService,
+  formatIctDateTime,
+  formatIctDate,
+  parseAllowedBookingChannels,
+  buildBookingChannelFilter,
+} from '../services/bk-game.service.js';
 import {
   getActiveBkTelesalesIds,
   getBkSalaryConfig,
@@ -55,6 +61,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     let endDateTimeStr = `${endPart.split('T')[0]} 23:59:59`;
     let callStartDateStr = startPart.split('T')[0];
     let callEndDateStr = endPart.split('T')[0];
+    let gameChannelFilter = '';
 
     try {
       if (gameId) {
@@ -68,6 +75,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
             endDateTimeStr = formatIctDateTime(game.endDate);
             callStartDateStr = formatIctDate(game.startDate);
             callEndDateStr = formatIctDate(game.endDate);
+            const allowedChannels = parseAllowedBookingChannels(game.allowedBookingChannels);
+            gameChannelFilter = buildBookingChannelFilter(allowedChannels, 'o.booking_channels');
           }
         }
       } else {
@@ -125,6 +134,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           AND o.date_created >= '${startDateTimeStr}' 
           AND o.date_created <= '${endDateTimeStr}'
           ${storeFilter}
+          ${gameChannelFilter}
         WHERE up.user_id IN (${bkIdsStr})
         GROUP BY up.user_id, up.full_name, up.avatar, cs_staff.client_store_key
         ORDER BY totalCreatedBookings DESC, doneBookings DESC
@@ -217,6 +227,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     let endDateTimeStr = `${endPart.split('T')[0]} 23:59:59`;
     let callStartDateStr = startPart.split('T')[0];
     let callEndDateStr = endPart.split('T')[0];
+    let gameChannelFilter = '';
 
     try {
       if (gameId) {
@@ -230,6 +241,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
             endDateTimeStr = formatIctDateTime(game.endDate);
             callStartDateStr = formatIctDate(game.startDate);
             callEndDateStr = formatIctDate(game.endDate);
+            const allowedChannels = parseAllowedBookingChannels(game.allowedBookingChannels);
+            gameChannelFilter = buildBookingChannelFilter(allowedChannels, 'o.booking_channels');
           }
         }
       } else {
@@ -307,6 +320,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           AND o.date_created <= '${endDateTimeStr}'
           ${bookerFilter}
           ${storeFilter}
+          ${gameChannelFilter}
           AND ${bookingStatusFilter}
       `;
 
@@ -338,10 +352,11 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
         WHERE o.date_created >= '${startDateTimeStr}' 
-          AND o.date_created <= '${endDateTimeStr}'
-          ${bookerFilter}
-          ${storeFilter}
-          AND ${bookingStatusFilter}
+        AND o.date_created <= '${endDateTimeStr}'
+        ${bookerFilter}
+        ${storeFilter}
+        ${gameChannelFilter}
+        AND ${bookingStatusFilter}
         ORDER BY o.date_created DESC
         LIMIT 500
       `;

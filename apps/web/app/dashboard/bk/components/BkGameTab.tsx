@@ -247,10 +247,17 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 label: (
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate">{g.title}</span>
-                    <StatusTag
-                      status={g.status === 'ACTIVE' ? 'success' : g.status === 'COMPLETED' ? 'default' : 'warning'}
-                      label={g.status === 'ACTIVE' ? 'Đang chạy' : g.status === 'COMPLETED' ? 'Đã chốt' : 'Nháp'}
-                    />
+                    <div className="flex items-center gap-1 shrink-0">
+                      {g.allowedBookingChannels && g.allowedBookingChannels.length > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 font-semibold">
+                          {g.allowedBookingChannels.join(',')}
+                        </span>
+                      )}
+                      <StatusTag
+                        status={g.status === 'ACTIVE' ? 'success' : g.status === 'COMPLETED' ? 'default' : 'warning'}
+                        label={g.status === 'ACTIVE' ? 'Đang chạy' : g.status === 'COMPLETED' ? 'Đã chốt' : 'Nháp'}
+                      />
+                    </div>
                   </div>
                 ),
               }))}
@@ -295,6 +302,12 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     status={activeGame.status === 'ACTIVE' ? 'success' : 'default'}
                     label={activeGame.status === 'ACTIVE' ? 'Đang Diễn Ra' : 'Đã Kết Thúc'}
                   />
+                  {activeGame.allowedBookingChannels && activeGame.allowedBookingChannels.length > 0 && (
+                    <StatusTag
+                      status="cyan"
+                      label={`Kênh: ${activeGame.allowedBookingChannels.join(', ')}`}
+                    />
+                  )}
                 </div>
                 <Typography.Title level={3} className="!text-white !mb-1 font-extrabold tracking-tight">
                   {activeGame.title}

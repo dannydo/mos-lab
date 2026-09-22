@@ -42,6 +42,53 @@ export function formatIctDate(date: Date): string {
   return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
+/**
+ * Parses allowedBookingChannels from either a JSON array string, comma-separated string,
+ * or string array into a clean array of uppercase channel codes, or null.
+ */
+export function parseAllowedBookingChannels(val?: string | string[] | null): string[] | null {
+  if (!val) return null;
+  if (Array.isArray(val)) {
+    const list = val.map((c) => String(c).trim().toUpperCase()).filter(Boolean);
+    return list.length > 0 ? list : null;
+  }
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed) return null;
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        const list = parsed.map((c) => String(c).trim().toUpperCase()).filter(Boolean);
+        return list.length > 0 ? list : null;
+      }
+    } catch {
+      // Fallback to comma-separated string
+    }
+    const list = trimmed.split(',').map((c) => c.trim().toUpperCase()).filter(Boolean);
+    return list.length > 0 ? list : null;
+  }
+  return null;
+}
+
+/**
+ * Builds SQL filter clause for allowed booking channels.
+ * Example: AND UPPER(o.booking_channels) IN ('GB')
+ */
+export function buildBookingChannelFilter(
+  allowedChannels?: string[] | null,
+  columnRef = 'o.booking_channels'
+): string {
+  if (!allowedChannels || allowedChannels.length === 0) {
+    return '';
+  }
+  const escaped = allowedChannels
+    .map((ch) => `'${ch.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')}'`)
+    .filter((c) => c !== "''")
+    .join(', ');
+  if (!escaped) return '';
+  return `AND UPPER(${columnRef}) IN (${escaped})`;
+}
+
 export class BkGameService {
   /**
    * Retrieves all Telesales games, optionally filtered by status.
@@ -71,6 +118,7 @@ export class BkGameService {
       description: g.description,
       gameType: g.gameType as SafeAny,
       metricType: g.metricType as SafeAny,
+      allowedBookingChannels: parseAllowedBookingChannels(g.allowedBookingChannels),
       targetScore: g.targetScore,
       startDate: g.startDate.toISOString(),
       endDate: g.endDate.toISOString(),
@@ -155,6 +203,9 @@ export class BkGameService {
       targetProgressPercent: game.targetScore ? Math.min(100, Math.round((p.score / game.targetScore) * 100)) : 100,
     }));
 
+    const allowedChannels = parseAllowedBookingChannels(game.allowedBookingChannels);
+    const channelFilter = buildBookingChannelFilter(allowedChannels, 'o.booking_channels');
+
     // If game is ACTIVE, compute live scores from the database
     if (game.status === 'ACTIVE' && participants.length > 0) {
       const staffIds = participants.map((p) => p.staffId);
@@ -175,6 +226,7 @@ export class BkGameService {
             AND o.date_created >= '${startIctDateTime}'
             AND o.date_created <= '${endIctDateTime}'
             AND o.order_state != 'Cancelled'
+            ${channelFilter}
           GROUP BY o.created_staff_id
         `);
         for (const r of rows) {
@@ -190,6 +242,7 @@ export class BkGameService {
             AND o.booking_date_start >= '${startIctDateTime}'
             AND o.booking_date_start <= '${endIctDateTime}'
             AND o.order_state = 'Completed'
+            ${channelFilter}
           GROUP BY o.created_staff_id
         `);
         for (const r of rows) {
@@ -213,6 +266,7 @@ export class BkGameService {
             AND o.date_created >= '${startIctDateTime}'
             AND o.date_created <= '${endIctDateTime}'
             AND o.order_state != 'Cancelled'
+            ${channelFilter}
           GROUP BY o.created_staff_id
         `);
         const callMetrics = await getBkCallMetricsByLegacyStaffIds(fastify, startDateStr, endDateStr, staffIds);
@@ -272,6 +326,7 @@ export class BkGameService {
       description: game.description,
       gameType: game.gameType as SafeAny,
       metricType: game.metricType as SafeAny,
+      allowedBookingChannels: allowedChannels,
       targetScore: game.targetScore,
       startDate: game.startDate.toISOString(),
       endDate: game.endDate.toISOString(),
@@ -290,7 +345,16 @@ export class BkGameService {
     };
 
     const metricType = game.metricType as BkGameMetricType;
-    const scoringRule = BK_GAME_SCORING_RULES[metricType] || BK_GAME_SCORING_RULES.BOOKINGS;
+    const baseRule = BK_GAME_SCORING_RULES[metricType] || BK_GAME_SCORING_RULES.BOOKINGS;
+    let scoringRule = baseRule;
+    if (allowedChannels && allowedChannels.length > 0) {
+      const channelLabel = allowedChannels.join(', ');
+      scoringRule = {
+        ...baseRule,
+        formula: `${baseRule.formula} (Chỉ tính kênh: ${channelLabel})`,
+        description: `${baseRule.description} Chỉ ghi nhận các booking thuộc kênh tiếp nhận đặt lịch: ${channelLabel}.`,
+      };
+    }
 
     return {
       game: mappedGame,
@@ -388,6 +452,10 @@ export class BkGameService {
           description: input.description,
           gameType: input.gameType,
           metricType: input.metricType,
+          allowedBookingChannels:
+            input.allowedBookingChannels && input.allowedBookingChannels.length > 0
+              ? JSON.stringify(input.allowedBookingChannels)
+              : null,
           targetScore: input.targetScore,
           startDate,
           endDate,
