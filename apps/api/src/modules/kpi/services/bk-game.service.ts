@@ -7,6 +7,8 @@ import {
   BkGameListResponse,
   BkGameParticipant,
   BkGameTeam,
+  BkGameMetricType,
+  BK_GAME_SCORING_RULES,
   SafeAny,
 } from '@mos-lab/shared';
 import { getActiveBkTelesalesIds, getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
@@ -264,6 +266,9 @@ export class BkGameService {
       teams,
     };
 
+    const metricType = game.metricType as BkGameMetricType;
+    const scoringRule = BK_GAME_SCORING_RULES[metricType] || BK_GAME_SCORING_RULES.BOOKINGS;
+
     return {
       game: mappedGame,
       leaderboard: participants,
@@ -276,6 +281,7 @@ export class BkGameService {
         timeRemainingSeconds,
         isExpired,
       },
+      scoringRule,
     };
   }
 
@@ -327,10 +333,7 @@ export class BkGameService {
     if (missingStaffIds.length > 0) {
       const crmProfiles = await fastify.prisma.crm.crmStaff.findMany({
         where: {
-          OR: [
-            { id: { in: missingStaffIds } },
-            { legacyStaffId: { in: missingStaffIds } },
-          ],
+          OR: [{ id: { in: missingStaffIds } }, { legacyStaffId: { in: missingStaffIds } }],
         },
         select: { id: true, legacyStaffId: true, displayName: true, avatarUrl: true },
       });

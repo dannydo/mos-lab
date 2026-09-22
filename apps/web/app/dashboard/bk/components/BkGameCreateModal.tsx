@@ -9,13 +9,22 @@ import {
   Radio,
   Segmented,
   Select,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
-import { Trophy, Users, Award, ShieldAlert, Sparkles, Filter, Trash2, Plus } from 'lucide-react';
-import type { BkGame, BkGameCreateInput, BkGameMetricType, BkGameType, Staff, TeamListResponse } from '@mos-lab/shared';
-import { removeVietnameseTones } from '@mos-lab/shared';
+import { Trophy, Users, Award, ShieldAlert, Sparkles, Filter, Trash2, Plus, Info } from 'lucide-react';
+import type {
+  BkGame,
+  BkGameCreateInput,
+  BkGameMetricType,
+  BkGameType,
+  Staff,
+  TeamListResponse,
+  BkGameScoringRule,
+} from '@mos-lab/shared';
+import { removeVietnameseTones, BK_GAME_SCORING_RULES } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
 
@@ -46,6 +55,9 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
   const [allStaffList, setAllStaffList] = useState<StaffProfileOption[]>([]);
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('ALL');
   const [staffLoading, setStaffLoading] = useState(false);
+
+  const watchedMetricType = (Form.useWatch('metricType', form) || 'BOOKINGS') as BkGameMetricType;
+  const currentScoringRule = BK_GAME_SCORING_RULES[watchedMetricType] || BK_GAME_SCORING_RULES.BOOKINGS;
 
   useEffect(() => {
     if (!open) return;
@@ -130,7 +142,8 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
         // 1. Add from crmStaff list (all active employees)
         (staffRes || []).forEach((s) => {
           const sid = s.legacyStaffId || s.id;
-          const meta = staffTeamMetaMap.get(sid) || (s.legacyStaffId ? staffTeamMetaMap.get(s.legacyStaffId) : undefined);
+          const meta =
+            staffTeamMetaMap.get(sid) || (s.legacyStaffId ? staffTeamMetaMap.get(s.legacyStaffId) : undefined);
 
           let depCode = meta?.departmentCode;
           let depName = meta?.departmentName;
@@ -455,9 +468,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
               {(s?.displayName || option.label || 'U').slice(0, 1).toUpperCase()}
             </Avatar>
           )}
-          <span className="font-medium text-sm text-slate-800 dark:text-slate-100 truncate">
-            {option.label}
-          </span>
+          <span className="font-medium text-sm text-slate-800 dark:text-slate-100 truncate">{option.label}</span>
         </div>
         <span
           className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[11px] font-medium border leading-none flex-shrink-0 ${tagBgClass}`}
@@ -573,7 +584,21 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Form.Item
             name="metricType"
-            label={<span className="font-medium">Chỉ số tính điểm KPI</span>}
+            label={
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium">Chỉ số tính điểm KPI</span>
+                <Tooltip title="Xem chi tiết công thức và quy tắc tính điểm">
+                  <span
+                    tabIndex={0}
+                    role="button"
+                    aria-label="Hướng dẫn công thức tính điểm"
+                    className="inline-flex items-center cursor-pointer text-slate-400 hover:text-blue-500 transition-colors"
+                  >
+                    <AppIcon icon={Info} size="sm" />
+                  </span>
+                </Tooltip>
+              </div>
+            }
             rules={[{ required: true }]}
           >
             <Radio.Group className="grid grid-cols-2 gap-2">
@@ -594,11 +619,38 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
 
           <Form.Item
             name="targetScore"
-            label={<span className="font-medium">Mục tiêu KPI cần đạt</span>}
+            label={<span className="font-medium">Mục tiêu KPI cần đạt ({currentScoringRule.unit})</span>}
             rules={[{ required: true, message: 'Vui lòng nhập mục tiêu' }]}
           >
             <InputNumber min={1} className="w-full" size="large" placeholder="Ví dụ: 50" />
           </Form.Item>
+        </div>
+
+        {/* Khối hiển thị trực quan công thức & quy tắc tính điểm cho chỉ số đang chọn */}
+        <div
+          data-testid="bk-game-scoring-guide"
+          className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/30 text-xs space-y-2 transition-all duration-200"
+        >
+          <div className="flex items-center justify-between flex-wrap gap-1">
+            <div className="flex items-center gap-1.5 font-semibold text-blue-700 dark:text-blue-300">
+              <AppIcon icon={Sparkles} size="sm" className="text-amber-500 shrink-0" />
+              <span>Công thức tính điểm: {currentScoringRule.formula}</span>
+            </div>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-medium">
+              Đơn vị: {currentScoringRule.unit}
+            </span>
+          </div>
+          <p className="text-slate-600 dark:text-slate-300 !mb-0 leading-relaxed">{currentScoringRule.description}</p>
+          <div className="flex items-start gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-blue-200/60 dark:border-blue-900/40">
+            <span className="font-semibold text-slate-700 dark:text-slate-300 shrink-0">Nguồn trích xuất:</span>
+            <span>{currentScoringRule.dataSource}</span>
+          </div>
+          {currentScoringRule.notes && (
+            <div className="text-[11px] text-amber-700 dark:text-amber-300/90 flex items-center gap-1">
+              <AppIcon icon={Info} size="sm" className="text-amber-500 shrink-0" />
+              <span>{currentScoringRule.notes}</span>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

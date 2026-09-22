@@ -44,9 +44,27 @@ describe('BkGameCreateModal', () => {
       { id: 3, code: 'BACK_OFFICE', name: 'Back Office' },
     ],
     teams: [
-      { id: 1, code: 'BK_TELESALES', name: 'Telesales', activeStaffIds: [50670], department: { code: 'GROWTH', name: 'Growth & Booking' } },
-      { id: 2, code: 'CC', name: 'Client Consultant', activeStaffIds: [52316], department: { code: 'SHOP', name: 'Shop Operations' } },
-      { id: 3, code: 'CV', name: 'Chuyên viên KTV', activeStaffIds: [52400], department: { code: 'SHOP', name: 'Shop Operations' } },
+      {
+        id: 1,
+        code: 'BK_TELESALES',
+        name: 'Telesales',
+        activeStaffIds: [50670],
+        department: { code: 'GROWTH', name: 'Growth & Booking' },
+      },
+      {
+        id: 2,
+        code: 'CC',
+        name: 'Client Consultant',
+        activeStaffIds: [52316],
+        department: { code: 'SHOP', name: 'Shop Operations' },
+      },
+      {
+        id: 3,
+        code: 'CV',
+        name: 'Chuyên viên KTV',
+        activeStaffIds: [52400],
+        department: { code: 'SHOP', name: 'Shop Operations' },
+      },
     ],
   };
 
@@ -108,6 +126,28 @@ describe('BkGameCreateModal', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Danh sách nhân viên tham gia \(4\)/)).toBeInTheDocument();
+    });
+  });
+
+  it('displays the scoring rule guide and updates formula when metric changes', async () => {
+    render(<BkGameCreateModal open={true} onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    // Default metric is BOOKINGS
+    const guide = screen.getByTestId('bk-game-scoring-guide');
+    expect(guide).toBeInTheDocument();
+    expect(guide).toHaveTextContent(/Công thức tính điểm: 1 Booking tạo mới hợp lệ = 1 Điểm/);
+    expect(guide).toHaveTextContent(/Nguồn trích xuất:/);
+    expect(guide).toHaveTextContent(/Bảng order/);
+    expect(guide).toHaveTextContent(/Điều răn #10/);
+
+    // Switch metric to CALLS
+    const callsRadio = screen.getByRole('radio', { name: /Cuộc gọi/i });
+    fireEvent.click(callsRadio);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('bk-game-scoring-guide')).toHaveTextContent(
+        /Công thức tính điểm: 1 Cuộc gọi phát sinh = 1 Điểm/
+      );
     });
   });
 });

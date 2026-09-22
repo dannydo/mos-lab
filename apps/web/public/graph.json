@@ -14255,6 +14255,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:BkGameScoringRule",
+      "type": "SharedType",
+      "label": "BkGameScoringRule",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameScoringRule",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:BkBookingRecord",
       "type": "SharedType",
       "label": "BkBookingRecord",
@@ -27452,8 +27464,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18150,
-        "lineCount": 539,
+        "sizeBytes": 18368,
+        "lineCount": 545,
         "ext": ".ts"
       }
     },
@@ -28453,8 +28465,8 @@
       "filePath": "apps/api/src/modules/teams/team.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29448,
-        "lineCount": 819,
+        "sizeBytes": 29422,
+        "lineCount": 817,
         "ext": ".ts"
       }
     },
@@ -30897,8 +30909,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4112,
-        "lineCount": 114,
+        "sizeBytes": 5059,
+        "lineCount": 136,
         "ext": ".tsx"
       }
     },
@@ -30910,8 +30922,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32181,
-        "lineCount": 817,
+        "sizeBytes": 34871,
+        "lineCount": 864,
         "ext": ".tsx"
       }
     },
@@ -30936,8 +30948,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2871,
-        "lineCount": 94,
+        "sizeBytes": 4657,
+        "lineCount": 139,
         "ext": ".tsx"
       }
     },
@@ -30949,8 +30961,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36911,
-        "lineCount": 796,
+        "sizeBytes": 41710,
+        "lineCount": 859,
         "ext": ".tsx"
       }
     },
@@ -34069,8 +34081,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 61944,
-        "lineCount": 965,
+        "sizeBytes": 61950,
+        "lineCount": 966,
         "ext": ".ts"
       }
     },
@@ -34251,8 +34263,8 @@
       "filePath": "packages/shared/src/types/bk-game.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2577,
-        "lineCount": 102,
+        "sizeBytes": 5735,
+        "lineCount": 168,
         "ext": ".ts"
       }
     },
@@ -41903,6 +41915,13 @@
     {
       "id": "edge:type:@mos-lab/shared:BkGameDetailResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:BkGameDetailResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameScoringRule:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameScoringRule",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -74977,20 +74996,20 @@
     }
   ],
   "stats": {
-    "totalNodes": 2668,
-    "totalEdges": 5735,
+    "totalNodes": 2669,
+    "totalEdges": 5736,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 143,
       "FastifyRoute": 554,
       "Component": 51,
-      "SharedType": 974,
+      "SharedType": 975,
       "DesignToken": 12,
       "UIComponent": 193,
       "File": 738
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1129,
+      "EXPORTS": 1130,
       "HANDLES_ROUTE": 554,
       "RENDERS": 244,
       "USES_TOKEN": 195,
@@ -75001,7 +75020,7 @@
     "fastifyRouteCount": 559,
     "prismaModelCount": 143,
     "nextPageCount": 51,
-    "sharedTypeCount": 974
+    "sharedTypeCount": 975
   },
   "routes": [
     {

@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, Progress, Segmented, Select, Typography } from 'antd';
+import { Alert, Button, Card, Popover, Progress, Segmented, Select, Tooltip, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { Trophy, RefreshCw, Plus, Clock, ShieldAlert, Swords, CheckCircle2 } from 'lucide-react';
+import { Trophy, RefreshCw, Plus, Clock, ShieldAlert, Swords, CheckCircle2, Info, Sparkles } from 'lucide-react';
 import type { BkBookingLeaderboardEntry, BkGame, BkGameDetailResponse } from '@mos-lab/shared';
+import { BK_GAME_SCORING_RULES } from '@mos-lab/shared';
 import { AppIcon, DataSection, DataTable, MetricGrid, StatePanel, StatusTag } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
 import BkAvatar from './BkAvatar';
@@ -169,6 +170,10 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
 
   // Selected game stats
   const activeGame = gameDetail?.game;
+  const scoringRule =
+    gameDetail?.scoringRule ||
+    (activeGame ? BK_GAME_SCORING_RULES[activeGame.metricType] : undefined) ||
+    BK_GAME_SCORING_RULES.BOOKINGS;
   const gameLeaderboard = gameDetail?.leaderboard || [];
   const top1 =
     gameLeaderboard[0] ||
@@ -289,18 +294,62 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 <Typography.Title level={3} className="!text-white !mb-1 font-extrabold tracking-tight">
                   {activeGame.title}
                 </Typography.Title>
-                <Typography.Text className="text-slate-300 text-sm block">
-                  {activeGame.description ||
-                    `Thi đua đo lường theo chỉ số: ${
-                      activeGame.metricType === 'BOOKINGS'
-                        ? 'Booking tạo mới'
-                        : activeGame.metricType === 'CALLS'
-                          ? 'Số cuộc gọi'
-                          : activeGame.metricType === 'PICKUPS'
-                            ? 'Khách nghe máy'
-                            : 'Booking hoàn thành (Done)'
-                    }`}
-                </Typography.Text>
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  <Typography.Text className="text-slate-300 text-sm">
+                    {activeGame.description || `Thi đua đo lường theo chỉ số: ${scoringRule.label}`}
+                  </Typography.Text>
+                  <Popover
+                    trigger="click"
+                    placement="bottomLeft"
+                    title={
+                      <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
+                        <AppIcon icon={Sparkles} size="sm" className="text-blue-500" />
+                        <span>Công Thức & Quy Tắc Tính Điểm</span>
+                      </div>
+                    }
+                    content={
+                      <div className="max-w-md space-y-2.5 text-xs py-1" data-testid="bk-game-scoring-popover">
+                        <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold flex items-center justify-between">
+                          <span>🎯 {scoringRule.formula}</span>
+                          <span className="text-[11px] font-normal px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                            {scoringRule.unit}
+                          </span>
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-300 !mb-0 leading-relaxed">
+                          {scoringRule.description}
+                        </p>
+                        <div className="space-y-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[11px]">
+                          <div>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">Thời gian game: </span>
+                            <span className="text-slate-600 dark:text-slate-400">
+                              {dayjs(activeGame.startDate).format('DD/MM/YYYY HH:mm')} –{' '}
+                              {dayjs(activeGame.endDate).format('DD/MM/YYYY HH:mm')}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">Nguồn trích xuất: </span>
+                            <span className="text-slate-600 dark:text-slate-400">{scoringRule.dataSource}</span>
+                          </div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                          💡 <strong>Quy tắc đối soát:</strong> Điểm thi đua trên Đấu trường được tính riêng từ thời
+                          điểm bắt đầu đến kết thúc của game ({dayjs(activeGame.startDate).format('DD/MM')} –{' '}
+                          {dayjs(activeGame.endDate).format('DD/MM')}), không bị ảnh hưởng bởi bộ lọc thời gian
+                          (tháng/tuần/ngày) của Bảng xếp hạng bên dưới.
+                        </div>
+                      </div>
+                    }
+                  >
+                    <button
+                      type="button"
+                      aria-label="Xem công thức tính điểm"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/20 hover:bg-blue-500/30 text-cyan-300 border border-cyan-400/40 transition-all cursor-pointer shadow-sm"
+                    >
+                      <AppIcon icon={Info} size="sm" />
+                      <span>Xem công thức tính điểm</span>
+                    </button>
+                  </Popover>
+                </div>
                 <div className="flex items-center gap-3 text-xs text-slate-400 pt-1">
                   <span>
                     Thời gian: {dayjs(activeGame.startDate).format('DD/MM/YYYY HH:mm')} –{' '}
@@ -325,7 +374,14 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
             {/* 4 Summary Stat Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10">
               <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
-                <div className="text-xs text-slate-400 uppercase font-medium">Mục Tiêu KPI</div>
+                <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
+                  <span>Mục Tiêu KPI</span>
+                  <Tooltip title={`Công thức: ${scoringRule.formula}`}>
+                    <span className="text-[10px] lowercase text-cyan-300/80 cursor-help underline decoration-dotted">
+                      {scoringRule.unit}
+                    </span>
+                  </Tooltip>
+                </div>
                 <div className="text-xl font-bold mt-1 text-white tabular-nums">
                   {activeGame.targetScore ? `${activeGame.targetScore} điểm` : 'Tự do'}
                 </div>
@@ -681,6 +737,22 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
           )
         }
       >
+        {activeGame && (
+          <div
+            data-testid="bk-game-table-disclaimer"
+            className="mb-3 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 text-xs flex items-center justify-between gap-2"
+          >
+            <span className="text-slate-600 dark:text-slate-400">
+              📌 <strong>Lưu ý hiển thị:</strong> Bảng xếp hạng bên dưới hiển thị số liệu theo bộ lọc thời gian chung (
+              {comparisonMode === 'day' ? 'theo ngày' : comparisonMode === 'week' ? 'theo tuần' : 'theo tháng'}). Điểm
+              thi đua của game <strong>{activeGame.title}</strong> trên Đấu trường được tính riêng từ{' '}
+              <strong>{dayjs(activeGame.startDate).format('DD/MM/YYYY HH:mm')}</strong> đến{' '}
+              <strong>{dayjs(activeGame.endDate).format('DD/MM/YYYY HH:mm')}</strong> theo công thức:{' '}
+              <em>{scoringRule.formula}</em>.
+            </span>
+          </div>
+        )}
+
         {error ? (
           <StatePanel
             kind="error"
