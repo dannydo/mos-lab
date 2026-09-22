@@ -250,7 +250,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                     <div className="flex items-center gap-1 shrink-0">
                       {g.allowedBookingChannels && g.allowedBookingChannels.length > 0 && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 font-semibold">
-                          {g.allowedBookingChannels.join(',')}
+                          🎯 Kênh: {g.allowedBookingChannels.join(', ')}
                         </span>
                       )}
                       <StatusTag
