@@ -66,18 +66,23 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.bk.getBookingLeaderboard({
-        dateFrom: dateRange[0].format('YYYY-MM-DD'),
-        dateTo: dateRange[1].format('YYYY-MM-DD'),
+      const params: Record<string, unknown> = {
         storeId: 'ALL',
-      });
+      };
+      if (selectedGameId) {
+        params.gameId = selectedGameId;
+      } else {
+        params.dateFrom = dateRange[0].format('YYYY-MM-DD');
+        params.dateTo = dateRange[1].format('YYYY-MM-DD');
+      }
+      const response = await apiClient.bk.getBookingLeaderboard(params);
       setLeaderboard(response.leaderboard || []);
     } catch {
       setError('Không thể tải bảng xếp hạng Game BK. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
-  }, [dateRange]);
+  }, [dateRange, selectedGameId]);
 
   // 2. Load Configured Games list
   const loadGames = useCallback(async () => {
@@ -743,9 +748,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
             className="mb-3 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 text-xs flex items-center justify-between gap-2"
           >
             <span className="text-slate-600 dark:text-slate-400">
-              📌 <strong>Lưu ý hiển thị:</strong> Bảng xếp hạng bên dưới hiển thị số liệu theo bộ lọc thời gian chung (
-              {comparisonMode === 'day' ? 'theo ngày' : comparisonMode === 'week' ? 'theo tuần' : 'theo tháng'}). Điểm
-              thi đua của game <strong>{activeGame.title}</strong> trên Đấu trường được tính riêng từ{' '}
+              🏆 <strong>Đang hiển thị theo Game:</strong> Bảng xếp hạng bên dưới được lọc trực tiếp theo thời gian diễn
+              ra của game <strong>{activeGame.title}</strong> từ{' '}
               <strong>{dayjs(activeGame.startDate).format('DD/MM/YYYY HH:mm')}</strong> đến{' '}
               <strong>{dayjs(activeGame.endDate).format('DD/MM/YYYY HH:mm')}</strong> theo công thức:{' '}
               <em>{scoringRule.formula}</em>.

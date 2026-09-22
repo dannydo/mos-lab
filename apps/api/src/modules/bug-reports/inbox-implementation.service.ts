@@ -414,7 +414,21 @@ function normalizeTests(value: unknown): InboxImplementationTestResult[] {
   return value
     .slice(0, 8)
     .map((entry): InboxImplementationTestResult | null => {
-      const item = entry && typeof entry === 'object' ? (entry as Partial<InboxImplementationTestResult>) : {};
+      let item: Partial<InboxImplementationTestResult>;
+      if (typeof entry === 'string') {
+        const isFailed = /\bfailed\b/i.test(entry);
+        const isSuperseded = /\bsuperseded\b/i.test(entry);
+        const isNotRun = /\bnot_run\b/i.test(entry);
+        const status = isFailed ? 'FAILED' : isSuperseded ? 'SUPERSEDED' : isNotRun ? 'NOT_RUN' : 'PASSED';
+        item = {
+          command: entry.replace(/\s*(passed|failed|not_run|superseded)\s*$/i, '').trim() || entry,
+          status,
+        };
+      } else if (entry && typeof entry === 'object') {
+        item = entry as Partial<InboxImplementationTestResult>;
+      } else {
+        item = {};
+      }
       const command = redactCommand(item.command);
       const status = item.status;
       if (!command || !['PASSED', 'FAILED', 'NOT_RUN', 'SUPERSEDED'].includes(status || '')) return null;
@@ -1152,7 +1166,12 @@ export class InboxImplementationService {
       throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
     const job =
       (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { ideTaskId: normalizedTaskId, status: 'PENDING' },
+        orderBy: { createdAt: 'desc' },
+      })) ||
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: { ideTaskId: normalizedTaskId },
+        orderBy: { createdAt: 'desc' },
       })) ||
       (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: { id: normalizedTaskId },
@@ -1177,7 +1196,12 @@ export class InboxImplementationService {
       throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
     const job =
       (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { ideTaskId: normalizedTaskId, status: 'PENDING' },
+        orderBy: { createdAt: 'desc' },
+      })) ||
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: { ideTaskId: normalizedTaskId },
+        orderBy: { createdAt: 'desc' },
       })) ||
       (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: { id: normalizedTaskId },
@@ -1273,7 +1297,9 @@ export class InboxImplementationService {
       if (job.ideTaskId === normalizedTaskId) return { outcome: 'DUPLICATE' as const, jobId: job.id };
       if (job.ideTaskId)
         throw new InboxImplementationError('IDE handoff đã được gán cho task khác.', 409, 'IDE_TASK_ALREADY_BOUND');
-      const existingTask = await tx.crmInboxImplementationJob.findFirst({ where: { ideTaskId: normalizedTaskId } });
+      const existingTask = await tx.crmInboxImplementationJob.findFirst({
+        where: { ideTaskId: normalizedTaskId, status: 'PENDING', id: { not: job.id } },
+      });
       if (existingTask)
         throw new InboxImplementationError(
           'Task Codex IDE đã được gán cho handoff khác.',
@@ -1314,7 +1340,12 @@ export class InboxImplementationService {
       throw new InboxImplementationError('Mã task Codex IDE không hợp lệ.', 422, 'IDE_TASK_INVALID');
     const job =
       (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
+        where: { ideTaskId: normalizedTaskId, status: 'PENDING' },
+        orderBy: { createdAt: 'desc' },
+      })) ||
+      (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: { ideTaskId: normalizedTaskId },
+        orderBy: { createdAt: 'desc' },
       })) ||
       (await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: { id: normalizedTaskId },
