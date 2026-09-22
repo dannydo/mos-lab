@@ -25559,8 +25559,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11707177,
-        "lineCount": 255084,
+        "sizeBytes": 11705123,
+        "lineCount": 255048,
         "ext": ".ts"
       }
     },
@@ -31214,7 +31214,7 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36835,
+        "sizeBytes": 36872,
         "lineCount": 908,
         "ext": ".tsx"
       }
@@ -31604,8 +31604,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 62744,
-        "lineCount": 1301,
+        "sizeBytes": 66084,
+        "lineCount": 1360,
         "ext": ".tsx"
       }
     },
@@ -32969,8 +32969,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 55941,
-        "lineCount": 1386,
+        "sizeBytes": 55893,
+        "lineCount": 1380,
         "ext": ".tsx"
       }
     },
@@ -33840,8 +33840,8 @@
       "filePath": "apps/web/app/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1762,
-        "lineCount": 60,
+        "sizeBytes": 3112,
+        "lineCount": 67,
         "ext": ".tsx"
       }
     },
@@ -34048,8 +34048,8 @@
       "filePath": "apps/web/lib/api/base.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5886,
-        "lineCount": 198,
+        "sizeBytes": 5860,
+        "lineCount": 191,
         "ext": ".ts"
       }
     },
@@ -34386,8 +34386,8 @@
       "filePath": "apps/web/lib/telemetry/frontend-observer.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1811,
-        "lineCount": 55,
+        "sizeBytes": 6128,
+        "lineCount": 155,
         "ext": ".ts"
       }
     },
@@ -34399,8 +34399,8 @@
       "filePath": "apps/web/lib/telemetry/frontend-observer.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9585,
-        "lineCount": 304,
+        "sizeBytes": 14043,
+        "lineCount": 415,
         "ext": ".ts"
       }
     },

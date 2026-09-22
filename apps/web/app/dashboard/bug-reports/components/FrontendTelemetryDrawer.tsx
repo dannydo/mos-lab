@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
@@ -165,6 +165,24 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
   const toggleClusterExpand = (key: string) => {
     setExpandedClusterKeys((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const pendingPriorityClusters = useMemo(() => {
+    return (clusterData?.clusters || []).filter((c) => {
+      const isResolved =
+        !!c.isResolved ||
+        ['CLOSED', 'RESOLVED', 'AWAITING_REPORTER_ACCEPTANCE'].includes(c.dispatchedBugReport?.status || '');
+      const isDispatched = !!c.dispatchedBugReport;
+      const isPriority =
+        ['POLLING_SLOW_API', 'RAGE_CLICK_CALL_LOG', 'WEBRTC_SDK_CRASH'].includes(c.clusterKey) || c.severity === 'P0';
+      return isPriority && !isResolved && !isDispatched;
+    });
+  }, [clusterData?.clusters]);
+
+  const isAllExtinguished = useMemo(() => {
+    const total = clusterData?.summary.totalClusters ?? 0;
+    const resolved = clusterData?.summary.resolvedClusters ?? 0;
+    return total > 0 && resolved >= total;
+  }, [clusterData?.summary.resolvedClusters, clusterData?.summary.totalClusters]);
 
   const fetchClusters = useCallback(async () => {
     setClustersLoading(true);
@@ -531,21 +549,47 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
             <Col xs={12} sm={6}>
               <Card
                 size="small"
-                className="bg-gradient-to-br from-amber-50 to-orange-50/40 dark:from-amber-950/30 dark:to-orange-950/20 border-amber-200 dark:border-amber-800/40 shadow-sm"
+                className={
+                  (metrics?.openClusters ?? 0) === 0
+                    ? 'bg-gradient-to-br from-emerald-50 to-teal-50/40 dark:from-emerald-950/30 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-sm'
+                    : 'bg-gradient-to-br from-amber-50 to-orange-50/40 dark:from-amber-950/30 dark:to-orange-950/20 border-amber-200 dark:border-amber-800/40 shadow-sm'
+                }
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1">
-                    <AppIcon icon={AlertTriangle} size="sm" />
+                  <span
+                    className={`text-xs font-semibold flex items-center gap-1 ${
+                      (metrics?.openClusters ?? 0) === 0
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-amber-700 dark:text-amber-300'
+                    }`}
+                  >
+                    <AppIcon icon={(metrics?.openClusters ?? 0) === 0 ? CheckCircle2 : AlertTriangle} size="sm" />
                     Cụm Cần Xử Lý Tiếp
                   </span>
-                  <BadgeTag color="warning">Tồn đọng</BadgeTag>
+                  <BadgeTag color={(metrics?.openClusters ?? 0) === 0 ? 'success' : 'warning'}>
+                    {(metrics?.openClusters ?? 0) === 0 ? 'Đã sạch' : 'Tồn đọng'}
+                  </BadgeTag>
                 </div>
-                <div className="text-2xl font-bold text-amber-900 dark:text-amber-200 tabular-nums mt-1">
+                <div
+                  className={`text-2xl font-bold tabular-nums mt-1 ${
+                    (metrics?.openClusters ?? 0) === 0
+                      ? 'text-emerald-900 dark:text-emerald-200'
+                      : 'text-amber-900 dark:text-amber-200'
+                  }`}
+                >
                   {metrics?.openClusters ?? 0}
                   <span className="text-base font-medium opacity-70"> Cụm</span>
                 </div>
-                <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 truncate">
-                  {(metrics?.newCount ?? 0) + (metrics?.investigatingCount ?? 0)} sự cố chưa dập tắt
+                <div
+                  className={`text-[11px] mt-0.5 truncate ${
+                    (metrics?.openClusters ?? 0) === 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                  }`}
+                >
+                  {(metrics?.openClusters ?? 0) === 0
+                    ? '100% cụm sự cố đã dập tắt'
+                    : `${(metrics?.newCount ?? 0) + (metrics?.investigatingCount ?? 0)} sự cố chưa dập tắt`}
                 </div>
               </Card>
             </Col>
@@ -607,16 +651,28 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                         >
                           Đồng bộ & Làm mới
                         </Button>
-                        <Button
-                          type="primary"
-                          icon={<AppIcon icon={Sparkles} size="sm" />}
-                          loading={batchDispatching}
-                          onClick={() => void handleBatchDispatchPriority()}
-                          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border-none text-white font-medium"
-                          size="small"
-                        >
-                          ⚡ Duyệt Nhanh 3 Cụm Trọng Tâm (P0)
-                        </Button>
+                        {pendingPriorityClusters.length > 0 ? (
+                          <Button
+                            type="primary"
+                            icon={<AppIcon icon={Sparkles} size="sm" />}
+                            loading={batchDispatching}
+                            onClick={() => void handleBatchDispatchPriority()}
+                            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border-none text-white font-medium shadow-sm"
+                            size="small"
+                          >
+                            ⚡ Duyệt Nhanh {pendingPriorityClusters.length} Cụm Trọng Tâm (P0)
+                          </Button>
+                        ) : isAllExtinguished ? (
+                          <div className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 px-2.5 py-1 rounded-md text-xs font-semibold">
+                            <AppIcon icon={CheckCircle2} size="sm" className="text-emerald-600 dark:text-emerald-400" />
+                            <span>Toàn bộ 5 cụm đã dập tắt</span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 px-2.5 py-1 rounded-md text-xs font-semibold">
+                            <AppIcon icon={CheckCircle2} size="sm" className="text-emerald-600 dark:text-emerald-400" />
+                            <span>Đã xử lý hết cụm P0</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
