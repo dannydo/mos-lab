@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Form, Select, Input, DatePicker, Button, Space, message, Divider, theme, Tag } from 'antd';
+import { Form, Select, Input, DatePicker, Button, Space, message, Divider, theme, Tag, Spin } from 'antd';
 import {
   PhoneOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   SyncOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '../lib/api-client';
 import { CALL_RESULT_LABELS, CALL_OUTCOME_LABELS } from '@mos-lab/shared';
@@ -17,6 +18,16 @@ import { AdaptiveModal } from './ui/AdaptiveOverlay';
 import { CopyPhoneButton } from './ui';
 
 const { TextArea } = Input;
+
+export const QUICK_NOTE_PRESETS = [
+  { label: 'Gọi nhỡ', text: 'Gọi nhỡ - Không trả lời', result: 'NO_ANSWER', outcome: 'PENDING' },
+  { label: '24h nt', text: '24h nt', result: 'NO_ANSWER', outcome: 'PENDING' },
+  { label: 'Máy bận', text: 'Máy bận', result: 'BUSY', outcome: 'PENDING' },
+  { label: 'Thuê bao', text: 'Thuê bao / Không liên lạc được', result: 'FAILED', outcome: 'PENDING' },
+  { label: 'Hẹn gọi lại', text: 'Khách hẹn gọi lại sau', result: 'ANSWERED', outcome: 'CALL_BACK' },
+  { label: 'Sai số', text: 'Sai số / Nhầm số', result: 'WRONG_NUMBER', outcome: 'PENDING' },
+  { label: 'Không nhu cầu', text: 'Khách không có nhu cầu', result: 'ANSWERED', outcome: 'PENDING' },
+];
 
 interface CallLogModalProps {
   visible?: boolean;
@@ -42,6 +53,8 @@ export default function CallLogModal({
   const [callResult, setCallResult] = useState<string>('ANSWERED');
   const [outcome, setOutcome] = useState<string>('PENDING');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isSubmittingRef = useRef(false);
+  const noteInputRef = useRef<any>(null);
 
   // Read from OmiCall global context
   const {
@@ -158,6 +171,44 @@ export default function CallLogModal({
     }
   }, [visible, activeCall, resolvedLog, form]);
 
+  // Auto-focus into note textarea when modal opens
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        if (noteInputRef.current) {
+          try {
+            noteInputRef.current.focus({ cursor: 'end' });
+          } catch {
+            noteInputRef.current.focus?.();
+          }
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  const handleApplyQuickNotePreset = (preset: (typeof QUICK_NOTE_PRESETS)[number]) => {
+    form.setFieldsValue({ note: preset.text });
+    if (preset.result) {
+      form.setFieldsValue({ callResult: preset.result });
+      setCallResult(preset.result);
+    }
+    if (preset.outcome) {
+      form.setFieldsValue({ outcome: preset.outcome });
+      setOutcome(preset.outcome);
+    }
+    // Focus textarea immediately after applying preset
+    setTimeout(() => {
+      if (noteInputRef.current) {
+        try {
+          noteInputRef.current.focus({ cursor: 'end' });
+        } catch {
+          noteInputRef.current.focus?.();
+        }
+      }
+    }, 50);
+  };
+
   const resolveTargetUserId = async (): Promise<number | null> => {
     if (legacyUserId && legacyUserId > 0) return legacyUserId;
     const phoneToLookup = activeCall?.phone || currentCall?.phone;
@@ -174,13 +225,18 @@ export default function CallLogModal({
     return null;
   };
 
-  const handleQuickAction = async (actionType: 'NO_ANSWER' | 'CALL_BACK' | 'BOOKED' | 'RENEWED') => {
+  const handleQuickAction = async (
+    actionType: 'NO_ANSWER' | 'NOTE_24H' | 'BUSY' | 'CALL_BACK' | 'BOOKED' | 'RENEWED'
+  ) => {
+    if (isSubmittingRef.current || loading) return;
+    isSubmittingRef.current = true;
     setLoading(true);
     try {
       const targetUserId = await resolveTargetUserId();
       if (!targetUserId) {
         message.error('Không tìm thấy thông tin khách hàng để lưu nhật ký. Vui lòng thử lại!');
         setLoading(false);
+        isSubmittingRef.current = false;
         return;
       }
 
@@ -201,6 +257,14 @@ export default function CallLogModal({
         data.callResult = 'NO_ANSWER';
         data.outcome = 'PENDING';
         data.note = 'Gọi nhỡ - Không trả lời';
+      } else if (actionType === 'NOTE_24H') {
+        data.callResult = callDuration > 0 ? 'ANSWERED' : 'NO_ANSWER';
+        data.outcome = 'PENDING';
+        data.note = '24h nt';
+      } else if (actionType === 'BUSY') {
+        data.callResult = 'BUSY';
+        data.outcome = 'PENDING';
+        data.note = 'Máy bận';
       } else if (actionType === 'CALL_BACK') {
         data.callResult = 'ANSWERED';
         data.outcome = 'CALL_BACK';
@@ -232,16 +296,22 @@ export default function CallLogModal({
       message.error('Không thể ghi nhận cuộc gọi.');
     } finally {
       setLoading(false);
+      setTimeout(() => {
+        isSubmittingRef.current = false;
+      }, 500);
     }
   };
 
   const handleFinish = async (values: SafeAny) => {
+    if (isSubmittingRef.current || loading) return;
+    isSubmittingRef.current = true;
     setLoading(true);
     try {
       const targetUserId = await resolveTargetUserId();
       if (!targetUserId) {
         message.error('Không tìm thấy thông tin khách hàng để lưu nhật ký. Vui lòng thử lại!');
         setLoading(false);
+        isSubmittingRef.current = false;
         return;
       }
 
@@ -275,6 +345,9 @@ export default function CallLogModal({
       message.error('Không thể ghi nhận cuộc gọi.');
     } finally {
       setLoading(false);
+      setTimeout(() => {
+        isSubmittingRef.current = false;
+      }, 500);
     }
   };
 
@@ -345,18 +418,52 @@ export default function CallLogModal({
         </div>
       )}
 
-      <div className="mb-4 mt-4">
-        <div style={{ color: token.colorTextDescription, marginBottom: '8px', fontSize: '12px', fontWeight: '500' }}>
-          GHI NHANH (1-CLICK):
+      <div
+        className="mb-4 mt-4 p-3 rounded-lg border"
+        style={{
+          background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span style={{ color: token.colorTextDescription, fontSize: '12px', fontWeight: '600' }}>
+            ⚡ GHI NHANH & LƯU NGAY (1-CLICK):
+          </span>
+          <span className="text-[11px] text-zinc-400">Tự động điền &amp; lưu nhật ký tức thì</span>
         </div>
-        <Space wrap>
+        <Space wrap size={[8, 8]}>
           <Button
             danger
+            type="primary"
             icon={<CloseCircleOutlined />}
             onClick={() => handleQuickAction('NO_ANSWER')}
             loading={loading}
+            disabled={loading}
+            className="font-medium hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            Gọi Nhỡ (No Ans)
+            Gọi Nhỡ (Lưu ngay)
+          </Button>
+          <Button
+            style={{ color: '#722ED1', borderColor: '#722ED1' }}
+            ghost
+            icon={<MessageOutlined />}
+            onClick={() => handleQuickAction('NOTE_24H')}
+            loading={loading}
+            disabled={loading}
+            className="font-medium hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            24h NT (Lưu ngay)
+          </Button>
+          <Button
+            style={{ color: '#FF4D4F', borderColor: '#FF4D4F' }}
+            ghost
+            icon={<CloseCircleOutlined />}
+            onClick={() => handleQuickAction('BUSY')}
+            loading={loading}
+            disabled={loading}
+            className="font-medium hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            Máy Bận (Lưu ngay)
           </Button>
           <Button
             style={{ color: '#FAAD14', borderColor: '#FAAD14' }}
@@ -364,8 +471,10 @@ export default function CallLogModal({
             icon={<CalendarOutlined />}
             onClick={() => handleQuickAction('CALL_BACK')}
             loading={loading}
+            disabled={loading}
+            className="font-medium hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            Hẹn Gọi Lại (Call Bk)
+            Hẹn Gọi Lại
           </Button>
           <Button
             type="primary"
@@ -373,8 +482,10 @@ export default function CallLogModal({
             icon={<CheckCircleOutlined />}
             onClick={() => handleQuickAction('BOOKED')}
             loading={loading}
+            disabled={loading}
+            className="font-medium hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            Đã Book Lịch (Booked)
+            Đã Book Lịch
           </Button>
         </Space>
       </div>
@@ -537,99 +648,163 @@ export default function CallLogModal({
 
       <Divider style={{ borderColor, margin: '15px 0' }} />
 
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleFinish}
-        initialValues={{
-          callResult: 'ANSWERED',
-          outcome: 'PENDING',
-        }}
-      >
-        <Form.Item
-          name="callResult"
-          label={<span style={{ color: token.colorTextSecondary }}>Kết quả cuộc gọi</span>}
-          rules={[{ required: true }]}
+      <Spin spinning={loading} tip="Đang lưu nhật ký cuộc gọi...">
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFinish}
+          initialValues={{
+            callResult: 'ANSWERED',
+            outcome: 'PENDING',
+          }}
         >
-          <Select
-            getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-            onChange={(val) => {
-              setCallResult(val);
-              if (val !== 'ANSWERED') {
-                form.setFieldsValue({ outcome: 'PENDING' });
-                setOutcome('PENDING');
-              }
-            }}
-            options={Object.entries(CALL_RESULT_LABELS).map(([k, v]) => ({ value: k, label: v }))}
-          />
-        </Form.Item>
-
-        {callResult === 'ANSWERED' && (
           <Form.Item
-            name="outcome"
-            label={<span style={{ color: token.colorTextSecondary }}>Kết quả chi tiết</span>}
+            name="callResult"
+            label={<span style={{ color: token.colorTextSecondary }}>Kết quả cuộc gọi</span>}
             rules={[{ required: true }]}
           >
             <Select
+              disabled={loading}
               getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-              onChange={(val) => setOutcome(val)}
-              options={Object.entries(CALL_OUTCOME_LABELS)
-                .filter(([k]) => k !== 'RENEWED')
-                .map(([k, v]) => ({ value: k, label: v }))}
+              onChange={(val) => {
+                setCallResult(val);
+                if (val !== 'ANSWERED') {
+                  form.setFieldsValue({ outcome: 'PENDING' });
+                  setOutcome('PENDING');
+                }
+              }}
+              options={Object.entries(CALL_RESULT_LABELS).map(([k, v]) => ({ value: k, label: v }))}
             />
           </Form.Item>
-        )}
 
-        {callResult === 'ANSWERED' && outcome === 'CALL_BACK' && (
-          <Form.Item
-            name="callbackDate"
-            label={<span style={{ color: token.colorTextSecondary }}>Ngày hẹn gọi lại</span>}
-            rules={[{ required: true, message: 'Vui lòng chọn ngày hẹn gọi lại' }]}
-          >
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" />
-          </Form.Item>
-        )}
-
-        <Form.Item
-          name="note"
-          label={
-            <div className="flex justify-between items-center w-full">
-              <span style={{ color: token.colorTextSecondary }}>Ghi chú cuộc gọi</span>
-              {resolvedLog?.satisfactionAnalysis && (
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() => {
-                    const currentNote = form.getFieldValue('note') || '';
-                    const prefix = currentNote ? `${currentNote}\n` : '';
-                    form.setFieldValue('note', `${prefix}${resolvedLog.satisfactionAnalysis}`);
-                  }}
-                  className="p-0 h-auto text-[11.5px] font-medium"
-                  style={{ color: '#D4A84B' }}
-                >
-                  📋 Áp dụng phân tích AI làm ghi chú
-                </Button>
-              )}
-            </div>
-          }
-        >
-          <TextArea rows={4} placeholder="Nhập ghi chú chi tiết về cuộc hội thoại..." />
-        </Form.Item>
-
-        <Form.Item className="mb-0 text-right">
-          <Space>
-            <Button onClick={onCancel}>Hủy</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              style={{ background: token.colorPrimary, borderColor: token.colorPrimary, color: '#000' }}
+          {callResult === 'ANSWERED' && (
+            <Form.Item
+              name="outcome"
+              label={<span style={{ color: token.colorTextSecondary }}>Kết quả chi tiết</span>}
+              rules={[{ required: true }]}
             >
-              Lưu Nhật Ký
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
+              <Select
+                disabled={loading}
+                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                onChange={(val) => setOutcome(val)}
+                options={Object.entries(CALL_OUTCOME_LABELS)
+                  .filter(([k]) => k !== 'RENEWED')
+                  .map(([k, v]) => ({ value: k, label: v }))}
+              />
+            </Form.Item>
+          )}
+
+          {callResult === 'ANSWERED' && outcome === 'CALL_BACK' && (
+            <Form.Item
+              name="callbackDate"
+              label={<span style={{ color: token.colorTextSecondary }}>Ngày hẹn gọi lại</span>}
+              rules={[{ required: true, message: 'Vui lòng chọn ngày hẹn gọi lại' }]}
+            >
+              <DatePicker disabled={loading} style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" />
+            </Form.Item>
+          )}
+
+          {/* Quick Note Presets */}
+          <div className="mb-2">
+            <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+              <span className="text-[11px] text-zinc-400 mr-1">Thẻ ghi nhanh:</span>
+              {QUICK_NOTE_PRESETS.map((preset) => (
+                <Tag
+                  key={preset.label}
+                  onClick={() => {
+                    if (!loading) {
+                      handleApplyQuickNotePreset(preset);
+                    }
+                  }}
+                  className={`cursor-pointer text-[11px] select-none py-0.5 px-2 transition-all ${
+                    loading ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-85 active:scale-95'
+                  }`}
+                  style={{
+                    borderRadius: '4px',
+                    background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#f4f4f5',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e4e4e7',
+                    color: textColor,
+                  }}
+                >
+                  + {preset.label}
+                </Tag>
+              ))}
+            </div>
+          </div>
+
+          <Form.Item
+            name="note"
+            label={
+              <div className="flex justify-between items-center w-full">
+                <span style={{ color: token.colorTextSecondary }}>Ghi chú cuộc gọi</span>
+                {resolvedLog?.satisfactionAnalysis && (
+                  <Button
+                    type="link"
+                    size="small"
+                    disabled={loading}
+                    onClick={() => {
+                      const currentNote = form.getFieldValue('note') || '';
+                      const prefix = currentNote ? `${currentNote}\n` : '';
+                      form.setFieldValue('note', `${prefix}${resolvedLog.satisfactionAnalysis}`);
+                    }}
+                    className="p-0 h-auto text-[11.5px] font-medium"
+                    style={{ color: '#D4A84B' }}
+                  >
+                    📋 Áp dụng phân tích AI làm ghi chú
+                  </Button>
+                )}
+              </div>
+            }
+            extra={
+              <div className="flex justify-between items-center text-[10.5px] text-zinc-400 mt-1">
+                <span>
+                  💡 Phím tắt: <strong>Ctrl + Enter</strong> để lưu nhanh từ bàn phím
+                </span>
+                <span>Click thẻ ở trên để tự động điền</span>
+              </div>
+            }
+          >
+            <TextArea
+              ref={noteInputRef}
+              rows={4}
+              autoFocus
+              disabled={loading}
+              placeholder="Nhập ghi chú chi tiết về cuộc hội thoại... (Nhấn Ctrl + Enter để lưu nhanh)"
+              onKeyDown={(e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!loading && !isSubmittingRef.current) {
+                    form.submit();
+                  }
+                }
+              }}
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-0 text-right">
+            <Space>
+              <Button onClick={onCancel} disabled={loading}>
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                disabled={loading}
+                style={{
+                  background: token.colorPrimary,
+                  borderColor: token.colorPrimary,
+                  color: '#000',
+                  fontWeight: 600,
+                }}
+                className="hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                {loading ? 'Đang lưu...' : 'Lưu Nhật Ký (Ctrl + Enter)'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Spin>
     </AdaptiveModal>
   );
 }
