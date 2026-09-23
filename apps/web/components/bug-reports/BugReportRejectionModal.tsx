@@ -3,14 +3,15 @@
 import React from 'react';
 import { Alert, Button, Checkbox, Image, Input, Modal, Typography, message, theme } from 'antd';
 import type { CreateBugReportAttachmentRequest } from '@mos-lab/shared';
+import { BUG_REPORT_MAX_ATTACHMENTS, BUG_REPORT_MAX_ATTACHMENT_BYTES } from '@mos-lab/shared';
 import { AlertCircle, ImagePlus, RotateCcw, UploadCloud, X } from 'lucide-react';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { AppIcon } from '../ui';
 
 const { Text } = Typography;
 
-const MAX_ATTACHMENTS = 3;
-const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
+const MAX_ATTACHMENTS = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
+const MAX_ATTACHMENT_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
 
 export interface BugReportRejectionModalProps {
   open: boolean;
@@ -64,7 +65,7 @@ export function BugReportRejectionModal({
       }
       const available = Math.max(0, MAX_ATTACHMENTS - files.length);
       if (!available) {
-        messageApi.warning('Mỗi phản hồi nhận tối đa 3 ảnh minh họa.');
+        messageApi.warning(`Mỗi phản hồi nhận tối đa ${MAX_ATTACHMENTS} ảnh minh họa.`);
         return;
       }
       setProcessing(true);
@@ -78,7 +79,7 @@ export function BugReportRejectionModal({
           }
         }
         if (next.length) setFiles((current) => [...current, ...next].slice(0, MAX_ATTACHMENTS));
-        if (imageFiles.length > available) messageApi.warning('Chỉ 3 ảnh đầu tiên được giữ lại.');
+        if (imageFiles.length > available) messageApi.warning(`Chỉ ${available} ảnh đầu tiên được giữ lại.`);
       } finally {
         setProcessing(false);
       }
@@ -293,38 +294,49 @@ export function BugReportRejectionModal({
                     để dán ảnh
                   </div>
                   <div className="mt-1 text-[11px] text-slate-500">
-                    Hỗ trợ PNG, JPG, WebP tối đa 3MB mỗi ảnh (tối đa 3 ảnh)
+                    Hỗ trợ PNG, JPG, WebP tối đa 5MB mỗi ảnh (tối đa {MAX_ATTACHMENTS} ảnh)
                   </div>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-3 gap-3">
-                    {files.map((file, index) => (
-                      <div
-                        key={index}
-                        className="group relative overflow-hidden rounded-xl border bg-slate-50 dark:bg-slate-900"
-                        style={{ borderColor: token.colorBorderSecondary }}
-                      >
-                        <div className="aspect-video w-full overflow-hidden">
-                          <Image
-                            src={previewUrls[index]}
-                            alt={file.name}
-                            className="h-full w-full object-cover"
-                            preview={{ mask: 'Xem phóng to' }}
-                          />
-                        </div>
-                        <div className="truncate p-1.5 text-[11px] text-slate-600 dark:text-slate-400">{file.name}</div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFile(index)}
-                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/80 text-white transition-opacity hover:bg-red-600"
-                          title="Xóa ảnh này"
+                  <Image.PreviewGroup
+                    preview={{
+                      zIndex: 12030,
+                      countRender: (current: number, total: number) => (
+                        <span className="tabular-nums font-semibold tracking-wide">
+                          {current} / {total}
+                        </span>
+                      ),
+                    }}
+                  >
+                    <div className="grid grid-cols-3 gap-3">
+                      {files.map((file, index) => (
+                        <div
+                          key={index}
+                          className="group relative overflow-hidden rounded-xl border bg-slate-50 dark:bg-slate-900"
+                          style={{ borderColor: token.colorBorderSecondary }}
                         >
-                          <AppIcon icon={X} size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                          <div className="aspect-video w-full overflow-hidden">
+                            <Image
+                              src={previewUrls[index]}
+                              alt={file.name}
+                              className="h-full w-full object-cover"
+                              preview={{ mask: 'Xem phóng to' }}
+                            />
+                          </div>
+                          <div className="truncate p-1.5 text-[11px] text-slate-600 dark:text-slate-400">{file.name}</div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(index)}
+                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/80 text-white transition-opacity hover:bg-red-600"
+                            title="Xóa ảnh này"
+                          >
+                            <AppIcon icon={X} size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </Image.PreviewGroup>
                   {files.length < MAX_ATTACHMENTS ? (
                     <div className="text-right">
                       <Button

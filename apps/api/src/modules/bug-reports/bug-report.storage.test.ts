@@ -33,6 +33,16 @@ test('private storage validates image magic bytes and blocks traversal', async (
         }),
       /không khớp định dạng/
     );
+    await assert.rejects(
+      () =>
+        BugReportStorage.save(9, {
+          fileName: 'oversized.png',
+          mimeType: 'image/png',
+          sizeBytes: 6 * 1024 * 1024,
+          dataBase64: ONE_PIXEL_PNG.toString('base64'),
+        }),
+      /Mỗi ảnh phải nhỏ hơn hoặc bằng 5 MB/
+    );
   } finally {
     delete process.env.BUG_REPORT_MEDIA_DIR;
     await rm(root, { recursive: true, force: true });

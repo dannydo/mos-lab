@@ -18,17 +18,19 @@ import {
 } from 'antd';
 import { ImagePlus, Inbox, Lightbulb, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import type {
-  BugReportClientError,
-  BugReportContext,
-  BugReportExpertDetails,
-  BugReportExpertImpact,
-  BugReportRequestType,
-  CreateBugReportAttachmentRequest,
-  FeatureRequestAudience,
-  RequestClassificationJob,
+import {
+  BUG_REPORT_MAX_ATTACHMENTS,
+  BUG_REPORT_MAX_ATTACHMENT_BYTES,
+  isAdminOrSuperAdminRole,
+  type BugReportClientError,
+  type BugReportContext,
+  type BugReportExpertDetails,
+  type BugReportExpertImpact,
+  type BugReportRequestType,
+  type CreateBugReportAttachmentRequest,
+  type FeatureRequestAudience,
+  type RequestClassificationJob,
 } from '@mos-lab/shared';
-import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '../../lib/bug-report-launcher';
 import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } from '../../lib/bug-diagnostics';
@@ -48,8 +50,8 @@ import {
 import { useBugReportLauncherPreferences } from './useBugReportLauncherPreferences';
 import { useMyBugReports } from './useMyBugReports';
 
-const MAX_ATTACHMENTS = 3;
-const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
+const MAX_ATTACHMENTS = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
+const MAX_ATTACHMENT_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
 const LAUNCHER_SIZE = 44;
 const LAUNCHER_MARGIN = 12;
 const DRAG_THRESHOLD = 4;
@@ -91,7 +93,9 @@ function BugReportFileThumbnail({ file }: { file: File }) {
       width={52}
       height={52}
       style={{ borderRadius: 6, objectFit: 'cover' }}
-      preview={{ zIndex: 12030 }}
+      preview={{
+        mask: <span className="text-[10px] font-medium text-white">Xem</span>,
+      }}
     />
   );
 }
@@ -470,7 +474,7 @@ export function BugReportSurface() {
   const addFiles = async (selected: File[], draftView: RequestDraftView) => {
     const available = Math.max(0, MAX_ATTACHMENTS - drafts[draftView].files.length);
     if (!available) {
-      message.warning('Mỗi yêu cầu nhận tối đa 3 ảnh.');
+      message.warning(`Mỗi yêu cầu nhận tối đa ${MAX_ATTACHMENTS} ảnh.`);
       return;
     }
     setDrafts((current) => updateRequestDraft(current, draftView, { processingImages: true }));
@@ -490,7 +494,7 @@ export function BugReportSurface() {
           }))
         );
       }
-      if (selected.length > available) message.warning('Chỉ 3 ảnh đầu tiên được giữ lại.');
+      if (selected.length > available) message.warning(`Chỉ ${available} ảnh đầu tiên được giữ lại.`);
     } finally {
       setDrafts((current) => updateRequestDraft(current, draftView, { processingImages: false }));
     }
@@ -981,44 +985,55 @@ export function BugReportSurface() {
                   {activeView === 'feature' ? 'Thêm ảnh minh họa nhu cầu' : 'Thêm ảnh chụp lỗi nếu cần'}
                 </span>
                 <span className="text-xs" style={{ color: token.colorTextSecondary }}>
-                  Không bắt buộc · tối đa 3 ảnh · mỗi ảnh 3 MB
+                  Không bắt buộc · tối đa {MAX_ATTACHMENTS} ảnh · mỗi ảnh 5 MB
                 </span>
               </div>
             </Upload.Dragger>
 
             {activeDraft.files.length > 0 && (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {activeDraft.files.map((file, index) => (
-                  <div
-                    key={`${file.name}-${file.size}-${index}`}
-                    className="flex min-w-0 items-center gap-3 rounded-lg border p-2"
-                    style={{ borderColor: token.colorBorderSecondary, background: token.colorFillQuaternary }}
-                  >
-                    <BugReportFileThumbnail file={file} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-medium" title={file.name}>
-                        {file.name}
+              <Image.PreviewGroup
+                preview={{
+                  zIndex: 12030,
+                  countRender: (current: number, total: number) => (
+                    <span className="tabular-nums font-semibold tracking-wide">
+                      {current} / {total}
+                    </span>
+                  ),
+                }}
+              >
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {activeDraft.files.map((file, index) => (
+                    <div
+                      key={`${file.name}-${file.size}-${index}`}
+                      className="flex min-w-0 items-center gap-3 rounded-lg border p-2"
+                      style={{ borderColor: token.colorBorderSecondary, background: token.colorFillQuaternary }}
+                    >
+                      <BugReportFileThumbnail file={file} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-xs font-medium" title={file.name}>
+                          {file.name}
+                        </div>
+                        <div className="mt-1 text-xs" style={{ color: token.colorTextSecondary }}>
+                          {(file.size / 1024).toFixed(0)} KB · bấm ảnh để lướt xem
+                        </div>
                       </div>
-                      <div className="mt-1 text-xs" style={{ color: token.colorTextSecondary }}>
-                        {(file.size / 1024).toFixed(0)} KB · bấm ảnh để xem
-                      </div>
+                      <Button
+                        type="text"
+                        size="small"
+                        aria-label={`Xóa ảnh ${file.name}`}
+                        icon={<AppIcon icon={X} size="sm" />}
+                        onClick={() =>
+                          setDrafts((current) =>
+                            updateRequestDraft(current, activeRequestView, (draft) => ({
+                              files: draft.files.filter((_, itemIndex) => itemIndex !== index),
+                            }))
+                          )
+                        }
+                      />
                     </div>
-                    <Button
-                      type="text"
-                      size="small"
-                      aria-label={`Xóa ảnh ${file.name}`}
-                      icon={<AppIcon icon={X} size="sm" />}
-                      onClick={() =>
-                        setDrafts((current) =>
-                          updateRequestDraft(current, activeRequestView, (draft) => ({
-                            files: draft.files.filter((_, itemIndex) => itemIndex !== index),
-                          }))
-                        )
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </Image.PreviewGroup>
             )}
           </div>
         )}

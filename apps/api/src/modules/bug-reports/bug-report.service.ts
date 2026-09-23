@@ -4,6 +4,7 @@ import {
   BUG_REPORT_AGENT_UPDATE_STAGES,
   BUG_REPORT_CLARIFICATION_STATUSES,
   BUG_REPORT_EXPERT_IMPACT_LEVELS,
+  BUG_REPORT_MAX_ATTACHMENTS,
   BUG_REPORT_PRIORITIES,
   BUG_REPORT_REQUEST_TYPES,
   BUG_REPORT_STATUSES,
@@ -1796,8 +1797,11 @@ async function saveAttachments(
 
 function normalizedAttachments(input: unknown): CreateBugReportAttachmentRequest[] {
   const raw = Array.isArray(input) ? input : [];
-  if (raw.length > 3) throw new BugReportError('Mỗi nội dung chỉ nhận tối đa 3 ảnh.');
-  return raw.slice(0, 3) as CreateBugReportAttachmentRequest[];
+  const maxAttachments = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
+  if (raw.length > maxAttachments) {
+    throw new BugReportError(`Mỗi nội dung chỉ nhận tối đa ${maxAttachments} ảnh.`);
+  }
+  return raw.slice(0, maxAttachments) as CreateBugReportAttachmentRequest[];
 }
 
 export class BugReportService {

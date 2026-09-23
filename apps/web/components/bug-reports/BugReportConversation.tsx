@@ -11,6 +11,7 @@ import type {
   CreateBugReportAttachmentRequest,
   CreateBugReportCommentRequest,
 } from '@mos-lab/shared';
+import { BUG_REPORT_MAX_ATTACHMENTS, BUG_REPORT_MAX_ATTACHMENT_BYTES } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { Bot, ImagePlus, Send, X } from 'lucide-react';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
@@ -18,8 +19,8 @@ import { AppIcon, StatePanel } from '../ui';
 import { BugReportAttachmentPreview } from './BugReportAttachmentPreview';
 
 const { Text, Paragraph } = Typography;
-const MAX_ATTACHMENTS = 3;
-const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
+const MAX_ATTACHMENTS = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
+const MAX_ATTACHMENT_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
 
 const CLARIFICATION_COPY: Record<
   BugReportClarification['status'],
@@ -79,7 +80,16 @@ function CommentFileThumbnail({ file }: { file: File }) {
   }, [file]);
 
   return url ? (
-    <Image src={url} alt={`Ảnh chờ gửi ${file.name}`} width={48} height={48} style={{ objectFit: 'cover' }} />
+    <Image
+      src={url}
+      alt={`Ảnh chờ gửi ${file.name}`}
+      width={48}
+      height={48}
+      style={{ objectFit: 'cover', borderRadius: 4 }}
+      preview={{
+        mask: <span className="text-[10px] font-medium text-white">Xem</span>,
+      }}
+    />
   ) : (
     <span className="h-12 w-12" />
   );
@@ -140,7 +150,7 @@ export function BugReportConversation({
     async (selected: File[]) => {
       const available = Math.max(0, MAX_ATTACHMENTS - files.length);
       if (!available) {
-        messageApi.warning('Mỗi bình luận nhận tối đa 3 ảnh.');
+        messageApi.warning(`Mỗi bình luận nhận tối đa ${MAX_ATTACHMENTS} ảnh.`);
         return;
       }
       setProcessing(true);
@@ -154,7 +164,7 @@ export function BugReportConversation({
           }
         }
         if (next.length) setFiles((current) => [...current, ...next].slice(0, MAX_ATTACHMENTS));
-        if (selected.length > available) messageApi.warning('Chỉ 3 ảnh đầu tiên được giữ lại.');
+        if (selected.length > available) messageApi.warning(`Chỉ ${available} ảnh đầu tiên được giữ lại.`);
       } finally {
         setProcessing(false);
       }
@@ -253,18 +263,29 @@ export function BugReportConversation({
                   <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 8 }}>{comment.body}</Paragraph>
                 ) : null}
                 {comment.attachments.some((item) => !item.deletedAt) ? (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {comment.attachments
-                      .filter((item) => !item.deletedAt)
-                      .map((attachment) => (
-                        <BugReportAttachmentPreview
-                          key={attachment.id}
-                          reportId={reportId}
-                          attachment={attachment}
-                          compact
-                        />
-                      ))}
-                  </div>
+                  <Image.PreviewGroup
+                    preview={{
+                      zIndex: 12030,
+                      countRender: (current: number, total: number) => (
+                        <span className="tabular-nums font-semibold tracking-wide">
+                          {current} / {total}
+                        </span>
+                      ),
+                    }}
+                  >
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {comment.attachments
+                        .filter((item) => !item.deletedAt)
+                        .map((attachment) => (
+                          <BugReportAttachmentPreview
+                            key={attachment.id}
+                            reportId={reportId}
+                            attachment={attachment}
+                            compact
+                          />
+                        ))}
+                    </div>
+                  </Image.PreviewGroup>
                 ) : null}
               </article>
             );
@@ -307,27 +328,38 @@ export function BugReportConversation({
           />
 
           {files.length ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {files.map((file, index) => (
-                <div
-                  key={`${file.name}-${file.size}-${index}`}
-                  className="flex max-w-full items-center gap-2 rounded-lg border p-1.5"
-                  style={{ borderColor: token.colorBorderSecondary }}
-                >
-                  <CommentFileThumbnail file={file} />
-                  <Text ellipsis title={file.name} className="max-w-32 text-xs">
-                    {file.name}
-                  </Text>
-                  <Button
-                    type="text"
-                    size="small"
-                    aria-label={`Xóa ảnh ${file.name}`}
-                    icon={<AppIcon icon={X} size="sm" />}
-                    onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-                  />
-                </div>
-              ))}
-            </div>
+            <Image.PreviewGroup
+              preview={{
+                zIndex: 12030,
+                countRender: (current: number, total: number) => (
+                  <span className="tabular-nums font-semibold tracking-wide">
+                    {current} / {total}
+                  </span>
+                ),
+              }}
+            >
+              <div className="mt-3 flex flex-wrap gap-2">
+                {files.map((file, index) => (
+                  <div
+                    key={`${file.name}-${file.size}-${index}`}
+                    className="flex max-w-full items-center gap-2 rounded-lg border p-1.5"
+                    style={{ borderColor: token.colorBorderSecondary }}
+                  >
+                    <CommentFileThumbnail file={file} />
+                    <Text ellipsis title={file.name} className="max-w-32 text-xs">
+                      {file.name}
+                    </Text>
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={`Xóa ảnh ${file.name}`}
+                      icon={<AppIcon icon={X} size="sm" />}
+                      onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                    />
+                  </div>
+                ))}
+              </div>
+            </Image.PreviewGroup>
           ) : null}
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">

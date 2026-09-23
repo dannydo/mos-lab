@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import {
+  BUG_REPORT_MAX_ATTACHMENTS,
   BUG_REPORT_REQUEST_TYPES,
   REQUEST_CLASSIFICATION_JOB_STATUSES,
   type CreateRequestClassificationJobRequest,
@@ -14,7 +15,7 @@ import { BugReportStorage } from './bug-report.storage.js';
 const JOB_TTL_MS = 30 * 60 * 1000;
 const LEASE_MS = 2 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
-const MAX_ATTACHMENTS = 3;
+const MAX_ATTACHMENTS = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
 
 export class RequestClassificationError extends Error {
   constructor(message: string, readonly statusCode = 400, readonly code = 'REQUEST_CLASSIFICATION_ERROR') {
@@ -50,7 +51,9 @@ function sanitizeContext(input: CreateRequestClassificationJobRequest['context']
 
 function normalizeAttachments(input: unknown) {
   const values = Array.isArray(input) ? input : [];
-  if (values.length > MAX_ATTACHMENTS) throw new RequestClassificationError('Mỗi lần phân loại chỉ nhận tối đa 3 ảnh.');
+  if (values.length > MAX_ATTACHMENTS) {
+    throw new RequestClassificationError(`Mỗi lần phân loại chỉ nhận tối đa ${MAX_ATTACHMENTS} ảnh.`);
+  }
   return values.slice(0, MAX_ATTACHMENTS);
 }
 
