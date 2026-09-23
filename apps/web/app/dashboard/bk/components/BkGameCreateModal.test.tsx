@@ -150,4 +150,40 @@ describe('BkGameCreateModal', () => {
       );
     });
   });
+
+  it('binds allowedBookingChannels correctly when clicking quick GB button and submits payload', async () => {
+    apiMocks.createGame.mockResolvedValue({
+      id: 99,
+      title: '[BK_LÔNG][T9] CUỘC ĐUA KỲ THÚ',
+      allowedBookingChannels: ['GB'],
+    });
+
+    render(<BkGameCreateModal open={true} onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    // Wait for staff to load so participantIds is auto-populated
+    await waitFor(() => {
+      expect(screen.getByText(/Hiển thị 4 \/ 4 nhân sự/)).toBeInTheDocument();
+    });
+
+    // Click "⚡ Chỉ tính GB (Fair-play)" quick button
+    const quickGbBtn = screen.getByTestId('quick-gb-btn');
+    expect(quickGbBtn).toBeInTheDocument();
+    fireEvent.click(quickGbBtn);
+
+    // Fill title
+    const titleInput = screen.getByPlaceholderText(/Ví dụ: Chiến Dịch Săn Booking/i);
+    fireEvent.change(titleInput, { target: { value: '[BK_LÔNG][T9] CUỘC ĐUA KỲ THÚ' } });
+
+    // Submit form by clicking "Khởi Tạo Game"
+    const submitBtn = screen.getByRole('button', { name: /Khởi Tạo Game/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiMocks.createGame).toHaveBeenCalledTimes(1);
+      const callArg = apiMocks.createGame.mock.calls[0][0];
+      expect(callArg.title).toBe('[BK_LÔNG][T9] CUỘC ĐUA KỲ THÚ');
+      expect(callArg.allowedBookingChannels).toEqual(['GB']);
+    });
+  });
 });
+

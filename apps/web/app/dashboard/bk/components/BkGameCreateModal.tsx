@@ -630,7 +630,6 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
 
         {(watchedMetricType === 'BOOKINGS' || watchedMetricType === 'DONE' || watchedMetricType === 'COMPOSITE') && (
           <Form.Item
-            name="allowedBookingChannels"
             label={
               <div className="flex items-center gap-1.5">
                 <span className="font-medium">Kênh tiếp nhận đặt lịch (Booking Channel)</span>
@@ -657,29 +656,34 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
                 <span className="text-[12px] text-slate-500 dark:text-slate-400">Chọn nhanh:</span>
                 <button
                   type="button"
-                  className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:opacity-80 transition-opacity"
+                  data-testid="quick-gb-btn"
+                  className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:opacity-80 transition-opacity cursor-pointer"
                   onClick={() => form.setFieldValue('allowedBookingChannels', ['GB'])}
                 >
                   ⚡ Chỉ tính GB (Fair-play)
                 </button>
                 <button
                   type="button"
-                  className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity"
+                  data-testid="quick-all-channels-btn"
+                  className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity cursor-pointer"
                   onClick={() => form.setFieldValue('allowedBookingChannels', [])}
                 >
                   Tất cả kênh
                 </button>
               </div>
-              <Select
-                mode="multiple"
-                allowClear
-                placeholder="Tất cả các kênh (mặc định) hoặc chọn: GB, FB, Zalo..."
-                size="large"
-                options={BK_BOOKING_CHANNELS.map((c) => ({
-                  value: c.value,
-                  label: c.label,
-                }))}
-              />
+              <Form.Item name="allowedBookingChannels" noStyle>
+                <Select
+                  data-testid="bk-game-channel-select"
+                  mode="multiple"
+                  allowClear
+                  placeholder="Tất cả các kênh (mặc định) hoặc chọn: GB, FB, Zalo..."
+                  size="large"
+                  options={BK_BOOKING_CHANNELS.map((c) => ({
+                    value: c.value,
+                    label: c.label,
+                  }))}
+                />
+              </Form.Item>
             </div>
           </Form.Item>
         )}

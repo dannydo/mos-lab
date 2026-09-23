@@ -11,6 +11,7 @@ import {
   BkRevenueRecord,
   BkSalaryConfig,
   BkGameCreateInput,
+  BkGameUpdateInput,
   BkGameFinalizeInput,
   SafeAny,
 } from '@mos-lab/shared';
@@ -62,6 +63,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     let callStartDateStr = startPart.split('T')[0];
     let callEndDateStr = endPart.split('T')[0];
     let gameChannelFilter = '';
+    let gameParticipantIds: number[] | null = null;
 
     try {
       if (gameId) {
@@ -69,6 +71,11 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         if (!isNaN(parsedGameId) && parsedGameId > 0) {
           const game = await fastify.prisma.crm.crmBkGame.findUnique({
             where: { id: parsedGameId },
+            include: {
+              participants: {
+                select: { staffId: true },
+              },
+            },
           });
           if (game) {
             startDateTimeStr = formatIctDateTime(game.startDate);
@@ -77,6 +84,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
             callEndDateStr = formatIctDate(game.endDate);
             const allowedChannels = parseAllowedBookingChannels(game.allowedBookingChannels);
             gameChannelFilter = buildBookingChannelFilter(allowedChannels, 'o.booking_channels');
+            if (game.participants && game.participants.length > 0) {
+              gameParticipantIds = game.participants.map((p) => p.staffId);
+            }
           }
         }
       } else {
@@ -97,7 +107,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       }
 
       const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
-      if (activeTelesalesIds.length === 0) {
+      const targetStaffIds =
+        gameParticipantIds && gameParticipantIds.length > 0 ? gameParticipantIds : activeTelesalesIds;
+      if (targetStaffIds.length === 0) {
         return reply.send({
           leaderboard: [],
           summary: {
@@ -111,7 +123,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const bkIdsStr = activeTelesalesIds.join(',');
+      const bkIdsStr = targetStaffIds.join(',');
 
       const normalizedStoreId = String(storeId || 'ALL').toUpperCase();
       let storeFilter = '';
@@ -145,7 +157,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         fastify,
         callStartDateStr,
         callEndDateStr,
-        activeTelesalesIds
+        targetStaffIds
       );
 
       let rank = 1;
@@ -1364,6 +1376,27 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({
         error: 'Bad Request',
         message: err instanceof Error ? err.message : 'Lỗi tạo Game BK mới.',
+      });
+    }
+  });
+
+  // PATCH /kpi/bk/games/:id
+  fastify.patch('/kpi/bk/games/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const gameId = parseInt(id, 10);
+      if (isNaN(gameId)) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'ID Game không hợp lệ.' });
+      }
+
+      const body = request.body as BkGameUpdateInput;
+      const updatedGame = await BkGameService.updateGame(fastify, gameId, body);
+      return reply.send({ success: true, game: updatedGame });
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Error updating BK game');
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: err instanceof Error ? err.message : 'Lỗi cập nhật Game BK.',
       });
     }
   });

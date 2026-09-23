@@ -4,13 +4,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Popover, Progress, Segmented, Select, Tooltip, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { Trophy, RefreshCw, Plus, Clock, ShieldAlert, Swords, CheckCircle2, Info, Sparkles } from 'lucide-react';
+import { Trophy, RefreshCw, Plus, Clock, ShieldAlert, Swords, CheckCircle2, Info, Sparkles, Edit3 } from 'lucide-react';
 import type { BkBookingLeaderboardEntry, BkGame, BkGameDetailResponse } from '@mos-lab/shared';
 import { BK_GAME_SCORING_RULES } from '@mos-lab/shared';
 import { AppIcon, DataSection, DataTable, MetricGrid, StatePanel, StatusTag } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
 import BkAvatar from './BkAvatar';
 import BkGameCreateModal from './BkGameCreateModal';
+import BkGameEditModal from './BkGameEditModal';
 import BkGameFinalizeModal from './BkGameFinalizeModal';
 
 type GameMetric = 'calls' | 'pickups' | 'bookings' | 'done';
@@ -56,6 +57,7 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
 
   // Modals
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [finalizeModalOpen, setFinalizeModalOpen] = useState(false);
 
   // Countdown timer in seconds
@@ -272,6 +274,16 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
           >
             Tạo Game Mới
           </Button>
+
+          {activeGame && (
+            <Button
+              icon={<AppIcon icon={Edit3} size="sm" />}
+              onClick={() => setEditModalOpen(true)}
+              className="font-medium"
+            >
+              Chỉnh sửa Game
+            </Button>
+          )}
 
           <Button
             icon={<AppIcon icon={RefreshCw} size="action" />}
@@ -742,16 +754,25 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
       <DataSection
         title={`Bảng xếp hạng · ${METRIC_LABEL[metric]}`}
         extra={
-          activeGame &&
-          activeGame.status === 'ACTIVE' && (
-            <Button
-              type="primary"
-              icon={<AppIcon icon={CheckCircle2} size="sm" />}
-              onClick={() => setFinalizeModalOpen(true)}
-              className="!bg-emerald-600 hover:!bg-emerald-500 !border-emerald-600"
-            >
-              Chốt & Công Bố Kết Quả
-            </Button>
+          activeGame && (
+            <div className="flex items-center gap-2">
+              <Button
+                icon={<AppIcon icon={Edit3} size="sm" />}
+                onClick={() => setEditModalOpen(true)}
+              >
+                Chỉnh sửa Game
+              </Button>
+              {activeGame.status === 'ACTIVE' && (
+                <Button
+                  type="primary"
+                  icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                  onClick={() => setFinalizeModalOpen(true)}
+                  className="!bg-emerald-600 hover:!bg-emerald-500 !border-emerald-600"
+                >
+                  Chốt & Công Bố Kết Quả
+                </Button>
+              )}
+            </div>
           )
         }
       >
@@ -766,6 +787,14 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               <strong>{dayjs(activeGame.startDate).format('DD/MM/YYYY HH:mm')}</strong> đến{' '}
               <strong>{dayjs(activeGame.endDate).format('DD/MM/YYYY HH:mm')}</strong> theo công thức:{' '}
               <em>{scoringRule.formula}</em>.
+              {activeGame.allowedBookingChannels && activeGame.allowedBookingChannels.length > 0 && (
+                <span>
+                  {' '}· 🎯 <strong>Chỉ ghi nhận kênh:</strong>{' '}
+                  <code className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-mono font-semibold">
+                    {activeGame.allowedBookingChannels.join(', ')}
+                  </code>
+                </span>
+              )}
             </span>
           </div>
         )}
@@ -866,6 +895,20 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
           setSelectedGameId(newGame.id);
         }}
       />
+
+      {/* MODAL: EDIT GAME */}
+      {activeGame && (
+        <BkGameEditModal
+          open={editModalOpen}
+          game={activeGame}
+          onClose={() => setEditModalOpen(false)}
+          onSuccess={() => {
+            void loadGames();
+            if (selectedGameId) void loadSelectedGameDetail(selectedGameId);
+            void loadLeaderboard();
+          }}
+        />
+      )}
 
       {/* MODAL: FINALIZE GAME */}
       {gameDetail && (

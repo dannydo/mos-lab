@@ -16,6 +16,7 @@ import type {
   BkWorkLogResponse,
   BkGame,
   BkGameCreateInput,
+  BkGameUpdateInput,
   BkGameDetailResponse,
   BkGameFinalizeInput,
   BkGameListResponse,
@@ -381,6 +382,10 @@ export const kpiApi = {
     },
     createGame: async (data: BkGameCreateInput): Promise<{ success: boolean; game: BkGame }> => {
       const response = await api.post('/kpi/bk/games', data);
+      return response.data;
+    },
+    updateGame: async (id: number, data: BkGameUpdateInput): Promise<{ success: boolean; game: BkGame }> => {
+      const response = await api.patch(`/kpi/bk/games/${id}`, data);
       return response.data;
     },
     finalizeGame: async (id: number, data?: BkGameFinalizeInput): Promise<{ success: boolean; game: BkGame }> => {

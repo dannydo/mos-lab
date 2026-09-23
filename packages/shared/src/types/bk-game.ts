@@ -77,6 +77,17 @@ export interface BkGameCreateInput {
   teams?: { teamName: string; color?: string; staffIds: number[] }[];
 }
 
+export interface BkGameUpdateInput {
+  title?: string;
+  description?: string;
+  targetScore?: number;
+  allowedBookingChannels?: string[] | null;
+  rewardPool?: number;
+  rewardDescription?: string;
+  penaltyDescription?: string;
+  status?: BkGameStatus;
+}
+
 export interface BkGameFinalizeInput {
   winners?: { participantId?: number; teamId?: number; rank: number; rewardAmount: number }[];
   penalties?: { participantId?: number; teamId?: number; penaltyNote: string }[];
