@@ -3306,4 +3306,39 @@ model CrmAiChatMessage {
   @@map("crm_ai_chat_messages")
 }
 
+// ═══════════════════════════════════════════
+// Pilot Dark Lashes (Uốn Mi Bóng Tối) - 30-Day Pilot Tracker
+// ═══════════════════════════════════════════
+model CrmPilotSession {
+  id                 Int      @id @default(autoincrement())
+  pilotCode          String   @default("DARK_LASHES") @map("pilot_code") @db.VarChar(50)
+  branchCode         String   @default("detham") @map("branch_code") @db.VarChar(50)
+  customerName       String   @map("customer_name") @db.VarChar(120)
+  customerPhone      String   @map("customer_phone") @db.VarChar(30)
+  sessionDate        DateTime @map("session_date") @db.Date
+  technicianName     String?  @map("technician_name") @db.VarChar(100)
+  revenue            Decimal  @default(990000) @map("revenue") @db.Decimal(12, 2)
+  materialCost       Decimal  @default(0) @map("material_cost") @db.Decimal(12, 2)
+  technicianCost     Decimal  @default(0) @map("technician_cost") @db.Decimal(12, 2)
+  commissionAmount   Decimal  @default(0) @map("commission_amount") @db.Decimal(12, 2)
+  promoAmount        Decimal  @default(0) @map("promo_amount") @db.Decimal(12, 2)
+  refundAmount       Decimal  @default(0) @map("refund_amount") @db.Decimal(12, 2)
+  totalDirectCost    Decimal  @default(0) @map("total_direct_cost") @db.Decimal(12, 2)
+  contributionMargin Decimal  @default(990000) @map("contribution_margin") @db.Decimal(12, 2)
+  followUp24hStatus  String   @default("PENDING") @map("follow_up_24h_status") @db.VarChar(20)
+  followUp72hStatus  String   @default("PENDING") @map("follow_up_72h_status") @db.VarChar(20)
+  csatScore          Int?     @map("csat_score")
+  issues             String?  @map("issues") @db.Text
+  notes              String?  @map("notes") @db.Text
+  source             String?  @map("source") @db.VarChar(100)
+  createdByStaffId   Int?     @map("created_by_staff_id")
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([pilotCode, sessionDate])
+  @@index([followUp24hStatus, followUp72hStatus])
+  @@map("crm_pilot_sessions")
+}
+
+
 

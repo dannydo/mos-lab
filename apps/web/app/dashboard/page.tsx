@@ -14,6 +14,7 @@ import {
   TeamOutlined,
   UsergroupAddOutlined,
 } from '@ant-design/icons';
+import { Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import type { DashboardBranchSnapshot, DashboardTodayResponse, RevenueHourlyResponse, Staff } from '@mos-lab/shared';
@@ -97,6 +98,13 @@ function getQuickActions(role?: string): QuickAction[] {
         description: 'Nhân sự, phân quyền và cấu hình đội ngũ.',
         href: '/dashboard/staff',
         icon: <TeamOutlined />,
+      },
+      {
+        key: 'pilot-dark-lashes',
+        title: 'Pilot Uốn Mi Đề Thám',
+        description: 'Pilot 30 ngày, Unit Economics và Follow-up 24h–72h.',
+        href: '/dashboard/pilot-dark-lashes',
+        icon: <Sparkles className="w-4 h-4 text-emerald-500" />,
       },
     ];
   }

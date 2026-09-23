@@ -30,6 +30,7 @@ import {
   WalletCards,
   CalendarClock,
   MessageSquareWarning,
+  Sparkles,
 } from 'lucide-react';
 
 import { canAccessLoca, isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
@@ -98,6 +99,12 @@ export function getSidebarGroups(
         label: 'Chi nhánh',
         icon: <ShopOutlined />,
         path: '/dashboard/branches',
+      },
+      {
+        key: 'pilot-dark-lashes',
+        label: 'Pilot Uốn Mi Đề Thám',
+        icon: <AppIcon icon={Sparkles} size="sm" />,
+        path: '/dashboard/pilot-dark-lashes',
       },
     ],
   };

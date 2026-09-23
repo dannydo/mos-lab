@@ -10,9 +10,11 @@ import { telecomApi } from './telecom.api';
 import { academyApi } from './academy.api';
 import { qaShopApi } from './qa-shop.api';
 import { aiApi } from './ai.api';
+import { pilotApi } from './pilot.api';
 
 export * from './base';
 export * from './ai.api';
+export * from './pilot.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -27,6 +29,7 @@ export const apiClient = {
   ...academyApi,
   ...qaShopApi,
   ...aiApi,
+  ...pilotApi,
   cs: {
     ...telecomApi.cs,
     ...kpiApi.cs,
