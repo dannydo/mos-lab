@@ -1,4 +1,6 @@
-const DEFAULT_MAX_IMAGE_BYTES = 3 * 1024 * 1024;
+import { BUG_REPORT_MAX_ATTACHMENT_BYTES } from '@mos-lab/shared';
+
+const DEFAULT_MAX_IMAGE_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
 
 export async function compressImageForUpload(
   file: File,
@@ -23,7 +25,9 @@ export async function compressImageForUpload(
   const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType, quality));
   if (!blob) throw new Error('Không thể nén ảnh.');
-  if (blob.size > maxBytes) throw new Error('Ảnh sau nén vẫn lớn hơn 3 MB.');
+  if (blob.size > maxBytes) {
+    throw new Error(`Ảnh sau nén vẫn lớn hơn ${Math.round(maxBytes / (1024 * 1024))} MB.`);
+  }
   const extension = mimeType === 'image/png' ? '.png' : '.jpg';
   return new File([blob], file.name.replace(/\.[^.]+$/, '') + extension, { type: mimeType });
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Input, Typography, message, theme } from 'antd';
+import { Alert, Button, Image, Input, Typography, message, theme } from 'antd';
 import type {
   BugReportCommentCreateResult,
   BugReportNotification,
@@ -501,26 +501,29 @@ export function MyBugReportsPanel({
               </InfoBlock>
               {selectedEvidence.length ? (
                 <InfoBlock icon={ImageIcon} title="Ảnh bạn đã gửi">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {selectedEvidence.slice(0, 3).map((attachment) => (
-                      <BugReportAttachmentPreview
-                        key={attachment.id}
-                        reportId={selected.id}
-                        attachment={attachment}
-                        thumbnail
-                      />
-                    ))}
-                    {selectedEvidence.length > 3 ? (
-                      <span
-                        className="inline-flex h-[72px] min-w-[72px] items-center justify-center rounded-lg px-2 text-sm font-semibold"
-                        style={{ background: token.colorFillQuaternary, color: token.colorTextSecondary }}
-                      >
-                        +{selectedEvidence.length - 3}
-                      </span>
-                    ) : null}
-                  </div>
+                  <Image.PreviewGroup
+                    preview={{
+                      zIndex: 12030,
+                      countRender: (current: number, total: number) => (
+                        <span className="tabular-nums font-semibold tracking-wide">
+                          {current} / {total}
+                        </span>
+                      ),
+                    }}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      {selectedEvidence.map((attachment) => (
+                        <BugReportAttachmentPreview
+                          key={attachment.id}
+                          reportId={selected.id}
+                          attachment={attachment}
+                          thumbnail
+                        />
+                      ))}
+                    </div>
+                  </Image.PreviewGroup>
                   <Text type="secondary" className="mt-2 block text-xs">
-                    Bấm vào ảnh để xem rõ hơn.
+                    Bấm vào ảnh để xem và lướt qua các ảnh.
                   </Text>
                 </InfoBlock>
               ) : null}

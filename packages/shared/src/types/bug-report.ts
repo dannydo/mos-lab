@@ -143,6 +143,9 @@ export interface BugReportContext {
   errorBoundary?: BugReportClientError | null;
 }
 
+export const BUG_REPORT_MAX_ATTACHMENTS = 10;
+export const BUG_REPORT_MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+
 export interface CreateBugReportAttachmentRequest {
   fileName: string;
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp';

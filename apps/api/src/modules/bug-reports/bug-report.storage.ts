@@ -2,8 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import type { CreateBugReportAttachmentRequest } from '@mos-lab/shared';
+import { BUG_REPORT_MAX_ATTACHMENT_BYTES } from '@mos-lab/shared';
 
-const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
+const MAX_ATTACHMENT_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
 const MIME_EXTENSIONS: Record<CreateBugReportAttachmentRequest['mimeType'], string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -32,7 +33,7 @@ export function bugReportStorageRoot(): string {
 function decodedImage(input: CreateBugReportAttachmentRequest): Buffer {
   if (!(input.mimeType in MIME_EXTENSIONS)) throw new BugReportStorageError('Định dạng ảnh không được hỗ trợ.');
   if (!Number.isInteger(input.sizeBytes) || input.sizeBytes <= 0 || input.sizeBytes > MAX_ATTACHMENT_BYTES) {
-    throw new BugReportStorageError('Mỗi ảnh phải nhỏ hơn hoặc bằng 3 MB.');
+    throw new BugReportStorageError(`Mỗi ảnh phải nhỏ hơn hoặc bằng ${Math.round(MAX_ATTACHMENT_BYTES / (1024 * 1024))} MB.`);
   }
 
   const encoded = String(input.dataBase64 || '')
