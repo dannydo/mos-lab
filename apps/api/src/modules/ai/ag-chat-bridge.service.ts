@@ -24,6 +24,7 @@ interface PendingBridgeJobEntry {
   resolve: (res: { conversationId: string; response: ParsedAiResponse }) => void;
   reject: (err: Error) => void;
   timer: NodeJS.Timeout;
+  claimedAt?: number;
 }
 
 export class AgChatBridgeService {
@@ -358,6 +359,10 @@ export class AgChatBridgeService {
       // Notify any waiting long-poller immediately
       const poller = this.waitingLongPollers.shift();
       if (poller) {
+        const entry = this.pendingBridgeJobs.get(jobId);
+        if (entry) {
+          entry.claimedAt = Date.now();
+        }
         poller(job);
       }
     });
@@ -367,9 +372,13 @@ export class AgChatBridgeService {
    * Long-polling endpoint handler: Danny's Mac asks for next pending chat job
    */
   static async getNextRemoteChatJob(timeoutMs = 25_000): Promise<AgChatBridgeJob | null> {
-    // 1. Check if there is already a pending job
+    const now = Date.now();
+    // 1. Check if there is already an unclaimed pending job (or a stale claim older than 45s)
     for (const entry of this.pendingBridgeJobs.values()) {
-      return entry.job;
+      if (!entry.claimedAt || now - entry.claimedAt > 45_000) {
+        entry.claimedAt = now;
+        return entry.job;
+      }
     }
 
     // 2. Wait up to timeoutMs for a new job to arrive

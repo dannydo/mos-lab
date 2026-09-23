@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Lightbulb,
 } from 'lucide-react';
+import { Tooltip } from 'antd';
 import type { AiChatSession, AiChatMessage, AiChatAction } from '@mos-lab/shared';
 import { AdaptiveDrawer } from '../../../../components/ui';
 import { aiApi } from '../../../../lib/api/ai.api';
@@ -241,18 +242,25 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
     <>
       {/* Floating Launcher Trigger */}
       <div className="fixed bottom-6 right-6 z-40">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-2.5 px-4 py-2.5 rounded-full shadow-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-medium text-sm transition-all duration-300 hover:scale-105 shadow-indigo-500/25 border border-white/20"
-        >
-          <Sparkles className="w-4 h-4 animate-pulse" />
-          <span className="font-semibold tracking-wide">mOS Copilot</span>
-          <span className="flex items-center gap-1 px-2 py-0.5 text-[11px] bg-white/20 rounded-full font-medium backdrop-blur-sm">
-            <ShieldCheck className="w-3 h-3 text-emerald-300" />
-            <span>Riêng tư</span>
-          </span>
-        </button>
+        <Tooltip title="mOS Copilot · Trợ lý AI riêng tư" placement="left">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="mOS Copilot (Riêng tư)"
+            className="group relative flex items-center justify-center w-12 h-12 rounded-full shadow-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-500 hover:to-pink-400 text-white transition-all duration-300 hover:scale-110 active:scale-95 shadow-indigo-500/30 border border-white/25 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+          >
+            <Sparkles className="w-5 h-5 text-white transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+            <span
+              className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm"
+              title="Bảo mật riêng tư"
+            >
+              <ShieldCheck className="w-2 h-2 text-white" />
+            </span>
+            {/* Screen reader text for accessibility & automated tests */}
+            <span className="sr-only">mOS Copilot</span>
+            <span className="sr-only">Riêng tư</span>
+          </button>
+        </Tooltip>
       </div>
 
       {/* Adaptive Slide-over Assistant Drawer */}

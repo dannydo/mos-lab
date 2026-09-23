@@ -1152,21 +1152,26 @@ export async function runPlanWatcher(deps: {
   return 'PLANNED';
 }
 
+let isChatWatcherRunning = false;
+
 export async function runAgChatWatcher(deps: { apiUrl: string; token: string }): Promise<'IDLE' | 'ANSWERED'> {
-  let res: Response;
-  try {
-    res = await fetch(`${deps.apiUrl}/ag-task-bridge/chat/next`, {
-      headers: {
-        Authorization: `Bearer ${deps.token}`,
-        Accept: 'application/json',
-      },
-    });
-  } catch {
-    return 'IDLE';
-  }
-  if (!res.ok) return 'IDLE';
+  if (isChatWatcherRunning) return 'IDLE';
+  isChatWatcherRunning = true;
 
   try {
+    let res: Response;
+    try {
+      res = await fetch(`${deps.apiUrl}/ag-task-bridge/chat/next`, {
+        headers: {
+          Authorization: `Bearer ${deps.token}`,
+          Accept: 'application/json',
+        },
+      });
+    } catch {
+      return 'IDLE';
+    }
+    if (!res.ok) return 'IDLE';
+
     const payload = (await res.json()) as { success?: boolean; data?: AgChatBridgeJob | null };
     const job = payload?.data;
     if (!job || !job.id || !job.prompt) return 'IDLE';
@@ -1195,6 +1200,8 @@ export async function runAgChatWatcher(deps: { apiUrl: string; token: string }):
       `[${new Date().toISOString()}] [AgChatBridge] Error executing chat: ${err instanceof Error ? err.message : String(err)}\n`
     );
     return 'IDLE';
+  } finally {
+    isChatWatcherRunning = false;
   }
 }
 
@@ -1273,12 +1280,6 @@ export async function main() {
       process.stderr.write(
         `[${new Date().toISOString()}] AutoPlan error: ${err instanceof Error ? err.message : String(err)}\n`
       );
-    }
-
-    try {
-      await runAgChatWatcher({ apiUrl: config.apiUrl, token });
-    } catch {
-      // non-blocking
     }
   };
 
