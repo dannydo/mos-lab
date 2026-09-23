@@ -27065,8 +27065,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 124771,
-        "lineCount": 2973,
+        "sizeBytes": 124700,
+        "lineCount": 2975,
         "ext": ".ts"
       }
     },
@@ -32590,8 +32590,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReports.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14474,
-        "lineCount": 416,
+        "sizeBytes": 16181,
+        "lineCount": 460,
         "ext": ".ts"
       }
     },
@@ -32603,8 +32603,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useRequestClassifierWorkerHealth.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2100,
-        "lineCount": 59,
+        "sizeBytes": 2267,
+        "lineCount": 62,
         "ext": ".ts"
       }
     },
@@ -35008,8 +35008,8 @@
       "filePath": "apps/web/lib/api/bug-reports.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12077,
-        "lineCount": 290,
+        "sizeBytes": 12351,
+        "lineCount": 294,
         "ext": ".ts"
       }
     },

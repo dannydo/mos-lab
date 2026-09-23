@@ -103,24 +103,61 @@ function readPersistedState(): { filters: BugInboxFilters; pagination: BugInboxP
   }
 }
 
+const INBOX_DATA_CACHE_KEY = 'mos_bug_reports_cache_v1';
+
+function readCachedInboxData(): { data: BugReportSummary[]; total: number; summary: BugReportListSummary } | null {
+  try {
+    const raw = typeof window !== 'undefined' ? window.sessionStorage.getItem(INBOX_DATA_CACHE_KEY) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed?.data)) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedInboxData(value: { data: BugReportSummary[]; total: number; summary: BugReportListSummary }): void {
+  try {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(INBOX_DATA_CACHE_KEY, JSON.stringify(value));
+    }
+  } catch {
+    // SessionStorage quota full
+  }
+}
+
 export function useBugReports() {
-  const [filters, setFiltersState] = useState<BugInboxFilters>(DEFAULT_FILTERS);
-  const [pagination, setPaginationState] = useState<BugInboxPagination>(DEFAULT_PAGINATION);
-  const [data, setData] = useState<BugReportSummary[]>([]);
-  const [total, setTotal] = useState(0);
-  const [summary, setSummary] = useState<BugReportListSummary>(EMPTY_SUMMARY);
-  const [loading, setLoading] = useState(true);
+  const [filters, setFiltersState] = useState<BugInboxFilters>(() => {
+    if (typeof window === 'undefined') return DEFAULT_FILTERS;
+    return readPersistedState()?.filters ?? DEFAULT_FILTERS;
+  });
+  const [pagination, setPaginationState] = useState<BugInboxPagination>(() => {
+    if (typeof window === 'undefined') return DEFAULT_PAGINATION;
+    return readPersistedState()?.pagination ?? DEFAULT_PAGINATION;
+  });
+  const [data, setData] = useState<BugReportSummary[]>(() => {
+    if (typeof window === 'undefined') return [];
+    return readCachedInboxData()?.data ?? [];
+  });
+  const [total, setTotal] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0;
+    return readCachedInboxData()?.total ?? 0;
+  });
+  const [summary, setSummary] = useState<BugReportListSummary>(() => {
+    if (typeof window === 'undefined') return EMPTY_SUMMARY;
+    return readCachedInboxData()?.summary ?? EMPTY_SUMMARY;
+  });
+  const [loading, setLoading] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return !readCachedInboxData();
+  });
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const requestVersionRef = useRef(0);
   const debouncedSearch = useDebounce(filters.search, 300);
 
   useEffect(() => {
-    const persisted = readPersistedState();
-    if (persisted) {
-      setFiltersState(persisted.filters);
-      setPaginationState(persisted.pagination);
-    }
     setHydrated(true);
   }, []);
 
@@ -137,7 +174,10 @@ export function useBugReports() {
     async (showLoading = true) => {
       if (!hydrated) return;
       const requestVersion = ++requestVersionRef.current;
-      if (showLoading) {
+      const hasCached = Boolean(readCachedInboxData()?.data?.length);
+      const isDefaultView =
+        pagination.page === 1 && !debouncedSearch.trim() && filters.requestType === 'ALL' && filters.status === 'ALL';
+      if (showLoading && !(hasCached && isDefaultView)) {
         setLoading(true);
         setError(null);
       }
@@ -156,9 +196,10 @@ export function useBugReports() {
         setData(result.data);
         setTotal(result.total);
         setSummary(result.summary ?? EMPTY_SUMMARY);
+        writeCachedInboxData({ data: result.data, total: result.total, summary: result.summary ?? EMPTY_SUMMARY });
       } catch (caught) {
         if (requestVersion !== requestVersionRef.current) return;
-        if (showLoading) {
+        if (showLoading && !(hasCached && isDefaultView)) {
           setError(getErrorMessage(caught));
           setData([]);
           setTotal(0);

@@ -245,9 +245,11 @@ const listReportInclude = {
   },
   comments: {
     orderBy: { createdAt: 'asc' as const },
-    include: {
-      author: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
-      attachments: { orderBy: { createdAt: 'asc' as const } },
+    select: {
+      id: true,
+      body: true,
+      authorType: true,
+      createdAt: true,
     },
   },
   audits: {

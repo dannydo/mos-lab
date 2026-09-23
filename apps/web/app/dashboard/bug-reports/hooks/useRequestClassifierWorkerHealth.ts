@@ -12,18 +12,21 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Không thể tải trạng thái worker.';
 }
 
+let cachedWorkerHealth: RequestClassifierWorkerHealth | null = null;
+
 export function useRequestClassifierWorkerHealth() {
-  const [health, setHealth] = useState<RequestClassifierWorkerHealth | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [health, setHealth] = useState<RequestClassifierWorkerHealth | null>(() => cachedWorkerHealth);
+  const [loading, setLoading] = useState(() => !cachedWorkerHealth);
   const [error, setError] = useState<string | null>(null);
   const requestVersion = useRef(0);
 
   const refresh = useCallback(async (showLoading = true) => {
     const version = ++requestVersion.current;
-    if (showLoading) setLoading(true);
+    if (showLoading && !cachedWorkerHealth) setLoading(true);
     try {
       const next = await apiClient.bugReports.workerHealth();
       if (version !== requestVersion.current) return;
+      cachedWorkerHealth = next;
       setHealth(next);
       setError(null);
     } catch (caught) {

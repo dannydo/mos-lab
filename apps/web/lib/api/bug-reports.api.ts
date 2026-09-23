@@ -53,7 +53,7 @@ import type {
   TriageBugReportResponse,
 } from '@mos-lab/shared';
 
-import { api, dedupeApiGet, invalidateApiGetCache } from './base';
+import { api, dedupeApiGet, invalidateApiGetCache, type ApiRequestOptions } from './base';
 
 export const bugReportsApi = {
   bugReports: {
@@ -85,12 +85,12 @@ export const bugReportsApi = {
         `/request-conversations/${encodeURIComponent(id)}/replies`,
         data
       );
-      invalidateApiGetCache(['/bug-reports/mine']);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     create: async (data: CreateBugReportRequest): Promise<CreateBugReportResponse> => {
       const response = await api.post<CreateBugReportResponse>('/bug-reports', data);
-      invalidateApiGetCache(['/bug-reports/mine']);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     mine: async (): Promise<MyBugReportsResponse> => {
@@ -98,28 +98,32 @@ export const bugReportsApi = {
     },
     review: async (id: number, data: ReviewBugReportRequest): Promise<ReviewBugReportResponse> => {
       const response = await api.patch<ReviewBugReportResponse>(`/bug-reports/${id}/review`, data);
-      invalidateApiGetCache(['/bug-reports/mine']);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     comment: async (id: number, data: CreateBugReportCommentRequest): Promise<CreateBugReportCommentResponse> => {
       const response = await api.post<CreateBugReportCommentResponse>(`/bug-reports/${id}/comments`, data);
-      invalidateApiGetCache(['/bug-reports/mine']);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     markNotificationsRead: async (
       data: MarkBugReportNotificationsReadRequest
     ): Promise<MarkBugReportNotificationsReadResponse> => {
       const response = await api.patch<MarkBugReportNotificationsReadResponse>('/bug-reports/notifications/read', data);
-      invalidateApiGetCache(['/bug-reports/mine']);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
-    list: async (params: BugReportListQuery): Promise<BugReportListResponse> => {
-      const response = await api.get<BugReportListResponse>('/bug-reports', { params });
-      return response.data;
+    list: async (params: BugReportListQuery, options?: ApiRequestOptions): Promise<BugReportListResponse> => {
+      return dedupeApiGet<BugReportListResponse>('/bug-reports', params as Record<string, unknown>, 5000, options);
     },
-    workerHealth: async (): Promise<RequestClassifierWorkerHealth> => {
-      const response = await api.get<{ data: RequestClassifierWorkerHealth }>('/bug-reports/worker-health');
-      return response.data.data;
+    workerHealth: async (options?: ApiRequestOptions): Promise<RequestClassifierWorkerHealth> => {
+      const response = await dedupeApiGet<{ data: RequestClassifierWorkerHealth }>(
+        '/bug-reports/worker-health',
+        undefined,
+        15000,
+        options
+      );
+      return response.data;
     },
     detail: async (id: number): Promise<BugReportDetail> => {
       const response = await api.get<{ data: BugReportDetail }>(`/bug-reports/${id}`);
@@ -127,7 +131,7 @@ export const bugReportsApi = {
     },
     triage: async (id: number, data: TriageBugReportRequest): Promise<TriageBugReportResponse> => {
       const response = await api.patch<TriageBugReportResponse>(`/bug-reports/${id}/triage`, data);
-      invalidateApiGetCache(['/bug-reports/mine']);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     approveImplementation: async (
@@ -261,12 +265,12 @@ export const bugReportsApi = {
         `/bug-reports/${id}/implementation-acceptance`,
         data
       );
-      invalidateApiGetCache(['/bug-reports/mine']);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     confirmClose: async (id: number, data: ConfirmCloseBugReportRequest): Promise<ConfirmCloseBugReportResponse> => {
       const response = await api.patch<ConfirmCloseBugReportResponse>(`/bug-reports/${id}/confirm-close`, data);
-      invalidateApiGetCache(['/bug-reports/mine']);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     attachment: async (reportId: number, attachmentId: number): Promise<Blob> => {
