@@ -297,14 +297,43 @@ export const useCustomerList = (
 
   // Instantly refresh customer table when popup/modal updates data
   useEffect(() => {
-    const handleDataChanged = () => {
-      refreshListAndStats();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleDataChanged = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const detail = customEvent.detail;
+      const customerId = detail?.customerId;
+      const callLog = detail?.callLog;
+
+      if (customerId && callLog) {
+        setCustomers((prev) =>
+          prev.map((c) => {
+            if (c.id === customerId) {
+              return {
+                ...c,
+                lastCall: {
+                  createdAt: callLog.createdAt || new Date().toISOString(),
+                  durationSec: callLog.durationSec,
+                  callResult: callLog.callResult,
+                  note: callLog.note,
+                },
+              };
+            }
+            return c;
+          })
+        );
+      }
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        refreshListAndStats();
+      }, 100);
     };
     window.addEventListener('mos-data-updated', handleDataChanged);
     window.addEventListener('mos-call-log-saved', handleDataChanged);
     window.addEventListener('mos-customer-updated', handleDataChanged);
     window.addEventListener('mos-booking-updated', handleDataChanged);
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       window.removeEventListener('mos-data-updated', handleDataChanged);
       window.removeEventListener('mos-call-log-saved', handleDataChanged);
       window.removeEventListener('mos-customer-updated', handleDataChanged);

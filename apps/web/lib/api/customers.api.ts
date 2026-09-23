@@ -371,7 +371,7 @@ export const customersApi = {
   calls: {
     create: async (data: CreateCallRequest): Promise<CallLog> => {
       const response = await api.post('/calls', data);
-      invalidateApiGetCache(['/calls/daily']);
+      invalidateApiGetCache(['/calls/daily', '/customers']);
       return response.data;
     },
     listByCustomer: async (customerId: number): Promise<CallLog[]> => {

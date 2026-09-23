@@ -856,15 +856,45 @@ export function useLocaData(options?: UseLocaDataOptions) {
   };
 
   useEffect(() => {
-    const handleLogSaved = () => {
-      fetchOverallStats();
-      fetchCustomerList();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleLogSaved = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const detail = customEvent.detail;
+      const customerId = detail?.customerId;
+      const callLog = detail?.callLog;
+
+      // Optimistically update matching customer row for instant feedback
+      if (customerId && callLog) {
+        setCustomers((prev) =>
+          prev.map((c) => {
+            if (c.id === customerId) {
+              return {
+                ...c,
+                lastCall: {
+                  createdAt: callLog.createdAt || new Date().toISOString(),
+                  durationSec: callLog.durationSec,
+                  callResult: callLog.callResult,
+                  note: callLog.note,
+                },
+              };
+            }
+            return c;
+          })
+        );
+      }
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchOverallStats();
+        fetchCustomerList();
+      }, 100);
     };
     window.addEventListener('mos-data-updated', handleLogSaved);
     window.addEventListener('mos-call-log-saved', handleLogSaved);
     window.addEventListener('mos-customer-updated', handleLogSaved);
     window.addEventListener('mos-booking-updated', handleLogSaved);
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       window.removeEventListener('mos-data-updated', handleLogSaved);
       window.removeEventListener('mos-call-log-saved', handleLogSaved);
       window.removeEventListener('mos-customer-updated', handleLogSaved);

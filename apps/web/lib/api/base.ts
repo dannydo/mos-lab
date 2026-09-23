@@ -91,6 +91,11 @@ export function invalidateApiGetCache(urlPrefixes: readonly string[]): void {
       inFlightRequests.delete(cacheKey);
     }
   }
+  for (const cacheKey of inFlightOnlyRequests.keys()) {
+    if (urlPrefixes.some((prefix) => cacheKey.startsWith(prefix))) {
+      inFlightOnlyRequests.delete(cacheKey);
+    }
+  }
 }
 
 export function invalidateAcademySalesReadCache(): void {
@@ -118,6 +123,19 @@ export function dedupeInFlightApiGet<T>(url: string, params?: unknown, options?:
     .then((response) => response.data as T);
 
   inFlightOnlyRequests.set(cacheKey, promise);
+
+  if (options?.signal) {
+    options.signal.addEventListener(
+      'abort',
+      () => {
+        if (inFlightOnlyRequests.get(cacheKey) === promise) {
+          inFlightOnlyRequests.delete(cacheKey);
+        }
+      },
+      { once: true }
+    );
+  }
+
   promise.then(
     () => {
       if (inFlightOnlyRequests.get(cacheKey) === promise) {

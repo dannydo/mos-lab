@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useOmiCall } from '../context/OmiCallContext';
 import { AdaptiveModal } from './ui/AdaptiveOverlay';
 import { CopyPhoneButton } from './ui';
+import { notifyCallLogSaved } from '../lib/call-events';
 
 const { TextArea } = Input;
 
@@ -283,12 +284,19 @@ export default function CallLogModal({
         data.note = 'Đã gia hạn/mua combo mới';
       }
 
-      await apiClient.calls.create(data);
+      const savedLog = await apiClient.calls.create(data);
       message.success('Ghi nhận cuộc gọi nhanh thành công!');
-      window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
-      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      notifyCallLogSaved({
+        customerId: targetUserId,
+        callLog: {
+          id: savedLog?.id,
+          createdAt: savedLog?.createdAt || new Date().toISOString(),
+          durationSec: data.durationSec,
+          callResult: data.callResult,
+          note: data.note,
+        },
+      });
       window.dispatchEvent(new CustomEvent('mos-booking-updated'));
-      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'call-log' } }));
       onSuccess();
       onCancel();
     } catch (error) {
@@ -332,12 +340,19 @@ export default function CallLogModal({
         callUuid: activeCall?.callUuid || null,
       };
 
-      await apiClient.calls.create(data);
+      const savedLog = await apiClient.calls.create(data);
       message.success('Ghi nhận lịch sử cuộc gọi thành công!');
-      window.dispatchEvent(new CustomEvent('mos-call-log-saved'));
-      window.dispatchEvent(new CustomEvent('mos-customer-updated'));
+      notifyCallLogSaved({
+        customerId: targetUserId,
+        callLog: {
+          id: savedLog?.id,
+          createdAt: savedLog?.createdAt || new Date().toISOString(),
+          durationSec: data.durationSec,
+          callResult: data.callResult,
+          note: data.note,
+        },
+      });
       window.dispatchEvent(new CustomEvent('mos-booking-updated'));
-      window.dispatchEvent(new CustomEvent('mos-data-updated', { detail: { type: 'call-log' } }));
       onSuccess();
       onCancel();
     } catch (error) {

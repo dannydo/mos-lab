@@ -136,9 +136,13 @@ export function useNycData(options?: UseNycDataOptions) {
   const lastStatsRequestIdRef = useRef(0);
   const customerAbortControllerRef = useRef<AbortController | null>(null);
   const statsAbortControllerRef = useRef<AbortController | null>(null);
+  const refreshDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
+      if (refreshDebounceTimerRef.current) {
+        clearTimeout(refreshDebounceTimerRef.current);
+      }
       if (customerAbortControllerRef.current) {
         customerAbortControllerRef.current.abort('UNMOUNT');
       }
@@ -383,21 +387,57 @@ export function useNycData(options?: UseNycDataOptions) {
 
   // Listen to global call log saved event to refresh NYC list and stats
   useEffect(() => {
-    const handleLogSaved = () => {
-      fetchOverallStats();
-      fetchCustomerList();
+    const handleDataEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const detail = customEvent.detail;
+      const customerId = detail?.customerId;
+      const callLog = detail?.callLog;
+
+      // Optimistically update matching customer row for instant feedback
+      if (customerId && callLog) {
+        setCustomers((prev) =>
+          prev.map((c) => {
+            if (c.id === customerId) {
+              return {
+                ...c,
+                lastCall: {
+                  createdAt: callLog.createdAt || new Date().toISOString(),
+                  durationSec: callLog.durationSec,
+                  callResult: callLog.callResult,
+                  note: callLog.note,
+                },
+              };
+            }
+            return c;
+          })
+        );
+      }
+
+      // Debounce and coalesce rapid event bursts to avoid concurrent abort collisions
+      if (refreshDebounceTimerRef.current) {
+        clearTimeout(refreshDebounceTimerRef.current);
+      }
+      refreshDebounceTimerRef.current = setTimeout(() => {
+        fetchOverallStats();
+        fetchTouchpointCounts();
+        fetchCustomerList();
+      }, 100);
     };
-    window.addEventListener('mos-data-updated', handleLogSaved);
-    window.addEventListener('mos-call-log-saved', handleLogSaved);
-    window.addEventListener('mos-customer-updated', handleLogSaved);
-    window.addEventListener('mos-booking-updated', handleLogSaved);
+
+    window.addEventListener('mos-data-updated', handleDataEvent);
+    window.addEventListener('mos-call-log-saved', handleDataEvent);
+    window.addEventListener('mos-customer-updated', handleDataEvent);
+    window.addEventListener('mos-booking-updated', handleDataEvent);
     return () => {
-      window.removeEventListener('mos-data-updated', handleLogSaved);
-      window.removeEventListener('mos-call-log-saved', handleLogSaved);
-      window.removeEventListener('mos-customer-updated', handleLogSaved);
-      window.removeEventListener('mos-booking-updated', handleLogSaved);
+      if (refreshDebounceTimerRef.current) {
+        clearTimeout(refreshDebounceTimerRef.current);
+      }
+      window.removeEventListener('mos-data-updated', handleDataEvent);
+      window.removeEventListener('mos-call-log-saved', handleDataEvent);
+      window.removeEventListener('mos-customer-updated', handleDataEvent);
+      window.removeEventListener('mos-booking-updated', handleDataEvent);
     };
-  }, [fetchOverallStats, fetchCustomerList]);
+  }, [fetchOverallStats, fetchTouchpointCounts, fetchCustomerList]);
 
   const handleOpenDetailModal = (customer: Customer) => {
     setSelectedCustomer(customer);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Form, message } from 'antd';
 import { apiClient } from '../../lib/api-client';
+import { notifyCallLogSaved } from '../../lib/call-events';
 
 export const useWrapupForm = (
   currentCall: SafeAny,
@@ -131,8 +132,18 @@ export const useWrapupForm = (
         callUuid: currentCall.callUuid || null,
       };
 
-      await apiClient.calls.create(payload as SafeAny);
+      const savedLog = await apiClient.calls.create(payload as SafeAny);
       message.success('Đã lưu ghi chú cuộc gọi thành công!');
+      notifyCallLogSaved({
+        customerId: payload.legacyUserId,
+        callLog: {
+          id: savedLog?.id,
+          createdAt: savedLog?.createdAt || new Date().toISOString(),
+          durationSec: payload.durationSec,
+          callResult: payload.callResult,
+          note: payload.note,
+        },
+      });
 
       // Reset states
       setCallState('idle');
