@@ -30822,8 +30822,8 @@
       "filePath": "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 109892,
-        "lineCount": 2053,
+        "sizeBytes": 112318,
+        "lineCount": 2103,
         "ext": ".tsx"
       }
     },
@@ -31186,8 +31186,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopDesignManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28418,
-        "lineCount": 668,
+        "sizeBytes": 29512,
+        "lineCount": 686,
         "ext": ".tsx"
       }
     },
@@ -31199,8 +31199,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopDesignPrepModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10510,
-        "lineCount": 268,
+        "sizeBytes": 11633,
+        "lineCount": 288,
         "ext": ".tsx"
       }
     },
@@ -31212,8 +31212,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopDesignTemplateLibrary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21223,
-        "lineCount": 501,
+        "sizeBytes": 21534,
+        "lineCount": 509,
         "ext": ".tsx"
       }
     },
@@ -31238,8 +31238,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopEquipmentManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27905,
-        "lineCount": 647,
+        "sizeBytes": 28809,
+        "lineCount": 660,
         "ext": ".tsx"
       }
     },
@@ -31251,8 +31251,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopEquipmentPrepModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11089,
-        "lineCount": 268,
+        "sizeBytes": 12060,
+        "lineCount": 289,
         "ext": ".tsx"
       }
     },
@@ -31264,8 +31264,21 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopEquipmentTemplateLibrary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26156,
-        "lineCount": 590,
+        "sizeBytes": 26461,
+        "lineCount": 598,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopImageGallery.tsx",
+      "type": "File",
+      "label": "AcademyWorkshopImageGallery.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopImageGallery.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2459,
+        "lineCount": 91,
         "ext": ".tsx"
       }
     },
@@ -31277,8 +31290,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopKitchenOrderModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12801,
-        "lineCount": 314,
+        "sizeBytes": 13820,
+        "lineCount": 329,
         "ext": ".tsx"
       }
     },
@@ -31290,8 +31303,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopMenuManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22078,
-        "lineCount": 513,
+        "sizeBytes": 22441,
+        "lineCount": 518,
         "ext": ".tsx"
       }
     },
@@ -31316,8 +31329,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21158,
-        "lineCount": 556,
+        "sizeBytes": 21331,
+        "lineCount": 559,
         "ext": ".tsx"
       }
     },
@@ -31329,8 +31342,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantSelectionsModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13678,
-        "lineCount": 307,
+        "sizeBytes": 14845,
+        "lineCount": 328,
         "ext": ".tsx"
       }
     },
@@ -31459,8 +31472,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopServerImageUpload.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4661,
-        "lineCount": 135,
+        "sizeBytes": 4913,
+        "lineCount": 141,
         "ext": ".tsx"
       }
     },
@@ -77953,7 +77966,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 2767,
+    "totalNodes": 2768,
     "totalEdges": 5974,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -77963,7 +77976,7 @@
       "SharedType": 1014,
       "DesignToken": 12,
       "UIComponent": 196,
-      "File": 763
+      "File": 764
     },
     "edgeTypeCounts": {
       "EXPORTS": 1177,

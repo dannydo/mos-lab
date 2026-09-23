@@ -18,6 +18,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import AcademyWorkshopParticipantSelectionsModal from './AcademyWorkshopParticipantSelectionsModal';
+import { WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 import {
   ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS,
   type AcademyLead,
@@ -337,18 +338,20 @@ export default function AcademyWorkshopParticipantOverlays({
                 </Upload>
               </Space>
               {selected.photos.length > 0 && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {selected.photos.map((photo) =>
-                    photo.signedUrl ? (
-                      <Image
-                        key={photo.id}
-                        src={photo.signedUrl}
-                        alt={photo.caption || selected.lead.name}
-                        className="aspect-square rounded-lg object-cover"
-                      />
-                    ) : null
-                  )}
-                </div>
+                <WorkshopImageGallery>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {selected.photos.map((photo) =>
+                      photo.signedUrl ? (
+                        <Image
+                          key={photo.id}
+                          src={photo.signedUrl}
+                          alt={photo.caption || selected.lead.name}
+                          className="aspect-square rounded-lg object-cover"
+                        />
+                      ) : null
+                    )}
+                  </div>
+                </WorkshopImageGallery>
               )}
             </div>
 

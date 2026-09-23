@@ -12,6 +12,7 @@ import {
   type AcademyWorkshopParticipant,
 } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon, CopyPhoneButton, MetricGrid, StatusTag } from '../../../../components/ui';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 
 export interface AcademyWorkshopKitchenOrderModalProps {
   open: boolean;
@@ -33,7 +34,7 @@ export default function AcademyWorkshopKitchenOrderModal({
 
     const categoryBreakdowns: Record<
       AcademyWorkshopMenuCategory,
-      Array<{ name: string; count: number; studentNames: string[] }>
+      Array<{ name: string; count: number; studentNames: string[]; imageUrl?: string | null }>
     > = {
       JUICE: [],
       MAIN_COURSE: [],
@@ -41,13 +42,13 @@ export default function AcademyWorkshopKitchenOrderModal({
     };
 
     ACADEMY_WORKSHOP_MENU_CATEGORIES.forEach((cat) => {
-      const countsMap = new Map<string, { count: number; studentNames: string[] }>();
+      const countsMap = new Map<string, { count: number; studentNames: string[]; imageUrl?: string | null }>();
 
       // Seed with configured workshop menu items
       workshop.menuItems
         .filter((item) => item.category === cat)
         .forEach((item) => {
-          countsMap.set(item.name, { count: 0, studentNames: [] });
+          countsMap.set(item.name, { count: 0, studentNames: [], imageUrl: item.imageUrl });
         });
 
       // Count from actual participant selections
@@ -227,32 +228,46 @@ export default function AcademyWorkshopKitchenOrderModal({
                 </div>
 
                 {items.length ? (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {items.map((item) => (
-                      <div
-                        key={item.name}
-                        className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 print:border-black print:bg-white"
-                      >
-                        <div>
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="font-semibold text-slate-900 dark:text-white print:text-black">
-                              {item.name}
-                            </span>
-                            <span className="shrink-0 rounded-lg bg-emerald-100 px-2 py-0.5 text-xs font-black text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 print:border print:border-black print:bg-white print:text-black">
-                              {item.count} suất
-                            </span>
+                  <WorkshopImageGallery>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {items.map((item) => (
+                        <div
+                          key={item.name}
+                          className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 print:border-black print:bg-white"
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                {item.imageUrl ? (
+                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg print:hidden">
+                                    <WorkshopImage
+                                      src={item.imageUrl}
+                                      alt={item.name}
+                                      className="h-full w-full object-cover"
+                                      wrapperClassName="!h-full !w-full"
+                                    />
+                                  </div>
+                                ) : null}
+                                <span className="font-semibold text-slate-900 dark:text-white print:text-black">
+                                  {item.name}
+                                </span>
+                              </div>
+                              <span className="shrink-0 rounded-lg bg-emerald-100 px-2 py-0.5 text-xs font-black text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 print:border print:border-black print:bg-white print:text-black">
+                                {item.count} suất
+                              </span>
+                            </div>
+                            {item.studentNames.length > 0 ? (
+                              <p className="mb-0 mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 print:text-black">
+                                {item.studentNames.join(', ')}
+                              </p>
+                            ) : (
+                              <p className="mb-0 mt-2 text-[11px] italic text-slate-400">Chưa có ai chọn</p>
+                            )}
                           </div>
-                          {item.studentNames.length > 0 ? (
-                            <p className="mb-0 mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 print:text-black">
-                              {item.studentNames.join(', ')}
-                            </p>
-                          ) : (
-                            <p className="mb-0 mt-2 text-[11px] italic text-slate-400">Chưa có ai chọn</p>
-                          )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </WorkshopImageGallery>
                 ) : (
                   <p className="mb-0 text-xs italic text-slate-400">Không có món ăn nào trong danh mục này.</p>
                 )}

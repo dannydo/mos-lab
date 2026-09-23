@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { AlertCircle, CheckCircle2, Copy, PackageCheck, Printer, Wrench, Users } from 'lucide-react';
 import type { AcademyWorkshopDetail, AcademyWorkshopParticipant } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon, MetricGrid, StatusTag } from '../../../../components/ui';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 
 export interface AcademyWorkshopEquipmentPrepModalProps {
   open: boolean;
@@ -192,6 +193,26 @@ export default function AcademyWorkshopEquipmentPrepModal({
                   Cần soạn: {count} bộ
                 </span>
               </div>
+
+              {pkg.images && pkg.images.length > 0 && (
+                <WorkshopImageGallery>
+                  <div className="mt-2.5 flex items-center gap-2 overflow-x-auto print:hidden">
+                    {pkg.images.map((img) => (
+                      <div
+                        key={img.id}
+                        className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-amber-200 dark:border-amber-900/60"
+                      >
+                        <WorkshopImage
+                          src={img.imageUrl}
+                          alt={img.altText || pkg.name}
+                          className="h-full w-full object-cover"
+                          wrapperClassName="!h-full !w-full"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </WorkshopImageGallery>
+              )}
 
               {items.length ? (
                 <div className="mt-3">

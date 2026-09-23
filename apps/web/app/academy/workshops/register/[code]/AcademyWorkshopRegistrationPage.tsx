@@ -1,7 +1,21 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Card, Divider, Drawer, Form, Input, Radio, Result, Spin, Tag, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Divider,
+  Drawer,
+  Form,
+  Image as AntdImage,
+  Input,
+  Radio,
+  Result,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd';
 import {
   ArrowRight,
   BookOpenCheck,
@@ -20,6 +34,7 @@ import {
   UsersRound,
   UtensilsCrossed,
   Wrench,
+  ZoomIn,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import Image from 'next/image';
@@ -435,11 +450,18 @@ function WorkshopExperienceTimeline({
                       <div className={`mt-3 overflow-hidden rounded-2xl ${styles.selectionSummary}`}>
                         <div className="flex items-start gap-3 p-3">
                           {selectedEquipmentPackage.images[0] ? (
-                            <img
-                              src={selectedEquipmentPackage.images[0].imageUrl}
-                              alt=""
-                              className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-emerald-100"
-                            />
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <AntdImage.PreviewGroup
+                                items={selectedEquipmentPackage.images.map((img) => img.imageUrl)}
+                              >
+                                <AntdImage
+                                  src={selectedEquipmentPackage.images[0].imageUrl}
+                                  alt=""
+                                  className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-emerald-100"
+                                  wrapperClassName="!h-12 !w-12 shrink-0 rounded-xl overflow-hidden block"
+                                />
+                              </AntdImage.PreviewGroup>
+                            </span>
                           ) : (
                             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
                               <AppIcon icon={PackageCheck} size="sm" />
@@ -544,11 +566,16 @@ function WorkshopExperienceTimeline({
                       <div className={`mt-3 overflow-hidden rounded-2xl ${styles.selectionSummary}`}>
                         <div className="flex items-start gap-3 p-3">
                           {selectedDesign.images[0] ? (
-                            <img
-                              src={selectedDesign.images[0].imageUrl}
-                              alt=""
-                              className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-purple-100"
-                            />
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <AntdImage.PreviewGroup items={selectedDesign.images.map((img) => img.imageUrl)}>
+                                <AntdImage
+                                  src={selectedDesign.images[0].imageUrl}
+                                  alt=""
+                                  className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-purple-100"
+                                  wrapperClassName="!h-12 !w-12 shrink-0 rounded-xl overflow-hidden block"
+                                />
+                              </AntdImage.PreviewGroup>
+                            </span>
                           ) : (
                             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
                               <AppIcon icon={Sparkles} size="sm" />
@@ -654,7 +681,14 @@ function WorkshopExperienceTimeline({
                           {selectedMenuItems.map((selection) => (
                             <div key={selection.category} className={styles.menuSelectionItem}>
                               {selection.imageUrl ? (
-                                <img src={selection.imageUrl} alt="" className={styles.menuSelectionImage} />
+                                <span onClick={(e) => e.stopPropagation()}>
+                                  <AntdImage
+                                    src={selection.imageUrl}
+                                    alt=""
+                                    className={styles.menuSelectionImage}
+                                    wrapperClassName="!h-10 !w-10 shrink-0 rounded-lg overflow-hidden block"
+                                  />
+                                </span>
                               ) : (
                                 <span className={styles.menuSelectionFallback}>
                                   <AppIcon icon={UtensilsCrossed} size="sm" />
@@ -829,7 +863,7 @@ function EquipmentImageCarousel({
 
   return (
     <div
-      className="relative mb-3 overflow-hidden rounded-xl bg-slate-100"
+      className="relative mb-3 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
       onClick={(event) => event.stopPropagation()}
       onTouchStart={(event) => {
         touchStartX.current = event.touches[0]?.clientX ?? null;
@@ -842,7 +876,32 @@ function EquipmentImageCarousel({
         setActiveIndex((current) => (endX < startX ? (current + 1) % count : (current - 1 + count) % count));
       }}
     >
-      <img src={image.imageUrl} alt={image.altText || label} className="h-36 w-full object-cover sm:h-40" />
+      <AntdImage.PreviewGroup
+        items={images.map((img) => img.imageUrl)}
+        preview={{
+          current: safeIndex,
+          countRender: (current, total) => (
+            <span className="tabular-nums font-semibold tracking-wide">
+              {current} / {total}
+            </span>
+          ),
+        }}
+      >
+        <AntdImage
+          src={image.imageUrl}
+          alt={image.altText || label}
+          className="h-36 w-full object-cover sm:h-40"
+          wrapperClassName="!h-36 !w-full sm:!h-40 block"
+          preview={{
+            mask: (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-white drop-shadow-sm">
+                <ZoomIn size={14} />
+                <span>Phóng to</span>
+              </span>
+            ),
+          }}
+        />
+      </AntdImage.PreviewGroup>
       {count > 1 ? (
         <>
           <button
@@ -1859,11 +1918,14 @@ export default function AcademyWorkshopRegistrationPage() {
                                                 >
                                                   <span className="flex min-w-0 items-center gap-3">
                                                     {item.imageUrl ? (
-                                                      <img
-                                                        src={item.imageUrl}
-                                                        alt=""
-                                                        className="h-14 w-14 shrink-0 rounded-xl object-cover shadow-sm ring-1 ring-slate-200"
-                                                      />
+                                                      <span onClick={(e) => e.stopPropagation()}>
+                                                        <AntdImage
+                                                          src={item.imageUrl}
+                                                          alt=""
+                                                          className="h-14 w-14 shrink-0 rounded-xl object-cover shadow-sm ring-1 ring-slate-200"
+                                                          wrapperClassName="!h-14 !w-14 shrink-0 rounded-xl overflow-hidden block"
+                                                        />
+                                                      </span>
                                                     ) : null}
                                                     <span className="min-w-0 flex-1 line-clamp-2 text-sm font-bold leading-5 text-slate-800">
                                                       {item.name}

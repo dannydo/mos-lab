@@ -22,6 +22,7 @@ import {
   StatePanel,
 } from '../../../../components/ui';
 import { useAcademyWorkshopEquipmentTemplates } from './useAcademyWorkshopEquipmentTemplates';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 
 type TemplateFormValues = SaveAcademyWorkshopEquipmentTemplateRequest;
 type SaveTarget = 'new' | 'existing';
@@ -78,10 +79,17 @@ function TemplatePreview({ template }: { template: AcademyWorkshopEquipmentTempl
       className="relative h-24 w-36 shrink-0 overflow-hidden rounded-xl"
       style={{ background: token.colorFillQuaternary }}
     >
-      <img src={cover.imageUrl} alt={cover.altText || template.title} className="h-full w-full object-cover" />
+      <WorkshopImageGallery items={images.map((img) => img.imageUrl)}>
+        <WorkshopImage
+          src={cover.imageUrl}
+          alt={cover.altText || template.title}
+          className="h-full w-full object-cover"
+          wrapperClassName="!h-full !w-full"
+        />
+      </WorkshopImageGallery>
       {images.length > 1 ? (
         <span
-          className="absolute bottom-1.5 right-1.5 rounded-md px-1.5 py-0.5 text-xs font-extrabold"
+          className="pointer-events-none absolute bottom-1.5 right-1.5 z-1 rounded-md px-1.5 py-0.5 text-xs font-extrabold"
           style={{ background: token.colorBgElevated, color: token.colorText }}
         >
           +{images.length - 1}

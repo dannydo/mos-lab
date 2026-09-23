@@ -19,6 +19,7 @@ import AcademyWorkshopKitchenOrderModal from './AcademyWorkshopKitchenOrderModal
 import AcademyWorkshopSelectionDeadline from './AcademyWorkshopSelectionDeadline';
 import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
 import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 import { useAcademyWorkshopMenuTemplates } from './useAcademyWorkshopMenuTemplates';
 import {
   AppIcon,
@@ -373,57 +374,63 @@ export default function AcademyWorkshopMenuManager({
                       <span className="tabular-nums text-xs opacity-55">{items.length} món</span>
                     </div>
                     {items.length ? (
-                      <div className="space-y-2">
-                        {items.map((item) => (
-                          <article
-                            key={item.id}
-                            className="rounded-xl border px-3 py-2.5"
-                            style={{ borderColor: token.colorBorderSecondary, opacity: item.isAvailable ? 1 : 0.58 }}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex min-w-0 gap-2.5">
-                                <img
-                                  src={item.imageUrl || undefined}
-                                  alt=""
-                                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
-                                  aria-hidden="true"
-                                />
-                                <div className="min-w-0">
-                                  <div className="truncate text-sm font-bold">{item.name}</div>
-                                  {item.description ? (
-                                    <p className="mb-0 mt-1 text-xs leading-5 opacity-65">{item.description}</p>
-                                  ) : null}
-                                </div>
-                              </div>
-                              {canEdit ? (
-                                <div className="flex shrink-0 gap-1">
-                                  <IconButton
-                                    label={`Sửa ${item.name}`}
-                                    icon={PencilLine}
-                                    onClick={() => openEdit(item)}
-                                  />
-                                  <Popconfirm
-                                    title={`Xóa “${item.name}”?`}
-                                    description="Học viên sẽ không thể chọn món này nữa."
-                                    okText="Xóa"
-                                    cancelText="Hủy"
-                                    okButtonProps={{ danger: true }}
-                                    onConfirm={() => void deleteItem(item)}
-                                  >
-                                    <IconButton
-                                      tone="danger"
-                                      label={`Xóa ${item.name}`}
-                                      icon={Trash2}
-                                      disabled={saving}
+                      <WorkshopImageGallery>
+                        <div className="space-y-2">
+                          {items.map((item) => (
+                            <article
+                              key={item.id}
+                              className="rounded-xl border px-3 py-2.5"
+                              style={{ borderColor: token.colorBorderSecondary, opacity: item.isAvailable ? 1 : 0.58 }}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex min-w-0 gap-2.5">
+                                  {item.imageUrl ? (
+                                    <WorkshopImage
+                                      src={item.imageUrl}
+                                      alt={item.name}
+                                      className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                                      wrapperClassName="!h-12 !w-12 shrink-0 rounded-lg"
                                     />
-                                  </Popconfirm>
+                                  ) : null}
+                                  <div className="min-w-0">
+                                    <div className="truncate text-sm font-bold">{item.name}</div>
+                                    {item.description ? (
+                                      <p className="mb-0 mt-1 text-xs leading-5 opacity-65">{item.description}</p>
+                                    ) : null}
+                                  </div>
                                 </div>
+                                {canEdit ? (
+                                  <div className="flex shrink-0 gap-1">
+                                    <IconButton
+                                      label={`Sửa ${item.name}`}
+                                      icon={PencilLine}
+                                      onClick={() => openEdit(item)}
+                                    />
+                                    <Popconfirm
+                                      title={`Xóa “${item.name}”?`}
+                                      description="Học viên sẽ không thể chọn món này nữa."
+                                      okText="Xóa"
+                                      cancelText="Hủy"
+                                      okButtonProps={{ danger: true }}
+                                      onConfirm={() => void deleteItem(item)}
+                                    >
+                                      <IconButton
+                                        tone="danger"
+                                        label={`Xóa ${item.name}`}
+                                        icon={Trash2}
+                                        disabled={saving}
+                                      />
+                                    </Popconfirm>
+                                  </div>
+                                ) : null}
+                              </div>
+                              {!item.isAvailable ? (
+                                <StatusTag className="mt-2" status="default" label="Tạm ẩn" />
                               ) : null}
-                            </div>
-                            {!item.isAvailable ? <StatusTag className="mt-2" status="default" label="Tạm ẩn" /> : null}
-                          </article>
-                        ))}
-                      </div>
+                            </article>
+                          ))}
+                        </div>
+                      </WorkshopImageGallery>
                     ) : (
                       <p className="mb-0 text-sm opacity-55">Chưa có món trong nhóm này.</p>
                     )}

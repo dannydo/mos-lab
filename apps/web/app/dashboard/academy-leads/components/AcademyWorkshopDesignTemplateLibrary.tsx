@@ -23,6 +23,7 @@ import {
   StatePanel,
 } from '../../../../components/ui';
 import { useAcademyWorkshopDesignTemplates } from './useAcademyWorkshopDesignTemplates';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 
 type TemplateFormValues = SaveAcademyWorkshopDesignTemplateRequest;
 type SaveTarget = 'new' | 'existing';
@@ -80,9 +81,16 @@ function TemplatePreview({ template }: { template: AcademyWorkshopDesignTemplate
   }
   return (
     <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-900">
-      <img src={cover.imageUrl} alt={cover.altText || template.title} className="h-full w-full object-cover" />
+      <WorkshopImageGallery items={images.map((img) => img.imageUrl)}>
+        <WorkshopImage
+          src={cover.imageUrl}
+          alt={cover.altText || template.title}
+          className="h-full w-full object-cover"
+          wrapperClassName="!h-full !w-full"
+        />
+      </WorkshopImageGallery>
       {images.length > 1 ? (
-        <span className="absolute bottom-1.5 right-1.5 rounded-md bg-white px-1.5 py-0.5 text-xs font-extrabold text-slate-800 shadow-xs dark:bg-slate-800 dark:text-slate-200">
+        <span className="pointer-events-none absolute bottom-1.5 right-1.5 z-1 rounded-md bg-white/90 px-1.5 py-0.5 text-xs font-extrabold text-slate-800 shadow-xs dark:bg-slate-800/90 dark:text-slate-200">
           +{images.length - 1}
         </span>
       ) : null}

@@ -10,6 +10,7 @@ import type {
   AcademyWorkshopDesignDifficultyLevel,
 } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon, MetricGrid, StatusTag } from '../../../../components/ui';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 
 export interface AcademyWorkshopDesignPrepModalProps {
   open: boolean;
@@ -218,6 +219,25 @@ export default function AcademyWorkshopDesignPrepModal({
                           {design.description}
                         </p>
                       ) : null}
+                      {design.images && design.images.length > 0 && (
+                        <WorkshopImageGallery>
+                          <div className="mt-2.5 flex items-center gap-2 overflow-x-auto">
+                            {design.images.map((img) => (
+                              <div
+                                key={img.id}
+                                className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-purple-100 dark:border-purple-900/60"
+                              >
+                                <WorkshopImage
+                                  src={img.imageUrl}
+                                  alt={img.altText || design.name}
+                                  className="h-full w-full object-cover"
+                                  wrapperClassName="!h-full !w-full"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </WorkshopImageGallery>
+                      )}
                     </div>
                     <span className="inline-flex shrink-0 items-center justify-center rounded-lg bg-pink-50 px-2.5 py-1 text-sm font-bold text-pink-600 dark:bg-pink-950/40 dark:text-pink-400">
                       {count} học viên

@@ -13,6 +13,7 @@ import {
   type AcademyWorkshopParticipant,
 } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon } from '../../../../components/ui';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 
 export interface AcademyWorkshopParticipantSelectionsModalProps {
   open: boolean;
@@ -235,6 +236,22 @@ export default function AcademyWorkshopParticipantSelectionsModal({
                       </div>
                     </div>
                   )}
+                  {selectedPkg.images && selectedPkg.images.length > 0 && (
+                    <WorkshopImageGallery>
+                      <div className="mt-2 flex items-center gap-1.5 overflow-x-auto">
+                        {selectedPkg.images.map((img) => (
+                          <div key={img.id} className="h-12 w-12 shrink-0 rounded overflow-hidden">
+                            <WorkshopImage
+                              src={img.imageUrl}
+                              alt={img.altText || selectedPkg.name}
+                              className="h-full w-full rounded object-cover"
+                              wrapperClassName="!h-full !w-full"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </WorkshopImageGallery>
+                  )}
                 </div>
               )}
             </div>
@@ -284,16 +301,20 @@ export default function AcademyWorkshopParticipantSelectionsModal({
                   </div>
                   {selectedDesign.description && <div className="mt-1 opacity-70">{selectedDesign.description}</div>}
                   {selectedDesign.images && selectedDesign.images.length > 0 && (
-                    <div className="mt-2 flex items-center gap-1.5 overflow-x-auto">
-                      {selectedDesign.images.map((img) => (
-                        <img
-                          key={img.id}
-                          src={img.imageUrl}
-                          alt={img.altText || selectedDesign.name}
-                          className="h-12 w-12 rounded object-cover border border-purple-200 dark:border-purple-800 shadow-2xs"
-                        />
-                      ))}
-                    </div>
+                    <WorkshopImageGallery>
+                      <div className="mt-2 flex items-center gap-1.5 overflow-x-auto">
+                        {selectedDesign.images.map((img) => (
+                          <div key={img.id} className="h-12 w-12 shrink-0 rounded overflow-hidden">
+                            <WorkshopImage
+                              src={img.imageUrl}
+                              alt={img.altText || selectedDesign.name}
+                              className="h-full w-full rounded object-cover"
+                              wrapperClassName="!h-full !w-full"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </WorkshopImageGallery>
                   )}
                 </div>
               )}

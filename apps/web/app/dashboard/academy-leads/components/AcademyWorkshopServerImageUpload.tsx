@@ -5,6 +5,7 @@ import { Button, Upload, message, theme } from 'antd';
 import { ImagePlus, LoaderCircle } from 'lucide-react';
 import { apiClient } from '../../../../lib/api-client';
 import { AppIcon, IconText } from '../../../../components/ui';
+import { WorkshopImage } from './AcademyWorkshopImageGallery';
 
 type MediaArea = 'hero' | 'menu' | 'equipment' | 'quiz' | 'design';
 
@@ -91,7 +92,7 @@ export function AcademyWorkshopServerImageUpload({
           className="flex items-center gap-3 rounded-xl border p-2.5"
           style={{ borderColor: token.colorBorderSecondary, background: token.colorFillQuaternary }}
         >
-          <img
+          <WorkshopImage
             src={value}
             alt="Ảnh đã chọn"
             className={
@@ -99,6 +100,7 @@ export function AcademyWorkshopServerImageUpload({
                 ? 'h-20 w-32 shrink-0 rounded-lg object-cover'
                 : 'h-14 w-14 shrink-0 rounded-lg object-cover'
             }
+            wrapperClassName={area === 'hero' ? '!h-20 !w-32 shrink-0 rounded-lg' : '!h-14 !w-14 shrink-0 rounded-lg'}
             style={{ background: token.colorFillTertiary }}
           />
           <div className="min-w-0 flex-1">

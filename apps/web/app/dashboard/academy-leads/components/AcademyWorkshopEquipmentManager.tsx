@@ -18,6 +18,7 @@ import AcademyWorkshopEquipmentPrepModal from './AcademyWorkshopEquipmentPrepMod
 import AcademyWorkshopSelectionDeadline from './AcademyWorkshopSelectionDeadline';
 import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
 import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 import { useAcademyWorkshopEquipmentTemplates } from './useAcademyWorkshopEquipmentTemplates';
 import {
   AppIcon,
@@ -442,44 +443,56 @@ export default function AcademyWorkshopEquipmentManager({
                       ) : null}
                     </div>
                     {item.images.length ? (
-                      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {sortImages(item.images).map((image) => (
-                          <figure
-                            key={image.id}
-                            className="group relative m-0 aspect-square overflow-hidden rounded-xl bg-slate-100"
-                          >
-                            <img
-                              src={image.imageUrl}
-                              alt={image.altText || item.name}
-                              className="h-full w-full object-cover"
-                            />
-                            {canEdit ? (
-                              <div className="absolute inset-x-1.5 bottom-1.5 flex justify-end gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                                <IconButton
-                                  label={`Sửa ảnh ${item.name}`}
-                                  icon={PencilLine}
-                                  onClick={() => openEditImage(item, image)}
-                                />
-                                <Popconfirm
-                                  title="Xóa ảnh này?"
-                                  description="Ảnh sẽ không còn hiển thị cho học viên."
-                                  okText="Xóa"
-                                  cancelText="Hủy"
-                                  okButtonProps={{ danger: true }}
-                                  onConfirm={() => void deleteImage(item, image)}
+                      <WorkshopImageGallery>
+                        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          {sortImages(item.images).map((image) => (
+                            <figure
+                              key={image.id}
+                              className="group relative m-0 aspect-square overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
+                            >
+                              <WorkshopImage
+                                src={image.imageUrl}
+                                alt={image.altText || item.name}
+                                className="h-full w-full object-cover"
+                                wrapperClassName="!h-full !w-full"
+                              />
+                              {canEdit ? (
+                                <div
+                                  className="pointer-events-none absolute inset-x-1.5 bottom-1.5 flex justify-end gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  <IconButton
-                                    tone="danger"
-                                    label={`Xóa ảnh ${item.name}`}
-                                    icon={Trash2}
-                                    disabled={saving}
-                                  />
-                                </Popconfirm>
-                              </div>
-                            ) : null}
-                          </figure>
-                        ))}
-                      </div>
+                                  <div className="pointer-events-auto flex items-center gap-1">
+                                    <IconButton
+                                      label={`Sửa ảnh ${item.name}`}
+                                      icon={PencilLine}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openEditImage(item, image);
+                                      }}
+                                    />
+                                    <Popconfirm
+                                      title="Xóa ảnh này?"
+                                      description="Ảnh sẽ không còn hiển thị cho học viên."
+                                      okText="Xóa"
+                                      cancelText="Hủy"
+                                      okButtonProps={{ danger: true }}
+                                      onConfirm={() => void deleteImage(item, image)}
+                                    >
+                                      <IconButton
+                                        tone="danger"
+                                        label={`Xóa ảnh ${item.name}`}
+                                        icon={Trash2}
+                                        disabled={saving}
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                    </Popconfirm>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </figure>
+                          ))}
+                        </div>
+                      </WorkshopImageGallery>
                     ) : (
                       <p className="mb-0 mt-2 text-sm opacity-55">
                         Chưa có ảnh. Thêm ảnh để học viên xem gallery trước khi chọn.

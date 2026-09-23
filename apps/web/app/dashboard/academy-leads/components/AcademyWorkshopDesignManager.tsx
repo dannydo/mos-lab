@@ -19,6 +19,7 @@ import AcademyWorkshopDesignPrepModal from './AcademyWorkshopDesignPrepModal';
 import AcademyWorkshopSelectionDeadline from './AcademyWorkshopSelectionDeadline';
 import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
 import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
+import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 import { useAcademyWorkshopDesignTemplates } from './useAcademyWorkshopDesignTemplates';
 import {
   AppIcon,
@@ -499,38 +500,55 @@ export default function AcademyWorkshopDesignManager({
                       </div>
 
                       {design.images.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {design.images.map((img) => (
-                            <div
-                              key={img.id}
-                              className="group relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
-                            >
-                              <img
-                                src={img.imageUrl}
-                                alt={img.altText || design.name}
-                                className="h-full w-full object-cover"
-                              />
-                              {canEdit ? (
-                                <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                                  <IconButton
-                                    icon={PencilLine}
-                                    label="Chỉnh sửa ảnh"
-                                    className="text-white hover:text-white"
-                                    onClick={() => openEditImage(design, img)}
-                                  />
-                                  <Popconfirm
-                                    title="Xóa ảnh này?"
-                                    onConfirm={() => deleteImage(design, img)}
-                                    okText="Xóa"
-                                    cancelText="Hủy"
+                        <WorkshopImageGallery>
+                          <div className="flex flex-wrap gap-2">
+                            {design.images.map((img) => (
+                              <div
+                                key={img.id}
+                                className="group relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+                              >
+                                <WorkshopImage
+                                  src={img.imageUrl}
+                                  alt={img.altText || design.name}
+                                  className="h-full w-full object-cover"
+                                  wrapperClassName="!h-full !w-full"
+                                />
+                                {canEdit ? (
+                                  <div
+                                    className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                                    onClick={(e) => e.stopPropagation()}
                                   >
-                                    <IconButton icon={Trash2} label="Xóa ảnh" tone="danger" className="text-red-400" />
-                                  </Popconfirm>
-                                </div>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
+                                    <div className="pointer-events-auto flex items-center gap-1">
+                                      <IconButton
+                                        icon={PencilLine}
+                                        label="Chỉnh sửa ảnh"
+                                        className="text-white hover:text-white"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openEditImage(design, img);
+                                        }}
+                                      />
+                                      <Popconfirm
+                                        title="Xóa ảnh này?"
+                                        onConfirm={() => deleteImage(design, img)}
+                                        okText="Xóa"
+                                        cancelText="Hủy"
+                                      >
+                                        <IconButton
+                                          icon={Trash2}
+                                          label="Xóa ảnh"
+                                          tone="danger"
+                                          className="text-red-400"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </Popconfirm>
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        </WorkshopImageGallery>
                       ) : (
                         <div className="text-xs italic text-gray-400">Chưa có ảnh minh họa cho mẫu này</div>
                       )}
