@@ -66,7 +66,7 @@ assertSafeDevConfiguration();
 
 const server = Fastify({
   logger: true,
-  bodyLimit: 50 * 1024 * 1024, // 50MB payload limit for audit submissions with photos
+  bodyLimit: 64 * 1024 * 1024, // 64MB payload limit matching Nginx client_max_body_size
 });
 
 function isDevelopmentLanOrigin(origin: string): boolean {

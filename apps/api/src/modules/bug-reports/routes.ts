@@ -60,6 +60,7 @@ import { InboxWorkerStatusService } from './inbox-worker-status.service.js';
 const WORKER_RATE_LIMIT_WINDOW_MS = 60_000;
 const WORKER_RATE_LIMIT_MAX_REQUESTS = 180;
 const classifierWorkerRateBuckets = new Map<string, { startedAt: number; count: number }>();
+const BUG_REPORT_BODY_LIMIT = 60 * 1024 * 1024; // 60MB payload limit for up to 10 photos of 5MB in base64
 
 function numericParam(value: unknown, label: string): number {
   const parsed = Number(value);
@@ -548,7 +549,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
 
   fastify.post(
     '/request-classifications',
-    { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] },
+    { bodyLimit: BUG_REPORT_BODY_LIMIT, preHandler: [requireAuth] },
     async (request, reply) => {
       try {
         const data = await RequestClassificationService.create(
@@ -614,23 +615,27 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.post('/bug-reports', { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] }, async (request, reply) => {
-    try {
-      const input = request.body as CreateBugReportRequest;
-      const data = await BugReportService.create(fastify, request.user.id, input);
-      if (await InboxFollowUpService.enqueue(fastify, data.id, 'CREATED', String(data.id)))
-        RequestClassifierWorkerHub.notify('inbox_follow_up_available');
-      if (await InboxPlanService.enqueue(fastify, data.id, 'CREATED'))
-        RequestClassifierWorkerHub.notify('inbox_plan_available');
-      return reply.status(201).send({
-        success: true,
-        data,
-        message: input?.requestType === 'FEATURE' ? 'Đã ghi nhận yêu cầu chức năng.' : 'Đã ghi nhận báo lỗi.',
-      });
-    } catch (error) {
-      return sendError(fastify, reply, error, 'Create bug report failed');
+  fastify.post(
+    '/bug-reports',
+    { bodyLimit: BUG_REPORT_BODY_LIMIT, preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const input = request.body as CreateBugReportRequest;
+        const data = await BugReportService.create(fastify, request.user.id, input);
+        if (await InboxFollowUpService.enqueue(fastify, data.id, 'CREATED', String(data.id)))
+          RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+        if (await InboxPlanService.enqueue(fastify, data.id, 'CREATED'))
+          RequestClassifierWorkerHub.notify('inbox_plan_available');
+        return reply.status(201).send({
+          success: true,
+          data,
+          message: input?.requestType === 'FEATURE' ? 'Đã ghi nhận yêu cầu chức năng.' : 'Đã ghi nhận báo lỗi.',
+        });
+      } catch (error) {
+        return sendError(fastify, reply, error, 'Create bug report failed');
+      }
     }
-  });
+  );
 
   fastify.get('/bug-reports/mine', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
@@ -655,7 +660,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
 
   fastify.patch(
     '/bug-reports/:id/review',
-    { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] },
+    { bodyLimit: BUG_REPORT_BODY_LIMIT, preHandler: [requireAuth] },
     async (request, reply) => {
       try {
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
@@ -681,7 +686,7 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
 
   fastify.post(
     '/bug-reports/:id/comments',
-    { bodyLimit: 14 * 1024 * 1024, preHandler: [requireAuth] },
+    { bodyLimit: BUG_REPORT_BODY_LIMIT, preHandler: [requireAuth] },
     async (request, reply) => {
       try {
         const id = numericParam((request.params as { id: string }).id, 'Ticket ID');

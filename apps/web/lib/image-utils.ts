@@ -22,13 +22,13 @@ export async function compressImageForUpload(
   }
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+  const mimeType = 'image/jpeg';
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType, quality));
   if (!blob) throw new Error('Không thể nén ảnh.');
   if (blob.size > maxBytes) {
     throw new Error(`Ảnh sau nén vẫn lớn hơn ${Math.round(maxBytes / (1024 * 1024))} MB.`);
   }
-  const extension = mimeType === 'image/png' ? '.png' : '.jpg';
+  const extension = '.jpg';
   return new File([blob], file.name.replace(/\.[^.]+$/, '') + extension, { type: mimeType });
 }
 
