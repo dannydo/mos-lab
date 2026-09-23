@@ -235,8 +235,65 @@ const mineReportInclude = {
   },
 } satisfies Prisma.CrmBugReportInclude;
 
+const listReportInclude = {
+  inboxPlanJobs: { orderBy: { createdAt: 'desc' as const }, take: 3 },
+  reporter: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
+  resolution: true,
+  attachments: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'asc' as const },
+  },
+  comments: {
+    orderBy: { createdAt: 'asc' as const },
+    include: {
+      author: { select: { id: true, displayName: true, role: true, avatarUrl: true } },
+      attachments: { orderBy: { createdAt: 'asc' as const } },
+    },
+  },
+  audits: {
+    orderBy: { createdAt: 'asc' as const },
+    select: {
+      id: true,
+      action: true,
+      note: true,
+      afterJson: true,
+      createdAt: true,
+    },
+  },
+  inboxImplementationJobs: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+    select: {
+      id: true,
+      status: true,
+      executionOwner: true,
+      ideTaskId: true,
+      ideTaskBoundAt: true,
+      executionPhase: true,
+      sourceVersion: true,
+      planVersion: true,
+      progressLabel: true,
+      lastProgressAt: true,
+      progressCount: true,
+      checkpointCount: true,
+      failureCode: true,
+      retrySequence: true,
+      testsJson: true,
+      changedFilesJson: true,
+      retainUntil: true,
+      startedAt: true,
+      completedAt: true,
+      updatedAt: true,
+      createdAt: true,
+      leaseExpiresAt: true,
+      leaseHeartbeatAt: true,
+    },
+  },
+} satisfies Prisma.CrmBugReportInclude;
+
 type ReportWithRelations = Prisma.CrmBugReportGetPayload<{ include: typeof reportInclude }>;
 type MyReportWithRelations = Prisma.CrmBugReportGetPayload<{ include: typeof mineReportInclude }>;
+type ListReportWithRelations = Prisma.CrmBugReportGetPayload<{ include: typeof listReportInclude }>;
 
 export class BugReportError extends Error {
   constructor(
@@ -1327,7 +1384,7 @@ export function assertAgentProgressUpdateAllowed(input: {
   }
 }
 
-function summaryDto(row: ReportWithRelations | MyReportWithRelations): BugReportSummary {
+function summaryDto(row: ReportWithRelations | MyReportWithRelations | ListReportWithRelations): BugReportSummary {
   // Older/manual records can contain valid JSON that is only a partial context.
   // Normalize after parsing so one incomplete ticket cannot break the whole Inbox.
   const context = sanitizeBugReportContext(safeJsonParse<unknown>(row.contextJson, {}));
@@ -1938,73 +1995,37 @@ export class BugReportService {
       ...(search ? { searchNormalized: { contains: search } } : {}),
     };
     const now = new Date();
-    const [
-      total,
-      rows,
-      bugCount,
-      featureCount,
-      newCount,
-      readyForDannyCount,
-      approvedCount,
-      inProgressCount,
-      fixedCount,
-      closedCount,
-      pendingAgentCount,
-      waitingReporterCount,
-      openCount,
-      reporterActionCount,
-      reporterClarificationCount,
-      reporterReviewCount,
-      dannyActionCount,
-      agentActionCount,
-      agentClarificationCount,
-      agentDeliveryCount,
-      liveWorkerJob,
-    ] = await fastify.prisma.crm.$transaction([
+    const [total, rows, [summaryCounts], liveWorkerJob] = await Promise.all([
       fastify.prisma.crm.crmBugReport.count({ where }),
       fastify.prisma.crm.crmBugReport.findMany({
         where,
-        include: reportInclude,
+        include: listReportInclude,
         orderBy: [{ statusSort: 'asc' }, { prioritySort: 'asc' }, { createdAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
-      fastify.prisma.crm.crmBugReport.count({ where: { requestType: 'BUG' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { requestType: 'FEATURE' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { status: 'NEW' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { status: 'NEW', clarificationStatus: 'READY' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { status: 'APPROVED' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { status: 'IN_PROGRESS' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { status: 'FIXED' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { status: 'CLOSED' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { clarificationStatus: 'PENDING_AGENT' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: { clarificationStatus: 'WAITING_REPORTER' } }),
-      fastify.prisma.crm.crmBugReport.count({
-        where: { status: { in: ['NEW', 'APPROVED', 'IN_PROGRESS', 'FIXED'] } },
-      }),
-      fastify.prisma.crm.crmBugReport.count({ where: bugReportNextActorWhere('REPORTER') }),
-      fastify.prisma.crm.crmBugReport.count({
-        where: {
-          status: { in: ['NEW', 'APPROVED', 'IN_PROGRESS'] },
-          clarificationStatus: 'WAITING_REPORTER',
-        },
-      }),
-      fastify.prisma.crm.crmBugReport.count({ where: { status: 'FIXED' } }),
-      fastify.prisma.crm.crmBugReport.count({ where: bugReportNextActorWhere('DANNY') }),
-      fastify.prisma.crm.crmBugReport.count({ where: bugReportNextActorWhere('AGENT') }),
-      fastify.prisma.crm.crmBugReport.count({
-        where: {
-          status: { in: ['NEW', 'APPROVED', 'IN_PROGRESS'] },
-          clarificationStatus: 'PENDING_AGENT',
-        },
-      }),
-      fastify.prisma.crm.crmBugReport.count({
-        where: {
-          status: { in: ['APPROVED', 'IN_PROGRESS'] },
-          clarificationStatus: 'READY',
-          priority: { not: null },
-        },
-      }),
+      fastify.prisma.crm.$queryRaw<Array<Record<string, bigint | number>>>`
+        SELECT
+          COUNT(CASE WHEN request_type = 'BUG' THEN 1 END) AS bugCount,
+          COUNT(CASE WHEN request_type = 'FEATURE' THEN 1 END) AS featureCount,
+          COUNT(CASE WHEN status = 'NEW' THEN 1 END) AS newCount,
+          COUNT(CASE WHEN status = 'NEW' AND clarification_status = 'READY' THEN 1 END) AS readyForDannyCount,
+          COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) AS approvedCount,
+          COUNT(CASE WHEN status = 'IN_PROGRESS' THEN 1 END) AS inProgressCount,
+          COUNT(CASE WHEN status = 'FIXED' THEN 1 END) AS fixedCount,
+          COUNT(CASE WHEN status = 'CLOSED' THEN 1 END) AS closedCount,
+          COUNT(CASE WHEN clarification_status = 'PENDING_AGENT' THEN 1 END) AS pendingAgentCount,
+          COUNT(CASE WHEN clarification_status = 'WAITING_REPORTER' THEN 1 END) AS waitingReporterCount,
+          COUNT(CASE WHEN status IN ('NEW', 'APPROVED', 'IN_PROGRESS', 'FIXED') THEN 1 END) AS openCount,
+          COUNT(CASE WHEN status = 'FIXED' OR (status IN ('NEW', 'APPROVED', 'IN_PROGRESS') AND clarification_status = 'WAITING_REPORTER') THEN 1 END) AS reporterActionCount,
+          COUNT(CASE WHEN status IN ('NEW', 'APPROVED', 'IN_PROGRESS') AND clarification_status = 'WAITING_REPORTER' THEN 1 END) AS reporterClarificationCount,
+          COUNT(CASE WHEN status = 'FIXED' THEN 1 END) AS reporterReviewCount,
+          COUNT(CASE WHEN status = 'NEW' AND clarification_status = 'READY' THEN 1 END) AS dannyActionCount,
+          COUNT(CASE WHEN (status IN ('NEW', 'APPROVED', 'IN_PROGRESS') AND clarification_status = 'PENDING_AGENT') OR (status IN ('APPROVED', 'IN_PROGRESS') AND clarification_status = 'READY' AND priority IS NOT NULL) THEN 1 END) AS agentActionCount,
+          COUNT(CASE WHEN status IN ('NEW', 'APPROVED', 'IN_PROGRESS') AND clarification_status = 'PENDING_AGENT' THEN 1 END) AS agentClarificationCount,
+          COUNT(CASE WHEN status IN ('APPROVED', 'IN_PROGRESS') AND clarification_status = 'READY' AND priority IS NOT NULL THEN 1 END) AS agentDeliveryCount
+        FROM crm_bug_reports
+      `,
       fastify.prisma.crm.crmInboxImplementationJob.findFirst({
         where: { status: 'RUNNING', leaseExpiresAt: { gt: now } },
         orderBy: [{ lastProgressAt: 'desc' }, { startedAt: 'asc' }],
@@ -2018,6 +2039,26 @@ export class BugReportService {
         },
       }),
     ]);
+
+    const num = (val: unknown) => (val !== undefined && val !== null ? Number(val) : 0);
+    const bugCount = num(summaryCounts?.bugCount);
+    const featureCount = num(summaryCounts?.featureCount);
+    const newCount = num(summaryCounts?.newCount);
+    const readyForDannyCount = num(summaryCounts?.readyForDannyCount);
+    const approvedCount = num(summaryCounts?.approvedCount);
+    const inProgressCount = num(summaryCounts?.inProgressCount);
+    const fixedCount = num(summaryCounts?.fixedCount);
+    const closedCount = num(summaryCounts?.closedCount);
+    const pendingAgentCount = num(summaryCounts?.pendingAgentCount);
+    const waitingReporterCount = num(summaryCounts?.waitingReporterCount);
+    const openCount = num(summaryCounts?.openCount);
+    const reporterActionCount = num(summaryCounts?.reporterActionCount);
+    const reporterClarificationCount = num(summaryCounts?.reporterClarificationCount);
+    const reporterReviewCount = num(summaryCounts?.reporterReviewCount);
+    const dannyActionCount = num(summaryCounts?.dannyActionCount);
+    const agentActionCount = num(summaryCounts?.agentActionCount);
+    const agentClarificationCount = num(summaryCounts?.agentClarificationCount);
+    const agentDeliveryCount = num(summaryCounts?.agentDeliveryCount);
     return {
       data: rows.map(summaryDto),
       total,

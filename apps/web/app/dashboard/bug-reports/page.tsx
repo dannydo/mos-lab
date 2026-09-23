@@ -35,14 +35,28 @@ import {
 import { BugReportMobileCard } from './components/BugReportMobileCard';
 import { useBugReportInboxColumns } from './components/useBugReportInboxColumns';
 import { InboxWorkerLiveBar } from './components/BugReportWorkerActivity';
+import dynamic from 'next/dynamic';
 import { CLARIFICATION_FILTER_LABELS, STATUS_LABELS } from './bug-report-presenters';
 import { useBugReports } from './hooks/useBugReports';
 import { useRequestClassifierWorkerHealth } from './hooks/useRequestClassifierWorkerHealth';
-import { ExperienceJournalDrawer } from './components/ExperienceJournalDrawer';
-import { FrontendTelemetryDrawer } from './components/FrontendTelemetryDrawer';
-import { BugReportDetailDrawer } from './components/BugReportDetailDrawer';
-import { BugReportExecutionDashboardDrawer } from './components/BugReportExecutionDashboardDrawer';
 import { apiClient } from '../../../lib/api-client';
+
+const ExperienceJournalDrawer = dynamic(
+  () => import('./components/ExperienceJournalDrawer').then((m) => m.ExperienceJournalDrawer),
+  { ssr: false }
+);
+const FrontendTelemetryDrawer = dynamic(
+  () => import('./components/FrontendTelemetryDrawer').then((m) => m.FrontendTelemetryDrawer),
+  { ssr: false }
+);
+const BugReportDetailDrawer = dynamic(
+  () => import('./components/BugReportDetailDrawer').then((m) => m.BugReportDetailDrawer),
+  { ssr: false }
+);
+const BugReportExecutionDashboardDrawer = dynamic(
+  () => import('./components/BugReportExecutionDashboardDrawer').then((m) => m.BugReportExecutionDashboardDrawer),
+  { ssr: false }
+);
 
 export default function BugReportsPage() {
   const { token } = theme.useToken();

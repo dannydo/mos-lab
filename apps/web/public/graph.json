@@ -8810,7 +8810,7 @@
         "path": "/api/kpi/bk/booking/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 47
+        "line": 48
       }
     },
     {
@@ -8824,7 +8824,7 @@
         "path": "/api/kpi/bk/booking/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 211
+        "line": 223
       }
     },
     {
@@ -8838,7 +8838,7 @@
         "path": "/api/kpi/bk/done/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 426
+        "line": 438
       }
     },
     {
@@ -8852,7 +8852,7 @@
         "path": "/api/kpi/bk/done/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 554
+        "line": 566
       }
     },
     {
@@ -8866,7 +8866,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 744
+        "line": 756
       }
     },
     {
@@ -8880,7 +8880,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 857
+        "line": 869
       }
     },
     {
@@ -8894,7 +8894,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 961
+        "line": 973
       }
     },
     {
@@ -8908,7 +8908,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1061
+        "line": 1073
       }
     },
     {
@@ -8922,7 +8922,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1157
+        "line": 1169
       }
     },
     {
@@ -8936,7 +8936,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1190
+        "line": 1202
       }
     },
     {
@@ -8950,7 +8950,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1224
+        "line": 1236
       }
     },
     {
@@ -8964,7 +8964,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1269
+        "line": 1281
       }
     },
     {
@@ -8978,7 +8978,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1321
+        "line": 1333
       }
     },
     {
@@ -8992,7 +8992,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1333
+        "line": 1345
       }
     },
     {
@@ -9006,7 +9006,21 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1354
+        "line": 1366
+      }
+    },
+    {
+      "id": "route:PATCH:/api/kpi/bk/games/:id",
+      "type": "FastifyRoute",
+      "label": "PATCH /api/kpi/bk/games/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "metadata": {
+        "method": "PATCH",
+        "path": "/api/kpi/bk/games/:id",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 1384
       }
     },
     {
@@ -9020,7 +9034,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1372
+        "line": 1405
       }
     },
     {
@@ -9034,7 +9048,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1393
+        "line": 1426
       }
     },
     {
@@ -15013,6 +15027,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BkGameCreateInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameUpdateInput",
+      "type": "SharedType",
+      "label": "BkGameUpdateInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameUpdateInput",
         "package": "@mos-lab/shared"
       }
     },
@@ -27039,8 +27065,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 122149,
-        "lineCount": 2932,
+        "sizeBytes": 124771,
+        "lineCount": 2973,
         "ext": ".ts"
       }
     },
@@ -28274,8 +28300,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 56135,
-        "lineCount": 1409,
+        "sizeBytes": 57454,
+        "lineCount": 1442,
         "ext": ".ts"
       }
     },
@@ -28469,8 +28495,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6795,
-        "lineCount": 192,
+        "sizeBytes": 8461,
+        "lineCount": 245,
         "ext": ".ts"
       }
     },
@@ -28482,8 +28508,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21697,
-        "lineCount": 633,
+        "sizeBytes": 23269,
+        "lineCount": 669,
         "ext": ".ts"
       }
     },
@@ -30666,8 +30692,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14854,
-        "lineCount": 373,
+        "sizeBytes": 14875,
+        "lineCount": 374,
         "ext": ".ts"
       }
     },
@@ -30822,8 +30848,8 @@
       "filePath": "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 112318,
-        "lineCount": 2103,
+        "sizeBytes": 112282,
+        "lineCount": 2115,
         "ext": ".tsx"
       }
     },
@@ -31303,8 +31329,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopMenuManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22441,
-        "lineCount": 518,
+        "sizeBytes": 22569,
+        "lineCount": 520,
         "ext": ".tsx"
       }
     },
@@ -31472,8 +31498,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopServerImageUpload.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4913,
-        "lineCount": 141,
+        "sizeBytes": 4853,
+        "lineCount": 137,
         "ext": ".tsx"
       }
     },
@@ -32070,8 +32096,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5200,
-        "lineCount": 154,
+        "sizeBytes": 6612,
+        "lineCount": 190,
         "ext": ".tsx"
       }
     },
@@ -32083,8 +32109,34 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38059,
-        "lineCount": 927,
+        "sizeBytes": 38313,
+        "lineCount": 931,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx",
+      "type": "File",
+      "label": "BkGameEditModal.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2389,
+        "lineCount": 82,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/BkGameEditModal.tsx",
+      "type": "File",
+      "label": "BkGameEditModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/BkGameEditModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7883,
+        "lineCount": 197,
         "ext": ".tsx"
       }
     },
@@ -32122,8 +32174,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42669,
-        "lineCount": 885,
+        "sizeBytes": 44280,
+        "lineCount": 928,
         "ext": ".tsx"
       }
     },
@@ -32538,8 +32590,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReports.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14070,
-        "lineCount": 401,
+        "sizeBytes": 14474,
+        "lineCount": 416,
         "ext": ".ts"
       }
     },
@@ -32551,8 +32603,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useRequestClassifierWorkerHealth.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1694,
-        "lineCount": 45,
+        "sizeBytes": 2100,
+        "lineCount": 59,
         "ext": ".ts"
       }
     },
@@ -32577,8 +32629,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15552,
-        "lineCount": 366,
+        "sizeBytes": 15901,
+        "lineCount": 380,
         "ext": ".tsx"
       }
     },
@@ -35021,8 +35073,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15333,
-        "lineCount": 402,
+        "sizeBytes": 15568,
+        "lineCount": 407,
         "ext": ".ts"
       }
     },
@@ -35567,8 +35619,8 @@
       "filePath": "packages/shared/src/types/bk-game.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6381,
-        "lineCount": 187,
+        "sizeBytes": 6640,
+        "lineCount": 198,
         "ext": ".ts"
       }
     },
@@ -40333,6 +40385,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:PATCH:/api/kpi/bk/games/:id:ws:apps/api",
+      "source": "route:PATCH:/api/kpi/bk/games/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:POST:/api/kpi/bk/games/:id/finalize:ws:apps/api",
       "source": "route:POST:/api/kpi/bk/games/:id/finalize",
       "target": "ws:apps/api",
@@ -43611,6 +43670,13 @@
     {
       "id": "edge:type:@mos-lab/shared:BkGameCreateInput:ws:packages/shared",
       "source": "type:@mos-lab/shared:BkGameCreateInput",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameUpdateInput:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameUpdateInput",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -53220,6 +53286,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/BkGameEditModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/BkGameEditModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/bk/components/BkGameFinalizeModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/BkGameFinalizeModal.tsx",
       "target": "ws:packages/shared",
@@ -61123,6 +61203,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/dashboard/architecture",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:POST:/api/kpi/bk/games/:id/finalize",
       "source": "page:/dashboard/architecture",
       "target": "route:POST:/api/kpi/bk/games/:id/finalize",
@@ -61854,6 +61941,13 @@
       "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/cc",
       "target": "route:POST:/api/kpi/bk/games",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/dashboard/cc",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
     },
@@ -63023,6 +63117,13 @@
       "id": "edge:page:/dashboard/design-system:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/design-system",
       "target": "route:POST:/api/kpi/bk/games",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/dashboard/design-system",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -66327,6 +66428,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/kpi/bk/games",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -70356,6 +70464,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/bk/games/:id/finalize",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/kpi/bk/games/:id/finalize",
@@ -73716,6 +73831,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/kpi/bk/games/:id/finalize",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/kpi/bk/games/:id/finalize",
@@ -76999,6 +77121,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:PATCH:/api/kpi/bk/games/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PATCH:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/bk/games/:id/finalize",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/kpi/bk/games/:id/finalize",
@@ -77966,31 +78095,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2768,
-    "totalEdges": 5974,
+    "totalNodes": 2772,
+    "totalEdges": 5985,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 151,
-      "FastifyRoute": 575,
+      "FastifyRoute": 576,
       "Component": 53,
-      "SharedType": 1014,
+      "SharedType": 1015,
       "DesignToken": 12,
       "UIComponent": 196,
-      "File": 764
+      "File": 766
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1177,
-      "HANDLES_ROUTE": 575,
+      "EXPORTS": 1178,
+      "HANDLES_ROUTE": 576,
       "RENDERS": 249,
       "USES_TOKEN": 198,
-      "IMPORTS": 411,
+      "IMPORTS": 413,
       "QUERIES_MODEL": 357,
-      "API_CALL": 3007
+      "API_CALL": 3014
     },
-    "fastifyRouteCount": 580,
+    "fastifyRouteCount": 581,
     "prismaModelCount": 151,
     "nextPageCount": 53,
-    "sharedTypeCount": 1014
+    "sharedTypeCount": 1015
   },
   "routes": [
     {
@@ -81118,6 +81247,13 @@
     {
       "method": "POST",
       "path": "/api/kpi/bk/games",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/kpi/bk/games/:id",
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"

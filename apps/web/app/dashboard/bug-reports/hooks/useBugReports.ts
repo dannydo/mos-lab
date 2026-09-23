@@ -187,8 +187,23 @@ export function useBugReports() {
 
   useEffect(() => {
     if (!hydrated) return;
-    const interval = window.setInterval(() => void load(false), 15_000);
-    return () => window.clearInterval(interval);
+
+    const interval = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      void load(false);
+    }, 30_000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void load(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [hydrated, load]);
 
   const setFilters = useCallback((next: Partial<BugInboxFilters>) => {

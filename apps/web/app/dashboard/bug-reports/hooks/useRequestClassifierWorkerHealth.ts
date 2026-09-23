@@ -36,8 +36,22 @@ export function useRequestClassifierWorkerHealth() {
 
   useEffect(() => {
     void refresh();
-    const interval = window.setInterval(() => void refresh(false), 30_000);
-    return () => window.clearInterval(interval);
+    const interval = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      void refresh(false);
+    }, 45_000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refresh(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [refresh]);
 
   return { health, loading, error, refresh };

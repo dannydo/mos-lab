@@ -104,6 +104,7 @@ const start = async () => {
         callback(null, !origin || origin === configuredCorsOrigin || isDevelopmentLanOrigin(origin));
       },
       credentials: true,
+      maxAge: 86400,
     });
 
     // Must be registered before any route which opts into websocket handling.
