@@ -24,6 +24,15 @@ import {
   type AcademyWorkshopQuiz,
   type AcademyWorkshopSummary,
   type AcademyWorkshopTalentLeaderboardEntry,
+  type AcademyWorkshopDesignDifficultyLevel,
+  type AcademyWorkshopDesignItem,
+  type AcademyWorkshopDesignItemImage,
+  type AcademyWorkshopParticipantDesignSelection,
+  type CreateAcademyWorkshopDesignItemRequest,
+  type CreateAcademyWorkshopDesignItemImageRequest,
+  type SaveAcademyWorkshopDesignTemplateRequest,
+  type UpdateAcademyWorkshopDesignItemRequest,
+  type UpdateAcademyWorkshopDesignItemImageRequest,
   type CreateAcademyWorkshopMenuItemRequest,
   type CreateAcademyWorkshopPublicMediaUploadRequest,
   type CreateAcademyWorkshopEquipmentPackageRequest,
@@ -70,6 +79,10 @@ import {
   AcademyWorkshopEquipmentTemplateService,
   toAcademyWorkshopEquipmentTemplate,
 } from './academy-workshop-equipment-template.service.js';
+import {
+  AcademyWorkshopDesignTemplateService,
+  toAcademyWorkshopDesignTemplate,
+} from './academy-workshop-design-template.service.js';
 
 const WORKSHOP_STATUSES = new Set([
   'DRAFT',
@@ -151,6 +164,7 @@ const PARTICIPANT_INCLUDE: SafeAny = {
   photos: { include: { capturedBy: { select: STAFF_SELECT } }, orderBy: [{ capturedAt: 'desc' }] },
   menuSelections: { orderBy: [{ category: 'asc' }, { id: 'asc' }] },
   equipmentSelection: true,
+  designSelection: true,
   assessments: {
     include: { payments: { select: { amountVnd: true } } },
     orderBy: [{ updatedAt: 'desc' }],
@@ -172,9 +186,21 @@ const WORKSHOP_INCLUDE: SafeAny = {
       },
     },
   },
+  designTemplate: {
+    include: {
+      items: {
+        include: { images: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } },
+        orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      },
+    },
+  },
   agendaItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
   menuItems: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
   equipmentPackages: {
+    include: { images: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } },
+    orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+  },
+  designs: {
     include: { images: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } },
     orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
   },
@@ -494,6 +520,55 @@ function equipmentSelection(row: SafeAny): AcademyWorkshopParticipantEquipmentSe
   };
 }
 
+function normalizeDifficultyLevel(value: unknown): AcademyWorkshopDesignDifficultyLevel {
+  const level = String(value || '')
+    .trim()
+    .toUpperCase();
+  if (level === 'ADVANCED' || level === 'MASTER') return level;
+  return 'BASIC';
+}
+
+function designItem(row: SafeAny): AcademyWorkshopDesignItem {
+  return {
+    id: Number(row.id),
+    workshopId: Number(row.workshopId),
+    name: String(row.name),
+    description: row.description ?? null,
+    difficultyLevel: normalizeDifficultyLevel(row.difficultyLevel),
+    priceVnd: Math.max(0, Math.round(Number(row.priceVnd) || 0)),
+    sortOrder: Math.max(0, Number(row.sortOrder) || 0),
+    isAvailable: Boolean(row.isAvailable),
+    images: (row.images || []).map(designItemImage),
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
+  };
+}
+
+function designItemImage(row: SafeAny): AcademyWorkshopDesignItemImage {
+  return {
+    id: Number(row.id),
+    designItemId: Number(row.designItemId),
+    imageUrl: String(row.imageUrl),
+    altText: row.altText ?? null,
+    sortOrder: Math.max(0, Number(row.sortOrder) || 0),
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
+  };
+}
+
+function designSelection(row: SafeAny): AcademyWorkshopParticipantDesignSelection | null {
+  if (!row) return null;
+  return {
+    id: Number(row.id),
+    participantId: Number(row.participantId),
+    designItemId: row.designItemId == null ? null : Number(row.designItemId),
+    designName: String(row.designName),
+    difficultyLevel: normalizeDifficultyLevel(row.difficultyLevel),
+    priceVnd: Math.max(0, Math.round(Number(row.priceVnd) || 0)),
+    selectedAt: new Date(row.selectedAt).toISOString(),
+  };
+}
+
 function sortMenuItems(items: AcademyWorkshopMenuItem[]) {
   return [...items].sort(
     (left, right) =>
@@ -646,6 +721,7 @@ async function toParticipant(row: SafeAny, feeVnd: number, qrToken?: string): Pr
     })),
     menuSelections: (row.menuSelections || []).map(menuSelection),
     equipmentSelection: equipmentSelection(row.equipmentSelection),
+    designSelection: designSelection(row.designSelection),
     talent: latestTalent,
     gameScore: (row.answers || []).reduce((sum: number, answer: SafeAny) => sum + Number(answer.score || 0), 0),
     gameResponseTimeMs: (row.answers || []).reduce(
@@ -744,6 +820,7 @@ export class AcademyWorkshopService {
       equipmentSelectionDeadline: row.equipmentSelectionDeadline
         ? new Date(row.equipmentSelectionDeadline).toISOString()
         : null,
+      designSelectionDeadline: row.designSelectionDeadline ? new Date(row.designSelectionDeadline).toISOString() : null,
       location: String(row.location),
       capacity: Number(row.capacity),
       feeVnd: Math.max(0, Math.round(Number(row.feeVnd) || 0)),
@@ -753,7 +830,9 @@ export class AcademyWorkshopService {
       menuTemplate: row.menuTemplate ? toAcademyWorkshopMenuTemplate(row.menuTemplate) : null,
       menuAgendaItemId: row.menuAgendaItemId == null ? null : Number(row.menuAgendaItemId),
       equipmentAgendaItemId: row.equipmentAgendaItemId == null ? null : Number(row.equipmentAgendaItemId),
+      designAgendaItemId: row.designAgendaItemId == null ? null : Number(row.designAgendaItemId),
       equipmentTemplate: row.equipmentTemplate ? toAcademyWorkshopEquipmentTemplate(row.equipmentTemplate) : null,
+      designTemplate: row.designTemplate ? toAcademyWorkshopDesignTemplate(row.designTemplate) : null,
       assignedStaffIds: assignedStaffIds(row.campaign.assignedStaffIds),
       participantCount: participants.length,
       checkedInCount: participants.filter((item) => item.checkedInAt).length,
@@ -772,6 +851,7 @@ export class AcademyWorkshopService {
       agenda: row.agendaItems.map((item: SafeAny) => toAcademyWorkshopAgendaItem(item)),
       menuItems: sortMenuItems((row.menuItems || []).map(menuItem)),
       equipmentPackages: (row.equipmentPackages || []).map(equipmentPackage),
+      designs: (row.designs || []).map(designItem),
       activeQuiz: toAcademyWorkshopQuiz(row.quizzes?.[0], true),
     };
   }
@@ -851,6 +931,11 @@ export class AcademyWorkshopService {
       'Hạn chốt bộ dụng cụ',
       startsAt
     );
+    const designSelectionDeadline = selectionDeadline(
+      input.designSelectionDeadline,
+      'Hạn chốt mẫu thiết kế mi',
+      startsAt
+    );
     const heroImageUrl = normalizeHeroImageUrl(input.heroImageUrl);
     const staffIds = await this.validateStaffIds(fastify, input.assignedStaffIds || []);
     if (!staffIds.includes(actor.id)) staffIds.push(actor.id);
@@ -887,6 +972,7 @@ export class AcademyWorkshopService {
           feeDueAt,
           menuSelectionDeadline,
           equipmentSelectionDeadline,
+          designSelectionDeadline,
           heroImageUrl,
           status: 'SCHEDULED',
           agendaTemplateId: agendaTemplate.id,
@@ -923,6 +1009,11 @@ export class AcademyWorkshopService {
         ? row.equipmentSelectionDeadline
         : input.equipmentSelectionDeadline,
       'Hạn chốt bộ dụng cụ',
+      startsAt
+    );
+    const designSelectionDeadline = selectionDeadline(
+      input.designSelectionDeadline === undefined ? row.designSelectionDeadline : input.designSelectionDeadline,
+      'Hạn chốt mẫu thiết kế mi',
       startsAt
     );
     if (input.status && !WORKSHOP_STATUSES.has(input.status))
@@ -975,6 +1066,7 @@ export class AcademyWorkshopService {
           feeDueAt: input.feeDueAt === undefined ? row.feeDueAt : parseDate(input.feeDueAt, 'Hạn đóng phí', true),
           menuSelectionDeadline,
           equipmentSelectionDeadline,
+          designSelectionDeadline,
           heroImageUrl,
           status: input.status || row.status,
           registrationOpen:
@@ -1646,6 +1738,255 @@ export class AcademyWorkshopService {
     await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackageImage.delete({ where: { id: currentImage.id } });
   }
 
+  private static assertCanEditDesign(actor: AcademyActor) {
+    if (!canManage(actor) && actor.academyAccess !== true) {
+      throw new AcademySalesError('Chỉ Admin, Quản lý hoặc staff được phân công mới được sửa mẫu thiết kế mi.', 403);
+    }
+  }
+
+  static async uploadDesignImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopPublicMediaUploadRequest
+  ): Promise<AcademyWorkshopPublicMediaUploadResult> {
+    await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    return AcademyWorkshopStorageService.uploadPublicMedia(workshopId, 'design-images', input);
+  }
+
+  static async setDesignAgendaItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: SetAcademyWorkshopAgendaResourceRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    const agendaItemId = this.agendaItemIdForResource(
+      row,
+      input.agendaItemId == null ? null : Number(input.agendaItemId)
+    );
+    await fastify.prisma.crm.crmAcademyWorkshop.update({
+      where: { id: row.id },
+      data: { designAgendaItemId: agendaItemId },
+    });
+    return this.getById(fastify, actor, row.id);
+  }
+
+  private static normalizeDesignItem(input: {
+    name: unknown;
+    description?: unknown;
+    difficultyLevel?: unknown;
+    priceVnd?: unknown;
+    isAvailable?: unknown;
+  }) {
+    const name = String(input.name || '').trim();
+    const description = String(input.description || '').trim() || null;
+    const difficultyLevel = normalizeDifficultyLevel(input.difficultyLevel);
+    const priceVnd = Math.max(0, Math.round(Number(input.priceVnd) || 0));
+    if (!name || name.length > 180) throw new AcademySalesError('Tên mẫu thiết kế mi là bắt buộc và tối đa 180 ký tự.');
+    if (description && description.length > 2_000)
+      throw new AcademySalesError('Mô tả mẫu thiết kế mi tối đa 2.000 ký tự.');
+    if (!Number.isFinite(priceVnd) || priceVnd < 0 || priceVnd > 100_000_000) {
+      throw new AcademySalesError('Phụ thu mẫu thiết kế mi phải là số tiền VND hợp lệ.');
+    }
+    return {
+      name,
+      description,
+      difficultyLevel,
+      priceVnd,
+      isAvailable: input.isAvailable === undefined ? true : Boolean(input.isAvailable),
+    };
+  }
+
+  static async createDesignItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: CreateAcademyWorkshopDesignItemRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    const item = this.normalizeDesignItem(input);
+    const sortOrder = Math.max(0, ...(row.designs || []).map((current: SafeAny) => Number(current.sortOrder) || 0)) + 1;
+    const created = await fastify.prisma.crm.crmAcademyWorkshopDesignItem.create({
+      data: { ...item, workshopId: row.id, sortOrder },
+      include: { images: true },
+    });
+    return designItem(created);
+  }
+
+  static async updateDesignItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    designItemId: number,
+    input: UpdateAcademyWorkshopDesignItemRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    const itemId = positiveId(designItemId, 'Mẫu thiết kế mi');
+    const existing = (row.designs || []).find((item: SafeAny) => item.id === itemId);
+    if (!existing) throw new AcademySalesError('Không tìm thấy mẫu thiết kế mi.', 404);
+    const item = this.normalizeDesignItem({
+      name: input.name === undefined ? existing.name : input.name,
+      description: input.description === undefined ? existing.description : input.description,
+      difficultyLevel: input.difficultyLevel === undefined ? existing.difficultyLevel : input.difficultyLevel,
+      priceVnd: input.priceVnd === undefined ? existing.priceVnd : input.priceVnd,
+      isAvailable: input.isAvailable === undefined ? existing.isAvailable : input.isAvailable,
+    });
+    const updated = await fastify.prisma.crm.crmAcademyWorkshopDesignItem.update({
+      where: { id: existing.id },
+      data: item,
+      include: { images: true },
+    });
+    return designItem(updated);
+  }
+
+  static async deleteDesignItem(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    designItemId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    const itemId = positiveId(designItemId, 'Mẫu thiết kế mi');
+    if (!(row.designs || []).some((item: SafeAny) => item.id === itemId)) {
+      throw new AcademySalesError('Không tìm thấy mẫu thiết kế mi.', 404);
+    }
+    await fastify.prisma.crm.crmAcademyWorkshopDesignItem.delete({ where: { id: itemId } });
+  }
+
+  static async saveDesignAsTemplate(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    input: SaveAcademyWorkshopDesignTemplateRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    return AcademyWorkshopDesignTemplateService.createFromWorkshop(fastify, actor, input, row.designs || []);
+  }
+
+  static async refreshDesignTemplateFromWorkshop(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    designTemplateId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    return AcademyWorkshopDesignTemplateService.replaceItemsFromWorkshop(
+      fastify,
+      actor,
+      designTemplateId,
+      row.designs || []
+    );
+  }
+
+  static async applyDesignTemplate(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    designTemplateId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    const template = await AcademyWorkshopDesignTemplateService.getRequired(fastify, designTemplateId);
+
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmAcademyWorkshopDesignItem.deleteMany({ where: { workshopId: row.id } });
+      for (const item of template.items) {
+        await tx.crmAcademyWorkshopDesignItem.create({
+          data: {
+            workshopId: row.id,
+            name: item.name,
+            description: item.description,
+            difficultyLevel: item.difficultyLevel,
+            priceVnd: item.priceVnd,
+            sortOrder: item.sortOrder,
+            isAvailable: item.isAvailable,
+            images: {
+              create: item.images.map((image) => ({
+                imageUrl: image.imageUrl,
+                altText: image.altText,
+                sortOrder: image.sortOrder,
+              })),
+            },
+          },
+        });
+      }
+      await tx.crmAcademyWorkshop.update({ where: { id: row.id }, data: { designTemplateId: template.id } });
+    });
+    return this.getById(fastify, actor, row.id);
+  }
+
+  static async createDesignItemImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    designItemId: number,
+    input: CreateAcademyWorkshopDesignItemImageRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    const itemId = positiveId(designItemId, 'Mẫu thiết kế mi');
+    const selectedItem = (row.designs || []).find((item: SafeAny) => item.id === itemId);
+    if (!selectedItem) throw new AcademySalesError('Không tìm thấy mẫu thiết kế mi.', 404);
+    const image = this.normalizeEquipmentImage(input);
+    const sortOrder =
+      Math.max(0, ...(selectedItem.images || []).map((item: SafeAny) => Number(item.sortOrder) || 0)) + 1;
+    const created = await fastify.prisma.crm.crmAcademyWorkshopDesignItemImage.create({
+      data: { ...image, designItemId: selectedItem.id, sortOrder },
+    });
+    return designItemImage(created);
+  }
+
+  static async updateDesignItemImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    designItemId: number,
+    imageId: number,
+    input: UpdateAcademyWorkshopDesignItemImageRequest
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    const itemId = positiveId(designItemId, 'Mẫu thiết kế mi');
+    const selectedItem = (row.designs || []).find((item: SafeAny) => item.id === itemId);
+    if (!selectedItem) throw new AcademySalesError('Không tìm thấy mẫu thiết kế mi.', 404);
+    const selectedImage = (selectedItem.images || []).find((item: SafeAny) => item.id === positiveId(imageId, 'Ảnh'));
+    if (!selectedImage) throw new AcademySalesError('Không tìm thấy ảnh của mẫu thiết kế.', 404);
+    const image = this.normalizeEquipmentImage({
+      imageUrl: input.imageUrl === undefined ? selectedImage.imageUrl : input.imageUrl,
+      altText: input.altText === undefined ? selectedImage.altText : input.altText,
+    });
+    const updated = await fastify.prisma.crm.crmAcademyWorkshopDesignItemImage.update({
+      where: { id: selectedImage.id },
+      data: image,
+    });
+    return designItemImage(updated);
+  }
+
+  static async deleteDesignItemImage(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    designItemId: number,
+    imageId: number
+  ) {
+    const row = await this.rowById(fastify, actor, workshopId);
+    this.assertCanEditDesign(actor);
+    const itemId = positiveId(designItemId, 'Mẫu thiết kế mi');
+    const selectedItem = (row.designs || []).find((item: SafeAny) => item.id === itemId);
+    if (!selectedItem) throw new AcademySalesError('Không tìm thấy mẫu thiết kế mi.', 404);
+    const currentImage = (selectedItem.images || []).find((item: SafeAny) => item.id === positiveId(imageId, 'Ảnh'));
+    if (!currentImage) throw new AcademySalesError('Không tìm thấy ảnh của mẫu thiết kế.', 404);
+    await fastify.prisma.crm.crmAcademyWorkshopDesignItemImage.delete({ where: { id: currentImage.id } });
+  }
+
   private static async addLeadIds(fastify: FastifyInstance, actor: AcademyActor, row: SafeAny, leadIds: number[]) {
     const ids = Array.from(new Set(leadIds.map(Number).filter((id) => Number.isInteger(id) && id > 0)));
     if (!ids.length) throw new AcademySalesError('Chọn ít nhất một học viên.');
@@ -1928,7 +2269,41 @@ export class AcademyWorkshopService {
         }
       }
 
-      // 3. Event audit trail
+      // 3. Design item update
+      if (input.designItemId !== undefined) {
+        if (input.designItemId === null || Number(input.designItemId) <= 0) {
+          await tx.crmAcademyWorkshopParticipantDesignSelection.deleteMany({
+            where: { participantId: participant.id },
+          });
+        } else {
+          const desId = Number(input.designItemId);
+          const design = await tx.crmAcademyWorkshopDesignItem.findFirst({
+            where: { id: desId, workshopId: workshop.id },
+          });
+          if (!design) {
+            throw new AcademySalesError('Mẫu thiết kế mi không tồn tại trong workshop này.', 404);
+          }
+          await tx.crmAcademyWorkshopParticipantDesignSelection.upsert({
+            where: { participantId: participant.id },
+            create: {
+              participantId: participant.id,
+              designItemId: design.id,
+              designName: design.name,
+              difficultyLevel: design.difficultyLevel,
+              priceVnd: design.priceVnd,
+            },
+            update: {
+              designItemId: design.id,
+              designName: design.name,
+              difficultyLevel: design.difficultyLevel,
+              priceVnd: design.priceVnd,
+              selectedAt: new Date(),
+            },
+          });
+        }
+      }
+
+      // 4. Event audit trail
       await tx.crmAcademyWorkshopParticipantEvent.create({
         data: {
           workshopId: workshop.id,

@@ -22,6 +22,9 @@ import type {
   AcademyWorkshopAgendaTemplate,
   AcademyWorkshopAnswerReceipt,
   AcademyWorkshopDetail,
+  AcademyWorkshopDesignItem,
+  AcademyWorkshopDesignItemImage,
+  AcademyWorkshopDesignTemplate,
   AcademyWorkshopEquipmentPackage,
   AcademyWorkshopEquipmentPackageImage,
   AcademyWorkshopEquipmentTemplate,
@@ -55,6 +58,8 @@ import type {
   CreateAcademyTalentAssessmentRequest,
   CreateAcademyWorkshopAgendaItemRequest,
   CreateAcademyWorkshopAgendaTemplateRequest,
+  CreateAcademyWorkshopDesignItemImageRequest,
+  CreateAcademyWorkshopDesignItemRequest,
   CreateAcademyWorkshopEquipmentPackageImageRequest,
   CreateAcademyWorkshopEquipmentPackageRequest,
   CreateAcademyWorkshopMenuItemRequest,
@@ -81,6 +86,8 @@ import type {
   ListAcademyTalentPaymentManagementResponse,
   ListAcademyWorkshopAgendaTemplatesParams,
   ListAcademyWorkshopAgendaTemplatesResponse,
+  ListAcademyWorkshopDesignTemplatesParams,
+  ListAcademyWorkshopDesignTemplatesResponse,
   ListAcademyWorkshopEquipmentTemplatesParams,
   ListAcademyWorkshopEquipmentTemplatesResponse,
   ListAcademyWorkshopMenuTemplatesParams,
@@ -104,6 +111,7 @@ import type {
   RegisterAcademyWorkshopWithZaloRequest,
   RemoveAcademyCampaignLeadRequest,
   ReorderAcademyWorkshopAgendaRequest,
+  SaveAcademyWorkshopDesignTemplateRequest,
   SaveAcademyWorkshopEquipmentTemplateRequest,
   SaveAcademyWorkshopMenuTemplateRequest,
   SelectAcademyWorkshopParticipantRequest,
@@ -121,6 +129,9 @@ import type {
   UpdateAcademyWorkshopAgendaTemplateRequest,
   UpdateAcademyWorkshopCareRequest,
   UpdateAcademyWorkshopParticipantSelectionsRequest,
+  UpdateAcademyWorkshopDesignItemImageRequest,
+  UpdateAcademyWorkshopDesignItemRequest,
+  UpdateAcademyWorkshopDesignTemplateRequest,
   UpdateAcademyWorkshopDisplaySettingsRequest,
   UpdateAcademyWorkshopEquipmentPackageImageRequest,
   UpdateAcademyWorkshopEquipmentPackageRequest,
@@ -422,6 +433,30 @@ export const academyApi = {
         await api.delete(`/academy-sales/workshop-equipment-templates/${templateId}`);
         invalidateAcademySalesReadCache();
       },
+      listDesignTemplates: async (
+        params: ListAcademyWorkshopDesignTemplatesParams = {}
+      ): Promise<ListAcademyWorkshopDesignTemplatesResponse> => {
+        const response = await api.get<ListAcademyWorkshopDesignTemplatesResponse>(
+          '/academy-sales/workshop-design-templates',
+          { params }
+        );
+        return response.data;
+      },
+      updateDesignTemplate: async (
+        templateId: number,
+        dto: UpdateAcademyWorkshopDesignTemplateRequest
+      ): Promise<AcademyWorkshopDesignTemplate> => {
+        const response = await api.put<{ data: AcademyWorkshopDesignTemplate }>(
+          `/academy-sales/workshop-design-templates/${templateId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteDesignTemplate: async (templateId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshop-design-templates/${templateId}`);
+        invalidateAcademySalesReadCache();
+      },
       listZaloTemplates: async (): Promise<AcademyWorkshopZaloTemplate[]> => {
         const response = await api.get<AcademyWorkshopZaloTemplate[]>('/academy-sales/workshop-zalo-templates');
         return response.data;
@@ -515,6 +550,17 @@ export const academyApi = {
       ): Promise<AcademyWorkshopDetail> => {
         const response = await api.put<{ data: AcademyWorkshopDetail }>(
           `/academy-sales/workshops/${workshopId}/equipment-service`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      setDesignAgendaItem: async (
+        workshopId: number,
+        dto: SetAcademyWorkshopAgendaResourceRequest
+      ): Promise<AcademyWorkshopDetail> => {
+        const response = await api.put<{ data: AcademyWorkshopDetail }>(
+          `/academy-sales/workshops/${workshopId}/design-service`,
           dto
         );
         invalidateAcademySalesReadCache();
@@ -662,6 +708,100 @@ export const academyApi = {
         await api.delete(
           `/academy-sales/workshops/${workshopId}/equipment-packages/${equipmentPackageId}/images/${imageId}`
         );
+        invalidateAcademySalesReadCache();
+      },
+      createDesignItem: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopDesignItemRequest
+      ): Promise<AcademyWorkshopDesignItem> => {
+        const response = await api.post<{ data: AcademyWorkshopDesignItem }>(
+          `/academy-sales/workshops/${workshopId}/designs`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      uploadDesignImage: async (
+        workshopId: number,
+        dto: CreateAcademyWorkshopPublicMediaUploadRequest
+      ): Promise<AcademyWorkshopPublicMediaUploadResult> => {
+        const response = await api.post<{ data: AcademyWorkshopPublicMediaUploadResult }>(
+          `/academy-sales/workshops/${workshopId}/design-images/upload`,
+          dto
+        );
+        return response.data.data;
+      },
+      updateDesignItem: async (
+        workshopId: number,
+        designId: number,
+        dto: UpdateAcademyWorkshopDesignItemRequest
+      ): Promise<AcademyWorkshopDesignItem> => {
+        const response = await api.put<{ data: AcademyWorkshopDesignItem }>(
+          `/academy-sales/workshops/${workshopId}/designs/${designId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteDesignItem: async (workshopId: number, designId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshops/${workshopId}/designs/${designId}`);
+        invalidateAcademySalesReadCache();
+      },
+      saveDesignAsTemplate: async (
+        workshopId: number,
+        dto: SaveAcademyWorkshopDesignTemplateRequest
+      ): Promise<AcademyWorkshopDesignTemplate> => {
+        const response = await api.post<{ data: AcademyWorkshopDesignTemplate }>(
+          `/academy-sales/workshops/${workshopId}/design-templates`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      refreshDesignTemplateFromWorkshop: async (
+        workshopId: number,
+        templateId: number
+      ): Promise<AcademyWorkshopDesignTemplate> => {
+        const response = await api.post<{ data: AcademyWorkshopDesignTemplate }>(
+          `/academy-sales/workshops/${workshopId}/design-templates/${templateId}/refresh`
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      applyDesignTemplate: async (workshopId: number, templateId: number): Promise<AcademyWorkshopDetail> => {
+        const response = await api.post<{ data: AcademyWorkshopDetail }>(
+          `/academy-sales/workshops/${workshopId}/design-templates/${templateId}/apply`
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      createDesignItemImage: async (
+        workshopId: number,
+        designId: number,
+        dto: CreateAcademyWorkshopDesignItemImageRequest
+      ): Promise<AcademyWorkshopDesignItemImage> => {
+        const response = await api.post<{ data: AcademyWorkshopDesignItemImage }>(
+          `/academy-sales/workshops/${workshopId}/designs/${designId}/images`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      updateDesignItemImage: async (
+        workshopId: number,
+        designId: number,
+        imageId: number,
+        dto: UpdateAcademyWorkshopDesignItemImageRequest
+      ): Promise<AcademyWorkshopDesignItemImage> => {
+        const response = await api.put<{ data: AcademyWorkshopDesignItemImage }>(
+          `/academy-sales/workshops/${workshopId}/designs/${designId}/images/${imageId}`,
+          dto
+        );
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      deleteDesignItemImage: async (workshopId: number, designId: number, imageId: number): Promise<void> => {
+        await api.delete(`/academy-sales/workshops/${workshopId}/designs/${designId}/images/${imageId}`);
         invalidateAcademySalesReadCache();
       },
       resources: async (): Promise<AcademyWorkshopResourcesResponse> => {

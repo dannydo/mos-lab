@@ -17,6 +17,7 @@ import {
   Trash2,
   UtensilsCrossed,
   WandSparkles,
+  Sparkles,
 } from 'lucide-react';
 import {
   ACADEMY_WORKSHOP_AGENDA_KINDS,
@@ -60,7 +61,7 @@ const AGENDA_STATUS_LABELS = {
   SKIPPED: 'Đã bỏ qua',
 } as const;
 
-type AgendaResourceKey = 'MENU' | 'GAME' | 'EQUIPMENT';
+type AgendaResourceKey = 'MENU' | 'GAME' | 'EQUIPMENT' | 'DESIGN';
 
 type AgendaFormValues = {
   title: string;
@@ -120,7 +121,7 @@ export default function AcademyWorkshopAgendaManager({
   canEdit: boolean;
   onUpdated: (workshop: AcademyWorkshopDetail) => void;
   onRefresh: () => Promise<void> | void;
-  onOpenResourceTab: (tab: 'game' | 'menu' | 'equipment') => void;
+  onOpenResourceTab: (tab: 'game' | 'menu' | 'equipment' | 'design') => void;
 }) {
   const { token } = theme.useToken();
   const [form] = Form.useForm<AgendaFormValues>();
@@ -262,6 +263,11 @@ export default function AcademyWorkshopAgendaManager({
         onOpenResourceTab('equipment');
         return;
       }
+      if (resource === 'DESIGN' && !workshop.designs?.length) {
+        message.info('Tạo hoặc áp dụng mẫu thiết kế mi trước khi gắn vào Agenda.');
+        onOpenResourceTab('design');
+        return;
+      }
       if (resource === 'GAME' && !workshop.activeQuiz) {
         message.info('Tạo hoặc áp dụng game trước khi gắn vào Agenda.');
         onOpenResourceTab('game');
@@ -279,6 +285,11 @@ export default function AcademyWorkshopAgendaManager({
         } else if (resource === 'EQUIPMENT') {
           const updated = await apiClient.academySales.workshops.setEquipmentAgendaItem(workshop.id, {
             agendaItemId: workshop.equipmentAgendaItemId === item.id ? null : item.id,
+          });
+          onUpdated(updated);
+        } else if (resource === 'DESIGN') {
+          const updated = await apiClient.academySales.workshops.setDesignAgendaItem(workshop.id, {
+            agendaItemId: workshop.designAgendaItemId === item.id ? null : item.id,
           });
           onUpdated(updated);
         } else if (workshop.activeQuiz) {
@@ -411,6 +422,14 @@ export default function AcademyWorkshopAgendaManager({
                           className="!mb-0"
                         />
                       ) : null}
+                      {workshop.designAgendaItemId === item.id ? (
+                        <StatusTag
+                          status="processing"
+                          icon={<AppIcon icon={Sparkles} size="sm" />}
+                          label="Mẫu mi"
+                          className="!mb-0"
+                        />
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -445,6 +464,15 @@ export default function AcademyWorkshopAgendaManager({
                           onClick={() => void toggleResource('EQUIPMENT', item)}
                         >
                           <IconText icon={<AppIcon icon={PackageCheck} size="sm" />}>Dụng cụ</IconText>
+                        </Button>
+                        <Button
+                          size="small"
+                          type={workshop.designAgendaItemId === item.id ? 'primary' : 'default'}
+                          loading={resourceSaving === `DESIGN:${item.id}`}
+                          disabled={saving || Boolean(resourceSaving)}
+                          onClick={() => void toggleResource('DESIGN', item)}
+                        >
+                          <IconText icon={<AppIcon icon={Sparkles} size="sm" />}>Mẫu mi</IconText>
                         </Button>
                       </Space>
                       <div className="academy-workshop-agenda-item__actions">

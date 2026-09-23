@@ -2,10 +2,11 @@
 
 import React from 'react';
 import { Button, Form, Select } from 'antd';
-import { UtensilsCrossed, Wrench, CheckCircle2 } from 'lucide-react';
+import { UtensilsCrossed, Wrench, CheckCircle2, Sparkles } from 'lucide-react';
 import {
   ACADEMY_WORKSHOP_MENU_CATEGORIES,
   ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS,
+  ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS,
   type AcademyWorkshopDetail,
   type AcademyWorkshopMenuCategory,
   type AcademyWorkshopMenuItem,
@@ -19,7 +20,7 @@ export interface AcademyWorkshopParticipantSelectionsModalProps {
   workshop: AcademyWorkshopDetail | null;
   busy?: boolean;
   onClose: () => void;
-  onSave: (menuItemIds: number[], equipmentPackageId: number | null) => Promise<void>;
+  onSave: (menuItemIds: number[], equipmentPackageId: number | null, designItemId?: number | null) => Promise<void>;
 }
 
 export default function AcademyWorkshopParticipantSelectionsModal({
@@ -32,6 +33,7 @@ export default function AcademyWorkshopParticipantSelectionsModal({
 }: AcademyWorkshopParticipantSelectionsModalProps) {
   const [form] = Form.useForm();
   const [selectedPkgId, setSelectedPkgId] = React.useState<number | null>(null);
+  const [selectedDesignId, setSelectedDesignId] = React.useState<number | null>(null);
 
   // Group available menu items by category
   const categorizedMenuItems = React.useMemo(() => {
@@ -51,6 +53,11 @@ export default function AcademyWorkshopParticipantSelectionsModal({
     return workshop.equipmentPackages.find((p) => p.id === selectedPkgId) || null;
   }, [selectedPkgId, workshop]);
 
+  const selectedDesign = React.useMemo(() => {
+    if (!selectedDesignId || !workshop?.designs) return null;
+    return workshop.designs.find((d) => d.id === selectedDesignId) || null;
+  }, [selectedDesignId, workshop]);
+
   // Sync form when modal opens or participant changes
   React.useEffect(() => {
     if (!open || !participant) return;
@@ -64,6 +71,10 @@ export default function AcademyWorkshopParticipantSelectionsModal({
     const pkgId = participant.equipmentSelection?.equipmentPackageId || 0;
     initialValues.equipmentPackageId = pkgId;
     setSelectedPkgId(pkgId > 0 ? pkgId : null);
+
+    const desId = participant.designSelection?.designItemId || 0;
+    initialValues.designItemId = desId;
+    setSelectedDesignId(desId > 0 ? desId : null);
 
     form.setFieldsValue(initialValues);
   }, [open, participant, form]);
@@ -80,7 +91,10 @@ export default function AcademyWorkshopParticipantSelectionsModal({
     const rawPkgId = Number(values.equipmentPackageId);
     const equipmentPackageId = rawPkgId && rawPkgId > 0 ? rawPkgId : null;
 
-    await onSave(menuItemIds, equipmentPackageId);
+    const rawDesignId = Number(values.designItemId);
+    const designItemId = rawDesignId && rawDesignId > 0 ? rawDesignId : null;
+
+    await onSave(menuItemIds, equipmentPackageId, designItemId);
   };
 
   if (!participant || !workshop) return null;
@@ -95,7 +109,7 @@ export default function AcademyWorkshopParticipantSelectionsModal({
           </div>
           <div>
             <div className="text-base font-semibold leading-tight">
-              Chọn Thực đơn & Dụng cụ · {participant.lead.name}
+              Chọn Thực đơn, Dụng cụ & Mẫu mi · {participant.lead.name}
             </div>
             <div className="text-xs font-normal opacity-65">
               {participant.lead.phone || participant.lead.email || 'Học viên'}
@@ -219,6 +233,66 @@ export default function AcademyWorkshopParticipantSelectionsModal({
                           </span>
                         ))}
                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SECTION 3: LASH DESIGN */}
+          {workshop.designs && workshop.designs.length > 0 && (
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AppIcon icon={Sparkles} className="h-4 w-4 text-purple-500" />
+                  <span className="font-semibold">3. Mẫu thiết kế mi thực hành</span>
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Chọn 1 mẫu học viên muốn thực hành</span>
+              </div>
+
+              <Form.Item name="designItemId" className="mb-0">
+                <Select
+                  placeholder="Chọn mẫu thiết kế mi"
+                  onChange={(val) => setSelectedDesignId(val ? Number(val) : null)}
+                  options={[
+                    { value: 0, label: '-- Chưa chọn / Mặc định theo lớp --' },
+                    ...workshop.designs.map((des) => ({
+                      value: des.id,
+                      label: `${des.name} · [${ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS[des.difficultyLevel] || des.difficultyLevel}]${des.priceVnd > 0 ? ` · Phụ thu ${des.priceVnd.toLocaleString('vi-VN')} đ` : ''}`,
+                    })),
+                  ]}
+                  className="w-full"
+                />
+              </Form.Item>
+
+              {selectedDesign && (
+                <div className="mt-2 rounded-lg border border-purple-200/80 bg-purple-50/60 p-3 text-xs dark:border-purple-900/60 dark:bg-purple-950/30">
+                  <div className="flex items-center justify-between font-semibold text-purple-950 dark:text-purple-200">
+                    <div className="flex items-center gap-2">
+                      <span>{selectedDesign.name}</span>
+                      <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
+                        {ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS[selectedDesign.difficultyLevel] ||
+                          selectedDesign.difficultyLevel}
+                      </span>
+                    </div>
+                    <span className="tabular-nums">
+                      {selectedDesign.priceVnd > 0
+                        ? `+${selectedDesign.priceVnd.toLocaleString('vi-VN')} đ`
+                        : 'Không phụ thu'}
+                    </span>
+                  </div>
+                  {selectedDesign.description && <div className="mt-1 opacity-70">{selectedDesign.description}</div>}
+                  {selectedDesign.images && selectedDesign.images.length > 0 && (
+                    <div className="mt-2 flex items-center gap-1.5 overflow-x-auto">
+                      {selectedDesign.images.map((img) => (
+                        <img
+                          key={img.id}
+                          src={img.imageUrl}
+                          alt={img.altText || selectedDesign.name}
+                          className="h-12 w-12 rounded object-cover border border-purple-200 dark:border-purple-800 shadow-2xs"
+                        />
+                      ))}
                     </div>
                   )}
                 </div>

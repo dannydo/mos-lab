@@ -15,6 +15,7 @@ import {
   Users,
   UtensilsCrossed,
   Wrench,
+  Sparkles,
 } from 'lucide-react';
 import type {
   AcademyInstructorBonus,
@@ -40,12 +41,14 @@ import {
 import AcademyWorkshopAgendaManager from '../../components/AcademyWorkshopAgendaManager';
 import AcademyWorkshopMenuManager from '../../components/AcademyWorkshopMenuManager';
 import AcademyWorkshopEquipmentManager from '../../components/AcademyWorkshopEquipmentManager';
+import AcademyWorkshopDesignManager from '../../components/AcademyWorkshopDesignManager';
 import AcademyWorkshopParticipantOverlays from '../../components/AcademyWorkshopParticipantOverlays';
 import AcademyWorkshopPrintBadgesModal from '../../components/AcademyWorkshopPrintBadgesModal';
 import AcademyWorkshopZaloScriptModal from '../../components/AcademyWorkshopZaloScriptModal';
 import AcademyWorkshopQrCheckInModal from '../../components/AcademyWorkshopQrCheckInModal';
 import AcademyWorkshopKitchenOrderModal from '../../components/AcademyWorkshopKitchenOrderModal';
 import AcademyWorkshopEquipmentPrepModal from '../../components/AcademyWorkshopEquipmentPrepModal';
+import AcademyWorkshopDesignPrepModal from '../../components/AcademyWorkshopDesignPrepModal';
 import { academyTalentCourseSelectionRules } from '../../components/academy-talent-workshop.adapter';
 import { useAcademyTalentLadderConfiguration } from '../../components/useAcademyTalentLadderConfiguration';
 import { useAcademyWorkshopQuizActions } from '../../components/useAcademyWorkshopQuizActions';
@@ -81,6 +84,7 @@ export default function AcademyWorkshopWorkspacePage() {
   const [qrCheckInOpen, setQrCheckInOpen] = React.useState(false);
   const [kitchenModalOpen, setKitchenModalOpen] = React.useState(false);
   const [equipmentPrepModalOpen, setEquipmentPrepModalOpen] = React.useState(false);
+  const [designPrepModalOpen, setDesignPrepModalOpen] = React.useState(false);
 
   const talentLadder = useAcademyTalentLadderConfiguration(canAccess);
   const { courses, talentInstructors, saveTalentCourseConfiguration } = useAcademyTalentResources(canAccess);
@@ -89,12 +93,16 @@ export default function AcademyWorkshopWorkspacePage() {
   React.useEffect(() => {
     if (!slug) return;
     const requestedTab = searchParams.get('tab');
-    if (requestedTab && ['roster', 'game', 'agenda', 'menu', 'equipment', 'settlement'].includes(requestedTab)) {
+    if (
+      requestedTab &&
+      ['roster', 'game', 'agenda', 'menu', 'equipment', 'design', 'settlement'].includes(requestedTab)
+    ) {
       setActiveTab(requestedTab);
       return;
     }
     const saved = window.localStorage.getItem(`academy-workshop:${slug}:active-tab`);
-    if (saved && ['roster', 'game', 'agenda', 'menu', 'equipment', 'settlement'].includes(saved)) setActiveTab(saved);
+    if (saved && ['roster', 'game', 'agenda', 'menu', 'equipment', 'design', 'settlement'].includes(saved))
+      setActiveTab(saved);
   }, [searchParams, slug]);
 
   const load = React.useCallback(async () => {
@@ -218,8 +226,10 @@ export default function AcademyWorkshopWorkspacePage() {
                   <AcademyWorkshopRosterToolbar
                     hasMenuItems={workshop.menuItems.length > 0}
                     hasEquipmentPackages={workshop.equipmentPackages.length > 0}
+                    hasDesigns={workshop.designs.length > 0}
                     onOpenKitchenModal={() => setKitchenModalOpen(true)}
                     onOpenEquipmentPrepModal={() => setEquipmentPrepModalOpen(true)}
+                    onOpenDesignPrepModal={() => setDesignPrepModalOpen(true)}
                     onOpenQrCheckIn={() => setQrCheckInOpen(true)}
                     onOpenWalkIn={() => participantActions.setWalkInOpen(true)}
                     onOpenAddParticipant={() => participantActions.setAddOpen(true)}
@@ -230,6 +240,7 @@ export default function AcademyWorkshopWorkspacePage() {
                   participants={participants}
                   resources={resources}
                   menuTitle={workshop.menuTemplate?.title}
+                  designs={workshop.designs}
                   loading={loading}
                   page={page}
                   pageSize={pageSize}
@@ -323,6 +334,18 @@ export default function AcademyWorkshopWorkspacePage() {
             label: <IconText icon={<AppIcon icon={PackageCheck} size="sm" />}>Dụng cụ thực hành</IconText>,
             children: (
               <AcademyWorkshopEquipmentManager
+                workshop={workshop}
+                participants={participants}
+                canEdit={canAccess}
+                onUpdated={setWorkshop}
+              />
+            ),
+          },
+          {
+            key: 'design',
+            label: <IconText icon={<AppIcon icon={Sparkles} size="sm" />}>Mẫu thiết kế mi</IconText>,
+            children: (
+              <AcademyWorkshopDesignManager
                 workshop={workshop}
                 participants={participants}
                 canEdit={canAccess}
@@ -541,6 +564,13 @@ export default function AcademyWorkshopWorkspacePage() {
       <AcademyWorkshopEquipmentPrepModal
         open={equipmentPrepModalOpen}
         onClose={() => setEquipmentPrepModalOpen(false)}
+        workshop={workshop}
+        participants={participants}
+      />
+
+      <AcademyWorkshopDesignPrepModal
+        open={designPrepModalOpen}
+        onClose={() => setDesignPrepModalOpen(false)}
         workshop={workshop}
         participants={participants}
       />

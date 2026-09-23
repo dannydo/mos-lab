@@ -109,6 +109,7 @@ type WorkshopRegistrationInput = {
   referrer?: string | null;
   menuSelections?: AcademyWorkshopMenuSelectionInput[];
   equipmentPackageId?: number;
+  designItemId?: number;
 };
 
 type ExternalWorkshopRegistrationIdentity = {
@@ -195,6 +196,59 @@ function validateEquipmentSelection(
     equipmentPackageId: selected.id,
     packageName: selected.name,
     packageContentsJson: JSON.stringify(packageContents),
+    priceVnd: Math.max(0, Math.round(Number(selected.priceVnd) || 0)),
+  };
+}
+
+type PublicDesignItem = {
+  id: number;
+  name: string;
+  description: string | null;
+  difficultyLevel: string;
+  priceVnd: number;
+  images?: Array<{ id: number; imageUrl: string; altText: string | null; sortOrder: number }>;
+};
+
+function buildPublicDesign(
+  items: PublicDesignItem[],
+  selectionEnabled: boolean
+): AcademyWorkshopPublicRegistrationInfo['workshop']['design'] {
+  return {
+    required: selectionEnabled && items.length > 0,
+    items: items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      difficultyLevel: (['BASIC', 'ADVANCED', 'MASTER'].includes(item.difficultyLevel)
+        ? item.difficultyLevel
+        : 'BASIC') as 'BASIC' | 'ADVANCED' | 'MASTER',
+      priceVnd: Math.max(0, Math.round(Number(item.priceVnd) || 0)),
+      images: (item.images || []).map((image) => ({
+        id: image.id,
+        imageUrl: image.imageUrl,
+        altText: image.altText,
+      })),
+    })),
+  };
+}
+
+function validateDesignSelection(
+  input: unknown,
+  availableItems: PublicDesignItem[]
+): { designItemId: number; designName: string; difficultyLevel: string; priceVnd: number } | null {
+  if (!availableItems.length) return null;
+  const designItemId = Math.round(Number(input));
+  if (!Number.isInteger(designItemId) || designItemId <= 0) {
+    throw new AcademySalesError('Vui lòng chọn một mẫu thiết kế mi thực hành.');
+  }
+  const selected = availableItems.find((item) => item.id === designItemId);
+  if (!selected) {
+    throw new AcademySalesError('Mẫu thiết kế mi bạn chọn không còn khả dụng. Vui lòng chọn lại.');
+  }
+  return {
+    designItemId: selected.id,
+    designName: selected.name,
+    difficultyLevel: selected.difficultyLevel,
     priceVnd: Math.max(0, Math.round(Number(selected.priceVnd) || 0)),
   };
 }
@@ -376,6 +430,21 @@ export class AcademyWorkshopPublicJoinService {
             },
           },
         },
+        designs: {
+          where: { isAvailable: true },
+          orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            difficultyLevel: true,
+            priceVnd: true,
+            images: {
+              select: { id: true, imageUrl: true, altText: true, sortOrder: true },
+              orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+            },
+          },
+        },
         _count: { select: { participants: true } },
       },
     });
@@ -386,6 +455,7 @@ export class AcademyWorkshopPublicJoinService {
     const phase = registrationPhase(workshop);
     const canJoin = phase === 'CHECKIN' || phase === 'LIVE';
     const equipmentSelectionEnabled = workshop.equipmentAgendaItemId != null && workshop.equipmentPackages.length > 0;
+    const designSelectionEnabled = workshop.designAgendaItemId != null && workshop.designs.length > 0;
     const menuSelectionEnabled = workshop.menuAgendaItemId != null && workshop.menuItems.length > 0;
     return {
       phase,
@@ -400,11 +470,13 @@ export class AcademyWorkshopPublicJoinService {
         endsAt: workshop.endsAt.toISOString(),
         menuSelectionDeadline: (workshop.menuSelectionDeadline || workshop.startsAt).toISOString(),
         equipmentSelectionDeadline: (workshop.equipmentSelectionDeadline || workshop.startsAt).toISOString(),
+        designSelectionDeadline: (workshop.designSelectionDeadline || workshop.startsAt).toISOString(),
         location: workshop.location,
         capacity: workshop.capacity,
         remainingSeats: Math.max(0, workshop.capacity - workshop._count.participants),
         feeVnd: workshop.feeVnd,
         equipment: buildPublicEquipment(workshop.equipmentPackages, equipmentSelectionEnabled),
+        design: buildPublicDesign(workshop.designs, designSelectionEnabled),
         agenda: workshop.agendaItems.map((item) => ({
           id: item.id,
           title: item.title,
@@ -413,6 +485,7 @@ export class AcademyWorkshopPublicJoinService {
           plannedDurationSeconds: item.plannedDurationSeconds,
           sortOrder: item.sortOrder,
           equipmentSelectionEnabled: equipmentSelectionEnabled && workshop.equipmentAgendaItemId === item.id,
+          designSelectionEnabled: designSelectionEnabled && workshop.designAgendaItemId === item.id,
           menuSelectionEnabled: menuSelectionEnabled && workshop.menuAgendaItemId === item.id,
         })),
         menu: buildPublicMenu(workshop.menuItems, menuSelectionEnabled),
@@ -456,11 +529,13 @@ export class AcademyWorkshopPublicJoinService {
           starts_at: Date;
           menu_selection_deadline: Date | null;
           equipment_selection_deadline: Date | null;
+          design_selection_deadline: Date | null;
           menu_agenda_item_id: number | null;
           equipment_agenda_item_id: number | null;
+          design_agenda_item_id: number | null;
         }>
       >(
-        `SELECT id, campaign_id, capacity, status, registration_open, starts_at, menu_selection_deadline, equipment_selection_deadline, menu_agenda_item_id, equipment_agenda_item_id
+        `SELECT id, campaign_id, capacity, status, registration_open, starts_at, menu_selection_deadline, equipment_selection_deadline, design_selection_deadline, menu_agenda_item_id, equipment_agenda_item_id, design_agenda_item_id
          FROM crm_academy_workshops WHERE registration_code = ? FOR UPDATE`,
         code
       );
@@ -479,15 +554,21 @@ export class AcademyWorkshopPublicJoinService {
       const equipmentSelectionDeadlineMs = new Date(
         workshop.equipment_selection_deadline || workshop.starts_at
       ).getTime();
+      const designSelectionDeadlineMs = new Date(workshop.design_selection_deadline || workshop.starts_at).getTime();
       const menuSelectionsAreLocked =
         !Number.isFinite(menuSelectionDeadlineMs) || menuSelectionDeadlineMs <= Date.now();
       const equipmentSelectionIsLocked =
         !Number.isFinite(equipmentSelectionDeadlineMs) || equipmentSelectionDeadlineMs <= Date.now();
+      const designSelectionIsLocked =
+        !Number.isFinite(designSelectionDeadlineMs) || designSelectionDeadlineMs <= Date.now();
       if (workshop.menu_agenda_item_id && menuSelectionsAreLocked && input.menuSelections?.length) {
         throw new AcademySalesError('Đã hết hạn thay đổi thực đơn.', 409);
       }
       if (workshop.equipment_agenda_item_id && equipmentSelectionIsLocked && input.equipmentPackageId != null) {
         throw new AcademySalesError('Đã hết hạn thay đổi bộ dụng cụ.', 409);
+      }
+      if (workshop.design_agenda_item_id && designSelectionIsLocked && input.designItemId != null) {
+        throw new AcademySalesError('Đã hết hạn thay đổi mẫu thiết kế mi.', 409);
       }
 
       const availableMenuItems = await tx.crmAcademyWorkshopMenuItem.findMany({
@@ -503,6 +584,13 @@ export class AcademyWorkshopPublicJoinService {
       });
       const equipmentSelection = workshop.equipment_agenda_item_id
         ? validateEquipmentSelection(input.equipmentPackageId, availableEquipmentPackages)
+        : null;
+      const availableDesignItems = await tx.crmAcademyWorkshopDesignItem.findMany({
+        where: { workshopId: workshop.id, isAvailable: true },
+        select: { id: true, name: true, description: true, difficultyLevel: true, priceVnd: true },
+      });
+      const designSelection = workshop.design_agenda_item_id
+        ? validateDesignSelection(input.designItemId, availableDesignItems)
         : null;
 
       let lead = externalKey ? await tx.crmAcademyLead.findUnique({ where: { externalKey } }) : null;
@@ -604,6 +692,13 @@ export class AcademyWorkshopPublicJoinService {
             ? {
                 equipmentSelection: {
                   create: equipmentSelection,
+                },
+              }
+            : {}),
+          ...(designSelection
+            ? {
+                designSelection: {
+                  create: designSelection,
                 },
               }
             : {}),

@@ -96,7 +96,11 @@ interface AcademyWorkshopParticipantOverlaysProps {
   selectionsParticipant?: AcademyWorkshopParticipant | null;
   onOpenSelections?: (participant: AcademyWorkshopParticipant) => void;
   onCloseSelections?: () => void;
-  onSaveSelections?: (menuItemIds: number[], equipmentPackageId: number | null) => Promise<void>;
+  onSaveSelections?: (
+    menuItemIds: number[],
+    equipmentPackageId: number | null,
+    designItemId?: number | null
+  ) => Promise<void>;
 }
 
 export default function AcademyWorkshopParticipantOverlays({

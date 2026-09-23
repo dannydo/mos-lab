@@ -49,6 +49,7 @@ echo '[VPS] Applying legacy reporting indexes...'
 pnpm --filter @mos-lab/api legacy:indexes:phase1
 pnpm --filter @mos-lab/api legacy:indexes:phase2
 pnpm --filter @mos-lab/api legacy:indexes:phase3
+pnpm --filter @mos-lab/api legacy:indexes:phase4
 
 echo '[VPS] Planning production data migrations...'
 pnpm --filter @mos-lab/api data-migrations:plan -- --commit="${DEPLOY_COMMIT}"

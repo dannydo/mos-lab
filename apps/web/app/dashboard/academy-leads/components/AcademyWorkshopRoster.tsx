@@ -1,13 +1,15 @@
 'use client';
 
 import React from 'react';
-import { Avatar, Button, Select, Space } from 'antd';
+import { Avatar, Button, Input, Select, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { Check, Clock3, MessageCircle, X } from 'lucide-react';
 import {
+  ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS,
   ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS,
   removeVietnameseTones,
+  type AcademyWorkshopDesignItem,
   type AcademyWorkshopParticipant,
   type AcademyWorkshopResourcesResponse,
 } from '@mos-lab/shared';
@@ -107,6 +109,7 @@ export interface AcademyWorkshopRosterProps {
   participants: AcademyWorkshopParticipant[];
   resources: AcademyWorkshopResourcesResponse;
   menuTitle?: string | null;
+  designs?: AcademyWorkshopDesignItem[];
   loading: boolean;
   page: number;
   pageSize: number;
@@ -133,6 +136,7 @@ export default function AcademyWorkshopRoster({
   participants,
   resources,
   menuTitle,
+  designs,
   loading,
   page,
   pageSize,
@@ -150,6 +154,29 @@ export default function AcademyWorkshopRoster({
   onOpenZaloScript,
   onOpenSelections,
 }: AcademyWorkshopRosterProps) {
+  const [designFilter, setDesignFilter] = React.useState<string | number>('ALL');
+  const [searchKeyword, setSearchKeyword] = React.useState<string>('');
+
+  const filteredParticipants = React.useMemo(() => {
+    return participants.filter((p) => {
+      if (designFilter !== 'ALL') {
+        if (designFilter === 'UNSELECTED') {
+          if (p.designSelection) return false;
+        } else {
+          if (p.designSelection?.designItemId !== Number(designFilter)) return false;
+        }
+      }
+      if (searchKeyword.trim()) {
+        const keyword = removeVietnameseTones(searchKeyword.toLowerCase().trim());
+        const matchName = removeVietnameseTones(p.lead.name.toLowerCase()).includes(keyword);
+        const matchPhone = (p.lead.phone || '').includes(keyword);
+        const matchEmail = (p.lead.email || '').toLowerCase().includes(keyword);
+        if (!matchName && !matchPhone && !matchEmail) return false;
+      }
+      return true;
+    });
+  }, [participants, designFilter, searchKeyword]);
+
   const columns = React.useMemo<ColumnsType<AcademyWorkshopParticipant>>(
     () => [
       {
@@ -319,6 +346,52 @@ export default function AcademyWorkshopRoster({
         ),
       },
       {
+        key: 'design',
+        title: 'Mẫu thiết kế mi',
+        width: 210,
+        render: (_value, row) => (
+          <button
+            type="button"
+            className="group block w-full text-left transition-opacity hover:opacity-80"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenSelections?.(row);
+            }}
+          >
+            {row.designSelection ? (
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold">{row.designSelection.designName}</div>
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <span
+                    className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${
+                      row.designSelection.difficultyLevel === 'MASTER'
+                        ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800'
+                        : row.designSelection.difficultyLevel === 'ADVANCED'
+                          ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                    }`}
+                  >
+                    {ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS[row.designSelection.difficultyLevel] ||
+                      row.designSelection.difficultyLevel}
+                  </span>
+                  {row.designSelection.priceVnd > 0 && (
+                    <span className="tabular-nums text-xs opacity-65">
+                      +{row.designSelection.priceVnd.toLocaleString('vi-VN')} đ
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <StatusTag
+                status="default"
+                label="Chưa chọn mẫu mi"
+                className="cursor-pointer transition-opacity group-hover:opacity-80"
+              />
+            )}
+          </button>
+        ),
+      },
+      {
         key: 'checkin',
         title: 'Check-in',
         width: 140,
@@ -439,6 +512,7 @@ export default function AcademyWorkshopRoster({
       onCheckIn,
       onOpenFee,
       onOpenParticipant,
+      onOpenSelections,
       onOpenTalent,
       onOpenZaloScript,
       onUpdateCare,
@@ -451,21 +525,63 @@ export default function AcademyWorkshopRoster({
   );
 
   return (
-    <DataTable
-      rowKey="id"
-      columns={columns}
-      dataSource={participants}
-      loading={loading}
-      scroll={{ x: 1480 }}
-      pagination={{
-        current: page,
-        pageSize,
-        total: participants.length,
-        showSizeChanger: true,
-        pageSizeOptions: ['10', '20', '50', '100'],
-        showTotal: (count) => `${count} học viên`,
-        onChange: onPageChange,
-      }}
-    />
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <Input.Search
+            placeholder="Tìm theo tên, SĐT học viên..."
+            allowClear
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            className="w-64"
+          />
+          {designs && designs.length > 0 && (
+            <Select
+              value={designFilter}
+              onChange={setDesignFilter}
+              className="w-64"
+              options={[
+                { value: 'ALL', label: `Tất cả mẫu mi (${participants.length})` },
+                {
+                  value: 'UNSELECTED',
+                  label: `Chưa chọn mẫu (${participants.filter((p) => !p.designSelection).length})`,
+                },
+                ...designs.map((des) => {
+                  const count = participants.filter((p) => p.designSelection?.designItemId === des.id).length;
+                  return {
+                    value: des.id,
+                    label: `${des.name} · [${ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS[des.difficultyLevel] || des.difficultyLevel}] (${count})`,
+                  };
+                }),
+              ]}
+            />
+          )}
+        </div>
+        {filteredParticipants.length !== participants.length && (
+          <div className="text-xs text-slate-500">
+            Hiển thị{' '}
+            <span className="font-semibold text-slate-700 dark:text-slate-200">{filteredParticipants.length}</span> /{' '}
+            {participants.length} học viên
+          </div>
+        )}
+      </div>
+
+      <DataTable
+        rowKey="id"
+        columns={columns}
+        dataSource={filteredParticipants}
+        loading={loading}
+        scroll={{ x: 1700 }}
+        pagination={{
+          current: page,
+          pageSize,
+          total: filteredParticipants.length,
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
+          showTotal: (count) => `${count} học viên`,
+          onChange: onPageChange,
+        }}
+      />
+    </div>
   );
 }

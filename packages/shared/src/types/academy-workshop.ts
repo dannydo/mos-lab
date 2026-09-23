@@ -1,6 +1,14 @@
 import type { ActionResponse, PageQuery, PageResponse } from './api.js';
 import type { AcademyLeadStatus, AcademyStaffOption } from './academy-sales.js';
 import type { AcademyTalentInstructor } from './academy-talent-assessment.js';
+import type {
+  AcademyWorkshopDesignItem,
+  AcademyWorkshopDesignItemImage,
+  AcademyWorkshopDesignTemplate,
+  AcademyWorkshopParticipantDesignSelection,
+} from './academy-workshop-designs.js';
+
+export * from './academy-workshop-designs.js';
 
 export const ACADEMY_CAMPAIGN_KINDS = ['CAMPAIGN', 'WORKSHOP'] as const;
 export type AcademyCampaignKind = (typeof ACADEMY_CAMPAIGN_KINDS)[number];
@@ -102,6 +110,8 @@ export interface AcademyWorkshopDetail extends AcademyWorkshopListItem {
   menuSelectionDeadline: string | null;
   /** Equipment selection cutoff; defaults to the workshop start when unset. */
   equipmentSelectionDeadline: string | null;
+  /** Lash design selection cutoff; defaults to the workshop start when unset. */
+  designSelectionDeadline: string | null;
   /** Public code is separate from the event-day display/lobby code. */
   registrationCode: string | null;
   registrationOpen: boolean;
@@ -114,14 +124,19 @@ export interface AcademyWorkshopDetail extends AcademyWorkshopListItem {
   menuAgendaItemId: number | null;
   /** The agenda item at which practical equipment is used. */
   equipmentAgendaItemId: number | null;
+  /** The agenda item at which lash design is practiced. */
+  designAgendaItemId: number | null;
   /** The reusable practical-kit template last copied into this workshop. */
   equipmentTemplate: AcademyWorkshopEquipmentTemplate | null;
+  /** The reusable lash design template last copied into this workshop. */
+  designTemplate: AcademyWorkshopDesignTemplate | null;
   /** Stable workshop-wide QR target for participant self-selection. */
   sharedJoinUrl: string;
   summary: AcademyWorkshopSummary;
   agenda: AcademyWorkshopAgendaItem[];
   menuItems: AcademyWorkshopMenuItem[];
   equipmentPackages: AcademyWorkshopEquipmentPackage[];
+  designs: AcademyWorkshopDesignItem[];
   activeQuiz: AcademyWorkshopQuiz | null;
 }
 
@@ -209,6 +224,7 @@ export interface AcademyWorkshopParticipant {
   feePayments: AcademyWorkshopFeePayment[];
   menuSelections: AcademyWorkshopMenuSelection[];
   equipmentSelection: AcademyWorkshopParticipantEquipmentSelection | null;
+  designSelection: AcademyWorkshopParticipantDesignSelection | null;
   talent: AcademyWorkshopTalentSnapshot | null;
   gameScore: number;
   gameResponseTimeMs: number;
@@ -551,6 +567,8 @@ export interface AcademyWorkshopPublicRegistrationInfo {
     menuSelectionDeadline: string;
     /** Effective equipment-selection cutoff, with workshop start as the fallback. */
     equipmentSelectionDeadline: string;
+    /** Effective lash-design-selection cutoff, with workshop start as the fallback. */
+    designSelectionDeadline: string;
     location: string;
     capacity: number;
     remainingSeats: number;
@@ -560,6 +578,14 @@ export interface AcademyWorkshopPublicRegistrationInfo {
       packages: Array<
         Pick<AcademyWorkshopEquipmentPackage, 'id' | 'name' | 'description' | 'includedItems' | 'priceVnd'> & {
           images: Array<Pick<AcademyWorkshopEquipmentPackageImage, 'id' | 'imageUrl' | 'altText'>>;
+        }
+      >;
+    };
+    design: {
+      required: boolean;
+      items: Array<
+        Pick<AcademyWorkshopDesignItem, 'id' | 'name' | 'description' | 'difficultyLevel' | 'priceVnd'> & {
+          images: Array<Pick<AcademyWorkshopDesignItemImage, 'id' | 'imageUrl' | 'altText'>>;
         }
       >;
     };
@@ -580,6 +606,8 @@ export interface AcademyWorkshopPublicRegistrationInfo {
       sortOrder: number;
       /** Show the participant's practical-kit selection at this exact agenda item. */
       equipmentSelectionEnabled: boolean;
+      /** Show the participant's lash design selection at this exact agenda item. */
+      designSelectionEnabled: boolean;
       /** Show the participant's meal selection at this exact agenda item. */
       menuSelectionEnabled: boolean;
     }>;
@@ -596,6 +624,7 @@ export interface RegisterAcademyWorkshopRequest {
   referrer?: string | null;
   menuSelections?: AcademyWorkshopMenuSelectionInput[];
   equipmentPackageId?: number;
+  designItemId?: number;
 }
 
 export interface AcademyWorkshopMenuSelectionInput {
@@ -614,6 +643,7 @@ export interface RegisterAcademyWorkshopWithGoogleRequest {
   referrer?: string | null;
   menuSelections?: AcademyWorkshopMenuSelectionInput[];
   equipmentPackageId?: number;
+  designItemId?: number;
 }
 
 /** Verifies a Google identity before checking whether it already joined a workshop. */
@@ -630,6 +660,7 @@ export interface RegisterAcademyWorkshopWithZaloRequest {
   referrer?: string | null;
   menuSelections?: AcademyWorkshopMenuSelectionInput[];
   equipmentPackageId?: number;
+  designItemId?: number;
 }
 
 /** Verifies the short-lived Zalo ticket before checking an existing registration. */
@@ -670,6 +701,8 @@ export interface CreateAcademyWorkshopRequest {
   menuSelectionDeadline?: string | null;
   /** Leave empty to lock equipment choices at workshop start. */
   equipmentSelectionDeadline?: string | null;
+  /** Leave empty to lock lash design choices at workshop start. */
+  designSelectionDeadline?: string | null;
   assignedStaffIds?: number[];
   showInSidebar?: boolean;
   agendaTemplateId?: number;
@@ -732,6 +765,7 @@ export interface UpdateAcademyWorkshopParticipantSelectionsRequest {
   menuItemIds?: number[];
   menuSelections?: AcademyWorkshopMenuSelectionInput[];
   equipmentPackageId?: number | null;
+  designItemId?: number | null;
 }
 
 export interface AcademyWorkshopZaloTemplate {

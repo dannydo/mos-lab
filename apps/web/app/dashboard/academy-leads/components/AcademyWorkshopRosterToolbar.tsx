@@ -2,14 +2,16 @@
 
 import React from 'react';
 import { Button, Dropdown, Space, type MenuProps } from 'antd';
-import { ChevronDown, FileText, QrCode, UserPlus, Users, UtensilsCrossed, Wrench } from 'lucide-react';
+import { ChevronDown, FileText, QrCode, Sparkles, UserPlus, Users, UtensilsCrossed, Wrench } from 'lucide-react';
 import { AppIcon, IconText } from '../../../../components/ui';
 
 export interface AcademyWorkshopRosterToolbarProps {
   hasMenuItems: boolean;
   hasEquipmentPackages: boolean;
+  hasDesigns?: boolean;
   onOpenKitchenModal: () => void;
   onOpenEquipmentPrepModal: () => void;
+  onOpenDesignPrepModal?: () => void;
   onOpenQrCheckIn: () => void;
   onOpenWalkIn: () => void;
   onOpenAddParticipant: () => void;
@@ -18,8 +20,10 @@ export interface AcademyWorkshopRosterToolbarProps {
 export default function AcademyWorkshopRosterToolbar({
   hasMenuItems,
   hasEquipmentPackages,
+  hasDesigns = false,
   onOpenKitchenModal,
   onOpenEquipmentPrepModal,
+  onOpenDesignPrepModal,
   onOpenQrCheckIn,
   onOpenWalkIn,
   onOpenAddParticipant,
@@ -40,8 +44,22 @@ export default function AcademyWorkshopRosterToolbar({
         onClick: onOpenEquipmentPrepModal,
       });
     }
+    if (hasDesigns && onOpenDesignPrepModal) {
+      items.push({
+        key: 'design',
+        label: <IconText icon={<AppIcon icon={Sparkles} size="sm" />}>Báo cáo Chuẩn bị Mẫu mi</IconText>,
+        onClick: onOpenDesignPrepModal,
+      });
+    }
     return items;
-  }, [hasEquipmentPackages, hasMenuItems, onOpenEquipmentPrepModal, onOpenKitchenModal]);
+  }, [
+    hasDesigns,
+    hasEquipmentPackages,
+    hasMenuItems,
+    onOpenDesignPrepModal,
+    onOpenEquipmentPrepModal,
+    onOpenKitchenModal,
+  ]);
 
   const hasReports = reportMenuItems.length > 0;
 
@@ -65,6 +83,10 @@ export default function AcademyWorkshopRosterToolbar({
       ) : hasReports && hasEquipmentPackages ? (
         <Button onClick={onOpenEquipmentPrepModal}>
           <IconText icon={<AppIcon icon={Wrench} size="sm" />}>Báo cáo Soạn kho</IconText>
+        </Button>
+      ) : hasReports && hasDesigns && onOpenDesignPrepModal ? (
+        <Button onClick={onOpenDesignPrepModal}>
+          <IconText icon={<AppIcon icon={Sparkles} size="sm" />}>Báo cáo Mẫu mi</IconText>
         </Button>
       ) : null}
 

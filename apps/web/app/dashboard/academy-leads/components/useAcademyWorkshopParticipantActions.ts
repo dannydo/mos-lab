@@ -150,15 +150,16 @@ export function useAcademyWorkshopParticipantActions({
   }, []);
 
   const saveSelections = React.useCallback(
-    async (menuItemIds: number[], equipmentPackageId: number | null) => {
+    async (menuItemIds: number[], equipmentPackageId: number | null, designItemId?: number | null) => {
       if (!workshop || !selectionsParticipant) return;
       await mutateParticipant(
         () =>
           apiClient.academySales.workshops.updateSelections(workshop.id, selectionsParticipant.id, {
             menuItemIds,
             equipmentPackageId,
+            designItemId,
           }),
-        'Đã lưu lựa chọn thực đơn và dụng cụ.',
+        'Đã lưu lựa chọn thực đơn, dụng cụ và mẫu mi.',
         selectionsParticipant.id
       );
       setSelectionsOpen(false);

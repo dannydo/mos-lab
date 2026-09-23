@@ -32,6 +32,7 @@ import type {
   RegisterAcademyWorkshopWithGoogleRequest,
   RegisterAcademyWorkshopWithZaloRequest,
 } from '@mos-lab/shared';
+import { ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS } from '@mos-lab/shared';
 import { apiClient } from '../../../../../lib/api-client';
 import { AppIcon, IconText } from '../../../../../components/ui';
 import { useTheme } from '../../../../../context/ThemeContext';
@@ -53,6 +54,7 @@ type WorkshopRegistrationDraft = {
   goal?: string;
   referrer?: string;
   equipmentPackageId?: number;
+  designItemId?: number;
   menuSelections?: Partial<Record<AcademyWorkshopMenuCategory, number>>;
 };
 
@@ -88,6 +90,7 @@ function registrationDraft(values: Partial<RegistrationFormValues>): WorkshopReg
     goal: draftText(values.goal, 2_000),
     referrer: draftText(values.referrer, 300),
     equipmentPackageId: draftSelectionId(values.equipmentPackageId),
+    designItemId: draftSelectionId(values.designItemId),
     menuSelections: Object.keys(menuSelections).length ? menuSelections : undefined,
   };
 }
@@ -100,6 +103,7 @@ function hasRegistrationDraftContent(draft: WorkshopRegistrationDraft) {
     draft.goal?.trim() ||
     draft.referrer?.trim() ||
     draft.equipmentPackageId ||
+    draft.designItemId ||
     Object.keys(draft.menuSelections || {}).length
   );
 }
@@ -118,6 +122,7 @@ function readRegistrationDraft(serialized: string | null): Partial<RegistrationF
       goal: raw.goal as string | undefined,
       referrer: raw.referrer as string | undefined,
       equipmentPackageId: raw.equipmentPackageId as number | undefined,
+      designItemId: raw.designItemId as number | undefined,
       menuSelections: raw.menuSelections as Partial<Record<AcademyWorkshopMenuCategory, number>> | undefined,
     });
 
@@ -278,25 +283,32 @@ function WorkshopExperienceTimeline({
   startsAt,
   menuSelectionDeadline,
   equipmentSelectionDeadline,
+  designSelectionDeadline,
   agenda,
   equipment,
+  design,
   menu,
   selectedEquipmentPackage,
+  selectedDesign,
   selectedMenuItems,
   onOpenSelectionSheet,
 }: {
   startsAt: string;
   menuSelectionDeadline?: string | null;
   equipmentSelectionDeadline?: string | null;
+  designSelectionDeadline?: string | null;
   agenda: AcademyWorkshopPublicRegistrationInfo['workshop']['agenda'];
   equipment: AcademyWorkshopPublicRegistrationInfo['workshop']['equipment'];
+  design: AcademyWorkshopPublicRegistrationInfo['workshop']['design'];
   menu: AcademyWorkshopPublicRegistrationInfo['workshop']['menu'];
   selectedEquipmentPackage:
     AcademyWorkshopPublicRegistrationInfo['workshop']['equipment']['packages'][number] | undefined;
+  selectedDesign: AcademyWorkshopPublicRegistrationInfo['workshop']['design']['items'][number] | undefined;
   selectedMenuItems: WorkshopMenuSelectionSummary[];
-  onOpenSelectionSheet: (selection: 'equipment' | 'menu') => void;
+  onOpenSelectionSheet: (selection: 'equipment' | 'design' | 'menu') => void;
 }) {
   const equipmentSelectionChangeCountdown = useWorkshopSelectionChangeCountdown(equipmentSelectionDeadline, startsAt);
+  const designSelectionChangeCountdown = useWorkshopSelectionChangeCountdown(designSelectionDeadline, startsAt);
   const menuSelectionChangeCountdown = useWorkshopSelectionChangeCountdown(menuSelectionDeadline, startsAt);
   const timeline = React.useMemo(() => {
     let cursor = dayjs(startsAt);
@@ -527,6 +539,98 @@ function WorkshopExperienceTimeline({
                       </button>
                     )
                   ) : null}
+                  {item.designSelectionEnabled ? (
+                    selectedDesign ? (
+                      <div className={`mt-3 overflow-hidden rounded-2xl ${styles.selectionSummary}`}>
+                        <div className="flex items-start gap-3 p-3">
+                          {selectedDesign.images[0] ? (
+                            <img
+                              src={selectedDesign.images[0].imageUrl}
+                              alt=""
+                              className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-purple-100"
+                            />
+                          ) : (
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
+                              <AppIcon icon={Sparkles} size="sm" />
+                            </span>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="m-0 text-[10px] font-black uppercase tracking-[0.14em] text-purple-700">
+                                Mẫu mi thực hành của bạn
+                              </p>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-purple-600 px-2 py-1 text-[10px] font-medium text-white">
+                                <Check size={12} strokeWidth={3} aria-hidden="true" /> Đã chọn
+                              </span>
+                            </div>
+                            <p className={`mb-0 mt-1 truncate text-sm font-semibold ${styles.agendaTitle}`}>
+                              {selectedDesign.name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
+                                {ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS[selectedDesign.difficultyLevel] ||
+                                  selectedDesign.difficultyLevel}
+                              </span>
+                              <span className={`text-xs font-medium tabular-nums ${styles.agendaDescription}`}>
+                                {selectedDesign.priceVnd > 0 ? `+${formatFee(selectedDesign.priceVnd)}` : 'Miễn phí'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-xs font-medium transition ${styles.selectionSummaryAction}`}
+                          disabled={designSelectionChangeCountdown.locked}
+                          title={
+                            designSelectionChangeCountdown.locked
+                              ? 'Đã hết hạn thay đổi mẫu mi.'
+                              : 'Bạn có thể thay đổi đến hạn chốt đã đặt.'
+                          }
+                          onClick={() => onOpenSelectionSheet('design')}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span>{designSelectionChangeCountdown.locked ? 'Mẫu mi đã chốt' : 'Thay đổi mẫu mi'}</span>
+                            <span
+                              className={styles.selectionChangeCountdown}
+                              aria-live="polite"
+                              suppressHydrationWarning
+                            >
+                              {designSelectionChangeCountdown.locked ? 'Đã chốt' : designSelectionChangeCountdown.label}
+                            </span>
+                          </span>
+                          <ArrowRight size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        aria-haspopup="dialog"
+                        className={`group mt-3 flex min-h-14 w-full items-center gap-3 rounded-2xl p-3 text-left transition ${styles.selectionAction}`}
+                        disabled={designSelectionChangeCountdown.locked}
+                        title={
+                          designSelectionChangeCountdown.locked
+                            ? 'Đã hết hạn chọn mẫu thiết kế mi.'
+                            : 'Chọn mẫu thiết kế mi trước hạn chốt.'
+                        }
+                        onClick={() => onOpenSelectionSheet('design')}
+                      >
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white transition group-hover:scale-105 ${styles.selectionActionIcon}`}
+                        >
+                          <AppIcon icon={Sparkles} size="sm" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block text-sm font-semibold ${styles.selectionActionTitle}`}>
+                            Chọn mẫu thiết kế mi
+                          </span>
+                          <span className={`mt-0.5 block text-xs leading-5 ${styles.selectionActionDescription}`}>
+                            Sẵn sàng cho phần thực hành mẫu mi yêu thích.
+                          </span>
+                        </span>
+                        <AppIcon icon={ArrowRight} size="sm" className={`shrink-0 ${styles.selectionActionArrow}`} />
+                      </button>
+                    )
+                  ) : null}
                   {item.menuSelectionEnabled ? (
                     hasCompleteMenuSelection ? (
                       <div className={`mt-3 overflow-hidden rounded-2xl ${styles.selectionSummary}`}>
@@ -703,7 +807,7 @@ function EquipmentImageCarousel({
   images,
   label,
 }: {
-  images: AcademyWorkshopPublicRegistrationInfo['workshop']['equipment']['packages'][number]['images'];
+  images: Array<{ id: number; imageUrl: string; altText?: string | null }>;
   label: string;
 }) {
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -785,6 +889,7 @@ export default function AcademyWorkshopRegistrationPage() {
   const [form] = Form.useForm<RegistrationFormValues>();
   const selectedMenuChoices = Form.useWatch('menuSelections', form);
   const selectedEquipmentPackageId = Form.useWatch('equipmentPackageId', form);
+  const selectedDesignItemId = Form.useWatch('designItemId', form);
   const selectionPersistenceReadyRef = React.useRef(false);
   const [info, setInfo] = React.useState<AcademyWorkshopPublicRegistrationInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -793,7 +898,7 @@ export default function AcademyWorkshopRegistrationPage() {
   const [receipt, setReceipt] = React.useState<string | null>(null);
   const [googleCredential, setGoogleCredential] = React.useState<string | null>(null);
   const [zaloTicket, setZaloTicket] = React.useState<string | null>(null);
-  const [activeSelectionSheet, setActiveSelectionSheet] = React.useState<'equipment' | 'menu' | null>(null);
+  const [activeSelectionSheet, setActiveSelectionSheet] = React.useState<'equipment' | 'design' | 'menu' | null>(null);
   const closeSelectionSheet = React.useCallback(() => setActiveSelectionSheet(null), []);
   const selectionSheetDrag = useBottomSheetDragToDismiss(closeSelectionSheet, activeSelectionSheet !== null);
   const receiptStorageKey = React.useMemo(
@@ -895,15 +1000,17 @@ export default function AcademyWorkshopRegistrationPage() {
     persistDraft({
       ...(form.getFieldsValue(true) as RegistrationFormValues),
       equipmentPackageId: draftSelectionId(selectedEquipmentPackageId),
+      designItemId: draftSelectionId(selectedDesignItemId),
       menuSelections: (selectedMenuChoices || {}) as Partial<Record<AcademyWorkshopMenuCategory, number>>,
     });
-  }, [draftRestored, form, persistDraft, selectedEquipmentPackageId, selectedMenuChoices]);
+  }, [draftRestored, form, persistDraft, selectedDesignItemId, selectedEquipmentPackageId, selectedMenuChoices]);
 
   React.useEffect(() => {
     const persistBeforeLeaving = () => {
       persistDraft({
         ...(form.getFieldsValue(true) as RegistrationFormValues),
         equipmentPackageId: draftSelectionId(selectedEquipmentPackageId),
+        designItemId: draftSelectionId(selectedDesignItemId),
         menuSelections: (selectedMenuChoices || {}) as Partial<Record<AcademyWorkshopMenuCategory, number>>,
       });
     };
@@ -914,7 +1021,7 @@ export default function AcademyWorkshopRegistrationPage() {
       window.removeEventListener('beforeunload', persistBeforeLeaving);
       window.removeEventListener('pagehide', persistBeforeLeaving);
     };
-  }, [form, persistDraft, selectedEquipmentPackageId, selectedMenuChoices]);
+  }, [form, persistDraft, selectedDesignItemId, selectedEquipmentPackageId, selectedMenuChoices]);
 
   React.useEffect(() => {
     const hash = new URLSearchParams(window.location.hash.slice(1));
@@ -961,6 +1068,7 @@ export default function AcademyWorkshopRegistrationPage() {
             referrer: registration.referrer,
             menuSelections: registration.menuSelections,
             equipmentPackageId: registration.equipmentPackageId,
+            designItemId: registration.designItemId,
           } satisfies RegisterAcademyWorkshopWithGoogleRequest)
         : zaloTicket
           ? await apiClient.academyWorkshopsPublic.registerWithZalo(code, {
@@ -971,6 +1079,7 @@ export default function AcademyWorkshopRegistrationPage() {
               referrer: registration.referrer,
               menuSelections: registration.menuSelections,
               equipmentPackageId: registration.equipmentPackageId,
+              designItemId: registration.designItemId,
             } satisfies RegisterAcademyWorkshopWithZaloRequest)
           : await apiClient.academyWorkshopsPublic.register(code, registration);
       clearDraft();
@@ -981,6 +1090,7 @@ export default function AcademyWorkshopRegistrationPage() {
       if (errorFields) {
         const firstInvalidField = errorFields[0]?.name?.[0];
         if (firstInvalidField === 'equipmentPackageId') setActiveSelectionSheet('equipment');
+        if (firstInvalidField === 'designItemId') setActiveSelectionSheet('design');
         if (firstInvalidField === 'menuSelections') setActiveSelectionSheet('menu');
         return;
       }
@@ -1056,6 +1166,7 @@ export default function AcademyWorkshopRegistrationPage() {
   const selectedEquipmentPackage = workshop.equipment.packages.find(
     (item) => item.id === Number(selectedEquipmentPackageId)
   );
+  const selectedDesign = workshop.design.items.find((item) => item.id === Number(selectedDesignItemId));
   const selectedMenuItems = workshop.menu.categories.flatMap((category) => {
     const selectedItem = category.items.find((item) => item.id === Number(selectedMenuChoices?.[category.category]));
     return selectedItem
@@ -1071,7 +1182,7 @@ export default function AcademyWorkshopRegistrationPage() {
       : [];
   });
   const selectedMenuCount = selectedMenuItems.length;
-  const openSelectionSheet = (selection: 'equipment' | 'menu') => setActiveSelectionSheet(selection);
+  const openSelectionSheet = (selection: 'equipment' | 'design' | 'menu') => setActiveSelectionSheet(selection);
   return (
     <main className={`min-h-[100svh] p-3 sm:p-6 lg:p-8 ${styles.shell}`}>
       <div className="mx-auto grid w-full min-w-0 max-w-6xl grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)] lg:gap-6">
@@ -1087,10 +1198,13 @@ export default function AcademyWorkshopRegistrationPage() {
             startsAt={workshop.startsAt}
             menuSelectionDeadline={workshop.menuSelectionDeadline}
             equipmentSelectionDeadline={workshop.equipmentSelectionDeadline}
+            designSelectionDeadline={workshop.designSelectionDeadline}
             agenda={workshop.agenda}
             equipment={workshop.equipment}
+            design={workshop.design}
             menu={workshop.menu}
             selectedEquipmentPackage={selectedEquipmentPackage}
+            selectedDesign={selectedDesign}
             selectedMenuItems={selectedMenuItems}
             onOpenSelectionSheet={openSelectionSheet}
           />
@@ -1451,6 +1565,172 @@ export default function AcademyWorkshopRegistrationPage() {
                         </div>
                       </Drawer>
                     ) : null}
+                    {workshop.design.required || workshop.design.items.length > 0 ? (
+                      <Drawer
+                        open={activeSelectionSheet === 'design'}
+                        placement="bottom"
+                        closable={false}
+                        destroyOnHidden={false}
+                        forceRender
+                        rootClassName={styles.selectionDrawer}
+                        height="min(860px, calc(100dvh - 16px))"
+                        onClose={closeSelectionSheet}
+                        styles={{
+                          body: { display: 'flex', minHeight: 0, overflow: 'hidden', padding: 0 },
+                          content: selectionSheetDrag.contentStyle,
+                        }}
+                      >
+                        <div className={`flex min-h-0 flex-1 flex-col ${styles.selectionSheet}`}>
+                          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-3 pb-5 sm:px-5">
+                            <div className="mx-auto max-w-2xl">
+                              <div
+                                aria-label="Kéo xuống để đóng"
+                                className={`sticky top-0 z-10 -mx-3 flex h-11 touch-none items-center justify-center px-3 backdrop-blur sm:-mx-5 sm:h-9 sm:px-5 ${styles.selectionSheetGrip}`}
+                                {...selectionSheetDrag.dragHandleProps}
+                              >
+                                <span className="h-1.5 w-11 rounded-full bg-slate-300" aria-hidden="true" />
+                              </div>
+                              <section
+                                className={`mb-5 overflow-hidden rounded-3xl border ${styles.selectionSheetCard}`}
+                              >
+                                <div className="border-b border-purple-200 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 px-4 py-4 text-white sm:px-5">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex min-w-0 items-start gap-3">
+                                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-400 text-slate-950 shadow-lg shadow-purple-400/20">
+                                        <AppIcon icon={Sparkles} size="sm" />
+                                      </span>
+                                      <div className="min-w-0">
+                                        <p className="m-0 text-xs font-bold uppercase tracking-[0.14em] text-purple-200">
+                                          Phần thực hành mẫu mi
+                                        </p>
+                                        <h3 className="mb-0 mt-1 text-lg font-black leading-tight">
+                                          Chọn mẫu thiết kế mi của bạn
+                                        </h3>
+                                      </div>
+                                    </div>
+                                    <span className="shrink-0 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-bold">
+                                      1 lựa chọn
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className={`space-y-4 p-4 sm:p-5 ${styles.selectionSheetContent}`}>
+                                  <div className="flex items-start gap-3 rounded-2xl border border-purple-100 bg-purple-50/60 p-3.5 dark:border-purple-900/40 dark:bg-purple-950/20">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-purple-700 shadow-sm ring-1 ring-purple-100 dark:bg-slate-800 dark:text-purple-300">
+                                      <AppIcon icon={Sparkles} size="sm" />
+                                    </span>
+                                    <div className="min-w-0">
+                                      <p className="m-0 text-xs font-bold uppercase tracking-[0.14em] text-purple-800 dark:text-purple-300">
+                                        Mẫu thiết kế mi cá nhân
+                                      </p>
+                                      <p className="mb-0 mt-1 text-sm leading-5 text-slate-700 dark:text-slate-300">
+                                        Chọn mẫu thiết kế mi bạn muốn thực hành trực tiếp cùng Giảng viên. Độ khó và phụ
+                                        thu (nếu có) được hiển thị rõ bên dưới.
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Form.Item
+                                    className="!mb-0"
+                                    name="designItemId"
+                                    rules={
+                                      workshop.design.required
+                                        ? [{ required: true, message: 'Vui lòng chọn một mẫu thiết kế mi.' }]
+                                        : []
+                                    }
+                                  >
+                                    <Radio.Group className="grid w-full grid-cols-1 gap-3" disabled={submitting}>
+                                      {workshop.design.items.map((item) => (
+                                        <Radio
+                                          key={item.id}
+                                          value={item.id}
+                                          className="!relative !ml-0 !flex !w-full !rounded-2xl border border-slate-200 bg-white !p-0 text-left shadow-sm transition hover:!border-purple-400 hover:bg-purple-50/30 [&>.ant-radio]:!absolute [&>.ant-radio]:!opacity-0 [&>span:last-child]:!min-w-0 [&>span:last-child]:!flex-1 [&>span:last-child]:!p-0"
+                                        >
+                                          <span className="relative flex min-h-[104px] min-w-0 flex-1 flex-col justify-center px-4 py-3">
+                                            {Number(selectedDesignItemId) === item.id ? (
+                                              <span
+                                                aria-hidden="true"
+                                                className="absolute left-6 top-5 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-purple-500 bg-purple-500 text-white shadow-sm"
+                                              >
+                                                <Check size={16} strokeWidth={3} />
+                                              </span>
+                                            ) : null}
+                                            <EquipmentImageCarousel images={item.images} label={item.name} />
+                                            <span className="flex items-start justify-between gap-3">
+                                              <span className="min-w-0 text-base font-extrabold leading-5 text-slate-900">
+                                                {item.name}
+                                              </span>
+                                              <span className="shrink-0 rounded-lg bg-purple-100 px-2.5 py-1 text-sm font-black tabular-nums text-purple-900">
+                                                {item.priceVnd > 0 ? `+${formatFee(item.priceVnd)}` : 'Miễn phí'}
+                                              </span>
+                                            </span>
+                                            <div className="mt-1.5 flex items-center gap-2">
+                                              <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200">
+                                                {ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS[item.difficultyLevel] ||
+                                                  item.difficultyLevel}
+                                              </span>
+                                            </div>
+                                            {item.description ? (
+                                              <span className="mt-1.5 block text-sm leading-5 text-slate-600">
+                                                {item.description}
+                                              </span>
+                                            ) : null}
+                                          </span>
+                                        </Radio>
+                                      ))}
+                                    </Radio.Group>
+                                  </Form.Item>
+                                </div>
+                              </section>
+                            </div>
+                          </div>
+                          <div className={`shrink-0 border-t px-3 py-3 sm:px-5 ${styles.selectionSheetFooter}`}>
+                            <div className="mx-auto flex max-w-2xl items-center gap-3">
+                              {selectedDesign ? (
+                                <>
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700 ring-1 ring-purple-200">
+                                    <Check size={18} strokeWidth={3} aria-hidden="true" />
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="m-0 text-xs font-bold text-purple-700">Mẫu mi đã chọn</p>
+                                    <div className="flex min-w-0 items-baseline gap-1.5">
+                                      <p className="m-0 min-w-0 flex-1 truncate text-sm font-extrabold text-slate-950">
+                                        {selectedDesign.name}
+                                      </p>
+                                      <span className="shrink-0 text-sm font-black tabular-nums text-purple-800">
+                                        {selectedDesign.priceVnd > 0
+                                          ? `+${formatFee(selectedDesign.priceVnd)}`
+                                          : 'Miễn phí'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="primary"
+                                    size="large"
+                                    className="!h-11 !rounded-xl !px-4 !font-bold"
+                                    onClick={closeSelectionSheet}
+                                  >
+                                    Xác nhận
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-sm font-black text-purple-800 ring-1 ring-purple-200">
+                                    1
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="m-0 text-sm font-extrabold text-slate-950">
+                                      Chọn một mẫu để tiếp tục
+                                    </p>
+                                    <p className="m-0 text-xs leading-5 text-slate-500">
+                                      Chạm vào mẫu mi bạn muốn thực hành trong buổi học.
+                                    </p>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Drawer>
+                    ) : null}
                     {workshop.menu.required ? (
                       <Drawer
                         open={activeSelectionSheet === 'menu'}
@@ -1657,6 +1937,91 @@ export default function AcademyWorkshopRegistrationPage() {
                         </div>
                       </Drawer>
                     ) : null}
+                    {/* Interactive Selection Cards */}
+                    <div className="space-y-2.5 pb-3">
+                      {workshop.equipment.packages.length > 0 && (
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openSelectionSheet('equipment')}
+                          className="flex items-center justify-between p-3 rounded-2xl border border-amber-200/80 bg-amber-50/50 hover:bg-amber-50 cursor-pointer transition dark:border-amber-900/50 dark:bg-amber-950/20"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                              <AppIcon icon={Wrench} size="sm" />
+                            </span>
+                            <div>
+                              <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                {selectedEquipmentPackage ? selectedEquipmentPackage.name : 'Chọn bộ dụng cụ thực hành'}
+                              </div>
+                              <div className="text-[11px] text-slate-500">
+                                {selectedEquipmentPackage
+                                  ? `+${formatFee(selectedEquipmentPackage.priceVnd)} · Chạm để đổi`
+                                  : workshop.equipment.required
+                                    ? 'Bắt buộc chọn'
+                                    : 'Tùy chọn'}
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronRight size={16} className="text-slate-400" />
+                        </div>
+                      )}
+
+                      {workshop.design.items.length > 0 && (
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openSelectionSheet('design')}
+                          className="flex items-center justify-between p-3 rounded-2xl border border-purple-200/80 bg-purple-50/50 hover:bg-purple-50 cursor-pointer transition dark:border-purple-900/50 dark:bg-purple-950/20"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
+                              <AppIcon icon={Sparkles} size="sm" />
+                            </span>
+                            <div>
+                              <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                {selectedDesign ? selectedDesign.name : 'Chọn mẫu thiết kế mi'}
+                              </div>
+                              <div className="text-[11px] text-slate-500">
+                                {selectedDesign
+                                  ? `${ACADEMY_WORKSHOP_DESIGN_DIFFICULTY_LABELS[selectedDesign.difficultyLevel] || selectedDesign.difficultyLevel}${selectedDesign.priceVnd > 0 ? ` · +${formatFee(selectedDesign.priceVnd)}` : ''} · Chạm để đổi`
+                                  : workshop.design.required
+                                    ? 'Bắt buộc chọn'
+                                    : 'Tùy chọn'}
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronRight size={16} className="text-slate-400" />
+                        </div>
+                      )}
+
+                      {workshop.menu.categories.length > 0 && (
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openSelectionSheet('menu')}
+                          className="flex items-center justify-between p-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/50 hover:bg-emerald-50 cursor-pointer transition dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                              <AppIcon icon={UtensilsCrossed} size="sm" />
+                            </span>
+                            <div>
+                              <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                {selectedMenuCount === workshop.menu.categories.length
+                                  ? 'Đã chọn đủ phần ăn'
+                                  : 'Chọn thực đơn ăn trưa'}
+                              </div>
+                              <div className="text-[11px] text-slate-500">
+                                {selectedMenuCount}/{workshop.menu.categories.length} phần đã chọn · Chạm để đổi
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronRight size={16} className="text-slate-400" />
+                        </div>
+                      )}
+                    </div>
+
                     <Button
                       type="primary"
                       size="large"

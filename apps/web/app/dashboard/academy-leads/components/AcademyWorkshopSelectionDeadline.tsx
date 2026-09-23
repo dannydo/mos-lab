@@ -8,7 +8,7 @@ import type { AcademyWorkshopDetail } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { AppIcon, IconText, StatusTag } from '../../../../components/ui';
 
-type SelectionType = 'menu' | 'equipment';
+type SelectionType = 'menu' | 'equipment' | 'design';
 
 export default function AcademyWorkshopSelectionDeadline({
   workshop,
@@ -30,13 +30,21 @@ export default function AcademyWorkshopSelectionDeadline({
           deadline: workshop.menuSelectionDeadline,
           request: (deadline: string | null) => ({ menuSelectionDeadline: deadline }),
         }
-      : {
-          title: 'Hạn chốt bộ dụng cụ',
-          itemLabel: 'bộ dụng cụ',
-          inputLabel: 'Chọn hạn cuối chọn/thay đổi dụng cụ',
-          deadline: workshop.equipmentSelectionDeadline,
-          request: (deadline: string | null) => ({ equipmentSelectionDeadline: deadline }),
-        };
+      : selectionType === 'design'
+        ? {
+            title: 'Hạn chốt mẫu thiết kế mi',
+            itemLabel: 'mẫu thiết kế mi',
+            inputLabel: 'Chọn hạn cuối chọn/thay đổi mẫu mi thực hành',
+            deadline: workshop.designSelectionDeadline,
+            request: (deadline: string | null) => ({ designSelectionDeadline: deadline }),
+          }
+        : {
+            title: 'Hạn chốt bộ dụng cụ',
+            itemLabel: 'bộ dụng cụ',
+            inputLabel: 'Chọn hạn cuối chọn/thay đổi dụng cụ',
+            deadline: workshop.equipmentSelectionDeadline,
+            request: (deadline: string | null) => ({ equipmentSelectionDeadline: deadline }),
+          };
   const [draftDeadline, setDraftDeadline] = React.useState<Dayjs | null>(
     configuration.deadline ? dayjs(configuration.deadline) : null
   );
