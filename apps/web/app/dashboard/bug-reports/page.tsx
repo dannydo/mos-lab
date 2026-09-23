@@ -49,10 +49,7 @@ const FrontendTelemetryDrawer = dynamic(
   () => import('./components/FrontendTelemetryDrawer').then((m) => m.FrontendTelemetryDrawer),
   { ssr: false }
 );
-const BugReportDetailDrawer = dynamic(
-  () => import('./components/BugReportDetailDrawer').then((m) => m.BugReportDetailDrawer),
-  { ssr: false }
-);
+import { BugReportDetailDrawer } from './components/BugReportDetailDrawer';
 const BugReportExecutionDashboardDrawer = dynamic(
   () => import('./components/BugReportExecutionDashboardDrawer').then((m) => m.BugReportExecutionDashboardDrawer),
   { ssr: false }
@@ -356,6 +353,7 @@ export default function BugReportsPage() {
       ) : null}
       <BugReportDetailDrawer
         reportId={selectedId}
+        initialSummary={inbox.data.find((row) => row.id === selectedId) || null}
         liveVersion={inbox.data.find((row) => row.id === selectedId)?.updatedAt}
         requestImplementationChanges={inbox.requestImplementationChanges}
         requestPlanChanges={inbox.requestPlanChanges}

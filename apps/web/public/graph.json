@@ -32356,8 +32356,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39202,
-        "lineCount": 852,
+        "sizeBytes": 39188,
+        "lineCount": 851,
         "ext": ".tsx"
       }
     },
@@ -32577,8 +32577,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19378,
-        "lineCount": 499,
+        "sizeBytes": 20812,
+        "lineCount": 553,
         "ext": ".ts"
       }
     },
@@ -32590,8 +32590,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReports.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16181,
-        "lineCount": 460,
+        "sizeBytes": 16157,
+        "lineCount": 457,
         "ext": ".ts"
       }
     },
@@ -32629,8 +32629,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15901,
-        "lineCount": 380,
+        "sizeBytes": 15908,
+        "lineCount": 378,
         "ext": ".tsx"
       }
     },
@@ -35008,8 +35008,8 @@
       "filePath": "apps/web/lib/api/bug-reports.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12351,
-        "lineCount": 294,
+        "sizeBytes": 12447,
+        "lineCount": 299,
         "ext": ".ts"
       }
     },

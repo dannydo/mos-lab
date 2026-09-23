@@ -7,11 +7,48 @@ import type {
   BugReportDetail,
   BugReportPlanReviewCandidate,
   BugReportStatus,
+  BugReportSummary,
   TriageBugReportRequest,
   InboxImplementationExecutionOwner,
 } from '@mos-lab/shared';
 import { parseDuplicateKey } from '../bug-report-presenters';
 import type { useBugReports } from './useBugReports';
+
+function summaryToInitialDetail(summary: BugReportSummary): BugReportDetail {
+  return {
+    ...summary,
+    businessContext: null,
+    triageNote: summary.triageNote ?? null,
+    duplicateOfId: null,
+    duplicateOfKey: null,
+    approvedBy: null,
+    resolvedAt: null,
+    closedAt: null,
+    context: {
+      capturedAt: summary.createdAt,
+      path: summary.sourcePath,
+      query: {},
+      pageTitle: summary.title,
+      overlays: summary.overlay ? [summary.overlay] : [],
+      themeMode: 'unknown',
+      viewport: { width: 1440, height: 900, devicePixelRatio: 1 },
+      userAgent: '',
+      online: true,
+      timeZone: 'Asia/Ho_Chi_Minh',
+      webCommit: null,
+      apiCommit: null,
+      apiDeployedAt: null,
+      recentApiFailures: [],
+      recentClientErrors: [],
+      errorBoundary: null,
+    },
+    resolution: null,
+    attachments: [],
+    comments: [],
+    audits: [],
+    executionTiming: null,
+  };
+}
 
 export type BugReportDetailOptions = Pick<
   ReturnType<typeof useBugReports>,
@@ -28,11 +65,12 @@ export type BugReportDetailOptions = Pick<
   | 'authorizeQualityGateRecoveryRetry'
   | 'authorizeBuildLockRecoveryRetry'
   | 'confirmClose'
-> & { reportId: number | null; liveVersion?: string };
+> & { reportId: number | null; liveVersion?: string; initialSummary?: BugReportSummary | null };
 
 export function useBugReportDetail({
   reportId,
   liveVersion,
+  initialSummary,
   getDetail,
   triage,
   approveImplementation,
@@ -70,23 +108,39 @@ export function useBugReportDetail({
     setDuplicateKey(report.duplicateOfKey || '');
   }, []);
 
-  const load = useCallback(async () => {
-    if (!reportId) return;
-    setLoading(true);
-    setLoadError(null);
-    try {
-      hydrateForm(await getDetail(reportId));
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Không thể tải chi tiết ticket.');
-    } finally {
-      setLoading(false);
-    }
-  }, [getDetail, hydrateForm, reportId]);
+  const load = useCallback(
+    async (isSilent = false) => {
+      if (!reportId) return;
+      if (!isSilent) setLoading(true);
+      setLoadError(null);
+      try {
+        hydrateForm(await getDetail(reportId));
+      } catch (error) {
+        if (!isSilent) {
+          setLoadError(error instanceof Error ? error.message : 'Không thể tải chi tiết ticket.');
+        }
+      } finally {
+        if (!isSilent) {
+          setLoading(false);
+        }
+      }
+    },
+    [getDetail, hydrateForm, reportId]
+  );
 
   useEffect(() => {
-    if (reportId) void load();
-    else setDetail(null);
-  }, [load, reportId, liveVersion]);
+    if (!reportId) {
+      setDetail(null);
+      return;
+    }
+    const hasInitial = Boolean(initialSummary && initialSummary.id === reportId);
+    if (hasInitial && initialSummary) {
+      hydrateForm(summaryToInitialDetail(initialSummary));
+      void load(true);
+    } else {
+      void load(false);
+    }
+  }, [hydrateForm, initialSummary, load, reportId, liveVersion]);
 
   useEffect(() => {
     setApprovalReceived(false);

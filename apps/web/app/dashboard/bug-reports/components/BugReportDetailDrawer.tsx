@@ -119,7 +119,6 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
         onClose={onClose}
         intent="detail"
         className="bug-report-detail-drawer"
-        destroyOnHidden
         title={detail ? `${detail.key} · ${detail.title}` : 'Chi tiết yêu cầu'}
         extra={
           detail ? (
@@ -441,8 +440,8 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
             placeholder="Nêu phần chưa đạt và kết quả cần bổ sung (ít nhất 10 ký tự)."
           />
         </AdaptiveModal>
-        {loading && <StatePanel kind="loading" minHeight={256} surface={false} />}
-        {loadError && (
+        {loading && !detail && <StatePanel kind="loading" minHeight={256} surface={false} />}
+        {loadError && !detail && (
           <Alert
             type="error"
             showIcon
@@ -450,7 +449,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
             action={<Button onClick={() => void load()}>Thử lại</Button>}
           />
         )}
-        {!loading && detail && context && (
+        {detail && context && (
           <div className="space-y-4">
             {isDeferred && (
               <Alert

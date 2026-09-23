@@ -125,9 +125,9 @@ export const bugReportsApi = {
       );
       return response.data;
     },
-    detail: async (id: number): Promise<BugReportDetail> => {
-      const response = await api.get<{ data: BugReportDetail }>(`/bug-reports/${id}`);
-      return response.data.data;
+    detail: async (id: number, options?: ApiRequestOptions): Promise<BugReportDetail> => {
+      const response = await dedupeApiGet<{ data: BugReportDetail }>(`/bug-reports/${id}`, undefined, 15000, options);
+      return response.data;
     },
     triage: async (id: number, data: TriageBugReportRequest): Promise<TriageBugReportResponse> => {
       const response = await api.patch<TriageBugReportResponse>(`/bug-reports/${id}/triage`, data);
