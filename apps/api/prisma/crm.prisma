@@ -1939,17 +1939,17 @@ model CrmAcademyWorkshopDesignTemplateItemImage {
 
 model CrmAcademyWorkshopParticipantDesignSelection {
   id              Int      @id @default(autoincrement())
-  participantId   Int      @unique @map("participant_id")
+  participantId   Int      @unique(map: "crm_ac_ws_part_design_sel_part_id_key") @map("participant_id")
   designItemId    Int?     @map("design_item_id")
   designName      String   @map("design_name") @db.VarChar(180)
   difficultyLevel String   @default("BASIC") @map("difficulty_level") @db.VarChar(24)
   priceVnd        Int      @default(0) @map("price_vnd")
   selectedAt      DateTime @default(now()) @map("selected_at") @db.DateTime(0)
 
-  participant CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
-  designItem  CrmAcademyWorkshopDesignItem? @relation(fields: [designItemId], references: [id], onDelete: SetNull)
+  participant CrmAcademyWorkshopParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade, map: "crm_ac_ws_part_design_sel_part_id_fk")
+  designItem  CrmAcademyWorkshopDesignItem? @relation(fields: [designItemId], references: [id], onDelete: SetNull, map: "crm_ac_ws_part_design_sel_item_id_fk")
 
-  @@index([designItemId])
+  @@index([designItemId], map: "crm_ac_ws_part_design_sel_item_id_idx")
   @@map("crm_academy_workshop_participant_design_selections")
 }
 

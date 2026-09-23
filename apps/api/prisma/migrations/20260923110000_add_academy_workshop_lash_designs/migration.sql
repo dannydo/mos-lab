@@ -97,10 +97,10 @@ CREATE TABLE `crm_academy_workshop_participant_design_selections` (
   `price_vnd` INT NOT NULL DEFAULT 0,
   `selected_at` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   PRIMARY KEY (`id`),
-  UNIQUE INDEX `crm_academy_workshop_participant_design_selections_participant_id_key` (`participant_id`),
-  INDEX `crm_academy_workshop_participant_design_selections_design_item_id_idx` (`design_item_id`),
-  CONSTRAINT `crm_academy_workshop_participant_design_selections_participant_id_fkey`
+  UNIQUE INDEX `crm_ac_ws_part_design_sel_part_id_key` (`participant_id`),
+  INDEX `crm_ac_ws_part_design_sel_item_id_idx` (`design_item_id`),
+  CONSTRAINT `crm_ac_ws_part_design_sel_part_id_fk`
     FOREIGN KEY (`participant_id`) REFERENCES `crm_academy_workshop_participants` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `crm_academy_workshop_participant_design_selections_design_item_id_fkey`
+  CONSTRAINT `crm_ac_ws_part_design_sel_item_id_fk`
     FOREIGN KEY (`design_item_id`) REFERENCES `crm_academy_workshop_design_items` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

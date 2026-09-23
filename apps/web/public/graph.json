@@ -3854,7 +3854,7 @@
         "path": "/api/academy-sales/workshop-quiz-templates",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 275
+        "line": 271
       }
     },
     {
@@ -3868,7 +3868,7 @@
         "path": "/api/academy-sales/workshop-quiz-templates",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 289
+        "line": 285
       }
     },
     {
@@ -3882,7 +3882,7 @@
         "path": "/api/academy-sales/workshop-quiz-templates/:templateId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 303
+        "line": 299
       }
     },
     {
@@ -3896,7 +3896,7 @@
         "path": "/api/academy-sales/workshop-quiz-templates/:templateId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 318
+        "line": 314
       }
     },
     {
@@ -3910,7 +3910,7 @@
         "path": "/api/academy-sales/workshop-zalo-templates",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 328
+        "line": 324
       }
     },
     {
@@ -3924,7 +3924,7 @@
         "path": "/api/academy-sales/workshop-zalo-templates",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 336
+        "line": 332
       }
     },
     {
@@ -3938,7 +3938,7 @@
         "path": "/api/academy-sales/workshop-quiz-templates/:templateId/questions",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 346
+        "line": 342
       }
     },
     {
@@ -3952,7 +3952,7 @@
         "path": "/api/academy-sales/workshop-quiz-templates/:templateId/questions/:questionId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 362
+        "line": 358
       }
     },
     {
@@ -3966,7 +3966,7 @@
         "path": "/api/academy-sales/workshop-quiz-templates/:templateId/questions/:questionId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 378
+        "line": 374
       }
     },
     {
@@ -3980,7 +3980,7 @@
         "path": "/api/academy-sales/workshops",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 393
+        "line": 389
       }
     },
     {
@@ -3994,7 +3994,7 @@
         "path": "/api/academy-sales/workshops",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 403
+        "line": 399
       }
     },
     {
@@ -4008,7 +4008,7 @@
         "path": "/api/academy-sales/workshops/resources",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 416
+        "line": 412
       }
     },
     {
@@ -4022,7 +4022,7 @@
         "path": "/api/academy-sales/workshops/slug/:slug",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 428
+        "line": 424
       }
     },
     {
@@ -4036,7 +4036,7 @@
         "path": "/api/academy-sales/workshops/:workshopId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 437
+        "line": 433
       }
     },
     {
@@ -4050,7 +4050,7 @@
         "path": "/api/academy-sales/workshops/:workshopId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 448
+        "line": 444
       }
     },
     {
@@ -4064,7 +4064,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/hero-image/upload",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 463
+        "line": 459
       }
     },
     {
@@ -4078,7 +4078,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quiz-images/upload",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 478
+        "line": 474
       }
     },
     {
@@ -4092,7 +4092,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/menu-items",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 493
+        "line": 489
       }
     },
     {
@@ -4106,7 +4106,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/menu-templates",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 508
+        "line": 504
       }
     },
     {
@@ -4120,7 +4120,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 523
+        "line": 519
       }
     },
     {
@@ -4134,7 +4134,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 538
+        "line": 534
       }
     },
     {
@@ -4148,7 +4148,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 553
+        "line": 549
       }
     },
     {
@@ -4162,7 +4162,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/menu-service",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 568
+        "line": 564
       }
     },
     {
@@ -4176,7 +4176,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-service",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 583
+        "line": 579
       }
     },
     {
@@ -4190,7 +4190,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/design-service",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 598
+        "line": 594
       }
     },
     {
@@ -4204,7 +4204,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 613
+        "line": 609
       }
     },
     {
@@ -4218,7 +4218,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 629
+        "line": 625
       }
     },
     {
@@ -4232,7 +4232,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-packages",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 644
+        "line": 640
       }
     },
     {
@@ -4246,7 +4246,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-templates",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 659
+        "line": 655
       }
     },
     {
@@ -4260,7 +4260,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 674
+        "line": 670
       }
     },
     {
@@ -4274,7 +4274,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 692
+        "line": 688
       }
     },
     {
@@ -4288,7 +4288,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-images/upload",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 707
+        "line": 703
       }
     },
     {
@@ -4302,7 +4302,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 722
+        "line": 718
       }
     },
     {
@@ -4316,7 +4316,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 741
+        "line": 737
       }
     },
     {
@@ -4330,7 +4330,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 762
+        "line": 758
       }
     },
     {
@@ -4344,7 +4344,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 784
+        "line": 780
       }
     },
     {
@@ -4358,7 +4358,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 808
+        "line": 804
       }
     },
     {
@@ -4372,7 +4372,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/designs",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 831
+        "line": 827
       }
     },
     {
@@ -4386,7 +4386,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/design-templates",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 846
+        "line": 842
       }
     },
     {
@@ -4400,7 +4400,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/design-templates/:templateId/refresh",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 861
+        "line": 857
       }
     },
     {
@@ -4414,7 +4414,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/design-templates/:templateId/apply",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 879
+        "line": 872
       }
     },
     {
@@ -4428,7 +4428,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/design-images/upload",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 894
+        "line": 887
       }
     },
     {
@@ -4442,7 +4442,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/designs/:designId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 909
+        "line": 902
       }
     },
     {
@@ -4456,7 +4456,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/designs/:designId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 928
+        "line": 921
       }
     },
     {
@@ -4470,7 +4470,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/designs/:designId/images",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 946
+        "line": 939
       }
     },
     {
@@ -4484,7 +4484,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/designs/:designId/images/:imageId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 968
+        "line": 958
       }
     },
     {
@@ -4498,7 +4498,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/designs/:designId/images/:imageId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 992
+        "line": 979
       }
     },
     {
@@ -4512,7 +4512,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1015
+        "line": 999
       }
     },
     {
@@ -4526,7 +4526,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1031
+        "line": 1015
       }
     },
     {
@@ -4540,7 +4540,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/walk-ins",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1047
+        "line": 1031
       }
     },
     {
@@ -4554,7 +4554,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/scan-check-in",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1062
+        "line": 1046
       }
     },
     {
@@ -4568,7 +4568,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1078
+        "line": 1062
       }
     },
     {
@@ -4582,7 +4582,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/care",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1094
+        "line": 1078
       }
     },
     {
@@ -4596,7 +4596,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/selections",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1110
+        "line": 1094
       }
     },
     {
@@ -4610,7 +4610,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/check-in",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1126
+        "line": 1110
       }
     },
     {
@@ -4624,7 +4624,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/reissue-qr",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1147
+        "line": 1131
       }
     },
     {
@@ -4638,7 +4638,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1165
+        "line": 1149
       }
     },
     {
@@ -4652,7 +4652,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1181
+        "line": 1165
       }
     },
     {
@@ -4666,7 +4666,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/consent",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1199
+        "line": 1183
       }
     },
     {
@@ -4680,7 +4680,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/upload-intent",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1221
+        "line": 1205
       }
     },
     {
@@ -4694,7 +4694,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/confirm",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1241
+        "line": 1225
       }
     },
     {
@@ -4708,7 +4708,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/instructor",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1260
+        "line": 1244
       }
     },
     {
@@ -4722,7 +4722,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/talent-leaderboard",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1280
+        "line": 1264
       }
     },
     {
@@ -4736,7 +4736,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId/command",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1295
+        "line": 1279
       }
     },
     {
@@ -4750,7 +4750,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1312
+        "line": 1296
       }
     },
     {
@@ -4764,7 +4764,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/reorder",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1327
+        "line": 1311
       }
     },
     {
@@ -4778,7 +4778,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1342
+        "line": 1326
       }
     },
     {
@@ -4792,7 +4792,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1358
+        "line": 1342
       }
     },
     {
@@ -4806,7 +4806,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/timeline-report",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1373
+        "line": 1357
       }
     },
     {
@@ -4820,7 +4820,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/live-state",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1388
+        "line": 1372
       }
     },
     {
@@ -4834,7 +4834,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/display-settings",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1400
+        "line": 1384
       }
     },
     {
@@ -4848,7 +4848,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1415
+        "line": 1399
       }
     },
     {
@@ -4862,7 +4862,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1431
+        "line": 1415
       }
     },
     {
@@ -4876,7 +4876,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/agenda-item",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1447
+        "line": 1431
       }
     },
     {
@@ -4890,7 +4890,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/clone",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1463
+        "line": 1447
       }
     },
     {
@@ -4904,7 +4904,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/save-template",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1479
+        "line": 1463
       }
     },
     {
@@ -4918,7 +4918,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/template/refresh",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1495
+        "line": 1479
       }
     },
     {
@@ -4932,7 +4932,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/from-template/:templateId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1510
+        "line": 1494
       }
     },
     {
@@ -4946,7 +4946,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1526
+        "line": 1510
       }
     },
     {
@@ -4960,7 +4960,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1543
+        "line": 1527
       }
     },
     {
@@ -4974,7 +4974,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1564
+        "line": 1548
       }
     },
     {
@@ -4988,7 +4988,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/command",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1587
+        "line": 1571
       }
     },
     {
@@ -5002,7 +5002,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/rewards",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1605
+        "line": 1589
       }
     },
     {
@@ -5016,7 +5016,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/rewards/:rewardId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1616
+        "line": 1600
       }
     },
     {
@@ -5030,7 +5030,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/bonuses",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1634
+        "line": 1618
       }
     },
     {
@@ -5044,7 +5044,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/bonuses/:bonusId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1644
+        "line": 1628
       }
     },
     {
@@ -26662,8 +26662,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-design-template.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10110,
-        "lineCount": 261,
+        "sizeBytes": 10120,
+        "lineCount": 263,
         "ext": ".ts"
       }
     },
@@ -26714,8 +26714,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 36253,
-        "lineCount": 909,
+        "sizeBytes": 36237,
+        "lineCount": 907,
         "ext": ".ts"
       }
     },
@@ -26766,8 +26766,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 108218,
-        "lineCount": 2642,
+        "sizeBytes": 108154,
+        "lineCount": 2633,
         "ext": ".ts"
       }
     },
@@ -26792,8 +26792,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 66317,
-        "lineCount": 1664,
+        "sizeBytes": 66103,
+        "lineCount": 1648,
         "ext": ".ts"
       }
     },
@@ -29860,8 +29860,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase4-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2588,
-        "lineCount": 76,
+        "sizeBytes": 2576,
+        "lineCount": 74,
         "ext": ".ts"
       }
     },
@@ -30822,8 +30822,8 @@
       "filePath": "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 109382,
-        "lineCount": 2043,
+        "sizeBytes": 109892,
+        "lineCount": 2053,
         "ext": ".tsx"
       }
     },
@@ -31186,8 +31186,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopDesignManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28449,
-        "lineCount": 678,
+        "sizeBytes": 28418,
+        "lineCount": 668,
         "ext": ".tsx"
       }
     },
@@ -31199,8 +31199,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopDesignPrepModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10374,
-        "lineCount": 252,
+        "sizeBytes": 10510,
+        "lineCount": 268,
         "ext": ".tsx"
       }
     },
@@ -31212,8 +31212,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopDesignTemplateLibrary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21496,
-        "lineCount": 518,
+        "sizeBytes": 21223,
+        "lineCount": 501,
         "ext": ".tsx"
       }
     },
@@ -31316,8 +31316,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21142,
-        "lineCount": 552,
+        "sizeBytes": 21158,
+        "lineCount": 556,
         "ext": ".tsx"
       }
     },
@@ -31329,8 +31329,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantSelectionsModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13688,
-        "lineCount": 308,
+        "sizeBytes": 13678,
+        "lineCount": 307,
         "ext": ".tsx"
       }
     },
@@ -31407,8 +31407,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopRoster.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21004,
-        "lineCount": 590,
+        "sizeBytes": 20980,
+        "lineCount": 588,
         "ext": ".tsx"
       }
     },
@@ -31420,8 +31420,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopRosterToolbar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3692,
-        "lineCount": 100,
+        "sizeBytes": 3721,
+        "lineCount": 107,
         "ext": ".tsx"
       }
     },
@@ -31446,7 +31446,7 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopSelectionDeadline.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7979,
+        "sizeBytes": 8007,
         "lineCount": 182,
         "ext": ".tsx"
       }
@@ -31875,8 +31875,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24858,
-        "lineCount": 576,
+        "sizeBytes": 24882,
+        "lineCount": 580,
         "ext": ".tsx"
       }
     },
@@ -34904,8 +34904,8 @@
       "filePath": "apps/web/lib/api/academy.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 60832,
-        "lineCount": 1458,
+        "sizeBytes": 60780,
+        "lineCount": 1452,
         "ext": ".ts"
       }
     },
