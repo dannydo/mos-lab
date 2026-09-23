@@ -8,8 +8,8 @@ import { promisify } from 'node:util';
 import { extractThinkingAndAction, type ParsedAiResponse } from './ai.service.js';
 
 const execFile = promisify(execFileCallback);
-const AGENTAPI_TIMEOUT_MS = 60_000;
-const AG_RESPONSE_TIMEOUT_MS = 45_000;
+const AGENTAPI_TIMEOUT_MS = 180_000;
+const AG_RESPONSE_TIMEOUT_MS = 240_000;
 
 export interface AgChatBridgeJob {
   id: string;
@@ -302,7 +302,32 @@ export class AgChatBridgeService {
                     step.content.trim().length > 0 &&
                     (!step.tool_calls || step.tool_calls.length === 0)
                   ) {
-                    const parsed = extractThinkingAndAction(step.content);
+                    let fullContent = step.content;
+                    if (
+                      step.truncated_fields &&
+                      Array.isArray(step.truncated_fields) &&
+                      step.truncated_fields.includes('content')
+                    ) {
+                      const fullTranscriptPath = resolve(
+                        homedir(),
+                        '.gemini/antigravity/brain',
+                        conversationId,
+                        '.system_generated/logs/transcript_full.jsonl'
+                      );
+                      if (existsSync(fullTranscriptPath)) {
+                        try {
+                          const fullLines = readFileSync(fullTranscriptPath, 'utf8').trim().split('\n').filter(Boolean);
+                          const targetLine = fullLines[initialLineCount + i];
+                          if (targetLine) {
+                            const fullStep = JSON.parse(targetLine);
+                            if (fullStep.content) fullContent = fullStep.content;
+                          }
+                        } catch {
+                          // Keep fallback step.content
+                        }
+                      }
+                    }
+                    const parsed = extractThinkingAndAction(fullContent);
                     return {
                       content: parsed.content,
                       thinking: parsed.thinking || accumulatedThinking || null,
@@ -332,7 +357,7 @@ export class AgChatBridgeService {
     conversationId: string | undefined,
     prompt: string,
     title?: string,
-    timeoutMs = 40_000
+    timeoutMs = 240_000
   ): Promise<{ conversationId: string; response: ParsedAiResponse }> {
     return new Promise((resolve, reject) => {
       const jobId = randomUUID();
@@ -373,9 +398,9 @@ export class AgChatBridgeService {
    */
   static async getNextRemoteChatJob(timeoutMs = 25_000): Promise<AgChatBridgeJob | null> {
     const now = Date.now();
-    // 1. Check if there is already an unclaimed pending job (or a stale claim older than 45s)
+    // 1. Check if there is already an unclaimed pending job (or a stale claim older than 240s)
     for (const entry of this.pendingBridgeJobs.values()) {
-      if (!entry.claimedAt || now - entry.claimedAt > 45_000) {
+      if (!entry.claimedAt || now - entry.claimedAt > 240_000) {
         entry.claimedAt = now;
         return entry.job;
       }

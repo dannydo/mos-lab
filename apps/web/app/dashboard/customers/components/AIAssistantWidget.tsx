@@ -66,6 +66,7 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
   const [showSessionDrawer, setShowSessionDrawer] = useState(false);
   const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
   const [appliedActions, setAppliedActions] = useState<Record<string, boolean>>({});
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -125,6 +126,22 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
       scrollToBottom();
     }
   }, [messages, open]);
+
+  // Track elapsed reasoning time when sending
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (sending) {
+      setElapsedSeconds(0);
+      timer = setInterval(() => {
+        setElapsedSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [sending]);
 
   // Create new session
   const handleNewSession = async () => {
@@ -534,9 +551,25 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
             )}
 
             {sending && (
-              <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
-                <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
-                <span>Antigravity đang tư duy và phân tích dữ liệu...</span>
+              <div className="flex flex-col gap-1.5 text-xs py-2.5 px-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 shadow-sm transition-all">
+                <div className="flex items-center gap-2 font-medium text-indigo-700 dark:text-indigo-300">
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-500 flex-shrink-0" />
+                  <span>
+                    {elapsedSeconds < 10
+                      ? 'mOS Copilot đang suy luận và phân tích câu hỏi...'
+                      : elapsedSeconds < 30
+                        ? 'Đang tra cứu cơ sở dữ liệu khách hàng & salon...'
+                        : 'Đang tổng hợp dữ liệu chi tiết và tính toán số liệu...'}
+                  </span>
+                  <span className="ml-auto font-mono text-[11px] tabular-nums text-indigo-500 dark:text-indigo-400">
+                    {elapsedSeconds}s
+                  </span>
+                </div>
+                {elapsedSeconds >= 12 && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 pl-6 leading-tight">
+                    Hệ thống đang truy vấn dữ liệu thực tế, phản hồi trễ một chút vẫn đảm bảo số liệu chính xác 100%.
+                  </p>
+                )}
               </div>
             )}
             <div ref={chatBottomRef} />

@@ -531,7 +531,8 @@ ${trimmedMessage}
 Quy định phản hồi:
 - Hãy suy luận và phân tích kỹ lưỡng. Đặt quá trình tư duy trong thẻ <thinking>...</thinking>.
 - Nếu người dùng cần lọc tệp khách hàng, hãy đề xuất cấu hình bộ lọc cụ thể trong thẻ <action type="APPLY_FILTER" label="...">JSON_FILTER_PAYLOAD</action>.
-- Trả lời bằng tiếng Việt thân thiện, súc tích và chuẩn xác.`;
+- Trả lời bằng tiếng Việt thân thiện, súc tích và chuẩn xác.
+- QUAN TRỌNG: Đây là phản hồi văn bản cho giao diện web Copilot, KHÔNG gọi lệnh speak âm thanh để tập trung phản hồi nhanh và chính xác nhất cho người dùng.`;
 
       const agTitle = `[mOS Copilot] ${trimmedMessage.slice(0, 40)}`;
 
@@ -549,7 +550,7 @@ Quy định phản hồi:
             agConversationId,
             promptForAg,
             agTitle,
-            30_000
+            240_000
           );
           if (agResult?.response?.content) {
             parsedResponse = agResult.response;

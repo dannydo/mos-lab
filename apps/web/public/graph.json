@@ -26260,8 +26260,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13985,
-        "lineCount": 416,
+        "sizeBytes": 15219,
+        "lineCount": 441,
         "ext": ".ts"
       }
     },
@@ -26273,8 +26273,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27316,
-        "lineCount": 680,
+        "sizeBytes": 27512,
+        "lineCount": 681,
         "ext": ".ts"
       }
     },
@@ -32461,8 +32461,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28319,
-        "lineCount": 609,
+        "sizeBytes": 29868,
+        "lineCount": 642,
         "ext": ".tsx"
       }
     },
@@ -34307,8 +34307,8 @@
       "filePath": "apps/web/lib/api/ai.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1866,
-        "lineCount": 58,
+        "sizeBytes": 1903,
+        "lineCount": 60,
         "ext": ".ts"
       }
     },
