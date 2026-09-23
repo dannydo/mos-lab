@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import {
   BkGame,
   BkGameCreateInput,
+  BkGameUpdateInput,
   BkGameDetailResponse,
   BkGameFinalizeInput,
   BkGameListResponse,
@@ -338,8 +339,8 @@ export class BkGameService {
       winnerCriteria: game.winnerCriteria as SafeAny,
       announcedResults: game.announcedResults,
       createdByStaffId: game.createdByStaffId,
-      createdAt: game.createdAt.toISOString(),
-      updatedAt: game.updatedAt.toISOString(),
+      createdAt: game.createdAt ? game.createdAt.toISOString() : new Date().toISOString(),
+      updatedAt: game.updatedAt ? game.updatedAt.toISOString() : new Date().toISOString(),
       participants,
       teams,
     };
@@ -517,6 +518,41 @@ export class BkGameService {
     });
 
     const detail = await this.getGameDetail(fastify, createdGame.id);
+    return detail!.game;
+  }
+
+  /**
+   * Updates an existing Telesales game's settings (channels, target, descriptions, etc.).
+   */
+  static async updateGame(fastify: FastifyInstance, gameId: number, input: BkGameUpdateInput): Promise<BkGame> {
+    const existing = await fastify.prisma.crm.crmBkGame.findUnique({
+      where: { id: gameId },
+    });
+    if (!existing) {
+      throw new Error(`Game với ID ${gameId} không tồn tại`);
+    }
+
+    const data: Record<string, SafeAny> = {};
+    if (input.title !== undefined) data.title = input.title;
+    if (input.description !== undefined) data.description = input.description;
+    if (input.targetScore !== undefined) data.targetScore = input.targetScore;
+    if (input.rewardPool !== undefined) data.rewardPool = input.rewardPool;
+    if (input.rewardDescription !== undefined) data.rewardDescription = input.rewardDescription;
+    if (input.penaltyDescription !== undefined) data.penaltyDescription = input.penaltyDescription;
+    if (input.status !== undefined) data.status = input.status;
+    if (input.allowedBookingChannels !== undefined) {
+      data.allowedBookingChannels =
+        input.allowedBookingChannels && input.allowedBookingChannels.length > 0
+          ? JSON.stringify(input.allowedBookingChannels)
+          : null;
+    }
+
+    await fastify.prisma.crm.crmBkGame.update({
+      where: { id: gameId },
+      data,
+    });
+
+    const detail = await this.getGameDetail(fastify, gameId);
     return detail!.game;
   }
 

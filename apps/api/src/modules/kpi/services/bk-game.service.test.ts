@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import type { FastifyInstance } from 'fastify';
 import { BkGameParticipant } from '@mos-lab/shared';
 import {
+  BkGameService,
   formatIctDateTime,
   formatIctDate,
   parseAllowedBookingChannels,
@@ -189,3 +191,54 @@ test('Fair-play Game scenario: Only GB bookings count towards points when allowe
   assert.equal(playerAScore, 1);
   assert.equal(playerBScore, 1);
 });
+
+test('BkGameService.updateGame updates allowedBookingChannels and config fields', async () => {
+  let updatedData: Record<string, unknown> | null = null;
+  const now = new Date();
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmBkGame: {
+          findUnique: async () => ({
+            id: 3,
+            title: 'Old Title',
+            status: 'ACTIVE',
+            gameType: 'SOLO',
+            startDate: new Date(now.getTime() - 86400000),
+            endDate: new Date(now.getTime() + 86400000),
+            allowedBookingChannels: null,
+            participants: [],
+            teams: [],
+          }),
+          update: async ({ data }: { data: Record<string, unknown> }) => {
+            updatedData = data;
+            return {
+              id: 3,
+              status: 'ACTIVE',
+              gameType: 'SOLO',
+              startDate: new Date(now.getTime() - 86400000),
+              endDate: new Date(now.getTime() + 86400000),
+              participants: [],
+              teams: [],
+              ...data,
+            };
+          },
+        },
+      },
+    },
+    log: { info: () => {} },
+  } as unknown as FastifyInstance;
+
+  const result = await BkGameService.updateGame(mockFastify, 3, {
+    title: '[BK_LÔNG][T9] CUỘC ĐUA KỲ THÚ',
+    allowedBookingChannels: ['GB'],
+    targetScore: 50,
+  });
+
+  assert.equal(result.id, 3);
+  const data = updatedData as Record<string, unknown> | null;
+  assert.equal(data?.title, '[BK_LÔNG][T9] CUỘC ĐUA KỲ THÚ');
+  assert.equal(data?.allowedBookingChannels, '["GB"]');
+  assert.equal(data?.targetScore, 50);
+});
+
