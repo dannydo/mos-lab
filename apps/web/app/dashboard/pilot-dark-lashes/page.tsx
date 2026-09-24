@@ -867,6 +867,7 @@ export default function PilotDarkLashesPage() {
         isEditing={Boolean(editingSession)}
         form={form}
         materialsCatalog={materialsCatalog}
+        onRefreshMaterials={fetchMaterials}
         onClose={() => setCreateDrawerOpen(false)}
         onSubmit={handleSubmitSession}
       />

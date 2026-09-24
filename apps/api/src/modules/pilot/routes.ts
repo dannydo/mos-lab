@@ -113,6 +113,17 @@ export async function pilotRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Seed default materials
+  fastify.post('/pilot/materials/seed-defaults', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as { pilotCode?: string };
+      const materials = await PilotService.seedDefaultMaterials(fastify, body?.pilotCode);
+      return reply.send(materials);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Seed default pilot materials error');
+    }
+  });
+
   // Get pilot sessions list + summary metrics
   fastify.get('/pilot/sessions', { preHandler: [requireAuth] }, async (request, reply) => {
     try {

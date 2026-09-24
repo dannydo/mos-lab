@@ -89,5 +89,9 @@ export const pilotApi = {
       const response = await api.delete(`/pilot/materials/${id}`);
       return response.data;
     },
+    seedDefaultMaterials: async (params?: { pilotCode?: string }): Promise<PilotMaterial[]> => {
+      const response = await api.post('/pilot/materials/seed-defaults', params || {});
+      return response.data;
+    },
   },
 };

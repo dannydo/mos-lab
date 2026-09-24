@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useMemo, useEffect } from 'react';
-import { Button, Form, Input, InputNumber, Select } from 'antd';
+import React, { useMemo, useEffect, useState } from 'react';
+import { Button, Form, Input, InputNumber, Select, message } from 'antd';
 import type { FormInstance } from 'antd';
 import { Package, Plus, Sparkles, Trash2 } from 'lucide-react';
-import type { PilotMaterial } from '@mos-lab/shared';
+import type { CreatePilotMaterialRequest, PilotMaterial } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { EntityFormDrawer } from '../../../../components/ui/EntityFormDrawer';
+import { AdaptiveModal } from '../../../../components/ui/AdaptiveOverlay';
+import { apiClient } from '../../../../lib/api-client';
 
 function formatVND(value: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -21,6 +23,7 @@ interface PilotSessionDrawerProps {
   isEditing: boolean;
   form: FormInstance;
   materialsCatalog: PilotMaterial[];
+  onRefreshMaterials?: () => void;
   onClose: () => void;
   onSubmit: () => void;
 }
@@ -30,9 +33,52 @@ export function PilotSessionDrawer({
   isEditing,
   form,
   materialsCatalog,
+  onRefreshMaterials,
   onClose,
   onSubmit,
 }: PilotSessionDrawerProps) {
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickSubmitting, setQuickSubmitting] = useState(false);
+  const [quickForm] = Form.useForm();
+
+  const watchQuickPrice = Form.useWatch('purchasePrice', quickForm) ?? 0;
+  const watchQuickVolume = Form.useWatch('volume', quickForm) ?? 1;
+  const quickCostPerUnit = watchQuickVolume > 0 ? Math.round(watchQuickPrice / watchQuickVolume) : 0;
+
+  const handleSaveQuickMaterial = async () => {
+    try {
+      setQuickSubmitting(true);
+      const values = await quickForm.validateFields();
+      const created = await apiClient.pilot.createMaterial(values as CreatePilotMaterialRequest);
+      message.success(`Đã thêm vật tư "${created.name}" vào danh mục và chọn cho ca này!`);
+      quickForm.resetFields();
+      setQuickAddOpen(false);
+      if (onRefreshMaterials) {
+        onRefreshMaterials();
+      }
+      const current = form.getFieldValue('materials') || [];
+      form.setFieldValue('materials', [...current, { materialId: created.id, usageAmount: 1 }]);
+    } catch (err: any) {
+      if (err?.errorFields) return;
+      message.error(err?.response?.data?.message || 'Lỗi khi tạo vật tư mới.');
+    } finally {
+      setQuickSubmitting(false);
+    }
+  };
+
+  const QUICK_LASH_PRESETS = [
+    { name: 'Thuốc số 1 (Perming Cream)', unit: 'ml', volume: 15, purchasePrice: 450000 },
+    { name: 'Thuốc số 2 (Setting Cream)', unit: 'ml', volume: 15, purchasePrice: 450000 },
+    { name: 'Cây chải mi kim loại', unit: 'cây', volume: 1, purchasePrice: 35000 },
+    { name: 'Cây chải mi nhựa', unit: 'cây', volume: 1, purchasePrice: 3000 },
+    { name: 'Keratin dưỡng mi', unit: 'ml', volume: 20, purchasePrice: 380000 },
+    { name: 'Kềm PH (Kiểm tra độ pH)', unit: 'lần', volume: 50, purchasePrice: 50000 },
+    { name: 'Eye Pad (Miếng dán mi dưới)', unit: 'cặp', volume: 1, purchasePrice: 6000 },
+    { name: 'Giấy giữ mi con', unit: 'miếng', volume: 50, purchasePrice: 20000 },
+    { name: 'Thuốc nhuộm mi (Lash Tint)', unit: 'ml', volume: 15, purchasePrice: 240000 },
+    { name: 'Dụng cụ vệ sinh mi', unit: 'bộ', volume: 1, purchasePrice: 5000 },
+  ];
+  const QUICK_UNITS = ['ml', 'cây', 'cặp', 'miếng', 'bộ', 'g', 'lần', 'gói'];
   const formRevenue = Form.useWatch('revenue', form) ?? 990000;
   const formMaterialCost = Form.useWatch('materialCost', form) ?? 0;
   const formTechnicianCost = Form.useWatch('technicianCost', form) ?? 0;
@@ -77,7 +123,8 @@ export function PilotSessionDrawer({
   const liveMarginPct = formRevenue > 0 ? Math.round((liveContribution / formRevenue) * 100) : 0;
 
   return (
-    <EntityFormDrawer
+    <>
+      <EntityFormDrawer
       title={
         <div className="flex items-center gap-2 text-base font-bold">
           <AppIcon icon={Sparkles} size="sm" className="text-emerald-500" />
@@ -273,6 +320,18 @@ export function PilotSessionDrawer({
                   >
                     Thêm vật tư đã dùng
                   </Button>
+                  <Button
+                    type="dashed"
+                    onClick={() => {
+                      quickForm.resetFields();
+                      quickForm.setFieldsValue({ unit: 'ml', volume: 1, purchasePrice: 0 });
+                      setQuickAddOpen(true);
+                    }}
+                    icon={<AppIcon icon={Package} size="sm" />}
+                    className="rounded-lg text-xs border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                  >
+                    + Tạo vật tư mới vào danh mục
+                  </Button>
                   {materialsCatalog.length > 0 && fields.length === 0 && (
                     <Button
                       type="default"
@@ -412,5 +471,106 @@ export function PilotSessionDrawer({
         </div>
       </Form>
     </EntityFormDrawer>
+
+    {/* Modal Thêm nhanh Vật tư Tiêu hao ngay trong ca làm */}
+    <AdaptiveModal
+      intent="form"
+      title="Thêm nhanh Vật tư Tiêu hao"
+      open={quickAddOpen}
+      onCancel={() => setQuickAddOpen(false)}
+      onOk={handleSaveQuickMaterial}
+      confirmLoading={quickSubmitting}
+      okText="Tạo & chọn dùng ngay"
+      cancelText="Hủy"
+      okButtonProps={{ className: 'bg-emerald-600 hover:bg-emerald-700 text-white' }}
+      width={480}
+    >
+      <Form form={quickForm} layout="vertical" className="mt-2">
+        <div className="mb-3">
+          <span className="text-xs font-medium text-slate-500 block mb-1.5">Gợi ý nhanh vật tư uốn mi:</span>
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 border border-slate-100 dark:border-slate-800 rounded-lg">
+            {QUICK_LASH_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => {
+                  quickForm.setFieldsValue({
+                    name: preset.name,
+                    unit: preset.unit,
+                    volume: preset.volume,
+                    purchasePrice: preset.purchasePrice,
+                  });
+                }}
+                className="text-[11px] px-2 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 hover:text-emerald-700 transition-colors"
+              >
+                + {preset.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Form.Item
+          name="name"
+          label="Tên vật tư"
+          rules={[{ required: true, message: 'Vui lòng nhập tên vật tư' }]}
+        >
+          <Input placeholder="VD: Cây chải mi kim loại, Keratin..." className="rounded-lg" />
+        </Form.Item>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Form.Item
+            name="purchasePrice"
+            label="Giá mua trọn gói (đ)"
+            rules={[{ required: true, message: 'Nhập giá mua' }]}
+          >
+            <InputNumber<number>
+              className="w-full rounded-lg tabular-nums"
+              min={0}
+              formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={(val) => (val ? Number(val.replace(/\$\s?|(,*)/g, '')) : 0)}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="volume"
+            label="Quy cách / Dung tích"
+            rules={[{ required: true, message: 'Nhập dung tích' }]}
+          >
+            <InputNumber<number> className="w-full rounded-lg tabular-nums" min={0.01} step={1} />
+          </Form.Item>
+        </div>
+
+        <Form.Item
+          name="unit"
+          label="Đơn vị tính"
+          rules={[{ required: true, message: 'Nhập đơn vị tính' }]}
+          extra={
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              <span className="text-[10px] text-slate-400 mr-1 self-center">Chọn nhanh:</span>
+              {QUICK_UNITS.map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => quickForm.setFieldValue('unit', u)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-slate-600 dark:text-slate-300"
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
+          }
+        >
+          <Input placeholder="VD: ml, cây, cặp, miếng, bộ, g..." className="rounded-lg" />
+        </Form.Item>
+
+        <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <span className="text-xs text-slate-500">Cost tự động trên 1 đơn vị:</span>
+          <span className="text-base font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+            {formatVND(quickCostPerUnit)} / đơn vị
+          </span>
+        </div>
+      </Form>
+    </AdaptiveModal>
+  </>
   );
 }

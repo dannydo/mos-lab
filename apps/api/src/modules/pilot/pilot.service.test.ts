@@ -278,11 +278,55 @@ test('PilotService: listMaterials seeds defaults when empty', async () => {
   };
 
   const materials = await PilotService.listMaterials(fakeFastify, 'DARK_LASHES');
-  assert.equal(materials.length, 5);
+  assert.equal(materials.length, 13);
   assert.equal(materials[0].name, 'Thuốc uốn số 1 (Perming Cream)');
   assert.equal(materials[0].costPerUnit, 30000);
-  assert.equal(materials[3].unit, 'cặp');
-  assert.equal(materials[3].costPerUnit, 16000);
+  assert.ok(materials.some((m) => m.name === 'Cây chải mi kim loại'));
+  assert.ok(materials.some((m) => m.name === 'Keratin dưỡng mi'));
+  assert.ok(materials.some((m) => m.name === 'Thuốc nhuộm mi (Lash Tint)'));
+});
+
+test('PilotService: seedDefaultMaterials inserts missing defaults without duplicating existing', async () => {
+  let createdData: SafeAny[] = [];
+  const existingRecords = [
+    {
+      id: 1,
+      pilotCode: 'DARK_LASHES',
+      name: 'Thuốc uốn số 1 (Perming Cream)',
+      purchasePrice: 450000,
+      volume: 15,
+      unit: 'ml',
+      costPerUnit: 30000,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ];
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotMaterial: {
+          findMany: async () => [
+            ...existingRecords,
+            ...createdData.map((d, i) => ({
+              id: i + 2,
+              ...d,
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })),
+          ],
+          createMany: async ({ data }: SafeAny) => {
+            createdData = data;
+          },
+        },
+      },
+    },
+  };
+
+  const materials = await PilotService.seedDefaultMaterials(fakeFastify, 'DARK_LASHES');
+  assert.equal(createdData.length, 12);
+  assert.equal(materials.length, 13);
 });
 
 test('PilotService: createMaterial calculates costPerUnit accurately', async () => {
@@ -324,7 +368,7 @@ test('PilotService: createSession with materials calculates total materialCost a
     { id: 3, name: 'Miếng silicon', costPerUnit: 16000, unit: 'cặp' },
   ];
 
-  let createdSessionData: SafeAny = null;
+  let _createdSessionData: SafeAny = null;
   let createdSessionMaterials: SafeAny[] = [];
 
   const fakeFastify: SafeAny = {
@@ -337,7 +381,7 @@ test('PilotService: createSession with materials calculates total materialCost a
         },
         crmPilotSession: {
           create: async ({ data }: SafeAny) => {
-            createdSessionData = data;
+            _createdSessionData = data;
             return {
               id: 101,
               ...data,

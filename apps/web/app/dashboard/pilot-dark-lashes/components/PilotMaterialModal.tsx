@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Form, Input, InputNumber, Popconfirm, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Package, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Package, Plus, Trash2, Edit2, Sparkles } from 'lucide-react';
 import type { CreatePilotMaterialRequest, PilotMaterial, UpdatePilotMaterialRequest } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { AppIcon } from '../../../../components/ui/AppIcon';
@@ -30,6 +30,7 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<PilotMaterial | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [form] = Form.useForm();
 
   // Watch fields for live preview of costPerUnit
@@ -90,6 +91,34 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
       setSubmitting(false);
     }
   };
+
+  const handleSeedDefaults = async () => {
+    try {
+      setSeeding(true);
+      await apiClient.pilot.seedDefaultMaterials();
+      message.success('Đã bổ sung đầy đủ danh mục vật tư tiêu chuẩn uốn mi!');
+      onRefresh();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Lỗi khi đồng bộ vật tư chuẩn.');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const LASH_LIFT_PRESETS = [
+    { name: 'Thuốc số 1 (Perming Cream)', unit: 'ml', volume: 15, purchasePrice: 450000 },
+    { name: 'Thuốc số 2 (Setting Cream)', unit: 'ml', volume: 15, purchasePrice: 450000 },
+    { name: 'Cây chải mi kim loại', unit: 'cây', volume: 1, purchasePrice: 35000 },
+    { name: 'Cây chải mi nhựa', unit: 'cây', volume: 1, purchasePrice: 3000 },
+    { name: 'Keratin dưỡng mi', unit: 'ml', volume: 20, purchasePrice: 380000 },
+    { name: 'Kềm PH (Kiểm tra độ pH)', unit: 'lần', volume: 50, purchasePrice: 50000 },
+    { name: 'Eye Pad (Miếng dán mi dưới)', unit: 'cặp', volume: 1, purchasePrice: 6000 },
+    { name: 'Giấy giữ mi con', unit: 'miếng', volume: 50, purchasePrice: 20000 },
+    { name: 'Thuốc nhuộm mi (Lash Tint)', unit: 'ml', volume: 15, purchasePrice: 240000 },
+    { name: 'Dụng cụ vệ sinh mi', unit: 'bộ', volume: 1, purchasePrice: 5000 },
+  ];
+
+  const QUICK_UNITS = ['ml', 'cây', 'cặp', 'miếng', 'bộ', 'g', 'lần', 'gói'];
 
   const columns: ColumnsType<PilotMaterial> = [
     {
@@ -184,6 +213,15 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
         open={open}
         onCancel={onClose}
         footer={[
+          <Button
+            key="seed"
+            loading={seeding}
+            onClick={handleSeedDefaults}
+            className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+            icon={<AppIcon icon={Sparkles} size="sm" />}
+          >
+            Bổ sung 10 vật tư chuẩn
+          </Button>,
           <Button key="close" onClick={onClose}>
             Đóng
           </Button>,
@@ -227,6 +265,31 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
         width={480}
       >
         <Form form={form} layout="vertical" className="mt-3">
+          {!editingMaterial && (
+            <div className="mb-3">
+              <span className="text-xs font-medium text-slate-500 block mb-1.5">Gợi ý nhanh vật tư uốn mi:</span>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 border border-slate-100 dark:border-slate-800 rounded-lg">
+                {LASH_LIFT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => {
+                      form.setFieldsValue({
+                        name: preset.name,
+                        unit: preset.unit,
+                        volume: preset.volume,
+                        purchasePrice: preset.purchasePrice,
+                      });
+                    }}
+                    className="text-[11px] px-2 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 hover:text-emerald-700 transition-colors"
+                  >
+                    + {preset.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <Form.Item
             name="name"
             label="Tên vật tư"
@@ -260,10 +323,25 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
 
           <Form.Item
             name="unit"
-            label="Đơn vị tính (VD: ml, cặp, gói, miếng, cây)"
+            label="Đơn vị tính"
             rules={[{ required: true, message: 'Nhập đơn vị tính' }]}
+            extra={
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                <span className="text-[10px] text-slate-400 mr-1 self-center">Chọn nhanh:</span>
+                {QUICK_UNITS.map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => form.setFieldValue('unit', u)}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-slate-600 dark:text-slate-300"
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            }
           >
-            <Input placeholder="VD: ml" className="rounded-lg" />
+            <Input placeholder="VD: ml, cây, cặp, miếng, bộ, g..." className="rounded-lg" />
           </Form.Item>
 
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
