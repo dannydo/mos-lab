@@ -1,5 +1,48 @@
 export type PilotFollowUpStatus = 'PENDING' | 'DONE' | 'SKIPPED';
 
+export interface PilotMaterial {
+  id: number;
+  pilotCode: string;
+  name: string;
+  purchasePrice: number;
+  volume: number;
+  unit: string;
+  costPerUnit: number;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreatePilotMaterialRequest {
+  pilotCode?: string;
+  name: string;
+  purchasePrice: number;
+  volume: number;
+  unit: string;
+  costPerUnit?: number;
+  isActive?: boolean;
+}
+
+export interface UpdatePilotMaterialRequest {
+  name?: string;
+  purchasePrice?: number;
+  volume?: number;
+  unit?: string;
+  costPerUnit?: number;
+  isActive?: boolean;
+}
+
+export interface PilotSessionMaterialItem {
+  id?: number;
+  sessionId?: number;
+  materialId: number;
+  materialName?: string;
+  unit?: string;
+  usageAmount: number;
+  costPerUnit?: number;
+  calculatedCost?: number;
+}
+
 export interface PilotSession {
   id: number;
   pilotCode: string;
@@ -25,6 +68,7 @@ export interface PilotSession {
   createdByStaffId: number | null;
   createdAt: string;
   updatedAt: string;
+  materials?: PilotSessionMaterialItem[];
 }
 
 export interface CreatePilotSessionRequest {
@@ -46,6 +90,7 @@ export interface CreatePilotSessionRequest {
   issues?: string | null;
   notes?: string | null;
   source?: string | null;
+  materials?: Array<{ materialId: number; usageAmount: number }>;
 }
 
 export interface UpdatePilotSessionRequest {
@@ -65,6 +110,7 @@ export interface UpdatePilotSessionRequest {
   issues?: string | null;
   notes?: string | null;
   source?: string | null;
+  materials?: Array<{ materialId: number; usageAmount: number }>;
 }
 
 export interface PilotMetricsSummary {
@@ -74,6 +120,8 @@ export interface PilotMetricsSummary {
   progressPercent: number;
   totalRevenue: number;
   totalDirectCost: number;
+  totalConsumablesCost: number;
+  avgConsumablesCostPerSession: number;
   totalContribution: number;
   avgContributionPerSession: number;
   avgContributionMarginPct: number;

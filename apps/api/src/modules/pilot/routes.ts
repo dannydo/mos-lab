@@ -1,5 +1,11 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import type { CreatePilotSessionRequest, PilotSessionsQuery, UpdatePilotSessionRequest } from '@mos-lab/shared';
+import type {
+  CreatePilotMaterialRequest,
+  CreatePilotSessionRequest,
+  PilotSessionsQuery,
+  UpdatePilotMaterialRequest,
+  UpdatePilotSessionRequest,
+} from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { PilotService, PilotServiceError } from './pilot.service.js';
 
@@ -22,6 +28,63 @@ export async function pilotRoutes(fastify: FastifyInstance) {
       return reply.send({ enabled, pilotCode: PilotService.DEFAULT_PILOT_CODE });
     } catch (error) {
       return sendError(fastify, reply, error, 'Check pilot feature flag error');
+    }
+  });
+
+  // ═══════════════════════════════════════════
+  // Pilot Materials Catalog Endpoints
+  // ═══════════════════════════════════════════
+
+  // Get materials catalog
+  fastify.get('/pilot/materials', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const query = request.query as { pilotCode?: string };
+      const materials = await PilotService.listMaterials(fastify, query?.pilotCode);
+      return reply.send(materials);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'List pilot materials error');
+    }
+  });
+
+  // Create material
+  fastify.post('/pilot/materials', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as CreatePilotMaterialRequest;
+      const created = await PilotService.createMaterial(fastify, body);
+      return reply.status(201).send(created);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Create pilot material error');
+    }
+  });
+
+  // Update material
+  fastify.patch('/pilot/materials/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID vật tư không hợp lệ.' });
+      }
+      const body = request.body as UpdatePilotMaterialRequest;
+      const updated = await PilotService.updateMaterial(fastify, id, body);
+      return reply.send(updated);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Update pilot material error');
+    }
+  });
+
+  // Delete material (soft-delete / deactivate)
+  fastify.delete('/pilot/materials/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID vật tư không hợp lệ.' });
+      }
+      const result = await PilotService.deleteMaterial(fastify, id);
+      return reply.send(result);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Delete pilot material error');
     }
   });
 

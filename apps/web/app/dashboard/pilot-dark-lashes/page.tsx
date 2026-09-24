@@ -10,6 +10,7 @@ import {
   Clock,
   Edit,
   HeartHandshake,
+  Package,
   Phone,
   Plus,
   RotateCw,
@@ -25,6 +26,7 @@ import dayjs from 'dayjs';
 import type {
   CreatePilotSessionRequest,
   PilotFollowUpStatus,
+  PilotMaterial,
   PilotMetricsSummary,
   PilotSession,
   UpdatePilotSessionRequest,
@@ -36,6 +38,7 @@ import { DataTable } from '../../../components/ui/DataTable';
 import { CopyPhoneButton } from '../../../components/ui/CopyPhoneButton';
 import { PilotSessionDrawer } from './components/PilotSessionDrawer';
 import { PilotFollowUpDrawer } from './components/PilotFollowUpDrawer';
+import { PilotMaterialModal } from './components/PilotMaterialModal';
 
 const { Title } = Typography;
 
@@ -56,11 +59,13 @@ export default function PilotDarkLashesPage() {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING_24H' | 'PENDING_72H' | 'DONE'>('ALL');
 
-  // Drawers
+  // Drawers & Modals
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<PilotSession | null>(null);
   const [followUpDrawerOpen, setFollowUpDrawerOpen] = useState(false);
   const [selectedFollowUpSession, setSelectedFollowUpSession] = useState<PilotSession | null>(null);
+  const [materialsCatalog, setMaterialsCatalog] = useState<PilotMaterial[]>([]);
+  const [materialModalOpen, setMaterialModalOpen] = useState(false);
 
   const [form] = Form.useForm();
   const [followUpForm] = Form.useForm();
@@ -78,9 +83,19 @@ export default function PilotDarkLashesPage() {
     }
   }, []);
 
+  const fetchMaterials = useCallback(async () => {
+    try {
+      const mats = await apiClient.pilot.listMaterials({ pilotCode: 'DARK_LASHES' });
+      setMaterialsCatalog(mats || []);
+    } catch (err: any) {
+      console.error('Error fetching materials:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchPilotData();
-  }, [fetchPilotData]);
+    fetchMaterials();
+  }, [fetchPilotData, fetchMaterials]);
 
   // Open drawer for Create
   const handleOpenCreate = () => {
@@ -100,6 +115,7 @@ export default function PilotDarkLashesPage() {
       followUp24hStatus: 'PENDING',
       followUp72hStatus: 'PENDING',
       source: 'Facebook',
+      materials: [],
     });
     setCreateDrawerOpen(true);
   };
@@ -125,6 +141,11 @@ export default function PilotDarkLashesPage() {
       issues: session.issues,
       notes: session.notes,
       source: session.source,
+      materials:
+        session.materials?.map((m) => ({
+          materialId: m.materialId,
+          usageAmount: m.usageAmount,
+        })) || [],
     });
     setCreateDrawerOpen(true);
   };
@@ -272,12 +293,32 @@ export default function PilotDarkLashesPage() {
       render: (_, r) => (
         <Tooltip
           title={
-            <div className="text-xs space-y-1 p-1">
-              <div>Vật tư: {formatVND(r.materialCost)}</div>
-              <div>Kỹ thuật: {formatVND(r.technicianCost)}</div>
-              <div>Commission: {formatVND(r.commissionAmount)}</div>
-              <div>Voucher/Promo: {formatVND(r.promoAmount)}</div>
-              {r.refundAmount > 0 && <div>Đền bù/Refund: {formatVND(r.refundAmount)}</div>}
+            <div className="text-xs space-y-1.5 p-1 max-w-xs">
+              <div className="border-b border-slate-700 dark:border-slate-600 pb-1">
+                <div className="font-semibold text-emerald-400">
+                  Vật tư tiêu hao: {formatVND(r.materialCost)}
+                </div>
+                {r.materials && r.materials.length > 0 && (
+                  <div className="mt-1 pl-1 space-y-0.5 text-[11px] text-slate-300">
+                    {r.materials.map((m) => (
+                      <div key={m.id} className="flex justify-between gap-2">
+                        <span>
+                          • {m.materialName} ({m.usageAmount} {m.unit}):
+                        </span>
+                        <span className="tabular-nums font-medium text-slate-200">
+                          {formatVND(m.calculatedCost ?? 0)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-0.5">
+                <div>Kỹ thuật: {formatVND(r.technicianCost)}</div>
+                <div>Commission: {formatVND(r.commissionAmount)}</div>
+                <div>Voucher/Promo: {formatVND(r.promoAmount)}</div>
+                {r.refundAmount > 0 && <div>Đền bù/Refund: {formatVND(r.refundAmount)}</div>}
+              </div>
             </div>
           }
         >
@@ -452,6 +493,13 @@ export default function PilotDarkLashesPage() {
               Làm mới
             </Button>
             <Button
+              icon={<AppIcon icon={Package} size="sm" />}
+              onClick={() => setMaterialModalOpen(true)}
+              className="rounded-xl font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+            >
+              Danh mục vật tư
+            </Button>
+            <Button
               type="primary"
               icon={<AppIcon icon={Plus} size="sm" />}
               onClick={handleOpenCreate}
@@ -463,8 +511,8 @@ export default function PilotDarkLashesPage() {
         </div>
       </div>
 
-      {/* Top 4 Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top 5 Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* Card 1: Target Progress */}
         <StatCard
           title="Tiến độ Pilot 30 Ngày"
@@ -499,6 +547,21 @@ export default function PilotDarkLashesPage() {
             metrics?.avgContributionPerSession ?? 0
           )}/ca)`}
           trend="up"
+        />
+
+        {/* Card 3: Consumables Cost Per Done */}
+        <StatCard
+          title="Vật tư / Done"
+          value={formatVND(metrics?.avgConsumablesCostPerSession ?? 0)}
+          icon={<AppIcon icon={Package} size="md" className="text-teal-500" />}
+          subValue={
+            <div className="text-xs text-slate-500 flex flex-col gap-0.5 mt-0.5">
+              <span>Tổng CP vật tư: {formatVND(metrics?.totalConsumablesCost ?? 0)}</span>
+              <span>Đo lường chi phí thực tế / ca</span>
+            </div>
+          }
+          trendText="Mục tiêu 7 ngày: Chốt Avg Direct Cost / Done"
+          trend="neutral"
         />
 
         {/* Card 3: Satisfaction (CSAT) */}
@@ -619,6 +682,7 @@ export default function PilotDarkLashesPage() {
         open={createDrawerOpen}
         isEditing={Boolean(editingSession)}
         form={form}
+        materialsCatalog={materialsCatalog}
         onClose={() => setCreateDrawerOpen(false)}
         onSubmit={handleSubmitSession}
       />
@@ -630,6 +694,14 @@ export default function PilotDarkLashesPage() {
         form={followUpForm}
         onClose={() => setFollowUpDrawerOpen(false)}
         onSubmit={handleSubmitFollowUp}
+      />
+
+      {/* Modal: Quản lý danh mục vật tư tiêu hao */}
+      <PilotMaterialModal
+        open={materialModalOpen}
+        materials={materialsCatalog}
+        onClose={() => setMaterialModalOpen(false)}
+        onRefresh={fetchMaterials}
       />
     </div>
   );
