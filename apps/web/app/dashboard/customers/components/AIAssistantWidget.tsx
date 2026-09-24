@@ -22,6 +22,16 @@ import { Tooltip } from 'antd';
 import type { AiChatSession, AiChatMessage, AiChatAction } from '@mos-lab/shared';
 import { AdaptiveDrawer } from '../../../../components/ui';
 import { aiApi } from '../../../../lib/api/ai.api';
+import {
+  AI_LAUNCHER_MARGIN,
+  AI_LAUNCHER_SIZE,
+  DRAG_THRESHOLD,
+  clampAiLauncherPosition,
+  persistAiLauncherPosition,
+  readAiLauncherPosition,
+  subscribeAiLauncherPosition,
+  type AiLauncherPosition,
+} from '../../../../lib/ai-assistant-launcher';
 
 export interface AIAssistantWidgetProps {
   themeMode: string;
@@ -67,6 +77,20 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
   const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
   const [appliedActions, setAppliedActions] = useState<Record<string, boolean>>({});
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Floating Launcher Drag & Persistence State
+  const [launcherPosition, setLauncherPosition] = useState<AiLauncherPosition | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+    latest: AiLauncherPosition;
+  } | null>(null);
+  const suppressClickUntilRef = useRef(0);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -255,20 +279,154 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
     setExpandedThinking((prev) => ({ ...prev, [messageId]: !prev[messageId] }));
   };
 
+  // Floating Launcher Position Sync & Drag Logic
+  useEffect(() => {
+    const syncPosition = () => {
+      if (typeof window === 'undefined') return;
+      const saved = readAiLauncherPosition();
+      if (saved) {
+        const clamped = clampAiLauncherPosition(
+          saved,
+          { width: window.innerWidth, height: window.innerHeight },
+          AI_LAUNCHER_SIZE,
+          AI_LAUNCHER_MARGIN
+        );
+        setLauncherPosition(clamped);
+      }
+    };
+
+    syncPosition();
+    const unsubscribe = subscribeAiLauncherPosition(syncPosition);
+
+    const onResize = () => {
+      setLauncherPosition((current) => {
+        if (!current || typeof window === 'undefined') return current;
+        const clamped = clampAiLauncherPosition(
+          current,
+          { width: window.innerWidth, height: window.innerHeight },
+          AI_LAUNCHER_SIZE,
+          AI_LAUNCHER_MARGIN
+        );
+        if (clamped.x !== current.x || clamped.y !== current.y) {
+          persistAiLauncherPosition(clamped);
+        }
+        return clamped;
+      });
+    };
+
+    window.addEventListener('resize', onResize);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const origin = { x: rect.left, y: rect.top };
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: origin.x,
+      originY: origin.y,
+      moved: false,
+      latest: origin,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+
+    if (!drag.moved && Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD) {
+      return;
+    }
+
+    if (!drag.moved) {
+      drag.moved = true;
+      setIsDragging(true);
+    }
+
+    const nextPos = clampAiLauncherPosition(
+      { x: drag.originX + deltaX, y: drag.originY + deltaY },
+      { width: window.innerWidth, height: window.innerHeight },
+      AI_LAUNCHER_SIZE,
+      AI_LAUNCHER_MARGIN
+    );
+    drag.latest = nextPos;
+    setLauncherPosition(nextPos);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    if (drag.moved) {
+      persistAiLauncherPosition(drag.latest);
+      suppressClickUntilRef.current = Date.now() + 200;
+    }
+
+    setIsDragging(false);
+    dragRef.current = null;
+    try {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+    } catch {
+      // Ignore if pointer capture was already released
+    }
+  };
+
   return (
     <>
-      {/* Floating Launcher Trigger */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <Tooltip title="mOS Copilot · Trợ lý AI riêng tư" placement="left">
+      {/* Floating Launcher Trigger with Drag & Drop + Persistence */}
+      <div
+        data-ai-assistant-launcher-container
+        className="fixed z-40 select-none"
+        style={{
+          left: launcherPosition ? `${launcherPosition.x}px` : undefined,
+          top: launcherPosition ? `${launcherPosition.y}px` : undefined,
+          right: launcherPosition ? undefined : '24px',
+          bottom: launcherPosition ? undefined : '24px',
+          width: AI_LAUNCHER_SIZE,
+          height: AI_LAUNCHER_SIZE,
+          touchAction: 'none',
+        }}
+      >
+        <Tooltip
+          title={isDragging ? 'Đang di chuyển...' : 'mOS Copilot · Trợ lý AI riêng tư (Kéo để di chuyển)'}
+          placement="left"
+        >
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            data-ai-assistant-launcher
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onClick={(e) => {
+              if (Date.now() < suppressClickUntilRef.current) {
+                e.preventDefault();
+                return;
+              }
+              setOpen(true);
+            }}
             aria-label="mOS Copilot (Riêng tư)"
-            className="group relative flex items-center justify-center w-12 h-12 rounded-full shadow-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-500 hover:to-pink-400 text-white transition-all duration-300 hover:scale-110 active:scale-95 shadow-indigo-500/30 border border-white/25 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+            className="group relative flex items-center justify-center w-12 h-12 rounded-full shadow-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-500 hover:to-pink-400 text-white shadow-indigo-500/30 border border-white/25 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+            style={{
+              cursor: isDragging ? 'grabbing' : 'grab',
+              transition: isDragging ? 'none' : 'transform 0.2s ease-out, box-shadow 0.2s',
+              transform: isDragging ? 'scale(1.08)' : undefined,
+            }}
           >
-            <Sparkles className="w-5 h-5 text-white transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+            <Sparkles className="w-5 h-5 text-white transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 pointer-events-none" />
             <span
-              className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm"
+              className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm pointer-events-none"
               title="Bảo mật riêng tư"
             >
               <ShieldCheck className="w-2 h-2 text-white" />

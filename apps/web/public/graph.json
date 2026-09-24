@@ -26990,8 +26990,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 108154,
-        "lineCount": 2633,
+        "sizeBytes": 108104,
+        "lineCount": 2632,
         "ext": ".ts"
       }
     },
@@ -28511,7 +28511,7 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20197,
+        "sizeBytes": 20151,
         "lineCount": 527,
         "ext": ".ts"
       }
@@ -29447,8 +29447,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7799,
-        "lineCount": 256,
+        "sizeBytes": 7875,
+        "lineCount": 257,
         "ext": ".ts"
       }
     },
@@ -29460,8 +29460,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11964,
-        "lineCount": 346,
+        "sizeBytes": 12083,
+        "lineCount": 347,
         "ext": ".ts"
       }
     },
@@ -30656,8 +30656,8 @@
       "filePath": "apps/api/src/scripts/data-migrations/20260915100000_add_phuong_giao_to_bk_control.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2408,
-        "lineCount": 62,
+        "sizeBytes": 2469,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -32801,8 +32801,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15949,
-        "lineCount": 353,
+        "sizeBytes": 15919,
+        "lineCount": 350,
         "ext": ".tsx"
       }
     },
@@ -33373,8 +33373,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29872,
-        "lineCount": 642,
+        "sizeBytes": 34836,
+        "lineCount": 800,
         "ext": ".tsx"
       }
     },
@@ -33503,8 +33503,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6434,
-        "lineCount": 211,
+        "sizeBytes": 8576,
+        "lineCount": 280,
         "ext": ".tsx"
       }
     },
@@ -35186,6 +35186,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/__tests__/ai-assistant-launcher.test.ts",
+      "type": "File",
+      "label": "ai-assistant-launcher.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/__tests__/ai-assistant-launcher.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1695,
+        "lineCount": 46,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/__tests__/bug-diagnostics.test.ts",
       "type": "File",
       "label": "bug-diagnostics.test.ts",
@@ -35234,6 +35247,19 @@
       "metadata": {
         "sizeBytes": 6044,
         "lineCount": 175,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/ai-assistant-launcher.ts",
+      "type": "File",
+      "label": "ai-assistant-launcher.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/ai-assistant-launcher.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2484,
+        "lineCount": 71,
         "ext": ".ts"
       }
     },
@@ -52904,6 +52930,13 @@
     {
       "id": "edge:file:apps/api/src/modules/payroll-ledger/shadow-settlement.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/payroll-ledger/shadow-settlement.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/pilot.service.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -78754,8 +78787,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 2795,
-    "totalEdges": 6036,
+    "totalNodes": 2797,
+    "totalEdges": 6037,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 152,
@@ -78764,14 +78797,14 @@
       "SharedType": 1022,
       "DesignToken": 12,
       "UIComponent": 196,
-      "File": 774
+      "File": 776
     },
     "edgeTypeCounts": {
       "EXPORTS": 1186,
       "HANDLES_ROUTE": 582,
       "RENDERS": 250,
       "USES_TOKEN": 198,
-      "IMPORTS": 419,
+      "IMPORTS": 420,
       "QUERIES_MODEL": 359,
       "API_CALL": 3042
     },

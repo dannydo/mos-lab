@@ -3,18 +3,12 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AIAssistantWidget } from '../AIAssistantWidget';
 import { aiApi } from '../../../../../lib/api/ai.api';
+import { safeStorage } from '../../../../../lib/safe-storage';
+import { AI_LAUNCHER_STORAGE_KEY } from '../../../../../lib/ai-assistant-launcher';
 
 // Mock AdaptiveDrawer
 vi.mock('../../../../../components/ui', () => ({
-  AdaptiveDrawer: ({
-    open,
-    title,
-    children,
-  }: {
-    open: boolean;
-    title: React.ReactNode;
-    children: React.ReactNode;
-  }) =>
+  AdaptiveDrawer: ({ open, title, children }: { open: boolean; title: React.ReactNode; children: React.ReactNode }) =>
     open ? (
       <div data-testid="assistant-drawer">
         <div data-testid="drawer-title">{title}</div>
@@ -35,7 +29,6 @@ vi.mock('../../../../../lib/api/ai.api', () => ({
     },
   },
 }));
-
 
 describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
   const mockCurrentUser = {
@@ -73,26 +66,14 @@ describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
   });
 
   it('renders the floating launcher button with Private Workspace indicator', () => {
-    render(
-      <AIAssistantWidget
-        themeMode="dark"
-        currentUser={mockCurrentUser}
-        onApplyFilter={vi.fn()}
-      />
-    );
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
 
     expect(screen.getByText('mOS Copilot')).toBeDefined();
     expect(screen.getByText('Riêng tư')).toBeDefined();
   });
 
   it('opens the private workspace drawer when launcher is clicked', async () => {
-    render(
-      <AIAssistantWidget
-        themeMode="dark"
-        currentUser={mockCurrentUser}
-        onApplyFilter={vi.fn()}
-      />
-    );
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
 
     const launcher = screen.getByText('mOS Copilot').closest('button');
     expect(launcher).not.toBeNull();
@@ -107,13 +88,7 @@ describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
   });
 
   it('displays quick suggestion prompts in empty state', async () => {
-    render(
-      <AIAssistantWidget
-        themeMode="dark"
-        currentUser={mockCurrentUser}
-        onApplyFilter={vi.fn()}
-      />
-    );
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
 
     await act(async () => {
       fireEvent.click(screen.getByText('mOS Copilot').closest('button')!);
@@ -158,13 +133,7 @@ describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
       },
     });
 
-    render(
-      <AIAssistantWidget
-        themeMode="dark"
-        currentUser={mockCurrentUser}
-        onApplyFilter={handleApplyFilter}
-      />
-    );
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={handleApplyFilter} />);
 
     // Open drawer
     await act(async () => {
@@ -206,5 +175,60 @@ describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
 
     // Verify button text updates to "Đã áp dụng vào bảng dữ liệu"
     expect(screen.getByText('Đã áp dụng vào bảng dữ liệu')).toBeDefined();
+  });
+
+  it('loads and applies persisted launcher position from storage', () => {
+    safeStorage.setItem(AI_LAUNCHER_STORAGE_KEY, JSON.stringify({ x: 150, y: 280 }));
+
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
+
+    const launcher = screen.getByRole('button', { name: /mOS Copilot/i });
+    const container = launcher.closest('[data-ai-assistant-launcher-container]') as HTMLElement;
+    expect(container?.style.left).toBe('150px');
+    expect(container?.style.top).toBe('280px');
+  });
+
+  it('supports pointer dragging and persists new position on pointer up', () => {
+    safeStorage.removeItem(AI_LAUNCHER_STORAGE_KEY);
+
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
+
+    const launcher = screen.getByRole('button', { name: /mOS Copilot/i });
+    launcher.setPointerCapture = vi.fn();
+    launcher.releasePointerCapture = vi.fn();
+    launcher.hasPointerCapture = vi.fn().mockReturnValue(true);
+    launcher.getBoundingClientRect = vi.fn().mockReturnValue({ left: 300, top: 400, width: 48, height: 48 });
+
+    // Pointer down
+    fireEvent.pointerDown(launcher, {
+      button: 0,
+      pointerId: 1,
+      clientX: 300,
+      clientY: 400,
+    });
+
+    // Pointer move (dragging past threshold)
+    fireEvent.pointerMove(launcher, {
+      pointerId: 1,
+      clientX: 380,
+      clientY: 450,
+    });
+
+    // Pointer up
+    fireEvent.pointerUp(launcher, {
+      pointerId: 1,
+      clientX: 380,
+      clientY: 450,
+    });
+
+    const saved = safeStorage.getItem(AI_LAUNCHER_STORAGE_KEY);
+    expect(saved).not.toBeNull();
+    const parsed = JSON.parse(saved!);
+    expect(parsed.x).toBe(380);
+    expect(parsed.y).toBe(450);
+
+    // Clicking immediately after drag should be suppressed
+    fireEvent.click(launcher);
+    expect(screen.queryByTestId('assistant-drawer')).toBeNull();
   });
 });
