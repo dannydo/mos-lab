@@ -3316,7 +3316,18 @@ model CrmPilotSession {
   customerName       String   @map("customer_name") @db.VarChar(120)
   customerPhone      String   @map("customer_phone") @db.VarChar(30)
   sessionDate        DateTime @map("session_date") @db.Date
+  bookingTime        String?  @map("booking_time") @db.VarChar(10)
+  bookingNote        String?  @map("booking_note") @db.Text
   technicianName     String?  @map("technician_name") @db.VarChar(100)
+  status             String   @default("BOOKED") @map("status") @db.VarChar(30)
+  checkInAt          DateTime? @map("check_in_at") @db.DateTime(0)
+  beforePhotoUrl     String?  @map("before_photo_url") @db.LongText
+  serviceDoneAt      DateTime? @map("service_done_at") @db.DateTime(0)
+  afterPhotoUrl      String?  @map("after_photo_url") @db.LongText
+  feedbackRating     Int?     @map("feedback_rating")
+  feedbackNote       String?  @map("feedback_note") @db.Text
+  checkOutAt         DateTime? @map("check_out_at") @db.DateTime(0)
+  totalDurationMinutes Int?   @map("total_duration_minutes")
   revenue            Decimal  @default(990000) @map("revenue") @db.Decimal(12, 2)
   materialCost       Decimal  @default(0) @map("material_cost") @db.Decimal(12, 2)
   technicianCost     Decimal  @default(0) @map("technician_cost") @db.Decimal(12, 2)
@@ -3336,6 +3347,7 @@ model CrmPilotSession {
   updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   @@index([pilotCode, sessionDate])
+  @@index([status])
   @@index([followUp24hStatus, followUp72hStatus])
   @@map("crm_pilot_sessions")
 }

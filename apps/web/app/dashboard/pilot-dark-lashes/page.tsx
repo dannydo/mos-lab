@@ -6,10 +6,12 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   AlertTriangle,
   Award,
+  Camera,
   CheckCircle,
   Clock,
   Edit,
   HeartHandshake,
+  Image as ImageIcon,
   Phone,
   Plus,
   RotateCw,
@@ -24,6 +26,7 @@ import {
 import dayjs from 'dayjs';
 import type {
   CreatePilotSessionRequest,
+  DarkLashesSessionStatus,
   PilotFollowUpStatus,
   PilotMetricsSummary,
   PilotSession,
@@ -36,6 +39,7 @@ import { DataTable } from '../../../components/ui/DataTable';
 import { CopyPhoneButton } from '../../../components/ui/CopyPhoneButton';
 import { PilotSessionDrawer } from './components/PilotSessionDrawer';
 import { PilotFollowUpDrawer } from './components/PilotFollowUpDrawer';
+import { PilotFlowDrawer } from './components/PilotFlowDrawer';
 
 const { Title } = Typography;
 
@@ -55,12 +59,15 @@ export default function PilotDarkLashesPage() {
   // Filters
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING_24H' | 'PENDING_72H' | 'DONE'>('ALL');
+  const [opStatusFilter, setOpStatusFilter] = useState<'ALL' | 'IN_SHOP' | 'CHECKED_OUT'>('ALL');
 
   // Drawers
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<PilotSession | null>(null);
   const [followUpDrawerOpen, setFollowUpDrawerOpen] = useState(false);
   const [selectedFollowUpSession, setSelectedFollowUpSession] = useState<PilotSession | null>(null);
+  const [flowDrawerOpen, setFlowDrawerOpen] = useState(false);
+  const [selectedFlowSession, setSelectedFlowSession] = useState<PilotSession | null>(null);
 
   const [form] = Form.useForm();
   const [followUpForm] = Form.useForm();
@@ -188,6 +195,17 @@ export default function PilotDarkLashesPage() {
     }
   };
 
+  const handleOpenFlow = (session: PilotSession) => {
+    setSelectedFlowSession(session);
+    setFlowDrawerOpen(true);
+  };
+
+  const handleFlowSessionUpdated = (updated: PilotSession) => {
+    setSelectedFlowSession(updated);
+    setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    fetchPilotData();
+  };
+
   // Filtered Sessions
   const filteredSessions = useMemo(() => {
     return sessions.filter((s) => {
@@ -206,9 +224,17 @@ export default function PilotDarkLashesPage() {
         matchStatus = s.followUp24hStatus === 'DONE' && s.followUp72hStatus === 'DONE';
       }
 
-      return matchSearch && matchStatus;
+      let matchOp = true;
+      const op = s.status || 'BOOKED';
+      if (opStatusFilter === 'IN_SHOP') {
+        matchOp = op !== 'BOOKED' && op !== 'CHECKED_OUT';
+      } else if (opStatusFilter === 'CHECKED_OUT') {
+        matchOp = op === 'CHECKED_OUT';
+      }
+
+      return matchSearch && matchStatus && matchOp;
     });
-  }, [sessions, searchText, statusFilter]);
+  }, [sessions, searchText, statusFilter, opStatusFilter]);
 
   // Columns definition
   const columns: ColumnsType<PilotSession> = [
@@ -217,8 +243,15 @@ export default function PilotDarkLashesPage() {
       dataIndex: 'sessionDate',
       key: 'sessionDate',
       width: 105,
-      render: (val: string) => (
-        <span className="tabular-nums font-medium text-xs">{val ? dayjs(val).format('DD/MM/YYYY') : '--'}</span>
+      render: (val: string, r) => (
+        <div className="flex flex-col">
+          <span className="tabular-nums font-medium text-xs">{val ? dayjs(val).format('DD/MM/YYYY') : '--'}</span>
+          {r.bookingTime && (
+            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {r.bookingTime}
+            </span>
+          )}
+        </div>
       ),
     },
     {
@@ -239,8 +272,113 @@ export default function PilotDarkLashesPage() {
               </span>
             )}
           </div>
+          {r.bookingNote && (
+            <div className="text-[11px] text-slate-400 truncate max-w-[170px]" title={r.bookingNote}>
+              📝 {r.bookingNote}
+            </div>
+          )}
         </div>
       ),
+    },
+    {
+      title: 'Tiến trình (7 bước)',
+      key: 'opStatus',
+      width: 175,
+      render: (_, r) => {
+        const status = r.status || 'BOOKED';
+        const labels: Record<DarkLashesSessionStatus, { text: string; color: string; badge: string }> = {
+          BOOKED: { text: '1. Đã đặt lịch', color: 'blue', badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+          CHECKED_IN: { text: '2. Đã đến shop', color: 'cyan', badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' },
+          BEFORE_PHOTO: { text: '3. Đã chụp Before', color: 'purple', badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
+          SERVICE_DONE: { text: '4. Làm xong', color: 'gold', badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
+          AFTER_PHOTO: { text: '5. Đã chụp After', color: 'geekblue', badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' },
+          FEEDBACK_DONE: { text: '6. Đã feedback', color: 'orange', badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
+          CHECKED_OUT: { text: '7. Đã check-out', color: 'emerald', badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' },
+        };
+        const cfg = labels[status] || labels.BOOKED;
+
+        return (
+          <div className="flex flex-col gap-1.5 items-start">
+            <span
+              className={`inline-flex items-center justify-center leading-none px-2 py-1 rounded-md text-xs font-semibold border ${cfg.badge}`}
+            >
+              {cfg.text}
+            </span>
+            <Button
+              size="small"
+              type="primary"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg h-7 px-2.5 flex items-center gap-1 shadow-sm"
+              onClick={() => handleOpenFlow(r)}
+            >
+              <AppIcon icon={Camera} size="sm" />
+              <span>Vận hành ca</span>
+            </Button>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Ảnh Before / After',
+      key: 'photos',
+      width: 140,
+      render: (_, r) => {
+        if (!r.beforePhotoUrl && !r.afterPhotoUrl) {
+          return <span className="text-slate-400 text-xs">Chưa có ảnh</span>;
+        }
+
+        return (
+          <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => handleOpenFlow(r)}>
+            {r.beforePhotoUrl ? (
+              <Tooltip title="Xem ảnh Before">
+                <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 shrink-0">
+                  <img src={r.beforePhotoUrl} alt="Before" className="w-full h-full object-cover" />
+                </div>
+              </Tooltip>
+            ) : (
+              <div className="w-10 h-10 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0">
+                Tr
+              </div>
+            )}
+
+            {r.afterPhotoUrl ? (
+              <Tooltip title="Xem ảnh After">
+                <div className="w-10 h-10 rounded-lg overflow-hidden border border-emerald-300 dark:border-emerald-700 bg-slate-900 shrink-0">
+                  <img src={r.afterPhotoUrl} alt="After" className="w-full h-full object-cover" />
+                </div>
+              </Tooltip>
+            ) : (
+              <div className="w-10 h-10 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0">
+                Sau
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Thời lượng',
+      key: 'duration',
+      width: 110,
+      render: (_, r) => {
+        if (r.totalDurationMinutes) {
+          return (
+            <div className="flex flex-col">
+              <span className="tabular-nums font-bold text-emerald-700 dark:text-emerald-400 text-xs">
+                {r.totalDurationMinutes} phút
+              </span>
+              <span className="text-[10px] text-slate-400">Total Visit</span>
+            </div>
+          );
+        }
+        if (r.checkInAt) {
+          return (
+            <span className="inline-flex items-center text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">
+              Đang làm...
+            </span>
+          );
+        }
+        return <span className="text-slate-400 text-xs">--</span>;
+      },
     },
     {
       title: 'Kỹ thuật viên',
@@ -380,14 +518,23 @@ export default function PilotDarkLashesPage() {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 130,
+      width: 150,
       render: (_, r) => (
         <div className="flex items-center gap-1">
-          <Tooltip title="Chăm sóc & Đánh giá CSAT">
+          <Tooltip title="Mở Flow Vận Hành 7 Bước (Chụp ảnh, Feedback, Check-out)">
             <Button
               type="text"
               size="small"
               className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              icon={<AppIcon icon={Camera} size="sm" />}
+              onClick={() => handleOpenFlow(r)}
+            />
+          </Tooltip>
+          <Tooltip title="Chăm sóc & Đánh giá CSAT">
+            <Button
+              type="text"
+              size="small"
+              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40"
               icon={<AppIcon icon={HeartHandshake} size="sm" />}
               onClick={() => handleOpenFollowUp(r)}
             />
@@ -590,6 +737,17 @@ export default function PilotDarkLashesPage() {
               <Radio.Button value="PENDING_72H">Chờ 72h ({metrics?.pendingFollowUp72hCount ?? 0})</Radio.Button>
               <Radio.Button value="DONE">Hoàn tất chăm sóc</Radio.Button>
             </Radio.Group>
+
+            <Radio.Group
+              value={opStatusFilter}
+              onChange={(e) => setOpStatusFilter(e.target.value)}
+              buttonStyle="solid"
+              className="rounded-xl"
+            >
+              <Radio.Button value="ALL">Mọi tiến trình</Radio.Button>
+              <Radio.Button value="IN_SHOP">Đang tại shop</Radio.Button>
+              <Radio.Button value="CHECKED_OUT">Đã check-out</Radio.Button>
+            </Radio.Group>
           </div>
 
           <div className="text-xs text-slate-500 tabular-nums">
@@ -630,6 +788,14 @@ export default function PilotDarkLashesPage() {
         form={followUpForm}
         onClose={() => setFollowUpDrawerOpen(false)}
         onSubmit={handleSubmitFollowUp}
+      />
+
+      {/* Drawer: Flow Vận Hành 7 Bước Uốn Mi Bóng Tối */}
+      <PilotFlowDrawer
+        open={flowDrawerOpen}
+        session={selectedFlowSession}
+        onClose={() => setFlowDrawerOpen(false)}
+        onSessionUpdated={handleFlowSessionUpdated}
       />
     </div>
   );

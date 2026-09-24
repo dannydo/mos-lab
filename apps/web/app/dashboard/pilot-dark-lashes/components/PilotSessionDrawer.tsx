@@ -95,6 +95,10 @@ export function PilotSessionDrawer({ open, isEditing, form, onClose, onSubmit }:
               <Input type="date" className="rounded-lg" />
             </Form.Item>
 
+            <Form.Item name="bookingTime" label="Giờ booking (HH:mm)" className="!mb-2">
+              <Input placeholder="VD: 14:30" className="rounded-lg tabular-nums" />
+            </Form.Item>
+
             <Form.Item name="technicianName" label="Kỹ thuật viên phụ trách" className="!mb-2">
               <Select
                 placeholder="Chọn KTV"
@@ -105,6 +109,10 @@ export function PilotSessionDrawer({ open, isEditing, form, onClose, onSubmit }:
                 ]}
                 allowClear
               />
+            </Form.Item>
+
+            <Form.Item name="bookingNote" label="Ghi chú booking" className="!mb-2 sm:col-span-2">
+              <Input.TextArea rows={2} placeholder="VD: Khách muốn mi cong tự nhiên, mắt nhạy cảm..." className="rounded-lg" />
             </Form.Item>
 
             <Form.Item name="source" label="Nguồn khách" className="!mb-2">
