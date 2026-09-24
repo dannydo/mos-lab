@@ -521,6 +521,50 @@ test('derives one canonical next owner and action for every workflow gate', () =
     ).type,
     'REVIEW_COMMIT'
   );
+  assert.equal(
+    bugReportNextAction(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        implementation: {
+          status: 'AWAITING_DEPLOY_REVIEW',
+          executionPhase: 'DEPLOY_APPROVED',
+          progressLabel: null,
+          lastProgressAt: null,
+          progressCount: 0,
+          checkpointCount: 0,
+          failureCode: null,
+          retainUntil: null,
+          startedAt: null,
+          completedAt: null,
+          updatedAt: new Date('2026-08-31T01:10:00.000Z'),
+        },
+      })
+    ).label,
+    'Đang triển khai production'
+  );
+  assert.equal(
+    bugReportNextAction(
+      progressSource({
+        status: 'IN_PROGRESS',
+        clarificationStatus: 'READY',
+        implementation: {
+          status: 'AWAITING_COMMIT_REVIEW',
+          executionPhase: 'COMMIT_APPROVED',
+          progressLabel: null,
+          lastProgressAt: null,
+          progressCount: 0,
+          checkpointCount: 0,
+          failureCode: null,
+          retainUntil: null,
+          startedAt: null,
+          completedAt: null,
+          updatedAt: new Date('2026-08-31T01:10:00.000Z'),
+        },
+      })
+    ).label,
+    'Đang tạo commit'
+  );
   const ideHandoff = bugReportNextAction(
     progressSource({
       status: 'APPROVED',

@@ -18,7 +18,7 @@ function normalizeDatePart(value: string | undefined, fallback: string): string 
   return datePart && ISO_DATE_PATTERN.test(datePart) ? datePart : fallback;
 }
 
-function buildActualCheckinOrdersCte(): string {
+function buildActualCheckinOrdersWithLiveCte(comboLiveSql: string): string {
   return `
     WITH filtered_orders AS (
       SELECT ro.order_id AS orderId, ro.actual_booking_date_start AS checkinTime
@@ -37,6 +37,16 @@ function buildActualCheckinOrdersCte(): string {
         AND ro.actual_booking_date_start IS NULL
         AND o.booking_date_start >= ?
         AND o.booking_date_start <= ?
+    ),
+    orders_with_live AS (
+      SELECT
+        fo.orderId,
+        fo.checkinTime,
+        o.user_id,
+        o.client_store_id,
+        CASE WHEN (${comboLiveSql}) THEN 1 ELSE 0 END AS is_combo_live
+      FROM filtered_orders fo
+      JOIN \`order\` o ON o.id = fo.orderId
     )
   `;
 }

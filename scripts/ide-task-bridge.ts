@@ -179,13 +179,26 @@ async function handleWaitAndDeploy(
     }
 
     if (!isAlreadyMerged) {
-      execFileSync('git', ['-C', mainRepo, 'merge', commitSha, '-m', `deploy(inbox): merge ${ticketBranch}`], {
-        stdio: 'inherit',
-      });
+      try {
+        execFileSync('git', ['-C', mainRepo, 'merge', commitSha, '-m', `deploy(inbox): merge ${ticketBranch}`], {
+          stdio: 'inherit',
+        });
+      } catch (mergeErr) {
+        process.stderr.write(`\n[BRIDGE ERROR] Merge conflict when merging ${commitSha} into main: ${mergeErr}\n`);
+        speakAsync(
+          'Anh Danny ơi, nhánh ticket bị xung đột khi merge vào main, cần xử lý xung đột git để hoàn tất deploy ạ.'
+        );
+        throw mergeErr;
+      }
 
       // 2. Push to origin main
       process.stdout.write('Pushing main to origin...\n');
-      execFileSync('git', ['-C', mainRepo, 'push', 'origin', 'main'], { stdio: 'inherit' });
+      try {
+        execFileSync('git', ['-C', mainRepo, 'push', 'origin', 'main'], { stdio: 'inherit' });
+      } catch (pushErr) {
+        process.stderr.write(`\n[BRIDGE ERROR] Failed to push main to origin: ${pushErr}\n`);
+        throw pushErr;
+      }
     } else {
       process.stdout.write(`Commit ${commitSha} is already merged into main.\n`);
     }

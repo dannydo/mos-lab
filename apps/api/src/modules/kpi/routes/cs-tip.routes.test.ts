@@ -63,7 +63,7 @@ test('CS Tip 3% bonus calculation and response formatting', async () => {
               },
             ];
           }
-          if (sql.includes('SELECT COUNT(DISTINCT fo.orderId) AS totalCount')) {
+          if (sql.includes('AS totalCount')) {
             // Count query
             return [{ totalCount: 1 }];
           }

@@ -1113,6 +1113,18 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
     );
   }
   if (implementation?.status === 'AWAITING_COMMIT_REVIEW') {
+    if (implementation.executionPhase === 'COMMIT_APPROVED' || implementation.executionPhase === 'IDE_COMMIT_HANDOFF') {
+      const agOwned = implementation.executionOwner === 'AG';
+      const autoOwned = implementation.executionOwner === 'AUTO';
+      const engineLabel = agOwned ? 'Antigravity' : autoOwned ? 'Worker (AG/Codex)' : 'Codex IDE';
+      return nextAction(
+        'AGENT',
+        'CONTINUE_IMPLEMENTATION',
+        'Đang tạo commit',
+        `${engineLabel} đang tự động tạo commit từ bản diff đã duyệt.`,
+        implementation.updatedAt
+      );
+    }
     return nextAction(
       'DANNY',
       'REVIEW_COMMIT',
@@ -1122,6 +1134,18 @@ export function bugReportNextAction(source: AgentProgressSource): BugReportNextA
     );
   }
   if (implementation?.status === 'AWAITING_DEPLOY_REVIEW') {
+    if (implementation.executionPhase === 'DEPLOY_APPROVED') {
+      const agOwned = implementation.executionOwner === 'AG';
+      const autoOwned = implementation.executionOwner === 'AUTO';
+      const engineLabel = agOwned ? 'Antigravity' : autoOwned ? 'Worker (AG/Codex)' : 'Codex IDE';
+      return nextAction(
+        'AGENT',
+        'CONTINUE_IMPLEMENTATION',
+        'Đang triển khai production',
+        `${engineLabel} đang tự động merge main và triển khai pipeline production. Chờ xác thực release marker.`,
+        implementation.updatedAt
+      );
+    }
     return nextAction(
       'DANNY',
       'REVIEW_DEPLOY',
