@@ -228,7 +228,7 @@ function sendAttachment(reply: FastifyReply, value: Awaited<ReturnType<typeof Bu
   return reply
     .header('Content-Type', value.attachment.mimeType)
     .header('Content-Length', String(value.buffer.length))
-    .header('Cache-Control', 'private, no-store')
+    .header('Cache-Control', 'private, max-age=86400, immutable')
     .header('Content-Disposition', `inline; filename*=UTF-8''${safeName}`)
     .send(value.buffer);
 }

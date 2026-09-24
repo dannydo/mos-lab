@@ -128,17 +128,35 @@ export function useBugReportDetail({
     [getDetail, hydrateForm, reportId]
   );
 
+  const lastReportIdRef = useRef<number | null>(null);
+  const lastLiveVersionRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
     if (!reportId) {
+      lastReportIdRef.current = null;
+      lastLiveVersionRef.current = undefined;
       setDetail(null);
       return;
     }
-    const hasInitial = Boolean(initialSummary && initialSummary.id === reportId);
-    if (hasInitial && initialSummary) {
-      hydrateForm(summaryToInitialDetail(initialSummary));
+
+    const isNewTicket = lastReportIdRef.current !== reportId;
+    const isNewVersion = liveVersion !== undefined && liveVersion !== lastLiveVersionRef.current;
+
+    lastReportIdRef.current = reportId;
+    if (liveVersion !== undefined) {
+      lastLiveVersionRef.current = liveVersion;
+    }
+
+    if (isNewTicket) {
+      const hasInitial = Boolean(initialSummary && initialSummary.id === reportId);
+      if (hasInitial && initialSummary) {
+        hydrateForm(summaryToInitialDetail(initialSummary));
+        void load(true);
+      } else {
+        void load(false);
+      }
+    } else if (isNewVersion) {
       void load(true);
-    } else {
-      void load(false);
     }
   }, [hydrateForm, initialSummary, load, reportId, liveVersion]);
 

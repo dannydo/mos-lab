@@ -9,6 +9,30 @@ import { AppIcon } from '../ui';
 
 const { Text } = Typography;
 
+const MAX_CACHED_ATTACHMENTS = 100;
+const ATTACHMENT_URL_CACHE = new Map<string, string>();
+const ATTACHMENT_PROMISE_CACHE = new Map<string, Promise<string>>();
+
+function pruneAttachmentCache(): void {
+  while (ATTACHMENT_URL_CACHE.size > MAX_CACHED_ATTACHMENTS) {
+    const oldestKey = ATTACHMENT_URL_CACHE.keys().next().value;
+    if (!oldestKey) break;
+    const oldUrl = ATTACHMENT_URL_CACHE.get(oldestKey);
+    ATTACHMENT_URL_CACHE.delete(oldestKey);
+    if (oldUrl) {
+      try {
+        URL.revokeObjectURL(oldUrl);
+      } catch {
+        // Ignore revocation errors
+      }
+    }
+  }
+}
+
+export function getCachedAttachmentUrl(reportId: number, attachmentId: number): string | null {
+  return ATTACHMENT_URL_CACHE.get(`${reportId}:${attachmentId}`) ?? null;
+}
+
 export function BugReportAttachmentPreview({
   reportId,
   attachment,
@@ -21,28 +45,52 @@ export function BugReportAttachmentPreview({
   /** A compact, click-to-enlarge preview for the reporter's evidence strip. */
   thumbnail?: boolean;
 }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const cacheKey = `${reportId}:${attachment.id}`;
+  const [url, setUrl] = useState<string | null>(() => ATTACHMENT_URL_CACHE.get(cacheKey) ?? null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    const cached = ATTACHMENT_URL_CACHE.get(cacheKey);
+    if (cached) {
+      setUrl(cached);
+      setFailed(false);
+      return;
+    }
+
     let active = true;
-    let objectUrl: string | null = null;
     setFailed(false);
-    void apiClient.bugReports
-      .attachment(reportId, attachment.id)
-      .then((blob) => {
+
+    let promise = ATTACHMENT_PROMISE_CACHE.get(cacheKey);
+    if (!promise) {
+      promise = apiClient.bugReports
+        .attachment(reportId, attachment.id)
+        .then((blob) => {
+          const objectUrl = URL.createObjectURL(blob);
+          ATTACHMENT_URL_CACHE.set(cacheKey, objectUrl);
+          ATTACHMENT_PROMISE_CACHE.delete(cacheKey);
+          pruneAttachmentCache();
+          return objectUrl;
+        })
+        .catch((error) => {
+          ATTACHMENT_PROMISE_CACHE.delete(cacheKey);
+          throw error;
+        });
+      ATTACHMENT_PROMISE_CACHE.set(cacheKey, promise);
+    }
+
+    promise
+      .then((objectUrl) => {
         if (!active) return;
-        objectUrl = URL.createObjectURL(blob);
         setUrl(objectUrl);
       })
       .catch(() => {
         if (active) setFailed(true);
       });
+
     return () => {
       active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [attachment.id, reportId]);
+  }, [attachment.id, cacheKey, reportId]);
 
   if (failed) {
     if (thumbnail) {

@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { BugReportDetail } from '@mos-lab/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeDetail } from '../__tests__/detail-fixtures';
+import { capturedAt, makeDetail } from '../__tests__/detail-fixtures';
 import { useBugReportDetail, type BugReportDetailOptions } from './useBugReportDetail';
 
 const feedback = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
@@ -306,5 +306,44 @@ describe('useBugReportDetail preserved request contract', () => {
     expect(feedback.error).toHaveBeenCalledWith('Không có quyền thay đổi ticket.');
     expect(result.current.saving).toBe(false);
     expect(result.current.detail?.status).toBe('NEW');
+  });
+
+  it('does not wipe detail or attachments when initialSummary updates during background sync', async () => {
+    const attachment = {
+      id: 501,
+      fileName: 'screenshot.png',
+      sizeBytes: 12345,
+      mimeType: 'image/png' as const,
+      storagePath: '/path/to/screenshot.png',
+      commentId: null,
+      deletedAt: null,
+      createdAt: capturedAt,
+    };
+    const detail = makeDetail({ attachments: [attachment] });
+    const actions = makeActions(detail);
+    const initialSummary = {
+      ...detail,
+      overlay: null,
+    };
+    const { result, rerender } = renderHook((props) => useBugReportDetail(props), {
+      initialProps: {
+        ...actions,
+        initialSummary,
+        liveVersion: 'v1',
+      },
+    });
+    await waitFor(() => expect(result.current.detail?.attachments).toHaveLength(1));
+    expect(actions.getDetail).toHaveBeenCalledTimes(1);
+
+    // Background list refresh provides a new initialSummary object reference with same liveVersion
+    rerender({
+      ...actions,
+      initialSummary: { ...initialSummary },
+      liveVersion: 'v1',
+    });
+
+    // detail must NOT be wiped with summaryToInitialDetail (attachments must remain intact!)
+    expect(result.current.detail?.attachments).toHaveLength(1);
+    expect(actions.getDetail).toHaveBeenCalledTimes(1);
   });
 });

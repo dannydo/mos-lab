@@ -8,6 +8,7 @@ import {
   Button,
   Descriptions,
   Dropdown,
+  Image,
   Input,
   List,
   Popconfirm,
@@ -704,13 +705,24 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
               <SectionCard
                 title={`Ảnh đính kèm (${detail.attachments.filter((item) => !item.deletedAt && !item.commentId).length})`}
               >
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {detail.attachments
-                    .filter((item) => !item.deletedAt && !item.commentId)
-                    .map((attachment) => (
-                      <ProtectedAttachment key={attachment.id} reportId={detail.id} attachment={attachment} />
-                    ))}
-                </div>
+                <Image.PreviewGroup
+                  preview={{
+                    zIndex: 12030,
+                    countRender: (current: number, total: number) => (
+                      <span className="tabular-nums font-semibold tracking-wide">
+                        {current} / {total}
+                      </span>
+                    ),
+                  }}
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {detail.attachments
+                      .filter((item) => !item.deletedAt && !item.commentId)
+                      .map((attachment) => (
+                        <ProtectedAttachment key={attachment.id} reportId={detail.id} attachment={attachment} />
+                      ))}
+                  </div>
+                </Image.PreviewGroup>
               </SectionCard>
             )}
 

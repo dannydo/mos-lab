@@ -9724,7 +9724,7 @@
         "path": "/api/pilot/feature-flag",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 23
+        "line": 19
       }
     },
     {
@@ -9738,7 +9738,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 33
+        "line": 29
       }
     },
     {
@@ -9752,7 +9752,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 44
+        "line": 40
       }
     },
     {
@@ -9766,7 +9766,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 55
+        "line": 51
       }
     },
     {
@@ -9780,7 +9780,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 67
+        "line": 63
       }
     },
     {
@@ -9794,7 +9794,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 83
+        "line": 79
       }
     },
     {
@@ -27627,7 +27627,7 @@
       "filePath": "apps/api/src/modules/bug-reports/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 69694,
+        "sizeBytes": 69710,
         "lineCount": 1712,
         "ext": ".ts"
       }
@@ -29460,8 +29460,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12032,
-        "lineCount": 356,
+        "sizeBytes": 11964,
+        "lineCount": 346,
         "ext": ".ts"
       }
     },
@@ -29473,8 +29473,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3749,
-        "lineCount": 97,
+        "sizeBytes": 3742,
+        "lineCount": 93,
         "ext": ".ts"
       }
     },
@@ -32593,8 +32593,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39188,
-        "lineCount": 851,
+        "sizeBytes": 39638,
+        "lineCount": 863,
         "ext": ".tsx"
       }
     },
@@ -32801,8 +32801,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14588,
-        "lineCount": 311,
+        "sizeBytes": 15949,
+        "lineCount": 353,
         "ext": ".tsx"
       }
     },
@@ -32814,8 +32814,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20812,
-        "lineCount": 553,
+        "sizeBytes": 21411,
+        "lineCount": 571,
         "ext": ".ts"
       }
     },
@@ -34335,8 +34335,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3619,
-        "lineCount": 108,
+        "sizeBytes": 3561,
+        "lineCount": 98,
         "ext": ".tsx"
       }
     },
@@ -34348,8 +34348,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10689,
-        "lineCount": 257,
+        "sizeBytes": 10631,
+        "lineCount": 247,
         "ext": ".tsx"
       }
     },
@@ -34361,8 +34361,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25043,
-        "lineCount": 668,
+        "sizeBytes": 24761,
+        "lineCount": 637,
         "ext": ".tsx"
       }
     },
