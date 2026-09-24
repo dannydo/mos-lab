@@ -39,6 +39,7 @@ import {
   type ReviewBugReportRequest,
   type TriageBugReportRequest,
   type InboxExecutionDashboardQuery,
+  type MyBugReportsResponse,
   formatBugReportKey,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
@@ -638,8 +639,15 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/bug-reports/mine', { preHandler: [requireAuth] }, async (request, reply) => {
+    const cacheKey = `bug-reports:mine:${request.user.id}`;
+    const cached = fastify.cache?.get<MyBugReportsResponse>(cacheKey);
+    if (cached) {
+      return reply.send(cached);
+    }
     try {
-      return reply.send(await BugReportService.mine(fastify, request.user.id));
+      const data = await BugReportService.mine(fastify, request.user.id);
+      fastify.cache?.set(cacheKey, data, 15_000);
+      return reply.send(data);
     } catch (error) {
       return sendError(fastify, reply, error, 'List own bug reports failed');
     }

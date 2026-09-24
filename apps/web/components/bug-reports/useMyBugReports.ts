@@ -50,8 +50,24 @@ export function useMyBugReports(enabled: boolean) {
   React.useEffect(() => {
     if (!enabled) return;
     void refresh();
-    const interval = window.setInterval(() => void refresh(), 60_000);
-    return () => window.clearInterval(interval);
+    const interval = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return;
+      }
+      void refresh();
+    }, 60_000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refresh();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [enabled, refresh]);
 
   const review = React.useCallback(

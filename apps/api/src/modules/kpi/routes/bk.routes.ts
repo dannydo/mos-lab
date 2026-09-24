@@ -126,6 +126,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const bkIdsStr = targetStaffIds.join(',');
 
       const normalizedStoreId = String(storeId || 'ALL').toUpperCase();
+      const cacheKey = `kpi:bk:leaderboard:${startDateTimeStr}:${endDateTimeStr}:${normalizedStoreId}:${gameId || 'NONE'}`;
+      const cached = fastify.cache?.get<SafeAny>(cacheKey);
+      if (cached) {
+        return reply.send(cached);
+      }
+
       let storeFilter = '';
       if (normalizedStoreId !== 'ALL') {
         storeFilter = `AND o.client_store_id IN (SELECT id FROM client_store WHERE UPPER(client_store_key) = '${normalizedStoreId.replace(/[^A-Z0-9_-]/g, '')}')`;
@@ -202,7 +208,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const avgConversionRate =
         grandTotalBookings > 0 ? Number(((grandDoneBookings / grandTotalBookings) * 100).toFixed(1)) : 0;
 
-      return {
+      const payload = {
         leaderboard,
         summary: {
           totalBookings: grandTotalBookings,
@@ -213,6 +219,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           totalPickups: grandTotalPickups,
         },
       };
+      fastify.cache?.set(cacheKey, payload, 60_000);
+      return payload;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Error fetching BK booking leaderboard');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi tải Leaderboard Booking.' });

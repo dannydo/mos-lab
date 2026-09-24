@@ -2138,17 +2138,17 @@ export class BugReportService {
   }
 
   static async mine(fastify: FastifyInstance, reporterStaffId: number): Promise<MyBugReportsResponse> {
-    const [rows, notifications, unreadCount, actionRequiredCount] = await fastify.prisma.crm.$transaction([
+    const [rows, notifications, unreadCount, actionRequiredCount] = await Promise.all([
       fastify.prisma.crm.crmBugReport.findMany({
         where: { reporterStaffId },
         include: mineReportInclude,
         orderBy: { createdAt: 'desc' },
-        take: 100,
+        take: 40,
       }),
       fastify.prisma.crm.crmBugReportNotification.findMany({
         where: { recipientStaffId: reporterStaffId },
         orderBy: { createdAt: 'desc' },
-        take: 50,
+        take: 40,
       }),
       fastify.prisma.crm.crmBugReportNotification.count({
         where: { recipientStaffId: reporterStaffId, readAt: null },
