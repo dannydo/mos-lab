@@ -2491,10 +2491,46 @@
         "dbSource": "crm",
         "modelName": "CrmPilotSession",
         "tableName": "crm_pilot_sessions",
-        "fieldCount": 24,
+        "fieldCount": 36,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmPilotMaterial",
+      "type": "PrismaModel",
+      "label": "crm.CrmPilotMaterial",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmPilotMaterial",
+        "tableName": "crm_pilot_materials",
+        "fieldCount": 11,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmPilotSessionMaterial",
+      "type": "PrismaModel",
+      "label": "crm.CrmPilotSessionMaterial",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmPilotSessionMaterial",
+        "tableName": "crm_pilot_session_materials",
+        "fieldCount": 12,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["sessionId", "materialId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -8198,7 +8234,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1034
+        "line": 1039
       }
     },
     {
@@ -9714,6 +9750,20 @@
       }
     },
     {
+      "id": "route:GET:/api/pilot/media/:filename",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/media/:filename",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/media/:filename",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 33
+      }
+    },
+    {
       "id": "route:GET:/api/pilot/feature-flag",
       "type": "FastifyRoute",
       "label": "GET /api/pilot/feature-flag",
@@ -9724,7 +9774,63 @@
         "path": "/api/pilot/feature-flag",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 19
+        "line": 50
+      }
+    },
+    {
+      "id": "route:GET:/api/pilot/materials",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/materials",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/materials",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 64
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/materials",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/materials",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/materials",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 75
+      }
+    },
+    {
+      "id": "route:PATCH:/api/pilot/materials/:id",
+      "type": "FastifyRoute",
+      "label": "PATCH /api/pilot/materials/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "PATCH",
+        "path": "/api/pilot/materials/:id",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 86
+      }
+    },
+    {
+      "id": "route:DELETE:/api/pilot/materials/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/pilot/materials/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/pilot/materials/:id",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 102
       }
     },
     {
@@ -9738,7 +9844,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 29
+        "line": 117
       }
     },
     {
@@ -9752,7 +9858,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 40
+        "line": 128
       }
     },
     {
@@ -9766,7 +9872,105 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 51
+        "line": 139
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/check-in",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/check-in",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/check-in",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 151
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/before-photo",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/before-photo",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/before-photo",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 167
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/service-done",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/service-done",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/service-done",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 183
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/after-photo",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/after-photo",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/after-photo",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 199
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/feedback",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/feedback",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/feedback",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 215
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/check-out",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/check-out",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/check-out",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 231
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/upload-photo",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/upload-photo",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/upload-photo",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 247
       }
     },
     {
@@ -9780,7 +9984,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 63
+        "line": 258
       }
     },
     {
@@ -9794,7 +9998,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 79
+        "line": 274
       }
     },
     {
@@ -11498,8 +11702,14 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "metadata": {
         "routePath": "/dashboard/pilot-dark-lashes",
-        "apiCallsCount": 4,
-        "apiCalls": ["pilot.listSessions", "pilot.updateSession", "pilot.createSession", "pilot.deleteSession"]
+        "apiCallsCount": 5,
+        "apiCalls": [
+          "pilot.listSessions",
+          "pilot.listMaterials",
+          "pilot.updateSession",
+          "pilot.createSession",
+          "pilot.deleteSession"
+        ]
       }
     },
     {
@@ -22657,6 +22867,66 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:PilotMaterial",
+      "type": "SharedType",
+      "label": "PilotMaterial",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotMaterial",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreatePilotMaterialRequest",
+      "type": "SharedType",
+      "label": "CreatePilotMaterialRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreatePilotMaterialRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdatePilotMaterialRequest",
+      "type": "SharedType",
+      "label": "UpdatePilotMaterialRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdatePilotMaterialRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSessionMaterialItem",
+      "type": "SharedType",
+      "label": "PilotSessionMaterialItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSessionMaterialItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:DarkLashesSessionStatus",
+      "type": "SharedType",
+      "label": "DarkLashesSessionStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "DarkLashesSessionStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:PilotSession",
       "type": "SharedType",
       "label": "PilotSession",
@@ -22689,6 +22959,78 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdatePilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CheckInPilotSessionRequest",
+      "type": "SharedType",
+      "label": "CheckInPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CheckInPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BeforePhotoPilotSessionRequest",
+      "type": "SharedType",
+      "label": "BeforePhotoPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BeforePhotoPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ServiceDonePilotSessionRequest",
+      "type": "SharedType",
+      "label": "ServiceDonePilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ServiceDonePilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AfterPhotoPilotSessionRequest",
+      "type": "SharedType",
+      "label": "AfterPhotoPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AfterPhotoPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FeedbackPilotSessionRequest",
+      "type": "SharedType",
+      "label": "FeedbackPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FeedbackPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CheckOutPilotSessionRequest",
+      "type": "SharedType",
+      "label": "CheckOutPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CheckOutPilotSessionRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -26509,8 +26851,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12505971,
-        "lineCount": 271454,
+        "sizeBytes": 12668116,
+        "lineCount": 275265,
         "ext": ".ts"
       }
     },
@@ -27874,8 +28216,8 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49633,
-        "lineCount": 1181,
+        "sizeBytes": 49725,
+        "lineCount": 1184,
         "ext": ".ts"
       }
     },
@@ -27952,8 +28294,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49664,
-        "lineCount": 1228,
+        "sizeBytes": 49987,
+        "lineCount": 1233,
         "ext": ".ts"
       }
     },
@@ -29447,8 +29789,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7875,
-        "lineCount": 257,
+        "sizeBytes": 17976,
+        "lineCount": 576,
         "ext": ".ts"
       }
     },
@@ -29460,8 +29802,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12083,
-        "lineCount": 347,
+        "sizeBytes": 33623,
+        "lineCount": 988,
         "ext": ".ts"
       }
     },
@@ -29473,8 +29815,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3742,
-        "lineCount": 93,
+        "sizeBytes": 11833,
+        "lineCount": 288,
         "ext": ".ts"
       }
     },
@@ -30656,8 +30998,8 @@
       "filePath": "apps/api/src/scripts/data-migrations/20260915100000_add_phuong_giao_to_bk_control.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2469,
-        "lineCount": 64,
+        "sizeBytes": 2408,
+        "lineCount": 62,
         "ext": ".ts"
       }
     },
@@ -33503,8 +33845,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8576,
-        "lineCount": 280,
+        "sizeBytes": 8293,
+        "lineCount": 235,
         "ext": ".tsx"
       }
     },
@@ -34328,6 +34670,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
+      "type": "File",
+      "label": "PilotFlowDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 40947,
+        "lineCount": 858,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx",
       "type": "File",
       "label": "PilotFollowUpDrawer.tsx",
@@ -34341,6 +34696,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialModal.tsx",
+      "type": "File",
+      "label": "PilotMaterialModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9769,
+        "lineCount": 280,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "type": "File",
       "label": "PilotSessionDrawer.tsx",
@@ -34348,8 +34716,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10631,
-        "lineCount": 247,
+        "sizeBytes": 18127,
+        "lineCount": 413,
         "ext": ".tsx"
       }
     },
@@ -34361,8 +34729,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24761,
-        "lineCount": 637,
+        "sizeBytes": 35075,
+        "lineCount": 875,
         "ext": ".tsx"
       }
     },
@@ -35401,8 +35769,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1400,
-        "lineCount": 40,
+        "sizeBytes": 3803,
+        "lineCount": 87,
         "ext": ".ts"
       }
     },
@@ -36324,8 +36692,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2478,
-        "lineCount": 98,
+        "sizeBytes": 5334,
+        "lineCount": 213,
         "ext": ".ts"
       }
     },
@@ -37481,6 +37849,20 @@
     {
       "id": "edge:prisma:crm:CrmPilotSession:ws:apps/api",
       "source": "prisma:crm:CrmPilotSession",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmPilotMaterial:ws:apps/api",
+      "source": "prisma:crm:CrmPilotMaterial",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmPilotSessionMaterial:ws:apps/api",
+      "source": "prisma:crm:CrmPilotSessionMaterial",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -41063,8 +41445,43 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/pilot/media/:filename:ws:apps/api",
+      "source": "route:GET:/api/pilot/media/:filename",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/pilot/feature-flag:ws:apps/api",
       "source": "route:GET:/api/pilot/feature-flag",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/pilot/materials:ws:apps/api",
+      "source": "route:GET:/api/pilot/materials",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/materials:ws:apps/api",
+      "source": "route:POST:/api/pilot/materials",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PATCH:/api/pilot/materials/:id:ws:apps/api",
+      "source": "route:PATCH:/api/pilot/materials/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/pilot/materials/:id:ws:apps/api",
+      "source": "route:DELETE:/api/pilot/materials/:id",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -41086,6 +41503,55 @@
     {
       "id": "edge:route:POST:/api/pilot/sessions:ws:apps/api",
       "source": "route:POST:/api/pilot/sessions",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/check-in:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/check-in",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/before-photo:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/before-photo",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/service-done:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/service-done",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/after-photo:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/after-photo",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/feedback:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/feedback",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/check-out:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/check-out",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/upload-photo:ws:apps/api",
+      "source": "route:POST:/api/pilot/upload-photo",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -48441,6 +48907,41 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:PilotMaterial:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotMaterial",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreatePilotMaterialRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreatePilotMaterialRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdatePilotMaterialRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdatePilotMaterialRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSessionMaterialItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSessionMaterialItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:DarkLashesSessionStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:DarkLashesSessionStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PilotSession:ws:packages/shared",
       "source": "type:@mos-lab/shared:PilotSession",
       "target": "ws:packages/shared",
@@ -48457,6 +48958,48 @@
     {
       "id": "edge:type:@mos-lab/shared:UpdatePilotSessionRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:UpdatePilotSessionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CheckInPilotSessionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CheckInPilotSessionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BeforePhotoPilotSessionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BeforePhotoPilotSessionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ServiceDonePilotSessionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ServiceDonePilotSessionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AfterPhotoPilotSessionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AfterPhotoPilotSessionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FeedbackPilotSessionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FeedbackPilotSessionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CheckOutPilotSessionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CheckOutPilotSessionRequest",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -54538,8 +55081,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -57068,6 +57632,13 @@
       "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotSession",
       "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
       "target": "prisma:crm:CrmPilotSession",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotMaterial",
+      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "target": "prisma:crm:CrmPilotMaterial",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -61755,6 +62326,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/pilot/media/:filename",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/pilot/metrics",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/pilot/metrics",
@@ -62332,6 +62910,13 @@
       "id": "edge:page:/dashboard/catalog:route:POST:/api/fal/logs/:orderServiceId/approval",
       "source": "page:/dashboard/catalog",
       "target": "route:POST:/api/fal/logs/:orderServiceId/approval",
+      "type": "API_CALL",
+      "label": "CALLS catalog.updateService"
+    },
+    {
+      "id": "edge:page:/dashboard/catalog:route:POST:/api/pilot/sessions/:id/service-done",
+      "source": "page:/dashboard/catalog",
+      "target": "route:POST:/api/pilot/sessions/:id/service-done",
       "type": "API_CALL",
       "label": "CALLS catalog.updateService"
     },
@@ -63676,6 +64261,13 @@
       "id": "edge:page:/dashboard/design-system:route:PUT:/api/menu-access/policies/:menuKey",
       "source": "page:/dashboard/design-system",
       "target": "route:PUT:/api/menu-access/policies/:menuKey",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/pilot/media/:filename",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/pilot/media/:filename",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -67285,9 +67877,44 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/media/:filename",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/feature-flag",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/pilot/feature-flag",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/materials",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/materials",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/materials",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/materials",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PATCH:/api/pilot/materials/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PATCH:/api/pilot/materials/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/pilot/materials/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/pilot/materials/:id",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -67309,6 +67936,55 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/pilot/sessions",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/check-in",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/check-in",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/before-photo",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/before-photo",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/service-done",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/service-done",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/after-photo",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/after-photo",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/feedback",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/feedback",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/check-out",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/check-out",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/upload-photo",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/upload-photo",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -71359,9 +72035,44 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/media/:filename",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/feature-flag",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/pilot/feature-flag",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/materials",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/materials",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/materials",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/materials",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PATCH:/api/pilot/materials/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PATCH:/api/pilot/materials/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/pilot/materials/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/pilot/materials/:id",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -71383,6 +72094,55 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/pilot/sessions",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/check-in",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/check-in",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/before-photo",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/before-photo",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/service-done",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/service-done",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/after-photo",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/after-photo",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/feedback",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/feedback",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/check-out",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/check-out",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/upload-photo",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/upload-photo",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -72444,9 +73204,44 @@
       "label": "CALLS pilot.listSessions"
     },
     {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/media/:filename",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/feature-flag",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:GET:/api/pilot/feature-flag",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/materials",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/materials",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/materials",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/materials",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:PATCH:/api/pilot/materials/:id",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:PATCH:/api/pilot/materials/:id",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:DELETE:/api/pilot/materials/:id",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:DELETE:/api/pilot/materials/:id",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -72468,6 +73263,55 @@
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:POST:/api/pilot/sessions",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/check-in",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/check-in",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/before-photo",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/before-photo",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/service-done",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/service-done",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/after-photo",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/after-photo",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/feedback",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/feedback",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/check-out",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/check-out",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/upload-photo",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/upload-photo",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -74526,6 +75370,13 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:PUT:/api/menu-access/policies/:menuKey",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:PUT:/api/menu-access/policies/:menuKey",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/pilot/media/:filename",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/pilot/media/:filename",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -78114,9 +78965,44 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/media/:filename",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/feature-flag",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/pilot/feature-flag",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/materials",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/materials",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/materials",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/materials",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PATCH:/api/pilot/materials/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PATCH:/api/pilot/materials/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/pilot/materials/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/pilot/materials/:id",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -78138,6 +79024,55 @@
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/pilot/sessions",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/check-in",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/check-in",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/before-photo",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/before-photo",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/service-done",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/service-done",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/after-photo",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/after-photo",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/feedback",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/feedback",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/check-out",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/check-out",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/upload-photo",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/upload-photo",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -78787,31 +79722,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2797,
-    "totalEdges": 6037,
+    "totalNodes": 2824,
+    "totalEdges": 6118,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 152,
-      "FastifyRoute": 582,
+      "PrismaModel": 154,
+      "FastifyRoute": 594,
       "Component": 54,
-      "SharedType": 1022,
+      "SharedType": 1033,
       "DesignToken": 12,
       "UIComponent": 196,
-      "File": 776
+      "File": 778
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1186,
-      "HANDLES_ROUTE": 582,
+      "EXPORTS": 1199,
+      "HANDLES_ROUTE": 594,
       "RENDERS": 250,
       "USES_TOKEN": 198,
-      "IMPORTS": 420,
-      "QUERIES_MODEL": 359,
-      "API_CALL": 3042
+      "IMPORTS": 423,
+      "QUERIES_MODEL": 360,
+      "API_CALL": 3094
     },
-    "fastifyRouteCount": 587,
-    "prismaModelCount": 152,
+    "fastifyRouteCount": 599,
+    "prismaModelCount": 154,
     "nextPageCount": 54,
-    "sharedTypeCount": 1022
+    "sharedTypeCount": 1033
   },
   "routes": [
     {
@@ -82288,7 +83223,42 @@
     },
     {
       "method": "GET",
+      "path": "/api/pilot/media/:filename",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
       "path": "/api/pilot/feature-flag",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pilot/materials",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/materials",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/pilot/materials/:id",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/pilot/materials/:id",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
@@ -82310,6 +83280,55 @@
     {
       "method": "POST",
       "path": "/api/pilot/sessions",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/check-in",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/before-photo",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/service-done",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/after-photo",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/feedback",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/check-out",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/upload-photo",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
@@ -84153,10 +85172,28 @@
       "dbSource": "crm",
       "modelName": "CrmPilotSession",
       "tableName": "crm_pilot_sessions",
-      "fieldCount": 24,
+      "fieldCount": 36,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmPilotMaterial",
+      "tableName": "crm_pilot_materials",
+      "fieldCount": 11,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmPilotSessionMaterial",
+      "tableName": "crm_pilot_session_materials",
+      "fieldCount": 12,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["sessionId", "materialId"]
     },
     {
       "dbSource": "legacy",

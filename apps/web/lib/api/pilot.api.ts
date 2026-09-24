@@ -34,6 +34,41 @@ export const pilotApi = {
       const response = await api.patch(`/pilot/sessions/${id}`, data);
       return response.data;
     },
+    checkIn: async (id: number, data?: { checkInAt?: string }): Promise<PilotSession> => {
+      const response = await api.post(`/pilot/sessions/${id}/check-in`, data || {});
+      return response.data;
+    },
+    saveBeforePhoto: async (id: number, data: { beforePhotoUrl: string }): Promise<PilotSession> => {
+      const response = await api.post(`/pilot/sessions/${id}/before-photo`, data);
+      return response.data;
+    },
+    markServiceDone: async (id: number, data?: { serviceDoneAt?: string }): Promise<PilotSession> => {
+      const response = await api.post(`/pilot/sessions/${id}/service-done`, data || {});
+      return response.data;
+    },
+    saveAfterPhoto: async (id: number, data: { afterPhotoUrl: string }): Promise<PilotSession> => {
+      const response = await api.post(`/pilot/sessions/${id}/after-photo`, data);
+      return response.data;
+    },
+    saveFeedback: async (
+      id: number,
+      data: { feedbackRating: number; feedbackNote?: string }
+    ): Promise<PilotSession> => {
+      const response = await api.post(`/pilot/sessions/${id}/feedback`, data);
+      return response.data;
+    },
+    checkOut: async (id: number, data?: { checkOutAt?: string }): Promise<PilotSession> => {
+      const response = await api.post(`/pilot/sessions/${id}/check-out`, data || {});
+      return response.data;
+    },
+    uploadPhoto: async (data: {
+      photoData: string;
+      mimeType?: string;
+      filename?: string;
+    }): Promise<{ photoUrl: string }> => {
+      const response = await api.post('/pilot/upload-photo', data);
+      return response.data;
+    },
     deleteSession: async (id: number): Promise<{ success: boolean }> => {
       const response = await api.delete(`/pilot/sessions/${id}`);
       return response.data;

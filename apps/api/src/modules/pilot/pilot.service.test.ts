@@ -324,7 +324,7 @@ test('PilotService: createSession with materials calculates total materialCost a
     { id: 3, name: 'Miếng silicon', costPerUnit: 16000, unit: 'cặp' },
   ];
 
-  let _createdSessionData: SafeAny = null;
+  let createdSessionData: SafeAny = null;
   let createdSessionMaterials: SafeAny[] = [];
 
   const fakeFastify: SafeAny = {
@@ -400,7 +400,16 @@ test('PilotService: listSessions computes totalConsumablesCost and avgConsumable
       createdAt: new Date(),
       updatedAt: new Date(),
       materials: [
-        { id: 1, sessionId: 1, materialId: 1, materialName: 'Thuốc uốn', unit: 'ml', usageAmount: 1, costPerUnit: 30000, calculatedCost: 30000 },
+        {
+          id: 1,
+          sessionId: 1,
+          materialId: 1,
+          materialName: 'Thuốc uốn',
+          unit: 'ml',
+          usageAmount: 1,
+          costPerUnit: 30000,
+          calculatedCost: 30000,
+        },
       ],
     },
     {
@@ -443,4 +452,125 @@ test('PilotService: listSessions computes totalConsumablesCost and avgConsumable
   assert.equal(response.metrics.avgConsumablesCostPerSession, 75000); // 150,000 / 2 = 75,000
   assert.equal(response.sessions[0].materials?.length, 1);
   assert.equal(response.sessions[0].materials?.[0].calculatedCost, 30000);
+});
+
+test('PilotService: 7-step operational flow transitions and validations', async () => {
+  let sessionState: SafeAny = {
+    id: 101,
+    pilotCode: 'DARK_LASHES',
+    branchCode: 'detham',
+    customerName: 'Hoàng Yến',
+    customerPhone: '0988776655',
+    sessionDate: new Date('2026-09-24'),
+    bookingTime: '10:00',
+    bookingNote: 'Khách muốn mi cong tự nhiên',
+    technicianName: 'Cô Đẫm',
+    status: 'BOOKED',
+    checkInAt: null,
+    beforePhotoUrl: null,
+    serviceDoneAt: null,
+    afterPhotoUrl: null,
+    feedbackRating: null,
+    feedbackNote: null,
+    checkOutAt: null,
+    totalDurationMinutes: null,
+    revenue: 990000,
+    materialCost: 0,
+    technicianCost: 0,
+    commissionAmount: 0,
+    promoAmount: 0,
+    refundAmount: 0,
+    totalDirectCost: 0,
+    contributionMargin: 990000,
+    followUp24hStatus: 'PENDING',
+    followUp72hStatus: 'PENDING',
+    csatScore: null,
+    issues: null,
+    notes: null,
+    source: null,
+    createdByStaffId: null,
+    createdAt: new Date('2026-09-24T10:00:00.000Z'),
+    updatedAt: new Date('2026-09-24T10:00:00.000Z'),
+  };
+
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotSession: {
+          findUnique: async () => sessionState,
+          update: async ({ data }: SafeAny) => {
+            sessionState = { ...sessionState, ...data };
+            return sessionState;
+          },
+        },
+      },
+    },
+  };
+
+  // Step 2: Check-in
+  const checkInRes = await PilotService.checkIn(fakeFastify, 101, '2026-09-24T10:05:00.000Z');
+  assert.equal(checkInRes.status, 'CHECKED_IN');
+  assert.ok(checkInRes.checkInAt);
+
+  // Step 3 validation: cannot complete service if beforePhoto is missing
+  await assert.rejects(
+    async () => {
+      await PilotService.markServiceDone(fakeFastify, 101);
+    },
+    {
+      name: 'PilotServiceError',
+      message: 'Bắt buộc phải chụp/upload ảnh Trước khi làm (Before Photo) trước khi hoàn tất dịch vụ.',
+    }
+  );
+
+  // Step 3: Before Photo
+  const beforePhotoRes = await PilotService.saveBeforePhoto(fakeFastify, 101, 'https://example.com/photos/before.jpg');
+  assert.equal(beforePhotoRes.status, 'BEFORE_PHOTO');
+  assert.equal(beforePhotoRes.beforePhotoUrl, 'https://example.com/photos/before.jpg');
+
+  // Step 4: Service Done
+  const serviceDoneRes = await PilotService.markServiceDone(fakeFastify, 101, '2026-09-24T10:50:00.000Z');
+  assert.equal(serviceDoneRes.status, 'SERVICE_DONE');
+  assert.ok(serviceDoneRes.serviceDoneAt);
+
+  // Step 5: After Photo
+  const afterPhotoRes = await PilotService.saveAfterPhoto(fakeFastify, 101, 'https://example.com/photos/after.jpg');
+  assert.equal(afterPhotoRes.status, 'AFTER_PHOTO');
+  assert.equal(afterPhotoRes.afterPhotoUrl, 'https://example.com/photos/after.jpg');
+
+  // Check-out must fail if feedback is missing
+  await assert.rejects(
+    async () => {
+      await PilotService.checkOut(fakeFastify, 101, '2026-09-24T11:05:00.000Z');
+    },
+    {
+      name: 'PilotServiceError',
+      message: 'Chưa có đánh giá Feedback tại chỗ của khách. Bắt buộc hoàn tất trước khi Check-out.',
+    }
+  );
+
+  // Feedback validation: rating out of bounds
+  await assert.rejects(
+    async () => {
+      await PilotService.saveFeedback(fakeFastify, 101, 6);
+    },
+    {
+      name: 'PilotServiceError',
+      message: 'Đánh giá của khách hàng phải là số từ 1 đến 5 sao.',
+    }
+  );
+
+  // Step 6: Submit valid feedback
+  const feedbackRes = await PilotService.saveFeedback(fakeFastify, 101, 5, 'Dịch vụ rất êm ái, mi đẹp tự nhiên');
+  assert.equal(feedbackRes.status, 'FEEDBACK_DONE');
+  assert.equal(feedbackRes.feedbackRating, 5);
+  assert.equal(feedbackRes.csatScore, 5);
+  assert.equal(feedbackRes.feedbackNote, 'Dịch vụ rất êm ái, mi đẹp tự nhiên');
+
+  // Step 7: Check-out and Duration Calculation
+  // Check-in was 10:05:00, Check-out is 11:05:00 -> 60 minutes
+  const checkOutRes = await PilotService.checkOut(fakeFastify, 101, '2026-09-24T11:05:00.000Z');
+  assert.equal(checkOutRes.status, 'CHECKED_OUT');
+  assert.ok(checkOutRes.checkOutAt);
+  assert.equal(checkOutRes.totalDurationMinutes, 60);
 });

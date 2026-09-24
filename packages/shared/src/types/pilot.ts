@@ -43,6 +43,9 @@ export interface PilotSessionMaterialItem {
   calculatedCost?: number;
 }
 
+export type DarkLashesSessionStatus =
+  'BOOKED' | 'CHECKED_IN' | 'BEFORE_PHOTO' | 'SERVICE_DONE' | 'AFTER_PHOTO' | 'FEEDBACK_DONE' | 'CHECKED_OUT';
+
 export interface PilotSession {
   id: number;
   pilotCode: string;
@@ -50,7 +53,18 @@ export interface PilotSession {
   customerName: string;
   customerPhone: string;
   sessionDate: string; // YYYY-MM-DD
+  bookingTime: string | null; // HH:mm
+  bookingNote: string | null;
   technicianName: string | null;
+  status: DarkLashesSessionStatus;
+  checkInAt: string | null; // ISO string
+  beforePhotoUrl: string | null;
+  serviceDoneAt: string | null; // ISO string
+  afterPhotoUrl: string | null;
+  feedbackRating: number | null; // 1 - 5 stars
+  feedbackNote: string | null;
+  checkOutAt: string | null; // ISO string
+  totalDurationMinutes: number | null;
   revenue: number;
   materialCost: number;
   technicianCost: number;
@@ -77,7 +91,18 @@ export interface CreatePilotSessionRequest {
   customerName: string;
   customerPhone: string;
   sessionDate: string;
+  bookingTime?: string | null;
+  bookingNote?: string | null;
   technicianName?: string | null;
+  status?: DarkLashesSessionStatus;
+  checkInAt?: string | null;
+  beforePhotoUrl?: string | null;
+  serviceDoneAt?: string | null;
+  afterPhotoUrl?: string | null;
+  feedbackRating?: number | null;
+  feedbackNote?: string | null;
+  checkOutAt?: string | null;
+  totalDurationMinutes?: number | null;
   revenue?: number;
   materialCost?: number;
   technicianCost?: number;
@@ -97,7 +122,18 @@ export interface UpdatePilotSessionRequest {
   customerName?: string;
   customerPhone?: string;
   sessionDate?: string;
+  bookingTime?: string | null;
+  bookingNote?: string | null;
   technicianName?: string | null;
+  status?: DarkLashesSessionStatus;
+  checkInAt?: string | null;
+  beforePhotoUrl?: string | null;
+  serviceDoneAt?: string | null;
+  afterPhotoUrl?: string | null;
+  feedbackRating?: number | null;
+  feedbackNote?: string | null;
+  checkOutAt?: string | null;
+  totalDurationMinutes?: number | null;
   revenue?: number;
   materialCost?: number;
   technicianCost?: number;
@@ -111,6 +147,31 @@ export interface UpdatePilotSessionRequest {
   notes?: string | null;
   source?: string | null;
   materials?: Array<{ materialId: number; usageAmount: number }>;
+}
+
+export interface CheckInPilotSessionRequest {
+  checkInAt?: string;
+}
+
+export interface BeforePhotoPilotSessionRequest {
+  beforePhotoUrl: string;
+}
+
+export interface ServiceDonePilotSessionRequest {
+  serviceDoneAt?: string;
+}
+
+export interface AfterPhotoPilotSessionRequest {
+  afterPhotoUrl: string;
+}
+
+export interface FeedbackPilotSessionRequest {
+  feedbackRating: number;
+  feedbackNote?: string;
+}
+
+export interface CheckOutPilotSessionRequest {
+  checkOutAt?: string;
 }
 
 export interface PilotMetricsSummary {
