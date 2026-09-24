@@ -91,9 +91,15 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
     const offset = (page - 1) * limit;
 
-    const filteredOrdersCte = buildActualCheckinOrdersCte();
-    const dateQueryParams = actualCheckinQueryParams(dateFrom, dateTo);
+    const cacheKey = `kpi:cs-tip:${dateFrom}:${dateTo}:${storeId}:${customerType}:${tipFilter}:${search || ''}:${page}:${limit}`;
+    const cached = fastify.cache?.get<CsTipResponse>(cacheKey);
+    if (cached) {
+      return reply.send(cached);
+    }
+
     const comboLiveSql = buildComboLiveAtBookingSql('o');
+    const filteredOrdersWithLiveCte = buildActualCheckinOrdersWithLiveCte(comboLiveSql);
+    const dateQueryParams = actualCheckinQueryParams(dateFrom, dateTo);
 
     let storeFilterClause = '';
     const storeQueryParams: string[] = [];
@@ -104,23 +110,22 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
 
     // 1. Query Summary Metrics
     const summarySql = `
-      ${filteredOrdersCte}
+      ${filteredOrdersWithLiveCte}
       SELECT
-        COUNT(DISTINCT fo.orderId) AS totalVisits,
-        COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) > 0 THEN fo.orderId END) AS totalTippedVisits,
+        COUNT(DISTINCT owl.orderId) AS totalVisits,
+        COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) > 0 THEN owl.orderId END) AS totalTippedVisits,
         COALESCE(SUM(st.customer_tip), 0) AS totalCustomerTip,
 
-        COUNT(DISTINCT CASE WHEN (${comboLiveSql}) THEN fo.orderId END) AS locaVisits,
-        COUNT(DISTINCT CASE WHEN (${comboLiveSql}) AND COALESCE(st.customer_tip, 0) > 0 THEN fo.orderId END) AS locaTippedVisits,
-        COALESCE(SUM(CASE WHEN (${comboLiveSql}) THEN st.customer_tip ELSE 0 END), 0) AS locaCustomerTip,
+        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 1 THEN owl.orderId END) AS locaVisits,
+        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 1 AND COALESCE(st.customer_tip, 0) > 0 THEN owl.orderId END) AS locaTippedVisits,
+        COALESCE(SUM(CASE WHEN owl.is_combo_live = 1 THEN st.customer_tip ELSE 0 END), 0) AS locaCustomerTip,
 
-        COUNT(DISTINCT CASE WHEN NOT (${comboLiveSql}) THEN fo.orderId END) AS singleVisits,
-        COUNT(DISTINCT CASE WHEN NOT (${comboLiveSql}) AND COALESCE(st.customer_tip, 0) > 0 THEN fo.orderId END) AS singleTippedVisits,
-        COALESCE(SUM(CASE WHEN NOT (${comboLiveSql}) THEN st.customer_tip ELSE 0 END), 0) AS singleCustomerTip
-      FROM filtered_orders fo
-      JOIN \`order\` o ON o.id = fo.orderId
-      LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
-      LEFT JOIN client_store cs ON cs.id = o.client_store_id
+        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 0 THEN owl.orderId END) AS singleVisits,
+        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 0 AND COALESCE(st.customer_tip, 0) > 0 THEN owl.orderId END) AS singleTippedVisits,
+        COALESCE(SUM(CASE WHEN owl.is_combo_live = 0 THEN st.customer_tip ELSE 0 END), 0) AS singleCustomerTip
+      FROM orders_with_live owl
+      LEFT JOIN client_store_language csl ON owl.client_store_id = csl.client_store_id AND csl.language_id = 1
+      LEFT JOIN client_store cs ON cs.id = owl.client_store_id
       LEFT JOIN (
         SELECT
           st.order_id,
@@ -129,30 +134,29 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         JOIN filtered_orders tip_orders ON tip_orders.orderId = st.order_id
         WHERE st.tip_amount > 0
         GROUP BY st.order_id
-      ) st ON st.order_id = fo.orderId
+      ) st ON st.order_id = owl.orderId
       WHERE 1 = 1
         ${storeFilterClause}
     `;
 
     // 2. Query Store Breakdown
     const storeBreakdownSql = `
-      ${filteredOrdersCte}
+      ${filteredOrdersWithLiveCte}
       SELECT
         COALESCE(cs.client_store_key, 'DT') AS storeKey,
         COALESCE(csl.client_store_name, 'Đề Thám') AS storeName,
-        COUNT(DISTINCT fo.orderId) AS totalVisits,
-        COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) > 0 THEN fo.orderId END) AS totalTippedVisits,
+        COUNT(DISTINCT owl.orderId) AS totalVisits,
+        COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) > 0 THEN owl.orderId END) AS totalTippedVisits,
         COALESCE(SUM(st.customer_tip), 0) AS totalCustomerTip,
 
-        COUNT(DISTINCT CASE WHEN (${comboLiveSql}) THEN fo.orderId END) AS locaVisits,
-        COALESCE(SUM(CASE WHEN (${comboLiveSql}) THEN st.customer_tip ELSE 0 END), 0) AS locaCustomerTip,
+        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 1 THEN owl.orderId END) AS locaVisits,
+        COALESCE(SUM(CASE WHEN owl.is_combo_live = 1 THEN st.customer_tip ELSE 0 END), 0) AS locaCustomerTip,
 
-        COUNT(DISTINCT CASE WHEN NOT (${comboLiveSql}) THEN fo.orderId END) AS singleVisits,
-        COALESCE(SUM(CASE WHEN NOT (${comboLiveSql}) THEN st.customer_tip ELSE 0 END), 0) AS singleCustomerTip
-      FROM filtered_orders fo
-      JOIN \`order\` o ON o.id = fo.orderId
-      LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
-      LEFT JOIN client_store cs ON cs.id = o.client_store_id
+        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 0 THEN owl.orderId END) AS singleVisits,
+        COALESCE(SUM(CASE WHEN owl.is_combo_live = 0 THEN st.customer_tip ELSE 0 END), 0) AS singleCustomerTip
+      FROM orders_with_live owl
+      LEFT JOIN client_store_language csl ON owl.client_store_id = csl.client_store_id AND csl.language_id = 1
+      LEFT JOIN client_store cs ON cs.id = owl.client_store_id
       LEFT JOIN (
         SELECT
           st.order_id,
@@ -161,7 +165,7 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         JOIN filtered_orders tip_orders ON tip_orders.orderId = st.order_id
         WHERE st.tip_amount > 0
         GROUP BY st.order_id
-      ) st ON st.order_id = fo.orderId
+      ) st ON st.order_id = owl.orderId
       WHERE 1 = 1
         ${storeFilterClause}
       GROUP BY cs.client_store_key, csl.client_store_name
@@ -173,9 +177,9 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
     const recordQueryParams: SafeAny[] = [];
 
     if (customerType === 'LOCA') {
-      recordFilterClause += ` AND (${comboLiveSql})`;
+      recordFilterClause += ' AND owl.is_combo_live = 1';
     } else if (customerType === 'SINGLE') {
-      recordFilterClause += ` AND NOT (${comboLiveSql})`;
+      recordFilterClause += ' AND owl.is_combo_live = 0';
     }
 
     if (tipFilter === 'TIPPED') {
@@ -186,13 +190,13 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
 
     if (search) {
       if (/^\d+$/.test(search)) {
-        recordFilterClause += ` AND (fo.orderId = ? OR EXISTS (
-          SELECT 1 FROM user_contact uc WHERE uc.user_id = o.user_id AND uc.phone_number LIKE ? AND uc.is_disabled = 0
+        recordFilterClause += ` AND (owl.orderId = ? OR EXISTS (
+          SELECT 1 FROM user_contact uc WHERE uc.user_id = owl.user_id AND uc.phone_number LIKE ? AND uc.is_disabled = 0
         ))`;
         recordQueryParams.push(Number(search), `%${search}%`);
       } else {
         recordFilterClause += ` AND (up.full_name LIKE ? OR EXISTS (
-          SELECT 1 FROM user_contact uc WHERE uc.user_id = o.user_id AND uc.phone_number LIKE ? AND uc.is_disabled = 0
+          SELECT 1 FROM user_contact uc WHERE uc.user_id = owl.user_id AND uc.phone_number LIKE ? AND uc.is_disabled = 0
         ))`;
         recordQueryParams.push(`%${search}%`, `%${search}%`);
       }
@@ -200,13 +204,12 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
 
     // 4. Query Total Records Count
     const countSql = `
-      ${filteredOrdersCte}
-      SELECT COUNT(DISTINCT fo.orderId) AS totalCount
-      FROM filtered_orders fo
-      JOIN \`order\` o ON o.id = fo.orderId
-      LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
-      LEFT JOIN client_store cs ON cs.id = o.client_store_id
-      LEFT JOIN \`user_profile\` up ON up.user_id = o.user_id
+      ${filteredOrdersWithLiveCte}
+      SELECT COUNT(DISTINCT owl.orderId) AS totalCount
+      FROM orders_with_live owl
+      LEFT JOIN client_store_language csl ON owl.client_store_id = csl.client_store_id AND csl.language_id = 1
+      LEFT JOIN client_store cs ON cs.id = owl.client_store_id
+      LEFT JOIN \`user_profile\` up ON up.user_id = owl.user_id
       LEFT JOIN (
         SELECT
           st.order_id,
@@ -215,7 +218,7 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         JOIN filtered_orders tip_orders ON tip_orders.orderId = st.order_id
         WHERE st.tip_amount > 0
         GROUP BY st.order_id
-      ) st ON st.order_id = fo.orderId
+      ) st ON st.order_id = owl.orderId
       WHERE 1 = 1
         ${storeFilterClause}
         ${recordFilterClause}
@@ -223,23 +226,22 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
 
     // 5. Query Records with Pagination
     const recordsSql = `
-      ${filteredOrdersCte}
+      ${filteredOrdersWithLiveCte}
       SELECT
-        fo.orderId,
-        fo.checkinTime,
+        owl.orderId,
+        owl.checkinTime,
         COALESCE(up.full_name, 'Khách hàng') AS customerName,
-        (SELECT uc.phone_number FROM user_contact uc WHERE uc.user_id = o.user_id AND uc.is_disabled = 0 ORDER BY uc.id DESC LIMIT 1) AS customerPhone,
+        (SELECT uc.phone_number FROM user_contact uc WHERE uc.user_id = owl.user_id AND uc.is_disabled = 0 ORDER BY uc.id DESC LIMIT 1) AS customerPhone,
         COALESCE(csl.client_store_name, 'Đề Thám') AS storeName,
         COALESCE(cs.client_store_key, 'DT') AS storeKey,
-        CASE WHEN (${comboLiveSql}) THEN 1 ELSE 0 END AS isLoCa,
+        owl.is_combo_live AS isLoCa,
         COALESCE(st.customer_tip, 0) AS totalCustomerTip,
         staff_info.tech_name AS technicianName,
         staff_info.cc_name AS ccName
-      FROM filtered_orders fo
-      JOIN \`order\` o ON o.id = fo.orderId
-      LEFT JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
-      LEFT JOIN client_store cs ON cs.id = o.client_store_id
-      LEFT JOIN \`user_profile\` up ON up.user_id = o.user_id
+      FROM orders_with_live owl
+      LEFT JOIN client_store_language csl ON owl.client_store_id = csl.client_store_id AND csl.language_id = 1
+      LEFT JOIN client_store cs ON cs.id = owl.client_store_id
+      LEFT JOIN \`user_profile\` up ON up.user_id = owl.user_id
       LEFT JOIN (
         SELECT
           st.order_id,
@@ -248,7 +250,7 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         JOIN filtered_orders tip_orders ON tip_orders.orderId = st.order_id
         WHERE st.tip_amount > 0
         GROUP BY st.order_id
-      ) st ON st.order_id = fo.orderId
+      ) st ON st.order_id = owl.orderId
       LEFT JOIN (
         SELECT
           os.order_id,
@@ -259,11 +261,11 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         LEFT JOIN user_profile tech_p ON tech_p.user_id = os.assigned_staff_id
         LEFT JOIN user_profile cc_p ON cc_p.user_id = COALESCE(NULLIF(os.check_out_staff_id, 0), os.check_in_staff_id)
         GROUP BY os.order_id
-      ) staff_info ON staff_info.order_id = fo.orderId
+      ) staff_info ON staff_info.order_id = owl.orderId
       WHERE 1 = 1
         ${storeFilterClause}
         ${recordFilterClause}
-      ORDER BY fo.checkinTime DESC, fo.orderId DESC
+      ORDER BY owl.checkinTime DESC, owl.orderId DESC
       LIMIT ? OFFSET ?
     `;
 
@@ -361,6 +363,7 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         },
       };
 
+      fastify.cache?.set(cacheKey, responsePayload, 60_000);
       return reply.send(responsePayload);
     } catch (err: SafeAny) {
       fastify.log.error(err, 'Error executing GET /kpi/cs-tip');

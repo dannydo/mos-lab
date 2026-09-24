@@ -861,7 +861,7 @@ export default function PilotDarkLashesPage() {
         />
       </Card>
 
-      {/* Drawer: Thêm / Sửa ca Pilot */}
+      {/* Drawers & Modals */}
       <PilotSessionDrawer
         open={createDrawerOpen}
         isEditing={Boolean(editingSession)}
@@ -870,8 +870,6 @@ export default function PilotDarkLashesPage() {
         onClose={() => setCreateDrawerOpen(false)}
         onSubmit={handleSubmitSession}
       />
-
-      {/* Drawer: Fast Follow-up & CSAT Update */}
       <PilotFollowUpDrawer
         open={followUpDrawerOpen}
         session={selectedFollowUpSession}
@@ -879,16 +877,12 @@ export default function PilotDarkLashesPage() {
         onClose={() => setFollowUpDrawerOpen(false)}
         onSubmit={handleSubmitFollowUp}
       />
-
-      {/* Modal: Quản lý danh mục vật tư tiêu hao */}
       <PilotMaterialModal
         open={materialModalOpen}
         materials={materialsCatalog}
         onClose={() => setMaterialModalOpen(false)}
         onRefresh={fetchMaterials}
       />
-
-      {/* Drawer: Flow Vận Hành 7 Bước Uốn Mi Bóng Tối */}
       <PilotFlowDrawer
         open={flowDrawerOpen}
         session={selectedFlowSession}
