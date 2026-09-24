@@ -38,8 +38,8 @@ export const WidgetMinimized: React.FC<WidgetMinimizedProps> = ({
     >
       {callState === 'connected' ? (
         <span
-          className="font-bold text-[11px] font-mono leading-none"
-          style={{ color: 'var(--mos-accent-contrast, #000000)' }}
+          className="font-bold text-[11px] font-mono tabular-nums leading-none"
+          style={{ color: 'var(--mos-accent-contrast, #000000)', fontVariantNumeric: 'tabular-nums' }}
         >
           {formatDuration(callDuration)}
         </span>

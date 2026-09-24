@@ -54,11 +54,11 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       storeId?: string;
     };
 
-    const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
-    const endStr = dateTo || new Date().toLocaleDateString('en-CA');
+    const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+    const defaultEnd = new Date().toLocaleDateString('en-CA');
 
-    const startPart = startStr.includes('T') ? startStr.split('T')[0] : startStr;
-    const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
+    const startPart = normalizeDatePart(dateFrom, defaultStart);
+    const endPart = normalizeDatePart(dateTo, defaultEnd);
 
     try {
       // 1. Get active CC staff IDs from TeamService (Single Source of Truth)

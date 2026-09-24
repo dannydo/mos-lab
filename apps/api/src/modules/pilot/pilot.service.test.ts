@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type { SafeAny } from '@mos-lab/shared';
 import { PilotService } from './pilot.service.js';
 
 test('PilotService: calculateFinancials with defaults', () => {
@@ -85,7 +86,7 @@ test('PilotService: listSessions computes metrics and aggregations accurately', 
     },
   ];
 
-  const fakeFastify: any = {
+  const fakeFastify: SafeAny = {
     prisma: {
       crm: {
         crmPilotSession: {
@@ -114,13 +115,13 @@ test('PilotService: listSessions computes metrics and aggregations accurately', 
 });
 
 test('PilotService: createSession validates inputs and creates record', async () => {
-  let createdData: any = null;
+  let createdData: SafeAny = null;
 
-  const fakeFastify: any = {
+  const fakeFastify: SafeAny = {
     prisma: {
       crm: {
         crmPilotSession: {
-          create: async ({ data }: any) => {
+          create: async ({ data }: SafeAny) => {
             createdData = data;
             return {
               id: 10,
@@ -188,9 +189,9 @@ test('PilotService: createSession validates inputs and creates record', async ()
 });
 
 test('PilotService: updateSession updates fields and recalculates contribution', async () => {
-  let updatedData: any = null;
+  let updatedData: SafeAny = null;
 
-  const fakeFastify: any = {
+  const fakeFastify: SafeAny = {
     prisma: {
       crm: {
         crmPilotSession: {
@@ -220,7 +221,7 @@ test('PilotService: updateSession updates fields and recalculates contribution',
             createdAt: new Date(),
             updatedAt: new Date(),
           }),
-          update: async ({ data }: any) => {
+          update: async ({ data }: SafeAny) => {
             updatedData = data;
             return {
               id: 10,

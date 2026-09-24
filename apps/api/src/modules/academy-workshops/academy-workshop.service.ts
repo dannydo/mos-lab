@@ -53,7 +53,6 @@ import {
   type UpdateAcademyWorkshopEquipmentPackageImageRequest,
   type UpdateAcademyWorkshopParticipantSelectionsRequest,
   type AcademyWorkshopZaloTemplate,
-  type UpdateAcademyWorkshopZaloTemplatesRequest,
   type UpdateAcademyWorkshopRequest,
   type UpsertAcademyWorkshopAgendaItemRequest,
 } from '@mos-lab/shared';

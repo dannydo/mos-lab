@@ -54,7 +54,7 @@ export const WrapupPanel: React.FC<WrapupPanelProps> = ({
         </div>
         <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Cuộc gọi kết thúc</h4>
         <p className="text-xs font-semibold" style={{ color: textColor }}>
-          Thời lượng đàm thoại: <span className="font-mono">{formatDuration(callDuration)}</span>
+          Thời lượng đàm thoại: <span className="font-mono tabular-nums">{formatDuration(callDuration)}</span>
         </p>
       </div>
 

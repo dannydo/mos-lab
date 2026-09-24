@@ -5,6 +5,7 @@ import type {
   PilotSession,
   PilotSessionsListResponse,
   PilotSessionsQuery,
+  SafeAny,
   UpdatePilotSessionRequest,
 } from '@mos-lab/shared';
 
@@ -75,7 +76,7 @@ export class PilotService {
     };
   }
 
-  static formatSession(raw: any): PilotSession {
+  static formatSession(raw: SafeAny): PilotSession {
     const sessionDateStr =
       raw.sessionDate instanceof Date
         ? raw.sessionDate.toISOString().split('T')[0]
@@ -97,8 +98,8 @@ export class PilotService {
       refundAmount: Number(raw.refundAmount),
       totalDirectCost: Number(raw.totalDirectCost),
       contributionMargin: Number(raw.contributionMargin),
-      followUp24hStatus: raw.followUp24hStatus as any,
-      followUp72hStatus: raw.followUp72hStatus as any,
+      followUp24hStatus: raw.followUp24hStatus as PilotSession['followUp24hStatus'],
+      followUp72hStatus: raw.followUp72hStatus as PilotSession['followUp72hStatus'],
       csatScore: raw.csatScore !== null && raw.csatScore !== undefined ? Number(raw.csatScore) : null,
       issues: raw.issues ?? null,
       notes: raw.notes ?? null,
@@ -111,7 +112,7 @@ export class PilotService {
 
   static async listSessions(fastify: FastifyInstance, query: PilotSessionsQuery): Promise<PilotSessionsListResponse> {
     const pilotCode = query.pilotCode || this.DEFAULT_PILOT_CODE;
-    const where: any = { pilotCode };
+    const where: Record<string, SafeAny> = { pilotCode };
 
     if (query.branchCode) {
       where.branchCode = query.branchCode;
@@ -132,7 +133,7 @@ export class PilotService {
       orderBy: [{ sessionDate: 'desc' }, { id: 'desc' }],
     });
 
-    const sessions = records.map((r: any) => this.formatSession(r));
+    const sessions = records.map((r: SafeAny) => this.formatSession(r));
 
     // Compute metrics
     const completedSessions = sessions.length;
@@ -262,7 +263,7 @@ export class PilotService {
       refundAmount: data.refundAmount !== undefined ? data.refundAmount : Number(existing.refundAmount),
     });
 
-    const updatePayload: any = {
+    const updatePayload: Record<string, SafeAny> = {
       revenue: financials.revenue,
       materialCost: financials.materialCost,
       technicianCost: financials.technicianCost,

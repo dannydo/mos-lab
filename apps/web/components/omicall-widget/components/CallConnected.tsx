@@ -85,7 +85,7 @@ export const CallConnected: React.FC<CallConnectedProps> = ({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs" style={{ color: descColor }}>
           <span>Tiến trình KPI cuộc gọi</span>
-          <span className="font-mono font-bold">{callDuration}s</span>
+          <span className="font-mono font-bold tabular-nums">{callDuration}s</span>
         </div>
         <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden relative">
           {/* 30s marker */}
