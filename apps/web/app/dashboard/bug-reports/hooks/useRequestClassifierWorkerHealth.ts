@@ -19,9 +19,11 @@ export function useRequestClassifierWorkerHealth() {
   const [loading, setLoading] = useState(() => !cachedWorkerHealth);
   const [error, setError] = useState<string | null>(null);
   const requestVersion = useRef(0);
+  const lastFetchTimeRef = useRef(0);
 
   const refresh = useCallback(async (showLoading = true) => {
     const version = ++requestVersion.current;
+    lastFetchTimeRef.current = Date.now();
     if (showLoading && !cachedWorkerHealth) setLoading(true);
     try {
       const next = await apiClient.bugReports.workerHealth();
@@ -33,7 +35,9 @@ export function useRequestClassifierWorkerHealth() {
       if (version !== requestVersion.current) return;
       setError(errorMessage(caught));
     } finally {
-      if (showLoading && version === requestVersion.current) setLoading(false);
+      if (version === requestVersion.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -46,6 +50,7 @@ export function useRequestClassifierWorkerHealth() {
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        if (Date.now() - lastFetchTimeRef.current < 5000) return;
         void refresh(false);
       }
     };

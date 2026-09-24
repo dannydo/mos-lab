@@ -23,7 +23,7 @@ import type {
   InboxImplementationExecutionOwner,
 } from '@mos-lab/shared';
 import { useDebounce } from '../../../../hooks/useDebounce';
-import { apiClient } from '../../../../lib/api-client';
+import { apiClient, invalidateApiGetCache } from '../../../../lib/api-client';
 
 const STORAGE_KEY = 'mos_bug_inbox_state_v3';
 const LEGACY_STORAGE_KEYS = ['mos_bug_inbox_state_v2', 'mos_bug_inbox_state_v1'];
@@ -155,10 +155,15 @@ export function useBugReports() {
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const requestVersionRef = useRef(0);
+  const lastFetchTimeRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const debouncedSearch = useDebounce(filters.search, 300);
 
   useEffect(() => {
     setHydrated(true);
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -171,9 +176,10 @@ export function useBugReports() {
   }, [filters, hydrated, pagination]);
 
   const load = useCallback(
-    async (showLoading = true) => {
+    async (showLoading = true, forceFresh = false) => {
       if (!hydrated) return;
       const requestVersion = ++requestVersionRef.current;
+      lastFetchTimeRef.current = Date.now();
       const hasCached = Boolean(readCachedInboxData()?.data?.length);
       const isDefaultView =
         pagination.page === 1 && !debouncedSearch.trim() && filters.requestType === 'ALL' && filters.status === 'ALL';
@@ -181,35 +187,55 @@ export function useBugReports() {
         setLoading(true);
         setError(null);
       }
+      if (forceFresh) {
+        invalidateApiGetCache(['/bug-reports']);
+      }
+
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       try {
-        const result = await apiClient.bugReports.list({
-          page: pagination.page,
-          limit: pagination.pageSize,
-          search: debouncedSearch.trim() || undefined,
-          requestType: filters.requestType,
-          status: filters.status,
-          priority: filters.priority,
-          clarification: filters.clarification,
-          nextActor: filters.nextActor,
-        });
+        const result = await apiClient.bugReports.list(
+          {
+            page: pagination.page,
+            limit: pagination.pageSize,
+            search: debouncedSearch.trim() || undefined,
+            requestType: filters.requestType,
+            status: filters.status,
+            priority: filters.priority,
+            clarification: filters.clarification,
+            nextActor: filters.nextActor,
+          },
+          { signal: controller.signal }
+        );
         if (requestVersion !== requestVersionRef.current) return;
         setData(result.data);
         setTotal(result.total);
         setSummary(result.summary ?? EMPTY_SUMMARY);
+        setError(null);
         writeCachedInboxData({ data: result.data, total: result.total, summary: result.summary ?? EMPTY_SUMMARY });
-      } catch (caught) {
+      } catch (caught: unknown) {
+        const err = caught as { name?: string };
+        if (err?.name === 'CanceledError' || err?.name === 'AbortError') {
+          return;
+        }
         if (requestVersion !== requestVersionRef.current) return;
-        if (showLoading && !(hasCached && isDefaultView)) {
-          setError(getErrorMessage(caught));
+        const errorMsg = getErrorMessage(caught);
+        setError(errorMsg);
+        if (!hasCached && data.length === 0) {
           setData([]);
           setTotal(0);
           setSummary(EMPTY_SUMMARY);
         }
       } finally {
-        if (showLoading && requestVersion === requestVersionRef.current) setLoading(false);
+        if (requestVersion === requestVersionRef.current) {
+          setLoading(false);
+        }
       }
     },
     [
+      data.length,
       debouncedSearch,
       filters.clarification,
       filters.nextActor,
@@ -236,6 +262,7 @@ export function useBugReports() {
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        if (Date.now() - lastFetchTimeRef.current < 5000) return;
         void load(false);
       }
     };
@@ -436,7 +463,7 @@ export function useBugReports() {
     setFilters,
     clearFilters,
     setPagination,
-    refresh: load,
+    refresh: () => load(true, true),
     getDetail,
     triage,
     approveImplementation,
