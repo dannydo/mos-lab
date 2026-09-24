@@ -2525,6 +2525,17 @@ export class InboxImplementationService {
             afterJson: await releaseApprovalSnapshot(tx, report, job),
           },
         });
+        if (typeof (tx as { crmBugReport?: { update?: unknown } }).crmBugReport?.update === 'function') {
+          await tx.crmBugReport.update({
+            where: { id: reportId },
+            data: { updatedAt: now },
+          });
+        } else if (typeof (tx as { crmBugReport?: { updateMany?: unknown } }).crmBugReport?.updateMany === 'function') {
+          await tx.crmBugReport.updateMany({
+            where: { id: reportId },
+            data: { updatedAt: now },
+          });
+        }
         return true;
       });
     }
@@ -2561,6 +2572,17 @@ export class InboxImplementationService {
           afterJson: await releaseApprovalSnapshot(tx, report, job),
         },
       });
+      if (typeof (tx as { crmBugReport?: { update?: unknown } }).crmBugReport?.update === 'function') {
+        await tx.crmBugReport.update({
+          where: { id: reportId },
+          data: { updatedAt: now },
+        });
+      } else if (typeof (tx as { crmBugReport?: { updateMany?: unknown } }).crmBugReport?.updateMany === 'function') {
+        await tx.crmBugReport.updateMany({
+          where: { id: reportId },
+          data: { updatedAt: now },
+        });
+      }
       return true;
     });
     return queued;
@@ -2635,6 +2657,17 @@ export class InboxImplementationService {
             updatedAt: new Date(),
           },
         });
+        if (typeof (tx as { crmBugReport?: { update?: unknown } }).crmBugReport?.update === 'function') {
+          await tx.crmBugReport.update({
+            where: { id: reportId },
+            data: { updatedAt: new Date() },
+          });
+        } else if (typeof (tx as { crmBugReport?: { updateMany?: unknown } }).crmBugReport?.updateMany === 'function') {
+          await tx.crmBugReport.updateMany({
+            where: { id: reportId },
+            data: { updatedAt: new Date() },
+          });
+        }
         return true;
       });
     }
@@ -2691,6 +2724,17 @@ export class InboxImplementationService {
           afterJson: await releaseApprovalSnapshot(tx, report, { ...job, testsJson: JSON.stringify(qualityTests) }),
         },
       });
+      if (typeof (tx as { crmBugReport?: { update?: unknown } }).crmBugReport?.update === 'function') {
+        await tx.crmBugReport.update({
+          where: { id: reportId },
+          data: { updatedAt: now },
+        });
+      } else if (typeof (tx as { crmBugReport?: { updateMany?: unknown } }).crmBugReport?.updateMany === 'function') {
+        await tx.crmBugReport.updateMany({
+          where: { id: reportId },
+          data: { updatedAt: now },
+        });
+      }
       return true;
     });
   }

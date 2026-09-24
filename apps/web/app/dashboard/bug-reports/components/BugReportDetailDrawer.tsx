@@ -99,6 +99,8 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
     authorizeSchemaRecoveryRetry,
     authorizeQualityGateRecoveryRetry,
     authorizeBuildLockRecoveryRetry,
+    commitApprovalReceived,
+    deployApprovalReceived,
     approveCommit,
     approveDeploy,
   } = useBugReportDetail(actions);
@@ -283,35 +285,48 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     Tạo retry sạch
                   </Button>
                 ) : null)}
-              {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' && (
-                <>
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Duyệt commit bản đã review?"
-                    description="Worker Mac chỉ stage đúng các tệp đã ghi trong review, commit vào branch riêng rồi dừng. Không push, merge hay deploy."
-                    okText="Duyệt commit"
-                    cancelText="Chưa duyệt"
-                    onConfirm={() => void approveCommit()}
-                  >
-                    <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                      Duyệt commit
-                    </Button>
-                  </Popconfirm>
-                  {detail.implementation?.reviewCandidate && (
-                    <Button
-                      disabled={saving}
-                      icon={<AppIcon icon={RefreshCw} size="sm" />}
-                      onClick={() => {
-                        setChangesReason('');
-                        setChangesOpen(true);
-                      }}
-                    >
-                      Yêu cầu sửa lại
-                    </Button>
-                  )}
-                </>
+              {canTriage && (detail.agentProgress.stage === 'QUEUED_FOR_COMMIT' || commitApprovalReceived) && (
+                <Button disabled type="dashed" icon={<AppIcon icon={RefreshCw} size="sm" className="animate-spin" />}>
+                  Đã duyệt commit · Chờ worker...
+                </Button>
               )}
-              {canTriage && detail.agentProgress.stage === 'QUEUED_FOR_DEPLOY' && (
+              {canTriage &&
+                detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' &&
+                !commitApprovalReceived && (
+                  <>
+                    <Popconfirm
+                      classNames={{ root: styles.confirmationPopup }}
+                      title="Duyệt commit bản đã review?"
+                      description="Worker Mac chỉ stage đúng các tệp đã ghi trong review, commit vào branch riêng rồi dừng. Không push, merge hay deploy."
+                      okText="Duyệt commit"
+                      cancelText="Chưa duyệt"
+                      okButtonProps={{ loading: saving, disabled: saving || commitApprovalReceived }}
+                      onConfirm={() => void approveCommit()}
+                    >
+                      <Button
+                        type="primary"
+                        loading={saving}
+                        disabled={saving || commitApprovalReceived}
+                        icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                      >
+                        Duyệt commit
+                      </Button>
+                    </Popconfirm>
+                    {detail.implementation?.reviewCandidate && (
+                      <Button
+                        disabled={saving || commitApprovalReceived}
+                        icon={<AppIcon icon={RefreshCw} size="sm" />}
+                        onClick={() => {
+                          setChangesReason('');
+                          setChangesOpen(true);
+                        }}
+                      >
+                        Yêu cầu sửa lại
+                      </Button>
+                    )}
+                  </>
+                )}
+              {canTriage && (detail.agentProgress.stage === 'QUEUED_FOR_DEPLOY' || deployApprovalReceived) && (
                 <Button
                   disabled
                   className="!border-emerald-500 !text-emerald-600 dark:!text-emerald-400 !bg-emerald-50 dark:!bg-emerald-950/40 font-semibold cursor-default"
@@ -320,20 +335,28 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   Đã duyệt deploy · Đang triển khai...
                 </Button>
               )}
-              {canTriage && detail.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL' && (
-                <Popconfirm
-                  classNames={{ root: styles.confirmationPopup }}
-                  title="Duyệt deploy commit đã review?"
-                  description="Worker Mac sẽ merge đúng commit vào main, push, chạy pipeline production và chỉ bàn giao khi release marker khớp."
-                  okText="Duyệt deploy"
-                  cancelText="Chưa duyệt"
-                  onConfirm={() => void approveDeploy()}
-                >
-                  <Button type="primary" loading={saving} icon={<AppIcon icon={CheckCircle2} size="sm" />}>
-                    Duyệt deploy
-                  </Button>
-                </Popconfirm>
-              )}
+              {canTriage &&
+                detail.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL' &&
+                !deployApprovalReceived && (
+                  <Popconfirm
+                    classNames={{ root: styles.confirmationPopup }}
+                    title="Duyệt deploy commit đã review?"
+                    description="Worker Mac sẽ merge đúng commit vào main, push, chạy pipeline production và chỉ bàn giao khi release marker khớp."
+                    okText="Duyệt deploy"
+                    cancelText="Chưa duyệt"
+                    okButtonProps={{ loading: saving, disabled: saving || deployApprovalReceived }}
+                    onConfirm={() => void approveDeploy()}
+                  >
+                    <Button
+                      type="primary"
+                      loading={saving}
+                      disabled={saving || deployApprovalReceived}
+                      icon={<AppIcon icon={CheckCircle2} size="sm" />}
+                    >
+                      Duyệt deploy
+                    </Button>
+                  </Popconfirm>
+                )}
               {canTriage &&
                 ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) &&
                 detail.agentProgress.stage !== 'AWAITING_REPORTER_ACCEPTANCE' && (

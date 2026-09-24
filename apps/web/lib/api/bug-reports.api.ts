@@ -143,6 +143,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     recordIdeImplementationReceipt: async (
@@ -154,6 +155,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     approveImplementationCommit: async (
@@ -165,6 +167,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     approveImplementationDeploy: async (
@@ -176,6 +179,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     retryImplementation: async (
@@ -187,6 +191,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     authorizeWorkerRecoveryRetry: async (
@@ -198,6 +203,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     authorizeSchemaRecoveryRetry: async (
@@ -209,6 +215,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     authorizeQualityGateRecoveryRetry: async (
@@ -220,6 +227,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     authorizeBuildLockRecoveryRetry: async (
@@ -231,6 +239,7 @@ export const bugReportsApi = {
         data,
         { timeout: 12_000 }
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     requestImplementationChanges: async (
@@ -238,6 +247,7 @@ export const bugReportsApi = {
       data: RequestBugReportImplementationChangesRequest
     ): Promise<ReleaseBugReportImplementationResponse> => {
       const response = await api.post(`/bug-reports/${id}/implementation-request-changes`, data);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     requestPlanChanges: async (
@@ -245,6 +255,7 @@ export const bugReportsApi = {
       data: RequestBugReportPlanChangesRequest
     ): Promise<ReleaseBugReportImplementationResponse> => {
       const response = await api.post(`/bug-reports/${id}/plan-request-changes`, data);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     releaseImplementation: async (
@@ -255,6 +266,7 @@ export const bugReportsApi = {
         `/bug-reports/${id}/implementation-release`,
         data
       );
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
     reviewImplementationAcceptance: async (

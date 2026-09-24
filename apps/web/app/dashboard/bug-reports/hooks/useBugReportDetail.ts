@@ -97,16 +97,43 @@ export function useBugReportDetail({
   const [duplicateKey, setDuplicateKey] = useState('');
   const reviewPending = useRef(false);
   const approvalPending = useRef(false);
+  const commitPending = useRef(false);
+  const deployPending = useRef(false);
   const [approvalReceived, setApprovalReceived] = useState(false);
+  const [commitApprovalReceived, setCommitApprovalReceived] = useState(false);
+  const [deployApprovalReceived, setDeployApprovalReceived] = useState(false);
 
-  const hydrateForm = useCallback((report: BugReportDetail) => {
-    setDetail(report);
-    setStatus(report.status);
-    setPriority(report.priority);
-    setBusinessContext(report.businessContext || '');
-    setNote(report.triageNote || '');
-    setDuplicateKey(report.duplicateOfKey || '');
-  }, []);
+  const hydrateForm = useCallback(
+    (report: BugReportDetail) => {
+      const effectiveReport =
+        deployApprovalReceived && report.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL'
+          ? {
+              ...report,
+              agentProgress: {
+                ...report.agentProgress,
+                stage: 'QUEUED_FOR_DEPLOY' as const,
+                note: 'Danny đã duyệt deploy; đang tự động merge main và triển khai production.',
+              },
+            }
+          : commitApprovalReceived && report.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW'
+            ? {
+                ...report,
+                agentProgress: {
+                  ...report.agentProgress,
+                  stage: 'QUEUED_FOR_COMMIT' as const,
+                  note: 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.',
+                },
+              }
+            : report;
+      setDetail(effectiveReport);
+      setStatus(effectiveReport.status);
+      setPriority(effectiveReport.priority);
+      setBusinessContext(effectiveReport.businessContext || '');
+      setNote(effectiveReport.triageNote || '');
+      setDuplicateKey(effectiveReport.duplicateOfKey || '');
+    },
+    [commitApprovalReceived, deployApprovalReceived]
+  );
 
   const load = useCallback(
     async (isSilent = false) => {
@@ -162,6 +189,11 @@ export function useBugReportDetail({
 
   useEffect(() => {
     setApprovalReceived(false);
+    setCommitApprovalReceived(false);
+    setDeployApprovalReceived(false);
+    approvalPending.current = false;
+    commitPending.current = false;
+    deployPending.current = false;
   }, [reportId]);
 
   const save = useCallback(
@@ -480,29 +512,48 @@ export function useBugReportDetail({
   }, [authorizeBuildLockRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
 
   const approveCommit = useCallback(async () => {
-    if (!detail) return;
+    if (!detail || commitPending.current || commitApprovalReceived) return;
+    commitPending.current = true;
     setSaving(true);
+    setCommitApprovalReceived(true);
     try {
       const outcome = await approveImplementationCommit(detail.id);
       if (!outcome.commitQueued) throw new Error('Checkpoint commit đã thay đổi. Vui lòng tải lại ticket.');
+      setDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              agentProgress: {
+                ...prev.agentProgress,
+                stage: 'QUEUED_FOR_COMMIT',
+                note: 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.',
+              },
+            }
+          : null
+      );
       void getDetail(outcome.reportId)
         .then(hydrateForm)
         .catch(() => undefined);
       messageApi.success('Đã duyệt commit. Worker Mac chỉ commit bản diff đã review, rồi dừng chờ deploy.');
     } catch (error) {
+      commitPending.current = false;
+      setCommitApprovalReceived(false);
       const responseMessage =
         error && typeof error === 'object' && 'response' in error
           ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
       messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt commit.'));
     } finally {
+      commitPending.current = false;
       setSaving(false);
     }
-  }, [approveImplementationCommit, detail, getDetail, hydrateForm, messageApi]);
+  }, [approveImplementationCommit, commitApprovalReceived, detail, getDetail, hydrateForm, messageApi]);
 
   const approveDeploy = useCallback(async () => {
-    if (!detail) return;
+    if (!detail || deployPending.current || deployApprovalReceived) return;
+    deployPending.current = true;
     setSaving(true);
+    setDeployApprovalReceived(true);
     try {
       const outcome = await approveImplementationDeploy(detail.id);
       if (!outcome.deploymentQueued) throw new Error('Checkpoint deploy đã thay đổi. Vui lòng tải lại ticket.');
@@ -525,15 +576,18 @@ export function useBugReportDetail({
         'Đã duyệt deploy. Hệ thống đang tự động merge main, push, chạy pipeline production và xác minh release.'
       );
     } catch (error) {
+      deployPending.current = false;
+      setDeployApprovalReceived(false);
       const responseMessage =
         error && typeof error === 'object' && 'response' in error
           ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
       messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt deploy.'));
     } finally {
+      deployPending.current = false;
       setSaving(false);
     }
-  }, [approveImplementationDeploy, detail, getDetail, hydrateForm, messageApi]);
+  }, [approveImplementationDeploy, deployApprovalReceived, detail, getDetail, hydrateForm, messageApi]);
 
   return {
     messageContext,
@@ -541,6 +595,8 @@ export function useBugReportDetail({
     loading,
     saving,
     approvalReceived,
+    commitApprovalReceived,
+    deployApprovalReceived,
     requestChanges,
     revisePlan,
     loadError,

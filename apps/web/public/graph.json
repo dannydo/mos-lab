@@ -9834,6 +9834,20 @@
       }
     },
     {
+      "id": "route:POST:/api/pilot/materials/seed-defaults",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/materials/seed-defaults",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/materials/seed-defaults",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 117
+      }
+    },
+    {
       "id": "route:GET:/api/pilot/sessions",
       "type": "FastifyRoute",
       "label": "GET /api/pilot/sessions",
@@ -9844,7 +9858,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 117
+        "line": 128
       }
     },
     {
@@ -9858,7 +9872,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 128
+        "line": 139
       }
     },
     {
@@ -9872,7 +9886,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 139
+        "line": 150
       }
     },
     {
@@ -9886,7 +9900,7 @@
         "path": "/api/pilot/sessions/:id/check-in",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 151
+        "line": 162
       }
     },
     {
@@ -9900,7 +9914,7 @@
         "path": "/api/pilot/sessions/:id/before-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 167
+        "line": 178
       }
     },
     {
@@ -9914,7 +9928,7 @@
         "path": "/api/pilot/sessions/:id/service-done",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 183
+        "line": 194
       }
     },
     {
@@ -9928,7 +9942,7 @@
         "path": "/api/pilot/sessions/:id/after-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 199
+        "line": 210
       }
     },
     {
@@ -9942,7 +9956,7 @@
         "path": "/api/pilot/sessions/:id/feedback",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 215
+        "line": 226
       }
     },
     {
@@ -9956,7 +9970,7 @@
         "path": "/api/pilot/sessions/:id/check-out",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 231
+        "line": 242
       }
     },
     {
@@ -9970,7 +9984,7 @@
         "path": "/api/pilot/upload-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 247
+        "line": 258
       }
     },
     {
@@ -9984,7 +9998,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 258
+        "line": 269
       }
     },
     {
@@ -9998,7 +10012,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 274
+        "line": 285
       }
     },
     {
@@ -27774,8 +27788,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 155702,
-        "lineCount": 3911,
+        "sizeBytes": 157676,
+        "lineCount": 3955,
         "ext": ".ts"
       }
     },
@@ -29789,8 +29803,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18033,
-        "lineCount": 577,
+        "sizeBytes": 20545,
+        "lineCount": 660,
         "ext": ".ts"
       }
     },
@@ -29802,8 +29816,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 33623,
-        "lineCount": 972,
+        "sizeBytes": 36233,
+        "lineCount": 1075,
         "ext": ".ts"
       }
     },
@@ -29815,8 +29829,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11833,
-        "lineCount": 288,
+        "sizeBytes": 12285,
+        "lineCount": 299,
         "ext": ".ts"
       }
     },
@@ -32935,8 +32949,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39638,
-        "lineCount": 863,
+        "sizeBytes": 40697,
+        "lineCount": 884,
         "ext": ".tsx"
       }
     },
@@ -33156,8 +33170,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21411,
-        "lineCount": 571,
+        "sizeBytes": 23772,
+        "lineCount": 627,
         "ext": ".ts"
       }
     },
@@ -34677,8 +34691,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40804,
-        "lineCount": 851,
+        "sizeBytes": 44903,
+        "lineCount": 955,
         "ext": ".tsx"
       }
     },
@@ -34703,8 +34717,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9769,
-        "lineCount": 280,
+        "sizeBytes": 13481,
+        "lineCount": 358,
         "ext": ".tsx"
       }
     },
@@ -34716,8 +34730,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18187,
-        "lineCount": 417,
+        "sizeBytes": 25521,
+        "lineCount": 577,
         "ext": ".tsx"
       }
     },
@@ -34729,8 +34743,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 35167,
-        "lineCount": 895,
+        "sizeBytes": 35262,
+        "lineCount": 896,
         "ext": ".tsx"
       }
     },
@@ -35567,6 +35581,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/__tests__/api-base-url.test.ts",
+      "type": "File",
+      "label": "api-base-url.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/__tests__/api-base-url.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2170,
+        "lineCount": 58,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/__tests__/bug-diagnostics.test.ts",
       "type": "File",
       "label": "bug-diagnostics.test.ts",
@@ -35665,7 +35692,7 @@
       "filePath": "apps/web/lib/api/base.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6295,
+        "sizeBytes": 6329,
         "lineCount": 209,
         "ext": ".ts"
       }
@@ -35678,8 +35705,8 @@
       "filePath": "apps/web/lib/api/bug-reports.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12407,
-        "lineCount": 294,
+        "sizeBytes": 13223,
+        "lineCount": 306,
         "ext": ".ts"
       }
     },
@@ -35769,8 +35796,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3844,
-        "lineCount": 94,
+        "sizeBytes": 4063,
+        "lineCount": 98,
         "ext": ".ts"
       }
     },
@@ -35834,8 +35861,8 @@
       "filePath": "apps/web/lib/api-base-url.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 567,
-        "lineCount": 17,
+        "sizeBytes": 1211,
+        "lineCount": 44,
         "ext": ".ts"
       }
     },
@@ -35860,7 +35887,7 @@
       "filePath": "apps/web/lib/api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5729,
+        "sizeBytes": 5763,
         "lineCount": 159,
         "ext": ".ts"
       }
@@ -41482,6 +41509,13 @@
     {
       "id": "edge:route:DELETE:/api/pilot/materials/:id:ws:apps/api",
       "source": "route:DELETE:/api/pilot/materials/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/materials/seed-defaults:ws:apps/api",
+      "source": "route:POST:/api/pilot/materials/seed-defaults",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -67919,6 +67953,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/materials/seed-defaults",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/materials/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/sessions",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/pilot/sessions",
@@ -72077,6 +72118,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/materials/seed-defaults",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/materials/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sessions",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/pilot/sessions",
@@ -73242,6 +73290,13 @@
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:DELETE:/api/pilot/materials/:id",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:DELETE:/api/pilot/materials/:id",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/materials/seed-defaults",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/materials/seed-defaults",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -79007,6 +79062,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/materials/seed-defaults",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/materials/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sessions",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/pilot/sessions",
@@ -79722,28 +79784,28 @@
     }
   ],
   "stats": {
-    "totalNodes": 2824,
-    "totalEdges": 6118,
+    "totalNodes": 2826,
+    "totalEdges": 6123,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 154,
-      "FastifyRoute": 594,
+      "FastifyRoute": 595,
       "Component": 54,
       "SharedType": 1033,
       "DesignToken": 12,
       "UIComponent": 196,
-      "File": 778
+      "File": 779
     },
     "edgeTypeCounts": {
       "EXPORTS": 1199,
-      "HANDLES_ROUTE": 594,
+      "HANDLES_ROUTE": 595,
       "RENDERS": 250,
       "USES_TOKEN": 198,
       "IMPORTS": 423,
       "QUERIES_MODEL": 360,
-      "API_CALL": 3094
+      "API_CALL": 3098
     },
-    "fastifyRouteCount": 599,
+    "fastifyRouteCount": 600,
     "prismaModelCount": 154,
     "nextPageCount": 54,
     "sharedTypeCount": 1033
@@ -83259,6 +83321,13 @@
     {
       "method": "DELETE",
       "path": "/api/pilot/materials/:id",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/materials/seed-defaults",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
