@@ -31,6 +31,9 @@ export const useCustomerList = (
     notComboLive: 0,
   });
 
+  const listCacheRef = useRef<Map<string, { data: Customer[]; total: number; timestamp: number }>>(new Map());
+  const statsCacheRef = useRef<Map<string, { stats: typeof stats; timestamp: number }>>(new Map());
+
   const abortControllerRef = useRef<AbortController | null>(null);
   const statsAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -122,8 +125,20 @@ export const useCustomerList = (
         if (filterParams.lastCallDaysMax !== undefined)
           params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
 
+        const cacheKey = JSON.stringify(params);
+        const cached = statsCacheRef.current.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < 30_000) {
+          setStats(cached.stats);
+          return;
+        }
+
         const data = await apiClient.customers.getStats(params, { signal: abortController.signal });
         setStats(data);
+        statsCacheRef.current.set(cacheKey, { stats: data, timestamp: Date.now() });
+        if (statsCacheRef.current.size > 50) {
+          const oldest = statsCacheRef.current.keys().next().value;
+          if (oldest) statsCacheRef.current.delete(oldest);
+        }
       } catch (error) {
         if (
           axios.isCancel(error) ||
@@ -148,7 +163,6 @@ export const useCustomerList = (
       }
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
-      setLoading(true);
       try {
         const params: ListCustomersParams = {
           page: page.toString(),
@@ -231,17 +245,38 @@ export const useCustomerList = (
         if (filterParams.lastCallDaysMax !== undefined)
           params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
 
+        const cacheKey = JSON.stringify({ ...params, idsToUse });
+        const cached = listCacheRef.current.get(cacheKey);
+        const now = Date.now();
+
+        if (cached) {
+          setCustomers(cached.data);
+          setTotal(cached.total);
+          setLoading(false);
+          if (now - cached.timestamp < 15_000) {
+            return;
+          }
+        } else {
+          setLoading(true);
+        }
+
         const data = await apiClient.customers.list(params, { signal: abortController.signal });
 
         // Ignore stale response if a newer fetch was initiated
         if (currentFetchId !== fetchIdRef.current) return;
 
+        const resolvedTotal = idsToUse && idsToUse.length > 0 ? idsToUse.length : data.pagination.total;
         setCustomers(data.data);
+        setTotal(resolvedTotal);
 
-        if (idsToUse && idsToUse.length > 0) {
-          setTotal(idsToUse.length);
-        } else {
-          setTotal(data.pagination.total);
+        listCacheRef.current.set(cacheKey, {
+          data: data.data,
+          total: resolvedTotal,
+          timestamp: Date.now(),
+        });
+        if (listCacheRef.current.size > 50) {
+          const oldest = listCacheRef.current.keys().next().value;
+          if (oldest) listCacheRef.current.delete(oldest);
         }
       } catch (error) {
         if (
@@ -292,6 +327,8 @@ export const useCustomerList = (
   const sentinelRef = useCallback(() => {}, []);
 
   const refreshListAndStats = useCallback(async () => {
+    listCacheRef.current.clear();
+    statsCacheRef.current.clear();
     await Promise.all([fetchCustomers(1, pageSize), fetchStats()]);
   }, [fetchCustomers, fetchStats, pageSize]);
 
@@ -299,6 +336,8 @@ export const useCustomerList = (
   useEffect(() => {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const handleDataChanged = (e: Event) => {
+      listCacheRef.current.clear();
+      statsCacheRef.current.clear();
       const customEvent = e as CustomEvent;
       const detail = customEvent.detail;
       const customerId = detail?.customerId;

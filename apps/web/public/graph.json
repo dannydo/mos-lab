@@ -32949,8 +32949,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40697,
-        "lineCount": 884,
+        "sizeBytes": 40795,
+        "lineCount": 886,
         "ext": ".tsx"
       }
     },
@@ -33989,8 +33989,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerList.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14916,
-        "lineCount": 362,
+        "sizeBytes": 16484,
+        "lineCount": 401,
         "ext": ".ts"
       }
     },
