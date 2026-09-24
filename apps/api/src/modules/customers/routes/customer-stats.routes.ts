@@ -758,7 +758,12 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         effectiveAssignedStaffId === 'me' ? `staff:${adminUser?.id || 0}` : effectiveAssignedStaffId || 'all';
       const isRefresh =
         request.query && ((request.query as SafeAny).refresh === 'true' || (request.query as SafeAny).refresh === true);
-      const cacheKey = `loca_stats:${effectiveScope}:${JSON.stringify(request.query)}`;
+      const querySearch = typeof search === 'string' ? search.trim() : '';
+      const queryDateFrom = dateFrom || '';
+      const queryDateTo = dateTo || '';
+      const queryCustomTp =
+        typeof customTouchpoints === 'string' ? customTouchpoints : JSON.stringify(customTouchpoints || '');
+      const cacheKey = `loca_stats:${effectiveScope}:${queryDateFrom}:${queryDateTo}:${querySearch}:${queryCustomTp}`;
       if (!isRefresh) {
         const cachedStats = fastify.cache.get<{ tabs: Record<string, number>; touchpoints: Record<string, number> }>(
           cacheKey
@@ -1018,7 +1023,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       });
 
       const stats = { tabs, touchpoints };
-      fastify.cache.set(cacheKey, stats, 60_000); // 60 seconds fixed TTL
+      fastify.cache.set(cacheKey, stats, 120_000); // 120 seconds TTL
       return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get LoCa stats error:');

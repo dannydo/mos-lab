@@ -1107,23 +1107,26 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           o.id,
           CAST(o.booking_date_start AS CHAR) as start_str,
           COALESCE(o.booking_duration_minute, 90) as duration,
-          obdc.assigned_staff_id
+          (
+            SELECT obdc.assigned_staff_id 
+            FROM order_booking_date_change obdc 
+            WHERE obdc.order_id = o.id 
+            ORDER BY obdc.id DESC 
+            LIMIT 1
+          ) as assigned_staff_id
         FROM \`order\` o
-        LEFT JOIN (
-          SELECT order_id, assigned_staff_id 
-          FROM order_booking_date_change 
-          WHERE id IN (
-            SELECT MAX(id) FROM order_booking_date_change GROUP BY order_id
-          )
-        ) obdc ON o.id = obdc.order_id
         WHERE o.client_store_id = ?
-          AND DATE(o.booking_date_start) = ?
+          AND o.booking_date_start >= ?
+          AND o.booking_date_start <= ?
           AND o.order_state != 'Cancelled'
       `;
-      const orderParams: SafeAny[] = [storeId, date];
+      const orderParams: SafeAny[] = [storeId, `${date} 00:00:00`, `${date} 23:59:59`];
 
       if (technicianId) {
-        orderQuery += ` AND obdc.assigned_staff_id = ?`;
+        orderQuery = `
+          SELECT * FROM (${orderQuery}) active_orders
+          WHERE active_orders.assigned_staff_id = ?
+        `;
         orderParams.push(parseInt(technicianId, 10));
       }
 
