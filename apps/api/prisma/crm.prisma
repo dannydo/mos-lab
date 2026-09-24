@@ -3335,9 +3335,52 @@ model CrmPilotSession {
   createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
+  materials          CrmPilotSessionMaterial[]
+
   @@index([pilotCode, sessionDate])
   @@index([followUp24hStatus, followUp72hStatus])
   @@map("crm_pilot_sessions")
+}
+
+// ═══════════════════════════════════════════
+// Pilot Materials Catalog & Session Usages
+// ═══════════════════════════════════════════
+model CrmPilotMaterial {
+  id            Int      @id @default(autoincrement())
+  pilotCode     String   @default("DARK_LASHES") @map("pilot_code") @db.VarChar(50)
+  name          String   @map("name") @db.VarChar(120)
+  purchasePrice Decimal  @default(0) @map("purchase_price") @db.Decimal(12, 2)
+  volume        Decimal  @default(1) @map("volume") @db.Decimal(10, 2)
+  unit          String   @map("unit") @db.VarChar(30)
+  costPerUnit   Decimal  @default(0) @map("cost_per_unit") @db.Decimal(12, 2)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  sessionMaterials CrmPilotSessionMaterial[]
+
+  @@index([pilotCode, isActive])
+  @@map("crm_pilot_materials")
+}
+
+model CrmPilotSessionMaterial {
+  id             Int              @id @default(autoincrement())
+  sessionId      Int              @map("session_id")
+  materialId     Int              @map("material_id")
+  materialName   String           @map("material_name") @db.VarChar(120)
+  unit           String           @map("unit") @db.VarChar(30)
+  usageAmount    Decimal          @default(1) @map("usage_amount") @db.Decimal(10, 2)
+  costPerUnit    Decimal          @default(0) @map("cost_per_unit") @db.Decimal(12, 2)
+  calculatedCost Decimal          @default(0) @map("calculated_cost") @db.Decimal(12, 2)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.DateTime(0)
+
+  session        CrmPilotSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  material       CrmPilotMaterial @relation(fields: [materialId], references: [id], onDelete: Restrict)
+
+  @@index([sessionId])
+  @@index([materialId])
+  @@map("crm_pilot_session_materials")
 }
 
 

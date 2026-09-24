@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Button, Form, Input, InputNumber, Select } from 'antd';
 import type { FormInstance } from 'antd';
-import { Sparkles } from 'lucide-react';
+import { Package, Plus, Sparkles, Trash2 } from 'lucide-react';
+import type { PilotMaterial } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { EntityFormDrawer } from '../../../../components/ui/EntityFormDrawer';
 
@@ -19,20 +20,54 @@ interface PilotSessionDrawerProps {
   open: boolean;
   isEditing: boolean;
   form: FormInstance;
+  materialsCatalog: PilotMaterial[];
   onClose: () => void;
   onSubmit: () => void;
 }
 
-export function PilotSessionDrawer({ open, isEditing, form, onClose, onSubmit }: PilotSessionDrawerProps) {
+export function PilotSessionDrawer({
+  open,
+  isEditing,
+  form,
+  materialsCatalog,
+  onClose,
+  onSubmit,
+}: PilotSessionDrawerProps) {
   const formRevenue = Form.useWatch('revenue', form) ?? 990000;
   const formMaterialCost = Form.useWatch('materialCost', form) ?? 0;
   const formTechnicianCost = Form.useWatch('technicianCost', form) ?? 0;
   const formCommissionAmount = Form.useWatch('commissionAmount', form) ?? 0;
   const formPromoAmount = Form.useWatch('promoAmount', form) ?? 0;
   const formRefundAmount = Form.useWatch('refundAmount', form) ?? 0;
+  const formMaterials: Array<{ materialId?: number; usageAmount?: number }> = Form.useWatch('materials', form) || [];
+
+  const catalogMap = useMemo(() => {
+    const map = new Map<number, PilotMaterial>();
+    materialsCatalog.forEach((m) => map.set(m.id, m));
+    return map;
+  }, [materialsCatalog]);
+
+  const liveConsumablesCost = useMemo(() => {
+    if (!formMaterials || formMaterials.length === 0) return 0;
+    return formMaterials.reduce((total, item) => {
+      if (!item?.materialId || !item?.usageAmount || item.usageAmount <= 0) return total;
+      const mat = catalogMap.get(item.materialId);
+      if (!mat) return total;
+      return total + Math.round(Number(mat.costPerUnit) * Number(item.usageAmount));
+    }, 0);
+  }, [formMaterials, catalogMap]);
+
+  // Keep materialCost synced with liveConsumablesCost when materials list is used
+  useEffect(() => {
+    if (formMaterials && formMaterials.length > 0) {
+      form.setFieldValue('materialCost', liveConsumablesCost);
+    }
+  }, [formMaterials, liveConsumablesCost, form]);
+
+  const effectiveMaterialCost = formMaterials && formMaterials.length > 0 ? liveConsumablesCost : (formMaterialCost || 0);
 
   const liveTotalCost =
-    (formMaterialCost || 0) +
+    effectiveMaterialCost +
     (formTechnicianCost || 0) +
     (formCommissionAmount || 0) +
     (formPromoAmount || 0) +
@@ -51,7 +86,7 @@ export function PilotSessionDrawer({ open, isEditing, form, onClose, onSubmit }:
       }
       open={open}
       onClose={onClose}
-      width={650}
+      width={720}
       footer={
         <div className="flex items-center justify-end gap-2">
           <Button onClick={onClose}>Hủy</Button>
@@ -131,13 +166,136 @@ export function PilotSessionDrawer({ open, isEditing, form, onClose, onSubmit }:
           </div>
         </div>
 
-        {/* Direct Costs Section */}
+        {/* Phase 2: Consumables Material Tracking */}
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <AppIcon icon={Package} size="sm" className="text-emerald-500" />
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                2. Theo dõi Vật tư Tiêu hao (Consumables)
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-xs text-slate-500">Tổng Consumables Cost / Done: </span>
+              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                {formatVND(liveConsumablesCost)}
+              </span>
+            </div>
+          </div>
+
+          <Form.List name="materials">
+            {(fields, { add, remove }) => (
+              <div className="space-y-2">
+                {fields.map(({ key, name, ...restField }) => {
+                  const currentItem = formMaterials[name];
+                  const selectedMat = currentItem?.materialId ? catalogMap.get(currentItem.materialId) : null;
+                  const usage = currentItem?.usageAmount || 0;
+                  const rowCost = selectedMat ? Math.round(selectedMat.costPerUnit * usage) : 0;
+
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center gap-2 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
+                    >
+                      <div className="flex-1">
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'materialId']}
+                          rules={[{ required: true, message: 'Chọn vật tư' }]}
+                          className="!mb-0"
+                        >
+                          <Select
+                            placeholder="Chọn vật tư sử dụng"
+                            className="w-full"
+                            options={materialsCatalog
+                              .filter((m) => m.isActive || m.id === currentItem?.materialId)
+                              .map((m) => ({
+                                value: m.id,
+                                label: `${m.name} (${formatVND(m.costPerUnit)}/${m.unit})`,
+                              }))}
+                          />
+                        </Form.Item>
+                      </div>
+
+                      <div className="w-32">
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'usageAmount']}
+                          rules={[{ required: true, message: 'Lượng dùng' }]}
+                          className="!mb-0"
+                        >
+                          <InputNumber
+                            min={0.1}
+                            step={selectedMat?.unit === 'cặp' || selectedMat?.unit === 'miếng' ? 1 : 0.5}
+                            placeholder="Lượng"
+                            addonAfter={selectedMat?.unit || 'đv'}
+                            className="w-full tabular-nums"
+                          />
+                        </Form.Item>
+                      </div>
+
+                      <div className="w-32 text-right">
+                        <span className="text-[10px] text-slate-400 block leading-tight">Cost tạm tính</span>
+                        <span className="text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                          {formatVND(rowCost)}
+                        </span>
+                      </div>
+
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        icon={<AppIcon icon={Trash2} size="sm" />}
+                        onClick={() => remove(name)}
+                      />
+                    </div>
+                  );
+                })}
+
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <Button
+                    type="dashed"
+                    onClick={() => add({ materialId: undefined, usageAmount: 1 })}
+                    icon={<AppIcon icon={Plus} size="sm" />}
+                    className="rounded-lg text-xs"
+                  >
+                    Thêm vật tư đã dùng
+                  </Button>
+                  {materialsCatalog.length > 0 && fields.length === 0 && (
+                    <Button
+                      type="default"
+                      onClick={() => {
+                        const standardPreset = materialsCatalog
+                          .filter((m) => m.isActive)
+                          .map((m) => ({
+                            materialId: m.id,
+                            usageAmount: 1,
+                          }));
+                        form.setFieldValue('materials', standardPreset);
+                      }}
+                      className="text-xs rounded-lg text-emerald-600 border-emerald-500/30"
+                    >
+                      Áp dụng định lượng chuẩn (1 ca)
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </Form.List>
+        </div>
+
+        {/* Phase 3: Direct Costs & Unit Economics */}
         <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-            2. Chi phí trực tiếp & Unit Economics
+            3. Chi phí trực tiếp & Unit Economics
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Form.Item name="materialCost" label="Vật tư tiêu hao (đ)" className="!mb-2">
+            <Form.Item
+              name="materialCost"
+              label="Vật tư tiêu hao (đ)"
+              tooltip="Tự động tính từ danh sách vật tư bên trên hoặc nhập trực tiếp"
+              className="!mb-2"
+            >
               <InputNumber<number>
                 className="w-full rounded-lg tabular-nums"
                 formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
@@ -187,7 +345,7 @@ export function PilotSessionDrawer({ open, isEditing, form, onClose, onSubmit }:
           <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
             <div>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                Tổng chi phí: <strong className="tabular-nums">{formatVND(liveTotalCost)}</strong>
+                Tổng chi phí trực tiếp: <strong className="tabular-nums">{formatVND(liveTotalCost)}</strong>
               </span>
             </div>
             <div className="text-right">
@@ -201,10 +359,10 @@ export function PilotSessionDrawer({ open, isEditing, form, onClose, onSubmit }:
           </div>
         </div>
 
-        {/* Phase 2: Follow-up & Satisfaction */}
+        {/* Phase 4: Follow-up & Satisfaction */}
         <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-            3. Chăm sóc 24h–72h & Đánh giá (CSAT)
+            4. Chăm sóc 24h–72h & Đánh giá (CSAT)
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Form.Item name="followUp24hStatus" label="Follow-up 24h" className="!mb-2">
