@@ -66,9 +66,15 @@ const nextConfig: NextConfig = {
     // network connection/CORS grant for Fastify on :4001. Production keeps its
     // configured API origin unless the dedicated performance proxy is enabled.
     const shouldProxyApi = process.env.NODE_ENV === 'development' || process.env.PERFORMANCE_QA_PROXY === '1';
-    if (!shouldProxyApi) return [];
-    const apiOrigin = process.env.PERFORMANCE_QA_API_ORIGIN || 'http://localhost:4001';
-    return [{ source: '/api/:path*', destination: `${apiOrigin}/api/:path*` }];
+    if (shouldProxyApi) {
+      const apiOrigin = process.env.PERFORMANCE_QA_API_ORIGIN || 'http://localhost:4001';
+      return [{ source: '/api/:path*', destination: `${apiOrigin}/api/:path*` }];
+    }
+    const productionApiOrigin =
+      process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'https://api.lab.masteros.app';
+    return [
+      { source: '/api/pilot/media/:filename', destination: `${productionApiOrigin}/api/pilot/media/:filename` },
+    ];
   },
   async headers() {
     return [

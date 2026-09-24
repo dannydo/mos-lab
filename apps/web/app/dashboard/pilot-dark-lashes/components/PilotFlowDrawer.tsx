@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type { DarkLashesSessionStatus, PilotSession } from '@mos-lab/shared';
-import { apiClient } from '../../../../lib/api-client';
+import { apiClient, resolveMediaUrl } from '../../../../lib/api-client';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { CopyPhoneButton } from '../../../../components/ui/CopyPhoneButton';
 
@@ -55,31 +55,37 @@ async function compressImage(file: File, maxDim = 1600, quality = 0.82): Promise
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (!result) return reject(new Error('Không thể đọc tệp ảnh.'));
       const img = new Image();
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
+        try {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
           }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return resolve(result);
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch {
+          resolve(result);
         }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          return resolve(e.target?.result as string);
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
+      img.onerror = () => resolve(result);
+      img.src = result;
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -91,8 +97,10 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
   const [feedbackRating, setFeedbackRating] = useState<number>(session?.feedbackRating || session?.csatScore || 5);
   const [feedbackNote, setFeedbackNote] = useState<string>(session?.feedbackNote || '');
 
-  const beforePhotoInputRef = useRef<HTMLInputElement>(null);
-  const afterPhotoInputRef = useRef<HTMLInputElement>(null);
+  const beforeCameraInputRef = useRef<HTMLInputElement>(null);
+  const beforeLibraryInputRef = useRef<HTMLInputElement>(null);
+  const afterCameraInputRef = useRef<HTMLInputElement>(null);
+  const afterLibraryInputRef = useRef<HTMLInputElement>(null);
 
   // Sync state when session changes
   React.useEffect(() => {
@@ -124,6 +132,8 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
   const handleUploadPhoto = async (type: 'before' | 'after', file: File) => {
     try {
       setSubmittingAction(`upload-${type}`);
+      const typeLabel = type === 'before' ? 'Trước' : 'Sau';
+      message.loading({ content: `Đang xử lý và tải ảnh ${typeLabel} khi làm...`, key: `upload-${type}` });
       const compressedBase64 = await compressImage(file);
       const uploadRes = await apiClient.pilot.uploadPhoto({
         photoData: compressedBase64,
@@ -134,14 +144,18 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
       let updated: PilotSession;
       if (type === 'before') {
         updated = await apiClient.pilot.saveBeforePhoto(session.id, { beforePhotoUrl: photoUrl });
-        message.success('Đã lưu ảnh Trước khi làm (Before Photo)!');
+        message.success({ content: 'Đã lưu ảnh Trước khi làm (Before Photo)!', key: `upload-${type}` });
       } else {
         updated = await apiClient.pilot.saveAfterPhoto(session.id, { afterPhotoUrl: photoUrl });
-        message.success('Đã lưu ảnh Sau khi làm (After Photo)!');
+        message.success({ content: 'Đã lưu ảnh Sau khi làm (After Photo)!', key: `upload-${type}` });
       }
       onSessionUpdated(updated);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || `Lỗi tải ảnh ${type}.`);
+      console.error(`[Upload ${type} error]`, err);
+      message.error({
+        content: err?.response?.data?.message || err?.message || `Lỗi tải ảnh ${type}. Vui lòng thử lại.`,
+        key: `upload-${type}`,
+      });
     } finally {
       setSubmittingAction(null);
     }
@@ -439,47 +453,90 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
             )}
           </div>
 
+          {/* Hidden inputs for Camera and Photo Library */}
           <input
             type="file"
-            ref={beforePhotoInputRef}
+            ref={beforeCameraInputRef}
             accept="image/*"
             capture="environment"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleUploadPhoto('before', file);
+              e.target.value = '';
+            }}
+          />
+          <input
+            type="file"
+            ref={beforeLibraryInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleUploadPhoto('before', file);
+              e.target.value = '';
             }}
           />
 
           {session.beforePhotoUrl ? (
             <div className="space-y-3">
               <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950 aspect-[4/3] max-h-64 flex items-center justify-center">
-                <img src={session.beforePhotoUrl} alt="Before Photo" className="w-full h-full object-contain" />
+                <img
+                  src={resolveMediaUrl(session.beforePhotoUrl)}
+                  alt="Before Photo"
+                  className="w-full h-full object-contain"
+                />
                 <div className="absolute top-2 left-2 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md text-white text-xs font-bold">
                   BEFORE PHOTO
                 </div>
               </div>
-              <Button
-                block
-                icon={<AppIcon icon={Camera} size="sm" />}
-                onClick={() => beforePhotoInputRef.current?.click()}
-                loading={submittingAction === 'upload-before'}
-              >
-                Chụp / Tải lại ảnh Before
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  icon={<AppIcon icon={Camera} size="sm" />}
+                  onClick={() => beforeCameraInputRef.current?.click()}
+                  loading={submittingAction === 'upload-before'}
+                >
+                  Chụp lại Camera
+                </Button>
+                <Button
+                  icon={<AppIcon icon={ImageIcon} size="sm" />}
+                  onClick={() => beforeLibraryInputRef.current?.click()}
+                  loading={submittingAction === 'upload-before'}
+                >
+                  Đổi từ thư viện
+                </Button>
+              </div>
             </div>
           ) : (
-            <div
-              onClick={() => beforePhotoInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-xl p-6 text-center cursor-pointer transition-all bg-slate-50 hover:bg-emerald-50/30 dark:bg-slate-800/40 dark:hover:bg-emerald-950/20"
-            >
+            <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-5 text-center bg-slate-50 dark:bg-slate-800/40">
               <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center mb-2">
                 <AppIcon icon={Camera} size="md" />
               </div>
               <div className="font-bold text-sm text-slate-800 dark:text-slate-100">
-                Chạm để Chụp / Tải ảnh Trước khi làm
+                Chụp / Tải ảnh Trước khi làm
               </div>
-              <div className="text-xs text-slate-400 mt-1">Hỗ trợ mở Camera trực tiếp trên điện thoại</div>
+              <div className="text-xs text-slate-400 mt-1 mb-4">
+                Chụp trực tiếp bằng Camera hoặc chọn ảnh có sẵn từ thư viện điện thoại
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
+                <Button
+                  type="primary"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                  icon={<AppIcon icon={Camera} size="sm" />}
+                  onClick={() => beforeCameraInputRef.current?.click()}
+                  loading={submittingAction === 'upload-before'}
+                >
+                  Chụp Camera
+                </Button>
+                <Button
+                  icon={<AppIcon icon={ImageIcon} size="sm" />}
+                  onClick={() => beforeLibraryInputRef.current?.click()}
+                  loading={submittingAction === 'upload-before'}
+                  className="border-slate-300 dark:border-slate-700 font-medium"
+                >
+                  Thư viện ảnh
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -601,15 +658,28 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
             )}
           </div>
 
+          {/* Hidden inputs for Camera and Photo Library */}
           <input
             type="file"
-            ref={afterPhotoInputRef}
+            ref={afterCameraInputRef}
             accept="image/*"
             capture="environment"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleUploadPhoto('after', file);
+              e.target.value = '';
+            }}
+          />
+          <input
+            type="file"
+            ref={afterLibraryInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleUploadPhoto('after', file);
+              e.target.value = '';
             }}
           />
 
@@ -618,41 +688,75 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               {/* Side-by-Side Comparison */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950 aspect-[4/3] flex items-center justify-center">
-                  <img src={session.beforePhotoUrl || ''} alt="Before Photo" className="w-full h-full object-contain" />
+                  <img
+                    src={resolveMediaUrl(session.beforePhotoUrl)}
+                    alt="Before Photo"
+                    className="w-full h-full object-contain"
+                  />
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-white text-[11px] font-bold">
                     TRƯỚC (BEFORE)
                   </div>
                 </div>
 
                 <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950 aspect-[4/3] flex items-center justify-center">
-                  <img src={session.afterPhotoUrl} alt="After Photo" className="w-full h-full object-contain" />
+                  <img
+                    src={resolveMediaUrl(session.afterPhotoUrl)}
+                    alt="After Photo"
+                    className="w-full h-full object-contain"
+                  />
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-emerald-600/90 backdrop-blur-md text-white text-[11px] font-bold">
                     SAU (AFTER) ✨
                   </div>
                 </div>
               </div>
 
-              <Button
-                block
-                icon={<AppIcon icon={Camera} size="sm" />}
-                onClick={() => afterPhotoInputRef.current?.click()}
-                loading={submittingAction === 'upload-after'}
-              >
-                Chụp / Tải lại ảnh After
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  icon={<AppIcon icon={Camera} size="sm" />}
+                  onClick={() => afterCameraInputRef.current?.click()}
+                  loading={submittingAction === 'upload-after'}
+                >
+                  Chụp lại Camera
+                </Button>
+                <Button
+                  icon={<AppIcon icon={ImageIcon} size="sm" />}
+                  onClick={() => afterLibraryInputRef.current?.click()}
+                  loading={submittingAction === 'upload-after'}
+                >
+                  Đổi từ thư viện
+                </Button>
+              </div>
             </div>
           ) : (
-            <div
-              onClick={() => afterPhotoInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 rounded-xl p-6 text-center cursor-pointer transition-all bg-slate-50 hover:bg-indigo-50/30 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20"
-            >
+            <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-5 text-center bg-slate-50 dark:bg-slate-800/40">
               <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-2">
                 <AppIcon icon={Camera} size="md" />
               </div>
               <div className="font-bold text-sm text-slate-800 dark:text-slate-100">
-                Chạm để Chụp / Tải ảnh Sau khi làm
+                Chụp / Tải ảnh Sau khi làm
               </div>
-              <div className="text-xs text-slate-400 mt-1">Lưu vào hồ sơ ca dịch vụ để đối chiếu kết quả</div>
+              <div className="text-xs text-slate-400 mt-1 mb-4">
+                Chụp trực tiếp bằng Camera hoặc chọn ảnh có sẵn từ thư viện điện thoại
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
+                <Button
+                  type="primary"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                  icon={<AppIcon icon={Camera} size="sm" />}
+                  onClick={() => afterCameraInputRef.current?.click()}
+                  loading={submittingAction === 'upload-after'}
+                >
+                  Chụp Camera
+                </Button>
+                <Button
+                  icon={<AppIcon icon={ImageIcon} size="sm" />}
+                  onClick={() => afterLibraryInputRef.current?.click()}
+                  loading={submittingAction === 'upload-after'}
+                  className="border-slate-300 dark:border-slate-700 font-medium"
+                >
+                  Thư viện ảnh
+                </Button>
+              </div>
             </div>
           )}
         </div>

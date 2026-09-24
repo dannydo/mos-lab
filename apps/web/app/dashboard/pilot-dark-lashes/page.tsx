@@ -34,7 +34,7 @@ import type {
   PilotSession,
   UpdatePilotSessionRequest,
 } from '@mos-lab/shared';
-import { apiClient } from '../../../lib/api-client';
+import { apiClient, resolveMediaUrl } from '../../../lib/api-client';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { StatCard } from '../../../components/ui/StatCard';
 import { DataTable } from '../../../components/ui/DataTable';
@@ -380,7 +380,7 @@ export default function PilotDarkLashesPage() {
             {r.beforePhotoUrl ? (
               <Tooltip title="Xem ảnh Before">
                 <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 shrink-0">
-                  <img src={r.beforePhotoUrl} alt="Before" className="w-full h-full object-cover" />
+                  <img src={resolveMediaUrl(r.beforePhotoUrl)} alt="Before" className="w-full h-full object-cover" />
                 </div>
               </Tooltip>
             ) : (
@@ -392,7 +392,7 @@ export default function PilotDarkLashesPage() {
             {r.afterPhotoUrl ? (
               <Tooltip title="Xem ảnh After">
                 <div className="w-10 h-10 rounded-lg overflow-hidden border border-emerald-300 dark:border-emerald-700 bg-slate-900 shrink-0">
-                  <img src={r.afterPhotoUrl} alt="After" className="w-full h-full object-cover" />
+                  <img src={resolveMediaUrl(r.afterPhotoUrl)} alt="After" className="w-full h-full object-cover" />
                 </div>
               </Tooltip>
             ) : (

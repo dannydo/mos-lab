@@ -3,8 +3,8 @@ import { safeStorage } from './safe-storage';
 import { recordApiFailure } from './bug-diagnostics';
 import { recordBreadcrumb, reportFrontendIssue } from './telemetry/frontend-observer';
 
-import { resolveApiBaseUrl } from './api-base-url';
-export { resolveApiBaseUrl };
+import { resolveApiBaseUrl, resolveMediaUrl } from './api-base-url';
+export { resolveApiBaseUrl, resolveMediaUrl };
 
 declare module 'axios' {
   export interface AxiosRequestConfig {

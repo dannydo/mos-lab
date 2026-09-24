@@ -574,3 +574,42 @@ test('PilotService: 7-step operational flow transitions and validations', async 
   assert.ok(checkOutRes.checkOutAt);
   assert.equal(checkOutRes.totalDurationMinutes, 60);
 });
+
+test('PilotService: uploadPhoto handles data URIs, raw base64 and external URLs', async () => {
+  const fakeFastify: SafeAny = {};
+
+  // Reject empty photo
+  await assert.rejects(
+    async () => {
+      await PilotService.uploadPhoto(fakeFastify, { photoData: '' });
+    },
+    {
+      name: 'PilotServiceError',
+      message: 'Dữ liệu ảnh không được để trống.',
+    }
+  );
+
+  // External URL returned as-is
+  const httpRes = await PilotService.uploadPhoto(fakeFastify, {
+    photoData: 'https://example.com/avatar.jpg',
+  });
+  assert.equal(httpRes.photoUrl, 'https://example.com/avatar.jpg');
+
+  // 1x1 transparent png in base64
+  const pngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+  // Upload data URI
+  const dataUriRes = await PilotService.uploadPhoto(fakeFastify, {
+    photoData: `data:image/png;base64,${pngBase64}`,
+  });
+  assert.match(dataUriRes.photoUrl, /^\/api\/pilot\/media\/[a-f0-9-]+\.png$/);
+
+  // Upload raw base64
+  const rawBase64Res = await PilotService.uploadPhoto(fakeFastify, {
+    photoData: pngBase64,
+    mimeType: 'image/png',
+  });
+  assert.match(rawBase64Res.photoUrl, /^\/api\/pilot\/media\/[a-f0-9-]+\.png$/);
+});
+

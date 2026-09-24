@@ -1,5 +1,5 @@
 import axios from 'axios';
-import api, { resolveApiBaseUrl } from '../api';
+import api, { resolveApiBaseUrl, resolveMediaUrl } from '../api';
 
 export interface ApiRequestOptions {
   signal?: AbortSignal;
@@ -204,5 +204,5 @@ export async function pollWithAbort<T>(
   return undefined;
 }
 
-export { api, resolveApiBaseUrl };
+export { api, resolveApiBaseUrl, resolveMediaUrl };
 export default api;

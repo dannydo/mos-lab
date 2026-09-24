@@ -928,16 +928,19 @@ export class PilotService {
     }
 
     const trimmed = input.photoData.trim();
+    let mime = input.mimeType || 'image/jpeg';
+    let base64Data: string;
+
     const match = trimmed.match(/^data:([^;]+);base64,(.+)$/s);
-    if (!match) {
-      if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
-        return { photoUrl: trimmed };
-      }
-      throw new PilotServiceError('Định dạng ảnh không hợp lệ.', 400);
+    if (match) {
+      mime = match[1];
+      base64Data = match[2];
+    } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+      return { photoUrl: trimmed };
+    } else {
+      base64Data = trimmed.replace(/\s/g, '');
     }
 
-    const mime = match[1] || input.mimeType || 'image/jpeg';
-    const base64Data = match[2];
     const buffer = Buffer.from(base64Data, 'base64');
 
     let ext = 'jpg';
