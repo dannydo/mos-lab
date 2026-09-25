@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { SafeAny, AvatarScoreResponse } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
+import { useTheme } from '../../context/ThemeContext';
 
 interface AvatarCropModalProps {
   open: boolean;
@@ -114,6 +115,9 @@ function launchConfetti() {
 }
 
 export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose, currentUser, onSuccess }) => {
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
+
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
@@ -191,7 +195,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
 
   useEffect(() => {
     drawCanvas();
-  }, [zoom, rotation, panOffset]);
+  });
 
   // File selection handler
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,37 +355,63 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
       centered
       width={480}
       destroyOnClose
-      closeIcon={<X size={18} className="text-slate-400 hover:text-white" />}
+      closeIcon={
+        <X size={18} className={isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'} />
+      }
       styles={{
         content: {
-          background: 'linear-gradient(180deg, #18181c 0%, #101014 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          background: isDark
+            ? 'linear-gradient(180deg, #18181c 0%, #101014 100%)'
+            : 'linear-gradient(180deg, #ffffff 0%, #f9fafb 100%)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
           borderRadius: '28px',
-          boxShadow: '0 25px 60px -15px rgba(0,0,0,0.85)',
+          boxShadow: isDark
+            ? '0 25px 60px -15px rgba(0,0,0,0.85)'
+            : '0 25px 60px -15px rgba(0,0,0,0.18), 0 10px 25px -5px rgba(0,0,0,0.06)',
           padding: 0,
           overflow: 'hidden',
         },
         mask: {
-          backdropFilter: 'blur(12px)',
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(16px)',
+          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(15, 23, 42, 0.45)',
         },
       }}
     >
-      <div className="flex flex-col max-h-[85vh] overflow-y-auto no-scrollbar text-slate-100 p-5 md:p-6 select-none">
+      <div
+        className={`flex flex-col max-h-[85vh] overflow-y-auto no-scrollbar p-5 md:p-6 select-none ${
+          isDark ? 'text-slate-100' : 'text-slate-900'
+        }`}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+        <div
+          className={`flex items-center justify-between pb-3 border-b ${
+            isDark ? 'border-white/[0.08]' : 'border-slate-200'
+          }`}
+        >
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-950 font-bold shadow-md shadow-amber-500/20">
               <Camera size={16} />
             </div>
             <div>
-              <h2 className="text-sm md:text-base font-bold text-white tracking-tight leading-tight">
+              <h2
+                className={`text-sm md:text-base font-bold tracking-tight leading-tight ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}
+              >
                 Căn Chỉnh & Chấm Điểm AI
               </h2>
-              <p className="text-[11px] text-slate-400 font-medium">Apple Viewfinder & Wings Coach</p>
+              <p className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Apple Viewfinder & Wings Coach
+              </p>
             </div>
           </div>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase border ${
+              isDark
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                : 'bg-amber-100 text-amber-800 border-amber-300 shadow-xs'
+            }`}
+          >
             PRO
           </span>
         </div>
@@ -399,7 +429,11 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
 
         {/* Viewfinder Canvas Area */}
         <div className="mt-4 flex flex-col items-center">
-          <div className="relative w-64 h-64 md:w-72 md:h-72 rounded-full overflow-hidden border-2 border-amber-500/40 shadow-2xl bg-black/40 flex items-center justify-center group cursor-grab active:cursor-grabbing">
+          <div
+            className={`relative w-64 h-64 md:w-72 md:h-72 rounded-full overflow-hidden border-2 shadow-2xl flex items-center justify-center group cursor-grab active:cursor-grabbing ${
+              isDark ? 'border-amber-500/40 bg-black/40' : 'border-amber-400 bg-slate-100 shadow-inner'
+            }`}
+          >
             {selectedImageSrc ? (
               <canvas
                 ref={canvasRef}
@@ -416,11 +450,19 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
               />
             ) : (
               <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center text-slate-400">
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center border ${
+                    isDark
+                      ? 'bg-white/[0.05] border-white/10 text-slate-400'
+                      : 'bg-white border-slate-200 text-slate-500 shadow-sm'
+                  }`}
+                >
                   <ImageIcon size={28} />
                 </div>
-                <div className="text-xs font-semibold text-slate-300">Chưa chọn ảnh đại diện</div>
-                <p className="text-[11px] text-slate-500 leading-tight">
+                <div className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Chưa chọn ảnh đại diện
+                </div>
+                <p className={`text-[11px] leading-tight ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
                   Chụp một tấm hình selfie rạng rỡ hoặc chọn từ thư viện iPhone của bạn
                 </p>
               </div>
@@ -445,17 +487,25 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}
-              className="flex-1 py-2 px-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 active:scale-95 transition-all text-xs font-semibold flex items-center justify-center gap-2 text-slate-200 cursor-pointer shadow-sm"
+              className={`flex-1 py-2 px-3 rounded-xl border active:scale-95 transition-all text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
+                isDark
+                  ? 'bg-white/[0.08] hover:bg-white/[0.12] border-white/10 text-slate-200'
+                  : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+              }`}
             >
-              <Camera size={14} className="text-amber-400" />
+              <Camera size={14} className={isDark ? 'text-amber-400' : 'text-amber-600'} />
               Chụp Camera
             </button>
             <button
               type="button"
               onClick={() => galleryInputRef.current?.click()}
-              className="flex-1 py-2 px-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 active:scale-95 transition-all text-xs font-semibold flex items-center justify-center gap-2 text-slate-200 cursor-pointer shadow-sm"
+              className={`flex-1 py-2 px-3 rounded-xl border active:scale-95 transition-all text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
+                isDark
+                  ? 'bg-white/[0.08] hover:bg-white/[0.12] border-white/10 text-slate-200'
+                  : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+              }`}
             >
-              <ImageIcon size={14} className="text-sky-400" />
+              <ImageIcon size={14} className={isDark ? 'text-sky-400' : 'text-sky-600'} />
               Chọn từ Thư Viện
             </button>
             {selectedImageSrc && (
@@ -463,7 +513,11 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
                 type="button"
                 onClick={handleRotate}
                 title="Xoay 90 độ"
-                className="w-9 h-9 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 active:scale-95 transition-all flex items-center justify-center text-slate-300 cursor-pointer shadow-sm"
+                className={`w-9 h-9 rounded-xl border active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm ${
+                  isDark
+                    ? 'bg-white/[0.08] hover:bg-white/[0.12] border-white/10 text-slate-300'
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
+                }`}
               >
                 <RotateCw size={14} />
               </button>
@@ -472,8 +526,12 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
 
           {/* Zoom Slider Control */}
           {selectedImageSrc && (
-            <div className="mt-3 w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-1.5 flex items-center gap-3">
-              <ZoomIn size={14} className="text-slate-400 shrink-0" />
+            <div
+              className={`mt-3 w-full border rounded-xl px-3.5 py-1.5 flex items-center gap-3 ${
+                isDark ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-slate-100 border-slate-200'
+              }`}
+            >
+              <ZoomIn size={14} className={isDark ? 'text-slate-400' : 'text-slate-500'} />
               <Slider
                 min={0.8}
                 max={3.0}
@@ -482,27 +540,60 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
                 onChange={(val) => setZoom(val)}
                 className="flex-1 m-0"
               />
-              <span className="text-[11px] font-mono text-amber-400 shrink-0 w-8 text-right">{zoom.toFixed(1)}x</span>
+              <span
+                className={`text-[11px] font-mono shrink-0 w-8 text-right font-bold ${
+                  isDark ? 'text-amber-400' : 'text-amber-700'
+                }`}
+              >
+                {zoom.toFixed(1)}x
+              </span>
             </div>
           )}
         </div>
 
         {/* Wings AI Coach & Gemini Vision Scoring Card */}
         {selectedImageSrc && (
-          <div className="mt-4 rounded-2xl bg-white/[0.04] border border-white/[0.1] p-3.5 relative overflow-hidden backdrop-blur-md">
+          <div
+            className={`mt-4 rounded-2xl p-3.5 relative overflow-hidden backdrop-blur-md border shadow-md ${
+              isDark
+                ? 'bg-white/[0.04] border-white/[0.1]'
+                : 'bg-gradient-to-br from-amber-50/90 via-white to-purple-50/50 border-amber-200/80'
+            }`}
+          >
             {/* Ambient Aurora Gradient */}
-            <div className="absolute -top-12 -right-12 w-28 h-28 bg-gradient-to-br from-amber-500/20 to-purple-500/20 blur-2xl pointer-events-none" />
+            <div
+              className={`absolute -top-12 -right-12 w-28 h-28 blur-2xl pointer-events-none ${
+                isDark
+                  ? 'bg-gradient-to-br from-amber-500/20 to-purple-500/20'
+                  : 'bg-gradient-to-br from-amber-400/20 to-purple-400/20'
+              }`}
+            />
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-amber-400 animate-pulse" />
-                <span className="text-xs font-bold text-white tracking-tight">Wings AI Coach</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">
+                <Sparkles
+                  size={16}
+                  className={isDark ? 'text-amber-400 animate-pulse' : 'text-amber-600 animate-pulse'}
+                />
+                <span className={`text-xs font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  Wings AI Coach
+                </span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                    isDark
+                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                      : 'bg-purple-100 text-purple-800 border-purple-200 shadow-xs'
+                  }`}
+                >
                   Gemini Vision
                 </span>
               </div>
               {aiScoreState.status === 'analyzing' && (
-                <div className="flex items-center gap-1.5 text-[11px] text-amber-300 font-medium">
+                <div
+                  className={`flex items-center gap-1.5 text-[11px] font-medium ${
+                    isDark ? 'text-amber-300' : 'text-amber-700'
+                  }`}
+                >
                   <Spin size="small" />
                   Đang quét thần thái...
                 </div>
@@ -515,37 +606,55 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
                 {aiScoreState.data.isHumanPortrait ? (
                   <>
                     {/* Badge and Total Score */}
-                    <div className="flex items-center justify-between bg-black/30 rounded-xl p-2.5 border border-white/5">
+                    <div
+                      className={`flex items-center justify-between rounded-xl p-2.5 border ${
+                        isDark ? 'bg-black/30 border-white/5' : 'bg-white border-slate-200/80 shadow-xs'
+                      }`}
+                    >
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 size={16} className="text-emerald-400" />
+                        <CheckCircle2 size={16} className="text-emerald-500" />
                         <div>
-                          <div className="text-[11px] font-bold text-slate-200">
+                          <div className={`text-[12px] font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                             {aiScoreState.data.badge || 'Nụ Cười Tỏa Sáng'}
                           </div>
-                          <div className="text-[10px] text-slate-400">{aiScoreState.data.verdict}</div>
+                          <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {aiScoreState.data.verdict}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-lg font-black font-mono text-amber-400">
+                        <span
+                          className={`text-xl font-black font-mono ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
+                        >
                           {aiScoreState.data.totalScore}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono">/10</span>
+                        <span className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          /10
+                        </span>
                       </div>
                     </div>
 
                     {/* 3 Metric Bars */}
                     {aiScoreState.data.metrics && (
                       <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-                            <span className="flex items-center gap-1">
-                              <Smile size={11} className="text-pink-400" /> Nụ cười
+                        <div
+                          className={`rounded-lg p-2 border shadow-xs ${
+                            isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white border-slate-200/80'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] mb-1">
+                            <span
+                              className={`flex items-center gap-1 font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}
+                            >
+                              <Smile size={11} className="text-pink-500" /> Nụ cười
                             </span>
-                            <span className="font-mono font-bold text-slate-200">
+                            <span className={`font-mono font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                               {aiScoreState.data.metrics.smile}/10
                             </span>
                           </div>
-                          <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
+                          <div
+                            className={`w-full rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}
+                          >
                             <div
                               className="bg-gradient-to-r from-pink-500 to-rose-400 h-full rounded-full transition-all duration-500"
                               style={{ width: `${aiScoreState.data.metrics.smile * 10}%` }}
@@ -553,33 +662,49 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
                           </div>
                         </div>
 
-                        <div className="bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-                            <span className="flex items-center gap-1">
-                              <Sun size={11} className="text-amber-400" /> Ánh sáng
+                        <div
+                          className={`rounded-lg p-2 border shadow-xs ${
+                            isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white border-slate-200/80'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] mb-1">
+                            <span
+                              className={`flex items-center gap-1 font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}
+                            >
+                              <Sun size={11} className="text-amber-500" /> Ánh sáng
                             </span>
-                            <span className="font-mono font-bold text-slate-200">
+                            <span className={`font-mono font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                               {aiScoreState.data.metrics.lighting}/10
                             </span>
                           </div>
-                          <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
+                          <div
+                            className={`w-full rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}
+                          >
                             <div
-                              className="bg-gradient-to-r from-amber-500 to-yellow-300 h-full rounded-full transition-all duration-500"
+                              className="bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-500"
                               style={{ width: `${aiScoreState.data.metrics.lighting * 10}%` }}
                             />
                           </div>
                         </div>
 
-                        <div className="bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-                            <span className="flex items-center gap-1">
-                              <LayoutIcon size={11} className="text-sky-400" /> Bố cục
+                        <div
+                          className={`rounded-lg p-2 border shadow-xs ${
+                            isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white border-slate-200/80'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] mb-1">
+                            <span
+                              className={`flex items-center gap-1 font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}
+                            >
+                              <LayoutIcon size={11} className="text-sky-500" /> Bố cục
                             </span>
-                            <span className="font-mono font-bold text-slate-200">
+                            <span className={`font-mono font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                               {aiScoreState.data.metrics.composition}/10
                             </span>
                           </div>
-                          <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
+                          <div
+                            className={`w-full rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}
+                          >
                             <div
                               className="bg-gradient-to-r from-sky-500 to-cyan-400 h-full rounded-full transition-all duration-500"
                               style={{ width: `${aiScoreState.data.metrics.composition * 10}%` }}
@@ -591,17 +716,29 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
 
                     {/* AI Feedback advice */}
                     {aiScoreState.data.feedback && (
-                      <p className="text-[11px] text-slate-300 leading-snug italic bg-amber-500/[0.07] border border-amber-500/20 rounded-xl p-2.5">
+                      <p
+                        className={`text-[11px] leading-snug italic rounded-xl p-2.5 border ${
+                          isDark
+                            ? 'bg-amber-500/[0.07] border-amber-500/20 text-slate-300'
+                            : 'bg-amber-50 border-amber-300/80 text-amber-950 font-medium'
+                        }`}
+                      >
                         💡 &ldquo;{aiScoreState.data.feedback}&rdquo;
                       </p>
                     )}
                   </>
                 ) : (
-                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-start gap-2.5">
-                    <AlertTriangle size={16} className="text-rose-400 shrink-0 mt-0.5" />
+                  <div
+                    className={`rounded-xl p-3 flex items-start gap-2.5 border ${
+                      isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-200'
+                    }`}
+                  >
+                    <AlertTriangle size={16} className="text-rose-500 shrink-0 mt-0.5" />
                     <div>
-                      <div className="text-xs font-bold text-rose-300">Không nhận diện thấy chân dung</div>
-                      <p className="text-[11px] text-slate-300 mt-0.5">
+                      <div className={`text-xs font-bold ${isDark ? 'text-rose-300' : 'text-rose-800'}`}>
+                        Không nhận diện thấy chân dung
+                      </div>
+                      <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                         {aiScoreState.data.feedback ||
                           'Hãy chọn một tấm ảnh có khuôn mặt và nụ cười của bạn để tỏa sáng trên hệ thống nhé!'}
                       </p>
@@ -612,18 +749,28 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
             )}
 
             {aiScoreState.status === 'error' && (
-              <p className="text-[11px] text-slate-400 mt-2">{aiScoreState.errorMessage}</p>
+              <p className={`text-[11px] mt-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                {aiScoreState.errorMessage}
+              </p>
             )}
           </div>
         )}
 
         {/* Footer Buttons */}
-        <div className="mt-5 pt-3 border-t border-white/[0.08] flex items-center justify-end gap-3">
+        <div
+          className={`mt-5 pt-3 border-t flex items-center justify-end gap-3 ${
+            isDark ? 'border-white/[0.08]' : 'border-slate-200'
+          }`}
+        >
           <button
             type="button"
             onClick={handleClose}
             disabled={isUploading}
-            className="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
+            className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer border ${
+              isDark
+                ? 'bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 border-white/10'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-300 shadow-xs'
+            }`}
           >
             Hủy
           </button>
@@ -631,10 +778,12 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
             type="button"
             disabled={!selectedImageSrc || isUploading}
             onClick={handleSaveAvatar}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-lg ${
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-lg border ${
               selectedImageSrc && !isUploading
-                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 active:scale-95 shadow-amber-500/25'
-                : 'bg-white/10 text-slate-500 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 active:scale-95 shadow-amber-500/25 border-amber-400/40'
+                : isDark
+                  ? 'bg-white/10 text-slate-500 border-transparent cursor-not-allowed'
+                  : 'bg-slate-200 text-slate-400 border-transparent cursor-not-allowed'
             }`}
           >
             {isUploading ? (
