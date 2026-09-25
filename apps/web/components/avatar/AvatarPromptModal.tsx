@@ -93,16 +93,77 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
       });
       setNudgeData(res);
     } catch (_err) {
-      // Fallback nudge
-      setNudgeData({
-        greeting: `Chào ${currentUser?.displayName || 'bạn'}! ✨`,
-        banter:
-          currentCount > 0
-            ? 'Hôm qua hứa "để mai tính", hôm nay là "mai" rồi nè bạn tính tới đâu rồi? Đổi ảnh selfie thật rạng rỡ để cả team ngắm nụ cười tỏa sáng nhé!'
-            : 'Một nụ cười rạng rỡ trên avatar sẽ giúp kết nối tình đồng đội và trao gửi niềm tin tuyệt đối đến khách hàng mỗi ngày.',
-        callToAction: 'Chụp / Chọn ảnh ngay',
-        isBanter: currentCount > 0,
-      });
+      // Fallback list of Thiên Sứ Bóng Tối moods
+      const fallbackList: AvatarNudgeResponse[] = [
+        {
+          angelAction: 'dụ dỗ',
+          angelIcon: '🍎',
+          badge: 'Cám Dỗ Ngọt Ngào',
+          greeting: `Hỡi ${currentUser?.displayName || 'bạn'} xinh đẹp... ✨`,
+          banter:
+            'Ta mang đến cho ngươi cơ hội tỏa sáng ngút ngàn trên mOS! Chỉ 15 giây selfie nụ cười rạng rỡ, hào quang sẽ theo ngươi cả ngày dài. Ngươi nỡ chối từ quả táo thần kỳ này sao?',
+          callToAction: '🍎 Nghe Lời Cám Dỗ, Chụp Luôn!',
+          snoozeText: 'Cưỡng lại cám dỗ, để mai tính 🙈',
+          isBanter: false,
+        },
+        {
+          angelAction: 'năn nỉ',
+          angelIcon: '🥺',
+          badge: 'Hạ Mình Cầu Xin',
+          greeting: `Ai đó cứu Thiên Sứ với... 🥺`,
+          banter: `Ta bay vòng vòng năn nỉ ${currentUser?.displayName || 'bạn'} mỏi cả cánh rồi! Giơ máy lên cười tươi 15 giây cho ta hoàn thành KPI thiên đình đi mà, năn nỉ đó!`,
+          callToAction: '📸 Cứu Thiên Sứ, Chụp Liền!',
+          snoozeText: 'Cho nợ nốt hôm nay nha Thiên Sứ 🥺',
+          isBanter: true,
+        },
+        {
+          angelAction: 'cà khịa',
+          angelIcon: '😏',
+          badge: 'Bắt Quả Tang!',
+          greeting: `Ủa alo ${currentUser?.displayName || 'bạn'} ơi? 😈`,
+          banter:
+            currentCount > 0
+              ? 'Hôm qua ai thề non hẹn biển "để mai tính" ta? Hôm nay là ngày mai trong truyền thuyết rồi nè! Tính tới đâu rồi hay đang tính trốn luôn?'
+              : 'Đồng đội ai cũng avatar lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!',
+          callToAction: '📸 Thôi Được Rồi, Chụp Luôn!',
+          snoozeText: 'Hứa danh dự ngày mai đổi thiệt 🙈',
+          isBanter: true,
+        },
+        {
+          angelAction: 'hờn dỗi',
+          angelIcon: '😤',
+          badge: 'Giận Tím Người',
+          greeting: `Thiên Sứ dỗi ${currentUser?.displayName || 'bạn'} rồi đó! 😤`,
+          banter:
+            'Ngắm cái icon mặc định của bạn suốt mấy hôm làm ta muốn tiền đình. Hôm nay mà không chụp là ta ếm bùa cho khách khen suốt ngày mỏi miệng ráng chịu!',
+          callToAction: '📸 Chụp Ngay Kẻo Thiên Sứ Khóc',
+          snoozeText: 'Dỗ dành Thiên Sứ, mai tính nha 🥺',
+          isBanter: true,
+        },
+        {
+          angelAction: 'thầm thì',
+          angelIcon: '🤫',
+          badge: 'Bí Mật Đen Tối',
+          greeting: `Suỵt... lại gần đây ta bảo! 🤫`,
+          banter:
+            'Ta vừa soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ hôm nay thì tỉ lệ nhận tip và khách book tua tăng vùn vụt! Đừng để lọt bí mật này cho người khác nhen!',
+          callToAction: '✨ Đổi Avatar Hút May Mắn',
+          snoozeText: 'Để mai nhận lộc vậy 🙈',
+          isBanter: false,
+        },
+        {
+          angelAction: 'đe dọa (nhẹ)',
+          angelIcon: '⚡',
+          badge: 'Tối Hậu Thư',
+          greeting: `Cảnh báo từ cõi u tối! ⚡`,
+          banter: `Bạn đã bấm 'Để mai tính' đến lần thứ ${currentCount || 1} rồi đấy nhé! Nếu hôm nay còn chối từ, ta sẽ biến avatar của bạn thành hình quả chuối vàng khổng lồ!`,
+          callToAction: '📸 Đổi Ngay Tránh Bị Hóa Chuối!',
+          snoozeText: 'Vẫn can đảm hoãn tiếp 🏃💨',
+          isBanter: true,
+        },
+      ];
+      const picked = fallbackList[Math.floor(Math.random() * fallbackList.length)];
+      setNudgeData(picked);
     } finally {
       setIsLoadingNudge(false);
     }
@@ -260,7 +321,7 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
             </div>
           </div>
 
-          {/* Gemini AI Banter Card (Single Conversational Card - Thumb Zone Mobile Optimized) */}
+          {/* Thiên Sứ Bóng Tối Card (Single Conversational Card - Thumb Zone Mobile Optimized) */}
           <div
             className={`mt-1 rounded-2xl p-4 relative overflow-hidden backdrop-blur-md shadow-md border ${
               isDark
@@ -269,9 +330,15 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Gemini Nhắn Nhủ
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span
+                  className={`text-xs font-bold tracking-tight flex items-center gap-1 ${isDark ? 'text-white' : 'text-slate-900'}`}
+                >
+                  <span className="text-sm select-none">{nudgeData?.angelIcon || '😈'}</span>
+                  <span>Thiên Sứ Bóng Tối</span>
+                  <span className={`font-semibold text-[11px] ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+                    ({nudgeData?.angelAction || 'nhắn nhủ'})
+                  </span>
                 </span>
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
@@ -280,17 +347,17 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
                       : 'bg-purple-100 text-purple-800 border-purple-200 shadow-xs'
                   }`}
                 >
-                  {nudgeData?.isBanter ? 'Cà khịa thân thiện' : 'Khích lệ'}
+                  {nudgeData?.badge || (nudgeData?.isBanter ? 'Cà khịa thân thiện' : 'Khích lệ')}
                 </span>
               </div>
               {isLoadingNudge && (
                 <div
-                  className={`flex items-center gap-1 text-[10px] font-medium ${
+                  className={`flex items-center gap-1 text-[10px] font-medium shrink-0 ${
                     isDark ? 'text-amber-300' : 'text-amber-700'
                   }`}
                 >
                   <Spin size="small" />
-                  Đang nghĩ...
+                  <span>Đang nhập vai...</span>
                 </div>
               )}
             </div>
@@ -301,6 +368,7 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
               </div>
               <p className={`text-[12px] leading-relaxed font-normal ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                 {nudgeData?.banter ||
+                  nudgeData?.quote ||
                   'Một tấm ảnh đại diện rạng rỡ giúp kết nối tình đồng đội và trao gửi niềm tin trọn vẹn đến khách hàng.'}
               </p>
             </div>
@@ -348,7 +416,7 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
               className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all cursor-pointer border border-amber-400/40"
             >
               <Camera size={16} />
-              {nudgeData?.callToAction || 'Chụp / Chọn ảnh ngay'}
+              {nudgeData?.callToAction || nudgeData?.ctaText || 'Chụp / Chọn ảnh ngay'}
               <ChevronRight size={14} />
             </button>
 
@@ -363,7 +431,7 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
               }`}
             >
               <Clock size={13} className={isDark ? 'text-slate-400' : 'text-slate-500'} />
-              Để mai mình đổi {snoozeCount > 0 ? `(lần ${snoozeCount + 1})` : ''}
+              {nudgeData?.snoozeText || `Để mai mình đổi ${snoozeCount > 0 ? `(lần ${snoozeCount + 1})` : ''}`}
             </button>
           </div>
         </div>

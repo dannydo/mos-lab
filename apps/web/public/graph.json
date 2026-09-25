@@ -5176,7 +5176,7 @@
         "path": "/api/ai/avatar-nudge-message",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 424
+        "line": 426
       }
     },
     {
@@ -27947,8 +27947,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22629,
-        "lineCount": 509,
+        "sizeBytes": 29812,
+        "lineCount": 607,
         "ext": ".ts"
       }
     },
@@ -37398,8 +37398,8 @@
       "filePath": "packages/shared/src/types/staff.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1941,
-        "lineCount": 84,
+        "sizeBytes": 1987,
+        "lineCount": 86,
         "ext": ".ts"
       }
     },

@@ -80,4 +80,6 @@ export interface AvatarNudgeResponse {
   banter?: string;
   callToAction?: string;
   snoozeCount?: number;
+  angelAction?: string;
+  angelIcon?: string;
 }
