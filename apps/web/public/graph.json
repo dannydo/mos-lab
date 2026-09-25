@@ -2491,7 +2491,7 @@
         "dbSource": "crm",
         "modelName": "CrmPilotSession",
         "tableName": "crm_pilot_sessions",
-        "fieldCount": 36,
+        "fieldCount": 37,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -2531,6 +2531,42 @@
         "readOnly": false,
         "isCatalogException": false,
         "relations": ["sessionId", "materialId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmPilotSopStep",
+      "type": "PrismaModel",
+      "label": "crm.CrmPilotSopStep",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmPilotSopStep",
+        "tableName": "crm_pilot_sop_steps",
+        "fieldCount": 10,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmPilotSessionStep",
+      "type": "PrismaModel",
+      "label": "crm.CrmPilotSessionStep",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmPilotSessionStep",
+        "tableName": "crm_pilot_session_steps",
+        "fieldCount": 14,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["sessionId", "stepTemplateId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -9760,7 +9796,7 @@
         "path": "/api/pilot/media/:filename",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 33
+        "line": 39
       }
     },
     {
@@ -9774,7 +9810,7 @@
         "path": "/api/pilot/feature-flag",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 50
+        "line": 56
       }
     },
     {
@@ -9788,7 +9824,7 @@
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 64
+        "line": 70
       }
     },
     {
@@ -9802,7 +9838,7 @@
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 75
+        "line": 81
       }
     },
     {
@@ -9816,7 +9852,7 @@
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 86
+        "line": 92
       }
     },
     {
@@ -9830,7 +9866,7 @@
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 102
+        "line": 108
       }
     },
     {
@@ -9844,7 +9880,161 @@
         "path": "/api/pilot/materials/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 117
+        "line": 123
+      }
+    },
+    {
+      "id": "route:GET:/api/pilot/sop-steps",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/sop-steps",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/sop-steps",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 137
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sop-steps",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sop-steps",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sop-steps",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 147
+      }
+    },
+    {
+      "id": "route:PATCH:/api/pilot/sop-steps/:id",
+      "type": "FastifyRoute",
+      "label": "PATCH /api/pilot/sop-steps/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "PATCH",
+        "path": "/api/pilot/sop-steps/:id",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 157
+      }
+    },
+    {
+      "id": "route:DELETE:/api/pilot/sop-steps/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/pilot/sop-steps/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/pilot/sop-steps/:id",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 172
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sop-steps/reorder",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sop-steps/reorder",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sop-steps/reorder",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 186
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sop-steps/seed-defaults",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sop-steps/seed-defaults",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 196
+      }
+    },
+    {
+      "id": "route:GET:/api/pilot/sessions/:id/steps",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/sessions/:id/steps",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/sessions/:id/steps",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 211
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/steps/:stepId/start",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/steps/:stepId/start",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 226
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/steps/:stepId/finish",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 243
+      }
+    },
+    {
+      "id": "route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "type": "FastifyRoute",
+      "label": "PATCH /api/pilot/sessions/:id/steps/:stepId/note",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "PATCH",
+        "path": "/api/pilot/sessions/:id/steps/:stepId/note",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 260
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/steps/:stepId/reset",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 277
       }
     },
     {
@@ -9858,7 +10048,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 128
+        "line": 293
       }
     },
     {
@@ -9872,7 +10062,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 139
+        "line": 304
       }
     },
     {
@@ -9886,7 +10076,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 150
+        "line": 315
       }
     },
     {
@@ -9900,7 +10090,7 @@
         "path": "/api/pilot/sessions/:id/check-in",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 162
+        "line": 327
       }
     },
     {
@@ -9914,7 +10104,7 @@
         "path": "/api/pilot/sessions/:id/before-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 178
+        "line": 343
       }
     },
     {
@@ -9928,7 +10118,7 @@
         "path": "/api/pilot/sessions/:id/service-done",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 194
+        "line": 359
       }
     },
     {
@@ -9942,7 +10132,7 @@
         "path": "/api/pilot/sessions/:id/after-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 210
+        "line": 375
       }
     },
     {
@@ -9956,7 +10146,7 @@
         "path": "/api/pilot/sessions/:id/feedback",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 226
+        "line": 391
       }
     },
     {
@@ -9970,7 +10160,7 @@
         "path": "/api/pilot/sessions/:id/check-out",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 242
+        "line": 407
       }
     },
     {
@@ -9984,7 +10174,7 @@
         "path": "/api/pilot/upload-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 258
+        "line": 423
       }
     },
     {
@@ -9998,7 +10188,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 269
+        "line": 434
       }
     },
     {
@@ -10012,7 +10202,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 285
+        "line": 450
       }
     },
     {
@@ -23085,6 +23275,114 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:PilotSopStep",
+      "type": "SharedType",
+      "label": "PilotSopStep",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSopStep",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreatePilotSopStepRequest",
+      "type": "SharedType",
+      "label": "CreatePilotSopStepRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreatePilotSopStepRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdatePilotSopStepRequest",
+      "type": "SharedType",
+      "label": "UpdatePilotSopStepRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdatePilotSopStepRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReorderPilotSopStepsRequest",
+      "type": "SharedType",
+      "label": "ReorderPilotSopStepsRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReorderPilotSopStepsRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSessionStepStatus",
+      "type": "SharedType",
+      "label": "PilotSessionStepStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSessionStepStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSessionStep",
+      "type": "SharedType",
+      "label": "PilotSessionStep",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSessionStep",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:StartSessionStepRequest",
+      "type": "SharedType",
+      "label": "StartSessionStepRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StartSessionStepRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FinishSessionStepRequest",
+      "type": "SharedType",
+      "label": "FinishSessionStepRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FinishSessionStepRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateSessionStepNoteRequest",
+      "type": "SharedType",
+      "label": "UpdateSessionStepNoteRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateSessionStepNoteRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:PlanStatus",
       "type": "SharedType",
       "label": "PlanStatus",
@@ -26697,6 +26995,66 @@
       }
     },
     {
+      "id": "uicomp:RichTextEditor",
+      "type": "UIComponent",
+      "label": "<RichTextEditor />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/rich-text/RichTextEditor.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RichTextEditor",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:RichTextViewer",
+      "type": "UIComponent",
+      "label": "<RichTextViewer />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/rich-text/RichTextViewer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RichTextViewer",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:RichTextComponents.test",
+      "type": "UIComponent",
+      "label": "<RichTextComponents.test />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/rich-text/__tests__/RichTextComponents.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RichTextComponents.test",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:markdown-parser.test",
+      "type": "UIComponent",
+      "label": "<markdown-parser.test />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/rich-text/markdown-parser.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "markdown-parser.test",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:markdown-parser",
+      "type": "UIComponent",
+      "label": "<markdown-parser />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/rich-text/markdown-parser.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "markdown-parser",
+        "isPrimitive": true
+      }
+    },
+    {
       "id": "uicomp:GlobalVoiceAssistant",
       "type": "UIComponent",
       "label": "<GlobalVoiceAssistant />",
@@ -29803,8 +30161,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20545,
-        "lineCount": 660,
+        "sizeBytes": 29344,
+        "lineCount": 933,
         "ext": ".ts"
       }
     },
@@ -29816,8 +30174,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 36233,
-        "lineCount": 1075,
+        "sizeBytes": 49763,
+        "lineCount": 1458,
         "ext": ".ts"
       }
     },
@@ -29829,8 +30187,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12285,
-        "lineCount": 299,
+        "sizeBytes": 19731,
+        "lineCount": 464,
         "ext": ".ts"
       }
     },
@@ -32949,8 +33307,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40795,
-        "lineCount": 886,
+        "sizeBytes": 40556,
+        "lineCount": 873,
         "ext": ".tsx"
       }
     },
@@ -33042,6 +33400,19 @@
       "metadata": {
         "sizeBytes": 846,
         "lineCount": 34,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/BugReportReasonModal.tsx",
+      "type": "File",
+      "label": "BugReportReasonModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportReasonModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1442,
+        "lineCount": 65,
         "ext": ".tsx"
       }
     },
@@ -34691,8 +35062,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 45047,
-        "lineCount": 959,
+        "sizeBytes": 46458,
+        "lineCount": 999,
         "ext": ".tsx"
       }
     },
@@ -34723,6 +35094,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx",
+      "type": "File",
+      "label": "PilotMetricsGrid.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5432,
+        "lineCount": 142,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "type": "File",
       "label": "PilotSessionDrawer.tsx",
@@ -34730,8 +35114,34 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25521,
-        "lineCount": 577,
+        "sizeBytes": 27387,
+        "lineCount": 634,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx",
+      "type": "File",
+      "label": "PilotSopModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12464,
+        "lineCount": 348,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx",
+      "type": "File",
+      "label": "PilotStepTimer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17484,
+        "lineCount": 401,
         "ext": ".tsx"
       }
     },
@@ -34743,8 +35153,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 35326,
-        "lineCount": 896,
+        "sizeBytes": 32360,
+        "lineCount": 829,
         "ext": ".tsx"
       }
     },
@@ -35796,8 +36206,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4063,
-        "lineCount": 98,
+        "sizeBytes": 6753,
+        "lineCount": 162,
         "ext": ".ts"
       }
     },
@@ -36719,8 +37129,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5320,
-        "lineCount": 207,
+        "sizeBytes": 8194,
+        "lineCount": 288,
         "ext": ".ts"
       }
     },
@@ -37890,6 +38300,20 @@
     {
       "id": "edge:prisma:crm:CrmPilotSessionMaterial:ws:apps/api",
       "source": "prisma:crm:CrmPilotSessionMaterial",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmPilotSopStep:ws:apps/api",
+      "source": "prisma:crm:CrmPilotSopStep",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmPilotSessionStep:ws:apps/api",
+      "source": "prisma:crm:CrmPilotSessionStep",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -41516,6 +41940,83 @@
     {
       "id": "edge:route:POST:/api/pilot/materials/seed-defaults:ws:apps/api",
       "source": "route:POST:/api/pilot/materials/seed-defaults",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/pilot/sop-steps:ws:apps/api",
+      "source": "route:GET:/api/pilot/sop-steps",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sop-steps:ws:apps/api",
+      "source": "route:POST:/api/pilot/sop-steps",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PATCH:/api/pilot/sop-steps/:id:ws:apps/api",
+      "source": "route:PATCH:/api/pilot/sop-steps/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/pilot/sop-steps/:id:ws:apps/api",
+      "source": "route:DELETE:/api/pilot/sop-steps/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sop-steps/reorder:ws:apps/api",
+      "source": "route:POST:/api/pilot/sop-steps/reorder",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sop-steps/seed-defaults:ws:apps/api",
+      "source": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/pilot/sessions/:id/steps:ws:apps/api",
+      "source": "route:GET:/api/pilot/sessions/:id/steps",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/steps/:stepId/start:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/steps/:stepId/finish:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note:ws:apps/api",
+      "source": "route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/steps/:stepId/reset:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49060,6 +49561,69 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:PilotSopStep:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopStep",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreatePilotSopStepRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreatePilotSopStepRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdatePilotSopStepRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdatePilotSopStepRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReorderPilotSopStepsRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReorderPilotSopStepsRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSessionStepStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSessionStepStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSessionStep:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSessionStep",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:StartSessionStepRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:StartSessionStepRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FinishSessionStepRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FinishSessionStepRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateSessionStepNoteRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateSessionStepNoteRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PlanStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:PlanStatus",
       "target": "ws:packages/shared",
@@ -52504,6 +53068,76 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:RichTextEditor:ws:apps/web",
+      "source": "uicomp:RichTextEditor",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RichTextEditor:token:color:primary",
+      "source": "uicomp:RichTextEditor",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:RichTextViewer:ws:apps/web",
+      "source": "uicomp:RichTextViewer",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RichTextViewer:token:color:primary",
+      "source": "uicomp:RichTextViewer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:RichTextComponents.test:ws:apps/web",
+      "source": "uicomp:RichTextComponents.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RichTextComponents.test:token:color:primary",
+      "source": "uicomp:RichTextComponents.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:markdown-parser.test:ws:apps/web",
+      "source": "uicomp:markdown-parser.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:markdown-parser.test:token:color:primary",
+      "source": "uicomp:markdown-parser.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:markdown-parser:ws:apps/web",
+      "source": "uicomp:markdown-parser",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:markdown-parser:token:color:primary",
+      "source": "uicomp:markdown-parser",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:GlobalVoiceAssistant:ws:apps/web",
       "source": "uicomp:GlobalVoiceAssistant",
       "target": "ws:apps/web",
@@ -55136,8 +55770,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -57673,6 +58328,20 @@
       "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotMaterial",
       "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
       "target": "prisma:crm:CrmPilotMaterial",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotSopStep",
+      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "target": "prisma:crm:CrmPilotSopStep",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotSessionStep",
+      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "target": "prisma:crm:CrmPilotSessionStep",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -67960,6 +68629,83 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/sop-steps",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/sop-steps",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sop-steps",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sop-steps",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PATCH:/api/pilot/sop-steps/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PATCH:/api/pilot/sop-steps/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/pilot/sop-steps/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/pilot/sop-steps/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sop-steps/reorder",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sop-steps/reorder",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sop-steps/seed-defaults",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/sessions/:id/steps",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/sessions/:id/steps",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/sessions",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/pilot/sessions",
@@ -72125,6 +72871,83 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sop-steps",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/sop-steps",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sop-steps",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sop-steps",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PATCH:/api/pilot/sop-steps/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PATCH:/api/pilot/sop-steps/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/pilot/sop-steps/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/pilot/sop-steps/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sop-steps/reorder",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sop-steps/reorder",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sop-steps/seed-defaults",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sessions/:id/steps",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/sessions/:id/steps",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sessions",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/pilot/sessions",
@@ -73297,6 +74120,83 @@
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/materials/seed-defaults",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:POST:/api/pilot/materials/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/sop-steps",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/sop-steps",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sop-steps",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sop-steps",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:PATCH:/api/pilot/sop-steps/:id",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:PATCH:/api/pilot/sop-steps/:id",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:DELETE:/api/pilot/sop-steps/:id",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:DELETE:/api/pilot/sop-steps/:id",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sop-steps/reorder",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sop-steps/reorder",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sop-steps/seed-defaults",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/sessions/:id/steps",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/sessions/:id/steps",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -79069,6 +79969,83 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sop-steps",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/sop-steps",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sop-steps",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sop-steps",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PATCH:/api/pilot/sop-steps/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PATCH:/api/pilot/sop-steps/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/pilot/sop-steps/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/pilot/sop-steps/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sop-steps/reorder",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sop-steps/reorder",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sop-steps/seed-defaults",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sessions/:id/steps",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/sessions/:id/steps",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/start",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/finish",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PATCH:/api/pilot/sessions/:id/steps/:stepId/note",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/steps/:stepId/reset",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sessions",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/pilot/sessions",
@@ -79784,31 +80761,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2826,
-    "totalEdges": 6123,
+    "totalNodes": 2857,
+    "totalEdges": 6204,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 154,
-      "FastifyRoute": 595,
+      "PrismaModel": 156,
+      "FastifyRoute": 606,
       "Component": 54,
-      "SharedType": 1033,
+      "SharedType": 1042,
       "DesignToken": 12,
-      "UIComponent": 196,
-      "File": 779
+      "UIComponent": 201,
+      "File": 783
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1199,
-      "HANDLES_ROUTE": 595,
-      "RENDERS": 250,
-      "USES_TOKEN": 198,
-      "IMPORTS": 423,
-      "QUERIES_MODEL": 360,
-      "API_CALL": 3098
+      "EXPORTS": 1210,
+      "HANDLES_ROUTE": 606,
+      "RENDERS": 255,
+      "USES_TOKEN": 203,
+      "IMPORTS": 426,
+      "QUERIES_MODEL": 362,
+      "API_CALL": 3142
     },
-    "fastifyRouteCount": 600,
-    "prismaModelCount": 154,
+    "fastifyRouteCount": 611,
+    "prismaModelCount": 156,
     "nextPageCount": 54,
-    "sharedTypeCount": 1033
+    "sharedTypeCount": 1042
   },
   "routes": [
     {
@@ -83334,6 +84311,83 @@
     },
     {
       "method": "GET",
+      "path": "/api/pilot/sop-steps",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sop-steps",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/pilot/sop-steps/:id",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/pilot/sop-steps/:id",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sop-steps/reorder",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sop-steps/seed-defaults",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pilot/sessions/:id/steps",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/steps/:stepId/start",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/pilot/sessions/:id/steps/:stepId/note",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
       "path": "/api/pilot/sessions",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "handler": "inlineHandler",
@@ -85241,7 +86295,7 @@
       "dbSource": "crm",
       "modelName": "CrmPilotSession",
       "tableName": "crm_pilot_sessions",
-      "fieldCount": 36,
+      "fieldCount": 37,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
@@ -85263,6 +86317,24 @@
       "readOnly": false,
       "isCatalogException": false,
       "relations": ["sessionId", "materialId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmPilotSopStep",
+      "tableName": "crm_pilot_sop_steps",
+      "fieldCount": 10,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmPilotSessionStep",
+      "tableName": "crm_pilot_session_steps",
+      "fieldCount": 14,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["sessionId", "stepTemplateId"]
     },
     {
       "dbSource": "legacy",

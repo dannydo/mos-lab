@@ -24,12 +24,21 @@ import {
   isDeferredBugReport,
 } from '@mos-lab/shared';
 import { CheckCircle2, Clock, Gavel, RefreshCw, Send } from 'lucide-react';
-import { AdaptiveDrawer, AdaptiveModal, AppIcon, SectionCard, StatePanel } from '../../../../components/ui';
+import {
+  AdaptiveDrawer,
+  AdaptiveModal,
+  AppIcon,
+  SectionCard,
+  StatePanel,
+  RichTextViewer,
+  RichTextEditor,
+} from '../../../../components/ui';
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
 import { BugReportExecutionTimingCard } from './BugReportExecutionTimingCard';
 import { FeatureRequestDetails } from './FeatureRequestDetails';
 import { BugReportDeferModal } from './BugReportDeferModal';
+import { BugReportReasonModal } from './BugReportReasonModal';
 import { BugReportDiagnosticsSection } from './BugReportDiagnosticsSection';
 import {
   AgentProgressTag,
@@ -387,83 +396,52 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
             setDeferOpen(false);
           }}
         />
-        <AdaptiveModal
+        <BugReportReasonModal
           title="Đóng ticket bằng ngoại lệ Admin?"
           open={exceptionCloseOpen}
-          onCancel={() => !saving && setExceptionCloseOpen(false)}
+          onCancel={() => setExceptionCloseOpen(false)}
           okText="Xác nhận đóng ngoại lệ"
-          cancelText="Kiểm tra lại"
           confirmLoading={saving}
-          okButtonProps={{ disabled: exceptionCloseReason.trim().length < 10 || saving }}
-          onOk={async () => {
+          reason={exceptionCloseReason}
+          onReasonChange={setExceptionCloseReason}
+          description="Ghi rõ bằng chứng hoặc lý do đóng ngoại lệ. Thao tác này chỉ dành cho Danny và vẫn được máy chủ kiểm tra."
+          ariaLabel="Lý do đóng ngoại lệ"
+          placeholder="Nêu bằng chứng release/kiểm tra và lý do đóng (ít nhất 10 ký tự)."
+          onConfirm={async () => {
             if (await confirmResolvedAndClose(exceptionCloseReason)) setExceptionCloseOpen(false);
           }}
-        >
-          <Paragraph>
-            Ghi rõ bằng chứng hoặc lý do đóng ngoại lệ. Thao tác này chỉ dành cho Danny và vẫn được máy chủ kiểm tra.
-          </Paragraph>
-          <Input.TextArea
-            aria-label="Lý do đóng ngoại lệ"
-            value={exceptionCloseReason}
-            onChange={(event) => setExceptionCloseReason(event.target.value)}
-            maxLength={2000}
-            showCount
-            rows={5}
-            placeholder="Nêu bằng chứng release/kiểm tra và lý do đóng (ít nhất 10 ký tự)."
-          />
-        </AdaptiveModal>
-        <AdaptiveModal
+        />
+        <BugReportReasonModal
           title="Yêu cầu sửa lại plan"
           open={Boolean(reviewedPlan)}
-          onCancel={() => !saving && setReviewedPlan(null)}
+          onCancel={() => setReviewedPlan(null)}
           okText="Gửi yêu cầu sửa plan"
-          cancelText="Hủy"
           confirmLoading={saving}
-          okButtonProps={{ disabled: planReason.trim().length < 10 || saving || !detail?.planReview }}
-          onOk={async () => {
+          reason={planReason}
+          onReasonChange={setPlanReason}
+          disabled={!detail?.planReview}
+          description="Plan cũ và audit được giữ nguyên. Agent lập lại plan theo lý do này; Danny phải duyệt plan mới trước code/test. Không đóng ticket."
+          ariaLabel="Lý do yêu cầu sửa plan"
+          placeholder="Nêu phần plan cần sửa và kết quả mong muốn (ít nhất 10 ký tự)."
+          onConfirm={async () => {
             if (reviewedPlan && (await revisePlan(planReason, reviewedPlan))) setReviewedPlan(null);
           }}
-        >
-          <Paragraph>
-            Plan cũ và audit được giữ nguyên. Agent lập lại plan theo lý do này; Danny phải duyệt plan mới trước
-            code/test. Không đóng ticket.
-          </Paragraph>
-          <Input.TextArea
-            aria-label="Lý do yêu cầu sửa plan"
-            value={planReason}
-            onChange={(event) => setPlanReason(event.target.value)}
-            maxLength={2000}
-            showCount
-            rows={5}
-            placeholder="Nêu phần plan cần sửa và kết quả mong muốn (ít nhất 10 ký tự)."
-          />
-        </AdaptiveModal>
-        <AdaptiveModal
+        />
+        <BugReportReasonModal
           title="Yêu cầu sửa lại trước commit"
           open={changesOpen}
-          onCancel={() => !saving && setChangesOpen(false)}
+          onCancel={() => setChangesOpen(false)}
           okText="Gửi yêu cầu sửa lại"
-          cancelText="Hủy"
           confirmLoading={saving}
-          okButtonProps={{ disabled: changesReason.trim().length < 10 || saving }}
-          onOk={async () => {
+          reason={changesReason}
+          onReasonChange={setChangesReason}
+          description="Candidate và bằng chứng cũ được giữ nguyên. Agent lập plan mới; chỉ chạy code/test sau một phê duyệt mới của Danny. Không commit hoặc đóng ticket."
+          ariaLabel="Lý do yêu cầu sửa lại"
+          placeholder="Nêu phần chưa đạt và kết quả cần bổ sung (ít nhất 10 ký tự)."
+          onConfirm={async () => {
             if (await requestChanges(changesReason)) setChangesOpen(false);
           }}
-        >
-          <Paragraph>
-            Candidate và bằng chứng cũ được giữ nguyên. Agent lập plan mới; chỉ chạy code/test sau một phê duyệt mới của
-            Danny. Không commit hoặc đóng ticket.
-          </Paragraph>
-          <Input.TextArea
-            aria-label="Lý do yêu cầu sửa lại"
-            value={changesReason}
-            onChange={(event) => setChangesReason(event.target.value)}
-            maxLength={2000}
-            showCount
-            rows={5}
-            placeholder="Nêu phần chưa đạt và kết quả cần bổ sung (ít nhất 10 ký tự)."
-          />
-        </AdaptiveModal>
+        />
         {loading && !detail && <StatePanel kind="loading" minHeight={256} surface={false} />}
         {loadError && !detail && (
           <Alert
@@ -533,9 +511,22 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   </Text>
                 </div>
               </div>
-              <Paragraph className="!mb-2 whitespace-pre-wrap ![font-size:var(--text-base)]">
-                {detail.description}
-              </Paragraph>
+              <div className="!mb-3 ![font-size:var(--text-base)]">
+                <RichTextViewer content={detail.description} className="![font-size:var(--text-base)]" />
+              </div>
+              {detail.businessContext && (
+                <div className="!mb-3 rounded-lg border border-blue-200/70 bg-blue-50/40 p-3.5 dark:border-blue-900/40 dark:bg-blue-950/20">
+                  <Text
+                    strong
+                    className="mb-1.5 block text-xs uppercase tracking-wider text-blue-700 dark:text-blue-300"
+                  >
+                    {detail.requestType === 'FEATURE'
+                      ? 'Phạm vi & Tiêu chí nghiệm thu (Acceptance Criteria)'
+                      : 'Biz Logic & Kết quả đúng'}
+                  </Text>
+                  <RichTextViewer content={detail.businessContext} compact />
+                </div>
+              )}
               <Text type="secondary">
                 Báo bởi {detail.reporter.displayName} · {detail.reporter.role}
               </Text>
@@ -787,17 +778,16 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   <Text strong>
                     {detail.requestType === 'FEATURE' ? 'Phạm vi / acceptance criteria' : 'Biz logic / kết quả đúng'}
                   </Text>
-                  <Input.TextArea
+                  <RichTextEditor
                     value={businessContext}
-                    onChange={(event) => setBusinessContext(event.target.value)}
+                    onChange={(val) => setBusinessContext(val)}
                     placeholder={
                       detail.requestType === 'FEATURE'
                         ? 'Ghi phạm vi đã chốt, điều kiện được xem là đạt và giới hạn nếu có'
                         : 'Bổ sung điều Agent cần hiểu về nghiệp vụ hoặc kết quả đúng mong muốn'
                     }
                     maxLength={4000}
-                    autoSize={{ minRows: 3, maxRows: 8 }}
-                    showCount
+                    rows={4}
                   />
                 </label>
                 <label className="mt-4 block space-y-1">

@@ -36,7 +36,15 @@ import { clampBugReportLauncherPosition, type BugReportLauncherPosition } from '
 import { captureBugReportContext, OPEN_BUG_REPORT_EVENT, recordClientError } from '../../lib/bug-diagnostics';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
-import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, HeaderActionIndicator, IconButton, IconText } from '../ui';
+import {
+  AdaptiveModal,
+  AdaptiveOverlayFooter,
+  AppIcon,
+  HeaderActionIndicator,
+  IconButton,
+  IconText,
+  RichTextEditor,
+} from '../ui';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
 import { GuidedRequestConversation } from './GuidedRequestConversation';
 import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
@@ -776,20 +784,18 @@ export function BugReportSurface() {
               <label htmlFor={descriptionFieldId} className="mb-2 block text-sm font-semibold">
                 {activeView === 'feature' ? 'Bạn muốn mOS giúp làm việc gì?' : 'Bạn đang gặp vấn đề gì?'}
               </label>
-              <Input.TextArea
+              <RichTextEditor
                 key={activeRequestView}
                 id={descriptionFieldId}
                 autoFocus
                 value={activeDraft.description}
-                onChange={(event) => {
-                  const nextDescription = event.target.value;
+                onChange={(nextDescription) => {
                   setDrafts((current) =>
                     updateRequestDraft(current, activeRequestView, { description: nextDescription })
                   );
                   setConversationSessionId(null);
                 }}
                 maxLength={2000}
-                showCount
                 rows={5}
                 placeholder={
                   activeView === 'feature'
@@ -797,7 +803,7 @@ export function BugReportSurface() {
                     : 'Ví dụ: Tôi bấm Lưu nhưng popup vẫn đứng yên…'
                 }
               />
-              <p className="mb-0 mt-6 text-xs" style={{ color: token.colorTextSecondary }}>
+              <p className="mb-0 mt-3 text-xs" style={{ color: token.colorTextSecondary }}>
                 {activeView === 'feature'
                   ? 'Không cần viết đặc tả kỹ thuật. Hãy mô tả công việc theo cách bạn đang làm hằng ngày.'
                   : 'mOS tự đính kèm trang, popup, phiên bản và lỗi kỹ thuật gần nhất. Bạn không cần biết thuật ngữ kỹ thuật.'}

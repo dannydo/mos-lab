@@ -24,9 +24,9 @@ import {
   RotateCcw,
   Search,
   Sparkles,
+  type LucideIcon,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { AppIcon, StatePanel, StatusTag } from '../ui';
+import { AppIcon, StatePanel, StatusTag, RichTextViewer } from '../ui';
 import { BugReportConversation } from './BugReportConversation';
 import { BugReportAttachmentPreview } from './BugReportAttachmentPreview';
 import { BugReportRejectionModal } from './BugReportRejectionModal';
@@ -497,7 +497,7 @@ export function MyBugReportsPanel({
                 icon={FileText}
                 title={selected.requestType === 'FEATURE' ? 'Điều bạn muốn' : 'Điều bạn đã báo'}
               >
-                {selected.description}
+                <RichTextViewer content={selected.description} />
               </InfoBlock>
               {selectedEvidence.length ? (
                 <InfoBlock icon={ImageIcon} title="Ảnh bạn đã gửi">

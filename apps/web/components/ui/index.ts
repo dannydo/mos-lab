@@ -108,3 +108,6 @@ export { StatePanel } from './StatePanel';
 export type { StatePanelProps, StatePanelKind } from './StatePanel';
 
 export { MermaidViewer } from './MermaidViewer';
+
+export { RichTextViewer, RichTextEditor } from './rich-text';
+export type { RichTextViewerProps, RichTextEditorProps } from './rich-text';
