@@ -6,6 +6,10 @@ import type {
   CreateAiSessionRequest,
   GetAiSessionResponse,
   ListAiSessionsResponse,
+  AvatarScoreRequest,
+  AvatarScoreResponse,
+  AvatarNudgeRequest,
+  AvatarNudgeResponse,
 } from '@mos-lab/shared';
 
 export interface VoiceChatRequest {
@@ -52,6 +56,18 @@ export const aiApi = {
     sendMessage: async (data: AiAssistantChatRequest): Promise<AiAssistantChatResponse> => {
       const response = await api.post<AiAssistantChatResponse>('/ai/chat/message', data, {
         timeout: 240_000,
+      });
+      return response.data;
+    },
+    scoreAvatar: async (data: AvatarScoreRequest): Promise<AvatarScoreResponse> => {
+      const response = await api.post<AvatarScoreResponse>('/ai/avatar-score', data, {
+        timeout: 30_000,
+      });
+      return response.data;
+    },
+    getAvatarNudge: async (data: AvatarNudgeRequest): Promise<AvatarNudgeResponse> => {
+      const response = await api.post<AvatarNudgeResponse>('/ai/avatar-nudge-message', data, {
+        timeout: 15_000,
       });
       return response.data;
     },

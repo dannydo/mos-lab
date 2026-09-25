@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mOS Avatar Onboarding & Wings AI Coach - Apple Pro Design System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ========================================================== */
+    /* APPLE PRO DESIGN SYSTEM & VISION OS GLASS MATERIALS        */
+    /* ========================================================== */
+    :root {
+      --apple-titanium: #2b2a27;
+      --apple-desert-gold: #e8a855;
+      --apple-gold-gradient: linear-gradient(180deg, #FDE68A 0%, #F59E0B 50%, #B45309 100%);
+      --apple-glass-bg: rgba(28, 28, 32, 0.72);
+      --apple-glass-border: rgba(255, 255, 255, 0.12);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", sans-serif;
+      letter-spacing: -0.015em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Apple Ultra-Fine Frosted Glass */
+    .apple-glass {
+      background: rgba(24, 24, 28, 0.75);
+      backdrop-filter: blur(40px) saturate(190%);
+      -webkit-backdrop-filter: blur(40px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.18), 0 24px 60px -12px rgba(0, 0, 0, 0.75);
+    }
+
+    .apple-card-glass {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.16), 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .apple-pill-glass {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+    }
+
+    /* Apple Desert Titanium Button */
+    .apple-btn-primary {
+      background: linear-gradient(180deg, #FDE047 0%, #EAB308 30%, #CA8A04 80%, #A16207 100%);
+      box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.7), 0 10px 25px -4px rgba(234, 179, 8, 0.45);
+      transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .apple-btn-primary:active {
+      transform: scale(0.975);
+      box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.4), 0 4px 12px -2px rgba(234, 179, 8, 0.3);
+    }
+
+    .apple-btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+      transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .apple-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+    .apple-btn-secondary:active {
+      transform: scale(0.975);
+    }
+
+    /* Apple Intelligence Aurora Glow Breathing Effect */
+    @keyframes apple-aurora {
+      0% { transform: rotate(0deg); opacity: 0.8; }
+      50% { transform: rotate(180deg); opacity: 1; }
+      100% { transform: rotate(360deg); opacity: 0.8; }
+    }
+
+    .apple-aurora-halo {
+      background: conic-gradient(from 0deg, #f59e0b, #ec4899, #8b5cf6, #06b6d4, #10b981, #f59e0b);
+      animation: apple-aurora 7s linear infinite;
+    }
+
+    /* Dynamic Island Spring Animation */
+    .dynamic-island {
+      transition: width 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), height 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-radius 0.45s ease;
+    }
+
+    /* Radar scan effect */
+    .radar-sweep {
+      background: conic-gradient(from 0deg, transparent 0deg, rgba(234, 179, 8, 0.35) 60deg, transparent 60.1deg);
+      animation: sweep 2.2s linear infinite;
+    }
+    @keyframes sweep {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Hide scrollbars inside iPhone */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Keynote Stage Ambient Backlight */
+    .apple-stage-glow {
+      background: radial-gradient(circle at 50% 30%, rgba(234, 179, 8, 0.12) 0%, transparent 60%),
+                  radial-gradient(circle at 75% 70%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                  radial-gradient(circle at 25% 85%, rgba(6, 182, 212, 0.06) 0%, transparent 50%);
+    }
+
+    /* Subtle Glass Glare Across iPhone */
+    .screen-glare {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 40%, transparent 40.5%);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-[#08080a] text-slate-100 flex flex-col md:flex-row h-screen overflow-hidden select-none">
+
+  <!-- ============================================================ -->
+  <!-- LEFT SIDEBAR: macOS Sequoia Style Control Center             -->
+  <!-- ============================================================ -->
+  <aside class="w-full md:w-80 bg-[#121214]/90 backdrop-blur-2xl border-r border-white/[0.08] flex flex-col justify-between shrink-0 z-30 shadow-2xl">
+    <div class="overflow-y-auto no-scrollbar">
+      
+      <!-- Apple Header & Brand -->
+      <div class="p-4.5 border-b border-white/[0.08]">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-b from-[#FDE047] via-[#EAB308] to-[#CA8A04] flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-amber-500/20">
+            
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-sm font-bold tracking-tight text-white">mOS Avatar Lab</h1>
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold border border-amber-500/30">PRO</span>
+            </div>
+            <p class="text-[11px] text-slate-400 font-medium">Apple iPhone 16 Pro Experience</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Steps (Segmented Control List) -->
+      <div class="p-3 space-y-1">
+        <div class="px-2 py-1 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+          Trải Nghiệm 4 Bước Trên iPhone
+        </div>
+
+        <!-- Step 1 -->
+        <button onclick="switchStep(1)" id="btn-step-1" class="step-nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left bg-white/[0.08] text-amber-400 border border-amber-500/30 shadow-sm">
+          <span class="w-6 h-6 rounded-lg bg-amber-400 text-slate-950 font-extrabold flex items-center justify-center text-xs shrink-0 shadow">1</span>
+          <div>
+            <div class="text-white font-bold">Popup Dẫn Dắt Đầu Ngày</div>
+            <div class="text-[10px] text-slate-400">iOS 18 Bottom Sheet & Gemini AI</div>
+          </div>
+        </button>
+
+        <!-- Step 2 -->
+        <button onclick="switchStep(2)" id="btn-step-2" class="step-nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left text-slate-400 hover:text-white hover:bg-white/[0.04]">
+          <span class="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-xs shrink-0">2</span>
+          <div>
+            <div class="text-slate-200 font-bold">Căn Chỉnh & Chấm Điểm AI</div>
+            <div class="text-[10px] text-slate-400">Apple Viewfinder & Wings Coach</div>
+          </div>
+        </button>
+
+        <!-- Step 3 -->
+        <button onclick="switchStep(3)" id="btn-step-3" class="step-nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left text-slate-400 hover:text-white hover:bg-white/[0.04]">
+          <span class="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-xs shrink-0">3</span>
+          <div>
+            <div class="text-slate-200 font-bold">Control Center Hồ Sơ</div>
+            <div class="text-[10px] text-slate-400">Chạm đổi avatar chủ động</div>
+          </div>
+        </button>
+
+        <!-- Step 4 -->
+        <button onclick="switchStep(4)" id="btn-step-4" class="step-nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left text-slate-400 hover:text-white hover:bg-white/[0.04]">
+          <span class="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-xs shrink-0">4</span>
+          <div>
+            <div class="text-slate-200 font-bold">Quy Trình & Invariants</div>
+            <div class="text-[10px] text-slate-400">Tần suất 1 lần/ngày khép kín</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Gemini AI Banter Simulator (Apple Intelligence) -->
+      <div class="p-3 mx-3 my-1 rounded-2xl bg-gradient-to-b from-amber-500/10 via-white/[0.02] to-transparent border border-amber-500/25 space-y-2">
+        <div class="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+          <span class="flex items-center gap-1"><span>✦</span> Gemini AI Banter</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold">2.5 Flash</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight">
+          Chọn số ngày hoãn "Để mai tính" để thấy Gemini đổi câu cà khịa tinh tế:
+        </p>
+
+        <!-- Apple Segmented Control Grid -->
+        <div class="grid grid-cols-2 gap-1.5 text-xs">
+          <button onclick="setSnoozeDay(0)" id="snooze-btn-0" class="snooze-tab-btn py-1.5 px-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-[10px] text-center shadow transition active:scale-95">
+            Ngày 1 (Chưa hoãn)
+          </button>
+          <button onclick="setSnoozeDay(1)" id="snooze-btn-1" class="snooze-tab-btn py-1.5 px-2 rounded-xl bg-white/[0.05] text-slate-300 font-bold text-[10px] text-center hover:bg-white/[0.1] transition active:scale-95">
+            Ngày 2 (Hoãn 1 lần)
+          </button>
+          <button onclick="setSnoozeDay(2)" id="snooze-btn-2" class="snooze-tab-btn py-1.5 px-2 rounded-xl bg-white/[0.05] text-slate-300 font-bold text-[10px] text-center hover:bg-white/[0.1] transition active:scale-95">
+            Ngày 3 (Hoãn 2 lần)
+          </button>
+          <button onclick="setSnoozeDay(3)" id="snooze-btn-3" class="snooze-tab-btn py-1.5 px-2 rounded-xl bg-white/[0.05] text-slate-300 font-bold text-[10px] text-center hover:bg-white/[0.1] transition active:scale-95">
+            Ngày 4+ (Hoãn 3+ lần)
+          </button>
+        </div>
+
+        <button onclick="generateRandomGeminiBanter()" class="w-full py-2 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-[10px] flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 transition active:scale-95 cursor-pointer">
+          <span>✨</span> Sinh Câu Cà Khịa Mới Ngẫu Nhiên
+        </button>
+      </div>
+
+      <!-- AI Sample Image Tester -->
+      <div class="p-3 mx-3 my-1 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2">
+        <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+          <span>Thử Mẫu Ảnh Chân Dung</span>
+          <span class="text-amber-400 text-[10px]">Gemini Vision</span>
+        </div>
+        <div class="space-y-1.5">
+          <button onclick="applySampleImage('radiant')" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 flex items-center justify-between border border-amber-500/30">
+            <span>✨ Nụ cười rạng rỡ</span>
+            <span class="text-[10px] text-amber-400 font-bold font-mono">9.0 / 10</span>
+          </button>
+          <button onclick="applySampleImage('formal')" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 flex items-center justify-between border border-transparent">
+            <span>👔 Chân dung nghiêm túc</span>
+            <span class="text-[10px] text-sky-400 font-bold font-mono">7.5 / 10</span>
+          </button>
+          <button onclick="applySampleImage('invalid')" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 flex items-center justify-between border border-transparent">
+            <span>🚫 Không có mặt người</span>
+            <span class="text-[10px] text-rose-400 font-bold">Chặn lưu</span>
+          </button>
+        </div>
+
+        <div class="pt-2 border-t border-white/[0.08]">
+          <label class="block text-[10px] text-slate-400 mb-1">Tải ảnh bất kỳ từ máy:</label>
+          <input type="file" id="local-file-input" accept="image/*" onchange="handleLocalFileUpload(event)" class="text-[10px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-amber-400 file:text-slate-950 hover:file:bg-amber-300 cursor-pointer w-full">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Operator Info (Apple ID style) -->
+    <div class="p-3.5 border-t border-white/[0.08] bg-[#0c0c0e] text-[11px] text-slate-400 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full bg-rose-600 text-white font-bold flex items-center justify-center text-[9px]">TN</div>
+        <span class="font-medium text-slate-200">Tâm Nguyễn</span>
+      </div>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[9px] font-bold">Telesales</span>
+    </div>
+  </aside>
+
+  <!-- ============================================================ -->
+  <!-- MAIN STAGE: Apple Keynote Studio Canvas                      -->
+  <!-- ============================================================ -->
+  <main class="flex-1 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-[#070709] apple-stage-glow relative">
+
+    <!-- Ambient Floating Specular Glows behind iPhone -->
+    <div class="absolute w-[500px] h-[500px] rounded-full bg-amber-500/10 blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-10 right-20 w-[400px] h-[400px] rounded-full bg-violet-600/10 blur-[100px] pointer-events-none"></div>
+
+    <!-- ========================================================== -->
+    <!-- iPHONE 16 PRO TITANIUM CHASSIS                             -->
+    <!-- ========================================================== -->
+    <div class="relative mx-auto my-auto shrink-0 select-none group">
+
+      <!-- Left Flank Hardware Buttons: Action Button + Volume Rockers -->
+      <div class="absolute -left-[14px] top-[115px] w-[4px] h-[26px] bg-[#3a3935] rounded-l-md border-y border-l border-[#5a5852] shadow-sm"></div>
+      <div class="absolute -left-[14px] top-[160px] w-[4px] h-[48px] bg-[#3a3935] rounded-l-md border-y border-l border-[#5a5852] shadow-sm"></div>
+      <div class="absolute -left-[14px] top-[220px] w-[4px] h-[48px] bg-[#3a3935] rounded-l-md border-y border-l border-[#5a5852] shadow-sm"></div>
+
+      <!-- Right Flank Hardware Buttons: Power + Camera Control Bar -->
+      <div class="absolute -right-[14px] top-[170px] w-[4px] h-[65px] bg-[#3a3935] rounded-r-md border-y border-r border-[#5a5852] shadow-sm"></div>
+      <div class="absolute -right-[13px] top-[270px] w-[3px] h-[72px] bg-[#22211e] rounded-r-sm border border-[#44423c] shadow-inner"></div>
+
+      <!-- iPhone Titanium Outer Frame -->
+      <div class="w-[393px] h-[844px] rounded-[54px] p-[10px] bg-gradient-to-b from-[#4a4843] via-[#242320] to-[#3a3935] shadow-[0_30px_90px_rgba(0,0,0,0.9),0_0_50px_rgba(234,179,8,0.12)] ring-1 ring-white/20 relative flex flex-col overflow-hidden">
+        
+        <!-- Inner Black Display Border -->
+        <div class="w-full h-full rounded-[44px] bg-[#000000] relative overflow-hidden flex flex-col border border-white/[0.08]">
+          
+          <!-- Screen Glare Overlay -->
+          <div class="absolute inset-0 screen-glare z-30"></div>
+
+          <!-- 1. Apple Status Bar with Dynamic Island -->
+          <div class="h-11 bg-transparent px-7 flex items-center justify-between z-40 shrink-0 pt-2">
+            <!-- Time -->
+            <span class="text-xs font-bold text-white font-mono tracking-tight">9:41</span>
+            
+            <!-- Dynamic Island Capsule (Interactive) -->
+            <div id="dynamic-island" onclick="toggleDynamicIsland()" class="dynamic-island w-[118px] h-[30px] bg-black rounded-full flex items-center justify-between px-3 cursor-pointer shadow-2xl border border-white/[0.08] hover:border-white/20 transition-all">
+              <!-- Left Camera Dot & Sensor -->
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#111] border border-[#222] relative overflow-hidden">
+                  <span class="absolute inset-0.5 rounded-full bg-blue-900/60"></span>
+                </span>
+                <span id="dynamic-island-wave" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              </div>
+              <!-- Right Mic / Activity Glyphs -->
+              <div class="flex items-center gap-1 text-[9px] font-bold text-amber-400 font-mono">
+                <span id="dynamic-island-label">mOS</span>
+              </div>
+            </div>
+
+            <!-- Signal / Battery Status -->
+            <div class="flex items-center gap-1.5 text-xs text-white">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>
+              <span class="text-[10px] font-bold">5G</span>
+              <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M17 6a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2V6zm-2 2v6H5V8h10z" clip-rule="evenodd"></path></svg>
+            </div>
+          </div>
+
+          <!-- 2. Apple mOS Mobile Header inside iPhone -->
+          <header class="h-12 border-b border-white/[0.08] bg-[#0c0c0e]/80 backdrop-blur-xl px-3.5 flex items-center justify-between shrink-0 z-30">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-lg bg-gradient-to-b from-[#FDE047] via-[#EAB308] to-[#CA8A04] flex items-center justify-center text-[10px] font-black text-slate-950 shadow-sm">
+                W
+              </span>
+              <span class="text-xs font-bold text-white tracking-tight">mOS Mobile</span>
+            </div>
+
+            <!-- Apple Style Online Member Bubbles -->
+            <div class="flex items-center gap-1.5">
+              <div class="flex items-center bg-black/60 px-2.5 py-0.5 rounded-full border border-white/[0.1] shadow-inner">
+                <span class="text-[9px] text-slate-400 mr-1.5 font-medium">Online:</span>
+                <div class="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-white border border-black">K</div>
+                <div class="w-5 h-5 rounded-full bg-cyan-700 flex items-center justify-center text-[8px] font-bold text-white border border-black -ml-1.5">Vũ</div>
+                <div class="w-5 h-5 rounded-full bg-blue-700 flex items-center justify-center text-[8px] font-bold text-white border border-black -ml-1.5">P</div>
+                
+                <!-- Target User Bubble on iPhone -->
+                <div id="iphone-header-user-bubble" class="w-5 h-5 rounded-full bg-rose-600 flex items-center justify-center text-[8px] font-bold text-white border border-black -ml-1.5 relative overflow-hidden transition-all duration-300">
+                  <span id="iphone-header-user-text">TN</span>
+                  <img id="iphone-header-user-img" src="" class="w-full h-full object-cover hidden">
+                  <span class="absolute bottom-0 right-0 w-1.5 h-1.5 bg-emerald-400 rounded-full border border-black"></span>
+                </div>
+              </div>
+
+              <!-- Profile Avatar Button -->
+              <button onclick="switchStep(3)" class="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-[10px] font-bold text-white border border-white/20 overflow-hidden relative shadow-md active:scale-95 transition" id="iphone-profile-btn">
+                <span id="iphone-profile-text">TN</span>
+                <img id="iphone-profile-img" src="" class="w-full h-full object-cover hidden">
+              </button>
+            </div>
+          </header>
+
+          <!-- 3. iPHONE INNER VIEWPORT (Steps 1 -> 4) -->
+          <div class="flex-1 overflow-y-auto no-scrollbar p-3.5 relative flex flex-col justify-start z-20">
+
+            <!-- ==================================================== -->
+            <!-- STEP 1: APPLE DAILY INSPIRING BOTTOM SHEET           -->
+            <!-- ==================================================== -->
+            <section id="step-1" class="step-view w-full my-auto animate-fade-in space-y-3">
+              
+              <!-- iOS 18 Frosted Glass Sheet Container -->
+              <div class="relative apple-glass rounded-[32px] p-4.5 border border-white/[0.14] overflow-hidden">
+                
+                <!-- iOS Sheet Drag Handle Capsule -->
+                <div class="w-9 h-1 rounded-full bg-white/25 mx-auto mb-3 shadow-sm"></div>
+
+                <!-- Apple Blurred Close Button -->
+                <button onclick="handleSnooze()" class="absolute top-3.5 right-3.5 w-6 h-6 rounded-full bg-white/[0.08] hover:bg-white/[0.16] backdrop-blur-md text-white/70 hover:text-white flex items-center justify-center transition cursor-pointer border border-white/[0.1]">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+
+                <!-- Apple Intelligence Hero Halo (Breathing Rotating Aura) -->
+                <div class="text-center mb-3">
+                  <div class="relative inline-block">
+                    <!-- Siri Aurora Glow Ring -->
+                    <div class="w-20 h-20 rounded-full apple-aurora-halo p-[2px] mx-auto flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.35)]">
+                      <div class="w-full h-full rounded-full bg-[#111114] flex items-center justify-center overflow-hidden border border-white/20">
+                        <span id="step1-avatar-icon" class="text-2xl drop-shadow-md">✨</span>
+                      </div>
+                    </div>
+                    <!-- Specular Camera Badge -->
+                    <span class="absolute bottom-0 right-0 bg-gradient-to-b from-[#FDE047] to-[#CA8A04] text-slate-950 p-1.5 rounded-full shadow-lg border border-black/40">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z"></path></svg>
+                    </span>
+                  </div>
+
+                  <!-- Greeting Headline -->
+                  <h3 class="text-base font-bold text-white mt-2 leading-tight flex items-center justify-center gap-1.5 tracking-tight">
+                    <span>Chào bạn</span> <span class="text-amber-400 font-extrabold">Tâm Nguyễn</span>!
+                  </h3>
+                </div>
+
+                <!-- Apple Intelligence Siri Banter Card (Tinh gọn, sắc bén, không trùng lặp) -->
+                <div id="step1-gemini-box" class="p-3.5 rounded-2xl apple-card-glass text-slate-200 mb-3 transition-all duration-300 relative overflow-hidden">
+                  
+                  <!-- Card Header: AI Sparkle + Status Badge -->
+                  <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.08]">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-amber-400 text-xs">✦</span>
+                      <span class="text-[11px] font-bold text-amber-300/90 tracking-tight">Gemini Nhắn Nhủ</span>
+                    </div>
+                    <span id="step1-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      ✨ Lời Chào Đầu Ngày
+                    </span>
+                  </div>
+
+                  <!-- The Single Crisp Banter Message -->
+                  <p id="step1-gemini-quote" class="text-slate-100 text-xs leading-relaxed font-medium transition-opacity duration-200">
+                    "Đồng đội đang ngắm ký tự TN của bạn suốt cả tuần rồi đó, khoe ngay nụ cười rạng rỡ để tỏa sáng trên thanh Online thôi nào!"
+                  </p>
+                </div>
+
+                <!-- Apple Control Center Style 3 Value Squircles -->
+                <div class="grid grid-cols-3 gap-1.5 mb-3">
+                  <div class="apple-pill-glass p-2 rounded-2xl text-center">
+                    <span class="text-base">🤝</span>
+                    <div class="text-[10px] font-bold text-slate-200 mt-0.5">Dễ Nhận Ra</div>
+                  </div>
+                  <div class="apple-pill-glass p-2 rounded-2xl text-center">
+                    <span class="text-base">🏆</span>
+                    <div class="text-[10px] font-bold text-slate-200 mt-0.5">Tỏa Sáng KPI</div>
+                  </div>
+                  <div class="apple-pill-glass p-2 rounded-2xl text-center">
+                    <span class="text-base">💖</span>
+                    <div class="text-[10px] font-bold text-slate-200 mt-0.5">Khách Yêu Quý</div>
+                  </div>
+                </div>
+
+                <!-- Apple Pro Thumb Zone Action Buttons -->
+                <div class="space-y-2 pt-0.5">
+                  <button onclick="switchStep(2)" id="step1-cta-btn" class="apple-btn-primary w-full py-3 px-4 rounded-2xl font-bold text-xs text-slate-950 flex items-center justify-center gap-2 cursor-pointer shadow-lg">
+                    <span>📸</span> Tải Ảnh / Chụp Selfie Ngay (15s)
+                  </button>
+                  <button onclick="handleSnooze()" id="step1-snooze-btn" class="apple-btn-secondary w-full py-2 px-4 rounded-xl font-semibold text-[11px] text-slate-300 text-center cursor-pointer">
+                    Để mai mình đổi (Nhắc lại ngày mai)
+                  </button>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- ==================================================== -->
+            <!-- STEP 2: APPLE VIEWFINDER & WINGS AI COACH            -->
+            <!-- ==================================================== -->
+            <section id="step-2" class="step-view w-full hidden animate-fade-in space-y-3 pb-2">
+              
+              <!-- iOS Navigation Header -->
+              <div class="flex items-center justify-between py-1">
+                <button onclick="switchStep(1)" class="flex items-center gap-1 text-xs text-amber-400 font-semibold active:scale-95 transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                  Quay lại
+                </button>
+                <span class="text-xs font-bold text-white tracking-tight">Căn Chỉnh & Chấm Điểm</span>
+                <span class="w-8"></span>
+              </div>
+
+              <!-- Apple Camera Style Viewfinder Box -->
+              <div class="apple-glass rounded-3xl p-3.5 border border-white/[0.12] flex flex-col items-center shadow-xl">
+                
+                <!-- Viewfinder Aperture Frame -->
+                <div class="relative w-48 h-48 rounded-2xl bg-black overflow-hidden border border-white/10 flex items-center justify-center select-none cursor-move shadow-inner">
+                  <img id="crop-target-image" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&h=500&fit=crop" class="w-full h-full object-cover transition-transform duration-200" style="transform: scale(1.15) rotate(0deg);" />
+                  
+                  <!-- Circular Viewfinder Mask -->
+                  <div class="absolute inset-0 border-[28px] border-black/80 rounded-full pointer-events-none"></div>
+                  <div class="absolute inset-7 rounded-full border border-amber-400/80 pointer-events-none shadow-[0_0_15px_rgba(245,158,11,0.3)]"></div>
+
+                  <!-- Apple Yellow Camera Viewfinder Focus Reticle -->
+                  <div class="absolute top-8 left-8 w-2 h-2 border-t-2 border-l-2 border-amber-400 pointer-events-none"></div>
+                  <div class="absolute top-8 right-8 w-2 h-2 border-t-2 border-r-2 border-amber-400 pointer-events-none"></div>
+                  <div class="absolute bottom-8 left-8 w-2 h-2 border-b-2 border-l-2 border-amber-400 pointer-events-none"></div>
+                  <div class="absolute bottom-8 right-8 w-2 h-2 border-b-2 border-r-2 border-amber-400 pointer-events-none"></div>
+
+                  <!-- AI Radar Sweep Scan Overlay -->
+                  <div id="ai-scanner-overlay" class="absolute inset-7 rounded-full overflow-hidden pointer-events-none hidden">
+                    <div class="w-full h-full radar-sweep"></div>
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                      <div class="text-[10px] font-bold text-amber-300 animate-pulse flex items-center gap-1.5 bg-black/85 px-3 py-1 rounded-full border border-amber-500/40 shadow-lg">
+                        <span>✦</span> AI Đang Ngắm Ảnh...
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Apple Zoom Segmented Pill & Controls -->
+                <div class="w-full mt-3 space-y-2.5 px-1">
+                  <!-- Zoom Selector 1x · 1.5x · 2x -->
+                  <div class="flex items-center justify-center gap-2">
+                    <button onclick="setZoomPreset(1.0)" class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 active:scale-95 transition">1x</button>
+                    <button onclick="setZoomPreset(1.25)" class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500 text-slate-950 shadow border border-amber-400 active:scale-95 transition">1.25x</button>
+                    <button onclick="setZoomPreset(1.75)" class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 active:scale-95 transition">1.75x</button>
+                  </div>
+
+                  <!-- Slider -->
+                  <div class="flex items-center justify-between gap-2 text-[10px] text-slate-400">
+                    <span>−</span>
+                    <input type="range" id="zoom-slider" min="1" max="2.5" step="0.05" value="1.15" oninput="handleZoomChange(this.value)" class="w-full accent-amber-400 h-1 bg-white/20 rounded-lg cursor-pointer">
+                    <span>+</span>
+                  </div>
+
+                  <!-- Quick Action Buttons -->
+                  <div class="grid grid-cols-2 gap-2 pt-0.5">
+                    <button onclick="triggerFileInput()" class="apple-btn-secondary py-2 px-2.5 rounded-xl text-slate-200 text-[11px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+                      <span>📸</span> Chụp Selfie
+                    </button>
+                    <button onclick="handleRotate()" class="apple-btn-secondary py-2 px-2.5 rounded-xl text-slate-200 text-[11px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+                      <span>🔄</span> Xoay 90°
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Wings AI Coach Card (Apple Fitness Activity Style) -->
+              <div id="ai-coach-card" class="apple-card-glass p-3.5 rounded-2xl border border-amber-500/25 shadow-xl relative overflow-hidden transition-all duration-300">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5 tracking-tight">
+                    <span>✦</span> Wings AI Coach
+                  </span>
+                  <span id="ai-badge-score" class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-extrabold text-[11px] border border-amber-500/40 font-mono shadow-sm">
+                    8.5 / 10
+                  </span>
+                </div>
+                
+                <div id="ai-title" class="text-[11px] font-bold text-white mb-2.5 flex items-center gap-1">
+                  ✨ Danh hiệu: <span class="text-amber-400">"Nụ Cười Tỏa Nắng"</span>
+                </div>
+
+                <!-- 3 Apple Activity Metrics -->
+                <div class="space-y-1.5 text-[10px]">
+                  <div>
+                    <div class="flex justify-between text-slate-300 mb-0.5 font-medium">
+                      <span>Nụ cười & Thần thái</span>
+                      <span id="score-smile" class="font-bold text-amber-400 font-mono">9.0/10</span>
+                    </div>
+                    <div class="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div id="bar-smile" class="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full transition-all duration-500" style="width: 90%"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-slate-300 mb-0.5 font-medium">
+                      <span>Độ sáng & Rõ nét</span>
+                      <span id="score-light" class="font-bold text-emerald-400 font-mono">8.5/10</span>
+                    </div>
+                    <div class="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div id="bar-light" class="h-full bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full transition-all duration-500" style="width: 85%"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-slate-300 mb-0.5 font-medium">
+                      <span>Góc chụp chỉn chu</span>
+                      <span id="score-comp" class="font-bold text-sky-400 font-mono">8.0/10</span>
+                    </div>
+                    <div class="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div id="bar-comp" class="h-full bg-gradient-to-r from-sky-400 to-indigo-400 rounded-full transition-all duration-500" style="width: 80%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AI Coach Feedback Quote -->
+                <div id="ai-feedback" class="mt-2.5 pt-2 border-t border-white/[0.08] text-[10px] text-slate-300 italic leading-snug">
+                  💬 "Nụ cười của bạn tràn đầy năng lượng tích cực! Avatar này sẽ cực kỳ nổi bật trên thanh Online của salon."
+                </div>
+              </div>
+
+              <!-- Invalid Warning Card (When no face detected) -->
+              <div id="ai-invalid-card" class="bg-rose-500/10 p-3 rounded-2xl border border-rose-500/30 text-rose-300 text-[11px] hidden space-y-1">
+                <div class="font-bold flex items-center gap-1 text-rose-400 text-xs">
+                  <span>🚫</span> Không tìm thấy khuôn mặt
+                </div>
+                <p class="leading-relaxed text-[10px] text-slate-300">
+                  Ảnh chưa phát hiện khuôn mặt người. Bạn vui lòng chọn một bức ảnh chụp chân dung rõ mặt để lưu nhé!
+                </p>
+              </div>
+
+              <!-- Live Synchronized Preview -->
+              <div class="apple-pill-glass p-2.5 rounded-2xl flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="relative">
+                    <img id="preview-bubble-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" class="w-7 h-7 rounded-full border border-amber-400 object-cover shadow" />
+                    <span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-400 rounded-full border border-black"></span>
+                  </div>
+                  <div class="text-[10px]">
+                    <div class="font-bold text-white leading-tight">Tâm Nguyễn 🟢</div>
+                    <div class="text-slate-400 text-[9px]">Hiển thị tức thì trên thanh Online</div>
+                  </div>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-semibold font-mono">Đồng bộ</span>
+              </div>
+
+              <!-- Sticky Thumb Save Action -->
+              <div class="pt-1">
+                <button id="btn-save-avatar" onclick="handleSaveAvatar()" class="apple-btn-primary w-full py-3 px-4 rounded-2xl font-bold text-xs text-slate-950 flex items-center justify-center gap-2 cursor-pointer shadow-xl">
+                  <span>💾</span> Lưu Ảnh Đại Diện Mới
+                </button>
+              </div>
+
+            </section>
+
+            <!-- ==================================================== -->
+            <!-- STEP 3: APPLE CONTROL CENTER / PROFILE DRAWER       -->
+            <!-- ==================================================== -->
+            <section id="step-3" class="step-view w-full hidden animate-fade-in space-y-3 my-auto">
+              <div class="apple-glass rounded-3xl p-4.5 border border-white/[0.12] space-y-3.5 shadow-2xl">
+                
+                <div class="text-center pb-2 border-b border-white/[0.08]">
+                  <div class="text-[10px] font-bold text-amber-400 uppercase tracking-wider font-mono">Cổng Chủ Động</div>
+                  <h3 class="text-sm font-bold text-white">Menu Hồ Sơ Trên iPhone</h3>
+                  <p class="text-[10px] text-slate-400">Nhân viên chủ động chạm đổi avatar bất cứ lúc nào</p>
+                </div>
+
+                <!-- Profile Hero Row -->
+                <div class="flex items-center gap-3 p-3 rounded-2xl apple-card-glass border border-white/10">
+                  <div class="relative group cursor-pointer" onclick="switchStep(2)">
+                    <img id="iphone-drawer-user-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop" class="w-13 h-13 rounded-full object-cover border-2 border-amber-400 shadow-lg" />
+                    <span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-gradient-to-b from-[#FDE047] to-[#CA8A04] text-slate-950 flex items-center justify-center shadow-md text-[9px] font-bold">
+                      📷
+                    </span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-white truncate">Tâm Nguyễn</span>
+                      <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-semibold uppercase">Telesales</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">@tam.nguyen</div>
+                    <button onclick="switchStep(2)" class="text-[10px] text-amber-400 font-semibold hover:underline mt-1 flex items-center gap-0.5">
+                      Chạm để đổi ảnh đại diện →
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Apple Style Inset Grouped Settings -->
+                <div class="space-y-1.5 text-xs">
+                  <div class="flex items-center justify-between p-2.5 rounded-xl apple-pill-glass">
+                    <span class="text-slate-200 text-[11px] flex items-center gap-2">
+                      <span>📞</span> Nhận cuộc gọi tổng đài
+                    </span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
+                  </div>
+                  <div class="flex items-center justify-between p-2.5 rounded-xl apple-pill-glass">
+                    <span class="text-slate-200 text-[11px] flex items-center gap-2">
+                      <span>📊</span> KPI & Lịch ca làm việc
+                    </span>
+                    <span class="text-slate-500 text-xs">→</span>
+                  </div>
+                </div>
+
+                <div class="pt-1">
+                  <button onclick="switchStep(1)" class="w-full py-2.5 rounded-xl text-center text-xs text-amber-400 font-semibold apple-pill-glass hover:bg-white/[0.1] transition cursor-pointer">
+                    ← Quay lại Popup Dẫn dắt
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <!-- ==================================================== -->
+            <!-- STEP 4: APPLE KEYNOTE USER FLOW & ARCHITECTURE       -->
+            <!-- ==================================================== -->
+            <section id="step-4" class="step-view w-full hidden animate-fade-in space-y-2.5 py-1">
+              <div class="apple-glass rounded-3xl p-4 border border-white/[0.12] space-y-3 shadow-2xl">
+                
+                <div class="border-b border-white/[0.08] pb-2">
+                  <h3 class="text-xs font-bold text-white flex items-center gap-1.5 tracking-tight">
+                    <span>🗺️</span> Chu Trình Hoạt Động (Mobile Flow)
+                  </h3>
+                  <p class="text-[10px] text-slate-400">Kiểm soát tần suất 1 lần/ngày khép kín</p>
+                </div>
+
+                <div class="space-y-2 text-[10px]">
+                  <div class="p-2.5 rounded-2xl apple-card-glass flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center shrink-0 text-[10px] border border-amber-500/30">1</span>
+                    <div>
+                      <b class="text-white">Kiểm Tra Đầu Ngày</b>
+                      <p class="text-slate-400 mt-0.5 leading-snug">Nếu chưa có avatar thật & chưa Snooze hôm nay, popup xuất hiện sau 1.5s.</p>
+                    </div>
+                  </div>
+
+                  <div class="p-2.5 rounded-2xl apple-card-glass flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center shrink-0 text-[10px] border border-amber-500/30">2</span>
+                    <div>
+                      <b class="text-white">Snooze 1 Lần / Ngày</b>
+                      <p class="text-slate-400 mt-0.5 leading-snug">Bấm "Để mai tính" sẽ ẩn popup cho toàn bộ ca làm việc trong ngày.</p>
+                    </div>
+                  </div>
+
+                  <div class="p-2.5 rounded-2xl apple-card-glass flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center shrink-0 text-[10px] border border-amber-500/30">3</span>
+                    <div>
+                      <b class="text-white">AI Quét Nụ Cười & Khuôn Mặt</b>
+                      <p class="text-slate-400 mt-0.5 leading-snug">Gemini Vision chặn ảnh không có mặt người, chấm điểm nụ cười & ánh sáng.</p>
+                    </div>
+                  </div>
+
+                  <div class="p-2.5 rounded-2xl apple-card-glass flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center shrink-0 text-[10px] border border-amber-500/30">4</span>
+                    <div>
+                      <b class="text-white">Đồng Bộ Toàn Hệ Thống</b>
+                      <p class="text-slate-400 mt-0.5 leading-snug">Lưu server Fastify, Header bong bóng online chuyển sang avatar thật ngay.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button onclick="switchStep(1)" class="apple-btn-primary w-full py-2.5 rounded-xl font-bold text-slate-950 text-xs transition shadow-lg cursor-pointer">
+                  Trải Nghiệm Thử Từ Bước 1 →
+                </button>
+              </div>
+            </section>
+
+          </div>
+
+          <!-- 4. Apple iPhone Home Indicator Bar -->
+          <div class="h-6 bg-transparent flex items-center justify-center shrink-0 z-30 pb-1">
+            <div class="w-32 h-1 bg-white/40 rounded-full shadow-sm"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Subtle Reflection on Tabletop Surface below iPhone -->
+      <div class="w-[340px] h-8 mx-auto -mt-3 rounded-full bg-gradient-to-b from-amber-500/10 to-transparent blur-xl pointer-events-none"></div>
+
+    </div>
+  </main>
+
+  <!-- ============================================================ -->
+  <!-- JAVASCRIPT: Full Prototype Interaction Engine                -->
+  <!-- ============================================================ -->
+  <script>
+    let currentZoom = 1.15;
+    let currentRotation = 0;
+    let currentImageKey = 'radiant';
+    let currentSnoozeDay = 0;
+    let dynamicIslandExpanded = false;
+
+    const SNOOZE_DATA = {
+      0: {
+        badge: '✨ Lời Chào Đầu Ngày',
+        badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        quote: '"Chào Tâm! Đồng đội đang ngắm ký tự TN của bạn suốt cả tuần rồi đó, khoe ngay nụ cười rạng rỡ để tỏa sáng trên thanh Online thôi nào!"',
+        cta: '📸 Tải Ảnh / Chụp Selfie Ngay (15s)',
+        snooze: 'Để mai mình đổi (Nhắc lại ngày mai)',
+        avatarIcon: '✨'
+      },
+      1: {
+        badge: '😏 Hôm Nay Là "Mai" Rồi Nè!',
+        badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+        quote: '"Ủa alo Tâm Nguyễn ơi? Hôm qua bạn hứa để mai tính, hôm nay chính là ngày mai rồi đó! Bạn tính tới đâu rồi ta? Chụp lẹ 15 giây thôi nà!"',
+        cta: '📸 Thôi Được Rồi, Chụp Luôn (15s)!',
+        snooze: 'Cho nợ nốt hôm nay, mai đổi thiệt! 🥺',
+        avatarIcon: '⏰'
+      },
+      2: {
+        badge: '⏳ Ngày Thứ 3 Điểm Danh',
+        badgeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+        quote: '"Tâm Nguyễn ơi, cả salon ngóng nụ cười của bạn mòn mỏi luôn rồi! Chỉ cần giơ máy lên cười tươi 1 cái là AI chấm điểm 9+ ngay, đừng trốn nữa nhe!"',
+        cta: '📸 Tự Tin Khoe Nụ Cười Ngay!',
+        snooze: 'Hứa danh dự mai đổi nha! 🙈',
+        avatarIcon: '🕵️'
+      },
+      3: {
+        badge: '🚨 Cảnh Báo "Đại Sứ Để Mai Tính"',
+        badgeClass: 'bg-amber-500/30 text-amber-200 border-amber-500/50',
+        quote: '"Cảnh báo cấp 1: Ký tự TN sắp biến thành huyền thoại mOS! Bấm chụp selfie ngay, AI hứa sẽ nâng điểm nụ cười lên mức tối đa cho bạn!"',
+        cta: '🚀 Quyết Tâm Đổi Avatar Ngay Bây Giờ!',
+        snooze: 'Thôi ngại quá, bấm chụp luôn cho rồi! 📸',
+        avatarIcon: '🔥'
+      }
+    };
+
+    const RANDOM_GEMINI_BANTERS = [
+      {
+        quote: '"Avatar ẩn danh như điệp viên thế này thì khách ruột nhận diện làm sao được! Chụp selfie 15 giây khoe nụ cười thương hiệu ngay nào!"',
+        badge: '🤖 Gemini Cà Khịa Nhẹ',
+        badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+        cta: '📸 Chụp Selfie Thoát Ẩn Thân'
+      },
+      {
+        quote: '"Gemini vừa tham mưu ban quản trị thêm luật ai chưa đổi avatar hôm nay bị phạt mời trà sữa nè Tâm ơi! Đổi avatar đẹp để đồng đội ngắm nhé!"',
+        badge: '🧋 Gemini Đòi Trà Sữa',
+        badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        cta: '📸 Đổi Avatar Khỏi Mất Trà Sữa'
+      },
+      {
+        quote: '"Ký tự TN tâm sự nó mệt mỏi vì phải đại diện cho một người xinh đẹp và tài năng như Tâm rồi. Bấm camera để thay thế nó ngay đi nè!"',
+        badge: '💌 Ký Tự TN Kêu Cứu',
+        badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        cta: '📸 Giải Phóng Ký Tự TN Ngay'
+      },
+      {
+        quote: '"Gemini dự báo thời tiết hôm nay cực kỳ thuận lợi cho một bức selfie triệu view trên bảng Leaderboard mOS! Đừng bỏ lỡ cơ hội này!"',
+        badge: '🔮 Dự Báo Thần Thái AI',
+        badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+        cta: '📸 Chụp Bức Ảnh Triệu View'
+      },
+      {
+        quote: '"Nếu hôm nay bạn vẫn bấm \'Để mai tính\' thì lịch mOS sẽ tự động chuyển sang ngày 30 tháng 2 đó nha. Đổi avatar lẹ đi nào!"',
+        badge: '🗓️ Lịch 30 Tháng 2',
+        badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+        cta: '📸 Đổi Ngay Trong Hôm Nay'
+      }
+    ];
+
+    const SAMPLE_IMAGES = {
+      radiant: {
+        url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&h=500&fit=crop',
+        valid: true,
+        score: '9.0 / 10',
+        title: '"Nụ Cười Tỏa Nắng"',
+        smile: '9.5/10',
+        smileW: '95%',
+        light: '9.0/10',
+        lightW: '90%',
+        comp: '8.5/10',
+        compW: '85%',
+        feedback: '💬 "Nụ cười của bạn tràn đầy năng lượng tích cực! Avatar này sẽ cực kỳ nổi bật trên thanh Online của salon."'
+      },
+      formal: {
+        url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop',
+        valid: true,
+        score: '7.5 / 10',
+        title: '"Chỉn Chu & Chuyên Nghiệp"',
+        smile: '6.5/10',
+        smileW: '65%',
+        light: '8.0/10',
+        lightW: '80%',
+        comp: '8.5/10',
+        compW: '85%',
+        feedback: '💬 "Góc chụp rất nghiêm túc và ánh sáng tốt. Nếu cười tươi thêm một chút nữa sẽ càng truyền cảm hứng hơn cho đồng đội nhé!"'
+      },
+      invalid: {
+        url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&h=500&fit=crop',
+        valid: false,
+        score: '0 / 10',
+        title: '"Không Hợp Lệ"',
+        feedback: '🚫 "Chưa phát hiện khuôn mặt người."'
+      }
+    };
+
+    function switchStep(stepNumber) {
+      document.querySelectorAll('.step-view').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+
+      // Update sidebar nav buttons
+      document.querySelectorAll('.step-nav-btn').forEach(btn => {
+        btn.className = "step-nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left text-slate-400 hover:text-white hover:bg-white/[0.04]";
+        const badge = btn.querySelector('span');
+        if (badge) {
+          badge.className = "w-6 h-6 rounded-lg bg-slate-800 text-slate-300 font-bold flex items-center justify-center text-xs shrink-0";
+        }
+      });
+
+      const activeBtn = document.getElementById(`btn-step-${stepNumber}`);
+      if (activeBtn) {
+        activeBtn.className = "step-nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left bg-white/[0.08] text-amber-400 border border-amber-500/30 shadow-sm";
+        const badge = activeBtn.querySelector('span');
+        if (badge) {
+          badge.className = "w-6 h-6 rounded-lg bg-amber-400 text-slate-950 font-extrabold flex items-center justify-center text-xs shrink-0 shadow";
+        }
+      }
+
+      if (stepNumber === 2) {
+        runAiAnalysisAnimation();
+      }
+    }
+
+    function toggleDynamicIsland() {
+      const island = document.getElementById('dynamic-island');
+      const label = document.getElementById('dynamic-island-label');
+      dynamicIslandExpanded = !dynamicIslandExpanded;
+
+      if (dynamicIslandExpanded) {
+        island.style.width = "220px";
+        island.style.height = "38px";
+        label.innerHTML = "<span>✦ Gemini AI Live</span>";
+      } else {
+        island.style.width = "118px";
+        island.style.height = "30px";
+        label.innerHTML = "mOS";
+      }
+    }
+
+    function applySampleImage(key) {
+      currentImageKey = key;
+      const data = SAMPLE_IMAGES[key];
+      
+      document.getElementById('crop-target-image').src = data.url;
+      document.getElementById('preview-bubble-img').src = data.url;
+
+      switchStep(2);
+    }
+
+    function handleLocalFileUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const customUrl = e.target.result;
+          document.getElementById('crop-target-image').src = customUrl;
+          document.getElementById('preview-bubble-img').src = customUrl;
+
+          SAMPLE_IMAGES.custom = {
+            url: customUrl,
+            valid: true,
+            score: '8.8 / 10',
+            title: '"Rực Rỡ Tự Tin"',
+            smile: '9.2/10',
+            smileW: '92%',
+            light: '8.5/10',
+            lightW: '85%',
+            comp: '8.5/10',
+            compW: '85%',
+            feedback: '💬 "Bức ảnh chân dung rất đẹp và ấm áp! Bạn đã sẵn sàng để tỏa sáng trên toàn hệ thống mOS."'
+          };
+          currentImageKey = 'custom';
+          switchStep(2);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function runAiAnalysisAnimation() {
+      const scanner = document.getElementById('ai-scanner-overlay');
+      const coachCard = document.getElementById('ai-coach-card');
+      const invalidCard = document.getElementById('ai-invalid-card');
+      const saveBtn = document.getElementById('btn-save-avatar');
+      
+      scanner.classList.remove('hidden');
+      coachCard.style.opacity = '0.3';
+
+      setTimeout(() => {
+        scanner.classList.add('hidden');
+        coachCard.style.opacity = '1';
+
+        const data = SAMPLE_IMAGES[currentImageKey] || SAMPLE_IMAGES.radiant;
+        
+        if (data.valid) {
+          coachCard.classList.remove('hidden');
+          invalidCard.classList.add('hidden');
+          saveBtn.disabled = false;
+          saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+          document.getElementById('ai-badge-score').innerText = data.score;
+          document.getElementById('ai-title').innerHTML = `✨ Danh hiệu: <span class="text-amber-400">${data.title}</span>`;
+          document.getElementById('score-smile').innerText = data.smile;
+          document.getElementById('bar-smile').style.width = data.smileW;
+          document.getElementById('score-light').innerText = data.light;
+          document.getElementById('bar-light').style.width = data.lightW;
+          document.getElementById('score-comp').innerText = data.comp;
+          document.getElementById('bar-comp').style.width = data.compW;
+          document.getElementById('ai-feedback').innerText = data.feedback;
+        } else {
+          coachCard.classList.add('hidden');
+          invalidCard.classList.remove('hidden');
+          saveBtn.disabled = true;
+          saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+      }, 800);
+    }
+
+    function handleZoomChange(val) {
+      currentZoom = val;
+      updateImageTransform();
+    }
+
+    function setZoomPreset(val) {
+      currentZoom = val;
+      document.getElementById('zoom-slider').value = val;
+      updateImageTransform();
+    }
+
+    function handleRotate() {
+      currentRotation = (currentRotation + 90) % 360;
+      updateImageTransform();
+    }
+
+    function updateImageTransform() {
+      const img = document.getElementById('crop-target-image');
+      img.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+    }
+
+    function triggerFileInput() {
+      document.getElementById('local-file-input').click();
+    }
+
+    function handleSaveAvatar() {
+      // Confetti celebration inside the iPhone
+      confetti({
+        particleCount: 70,
+        spread: 60,
+        origin: { y: 0.6 }
+      });
+
+      const currentImgUrl = document.getElementById('crop-target-image').src;
+
+      // Update iPhone Header Stack Bubble
+      document.getElementById('iphone-header-user-text').classList.add('hidden');
+      const headerImg = document.getElementById('iphone-header-user-img');
+      headerImg.src = currentImgUrl;
+      headerImg.classList.remove('hidden');
+
+      // Update Right User Profile Avatar on iPhone
+      document.getElementById('iphone-profile-text').classList.add('hidden');
+      const profileImg = document.getElementById('iphone-profile-img');
+      profileImg.src = currentImgUrl;
+      profileImg.classList.remove('hidden');
+
+      // Update Drawer Avatar
+      document.getElementById('iphone-drawer-user-img').src = currentImgUrl;
+
+      // Pulse animation on the online bubble
+      const bubble = document.getElementById('iphone-header-user-bubble');
+      bubble.classList.add('ring-4', 'ring-amber-400', 'scale-125');
+      setTimeout(() => {
+        bubble.classList.remove('ring-4', 'ring-amber-400', 'scale-125');
+      }, 1500);
+
+      alert('🎉 Chúc mừng bạn! Ảnh đại diện mới đã được cập nhật tức thì trên iPhone và toàn hệ thống.');
+      switchStep(3);
+    }
+
+    function setSnoozeDay(dayIndex) {
+      currentSnoozeDay = dayIndex;
+      const data = SNOOZE_DATA[dayIndex] || SNOOZE_DATA[0];
+
+      // Update sidebar tab buttons
+      for (let i = 0; i <= 3; i++) {
+        const btn = document.getElementById(`snooze-btn-${i}`);
+        if (btn) {
+          if (i === dayIndex) {
+            btn.className = "snooze-tab-btn py-1.5 px-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-[10px] text-center shadow transition active:scale-95";
+          } else {
+            btn.className = "snooze-tab-btn py-1.5 px-2 rounded-xl bg-white/[0.05] text-slate-300 font-bold text-[10px] text-center hover:bg-white/[0.1] transition active:scale-95";
+          }
+        }
+      }
+
+      // Update Step 1 DOM inside iPhone (Streamlined single-card layout)
+      const badge = document.getElementById('step1-badge');
+      if (badge) {
+        badge.innerText = data.badge;
+        badge.className = `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${data.badgeClass}`;
+      }
+
+      const quote = document.getElementById('step1-gemini-quote');
+      if (quote) {
+        quote.innerText = data.quote;
+      }
+
+      const icon = document.getElementById('step1-avatar-icon');
+      if (icon) {
+        icon.innerText = data.avatarIcon;
+      }
+
+      const cta = document.getElementById('step1-cta-btn');
+      if (cta) {
+        cta.innerHTML = data.cta;
+      }
+
+      const snooze = document.getElementById('step1-snooze-btn');
+      if (snooze) {
+        snooze.innerText = data.snooze;
+      }
+
+      switchStep(1);
+    }
+
+    function generateRandomGeminiBanter() {
+      const randomIndex = Math.floor(Math.random() * RANDOM_GEMINI_BANTERS.length);
+      const banter = RANDOM_GEMINI_BANTERS[randomIndex];
+
+      const quoteEl = document.getElementById('step1-gemini-quote');
+      const boxEl = document.getElementById('step1-gemini-box');
+      const badgeEl = document.getElementById('step1-badge');
+      const ctaEl = document.getElementById('step1-cta-btn');
+
+      // Sparkle animation
+      if (boxEl) {
+        boxEl.classList.add('ring-2', 'ring-amber-400', 'scale-[1.02]');
+      }
+      if (quoteEl) {
+        quoteEl.style.opacity = '0.3';
+        quoteEl.innerText = "✦ Gemini API đang suy nghĩ câu khịa mới...";
+      }
+
+      setTimeout(() => {
+        if (quoteEl) {
+          quoteEl.style.opacity = '1';
+          quoteEl.innerText = banter.quote;
+        }
+        if (badgeEl) {
+          badgeEl.innerText = banter.badge;
+          badgeEl.className = `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${banter.badgeClass}`;
+        }
+        if (ctaEl) {
+          ctaEl.innerHTML = banter.cta;
+        }
+        if (boxEl) {
+          boxEl.classList.remove('ring-2', 'ring-amber-400', 'scale-[1.02]');
+        }
+      }, 250);
+
+      switchStep(1);
+    }
+
+    function handleSnooze() {
+      const nextDay = (currentSnoozeDay + 1) % 4;
+      alert(`⏰ Bạn vừa bấm "Để mai tính"!\n\nGemini đã ghi nhận số ngày hoãn = ${currentSnoozeDay + 1}.\nĐang giả lập tự động tua đến 9:00 sáng hôm sau để xem Gemini cà khịa bạn thế nào nhé! 😉`);
+      setSnoozeDay(nextDay);
+    }
+  </script>
+</body>
+</html>

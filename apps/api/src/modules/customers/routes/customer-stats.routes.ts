@@ -885,25 +885,43 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Phase 2 Optimization: Inline EXISTS subquery for is_new_loca
-      // instead of pre-fetching IDs via getNewLoCaCustomerIds() + building huge IN(...) list.
-      // MySQL optimizer handles EXISTS efficiently by stopping at first matching row.
       const { startStr: nlDateFrom, endStr: nlDateTo } = parseComboDateBounds(dateFrom, dateTo);
-      const newLocaExpr = `EXISTS (
-            SELECT 1 FROM \`order\` o_nl
-            JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-            LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-            WHERE o_nl.user_id = u.id
-              AND o_nl.order_state = 'Completed'
-              AND osc_nl.total_price > 0
-              AND (
-                (ro_nl.actual_booking_date_start >= '${nlDateFrom}' AND ro_nl.actual_booking_date_start <= '${nlDateTo}')
-                OR (
-                  ro_nl.actual_booking_date_start IS NULL
-                  AND o_nl.booking_date_start >= '${nlDateFrom}' AND o_nl.booking_date_start <= '${nlDateTo}'
-                )
+
+      // Optimization: Pre-fetch small ID sets in parallel to eliminate heavy correlated subqueries in batchSql:
+      // 1. Future bookings (~185 IDs, ~5ms)
+      // 2. Callbacks (~30 IDs, ~50ms)
+      // 3. New LoCa in period (~40 IDs, ~450ms)
+      const [futureBookingRows, callbackRows, newLocaRows] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
+          SELECT DISTINCT user_id FROM \`order\` WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')
+        `),
+        fastify.prisma.crm.$queryRawUnsafe<Array<{ legacy_user_id: number }>>(`
+          SELECT DISTINCT legacy_user_id FROM crm_call_logs WHERE callback_date >= CURDATE()
+          UNION
+          SELECT DISTINCT legacy_user_id FROM crm_daily_plans WHERE planned_date >= CURDATE()
+          UNION
+          SELECT DISTINCT legacy_user_id FROM crm_loca_touchpoints WHERE status = 'CALLBACK'
+        `),
+        fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
+          SELECT DISTINCT o_nl.user_id
+          FROM \`order\` o_nl
+          JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
+          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+          WHERE o_nl.order_state = 'Completed'
+            AND osc_nl.total_price > 0
+            AND (
+              (ro_nl.actual_booking_date_start >= '${nlDateFrom}' AND ro_nl.actual_booking_date_start <= '${nlDateTo}')
+              OR (
+                ro_nl.actual_booking_date_start IS NULL
+                AND o_nl.booking_date_start >= '${nlDateFrom}' AND o_nl.booking_date_start <= '${nlDateTo}'
               )
-          )`;
+            )
+        `),
+      ]);
+
+      const bookedIdStr = futureBookingRows.length > 0 ? futureBookingRows.map((r) => r.user_id).join(',') : '0';
+      const callbackIdStr = callbackRows.length > 0 ? callbackRows.map((r) => r.legacy_user_id).join(',') : '0';
+      const newLocaIdStr = newLocaRows.length > 0 ? newLocaRows.map((r) => r.user_id).join(',') : '0';
 
       // Build dynamic SELECT for touchpoints
       const tpSelects = activeTouchpoints
@@ -955,27 +973,13 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
                 LOWER(COALESCE(os_p.user_service_type, '')) LIKE '%product%'
               )
             ) as has_product,
-            (
-              EXISTS (
-                SELECT 1 FROM mos_lab.crm_call_logs ccl
-                WHERE ccl.legacy_user_id = u.id AND ccl.callback_date >= CURDATE()
-              ) OR EXISTS (
-                SELECT 1 FROM mos_lab.crm_daily_plans cdp 
-                WHERE cdp.legacy_user_id = u.id AND cdp.planned_date >= CURDATE()
-              ) OR EXISTS (
-                SELECT 1 FROM mos_lab.crm_loca_touchpoints clt 
-                WHERE clt.legacy_user_id = u.id AND clt.status = 'CALLBACK'
-              )
-            ) as has_callback,
-            EXISTS (
-              SELECT 1 FROM \`order\` o_bk 
-              WHERE o_bk.user_id = u.id AND o_bk.booking_date_start > NOW() AND o_bk.order_state IN ('New', 'Confirmed')
-            ) as has_future_booking,
+            CASE WHEN u.id IN (${callbackIdStr}) THEN 1 ELSE 0 END as has_callback,
+            CASE WHEN u.id IN (${bookedIdStr}) THEN 1 ELSE 0 END as has_future_booking,
             EXISTS (
               SELECT 1 FROM mos_lab.crm_call_logs ccl
               WHERE ccl.legacy_user_id = u.id
             ) as has_contacted,
-            ${newLocaExpr} as is_new_loca
+            CASE WHEN u.id IN (${newLocaIdStr}) THEN 1 ELSE 0 END as is_new_loca
           FROM (
             SELECT 
               user_id,
@@ -1023,7 +1027,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       });
 
       const stats = { tabs, touchpoints };
-      fastify.cache.set(cacheKey, stats, 120_000); // 120 seconds TTL
+      fastify.cache.set(cacheKey, stats, 300_000); // 300 seconds TTL (5 minutes)
       return stats;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get LoCa stats error:');

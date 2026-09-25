@@ -58,6 +58,7 @@ import { pollWithAbort, pollingCoordinator } from '../../lib/api/base';
 import { OmiCallProvider } from '../../context/OmiCallContext';
 const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
 import UserProfileDropdown from '../../components/layout/UserProfileDropdown';
+const AvatarPromptModal = dynamic(() => import('../../components/avatar/AvatarPromptModal'), { ssr: false });
 const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBibleDrawer'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
@@ -371,6 +372,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       }
     }
+  }, []);
+
+  const handleAvatarUpdated = useCallback((newAvatarUrl: string) => {
+    setUser((prev: SafeAny) => (prev ? { ...prev, avatarUrl: newAvatarUrl, avatar: newAvatarUrl } : prev));
   }, []);
 
   const handleLogout = () => {
@@ -827,6 +832,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     setIsDashboardVisible(true);
                   }}
                   onLogout={handleLogout}
+                  onAvatarUpdated={handleAvatarUpdated}
                 />
               </div>
             </Header>
@@ -1373,6 +1379,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           currentDate={cvDrawerDate}
           onDateChange={(d) => setCvDrawerDate(d)}
         />
+        <AvatarPromptModal currentUser={user} onAvatarUpdated={handleAvatarUpdated} />
       </OmiCallProvider>
     </SeasonalAccentProvider>
   );

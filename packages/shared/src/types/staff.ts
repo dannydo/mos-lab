@@ -17,3 +17,67 @@ export interface StaffOffDayQueryResponse {
   data: Record<number, StaffOffDayResult>;
   total: number;
 }
+
+export interface AvatarUploadRequest {
+  photoData?: string;
+  imageBase64?: string;
+  mimeType?: string;
+  targetStaffId?: number;
+  staffId?: number;
+}
+
+export interface AvatarUploadResponse {
+  success?: boolean;
+  message?: string;
+  avatarUrl: string;
+  staffId: number;
+  displayName: string;
+}
+
+export interface AvatarScoreRequest {
+  photoData?: string;
+  imageBase64?: string;
+  mimeType?: string;
+  staffName?: string;
+  role?: string;
+}
+
+export interface AvatarScoreResponse {
+  valid?: boolean;
+  isHumanPortrait?: boolean;
+  scores?: {
+    smileRadiance: number;
+    lightingClarity: number;
+    composition: number;
+  };
+  metrics?: {
+    smile: number;
+    lighting: number;
+    composition: number;
+  };
+  overallScore?: number;
+  totalScore?: number;
+  title?: string;
+  badge?: string;
+  coachFeedback?: string;
+  verdict?: string;
+  feedback?: string;
+}
+
+export interface AvatarNudgeRequest {
+  staffName: string;
+  role?: string;
+  snoozeCount: number;
+}
+
+export interface AvatarNudgeResponse {
+  badge?: string;
+  quote?: string;
+  ctaText?: string;
+  snoozeText?: string;
+  isBanter?: boolean;
+  greeting?: string;
+  banter?: string;
+  callToAction?: string;
+  snoozeCount?: number;
+}

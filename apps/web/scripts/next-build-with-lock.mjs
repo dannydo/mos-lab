@@ -72,7 +72,7 @@ function runNextBuild() {
     // after a successful artifact has otherwise been produced. Keep the
     // production default untouched, but allow that worker to opt into the
     // stable Webpack compiler for a deterministic quality gate.
-    const compilerArgs = process.env.MOS_NEXT_BUILD_COMPILER === 'webpack' ? ['--webpack'] : [];
+    const compilerArgs = process.env.MOS_NEXT_BUILD_COMPILER === 'turbopack' ? [] : ['--webpack'];
     const child = spawn(executable, ['build', ...compilerArgs], { env: process.env, stdio: 'inherit' });
     child.once('error', reject);
     child.once('exit', (code, signal) => {

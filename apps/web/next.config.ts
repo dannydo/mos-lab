@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import { networkInterfaces } from 'node:os';
+import path from 'node:path';
 // Touch next.config.ts to trigger dev server reload
 import withBundleAnalyzer from '@next/bundle-analyzer';
 
@@ -49,7 +50,9 @@ const nextConfig: NextConfig = {
     'dayjs',
     'lucide-react',
   ],
-  turbopack: {},
+  turbopack: {
+    root: process.cwd().endsWith('apps/web') ? path.resolve(process.cwd(), '../..') : process.cwd(),
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs', '@mos-lab/shared'],
   },
@@ -72,9 +75,7 @@ const nextConfig: NextConfig = {
     }
     const productionApiOrigin =
       process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'https://api.lab.masteros.app';
-    return [
-      { source: '/api/pilot/media/:filename', destination: `${productionApiOrigin}/api/pilot/media/:filename` },
-    ];
+    return [{ source: '/api/pilot/media/:filename', destination: `${productionApiOrigin}/api/pilot/media/:filename` }];
   },
   async headers() {
     return [

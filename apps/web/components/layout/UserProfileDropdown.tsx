@@ -3,11 +3,22 @@
 import React, { useState } from 'react';
 import { Dropdown, Avatar, Switch, Segmented, theme } from 'antd';
 import { ColumnHeightOutlined } from '@ant-design/icons';
-import { PhoneCall, Radio, MessageSquareWarning, BarChart3, ChevronRight, LogOut, UserRound } from 'lucide-react';
+import {
+  PhoneCall,
+  Radio,
+  MessageSquareWarning,
+  BarChart3,
+  ChevronRight,
+  LogOut,
+  UserRound,
+  Camera,
+  Sparkles,
+} from 'lucide-react';
 import type { SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
+import AvatarCropModal from '../avatar/AvatarCropModal';
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -17,6 +28,7 @@ interface UserProfileDropdownProps {
   setDesktopDensity: (density: 'compact' | 'standard' | 'comfortable') => void;
   onOpenTelesalesDashboard: () => void;
   onLogout: () => Promise<void> | void;
+  onAvatarUpdated?: (newAvatarUrl: string) => void;
 }
 
 function getRoleBadge(role?: string | null, token?: SafeAny) {
@@ -144,8 +156,10 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   setDesktopDensity,
   onOpenTelesalesDashboard,
   onLogout,
+  onAvatarUpdated,
 }) => {
   const [open, setOpen] = useState(false);
+  const [isAvatarCropOpen, setIsAvatarCropOpen] = useState(false);
   const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
   const isMobileTier = responsiveTier === 'mobile';
@@ -171,6 +185,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   const handleTelesalesClick = () => {
     setOpen(false);
     onOpenTelesalesDashboard();
+  };
+
+  const handleAvatarClick = () => {
+    setOpen(false);
+    setIsAvatarCropOpen(true);
   };
 
   const handleExitImpersonationClick = async () => {
@@ -201,7 +220,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         }}
       >
         <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
+          <div
+            className="relative shrink-0 group cursor-pointer"
+            onClick={handleAvatarClick}
+            title="Nhấp để đổi ảnh đại diện"
+          >
             <Avatar
               size={44}
               src={avatarUrl}
@@ -210,8 +233,12 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                 backgroundColor: token.colorPrimaryBg,
                 color: token.colorPrimary,
               }}
-              className="ring-1 ring-white/10"
+              className="ring-1 ring-white/10 group-hover:ring-amber-500 transition-all"
             />
+            {/* Camera Overlay Icon */}
+            <div className="absolute inset-0 bg-black/45 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-amber-300">
+              <Camera size={16} />
+            </div>
             {isRegistered && (
               <span
                 className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-black"
@@ -365,6 +392,21 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           />
         </div>
 
+        {/* Change Avatar Button */}
+        <button
+          type="button"
+          onClick={handleAvatarClick}
+          className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+        >
+          <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
+            <Camera size={16} className="text-amber-500 shrink-0" />
+            Đổi ảnh đại diện
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20">
+            <Sparkles size={10} /> AI Coach
+          </span>
+        </button>
+
         {/* Telesales Dashboard Button */}
         <button
           type="button"
@@ -405,29 +447,42 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   );
 
   return (
-    <Dropdown
-      open={open}
-      onOpenChange={setOpen}
-      trigger={['click']}
-      placement="bottomRight"
-      arrow={{ pointAtCenter: true }}
-      popupRender={() => dropdownContent}
-    >
-      <button
-        type="button"
-        className="mos-header-avatar-action"
-        data-header-action="user-menu"
-        aria-label="Mở menu người dùng"
-        aria-haspopup="menu"
-        title="Mở menu người dùng"
+    <>
+      <Dropdown
+        open={open}
+        onOpenChange={setOpen}
+        trigger={['click']}
+        placement="bottomRight"
+        arrow={{ pointAtCenter: true }}
+        popupRender={() => dropdownContent}
       >
-        <Avatar
-          className="mos-header-avatar"
-          src={avatarUrl}
-          icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
-        />
-      </button>
-    </Dropdown>
+        <button
+          type="button"
+          className="mos-header-avatar-action"
+          data-header-action="user-menu"
+          aria-label="Mở menu người dùng"
+          aria-haspopup="menu"
+          title="Mở menu người dùng"
+        >
+          <Avatar
+            className="mos-header-avatar"
+            src={avatarUrl}
+            icon={<UserRound aria-hidden className="mos-header-avatar__icon" />}
+          />
+        </button>
+      </Dropdown>
+
+      {/* Avatar Crop & AI Scoring Modal */}
+      <AvatarCropModal
+        open={isAvatarCropOpen}
+        onClose={() => setIsAvatarCropOpen(false)}
+        currentUser={user}
+        onSuccess={(newAvatarUrl) => {
+          setIsAvatarCropOpen(false);
+          onAvatarUpdated?.(newAvatarUrl);
+        }}
+      />
+    </>
   );
 };
 

@@ -5148,7 +5148,35 @@
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 238
+        "line": 246
+      }
+    },
+    {
+      "id": "route:POST:/api/ai/avatar-score",
+      "type": "FastifyRoute",
+      "label": "POST /api/ai/avatar-score",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/ai/avatar-score",
+        "module": "ai",
+        "handler": "inlineHandler",
+        "line": 288
+      }
+    },
+    {
+      "id": "route:POST:/api/ai/avatar-nudge-message",
+      "type": "FastifyRoute",
+      "label": "POST /api/ai/avatar-nudge-message",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/ai/avatar-nudge-message",
+        "module": "ai",
+        "handler": "inlineHandler",
+        "line": 424
       }
     },
     {
@@ -8270,7 +8298,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1039
+        "line": 1043
       }
     },
     {
@@ -10748,7 +10776,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 129
+        "line": 137
       }
     },
     {
@@ -10762,7 +10790,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 214
+        "line": 222
       }
     },
     {
@@ -10776,7 +10804,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "preHandler",
-        "line": 294
+        "line": 302
       }
     },
     {
@@ -10790,7 +10818,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 443
+        "line": 451
       }
     },
     {
@@ -10804,7 +10832,7 @@
         "path": "/api/staff/:id/audit-logs",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 785
+        "line": 793
       }
     },
     {
@@ -10818,7 +10846,7 @@
         "path": "/api/staff/roles/telesales-profile",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 839
+        "line": 847
       }
     },
     {
@@ -10832,7 +10860,7 @@
         "path": "/api/staff/bulk-update",
         "module": "staff",
         "handler": "preHandler",
-        "line": 844
+        "line": 852
       }
     },
     {
@@ -10846,7 +10874,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "preHandler",
-        "line": 924
+        "line": 932
       }
     },
     {
@@ -10860,7 +10888,7 @@
         "path": "/api/staff/legacy",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 997
+        "line": 1005
       }
     },
     {
@@ -10874,7 +10902,7 @@
         "path": "/api/staff/sync-legacy",
         "module": "staff",
         "handler": "preHandler",
-        "line": 1028
+        "line": 1036
       }
     },
     {
@@ -10888,7 +10916,7 @@
         "path": "/api/staff/merge",
         "module": "staff",
         "handler": "preHandler",
-        "line": 1213
+        "line": 1221
       }
     },
     {
@@ -10902,7 +10930,7 @@
         "path": "/api/staff/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1383
+        "line": 1391
       }
     },
     {
@@ -10916,7 +10944,35 @@
         "path": "/api/staff/:id/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1423
+        "line": 1431
+      }
+    },
+    {
+      "id": "route:GET:/api/staff/media/avatars/:filename",
+      "type": "FastifyRoute",
+      "label": "GET /api/staff/media/avatars/:filename",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/staff/media/avatars/:filename",
+        "module": "staff",
+        "handler": "inlineHandler",
+        "line": 1456
+      }
+    },
+    {
+      "id": "route:POST:/api/staff/avatar/upload",
+      "type": "FastifyRoute",
+      "label": "POST /api/staff/avatar/upload",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/staff/avatar/upload",
+        "module": "staff",
+        "handler": "inlineHandler",
+        "line": 1470
       }
     },
     {
@@ -24211,6 +24267,78 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:AvatarUploadRequest",
+      "type": "SharedType",
+      "label": "AvatarUploadRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/staff.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AvatarUploadRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AvatarUploadResponse",
+      "type": "SharedType",
+      "label": "AvatarUploadResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/staff.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AvatarUploadResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AvatarScoreRequest",
+      "type": "SharedType",
+      "label": "AvatarScoreRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/staff.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AvatarScoreRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AvatarScoreResponse",
+      "type": "SharedType",
+      "label": "AvatarScoreResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/staff.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AvatarScoreResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AvatarNudgeRequest",
+      "type": "SharedType",
+      "label": "AvatarNudgeRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/staff.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AvatarNudgeRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AvatarNudgeResponse",
+      "type": "SharedType",
+      "label": "AvatarNudgeResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/staff.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AvatarNudgeResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:ColumnConfig",
       "type": "SharedType",
       "label": "ColumnConfig",
@@ -25035,6 +25163,30 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "PendingAllocationModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:AvatarCropModal",
+      "type": "UIComponent",
+      "label": "<AvatarCropModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/AvatarCropModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AvatarCropModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:AvatarPromptModal",
+      "type": "UIComponent",
+      "label": "<AvatarPromptModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/AvatarPromptModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AvatarPromptModal",
         "isPrimitive": false
       }
     },
@@ -27223,8 +27375,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12668116,
-        "lineCount": 275265,
+        "sizeBytes": 12811450,
+        "lineCount": 278756,
         "ext": ".ts"
       }
     },
@@ -27795,8 +27947,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11280,
-        "lineCount": 279,
+        "sizeBytes": 22629,
+        "lineCount": 509,
         "ext": ".ts"
       }
     },
@@ -28666,8 +28818,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49987,
-        "lineCount": 1233,
+        "sizeBytes": 50464,
+        "lineCount": 1237,
         "ext": ".ts"
       }
     },
@@ -30382,8 +30534,21 @@
       "filePath": "apps/api/src/modules/staff/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 52076,
-        "lineCount": 1447,
+        "sizeBytes": 54892,
+        "lineCount": 1518,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/staff/services/avatar-storage.service.ts",
+      "type": "File",
+      "label": "avatar-storage.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/staff/services/avatar-storage.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3148,
+        "lineCount": 92,
         "ext": ".ts"
       }
     },
@@ -33307,8 +33472,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40556,
-        "lineCount": 873,
+        "sizeBytes": 40615,
+        "lineCount": 876,
         "ext": ".tsx"
       }
     },
@@ -34880,8 +35045,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 55893,
-        "lineCount": 1380,
+        "sizeBytes": 56335,
+        "lineCount": 1387,
         "ext": ".tsx"
       }
     },
@@ -36089,8 +36254,8 @@
       "filePath": "apps/web/lib/api/ai.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1903,
-        "lineCount": 60,
+        "sizeBytes": 2488,
+        "lineCount": 76,
         "ext": ".ts"
       }
     },
@@ -36232,8 +36397,8 @@
       "filePath": "apps/web/lib/api/staff.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9015,
-        "lineCount": 226,
+        "sizeBytes": 9295,
+        "lineCount": 233,
         "ext": ".ts"
       }
     },
@@ -37233,8 +37398,8 @@
       "filePath": "packages/shared/src/types/staff.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 733,
-        "lineCount": 20,
+        "sizeBytes": 1941,
+        "lineCount": 84,
         "ext": ".ts"
       }
     },
@@ -39574,6 +39739,20 @@
     {
       "id": "edge:route:GET:/api/ag-task-bridge/chat/next:ws:apps/api",
       "source": "route:GET:/api/ag-task-bridge/chat/next",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/ai/avatar-score:ws:apps/api",
+      "source": "route:POST:/api/ai/avatar-score",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/ai/avatar-nudge-message:ws:apps/api",
+      "source": "route:POST:/api/ai/avatar-nudge-message",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -42458,6 +42637,20 @@
     {
       "id": "edge:route:GET:/api/staff/:id/off-days:ws:apps/api",
       "source": "route:GET:/api/staff/:id/off-days",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/staff/media/avatars/:filename:ws:apps/api",
+      "source": "route:GET:/api/staff/media/avatars/:filename",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/staff/avatar/upload:ws:apps/api",
+      "source": "route:POST:/api/staff/avatar/upload",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -50107,6 +50300,48 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:AvatarUploadRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AvatarUploadRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AvatarUploadResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AvatarUploadResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AvatarScoreRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AvatarScoreRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AvatarScoreResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AvatarScoreResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AvatarNudgeRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AvatarNudgeRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AvatarNudgeResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AvatarNudgeResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:ColumnConfig:ws:packages/shared",
       "source": "type:@mos-lab/shared:ColumnConfig",
       "target": "ws:packages/shared",
@@ -50767,6 +51002,34 @@
     {
       "id": "edge:uicomp:PendingAllocationModal:token:color:primary",
       "source": "uicomp:PendingAllocationModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AvatarCropModal:ws:apps/web",
+      "source": "uicomp:AvatarCropModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AvatarCropModal:token:color:primary",
+      "source": "uicomp:AvatarCropModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AvatarPromptModal:ws:apps/web",
+      "source": "uicomp:AvatarPromptModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AvatarPromptModal:token:color:primary",
+      "source": "uicomp:AvatarPromptModal",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -62280,6 +62543,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/ai/avatar-nudge-message",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/ai/avatar-nudge-message",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:POST:/api/auth/login",
       "source": "page:/dashboard/architecture",
       "target": "route:POST:/api/auth/login",
@@ -63060,6 +63330,13 @@
       "id": "edge:page:/dashboard/architecture:route:POST:/api/staff/merge",
       "source": "page:/dashboard/architecture",
       "target": "route:POST:/api/staff/merge",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -64219,6 +64496,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/ai/avatar-nudge-message",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/ai/avatar-nudge-message",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/design-system:route:POST:/api/auth/login",
       "source": "page:/dashboard/design-system",
       "target": "route:POST:/api/auth/login",
@@ -64999,6 +65283,13 @@
       "id": "edge:page:/dashboard/design-system:route:POST:/api/staff/merge",
       "source": "page:/dashboard/design-system",
       "target": "route:POST:/api/staff/merge",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -66259,6 +66550,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/ag-task-bridge/chat/next",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/ag-task-bridge/chat/next",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/ai/avatar-score",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/ai/avatar-score",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/ai/avatar-nudge-message",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/ai/avatar-nudge-message",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -69147,6 +69452,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/staff/avatar/upload",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/staff/avatar/upload",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/table-config/:tableId",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/table-config/:tableId",
@@ -70501,6 +70820,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ag-task-bridge/chat/next",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/ag-task-bridge/chat/next",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/ai/avatar-score",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/ai/avatar-score",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/ai/avatar-nudge-message",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/ai/avatar-nudge-message",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -73389,6 +73722,20 @@
       "label": "CALLS customers.getStaff"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/staff/avatar/upload",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/staff/avatar/upload",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/table-config/:tableId",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/table-config/:tableId",
@@ -73959,6 +74306,20 @@
       "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/:id/off-days",
       "source": "page:/dashboard/omicall",
       "target": "route:GET:/api/staff/:id/off-days",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/avatar/upload",
+      "source": "page:/dashboard/omicall",
+      "target": "route:POST:/api/staff/avatar/upload",
       "type": "API_CALL",
       "label": "CALLS staff.list"
     },
@@ -75580,6 +75941,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/ai/avatar-nudge-message",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/ai/avatar-nudge-message",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/auth/login",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/auth/login",
@@ -76360,6 +76728,13 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/staff/merge",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/staff/merge",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -77599,6 +77974,20 @@
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ag-task-bridge/chat/next",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/ag-task-bridge/chat/next",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/ai/avatar-score",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/ai/avatar-score",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/ai/avatar-nudge-message",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/ai/avatar-nudge-message",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -80487,6 +80876,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/staff/media/avatars/:filename",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/staff/media/avatars/:filename",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/staff/avatar/upload",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/staff/avatar/upload",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/table-config/:tableId",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/table-config/:tableId",
@@ -80761,31 +81164,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2857,
-    "totalEdges": 6204,
+    "totalNodes": 2870,
+    "totalEdges": 6238,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 156,
-      "FastifyRoute": 606,
+      "FastifyRoute": 610,
       "Component": 54,
-      "SharedType": 1042,
+      "SharedType": 1048,
       "DesignToken": 12,
-      "UIComponent": 201,
-      "File": 783
+      "UIComponent": 203,
+      "File": 784
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1210,
-      "HANDLES_ROUTE": 606,
-      "RENDERS": 255,
-      "USES_TOKEN": 203,
+      "EXPORTS": 1216,
+      "HANDLES_ROUTE": 610,
+      "RENDERS": 257,
+      "USES_TOKEN": 205,
       "IMPORTS": 426,
       "QUERIES_MODEL": 362,
-      "API_CALL": 3142
+      "API_CALL": 3162
     },
-    "fastifyRouteCount": 611,
+    "fastifyRouteCount": 615,
     "prismaModelCount": 156,
     "nextPageCount": 54,
-    "sharedTypeCount": 1042
+    "sharedTypeCount": 1048
   },
   "routes": [
     {
@@ -81939,6 +82342,20 @@
     {
       "method": "GET",
       "path": "/api/ag-task-bridge/chat/next",
+      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ai"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/avatar-score",
+      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ai"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/avatar-nudge-message",
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ai"
@@ -84858,6 +85275,20 @@
     {
       "method": "GET",
       "path": "/api/staff/:id/off-days",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "staff"
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/media/avatars/:filename",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "staff"
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff/avatar/upload",
       "filePath": "apps/api/src/modules/staff/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "staff"

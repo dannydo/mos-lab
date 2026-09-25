@@ -27,6 +27,8 @@ import type {
   UpsertHolidayPeriodRequest,
   UpsertHolidayRosterRequest,
   UpsertTeamRequest,
+  AvatarUploadRequest,
+  AvatarUploadResponse,
 } from '@mos-lab/shared';
 
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
@@ -88,6 +90,11 @@ export const staffApi = {
     },
     getTelesalesProfile: async (): Promise<Record<string, unknown>> => {
       const response = await api.get('/staff/roles/telesales-profile');
+      return response.data;
+    },
+    uploadAvatar: async (data: AvatarUploadRequest): Promise<AvatarUploadResponse> => {
+      const response = await api.post('/staff/avatar/upload', data);
+      invalidateApiGetCache(['/staff']);
       return response.data;
     },
   },
