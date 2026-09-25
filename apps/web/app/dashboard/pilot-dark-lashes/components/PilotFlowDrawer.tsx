@@ -512,9 +512,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center mb-2">
                 <AppIcon icon={Camera} size="md" />
               </div>
-              <div className="font-bold text-sm text-slate-800 dark:text-slate-100">
-                Chụp / Tải ảnh Trước khi làm
-              </div>
+              <div className="font-bold text-sm text-slate-800 dark:text-slate-100">Chụp / Tải ảnh Trước khi làm</div>
               <div className="text-xs text-slate-400 mt-1 mb-4">
                 Chụp trực tiếp bằng Camera hoặc chọn ảnh có sẵn từ thư viện điện thoại
               </div>
@@ -692,6 +690,8 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     src={resolveMediaUrl(session.beforePhotoUrl)}
                     alt="Before Photo"
                     className="w-full h-full object-contain"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/70 backdrop-blur-md text-white text-[11px] font-bold">
                     TRƯỚC (BEFORE)
@@ -703,6 +703,8 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     src={resolveMediaUrl(session.afterPhotoUrl)}
                     alt="After Photo"
                     className="w-full h-full object-contain"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-emerald-600/90 backdrop-blur-md text-white text-[11px] font-bold">
                     SAU (AFTER) ✨
@@ -732,9 +734,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-2">
                 <AppIcon icon={Camera} size="md" />
               </div>
-              <div className="font-bold text-sm text-slate-800 dark:text-slate-100">
-                Chụp / Tải ảnh Sau khi làm
-              </div>
+              <div className="font-bold text-sm text-slate-800 dark:text-slate-100">Chụp / Tải ảnh Sau khi làm</div>
               <div className="text-xs text-slate-400 mt-1 mb-4">
                 Chụp trực tiếp bằng Camera hoặc chọn ảnh có sẵn từ thư viện điện thoại
               </div>

@@ -34691,8 +34691,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 44903,
-        "lineCount": 955,
+        "sizeBytes": 45047,
+        "lineCount": 959,
         "ext": ".tsx"
       }
     },
@@ -34743,7 +34743,7 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 35262,
+        "sizeBytes": 35326,
         "lineCount": 896,
         "ext": ".tsx"
       }
