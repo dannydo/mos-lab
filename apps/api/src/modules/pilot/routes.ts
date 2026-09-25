@@ -8,11 +8,17 @@ import type {
   CheckOutPilotSessionRequest,
   CreatePilotMaterialRequest,
   CreatePilotSessionRequest,
+  CreatePilotSopStepRequest,
   FeedbackPilotSessionRequest,
+  FinishSessionStepRequest,
   PilotSessionsQuery,
+  ReorderPilotSopStepsRequest,
   ServiceDonePilotSessionRequest,
+  StartSessionStepRequest,
   UpdatePilotMaterialRequest,
   UpdatePilotSessionRequest,
+  UpdatePilotSopStepRequest,
+  UpdateSessionStepNoteRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { PilotService, PilotServiceError, pilotMediaDir } from './pilot.service.js';
@@ -121,6 +127,165 @@ export async function pilotRoutes(fastify: FastifyInstance) {
       return reply.send(materials);
     } catch (error) {
       return sendError(fastify, reply, error, 'Seed default pilot materials error');
+    }
+  });
+
+  // ═══════════════════════════════════════════
+  // Pilot SOP Technical Steps Endpoints
+  // ═══════════════════════════════════════════
+
+  fastify.get('/pilot/sop-steps', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const query = request.query as { pilotCode?: string };
+      const steps = await PilotService.listSopSteps(fastify, query?.pilotCode);
+      return reply.send(steps);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'List pilot SOP steps error');
+    }
+  });
+
+  fastify.post('/pilot/sop-steps', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as CreatePilotSopStepRequest;
+      const created = await PilotService.createSopStep(fastify, body);
+      return reply.status(201).send(created);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Create pilot SOP step error');
+    }
+  });
+
+  fastify.patch('/pilot/sop-steps/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID bước kỹ thuật không hợp lệ.' });
+      }
+      const body = request.body as UpdatePilotSopStepRequest;
+      const updated = await PilotService.updateSopStep(fastify, id, body);
+      return reply.send(updated);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Update pilot SOP step error');
+    }
+  });
+
+  fastify.delete('/pilot/sop-steps/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID bước kỹ thuật không hợp lệ.' });
+      }
+      const result = await PilotService.deleteSopStep(fastify, id);
+      return reply.send(result);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Delete pilot SOP step error');
+    }
+  });
+
+  fastify.post('/pilot/sop-steps/reorder', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as ReorderPilotSopStepsRequest;
+      const updatedSteps = await PilotService.reorderSopSteps(fastify, body);
+      return reply.send(updatedSteps);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Reorder pilot SOP steps error');
+    }
+  });
+
+  fastify.post('/pilot/sop-steps/seed-defaults', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as { pilotCode?: string };
+      const steps = await PilotService.seedDefaultSopSteps(fastify, body?.pilotCode);
+      return reply.send(steps);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Seed default pilot SOP steps error');
+    }
+  });
+
+  // ═══════════════════════════════════════════
+  // Pilot Session Technical Step Timer Endpoints
+  // ═══════════════════════════════════════════
+
+  // Get/initialize session steps
+  fastify.get('/pilot/sessions/:id/steps', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID ca pilot không hợp lệ.' });
+      }
+      const steps = await PilotService.getSessionSteps(fastify, id);
+      return reply.send(steps);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get pilot session steps error');
+    }
+  });
+
+  // Start step timer
+  fastify.post('/pilot/sessions/:id/steps/:stepId/start', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string; stepId: string };
+      const id = parseInt(params.id, 10);
+      const stepId = parseInt(params.stepId, 10);
+      if (isNaN(id) || id <= 0 || isNaN(stepId) || stepId <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID ca hoặc ID bước không hợp lệ.' });
+      }
+      const body = (request.body || {}) as StartSessionStepRequest;
+      const updated = await PilotService.startSessionStep(fastify, id, stepId, body.startedAt);
+      return reply.send(updated);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Start session step error');
+    }
+  });
+
+  // Finish step timer
+  fastify.post('/pilot/sessions/:id/steps/:stepId/finish', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string; stepId: string };
+      const id = parseInt(params.id, 10);
+      const stepId = parseInt(params.stepId, 10);
+      if (isNaN(id) || id <= 0 || isNaN(stepId) || stepId <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID ca hoặc ID bước không hợp lệ.' });
+      }
+      const body = (request.body || {}) as FinishSessionStepRequest;
+      const updated = await PilotService.finishSessionStep(fastify, id, stepId, body.finishedAt, body.note);
+      return reply.send(updated);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Finish session step error');
+    }
+  });
+
+  // Update step note
+  fastify.patch('/pilot/sessions/:id/steps/:stepId/note', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string; stepId: string };
+      const id = parseInt(params.id, 10);
+      const stepId = parseInt(params.stepId, 10);
+      if (isNaN(id) || id <= 0 || isNaN(stepId) || stepId <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID ca hoặc ID bước không hợp lệ.' });
+      }
+      const body = request.body as UpdateSessionStepNoteRequest;
+      const updated = await PilotService.updateSessionStepNote(fastify, id, stepId, body?.note || '');
+      return reply.send(updated);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Update session step note error');
+    }
+  });
+
+  // Reset step
+  fastify.post('/pilot/sessions/:id/steps/:stepId/reset', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string; stepId: string };
+      const id = parseInt(params.id, 10);
+      const stepId = parseInt(params.stepId, 10);
+      if (isNaN(id) || id <= 0 || isNaN(stepId) || stepId <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID ca hoặc ID bước không hợp lệ.' });
+      }
+      const updated = await PilotService.resetSessionStep(fastify, id, stepId);
+      return reply.send(updated);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Reset session step error');
     }
   });
 

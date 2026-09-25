@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Card, Form, Input, Popconfirm, Progress, Radio, Tooltip, Typography, message } from 'antd';
+import { Button, Card, Form, Input, Popconfirm, Radio, Tooltip, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   AlertTriangle,
-  Award,
   Camera,
   CheckCircle,
   Clock,
   Edit,
   HeartHandshake,
+  ListOrdered,
   Package,
   Image as ImageIcon,
   Phone,
@@ -19,10 +19,8 @@ import {
   Search,
   Sparkles,
   Star,
-  Target,
   Trash2,
   User,
-  Wallet,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -36,13 +34,14 @@ import type {
 } from '@mos-lab/shared';
 import { apiClient, resolveMediaUrl } from '../../../lib/api-client';
 import { AppIcon } from '../../../components/ui/AppIcon';
-import { StatCard } from '../../../components/ui/StatCard';
 import { DataTable } from '../../../components/ui/DataTable';
 import { CopyPhoneButton } from '../../../components/ui/CopyPhoneButton';
+import { PilotMetricsGrid } from './components/PilotMetricsGrid';
 import { PilotSessionDrawer } from './components/PilotSessionDrawer';
 import { PilotFollowUpDrawer } from './components/PilotFollowUpDrawer';
 import { PilotMaterialModal } from './components/PilotMaterialModal';
 import { PilotFlowDrawer } from './components/PilotFlowDrawer';
+import { PilotSopModal } from './components/PilotSopModal';
 
 const { Title } = Typography;
 
@@ -71,6 +70,7 @@ export default function PilotDarkLashesPage() {
   const [selectedFollowUpSession, setSelectedFollowUpSession] = useState<PilotSession | null>(null);
   const [materialsCatalog, setMaterialsCatalog] = useState<PilotMaterial[]>([]);
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
+  const [sopModalOpen, setSopModalOpen] = useState(false);
   const [flowDrawerOpen, setFlowDrawerOpen] = useState(false);
   const [selectedFlowSession, setSelectedFlowSession] = useState<PilotSession | null>(null);
 
@@ -223,6 +223,12 @@ export default function PilotDarkLashesPage() {
 
   const handleFlowSessionUpdated = (updated: PilotSession) => {
     setSelectedFlowSession(updated);
+    setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    fetchPilotData();
+  };
+
+  const handleSessionDrawerUpdated = (updated: PilotSession) => {
+    setEditingSession(updated);
     setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
     fetchPilotData();
   };
@@ -419,26 +425,42 @@ export default function PilotDarkLashesPage() {
     {
       title: 'Thời lượng',
       key: 'duration',
-      width: 110,
+      width: 130,
       render: (_, r) => {
-        if (r.totalDurationMinutes) {
-          return (
-            <div className="flex flex-col">
-              <span className="tabular-nums font-bold text-emerald-700 dark:text-emerald-400 text-xs">
-                {r.totalDurationMinutes} phút
+        const totalTechnicalMin =
+          r.totalTechnicalDurationSeconds && r.totalTechnicalDurationSeconds > 0
+            ? Math.round(r.totalTechnicalDurationSeconds / 60)
+            : null;
+
+        return (
+          <div className="flex flex-col gap-0.5">
+            {r.totalDurationMinutes ? (
+              <div className="flex items-center gap-1">
+                <span className="tabular-nums font-bold text-emerald-700 dark:text-emerald-400 text-xs">
+                  {r.totalDurationMinutes} phút
+                </span>
+                <span className="text-[10px] text-slate-400">(Visit)</span>
+              </div>
+            ) : r.checkInAt ? (
+              <span className="inline-flex items-center text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">
+                Đang làm...
               </span>
-              <span className="text-[10px] text-slate-400">Total Visit</span>
-            </div>
-          );
-        }
-        if (r.checkInAt) {
-          return (
-            <span className="inline-flex items-center text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">
-              Đang làm...
-            </span>
-          );
-        }
-        return <span className="text-slate-400 text-xs">--</span>;
+            ) : (
+              <span className="text-slate-400 text-xs">--</span>
+            )}
+            {totalTechnicalMin !== null && (
+              <Tooltip
+                title={`Tổng thời gian kỹ thuật (SOP): ${Math.floor(r.totalTechnicalDurationSeconds! / 60)} phút ${
+                  r.totalTechnicalDurationSeconds! % 60
+                }s`}
+              >
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 dark:text-teal-300 tabular-nums">
+                  <AppIcon icon={Clock} size="sm" /> KT: {totalTechnicalMin}p
+                </span>
+              </Tooltip>
+            )}
+          </div>
+        );
       },
     },
     {
@@ -678,6 +700,13 @@ export default function PilotDarkLashesPage() {
               Làm mới
             </Button>
             <Button
+              icon={<AppIcon icon={ListOrdered} size="sm" />}
+              onClick={() => setSopModalOpen(true)}
+              className="rounded-xl font-medium border-teal-500/30 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/30"
+            >
+              Quy trình kỹ thuật (SOP)
+            </Button>
+            <Button
               icon={<AppIcon icon={Package} size="sm" />}
               onClick={() => setMaterialModalOpen(true)}
               className="rounded-xl font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
@@ -697,122 +726,7 @@ export default function PilotDarkLashesPage() {
       </div>
 
       {/* Top 5 Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {/* Card 1: Target Progress */}
-        <StatCard
-          title="Tiến độ Pilot 30 Ngày"
-          value={
-            <div className="flex items-baseline gap-1.5">
-              <span>{metrics?.completedSessions ?? 0}</span>
-              <span className="text-xs font-medium text-slate-400">/ {metrics?.targetSessions ?? 30} ca</span>
-            </div>
-          }
-          icon={<AppIcon icon={Target} size="md" className="text-emerald-500" />}
-          subValue={
-            <div className="w-full mt-1.5">
-              <Progress percent={metrics?.progressPercent ?? 0} size="small" showInfo={false} />
-            </div>
-          }
-          trendText={`Đạt ${metrics?.progressPercent ?? 0}% mục tiêu pilot`}
-          trend="up"
-        />
-
-        {/* Card 2: Contribution & Unit Economics */}
-        <StatCard
-          title="Tổng Contribution Margin"
-          value={formatVND(metrics?.totalContribution ?? 0)}
-          icon={<AppIcon icon={Wallet} size="md" className="text-blue-500" />}
-          subValue={
-            <div className="text-xs text-slate-500 flex flex-col gap-0.5 mt-0.5">
-              <span>Doanh thu: {formatVND(metrics?.totalRevenue ?? 0)}</span>
-              <span>CP trực tiếp: {formatVND(metrics?.totalDirectCost ?? 0)}</span>
-            </div>
-          }
-          trendText={`Margin TB: ${metrics?.avgContributionMarginPct ?? 0}% (${formatVND(
-            metrics?.avgContributionPerSession ?? 0
-          )}/ca)`}
-          trend="up"
-        />
-
-        {/* Card 3: Consumables Cost Per Done */}
-        <StatCard
-          title="Vật tư / Done"
-          value={formatVND(metrics?.avgConsumablesCostPerSession ?? 0)}
-          icon={<AppIcon icon={Package} size="md" className="text-teal-500" />}
-          subValue={
-            <div className="text-xs text-slate-500 flex flex-col gap-0.5 mt-0.5">
-              <span>Tổng CP vật tư: {formatVND(metrics?.totalConsumablesCost ?? 0)}</span>
-              <span>Đo lường chi phí thực tế / ca</span>
-            </div>
-          }
-          trendText="Mục tiêu 7 ngày: Chốt Avg Direct Cost / Done"
-          trend="neutral"
-        />
-
-        {/* Card 3: Satisfaction (CSAT) */}
-        <StatCard
-          title="Chỉ số Hài lòng (CSAT)"
-          value={
-            metrics?.avgCsat && metrics.avgCsat > 0 ? (
-              <div className="flex items-center gap-1.5 text-amber-500">
-                <span>{metrics.avgCsat}</span>
-                <span className="text-xs font-normal text-slate-400">/ 5.0 ⭐</span>
-              </div>
-            ) : (
-              <span className="text-slate-400 text-lg">Chưa có</span>
-            )
-          }
-          icon={<AppIcon icon={Award} size="md" className="text-amber-500" />}
-          subValue={
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-amber-400 text-xs font-medium">
-                {metrics?.avgCsat ? `${metrics.avgCsat} ⭐` : 'Chưa đánh giá'}
-              </span>
-            </div>
-          }
-          trendText={`Đã đánh giá: ${metrics?.ratedSessionsCount ?? 0} / ${metrics?.completedSessions ?? 0} ca`}
-        />
-
-        {/* Card 4: Follow-up & Care Alerts */}
-        <StatCard
-          title="Nhắc việc Follow-up"
-          value={
-            <div className="flex items-center gap-2">
-              <span>{metrics?.totalPendingFollowUpCount ?? 0}</span>
-              <span className="text-xs font-medium text-slate-400">ca cần chăm sóc</span>
-            </div>
-          }
-          icon={<AppIcon icon={Phone} size="md" className="text-rose-500" />}
-          subValue={
-            <div className="flex items-center gap-2 text-xs mt-1">
-              <span
-                className={`px-1.5 py-0.5 rounded font-medium ${
-                  (metrics?.pendingFollowUp24hCount ?? 0) > 0
-                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200'
-                    : 'text-slate-400'
-                }`}
-              >
-                24h: {metrics?.pendingFollowUp24hCount ?? 0}
-              </span>
-              <span
-                className={`px-1.5 py-0.5 rounded font-medium ${
-                  (metrics?.pendingFollowUp72hCount ?? 0) > 0
-                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200'
-                    : 'text-slate-400'
-                }`}
-              >
-                72h: {metrics?.pendingFollowUp72hCount ?? 0}
-              </span>
-            </div>
-          }
-          trendText={
-            (metrics?.totalPendingFollowUpCount ?? 0) === 0
-              ? 'Tất cả ca đã được chăm sóc'
-              : 'Ưu tiên liên hệ khách đúng hạn'
-          }
-          trend={(metrics?.totalPendingFollowUpCount ?? 0) === 0 ? 'up' : 'down'}
-        />
-      </div>
+      <PilotMetricsGrid metrics={metrics} />
 
       {/* Main Table Card */}
       <Card variant="outlined" className="rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
@@ -876,12 +790,14 @@ export default function PilotDarkLashesPage() {
       {/* Drawers & Modals */}
       <PilotSessionDrawer
         open={createDrawerOpen}
+        session={editingSession}
         isEditing={Boolean(editingSession)}
         form={form}
         materialsCatalog={materialsCatalog}
         onRefreshMaterials={fetchMaterials}
         onClose={() => setCreateDrawerOpen(false)}
         onSubmit={handleSubmitSession}
+        onSessionUpdated={handleSessionDrawerUpdated}
       />
       <PilotFollowUpDrawer
         open={followUpDrawerOpen}
@@ -895,6 +811,11 @@ export default function PilotDarkLashesPage() {
         materials={materialsCatalog}
         onClose={() => setMaterialModalOpen(false)}
         onRefresh={fetchMaterials}
+      />
+      <PilotSopModal
+        open={sopModalOpen}
+        onClose={() => setSopModalOpen(false)}
+        onRefresh={fetchPilotData}
       />
       <PilotFlowDrawer
         open={flowDrawerOpen}

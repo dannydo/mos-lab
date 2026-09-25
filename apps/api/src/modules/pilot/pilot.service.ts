@@ -14,7 +14,14 @@ import type {
   SafeAny,
   UpdatePilotMaterialRequest,
   UpdatePilotSessionRequest,
+  PilotSopStep,
+  CreatePilotSopStepRequest,
+  UpdatePilotSopStepRequest,
+  ReorderPilotSopStepsRequest,
+  PilotSessionStep,
+  PilotSessionStepStatus,
 } from '@mos-lab/shared';
+import { DEFAULT_DARK_LASH_SOP_STEPS } from '@mos-lab/shared';
 
 export function pilotMediaDir(): string {
   const configured = String(process.env.PILOT_MEDIA_DIR || '').trim();
@@ -196,6 +203,43 @@ export class PilotService {
       isActive: Boolean(raw.isActive),
       createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : String(raw.createdAt),
       updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : String(raw.updatedAt),
+    };
+  }
+
+  static formatSopStep(raw: SafeAny): PilotSopStep {
+    return {
+      id: raw.id,
+      pilotCode: raw.pilotCode,
+      name: raw.name,
+      description: raw.description ?? null,
+      stepOrder: Number(raw.stepOrder ?? 0),
+      targetMinutes: raw.targetMinutes !== null && raw.targetMinutes !== undefined ? Number(raw.targetMinutes) : null,
+      isActive: Boolean(raw.isActive),
+      createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : String(raw.createdAt || ''),
+      updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : String(raw.updatedAt || ''),
+    };
+  }
+
+  static formatSessionStep(raw: SafeAny): PilotSessionStep {
+    return {
+      id: raw.id,
+      sessionId: raw.sessionId,
+      stepTemplateId:
+        raw.stepTemplateId !== null && raw.stepTemplateId !== undefined ? Number(raw.stepTemplateId) : null,
+      stepName: raw.stepName,
+      stepOrder: Number(raw.stepOrder ?? 0),
+      status: (raw.status as PilotSessionStepStatus) || 'PENDING',
+      startedAt:
+        raw.startedAt instanceof Date ? raw.startedAt.toISOString() : raw.startedAt ? String(raw.startedAt) : null,
+      finishedAt:
+        raw.finishedAt instanceof Date ? raw.finishedAt.toISOString() : raw.finishedAt ? String(raw.finishedAt) : null,
+      durationSeconds:
+        raw.durationSeconds !== null && raw.durationSeconds !== undefined ? Number(raw.durationSeconds) : null,
+      note: raw.note ?? null,
+      createdAt:
+        raw.createdAt instanceof Date ? raw.createdAt.toISOString() : raw.createdAt ? String(raw.createdAt) : undefined,
+      updatedAt:
+        raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : raw.updatedAt ? String(raw.updatedAt) : undefined,
     };
   }
 
@@ -392,6 +436,17 @@ export class PilotService {
     const checkOutAtStr =
       raw.checkOutAt instanceof Date ? raw.checkOutAt.toISOString() : raw.checkOutAt ? String(raw.checkOutAt) : null;
 
+    const steps = Array.isArray(raw.steps)
+      ? raw.steps.map((s: SafeAny) => this.formatSessionStep(s))
+      : [];
+
+    let totalTechnicalDurationSeconds = 0;
+    for (const step of steps) {
+      if (step.durationSeconds && step.durationSeconds > 0) {
+        totalTechnicalDurationSeconds += step.durationSeconds;
+      }
+    }
+
     return {
       id: raw.id,
       pilotCode: raw.pilotCode,
@@ -433,6 +488,8 @@ export class PilotService {
       createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : String(raw.createdAt),
       updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : String(raw.updatedAt),
       materials,
+      steps,
+      totalTechnicalDurationSeconds: totalTechnicalDurationSeconds > 0 ? totalTechnicalDurationSeconds : null,
     };
   }
 
@@ -456,7 +513,10 @@ export class PilotService {
 
     const records = await fastify.prisma.crm.crmPilotSession.findMany({
       where,
-      include: { materials: true },
+      include: {
+        materials: true,
+        steps: { orderBy: { stepOrder: 'asc' } },
+      },
       orderBy: [{ sessionDate: 'desc' }, { id: 'desc' }],
     });
 
@@ -1054,6 +1114,329 @@ export class PilotService {
     await writeFile(filePath, buffer);
 
     return { photoUrl: `/api/pilot/media/${filename}` };
+  }
+
+  // ═══════════════════════════════════════════
+  // Pilot SOP Technical Steps Catalog
+  // ═══════════════════════════════════════════
+
+  static async seedDefaultSopSteps(fastify: FastifyInstance, pilotCode?: string): Promise<PilotSopStep[]> {
+    const code = pilotCode || this.DEFAULT_PILOT_CODE;
+    const existing = await fastify.prisma.crm.crmPilotSopStep.findMany({
+      where: { pilotCode: code },
+      select: { name: true },
+    });
+
+    const normalize = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '');
+    const existingNorms = new Set(existing.map((s: { name: string }) => normalize(s.name)));
+
+    const missing = DEFAULT_DARK_LASH_SOP_STEPS.filter(
+      (s) => !existingNorms.has(normalize(s.name))
+    );
+
+    if (missing.length > 0 && fastify.prisma.crm.crmPilotSopStep?.createMany) {
+      await fastify.prisma.crm.crmPilotSopStep.createMany({
+        data: missing.map((s) => ({
+          pilotCode: code,
+          name: s.name,
+          description: s.description,
+          stepOrder: s.stepOrder,
+          targetMinutes: s.targetMinutes,
+          isActive: true,
+        })),
+      });
+    }
+
+    const all = await fastify.prisma.crm.crmPilotSopStep.findMany({
+      where: { pilotCode: code, isActive: true },
+      orderBy: [{ stepOrder: 'asc' }, { id: 'asc' }],
+    });
+    return all.map((r: SafeAny) => this.formatSopStep(r));
+  }
+
+  static async listSopSteps(fastify: FastifyInstance, pilotCode?: string): Promise<PilotSopStep[]> {
+    const code = pilotCode || this.DEFAULT_PILOT_CODE;
+    const count = await fastify.prisma.crm.crmPilotSopStep.count({
+      where: { pilotCode: code },
+    });
+
+    if (count === 0) {
+      return this.seedDefaultSopSteps(fastify, code);
+    }
+
+    const records = await fastify.prisma.crm.crmPilotSopStep.findMany({
+      where: { pilotCode: code, isActive: true },
+      orderBy: [{ stepOrder: 'asc' }, { id: 'asc' }],
+    });
+
+    return records.map((r: SafeAny) => this.formatSopStep(r));
+  }
+
+  static async createSopStep(fastify: FastifyInstance, data: CreatePilotSopStepRequest): Promise<PilotSopStep> {
+    if (!data.name || !data.name.trim()) {
+      throw new PilotServiceError('Tên bước kỹ thuật không được để trống.');
+    }
+    const code = data.pilotCode || this.DEFAULT_PILOT_CODE;
+
+    let stepOrder = data.stepOrder;
+    if (stepOrder === undefined || stepOrder <= 0) {
+      const maxOrderRecord = await fastify.prisma.crm.crmPilotSopStep.findFirst({
+        where: { pilotCode: code },
+        orderBy: { stepOrder: 'desc' },
+      });
+      stepOrder = (maxOrderRecord?.stepOrder ?? 0) + 1;
+    }
+
+    const created = await fastify.prisma.crm.crmPilotSopStep.create({
+      data: {
+        pilotCode: code,
+        name: data.name.trim(),
+        description: data.description ? data.description.trim() : null,
+        stepOrder,
+        targetMinutes:
+          data.targetMinutes !== undefined && data.targetMinutes !== null ? Math.max(1, data.targetMinutes) : null,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+      },
+    });
+
+    return this.formatSopStep(created);
+  }
+
+  static async updateSopStep(
+    fastify: FastifyInstance,
+    id: number,
+    data: UpdatePilotSopStepRequest
+  ): Promise<PilotSopStep> {
+    const existing = await fastify.prisma.crm.crmPilotSopStep.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new PilotServiceError('Không tìm thấy bước kỹ thuật tương ứng.', 404);
+    }
+
+    const updatePayload: Record<string, SafeAny> = {};
+    if (data.name !== undefined) {
+      if (!data.name.trim()) throw new PilotServiceError('Tên bước kỹ thuật không được để trống.');
+      updatePayload.name = data.name.trim();
+    }
+    if (data.description !== undefined) {
+      updatePayload.description = data.description ? data.description.trim() : null;
+    }
+    if (data.stepOrder !== undefined) {
+      updatePayload.stepOrder = Math.max(1, data.stepOrder);
+    }
+    if (data.targetMinutes !== undefined) {
+      updatePayload.targetMinutes = data.targetMinutes !== null ? Math.max(1, data.targetMinutes) : null;
+    }
+    if (data.isActive !== undefined) {
+      updatePayload.isActive = data.isActive;
+    }
+
+    const updated = await fastify.prisma.crm.crmPilotSopStep.update({
+      where: { id },
+      data: updatePayload,
+    });
+
+    return this.formatSopStep(updated);
+  }
+
+  static async deleteSopStep(fastify: FastifyInstance, id: number): Promise<{ success: boolean }> {
+    const existing = await fastify.prisma.crm.crmPilotSopStep.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new PilotServiceError('Không tìm thấy bước kỹ thuật tương ứng.', 404);
+    }
+
+    await fastify.prisma.crm.crmPilotSopStep.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    return { success: true };
+  }
+
+  static async reorderSopSteps(
+    fastify: FastifyInstance,
+    data: ReorderPilotSopStepsRequest
+  ): Promise<PilotSopStep[]> {
+    const code = data.pilotCode || this.DEFAULT_PILOT_CODE;
+    if (!Array.isArray(data.stepIds) || data.stepIds.length === 0) {
+      throw new PilotServiceError('Danh sách thứ tự bước không hợp lệ.');
+    }
+
+    const txRunner =
+      typeof fastify.prisma.crm?.$transaction === 'function'
+        ? (cb: SafeAny) => fastify.prisma.crm.$transaction(cb)
+        : async (cb: SafeAny) => cb(fastify.prisma.crm);
+
+    await txRunner(async (tx: SafeAny) => {
+      for (let idx = 0; idx < data.stepIds.length; idx++) {
+        const stepId = data.stepIds[idx];
+        await tx.crmPilotSopStep.update({
+          where: { id: stepId },
+          data: { stepOrder: idx + 1 },
+        });
+      }
+    });
+
+    return this.listSopSteps(fastify, code);
+  }
+
+  // ═══════════════════════════════════════════
+  // Pilot Session Step Timer Management
+  // ═══════════════════════════════════════════
+
+  static async ensureSessionSteps(
+    fastify: FastifyInstance,
+    sessionId: number
+  ): Promise<PilotSessionStep[]> {
+    const session = await fastify.prisma.crm.crmPilotSession.findUnique({
+      where: { id: sessionId },
+      include: { steps: { orderBy: { stepOrder: 'asc' } } },
+    });
+    if (!session) {
+      throw new PilotServiceError('Không tìm thấy ca dịch vụ pilot tương ứng.', 404);
+    }
+
+    if (session.steps && session.steps.length > 0) {
+      return session.steps.map((s: SafeAny) => this.formatSessionStep(s));
+    }
+
+    const sopSteps = await this.listSopSteps(fastify, session.pilotCode);
+    if (sopSteps.length === 0) return [];
+
+    if (fastify.prisma.crm.crmPilotSessionStep?.createMany) {
+      await fastify.prisma.crm.crmPilotSessionStep.createMany({
+        data: sopSteps.map((step) => ({
+          sessionId,
+          stepTemplateId: step.id,
+          stepName: step.name,
+          stepOrder: step.stepOrder,
+          status: 'PENDING',
+        })),
+      });
+    }
+
+    const createdSteps = await fastify.prisma.crm.crmPilotSessionStep.findMany({
+      where: { sessionId },
+      orderBy: { stepOrder: 'asc' },
+    });
+
+    return createdSteps.map((s: SafeAny) => this.formatSessionStep(s));
+  }
+
+  static async getSessionSteps(fastify: FastifyInstance, sessionId: number): Promise<PilotSessionStep[]> {
+    return this.ensureSessionSteps(fastify, sessionId);
+  }
+
+  static async startSessionStep(
+    fastify: FastifyInstance,
+    sessionId: number,
+    stepId: number,
+    startedAtClient?: string
+  ): Promise<PilotSessionStep> {
+    const step = await fastify.prisma.crm.crmPilotSessionStep.findFirst({
+      where: { id: stepId, sessionId },
+    });
+    if (!step) {
+      throw new PilotServiceError('Không tìm thấy bước kỹ thuật của ca này.', 404);
+    }
+
+    const startDate = startedAtClient ? new Date(startedAtClient) : new Date();
+
+    const updated = await fastify.prisma.crm.crmPilotSessionStep.update({
+      where: { id: stepId },
+      data: {
+        status: 'RUNNING',
+        startedAt: startDate,
+        finishedAt: null,
+        durationSeconds: null,
+      },
+    });
+
+    return this.formatSessionStep(updated);
+  }
+
+  static async finishSessionStep(
+    fastify: FastifyInstance,
+    sessionId: number,
+    stepId: number,
+    finishedAtClient?: string,
+    note?: string
+  ): Promise<PilotSessionStep> {
+    const step = await fastify.prisma.crm.crmPilotSessionStep.findFirst({
+      where: { id: stepId, sessionId },
+    });
+    if (!step) {
+      throw new PilotServiceError('Không tìm thấy bước kỹ thuật của ca này.', 404);
+    }
+
+    const finishDate = finishedAtClient ? new Date(finishedAtClient) : new Date();
+    const startDate = step.startedAt ? new Date(step.startedAt) : finishDate;
+    const durationSeconds = Math.max(0, Math.round((finishDate.getTime() - startDate.getTime()) / 1000));
+
+    const updated = await fastify.prisma.crm.crmPilotSessionStep.update({
+      where: { id: stepId },
+      data: {
+        status: 'COMPLETED',
+        startedAt: step.startedAt || startDate,
+        finishedAt: finishDate,
+        durationSeconds,
+        ...(note !== undefined ? { note: note.trim() } : {}),
+      },
+    });
+
+    return this.formatSessionStep(updated);
+  }
+
+  static async updateSessionStepNote(
+    fastify: FastifyInstance,
+    sessionId: number,
+    stepId: number,
+    note: string
+  ): Promise<PilotSessionStep> {
+    const step = await fastify.prisma.crm.crmPilotSessionStep.findFirst({
+      where: { id: stepId, sessionId },
+    });
+    if (!step) {
+      throw new PilotServiceError('Không tìm thấy bước kỹ thuật của ca này.', 404);
+    }
+
+    const updated = await fastify.prisma.crm.crmPilotSessionStep.update({
+      where: { id: stepId },
+      data: { note: (note || '').trim() },
+    });
+
+    return this.formatSessionStep(updated);
+  }
+
+  static async resetSessionStep(
+    fastify: FastifyInstance,
+    sessionId: number,
+    stepId: number
+  ): Promise<PilotSessionStep> {
+    const step = await fastify.prisma.crm.crmPilotSessionStep.findFirst({
+      where: { id: stepId, sessionId },
+    });
+    if (!step) {
+      throw new PilotServiceError('Không tìm thấy bước kỹ thuật của ca này.', 404);
+    }
+
+    const updated = await fastify.prisma.crm.crmPilotSessionStep.update({
+      where: { id: stepId },
+      data: {
+        status: 'PENDING',
+        startedAt: null,
+        finishedAt: null,
+        durationSeconds: null,
+      },
+    });
+
+    return this.formatSessionStep(updated);
   }
 
   static async deleteSession(fastify: FastifyInstance, id: number): Promise<{ success: boolean }> {

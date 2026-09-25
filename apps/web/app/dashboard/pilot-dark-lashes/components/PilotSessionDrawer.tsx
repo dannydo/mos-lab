@@ -4,11 +4,12 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { Button, Form, Input, InputNumber, Select, message } from 'antd';
 import type { FormInstance } from 'antd';
 import { Package, Plus, Sparkles, Trash2 } from 'lucide-react';
-import type { CreatePilotMaterialRequest, PilotMaterial } from '@mos-lab/shared';
+import type { CreatePilotMaterialRequest, PilotMaterial, PilotSession, PilotSessionStep } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { EntityFormDrawer } from '../../../../components/ui/EntityFormDrawer';
 import { AdaptiveModal } from '../../../../components/ui/AdaptiveOverlay';
 import { apiClient } from '../../../../lib/api-client';
+import { PilotStepTimer } from './PilotStepTimer';
 
 function formatVND(value: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -22,20 +23,24 @@ interface PilotSessionDrawerProps {
   open: boolean;
   isEditing: boolean;
   form: FormInstance;
+  session?: PilotSession | null;
   materialsCatalog: PilotMaterial[];
   onRefreshMaterials?: () => void;
   onClose: () => void;
   onSubmit: () => void;
+  onSessionUpdated?: (updated: PilotSession) => void;
 }
 
 export function PilotSessionDrawer({
   open,
   isEditing,
   form,
+  session,
   materialsCatalog,
   onRefreshMaterials,
   onClose,
   onSubmit,
+  onSessionUpdated,
 }: PilotSessionDrawerProps) {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickSubmitting, setQuickSubmitting] = useState(false);
@@ -44,6 +49,43 @@ export function PilotSessionDrawer({
   const watchQuickPrice = Form.useWatch('purchasePrice', quickForm) ?? 0;
   const watchQuickVolume = Form.useWatch('volume', quickForm) ?? 1;
   const quickCostPerUnit = watchQuickVolume > 0 ? Math.round(watchQuickPrice / watchQuickVolume) : 0;
+
+  const [sessionSteps, setSessionSteps] = useState<PilotSessionStep[]>(session?.steps || []);
+
+  useEffect(() => {
+    if (session?.id) {
+      if (session.steps && session.steps.length > 0) {
+        setSessionSteps(session.steps);
+      } else {
+        apiClient.pilot
+          .getSessionSteps(session.id)
+          .then((res) => {
+            if (res && res.length > 0) {
+              setSessionSteps(res);
+              onSessionUpdated?.({ ...session, steps: res });
+            }
+          })
+          .catch(() => {});
+      }
+    } else {
+      setSessionSteps([]);
+    }
+  }, [session?.id]);
+
+  const handleStepsChange = (newSteps: PilotSessionStep[]) => {
+    setSessionSteps(newSteps);
+    let totalSec = 0;
+    for (const s of newSteps) {
+      if (s.durationSeconds && s.durationSeconds > 0) totalSec += s.durationSeconds;
+    }
+    if (session) {
+      onSessionUpdated?.({
+        ...session,
+        steps: newSteps,
+        totalTechnicalDurationSeconds: totalSec > 0 ? totalSec : null,
+      });
+    }
+  };
 
   const handleSaveQuickMaterial = async () => {
     try {
@@ -354,6 +396,21 @@ export function PilotSessionDrawer({
             )}
           </Form.List>
         </div>
+
+        {/* Phase: Technical Steps Timer History (SOP) */}
+        {session && session.id && (
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+            <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
+              Theo Dõi Thời Gian Kỹ Thuật (SOP Timer)
+            </div>
+            <PilotStepTimer
+              sessionId={session.id}
+              steps={sessionSteps}
+              onStepsChange={handleStepsChange}
+              readOnly={false}
+            />
+          </div>
+        )}
 
         {/* Phase 3: Direct Costs & Unit Economics */}
         <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">

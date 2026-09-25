@@ -1,13 +1,21 @@
 import type {
   CreatePilotMaterialRequest,
   CreatePilotSessionRequest,
+  CreatePilotSopStepRequest,
+  FinishSessionStepRequest,
   PilotMaterial,
   PilotMetricsSummary,
   PilotSession,
+  PilotSessionStep,
   PilotSessionsListResponse,
   PilotSessionsQuery,
+  PilotSopStep,
+  ReorderPilotSopStepsRequest,
+  StartSessionStepRequest,
   UpdatePilotMaterialRequest,
   UpdatePilotSessionRequest,
+  UpdatePilotSopStepRequest,
+  UpdateSessionStepNoteRequest,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -91,6 +99,62 @@ export const pilotApi = {
     },
     seedDefaultMaterials: async (params?: { pilotCode?: string }): Promise<PilotMaterial[]> => {
       const response = await api.post('/pilot/materials/seed-defaults', params || {});
+      return response.data;
+    },
+    listSopSteps: async (params?: { pilotCode?: string }): Promise<PilotSopStep[]> => {
+      const response = await api.get('/pilot/sop-steps', { params });
+      return response.data;
+    },
+    createSopStep: async (data: CreatePilotSopStepRequest): Promise<PilotSopStep> => {
+      const response = await api.post('/pilot/sop-steps', data);
+      return response.data;
+    },
+    updateSopStep: async (id: number, data: UpdatePilotSopStepRequest): Promise<PilotSopStep> => {
+      const response = await api.patch(`/pilot/sop-steps/${id}`, data);
+      return response.data;
+    },
+    deleteSopStep: async (id: number): Promise<{ success: boolean }> => {
+      const response = await api.delete(`/pilot/sop-steps/${id}`);
+      return response.data;
+    },
+    reorderSopSteps: async (data: ReorderPilotSopStepsRequest): Promise<PilotSopStep[]> => {
+      const response = await api.post('/pilot/sop-steps/reorder', data);
+      return response.data;
+    },
+    seedDefaultSopSteps: async (params?: { pilotCode?: string }): Promise<PilotSopStep[]> => {
+      const response = await api.post('/pilot/sop-steps/seed-defaults', params || {});
+      return response.data;
+    },
+    getSessionSteps: async (sessionId: number): Promise<PilotSessionStep[]> => {
+      const response = await api.get(`/pilot/sessions/${sessionId}/steps`);
+      return response.data;
+    },
+    startSessionStep: async (
+      sessionId: number,
+      stepId: number,
+      data?: StartSessionStepRequest
+    ): Promise<PilotSessionStep> => {
+      const response = await api.post(`/pilot/sessions/${sessionId}/steps/${stepId}/start`, data || {});
+      return response.data;
+    },
+    finishSessionStep: async (
+      sessionId: number,
+      stepId: number,
+      data?: FinishSessionStepRequest
+    ): Promise<PilotSessionStep> => {
+      const response = await api.post(`/pilot/sessions/${sessionId}/steps/${stepId}/finish`, data || {});
+      return response.data;
+    },
+    updateSessionStepNote: async (
+      sessionId: number,
+      stepId: number,
+      data: UpdateSessionStepNoteRequest
+    ): Promise<PilotSessionStep> => {
+      const response = await api.patch(`/pilot/sessions/${sessionId}/steps/${stepId}/note`, data);
+      return response.data;
+    },
+    resetSessionStep: async (sessionId: number, stepId: number): Promise<PilotSessionStep> => {
+      const response = await api.post(`/pilot/sessions/${sessionId}/steps/${stepId}/reset`);
       return response.data;
     },
   },

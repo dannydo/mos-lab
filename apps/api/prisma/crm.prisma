@@ -3347,6 +3347,7 @@ model CrmPilotSession {
   updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   materials          CrmPilotSessionMaterial[]
+  steps              CrmPilotSessionStep[]
 
   @@index([pilotCode, sessionDate])
   @@index([status])
@@ -3394,6 +3395,49 @@ model CrmPilotSessionMaterial {
   @@index([materialId])
   @@map("crm_pilot_session_materials")
 }
+
+// ═══════════════════════════════════════════
+// Pilot SOP Technical Steps & Session Timers
+// ═══════════════════════════════════════════
+model CrmPilotSopStep {
+  id            Int      @id @default(autoincrement())
+  pilotCode     String   @default("DARK_LASHES") @map("pilot_code") @db.VarChar(50)
+  name          String   @map("name") @db.VarChar(120)
+  description   String?  @map("description") @db.Text
+  stepOrder     Int      @default(0) @map("step_order")
+  targetMinutes Int?     @map("target_minutes")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  sessionSteps  CrmPilotSessionStep[]
+
+  @@index([pilotCode, isActive, stepOrder])
+  @@map("crm_pilot_sop_steps")
+}
+
+model CrmPilotSessionStep {
+  id              Int              @id @default(autoincrement())
+  sessionId       Int              @map("session_id")
+  stepTemplateId  Int?             @map("step_template_id")
+  stepName        String           @map("step_name") @db.VarChar(120)
+  stepOrder       Int              @default(0) @map("step_order")
+  status          String           @default("PENDING") @map("status") @db.VarChar(20)
+  startedAt       DateTime?        @map("started_at") @db.DateTime(0)
+  finishedAt      DateTime?        @map("finished_at") @db.DateTime(0)
+  durationSeconds Int?             @map("duration_seconds")
+  note            String?          @map("note") @db.Text
+  createdAt       DateTime         @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.DateTime(0)
+
+  session         CrmPilotSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  stepTemplate    CrmPilotSopStep? @relation(fields: [stepTemplateId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, stepOrder])
+  @@index([stepTemplateId])
+  @@map("crm_pilot_session_steps")
+}
+
 
 
 

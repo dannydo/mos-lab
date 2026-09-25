@@ -657,3 +657,276 @@ test('PilotService: uploadPhoto handles data URIs, raw base64 and external URLs'
   assert.match(rawBase64Res.photoUrl, /^\/api\/pilot\/media\/[a-f0-9-]+\.png$/);
 });
 
+test('PilotService: listSopSteps seeds defaults and formats correctly', async () => {
+  let createdData: SafeAny[] = [];
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotSopStep: {
+          count: async () => 0,
+          findMany: async () => {
+            if (createdData.length === 0) return [];
+            return createdData.map((d, idx) => ({ id: idx + 1, ...d, createdAt: new Date(), updatedAt: new Date() }));
+          },
+          createMany: async ({ data }: { data: SafeAny[] }) => {
+            createdData = [...data];
+          },
+        },
+      },
+    },
+  };
+
+  const steps = await PilotService.listSopSteps(fakeFastify, 'DARK_LASHES');
+  assert.equal(steps.length, 7);
+  assert.equal(steps[0].name, 'Kiểm tra & làm sạch mi');
+  assert.equal(steps[1].name, 'Làm mềm');
+  assert.equal(steps[6].name, 'Vệ sinh & hoàn thiện');
+  assert.equal(steps[0].stepOrder, 1);
+  assert.equal(steps[0].isActive, true);
+});
+
+test('PilotService: createSopStep, updateSopStep, deleteSopStep, and reorderSopSteps', async () => {
+  const store: SafeAny[] = [
+    { id: 1, pilotCode: 'DARK_LASHES', name: 'Bước 1', stepOrder: 1, targetMinutes: 5, isActive: true },
+    { id: 2, pilotCode: 'DARK_LASHES', name: 'Bước 2', stepOrder: 2, targetMinutes: 10, isActive: true },
+  ];
+
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotSopStep: {
+          findFirst: async () => ({ stepOrder: 2 }),
+          findUnique: async ({ where }: { where: { id: number } }) => store.find((s) => s.id === where.id),
+          create: async ({ data }: { data: SafeAny }) => {
+            const newItem = { id: 3, ...data, createdAt: new Date(), updatedAt: new Date() };
+            store.push(newItem);
+            return newItem;
+          },
+          update: async ({ where, data }: { where: { id: number }; data: SafeAny }) => {
+            const item = store.find((s) => s.id === where.id);
+            if (item) Object.assign(item, data, { updatedAt: new Date() });
+            return item;
+          },
+          findMany: async () => store.filter((s) => s.isActive),
+          count: async () => store.length,
+        },
+      },
+      $transaction: async (cb: SafeAny) => cb(fakeFastify.prisma),
+    },
+  };
+
+  // Create new step
+  const created = await PilotService.createSopStep(fakeFastify, {
+    name: 'Bước mới thêm',
+    description: 'Chi tiết kỹ thuật',
+    targetMinutes: 15,
+  });
+  assert.equal(created.id, 3);
+  assert.equal(created.name, 'Bước mới thêm');
+  assert.equal(created.stepOrder, 3);
+
+  // Update step
+  const updated = await PilotService.updateSopStep(fakeFastify, 3, {
+    name: 'Bước đã đổi tên',
+    targetMinutes: 20,
+  });
+  assert.equal(updated.name, 'Bước đã đổi tên');
+  assert.equal(updated.targetMinutes, 20);
+
+  // Reorder steps (swap 1 and 2)
+  const reordered = await PilotService.reorderSopSteps(fakeFastify, {
+    pilotCode: 'DARK_LASHES',
+    stepIds: [2, 1, 3],
+  });
+  const item2 = reordered.find((s) => s.id === 2);
+  const item1 = reordered.find((s) => s.id === 1);
+  assert.equal(item2?.stepOrder, 1);
+  assert.equal(item1?.stepOrder, 2);
+
+  // Delete step (soft-delete)
+  const delRes = await PilotService.deleteSopStep(fakeFastify, 3);
+  assert.equal(delRes.success, true);
+  const item3 = store.find((s) => s.id === 3);
+  assert.equal(item3.isActive, false);
+});
+
+test('PilotService: ensureSessionSteps initializes steps and takes snapshot of step name', async () => {
+  const sessionStepsStore: SafeAny[] = [];
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotSession: {
+          findUnique: async () => ({
+            id: 10,
+            pilotCode: 'DARK_LASHES',
+            steps: sessionStepsStore,
+          }),
+        },
+        crmPilotSopStep: {
+          count: async () => 2,
+          findMany: async () => [
+            { id: 101, pilotCode: 'DARK_LASHES', name: 'SOP 1', stepOrder: 1, isActive: true },
+            { id: 102, pilotCode: 'DARK_LASHES', name: 'SOP 2', stepOrder: 2, isActive: true },
+          ],
+        },
+        crmPilotSessionStep: {
+          createMany: async ({ data }: { data: SafeAny[] }) => {
+            data.forEach((d, idx) => {
+              sessionStepsStore.push({
+                id: 1000 + idx,
+                ...d,
+                startedAt: null,
+                finishedAt: null,
+                durationSeconds: null,
+                note: null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              });
+            });
+          },
+          findMany: async () => sessionStepsStore,
+        },
+      },
+    },
+  };
+
+  const steps = await PilotService.ensureSessionSteps(fakeFastify, 10);
+  assert.equal(steps.length, 2);
+  assert.equal(steps[0].stepName, 'SOP 1');
+  assert.equal(steps[0].status, 'PENDING');
+  assert.equal(steps[1].stepName, 'SOP 2');
+  assert.equal(steps[1].stepTemplateId, 102);
+});
+
+test('PilotService: startSessionStep, finishSessionStep calculate durationSeconds and total technical time accurately', async () => {
+  const startTime = new Date('2026-09-25T10:00:00.000Z');
+  const finishTime = new Date('2026-09-25T10:12:34.000Z'); // 12 minutes 34 seconds = 754s
+
+  const stepRecord: SafeAny = {
+    id: 501,
+    sessionId: 20,
+    stepTemplateId: 1,
+    stepName: 'Làm mềm',
+    stepOrder: 2,
+    status: 'PENDING',
+    startedAt: null,
+    finishedAt: null,
+    durationSeconds: null,
+    note: null,
+  };
+
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotSessionStep: {
+          findFirst: async () => stepRecord,
+          update: async ({ data }: { data: SafeAny }) => {
+            Object.assign(stepRecord, data);
+            return stepRecord;
+          },
+        },
+      },
+    },
+  };
+
+  // Start step
+  const started = await PilotService.startSessionStep(fakeFastify, 20, 501, startTime.toISOString());
+  assert.equal(started.status, 'RUNNING');
+  assert.equal(started.startedAt, startTime.toISOString());
+  assert.equal(started.finishedAt, null);
+
+  // Finish step
+  const finished = await PilotService.finishSessionStep(
+    fakeFastify,
+    20,
+    501,
+    finishTime.toISOString(),
+    'Mi sợi dày, giữ thuốc 12p30s'
+  );
+  assert.equal(finished.status, 'COMPLETED');
+  assert.equal(finished.finishedAt, finishTime.toISOString());
+  assert.equal(finished.durationSeconds, 754);
+  assert.equal(finished.note, 'Mi sợi dày, giữ thuốc 12p30s');
+
+  // Verify formatSession aggregates totalTechnicalDurationSeconds
+  const sessionRecord = {
+    id: 20,
+    pilotCode: 'DARK_LASHES',
+    branchCode: 'detham',
+    customerName: 'Khách VIP',
+    customerPhone: '0912345678',
+    sessionDate: new Date('2026-09-25'),
+    status: 'SERVICE_DONE',
+    revenue: 990000,
+    materialCost: 0,
+    technicianCost: 0,
+    commissionAmount: 0,
+    promoAmount: 0,
+    refundAmount: 0,
+    totalDirectCost: 0,
+    contributionMargin: 990000,
+    followUp24hStatus: 'PENDING',
+    followUp72hStatus: 'PENDING',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    steps: [
+      finished,
+      {
+        id: 502,
+        sessionId: 20,
+        stepName: 'Cân bằng pH',
+        stepOrder: 3,
+        status: 'COMPLETED',
+        startedAt: new Date('2026-09-25T10:13:00.000Z'),
+        finishedAt: new Date('2026-09-25T10:18:00.000Z'),
+        durationSeconds: 300,
+      },
+    ],
+  };
+
+  const formattedSession = PilotService.formatSession(sessionRecord);
+  assert.equal(formattedSession.steps?.length, 2);
+  // Total technical time = 754 + 300 = 1054 seconds
+  assert.equal(formattedSession.totalTechnicalDurationSeconds, 1054);
+});
+
+test('PilotService: updateSessionStepNote and resetSessionStep', async () => {
+  const stepRecord: SafeAny = {
+    id: 601,
+    sessionId: 30,
+    stepName: 'Dưỡng Keratin',
+    stepOrder: 6,
+    status: 'COMPLETED',
+    startedAt: new Date(),
+    finishedAt: new Date(),
+    durationSeconds: 300,
+    note: 'Ghi chú ban đầu',
+  };
+
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotSessionStep: {
+          findFirst: async () => stepRecord,
+          update: async ({ data }: { data: SafeAny }) => {
+            Object.assign(stepRecord, data);
+            return stepRecord;
+          },
+        },
+      },
+    },
+  };
+
+  // Update note
+  const updatedNote = await PilotService.updateSessionStepNote(fakeFastify, 30, 601, 'Ghi chú cập nhật mới');
+  assert.equal(updatedNote.note, 'Ghi chú cập nhật mới');
+
+  // Reset step
+  const reset = await PilotService.resetSessionStep(fakeFastify, 30, 601);
+  assert.equal(reset.status, 'PENDING');
+  assert.equal(reset.startedAt, null);
+  assert.equal(reset.finishedAt, null);
+  assert.equal(reset.durationSeconds, null);
+});
+
+

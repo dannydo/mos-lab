@@ -22,10 +22,11 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import dayjs from 'dayjs';
-import type { DarkLashesSessionStatus, PilotSession } from '@mos-lab/shared';
+import type { DarkLashesSessionStatus, PilotSession, PilotSessionStep } from '@mos-lab/shared';
 import { apiClient, resolveMediaUrl } from '../../../../lib/api-client';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { CopyPhoneButton } from '../../../../components/ui/CopyPhoneButton';
+import { PilotStepTimer } from './PilotStepTimer';
 
 const { TextArea } = Input;
 
@@ -102,13 +103,43 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
   const afterCameraInputRef = useRef<HTMLInputElement>(null);
   const afterLibraryInputRef = useRef<HTMLInputElement>(null);
 
+  const [sessionSteps, setSessionSteps] = useState<PilotSessionStep[]>(session?.steps || []);
+
   // Sync state when session changes
   React.useEffect(() => {
     if (session) {
       setFeedbackRating(session.feedbackRating || session.csatScore || 5);
       setFeedbackNote(session.feedbackNote || '');
+      if (session.steps && session.steps.length > 0) {
+        setSessionSteps(session.steps);
+      } else {
+        apiClient.pilot
+          .getSessionSteps(session.id)
+          .then((res) => {
+            if (res && res.length > 0) {
+              setSessionSteps(res);
+              onSessionUpdated({ ...session, steps: res });
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [session]);
+
+  const handleStepsChange = (newSteps: PilotSessionStep[]) => {
+    setSessionSteps(newSteps);
+    let totalSec = 0;
+    for (const s of newSteps) {
+      if (s.durationSeconds && s.durationSeconds > 0) totalSec += s.durationSeconds;
+    }
+    if (session) {
+      onSessionUpdated({
+        ...session,
+        steps: newSteps,
+        totalTechnicalDurationSeconds: totalSec > 0 ? totalSec : null,
+      });
+    }
+  };
 
   if (!session) return null;
 
@@ -576,6 +607,19 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 Đang thực hiện
               </span>
             )}
+          </div>
+
+          {/* Step-by-step SOP timer */}
+          <div className="mb-4">
+            <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+              Bấm giờ theo từng bước kỹ thuật (SOP Timer)
+            </div>
+            <PilotStepTimer
+              sessionId={session.id}
+              steps={sessionSteps}
+              onStepsChange={handleStepsChange}
+              readOnly={false}
+            />
           </div>
 
           {session.serviceDoneAt ? (
