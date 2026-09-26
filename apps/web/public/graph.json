@@ -11833,6 +11833,18 @@
       }
     },
     {
+      "id": "page:/dashboard/career-path",
+      "type": "Component",
+      "label": "App Page: /dashboard/career-path",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/career-path/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/career-path",
+        "apiCallsCount": 3,
+        "apiCalls": ["career.getConfig", "career.getMyProgression", "career.updateConfig"]
+      }
+    },
+    {
       "id": "page:/dashboard/catalog",
       "type": "Component",
       "label": "App Page: /dashboard/catalog",
@@ -28912,7 +28924,7 @@
       "filePath": "apps/api/src/modules/career/career.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2065,
+        "sizeBytes": 2064,
         "lineCount": 65,
         "ext": ".ts"
       }
@@ -28925,8 +28937,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11053,
-        "lineCount": 340,
+        "sizeBytes": 11031,
+        "lineCount": 335,
         "ext": ".ts"
       }
     },
@@ -34157,6 +34169,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
+      "type": "File",
+      "label": "CareerConfigDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4376,
+        "lineCount": 115,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 40850,
+        "lineCount": 839,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/catalog/components/CatalogBenchmarkTab.tsx",
       "type": "File",
       "label": "CatalogBenchmarkTab.tsx",
@@ -36692,6 +36730,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/career.api.ts",
+      "type": "File",
+      "label": "career.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/career.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2398,
+        "lineCount": 70,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/catalog.api.ts",
       "type": "File",
       "label": "catalog.api.ts",
@@ -36725,8 +36776,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 962,
-        "lineCount": 40,
+        "sizeBytes": 1050,
+        "lineCount": 43,
         "ext": ".ts"
       }
     },
@@ -37284,8 +37335,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5150,
-        "lineCount": 177,
+        "sizeBytes": 5180,
+        "lineCount": 191,
         "ext": ".ts"
       }
     },
@@ -37362,8 +37413,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5243,
-        "lineCount": 166,
+        "sizeBytes": 5231,
+        "lineCount": 161,
         "ext": ".ts"
       }
     },
@@ -43484,6 +43535,13 @@
     {
       "id": "edge:page:/dashboard/calls:ws:apps/web",
       "source": "page:/dashboard/calls",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:ws:apps/web",
+      "source": "page:/dashboard/career-path",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -56061,6 +56119,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/catalog/components/CatalogBenchmarkTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/catalog/components/CatalogBenchmarkTab.tsx",
       "target": "ws:packages/shared",
@@ -57008,6 +57080,13 @@
     {
       "id": "edge:file:apps/web/lib/api/campaigns.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/campaigns.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/career.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/career.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -64333,6 +64412,216 @@
       "target": "route:GET:/api/kpi/package-audit/list",
       "type": "API_CALL",
       "label": "CALLS experienceJournal.list"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/career/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/career/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/career/my-progression",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/career/my-progression",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/nyc/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/nyc/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:PUT:/api/nyc/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:PUT:/api/nyc/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/loca/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/loca/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:PUT:/api/loca/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:PUT:/api/loca/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/dashboard/vat-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/dashboard/vat-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:PUT:/api/dashboard/vat-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:PUT:/api/dashboard/vat-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/gamification/daily-sales-bonus/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/gamification/daily-sales-bonus/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/gamification/daily-sales-bonus/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/gamification/daily-sales-bonus/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/kpi/bk/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/kpi/bk/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/kpi/bk/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/kpi/bk/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/kpi/cc-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/kpi/cc-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/kpi/cc-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/kpi/cc-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/kpi/cv-seniority-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/kpi/cv-seniority-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/kpi/cv-seniority-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/kpi/cv-seniority-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/kpi/cv-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/kpi/cv-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/kpi/cv-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/kpi/cv-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/kpi/salary-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/kpi/salary-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/kpi/salary-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/kpi/salary-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/menu-access/configuration",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/menu-access/configuration",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/omicall/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/omicall/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/omicall/config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/omicall/config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/omicall/sip-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/omicall/sip-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:DELETE:/api/omicall/config/:staffId",
+      "source": "page:/dashboard/career-path",
+      "target": "route:DELETE:/api/omicall/config/:staffId",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/post-hub/reward-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/post-hub/reward-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:PUT:/api/post-hub/reward-config",
+      "source": "page:/dashboard/career-path",
+      "target": "route:PUT:/api/post-hub/reward-config",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/table-config/:tableId",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/table-config/:tableId",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/table-config/:tableId",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/table-config/:tableId",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/table-config/:tableId/reset",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/table-config/:tableId/reset",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
     },
     {
       "id": "edge:page:/dashboard/catalog:route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
@@ -82158,30 +82447,30 @@
     }
   ],
   "stats": {
-    "totalNodes": 2901,
-    "totalEdges": 6322,
+    "totalNodes": 2905,
+    "totalEdges": 6356,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 158,
       "FastifyRoute": 618,
-      "Component": 54,
+      "Component": 55,
       "SharedType": 1063,
       "DesignToken": 12,
       "UIComponent": 203,
-      "File": 790
+      "File": 793
     },
     "edgeTypeCounts": {
       "EXPORTS": 1233,
       "HANDLES_ROUTE": 618,
-      "RENDERS": 257,
+      "RENDERS": 258,
       "USES_TOKEN": 205,
-      "IMPORTS": 431,
+      "IMPORTS": 434,
       "QUERIES_MODEL": 367,
-      "API_CALL": 3211
+      "API_CALL": 3241
     },
     "fastifyRouteCount": 623,
     "prismaModelCount": 158,
-    "nextPageCount": 54,
+    "nextPageCount": 55,
     "sharedTypeCount": 1063
   },
   "routes": [

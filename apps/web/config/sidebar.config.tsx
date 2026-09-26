@@ -360,6 +360,12 @@ export function getSidebarGroups(
     groupTitle: 'NHÂN SỰ & LỊCH LÀM VIỆC',
     items: [
       {
+        key: 'career-path',
+        label: 'Lộ Trình Thăng Tiến',
+        icon: <AppIcon icon={Sparkles} size="sm" />,
+        path: '/dashboard/career-path',
+      },
+      {
         key: 'holiday-work',
         label: 'Lịch nghỉ lễ',
         icon: <AppIcon icon={CalendarClock} size="sm" />,
