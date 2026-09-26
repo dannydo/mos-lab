@@ -13,6 +13,7 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { CopyPhoneButton } from './ui';
+import { resolveMediaUrl } from '../lib/api';
 
 const { Title, Text } = Typography;
 
@@ -68,7 +69,7 @@ export function UserProfile({ user, onEdit, onRefresh, className = '', compact =
           <div className="relative">
             <Avatar
               size={compact ? 56 : 72}
-              src={user.avatarUrl}
+              src={resolveMediaUrl(user.avatarUrl)}
               icon={!user.avatarUrl && <UserOutlined />}
               style={{
                 backgroundColor: token.colorPrimary,

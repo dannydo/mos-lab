@@ -6,6 +6,7 @@ import { Sparkles, Camera, Heart, ShieldCheck, ChevronRight, Clock, X, UserRound
 import type { SafeAny, AvatarNudgeResponse } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
+import { resolveMediaUrl } from '../../lib/api';
 import { useTheme } from '../../context/ThemeContext';
 import AvatarCropModal from './AvatarCropModal';
 
@@ -321,7 +322,7 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
               >
                 {currentUser?.avatarUrl ? (
                   <img
-                    src={currentUser.avatarUrl}
+                    src={resolveMediaUrl(currentUser.avatarUrl)}
                     alt={currentUser?.displayName || 'User'}
                     className="w-full h-full object-cover"
                   />

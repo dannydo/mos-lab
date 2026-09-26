@@ -18,6 +18,7 @@ import type { SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
+import { resolveMediaUrl } from '../../lib/api';
 import AvatarCropModal from '../avatar/AvatarCropModal';
 
 interface UserProfileDropdownProps {
@@ -178,8 +179,9 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   const roleBadge = getRoleBadge(user?.role, token);
   const callStatus = getCallStatusInfo({ isRegistered, omicallReady, callState });
 
-  const avatarUrl = user?.avatarUrl
-    ? user.avatarUrl.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com')
+  const rawAvatar = user?.avatarUrl || user?.avatar;
+  const avatarUrl = rawAvatar
+    ? resolveMediaUrl(rawAvatar.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com'))
     : undefined;
 
   const handleTelesalesClick = () => {

@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import type { SafeAny } from '@mos-lab/shared';
+import { resolveMediaUrl } from '../../../lib/api';
 
 interface TelesalesAvatarProps {
   member?: SafeAny;
@@ -11,8 +13,11 @@ interface TelesalesAvatarProps {
 
 export function formatAvatarUrl(url?: string | null): string | undefined {
   if (!url || typeof url !== 'string' || !url.trim()) return undefined;
-  let clean = url.trim();
-  clean = clean.replace(/^(https?:\/\/)?((s|api|cdn|www)\.)?wingslashes\.com\/?/, '');
+  const trimmed = url.trim();
+  if (trimmed.startsWith('/api/') || trimmed.startsWith('api/')) {
+    return resolveMediaUrl(trimmed);
+  }
+  let clean = trimmed.replace(/^(https?:\/\/)?((s|api|cdn|www)\.)?wingslashes\.com\/?/, '');
   if (!clean.startsWith('http://') && !clean.startsWith('https://') && !clean.startsWith('data:')) {
     clean = `https://cdn.wingslashes.com/${clean.replace(/^\/+/, '')}`;
   }

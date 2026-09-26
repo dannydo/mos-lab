@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { SafeAny, AvatarScoreResponse } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
+import { resolveMediaUrl } from '../../lib/api';
 import { useTheme } from '../../context/ThemeContext';
 
 interface AvatarCropModalProps {
@@ -340,13 +341,14 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
       });
 
       if ((res.success || res.avatarUrl) && res.avatarUrl) {
+        const resolvedAvatarUrl = resolveMediaUrl(res.avatarUrl);
         // Update localStorage
         try {
           const stored = localStorage.getItem('mos_user');
           if (stored) {
             const parsed = JSON.parse(stored);
-            parsed.avatarUrl = res.avatarUrl;
-            parsed.avatar = res.avatarUrl;
+            parsed.avatarUrl = resolvedAvatarUrl;
+            parsed.avatar = resolvedAvatarUrl;
             localStorage.setItem('mos_user', JSON.stringify(parsed));
           }
         } catch (_) {}
@@ -357,7 +359,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
           icon: <Sparkles className="text-amber-500 animate-spin" />,
         });
 
-        onSuccess?.(res.avatarUrl);
+        onSuccess?.(resolvedAvatarUrl);
         handleClose();
       } else {
         message.error(res.message || 'Không thể lưu avatar. Vui lòng thử lại!');

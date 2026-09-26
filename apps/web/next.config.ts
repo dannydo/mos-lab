@@ -75,7 +75,10 @@ const nextConfig: NextConfig = {
     }
     const productionApiOrigin =
       process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'https://api.lab.masteros.app';
-    return [{ source: '/api/pilot/media/:filename', destination: `${productionApiOrigin}/api/pilot/media/:filename` }];
+    return [
+      { source: '/api/pilot/media/:filename', destination: `${productionApiOrigin}/api/pilot/media/:filename` },
+      { source: '/api/staff/media/:path*', destination: `${productionApiOrigin}/api/staff/media/:path*` },
+    ];
   },
   async headers() {
     return [
