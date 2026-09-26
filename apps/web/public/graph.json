@@ -34176,8 +34176,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4376,
-        "lineCount": 115,
+        "sizeBytes": 4417,
+        "lineCount": 118,
         "ext": ".tsx"
       }
     },
@@ -34189,8 +34189,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40850,
-        "lineCount": 839,
+        "sizeBytes": 41242,
+        "lineCount": 850,
         "ext": ".tsx"
       }
     },
@@ -36737,8 +36737,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2398,
-        "lineCount": 70,
+        "sizeBytes": 2319,
+        "lineCount": 59,
         "ext": ".ts"
       }
     },

@@ -371,7 +371,7 @@ export default function CareerPathPage() {
   const expProgressStyle = { width: `${Math.min(100, Math.round((sliderOrders / config.cvToCc.minOrders) * 100))}%` };
 
   return (
-    <div className="min-h-screen bg-rose-50/40 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-24 transition-colors duration-200">
+    <div className="min-h-screen bg-rose-50/40 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-36 transition-colors duration-200">
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50" />
 
       {/* TOP GAMER STATUS BAR (PLAYER HUD) */}
@@ -454,7 +454,9 @@ export default function CareerPathPage() {
             <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-pink-500 text-white text-[10px] font-black tracking-wide shadow-xs">
               🗺️ BẢN ĐỒ THẾ GIỚI THIÊN THẦN
             </div>
-            <span className="text-[10px] text-pink-600 dark:text-pink-300 font-bold font-mono">5 Vương Quốc</span>
+            <span className="text-[10px] text-pink-600 dark:text-pink-300 font-bold font-mono">
+              5 Vương Quốc · Vuốt ➔
+            </span>
           </div>
 
           <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
@@ -477,7 +479,7 @@ export default function CareerPathPage() {
                       playSound('pop');
                       setActiveIsland(island.id);
                     }}
-                    className={`flex-shrink-0 w-24 p-2.5 rounded-2xl border transition-all text-center relative group active:scale-95 ${
+                    className={`flex-shrink-0 w-[80px] sm:w-24 p-2 sm:p-2.5 rounded-2xl border transition-all text-center relative group active:scale-95 ${
                       isActive
                         ? 'bg-white dark:bg-slate-800 border-pink-500 shadow-md shadow-pink-500/20 ring-2 ring-pink-500/30'
                         : 'bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-80 hover:opacity-100'
@@ -493,13 +495,15 @@ export default function CareerPathPage() {
                       {island.badge}
                     </span>
                     <div className="text-2xl mt-1">{island.icon}</div>
-                    <div className="text-[11px] font-black text-slate-900 dark:text-white mt-1">
+                    <div className="text-[10px] sm:text-[11px] font-black text-slate-900 dark:text-white mt-1">
                       {island.name.split('·')[0]}
                     </div>
-                    <div className="text-[9px] text-pink-700 dark:text-pink-300 font-bold truncate">
+                    <div className="text-[8px] sm:text-[9px] text-pink-700 dark:text-pink-300 font-bold truncate">
                       {island.name.split('·')[1]}
                     </div>
-                    <div className="text-[8px] text-slate-400 font-mono mt-0.5 truncate">{island.sub}</div>
+                    <div className="text-[7.5px] sm:text-[8px] text-slate-400 font-mono mt-0.5 truncate">
+                      {island.sub}
+                    </div>
                   </button>
                 );
               })}
@@ -792,17 +796,17 @@ export default function CareerPathPage() {
       </main>
 
       {/* BOTTOM ACTION BAR */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-pink-200 dark:border-slate-800 p-3 shadow-lg">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
-          <div className="text-[11px] leading-tight">
-            <div className="font-bold text-slate-800 dark:text-slate-200">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-pink-200 dark:border-slate-800 p-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-lg">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-2.5">
+          <div className="pl-14 sm:pl-0 text-[11px] leading-tight min-w-0 flex-1">
+            <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
               {allPassed
                 ? 'ĐỦ ĐIỀU KIỆN THĂNG CẤP CC'
                 : isMasterTech
                   ? 'ĐỀ XUẤT NHÁNH MASTER TECH'
                   : `TIẾN ĐỘ: ${passedCount}/5 ẢI ĐẠT`}
             </div>
-            <div className="text-pink-600 dark:text-pink-400 font-mono text-[10px]">
+            <div className="text-pink-600 dark:text-pink-400 font-mono text-[10px] truncate">
               {allPassed ? 'Mở khóa Level × 65đ + 20% Tip' : 'Cần rèn luyện thêm'}
             </div>
           </div>
@@ -820,7 +824,7 @@ export default function CareerPathPage() {
                 message.warning(`Bạn cần hoàn thành cả 5 ải (Hiện đạt ${passedCount}/5)!`);
               }
             }}
-            className={`px-4 py-2.5 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 ${
+            className={`flex-shrink-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 ${
               allPassed
                 ? 'bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-white shadow-pink-500/30 animate-pulse'
                 : isMasterTech
