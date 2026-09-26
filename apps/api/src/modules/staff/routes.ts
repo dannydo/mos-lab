@@ -1500,12 +1500,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
       });
 
       const response: AvatarUploadResponse = {
+        success: true,
+        message: 'Cập nhật ảnh đại diện thành công',
         avatarUrl: updatedStaff.avatarUrl || saved.photoUrl,
         staffId: updatedStaff.id,
         displayName: updatedStaff.displayName,
       };
 
-      return response;
+      return reply.send(response);
     } catch (error: SafeAny) {
       if (error instanceof AvatarStorageError) {
         return reply.status(400).send({ error: 'Bad Request', message: error.message });

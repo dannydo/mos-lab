@@ -287,11 +287,12 @@ export async function aiRoutes(fastify: FastifyInstance) {
   // POST /api/ai/avatar-score - Analyze human portrait avatar with Gemini Vision
   fastify.post('/ai/avatar-score', { preHandler: [requireAuth] }, async (request, reply) => {
     const body = request.body as AvatarScoreRequest;
-    if (!body || !body.photoData) {
+    const rawImage = body?.photoData || body?.imageBase64;
+    if (!body || !rawImage) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Dữ liệu ảnh là bắt buộc' });
     }
 
-    const trimmed = body.photoData.trim();
+    const trimmed = rawImage.trim();
     let mime = body.mimeType || 'image/jpeg';
     let base64Data: string;
 

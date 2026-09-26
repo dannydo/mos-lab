@@ -152,8 +152,35 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
       setRotation(0);
       setPanOffset({ x: 0, y: 0 });
       drawCanvas();
-      // Auto analyze portrait with Gemini Vision
-      runAiScoring(selectedImageSrc);
+
+      // Create an optimized thumbnail (max 512x512) for fast Gemini Vision scoring
+      try {
+        const thumbCanvas = document.createElement('canvas');
+        const maxDim = 512;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        thumbCanvas.width = w;
+        thumbCanvas.height = h;
+        const thumbCtx = thumbCanvas.getContext('2d');
+        if (thumbCtx) {
+          thumbCtx.drawImage(img, 0, 0, w, h);
+          const thumbDataUrl = thumbCanvas.toDataURL('image/jpeg', 0.85);
+          runAiScoring(thumbDataUrl);
+        } else {
+          runAiScoring(selectedImageSrc);
+        }
+      } catch (_) {
+        runAiScoring(selectedImageSrc);
+      }
     };
     img.src = selectedImageSrc;
   }, [selectedImageSrc]);
@@ -222,7 +249,9 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
     setAiScoreState({ status: 'analyzing' });
     try {
       const res = await apiClient.ai.scoreAvatar({
+        photoData: base64Img,
         imageBase64: base64Img,
+        mimeType: 'image/jpeg',
         staffName: currentUser?.displayName || currentUser?.username,
         role: currentUser?.role,
       });
@@ -304,11 +333,13 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
     setIsUploading(true);
     try {
       const res = await apiClient.staff.uploadAvatar({
+        targetStaffId: currentUser?.id,
         staffId: currentUser?.id,
         photoData: croppedBase64,
+        mimeType: 'image/jpeg',
       });
 
-      if (res.success && res.avatarUrl) {
+      if ((res.success || res.avatarUrl) && res.avatarUrl) {
         // Update localStorage
         try {
           const stored = localStorage.getItem('mos_user');
