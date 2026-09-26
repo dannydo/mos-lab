@@ -5162,7 +5162,7 @@
         "path": "/api/ai/avatar-score",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 288
+        "line": 314
       }
     },
     {
@@ -5176,7 +5176,7 @@
         "path": "/api/ai/avatar-nudge-message",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 426
+        "line": 453
       }
     },
     {
@@ -27895,8 +27895,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15219,
-        "lineCount": 441,
+        "sizeBytes": 15686,
+        "lineCount": 455,
         "ext": ".ts"
       }
     },
@@ -27908,8 +27908,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27512,
-        "lineCount": 681,
+        "sizeBytes": 27536,
+        "lineCount": 682,
         "ext": ".ts"
       }
     },
@@ -27947,8 +27947,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29812,
-        "lineCount": 607,
+        "sizeBytes": 33788,
+        "lineCount": 640,
         "ext": ".ts"
       }
     },
@@ -30534,8 +30534,8 @@
       "filePath": "apps/api/src/modules/staff/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 54892,
-        "lineCount": 1518,
+        "sizeBytes": 54993,
+        "lineCount": 1520,
         "ext": ".ts"
       }
     },
@@ -34265,8 +34265,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 34836,
-        "lineCount": 800,
+        "sizeBytes": 38590,
+        "lineCount": 872,
         "ext": ".tsx"
       }
     },
@@ -34395,8 +34395,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8293,
-        "lineCount": 235,
+        "sizeBytes": 10970,
+        "lineCount": 312,
         "ext": ".tsx"
       }
     },
@@ -56953,6 +56953,13 @@
       "id": "edge:file:apps/api/src/modules/academy-workshops/public.routes.ts:prisma:crm:CrmAcademyWorkshopParticipant",
       "source": "file:apps/api/src/modules/academy-workshops/public.routes.ts",
       "target": "prisma:crm:CrmAcademyWorkshopParticipant",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/routes.ts:prisma:crm:CrmAiChatMessage",
+      "source": "file:apps/api/src/modules/ai/routes.ts",
+      "target": "prisma:crm:CrmAiChatMessage",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -81165,7 +81172,7 @@
   ],
   "stats": {
     "totalNodes": 2870,
-    "totalEdges": 6238,
+    "totalEdges": 6239,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 156,
@@ -81182,7 +81189,7 @@
       "RENDERS": 257,
       "USES_TOKEN": 205,
       "IMPORTS": 426,
-      "QUERIES_MODEL": 362,
+      "QUERIES_MODEL": 363,
       "API_CALL": 3162
     },
     "fastifyRouteCount": 615,

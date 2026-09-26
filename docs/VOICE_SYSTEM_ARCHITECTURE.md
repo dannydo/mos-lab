@@ -8,13 +8,13 @@ Tài liệu này là **Nguồn sự thật duy nhất (Single Source of Truth - 
 
 Tất cả các thành phần nền đều được quản lý thống nhất qua `launchd` (`~/Library/LaunchAgents/`) với tên hiển thị trực quan, phân định rõ chức năng trong **Cài đặt hệ thống (System Settings > Login Items & Allow in the Background)**:
 
-| Tên hiển thị (BTM Name)               |  Loại hình   | Đường dẫn thực thi (Executable Path)                                                                           | Tệp cấu hình Plist                          | Tệp Nhật ký (Log)                                    |             Phím tắt / Kích hoạt              | Nhiệm vụ chính                                                                                                   |
-| :------------------------------------ | :----------: | :------------------------------------------------------------------------------------------------------------- | :------------------------------------------ | :--------------------------------------------------- | :-------------------------------------------: | :--------------------------------------------------------------------------------------------------------------- |
-| **`Antigravity Voice Chat`**          | Swift Binary | `~/.gemini/antigravity/bin/Antigravity Voice Chat`<br>_(symlink ➔ `double-control-listener`)_                  | `com.antigravity.double-control.plist`      | `~/.gemini/antigravity/daemon/double-control.log`    |           **Gõ đúp Control (`⌃⌃`)**           | Bắt sự kiện phím toàn cục, tự động chuyển cửa sổ về Antigravity IDE và gửi `Control + M` để ghi âm rảnh tay.     |
-| **`VoicePilot HUD Overlay`**          |  Cocoa App   | `~/.gemini/antigravity/bin/VoicePilot HUD Overlay`<br>_(symlink ➔ `VoicePilot.app/Contents/MacOS/VoicePilot`)_ | `com.antigravity.voice-pilot-ui.plist`      | `~/.gemini/antigravity/logs/voice-pilot-ui.log`      |          Tự khởi chạy khi đăng nhập           | Cửa sổ HUD trong suốt nổi trên màn hình, hiển thị trạng thái nghe/nói, waveform âm thanh và nội dung AI trả lời. |
-| **`VoicePilot Mic Toggle`**           | Swift Binary | `~/.gemini/antigravity/bin/VoicePilot Mic Toggle`<br>_(symlink ➔ `double-fn-listener`)_                        | `com.antigravity.double-fn.plist`           | Chạy nền im lặng (âm thanh `Tink`/`Morse`)           | **Gõ đúp Option (`⌥⌥`)<br>hoặc Fn (`fn fn`)** | Bật/tắt nhanh micro của trợ lý Hột Mít, thông báo bằng âm thanh và cập nhật trạng thái lên HUD.                  |
-| **`VoicePilot Core Daemon`**          |   Node.js    | `~/.gemini/antigravity/bin/VoicePilot Core Daemon`<br>_(script ➔ `live-daemon.js`)_                            | `com.antigravity.voice-pilot.plist`         | `~/.gemini/antigravity/logs/voice-pilot.log`         |          Tự khởi chạy khi đăng nhập           | Bộ não xử lý STT (Whisper/Gemini Live), điều phối luồng âm thanh và tương tác AI của Hột Mít.                    |
-| **`Antigravity Nightly Maintenance`** |  Bash Cron   | `~/.gemini/antigravity/bin/Antigravity Nightly Maintenance`<br>_(script ➔ `nightly-maintenance`)_              | `com.antigravity.nightly-maintenance.plist` | `~/.gemini/antigravity/logs/nightly-maintenance.log` |           Chạy tự động lúc 03:00 AM           | Dọn dẹp log cũ, thu hoạch từ điển ngữ âm và tối ưu hóa hệ thống.                                                 |
+| Tên hiển thị (BTM Name)               |  Loại hình   | Đường dẫn thực thi (Executable Path)                                                                           | Tệp cấu hình Plist                          | Tệp Nhật ký (Log)                                    |                             Phím tắt / Kích hoạt                             | Nhiệm vụ chính                                                                                                         |
+| :------------------------------------ | :----------: | :------------------------------------------------------------------------------------------------------------- | :------------------------------------------ | :--------------------------------------------------- | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------- |
+| **`Antigravity Voice Chat`**          | Swift Binary | `~/.gemini/antigravity/bin/Antigravity Voice Chat`<br>_(symlink ➔ `double-control-listener`)_                  | `com.antigravity.double-control.plist`      | `~/.gemini/antigravity/daemon/double-control.log`    |                          **Gõ đúp Control (`⌃⌃`)**                           | Bắt sự kiện phím toàn cục, tự động chuyển cửa sổ về Antigravity IDE và gửi `Control + M` để ghi âm rảnh tay.           |
+| **`VoicePilot HUD Overlay`**          |  Cocoa App   | `~/.gemini/antigravity/bin/VoicePilot HUD Overlay`<br>_(symlink ➔ `VoicePilot.app/Contents/MacOS/VoicePilot`)_ | `com.antigravity.voice-pilot-ui.plist`      | `~/.gemini/antigravity/logs/voice-pilot-ui.log`      |                          Tự khởi chạy khi đăng nhập                          | Cửa sổ HUD trong suốt nổi trên màn hình, hiển thị trạng thái nghe/nói, waveform âm thanh và nội dung AI trả lời.       |
+| **`VoicePilot Mic & Power Toggle`**   | Swift Binary | `~/.gemini/antigravity/bin/VoicePilot Mic Toggle`<br>_(symlink ➔ `double-fn-listener`)_                        | `com.antigravity.double-fn.plist`           | Menu Bar Icon + `double-fn.log`                      | **Gõ 3 lần Option (`⌥⌥⌥`)<br>hoặc Fn (`fn fn fn`)<br>hoặc `⌃⌥H` / Menu Bar** | Điều khiển toàn diện: Bật/Tắt Hột Mít (3 tap / `⌃⌥H` / Menu Bar), Bật/Tắt Mic (2 tap), biểu tượng trạng thái Menu Bar. |
+| **`VoicePilot Core Daemon`**          |   Node.js    | `~/.gemini/antigravity/bin/VoicePilot Core Daemon`<br>_(script ➔ `live-daemon.js`)_                            | `com.antigravity.voice-pilot.plist`         | `~/.gemini/antigravity/logs/voice-pilot.log`         |                          Tự khởi chạy khi đăng nhập                          | Bộ não xử lý STT (Whisper/Gemini Live), điều phối luồng âm thanh và tương tác AI của Hột Mít.                          |
+| **`Antigravity Nightly Maintenance`** |  Bash Cron   | `~/.gemini/antigravity/bin/Antigravity Nightly Maintenance`<br>_(script ➔ `nightly-maintenance`)_              | `com.antigravity.nightly-maintenance.plist` | `~/.gemini/antigravity/logs/nightly-maintenance.log` |                          Chạy tự động lúc 03:00 AM                           | Dọn dẹp log cũ, thu hoạch từ điển ngữ âm và tối ưu hóa hệ thống.                                                       |
 
 ---
 
@@ -64,6 +64,28 @@ flowchart TD
 
 - Mọi lệnh phát âm thanh giọng nói qua script `~/.gemini/antigravity/bin/speak` tự động ngắt bất kỳ tiến trình âm thanh `afplay` nào đang phát dở trước khi đọc câu mới.
 - Không bao giờ xảy ra tình trạng 2 giọng đọc nói chồng lên nhau. Giọng đọc chuẩn mặc định toàn hệ thống là **Apple Siri Neural 48kHz của macOS 27** (chạy offline 100% trên chip Apple Silicon).
+
+### 2.4. Điều khiển Bật/Tắt Hột Mít Toàn diện (Full Power Lifecycle & PathState KeepAlive)
+
+- **Vấn đề đã xử lý**: Trước đây `com.antigravity.voice-pilot-ui.plist` và `com.antigravity.voice-pilot.plist` cài đặt `KeepAlive: true` vô điều kiện. Khi người dùng bấm nút [✕] đóng giao diện, `launchd` ngay lập tức khởi động lại cửa sổ trong vòng 200ms khiến người dùng không thể đóng Hột Mít.
+- **Giải pháp Điều khiển Vòng đời**:
+  1. **Launchd PathState Condition**: Cấu hình `KeepAlive` dạng điều kiện đường dẫn trên `/tmp/voice_pilot_disabled.lock`:
+     ```xml
+     <key>KeepAlive</key>
+     <dict>
+         <key>PathState</key>
+         <dict>
+             <key>/tmp/voice_pilot_disabled.lock</key>
+             <false/>
+         </dict>
+     </dict>
+     ```
+  2. **Controller CLI `hotmit`**: Script chuẩn hóa `~/.gemini/antigravity/bin/hotmit` hỗ trợ `on`, `off`, `toggle`, `restart`, `status`.
+  3. **4 Cách Bật/Tắt Hột Mít tức thì mọi lúc**:
+     - **Gõ 3 lần Option (`⌥⌥⌥`) hoặc 3 lần Fn (`fn fn fn`)**: Bật/Tắt toàn bộ Hột Mít. (Gõ đúp `⌥⌥` hoặc `fn fn` vẫn dùng để Toggle Mic Mute).
+     - **Phím tắt toàn cục `Control + Option + H` (`⌃⌥H`)**: Bật/Tắt Hột Mít tức thì từ bất kỳ ứng dụng nào trên macOS.
+     - **Biểu tượng Menu Bar macOS**: Biểu tượng trên thanh trạng thái góc trên bên phải hiển thị `🟢 Hoạt động` / `⚪ Đã tắt` kèm menu chuột điều khiển nhanh (Bật/Tắt Hột Mít, Mic, Thu gọn HUD, Khởi động lại).
+     - **Nút [✕] trên thanh Control Dock HUD**: Khi bấm [✕], HUD mờ dần và tự động gọi `hotmit off` để giải phóng 100% micro, tắt cả `live-daemon` và không bị launchd tự hồi sinh.
 
 ---
 

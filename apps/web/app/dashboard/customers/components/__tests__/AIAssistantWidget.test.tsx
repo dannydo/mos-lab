@@ -231,4 +231,81 @@ describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
     fireEvent.click(launcher);
     expect(screen.queryByTestId('assistant-drawer')).toBeNull();
   });
+
+  it('renders session switcher bar, allows starting new session and switching back to old session', async () => {
+    (aiApi.ai.listSessions as ReturnType<typeof vi.fn>).mockResolvedValue({
+      sessions: [
+        {
+          id: 'sess-1',
+          staffId: 99,
+          title: 'Báo cáo NOT_COMBO_LIVE',
+          scope: 'customers',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 'sess-2',
+          staffId: 99,
+          title: 'Giải thích nhóm khách',
+          scope: 'customers',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    });
+
+    (aiApi.ai.getSession as ReturnType<typeof vi.fn>).mockImplementation((id: string) => {
+      if (id === 'sess-2') {
+        return Promise.resolve({
+          session: { id: 'sess-2', staffId: 99, title: 'Giải thích nhóm khách' },
+          messages: [
+            {
+              id: 'm-2',
+              sessionId: 'sess-2',
+              role: 'assistant',
+              content: 'Nội dung phiên giải thích nhóm khách',
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        });
+      }
+      return Promise.resolve({
+        session: { id: 'sess-1', staffId: 99, title: 'Báo cáo NOT_COMBO_LIVE' },
+        messages: [],
+      });
+    });
+
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
+
+    // Open drawer
+    await act(async () => {
+      fireEvent.click(screen.getByText('mOS Copilot').closest('button')!);
+    });
+
+    // Check that session switcher bar is rendered
+    expect(screen.getByText('+ Phiên mới')).toBeDefined();
+    expect(screen.getByText('Báo cáo NOT_COMBO_LIVE')).toBeDefined();
+    expect(screen.getByText('Giải thích nhóm khách')).toBeDefined();
+
+    // Switch to sess-2 by clicking its pill
+    const sess2Btn = screen.getByText('Giải thích nhóm khách').closest('div');
+    expect(sess2Btn).not.toBeNull();
+    await act(async () => {
+      fireEvent.click(sess2Btn!);
+    });
+
+    expect(aiApi.ai.getSession).toHaveBeenCalledWith('sess-2');
+    await waitFor(() => {
+      expect(screen.getByText('Nội dung phiên giải thích nhóm khách')).toBeDefined();
+    });
+
+    // Click "+ Phiên mới" to start new session
+    const newSessBtn = screen.getByText('+ Phiên mới').closest('button');
+    await act(async () => {
+      fireEvent.click(newSessBtn!);
+    });
+
+    // Empty state should be displayed ready for new prompts
+    expect(screen.getByText('Không Gian Làm Việc Trợ Lý AI')).toBeDefined();
+  });
 });

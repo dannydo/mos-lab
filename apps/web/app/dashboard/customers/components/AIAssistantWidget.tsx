@@ -17,6 +17,7 @@ import {
   User,
   RefreshCw,
   Lightbulb,
+  MessageSquare,
 } from 'lucide-react';
 import { Tooltip } from 'antd';
 import type { AiChatSession, AiChatMessage, AiChatAction } from '@mos-lab/shared';
@@ -166,6 +167,14 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
       if (timer) clearInterval(timer);
     };
   }, [sending]);
+
+  // Start a new empty session (ready to send)
+  const handleStartNewSession = () => {
+    setActiveSessionId(null);
+    setMessages([]);
+    setShowSessionDrawer(false);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
 
   // Create new session
   const handleNewSession = async () => {
@@ -498,6 +507,69 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
             {sessions.length > 0 && (
               <span className="text-[11px] font-medium opacity-80">{sessions.length} phiên đã lưu</span>
             )}
+          </div>
+
+          {/* Quick Session Switcher Bar */}
+          <div className="px-3 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto text-xs">
+            {/* New Session Button */}
+            <button
+              type="button"
+              onClick={handleStartNewSession}
+              className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                !activeSessionId && messages.length === 0
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+              }`}
+              title="Tạo hội thoại mới"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Phiên mới</span>
+            </button>
+
+            {/* Quick Session Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 flex-1 min-w-0">
+              {sessions.slice(0, 6).map((s) => {
+                const isActive = activeSessionId === s.id;
+                return (
+                  <div
+                    key={s.id}
+                    onClick={() => loadSession(s.id)}
+                    className={`flex-shrink-0 group flex items-center gap-1.5 px-2.5 py-1 rounded-lg cursor-pointer text-xs transition-all max-w-[170px] border ${
+                      isActive
+                        ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-semibold border-indigo-300 dark:border-indigo-700 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                    title={s.title || 'Hội thoại'}
+                  >
+                    <MessageSquare className="w-3 h-3 flex-shrink-0 text-slate-400 group-hover:text-indigo-500" />
+                    <span className="truncate">{s.title || 'Hội thoại'}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteSession(e, s.id)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-rose-500 transition-opacity ml-0.5"
+                      title="Xóa phiên"
+                    >
+                      <Trash2 className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Full History Drawer Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowSessionDrawer(!showSessionDrawer)}
+              className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                showSessionDrawer
+                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-100'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title="Xem tất cả phiên hội thoại cũ"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>{sessions.length > 6 ? `Tất cả (${sessions.length})` : 'Lịch sử'}</span>
+            </button>
           </div>
 
           {/* Sessions List Panel (Overlay inside drawer) */}

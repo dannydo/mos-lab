@@ -550,7 +550,8 @@ Quy định phản hồi:
             agConversationId,
             promptForAg,
             agTitle,
-            240_000
+            240_000,
+            session.id
           );
           if (agResult?.response?.content) {
             parsedResponse = agResult.response;

@@ -17,6 +17,7 @@ export interface AgChatBridgeJob {
   prompt: string;
   title?: string;
   createdAt: number;
+  sessionId?: string;
 }
 
 interface PendingBridgeJobEntry {
@@ -31,6 +32,11 @@ export class AgChatBridgeService {
   // Pending jobs queue for remote bridge (VPS -> Danny's Mac)
   private static pendingBridgeJobs = new Map<string, PendingBridgeJobEntry>();
   private static waitingLongPollers: Array<(job: AgChatBridgeJob | null) => void> = [];
+  private static archivedJobs = new Map<string, AgChatBridgeJob>();
+
+  static getArchivedJob(jobId: string): AgChatBridgeJob | undefined {
+    return this.archivedJobs.get(jobId);
+  }
 
   /**
    * Resolve path to agentapi binary
@@ -357,7 +363,8 @@ export class AgChatBridgeService {
     conversationId: string | undefined,
     prompt: string,
     title?: string,
-    timeoutMs = 240_000
+    timeoutMs = 240_000,
+    sessionId?: string
   ): Promise<{ conversationId: string; response: ParsedAiResponse }> {
     return new Promise((resolve, reject) => {
       const jobId = randomUUID();
@@ -367,7 +374,14 @@ export class AgChatBridgeService {
         prompt,
         title,
         createdAt: Date.now(),
+        sessionId,
       };
+
+      if (this.archivedJobs.size >= 100) {
+        const oldestKey = this.archivedJobs.keys().next().value;
+        if (oldestKey) this.archivedJobs.delete(oldestKey);
+      }
+      this.archivedJobs.set(jobId, job);
 
       const timer = setTimeout(() => {
         this.pendingBridgeJobs.delete(jobId);

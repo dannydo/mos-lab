@@ -281,6 +281,32 @@ export async function aiRoutes(fastify: FastifyInstance) {
         suggestedAction: response?.suggestedAction || null,
       },
     });
+
+    // Late completion recovery: if in-memory job timed out or completed with fallback, update DB message directly
+    if (response?.content) {
+      try {
+        const archivedJob = AgChatBridgeService.getArchivedJob(jobId);
+        if (archivedJob?.sessionId) {
+          const lastMsg = await fastify.prisma.crm.crmAiChatMessage.findFirst({
+            where: { sessionId: archivedJob.sessionId, role: 'assistant' },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (lastMsg) {
+            await fastify.prisma.crm.crmAiChatMessage.update({
+              where: { id: lastMsg.id },
+              data: {
+                content: response.content,
+                thinking: response.thinking || null,
+                suggestedActionJson: response.suggestedAction ? JSON.stringify(response.suggestedAction) : null,
+              },
+            });
+          }
+        }
+      } catch (err) {
+        fastify.log.warn({ err }, 'Failed to apply late chat completion update');
+      }
+    }
+
     return reply.send({ success: ok });
   });
 
