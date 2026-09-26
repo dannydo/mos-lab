@@ -435,18 +435,31 @@ Bắt buộc trả về đúng định dạng JSON:
     if (geminiApiKey) {
       try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
-        const prompt = `Bạn là "Thiên Sứ Bóng Tối" 😈 — một nhân vật AI ma mị, dí dỏm, lém lỉnh và cực kỳ đáng yêu của hệ thống mOS Lab (Wings Lashes).
-Nhiệm vụ của bạn là xuất hiện để cám dỗ, năn nỉ, dụ dỗ hoặc cà khịa nhân viên "${staffName}" (vai trò: ${role}) đổi ảnh đại diện cá nhân trên hệ thống.
+        const prompt = `Bạn là "Thiên Sứ Bóng Tối" 😈 — một trợ lý AI dí dỏm, lém lỉnh, cực kỳ duyên dáng và đáng yêu của hệ thống mOS Lab (Wings Lashes).
+Nhiệm vụ của bạn là xuất hiện để khích lệ, dụ dỗ, năn nỉ hoặc cà khịa nhân viên "${staffName}" (vai trò: ${role}) đổi ảnh đại diện cá nhân trên hệ thống.
 Bạn ấy hiện chưa có avatar và đã bấm hoãn 'Để mai mình đổi' ${snoozeCount} lần.
 
+QUY TẮC BẮT BUỘC VỀ VĂN PHONG (CRITICAL TONE RULES):
+- TUYỆT ĐỐI KHÔNG dùng văn phong dịch truyện kiếm hiệp, ngôn tình, fantasy cổ trang!
+- CẤM các từ sáo rỗng kiểu dịch máy: "Hỡi...", "Ta thấy...", "ngươi", "ánh sáng của mOS Lab", "hào quang tiềm ẩn nơi em", "ngút ngàn vạn người mê", "chiếc gương ma thuật", "quả táo thần kỳ", "nỡ chối từ".
+- CẤM xưng hô kiểu "Ta - ngươi" hoặc "Ta - em".
+- VĂN PHONG THUẦN VIỆT 100%: Tự nhiên, gần gũi, ấm áp như đồng nghiệp salon làm đẹp trêu nhau. Xưng "em" (Thiên Sứ xưng em lém lỉnh), gọi "${staffName} ơi" hoặc "anh/chị ${staffName} ơi".
+
 Hãy chọn NGẪU NHIÊN 1 hành động/tâm trạng trong danh sách sau và sáng tạo lời thoại đúng ý cảnh của hành động đó:
-- "dụ dỗ" (Cám dỗ ngọt ngào, hứa hẹn nhan sắc tỏa sáng, hào quang ngút ngàn...) -> icon "🍎"
-- "năn nỉ" (Hạ mình đáng thương, năn nỉ ỉ ôi, cầu xin 15 giây chụp hình cho hoàn thành KPI thiên đình...) -> icon "🥺"
-- "cà khịa" (Trêu chọc cay cú một cách dễ thương về lời hứa 'để mai tính', hôm nay là 'mai' rồi nè...) -> icon "😏"
-- "nhắn nhủ" (Gửi gắm lời thì thầm tâm sự sâu lắng từ bóng tối...) -> icon "😈"
-- "hờn dỗi" (Giận dỗi đáng yêu vì bị cho leo cây từ hôm qua đến nay...) -> icon "😤"
-- "thầm thì" (Tiết lộ bí mật đen tối rằng ai có avatar đẹp thì tip và tua tăng vùn vụt...) -> icon "🤫"
-- "đe dọa (nhẹ)" (Đe dọa hài hước sẽ biến avatar thành quả chuối hoặc triệu hồi quỷ vương nếu dám hoãn tiếp...) -> icon "⚡"
+- "dụ dỗ" (icon: "🍎", badge: "Đang dụ dỗ 🍎"): Lời dụ dỗ ngọt ngào, khen ngợi góc mặt xinh tươi, rủ rê lên hình khoe nhan sắc để đồng đội thả tim mỏi tay và hút lộc khách hàng.
+  Ví dụ: greeting: "Alo ${staffName} ơi, ghé tai em nói nhỏ nè! ✨", banter: "Tướng mạo rạng rỡ thế này mà chưa có avatar thì uổng quá chừng! Lên 1 tấm selfie cười tươi là đồng đội thả tim mỏi tay, khách nhìn là mến liền. Thử ngay 15 giây nha?"
+- "cà khịa" (icon: "😏", badge: "Cà khịa nhẹ 😏"): Bắt quả tang vụ "để mai tính", trêu đùa hôm nay chính là "ngày mai" rồi nè.
+  Ví dụ: greeting: "Ủa alo ${staffName} ơi, bắt quả tang nha! 👀", banter: "Hôm qua ai vừa hứa chắc nịch 'để mai tính' vậy ta? Nay chính là 'ngày mai' rồi nè, tính tới đâu rồi hay đang tính trốn luôn? Làm tấm ảnh nhanh gọn lẹ rồi vô ca thôi nè!"
+- "năn nỉ" (icon: "🥺", badge: "Đang năn nỉ 🥺"): Năn nỉ ỉ ôi, cầu xin giơ máy 15 giây chụp hình cho em hoàn thành chỉ tiêu đầu ngày.
+  Ví dụ: greeting: "${staffName} ơi, cứu em với... 🥺", banter: "Em bay lượn năn nỉ bạn mấy bữa nay mỏi cả cánh rồi á! Giơ máy cười tươi 15 giây cho em hoàn thành chỉ tiêu đầu ngày đi mà, năn nỉ luôn đó!"
+- "hờn dỗi" (icon: "😤", badge: "Đang hờn dỗi 😤"): Giận dỗi đáng yêu vì bắt ngắm chữ cái viết tắt hoài, dọa buồn nguyên ngày.
+  Ví dụ: greeting: "Hôm nay em dỗi ${staffName} rồi đó nha! 😤", banter: "Cả salon ai cũng có ảnh đại diện xinh xắn, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 hoài. Nay mà không chịu chụp là em buồn nguyên ngày cho coi!"
+- "thầm thì" (icon: "🤫", badge: "Thì thầm bí mật 🤫"): Bật mí bí mật thiên cơ là đổi avatar cười tươi sáng nay sẽ x2 may mắn, tip nhận đều tay.
+  Ví dụ: greeting: "Suỵt... lại gần đây em bật mí bí mật nè ${staffName}! 🤫", banter: "Em mới soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ sáng nay là ca làm gặp toàn khách dễ thương, tip nhận mỏi tay luôn á. Bí mật nội bộ, làm liền kẻo lỡ lộc nha!"
+- "đe dọa (nhẹ)" (icon: "⚡", badge: "Tối hậu thư ⚡"): Dọa hài hước nếu hoãn tiếp lần nữa là em tự lấy ảnh dìm dán lên avatar.
+  Ví dụ: greeting: "Báo động cấp 1 gửi tới ${staffName}! ⚡", banter: "Bạn đã bấm hoãn lần thứ ${snoozeCount || 1} rồi đó nha! Hôm nay mà còn bấm 'để mai tính' nữa là em tự lấy ảnh dìm dán lên avatar ráng chịu à nghen!"
+- "nhắn nhủ" (icon: "✨", badge: "Nhắn nhủ đầu ngày ✨"): Lời chúc đầu ngày ấm áp, khích lệ nụ cười tỏa sáng.
+  Ví dụ: greeting: "Chào ${staffName}, chúc bạn ngày mới tràn đầy năng lượng! ✨", banter: "Một chiếc avatar cười tươi sáng bừng sẽ truyền cảm hứng và trao trọn niềm tin cho cả team và khách hàng mỗi ngày. Cùng em chụp 1 tấm selfie thật rạng rỡ nhé!"
 
 Gợi ý ngữ cảnh theo số lần hoãn (${snoozeCount} lần):
 - Nếu snoozeCount = 0: Thiên Sứ mới giáng trần, ưu tiên "dụ dỗ", "nhắn nhủ", "thầm thì".
@@ -456,14 +469,14 @@ Gợi ý ngữ cảnh theo số lần hoãn (${snoozeCount} lần):
 Trả về đúng định dạng JSON chuẩn:
 {
   "angelAction": string (bắt buộc chọn 1 trong: "nhắn nhủ" | "năn nỉ" | "dụ dỗ" | "cà khịa" | "hờn dỗi" | "thầm thì" | "đe dọa (nhẹ)"),
-  "angelIcon": string (emoji tương ứng như 🍎, 🥺, 😏, 😈, 😤, 🤫, ⚡),
-  "badge": string (tag nhỏ gọn vui nhộn, ví dụ: 'Cám Dỗ Ngọt Ngào' hoặc 'Bắt Quả Tang!'),
-  "greeting": string (lời mở đầu ma mị vui vẻ, ví dụ: 'Hỡi ${staffName} xinh đẹp... ✨' hoặc 'Ủa alo ${staffName} ơi? 😈'),
-  "banter": string (1-2 câu dụ dỗ / năn nỉ / cà khịa đúng chất Thiên Sứ Bóng Tối, xưng Ta - xưng hô thân mật với ${staffName}),
+  "angelIcon": string (emoji tương ứng: 🍎, 🥺, 😏, 😤, 🤫, ⚡, ✨),
+  "badge": string (đúng tên trạng thái ngắn gọn, ví dụ: 'Đang dụ dỗ 🍎' hoặc 'Cà khịa nhẹ 😏'),
+  "greeting": string (lời mở đầu tự nhiên, ví dụ: 'Alo ${staffName} ơi, ghé tai em nói nhỏ nè! ✨' hoặc 'Ủa alo ${staffName} ơi, bắt quả tang nha! 👀'),
+  "banter": string (1-2 câu tiếng Việt tự nhiên, ấm áp, hóm hỉnh, xưng em gọi ${staffName}),
   "quote": string (giống banter),
-  "callToAction": string (nút bấm kêu gọi, ví dụ: '🍎 Nghe Lời Cám Dỗ, Chụp Luôn!' hoặc '📸 Cứu Thiên Sứ, Đổi Liền (15s)!'),
+  "callToAction": string (nút bấm kêu gọi ngắn gọn, ví dụ: '📸 Đổi Liền Khoe Nhan Sắc' hoặc '📸 Thôi Được Rồi, Chụp Luôn!'),
   "ctaText": string (giống callToAction),
-  "snoozeText": string (nút hoãn dí dỏm, ví dụ: 'Cưỡng lại cám dỗ, để mai tính 🙈' hoặc 'Cho nợ nốt hôm nay nha Thiên Sứ 🥺'),
+  "snoozeText": string (nút hoãn dí dỏm, ví dụ: 'Để mai khoe, nay giấu mặt 🙈' hoặc 'Cho nợ nốt hôm nay nha Thiên Sứ 🥺'),
   "isBanter": boolean
 }`;
 
@@ -503,22 +516,22 @@ Trả về đúng định dạng JSON chuẩn:
       {
         angelAction: 'dụ dỗ',
         angelIcon: '🍎',
-        badge: 'Cám Dỗ Ngọt Ngào',
-        greeting: `Hỡi ${staffName} xinh đẹp... ✨`,
-        banter: `Ta có chiếc gương ma thuật ngàn năm, chỉ cần ngươi tải lên một tấm selfie rạng rỡ, hào quang của ngươi sẽ tỏa sáng khắp salon mOS! Ngươi nỡ từ chối quả táo thần kỳ này sao?`,
-        quote: `Ta có chiếc gương ma thuật ngàn năm, chỉ cần ngươi tải lên một tấm selfie rạng rỡ, hào quang của ngươi sẽ tỏa sáng khắp salon mOS! Ngươi nỡ từ chối quả táo thần kỳ này sao?`,
-        callToAction: '🍎 Nghe Lời Cám Dỗ, Đổi Ngay (15s)',
-        ctaText: '🍎 Nghe Lời Cám Dỗ, Đổi Ngay (15s)',
-        snoozeText: 'Cưỡng lại cám dỗ, để mai tính 🙈',
+        badge: 'Đang dụ dỗ 🍎',
+        greeting: `Alo ${staffName} ơi, ghé tai em nói nhỏ nè! ✨`,
+        banter: `Tướng mạo rạng rỡ thế này mà chưa có avatar thì uổng quá chừng! Lên 1 tấm selfie cười tươi là đồng đội thả tim mỏi tay, khách nhìn là mến liền. Thử ngay 15 giây nha?`,
+        quote: `Tướng mạo rạng rỡ thế này mà chưa có avatar thì uổng quá chừng! Lên 1 tấm selfie cười tươi là đồng đội thả tim mỏi tay, khách nhìn là mến liền. Thử ngay 15 giây nha?`,
+        callToAction: '📸 Đổi Liền Khoe Nhan Sắc',
+        ctaText: '📸 Đổi Liền Khoe Nhan Sắc',
+        snoozeText: 'Để mai khoe, nay giấu mặt 🙈',
         isBanter: false,
       },
       {
         angelAction: 'năn nỉ',
         angelIcon: '🥺',
-        badge: 'Hạ Mình Cầu Xin',
-        greeting: `Ai đó cứu Thiên Sứ với... 🥺`,
-        banter: `Ta đường đường là Thiên Sứ mà phải bay đi bay lại năn nỉ ${staffName} đổi avatar cả mấy bận rồi! Làm ơn giơ máy selfie cái vèo 15 giây cho ta hoàn thành KPI thiên đình đi mà!`,
-        quote: `Ta đường đường là Thiên Sứ mà phải bay đi bay lại năn nỉ ${staffName} đổi avatar cả mấy bận rồi! Làm ơn giơ máy selfie cái vèo 15 giây cho ta hoàn thành KPI thiên đình đi mà!`,
+        badge: 'Đang năn nỉ 🥺',
+        greeting: `${staffName} ơi, cứu em với... 🥺`,
+        banter: `Em bay lượn năn nỉ bạn mấy bữa nay mỏi cả cánh rồi á! Giơ máy cười tươi 15 giây cho em hoàn thành chỉ tiêu đầu ngày đi mà, năn nỉ luôn đó!`,
+        quote: `Em bay lượn năn nỉ bạn mấy bữa nay mỏi cả cánh rồi á! Giơ máy cười tươi 15 giây cho em hoàn thành chỉ tiêu đầu ngày đi mà, năn nỉ luôn đó!`,
         callToAction: '📸 Cứu Thiên Sứ, Chụp Liền!',
         ctaText: '📸 Cứu Thiên Sứ, Chụp Liền!',
         snoozeText: 'Cho nợ nốt hôm nay nha Thiên Sứ 🥺',
@@ -527,67 +540,67 @@ Trả về đúng định dạng JSON chuẩn:
       {
         angelAction: 'cà khịa',
         angelIcon: '😏',
-        badge: 'Bắt Quả Tang!',
-        greeting: `Ủa alo ${staffName} ơi? 😈`,
+        badge: 'Cà khịa nhẹ 😏',
+        greeting: `Ủa alo ${staffName} ơi, bắt quả tang nha! 👀`,
         banter:
           snoozeCount > 0
-            ? `Hôm qua ngươi thề non hẹn biển rằng 'để mai mình đổi', hôm nay chính là 'ngày mai' trong truyền thuyết rồi nè! Ngươi tính trốn ta đến kiếp nào nữa đây?`
-            : `Đồng đội ai cũng avatar lung linh, riêng ngươi cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!`,
+            ? `Hôm qua ai vừa hứa chắc nịch 'để mai tính' vậy ta? Nay chính là 'ngày mai' trong truyền thuyết rồi nè, tính tới đâu rồi hay đang tính trốn luôn? Làm tấm ảnh nhanh gọn lẹ rồi vô ca thôi nè!`
+            : `Đồng đội ai cũng có ảnh đại diện lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!`,
         quote:
           snoozeCount > 0
-            ? `Hôm qua ngươi thề non hẹn biển rằng 'để mai mình đổi', hôm nay chính là 'ngày mai' trong truyền thuyết rồi nè! Ngươi tính trốn ta đến kiếp nào nữa đây?`
-            : `Đồng đội ai cũng avatar lung linh, riêng ngươi cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!`,
+            ? `Hôm qua ai vừa hứa chắc nịch 'để mai tính' vậy ta? Nay chính là 'ngày mai' trong truyền thuyết rồi nè, tính tới đâu rồi hay đang tính trốn luôn? Làm tấm ảnh nhanh gọn lẹ rồi vô ca thôi nè!`
+            : `Đồng đội ai cũng có ảnh đại diện lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!`,
         callToAction: '📸 Thôi Được Rồi, Chụp Luôn!',
         ctaText: '📸 Thôi Được Rồi, Chụp Luôn!',
-        snoozeText: 'Hứa danh dự ngày mai đổi thiệt 🙈',
+        snoozeText: 'Mai đổi thiệt mà, đừng khịa nữa 🙈',
         isBanter: true,
       },
       {
         angelAction: 'hờn dỗi',
         angelIcon: '😤',
-        badge: 'Giận Tím Người',
-        greeting: `Thiên Sứ dỗi ${staffName} rồi đó! 😤`,
-        banter: `Cả salon ai cũng có ảnh lung linh, riêng ngươi cứ để cái vòng tròn chữ viết tắt làm ta ngắm đến hoa cả mắt. Hôm nay mà không chụp là ta ếm bùa cho khách khen ngươi suốt ngày đấy!`,
-        quote: `Cả salon ai cũng có ảnh lung linh, riêng ngươi cứ để cái vòng tròn chữ viết tắt làm ta ngắm đến hoa cả mắt. Hôm nay mà không chụp là ta ếm bùa cho khách khen ngươi suốt ngày đấy!`,
-        callToAction: '📸 Chụp Ngay Kẻo Thiên Sứ Khóc',
-        ctaText: '📸 Chụp Ngay Kẻo Thiên Sứ Khóc',
+        badge: 'Đang hờn dỗi 😤',
+        greeting: `Hôm nay em dỗi ${staffName} rồi đó nha! 😤`,
+        banter: `Cả salon ai cũng có ảnh đại diện xinh xắn, riêng bạn cứ để ký tự viết tắt bí ẩn hoài. Nay mà không chịu chụp là em buồn nguyên ngày cho coi!`,
+        quote: `Cả salon ai cũng có ảnh đại diện xinh xắn, riêng bạn cứ để ký tự viết tắt bí ẩn hoài. Nay mà không chịu chụp là em buồn nguyên ngày cho coi!`,
+        callToAction: '📸 Chụp Liền Kẻo Em Dỗi',
+        ctaText: '📸 Chụp Liền Kẻo Em Dỗi',
         snoozeText: 'Dỗ dành Thiên Sứ, mai tính nha 🥺',
         isBanter: true,
       },
       {
         angelAction: 'thầm thì',
         angelIcon: '🤫',
-        badge: 'Bí Mật Đen Tối',
-        greeting: `Suỵt... lại gần đây ta bảo, ${staffName}! 🤫`,
-        banter: `Ta vừa soi sổ thần kỳ: nhân viên nào đổi avatar có nụ cười rạng rỡ hôm nay thì tỉ lệ được tip và khách book tua tăng vùn vụt! Cơ hội ngàn vàng, đừng để lọt vào tay đồng đội bên cạnh!`,
-        quote: `Ta vừa soi sổ thần kỳ: nhân viên nào đổi avatar có nụ cười rạng rỡ hôm nay thì tỉ lệ được tip và khách book tua tăng vùn vụt! Cơ hội ngàn vàng, đừng để lọt vào tay đồng đội bên cạnh!`,
-        callToAction: '✨ Đổi Avatar Hút May Mắn Liền',
-        ctaText: '✨ Đổi Avatar Hút May Mắn Liền',
+        badge: 'Thì thầm bí mật 🤫',
+        greeting: `Suỵt... lại gần đây em bật mí bí mật nè ${staffName}! 🤫`,
+        banter: `Em mới soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ sáng nay là ca làm gặp toàn khách dễ thương, tip nhận mỏi tay luôn á. Bí mật nội bộ, làm liền kẻo lỡ lộc nha!`,
+        quote: `Em mới soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ sáng nay là ca làm gặp toàn khách dễ thương, tip nhận mỏi tay luôn á. Bí mật nội bộ, làm liền kẻo lỡ lộc nha!`,
+        callToAction: '✨ Đổi Avatar Hút May Mắn',
+        ctaText: '✨ Đổi Avatar Hút May Mắn',
         snoozeText: 'Để mai nhận lộc vậy 🙈',
         isBanter: false,
       },
       {
         angelAction: 'đe dọa (nhẹ)',
         angelIcon: '⚡',
-        badge: 'Tối Hậu Thư',
-        greeting: `Cảnh báo từ cõi u tối! ⚡`,
-        banter: `Ngươi đã bấm 'Để mai tính' đến lần thứ ${snoozeCount || 1} rồi đấy nhé ${staffName}! Nếu hôm nay còn chối từ, ta sẽ biến avatar của ngươi thành hình quả chuối vàng khổng lồ!`,
-        quote: `Ngươi đã bấm 'Để mai tính' đến lần thứ ${snoozeCount || 1} rồi đấy nhé ${staffName}! Nếu hôm nay còn chối từ, ta sẽ biến avatar của ngươi thành hình quả chuối vàng khổng lồ!`,
-        callToAction: '📸 Đổi Ngay Tránh Bị Hóa Chuối!',
-        ctaText: '📸 Đổi Ngay Tránh Bị Hóa Chuối!',
+        badge: 'Tối hậu thư ⚡',
+        greeting: `Báo động cấp 1 gửi tới ${staffName}! ⚡`,
+        banter: `Bạn đã bấm hoãn lần thứ ${snoozeCount || 1} rồi đó nha! Hôm nay mà còn bấm 'để mai tính' nữa là em tự lấy ảnh dìm dán lên avatar ráng chịu à nghen!`,
+        quote: `Bạn đã bấm hoãn lần thứ ${snoozeCount || 1} rồi đó nha! Hôm nay mà còn bấm 'để mai tính' nữa là em tự lấy ảnh dìm dán lên avatar ráng chịu à nghen!`,
+        callToAction: '📸 Tự Chụp Liền Tránh Bị Dìm!',
+        ctaText: '📸 Tự Chụp Liền Tránh Bị Dìm!',
         snoozeText: 'Vẫn can đảm hoãn tiếp 🏃💨',
         isBanter: true,
       },
       {
         angelAction: 'nhắn nhủ',
-        angelIcon: '😈',
-        badge: 'Lời Nhắn Hắc Ám',
-        greeting: `Gửi người bạn bí ẩn ${staffName}... 😈`,
-        banter: `Bóng tối chỉ đẹp khi có ánh sáng chiếu soi! Một tấm ảnh đại diện rạng rỡ chính là luồng sáng giúp đồng đội nhận ra ngươi giữa muôn vàn tinh tú mOS.`,
-        quote: `Bóng tối chỉ đẹp khi có ánh sáng chiếu soi! Một tấm ảnh đại diện rạng rỡ chính là luồng sáng giúp đồng đội nhận ra ngươi giữa muôn vàn tinh tú mOS.`,
-        callToAction: '🌟 Thắp Sáng Avatar (15s)',
-        ctaText: '🌟 Thắp Sáng Avatar (15s)',
-        snoozeText: 'Thích ẩn mình trong bóng tối, mai đổi 🙈',
+        angelIcon: '✨',
+        badge: 'Nhắn nhủ đầu ngày ✨',
+        greeting: `Chào ${staffName}, chúc bạn ngày mới tràn đầy năng lượng! ✨`,
+        banter: `Một chiếc avatar cười tươi sáng bừng sẽ truyền cảm hứng và trao trọn niềm tin cho cả team và khách hàng mỗi ngày. Cùng em chụp 1 tấm selfie thật rạng rỡ nhé!`,
+        quote: `Một chiếc avatar cười tươi sáng bừng sẽ truyền cảm hứng và trao trọn niềm tin cho cả team và khách hàng mỗi ngày. Cùng em chụp 1 tấm selfie thật rạng rỡ nhé!`,
+        callToAction: '📸 Chụp Selfie Rạng Rỡ Ngay',
+        ctaText: '📸 Chụp Selfie Rạng Rỡ Ngay',
+        snoozeText: 'Để mai mình đổi nha 🙈',
         isBanter: false,
       },
     ];

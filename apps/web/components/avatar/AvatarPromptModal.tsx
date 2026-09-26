@@ -48,6 +48,35 @@ export function shouldPromptForAvatar(user: SafeAny): boolean {
   return true;
 }
 
+function getStatusPill(action?: string, icon?: string, badge?: string): string {
+  if (
+    badge &&
+    (badge.startsWith('Đang') ||
+      badge.startsWith('Cà khịa') ||
+      badge.startsWith('Thì thầm') ||
+      badge.startsWith('Tối hậu') ||
+      badge.startsWith('Nhắn nhủ'))
+  ) {
+    return badge;
+  }
+  switch (action) {
+    case 'dụ dỗ':
+      return `Đang dụ dỗ ${icon || '🍎'}`;
+    case 'năn nỉ':
+      return `Đang năn nỉ ${icon || '🥺'}`;
+    case 'cà khịa':
+      return `Cà khịa nhẹ ${icon || '😏'}`;
+    case 'hờn dỗi':
+      return `Đang hờn dỗi ${icon || '😤'}`;
+    case 'thầm thì':
+      return `Thì thầm bí mật ${icon || '🤫'}`;
+    case 'đe dọa (nhẹ)':
+      return `Tối hậu thư ${icon || '⚡'}`;
+    default:
+      return `Nhắn nhủ đầu ngày ${icon || '✨'}`;
+  }
+}
+
 export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
   currentUser,
   forceOpen = false,
@@ -98,68 +127,86 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
         {
           angelAction: 'dụ dỗ',
           angelIcon: '🍎',
-          badge: 'Cám Dỗ Ngọt Ngào',
-          greeting: `Hỡi ${currentUser?.displayName || 'bạn'} xinh đẹp... ✨`,
+          badge: 'Đang dụ dỗ 🍎',
+          greeting: `Alo ${currentUser?.displayName || 'bạn'} ơi, ghé tai em nói nhỏ nè! ✨`,
           banter:
-            'Ta mang đến cho ngươi cơ hội tỏa sáng ngút ngàn trên mOS! Chỉ 15 giây selfie nụ cười rạng rỡ, hào quang sẽ theo ngươi cả ngày dài. Ngươi nỡ chối từ quả táo thần kỳ này sao?',
-          callToAction: '🍎 Nghe Lời Cám Dỗ, Chụp Luôn!',
-          snoozeText: 'Cưỡng lại cám dỗ, để mai tính 🙈',
+            'Tướng mạo rạng rỡ thế này mà chưa có avatar thì uổng quá chừng! Lên 1 tấm selfie cười tươi là đồng đội thả tim mỏi tay, khách nhìn là mến liền. Thử ngay 15 giây nha?',
+          callToAction: '📸 Đổi Liền Khoe Nhan Sắc',
+          ctaText: '📸 Đổi Liền Khoe Nhan Sắc',
+          snoozeText: 'Để mai khoe, nay giấu mặt 🙈',
           isBanter: false,
         },
         {
           angelAction: 'năn nỉ',
           angelIcon: '🥺',
-          badge: 'Hạ Mình Cầu Xin',
-          greeting: `Ai đó cứu Thiên Sứ với... 🥺`,
-          banter: `Ta bay vòng vòng năn nỉ ${currentUser?.displayName || 'bạn'} mỏi cả cánh rồi! Giơ máy lên cười tươi 15 giây cho ta hoàn thành KPI thiên đình đi mà, năn nỉ đó!`,
+          badge: 'Đang năn nỉ 🥺',
+          greeting: `${currentUser?.displayName || 'Bạn'} ơi, cứu em với... 🥺`,
+          banter: `Em bay lượn năn nỉ bạn mấy bữa nay mỏi cả cánh rồi á! Giơ máy cười tươi 15 giây cho em hoàn thành chỉ tiêu đầu ngày đi mà, năn nỉ luôn đó!`,
           callToAction: '📸 Cứu Thiên Sứ, Chụp Liền!',
+          ctaText: '📸 Cứu Thiên Sứ, Chụp Liền!',
           snoozeText: 'Cho nợ nốt hôm nay nha Thiên Sứ 🥺',
           isBanter: true,
         },
         {
           angelAction: 'cà khịa',
           angelIcon: '😏',
-          badge: 'Bắt Quả Tang!',
-          greeting: `Ủa alo ${currentUser?.displayName || 'bạn'} ơi? 😈`,
+          badge: 'Cà khịa nhẹ 😏',
+          greeting: `Ủa alo ${currentUser?.displayName || 'bạn'} ơi, bắt quả tang nha! 👀`,
           banter:
             currentCount > 0
-              ? 'Hôm qua ai thề non hẹn biển "để mai tính" ta? Hôm nay là ngày mai trong truyền thuyết rồi nè! Tính tới đâu rồi hay đang tính trốn luôn?'
-              : 'Đồng đội ai cũng avatar lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!',
+              ? 'Hôm qua ai vừa hứa chắc nịch "để mai tính" vậy ta? Nay chính là "ngày mai" trong truyền thuyết rồi nè, tính tới đâu rồi hay đang tính trốn luôn? Làm tấm ảnh nhanh gọn lẹ rồi vô ca thôi nè!'
+              : 'Đồng đội ai cũng có ảnh đại diện lung linh, riêng bạn cứ để ký tự viết tắt bí ẩn như điệp viên 007 vậy. Chụp lẹ khoe nụ cười đi nè!',
           callToAction: '📸 Thôi Được Rồi, Chụp Luôn!',
-          snoozeText: 'Hứa danh dự ngày mai đổi thiệt 🙈',
+          ctaText: '📸 Thôi Được Rồi, Chụp Luôn!',
+          snoozeText: 'Mai đổi thiệt mà, đừng khịa nữa 🙈',
           isBanter: true,
         },
         {
           angelAction: 'hờn dỗi',
           angelIcon: '😤',
-          badge: 'Giận Tím Người',
-          greeting: `Thiên Sứ dỗi ${currentUser?.displayName || 'bạn'} rồi đó! 😤`,
+          badge: 'Đang hờn dỗi 😤',
+          greeting: `Hôm nay em dỗi ${currentUser?.displayName || 'bạn'} rồi đó nha! 😤`,
           banter:
-            'Ngắm cái icon mặc định của bạn suốt mấy hôm làm ta muốn tiền đình. Hôm nay mà không chụp là ta ếm bùa cho khách khen suốt ngày mỏi miệng ráng chịu!',
-          callToAction: '📸 Chụp Ngay Kẻo Thiên Sứ Khóc',
+            'Cả salon ai cũng có ảnh đại diện xinh xắn, riêng bạn cứ để ký tự viết tắt bí ẩn hoài. Nay mà không chịu chụp là em buồn nguyên ngày cho coi!',
+          callToAction: '📸 Chụp Liền Kẻo Em Dỗi',
+          ctaText: '📸 Chụp Liền Kẻo Em Dỗi',
           snoozeText: 'Dỗ dành Thiên Sứ, mai tính nha 🥺',
           isBanter: true,
         },
         {
           angelAction: 'thầm thì',
           angelIcon: '🤫',
-          badge: 'Bí Mật Đen Tối',
-          greeting: `Suỵt... lại gần đây ta bảo! 🤫`,
+          badge: 'Thì thầm bí mật 🤫',
+          greeting: `Suỵt... lại gần đây em bật mí bí mật nè ${currentUser?.displayName || 'bạn'}! 🤫`,
           banter:
-            'Ta vừa soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ hôm nay thì tỉ lệ nhận tip và khách book tua tăng vùn vụt! Đừng để lọt bí mật này cho người khác nhen!',
+            'Em mới soi sổ thiên cơ: ai đổi avatar nụ cười rạng rỡ sáng nay là ca làm gặp toàn khách dễ thương, tip nhận mỏi tay luôn á. Bí mật nội bộ, làm liền kẻo lỡ lộc nha!',
           callToAction: '✨ Đổi Avatar Hút May Mắn',
+          ctaText: '✨ Đổi Avatar Hút May Mắn',
           snoozeText: 'Để mai nhận lộc vậy 🙈',
           isBanter: false,
         },
         {
           angelAction: 'đe dọa (nhẹ)',
           angelIcon: '⚡',
-          badge: 'Tối Hậu Thư',
-          greeting: `Cảnh báo từ cõi u tối! ⚡`,
-          banter: `Bạn đã bấm 'Để mai tính' đến lần thứ ${currentCount || 1} rồi đấy nhé! Nếu hôm nay còn chối từ, ta sẽ biến avatar của bạn thành hình quả chuối vàng khổng lồ!`,
-          callToAction: '📸 Đổi Ngay Tránh Bị Hóa Chuối!',
+          badge: 'Tối hậu thư ⚡',
+          greeting: `Báo động cấp 1 gửi tới ${currentUser?.displayName || 'bạn'}! ⚡`,
+          banter: `Bạn đã bấm hoãn lần thứ ${currentCount || 1} rồi đó nha! Hôm nay mà còn bấm "để mai tính" nữa là em tự lấy ảnh dìm dán lên avatar ráng chịu à nghen!`,
+          callToAction: '📸 Tự Chụp Liền Tránh Bị Dìm!',
+          ctaText: '📸 Tự Chụp Liền Tránh Bị Dìm!',
           snoozeText: 'Vẫn can đảm hoãn tiếp 🏃💨',
           isBanter: true,
+        },
+        {
+          angelAction: 'nhắn nhủ',
+          angelIcon: '✨',
+          badge: 'Nhắn nhủ đầu ngày ✨',
+          greeting: `Chào ${currentUser?.displayName || 'bạn'}, chúc bạn ngày mới tràn đầy năng lượng! ✨`,
+          banter:
+            'Một chiếc avatar cười tươi sáng bừng sẽ truyền cảm hứng và trao trọn niềm tin cho cả team và khách hàng mỗi ngày. Cùng em chụp 1 tấm selfie thật rạng rỡ nhé!',
+          callToAction: '📸 Chụp Selfie Rạng Rỡ Ngay',
+          ctaText: '📸 Chụp Selfie Rạng Rỡ Ngay',
+          snoozeText: 'Để mai mình đổi nha 🙈',
+          isBanter: false,
         },
       ];
       const picked = fallbackList[Math.floor(Math.random() * fallbackList.length)];
@@ -330,24 +377,21 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-2">
                 <span
-                  className={`text-xs font-bold tracking-tight flex items-center gap-1 ${isDark ? 'text-white' : 'text-slate-900'}`}
+                  className={`text-xs font-bold tracking-tight flex items-center gap-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}
                 >
-                  <span className="text-sm select-none">{nudgeData?.angelIcon || '😈'}</span>
+                  <span className="text-sm select-none">😈</span>
                   <span>Thiên Sứ Bóng Tối</span>
-                  <span className={`font-semibold text-[11px] ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
-                    ({nudgeData?.angelAction || 'nhắn nhủ'})
-                  </span>
                 </span>
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border transition-all ${
                     isDark
                       ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                       : 'bg-purple-100 text-purple-800 border-purple-200 shadow-xs'
                   }`}
                 >
-                  {nudgeData?.badge || (nudgeData?.isBanter ? 'Cà khịa thân thiện' : 'Khích lệ')}
+                  {getStatusPill(nudgeData?.angelAction, nudgeData?.angelIcon, nudgeData?.badge)}
                 </span>
               </div>
               {isLoadingNudge && (
