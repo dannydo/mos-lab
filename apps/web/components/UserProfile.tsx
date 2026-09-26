@@ -13,7 +13,7 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { CopyPhoneButton } from './ui';
-import { resolveMediaUrl } from '../lib/api';
+import { resolveMediaUrl } from '../lib/api-client';
 
 const { Title, Text } = Typography;
 

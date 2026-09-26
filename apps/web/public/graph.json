@@ -2491,7 +2491,7 @@
         "dbSource": "crm",
         "modelName": "CrmPilotSession",
         "tableName": "crm_pilot_sessions",
-        "fieldCount": 37,
+        "fieldCount": 42,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -2567,6 +2567,24 @@
         "readOnly": false,
         "isCatalogException": false,
         "relations": ["sessionId", "stepTemplateId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmPilotAssessmentCriterion",
+      "type": "PrismaModel",
+      "label": "crm.CrmPilotAssessmentCriterion",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmPilotAssessmentCriterion",
+        "tableName": "crm_pilot_assessment_criteria",
+        "fieldCount": 8,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -9824,7 +9842,7 @@
         "path": "/api/pilot/media/:filename",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 39
+        "line": 43
       }
     },
     {
@@ -9838,7 +9856,7 @@
         "path": "/api/pilot/feature-flag",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 56
+        "line": 60
       }
     },
     {
@@ -9852,7 +9870,7 @@
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 70
+        "line": 74
       }
     },
     {
@@ -9866,7 +9884,7 @@
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 81
+        "line": 85
       }
     },
     {
@@ -9880,7 +9898,7 @@
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 92
+        "line": 96
       }
     },
     {
@@ -9894,7 +9912,7 @@
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 108
+        "line": 112
       }
     },
     {
@@ -9908,7 +9926,7 @@
         "path": "/api/pilot/materials/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 123
+        "line": 127
       }
     },
     {
@@ -9922,7 +9940,7 @@
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 137
+        "line": 141
       }
     },
     {
@@ -9936,7 +9954,7 @@
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 147
+        "line": 151
       }
     },
     {
@@ -9950,7 +9968,7 @@
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 157
+        "line": 161
       }
     },
     {
@@ -9964,7 +9982,7 @@
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 172
+        "line": 176
       }
     },
     {
@@ -9978,7 +9996,7 @@
         "path": "/api/pilot/sop-steps/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 186
+        "line": 190
       }
     },
     {
@@ -9992,7 +10010,91 @@
         "path": "/api/pilot/sop-steps/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 196
+        "line": 200
+      }
+    },
+    {
+      "id": "route:GET:/api/pilot/assessment-criteria",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/assessment-criteria",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/assessment-criteria",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 214
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/assessment-criteria",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/assessment-criteria",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/assessment-criteria",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 224
+      }
+    },
+    {
+      "id": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "FastifyRoute",
+      "label": "PATCH /api/pilot/assessment-criteria/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "PATCH",
+        "path": "/api/pilot/assessment-criteria/:id",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 234
+      }
+    },
+    {
+      "id": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/pilot/assessment-criteria/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/pilot/assessment-criteria/:id",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 249
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/assessment-criteria/reorder",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/assessment-criteria/reorder",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 263
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/assessment",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/assessment",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/assessment",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 274
       }
     },
     {
@@ -10006,7 +10108,7 @@
         "path": "/api/pilot/sessions/:id/steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 211
+        "line": 294
       }
     },
     {
@@ -10020,7 +10122,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/start",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 226
+        "line": 309
       }
     },
     {
@@ -10034,7 +10136,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 243
+        "line": 326
       }
     },
     {
@@ -10048,7 +10150,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/note",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 260
+        "line": 343
       }
     },
     {
@@ -10062,7 +10164,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 277
+        "line": 360
       }
     },
     {
@@ -10076,7 +10178,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 293
+        "line": 376
       }
     },
     {
@@ -10090,7 +10192,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 304
+        "line": 387
       }
     },
     {
@@ -10104,7 +10206,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 315
+        "line": 398
       }
     },
     {
@@ -10118,7 +10220,7 @@
         "path": "/api/pilot/sessions/:id/check-in",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 327
+        "line": 410
       }
     },
     {
@@ -10132,7 +10234,7 @@
         "path": "/api/pilot/sessions/:id/before-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 343
+        "line": 426
       }
     },
     {
@@ -10146,7 +10248,7 @@
         "path": "/api/pilot/sessions/:id/service-done",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 359
+        "line": 442
       }
     },
     {
@@ -10160,7 +10262,7 @@
         "path": "/api/pilot/sessions/:id/after-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 375
+        "line": 458
       }
     },
     {
@@ -10174,7 +10276,7 @@
         "path": "/api/pilot/sessions/:id/feedback",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 391
+        "line": 474
       }
     },
     {
@@ -10188,7 +10290,7 @@
         "path": "/api/pilot/sessions/:id/check-out",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 407
+        "line": 490
       }
     },
     {
@@ -10202,7 +10304,7 @@
         "path": "/api/pilot/upload-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 423
+        "line": 506
       }
     },
     {
@@ -10216,7 +10318,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 434
+        "line": 517
       }
     },
     {
@@ -10230,7 +10332,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 450
+        "line": 533
       }
     },
     {
@@ -23439,6 +23541,78 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:PilotAssessmentCriterion",
+      "type": "SharedType",
+      "label": "PilotAssessmentCriterion",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotAssessmentCriterion",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreatePilotAssessmentCriterionRequest",
+      "type": "SharedType",
+      "label": "CreatePilotAssessmentCriterionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreatePilotAssessmentCriterionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdatePilotAssessmentCriterionRequest",
+      "type": "SharedType",
+      "label": "UpdatePilotAssessmentCriterionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdatePilotAssessmentCriterionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReorderPilotAssessmentCriteriaRequest",
+      "type": "SharedType",
+      "label": "ReorderPilotAssessmentCriteriaRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReorderPilotAssessmentCriteriaRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotCriterionEvaluation",
+      "type": "SharedType",
+      "label": "PilotCriterionEvaluation",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotCriterionEvaluation",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SavePilotAssessmentRequest",
+      "type": "SharedType",
+      "label": "SavePilotAssessmentRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SavePilotAssessmentRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:PlanStatus",
       "type": "SharedType",
       "label": "PlanStatus",
@@ -27375,8 +27549,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12811450,
-        "lineCount": 278756,
+        "sizeBytes": 12872234,
+        "lineCount": 280187,
         "ext": ".ts"
       }
     },
@@ -30313,8 +30487,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29344,
-        "lineCount": 933,
+        "sizeBytes": 35431,
+        "lineCount": 1095,
         "ext": ".ts"
       }
     },
@@ -30326,8 +30500,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49763,
-        "lineCount": 1458,
+        "sizeBytes": 60360,
+        "lineCount": 1738,
         "ext": ".ts"
       }
     },
@@ -30339,8 +30513,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19731,
-        "lineCount": 464,
+        "sizeBytes": 23506,
+        "lineCount": 547,
         "ext": ".ts"
       }
     },
@@ -35220,6 +35394,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx",
+      "type": "File",
+      "label": "PilotCriteriaModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11819,
+        "lineCount": 330,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "type": "File",
       "label": "PilotFlowDrawer.tsx",
@@ -35227,8 +35414,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 46458,
-        "lineCount": 999,
+        "sizeBytes": 70541,
+        "lineCount": 1457,
         "ext": ".tsx"
       }
     },
@@ -35318,8 +35505,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32360,
-        "lineCount": 829,
+        "sizeBytes": 33985,
+        "lineCount": 864,
         "ext": ".tsx"
       }
     },
@@ -36371,8 +36558,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6753,
-        "lineCount": 162,
+        "sizeBytes": 8376,
+        "lineCount": 201,
         "ext": ".ts"
       }
     },
@@ -37294,8 +37481,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 8194,
-        "lineCount": 288,
+        "sizeBytes": 9692,
+        "lineCount": 349,
         "ext": ".ts"
       }
     },
@@ -38479,6 +38666,13 @@
     {
       "id": "edge:prisma:crm:CrmPilotSessionStep:ws:apps/api",
       "source": "prisma:crm:CrmPilotSessionStep",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmPilotAssessmentCriterion:ws:apps/api",
+      "source": "prisma:crm:CrmPilotAssessmentCriterion",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -42161,6 +42355,48 @@
     {
       "id": "edge:route:POST:/api/pilot/sop-steps/seed-defaults:ws:apps/api",
       "source": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/pilot/assessment-criteria:ws:apps/api",
+      "source": "route:GET:/api/pilot/assessment-criteria",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/assessment-criteria:ws:apps/api",
+      "source": "route:POST:/api/pilot/assessment-criteria",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PATCH:/api/pilot/assessment-criteria/:id:ws:apps/api",
+      "source": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/pilot/assessment-criteria/:id:ws:apps/api",
+      "source": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/assessment-criteria/reorder:ws:apps/api",
+      "source": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/assessment:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/assessment",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49817,6 +50053,48 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:PilotAssessmentCriterion:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAssessmentCriterion",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreatePilotAssessmentCriterionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreatePilotAssessmentCriterionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdatePilotAssessmentCriterionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdatePilotAssessmentCriterionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReorderPilotAssessmentCriteriaRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReorderPilotAssessmentCriteriaRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotCriterionEvaluation:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotCriterionEvaluation",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SavePilotAssessmentRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SavePilotAssessmentRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PlanStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:PlanStatus",
       "target": "ws:packages/shared",
@@ -56012,6 +56290,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "target": "ws:packages/shared",
@@ -58612,6 +58897,13 @@
       "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotSessionStep",
       "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
       "target": "prisma:crm:CrmPilotSessionStep",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotAssessmentCriterion",
+      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "target": "prisma:crm:CrmPilotAssessmentCriterion",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -63313,6 +63605,48 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/architecture",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/architecture",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/pilot/metrics",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/pilot/metrics",
@@ -65262,6 +65596,48 @@
       "id": "edge:page:/dashboard/design-system:route:GET:/api/pilot/media/:filename",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/design-system",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/design-system",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -68979,6 +69355,48 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sop-steps/seed-defaults",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -73253,6 +73671,48 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sessions/:id/steps",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/pilot/sessions/:id/steps",
@@ -74530,6 +74990,48 @@
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sop-steps/seed-defaults",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -76707,6 +77209,48 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/pilot/media/:filename",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/pilot/media/:filename",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -80407,6 +80951,48 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/assessment-criteria",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/assessment-criteria",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PATCH:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/pilot/assessment-criteria/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/assessment-criteria/reorder",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/assessment",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/assessment",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sessions/:id/steps",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/pilot/sessions/:id/steps",
@@ -81171,31 +81757,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2870,
-    "totalEdges": 6239,
+    "totalNodes": 2884,
+    "totalEdges": 6296,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 156,
-      "FastifyRoute": 610,
+      "PrismaModel": 157,
+      "FastifyRoute": 616,
       "Component": 54,
-      "SharedType": 1048,
+      "SharedType": 1054,
       "DesignToken": 12,
       "UIComponent": 203,
-      "File": 784
+      "File": 785
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1216,
-      "HANDLES_ROUTE": 610,
+      "EXPORTS": 1223,
+      "HANDLES_ROUTE": 616,
       "RENDERS": 257,
       "USES_TOKEN": 205,
-      "IMPORTS": 426,
-      "QUERIES_MODEL": 363,
-      "API_CALL": 3162
+      "IMPORTS": 427,
+      "QUERIES_MODEL": 364,
+      "API_CALL": 3204
     },
-    "fastifyRouteCount": 615,
-    "prismaModelCount": 156,
+    "fastifyRouteCount": 621,
+    "prismaModelCount": 157,
     "nextPageCount": 54,
-    "sharedTypeCount": 1048
+    "sharedTypeCount": 1054
   },
   "routes": [
     {
@@ -84777,6 +85363,48 @@
     },
     {
       "method": "GET",
+      "path": "/api/pilot/assessment-criteria",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/assessment-criteria",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/pilot/assessment-criteria/:id",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/pilot/assessment-criteria/:id",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/assessment-criteria/reorder",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/assessment",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
       "path": "/api/pilot/sessions/:id/steps",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "handler": "inlineHandler",
@@ -86733,7 +87361,7 @@
       "dbSource": "crm",
       "modelName": "CrmPilotSession",
       "tableName": "crm_pilot_sessions",
-      "fieldCount": 37,
+      "fieldCount": 42,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
@@ -86773,6 +87401,15 @@
       "readOnly": false,
       "isCatalogException": false,
       "relations": ["sessionId", "stepTemplateId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmPilotAssessmentCriterion",
+      "tableName": "crm_pilot_assessment_criteria",
+      "fieldCount": 8,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
     },
     {
       "dbSource": "legacy",

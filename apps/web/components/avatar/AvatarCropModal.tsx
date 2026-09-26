@@ -18,8 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import type { SafeAny, AvatarScoreResponse } from '@mos-lab/shared';
-import { apiClient } from '../../lib/api-client';
-import { resolveMediaUrl } from '../../lib/api';
+import { apiClient, resolveMediaUrl } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
 
 interface AvatarCropModalProps {

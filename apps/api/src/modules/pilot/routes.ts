@@ -19,6 +19,10 @@ import type {
   UpdatePilotSessionRequest,
   UpdatePilotSopStepRequest,
   UpdateSessionStepNoteRequest,
+  CreatePilotAssessmentCriterionRequest,
+  UpdatePilotAssessmentCriterionRequest,
+  ReorderPilotAssessmentCriteriaRequest,
+  SavePilotAssessmentRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { PilotService, PilotServiceError, pilotMediaDir } from './pilot.service.js';
@@ -200,6 +204,85 @@ export async function pilotRoutes(fastify: FastifyInstance) {
       return reply.send(steps);
     } catch (error) {
       return sendError(fastify, reply, error, 'Seed default pilot SOP steps error');
+    }
+  });
+
+  // ═══════════════════════════════════════════
+  // Pilot Lash Assessment Criteria Endpoints
+  // ═══════════════════════════════════════════
+
+  fastify.get('/pilot/assessment-criteria', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const query = request.query as { pilotCode?: string };
+      const criteria = await PilotService.listAssessmentCriteria(fastify, query?.pilotCode);
+      return reply.send(criteria);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'List pilot assessment criteria error');
+    }
+  });
+
+  fastify.post('/pilot/assessment-criteria', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as CreatePilotAssessmentCriterionRequest;
+      const created = await PilotService.createAssessmentCriterion(fastify, body);
+      return reply.status(201).send(created);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Create pilot assessment criterion error');
+    }
+  });
+
+  fastify.patch('/pilot/assessment-criteria/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID tiêu chí không hợp lệ.' });
+      }
+      const body = request.body as UpdatePilotAssessmentCriterionRequest;
+      const updated = await PilotService.updateAssessmentCriterion(fastify, id, body);
+      return reply.send(updated);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Update pilot assessment criterion error');
+    }
+  });
+
+  fastify.delete('/pilot/assessment-criteria/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID tiêu chí không hợp lệ.' });
+      }
+      const result = await PilotService.deleteAssessmentCriterion(fastify, id);
+      return reply.send(result);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Delete pilot assessment criterion error');
+    }
+  });
+
+  fastify.post('/pilot/assessment-criteria/reorder', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as ReorderPilotAssessmentCriteriaRequest;
+      const updated = await PilotService.reorderAssessmentCriteria(fastify, body);
+      return reply.send(updated);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Reorder pilot assessment criteria error');
+    }
+  });
+
+  // Save session assessment result (PASS / FAIL)
+  fastify.post('/pilot/sessions/:id/assessment', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID ca pilot không hợp lệ.' });
+      }
+      const body = request.body as SavePilotAssessmentRequest;
+      const session = await PilotService.saveAssessment(fastify, id, body);
+      return reply.send(session);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Save pilot session assessment error');
     }
   });
 

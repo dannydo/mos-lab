@@ -3,10 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, message, Spin } from 'antd';
 import { Sparkles, Camera, Heart, ShieldCheck, ChevronRight, Clock, X, UserRound } from 'lucide-react';
-import type { SafeAny, AvatarNudgeResponse } from '@mos-lab/shared';
 import dayjs from 'dayjs';
-import { apiClient } from '../../lib/api-client';
-import { resolveMediaUrl } from '../../lib/api';
+import type { SafeAny, AvatarNudgeResponse } from '@mos-lab/shared';
+import { apiClient, resolveMediaUrl } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
 import AvatarCropModal from './AvatarCropModal';
 

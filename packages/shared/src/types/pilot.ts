@@ -44,7 +44,15 @@ export interface PilotSessionMaterialItem {
 }
 
 export type DarkLashesSessionStatus =
-  'BOOKED' | 'CHECKED_IN' | 'BEFORE_PHOTO' | 'SERVICE_DONE' | 'AFTER_PHOTO' | 'FEEDBACK_DONE' | 'CHECKED_OUT';
+  | 'BOOKED'
+  | 'CHECKED_IN'
+  | 'ASSESSED'
+  | 'BEFORE_PHOTO'
+  | 'SERVICE_DONE'
+  | 'AFTER_PHOTO'
+  | 'FEEDBACK_DONE'
+  | 'CHECKED_OUT'
+  | 'INELIGIBLE';
 
 export interface PilotSession {
   id: number;
@@ -58,6 +66,11 @@ export interface PilotSession {
   technicianName: string | null;
   status: DarkLashesSessionStatus;
   checkInAt: string | null; // ISO string
+  assessmentStatus?: 'PASS' | 'FAIL' | null;
+  assessmentReason?: string | null;
+  assessmentNotes?: string | null;
+  assessmentCriteria?: PilotCriterionEvaluation[] | null;
+  assessedAt?: string | null; // ISO string
   beforePhotoUrl: string | null;
   serviceDoneAt: string | null; // ISO string
   afterPhotoUrl: string | null;
@@ -212,13 +225,48 @@ export interface PilotSessionsQuery {
 // ═══════════════════════════════════════════
 
 export const DEFAULT_DARK_LASH_SOP_STEPS = [
-  { name: 'Kiểm tra & làm sạch mi', stepOrder: 1, targetMinutes: 5, description: 'Soi mi, làm sạch bụi bẩn và dầu thừa trên mi mắt' },
-  { name: 'Làm mềm', stepOrder: 2, targetMinutes: 12, description: 'Thoa thuốc uốn số 1 để mở biểu bì và làm mềm sợi mi' },
-  { name: 'Tạo form độ cong', stepOrder: 3, targetMinutes: 10, description: 'Cố định mi lên trục silicon định hình theo độ cong yêu cầu' },
-  { name: 'Cân bằng pH', stepOrder: 4, targetMinutes: 5, description: 'Kiểm tra và cân bằng độ pH trên mi trước khi sang bước tiếp theo' },
-  { name: 'Màu', stepOrder: 5, targetMinutes: 15, description: 'Phủ thuốc nhuộm mi bóng tối giúp mi đen tuyền và sâu màu' },
-  { name: 'Dưỡng Keratin', stepOrder: 6, targetMinutes: 5, description: 'Thoa serum keratin phục hồi và bảo vệ cấu trúc sợi mi' },
-  { name: 'Vệ sinh & hoàn thiện', stepOrder: 7, targetMinutes: 5, description: 'Vệ sinh sạch mắt, chải đều form mi và hướng dẫn khách chăm sóc' },
+  {
+    name: 'Kiểm tra & làm sạch mi',
+    stepOrder: 1,
+    targetMinutes: 5,
+    description: 'Soi mi, làm sạch bụi bẩn và dầu thừa trên mi mắt',
+  },
+  {
+    name: 'Làm mềm',
+    stepOrder: 2,
+    targetMinutes: 12,
+    description: 'Thoa thuốc uốn số 1 để mở biểu bì và làm mềm sợi mi',
+  },
+  {
+    name: 'Tạo form độ cong',
+    stepOrder: 3,
+    targetMinutes: 10,
+    description: 'Cố định mi lên trục silicon định hình theo độ cong yêu cầu',
+  },
+  {
+    name: 'Cân bằng pH',
+    stepOrder: 4,
+    targetMinutes: 5,
+    description: 'Kiểm tra và cân bằng độ pH trên mi trước khi sang bước tiếp theo',
+  },
+  {
+    name: 'Màu',
+    stepOrder: 5,
+    targetMinutes: 15,
+    description: 'Phủ thuốc nhuộm mi bóng tối giúp mi đen tuyền và sâu màu',
+  },
+  {
+    name: 'Dưỡng Keratin',
+    stepOrder: 6,
+    targetMinutes: 5,
+    description: 'Thoa serum keratin phục hồi và bảo vệ cấu trúc sợi mi',
+  },
+  {
+    name: 'Vệ sinh & hoàn thiện',
+    stepOrder: 7,
+    targetMinutes: 5,
+    description: 'Vệ sinh sạch mắt, chải đều form mi và hướng dẫn khách chăm sóc',
+  },
 ];
 
 export interface PilotSopStep {
@@ -285,3 +333,50 @@ export interface UpdateSessionStepNoteRequest {
   note: string;
 }
 
+// ═══════════════════════════════════════════
+// Pilot Lash Assessment Criteria & Results
+// ═══════════════════════════════════════════
+
+export interface PilotAssessmentCriterion {
+  id: number;
+  pilotCode: string;
+  name: string;
+  description?: string | null;
+  stepOrder: number;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreatePilotAssessmentCriterionRequest {
+  pilotCode?: string;
+  name: string;
+  description?: string | null;
+  stepOrder?: number;
+}
+
+export interface UpdatePilotAssessmentCriterionRequest {
+  name?: string;
+  description?: string | null;
+  stepOrder?: number;
+  isActive?: boolean;
+}
+
+export interface ReorderPilotAssessmentCriteriaRequest {
+  pilotCode?: string;
+  criteriaIds: number[];
+}
+
+export interface PilotCriterionEvaluation {
+  criterionId: number;
+  name: string;
+  passed: boolean;
+  note?: string;
+}
+
+export interface SavePilotAssessmentRequest {
+  result: 'PASS' | 'FAIL';
+  reason?: string | null;
+  notes?: string | null;
+  criteriaSnapshot?: PilotCriterionEvaluation[];
+}

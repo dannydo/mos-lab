@@ -640,8 +640,7 @@ test('PilotService: uploadPhoto handles data URIs, raw base64 and external URLs'
   assert.equal(httpRes.photoUrl, 'https://example.com/avatar.jpg');
 
   // 1x1 transparent png in base64
-  const pngBase64 =
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
   // Upload data URI
   const dataUriRes = await PilotService.uploadPhoto(fakeFastify, {
@@ -929,4 +928,169 @@ test('PilotService: updateSessionStepNote and resetSessionStep', async () => {
   assert.equal(reset.durationSeconds, null);
 });
 
+test('PilotService: listAssessmentCriteria seeds defaults and supports CRUD + reorder', async () => {
+  const criteriaStore: SafeAny[] = [];
+  let nextId = 1;
 
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotAssessmentCriterion: {
+          count: async () => criteriaStore.length,
+          findMany: async ({ where }: SafeAny) => {
+            return criteriaStore
+              .filter(
+                (c) =>
+                  c.pilotCode === where.pilotCode && (where.isActive === undefined || c.isActive === where.isActive)
+              )
+              .sort((a, b) => a.stepOrder - b.stepOrder);
+          },
+          findFirst: async ({ where }: SafeAny) => {
+            const list = criteriaStore
+              .filter((c) => c.pilotCode === where.pilotCode)
+              .sort((a, b) => b.stepOrder - a.stepOrder);
+            return list[0] || null;
+          },
+          findUnique: async ({ where }: SafeAny) => criteriaStore.find((c) => c.id === where.id) || null,
+          createMany: async ({ data }: SafeAny) => {
+            for (const item of data) {
+              criteriaStore.push({ id: nextId++, ...item });
+            }
+          },
+          create: async ({ data }: SafeAny) => {
+            const created = { id: nextId++, ...data };
+            criteriaStore.push(created);
+            return created;
+          },
+          update: async ({ where, data }: SafeAny) => {
+            const item = criteriaStore.find((c) => c.id === where.id);
+            if (item) Object.assign(item, data);
+            return item;
+          },
+        },
+        $transaction: async (cb: SafeAny) => cb(fakeFastify.prisma.crm),
+      },
+    },
+  };
+
+  // 1. Initial list seeds 5 default criteria
+  const list = await PilotService.listAssessmentCriteria(fakeFastify, 'DARK_LASHES');
+  assert.equal(list.length, 5);
+  assert.equal(list[0].name, 'Độ dài mi');
+  assert.equal(list[1].name, 'Độ dày sợi mi');
+  assert.equal(list[2].name, 'Mật độ mi');
+  assert.equal(list[3].name, 'Tình trạng sợi mi');
+  assert.equal(list[4].name, 'Khả năng tạo form');
+
+  // 2. Create new criterion
+  const created = await PilotService.createAssessmentCriterion(fakeFastify, {
+    pilotCode: 'DARK_LASHES',
+    name: 'Độ kích ứng mắt',
+    description: 'Kiểm tra mắt nhạy cảm',
+  });
+  assert.equal(created.name, 'Độ kích ứng mắt');
+  assert.equal(created.stepOrder, 6);
+
+  // 3. Update criterion
+  const updated = await PilotService.updateAssessmentCriterion(fakeFastify, created.id, {
+    name: 'Độ nhạy cảm của mắt',
+  });
+  assert.equal(updated.name, 'Độ nhạy cảm của mắt');
+
+  // 4. Reorder criteria
+  const reordered = await PilotService.reorderAssessmentCriteria(fakeFastify, {
+    pilotCode: 'DARK_LASHES',
+    criteriaIds: [created.id, 1, 2, 3, 4, 5],
+  });
+  assert.equal(reordered[0].id, created.id);
+  assert.equal(reordered[0].stepOrder, 1);
+
+  // 5. Delete criterion (soft delete)
+  const delRes = await PilotService.deleteAssessmentCriterion(fakeFastify, created.id);
+  assert.equal(delRes.success, true);
+  const remaining = await PilotService.listAssessmentCriteria(fakeFastify, 'DARK_LASHES');
+  assert.equal(remaining.length, 5);
+});
+
+test('PilotService: saveAssessment PASS transitions to ASSESSED; FAIL transitions to INELIGIBLE', async () => {
+  const sessionRecord: SafeAny = {
+    id: 101,
+    pilotCode: 'DARK_LASHES',
+    customerName: 'Chị Mai',
+    customerPhone: '0901234567',
+    sessionDate: new Date('2026-09-26'),
+    revenue: 990000,
+    materialCost: 50000,
+    technicianCost: 150000,
+    commissionAmount: 50000,
+    promoAmount: 0,
+    refundAmount: 0,
+    totalDirectCost: 250000,
+    contributionMargin: 740000,
+    status: 'CHECKED_IN',
+    checkInAt: new Date('2026-09-26T10:00:00Z'),
+    assessmentStatus: null,
+    assessmentReason: null,
+    assessmentNotes: null,
+    assessmentCriteriaJson: null,
+    assessedAt: null,
+  };
+
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotSession: {
+          findUnique: async () => sessionRecord,
+          update: async ({ data }: SafeAny) => {
+            Object.assign(sessionRecord, data);
+            return sessionRecord;
+          },
+        },
+      },
+    },
+  };
+
+  // 1. FAIL requires reason
+  await assert.rejects(
+    async () => {
+      await PilotService.saveAssessment(fakeFastify, 101, {
+        result: 'FAIL',
+        reason: '',
+      });
+    },
+    { message: 'Bắt buộc phải nhập Lý do không đủ điều kiện khi đánh giá FAIL.' }
+  );
+
+  // 2. PASS advances to ASSESSED
+  const passResult = await PilotService.saveAssessment(fakeFastify, 101, {
+    result: 'PASS',
+    criteriaSnapshot: [
+      { criterionId: 1, name: 'Độ dài mi', passed: true },
+      { criterionId: 2, name: 'Độ dày sợi mi', passed: true },
+    ],
+  });
+  assert.equal(passResult.status, 'ASSESSED');
+  assert.equal(passResult.assessmentStatus, 'PASS');
+  assert.equal(passResult.assessmentCriteria?.length, 2);
+
+  // 3. FAIL sets INELIGIBLE with reason and notes
+  const failResult = await PilotService.saveAssessment(fakeFastify, 101, {
+    result: 'FAIL',
+    reason: 'Mi quá mỏng yếu do mới tháo mi nối hôm qua',
+    notes: 'Khuyên khách dưỡng mi Keratin 2 tuần rồi quay lại',
+    criteriaSnapshot: [
+      { criterionId: 1, name: 'Độ dài mi', passed: true },
+      { criterionId: 4, name: 'Tình trạng sợi mi', passed: false, note: 'Sợi mi yếu' },
+    ],
+  });
+  assert.equal(failResult.status, 'INELIGIBLE');
+  assert.equal(failResult.assessmentStatus, 'FAIL');
+  assert.equal(failResult.assessmentReason, 'Mi quá mỏng yếu do mới tháo mi nối hôm qua');
+  assert.equal(failResult.assessmentNotes, 'Khuyên khách dưỡng mi Keratin 2 tuần rồi quay lại');
+
+  // 4. checkOut on INELIGIBLE does not require After Photo or Feedback
+  const checkedOutFail = await PilotService.checkOut(fakeFastify, 101, '2026-09-26T10:30:00Z');
+  assert.equal(checkedOutFail.status, 'INELIGIBLE');
+  assert.equal(checkedOutFail.totalDurationMinutes, 30);
+  assert.ok(checkedOutFail.checkOutAt);
+});

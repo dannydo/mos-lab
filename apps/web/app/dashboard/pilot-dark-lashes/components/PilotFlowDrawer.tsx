@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Button, Input, Rate, message, Popconfirm, Tooltip } from 'antd';
+import { Button, Input, Rate, Radio, message, Popconfirm, Tooltip } from 'antd';
 import { AdaptiveDrawer } from '../../../../components/ui/AdaptiveOverlay';
 import {
   Calendar,
@@ -16,13 +16,23 @@ import {
   RefreshCw,
   Sparkles,
   Star,
-  User,
   AlertCircle,
+  AlertTriangle,
   ChevronRight,
   ArrowRight,
+  ClipboardCheck,
+  Edit3,
+  XCircle,
 } from 'lucide-react';
 import dayjs from 'dayjs';
-import type { DarkLashesSessionStatus, PilotSession, PilotSessionStep } from '@mos-lab/shared';
+import type {
+  DarkLashesSessionStatus,
+  PilotAssessmentCriterion,
+  PilotCriterionEvaluation,
+  PilotSession,
+  PilotSessionStep,
+  SavePilotAssessmentRequest,
+} from '@mos-lab/shared';
 import { apiClient, resolveMediaUrl } from '../../../../lib/api-client';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { CopyPhoneButton } from '../../../../components/ui/CopyPhoneButton';
@@ -33,14 +43,16 @@ const { TextArea } = Input;
 const STATUS_STEPS: { key: DarkLashesSessionStatus; label: string; shortLabel: string; stepNumber: number }[] = [
   { key: 'BOOKED', label: '1. Đã đặt lịch (Booked)', shortLabel: 'Booked', stepNumber: 1 },
   { key: 'CHECKED_IN', label: '2. Đã đến shop (Checked-in)', shortLabel: 'Check-in', stepNumber: 2 },
-  { key: 'BEFORE_PHOTO', label: '3. Ảnh trước khi làm (Before Photo)', shortLabel: 'Before Photo', stepNumber: 3 },
-  { key: 'SERVICE_DONE', label: '4. Đã làm xong (Service Done)', shortLabel: 'Service Done', stepNumber: 4 },
-  { key: 'AFTER_PHOTO', label: '5. Ảnh sau khi làm (After Photo)', shortLabel: 'After Photo', stepNumber: 5 },
-  { key: 'FEEDBACK_DONE', label: '6. Khách đánh giá (Feedback Done)', shortLabel: 'Feedback', stepNumber: 6 },
-  { key: 'CHECKED_OUT', label: '7. Đã ra về (Checked-out)', shortLabel: 'Check-out', stepNumber: 7 },
+  { key: 'ASSESSED', label: '3. Tư vấn & Đánh giá (Assessed)', shortLabel: 'Đánh giá', stepNumber: 3 },
+  { key: 'BEFORE_PHOTO', label: '4. Ảnh trước khi làm (Before Photo)', shortLabel: 'Before Photo', stepNumber: 4 },
+  { key: 'SERVICE_DONE', label: '5. Đã làm xong (Service Done)', shortLabel: 'Service Done', stepNumber: 5 },
+  { key: 'AFTER_PHOTO', label: '6. Ảnh sau khi làm (After Photo)', shortLabel: 'After Photo', stepNumber: 6 },
+  { key: 'FEEDBACK_DONE', label: '7. Khách đánh giá (Feedback Done)', shortLabel: 'Feedback', stepNumber: 7 },
+  { key: 'CHECKED_OUT', label: '8. Đã ra về (Checked-out)', shortLabel: 'Check-out', stepNumber: 8 },
 ];
 
 function getStatusIndex(status: DarkLashesSessionStatus): number {
+  if (status === 'INELIGIBLE') return 2;
   const idx = STATUS_STEPS.findIndex((s) => s.key === status);
   return idx >= 0 ? idx : 0;
 }
@@ -104,12 +116,49 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
   const afterLibraryInputRef = useRef<HTMLInputElement>(null);
 
   const [sessionSteps, setSessionSteps] = useState<PilotSessionStep[]>(session?.steps || []);
+  const [criteriaList, setCriteriaList] = useState<PilotAssessmentCriterion[]>([]);
+  const [loadingCriteria, setLoadingCriteria] = useState<boolean>(false);
+  const [evaluations, setEvaluations] = useState<Record<number, { passed: boolean; note: string }>>({});
+  const [assessmentResult, setAssessmentResult] = useState<'PASS' | 'FAIL'>(
+    (session?.assessmentStatus as 'PASS' | 'FAIL') || 'PASS'
+  );
+  const [assessmentReason, setAssessmentReason] = useState<string>(session?.assessmentReason || '');
+  const [assessmentNotes, setAssessmentNotes] = useState<string>(session?.assessmentNotes || '');
+  const [isEditingAssessment, setIsEditingAssessment] = useState<boolean>(!session?.assessmentStatus);
+
+  React.useEffect(() => {
+    if (open) {
+      setLoadingCriteria(true);
+      apiClient.pilot
+        .listAssessmentCriteria({ pilotCode: 'DARK_LASHES' })
+        .then((res) => {
+          setCriteriaList(res || []);
+        })
+        .catch(() => {})
+        .finally(() => {
+          setLoadingCriteria(false);
+        });
+    }
+  }, [open]);
 
   // Sync state when session changes
   React.useEffect(() => {
     if (session) {
       setFeedbackRating(session.feedbackRating || session.csatScore || 5);
       setFeedbackNote(session.feedbackNote || '');
+      setAssessmentResult((session.assessmentStatus as 'PASS' | 'FAIL') || 'PASS');
+      setAssessmentReason(session.assessmentReason || '');
+      setAssessmentNotes(session.assessmentNotes || '');
+      setIsEditingAssessment(!session.assessmentStatus);
+
+      if (session.assessmentCriteria && session.assessmentCriteria.length > 0) {
+        const evals: Record<number, { passed: boolean; note: string }> = {};
+        for (const item of session.assessmentCriteria) {
+          evals[item.criterionId] = { passed: item.passed, note: item.note || '' };
+        }
+        setEvaluations(evals);
+      }
+
       if (session.steps && session.steps.length > 0) {
         setSessionSteps(session.steps);
       } else {
@@ -221,6 +270,47 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
     }
   };
 
+  const handleSaveAssessment = async () => {
+    if (!assessmentResult) {
+      message.error('Vui lòng chọn kết luận Đủ điều kiện hoặc Không đủ điều kiện.');
+      return;
+    }
+    if (assessmentResult === 'FAIL' && !assessmentReason.trim()) {
+      message.error('Bắt buộc phải ghi Lý do không đủ điều kiện.');
+      return;
+    }
+
+    try {
+      setSubmittingAction('save-assessment');
+      const criteriaSnapshot: PilotCriterionEvaluation[] = criteriaList.map((c) => ({
+        criterionId: c.id,
+        name: c.name,
+        passed: evaluations[c.id]?.passed ?? true,
+        note: evaluations[c.id]?.note ?? '',
+      }));
+
+      const payload: SavePilotAssessmentRequest = {
+        result: assessmentResult,
+        reason: assessmentResult === 'FAIL' ? assessmentReason.trim() : null,
+        notes: assessmentNotes.trim() || null,
+        criteriaSnapshot,
+      };
+
+      const updated = await apiClient.pilot.saveAssessment(session.id, payload);
+      if (assessmentResult === 'PASS') {
+        message.success('Đánh giá hoàn tất: Khách ĐỦ ĐIỀU KIỆN làm dịch vụ!');
+      } else {
+        message.warning('Đã ghi nhận: Khách KHÔNG ĐỦ ĐIỀU KIỆN làm dịch vụ. Chuyển thẳng Check-out.');
+      }
+      setIsEditingAssessment(false);
+      onSessionUpdated(updated);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Không thể lưu kết quả đánh giá.');
+    } finally {
+      setSubmittingAction(null);
+    }
+  };
+
   const handleCheckOut = async () => {
     try {
       setSubmittingAction('check-out');
@@ -237,9 +327,10 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
   };
 
   // Check-out requirements
+  const isIneligible = session.status === 'INELIGIBLE' || session.assessmentStatus === 'FAIL';
   const hasAfterPhoto = Boolean(session.afterPhotoUrl);
   const hasFeedback = Boolean(session.feedbackRating || session.csatScore);
-  const canCheckOut = hasAfterPhoto && hasFeedback;
+  const canCheckOut = isIneligible ? true : hasAfterPhoto && hasFeedback;
 
   return (
     <AdaptiveDrawer
@@ -286,9 +377,9 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
         {/* Step Progression Bar */}
         <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
-            Tiến trình ca dịch vụ (7 bước)
+            Tiến trình ca dịch vụ ({STATUS_STEPS.length} bước)
           </div>
-          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 sm:gap-2">
             {STATUS_STEPS.map((s, idx) => {
               const isPassed = currentStepIdx > idx;
               const isCurrent = currentStepIdx === idx;
@@ -446,13 +537,348 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
         </div>
 
         {/* ═══════════════════════════════════════════════════
-            BƯỚC 3: BEFORE PHOTO (Bắt buộc trước khi làm)
+            BƯỚC 3: TƯ VẤN & ĐÁNH GIÁ ĐIỀU KIỆN MI
         ═══════════════════════════════════════════════════════ */}
         <div
           className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border transition-all shadow-sm ${
-            currentStatus === 'CHECKED_IN'
+            currentStatus === 'CHECKED_IN' || currentStatus === 'ASSESSED'
               ? 'border-emerald-400 ring-2 ring-emerald-500/20'
               : 'border-slate-200 dark:border-slate-800'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  session.assessmentStatus
+                    ? session.assessmentStatus === 'PASS'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-rose-500 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                3
+              </span>
+              <div>
+                <span className="font-bold text-sm text-slate-800 dark:text-slate-100">
+                  Tư Vấn & Đánh Giá Điều Kiện Mi
+                </span>
+                <div className="text-xs text-slate-400">
+                  Kiểm tra tiêu chuẩn mi ngay sau check-in trước khi làm dịch vụ
+                </div>
+              </div>
+            </div>
+
+            {session.assessmentStatus === 'PASS' && (
+              <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                Đủ điều kiện (PASS)
+              </span>
+            )}
+            {(session.assessmentStatus === 'FAIL' || session.status === 'INELIGIBLE') && (
+              <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                Không đủ điều kiện (FAIL)
+              </span>
+            )}
+            {!session.assessmentStatus && session.status !== 'INELIGIBLE' && (
+              <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                Chờ đánh giá
+              </span>
+            )}
+          </div>
+
+          {!session.checkInAt ? (
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-500 flex items-center gap-2">
+              <AppIcon icon={AlertCircle} size="sm" className="text-amber-500 shrink-0" />
+              <span>Cần bấm Check-in khách đến (Bước 2) trước khi thực hiện tư vấn & đánh giá mi.</span>
+            </div>
+          ) : session.assessedAt && !isEditingAssessment ? (
+            <div className="space-y-3">
+              <div
+                className={`p-3.5 rounded-xl border ${
+                  session.assessmentStatus === 'PASS'
+                    ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-100'
+                    : 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-100'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {session.assessmentStatus === 'PASS' ? (
+                      <AppIcon icon={CheckCircle} size="sm" className="text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <AppIcon icon={AlertTriangle} size="sm" className="text-rose-600 dark:text-rose-400" />
+                    )}
+                    <span className="font-bold text-sm">
+                      {session.assessmentStatus === 'PASS'
+                        ? 'Khách ĐỦ ĐIỀU KIỆN thực hiện dịch vụ'
+                        : 'Khách KHÔNG ĐỦ ĐIỀU KIỆN thực hiện dịch vụ'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] opacity-75 tabular-nums">
+                    {dayjs(session.assessedAt).format('HH:mm · DD/MM/YYYY')}
+                  </span>
+                </div>
+
+                {session.assessmentStatus === 'FAIL' && session.assessmentReason && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-rose-100/70 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 text-xs">
+                    <span className="font-bold block mb-0.5">Lý do không đủ điều kiện:</span>
+                    <span>{session.assessmentReason}</span>
+                  </div>
+                )}
+
+                {session.assessmentNotes && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-white/60 dark:bg-slate-900/60 text-slate-700 dark:text-slate-200 text-xs">
+                    <span className="font-bold block mb-0.5">Ghi chú tư vấn / Giải pháp:</span>
+                    <span>{session.assessmentNotes}</span>
+                  </div>
+                )}
+
+                {Array.isArray(session.assessmentCriteria) && session.assessmentCriteria.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      Chi tiết kiểm tra tiêu chuẩn mi:
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                      {session.assessmentCriteria.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-1.5 px-2.5 rounded-md bg-white/70 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50"
+                        >
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">{item.name}</span>
+                          <span
+                            className={`inline-flex items-center justify-center leading-none px-2 py-0.5 rounded text-[11px] font-semibold ${
+                              item.passed
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
+                            }`}
+                          >
+                            {item.passed ? 'Đạt' : 'Không đạt'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  size="small"
+                  icon={<AppIcon icon={Edit3} size="sm" />}
+                  onClick={() => setIsEditingAssessment(true)}
+                >
+                  Đánh giá lại / Chỉnh sửa
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
+              <div>
+                <div className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+                  <span>Bảng kiểm tra tiêu chuẩn mi uốn</span>
+                  {loadingCriteria && <span className="text-[11px] text-slate-400">Đang tải tiêu chí...</span>}
+                </div>
+
+                <div className="space-y-2">
+                  {criteriaList.map((crit, idx) => {
+                    const isPassed = evaluations[crit.id]?.passed ?? true;
+                    return (
+                      <div
+                        key={crit.id}
+                        className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-[10px] font-bold">
+                              {idx + 1}
+                            </span>
+                            <span className="font-semibold text-xs text-slate-800 dark:text-slate-100">
+                              {crit.name}
+                            </span>
+                          </div>
+                          {crit.description && (
+                            <div className="text-[11px] text-slate-400 pl-6 mt-0.5">{crit.description}</div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 pl-6 sm:pl-0">
+                          <Radio.Group
+                            size="small"
+                            value={isPassed ? 'PASS' : 'FAIL'}
+                            onChange={(e) => {
+                              const passed = e.target.value === 'PASS';
+                              setEvaluations((prev) => ({
+                                ...prev,
+                                [crit.id]: {
+                                  criterionId: crit.id,
+                                  name: crit.name,
+                                  passed,
+                                  note: prev[crit.id]?.note || '',
+                                },
+                              }));
+                            }}
+                          >
+                            <Radio.Button value="PASS" className={isPassed ? 'ant-radio-button-checked-emerald' : ''}>
+                              Đạt
+                            </Radio.Button>
+                            <Radio.Button value="FAIL" className={!isPassed ? 'ant-radio-button-checked-rose' : ''}>
+                              Không đạt
+                            </Radio.Button>
+                          </Radio.Group>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                <div className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  Kết luận đánh giá điều kiện mi: <span className="text-rose-500">*</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div
+                    onClick={() => setAssessmentResult('PASS')}
+                    className={`cursor-pointer p-3 rounded-xl border-2 transition-all flex items-start gap-2.5 ${
+                      assessmentResult === 'PASS'
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 shadow-sm'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-300'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full mt-0.5 flex items-center justify-center shrink-0 ${
+                        assessmentResult === 'PASS'
+                          ? 'bg-emerald-500 text-white'
+                          : 'border border-slate-300 dark:border-slate-600'
+                      }`}
+                    >
+                      {assessmentResult === 'PASS' && <AppIcon icon={Check} size="sm" />}
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs">ĐỦ ĐIỀU KIỆN (PASS)</div>
+                      <div className="text-[11px] opacity-75">
+                        Mi đạt chuẩn uốn bóng tối. Tiếp tục chụp ảnh Before và thực hiện dịch vụ.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setAssessmentResult('FAIL')}
+                    className={`cursor-pointer p-3 rounded-xl border-2 transition-all flex items-start gap-2.5 ${
+                      assessmentResult === 'FAIL'
+                        ? 'border-rose-500 bg-rose-500/10 text-rose-900 dark:text-rose-100 shadow-sm'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-rose-300'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full mt-0.5 flex items-center justify-center shrink-0 ${
+                        assessmentResult === 'FAIL'
+                          ? 'bg-rose-500 text-white'
+                          : 'border border-slate-300 dark:border-slate-600'
+                      }`}
+                    >
+                      {assessmentResult === 'FAIL' && <AppIcon icon={Check} size="sm" />}
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs">KHÔNG ĐỦ ĐIỀU KIỆN (FAIL)</div>
+                      <div className="text-[11px] opacity-75">
+                        Bỏ qua các bước làm dịch vụ, chuyển thẳng sang Check-out.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {assessmentResult === 'FAIL' && (
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                    Lý do không đủ điều kiện: <span className="text-rose-500">* (Bắt buộc)</span>
+                  </div>
+                  <TextArea
+                    rows={2}
+                    value={assessmentReason}
+                    onChange={(e) => setAssessmentReason(e.target.value)}
+                    placeholder="VD: Mi quá ngắn dưới 4mm, sợi mi yếu gãy rụng nhiều, mí mắt sụp nặng..."
+                    className="rounded-lg"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {assessmentResult === 'FAIL'
+                    ? 'Giải pháp thay thế & Ghi chú tư vấn khách:'
+                    : 'Ghi chú kỹ thuật & Lưu ý cho ca làm (Tùy chọn):'}
+                </div>
+                <TextArea
+                  rows={2}
+                  value={assessmentNotes}
+                  onChange={(e) => setAssessmentNotes(e.target.value)}
+                  placeholder={
+                    assessmentResult === 'FAIL'
+                      ? 'VD: Tư vấn khách dưỡng mi bằng serum 2-3 tuần, đề xuất làm dịch vụ phục hồi mi...'
+                      : 'VD: Khách mi dài mỏng, sử dụng trục size S, thời gian ủ thuốc 9 phút...'
+                  }
+                  className="rounded-lg"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <Button
+                  type="primary"
+                  block
+                  className={`font-bold h-11 rounded-xl shadow-md ${
+                    assessmentResult === 'FAIL'
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  }`}
+                  onClick={handleSaveAssessment}
+                  loading={submittingAction === 'save-assessment'}
+                >
+                  <AppIcon icon={CheckCircle} size="sm" />
+                  {assessmentResult === 'FAIL'
+                    ? 'Xác Nhận Không Đủ Điều Kiện & Chuyển Check-out'
+                    : 'Xác Nhận Đủ Điều Kiện & Bắt Đầu Chụp Ảnh'}
+                </Button>
+                {isEditingAssessment && (
+                  <Button className="h-11 rounded-xl font-medium" onClick={() => setIsEditingAssessment(false)}>
+                    Hủy
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Banner cảnh báo nếu ca KHÔNG ĐỦ ĐIỀU KIỆN */}
+        {isIneligible && (
+          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900/60 shadow-sm flex items-start gap-3">
+            <AppIcon icon={AlertTriangle} size="md" className="text-rose-600 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <div className="font-bold text-sm text-rose-800 dark:text-rose-200">
+                Ca không đủ điều kiện uốn mi bóng tối · Bỏ qua các bước làm dịch vụ
+              </div>
+              <div className="text-xs text-rose-700 dark:text-rose-300">
+                Lý do: <strong>{session.assessmentReason || 'Không đáp ứng tiêu chuẩn mi'}</strong>
+              </div>
+              <div className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">
+                Các bước thực hiện dịch vụ (Ảnh trước/sau, Quy trình SOP, Khảo sát Feedback) đã được tự động bỏ qua. Quý
+                KTV vui lòng di chuyển xuống <strong>Bước 8: Check-out</strong> để hoàn tất ghi nhận thời gian khách tại
+                salon.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════
+            BƯỚC 4: BEFORE PHOTO (Bắt buộc trước khi làm)
+        ═══════════════════════════════════════════════════════ */}
+        <div
+          className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border transition-all shadow-sm ${
+            isIneligible
+              ? 'opacity-40 pointer-events-none border-slate-200 dark:border-slate-800'
+              : currentStatus === 'ASSESSED' || currentStatus === 'CHECKED_IN'
+                ? 'border-emerald-400 ring-2 ring-emerald-500/20'
+                : 'border-slate-200 dark:border-slate-800'
           }`}
         >
           <div className="flex items-center justify-between mb-3">
@@ -464,7 +890,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                3
+                4
               </span>
               <div>
                 <span className="font-bold text-sm text-slate-800 dark:text-slate-100">
@@ -473,7 +899,11 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 <div className="text-xs text-rose-500 font-medium">Bắt buộc chụp trước khi bắt đầu dịch vụ</div>
               </div>
             </div>
-            {session.beforePhotoUrl ? (
+            {isIneligible ? (
+              <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                Bỏ qua (FAIL)
+              </span>
+            ) : session.beforePhotoUrl ? (
               <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                 Đã có ảnh Before
               </span>
@@ -571,13 +1001,15 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
         </div>
 
         {/* ═══════════════════════════════════════════════════
-            BƯỚC 4: SERVICE DONE
+            BƯỚC 5: SERVICE DONE
         ═══════════════════════════════════════════════════════ */}
         <div
           className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border transition-all shadow-sm ${
-            currentStatus === 'BEFORE_PHOTO'
-              ? 'border-emerald-400 ring-2 ring-emerald-500/20'
-              : 'border-slate-200 dark:border-slate-800'
+            isIneligible
+              ? 'opacity-40 pointer-events-none border-slate-200 dark:border-slate-800'
+              : currentStatus === 'BEFORE_PHOTO'
+                ? 'border-emerald-400 ring-2 ring-emerald-500/20'
+                : 'border-slate-200 dark:border-slate-800'
           }`}
         >
           <div className="flex items-center justify-between mb-3">
@@ -589,7 +1021,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                4
+                5
               </span>
               <div>
                 <span className="font-bold text-sm text-slate-800 dark:text-slate-100">
@@ -598,7 +1030,11 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 <div className="text-xs text-slate-400">Kỹ thuật viên hoàn tất uốn mi bóng tối cho khách</div>
               </div>
             </div>
-            {session.serviceDoneAt ? (
+            {isIneligible ? (
+              <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                Bỏ qua (FAIL)
+              </span>
+            ) : session.serviceDoneAt ? (
               <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                 Đã hoàn thành
               </span>
@@ -618,7 +1054,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               sessionId={session.id}
               steps={sessionSteps}
               onStepsChange={handleStepsChange}
-              readOnly={false}
+              readOnly={isIneligible}
             />
           </div>
 
@@ -644,7 +1080,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               type="primary"
               size="large"
               block
-              disabled={!session.beforePhotoUrl}
+              disabled={!session.beforePhotoUrl || isIneligible}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-md flex items-center justify-center gap-2"
               onClick={handleServiceDone}
               loading={submittingAction === 'service-done'}
@@ -653,22 +1089,24 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               Đánh Dấu Hoàn Thành Dịch Vụ
             </Button>
           )}
-          {!session.beforePhotoUrl && !session.serviceDoneAt && (
+          {!session.beforePhotoUrl && !session.serviceDoneAt && !isIneligible && (
             <div className="text-[11px] text-rose-500 mt-2 flex items-center gap-1">
               <AppIcon icon={AlertCircle} size="sm" />
-              <span>Cần chụp ảnh Before (Bước 3) trước khi bấm hoàn tất dịch vụ.</span>
+              <span>Cần chụp ảnh Before (Bước 4) trước khi bấm hoàn tất dịch vụ.</span>
             </div>
           )}
         </div>
 
         {/* ═══════════════════════════════════════════════════
-            BƯỚC 5: AFTER PHOTO & BEFORE/AFTER COMPARISON
+            BƯỚC 6: AFTER PHOTO & BEFORE/AFTER COMPARISON
         ═══════════════════════════════════════════════════════ */}
         <div
           className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border transition-all shadow-sm ${
-            currentStatus === 'SERVICE_DONE'
-              ? 'border-emerald-400 ring-2 ring-emerald-500/20'
-              : 'border-slate-200 dark:border-slate-800'
+            isIneligible
+              ? 'opacity-40 pointer-events-none border-slate-200 dark:border-slate-800'
+              : currentStatus === 'SERVICE_DONE'
+                ? 'border-emerald-400 ring-2 ring-emerald-500/20'
+                : 'border-slate-200 dark:border-slate-800'
           }`}
         >
           <div className="flex items-center justify-between mb-3">
@@ -680,7 +1118,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                5
+                6
               </span>
               <div>
                 <span className="font-bold text-sm text-slate-800 dark:text-slate-100">
@@ -689,7 +1127,11 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 <div className="text-xs text-rose-500 font-medium">Bắt buộc để đối chiếu Before/After & Check-out</div>
               </div>
             </div>
-            {session.afterPhotoUrl ? (
+            {isIneligible ? (
+              <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                Bỏ qua (FAIL)
+              </span>
+            ) : session.afterPhotoUrl ? (
               <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                 Đã có ảnh After
               </span>
@@ -806,13 +1248,15 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
         </div>
 
         {/* ═══════════════════════════════════════════════════
-            BƯỚC 6: CUSTOMER FEEDBACK TẠI CHỖ
+            BƯỚC 7: CUSTOMER FEEDBACK TẠI CHỖ
         ═══════════════════════════════════════════════════════ */}
         <div
           className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border transition-all shadow-sm ${
-            currentStatus === 'AFTER_PHOTO'
-              ? 'border-emerald-400 ring-2 ring-emerald-500/20'
-              : 'border-slate-200 dark:border-slate-800'
+            isIneligible
+              ? 'opacity-40 pointer-events-none border-slate-200 dark:border-slate-800'
+              : currentStatus === 'AFTER_PHOTO'
+                ? 'border-emerald-400 ring-2 ring-emerald-500/20'
+                : 'border-slate-200 dark:border-slate-800'
           }`}
         >
           <div className="flex items-center justify-between mb-3">
@@ -824,16 +1268,20 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                6
+                7
               </span>
               <div>
-                <span className="font-bold text-sm text-slate-800 dark:text-slate-100">Customer Feedback Tại Chỗ</span>
+                <span className="font-bold text-sm text-slate-800 dark:text-slate-100">Customer Feedback Tại ChỖ</span>
                 <div className="text-xs text-rose-500 font-medium">
                   Bắt buộc khách chấm sao & góp ý trước khi Check-out
                 </div>
               </div>
             </div>
-            {session.feedbackRating ? (
+            {isIneligible ? (
+              <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                Bỏ qua (FAIL)
+              </span>
+            ) : session.feedbackRating ? (
               <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
                 {session.feedbackRating} ⭐ Đã đánh giá
               </span>
@@ -853,6 +1301,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 <Rate
                   value={feedbackRating}
                   onChange={(val) => setFeedbackRating(val)}
+                  disabled={isIneligible}
                   className="text-amber-400 text-2xl"
                 />
                 <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">
@@ -873,6 +1322,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 rows={2}
                 placeholder="VD: Mi cong tự nhiên rất êm, nhân viên tư vấn nhiệt tình..."
                 value={feedbackNote}
+                disabled={isIneligible}
                 onChange={(e) => setFeedbackNote(e.target.value)}
                 className="rounded-lg"
               />
@@ -881,6 +1331,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
             <Button
               type="primary"
               block
+              disabled={isIneligible}
               className="bg-amber-600 hover:bg-amber-700 text-white font-bold h-10 rounded-xl"
               onClick={handleSaveFeedback}
               loading={submittingAction === 'feedback'}
@@ -891,11 +1342,11 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
         </div>
 
         {/* ═══════════════════════════════════════════════════
-            BƯỚC 7: CHECK-OUT (Total Visit Duration)
+            BƯỚC 8: CHECK-OUT (Total Visit Duration)
         ═══════════════════════════════════════════════════════ */}
         <div
           className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border transition-all shadow-sm ${
-            currentStatus === 'FEEDBACK_DONE'
+            currentStatus === 'FEEDBACK_DONE' || (isIneligible && currentStatus === 'INELIGIBLE')
               ? 'border-emerald-400 ring-2 ring-emerald-500/20'
               : 'border-slate-200 dark:border-slate-800'
           }`}
@@ -909,7 +1360,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                7
+                8
               </span>
               <div>
                 <span className="font-bold text-sm text-slate-800 dark:text-slate-100">
@@ -964,14 +1415,14 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
             </div>
           ) : (
             <div className="space-y-3">
-              {!canCheckOut && (
+              {!canCheckOut && !isIneligible && (
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2">
                   <AppIcon icon={AlertCircle} size="sm" className="text-rose-500 mt-0.5 shrink-0" />
                   <div>
                     <span className="font-bold block mb-0.5">Chưa đủ điều kiện Check-out:</span>
                     <ul className="list-disc list-inside space-y-0.5 text-[11px]">
-                      {!hasAfterPhoto && <li>Chưa upload ảnh Sau khi làm (After Photo - Bước 5)</li>}
-                      {!hasFeedback && <li>Chưa hoàn thành đánh giá Feedback tại chỗ (Bước 6)</li>}
+                      {!hasAfterPhoto && <li>Chưa upload ảnh Sau khi làm (After Photo - Bước 6)</li>}
+                      {!hasFeedback && <li>Chưa hoàn thành đánh giá Feedback tại chỗ (Bước 7)</li>}
                     </ul>
                   </div>
                 </div>

@@ -3342,6 +3342,11 @@ model CrmPilotSession {
   issues             String?  @map("issues") @db.Text
   notes              String?  @map("notes") @db.Text
   source             String?  @map("source") @db.VarChar(100)
+  assessmentStatus   String?  @map("assessment_status") @db.VarChar(20)
+  assessmentReason   String?  @map("assessment_reason") @db.Text
+  assessmentNotes    String?  @map("assessment_notes") @db.Text
+  assessmentCriteriaJson String? @map("assessment_criteria_json") @db.LongText
+  assessedAt         DateTime? @map("assessed_at") @db.DateTime(0)
   createdByStaffId   Int?     @map("created_by_staff_id")
   createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
@@ -3436,6 +3441,23 @@ model CrmPilotSessionStep {
   @@index([sessionId, stepOrder])
   @@index([stepTemplateId])
   @@map("crm_pilot_session_steps")
+}
+
+// ═══════════════════════════════════════════
+// Pilot Dark Lashes - Criteria for Assessment
+// ═══════════════════════════════════════════
+model CrmPilotAssessmentCriterion {
+  id          Int      @id @default(autoincrement())
+  pilotCode   String   @default("DARK_LASHES") @map("pilot_code") @db.VarChar(50)
+  name        String   @map("name") @db.VarChar(120)
+  description String?  @map("description") @db.Text
+  stepOrder   Int      @default(0) @map("step_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([pilotCode, isActive, stepOrder])
+  @@map("crm_pilot_assessment_criteria")
 }
 
 

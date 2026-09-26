@@ -18,7 +18,7 @@ import type { SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
-import { resolveMediaUrl } from '../../lib/api';
+import { resolveMediaUrl } from '../../lib/api-client';
 import AvatarCropModal from '../avatar/AvatarCropModal';
 
 interface UserProfileDropdownProps {

@@ -16,6 +16,11 @@ import type {
   UpdatePilotSessionRequest,
   UpdatePilotSopStepRequest,
   UpdateSessionStepNoteRequest,
+  PilotAssessmentCriterion,
+  CreatePilotAssessmentCriterionRequest,
+  UpdatePilotAssessmentCriterionRequest,
+  ReorderPilotAssessmentCriteriaRequest,
+  SavePilotAssessmentRequest,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -155,6 +160,37 @@ export const pilotApi = {
     },
     resetSessionStep: async (sessionId: number, stepId: number): Promise<PilotSessionStep> => {
       const response = await api.post(`/pilot/sessions/${sessionId}/steps/${stepId}/reset`);
+      return response.data;
+    },
+    listAssessmentCriteria: async (params?: { pilotCode?: string }): Promise<PilotAssessmentCriterion[]> => {
+      const response = await api.get('/pilot/assessment-criteria', { params });
+      return response.data;
+    },
+    createAssessmentCriterion: async (
+      data: CreatePilotAssessmentCriterionRequest
+    ): Promise<PilotAssessmentCriterion> => {
+      const response = await api.post('/pilot/assessment-criteria', data);
+      return response.data;
+    },
+    updateAssessmentCriterion: async (
+      id: number,
+      data: UpdatePilotAssessmentCriterionRequest
+    ): Promise<PilotAssessmentCriterion> => {
+      const response = await api.patch(`/pilot/assessment-criteria/${id}`, data);
+      return response.data;
+    },
+    deleteAssessmentCriterion: async (id: number): Promise<{ success: boolean }> => {
+      const response = await api.delete(`/pilot/assessment-criteria/${id}`);
+      return response.data;
+    },
+    reorderAssessmentCriteria: async (
+      data: ReorderPilotAssessmentCriteriaRequest
+    ): Promise<PilotAssessmentCriterion[]> => {
+      const response = await api.post('/pilot/assessment-criteria/reorder', data);
+      return response.data;
+    },
+    saveAssessment: async (sessionId: number, data: SavePilotAssessmentRequest): Promise<PilotSession> => {
+      const response = await api.post(`/pilot/sessions/${sessionId}/assessment`, data);
       return response.data;
     },
   },

@@ -20,6 +20,12 @@ import type {
   ReorderPilotSopStepsRequest,
   PilotSessionStep,
   PilotSessionStepStatus,
+  PilotAssessmentCriterion,
+  CreatePilotAssessmentCriterionRequest,
+  UpdatePilotAssessmentCriterionRequest,
+  ReorderPilotAssessmentCriteriaRequest,
+  PilotCriterionEvaluation,
+  SavePilotAssessmentRequest,
 } from '@mos-lab/shared';
 import { DEFAULT_DARK_LASH_SOP_STEPS } from '@mos-lab/shared';
 
@@ -243,6 +249,19 @@ export class PilotService {
     };
   }
 
+  static formatAssessmentCriterion(raw: SafeAny): PilotAssessmentCriterion {
+    return {
+      id: raw.id,
+      pilotCode: raw.pilotCode,
+      name: raw.name,
+      description: raw.description ?? null,
+      stepOrder: Number(raw.stepOrder ?? 0),
+      isActive: Boolean(raw.isActive),
+      createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : String(raw.createdAt || ''),
+      updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : String(raw.updatedAt || ''),
+    };
+  }
+
   static async seedDefaultMaterials(fastify: FastifyInstance, pilotCode?: string): Promise<PilotMaterial[]> {
     const code = pilotCode || this.DEFAULT_PILOT_CODE;
     const existing = await fastify.prisma.crm.crmPilotMaterial.findMany({
@@ -251,14 +270,10 @@ export class PilotService {
     });
 
     const normalize = (s: string) =>
-      s
-        .toLowerCase()
-        .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '');
+      s.toLowerCase().replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '');
     const existingNorms = new Set(existing.map((m: { name: string }) => normalize(m.name)));
 
-    const missing = DEFAULT_DARK_LASH_MATERIALS.filter(
-      (m) => !existingNorms.has(normalize(m.name))
-    );
+    const missing = DEFAULT_DARK_LASH_MATERIALS.filter((m) => !existingNorms.has(normalize(m.name)));
 
     if (missing.length > 0) {
       await fastify.prisma.crm.crmPilotMaterial.createMany({
@@ -436,9 +451,22 @@ export class PilotService {
     const checkOutAtStr =
       raw.checkOutAt instanceof Date ? raw.checkOutAt.toISOString() : raw.checkOutAt ? String(raw.checkOutAt) : null;
 
-    const steps = Array.isArray(raw.steps)
-      ? raw.steps.map((s: SafeAny) => this.formatSessionStep(s))
-      : [];
+    const assessedAtStr =
+      raw.assessedAt instanceof Date ? raw.assessedAt.toISOString() : raw.assessedAt ? String(raw.assessedAt) : null;
+
+    let assessmentCriteria: PilotCriterionEvaluation[] | null = null;
+    if (raw.assessmentCriteriaJson) {
+      try {
+        assessmentCriteria =
+          typeof raw.assessmentCriteriaJson === 'string'
+            ? JSON.parse(raw.assessmentCriteriaJson)
+            : raw.assessmentCriteriaJson;
+      } catch {
+        assessmentCriteria = null;
+      }
+    }
+
+    const steps = Array.isArray(raw.steps) ? raw.steps.map((s: SafeAny) => this.formatSessionStep(s)) : [];
 
     let totalTechnicalDurationSeconds = 0;
     for (const step of steps) {
@@ -459,6 +487,11 @@ export class PilotService {
       technicianName: raw.technicianName ?? null,
       status: (raw.status || 'BOOKED') as DarkLashesSessionStatus,
       checkInAt: checkInAtStr,
+      assessmentStatus: (raw.assessmentStatus as 'PASS' | 'FAIL' | null) ?? null,
+      assessmentReason: raw.assessmentReason ?? null,
+      assessmentNotes: raw.assessmentNotes ?? null,
+      assessmentCriteria,
+      assessedAt: assessedAtStr,
       beforePhotoUrl: raw.beforePhotoUrl ?? null,
       serviceDoneAt: serviceDoneAtStr,
       afterPhotoUrl: raw.afterPhotoUrl ?? null,
@@ -1048,14 +1081,17 @@ export class PilotService {
     if (!existing) {
       throw new PilotServiceError('Không tìm thấy ca dịch vụ pilot tương ứng.', 404);
     }
-    if (!existing.afterPhotoUrl) {
-      throw new PilotServiceError('Chưa có ảnh sau khi làm (After Photo). Bắt buộc upload trước khi Check-out.', 400);
-    }
-    if (!existing.feedbackRating && !existing.csatScore) {
-      throw new PilotServiceError(
-        'Chưa có đánh giá Feedback tại chỗ của khách. Bắt buộc hoàn tất trước khi Check-out.',
-        400
-      );
+    const isIneligible = existing.status === 'INELIGIBLE' || existing.assessmentStatus === 'FAIL';
+    if (!isIneligible) {
+      if (!existing.afterPhotoUrl) {
+        throw new PilotServiceError('Chưa có ảnh sau khi làm (After Photo). Bắt buộc upload trước khi Check-out.', 400);
+      }
+      if (!existing.feedbackRating && !existing.csatScore) {
+        throw new PilotServiceError(
+          'Chưa có đánh giá Feedback tại chỗ của khách. Bắt buộc hoàn tất trước khi Check-out.',
+          400
+        );
+      }
     }
 
     const checkOutDate = checkOutAtStr ? new Date(checkOutAtStr) : new Date();
@@ -1072,7 +1108,7 @@ export class PilotService {
       data: {
         checkOutAt: checkOutDate,
         totalDurationMinutes: diffMinutes,
-        status: 'CHECKED_OUT',
+        status: isIneligible ? 'INELIGIBLE' : 'CHECKED_OUT',
       },
     });
 
@@ -1128,14 +1164,10 @@ export class PilotService {
     });
 
     const normalize = (s: string) =>
-      s
-        .toLowerCase()
-        .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '');
+      s.toLowerCase().replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '');
     const existingNorms = new Set(existing.map((s: { name: string }) => normalize(s.name)));
 
-    const missing = DEFAULT_DARK_LASH_SOP_STEPS.filter(
-      (s) => !existingNorms.has(normalize(s.name))
-    );
+    const missing = DEFAULT_DARK_LASH_SOP_STEPS.filter((s) => !existingNorms.has(normalize(s.name)));
 
     if (missing.length > 0 && fastify.prisma.crm.crmPilotSopStep?.createMany) {
       await fastify.prisma.crm.crmPilotSopStep.createMany({
@@ -1259,10 +1291,7 @@ export class PilotService {
     return { success: true };
   }
 
-  static async reorderSopSteps(
-    fastify: FastifyInstance,
-    data: ReorderPilotSopStepsRequest
-  ): Promise<PilotSopStep[]> {
+  static async reorderSopSteps(fastify: FastifyInstance, data: ReorderPilotSopStepsRequest): Promise<PilotSopStep[]> {
     const code = data.pilotCode || this.DEFAULT_PILOT_CODE;
     if (!Array.isArray(data.stepIds) || data.stepIds.length === 0) {
       throw new PilotServiceError('Danh sách thứ tự bước không hợp lệ.');
@@ -1287,13 +1316,266 @@ export class PilotService {
   }
 
   // ═══════════════════════════════════════════
+  // Pilot Lash Assessment Criteria & Results
+  // ═══════════════════════════════════════════
+
+  static readonly DEFAULT_ASSESSMENT_CRITERIA = [
+    {
+      name: 'Độ dài mi',
+      description: 'Đánh giá độ dài của sợi mi tự nhiên có phù hợp để uốn/tạo độ cong không.',
+      stepOrder: 1,
+    },
+    {
+      name: 'Độ dày sợi mi',
+      description: 'Kiểm tra độ mảnh/dày và sức chịu tải của sợi mi đối với thuốc uốn/dưỡng.',
+      stepOrder: 2,
+    },
+    {
+      name: 'Mật độ mi',
+      description: 'Mật độ phân bổ hàng mi (dày, vừa, thưa, có khoảng trống/rụng mi không).',
+      stepOrder: 3,
+    },
+    {
+      name: 'Tình trạng sợi mi',
+      description: 'Tình trạng mi: mi khỏe, mi hư tổn, mi từng uốn/nối hay bị cháy ngọn.',
+      stepOrder: 4,
+    },
+    {
+      name: 'Khả năng tạo form',
+      description: 'Đánh giá dáng mi và khả năng định hình form cong theo yêu cầu.',
+      stepOrder: 5,
+    },
+  ];
+
+  static async seedDefaultAssessmentCriteria(
+    fastify: FastifyInstance,
+    pilotCode?: string
+  ): Promise<PilotAssessmentCriterion[]> {
+    const code = pilotCode || this.DEFAULT_PILOT_CODE;
+    const existing = await fastify.prisma.crm.crmPilotAssessmentCriterion.findMany({
+      where: { pilotCode: code },
+      select: { name: true },
+    });
+
+    const normalize = (s: string) =>
+      s.toLowerCase().replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '');
+    const existingNorms = new Set(existing.map((e: { name: string }) => normalize(e.name)));
+
+    const missing = this.DEFAULT_ASSESSMENT_CRITERIA.filter((d) => !existingNorms.has(normalize(d.name)));
+
+    if (missing.length > 0 && fastify.prisma.crm.crmPilotAssessmentCriterion?.createMany) {
+      await fastify.prisma.crm.crmPilotAssessmentCriterion.createMany({
+        data: missing.map((d) => ({
+          pilotCode: code,
+          name: d.name,
+          description: d.description,
+          stepOrder: d.stepOrder,
+          isActive: true,
+        })),
+      });
+    }
+
+    const all = await fastify.prisma.crm.crmPilotAssessmentCriterion.findMany({
+      where: { pilotCode: code, isActive: true },
+      orderBy: { stepOrder: 'asc' },
+    });
+    return all.map((r: SafeAny) => this.formatAssessmentCriterion(r));
+  }
+
+  static async listAssessmentCriteria(
+    fastify: FastifyInstance,
+    pilotCode?: string
+  ): Promise<PilotAssessmentCriterion[]> {
+    const code = pilotCode || this.DEFAULT_PILOT_CODE;
+    const count = await fastify.prisma.crm.crmPilotAssessmentCriterion.count({
+      where: { pilotCode: code },
+    });
+
+    if (count === 0) {
+      return this.seedDefaultAssessmentCriteria(fastify, code);
+    }
+
+    const records = await fastify.prisma.crm.crmPilotAssessmentCriterion.findMany({
+      where: { pilotCode: code, isActive: true },
+      orderBy: { stepOrder: 'asc' },
+    });
+    return records.map((r: SafeAny) => this.formatAssessmentCriterion(r));
+  }
+
+  static async createAssessmentCriterion(
+    fastify: FastifyInstance,
+    data: CreatePilotAssessmentCriterionRequest
+  ): Promise<PilotAssessmentCriterion> {
+    const code = data.pilotCode || this.DEFAULT_PILOT_CODE;
+    if (!data.name || !data.name.trim()) {
+      throw new PilotServiceError('Tên tiêu chí đánh giá không được để trống.', 400);
+    }
+
+    let order = data.stepOrder;
+    if (order === undefined || order === null) {
+      const maxOrderRecord = await fastify.prisma.crm.crmPilotAssessmentCriterion.findFirst({
+        where: { pilotCode: code },
+        orderBy: { stepOrder: 'desc' },
+        select: { stepOrder: true },
+      });
+      order = (maxOrderRecord?.stepOrder ?? 0) + 1;
+    }
+
+    const created = await fastify.prisma.crm.crmPilotAssessmentCriterion.create({
+      data: {
+        pilotCode: code,
+        name: data.name.trim(),
+        description: data.description ? data.description.trim() : null,
+        stepOrder: order,
+        isActive: true,
+      },
+    });
+
+    return this.formatAssessmentCriterion(created);
+  }
+
+  static async updateAssessmentCriterion(
+    fastify: FastifyInstance,
+    id: number,
+    data: UpdatePilotAssessmentCriterionRequest
+  ): Promise<PilotAssessmentCriterion> {
+    const existing = await fastify.prisma.crm.crmPilotAssessmentCriterion.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new PilotServiceError('Không tìm thấy tiêu chí đánh giá.', 404);
+    }
+
+    const updatePayload: SafeAny = {};
+    if (data.name !== undefined) {
+      if (!data.name.trim()) {
+        throw new PilotServiceError('Tên tiêu chí không được để trống.', 400);
+      }
+      updatePayload.name = data.name.trim();
+    }
+    if (data.description !== undefined) {
+      updatePayload.description = data.description ? data.description.trim() : null;
+    }
+    if (data.stepOrder !== undefined) {
+      updatePayload.stepOrder = Number(data.stepOrder);
+    }
+    if (data.isActive !== undefined) {
+      updatePayload.isActive = Boolean(data.isActive);
+    }
+
+    const updated = await fastify.prisma.crm.crmPilotAssessmentCriterion.update({
+      where: { id },
+      data: updatePayload,
+    });
+
+    return this.formatAssessmentCriterion(updated);
+  }
+
+  static async deleteAssessmentCriterion(fastify: FastifyInstance, id: number): Promise<{ success: boolean }> {
+    const existing = await fastify.prisma.crm.crmPilotAssessmentCriterion.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new PilotServiceError('Không tìm thấy tiêu chí đánh giá.', 404);
+    }
+
+    await fastify.prisma.crm.crmPilotAssessmentCriterion.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    return { success: true };
+  }
+
+  static async reorderAssessmentCriteria(
+    fastify: FastifyInstance,
+    data: ReorderPilotAssessmentCriteriaRequest
+  ): Promise<PilotAssessmentCriterion[]> {
+    const code = data.pilotCode || this.DEFAULT_PILOT_CODE;
+    if (!Array.isArray(data.criteriaIds) || data.criteriaIds.length === 0) {
+      throw new PilotServiceError('Danh sách criteriaIds không hợp lệ.', 400);
+    }
+
+    const txRunner =
+      typeof fastify.prisma.crm?.$transaction === 'function'
+        ? (cb: SafeAny) => fastify.prisma.crm.$transaction(cb)
+        : async (cb: SafeAny) => cb(fastify.prisma.crm);
+
+    await txRunner(async (tx: SafeAny) => {
+      for (let idx = 0; idx < data.criteriaIds.length; idx++) {
+        const critId = data.criteriaIds[idx];
+        await tx.crmPilotAssessmentCriterion.update({
+          where: { id: critId },
+          data: { stepOrder: idx + 1 },
+        });
+      }
+    });
+
+    return this.listAssessmentCriteria(fastify, code);
+  }
+
+  static async saveAssessment(
+    fastify: FastifyInstance,
+    id: number,
+    data: SavePilotAssessmentRequest
+  ): Promise<PilotSession> {
+    const existing = await fastify.prisma.crm.crmPilotSession.findUnique({
+      where: { id },
+      include: {
+        materials: true,
+        steps: true,
+      },
+    });
+    if (!existing) {
+      throw new PilotServiceError('Không tìm thấy ca dịch vụ pilot tương ứng.', 404);
+    }
+    if (!['PASS', 'FAIL'].includes(data.result)) {
+      throw new PilotServiceError('Kết luận đánh giá phải là Đủ điều kiện (PASS) hoặc Không đủ điều kiện (FAIL).', 400);
+    }
+    if (data.result === 'FAIL') {
+      if (!data.reason || !data.reason.trim()) {
+        throw new PilotServiceError('Bắt buộc phải nhập Lý do không đủ điều kiện khi đánh giá FAIL.', 400);
+      }
+    }
+
+    let nextStatus: DarkLashesSessionStatus;
+    if (data.result === 'PASS') {
+      if (['BEFORE_PHOTO', 'SERVICE_DONE', 'AFTER_PHOTO', 'FEEDBACK_DONE', 'CHECKED_OUT'].includes(existing.status)) {
+        nextStatus = existing.status as DarkLashesSessionStatus;
+      } else {
+        nextStatus = 'ASSESSED';
+      }
+    } else {
+      nextStatus = 'INELIGIBLE';
+    }
+
+    const criteriaJson = data.criteriaSnapshot ? JSON.stringify(data.criteriaSnapshot) : null;
+    const now = new Date();
+
+    const updated = await fastify.prisma.crm.crmPilotSession.update({
+      where: { id },
+      data: {
+        assessmentStatus: data.result,
+        assessmentReason: data.result === 'FAIL' ? data.reason?.trim() : null,
+        assessmentNotes: data.notes?.trim() || null,
+        assessmentCriteriaJson: criteriaJson,
+        assessedAt: now,
+        status: nextStatus,
+      },
+      include: {
+        materials: true,
+        steps: true,
+      },
+    });
+
+    return this.formatSession(updated);
+  }
+
+  // ═══════════════════════════════════════════
   // Pilot Session Step Timer Management
   // ═══════════════════════════════════════════
 
-  static async ensureSessionSteps(
-    fastify: FastifyInstance,
-    sessionId: number
-  ): Promise<PilotSessionStep[]> {
+  static async ensureSessionSteps(fastify: FastifyInstance, sessionId: number): Promise<PilotSessionStep[]> {
     const session = await fastify.prisma.crm.crmPilotSession.findUnique({
       where: { id: sessionId },
       include: { steps: { orderBy: { stepOrder: 'asc' } } },

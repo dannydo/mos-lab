@@ -21,6 +21,7 @@ import {
   Star,
   Trash2,
   User,
+  ClipboardCheck,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -42,6 +43,7 @@ import { PilotFollowUpDrawer } from './components/PilotFollowUpDrawer';
 import { PilotMaterialModal } from './components/PilotMaterialModal';
 import { PilotFlowDrawer } from './components/PilotFlowDrawer';
 import { PilotSopModal } from './components/PilotSopModal';
+import { PilotCriteriaModal } from './components/PilotCriteriaModal';
 
 const { Title } = Typography;
 
@@ -61,7 +63,7 @@ export default function PilotDarkLashesPage() {
   // Filters
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING_24H' | 'PENDING_72H' | 'DONE'>('ALL');
-  const [opStatusFilter, setOpStatusFilter] = useState<'ALL' | 'IN_SHOP' | 'CHECKED_OUT'>('ALL');
+  const [opStatusFilter, setOpStatusFilter] = useState<'ALL' | 'IN_SHOP' | 'INELIGIBLE' | 'CHECKED_OUT'>('ALL');
 
   // Drawers & Modals
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
@@ -71,6 +73,7 @@ export default function PilotDarkLashesPage() {
   const [materialsCatalog, setMaterialsCatalog] = useState<PilotMaterial[]>([]);
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [sopModalOpen, setSopModalOpen] = useState(false);
+  const [criteriaModalOpen, setCriteriaModalOpen] = useState(false);
   const [flowDrawerOpen, setFlowDrawerOpen] = useState(false);
   const [selectedFlowSession, setSelectedFlowSession] = useState<PilotSession | null>(null);
 
@@ -254,7 +257,9 @@ export default function PilotDarkLashesPage() {
       let matchOp = true;
       const op = s.status || 'BOOKED';
       if (opStatusFilter === 'IN_SHOP') {
-        matchOp = op !== 'BOOKED' && op !== 'CHECKED_OUT';
+        matchOp = op !== 'BOOKED' && op !== 'CHECKED_OUT' && op !== 'INELIGIBLE';
+      } else if (opStatusFilter === 'INELIGIBLE') {
+        matchOp = op === 'INELIGIBLE' || s.assessmentStatus === 'FAIL';
       } else if (opStatusFilter === 'CHECKED_OUT') {
         matchOp = op === 'CHECKED_OUT';
       }
@@ -308,7 +313,7 @@ export default function PilotDarkLashesPage() {
       ),
     },
     {
-      title: 'Tiến trình (7 bước)',
+      title: 'Tiến trình (8 bước)',
       key: 'opStatus',
       width: 175,
       render: (_, r) => {
@@ -324,30 +329,40 @@ export default function PilotDarkLashesPage() {
             color: 'cyan',
             badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
           },
+          ASSESSED: {
+            text: '3. Đã đánh giá đạt',
+            color: 'emerald',
+            badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+          },
+          INELIGIBLE: {
+            text: 'Không đủ điều kiện',
+            color: 'rose',
+            badge: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
+          },
           BEFORE_PHOTO: {
-            text: '3. Đã chụp Before',
+            text: '4. Đã chụp Before',
             color: 'purple',
             badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
           },
           SERVICE_DONE: {
-            text: '4. Làm xong',
+            text: '5. Làm xong',
             color: 'gold',
             badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
           },
           AFTER_PHOTO: {
-            text: '5. Đã chụp After',
+            text: '6. Đã chụp After',
             color: 'geekblue',
             badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
           },
           FEEDBACK_DONE: {
-            text: '6. Đã feedback',
+            text: '7. Đã feedback',
             color: 'orange',
             badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
           },
           CHECKED_OUT: {
-            text: '7. Đã check-out',
+            text: '8. Đã check-out',
             color: 'emerald',
-            badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+            badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20',
           },
         };
         const cfg = labels[status] || labels.BOOKED;
@@ -359,6 +374,11 @@ export default function PilotDarkLashesPage() {
             >
               {cfg.text}
             </span>
+            {r.assessmentStatus === 'FAIL' && r.assessmentReason && (
+              <span className="text-[10px] text-rose-500 font-medium truncate max-w-[150px]" title={r.assessmentReason}>
+                Lý do: {r.assessmentReason}
+              </span>
+            )}
             <Button
               size="small"
               type="primary"
@@ -707,6 +727,13 @@ export default function PilotDarkLashesPage() {
               Quy trình kỹ thuật (SOP)
             </Button>
             <Button
+              icon={<AppIcon icon={ClipboardCheck} size="sm" />}
+              onClick={() => setCriteriaModalOpen(true)}
+              className="rounded-xl font-medium border-violet-500/30 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/30"
+            >
+              Tiêu chí đánh giá mi
+            </Button>
+            <Button
               icon={<AppIcon icon={Package} size="sm" />}
               onClick={() => setMaterialModalOpen(true)}
               className="rounded-xl font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
@@ -761,6 +788,7 @@ export default function PilotDarkLashesPage() {
             >
               <Radio.Button value="ALL">Mọi tiến trình</Radio.Button>
               <Radio.Button value="IN_SHOP">Đang tại shop</Radio.Button>
+              <Radio.Button value="INELIGIBLE">Không đủ điều kiện</Radio.Button>
               <Radio.Button value="CHECKED_OUT">Đã check-out</Radio.Button>
             </Radio.Group>
           </div>
@@ -812,11 +840,8 @@ export default function PilotDarkLashesPage() {
         onClose={() => setMaterialModalOpen(false)}
         onRefresh={fetchMaterials}
       />
-      <PilotSopModal
-        open={sopModalOpen}
-        onClose={() => setSopModalOpen(false)}
-        onRefresh={fetchPilotData}
-      />
+      <PilotSopModal open={sopModalOpen} onClose={() => setSopModalOpen(false)} onRefresh={fetchPilotData} />
+      <PilotCriteriaModal open={criteriaModalOpen} onClose={() => setCriteriaModalOpen(false)} />
       <PilotFlowDrawer
         open={flowDrawerOpen}
         session={selectedFlowSession}

@@ -1,8 +1,6 @@
 'use client';
 
-import React from 'react';
-import type { SafeAny } from '@mos-lab/shared';
-import { resolveMediaUrl } from '../../../lib/api';
+import { resolveMediaUrl } from '../../../lib/api-client';
 
 interface TelesalesAvatarProps {
   member?: SafeAny;
