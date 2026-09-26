@@ -96,6 +96,7 @@ model CrmStaff {
   resolvedFrontendIssues CrmFrontendIssue[] @relation("FrontendIssueResolvedBy")
   staffAuditsReceived  CrmStaffAudit[] @relation("StaffAudited")
   staffAuditsPerformed CrmStaffAudit[] @relation("StaffAuditActor")
+  careerProgression    CrmCareerProgression?
 
   @@map("crm_staff")
 }
@@ -234,6 +235,28 @@ model CrmConfig {
   updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   @@map("crm_config")
+}
+
+/// Career progression ledger for staff moving through CV -> CC -> FM -> CHO -> BOSS
+model CrmCareerProgression {
+  id              Int       @id @default(autoincrement())
+  staffId         Int       @unique @map("staff_id")
+  currentRole     String    @map("current_role") @db.VarChar(20)
+  targetRole      String    @map("target_role") @db.VarChar(20)
+  status          String    @default("IN_PROGRESS") @db.VarChar(30)
+  trialStartedAt  DateTime? @map("trial_started_at") @db.DateTime(0)
+  trialEndsAt     DateTime? @map("trial_ends_at") @db.DateTime(0)
+  metricsSnapshot String?   @map("metrics_snapshot") @db.Text
+  promotedAt      DateTime? @map("promoted_at") @db.DateTime(0)
+  promotedBy      Int?      @map("promoted_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  staff CrmStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([currentRole])
+  @@index([status])
+  @@map("crm_career_progressions")
 }
 
 /// Immutable visual/config revisions for public marketing experiences and

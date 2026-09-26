@@ -44,6 +44,7 @@ import { bugReportRoutes } from './modules/bug-reports/routes.js';
 import { frontendTelemetryRoutes } from './modules/telemetry/routes.js';
 import { aiRoutes } from './modules/ai/routes.js';
 import { pilotRoutes } from './modules/pilot/routes.js';
+import { careerRoutes } from './modules/career/career.routes.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { RequestClassificationService } from './modules/bug-reports/request-classification.service.js';
 import { RequestConversationService } from './modules/bug-reports/request-conversation.service.js';
@@ -276,6 +277,36 @@ const start = async () => {
           isSystem: true,
           description: 'Kiểm soát & Đảm bảo chất lượng',
         },
+        {
+          key: 'fm',
+          name: 'Floor Manager',
+          color: 'gold',
+          viewKPI: true,
+          viewTeamKPI: true,
+          manageStaff: false,
+          isSystem: true,
+          description: 'Quản lý vận hành sàn, kho hàng và CSVC',
+        },
+        {
+          key: 'cho',
+          name: 'Chief Happiness Officer',
+          color: 'pink',
+          viewKPI: true,
+          viewTeamKPI: true,
+          manageStaff: true,
+          isSystem: true,
+          description: 'Trưởng ban Hạnh phúc: phát triển nhân sự và trải nghiệm khách',
+        },
+        {
+          key: 'boss',
+          name: 'Partner / Co-Owner',
+          color: 'volcano',
+          viewKPI: true,
+          viewTeamKPI: true,
+          manageStaff: true,
+          isSystem: true,
+          description: 'Đồng sở hữu chi nhánh, cổ đông P&L',
+        },
       ];
       for (const systemRole of missingSystemRoles) {
         const existingRole = await server.prisma.crm.crmRole.findUnique({ where: { key: systemRole.key } });
@@ -320,6 +351,7 @@ const start = async () => {
     await server.register(frontendTelemetryRoutes, { prefix: '/api' });
     await server.register(aiRoutes, { prefix: '/api' });
     await server.register(pilotRoutes, { prefix: '/api' });
+    await server.register(careerRoutes, { prefix: '/api' });
 
     if (isSafeDev()) {
       server.log.info('Safe Dev enabled: background jobs and external synchronization are disabled.');

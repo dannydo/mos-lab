@@ -43,7 +43,7 @@
         "dbSource": "crm",
         "modelName": "CrmStaff",
         "tableName": "crm_staff",
-        "fieldCount": 82,
+        "fieldCount": 83,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -173,6 +173,24 @@
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmCareerProgression",
+      "type": "PrismaModel",
+      "label": "crm.CrmCareerProgression",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCareerProgression",
+        "tableName": "crm_career_progressions",
+        "fieldCount": 13,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["staffId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -6903,6 +6921,34 @@
         "module": "campaigns",
         "handler": "inlineHandler",
         "line": 583
+      }
+    },
+    {
+      "id": "route:GET:/api/career/config",
+      "type": "FastifyRoute",
+      "label": "GET /api/career/config",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/career/career.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/career/config",
+        "module": "career",
+        "handler": "inlineHandler",
+        "line": 11
+      }
+    },
+    {
+      "id": "route:GET:/api/career/my-progression",
+      "type": "FastifyRoute",
+      "label": "GET /api/career/my-progression",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/career/career.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/career/my-progression",
+        "module": "career",
+        "handler": "inlineHandler",
+        "line": 67
       }
     },
     {
@@ -18585,6 +18631,114 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CareerRole",
+      "type": "SharedType",
+      "label": "CareerRole",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CareerRole",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CareerProgressionStatus",
+      "type": "SharedType",
+      "label": "CareerProgressionStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CareerProgressionStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvToCcRequirements",
+      "type": "SharedType",
+      "label": "CvToCcRequirements",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvToCcRequirements",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CcToFmRequirements",
+      "type": "SharedType",
+      "label": "CcToFmRequirements",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CcToFmRequirements",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmToChoRequirements",
+      "type": "SharedType",
+      "label": "FmToChoRequirements",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmToChoRequirements",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ChoToBossRequirements",
+      "type": "SharedType",
+      "label": "ChoToBossRequirements",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ChoToBossRequirements",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CareerRewardRates",
+      "type": "SharedType",
+      "label": "CareerRewardRates",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CareerRewardRates",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CareerProgressionConfig",
+      "type": "SharedType",
+      "label": "CareerProgressionConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CareerProgressionConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:StaffCareerStatus",
+      "type": "SharedType",
+      "label": "StaffCareerStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StaffCareerStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:ServiceType",
       "type": "SharedType",
       "label": "ServiceType",
@@ -27549,8 +27703,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12872234,
-        "lineCount": 280187,
+        "sizeBytes": 12977615,
+        "lineCount": 282300,
         "ext": ".ts"
       }
     },
@@ -28721,6 +28875,58 @@
       "metadata": {
         "sizeBytes": 24283,
         "lineCount": 609,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/career/career.routes.test.ts",
+      "type": "File",
+      "label": "career.routes.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/career/career.routes.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4278,
+        "lineCount": 138,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/career/career.routes.ts",
+      "type": "File",
+      "label": "career.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/career/career.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7121,
+        "lineCount": 201,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/career/career.service.test.ts",
+      "type": "File",
+      "label": "career.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/career/career.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2065,
+        "lineCount": 65,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/career/career.service.ts",
+      "type": "File",
+      "label": "career.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/career/career.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11053,
+        "lineCount": 340,
         "ext": ".ts"
       }
     },
@@ -30487,8 +30693,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 35431,
-        "lineCount": 1095,
+        "sizeBytes": 35505,
+        "lineCount": 1097,
         "ext": ".ts"
       }
     },
@@ -30500,8 +30706,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 60360,
-        "lineCount": 1738,
+        "sizeBytes": 60361,
+        "lineCount": 1740,
         "ext": ".ts"
       }
     },
@@ -31982,8 +32188,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14994,
-        "lineCount": 376,
+        "sizeBytes": 16023,
+        "lineCount": 408,
         "ext": ".ts"
       }
     },
@@ -35401,8 +35607,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11819,
-        "lineCount": 330,
+        "sizeBytes": 11807,
+        "lineCount": 329,
         "ext": ".tsx"
       }
     },
@@ -35414,8 +35620,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70541,
-        "lineCount": 1457,
+        "sizeBytes": 70336,
+        "lineCount": 1450,
         "ext": ".tsx"
       }
     },
@@ -35505,8 +35711,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 33985,
-        "lineCount": 864,
+        "sizeBytes": 33886,
+        "lineCount": 854,
         "ext": ".tsx"
       }
     },
@@ -36558,8 +36764,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8376,
-        "lineCount": 201,
+        "sizeBytes": 8358,
+        "lineCount": 198,
         "ext": ".ts"
       }
     },
@@ -36896,8 +37102,8 @@
       "filePath": "packages/shared/src/constants/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2513,
-        "lineCount": 104,
+        "sizeBytes": 2751,
+        "lineCount": 119,
         "ext": ".ts"
       }
     },
@@ -36935,8 +37141,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2289,
-        "lineCount": 60,
+        "sizeBytes": 2336,
+        "lineCount": 61,
         "ext": ".ts"
       }
     },
@@ -37078,7 +37284,7 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5126,
+        "sizeBytes": 5150,
         "lineCount": 177,
         "ext": ".ts"
       }
@@ -37145,6 +37351,19 @@
       "metadata": {
         "sizeBytes": 7197,
         "lineCount": 295,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/career-progression.ts",
+      "type": "File",
+      "label": "career-progression.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 5243,
+        "lineCount": 166,
         "ext": ".ts"
       }
     },
@@ -37481,8 +37700,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9692,
-        "lineCount": 349,
+        "sizeBytes": 9824,
+        "lineCount": 383,
         "ext": ".ts"
       }
     },
@@ -37735,6 +37954,13 @@
     {
       "id": "edge:prisma:crm:CrmConfig:ws:apps/api",
       "source": "prisma:crm:CrmConfig",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCareerProgression:ws:apps/api",
+      "source": "prisma:crm:CrmCareerProgression",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -40801,6 +41027,20 @@
     {
       "id": "edge:route:GET:/api/campaigns/customer/:customerId/active-promotions:ws:apps/api",
       "source": "route:GET:/api/campaigns/customer/:customerId/active-promotions",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/career/config:ws:apps/api",
+      "source": "route:GET:/api/career/config",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/career/my-progression:ws:apps/api",
+      "source": "route:GET:/api/career/my-progression",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -47157,6 +47397,69 @@
     {
       "id": "edge:type:@mos-lab/shared:ReopenCampaignDto:ws:packages/shared",
       "source": "type:@mos-lab/shared:ReopenCampaignDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CareerRole:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CareerRole",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CareerProgressionStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CareerProgressionStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvToCcRequirements:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvToCcRequirements",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CcToFmRequirements:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CcToFmRequirements",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmToChoRequirements:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmToChoRequirements",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ChoToBossRequirements:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ChoToBossRequirements",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CareerRewardRates:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CareerRewardRates",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CareerProgressionConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CareerProgressionConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:StaffCareerStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:StaffCareerStatus",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -54127,6 +54430,34 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/career/career.routes.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/career/career.routes.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/career/career.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/career/career.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/career/career.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/career/career.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/career/career.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/career/career.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/catalog/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/catalog/routes.ts",
       "target": "ws:packages/shared",
@@ -57639,6 +57970,27 @@
       "target": "prisma:legacy:user_profile",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/career/career.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/career/career.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/career/career.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/career/career.service.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/career/career.service.ts:prisma:crm:CrmCareerProgression",
+      "source": "file:apps/api/src/modules/career/career.service.ts",
+      "target": "prisma:crm:CrmCareerProgression",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/catalog/routes.ts:prisma:crm:CrmLashTypeBenchmark",
@@ -67805,6 +68157,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/career/config",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/career/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/career/my-progression",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/career/my-progression",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/catalog/groups",
@@ -72117,6 +72483,20 @@
       "label": "CALLS campaigns.list"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/career/config",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/career/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/career/my-progression",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/career/my-progression",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/catalog/groups",
@@ -74411,6 +74791,13 @@
       "target": "route:GET:/api/academy-sales/staff",
       "type": "API_CALL",
       "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/career/config",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/career/config",
+      "type": "API_CALL",
+      "label": "CALLS omicall.deleteConfig"
     },
     {
       "id": "edge:page:/dashboard/omicall:route:GET:/api/cs/dashboard/staff-rankings",
@@ -79397,6 +79784,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/career/config",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/career/config",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/career/my-progression",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/career/my-progression",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/catalog/groups",
@@ -81757,31 +82158,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2884,
-    "totalEdges": 6296,
+    "totalNodes": 2901,
+    "totalEdges": 6322,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 157,
-      "FastifyRoute": 616,
+      "PrismaModel": 158,
+      "FastifyRoute": 618,
       "Component": 54,
-      "SharedType": 1054,
+      "SharedType": 1063,
       "DesignToken": 12,
       "UIComponent": 203,
-      "File": 785
+      "File": 790
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1223,
-      "HANDLES_ROUTE": 616,
+      "EXPORTS": 1233,
+      "HANDLES_ROUTE": 618,
       "RENDERS": 257,
       "USES_TOKEN": 205,
-      "IMPORTS": 427,
-      "QUERIES_MODEL": 364,
-      "API_CALL": 3204
+      "IMPORTS": 431,
+      "QUERIES_MODEL": 367,
+      "API_CALL": 3211
     },
-    "fastifyRouteCount": 621,
-    "prismaModelCount": 157,
+    "fastifyRouteCount": 623,
+    "prismaModelCount": 158,
     "nextPageCount": 54,
-    "sharedTypeCount": 1054
+    "sharedTypeCount": 1063
   },
   "routes": [
     {
@@ -83806,6 +84207,20 @@
       "filePath": "apps/api/src/modules/campaigns/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "campaigns"
+    },
+    {
+      "method": "GET",
+      "path": "/api/career/config",
+      "filePath": "apps/api/src/modules/career/career.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "career"
+    },
+    {
+      "method": "GET",
+      "path": "/api/career/my-progression",
+      "filePath": "apps/api/src/modules/career/career.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "career"
     },
     {
       "method": "GET",
@@ -86137,7 +86552,7 @@
       "dbSource": "crm",
       "modelName": "CrmStaff",
       "tableName": "crm_staff",
-      "fieldCount": 82,
+      "fieldCount": 83,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
@@ -86204,6 +86619,15 @@
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCareerProgression",
+      "tableName": "crm_career_progressions",
+      "fieldCount": 13,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["staffId"]
     },
     {
       "dbSource": "crm",

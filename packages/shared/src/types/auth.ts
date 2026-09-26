@@ -2,7 +2,21 @@
 export type SafeAny = any;
 
 export type UserRole =
-  'telesales' | 'manager' | 'admin' | 'super_admin' | 'oc' | 'cc' | 'ls' | 'technician' | 'qa' | 'qc' | 'qa_qc' | 'hr';
+  | 'telesales'
+  | 'manager'
+  | 'admin'
+  | 'super_admin'
+  | 'oc'
+  | 'cc'
+  | 'ls'
+  | 'technician'
+  | 'qa'
+  | 'qc'
+  | 'qa_qc'
+  | 'hr'
+  | 'fm'
+  | 'cho'
+  | 'boss';
 
 export type EmploymentStatus = 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED';
 export type ContractStatus = 'PROBATION' | 'OFFICIAL' | 'TERMINATED';

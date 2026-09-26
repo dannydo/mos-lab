@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🌸 Wings Wonderland · Lộ Trình Thăng Tiến Thiên Thần (Game Edition)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Fredoka:wght@500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            game: ['Fredoka', 'cursive', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            wonder: {
+              pink: '#ff6b9d',
+              rose: '#ff85a2',
+              purple: '#b388ff',
+              lavender: '#d1c4e9',
+              mint: '#4dd0e1',
+              emerald: '#10b981',
+              gold: '#ffd166',
+              peach: '#ffb3ba',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Cute game bouncy animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(1deg); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .animate-float { animation: float 3.5s ease-in-out infinite; }
+    .animate-glow { animation: pulse-glow 2.5s ease-in-out infinite; }
+    
+    .shimmer-badge {
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2.5s infinite;
+    }
+
+    /* Range slider custom styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 10px;
+      border-radius: 9999px;
+      outline: none;
+      background: #e2e8f0;
+    }
+    .dark input[type=range] {
+      background: #1e293b;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #ff6b9d;
+      background-image: radial-gradient(circle at 35% 35%, #ffffff 0%, #ff6b9d 60%);
+      cursor: pointer;
+      border: 3px solid #ffffff;
+      box-shadow: 0 4px 10px rgba(255, 107, 157, 0.4);
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    input[type=range]::-webkit-slider-thumb:active {
+      transform: scale(1.25);
+    }
+
+    /* Confetti canvas */
+    #confettiCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body class="bg-rose-50/40 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen font-sans antialiased selection:bg-pink-500 selection:text-white pb-28 transition-colors duration-200">
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- TOP GAMER STATUS BAR (PLAYER HUD) -->
+  <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-pink-200 dark:border-slate-800 px-3 py-2.5 shadow-xs">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      
+      <!-- Player Avatar & Name -->
+      <div class="flex items-center gap-2">
+        <div class="relative">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-400 via-rose-400 to-purple-400 p-0.5 shadow-md shadow-pink-500/25 animate-float">
+            <div class="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center text-xl overflow-hidden">
+              🧝‍♀️
+            </div>
+          </div>
+          <span class="absolute -bottom-1 -right-1 text-[10px] font-black bg-pink-500 text-white px-1 py-0.2 rounded-full border border-white font-mono">Lv.4</span>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-black text-xs sm:text-sm text-slate-900 dark:text-white">Thảo My</span>
+            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300 font-game">✨ Tu Chân CV</span>
+          </div>
+          
+          <!-- Mini EXP Bar -->
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <div class="w-20 sm:w-24 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-slate-700">
+              <div class="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full" style="width: 82%;"></div>
+            </div>
+            <span class="text-[9px] font-mono text-slate-500 dark:text-slate-400 font-bold">82% EXP</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Currency Badges & Theme Pill -->
+      <div class="flex items-center gap-1.5">
+        <!-- Chuối (Banana Coin) -->
+        <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px] font-bold font-mono shadow-xs">
+          <span>🍌</span>
+          <span class="tabular-nums">1,450</span>
+        </div>
+
+        <!-- Theme Toggle Button -->
+        <button id="themeToggleBtn" class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 active:scale-90 transition text-sm">
+          <span id="themeBtnIcon">🌙</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN ADVENTURE CONTAINER -->
+  <main class="max-w-md mx-auto px-3.5 pt-3.5 space-y-4">
+
+    <!-- WORLD MAP BANNER: 5 FLOATING ISLANDS -->
+    <div class="rounded-3xl p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-sky-50 dark:from-slate-900 dark:via-purple-950/40 dark:to-slate-900 border-2 border-pink-200/80 dark:border-pink-500/30 shadow-md relative overflow-hidden">
+      <div class="flex items-center justify-between mb-2">
+        <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-pink-500 text-white text-[10px] font-black tracking-wide font-game shadow-xs">
+          🗺️ BẢN ĐỒ THẾ GIỚI THIÊN THẦN
+        </div>
+        <span class="text-[10px] text-pink-600 dark:text-pink-300 font-bold font-mono">5 Vương Quốc</span>
+      </div>
+
+      <h1 class="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+        <span>Hành Trình Thăng Cấp RPG</span>
+        <span class="text-sm">✨</span>
+      </h1>
+      <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-snug mt-1">
+        Vượt ải Thợ Kỹ Thuật ➔ Mở khóa Phù Thủy Sảnh ➔ Nhạc Trưởng Sàn ➔ Nữ Thần Hạnh Phúc ➔ Nữ Hoàng Đồng Sáng Lập!
+      </p>
+
+      <!-- 5 ISLANDS INTERACTIVE TRACK (SCROLLABLE / TAPPABLE) -->
+      <div class="mt-3.5 pt-3 border-t border-pink-200/60 dark:border-pink-500/20">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1 pt-0.5 -mx-2 px-2 scroll-smooth" id="islandTrack">
+          
+          <!-- Island 1: CV -->
+          <button onclick="selectIsland('cv')" id="island-cv" class="island-btn flex-shrink-0 w-24 p-2.5 rounded-2xl border-2 transition-all text-center bg-white dark:bg-slate-900 border-sky-400 ring-2 ring-sky-400/30 shadow-sm relative group">
+            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-black bg-sky-500 text-white px-1.5 py-0.2 rounded-full uppercase">Ải 1</span>
+            <div class="text-2xl mt-1 animate-float">👁️</div>
+            <div class="text-[11px] font-black text-slate-900 dark:text-white mt-1">CV</div>
+            <div class="text-[9px] text-sky-700 dark:text-sky-300 font-bold font-game">Thợ Lash</div>
+            <div class="text-[8px] text-slate-400 font-mono mt-0.5">80% Tip</div>
+          </button>
+
+          <!-- Island 2: CC -->
+          <button onclick="selectIsland('cc')" id="island-cc" class="island-btn flex-shrink-0 w-24 p-2.5 rounded-2xl border transition-all text-center bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 relative group opacity-90">
+            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-black bg-purple-500 text-white px-1.5 py-0.2 rounded-full uppercase">Ải 2</span>
+            <div class="text-2xl mt-1">🌸</div>
+            <div class="text-[11px] font-black text-slate-900 dark:text-white mt-1">CC</div>
+            <div class="text-[9px] text-purple-700 dark:text-purple-300 font-bold font-game">Phù Thủy Sảnh</div>
+            <div class="text-[8px] text-slate-400 font-mono mt-0.5">Lv × 65đ</div>
+          </button>
+
+          <!-- Island 3: FM -->
+          <button onclick="selectIsland('fm')" id="island-fm" class="island-btn flex-shrink-0 w-24 p-2.5 rounded-2xl border transition-all text-center bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 relative group opacity-85">
+            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-black bg-amber-500 text-white px-1.5 py-0.2 rounded-full uppercase">Ải 3</span>
+            <div class="text-2xl mt-1">🏰</div>
+            <div class="text-[11px] font-black text-slate-900 dark:text-white mt-1">FM</div>
+            <div class="text-[9px] text-amber-700 dark:text-amber-300 font-bold font-game">Nữ Thần Sàn</div>
+            <div class="text-[8px] text-slate-400 font-mono mt-0.5">% Shop + Kho</div>
+          </button>
+
+          <!-- Island 4: CHO -->
+          <button onclick="selectIsland('cho')" id="island-cho" class="island-btn flex-shrink-0 w-24 p-2.5 rounded-2xl border transition-all text-center bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 relative group opacity-85">
+            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-black bg-pink-500 text-white px-1.5 py-0.2 rounded-full uppercase">Ải 4</span>
+            <div class="text-2xl mt-1">💖</div>
+            <div class="text-[11px] font-black text-slate-900 dark:text-white mt-1">CHO</div>
+            <div class="text-[9px] text-pink-700 dark:text-pink-300 font-bold font-game">Mẹ Thiên Thần</div>
+            <div class="text-[8px] text-slate-400 font-mono mt-0.5">NPS 1/Shop</div>
+          </button>
+
+          <!-- Island 5: BOSS -->
+          <button onclick="selectIsland('boss')" id="island-boss" class="island-btn flex-shrink-0 w-24 p-2.5 rounded-2xl border transition-all text-center bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 relative group opacity-85">
+            <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-black bg-emerald-500 text-white px-1.5 py-0.2 rounded-full uppercase">Ải 5</span>
+            <div class="text-2xl mt-1">👑</div>
+            <div class="text-[11px] font-black text-slate-900 dark:text-white mt-1">BOSS</div>
+            <div class="text-[9px] text-emerald-700 dark:text-emerald-300 font-bold font-game">Nữ Hoàng Co-Owner</div>
+            <div class="text-[8px] text-slate-400 font-mono mt-0.5">Cổ Tức P&L</div>
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVE REALM HERO CARD (RPG CHARACTER LORE & PERKS) -->
+    <div id="realmHeroCard" class="rounded-3xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3.5">
+      <!-- Injected by JavaScript -->
+    </div>
+
+    <!-- RPG QUEST BOARD & BOSS BATTLE (SIMULATOR FOR IPHONE 12) -->
+    <div class="rounded-3xl p-4 bg-white dark:bg-slate-900 border-2 border-purple-200 dark:border-purple-900/50 shadow-sm space-y-3.5" id="questBoardSection">
+      
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+        <div>
+          <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 text-[10px] font-black font-game">
+            ⚔️ ĐẤU TRƯỜNG THĂNG CẤP (PROMOTION QUESTS)
+          </div>
+          <h2 class="text-base font-black text-slate-900 dark:text-white mt-0.5">
+            Chinh Phục Ải Thăng Cấp (CV ➔ CC)
+          </h2>
+        </div>
+
+        <select id="heroSelect" onchange="pickHero(this.value)" class="bg-pink-50 dark:bg-slate-950 border border-pink-300 dark:border-purple-800 text-pink-900 dark:text-purple-300 text-xs rounded-xl px-2 py-1 font-bold font-game focus:outline-none">
+          <option value="thao_my">Thảo My (Chiến Thần)</option>
+          <option value="lan_anh">Lan Anh (Học Việc)</option>
+          <option value="bao_tran">Bảo Trân (Siêu Sao)</option>
+        </select>
+      </div>
+
+      <!-- 4 Standard Quests + 1 Final Boss Battle -->
+      <div class="space-y-2.5">
+
+        <!-- Quest 1 -->
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span>🎯</span>
+              <span>1. Vũ Điệu Nhíp Vàng (Ca làm)</span>
+            </span>
+            <span id="label_orders" class="font-mono text-emerald-600 dark:text-emerald-400 font-black tabular-nums">340 / 300 ca ✔</span>
+          </div>
+          <input type="range" id="slider_orders" min="100" max="600" value="340" oninput="calculateGameProgress()" class="w-full">
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
+            <span>Cần tối thiểu: 300 ca mi</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold" id="badge_q1">ĐẠT CHỈ TIÊU</span>
+          </div>
+        </div>
+
+        <!-- Quest 2 -->
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span>💖</span>
+              <span>2. Cơn Mưa Tiền Tip (Hơn TB Shop)</span>
+            </span>
+            <span id="label_tip" class="font-mono text-emerald-600 dark:text-emerald-400 font-black tabular-nums">+18% Vượt Trội ✔</span>
+          </div>
+          <input type="range" id="slider_tip" min="-50" max="50" value="18" oninput="calculateGameProgress()" class="w-full">
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
+            <span>Yêu cầu: % Tip > 0% so với TB</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold" id="badge_q2">KHÁCH CỰC MÊ</span>
+          </div>
+        </div>
+
+        <!-- Quest 3 -->
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span>🛡️</span>
+              <span>3. Khắc Tinh Rụng Mi (Lỗi Fix < 2%)</span>
+            </span>
+            <span id="label_fix" class="font-mono text-emerald-600 dark:text-emerald-400 font-black tabular-nums">1.2% (Rất ít lỗi) ✔</span>
+          </div>
+          <input type="range" id="slider_fix" min="0" max="50" value="12" oninput="calculateGameProgress()" class="w-full">
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
+            <span>Tiêu chuẩn: Tỷ lệ Fix < 2.0%</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold" id="badge_q3">TAY NGHỀ VỮNG</span>
+          </div>
+        </div>
+
+        <!-- Quest 4 -->
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span>⭐</span>
+              <span>4. Nụ Cười Thiên Sứ (HI > 70%)</span>
+            </span>
+            <span id="label_hi" class="font-mono text-emerald-600 dark:text-emerald-400 font-black tabular-nums">84% Hài Lòng ✔</span>
+          </div>
+          <input type="range" id="slider_hi" min="40" max="100" value="84" oninput="calculateGameProgress()" class="w-full">
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
+            <span>Mục tiêu: Happiness Index > 70%</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold" id="badge_q4">SIÊU THIỆN CẢM</span>
+          </div>
+        </div>
+
+        <!-- BOSS QUEST (DECISIVE GATE) -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 dark:from-pink-950/40 dark:via-purple-950/40 dark:to-slate-900 border-2 border-pink-400 dark:border-pink-500/50 space-y-2 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base animate-bounce">🔥</span>
+              <span class="text-xs font-black text-pink-700 dark:text-pink-300 font-game uppercase tracking-wide">TRÙM CUỐI: TỰ BÁN COMBO</span>
+            </div>
+            <span id="label_combo" class="text-base font-black font-mono text-pink-700 dark:text-pink-300 tabular-nums">24.5%</span>
+          </div>
+          
+          <input type="range" id="slider_combo" min="0" max="500" value="245" oninput="calculateGameProgress()" class="w-full accent-pink-500">
+          
+          <div class="flex justify-between text-[10px] font-bold text-pink-800 dark:text-pink-300">
+            <span>0%</span>
+            <span class="bg-pink-200 dark:bg-pink-500/20 px-2 py-0.5 rounded-full">MỐC SỐNG CÒN: ≥ 20.0% COMBO NOT LIVE</span>
+            <span>50%</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CELEBRATION / LEVEL UP BUTTON & OUTCOME -->
+      <div id="gameOutcomeCard" class="p-4 rounded-2xl border-2 transition-all space-y-3">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <!-- LOOT BOX REWARDS (CHEST UNLOCKS) -->
+    <div class="rounded-3xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-black text-slate-900 dark:text-white font-game uppercase">🎁 RƯƠNG BÁU MỞ KHÓA THEO CẤP BẬC</span>
+        <span class="text-[10px] text-pink-600 dark:text-pink-400 font-bold">5 Kho Báu</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2" id="lootGrid">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM GAMER ACTION BAR -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur border-t border-pink-200 dark:border-slate-800 px-4 py-2.5 max-w-md mx-auto shadow-lg">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase font-game" id="bottomStageTitle">Ải 1: Lash Artisan</div>
+        <div class="text-xs font-mono font-black text-pink-600 dark:text-pink-400" id="bottomStagePerk">80% Tip · Thưởng 5★</div>
+      </div>
+      <button onclick="triggerLevelUpAction()" id="levelUpBtn" class="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white font-black text-xs font-game shadow-md shadow-pink-500/30 active:scale-95 transition flex items-center gap-1.5 animate-pulse">
+        <span>🎉</span>
+        <span id="levelUpBtnText">THĂNG CẤP NGAY!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- AUDIO CONTEXT CHIME SOUNDS (WEB AUDIO API) -->
+  <script>
+    let audioCtx = null;
+    function playChime(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        if (type === 'success') {
+          // Play fanfare / cute coin notes: C5, E5, G5, C6
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+            gain.gain.setValueAtTime(0.18, now + idx * 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.09);
+            osc.stop(now + idx * 0.09 + 0.25);
+          });
+        } else if (type === 'click') {
+          // Cute bubble pop sound
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        }
+      } catch (e) {
+        console.warn('Audio not supported:', e);
+      }
+    }
+
+    // Confetti particles
+    const canvas = document.getElementById('confettiCanvas');
+    const ctx = canvas.getContext('2d');
+    let confetti = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function launchConfetti() {
+      confetti = [];
+      const colors = ['#ff6b9d', '#b388ff', '#4dd0e1', '#ffd166', '#ff85a2', '#ffffff'];
+      for (let i = 0; i < 90; i++) {
+        confetti.push({
+          x: canvas.width / 2,
+          y: canvas.height * 0.65,
+          vx: (Math.random() - 0.5) * 14,
+          vy: -Math.random() * 16 - 4,
+          size: Math.random() * 7 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 12,
+          opacity: 1
+        });
+      }
+      animateConfetti();
+    }
+
+    let confettiAnim = null;
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      confetti.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.45; // gravity
+        p.rotation += p.rotSpeed;
+        p.opacity -= 0.012;
+
+        if (p.opacity > 0) {
+          alive = true;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+      if (alive) {
+        confettiAnim = requestAnimationFrame(animateConfetti);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // Theme Switcher
+    const themeBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeBtnIcon');
+    let isDark = true;
+
+    function applyTheme(dark) {
+      isDark = dark;
+      if (dark) {
+        document.documentElement.classList.add('dark');
+        themeIcon.textContent = '🌙';
+      } else {
+        document.documentElement.classList.remove('dark');
+        themeIcon.textContent = '☀️';
+      }
+      playChime('click');
+      renderRealm(currentRealm);
+      renderLoot();
+    }
+
+    themeBtn.addEventListener('click', () => applyTheme(!isDark));
+
+    // Game Lore for 5 Realms
+    const realms = {
+      cv: {
+        id: 'cv',
+        num: '1',
+        name: 'Khu Rừng Kỹ Thuật (Lash Forest)',
+        title: 'Chuyên Viên Kỹ Thuật (Technician)',
+        gameTitle: '🎀 Tập Sự Thiên Thần · Lash Artisan',
+        icon: '👁️',
+        bgGradient: 'from-sky-50 to-blue-50 dark:from-slate-900 dark:to-sky-950/40',
+        borderColor: 'border-sky-400',
+        tagColor: 'bg-sky-100 dark:bg-sky-500/20 text-sky-800 dark:text-sky-300',
+        perkShort: '80% Tip · Thưởng 5★ · 15 Chuối FAL',
+        quote: '‘Đôi bàn tay mềm mại, từng sợi mi êm ru ru giấc ngủ nàng thơ.’',
+        nature: 'Kỹ thuật tinh xảo & An toàn tuyệt đối tại giường',
+        skills: [
+          { name: 'Khử Trùng Phép Thuật', desc: 'Vệ sinh giường, nhíp tiệt trùng 100%' },
+          { name: 'Nối Mi Êm Ái', desc: 'Đúng SLA, không cộm, không cay mắt' },
+          { name: 'Bảo Hành Kỹ Thuật', desc: 'Chịu trách nhiệm sửa ca Fix không tính công' },
+        ],
+        rewards: [
+          'Hưởng trọn vẹn 80% tổng tiền tip khách yêu quý',
+          'Thưởng nóng tiền tươi khi khách đánh giá 5★',
+          'Thưởng giữ chân khách quen (Retention Bonus)',
+          'Nhận 15 quả Chuối vàng khi hỗ trợ ca Adjust ngắn ≤ 25p'
+        ],
+        promotionGate: 'Đạt 300 ca mi + Tip > TB shop + Fix < 2% + HI > 70% ➔ Mở khóa đặc quyền Tự Tư Vấn. Nếu bán Combo tự thân > 20% ➔ Thăng cấp Phù Thủy Sảnh (CC)!'
+      },
+      cc: {
+        id: 'cc',
+        num: '2',
+        name: 'Thành Phố Nụ Cười (Charm City)',
+        title: 'Tư Vấn Viên Sảnh (Client Consultant)',
+        gameTitle: '🌸 Phù Thủy Giao Tiếp · Experience Muse',
+        icon: '💬',
+        bgGradient: 'from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-950/40',
+        borderColor: 'border-purple-400',
+        tagColor: 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300',
+        perkShort: 'Level × 65đ · 20% Tip · Hoa Hồng Combo/SP',
+        quote: '‘Nụ cười rạng rỡ đón chào, dáng mi chuẩn gu khách vừa nhìn đã say.’',
+        nature: 'Tư vấn dáng mắt, Bán hàng & Trải nghiệm sảnh đón tiếp',
+        skills: [
+          { name: 'Kính Soi Thần Kỳ', desc: 'Bắt bệnh mi, soi form mắt tinh tường' },
+          { name: 'Bùa Mê Combo', desc: 'Tư vấn gói combo & dưỡng mi chuẩn gu' },
+          { name: 'Trách Nhiệm Điều Răn', desc: 'Tư vấn sai dẫn đến Adjust bị thu hồi điểm/thưởng' },
+        ],
+        rewards: [
+          'Thưởng CC Xoay theo cấp độ (Level CC × 65đ, chia 50/50)',
+          'Hưởng 20% tổng tiền tip của khách (chia 50/50)',
+          'Hoa hồng Combo & Sản phẩm dưỡng mi theo bậc doanh số',
+          'Huy hiệu Nữ Hoàng Tư Vấn trên bảng vàng'
+        ],
+        promotionGate: 'Duy trì Level CC ≥ 5 trong 3-6 tháng, bán combo đều đặn, tỷ lệ Adjust < 1.5% và đỗ bài thi Quản trị Sàn ➔ Thăng cấp Nữ Thần Vận Hành (FM)!'
+      },
+      fm: {
+        id: 'fm',
+        num: '3',
+        name: 'Pháo Đài Lý Tính (Logic Citadel)',
+        title: 'Floor Manager (Quản Lý Sàn Vận Hành)',
+        gameTitle: '👑 Nữ Thần Vận Hành · Floor Valkyrie',
+        icon: '🏰',
+        bgGradient: 'from-amber-50 to-orange-50 dark:from-slate-900 dark:to-amber-950/40',
+        borderColor: 'border-amber-400',
+        tagColor: 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300',
+        perkShort: 'Lương Quản Lý + % Shop + Túi Chuối Thưởng Nóng',
+        quote: '‘Kỷ luật thép trong nụ cười hoa, sàn sạch - kho chuẩn - tua giường quay tít.’',
+        nature: '100% LÝ TÍNH: Kho, CSVC, Giờ giấc kỷ luật, Đồng phục, Tua giường',
+        skills: [
+          { name: 'Kho Báu Bất Thất Thoát', desc: 'Kiểm kê vật tư tiêu hao không hao hụt' },
+          { name: 'Chuẩn 5 Giác Quan', desc: 'Ánh sáng, nhiệt độ, mùi hương, giường êm thơm' },
+          { name: 'Điều Tua Thần Tốc', desc: 'Quay vòng giường nhanh, khách không chờ 1 phút' },
+        ],
+        rewards: [
+          'Lương cứng Quản lý sàn cao cấp',
+          'Thưởng % Doanh thu tổng của chi nhánh hàng tháng',
+          'Thưởng vượt target doanh số chi nhánh',
+          'Túi Chuối phép thuật (500 Chuối/tháng) để tự tay thưởng nóng cho CC/CV'
+        ],
+        promotionGate: 'Vận hành lý tính sàn trơn tru 6 tháng, tỷ lệ lấp đầy cao, không lỗi kho/CSVC và hoàn thành khóa Tâm lý học ➔ Thăng cấp Mẹ Thiên Thần (CHO)!'
+      },
+      cho: {
+        id: 'cho',
+        num: '4',
+        name: 'Vương Quốc Hạnh Phúc (Heart Haven)',
+        title: 'Chief Happiness Officer (1 Người / Shop)',
+        gameTitle: '💖 Mẹ Thiên Thần · Heart Archangel',
+        icon: '💖',
+        bgGradient: 'from-pink-50 to-rose-50 dark:from-slate-900 dark:to-pink-950/40',
+        borderColor: 'border-pink-400',
+        tagColor: 'bg-pink-100 dark:bg-pink-500/20 text-pink-800 dark:text-pink-300',
+        perkShort: 'Thu Nhập Executive + Thưởng NPS Khách & Thợ',
+        quote: '‘Chăm lo từng Thiên Thần nhỏ, tạo nên hàng vạn khoảnh khắc Wow cho khách hàng.’',
+        nature: '100% CẢM TÍNH: Phát triển Thiên Thần nhân viên & Khách hàng',
+        skills: [
+          { name: 'Hào Quang Gắn Kết', desc: 'Lắng nghe tâm tư, ngăn ngừa burnout, giữ lửa đam mê' },
+          { name: 'Khoảnh Khắc Wow', desc: 'Tạo bất ngờ dễ thương, giải quyết êm đẹp phàn nàn' },
+          { name: 'Ươm Mầm Kế Cận', desc: 'Đào tạo thế hệ FM & CHO mới tiếp quản salon' },
+        ],
+        rewards: [
+          'Gói thu nhập Executive (Lương Giám đốc cơ sở)',
+          'Thưởng Chỉ số Hài lòng Khách hàng (NPS Khách ≥ 85)',
+          'Thưởng Chỉ số Hạnh phúc Nội bộ (eNPS Thiên Thần ≥ 80)',
+          'Quỹ Hạnh Phúc & Ngân sách Wow tự quyết để tổ chức party, tặng quà'
+        ],
+        promotionGate: 'Shop đạt lợi nhuận P&L bền vững liên tục ≥ 12 tháng VÀ ĐÀO TẠO THÀNH CÔNG thế hệ FM & CHO mới ➔ Thăng cấp Nữ Hoàng Co-Owner (BOSS)!'
+      },
+      boss: {
+        id: 'boss',
+        num: '5',
+        name: 'Đỉnh Núi Nữ Hoàng (Queen’s Summit)',
+        title: 'BOSS (Co-Owner / Đối Tác Đồng Sáng Lập)',
+        gameTitle: '💎 Nữ Hoàng Đồng Sáng Lập · Legendary Queen',
+        icon: '👑',
+        bgGradient: 'from-emerald-50 to-teal-50 dark:from-slate-900 dark:to-emerald-950/40',
+        borderColor: 'border-emerald-400',
+        tagColor: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300',
+        perkShort: 'Cổ Tức P&L Trọn Đời · Tự Do Tài Chính',
+        quote: '‘Tự do tài chính, nhân bản thương hiệu tử tế cùng đại gia đình Wings Lashes.’',
+        nature: 'Quản trị P&L, Cổ phần Chi nhánh & Tự Vận Hành 100%',
+        skills: [
+          { name: 'Nhân Bản Chi Nhánh', desc: 'Mở salon mới theo mô hình Co-Owner thịnh vượng' },
+          { name: 'Tự Vận Hành 100%', desc: 'Hệ thống chạy mượt mà không cần Boss có mặt' },
+          { name: 'Bảo Trợ Thiên Thần', desc: 'Cố vấn và đầu tư cho các thế hệ học trò làm chủ' },
+        ],
+        rewards: [
+          'Cổ phần sở hữu chi nhánh & Cổ tức Lợi nhuận P&L trọn đời',
+          'Tự do thời gian và tài chính hoàn toàn',
+          'Vinh danh tại Đại Lộ Danh Vọng Wings Lashes',
+          'Quyền đầu tư và bảo trợ các chi nhánh mới trong hệ sinh thái'
+        ],
+        promotionGate: 'Đỉnh cao vinh quang: Trở thành Thiên Thần Đầu Tư (Angel Investor) trong hệ sinh thái mos-lab!'
+      }
+    };
+
+    let currentRealm = 'cv';
+
+    function selectIsland(realmId) {
+      currentRealm = realmId;
+      playChime('click');
+
+      const tabs = ['cv', 'cc', 'fm', 'cho', 'boss'];
+      tabs.forEach(id => {
+        const btn = document.getElementById(`island-${id}`);
+        if (id === realmId) {
+          btn.className = `island-btn flex-shrink-0 w-24 p-2.5 rounded-2xl border-2 transition-all text-center bg-white dark:bg-slate-900 ${realms[id].borderColor} ring-2 ring-pink-400/40 shadow-md scale-105 z-10`;
+          btn.style.opacity = '1';
+        } else {
+          btn.className = 'island-btn flex-shrink-0 w-24 p-2.5 rounded-2xl border transition-all text-center bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-80';
+        }
+      });
+
+      document.getElementById('bottomStageTitle').textContent = `Ải ${realms[realmId].num}: ${realms[realmId].title}`;
+      document.getElementById('bottomStagePerk').textContent = realms[realmId].perkShort;
+
+      renderRealm(realmId);
+    }
+
+    function renderRealm(realmId) {
+      const r = realms[realmId];
+      const container = document.getElementById('realmHeroCard');
+
+      container.innerHTML = `
+        <!-- Realm Header -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br ${r.bgGradient} border-2 ${r.borderColor} space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-black px-2 py-0.5 rounded-full ${r.tagColor} font-game">Ải ${r.num}: ${r.name}</span>
+            <span class="text-2xl animate-float">${r.icon}</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-slate-900 dark:text-white font-game">${r.gameTitle}</h3>
+            <p class="text-[11px] italic text-slate-600 dark:text-slate-300 mt-0.5">${r.quote}</p>
+          </div>
+          <div class="text-[10px] font-bold text-slate-700 dark:text-slate-300 pt-1 border-t border-slate-200/60 dark:border-slate-800">
+            <span class="text-slate-400">Trọng tâm:</span> ${r.nature}
+          </div>
+        </div>
+
+        <!-- 3 Skills (Bộ Kỹ Năng) -->
+        <div class="space-y-1.5">
+          <div class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 font-game">✨ Bộ Kỹ Năng Cần Luyện</div>
+          <div class="grid grid-cols-1 gap-1.5">
+            ${r.skills.map(s => `
+              <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                <div>
+                  <span class="font-black text-slate-900 dark:text-white">${s.name}:</span>
+                  <span class="text-slate-600 dark:text-slate-400 text-[11px] ml-1">${s.desc}</span>
+                </div>
+                <span class="text-[10px] text-pink-600 dark:text-pink-400 font-black font-game">Lv.Max</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Rewards (Kho Báu Mở Khóa) -->
+        <div class="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 space-y-1.5">
+          <div class="text-[10px] font-black text-amber-800 dark:text-amber-300 uppercase font-game flex items-center gap-1">
+            <span>🎁 Quyền Lợi & Thu Nhập Mở Khóa</span>
+          </div>
+          <ul class="text-[11px] space-y-1 font-mono text-slate-800 dark:text-slate-200">
+            ${r.rewards.map(rw => `<li class="flex items-start gap-1.5"><span class="text-amber-500">✔</span><span>${rw}</span></li>`).join('')}
+          </ul>
+        </div>
+
+        <!-- Gate Rule -->
+        <div class="p-3 rounded-2xl bg-pink-50 dark:bg-pink-950/20 border border-pink-200 dark:border-pink-500/30 text-[11px] text-slate-800 dark:text-slate-200 leading-snug">
+          <span class="font-black text-pink-700 dark:text-pink-300 font-game">🎯 Điểm Mấu Chốt:</span> ${r.promotionGate}
+        </div>
+      `;
+    }
+
+    // Loot Box Grid
+    function renderLoot() {
+      const grid = document.getElementById('lootGrid');
+      const items = [
+        { icon: '🎀', title: 'Khăn Choàng Lash', perk: '80% Tiền Tip', tier: 'CV' },
+        { icon: '🪄', title: 'Gậy Phép Duyên Dáng', perk: 'Level × 65đ', tier: 'CC' },
+        { icon: '🍌', title: 'Túi Chuối Vô Tận', perk: '500 Chuối/Tháng', tier: 'FM' },
+        { icon: '💖', title: 'Vòng Ngọc Hạnh Phúc', perk: 'Thưởng NPS Shop', tier: 'CHO' },
+        { icon: '👑', title: 'Vương Miện Kim Cương', perk: 'Cổ Tức P&L Shop', tier: 'BOSS' },
+      ];
+
+      grid.innerHTML = items.map(it => `
+        <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
+          <div class="text-2xl">${it.icon}</div>
+          <div>
+            <div class="text-[11px] font-black text-slate-900 dark:text-white leading-tight">${it.title}</div>
+            <div class="text-[10px] text-pink-600 dark:text-pink-400 font-bold font-mono">${it.perk}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Hero Profile Selection
+    const heroes = {
+      thao_my: { orders: 350, tip: 20, fix: 1.1, hi: 86, combo: 24.5 },
+      lan_anh: { orders: 310, tip: 8, fix: 1.5, hi: 74, combo: 14.0 },
+      bao_tran: { orders: 480, tip: 35, fix: 0.7, hi: 92, combo: 38.0 },
+    };
+
+    function pickHero(key) {
+      const h = heroes[key];
+      if (!h) return;
+      playChime('click');
+      document.getElementById('slider_orders').value = h.orders;
+      document.getElementById('slider_tip').value = h.tip;
+      document.getElementById('slider_fix').value = Math.round(h.fix * 10);
+      document.getElementById('slider_hi').value = h.hi;
+      document.getElementById('slider_combo').value = Math.round(h.combo * 10);
+      calculateGameProgress();
+    }
+
+    let isVictory = false;
+
+    function calculateGameProgress() {
+      const orders = parseInt(document.getElementById('slider_orders').value);
+      const tip = parseInt(document.getElementById('slider_tip').value);
+      const fix = parseFloat((parseInt(document.getElementById('slider_fix').value) / 10).toFixed(1));
+      const hi = parseInt(document.getElementById('slider_hi').value);
+      const combo = parseFloat((parseInt(document.getElementById('slider_combo').value) / 10).toFixed(1));
+
+      // Labels
+      document.getElementById('label_orders').textContent = `${orders} / 300 ca ${orders >= 300 ? '✔' : '✖'}`;
+      document.getElementById('label_tip').textContent = `${tip >= 0 ? '+' : ''}${tip}% ${tip > 0 ? '✔' : '✖'}`;
+      document.getElementById('label_fix').textContent = `${fix}% ${fix < 2.0 ? '✔' : '✖'}`;
+      document.getElementById('label_hi').textContent = `${hi}% ${hi >= 70 ? '✔' : '✖'}`;
+      document.getElementById('label_combo').textContent = `${combo}% ${combo >= 20.0 ? '✔ VƯỢT MỐC' : '✖'}`;
+
+      const p1 = orders >= 300;
+      const p2 = tip > 0;
+      const p3 = fix < 2.0;
+      const p4 = hi >= 70;
+      const p5 = combo >= 20.0;
+
+      isVictory = p1 && p2 && p3 && p4 && p5;
+
+      const card = document.getElementById('gameOutcomeCard');
+      const btnText = document.getElementById('levelUpBtnText');
+
+      if (isVictory) {
+        btnText.textContent = "🎉 THĂNG CẤP LÊN CC!";
+        card.className = "p-3.5 rounded-2xl border-2 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-400 space-y-2";
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-emerald-800 dark:text-emerald-300 font-game">🏆 HOÀN THÀNH 5/5 THỬ THÁCH!</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 font-bold font-mono">VICTORY</span>
+          </div>
+          <p class="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-sans">
+            Tuyệt vời! Thiên Thần đã hạ gục toàn bộ 4 chỉ số tay nghề thợ mi và vượt qua Ải Trùm Cuối với tỷ lệ tự bán Combo <strong>${combo}%</strong> (≥ 20%). Nhấn nút bên dưới để mở khóa chức danh <strong>Phù Thủy Sảnh (CC)</strong> và nhận thưởng Level × 65đ!
+          </p>
+        `;
+      } else if (p1 && p2 && p3 && p4) {
+        btnText.textContent = "⚔️ ĐANG ĐẤU TRÙM COMBO";
+        card.className = "p-3.5 rounded-2xl border-2 bg-pink-50 dark:bg-pink-950/30 border-pink-400 space-y-2";
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-pink-800 dark:text-pink-300 font-game">⚔️ ĐẠT 4/5 ẢI · ĐANG SÁT HẠCH BÁN COMBO</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-pink-200 dark:bg-pink-500/20 text-pink-900 dark:text-pink-300 font-bold font-mono">BOSS FIGHT</span>
+          </div>
+          <p class="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-sans">
+            Tay nghề thợ đã đạt đỉnh cao! Bạn đang được quyền tự tư vấn cho khách của chính mình. Tỷ lệ bán combo hiện đạt <strong>${combo}%</strong> (cần ≥ 20.0%). Nếu sau 1-2 tháng duy trì dưới 20%, bạn sẽ được trao tặng danh hiệu <strong>Master Lash Artisan</strong> để chuyên tâm làm Đại Thợ Mi!
+          </p>
+        `;
+      } else {
+        btnText.textContent = "📖 CẦN LUYỆN THÊM SKILL";
+        card.className = "p-3.5 rounded-2xl border-2 bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 space-y-2";
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-amber-800 dark:text-amber-400 font-game">📖 CHƯA ĐỦ ĐIỀU KIỆN MỞ KHÓA TRÙM</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 font-bold font-mono">TRAINING</span>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-sans">
+            Hãy tiếp tục rèn luyện kỹ năng nối mi tại giường, phục vụ chu đáo để nâng điểm Tip và giảm lỗi Fix trước khi bước vào Ải Sát Hạch Combo nhé Thiên Thần!
+          </p>
+        `;
+      }
+    }
+
+    function triggerLevelUpAction() {
+      if (isVictory) {
+        playChime('success');
+        launchConfetti();
+        alert('🎉 CHÚC MỪNG THIÊN THẦN! Bạn đã xuất sắc thăng cấp lên Client Consultant (CC)! Cánh Cổng Thành Phố Nụ Cười đã mở!');
+      } else {
+        playChime('click');
+        document.getElementById('questBoardSection').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      selectIsland('cv');
+      pickHero('thao_my');
+      renderLoot();
+    });
+  </script>
+</body>
+</html>

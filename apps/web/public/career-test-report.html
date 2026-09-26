@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧪 Báo Cáo Kiểm Thử Tự Động · Lộ Trình Thăng Tiến</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex flex-col items-center justify-start">
+  
+  <div class="w-full max-w-3xl space-y-6">
+
+    <!-- HEADER STATUS BANNER -->
+    <div class="rounded-3xl p-6 bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-900 border-2 border-emerald-500/40 shadow-xl shadow-emerald-950/40 relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl shadow-inner">
+            ✅
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-mono">ALL TESTS PASSED</span>
+              <span class="text-xs text-slate-400 font-mono">Node.js Test Runner</span>
+            </div>
+            <h1 class="text-xl font-black text-white mt-1">
+              Kiểm Thử Tự Động: Lộ Trình Thăng Tiến & Cấu Hình Động
+            </h1>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <div class="text-2xl font-black text-emerald-400 font-mono">100%</div>
+          <div class="text-xs text-slate-400">6 / 6 Test Cases</div>
+        </div>
+      </div>
+
+      <!-- METRICS GRID -->
+      <div class="grid grid-cols-4 gap-3 mt-5 pt-4 border-t border-slate-800">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="text-[11px] text-slate-400">Tổng Tests</div>
+          <div class="text-lg font-black text-white font-mono mt-0.5">6</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="text-[11px] text-slate-400">Thành công</div>
+          <div class="text-lg font-black text-emerald-400 font-mono mt-0.5">6 (Pass)</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="text-[11px] text-slate-400">Thất bại</div>
+          <div class="text-lg font-black text-slate-500 font-mono mt-0.5">0 (Fail)</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="text-[11px] text-slate-400">Thời gian chạy</div>
+          <div class="text-lg font-black text-amber-400 font-mono mt-0.5">354 ms</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEST SUITE 1: FASTIFY REST API ROUTES -->
+    <div class="rounded-2xl p-5 bg-slate-900/90 border border-slate-800 shadow-md space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+        <div class="flex items-center gap-2">
+          <span class="text-base">🌐</span>
+          <span class="font-bold text-sm text-slate-200">Suite 1: Fastify REST API Routes (`career.routes.test.ts`)</span>
+        </div>
+        <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">4 PASSED</span>
+      </div>
+
+      <div class="space-y-2">
+        <!-- Test 1 -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/50 hover:border-slate-700 transition">
+          <div class="flex items-center gap-2.5">
+            <span class="text-emerald-400 font-bold font-mono">✔</span>
+            <span class="text-xs text-slate-200">GET `/career/config` trả về cấu hình mặc định (fallback)</span>
+          </div>
+          <span class="text-xs font-mono text-slate-400">75.2 ms</span>
+        </div>
+
+        <!-- Test 2 -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/50 hover:border-slate-700 transition">
+          <div class="flex items-center gap-2.5">
+            <span class="text-emerald-400 font-bold font-mono">✔</span>
+            <span class="text-xs text-slate-200">PUT `/career/config` chặn Technician (403) và cho phép Admin cập nhật (200)</span>
+          </div>
+          <span class="text-xs font-mono text-slate-400">4.9 ms</span>
+        </div>
+
+        <!-- Test 3 -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/50 hover:border-slate-700 transition">
+          <div class="flex items-center gap-2.5">
+            <span class="text-emerald-400 font-bold font-mono">✔</span>
+            <span class="text-xs text-slate-200">GET `/career/my-progression` tính toán chỉ số CV đối chiếu với cấu hình động</span>
+          </div>
+          <span class="text-xs font-mono text-slate-400">1.8 ms</span>
+        </div>
+
+        <!-- Test 4 -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/50 hover:border-slate-700 transition">
+          <div class="flex items-center gap-2.5">
+            <span class="text-emerald-400 font-bold font-mono">✔</span>
+            <span class="text-xs text-slate-200">POST `/career/staff/:id/trial` kích hoạt 30 ngày thử thách tự tư vấn chốt Combo</span>
+          </div>
+          <span class="text-xs font-mono text-slate-400">1.6 ms</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEST SUITE 2: DYNAMIC CONFIG SERVICE & CACHING -->
+    <div class="rounded-2xl p-5 bg-slate-900/90 border border-slate-800 shadow-md space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⚙️</span>
+          <span class="font-bold text-sm text-slate-200">Suite 2: Dynamic Config Engine & Cache (`career.service.test.ts`)</span>
+        </div>
+        <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">2 PASSED</span>
+      </div>
+
+      <div class="space-y-2">
+        <!-- Test 5 -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/50 hover:border-slate-700 transition">
+          <div class="flex items-center gap-2.5">
+            <span class="text-emerald-400 font-bold font-mono">✔</span>
+            <span class="text-xs text-slate-200">Tự động nạp DEFAULT_CAREER_PROGRESSION_CONFIG khi database trống</span>
+          </div>
+          <span class="text-xs font-mono text-slate-400">0.9 ms</span>
+        </div>
+
+        <!-- Test 6 -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/50 hover:border-slate-700 transition">
+          <div class="flex items-center gap-2.5">
+            <span class="text-emerald-400 font-bold font-mono">✔</span>
+            <span class="text-xs text-slate-200">Cập nhật tham số động, ghi đè DB và làm tươi in-memory cache tức thì</span>
+          </div>
+          <span class="text-xs font-mono text-slate-400">0.2 ms</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERMINAL RAW OUTPUT BOX -->
+    <div class="rounded-2xl bg-black border border-slate-800 p-4 font-mono text-xs space-y-2 shadow-inner">
+      <div class="flex items-center justify-between text-slate-500 border-b border-slate-800/80 pb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+          <span class="ml-2 font-bold text-slate-400">Terminal Stderr/Stdout</span>
+        </div>
+        <span>bash · zsh (macOS)</span>
+      </div>
+
+      <div class="text-slate-300 space-y-1 pt-1 leading-relaxed">
+        <div class="text-slate-500">$ npx tsx --test apps/api/src/modules/career/*.test.ts</div>
+        <div class="text-emerald-400">✔ GET /career/config returns default dynamic config successfully (75.22ms)</div>
+        <div class="text-emerald-400">✔ PUT /career/config blocks non-admin and allows admin to update config (4.93ms)</div>
+        <div class="text-emerald-400">✔ GET /career/my-progression calculates technician metrics against dynamic config (1.79ms)</div>
+        <div class="text-emerald-400">✔ POST /career/staff/:id/trial activates 30-day trial gate (1.61ms)</div>
+        <div class="text-emerald-400">✔ CareerProgressionService: fallback to DEFAULT_CAREER_PROGRESSION_CONFIG when DB is empty (0.86ms)</div>
+        <div class="text-emerald-400">✔ CareerProgressionService: updateConfig merges partial values and updates cache immediately (0.18ms)</div>
+        <div class="text-slate-400 pt-2 border-t border-slate-900 flex justify-between font-bold">
+          <span>ℹ tests: 6 passed, 0 failed</span>
+          <span class="text-emerald-400">⚡ total duration: 354 ms</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FULL MONOREPO VERIFICATION FOOTER -->
+    <div class="rounded-xl p-3 bg-slate-900/40 border border-slate-800 text-center text-xs text-slate-400 flex items-center justify-between">
+      <span class="flex items-center gap-1.5">
+        <span class="text-emerald-400">●</span>
+        <span>Monorepo Quick Verification (`pnpm verify:quick`): <strong>508 passed / 0 failed</strong></span>
+      </span>
+      <span class="font-mono text-[11px] text-slate-500">mos-lab CI/CD Quality Gate</span>
+    </div>
+
+  </div>
+
+</body>
+</html>
