@@ -268,22 +268,27 @@ export class ComboRecognitionService {
 
     try {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<{ user_id: number }[]>(
-        `SELECT /* origin: ComboRecognitionService.getNewLoCaCustomerIds */ DISTINCT recognized_combo.user_id FROM (
-          SELECT o_nl.user_id FROM \`order\` o_nl
-          JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+        `WITH eligible_orders AS (
+          SELECT ro_nl.order_id, o_nl.user_id
+          FROM report_order ro_nl
+          JOIN \`order\` o_nl ON o_nl.id = ro_nl.order_id
+          WHERE ro_nl.actual_booking_date_start >= ? AND ro_nl.actual_booking_date_start <= ?
+            AND o_nl.order_state = 'Completed'
+          UNION ALL
+          SELECT o_nl.id AS order_id, o_nl.user_id
+          FROM \`order\` o_nl
+          LEFT JOIN report_order ro_nl ON ro_nl.order_id = o_nl.id
+          WHERE o_nl.booking_date_start >= ? AND o_nl.booking_date_start <= ?
+            AND ro_nl.actual_booking_date_start IS NULL
+            AND o_nl.order_state = 'Completed'
+        )
+        SELECT /* origin: ComboRecognitionService.getNewLoCaCustomerIds */ DISTINCT recognized_combo.user_id FROM (
+          SELECT eo.user_id
+          FROM eligible_orders eo
+          JOIN order_service_combo osc_nl ON osc_nl.order_id = eo.order_id
           LEFT JOIN service_price sp_nl ON osc_nl.service_price_id = sp_nl.id
           LEFT JOIN service_language sl_nl ON osc_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-          WHERE o_nl.order_state = 'Completed'
-            AND osc_nl.total_price > 0
-            AND (
-              (ro_nl.actual_booking_date_start >= ? AND ro_nl.actual_booking_date_start <= ?)
-              OR (
-                ro_nl.actual_booking_date_start IS NULL
-                AND o_nl.booking_date_start >= ?
-                AND o_nl.booking_date_start <= ?
-              )
-            )
+          WHERE osc_nl.total_price > 0
             AND (sp_nl.service_price_package_key IS NULL OR (
               LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
               AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
@@ -295,22 +300,13 @@ export class ComboRecognitionService {
               AND LOWER(sl_nl.service_name) NOT LIKE '%balance%'
             ))
           UNION
-          SELECT o_nl.user_id FROM \`order\` o_nl
-          JOIN order_service os_nl ON os_nl.order_id = o_nl.id
-          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
+          SELECT eo.user_id
+          FROM eligible_orders eo
+          JOIN order_service os_nl ON os_nl.order_id = eo.order_id
           LEFT JOIN service_price sp_nl ON os_nl.service_price_id = sp_nl.id
           LEFT JOIN service_language sl_nl ON os_nl.service_id = sl_nl.service_id AND sl_nl.language_id = 1
-          WHERE o_nl.order_state = 'Completed'
-            AND os_nl.total_price > 0
+          WHERE os_nl.total_price > 0
             AND (os_nl.user_service_type = 'combo' OR os_nl.service_group = 'combo')
-            AND (
-              (ro_nl.actual_booking_date_start >= ? AND ro_nl.actual_booking_date_start <= ?)
-              OR (
-                ro_nl.actual_booking_date_start IS NULL
-                AND o_nl.booking_date_start >= ?
-                AND o_nl.booking_date_start <= ?
-              )
-            )
             AND (sp_nl.service_price_package_key IS NULL OR (
               LOWER(sp_nl.service_price_package_key) NOT LIKE '%single%'
               AND LOWER(sp_nl.service_price_package_key) NOT LIKE '%refill%'
@@ -323,10 +319,6 @@ export class ComboRecognitionService {
             ))
         ) recognized_combo
         WHERE ${balanceExistsSql}`,
-        startStr,
-        endStr,
-        startStr,
-        endStr,
         startStr,
         endStr,
         startStr,

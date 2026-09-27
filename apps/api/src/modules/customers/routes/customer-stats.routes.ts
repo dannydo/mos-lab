@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { BucketType, SafeAny } from '@mos-lab/shared';
 import { CustomerAccessService } from '../services/customer-access.service.js';
-import { parseComboDateBounds } from '../services/combo-recognition.service.js';
+import { ComboRecognitionService } from '../services/combo-recognition.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';
 import { getForeignSqlFilter } from '../services/foreign-customer.service.js';
 import {
@@ -885,13 +885,11 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const { startStr: nlDateFrom, endStr: nlDateTo } = parseComboDateBounds(dateFrom, dateTo);
-
       // Optimization: Pre-fetch small ID sets in parallel to eliminate heavy correlated subqueries in batchSql:
       // 1. Future bookings (~185 IDs, ~5ms)
       // 2. Callbacks (~30 IDs, ~50ms)
       // 3. New LoCa in period (~40 IDs, ~450ms)
-      const [futureBookingRows, callbackRows, newLocaRows] = await Promise.all([
+      const [futureBookingRows, callbackRows, newLocaUserIds] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
           SELECT DISTINCT user_id FROM \`order\` WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')
         `),
@@ -902,26 +900,12 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
           UNION
           SELECT DISTINCT legacy_user_id FROM crm_loca_touchpoints WHERE status = 'CALLBACK'
         `),
-        fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
-          SELECT DISTINCT o_nl.user_id
-          FROM \`order\` o_nl
-          JOIN order_service_combo osc_nl ON osc_nl.order_id = o_nl.id
-          LEFT JOIN report_order ro_nl ON o_nl.id = ro_nl.order_id
-          WHERE o_nl.order_state = 'Completed'
-            AND osc_nl.total_price > 0
-            AND (
-              (ro_nl.actual_booking_date_start >= '${nlDateFrom}' AND ro_nl.actual_booking_date_start <= '${nlDateTo}')
-              OR (
-                ro_nl.actual_booking_date_start IS NULL
-                AND o_nl.booking_date_start >= '${nlDateFrom}' AND o_nl.booking_date_start <= '${nlDateTo}'
-              )
-            )
-        `),
+        ComboRecognitionService.getNewLoCaCustomerIds(fastify, dateFrom, dateTo),
       ]);
 
       const bookedIdStr = futureBookingRows.length > 0 ? futureBookingRows.map((r) => r.user_id).join(',') : '0';
       const callbackIdStr = callbackRows.length > 0 ? callbackRows.map((r) => r.legacy_user_id).join(',') : '0';
-      const newLocaIdStr = newLocaRows.length > 0 ? newLocaRows.map((r) => r.user_id).join(',') : '0';
+      const newLocaIdStr = newLocaUserIds.length > 0 ? newLocaUserIds.join(',') : '0';
 
       // Build dynamic SELECT for touchpoints
       const tpSelects = activeTouchpoints
@@ -997,7 +981,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
             GROUP BY user_id
             HAVING live_count > 0
           ) as usb_agg
-          JOIN user u ON u.id = usb_agg.user_id
+          STRAIGHT_JOIN user u ON u.id = usb_agg.user_id
           LEFT JOIN user_profile up ON u.id = up.user_id
           ${innerWhereString}
         ) as loca_base
