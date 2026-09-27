@@ -529,6 +529,32 @@ export async function pilotRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Manually or automatically deduct BOM materials from physical stock inventory
+  fastify.post('/pilot/sessions/:id/deduct-stock', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID ca pilot không hợp lệ.' });
+      }
+      const result = await PilotService.deductStockForSession(fastify, id);
+      return reply.send(result);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Deduct pilot session stock error');
+    }
+  });
+
+  // Get physical stock inventory list
+  fastify.get('/pilot/inventory', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const query = request.query as { warehouse?: string };
+      const items = await PilotService.listStockInventory(fastify, query?.warehouse);
+      return reply.send(items);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get pilot inventory error');
+    }
+  });
+
   // Delete session
   fastify.delete('/pilot/sessions/:id', { preHandler: [requireAuth] }, async (request, reply) => {
     try {

@@ -2509,7 +2509,7 @@
         "dbSource": "crm",
         "modelName": "CrmPilotSession",
         "tableName": "crm_pilot_sessions",
-        "fieldCount": 42,
+        "fieldCount": 43,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -2527,10 +2527,28 @@
         "dbSource": "crm",
         "modelName": "CrmPilotMaterial",
         "tableName": "crm_pilot_materials",
-        "fieldCount": 11,
+        "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmStockInventory",
+      "type": "PrismaModel",
+      "label": "crm.CrmStockInventory",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmStockInventory",
+        "tableName": "stock_inventory",
+        "fieldCount": 10,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["materialId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -10368,6 +10386,34 @@
       }
     },
     {
+      "id": "route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/deduct-stock",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/deduct-stock",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 533
+      }
+    },
+    {
+      "id": "route:GET:/api/pilot/inventory",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/inventory",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/inventory",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 548
+      }
+    },
+    {
       "id": "route:DELETE:/api/pilot/sessions/:id",
       "type": "FastifyRoute",
       "label": "DELETE /api/pilot/sessions/:id",
@@ -10378,7 +10424,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 533
+        "line": 559
       }
     },
     {
@@ -23395,6 +23441,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:PilotMaterialItemType",
+      "type": "SharedType",
+      "label": "PilotMaterialItemType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotMaterialItemType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:PilotMaterial",
       "type": "SharedType",
       "label": "PilotMaterial",
@@ -23427,6 +23485,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdatePilotMaterialRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:StockInventoryItem",
+      "type": "SharedType",
+      "label": "StockInventoryItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StockInventoryItem",
         "package": "@mos-lab/shared"
       }
     },
@@ -27715,8 +27785,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12977615,
-        "lineCount": 282300,
+        "sizeBytes": 13050087,
+        "lineCount": 284068,
         "ext": ".ts"
       }
     },
@@ -30718,8 +30788,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 60361,
-        "lineCount": 1740,
+        "sizeBytes": 64910,
+        "lineCount": 1879,
         "ext": ".ts"
       }
     },
@@ -30731,8 +30801,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23506,
-        "lineCount": 547,
+        "sizeBytes": 24613,
+        "lineCount": 573,
         "ext": ".ts"
       }
     },
@@ -34189,8 +34259,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41242,
-        "lineCount": 850,
+        "sizeBytes": 41314,
+        "lineCount": 854,
         "ext": ".tsx"
       }
     },
@@ -34683,8 +34753,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38590,
-        "lineCount": 872,
+        "sizeBytes": 42420,
+        "lineCount": 953,
         "ext": ".tsx"
       }
     },
@@ -34813,8 +34883,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10970,
-        "lineCount": 312,
+        "sizeBytes": 14368,
+        "lineCount": 413,
         "ext": ".tsx"
       }
     },
@@ -35684,8 +35754,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13481,
-        "lineCount": 358,
+        "sizeBytes": 14785,
+        "lineCount": 400,
         "ext": ".tsx"
       }
     },
@@ -35710,8 +35780,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27387,
-        "lineCount": 634,
+        "sizeBytes": 30148,
+        "lineCount": 692,
         "ext": ".tsx"
       }
     },
@@ -36659,8 +36729,8 @@
       "filePath": "apps/web/lib/ai-assistant-launcher.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2484,
-        "lineCount": 71,
+        "sizeBytes": 3597,
+        "lineCount": 101,
         "ext": ".ts"
       }
     },
@@ -36815,8 +36885,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8358,
-        "lineCount": 198,
+        "sizeBytes": 8816,
+        "lineCount": 207,
         "ext": ".ts"
       }
     },
@@ -37751,8 +37821,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9824,
-        "lineCount": 383,
+        "sizeBytes": 10337,
+        "lineCount": 403,
         "ext": ".ts"
       }
     },
@@ -38922,6 +38992,13 @@
     {
       "id": "edge:prisma:crm:CrmPilotMaterial:ws:apps/api",
       "source": "prisma:crm:CrmPilotMaterial",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmStockInventory:ws:apps/api",
+      "source": "prisma:crm:CrmStockInventory",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -42800,6 +42877,20 @@
     {
       "id": "edge:route:PATCH:/api/pilot/sessions/:id:ws:apps/api",
       "source": "route:PATCH:/api/pilot/sessions/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/deduct-stock:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/pilot/inventory:ws:apps/api",
+      "source": "route:GET:/api/pilot/inventory",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -50232,6 +50323,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:PilotMaterialItemType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotMaterialItemType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PilotMaterial:ws:packages/shared",
       "source": "type:@mos-lab/shared:PilotMaterial",
       "target": "ws:packages/shared",
@@ -50248,6 +50346,13 @@
     {
       "id": "edge:type:@mos-lab/shared:UpdatePilotMaterialRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:UpdatePilotMaterialRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:StockInventoryItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:StockInventoryItem",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -59314,6 +59419,13 @@
       "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotMaterial",
       "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
       "target": "prisma:crm:CrmPilotMaterial",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmStockInventory",
+      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "target": "prisma:crm:CrmStockInventory",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -70168,6 +70280,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/pilot/sessions/:id",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:DELETE:/api/pilot/sessions/:id",
@@ -74494,6 +74620,20 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/pilot/sessions/:id",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:DELETE:/api/pilot/sessions/:id",
@@ -75820,6 +75960,20 @@
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:PATCH:/api/pilot/sessions/:id",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:PATCH:/api/pilot/sessions/:id",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/inventory",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -81795,6 +81949,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/deduct-stock",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/pilot/sessions/:id",
       "source": "page:/dashboard/staff/teams",
       "target": "route:DELETE:/api/pilot/sessions/:id",
@@ -82447,31 +82615,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2905,
-    "totalEdges": 6356,
+    "totalNodes": 2910,
+    "totalEdges": 6370,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 158,
-      "FastifyRoute": 618,
+      "PrismaModel": 159,
+      "FastifyRoute": 620,
       "Component": 55,
-      "SharedType": 1063,
+      "SharedType": 1065,
       "DesignToken": 12,
       "UIComponent": 203,
       "File": 793
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1233,
-      "HANDLES_ROUTE": 618,
+      "EXPORTS": 1236,
+      "HANDLES_ROUTE": 620,
       "RENDERS": 258,
       "USES_TOKEN": 205,
       "IMPORTS": 434,
-      "QUERIES_MODEL": 367,
-      "API_CALL": 3241
+      "QUERIES_MODEL": 368,
+      "API_CALL": 3249
     },
-    "fastifyRouteCount": 623,
-    "prismaModelCount": 158,
+    "fastifyRouteCount": 625,
+    "prismaModelCount": 159,
     "nextPageCount": 55,
-    "sharedTypeCount": 1063
+    "sharedTypeCount": 1065
   },
   "routes": [
     {
@@ -86220,6 +86388,20 @@
       "moduleName": "pilot"
     },
     {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/deduct-stock",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pilot/inventory",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
       "method": "DELETE",
       "path": "/api/pilot/sessions/:id",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
@@ -88074,7 +88256,7 @@
       "dbSource": "crm",
       "modelName": "CrmPilotSession",
       "tableName": "crm_pilot_sessions",
-      "fieldCount": 42,
+      "fieldCount": 43,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
@@ -88083,10 +88265,19 @@
       "dbSource": "crm",
       "modelName": "CrmPilotMaterial",
       "tableName": "crm_pilot_materials",
-      "fieldCount": 11,
+      "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmStockInventory",
+      "tableName": "stock_inventory",
+      "fieldCount": 10,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["materialId"]
     },
     {
       "dbSource": "crm",

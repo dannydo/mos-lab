@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AIAssistantWidget } from '../AIAssistantWidget';
 import { aiApi } from '../../../../../lib/api/ai.api';
 import { safeStorage } from '../../../../../lib/safe-storage';
-import { AI_LAUNCHER_STORAGE_KEY } from '../../../../../lib/ai-assistant-launcher';
+import { AI_LAUNCHER_STORAGE_KEY, AI_COPILOT_VISIBILITY_KEY } from '../../../../../lib/ai-assistant-launcher';
 
 // Mock AdaptiveDrawer
 vi.mock('../../../../../components/ui', () => ({
@@ -307,5 +307,105 @@ describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
 
     // Empty state should be displayed ready for new prompts
     expect(screen.getByText('Không Gian Làm Việc Trợ Lý AI')).toBeDefined();
+  });
+
+  it('does not render launcher when copilot visibility is disabled in user preferences', () => {
+    safeStorage.setItem(AI_COPILOT_VISIBILITY_KEY, 'false');
+
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
+
+    expect(screen.queryByText('mOS Copilot')).toBeNull();
+
+    // Reset back
+    safeStorage.removeItem(AI_COPILOT_VISIBILITY_KEY);
+  });
+
+  it('renders retry button and allows retrying when message sending fails', async () => {
+    (aiApi.ai.sendMessage as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('mOS Copilot').closest('button')!);
+    });
+
+    const textarea = screen.getByPlaceholderText(/Hỏi về cấu trúc khách hàng/i);
+    await act(async () => {
+      fireEvent.change(textarea, { target: { value: 'Kiểm tra tỷ lệ quay lại' } });
+    });
+
+    const sendBtn = screen.getByRole('button', { name: '' });
+    await act(async () => {
+      fireEvent.click(sendBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Không thể kết nối đến máy chủ AI. Vui lòng thử lại sau giây lát.')).toBeDefined();
+      expect(screen.getByText('Thử lại câu hỏi')).toBeDefined();
+    });
+
+    // Mock success for retry
+    (aiApi.ai.sendMessage as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      sessionId: 'sess-1',
+      message: {
+        id: 'msg-success',
+        sessionId: 'sess-1',
+        role: 'assistant',
+        content: 'Đây là câu trả lời sau khi thử lại',
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    const retryBtn = screen.getByText('Thử lại câu hỏi');
+    await act(async () => {
+      fireEvent.click(retryBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Đây là câu trả lời sau khi thử lại')).toBeDefined();
+    });
+  });
+
+  it('supports pasting screenshot image into chat input and showing preview', async () => {
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('mOS Copilot').closest('button')!);
+    });
+
+    const textarea = screen.getByPlaceholderText(/Hỏi về cấu trúc khách hàng/i);
+
+    // Create a mock file and clipboard event
+    const file = new File(['fake-image-bits'], 'screenshot.png', { type: 'image/png' });
+    const clipboardData = {
+      items: [
+        {
+          type: 'image/png',
+          getAsFile: () => file,
+        },
+      ],
+    };
+
+    // Mock FileReader
+    const originalFileReader = global.FileReader;
+    class MockFileReader {
+      onload: ((e: any) => void) | null = null;
+      readAsDataURL() {
+        setTimeout(() => {
+          this.onload?.({ target: { result: 'data:image/png;base64,mockbase64bits' } });
+        }, 10);
+      }
+    }
+    global.FileReader = MockFileReader as any;
+
+    await act(async () => {
+      fireEvent.paste(textarea, { clipboardData });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Đã dán ảnh chụp màn hình từ Clipboard/i)).toBeDefined();
+    });
+
+    global.FileReader = originalFileReader;
   });
 });

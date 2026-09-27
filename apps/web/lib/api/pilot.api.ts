@@ -21,6 +21,7 @@ import type {
   UpdatePilotAssessmentCriterionRequest,
   ReorderPilotAssessmentCriteriaRequest,
   SavePilotAssessmentRequest,
+  StockInventoryItem,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -191,6 +192,16 @@ export const pilotApi = {
     },
     saveAssessment: async (sessionId: number, data: SavePilotAssessmentRequest): Promise<PilotSession> => {
       const response = await api.post(`/pilot/sessions/${sessionId}/assessment`, data);
+      return response.data;
+    },
+    deductStock: async (
+      id: number
+    ): Promise<{ success: boolean; deductedCount: number; isAlreadyDeducted?: boolean }> => {
+      const response = await api.post(`/pilot/sessions/${id}/deduct-stock`);
+      return response.data;
+    },
+    listInventory: async (params?: { warehouse?: string }): Promise<StockInventoryItem[]> => {
+      const response = await api.get('/pilot/inventory', { params });
       return response.data;
     },
   },

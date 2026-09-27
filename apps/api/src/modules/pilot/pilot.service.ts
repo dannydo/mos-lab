@@ -2,10 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type { FastifyInstance } from 'fastify';
+import { Prisma } from '../../generated/crm-client/index.js';
 import type {
   CreatePilotMaterialRequest,
   CreatePilotSessionRequest,
   PilotMaterial,
+  PilotMaterialItemType,
+  StockInventoryItem,
   DarkLashesSessionStatus,
   PilotMetricsSummary,
   PilotSession,
@@ -206,6 +209,8 @@ export class PilotService {
       volume: Number(raw.volume),
       unit: raw.unit,
       costPerUnit: Number(raw.costPerUnit),
+      imageUrl: raw.imageUrl ?? null,
+      itemType: (raw.itemType as PilotMaterialItemType) || 'CONSUMABLE',
       isActive: Boolean(raw.isActive),
       createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : String(raw.createdAt),
       updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : String(raw.updatedAt),
@@ -350,6 +355,8 @@ export class PilotService {
         volume,
         unit: data.unit.trim(),
         costPerUnit,
+        imageUrl: data.imageUrl ? data.imageUrl.trim() : null,
+        itemType: data.itemType || 'CONSUMABLE',
         isActive: data.isActive !== undefined ? data.isActive : true,
       },
     });
@@ -390,6 +397,12 @@ export class PilotService {
       const price = data.purchasePrice !== undefined ? data.purchasePrice : Number(existing.purchasePrice);
       const vol = data.volume !== undefined ? data.volume : Number(existing.volume);
       updatePayload.costPerUnit = vol > 0 ? Math.round(price / vol) : price;
+    }
+    if (data.imageUrl !== undefined) {
+      updatePayload.imageUrl = data.imageUrl ? data.imageUrl.trim() : null;
+    }
+    if (data.itemType !== undefined) {
+      updatePayload.itemType = data.itemType;
     }
     if (data.isActive !== undefined) {
       updatePayload.isActive = data.isActive;
@@ -518,6 +531,7 @@ export class PilotService {
       notes: raw.notes ?? null,
       source: raw.source ?? null,
       createdByStaffId: raw.createdByStaffId ?? null,
+      isStockDeducted: Boolean(raw.isStockDeducted),
       createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : String(raw.createdAt),
       updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : String(raw.updatedAt),
       materials,
@@ -746,6 +760,14 @@ export class PilotService {
       return sess;
     });
 
+    if (data.status === 'SERVICE_DONE' || data.status === 'CHECKED_OUT') {
+      try {
+        await this.deductStockForSession(fastify, record.id);
+      } catch {
+        // non-blocking stock deduction
+      }
+    }
+
     return this.formatSession(record);
   }
 
@@ -949,6 +971,14 @@ export class PilotService {
       return res;
     });
 
+    if (data.status === 'SERVICE_DONE' || data.status === 'CHECKED_OUT') {
+      try {
+        await this.deductStockForSession(fastify, id);
+      } catch {
+        // non-blocking stock deduction
+      }
+    }
+
     return this.formatSession(updated);
   }
 
@@ -1018,6 +1048,12 @@ export class PilotService {
         status: 'SERVICE_DONE',
       },
     });
+
+    try {
+      await this.deductStockForSession(fastify, id);
+    } catch {
+      // non-blocking stock deduction
+    }
 
     return this.formatSession(updated);
   }
@@ -1719,6 +1755,106 @@ export class PilotService {
     });
 
     return this.formatSessionStep(updated);
+  }
+
+  static async deductStockForSession(
+    fastify: FastifyInstance,
+    sessionId: number
+  ): Promise<{ success: boolean; deductedCount: number; isAlreadyDeducted?: boolean }> {
+    const session = await fastify.prisma.crm.crmPilotSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        materials: true,
+      },
+    });
+    if (!session) {
+      throw new PilotServiceError('Không tìm thấy ca dịch vụ pilot tương ứng.', 404);
+    }
+    if (session.isStockDeducted) {
+      return { success: true, deductedCount: 0, isAlreadyDeducted: true };
+    }
+
+    const warehouse = session.branchCode || this.DEFAULT_BRANCH_CODE;
+    let materialsToDeduct = session.materials;
+
+    // If session has no materials recorded yet, load standard active BOM
+    if (!materialsToDeduct || materialsToDeduct.length === 0) {
+      const activeMaterials = await fastify.prisma.crm.crmPilotMaterial.findMany({
+        where: { pilotCode: session.pilotCode || this.DEFAULT_PILOT_CODE, isActive: true },
+      });
+      if (activeMaterials.length > 0) {
+        materialsToDeduct = activeMaterials.map((m: SafeAny) => ({
+          id: 0,
+          sessionId: session.id,
+          materialId: m.id,
+          materialName: m.name,
+          unit: m.unit,
+          usageAmount: new Prisma.Decimal(1),
+          costPerUnit: m.costPerUnit,
+          calculatedCost: m.costPerUnit,
+        })) as SafeAny;
+      }
+    }
+
+    let deductedCount = 0;
+    if (materialsToDeduct && materialsToDeduct.length > 0) {
+      for (const mat of materialsToDeduct) {
+        const usage = Number(mat.usageAmount || 1);
+        if (mat.materialId) {
+          await fastify.prisma.crm.crmStockInventory.upsert({
+            where: {
+              materialId_warehouse: {
+                materialId: mat.materialId,
+                warehouse,
+              },
+            },
+            create: {
+              materialId: mat.materialId,
+              materialName: mat.materialName || 'Vật tư',
+              unit: mat.unit || 'đv',
+              quantity: -usage,
+              warehouse,
+            },
+            update: {
+              quantity: {
+                decrement: usage,
+              },
+            },
+          });
+          deductedCount++;
+        }
+      }
+    }
+
+    await fastify.prisma.crm.crmPilotSession.update({
+      where: { id: sessionId },
+      data: { isStockDeducted: true },
+    });
+
+    return { success: true, deductedCount };
+  }
+
+  static async listStockInventory(fastify: FastifyInstance, warehouse?: string): Promise<StockInventoryItem[]> {
+    const where: Record<string, SafeAny> = {};
+    if (warehouse) {
+      where.warehouse = warehouse;
+    }
+    const list = await fastify.prisma.crm.crmStockInventory.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      include: { material: true },
+    });
+    return list.map((item: SafeAny) => ({
+      id: item.id,
+      materialId: item.materialId,
+      materialName: item.materialName || item.material?.name || '',
+      unit: item.unit,
+      quantity: Number(item.quantity),
+      minQuantity: Number(item.minQuantity),
+      warehouse: item.warehouse,
+      updatedAt: item.updatedAt instanceof Date ? item.updatedAt.toISOString() : String(item.updatedAt),
+      createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : String(item.createdAt),
+    }));
   }
 
   static async deleteSession(fastify: FastifyInstance, id: number): Promise<{ success: boolean }> {

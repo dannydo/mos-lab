@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Form, Input, InputNumber, Popconfirm, message } from 'antd';
+import { Button, Form, Input, InputNumber, Popconfirm, Select, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Package, Plus, Trash2, Edit2, Sparkles } from 'lucide-react';
 import type { CreatePilotMaterialRequest, PilotMaterial, UpdatePilotMaterialRequest } from '@mos-lab/shared';
@@ -45,6 +45,8 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
       unit: 'ml',
       volume: 1,
       purchasePrice: 0,
+      itemType: 'CONSUMABLE',
+      imageUrl: '',
     });
     setFormModalOpen(true);
   };
@@ -57,6 +59,8 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
       purchasePrice: material.purchasePrice,
       volume: material.volume,
       unit: material.unit,
+      itemType: material.itemType || 'CONSUMABLE',
+      imageUrl: material.imageUrl || '',
     });
     setFormModalOpen(true);
   };
@@ -122,6 +126,22 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
 
   const columns: ColumnsType<PilotMaterial> = [
     {
+      title: 'Hình ảnh',
+      dataIndex: 'imageUrl',
+      key: 'imageUrl',
+      width: 70,
+      align: 'center',
+      render: (url: string | undefined, r) => (
+        <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 flex items-center justify-center mx-auto">
+          {url ? (
+            <img src={url} alt={r.name} className="w-full h-full object-cover" />
+          ) : (
+            <AppIcon icon={Package} size="sm" className="text-slate-400" />
+          )}
+        </div>
+      ),
+    },
+    {
       title: 'Tên vật tư',
       dataIndex: 'name',
       key: 'name',
@@ -131,6 +151,19 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
           {!r.isActive && <StatusTag status="default" label="Đã dừng dùng" className="ml-2 text-[10px]" />}
         </div>
       ),
+    },
+    {
+      title: 'Phân loại',
+      dataIndex: 'itemType',
+      key: 'itemType',
+      width: 110,
+      align: 'center',
+      render: (type: string | undefined) =>
+        type === 'TOOL' ? (
+          <StatusTag status="purple" label="Dụng cụ" />
+        ) : (
+          <StatusTag status="success" label="Tiêu hao" />
+        ),
     },
     {
       title: 'Giá mua',
@@ -163,9 +196,7 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
       align: 'right',
       render: (val: number, r) => (
         <div className="flex flex-col items-end">
-          <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
-            {formatVND(val)}
-          </span>
+          <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">{formatVND(val)}</span>
           <span className="text-[10px] text-slate-400">/{r.unit}</span>
         </div>
       ),
@@ -235,10 +266,11 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
             Thêm vật tư mới
           </Button>,
         ]}
-        width={800}
+        width={880}
       >
         <div className="mb-3 p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
-          💡 <strong>Quy tắc tính tự động:</strong> Cost trên 1 đơn vị = <code>Giá mua / Quy cách dung tích</code>. Khi KTV ghi nhận lượng dùng trong ca làm, hệ thống sẽ nhân với Cost/đơn vị này để tính chi phí vật tư chính xác.
+          💡 <strong>Quy tắc tính tự động:</strong> Cost trên 1 đơn vị = <code>Giá mua / Quy cách dung tích</code>. Khi
+          KTV ghi nhận lượng dùng trong ca làm, hệ thống sẽ nhân với Cost/đơn vị này để tính chi phí vật tư chính xác.
         </div>
 
         <DataTable<PilotMaterial>
@@ -262,7 +294,7 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
         okText={editingMaterial ? 'Lưu thay đổi' : 'Thêm vào danh mục'}
         cancelText="Hủy"
         okButtonProps={{ className: 'bg-emerald-600 hover:bg-emerald-700 text-white' }}
-        width={480}
+        width={520}
       >
         <Form form={form} layout="vertical" className="mt-3">
           {!editingMaterial && (
@@ -290,13 +322,25 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
             </div>
           )}
 
-          <Form.Item
-            name="name"
-            label="Tên vật tư"
-            rules={[{ required: true, message: 'Vui lòng nhập tên vật tư' }]}
-          >
+          <Form.Item name="name" label="Tên vật tư" rules={[{ required: true, message: 'Vui lòng nhập tên vật tư' }]}>
             <Input placeholder="VD: Thuốc uốn số 1 (Perming Cream)" className="rounded-lg" />
           </Form.Item>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Form.Item name="itemType" label="Phân loại vật tư" rules={[{ required: true, message: 'Chọn phân loại' }]}>
+              <Select
+                className="w-full rounded-lg"
+                options={[
+                  { value: 'CONSUMABLE', label: 'Vật tư tiêu hao' },
+                  { value: 'TOOL', label: 'Dụng cụ / Thiết bị' },
+                ]}
+              />
+            </Form.Item>
+
+            <Form.Item name="unit" label="Đơn vị tính" rules={[{ required: true, message: 'Nhập đơn vị tính' }]}>
+              <Input placeholder="VD: ml, cây, cặp..." className="rounded-lg" />
+            </Form.Item>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Form.Item
@@ -322,26 +366,11 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
           </div>
 
           <Form.Item
-            name="unit"
-            label="Đơn vị tính"
-            rules={[{ required: true, message: 'Nhập đơn vị tính' }]}
-            extra={
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                <span className="text-[10px] text-slate-400 mr-1 self-center">Chọn nhanh:</span>
-                {QUICK_UNITS.map((u) => (
-                  <button
-                    key={u}
-                    type="button"
-                    onClick={() => form.setFieldValue('unit', u)}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-slate-600 dark:text-slate-300"
-                  >
-                    {u}
-                  </button>
-                ))}
-              </div>
-            }
+            name="imageUrl"
+            label="URL Hình ảnh (Tùy chọn)"
+            extra="Nhập đường dẫn ảnh sản phẩm nếu có để hiển thị thumbnail trực quan."
           >
-            <Input placeholder="VD: ml, cây, cặp, miếng, bộ, g..." className="rounded-lg" />
+            <Input placeholder="https://example.com/item.png" className="rounded-lg" />
           </Form.Item>
 
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">

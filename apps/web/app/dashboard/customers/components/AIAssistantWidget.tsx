@@ -31,6 +31,8 @@ import {
   persistAiLauncherPosition,
   readAiLauncherPosition,
   subscribeAiLauncherPosition,
+  readAiCopilotVisible,
+  subscribeAiCopilotVisibility,
   type AiLauncherPosition,
 } from '../../../../lib/ai-assistant-launcher';
 
@@ -67,17 +69,27 @@ const QUICK_PROMPTS = [
 ];
 
 export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, currentUser }: AIAssistantWidgetProps) {
+  const [copilotVisible, setCopilotVisible] = useState(() => readAiCopilotVisible());
   const [open, setOpen] = useState(false);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
+  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showSessionDrawer, setShowSessionDrawer] = useState(false);
   const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
   const [appliedActions, setAppliedActions] = useState<Record<string, boolean>>({});
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Sync Copilot Visibility from User Profile / Storage
+  useEffect(() => {
+    return subscribeAiCopilotVisibility(() => {
+      setCopilotVisible(readAiCopilotVisible());
+    });
+  }, []);
 
   // Floating Launcher Drag & Persistence State
   const [launcherPosition, setLauncherPosition] = useState<AiLauncherPosition | null>(null);
@@ -211,12 +223,38 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
     }
   };
 
+  // Paste screenshot from clipboard
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (typeof event.target?.result === 'string') {
+              setPastedImage(event.target.result);
+            }
+          };
+          reader.readAsDataURL(file);
+          e.preventDefault();
+          break;
+        }
+      }
+    }
+  };
+
   // Send message
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputMessage).trim();
-    if (!text || sending) return;
+    const hasImage = !!pastedImage;
+    if ((!text && !hasImage) || sending) return;
+
+    const fullContent = hasImage ? `${text ? text + '\n' : ''}[Đính kèm ảnh màn hình]` : text;
 
     setInputMessage('');
+    setLastFailedMessage(null);
     setSending(true);
 
     // Optimistic user message
@@ -224,15 +262,18 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
       id: `temp-${Date.now()}`,
       sessionId: activeSessionId || '',
       role: 'user',
-      content: text,
+      content: fullContent,
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMsg]);
+    if (hasImage) {
+      setPastedImage(null);
+    }
 
     try {
       const res = await aiApi.ai.sendMessage({
         sessionId: activeSessionId || undefined,
-        message: text,
+        message: fullContent,
         scope: 'customers',
         context: {
           page: 'customers',
@@ -261,6 +302,7 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
         }
       }
     } catch {
+      setLastFailedMessage(fullContent);
       // Append error message
       const errorMsg: AiChatMessage = {
         id: `err-${Date.now()}`,
@@ -390,6 +432,10 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
       // Ignore if pointer capture was already released
     }
   };
+
+  if (!copilotVisible) {
+    return null;
+  }
 
   return (
     <>
@@ -724,10 +770,26 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
                       className={`max-w-[90%] rounded-2xl px-4 py-2.5 text-xs shadow-sm leading-relaxed ${
                         isUser
                           ? 'bg-indigo-600 text-white rounded-tr-none'
-                          : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-tl-none'
+                          : msg.id.startsWith('err-')
+                            ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 rounded-tl-none'
+                            : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-tl-none'
                       }`}
                     >
                       <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                      {msg.id.startsWith('err-') && lastFailedMessage && (
+                        <div className="mt-2 pt-2 border-t border-rose-200/60 dark:border-rose-900/40 flex items-center justify-between gap-2">
+                          <span className="text-[11px] text-rose-500">Mất kết nối máy chủ AI</span>
+                          <button
+                            type="button"
+                            onClick={() => handleSendMessage(lastFailedMessage)}
+                            disabled={sending}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-medium transition-colors cursor-pointer"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            <span>Thử lại câu hỏi</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Suggestion Card */}
@@ -835,32 +897,51 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
 
           {/* Input Box Area */}
           <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+            {pastedImage && (
+              <div className="mb-2 relative inline-block">
+                <div className="relative rounded-lg overflow-hidden border border-indigo-200 dark:border-indigo-800 max-h-28 max-w-xs shadow-sm bg-slate-100 dark:bg-slate-800">
+                  <img src={pastedImage} alt="Ảnh chụp màn hình" className="max-h-28 object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => setPastedImage(null)}
+                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors cursor-pointer"
+                    title="Gỡ ảnh đính kèm"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+                <span className="block text-[10px] text-indigo-600 dark:text-indigo-400 mt-0.5">
+                  📷 Đã dán ảnh chụp màn hình từ Clipboard
+                </span>
+              </div>
+            )}
             <div className="flex items-end gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
               <textarea
                 ref={inputRef}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
+                onPaste={handlePaste}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
                   }
                 }}
-                placeholder="Hỏi về cấu trúc khách hàng, tư vấn CSKH hoặc yêu cầu lọc dữ liệu..."
+                placeholder="Hỏi về cấu trúc khách hàng, dán ảnh màn hình (Ctrl+V) hoặc yêu cầu lọc dữ liệu..."
                 rows={1}
                 className="flex-1 bg-transparent resize-none border-0 focus:outline-none focus:ring-0 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 max-h-24 py-1.5 px-2 leading-relaxed"
               />
               <button
                 type="button"
-                disabled={!inputMessage.trim() || sending}
+                disabled={(!inputMessage.trim() && !pastedImage) || sending}
                 onClick={() => handleSendMessage()}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white transition-colors flex-shrink-0"
+                className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white transition-colors flex-shrink-0 cursor-pointer"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
             </div>
             <div className="flex items-center justify-between mt-1 px-1 text-[10px] text-slate-400">
-              <span>Enter để gửi · Shift+Enter để xuống dòng</span>
+              <span>Enter để gửi · Shift+Enter để xuống dòng · Ctrl+V dán ảnh</span>
               <span>Workspace cá nhân</span>
             </div>
           </div>

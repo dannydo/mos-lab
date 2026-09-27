@@ -13,12 +13,18 @@ import {
   UserRound,
   Camera,
   Sparkles,
+  Bot,
 } from 'lucide-react';
 import type { SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { resolveMediaUrl } from '../../lib/api-client';
+import {
+  readAiCopilotVisible,
+  persistAiCopilotVisible,
+  subscribeAiCopilotVisibility,
+} from '../../lib/ai-assistant-launcher';
 import AvatarCropModal from '../avatar/AvatarCropModal';
 
 interface UserProfileDropdownProps {
@@ -175,6 +181,18 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   } = useOmiCall();
 
   const { preferences, ready: bugReportReady, setVisible: setBugReportVisible } = useBugReportLauncherPreferences();
+
+  const [aiCopilotVisible, setAiCopilotVisible] = useState(() => readAiCopilotVisible());
+  React.useEffect(() => {
+    return subscribeAiCopilotVisibility(() => {
+      setAiCopilotVisible(readAiCopilotVisible());
+    });
+  }, []);
+
+  const handleToggleAiCopilot = (checked: boolean) => {
+    persistAiCopilotVisible(checked);
+    setAiCopilotVisible(checked);
+  };
 
   const roleBadge = getRoleBadge(user?.role, token);
   const callStatus = getCallStatusInfo({ isRegistered, omicallReady, callState });
@@ -366,6 +384,24 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             disabled={!bugReportReady}
             aria-label="Hiển thị nút phản hồi mOS"
             onChange={setBugReportVisible}
+          />
+        </div>
+
+        {/* Wings AI Copilot Toggle */}
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+              <Bot size={15} />
+            </span>
+            <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
+              Trợ Lý Thông Minh Wings AI
+            </div>
+          </div>
+          <Switch
+            size="small"
+            checked={aiCopilotVisible}
+            aria-label="Bật/tắt Trợ Lý Thông Minh Wings AI"
+            onChange={handleToggleAiCopilot}
           />
         </div>
       </div>

@@ -68,3 +68,32 @@ export function subscribeAiLauncherPosition(listener: () => void): () => void {
     window.removeEventListener('storage', onStorage);
   };
 }
+
+export const AI_COPILOT_VISIBILITY_KEY = 'mos_ai_copilot_visible_v1';
+export const AI_COPILOT_VISIBILITY_EVENT = 'mos-ai-copilot-visibility-changed';
+
+export function readAiCopilotVisible(): boolean {
+  const raw = safeStorage.getItem(AI_COPILOT_VISIBILITY_KEY);
+  if (raw === null) return true; // Mặc định bật
+  return raw === 'true';
+}
+
+export function persistAiCopilotVisible(visible: boolean): void {
+  safeStorage.setItem(AI_COPILOT_VISIBILITY_KEY, String(visible));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AI_COPILOT_VISIBILITY_EVENT));
+  }
+}
+
+export function subscribeAiCopilotVisibility(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => undefined;
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === AI_COPILOT_VISIBILITY_KEY) listener();
+  };
+  window.addEventListener(AI_COPILOT_VISIBILITY_EVENT, listener);
+  window.addEventListener('storage', onStorage);
+  return () => {
+    window.removeEventListener(AI_COPILOT_VISIBILITY_EVENT, listener);
+    window.removeEventListener('storage', onStorage);
+  };
+}

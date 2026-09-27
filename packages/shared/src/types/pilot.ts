@@ -1,4 +1,5 @@
 export type PilotFollowUpStatus = 'PENDING' | 'DONE' | 'SKIPPED';
+export type PilotMaterialItemType = 'CONSUMABLE' | 'TOOL';
 
 export interface PilotMaterial {
   id: number;
@@ -8,6 +9,8 @@ export interface PilotMaterial {
   volume: number;
   unit: string;
   costPerUnit: number;
+  imageUrl?: string | null;
+  itemType?: PilotMaterialItemType;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -20,6 +23,8 @@ export interface CreatePilotMaterialRequest {
   volume: number;
   unit: string;
   costPerUnit?: number;
+  imageUrl?: string | null;
+  itemType?: PilotMaterialItemType;
   isActive?: boolean;
 }
 
@@ -29,7 +34,21 @@ export interface UpdatePilotMaterialRequest {
   volume?: number;
   unit?: string;
   costPerUnit?: number;
+  imageUrl?: string | null;
+  itemType?: PilotMaterialItemType;
   isActive?: boolean;
+}
+
+export interface StockInventoryItem {
+  id: number;
+  materialId?: number | null;
+  materialName: string;
+  unit: string;
+  quantity: number;
+  minQuantity: number;
+  warehouse: string;
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 export interface PilotSessionMaterialItem {
@@ -93,6 +112,7 @@ export interface PilotSession {
   notes: string | null;
   source: string | null;
   createdByStaffId: number | null;
+  isStockDeducted?: boolean;
   createdAt: string;
   updatedAt: string;
   materials?: PilotSessionMaterialItem[];

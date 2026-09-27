@@ -3370,6 +3370,7 @@ model CrmPilotSession {
   assessmentNotes    String?  @map("assessment_notes") @db.Text
   assessmentCriteriaJson String? @map("assessment_criteria_json") @db.LongText
   assessedAt         DateTime? @map("assessed_at") @db.DateTime(0)
+  isStockDeducted    Boolean  @default(false) @map("is_stock_deducted")
   createdByStaffId   Int?     @map("created_by_staff_id")
   createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
@@ -3394,14 +3395,38 @@ model CrmPilotMaterial {
   volume        Decimal  @default(1) @map("volume") @db.Decimal(10, 2)
   unit          String   @map("unit") @db.VarChar(30)
   costPerUnit   Decimal  @default(0) @map("cost_per_unit") @db.Decimal(12, 2)
+  imageUrl      String?  @map("image_url") @db.VarChar(512)
+  itemType      String   @default("CONSUMABLE") @map("item_type") @db.VarChar(30)
   isActive      Boolean  @default(true) @map("is_active")
   createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt     DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   sessionMaterials CrmPilotSessionMaterial[]
+  stockInventories CrmStockInventory[]
 
   @@index([pilotCode, isActive])
   @@map("crm_pilot_materials")
+}
+
+// ═══════════════════════════════════════════
+// Pilot Physical Stock Inventory
+// ═══════════════════════════════════════════
+model CrmStockInventory {
+  id           Int      @id @default(autoincrement())
+  materialId   Int?     @map("material_id")
+  materialName String   @map("material_name") @db.VarChar(120)
+  unit         String   @map("unit") @db.VarChar(30)
+  quantity     Decimal  @default(0) @map("quantity") @db.Decimal(12, 2)
+  minQuantity  Decimal  @default(0) @map("min_quantity") @db.Decimal(12, 2)
+  warehouse    String   @default("detham") @map("warehouse") @db.VarChar(50)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  material     CrmPilotMaterial? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+
+  @@unique([materialId, warehouse])
+  @@index([warehouse])
+  @@map("stock_inventory")
 }
 
 model CrmPilotSessionMaterial {
