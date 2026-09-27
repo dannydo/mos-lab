@@ -55,13 +55,24 @@ export function getBestVietnameseVoice(): SpeechSynthesisVoice | null {
   return defaultVoice || voices[0] || null;
 }
 
+export interface SpeakTextOptions {
+  rate?: number;
+  pitch?: number;
+  voice?: SpeechSynthesisVoice | null;
+  onStart?: () => void;
+  onEnd?: () => void;
+  onError?: (error?: unknown) => void;
+}
+
 export function speakText(
   text: string,
-  callbacks?: {
-    onStart?: () => void;
-    onEnd?: () => void;
-    onError?: () => void;
-  }
+  optionsOrCallbacks?:
+    | SpeakTextOptions
+    | {
+        onStart?: () => void;
+        onEnd?: () => void;
+        onError?: () => void;
+      }
 ): SpeechSynthesisUtterance | null {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
 
@@ -72,26 +83,27 @@ export function speakText(
   if (!spokenText) return null;
 
   const utterance = new SpeechSynthesisUtterance(spokenText);
-  const voice = getBestVietnameseVoice();
+  const options = optionsOrCallbacks as SpeakTextOptions | undefined;
+  const voice = options?.voice !== undefined ? options.voice : getBestVietnameseVoice();
 
   if (voice) {
     utterance.voice = voice;
   }
   utterance.lang = voice?.lang || 'vi-VN';
-  utterance.rate = 1.05; // Slightly faster natural conversational pacing
-  utterance.pitch = 1.0;
+  utterance.rate = options?.rate !== undefined ? options.rate : 1.05; // Natural conversational pacing
+  utterance.pitch = options?.pitch !== undefined ? options.pitch : 1.0;
 
   utterance.onstart = () => {
-    callbacks?.onStart?.();
+    optionsOrCallbacks?.onStart?.();
   };
 
   utterance.onend = () => {
-    callbacks?.onEnd?.();
+    optionsOrCallbacks?.onEnd?.();
   };
 
   utterance.onerror = (e) => {
     if (e.error !== 'canceled' && e.error !== 'interrupted') {
-      callbacks?.onError?.();
+      optionsOrCallbacks?.onError?.(e);
     }
   };
 

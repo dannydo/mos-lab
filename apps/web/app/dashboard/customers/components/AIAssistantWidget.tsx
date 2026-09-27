@@ -18,11 +18,16 @@ import {
   RefreshCw,
   Lightbulb,
   MessageSquare,
+  Volume2,
+  VolumeX,
+  Copy,
+  Square,
 } from 'lucide-react';
 import { Tooltip } from 'antd';
 import type { AiChatSession, AiChatMessage, AiChatAction } from '@mos-lab/shared';
 import { AdaptiveDrawer } from '../../../../components/ui';
 import { aiApi } from '../../../../lib/api/ai.api';
+import { speakText, stopSpeaking } from '../../../../components/voice-assistant/speech-utils';
 import {
   AI_LAUNCHER_MARGIN,
   AI_LAUNCHER_SIZE,
@@ -89,6 +94,97 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
     return subscribeAiCopilotVisibility(() => {
       setCopilotVisible(readAiCopilotVisible());
     });
+  }, []);
+
+  // Audio Speech (TTS) & Playback Rate State
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [autoSpeakEnabled, setAutoSpeakEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('mos_copilot_auto_speak') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [playbackRate, setPlaybackRate] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1.05;
+    try {
+      const saved = localStorage.getItem('mos_copilot_playback_rate');
+      return saved ? parseFloat(saved) || 1.05 : 1.05;
+    } catch {
+      return 1.05;
+    }
+  });
+
+  const handleToggleAutoSpeak = () => {
+    setAutoSpeakEnabled((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('mos_copilot_auto_speak', String(next));
+        } catch {
+          // Ignore localStorage errors
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleCyclePlaybackRate = () => {
+    const rates = [1.0, 1.25, 1.5];
+    const currentIndex = rates.indexOf(playbackRate);
+    const nextRate = rates[(currentIndex + 1) % rates.length] || 1.0;
+    setPlaybackRate(nextRate);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('mos_copilot_playback_rate', String(nextRate));
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  };
+
+  const handleToggleSpeak = useCallback(
+    (msg: AiChatMessage) => {
+      if (speakingMessageId === msg.id) {
+        stopSpeaking();
+        setSpeakingMessageId(null);
+        return;
+      }
+
+      stopSpeaking();
+      setSpeakingMessageId(msg.id);
+      speakText(msg.content, {
+        rate: playbackRate,
+        onStart: () => setSpeakingMessageId(msg.id),
+        onEnd: () => setSpeakingMessageId((current) => (current === msg.id ? null : current)),
+        onError: () => setSpeakingMessageId((current) => (current === msg.id ? null : current)),
+      });
+    },
+    [speakingMessageId, playbackRate]
+  );
+
+  const handleCopyContent = useCallback((msg: AiChatMessage) => {
+    if (!msg.content) return;
+    navigator.clipboard.writeText(msg.content).then(() => {
+      setCopiedMessageId(msg.id);
+      setTimeout(() => setCopiedMessageId((cur) => (cur === msg.id ? null : cur)), 2000);
+    });
+  }, []);
+
+  // Cleanup speech when drawer closes or unmounts
+  useEffect(() => {
+    if (!open) {
+      stopSpeaking();
+      setSpeakingMessageId(null);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
   }, []);
 
   // Floating Launcher Drag & Persistence State
@@ -299,6 +395,11 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
         // Expand thinking for assistant message
         if (res.message?.thinking) {
           setExpandedThinking((prev) => ({ ...prev, [res.message.id]: true }));
+        }
+
+        // Auto-speak if enabled
+        if (autoSpeakEnabled && res.message?.content) {
+          handleToggleSpeak(res.message);
         }
       }
     } catch {
@@ -522,6 +623,38 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
             </div>
 
             <div className="flex items-center gap-1">
+              {/* Audio Controls */}
+              <Tooltip
+                title={
+                  autoSpeakEnabled
+                    ? 'Tự động đọc phản hồi (Đang BẬT) · Bấm để tắt'
+                    : 'Tự động đọc phản hồi (Đang TẮT) · Bấm để bật'
+                }
+              >
+                <button
+                  type="button"
+                  onClick={handleToggleAutoSpeak}
+                  className={`p-1.5 rounded-md transition-colors ${
+                    autoSpeakEnabled
+                      ? 'bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  aria-label="Tự động đọc phản hồi"
+                >
+                  {autoSpeakEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                </button>
+              </Tooltip>
+
+              <Tooltip title={`Tốc độ đọc giọng nói: ${playbackRate}x · Bấm để đổi (1.0x / 1.25x / 1.5x)`}>
+                <button
+                  type="button"
+                  onClick={handleCyclePlaybackRate}
+                  className="px-1.5 py-1 rounded-md text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  {playbackRate}x
+                </button>
+              </Tooltip>
+
               <button
                 type="button"
                 onClick={() => setShowSessionDrawer(!showSessionDrawer)}
@@ -772,7 +905,11 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
                           ? 'bg-indigo-600 text-white rounded-tr-none'
                           : msg.id.startsWith('err-')
                             ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 rounded-tl-none'
-                            : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-tl-none'
+                            : `bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border rounded-tl-none ${
+                                speakingMessageId === msg.id
+                                  ? 'border-purple-300 dark:border-purple-700/80 shadow-purple-500/10 shadow-md ring-1 ring-purple-400/30'
+                                  : 'border-slate-200 dark:border-slate-800'
+                              }`
                       }`}
                     >
                       <div className="whitespace-pre-wrap break-words">{msg.content}</div>
@@ -791,6 +928,59 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
                         </div>
                       )}
                     </div>
+
+                    {/* Action Bar (Audio Speech & Copy) for Assistant Message */}
+                    {!isUser && (
+                      <div className="flex items-center gap-2 mt-1.5 px-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSpeak(msg)}
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                            speakingMessageId === msg.id
+                              ? 'bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 shadow-xs'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                          title={speakingMessageId === msg.id ? 'Dừng đọc' : 'Nghe đọc câu trả lời'}
+                        >
+                          {speakingMessageId === msg.id ? (
+                            <>
+                              <Square className="w-3 h-3 fill-current text-purple-600 dark:text-purple-400" />
+                              <span className="font-semibold text-purple-700 dark:text-purple-300">Dừng</span>
+                              {/* Animated mini soundwave equalizer */}
+                              <span className="flex items-end gap-0.5 ml-0.5 h-3">
+                                <span className="w-0.5 h-2 bg-purple-500 rounded-full animate-pulse" />
+                                <span className="w-0.5 h-3 bg-purple-500 rounded-full animate-pulse" />
+                                <span className="w-0.5 h-1.5 bg-purple-500 rounded-full animate-pulse" />
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="w-3 h-3" />
+                              <span>Nghe đọc</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyContent(msg)}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          title="Sao chép nội dung"
+                        >
+                          {copiedMessageId === msg.id ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-500" />
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">Đã chép</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Sao chép</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
 
                     {/* Action Suggestion Card */}
                     {!isUser && msg.suggestedAction && (

@@ -429,6 +429,33 @@ async function main() {
   }
 
   const receipt = JSON.parse(readFileSync(resolve(receiptPath), 'utf8'));
+
+  if (command === 'submit') {
+    const changedFiles = (receipt.changedFiles as string[]) || [];
+    const tests = receipt.result?.tests;
+    if (!Array.isArray(tests) || tests.length === 0) {
+      throw new Error(
+        '[BRIDGE QUALITY GATE ERROR] receipt.result.tests bắt buộc phải là một Array các test item, không được để trống hoặc truyền dạng string.'
+      );
+    }
+    const changedWeb = changedFiles.some((f) => f.startsWith('apps/web/'));
+    if (changedWeb) {
+      const hasPassedVisualQa = tests.some((t) => {
+        const cmd = typeof t === 'string' ? t : t?.command || '';
+        const isFailed = /\bfailed\b/i.test(cmd);
+        const status = typeof t === 'object' && t?.status ? t.status : isFailed ? 'FAILED' : 'PASSED';
+        return (
+          status === 'PASSED' && /playwright/i.test(cmd) && /(visual|screenshot|snapshot|tohavescreenshot)/i.test(cmd)
+        );
+      });
+      if (!hasPassedVisualQa) {
+        throw new Error(
+          '[BRIDGE QUALITY GATE ERROR] Thay đổi liên quan apps/web/ bắt buộc phải có ít nhất một test Playwright visual QA PASSED (command chứa "playwright" và "visual|screenshot|snapshot").'
+        );
+      }
+    }
+  }
+
   const response = await fetch(
     `${apiUrl}/ide-task-bridge/tasks/${encodeURIComponent(taskId)}/${command === 'commit' ? 'commit-receipt' : 'receipt'}`,
     {

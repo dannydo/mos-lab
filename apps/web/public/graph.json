@@ -30788,8 +30788,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 64910,
-        "lineCount": 1879,
+        "sizeBytes": 64898,
+        "lineCount": 1876,
         "ext": ".ts"
       }
     },
@@ -34753,8 +34753,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42420,
-        "lineCount": 953,
+        "sizeBytes": 50521,
+        "lineCount": 1143,
         "ext": ".tsx"
       }
     },
@@ -34883,8 +34883,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14368,
-        "lineCount": 413,
+        "sizeBytes": 18266,
+        "lineCount": 534,
         "ext": ".tsx"
       }
     },
@@ -35754,8 +35754,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14785,
-        "lineCount": 400,
+        "sizeBytes": 14614,
+        "lineCount": 387,
         "ext": ".tsx"
       }
     },
@@ -35780,8 +35780,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30148,
-        "lineCount": 692,
+        "sizeBytes": 31218,
+        "lineCount": 691,
         "ext": ".tsx"
       }
     },
@@ -36729,8 +36729,8 @@
       "filePath": "apps/web/lib/ai-assistant-launcher.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3597,
-        "lineCount": 101,
+        "sizeBytes": 3596,
+        "lineCount": 100,
         "ext": ".ts"
       }
     },
@@ -36885,8 +36885,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8816,
-        "lineCount": 207,
+        "sizeBytes": 8828,
+        "lineCount": 209,
         "ext": ".ts"
       }
     },

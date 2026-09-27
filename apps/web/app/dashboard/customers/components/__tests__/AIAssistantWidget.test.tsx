@@ -30,6 +30,16 @@ vi.mock('../../../../../lib/api/ai.api', () => ({
   },
 }));
 
+// Mock speech-utils
+vi.mock('../../../../../components/voice-assistant/speech-utils', () => ({
+  speakText: vi.fn((text, opts) => {
+    opts?.onStart?.();
+    return null;
+  }),
+  stopSpeaking: vi.fn(),
+  cleanMarkdownForSpeech: vi.fn((t) => t),
+}));
+
 describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
   const mockCurrentUser = {
     id: 99,
@@ -407,5 +417,116 @@ describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
     });
 
     global.FileReader = originalFileReader;
+  });
+
+  it('renders speak and copy action bar on assistant messages and triggers TTS', async () => {
+    const { speakText, stopSpeaking } = await import('../../../../../components/voice-assistant/speech-utils');
+
+    (aiApi.ai.listSessions as ReturnType<typeof vi.fn>).mockResolvedValue({
+      sessions: [
+        {
+          id: 'sess-tts',
+          staffId: 99,
+          title: 'Hội thoại TTS',
+          scope: 'customers',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    });
+
+    (aiApi.ai.getSession as ReturnType<typeof vi.fn>).mockResolvedValue({
+      session: { id: 'sess-tts', staffId: 99, title: 'Hội thoại TTS' },
+      messages: [
+        {
+          id: 'msg-tts-1',
+          sessionId: 'sess-tts',
+          role: 'assistant',
+          content: 'Xin chào, đây là câu trả lời của mOS Copilot để kiểm tra âm thanh.',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    });
+
+    // Mock clipboard API
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockImplementation(() => Promise.resolve()),
+      },
+    });
+
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
+
+    // Open drawer
+    await act(async () => {
+      fireEvent.click(screen.getByText('mOS Copilot').closest('button')!);
+    });
+
+    // Wait for message to render
+    await waitFor(() => {
+      expect(screen.getByText('Xin chào, đây là câu trả lời của mOS Copilot để kiểm tra âm thanh.')).toBeDefined();
+    });
+
+    // Speak button should be rendered
+    const speakBtn = screen.getByText('Nghe đọc').closest('button');
+    expect(speakBtn).toBeDefined();
+    expect(speakBtn).not.toBeNull();
+
+    // Copy button should be rendered
+    const copyBtn = screen.getByText('Sao chép').closest('button');
+    expect(copyBtn).toBeDefined();
+
+    // Click speak
+    await act(async () => {
+      fireEvent.click(speakBtn!);
+    });
+
+    expect(stopSpeaking).toHaveBeenCalled();
+    expect(speakText).toHaveBeenCalledWith(
+      'Xin chào, đây là câu trả lời của mOS Copilot để kiểm tra âm thanh.',
+      expect.objectContaining({ rate: expect.any(Number) })
+    );
+
+    // After starting, button changes to "Dừng"
+    await waitFor(() => {
+      expect(screen.getByText('Dừng')).toBeDefined();
+    });
+
+    // Click copy
+    await act(async () => {
+      fireEvent.click(copyBtn!);
+    });
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      'Xin chào, đây là câu trả lời của mOS Copilot để kiểm tra âm thanh.'
+    );
+  });
+
+  it('allows toggling auto-speak and cycling playback rate on header', async () => {
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={vi.fn()} />);
+
+    // Open drawer
+    await act(async () => {
+      fireEvent.click(screen.getByText('mOS Copilot').closest('button')!);
+    });
+
+    // Check header audio controls
+    const autoSpeakBtn = screen.getByLabelText('Tự động đọc phản hồi');
+    expect(autoSpeakBtn).toBeDefined();
+
+    // Click to toggle auto-speak
+    await act(async () => {
+      fireEvent.click(autoSpeakBtn);
+    });
+    expect(localStorage.getItem('mos_copilot_auto_speak')).toBe('true');
+
+    // Check playback rate switcher
+    const rateBtn = screen.getByText(/1\.05x|1x|1\.0x/);
+    expect(rateBtn).toBeDefined();
+
+    // Click to cycle rate
+    await act(async () => {
+      fireEvent.click(rateBtn);
+    });
+    expect(localStorage.getItem('mos_copilot_playback_rate')).toBeDefined();
   });
 });
