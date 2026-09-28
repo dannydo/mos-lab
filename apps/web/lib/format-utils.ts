@@ -72,3 +72,29 @@ export function getPercent(value: number | null | undefined, total: number | nul
   if (!total || !value) return 0;
   return Math.round((value / total) * 100);
 }
+
+/**
+ * Formatter for Ant Design InputNumber currency fields.
+ * Formats a number with Vietnamese dot thousand separators and đ suffix.
+ * e.g., 1500000 -> "1.500.000 đ"
+ */
+export function formatVndInput(value?: number | string | null): string {
+  if (value === undefined || value === null || value === '') return '';
+  return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' đ';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SafeAny = any;
+
+/**
+ * Parser for Ant Design InputNumber currency fields.
+ * Strips non-digits so InputNumber can parse formatted values without reverting or decimal truncation.
+ * e.g., "1.500.000 đ" -> "1500000"
+ */
+export function parseVndInput(value?: string | number | null): SafeAny {
+  if (value === undefined || value === null || value === '') return '';
+  const digits = String(value).replace(/\D/g, '');
+  return digits ? (digits as SafeAny) : '';
+}
+
+

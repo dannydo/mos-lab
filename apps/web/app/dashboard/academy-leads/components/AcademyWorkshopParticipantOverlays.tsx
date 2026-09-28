@@ -35,6 +35,7 @@ import {
   EntityFormField,
   StatusTag,
 } from '../../../../components/ui';
+import { formatVndInput, parseVndInput } from '../../../../lib/format-utils';
 import { WORKSHOP_ATTENDANCE_LABELS, WORKSHOP_FEE_LABELS } from './AcademyWorkshopRoster';
 
 export type AcademyWorkshopFeeForm = {
@@ -521,7 +522,8 @@ export default function AcademyWorkshopParticipantOverlays({
                   precision={0}
                   step={100000}
                   className="w-full"
-                  formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+                  formatter={formatVndInput}
+                  parser={parseVndInput}
                 />
               </Form.Item>
               <Form.Item name="method" label="Phương thức">

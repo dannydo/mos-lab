@@ -28,7 +28,7 @@ import type {
   CreateAcademyFollowUpRequest,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
-import { formatVND } from '../../../../lib/format-utils';
+import { formatVND, formatVndInput, parseVndInput } from '../../../../lib/format-utils';
 import { EntityForm, EntityFormDrawer, EntityFormField, StatePanel, StatusTag } from '../../../../components/ui';
 import AcademyLeadScripts from './AcademyLeadScripts';
 
@@ -306,7 +306,8 @@ export function AcademyLeadDrawer({
                         min={0}
                         step={100000}
                         className="w-full"
-                        formatter={(value) => `${Number(value || 0).toLocaleString('vi-VN')} đ`}
+                        formatter={formatVndInput}
+                        parser={parseVndInput}
                       />
                     </EntityFormField>
                     <EntityFormField label="Ưu tiên Hot" name="isHot">
