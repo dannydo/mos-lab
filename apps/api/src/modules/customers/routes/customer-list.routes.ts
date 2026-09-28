@@ -775,13 +775,9 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push('(COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1');
       }
       if (hasProduct === 'true') {
-        innerWhereClauses.push(`EXISTS (
-          SELECT 1 FROM order_service os_p 
-          WHERE os_p.user_id = u.id AND (
-            LOWER(COALESCE(os_p.service_group, '')) LIKE '%product%' OR 
-            LOWER(COALESCE(os_p.service_type, '')) LIKE '%product%' OR 
-            LOWER(COALESCE(os_p.user_service_type, '')) LIKE '%product%'
-          )
+        innerWhereClauses.push(`u.id IN (
+          SELECT DISTINCT user_id FROM order_service 
+          WHERE service_group = 'product' OR user_service_type = 'product'
         )`);
       }
       if (hasCallback === 'true') {

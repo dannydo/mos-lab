@@ -477,7 +477,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
                      COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
               FROM user_service_balance_transaction usbt
               LEFT JOIN \`order\` o ON o.id = usbt.order_id
-              LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
+              LEFT JOIN \`report_order\` ro ON ro.order_id = usbt.order_id
               WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
             `)
           : Promise.resolve([]),

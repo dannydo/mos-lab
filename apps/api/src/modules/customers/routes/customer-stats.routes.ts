@@ -559,13 +559,9 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push('(COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1');
       }
       if (hasProduct === 'true') {
-        innerWhereClauses.push(`EXISTS (
-          SELECT 1 FROM order_service os_p 
-          WHERE os_p.user_id = u.id AND (
-            LOWER(COALESCE(os_p.service_group, '')) LIKE '%product%' OR 
-            LOWER(COALESCE(os_p.service_type, '')) LIKE '%product%' OR 
-            LOWER(COALESCE(os_p.user_service_type, '')) LIKE '%product%'
-          )
+        innerWhereClauses.push(`u.id IN (
+          SELECT DISTINCT user_id FROM order_service 
+          WHERE service_group = 'product' OR user_service_type = 'product'
         )`);
       }
       if (hasCallback === 'true') {
@@ -889,7 +885,8 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       // 1. Future bookings (~185 IDs, ~5ms)
       // 2. Callbacks (~30 IDs, ~50ms)
       // 3. New LoCa in period (~40 IDs, ~450ms)
-      const [futureBookingRows, callbackRows, newLocaUserIds] = await Promise.all([
+      // 4. Product buyers (~138 IDs, ~10ms)
+      const [futureBookingRows, callbackRows, newLocaUserIds, productRows] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
           SELECT DISTINCT user_id FROM \`order\` WHERE booking_date_start > NOW() AND order_state IN ('New', 'Confirmed')
         `),
@@ -901,11 +898,16 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
           SELECT DISTINCT legacy_user_id FROM crm_loca_touchpoints WHERE status = 'CALLBACK'
         `),
         ComboRecognitionService.getNewLoCaCustomerIds(fastify, dateFrom, dateTo),
+        fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
+          SELECT DISTINCT user_id FROM \`order_service\` 
+          WHERE service_group = 'product' OR user_service_type = 'product'
+        `),
       ]);
 
       const bookedIdStr = futureBookingRows.length > 0 ? futureBookingRows.map((r) => r.user_id).join(',') : '0';
       const callbackIdStr = callbackRows.length > 0 ? callbackRows.map((r) => r.legacy_user_id).join(',') : '0';
       const newLocaIdStr = newLocaUserIds.length > 0 ? newLocaUserIds.join(',') : '0';
+      const productIdStr = productRows.length > 0 ? productRows.map((r) => r.user_id).join(',') : '0';
 
       // Build dynamic SELECT for touchpoints
       const tpSelects = activeTouchpoints
@@ -949,14 +951,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
             END as is_lsd1,
             DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
             up.last_order_booking as lastOrderBooking,
-            EXISTS (
-              SELECT 1 FROM order_service os_p 
-              WHERE os_p.user_id = u.id AND (
-                LOWER(COALESCE(os_p.service_group, '')) LIKE '%product%' OR 
-                LOWER(COALESCE(os_p.service_type, '')) LIKE '%product%' OR 
-                LOWER(COALESCE(os_p.user_service_type, '')) LIKE '%product%'
-              )
-            ) as has_product,
+            CASE WHEN u.id IN (${productIdStr}) THEN 1 ELSE 0 END as has_product,
             CASE WHEN u.id IN (${callbackIdStr}) THEN 1 ELSE 0 END as has_callback,
             CASE WHEN u.id IN (${bookedIdStr}) THEN 1 ELSE 0 END as has_future_booking,
             EXISTS (
