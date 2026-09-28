@@ -16,6 +16,7 @@ import {
   Trophy,
   User,
 } from 'lucide-react';
+import { removeVietnameseTones } from '@mos-lab/shared';
 import type {
   AcademyLead,
   AcademyLeadStatus,
@@ -94,10 +95,20 @@ export function followUpLabel(lead: AcademyLead) {
 }
 
 export function buildCourseOptions(courses: AcademyCourse[]) {
-  return courses.map((course) => ({
+  const options = courses.map((course) => ({
     value: course.name,
     label: [course.name, course.nameEn, course.code].filter(Boolean).join(' · '),
   }));
+  const hasWorkshop = options.some((opt) =>
+    removeVietnameseTones(opt.value).toLowerCase().includes('workshop 1days')
+  );
+  if (!hasWorkshop) {
+    options.push({
+      value: 'Khóa WORKSHOP 1DAYS',
+      label: 'Khóa WORKSHOP 1DAYS · Workshop 1 Day · workshop_1days',
+    });
+  }
+  return options;
 }
 
 export function buildOwnerOptions(staff: AcademyStaffOption[]) {

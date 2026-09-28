@@ -29,6 +29,7 @@ import {
   type CreateAcademyCampaignTouchpointRequest,
   type UpdateAcademyCampaignRequest,
   vietnameseSearchFilter,
+  removeVietnameseTones,
 } from '@mos-lab/shared';
 import { TouchpointIconPicker } from '../../../../../components/campaign/TouchpointIconPicker';
 import {
@@ -278,14 +279,22 @@ export function AcademyCampaignFormDrawer({
     [activeStep, form]
   );
 
-  const courseOptions = React.useMemo(
-    () =>
-      courses.map((course) => ({
-        value: course.name,
-        label: [course.name, course.nameEn, course.code].filter(Boolean).join(' · '),
-      })),
-    [courses]
-  );
+  const courseOptions = React.useMemo(() => {
+    const list = courses.map((course) => ({
+      value: course.name,
+      label: [course.name, course.nameEn, course.code].filter(Boolean).join(' · '),
+    }));
+    const hasWorkshop = list.some((item) =>
+      removeVietnameseTones(item.value).toLowerCase().includes('workshop 1days')
+    );
+    if (!hasWorkshop) {
+      list.push({
+        value: 'Khóa WORKSHOP 1DAYS',
+        label: 'Khóa WORKSHOP 1DAYS · Workshop 1 Day · workshop_1days',
+      });
+    }
+    return list;
+  }, [courses]);
   const staffOptions = React.useMemo(
     () =>
       staff.map((member) => ({

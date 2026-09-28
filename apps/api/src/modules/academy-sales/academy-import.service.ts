@@ -14,6 +14,7 @@ const COURSE_LABELS: Record<string, string> = {
   advanced: 'Dark Lash Elite Artistry',
   fan: 'International Volume & Mega Lash',
   design: 'Dark Lash Design & Styling',
+  workshop_1days: 'Khóa WORKSHOP 1DAYS',
 };
 
 type ImportOptions = { dryRun?: boolean };
