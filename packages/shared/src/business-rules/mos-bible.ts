@@ -253,6 +253,30 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'TIP-001',
+    book: 'REWARDS',
+    title: 'Khách tip từ 20K mới tính một lượt tip',
+    summary:
+      'Lượt tip KPI chỉ tính cho hóa đơn có tổng tiền tip từ 20.000đ trở lên; tiền tip dưới 20.000đ là tiền thối lẻ không tính lượt nhưng vẫn kết chuyển đủ vào thu nhập.',
+    commandments: [
+      'Chỉ các hóa đơn có tổng tiền khách tip (Customer Tip) ≥ 20.000đ mới được ghi nhận là 1 lượt có tip và tính vào Tỷ lệ Tip (%) trên Leaderboard.',
+      'Các khoản tip dưới 20.000đ là tiền thối lẻ khách không lấy lại: không tính vào số lượt có tip (Tipped Visits), không làm tăng Tỷ lệ Tip chuyển đổi.',
+      'Nhân viên vẫn được hưởng đủ số tiền chia thưởng tip (CV 70%, CC 20% hoặc 10% mỗi người khi chia ca) đối với các khoản tip dưới 20.000đ trên bảng lương.',
+      'Giao diện tra cứu chi tiết phân định rõ 4 trạng thái: Tất cả (ALL), Có Tip ≥ 20K (TIPPED), Tiền lẻ < 20K (SMALL_CHANGE) và Không Tip 0đ (NO_TIP).',
+    ],
+    rationale:
+      'Ngăn ngừa hiện tượng tiền thối lẻ làm sai lệch chỉ số đánh giá mức độ hài lòng khách hàng (KPI), đồng thời bảo toàn trọn vẹn thu nhập thực tế cho nhân sự.',
+    tags: ['TIP', '20K', 'KPI', 'CV', 'CC', 'CS', 'tiền lẻ', 'ledger'],
+    routeScopes: ['/dashboard/cv', '/dashboard/cc', '/dashboard/cs', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-28',
+    sources: [
+      { label: 'Quy tắc Tip 20K', reference: 'AGENTS.md · Rule #7 & Điều răn TIP-001' },
+      { label: 'Hằng số hệ thống', reference: 'packages/shared/src/constants/system-constants.ts · TIP_SYSTEM_CONFIG' },
+    ],
+  },
+  {
     id: 'CC-003',
     book: 'REWARDS',
     title: 'CC có thưởng ngày, không có thưởng doanh số tháng',

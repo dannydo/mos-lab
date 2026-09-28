@@ -1,22 +1,84 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Menu, Popover, Tooltip } from 'antd';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Menu, Popover, Tooltip, message } from 'antd';
+import {
+  ChevronDown,
+  ChevronRight,
+  Pin,
+  PinOff,
+  Plus,
+  ExternalLink,
+  GripVertical,
+  Bookmark,
+  Sparkles,
+  Heart,
+  Rocket,
+  Target,
+  Globe,
+  FileText,
+  Clock,
+  Layers,
+  Zap,
+  BarChart2,
+  Calendar,
+  Compass,
+} from 'lucide-react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { isCanonicalSuperAdminIdentity, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole, SafeAny, PinnedLinkItem } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
-import { getSidebarGroups, getSelectedMenuKey, SidebarItemConfig } from '../../config/sidebar.config';
+import {
+  getSidebarGroups,
+  getSelectedMenuKey,
+  SidebarItemConfig,
+  SidebarGroupConfig,
+} from '../../config/sidebar.config';
 import { AppIcon } from '../ui/AppIcon';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
+import { usePinnedLinks } from '../../hooks/usePinnedLinks';
+import { AddPinnedLinkModal } from './AddPinnedLinkModal';
 
 interface SidebarNavProps {
   collapsed: boolean;
   themeMode: string;
   token: SafeAny;
   userRole?: string;
+  userId?: number | string;
   userIdentity?: { username?: string | null; email?: string | null };
   onNavigate?: () => void;
+}
+
+function getPinnedIconComponent(iconName?: string) {
+  switch (iconName) {
+    case 'Bookmark':
+      return Bookmark;
+    case 'Sparkles':
+      return Sparkles;
+    case 'Heart':
+      return Heart;
+    case 'Rocket':
+      return Rocket;
+    case 'Target':
+      return Target;
+    case 'Globe':
+      return Globe;
+    case 'BarChart2':
+      return BarChart2;
+    case 'Calendar':
+      return Calendar;
+    case 'FileText':
+      return FileText;
+    case 'Clock':
+      return Clock;
+    case 'Layers':
+      return Layers;
+    case 'Zap':
+      return Zap;
+    case 'Compass':
+      return Compass;
+    default:
+      return Pin;
+  }
 }
 
 const SIDEBAR_COLLAPSED_GROUPS_STORAGE_KEY = 'mos_sidebar_collapsed_groups_v1';
@@ -56,6 +118,7 @@ export default function SidebarNav({
   themeMode,
   token,
   userRole,
+  userId,
   userIdentity,
   onNavigate,
 }: SidebarNavProps) {
@@ -63,6 +126,38 @@ export default function SidebarNav({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const assignedStaffId = searchParams.get('assignedStaffId');
+
+  const { pinnedLinks, isPinned, pinLink, unpinLink, reorderLinks } = usePinnedLinks(userId || userIdentity?.username);
+
+  const [isAddPinnedModalOpen, setIsAddPinnedModalOpen] = useState(false);
+  const [draggedPinId, setDraggedPinId] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedPinId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain') || draggedPinId;
+    if (!sourceId || sourceId === targetId) return;
+
+    const sourceIndex = pinnedLinks.findIndex((p) => p.id === sourceId);
+    const targetIndex = pinnedLinks.findIndex((p) => p.id === targetId);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const nextItems = [...pinnedLinks];
+    const [removed] = nextItems.splice(sourceIndex, 1);
+    nextItems.splice(targetIndex, 0, removed);
+    reorderLinks(nextItems);
+    setDraggedPinId(null);
+  };
 
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const [activeCampaigns, setActiveCampaigns] = useState<SafeAny[]>([]);
@@ -329,7 +424,29 @@ export default function SidebarNav({
         .filter((group) => group.items.length > 0)
     : sidebarGroups;
 
+  const pinnedGroup: SidebarGroupConfig = {
+    groupKey: 'grp-pinned',
+    groupTitle: 'ĐÃ GHIM',
+    items: pinnedLinks.map(
+      (item) =>
+        ({
+          key: `pinned-${item.id}`,
+          label: item.title,
+          path: item.url,
+          icon: <AppIcon icon={getPinnedIconComponent(item.icon)} size="sm" className="text-pink-500" />,
+          isExternal: item.isExternal,
+          pinnedId: item.id,
+          menuKey: item.menuKey,
+        }) as SidebarItemConfig & { isExternal?: boolean; pinnedId?: string; menuKey?: string }
+    ),
+  };
+
+  const allDisplayedGroups: SidebarGroupConfig[] = [pinnedGroup, ...displayedGroups];
+
   const createMenuItem = (item: SidebarItemConfig, depth = 0): SafeAny => {
+    const customItem = item as SafeAny;
+    const isPinnedEntry = Boolean(customItem.pinnedId);
+
     if (item.children && item.children.length > 0) {
       const childItems = item.children.map((child) => createMenuItem(child, depth + 1));
 
@@ -354,29 +471,121 @@ export default function SidebarNav({
         item.label
       );
 
+    const isItemPinned = isPinnedEntry || isPinned(item.key) || (item.path ? isPinned(item.path) : false);
+
+    // If it is an item in the Pinned group
+    if (isPinnedEntry) {
+      return {
+        key: item.key,
+        icon: item.icon,
+        title: item.label,
+        className:
+          depth === 0
+            ? 'sidebar-menu-entry sidebar-menu-entry--root group/pin'
+            : 'sidebar-menu-entry sidebar-menu-entry--nested group/pin',
+        label: (
+          <span
+            className="sidebar-menu-label sidebar-menu-label--root flex items-center justify-between w-full"
+            draggable
+            onDragStart={(e) => handleDragStart(e, customItem.pinnedId)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, customItem.pinnedId)}
+          >
+            <span className="sidebar-menu-label__content flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="truncate">{itemLabel}</span>
+              {customItem.isExternal && <AppIcon icon={ExternalLink} size={11} className="text-neutral-400 shrink-0" />}
+            </span>
+            <span className="inline-flex items-center gap-1 shrink-0">
+              <span
+                className="opacity-0 group-hover/pin:opacity-100 cursor-grab active:cursor-grabbing text-neutral-500 hover:text-neutral-300 transition-opacity p-0.5"
+                title="Kéo thả để sắp xếp"
+              >
+                <AppIcon icon={GripVertical} size={12} />
+              </span>
+              <button
+                type="button"
+                aria-label="Bỏ ghim"
+                title="Bỏ ghim liên kết này"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  unpinLink(customItem.pinnedId);
+                  message.info(`Đã bỏ ghim "${typeof item.label === 'string' ? item.label : item.key}"`);
+                }}
+                className="sidebar-pin-btn inline-flex items-center justify-center p-0.5 rounded text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                <AppIcon icon={PinOff} size={13} />
+              </button>
+            </span>
+          </span>
+        ),
+        onClick: () => {
+          if (item.path) {
+            if (customItem.isExternal) {
+              window.open(item.path, '_blank', 'noopener,noreferrer');
+            } else {
+              router.push(item.path);
+              onNavigate?.();
+            }
+          }
+        },
+      };
+    }
+
     return {
       key: item.key,
       icon: item.icon,
       title: hasBadge ? `${item.label} — ${item.badgeCount} ticket đang chờ Danny duyệt` : item.label,
       className:
-        depth === 0 ? 'sidebar-menu-entry sidebar-menu-entry--root' : 'sidebar-menu-entry sidebar-menu-entry--nested',
+        depth === 0
+          ? 'sidebar-menu-entry sidebar-menu-entry--root group/pin'
+          : 'sidebar-menu-entry sidebar-menu-entry--nested group/pin',
       label: item.path ? (
         <span
           className={`sidebar-menu-label ${hasBadge ? 'sidebar-menu-label--with-badge' : ''} ${
             depth > 0 ? 'sidebar-menu-label--nested' : 'sidebar-menu-label--root'
-          }`}
+          } flex items-center justify-between w-full`}
           onMouseEnter={() => item.path && router.prefetch(item.path)}
         >
-          <span className="sidebar-menu-label__content">{itemLabel}</span>
-          {hasBadge ? (
-            <span
-              className="sidebar-menu-label__badge"
-              aria-label={`${item.badgeCount} ticket đang chờ Danny duyệt`}
-              style={{ backgroundColor: token.colorWarning, color: token.colorTextLightSolid }}
+          <span className="sidebar-menu-label__content flex-1 min-w-0 truncate">{itemLabel}</span>
+          <span className="inline-flex items-center gap-1 shrink-0">
+            {hasBadge ? (
+              <span
+                className="sidebar-menu-label__badge"
+                aria-label={`${item.badgeCount} ticket đang chờ Danny duyệt`}
+                style={{ backgroundColor: token.colorWarning, color: token.colorTextLightSolid }}
+              >
+                {item.badgeCount}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              aria-label={isItemPinned ? 'Bỏ ghim khỏi menu' : 'Ghim lên đầu menu'}
+              title={isItemPinned ? 'Bỏ ghim khỏi menu' : 'Ghim lên đầu menu'}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isItemPinned) {
+                  unpinLink(item.key);
+                  message.info(`Đã bỏ ghim "${typeof item.label === 'string' ? item.label : item.key}"`);
+                } else {
+                  pinLink({
+                    title: typeof item.label === 'string' ? item.label : String(item.key),
+                    url: item.path || '',
+                    menuKey: item.key,
+                  });
+                  message.success(`Đã ghim "${typeof item.label === 'string' ? item.label : item.key}" lên đầu menu`);
+                }
+              }}
+              className={`sidebar-pin-btn inline-flex items-center justify-center p-1 rounded transition-all duration-150 ${
+                isItemPinned
+                  ? 'text-pink-500 hover:text-pink-400 opacity-100'
+                  : 'text-neutral-400 hover:text-pink-500 opacity-0 group-hover/pin:opacity-100 hover:bg-neutral-800/30'
+              }`}
             >
-              {item.badgeCount}
-            </span>
-          ) : null}
+              <AppIcon icon={Pin} size={13} className={isItemPinned ? 'fill-current' : ''} />
+            </button>
+          </span>
         </span>
       ) : (
         item.label
@@ -390,9 +599,10 @@ export default function SidebarNav({
     };
   };
 
-  const expandedMenuItems: SafeAny[] = displayedGroups.map((group) => {
+  const expandedMenuItems: SafeAny[] = allDisplayedGroups.map((group) => {
     const isGroupCollapsed = collapsedGroupKeys.includes(group.groupKey);
     const isAcademyGroup = group.groupKey === 'grp-academy';
+    const isPinnedGroup = group.groupKey === 'grp-pinned';
     const collapseAction = isGroupCollapsed ? 'Mở rộng' : 'Thu gọn';
     const visibleItemCount = countLeafItems(group.items);
 
@@ -400,8 +610,9 @@ export default function SidebarNav({
       type: 'group',
       key: group.groupKey,
       label: (
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           aria-expanded={!isGroupCollapsed}
           aria-label={`${collapseAction} nhóm ${group.groupTitle}`}
           title={`${collapseAction} nhóm ${group.groupTitle}`}
@@ -410,40 +621,85 @@ export default function SidebarNav({
             event.stopPropagation();
             handleGroupCollapse(group.groupKey);
           }}
-          className={`sidebar-group-title flex w-full items-center justify-between text-left font-bold uppercase transition-colors duration-200 ${
-            isAcademyGroup
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              handleGroupCollapse(group.groupKey);
+            }
+          }}
+          className={`sidebar-group-title flex w-full items-center justify-between text-left font-bold uppercase transition-colors duration-200 select-none ${
+            isAcademyGroup || isPinnedGroup
               ? 'min-h-7 gap-2 rounded-[var(--mos-control-radius)] px-2 hover:bg-[var(--ant-color-fill-quaternary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mos-focus-ring)]'
               : ''
           } ${collapsed ? 'hidden' : ''}`}
           style={{
             background: 'transparent',
             border: 0,
-            color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.55)',
+            color: isPinnedGroup
+              ? token.colorPrimary || '#ec4899'
+              : themeMode === 'dark'
+                ? 'rgba(255, 255, 255, 0.5)'
+                : 'rgba(0, 0, 0, 0.55)',
             cursor: 'pointer',
             fontWeight: 700,
           }}
         >
-          <span className="sidebar-group-title__label">{group.groupTitle}</span>
-          <span
-            className={`sidebar-group-title__meta inline-flex shrink-0 items-center gap-1 leading-none ${
-              isAcademyGroup ? 'text-[var(--ant-color-text-description)]' : ''
-            }`}
-            aria-hidden
-          >
+          <div className="sidebar-group-title__label flex items-center gap-1.5 min-w-0">
+            {isPinnedGroup && <AppIcon icon={Pin} size={12} className="text-pink-500 fill-current shrink-0" />}
+            <span className="truncate">{group.groupTitle}</span>
+          </div>
+          <div className="inline-flex items-center gap-1 shrink-0">
+            {isPinnedGroup && (
+              <button
+                type="button"
+                aria-label="Thêm link ghim mới"
+                title="Thêm link ghim mới"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsAddPinnedModalOpen(true);
+                }}
+                className="inline-flex items-center justify-center h-5 w-5 rounded text-neutral-400 hover:text-pink-500 hover:bg-pink-500/10 transition-colors"
+              >
+                <AppIcon icon={Plus} size={13} strokeWidth={2.5} />
+              </button>
+            )}
             <span
-              className={`sidebar-group-title__count tabular-nums ${
-                isAcademyGroup
-                  ? 'inline-flex min-w-4 items-center justify-center rounded-full bg-[var(--ant-color-fill-quaternary)] px-1 text-xs leading-none'
-                  : ''
+              className={`sidebar-group-title__meta inline-flex shrink-0 items-center gap-1 leading-none ${
+                isAcademyGroup || isPinnedGroup ? 'text-[var(--ant-color-text-description)]' : ''
               }`}
+              aria-hidden
             >
-              {visibleItemCount}
+              <span
+                className={`sidebar-group-title__count tabular-nums ${
+                  isAcademyGroup || isPinnedGroup
+                    ? 'inline-flex min-w-4 items-center justify-center rounded-full bg-[var(--ant-color-fill-quaternary)] px-1 text-xs leading-none'
+                    : ''
+                }`}
+              >
+                {visibleItemCount}
+              </span>
+              <AppIcon icon={isGroupCollapsed ? ChevronRight : ChevronDown} size="disclosure" />
             </span>
-            <AppIcon icon={isGroupCollapsed ? ChevronRight : ChevronDown} size="disclosure" />
-          </span>
-        </button>
+          </div>
+        </div>
       ),
-      children: isGroupCollapsed ? [] : group.items.map(createMenuItem),
+      children: isGroupCollapsed
+        ? []
+        : isPinnedGroup && group.items.length === 0
+          ? [
+              {
+                key: 'pinned-empty-placeholder',
+                className: 'sidebar-menu-entry sidebar-menu-entry--root opacity-60 pointer-events-none cursor-default',
+                label: (
+                  <span className="text-xs text-neutral-400 italic px-2 py-1 select-none flex items-center gap-1.5">
+                    <AppIcon icon={Pin} size={11} className="text-pink-500/60" />
+                    <span>Rê chuột vào menu để ghim</span>
+                  </span>
+                ),
+              },
+            ]
+          : group.items.map(createMenuItem),
     };
   });
 
@@ -451,6 +707,47 @@ export default function SidebarNav({
     return (
       <nav aria-label="Main Navigation" className="sidebar-nav-container sidebar-compact-nav">
         <ul className="sidebar-compact-list" role="menu">
+          {pinnedLinks.length > 0 && (
+            <>
+              {pinnedLinks.map((item) => {
+                const isActive = pathname === item.url;
+                return (
+                  <li className="sidebar-compact-item" key={`rail-pinned-${item.id}`}>
+                    <Tooltip
+                      placement="right"
+                      title={
+                        <div>
+                          <div className="font-semibold text-pink-400">{item.title}</div>
+                          <div className="text-[10px] opacity-75">{item.isExternal ? 'Liên kết ngoài' : 'Đã ghim'}</div>
+                        </div>
+                      }
+                      mouseEnterDelay={0.2}
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        aria-label={item.title}
+                        className={`sidebar-rail-action ${isActive ? 'sidebar-rail-action--active' : ''}`}
+                        onClick={() => {
+                          if (item.isExternal) {
+                            window.open(item.url, '_blank', 'noopener,noreferrer');
+                          } else {
+                            router.push(item.url);
+                            onNavigate?.();
+                          }
+                        }}
+                      >
+                        <span className="sidebar-rail-action__icon text-pink-500">
+                          <AppIcon icon={getPinnedIconComponent(item.icon)} size="sm" />
+                        </span>
+                      </button>
+                    </Tooltip>
+                  </li>
+                );
+              })}
+              <li aria-hidden className="sidebar-rail-divider !border-pink-500/30" role="separator" />
+            </>
+          )}
           {displayedGroups.map((group, groupIndex) => (
             <React.Fragment key={group.groupKey}>
               {groupIndex > 0 && <li aria-hidden className="sidebar-rail-divider" role="separator" />}
@@ -544,34 +841,43 @@ export default function SidebarNav({
   }
 
   return (
-    <nav aria-label="Main Navigation" className="sidebar-nav-container">
-      <Menu
-        theme={themeMode === 'dark' ? 'dark' : 'light'}
-        mode="inline"
-        inlineCollapsed={false}
-        inlineIndent={16}
-        selectedKeys={[selectedKey]}
-        openKeys={openKeys}
-        onOpenChange={handleOpenChange}
-        triggerSubMenuAction="hover"
-        subMenuOpenDelay={0.12}
-        subMenuCloseDelay={0.16}
-        getPopupContainer={() => document.body}
-        expandIcon={({ isOpen }: SafeAny) =>
-          isOpen ? (
-            <AppIcon icon={ChevronDown} className="sidebar-menu-chevron" size="disclosure" />
-          ) : (
-            <AppIcon icon={ChevronRight} className="sidebar-menu-chevron" size="disclosure" />
-          )
-        }
-        items={expandedMenuItems}
-        style={{
-          background: 'transparent',
-          paddingTop: '4px',
-          borderRight: 0,
-        }}
-        className="antd-custom-menu"
+    <>
+      <nav aria-label="Main Navigation" className="sidebar-nav-container">
+        <Menu
+          theme={themeMode === 'dark' ? 'dark' : 'light'}
+          mode="inline"
+          inlineCollapsed={false}
+          inlineIndent={16}
+          selectedKeys={[selectedKey]}
+          openKeys={openKeys}
+          onOpenChange={handleOpenChange}
+          triggerSubMenuAction="hover"
+          subMenuOpenDelay={0.12}
+          subMenuCloseDelay={0.16}
+          getPopupContainer={() => document.body}
+          expandIcon={({ isOpen }: SafeAny) =>
+            isOpen ? (
+              <AppIcon icon={ChevronDown} className="sidebar-menu-chevron" size="disclosure" />
+            ) : (
+              <AppIcon icon={ChevronRight} className="sidebar-menu-chevron" size="disclosure" />
+            )
+          }
+          items={expandedMenuItems}
+          style={{
+            background: 'transparent',
+            paddingTop: '4px',
+            borderRight: 0,
+          }}
+          className="antd-custom-menu"
+        />
+      </nav>
+      <AddPinnedLinkModal
+        open={isAddPinnedModalOpen}
+        onClose={() => setIsAddPinnedModalOpen(false)}
+        onAdd={pinLink}
+        currentPath={pathname}
+        themeMode={themeMode}
       />
-    </nav>
+    </>
   );
 }

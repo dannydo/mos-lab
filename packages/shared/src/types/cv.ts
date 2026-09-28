@@ -62,6 +62,8 @@ export interface CvTipLeaderboardResponse {
   };
 }
 
+export type TipFilterType = 'ALL' | 'TIPPED' | 'SMALL_CHANGE' | 'NO_TIP';
+
 export interface CvTipRecord {
   orderId: number;
   serviceId: number;
@@ -75,7 +77,7 @@ export interface CvTipRecord {
   totalCustomerTip: number;
   cvTipAmount: number; // 70% share
   cvTipPercentage: number; // 70%
-  tipStatus: 'Tipped' | 'No Tip';
+  tipStatus: 'Tipped' | 'Small Change' | 'No Tip';
   clientTippedVisits?: number;
   clientTotalVisits?: number;
 }
@@ -105,7 +107,7 @@ export interface CvTipCustomerVisit {
   ccOutName: string;
   bookerName: string;
   totalCustomerTip: number;
-  tipStatus: 'Tipped' | 'No Tip';
+  tipStatus: 'Tipped' | 'Small Change' | 'No Tip';
 }
 
 export interface CvTipCustomerHistoryResponse {

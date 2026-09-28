@@ -498,6 +498,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             themeMode={themeMode}
             token={token}
             userRole={user?.role}
+            userId={user?.id}
             userIdentity={{ username: user?.username, email: user?.email }}
             onNavigate={() => setIsMobileNavigationOpen(false)}
           />

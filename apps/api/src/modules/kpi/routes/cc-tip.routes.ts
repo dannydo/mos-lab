@@ -7,6 +7,7 @@ import {
   CcTipResponse,
   ReportComparisonMode,
   SafeAny,
+  TIP_SYSTEM_CONFIG,
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { getPreviousReportPeriod } from '../services/report-period-comparison.js';
@@ -73,7 +74,7 @@ async function getCcTipSummaryForPeriod(
       ${filteredOrdersCte}
       SELECT
         COUNT(DISTINCT fo.orderId) as totalVisits,
-        COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN fo.orderId END) as totalTippedVisits,
+        COUNT(DISTINCT CASE WHEN st.customer_tip_100 >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN fo.orderId END) as totalTippedVisits,
         COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
       FROM filtered_orders fo
       JOIN \`order\` o ON o.id = fo.orderId
@@ -161,7 +162,7 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
         ${filteredOrdersCte}
         SELECT 
           COUNT(DISTINCT fo.orderId) as totalVisits,
-          COUNT(DISTINCT CASE WHEN st.tip_amount > 0 THEN fo.orderId END) as totalTippedVisits,
+          COUNT(DISTINCT CASE WHEN st.customer_tip_100 >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN fo.orderId END) as totalTippedVisits,
           COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
         FROM filtered_orders fo
         JOIN \`order\` o ON o.id = fo.orderId
@@ -187,7 +188,7 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
           up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT cc.order_id) as totalVisits,
-          COUNT(DISTINCT CASE WHEN st.id IS NOT NULL AND st.tip_amount > 0 THEN cc.order_id END) as tippedVisits,
+          COUNT(DISTINCT CASE WHEN st.id IS NOT NULL AND (CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN cc.order_id END) as tippedVisits,
           COALESCE(SUM(st.tip_amount), 0) as totalCcTipBonus,
           COALESCE(SUM(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE 0 END), 0) as totalCustomerTipAmount
         FROM (
@@ -298,7 +299,7 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
       dateTo?: string;
       storeId?: string;
       consultantId?: string;
-      tipFilter?: 'ALL' | 'TIPPED' | 'NO_TIP';
+      tipFilter?: 'ALL' | 'TIPPED' | 'SMALL_CHANGE' | 'NO_TIP';
       page?: number;
       limit?: number;
     };
@@ -372,7 +373,13 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
 
       const allRecords: CcTipRecord[] = dbRows.map((row) => {
         const ccTipAmount = Math.round(Number(row.ccTipAmount || 0));
-        const isTipped = ccTipAmount > 0;
+        const totalCustomerTip = Math.round(Number(row.totalCustomerTip || 0));
+        let tipStatus: 'Tipped' | 'Small Change' | 'No Tip' = 'No Tip';
+        if (totalCustomerTip >= TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT) {
+          tipStatus = 'Tipped';
+        } else if (totalCustomerTip > 0) {
+          tipStatus = 'Small Change';
+        }
         return {
           orderId: Number(row.orderId),
           serviceId: Number(row.serviceId),
@@ -385,16 +392,18 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
           ccInAvatar: row.ccInAvatar ? String(row.ccInAvatar) : null,
           ccOutAvatar: row.ccOutAvatar ? String(row.ccOutAvatar) : null,
           consultantName: String(row.consultantName || ''),
-          totalCustomerTip: Math.round(Number(row.totalCustomerTip || 0)),
+          totalCustomerTip,
           ccTipAmount,
           ccTipPercentage: Number(row.ccTipPercentage || 0),
-          tipStatus: isTipped ? 'Tipped' : 'No Tip',
+          tipStatus,
         };
       });
 
       let filteredRecords = allRecords;
       if (tipFilter === 'TIPPED') {
         filteredRecords = allRecords.filter((r) => r.tipStatus === 'Tipped');
+      } else if (tipFilter === 'SMALL_CHANGE') {
+        filteredRecords = allRecords.filter((r) => r.tipStatus === 'Small Change');
       } else if (tipFilter === 'NO_TIP') {
         filteredRecords = allRecords.filter((r) => r.tipStatus === 'No Tip');
       }

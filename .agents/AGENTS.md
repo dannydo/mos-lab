@@ -268,11 +268,14 @@ Tất cả các tác vụ tính toán thưởng, báo cáo và Leaderboard cho C
 - Điểm tích luỹ `Points Accu` được tính dồn ngược từ ca cũ nhất (dưới cùng) lên ca mới nhất (trên cùng) theo từng nhân viên CC.
 - **Leaderboard Sum**: Tiền thưởng `Thưởng CC Bonus` trên Bảng Xếp Hạng phải là tổng tiền thưởng thực tế của từng ca làm dịch vụ trong tháng của CC đó, đảm bảo khớp 100% từng đồng khi lọc chi tiết.
 
-## 4. Công thức CC Tip Bonus & Quy tắc chia 50/50
+## 4. Công thức CC Tip Bonus, Tỷ Lệ Tip & Ngưỡng 20K (Kinh Thánh mOS Điều Răn TIP-001)
 
+- **Ngưỡng Tính Lượt Tip (Điều răn TIP-001)**: Khách hàng phải đưa từ **20.000đ trở lên** trên hóa đơn mới được tính là 1 lượt có tip (`totalTippedVisits` + 1, tính vào `% Tip Rate`).
+- **Xử lý tiền lẻ < 20K (Small Change)**: Khoản tiền tip dưới 20.000đ được coi là tiền thừa khách làm biếng lấy. **Vẫn cộng đủ tiền vào bảng lương/thu nhập nhân viên** (CV 70%, CC 20%, CS 3%), nhưng **tuyệt đối KHÔNG tính là lượt tip** (không tăng `totalTippedVisits`, không tính vào `% Tip Rate`).
+- **Bộ lọc 4 trạng thái**: Bảng chi tiết hỗ trợ 4 chế độ lọc: Tất cả (`ALL`) | Có Tip $\ge$ 20K (`TIPPED`) | Tiền lẻ < 20K (`SMALL_CHANGE`) | Không Tip 0đ (`NO_TIP`).
 - **Tỷ lệ Thưởng CC Tip**: CC nhận 20% trên tổng số tiền tip mà khách hàng cho (`staff_tip` lưu `tip_percentage = 20`).
 - **Quy tắc CC In != CC Out**: Khi nhân viên CC In khác CC Out, cả hai CC đều được **chia 50/50** khoản Thưởng CC Tip (20%) (mỗi CC nhận 10% tip share, tức `tip_percentage = 10` trong cơ sở dữ liệu `staff_tip`).
-- **Lọc theo đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order.order_state = 'Completed'` trong khoảng thời gian được lọc.
+- **Chỉ đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order.order_state = 'Completed'` trong khoảng thời gian được lọc.
 - **Tránh SQL Duplication**: Tuyệt đối không `JOIN order_service` hoặc `JOIN staff_bonus` trực tiếp khi tính `SUM(st.tip_amount)`, tránh hiện tượng đơn hàng có nhiều dịch vụ làm nhân bản tổng tiền tip. Hãy query trực tiếp từ `staff_tip` JOIN `order` theo `st.user_id` hoặc `st.id`.
 
 ## 5. CC Daily Sales Bonus Calculation Pipeline (Immutable — Finalized 2026-08-05)

@@ -172,8 +172,11 @@ mos-lab/
 - **CC In != CC Out**: Tự động chia **50/50** cho cả Điểm CC (+pts) và Tiền thưởng CC Bonus (đ).
 - **Leaderboard**: Tổng tiền thưởng `Thưởng CC Bonus` trên Leaderboard khớp 100% từng đồng với tổng từng ca làm trong Bảng Chi Tiết.
 
-### 7. CC Tip Bonus & Active CC Filter Rules (Refer to `.agents/AGENTS.md`)
+### 7. CC Tip Bonus, Tỷ Lệ Tip & Ngưỡng 20K (Kinh Thánh mOS Điều Răn TIP-001)
 
+- **Ngưỡng Tính Lượt Tip (Điều răn TIP-001)**: Khách hàng phải đưa từ **20.000đ trở lên** trên hóa đơn mới được tính là 1 lượt có tip (`totalTippedVisits` + 1, tính vào `% Tip Rate`).
+- **Xử lý tiền lẻ < 20K (Small Change)**: Khoản tiền tip dưới 20.000đ được coi là tiền thừa khách làm biếng lấy. **Vẫn cộng đủ tiền vào bảng lương/thu nhập nhân viên** (CV 70%, CC 20%, CS 3%), nhưng **tuyệt đối KHÔNG tính là lượt tip** (không tăng `totalTippedVisits`, không tính vào `% Tip Rate`).
+- **Bộ lọc 4 trạng thái**: Bảng chi tiết hỗ trợ 4 chế độ lọc: Tất cả (`ALL`) | Có Tip $\ge$ 20K (`TIPPED`) | Tiền lẻ < 20K (`SMALL_CHANGE`) | Không Tip 0đ (`NO_TIP`).
 - **Công thức CC Tip (20%)**: CC nhận 20% tổng tiền tip khách cho (lưu trong `staff_tip` với `tip_percentage = 20`).
 - **CC In != CC Out**: Khi nhân viên CC In khác CC Out, khoản Thưởng CC Tip (20%) bắt buộc chia **50/50** cho cả 2 CC (mỗi CC nhận 10% tip share, `tip_percentage = 10`).
 - **Chỉ đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order_state = 'Completed'`.

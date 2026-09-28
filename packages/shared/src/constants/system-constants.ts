@@ -42,6 +42,28 @@ export const CC_GAMIFICATION_SYSTEM_CONFIG = {
 } as const;
 
 /**
+ * 💵 TIP SYSTEM CONFIGURATION
+ * @description Single Source of Truth for Tip thresholds, share percentages, and KPI rules.
+ * Ref: AGENTS.md Rule #7, MOS Bible TIP-001
+ */
+export const TIP_SYSTEM_CONFIG = {
+  /** Minimum customer tip on order bill (in VND) to count as a valid tip visit for KPI (tippedVisits + 1). Under 20K is loose change. */
+  MIN_VALID_CUSTOMER_TIP_AMOUNT: 20_000,
+
+  /** Standard tip share percentage for CV (technician) */
+  CV_TIP_PERCENTAGE: 70,
+
+  /** Standard tip share percentage for CC (client consultant) */
+  CC_TIP_PERCENTAGE_FULL: 20,
+
+  /** Split tip share percentage for CC when CC IN != CC OUT */
+  CC_TIP_PERCENTAGE_SPLIT: 10,
+
+  /** Fund share percentage for CS (customer service) */
+  CS_TIP_PERCENTAGE: 3,
+} as const;
+
+/**
  * 👁️ EYELASH TOUCH-UP SYSTEM CONFIGURATION
  * @description Expiration rules for eyelash touch-up / refill services.
  * Ref: AGENTS.md Rule #16

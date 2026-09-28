@@ -31,7 +31,13 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CvTipCustomerVisit, CvTipLeaderboardEntry, CvTipRecord, type ReportComparisonMode } from '@mos-lab/shared';
+import {
+  CvTipCustomerVisit,
+  CvTipLeaderboardEntry,
+  CvTipRecord,
+  TipFilterType,
+  type ReportComparisonMode,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { formatCompactVND, formatVND } from '../../../../lib/format-utils';
 import CcAvatar from '../../cc/components/CcAvatar';
@@ -79,18 +85,18 @@ export default function CvTipTab({
   const [totalRecords, setTotalRecords] = useState(0);
 
   const [selectedCvName, setSelectedCvName] = useState<string | null>(null);
-  const [tipFilter, setTipFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
+  const [tipFilter, setTipFilter] = useState<TipFilterType>('ALL');
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
   const [tipHistoryOpen, setTipHistoryOpen] = useState(false);
   const [tipHistoryLoading, setTipHistoryLoading] = useState(false);
-  const [tipHistoryFilter, setTipHistoryFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
+  const [tipHistoryFilter, setTipHistoryFilter] = useState<TipFilterType>('ALL');
   const [tipHistoryRecords, setTipHistoryRecords] = useState<CvTipRecord[]>([]);
   const [customerHistoryOpen, setCustomerHistoryOpen] = useState(false);
   const [customerHistoryLoading, setCustomerHistoryLoading] = useState(false);
   const [customerHistoryName, setCustomerHistoryName] = useState('');
   const [customerHistoryRecords, setCustomerHistoryRecords] = useState<CvTipCustomerVisit[]>([]);
-  const [customerHistoryFilter, setCustomerHistoryFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
+  const [customerHistoryFilter, setCustomerHistoryFilter] = useState<TipFilterType>('ALL');
 
   const [summary, setSummary] = useState({
     totalCvTipBonus: 0,
@@ -252,6 +258,8 @@ export default function CvTipTab({
 
   const visibleTipHistoryRecords = React.useMemo(() => {
     if (tipHistoryFilter === 'TIPPED') return tipHistoryRecords.filter((record) => record.tipStatus === 'Tipped');
+    if (tipHistoryFilter === 'SMALL_CHANGE')
+      return tipHistoryRecords.filter((record) => record.tipStatus === 'Small Change');
     if (tipHistoryFilter === 'NO_TIP') return tipHistoryRecords.filter((record) => record.tipStatus === 'No Tip');
     return tipHistoryRecords;
   }, [tipHistoryFilter, tipHistoryRecords]);
@@ -259,6 +267,8 @@ export default function CvTipTab({
   const visibleCustomerHistoryRecords = React.useMemo(() => {
     if (customerHistoryFilter === 'TIPPED')
       return customerHistoryRecords.filter((record) => record.tipStatus === 'Tipped');
+    if (customerHistoryFilter === 'SMALL_CHANGE')
+      return customerHistoryRecords.filter((record) => record.tipStatus === 'Small Change');
     if (customerHistoryFilter === 'NO_TIP')
       return customerHistoryRecords.filter((record) => record.tipStatus === 'No Tip');
     return customerHistoryRecords;
@@ -448,11 +458,23 @@ export default function CvTipTab({
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
       align: 'right' as const,
-      width: 120,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-purple-400 text-xs">
-          {val > 0 ? `${val.toLocaleString('vi-VN')} đ` : '0 đ'}
-        </span>
+      width: 130,
+      render: (val: number, record: CvTipRecord) => (
+        <div className="flex flex-col items-end">
+          <span className="tabular-nums font-semibold text-purple-400 text-xs">
+            {val > 0 ? `${val.toLocaleString('vi-VN')} đ` : '0 đ'}
+          </span>
+          {record.tipStatus === 'Small Change' && (
+            <Tag color="orange" className="mr-0 text-[10px] scale-90 origin-right py-0 leading-tight">
+              Tiền lẻ &lt; 20K
+            </Tag>
+          )}
+          {record.tipStatus === 'Tipped' && (
+            <Tag color="green" className="mr-0 text-[10px] scale-90 origin-right py-0 leading-tight">
+              Tip ≥ 20K
+            </Tag>
+          )}
+        </div>
       ),
     },
     {
@@ -710,13 +732,14 @@ export default function CvTipTab({
               <Segmented
                 options={[
                   { label: 'Tất cả', value: 'ALL' },
-                  { label: 'Có Tip', value: 'TIPPED' },
-                  { label: 'Không Tip', value: 'NO_TIP' },
+                  { label: 'Có Tip (≥ 20K)', value: 'TIPPED' },
+                  { label: 'Tiền lẻ (< 20K)', value: 'SMALL_CHANGE' },
+                  { label: 'Không Tip (0đ)', value: 'NO_TIP' },
                 ]}
                 value={tipFilter}
                 onChange={(val) => {
                   setCurrentPage(1);
-                  setTipFilter(val as 'ALL' | 'TIPPED' | 'NO_TIP');
+                  setTipFilter(val as TipFilterType);
                 }}
               />
               <Input
@@ -786,8 +809,12 @@ export default function CvTipTab({
             options={[
               { label: `Tất cả (${tipHistoryRecords.length})`, value: 'ALL' },
               {
-                label: `Có tip (${tipHistoryRecords.filter((record) => record.tipStatus === 'Tipped').length})`,
+                label: `Có tip ≥ 20K (${tipHistoryRecords.filter((record) => record.tipStatus === 'Tipped').length})`,
                 value: 'TIPPED',
+              },
+              {
+                label: `Tiền lẻ < 20K (${tipHistoryRecords.filter((record) => record.tipStatus === 'Small Change').length})`,
+                value: 'SMALL_CHANGE',
               },
               {
                 label: `Không tip (${tipHistoryRecords.filter((record) => record.tipStatus === 'No Tip').length})`,
@@ -795,7 +822,7 @@ export default function CvTipTab({
               },
             ]}
             value={tipHistoryFilter}
-            onChange={(value) => setTipHistoryFilter(value as 'ALL' | 'TIPPED' | 'NO_TIP')}
+            onChange={(value) => setTipHistoryFilter(value as TipFilterType)}
           />
           <Text type="secondary" className="tabular-nums text-xs">
             {visibleTipHistoryRecords.length} lần phục vụ
@@ -811,8 +838,8 @@ export default function CvTipTab({
               key: 'tipStatus',
               width: 120,
               render: (status: CvTipRecord['tipStatus']) => (
-                <Tag color={status === 'Tipped' ? 'green' : 'default'}>
-                  {status === 'Tipped' ? 'Có tip' : 'Không tip'}
+                <Tag color={status === 'Tipped' ? 'green' : status === 'Small Change' ? 'orange' : 'default'}>
+                  {status === 'Tipped' ? 'Có tip (≥ 20K)' : status === 'Small Change' ? 'Tiền lẻ (< 20K)' : 'Không tip'}
                 </Tag>
               ),
             },
@@ -839,8 +866,12 @@ export default function CvTipTab({
             options={[
               { label: `Tất cả (${customerHistoryRecords.length})`, value: 'ALL' },
               {
-                label: `Có tip (${customerHistoryRecords.filter((record) => record.tipStatus === 'Tipped').length})`,
+                label: `Có tip ≥ 20K (${customerHistoryRecords.filter((record) => record.tipStatus === 'Tipped').length})`,
                 value: 'TIPPED',
+              },
+              {
+                label: `Tiền lẻ < 20K (${customerHistoryRecords.filter((record) => record.tipStatus === 'Small Change').length})`,
+                value: 'SMALL_CHANGE',
               },
               {
                 label: `Không tip (${customerHistoryRecords.filter((record) => record.tipStatus === 'No Tip').length})`,
@@ -848,7 +879,7 @@ export default function CvTipTab({
               },
             ]}
             value={customerHistoryFilter}
-            onChange={(value) => setCustomerHistoryFilter(value as 'ALL' | 'TIPPED' | 'NO_TIP')}
+            onChange={(value) => setCustomerHistoryFilter(value as TipFilterType)}
           />
           <Text type="secondary" className="tabular-nums text-xs">
             {visibleCustomerHistoryRecords.length} lượt ghé
@@ -922,8 +953,8 @@ export default function CvTipTab({
               key: 'tipStatus',
               width: 100,
               render: (status: CvTipCustomerVisit['tipStatus']) => (
-                <Tag color={status === 'Tipped' ? 'green' : 'default'}>
-                  {status === 'Tipped' ? 'Có tip' : 'Không tip'}
+                <Tag color={status === 'Tipped' ? 'green' : status === 'Small Change' ? 'orange' : 'default'}>
+                  {status === 'Tipped' ? 'Có tip' : status === 'Small Change' ? 'Tiền lẻ' : 'Không tip'}
                 </Tag>
               ),
             },

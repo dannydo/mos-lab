@@ -21,6 +21,7 @@ import { kpiRoutes } from './modules/kpi/routes.js';
 import { staffRoutes } from './modules/staff/routes.js';
 import { rolesRoutes } from './modules/roles/routes.js';
 import { tableConfigRoutes } from './modules/table-config/routes.js';
+import { pinnedLinksRoutes } from './modules/user-preferences/pinned-links.routes.js';
 import { omicallRoutes } from './modules/omicall/routes.js';
 import { gamificationRoutes } from './modules/gamification/routes.js';
 import { catalogRoutes } from './modules/catalog/routes.js';
@@ -329,6 +330,7 @@ const start = async () => {
     await server.register(staffRoutes, { prefix: '/api' });
     await server.register(rolesRoutes, { prefix: '/api' });
     await server.register(tableConfigRoutes, { prefix: '/api' });
+    await server.register(pinnedLinksRoutes, { prefix: '/api' });
     await server.register(omicallRoutes, { prefix: '/api' });
     await server.register(gamificationRoutes, { prefix: '/api' });
     await server.register(catalogRoutes, { prefix: '/api' });

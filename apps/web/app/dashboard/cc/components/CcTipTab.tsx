@@ -18,6 +18,7 @@ import {
   CcTipLeaderboardEntry,
   CcTipLeaderboardResponse,
   CcTipRecord,
+  TipFilterType,
   removeVietnameseTones,
   calculateFractionToday,
 } from '@mos-lab/shared';
@@ -58,8 +59,8 @@ export default function CcTipTab({
   // Selected CC for Leaderboard -> Detail table drill-down
   const [selectedCcName, setSelectedCcName] = useState<string | null>(null);
 
-  // Tip filter status: 'ALL' | 'TIPPED' | 'NO_TIP'
-  const [tipFilter, setTipFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
+  // Tip filter status: TipFilterType
+  const [tipFilter, setTipFilter] = useState<TipFilterType>('ALL');
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
 
@@ -155,6 +156,7 @@ export default function CcTipTab({
   // Local Filtered Records for Detail Table
   const filteredRecords = records.filter((r) => {
     if (tipFilter === 'TIPPED' && r.tipStatus !== 'Tipped') return false;
+    if (tipFilter === 'SMALL_CHANGE' && r.tipStatus !== 'Small Change') return false;
     if (tipFilter === 'NO_TIP' && r.tipStatus !== 'No Tip') return false;
 
     if (searchText) {
@@ -173,7 +175,8 @@ export default function CcTipTab({
 
   // Calculate local filtered totals
   const totalTippedCount = records.filter((r) => r.tipStatus === 'Tipped').length;
-  const totalNoTipCount = records.length - totalTippedCount;
+  const totalSmallChangeCount = records.filter((r) => r.tipStatus === 'Small Change').length;
+  const totalNoTipCount = records.filter((r) => r.tipStatus === 'No Tip').length;
 
   // Leaderboard Columns
   const leaderboardColumns = [
@@ -374,10 +377,23 @@ export default function CcTipTab({
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-sky-700 dark:text-sky-400 text-xs">
-          {val > 0 ? `${val.toLocaleString('vi-VN')} đ` : '0 đ'}
-        </span>
+      width: 125,
+      render: (val: number, record: CcTipRecord) => (
+        <div className="flex flex-col items-end">
+          <span className="tabular-nums font-semibold text-sky-700 dark:text-sky-400 text-xs">
+            {val > 0 ? `${val.toLocaleString('vi-VN')} đ` : '0 đ'}
+          </span>
+          {record.tipStatus === 'Small Change' && (
+            <Tag color="orange" className="mr-0 text-[10px] scale-90 origin-right py-0 leading-tight">
+              Tiền lẻ &lt; 20K
+            </Tag>
+          )}
+          {record.tipStatus === 'Tipped' && (
+            <Tag color="green" className="mr-0 text-[10px] scale-90 origin-right py-0 leading-tight">
+              Tip ≥ 20K
+            </Tag>
+          )}
+        </div>
       ),
     },
     {
@@ -645,11 +661,12 @@ export default function CcTipTab({
           <Segmented
             options={[
               { label: `Tất cả (${records.length})`, value: 'ALL' },
-              { label: `Có Tip (${totalTippedCount})`, value: 'TIPPED' },
+              { label: `Có Tip ≥ 20K (${totalTippedCount})`, value: 'TIPPED' },
+              { label: `Tiền lẻ < 20K (${totalSmallChangeCount})`, value: 'SMALL_CHANGE' },
               { label: `Không Tip (${totalNoTipCount})`, value: 'NO_TIP' },
             ]}
             value={tipFilter}
-            onChange={(val) => setTipFilter(val as 'ALL' | 'TIPPED' | 'NO_TIP')}
+            onChange={(val) => setTipFilter(val as TipFilterType)}
             className="tip-detail-filter font-semibold text-xs"
           />
 

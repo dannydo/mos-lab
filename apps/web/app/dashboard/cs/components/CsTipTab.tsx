@@ -4,7 +4,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Input, Button, Segmented, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { Store, Heart, User, Users, Zap, Search, RotateCw, Receipt, Coins, CircleSlash, XCircle } from 'lucide-react';
+import {
+  Store,
+  Heart,
+  User,
+  Users,
+  Zap,
+  Search,
+  RotateCw,
+  Receipt,
+  Coins,
+  CircleSlash,
+  XCircle,
+  PiggyBank,
+} from 'lucide-react';
 import { CsTipQueryParams, CsTipRecord, CsTipResponse, CsTipStoreBreakdown } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { AppIcon, CollapsibleSearchField, CopyPhoneButton, DataTable } from '~/components/ui';
@@ -27,7 +40,7 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
 
   // Filters for order records
   const [customerType, setCustomerType] = useState<'ALL' | 'LOCA' | 'SINGLE'>('ALL');
-  const [tipFilter, setTipFilter] = useState<'ALL' | 'TIPPED' | 'NO_TIP'>('ALL');
+  const [tipFilter, setTipFilter] = useState<'ALL' | 'TIPPED' | 'SMALL_CHANGE' | 'NO_TIP'>('ALL');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -64,7 +77,7 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
     setPage(1);
   };
 
-  const handleTipFilterChange = (val: 'ALL' | 'TIPPED' | 'NO_TIP') => {
+  const handleTipFilterChange = (val: 'ALL' | 'TIPPED' | 'SMALL_CHANGE' | 'NO_TIP') => {
     setTipFilter(val);
     setPage(1);
   };
@@ -259,15 +272,32 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
       align: 'right',
-      width: 130,
-      render: (tip: number, record) =>
-        record.hasTip ? (
-          <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
-            {formatCurrency(tip)}
-          </span>
-        ) : (
-          <span className="text-xs text-slate-400 tabular-nums">0 ₫</span>
-        ),
+      width: 140,
+      render: (tip: number, record) => (
+        <div className="flex flex-col items-end">
+          {tip > 0 ? (
+            <span
+              className={`tabular-nums font-bold text-sm whitespace-nowrap ${
+                record.hasTip ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+              }`}
+            >
+              {formatCurrency(tip)}
+            </span>
+          ) : (
+            <span className="text-xs text-slate-400 tabular-nums">0 ₫</span>
+          )}
+          {record.isSmallChange && (
+            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800 leading-tight">
+              Tiền lẻ &lt; 20K
+            </span>
+          )}
+          {record.hasTip && (
+            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 leading-tight">
+              Tip ≥ 20K
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Thưởng CS (3%)',
@@ -276,7 +306,7 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
       align: 'right',
       width: 140,
       render: (bonus: number, record) =>
-        record.hasTip ? (
+        record.totalCustomerTip > 0 ? (
           <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-xs font-extrabold tabular-nums bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 whitespace-nowrap">
             <AppIcon icon={Zap} size={11} className="text-blue-600 dark:text-blue-400" />
             {formatCurrency(bonus)}
@@ -417,7 +447,7 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
             <Segmented
               size="small"
               value={tipFilter}
-              onChange={(val) => handleTipFilterChange(val as 'ALL' | 'TIPPED' | 'NO_TIP')}
+              onChange={(val) => handleTipFilterChange(val as 'ALL' | 'TIPPED' | 'SMALL_CHANGE' | 'NO_TIP')}
               options={[
                 {
                   value: 'ALL',
@@ -432,7 +462,7 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
                 {
                   value: 'TIPPED',
                   label: (
-                    <Tooltip title="Chỉ đơn có tiền tip">
+                    <Tooltip title="Chỉ đơn có tiền tip (≥ 20K)">
                       <span className="flex items-center justify-center p-0.5 text-emerald-600 dark:text-emerald-400">
                         <AppIcon icon={Coins} size="sm" />
                       </span>
@@ -440,9 +470,19 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
                   ),
                 },
                 {
+                  value: 'SMALL_CHANGE',
+                  label: (
+                    <Tooltip title="Chỉ đơn tiền lẻ (< 20K)">
+                      <span className="flex items-center justify-center p-0.5 text-amber-500">
+                        <AppIcon icon={PiggyBank} size="sm" />
+                      </span>
+                    </Tooltip>
+                  ),
+                },
+                {
                   value: 'NO_TIP',
                   label: (
-                    <Tooltip title="Chỉ đơn không tip">
+                    <Tooltip title="Chỉ đơn không tip (0đ)">
                       <span className="flex items-center justify-center p-0.5 text-slate-400">
                         <AppIcon icon={CircleSlash} size="sm" />
                       </span>

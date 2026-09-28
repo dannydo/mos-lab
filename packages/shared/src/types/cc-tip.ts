@@ -30,7 +30,7 @@ export interface CcTipRecord {
   totalCustomerTip: number;
   ccTipAmount: number;
   ccTipPercentage: number;
-  tipStatus: 'Tipped' | 'No Tip';
+  tipStatus: 'Tipped' | 'Small Change' | 'No Tip';
 }
 
 export interface CcTipResponse {
@@ -68,7 +68,7 @@ export interface CcTipQueryParams {
   dateTo?: string;
   storeId?: string;
   consultantId?: string;
-  tipFilter?: 'ALL' | 'TIPPED' | 'NO_TIP';
+  tipFilter?: 'ALL' | 'TIPPED' | 'SMALL_CHANGE' | 'NO_TIP';
   page?: number;
   limit?: number;
 }

@@ -4786,6 +4786,20 @@
       }
     },
     {
+      "id": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-workshops/routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+        "module": "academy-workshops",
+        "handler": "inlineHandler",
+        "line": 1165
+      }
+    },
+    {
       "id": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
@@ -4796,7 +4810,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1165
+        "line": 1188
       }
     },
     {
@@ -4810,7 +4824,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/consent",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1183
+        "line": 1206
       }
     },
     {
@@ -4824,7 +4838,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/upload-intent",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1205
+        "line": 1228
       }
     },
     {
@@ -4838,7 +4852,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/confirm",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1225
+        "line": 1248
       }
     },
     {
@@ -4852,7 +4866,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/instructor",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1244
+        "line": 1267
       }
     },
     {
@@ -4866,7 +4880,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/talent-leaderboard",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1264
+        "line": 1287
       }
     },
     {
@@ -4880,7 +4894,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId/command",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1279
+        "line": 1302
       }
     },
     {
@@ -4894,7 +4908,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1296
+        "line": 1319
       }
     },
     {
@@ -4908,7 +4922,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/reorder",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1311
+        "line": 1334
       }
     },
     {
@@ -4922,7 +4936,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1326
+        "line": 1349
       }
     },
     {
@@ -4936,7 +4950,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1342
+        "line": 1365
       }
     },
     {
@@ -4950,7 +4964,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/timeline-report",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1357
+        "line": 1380
       }
     },
     {
@@ -4964,7 +4978,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/live-state",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1372
+        "line": 1395
       }
     },
     {
@@ -4978,7 +4992,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/display-settings",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1384
+        "line": 1407
       }
     },
     {
@@ -4992,7 +5006,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1399
+        "line": 1422
       }
     },
     {
@@ -5006,7 +5020,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1415
+        "line": 1438
       }
     },
     {
@@ -5020,7 +5034,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/agenda-item",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1431
+        "line": 1454
       }
     },
     {
@@ -5034,7 +5048,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/clone",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1447
+        "line": 1470
       }
     },
     {
@@ -5048,7 +5062,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/save-template",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1463
+        "line": 1486
       }
     },
     {
@@ -5062,7 +5076,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/template/refresh",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1479
+        "line": 1502
       }
     },
     {
@@ -5076,7 +5090,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/from-template/:templateId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1494
+        "line": 1517
       }
     },
     {
@@ -5090,7 +5104,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1510
+        "line": 1533
       }
     },
     {
@@ -5104,7 +5118,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1527
+        "line": 1550
       }
     },
     {
@@ -5118,7 +5132,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1548
+        "line": 1571
       }
     },
     {
@@ -5132,7 +5146,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/command",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1571
+        "line": 1594
       }
     },
     {
@@ -5146,7 +5160,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/rewards",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1589
+        "line": 1612
       }
     },
     {
@@ -5160,7 +5174,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/rewards/:rewardId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1600
+        "line": 1623
       }
     },
     {
@@ -5174,7 +5188,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/bonuses",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1618
+        "line": 1641
       }
     },
     {
@@ -5188,7 +5202,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/bonuses/:bonusId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1628
+        "line": 1651
       }
     },
     {
@@ -9290,7 +9304,7 @@
         "path": "/api/kpi/cc-tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 123
+        "line": 124
       }
     },
     {
@@ -9304,7 +9318,7 @@
         "path": "/api/kpi/cc-tip/records",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 287
+        "line": 288
       }
     },
     {
@@ -9374,7 +9388,7 @@
         "path": "/api/kpi/cs-tip",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 80
+        "line": 81
       }
     },
     {
@@ -9444,7 +9458,7 @@
         "path": "/api/kpi/cv-tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 73
+        "line": 75
       }
     },
     {
@@ -9458,7 +9472,7 @@
         "path": "/api/kpi/cv-tip/records",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 208
+        "line": 210
       }
     },
     {
@@ -9472,7 +9486,7 @@
         "path": "/api/kpi/cv-tip/customer-history",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 452
+        "line": 464
       }
     },
     {
@@ -11573,6 +11587,62 @@
         "module": "ui-experiences",
         "handler": "inlineHandler",
         "line": 172
+      }
+    },
+    {
+      "id": "route:GET:/api/user-preferences/pinned-links",
+      "type": "FastifyRoute",
+      "label": "GET /api/user-preferences/pinned-links",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/user-preferences/pinned-links",
+        "module": "user-preferences",
+        "handler": "preHandler",
+        "line": 14
+      }
+    },
+    {
+      "id": "route:PUT:/api/user-preferences/pinned-links",
+      "type": "FastifyRoute",
+      "label": "PUT /api/user-preferences/pinned-links",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/user-preferences/pinned-links",
+        "module": "user-preferences",
+        "handler": "preHandler",
+        "line": 63
+      }
+    },
+    {
+      "id": "route:POST:/api/user-preferences/pinned-links",
+      "type": "FastifyRoute",
+      "label": "POST /api/user-preferences/pinned-links",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/user-preferences/pinned-links",
+        "module": "user-preferences",
+        "handler": "preHandler",
+        "line": 156
+      }
+    },
+    {
+      "id": "route:DELETE:/api/user-preferences/pinned-links/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/user-preferences/pinned-links/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/user-preferences/pinned-links/:id",
+        "module": "user-preferences",
+        "handler": "preHandler",
+        "line": 277
       }
     },
     {
@@ -20993,6 +21063,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TipFilterType",
+      "type": "SharedType",
+      "label": "TipFilterType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TipFilterType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CvTipRecord",
       "type": "SharedType",
       "label": "CvTipRecord",
@@ -23861,6 +23943,30 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:PinnedLinkItem",
+      "type": "SharedType",
+      "label": "PinnedLinkItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pinned-links.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PinnedLinkItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UserPinnedLinksResponse",
+      "type": "SharedType",
+      "label": "UserPinnedLinksResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pinned-links.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UserPinnedLinksResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:PlanStatus",
       "type": "SharedType",
       "label": "PlanStatus",
@@ -26369,6 +26475,18 @@
       }
     },
     {
+      "id": "uicomp:AddPinnedLinkModal",
+      "type": "UIComponent",
+      "label": "<AddPinnedLinkModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/AddPinnedLinkModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AddPinnedLinkModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:HeaderLeftToolbar",
       "type": "UIComponent",
       "label": "<HeaderLeftToolbar />",
@@ -28005,8 +28123,8 @@
       "filePath": "apps/api/src/modules/academy-sales/academy-import.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15402,
-        "lineCount": 407,
+        "sizeBytes": 15444,
+        "lineCount": 408,
         "ext": ".ts"
       }
     },
@@ -28265,8 +28383,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4293,
-        "lineCount": 128,
+        "sizeBytes": 4524,
+        "lineCount": 132,
         "ext": ".ts"
       }
     },
@@ -28278,8 +28396,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 108104,
-        "lineCount": 2632,
+        "sizeBytes": 108871,
+        "lineCount": 2653,
         "ext": ".ts"
       }
     },
@@ -28304,8 +28422,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 66103,
-        "lineCount": 1648,
+        "sizeBytes": 66906,
+        "lineCount": 1671,
         "ext": ".ts"
       }
     },
@@ -29864,8 +29982,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-tip.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18483,
-        "lineCount": 454,
+        "sizeBytes": 19143,
+        "lineCount": 463,
         "ext": ".ts"
       }
     },
@@ -29903,8 +30021,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cs-tip.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15959,
-        "lineCount": 377,
+        "sizeBytes": 16576,
+        "lineCount": 381,
         "ext": ".ts"
       }
     },
@@ -29942,8 +30060,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-tip.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22345,
-        "lineCount": 540,
+        "sizeBytes": 23739,
+        "lineCount": 558,
         "ext": ".ts"
       }
     },
@@ -31183,6 +31301,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "type": "File",
+      "label": "pinned-links.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10780,
+        "lineCount": 347,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/plugins/cache.test.ts",
       "type": "File",
       "label": "cache.test.ts",
@@ -32028,6 +32159,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/data-migrations/20260928110000_seed_workshop_1days_course.ts",
+      "type": "File",
+      "label": "20260928110000_seed_workshop_1days_course.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20260928110000_seed_workshop_1days_course.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1486,
+        "lineCount": 58,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/data-migrations/types.ts",
       "type": "File",
       "label": "types.ts",
@@ -32295,8 +32439,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16023,
-        "lineCount": 408,
+        "sizeBytes": 16176,
+        "lineCount": 410,
         "ext": ".ts"
       }
     },
@@ -32568,8 +32712,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/campaigns/components/AcademyCampaignFormDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26953,
-        "lineCount": 649,
+        "sizeBytes": 27299,
+        "lineCount": 658,
         "ext": ".tsx"
       }
     },
@@ -32652,6 +32796,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/AcademyLeadDrawer.test.tsx",
+      "type": "File",
+      "label": "AcademyLeadDrawer.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyLeadDrawer.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3910,
+        "lineCount": 137,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/academy-leads/components/AcademyLeadDrawer.tsx",
       "type": "File",
       "label": "AcademyLeadDrawer.tsx",
@@ -32659,8 +32816,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyLeadDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19783,
-        "lineCount": 495,
+        "sizeBytes": 20382,
+        "lineCount": 517,
         "ext": ".tsx"
       }
     },
@@ -32958,8 +33115,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21331,
-        "lineCount": 559,
+        "sizeBytes": 30743,
+        "lineCount": 743,
         "ext": ".tsx"
       }
     },
@@ -33049,8 +33206,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopRoster.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20980,
-        "lineCount": 588,
+        "sizeBytes": 21112,
+        "lineCount": 590,
         "ext": ".tsx"
       }
     },
@@ -33283,8 +33440,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/useAcademyWorkshopParticipantActions.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13050,
-        "lineCount": 362,
+        "sizeBytes": 14252,
+        "lineCount": 398,
         "ext": ".ts"
       }
     },
@@ -33374,8 +33531,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/courses/utils.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 469,
-        "lineCount": 13,
+        "sizeBytes": 80,
+        "lineCount": 4,
         "ext": ".ts"
       }
     },
@@ -33419,6 +33576,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts",
+      "type": "File",
+      "label": "lead-manager.helpers.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2370,
+        "lineCount": 75,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.tsx",
       "type": "File",
       "label": "lead-manager.helpers.tsx",
@@ -33426,8 +33596,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27444,
-        "lineCount": 737,
+        "sizeBytes": 27818,
+        "lineCount": 748,
         "ext": ".tsx"
       }
     },
@@ -33517,8 +33687,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24882,
-        "lineCount": 580,
+        "sizeBytes": 25221,
+        "lineCount": 589,
         "ext": ".tsx"
       }
     },
@@ -33946,7 +34116,7 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26335,
+        "sizeBytes": 26342,
         "lineCount": 570,
         "ext": ".tsx"
       }
@@ -34284,8 +34454,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4557,
-        "lineCount": 128,
+        "sizeBytes": 4526,
+        "lineCount": 126,
         "ext": ".tsx"
       }
     },
@@ -34297,7 +34467,7 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41794,
+        "sizeBytes": 41799,
         "lineCount": 871,
         "ext": ".tsx"
       }
@@ -34570,8 +34740,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27468,
-        "lineCount": 705,
+        "sizeBytes": 28286,
+        "lineCount": 722,
         "ext": ".tsx"
       }
     },
@@ -34622,8 +34792,8 @@
       "filePath": "apps/web/app/dashboard/cs/components/CsTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19152,
-        "lineCount": 506,
+        "sizeBytes": 20535,
+        "lineCount": 533,
         "ext": ".tsx"
       }
     },
@@ -35129,8 +35299,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36709,
-        "lineCount": 942,
+        "sizeBytes": 38147,
+        "lineCount": 973,
         "ext": ".tsx"
       }
     },
@@ -35571,8 +35741,8 @@
       "filePath": "apps/web/app/dashboard/labs/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19518,
-        "lineCount": 414,
+        "sizeBytes": 19814,
+        "lineCount": 428,
         "ext": ".tsx"
       }
     },
@@ -35584,8 +35754,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 56335,
-        "lineCount": 1387,
+        "sizeBytes": 56365,
+        "lineCount": 1388,
         "ext": ".tsx"
       }
     },
@@ -36793,8 +36963,8 @@
       "filePath": "apps/web/lib/api/academy.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 60780,
-        "lineCount": 1452,
+        "sizeBytes": 61181,
+        "lineCount": 1462,
         "ext": ".ts"
       }
     },
@@ -36975,8 +37145,8 @@
       "filePath": "apps/web/lib/api/system.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11528,
-        "lineCount": 294,
+        "sizeBytes": 12702,
+        "lineCount": 321,
         "ext": ".ts"
       }
     },
@@ -37163,6 +37333,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/format-utils.test.ts",
+      "type": "File",
+      "label": "format-utils.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/format-utils.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2524,
+        "lineCount": 71,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/format-utils.ts",
       "type": "File",
       "label": "format-utils.ts",
@@ -37170,8 +37353,8 @@
       "filePath": "apps/web/lib/format-utils.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2418,
-        "lineCount": 75,
+        "sizeBytes": 3243,
+        "lineCount": 98,
         "ext": ".ts"
       }
     },
@@ -37261,8 +37444,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 61950,
-        "lineCount": 966,
+        "sizeBytes": 63823,
+        "lineCount": 990,
         "ext": ".ts"
       }
     },
@@ -37287,8 +37470,8 @@
       "filePath": "packages/shared/src/constants/system-constants.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5270,
-        "lineCount": 139,
+        "sizeBytes": 6036,
+        "lineCount": 161,
         "ext": ".ts"
       }
     },
@@ -37313,8 +37496,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2336,
-        "lineCount": 61,
+        "sizeBytes": 2377,
+        "lineCount": 62,
         "ext": ".ts"
       }
     },
@@ -37586,7 +37769,7 @@
       "filePath": "packages/shared/src/types/cc-tip.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1718,
+        "sizeBytes": 1752,
         "lineCount": 75,
         "ext": ".ts"
       }
@@ -37612,8 +37795,8 @@
       "filePath": "packages/shared/src/types/cs-tip.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1552,
-        "lineCount": 71,
+        "sizeBytes": 1596,
+        "lineCount": 72,
         "ext": ".ts"
       }
     },
@@ -37664,8 +37847,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7276,
-        "lineCount": 310,
+        "sizeBytes": 7385,
+        "lineCount": 312,
         "ext": ".ts"
       }
     },
@@ -37874,6 +38057,19 @@
       "metadata": {
         "sizeBytes": 10337,
         "lineCount": 403,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/pinned-links.ts",
+      "type": "File",
+      "label": "pinned-links.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/pinned-links.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 278,
+        "lineCount": 16,
         "ext": ".ts"
       }
     },
@@ -40128,6 +40324,13 @@
     {
       "id": "edge:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee:ws:apps/api",
       "source": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId:ws:apps/api",
+      "source": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -43523,6 +43726,34 @@
     {
       "id": "edge:route:POST:/api/ui-experiences/:id/preview-token:ws:apps/api",
       "source": "route:POST:/api/ui-experiences/:id/preview-token",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/user-preferences/pinned-links:ws:apps/api",
+      "source": "route:GET:/api/user-preferences/pinned-links",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/user-preferences/pinned-links:ws:apps/api",
+      "source": "route:PUT:/api/user-preferences/pinned-links",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/user-preferences/pinned-links:ws:apps/api",
+      "source": "route:POST:/api/user-preferences/pinned-links",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/user-preferences/pinned-links/:id:ws:apps/api",
+      "source": "route:DELETE:/api/user-preferences/pinned-links/:id",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -48946,6 +49177,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:TipFilterType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TipFilterType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CvTipRecord:ws:packages/shared",
       "source": "type:@mos-lab/shared:CvTipRecord",
       "target": "ws:packages/shared",
@@ -50614,6 +50852,20 @@
     {
       "id": "edge:type:@mos-lab/shared:SavePilotAssessmentRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:SavePilotAssessmentRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PinnedLinkItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PinnedLinkItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UserPinnedLinksResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UserPinnedLinksResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -52714,6 +52966,20 @@
     {
       "id": "edge:uicomp:RocketPlusIcon:token:color:primary",
       "source": "uicomp:RocketPlusIcon",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AddPinnedLinkModal:ws:apps/web",
+      "source": "uicomp:AddPinnedLinkModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AddPinnedLinkModal:token:color:primary",
+      "source": "uicomp:AddPinnedLinkModal",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -55393,6 +55659,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/user-preferences/pinned-links.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/plugins/prisma.ts:ws:packages/shared",
       "source": "file:apps/api/src/plugins/prisma.ts",
       "target": "ws:packages/shared",
@@ -55906,6 +56179,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/instructors/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/instructors/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -59817,6 +60097,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/user-preferences/pinned-links.routes.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/safe-dev/legacy-cc-parity-replay.ts:prisma:crm:CrmPayrollPeriod",
       "source": "file:apps/api/src/safe-dev/legacy-cc-parity-replay.ts",
       "target": "prisma:crm:CrmPayrollPeriod",
@@ -61308,6 +61595,13 @@
       "label": "CALLS academySales.workshops"
     },
     {
+      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "type": "API_CALL",
+      "label": "CALLS academySales.workshops"
+    },
+    {
       "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
       "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
       "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
@@ -61959,6 +62253,13 @@
       "label": "CALLS academySales.workshops"
     },
     {
+      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/academy-leads/workshops/[slug]",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "type": "API_CALL",
+      "label": "CALLS academySales.workshops"
+    },
+    {
       "id": "edge:page:/dashboard/academy-leads/workshops/[slug]:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
       "source": "page:/dashboard/academy-leads/workshops/[slug]",
       "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
@@ -62606,6 +62907,13 @@
       "id": "edge:page:/dashboard/academy-leads/workshops:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
       "source": "page:/dashboard/academy-leads/workshops",
       "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
+      "type": "API_CALL",
+      "label": "CALLS academySales.workshops"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/workshops:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/academy-leads/workshops",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
       "type": "API_CALL",
       "label": "CALLS academySales.workshops"
     },
@@ -63439,6 +63747,13 @@
       "id": "edge:page:/dashboard/architecture:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
       "source": "page:/dashboard/architecture",
       "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/architecture",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -65648,6 +65963,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/design-system",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/design-system:route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
@@ -67541,6 +67863,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -70940,6 +71269,34 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/user-preferences/pinned-links/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/user-preferences/pinned-links/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/access",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/academy-sales/access",
@@ -71881,6 +72238,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -75280,6 +75644,34 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/user-preferences/pinned-links/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/user-preferences/pinned-links/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/omicall:route:GET:/api/academy-sales/staff",
       "source": "page:/dashboard/omicall",
       "target": "route:GET:/api/academy-sales/staff",
@@ -77338,6 +77730,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
@@ -79210,6 +79609,13 @@
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -82609,6 +83015,34 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/user-preferences/pinned-links",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/user-preferences/pinned-links",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/user-preferences/pinned-links/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/user-preferences/pinned-links/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/login:route:POST:/api/academy/workshops/registration/:registrationCode/google",
       "source": "page:/login",
       "target": "route:POST:/api/academy/workshops/registration/:registrationCode/google",
@@ -82680,31 +83114,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2914,
-    "totalEdges": 6372,
+    "totalNodes": 2929,
+    "totalEdges": 6406,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 159,
-      "FastifyRoute": 620,
+      "FastifyRoute": 625,
       "Component": 56,
-      "SharedType": 1065,
+      "SharedType": 1068,
       "DesignToken": 12,
-      "UIComponent": 203,
-      "File": 796
+      "UIComponent": 204,
+      "File": 802
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1236,
-      "HANDLES_ROUTE": 620,
-      "RENDERS": 259,
-      "USES_TOKEN": 205,
-      "IMPORTS": 435,
-      "QUERIES_MODEL": 368,
-      "API_CALL": 3249
+      "EXPORTS": 1239,
+      "HANDLES_ROUTE": 625,
+      "RENDERS": 260,
+      "USES_TOKEN": 206,
+      "IMPORTS": 437,
+      "QUERIES_MODEL": 369,
+      "API_CALL": 3270
     },
-    "fastifyRouteCount": 625,
+    "fastifyRouteCount": 630,
     "prismaModelCount": 159,
     "nextPageCount": 56,
-    "sharedTypeCount": 1065
+    "sharedTypeCount": 1068
   },
   "routes": [
     {
@@ -83648,6 +84082,13 @@
     {
       "method": "POST",
       "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
+      "filePath": "apps/api/src/modules/academy-workshops/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-workshops"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
       "filePath": "apps/api/src/modules/academy-workshops/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-workshops"
@@ -87081,6 +87522,34 @@
       "filePath": "apps/api/src/modules/ui-experiences/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ui-experiences"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user-preferences/pinned-links",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "handler": "preHandler",
+      "moduleName": "user-preferences"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/user-preferences/pinned-links",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "handler": "preHandler",
+      "moduleName": "user-preferences"
+    },
+    {
+      "method": "POST",
+      "path": "/api/user-preferences/pinned-links",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "handler": "preHandler",
+      "moduleName": "user-preferences"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user-preferences/pinned-links/:id",
+      "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
+      "handler": "preHandler",
+      "moduleName": "user-preferences"
     }
   ],
   "prismaModels": [

@@ -8,6 +8,7 @@ import {
   CsTipStoreBreakdown,
   CsTipSummary,
   SafeAny,
+  TIP_SYSTEM_CONFIG,
 } from '@mos-lab/shared';
 import { buildComboLiveAtBookingSql } from '../../customers/services/combo-recognition.service.js';
 
@@ -113,15 +114,15 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
       ${filteredOrdersWithLiveCte}
       SELECT
         COUNT(DISTINCT owl.orderId) AS totalVisits,
-        COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) > 0 THEN owl.orderId END) AS totalTippedVisits,
+        COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN owl.orderId END) AS totalTippedVisits,
         COALESCE(SUM(st.customer_tip), 0) AS totalCustomerTip,
 
         COUNT(DISTINCT CASE WHEN owl.is_combo_live = 1 THEN owl.orderId END) AS locaVisits,
-        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 1 AND COALESCE(st.customer_tip, 0) > 0 THEN owl.orderId END) AS locaTippedVisits,
+        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 1 AND COALESCE(st.customer_tip, 0) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN owl.orderId END) AS locaTippedVisits,
         COALESCE(SUM(CASE WHEN owl.is_combo_live = 1 THEN st.customer_tip ELSE 0 END), 0) AS locaCustomerTip,
 
         COUNT(DISTINCT CASE WHEN owl.is_combo_live = 0 THEN owl.orderId END) AS singleVisits,
-        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 0 AND COALESCE(st.customer_tip, 0) > 0 THEN owl.orderId END) AS singleTippedVisits,
+        COUNT(DISTINCT CASE WHEN owl.is_combo_live = 0 AND COALESCE(st.customer_tip, 0) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN owl.orderId END) AS singleTippedVisits,
         COALESCE(SUM(CASE WHEN owl.is_combo_live = 0 THEN st.customer_tip ELSE 0 END), 0) AS singleCustomerTip
       FROM orders_with_live owl
       LEFT JOIN client_store_language csl ON owl.client_store_id = csl.client_store_id AND csl.language_id = 1
@@ -146,7 +147,7 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
         COALESCE(cs.client_store_key, 'DT') AS storeKey,
         COALESCE(csl.client_store_name, 'Đề Thám') AS storeName,
         COUNT(DISTINCT owl.orderId) AS totalVisits,
-        COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) > 0 THEN owl.orderId END) AS totalTippedVisits,
+        COUNT(DISTINCT CASE WHEN COALESCE(st.customer_tip, 0) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN owl.orderId END) AS totalTippedVisits,
         COALESCE(SUM(st.customer_tip), 0) AS totalCustomerTip,
 
         COUNT(DISTINCT CASE WHEN owl.is_combo_live = 1 THEN owl.orderId END) AS locaVisits,
@@ -183,7 +184,9 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
     }
 
     if (tipFilter === 'TIPPED') {
-      recordFilterClause += ' AND COALESCE(st.customer_tip, 0) > 0';
+      recordFilterClause += ` AND COALESCE(st.customer_tip, 0) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT}`;
+    } else if (tipFilter === 'SMALL_CHANGE') {
+      recordFilterClause += ` AND COALESCE(st.customer_tip, 0) > 0 AND COALESCE(st.customer_tip, 0) < ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT}`;
     } else if (tipFilter === 'NO_TIP') {
       recordFilterClause += ' AND COALESCE(st.customer_tip, 0) = 0';
     }
@@ -347,7 +350,8 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
           ccName: r.ccName ? String(r.ccName) : null,
           totalCustomerTip: tipVal,
           csTipBonus: Math.round(tipVal * 0.03),
-          hasTip: tipVal > 0,
+          hasTip: tipVal >= TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT,
+          isSmallChange: tipVal > 0 && tipVal < TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT,
         };
       });
 

@@ -8,6 +8,8 @@ import {
   CvTipRecord,
   CvTipResponse,
   SafeAny,
+  TIP_SYSTEM_CONFIG,
+  TipFilterType,
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 
@@ -101,7 +103,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         ${filteredOrdersCte}
         SELECT 
           COUNT(*) as totalVisits,
-          COUNT(CASE WHEN st.tip_amount > 0 THEN 1 END) as totalTippedVisits,
+          COUNT(CASE WHEN st.customer_tip_100 >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN 1 END) as totalTippedVisits,
           COALESCE(SUM(st.customer_tip_100), 0) as totalCustomerTip
         FROM filtered_orders fo
         JOIN \`order\` o ON o.id = fo.orderId
@@ -127,7 +129,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           up.avatar as avatar,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COUNT(DISTINCT tech.orderId) as totalVisits,
-          COUNT(DISTINCT CASE WHEN st.id IS NOT NULL AND st.tip_amount > 0 THEN tech.orderId END) as tippedVisits,
+          COUNT(DISTINCT CASE WHEN st.id IS NOT NULL AND (CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN tech.orderId END) as tippedVisits,
           COALESCE(SUM(st.tip_amount), 0) as totalCvTipBonus,
           COALESCE(SUM(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE 0 END), 0) as totalCustomerTipAmount
         FROM (
@@ -221,7 +223,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
       dateTo?: string;
       storeId?: string;
       consultantId?: string;
-      tipFilter?: 'ALL' | 'TIPPED' | 'NO_TIP';
+      tipFilter?: TipFilterType;
       page?: number;
       limit?: number;
       search?: string;
@@ -272,12 +274,16 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
       }
 
       const baseWhereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+      const customerTipExpr =
+        'COALESCE(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END, 0)';
       const tipFilterClause =
         tipFilter === 'TIPPED'
-          ? ' AND COALESCE(st.tip_amount, 0) > 0'
-          : tipFilter === 'NO_TIP'
-            ? ' AND COALESCE(st.tip_amount, 0) = 0'
-            : '';
+          ? ` AND ${customerTipExpr} >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT}`
+          : tipFilter === 'SMALL_CHANGE'
+            ? ` AND ${customerTipExpr} > 0 AND ${customerTipExpr} < ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT}`
+            : tipFilter === 'NO_TIP'
+              ? ` AND COALESCE(st.tip_amount, 0) = 0`
+              : '';
       const filteredWhereClause = `${baseWhereClause}${tipFilterClause}`;
       const filteredOrdersCte = buildActualCheckinOrdersCte();
       const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
@@ -332,7 +338,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         ), order_tip_summary AS (
           SELECT
             scoped.orderId,
-            MAX(CASE WHEN st.tip_amount > 0 THEN 1 ELSE 0 END) AS isTipped,
+            MAX(CASE WHEN (CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN 1 ELSE 0 END) AS isTipped,
             MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) AS customerTip,
             SUM(COALESCE(st.tip_amount, 0)) AS cvTipBonus
           FROM scoped_orders scoped
@@ -376,7 +382,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
               SELECT
                 history_o.user_id as clientId,
                 COUNT(DISTINCT history_o.id) as clientTotalVisits,
-                COUNT(DISTINCT CASE WHEN history_tip.tip_amount > 0 THEN history_o.id END) as clientTippedVisits
+                COUNT(DISTINCT CASE WHEN history_tip.tip_amount > 0 AND (CASE WHEN history_tip.tip_percentage > 0 THEN history_tip.tip_amount / (history_tip.tip_percentage / 100) ELSE history_tip.tip_amount END) >= ${TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT} THEN history_o.id END) as clientTippedVisits
               FROM \`order\` history_o
               LEFT JOIN staff_tip history_tip ON history_tip.order_id = history_o.id
               WHERE history_o.user_id IN (${clientIds.join(',')})
@@ -397,7 +403,13 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
 
       const data: CvTipRecord[] = dbRows.map((row) => {
         const cvTipAmount = Math.round(Number(row.cvTipAmount || 0));
-        const isTipped = cvTipAmount > 0;
+        const totalCustomerTip = Math.round(Number(row.totalCustomerTip || 0));
+        let tipStatus: 'Tipped' | 'Small Change' | 'No Tip' = 'No Tip';
+        if (totalCustomerTip >= TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT) {
+          tipStatus = 'Tipped';
+        } else if (totalCustomerTip > 0) {
+          tipStatus = 'Small Change';
+        }
         const customerHistory = customerHistoryByClientId.get(Number(row.clientId || 0));
         return {
           orderId: Number(row.orderId),
@@ -409,10 +421,10 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           serviceName: String(row.serviceName || ''),
           techName: String(row.techName || ''),
           avatar: String(row.avatar || '') || null,
-          totalCustomerTip: Math.round(Number(row.totalCustomerTip || 0)),
+          totalCustomerTip,
           cvTipAmount,
           cvTipPercentage: Number(row.cvTipPercentage || 70),
-          tipStatus: isTipped ? 'Tipped' : 'No Tip',
+          tipStatus,
           clientTippedVisits: customerHistory?.clientTippedVisits || 0,
           clientTotalVisits: customerHistory?.clientTotalVisits || 0,
         };
@@ -501,6 +513,12 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(rawSql);
       const data: CvTipCustomerVisit[] = rows.map((row) => {
         const totalCustomerTip = Math.round(Number(row.totalCustomerTip || 0));
+        let tipStatus: 'Tipped' | 'Small Change' | 'No Tip' = 'No Tip';
+        if (totalCustomerTip >= TIP_SYSTEM_CONFIG.MIN_VALID_CUSTOMER_TIP_AMOUNT) {
+          tipStatus = 'Tipped';
+        } else if (totalCustomerTip > 0) {
+          tipStatus = 'Small Change';
+        }
         return {
           orderId: Number(row.orderId),
           checkinTime: String(row.checkinTime || ''),
@@ -513,7 +531,7 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
           ccOutName: String(row.ccOutName || ''),
           bookerName: String(row.bookerName || ''),
           totalCustomerTip,
-          tipStatus: totalCustomerTip > 0 ? 'Tipped' : 'No Tip',
+          tipStatus,
         };
       });
 

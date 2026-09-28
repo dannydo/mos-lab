@@ -44,6 +44,7 @@ export interface CsTipRecord {
   totalCustomerTip: number;
   csTipBonus: number;
   hasTip: boolean;
+  isSmallChange?: boolean;
 }
 
 export interface CsTipResponse {
@@ -63,7 +64,7 @@ export interface CsTipQueryParams {
   dateTo?: string;
   storeId?: string;
   customerType?: 'ALL' | 'LOCA' | 'SINGLE';
-  tipFilter?: 'ALL' | 'TIPPED' | 'NO_TIP';
+  tipFilter?: 'ALL' | 'TIPPED' | 'SMALL_CHANGE' | 'NO_TIP';
   search?: string;
   page?: number;
   limit?: number;

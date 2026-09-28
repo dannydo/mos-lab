@@ -1,5 +1,6 @@
 import type {
   ColumnConfig,
+  PinnedLinkItem,
   CreateUiExperienceRequest,
   ExperienceJournalFingerprint,
   ExperienceJournalListQuery,
@@ -290,4 +291,35 @@ export const systemApi = {
       },
     };
   })(),
+  userPreferences: {
+    getPinnedLinks: async (): Promise<PinnedLinkItem[]> => {
+      const response = await api.get<{ success: boolean; data: PinnedLinkItem[] }>('/user-preferences/pinned-links');
+      return response.data.data || [];
+    },
+    savePinnedLinks: async (items: PinnedLinkItem[]): Promise<PinnedLinkItem[]> => {
+      const response = await api.put<{ success: boolean; data: PinnedLinkItem[] }>('/user-preferences/pinned-links', {
+        items,
+      });
+      return response.data.data || [];
+    },
+    addPinnedLink: async (payload: {
+      title: string;
+      url: string;
+      icon?: string;
+      isExternal?: boolean;
+      menuKey?: string;
+    }): Promise<PinnedLinkItem[]> => {
+      const response = await api.post<{ success: boolean; data: PinnedLinkItem[] }>(
+        '/user-preferences/pinned-links',
+        payload
+      );
+      return response.data.data || [];
+    },
+    removePinnedLink: async (id: string): Promise<PinnedLinkItem[]> => {
+      const response = await api.delete<{ success: boolean; data: PinnedLinkItem[] }>(
+        `/user-preferences/pinned-links/${encodeURIComponent(id)}`
+      );
+      return response.data.data || [];
+    },
+  },
 };
