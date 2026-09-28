@@ -6966,7 +6966,7 @@
         "path": "/api/career/my-progression",
         "module": "career",
         "handler": "inlineHandler",
-        "line": 67
+        "line": 61
       }
     },
     {
@@ -8380,7 +8380,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1043
+        "line": 1027
       }
     },
     {
@@ -12036,6 +12036,18 @@
       "filePath": "apps/web/app/dashboard/kpi/page.tsx",
       "metadata": {
         "routePath": "/dashboard/kpi",
+        "apiCallsCount": 0,
+        "apiCalls": []
+      }
+    },
+    {
+      "id": "page:/dashboard/labs",
+      "type": "Component",
+      "label": "App Page: /dashboard/labs",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/labs/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/labs",
         "apiCallsCount": 0,
         "apiCalls": []
       }
@@ -28981,8 +28993,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7121,
-        "lineCount": 201,
+        "sizeBytes": 7047,
+        "lineCount": 195,
         "ext": ".ts"
       }
     },
@@ -29280,8 +29292,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 50464,
-        "lineCount": 1237,
+        "sizeBytes": 49715,
+        "lineCount": 1221,
         "ext": ".ts"
       }
     },
@@ -29488,8 +29500,8 @@
       "filePath": "apps/api/src/modules/customers/services/combo-recognition.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3217,
-        "lineCount": 94,
+        "sizeBytes": 3165,
+        "lineCount": 91,
         "ext": ".ts"
       }
     },
@@ -29501,8 +29513,8 @@
       "filePath": "apps/api/src/modules/customers/services/combo-recognition.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13781,
-        "lineCount": 343,
+        "sizeBytes": 13559,
+        "lineCount": 335,
         "ext": ".ts"
       }
     },
@@ -31465,6 +31477,19 @@
       "packageName": "@mos-lab/api",
       "metadata": {
         "sizeBytes": 2576,
+        "lineCount": 74,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/scripts/apply-legacy-query-perf-phase5-indexes.ts",
+      "type": "File",
+      "label": "apply-legacy-query-perf-phase5-indexes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase5-indexes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2527,
         "lineCount": 74,
         "ext": ".ts"
       }
@@ -34239,6 +34264,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/career-path/career-path.constants.ts",
+      "type": "File",
+      "label": "career-path.constants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1122,
+        "lineCount": 49,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "type": "File",
       "label": "CareerConfigDrawer.tsx",
@@ -34246,8 +34284,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4417,
-        "lineCount": 118,
+        "sizeBytes": 4557,
+        "lineCount": 128,
         "ext": ".tsx"
       }
     },
@@ -34259,8 +34297,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41314,
-        "lineCount": 854,
+        "sizeBytes": 41794,
+        "lineCount": 871,
         "ext": ".tsx"
       }
     },
@@ -34883,8 +34921,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18266,
-        "lineCount": 534,
+        "sizeBytes": 18265,
+        "lineCount": 533,
         "ext": ".tsx"
       }
     },
@@ -35522,6 +35560,19 @@
       "metadata": {
         "sizeBytes": 34241,
         "lineCount": 736,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/labs/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/labs/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 19518,
+        "lineCount": 414,
         "ext": ".tsx"
       }
     },
@@ -36807,8 +36858,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2319,
-        "lineCount": 59,
+        "sizeBytes": 3724,
+        "lineCount": 111,
         "ext": ".ts"
       }
     },
@@ -37730,8 +37781,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10480,
-        "lineCount": 372,
+        "sizeBytes": 11447,
+        "lineCount": 406,
         "ext": ".ts"
       }
     },
@@ -43710,6 +43761,13 @@
     {
       "id": "edge:page:/dashboard/kpi:ws:apps/web",
       "source": "page:/dashboard/kpi",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/labs:ws:apps/web",
+      "source": "page:/dashboard/labs",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -56219,6 +56277,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bug-reports/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bug-reports/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/career-path.constants.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/career-path.constants.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -82615,30 +82680,30 @@
     }
   ],
   "stats": {
-    "totalNodes": 2910,
-    "totalEdges": 6370,
+    "totalNodes": 2914,
+    "totalEdges": 6372,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 159,
       "FastifyRoute": 620,
-      "Component": 55,
+      "Component": 56,
       "SharedType": 1065,
       "DesignToken": 12,
       "UIComponent": 203,
-      "File": 793
+      "File": 796
     },
     "edgeTypeCounts": {
       "EXPORTS": 1236,
       "HANDLES_ROUTE": 620,
-      "RENDERS": 258,
+      "RENDERS": 259,
       "USES_TOKEN": 205,
-      "IMPORTS": 434,
+      "IMPORTS": 435,
       "QUERIES_MODEL": 368,
       "API_CALL": 3249
     },
     "fastifyRouteCount": 625,
     "prismaModelCount": 159,
-    "nextPageCount": 55,
+    "nextPageCount": 56,
     "sharedTypeCount": 1065
   },
   "routes": [

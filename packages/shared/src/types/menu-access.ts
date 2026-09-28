@@ -61,6 +61,12 @@ export const MENU_ACCESS_CATEGORY_DEFINITIONS: readonly MenuAccessCategoryDefini
     menuGroupKeys: ['system'],
     description: 'Nhân sự, Đội nhóm, Catalog, Kiến trúc và Hệ thống thiết kế.',
   },
+  {
+    key: 'labs',
+    label: 'Sản phẩm phát triển (Labs)',
+    menuGroupKeys: ['labs'],
+    description: 'Vườn ươm sản phẩm, Career Path (CV -> BOSS) và các tính năng R&D đang thử nghiệm.',
+  },
 ] as const;
 
 export function getMenuAccessCategoryPolicyKey(categoryKey: string): string {
@@ -285,6 +291,34 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
     groupKey: 'system',
     groupLabel: 'Quản trị hệ thống',
     path: '/dashboard/design-system',
+  },
+  {
+    key: 'labs-hub',
+    label: 'Vườn ươm Labs (Tổng quan)',
+    groupKey: 'labs',
+    groupLabel: 'Sản phẩm phát triển (Labs)',
+    path: '/dashboard/labs',
+  },
+  {
+    key: 'career-path',
+    label: 'Career Path (CV → BOSS)',
+    groupKey: 'labs',
+    groupLabel: 'Sản phẩm phát triển (Labs)',
+    path: '/dashboard/career-path',
+  },
+  {
+    key: 'pilot-dark-lashes',
+    label: 'Pilot Uốn Mi Đề Thám',
+    groupKey: 'labs',
+    groupLabel: 'Sản phẩm phát triển (Labs)',
+    path: '/dashboard/pilot-dark-lashes',
+  },
+  {
+    key: 'cc-payroll-pilot',
+    label: 'Pilot Payroll CC',
+    groupKey: 'labs',
+    groupLabel: 'Sản phẩm phát triển (Labs)',
+    path: '/dashboard/payroll-pilot',
   },
 ] as const;
 

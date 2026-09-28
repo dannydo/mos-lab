@@ -259,6 +259,17 @@ export default function SidebarNav({
         didOpenActiveParent = true;
       }
     }
+    if (
+      pathname.includes('/dashboard/labs') ||
+      pathname.includes('/dashboard/career-path') ||
+      pathname.includes('/dashboard/pilot-dark-lashes') ||
+      pathname.includes('/dashboard/payroll-pilot')
+    ) {
+      if (!keys.includes('labs-parent')) {
+        keys.push('labs-parent');
+        didOpenActiveParent = true;
+      }
+    }
     if (didOpenActiveParent) localStorage.setItem('mos_menu_openKeys', JSON.stringify(keys));
     setOpenKeys(keys);
   }, [pathname]);

@@ -24,6 +24,16 @@ export function CareerConfigDrawer({
   saving,
   themeMode,
 }: CareerConfigDrawerProps) {
+  const cvToCc = config?.cvToCc || {
+    minOrders: 300,
+    minTipRatioAboveShop: 0.0,
+    maxFixRate: 0.02,
+    minHappinessIndex: 0.7,
+    trialDurationDays: 30,
+    minSelfComboRate: 0.2,
+    allowSelfConsultTrial: true,
+  };
+
   return (
     <AdaptiveDrawer
       title="⚙️ Cấu Hình Thông Số Thăng Tiến (Zero-Code Admin)"
@@ -43,55 +53,53 @@ export function CareerConfigDrawer({
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
               <span>Số ca làm tối thiểu:</span>
-              <span className="font-mono text-pink-600">{config.cvToCc.minOrders} ca</span>
+              <span className="font-mono text-pink-600">{cvToCc.minOrders} ca</span>
             </div>
             <Slider
               min={100}
               max={600}
-              value={config.cvToCc.minOrders}
-              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...config.cvToCc, minOrders: val } })}
+              value={cvToCc.minOrders}
+              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minOrders: val } })}
             />
           </div>
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
               <span>Tỷ lệ tự bán Combo tối thiểu (Ải Trùm Cuối):</span>
-              <span className="font-mono text-pink-600">{(config.cvToCc.minSelfComboRate * 100).toFixed(0)}%</span>
+              <span className="font-mono text-pink-600">{(cvToCc.minSelfComboRate * 100).toFixed(0)}%</span>
             </div>
             <Slider
               min={5}
               max={40}
-              value={config.cvToCc.minSelfComboRate * 100}
-              onChange={(val) =>
-                onConfigChange({ ...config, cvToCc: { ...config.cvToCc, minSelfComboRate: val / 100 } })
-              }
+              value={cvToCc.minSelfComboRate * 100}
+              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minSelfComboRate: val / 100 } })}
             />
           </div>
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
               <span>Tỷ lệ lỗi Fix tối đa:</span>
-              <span className="font-mono text-pink-600">{(config.cvToCc.maxFixRate * 100).toFixed(1)}%</span>
+              <span className="font-mono text-pink-600">{(cvToCc.maxFixRate * 100).toFixed(1)}%</span>
             </div>
             <Slider
               min={0.5}
               max={5}
               step={0.1}
-              value={config.cvToCc.maxFixRate * 100}
-              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...config.cvToCc, maxFixRate: val / 100 } })}
+              value={cvToCc.maxFixRate * 100}
+              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, maxFixRate: val / 100 } })}
             />
           </div>
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
               <span>Số ngày thử thách tự tư vấn:</span>
-              <span className="font-mono text-pink-600">{config.cvToCc.trialDurationDays} ngày</span>
+              <span className="font-mono text-pink-600">{cvToCc.trialDurationDays} ngày</span>
             </div>
             <Slider
               min={15}
               max={60}
-              value={config.cvToCc.trialDurationDays}
-              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...config.cvToCc, trialDurationDays: val } })}
+              value={cvToCc.trialDurationDays}
+              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, trialDurationDays: val } })}
             />
           </div>
         </div>
@@ -105,7 +113,7 @@ export function CareerConfigDrawer({
           </button>
           <button
             disabled={saving}
-            onClick={() => onSave(config.cvToCc)}
+            onClick={() => onSave(cvToCc)}
             className="px-4 py-2 rounded-xl text-xs font-bold bg-pink-500 text-white shadow-md shadow-pink-500/30 hover:bg-pink-600 transition"
           >
             {saving ? 'Đang Lưu...' : 'Lưu Cấu Hình Mới'}

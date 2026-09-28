@@ -8,21 +8,15 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
    * Lấy cấu hình lộ trình thăng tiến hiện hành
    * GET /api/career/config
    */
-  fastify.get(
-    '/career/config',
-    {
-      preHandler: [requireAuth],
-    },
-    async (request, reply) => {
-      try {
-        const config = await CareerProgressionService.getConfig(fastify);
-        return reply.send({ success: true, data: config });
-      } catch (err: any) {
-        fastify.log.error({ err }, 'Failed to get career config');
-        return reply.status(500).send({ success: false, message: 'Lỗi nạp cấu hình lộ trình thăng tiến' });
-      }
+  fastify.get('/career/config', async (request, reply) => {
+    try {
+      const config = await CareerProgressionService.getConfig(fastify);
+      return reply.send({ success: true, data: config });
+    } catch (err: any) {
+      fastify.log.error({ err }, 'Failed to get career config');
+      return reply.status(500).send({ success: false, message: 'Lỗi nạp cấu hình lộ trình thăng tiến' });
     }
-  );
+  });
 
   /**
    * Cập nhật cấu hình lộ trình thăng tiến (Chỉ Admin / Super Admin)

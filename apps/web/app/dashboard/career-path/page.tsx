@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, Slider, message, Tooltip, Switch } from 'antd';
 import { Sparkles, Trophy, Settings, ChevronRight, Shield, Heart, Zap, Award } from 'lucide-react';
-import { CareerProgressionConfig, DEFAULT_CAREER_PROGRESSION_CONFIG, StaffCareerStatus } from '@mos-lab/shared';
+import type { CareerProgressionConfig, StaffCareerStatus } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
 import { CareerConfigDrawer } from './components/CareerConfigDrawer';
+import { FALLBACK_CAREER_PROGRESSION_CONFIG } from './career-path.constants';
 
 export default function CareerPathPage() {
   const { themeMode } = useTheme();
@@ -31,7 +32,7 @@ export default function CareerPathPage() {
   // State
   const [activeIsland, setActiveIsland] = useState<'cv' | 'cc' | 'fm' | 'cho' | 'boss'>('cv');
   const [selectedHero, setSelectedHero] = useState<string>('thao_my');
-  const [config, setConfig] = useState<CareerProgressionConfig>(DEFAULT_CAREER_PROGRESSION_CONFIG);
+  const [config, setConfig] = useState<CareerProgressionConfig>(FALLBACK_CAREER_PROGRESSION_CONFIG);
   const [liveData, setLiveData] = useState<StaffCareerStatus | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isConfigDrawerOpen, setIsConfigDrawerOpen] = useState<boolean>(false);
@@ -47,6 +48,22 @@ export default function CareerPathPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
+  const safeConfig: CareerProgressionConfig = useMemo(() => {
+    const base = FALLBACK_CAREER_PROGRESSION_CONFIG;
+    if (!config || !config.cvToCc) return base;
+    return {
+      ...base,
+      ...config,
+      cvToCc: { ...base.cvToCc, ...(config.cvToCc || {}) },
+      ccToFm: { ...base.ccToFm, ...(config.ccToFm || {}) },
+      fmToCho: { ...base.fmToCho, ...(config.fmToCho || {}) },
+      choToBoss: { ...base.choToBoss, ...(config.choToBoss || {}) },
+      rewardRates: { ...base.rewardRates, ...(config.rewardRates || {}) },
+    };
+  }, [config]);
+
+  const { cvToCc, ccToFm, fmToCho, choToBoss, rewardRates } = safeConfig;
+
   // Load config & live data
   const loadData = useCallback(async () => {
     try {
@@ -56,7 +73,7 @@ export default function CareerPathPage() {
         apiClient.career.getMyProgression(),
       ]);
 
-      if (fetchedConfig.status === 'fulfilled' && fetchedConfig.value) {
+      if (fetchedConfig.status === 'fulfilled' && fetchedConfig.value?.cvToCc) {
         setConfig(fetchedConfig.value);
       }
       if (myStatus.status === 'fulfilled' && myStatus.value) {
@@ -226,18 +243,18 @@ export default function CareerPathPage() {
   };
 
   // Condition checks against dynamic config
-  const q1Passed = sliderOrders >= config.cvToCc.minOrders;
-  const q2Passed = sliderTip >= config.cvToCc.minTipRatioAboveShop * 100;
-  const q3Passed = sliderFix <= config.cvToCc.maxFixRate * 100;
-  const q4Passed = sliderHi >= config.cvToCc.minHappinessIndex * 100;
-  const bossPassed = sliderCombo >= config.cvToCc.minSelfComboRate * 100;
+  const q1Passed = sliderOrders >= cvToCc.minOrders;
+  const q2Passed = sliderTip >= cvToCc.minTipRatioAboveShop * 100;
+  const q3Passed = sliderFix <= cvToCc.maxFixRate * 100;
+  const q4Passed = sliderHi >= cvToCc.minHappinessIndex * 100;
+  const bossPassed = sliderCombo >= cvToCc.minSelfComboRate * 100;
 
   const passedCount = [q1Passed, q2Passed, q3Passed, q4Passed, bossPassed].filter(Boolean).length;
   const allPassed = passedCount === 5;
   const isMasterTech = q1Passed && q2Passed && q3Passed && q4Passed && !bossPassed;
 
   // Save admin config
-  const handleSaveConfig = async (newCvToCc: typeof config.cvToCc) => {
+  const handleSaveConfig = async (newCvToCc: typeof cvToCc) => {
     try {
       setSavingConfig(true);
       const updated = await apiClient.career.updateConfig({ cvToCc: newCvToCc });
@@ -274,14 +291,14 @@ export default function CareerPathPage() {
         'Thưởng giữ chân khách quen (Retention Bonus)',
         'Nhận 15 quả Chuối vàng khi hỗ trợ ca Adjust ngắn ≤ 25p',
       ],
-      gateText: `Đạt ${config.cvToCc.minOrders} ca mi + Tip > TB shop + Fix < ${(config.cvToCc.maxFixRate * 100).toFixed(1)}% + HI > ${(config.cvToCc.minHappinessIndex * 100).toFixed(0)}% ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(config.cvToCc.minSelfComboRate * 100).toFixed(0)}%) để thăng cấp CC!`,
+      gateText: `Đạt ${cvToCc.minOrders} ca mi + Tip > TB shop + Fix < ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI > ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}%) để thăng cấp CC!`,
     },
     {
       id: 'cc' as const,
       name: 'CC · Phù Thủy Sảnh',
       badge: 'Ải 2',
       icon: '🌸',
-      sub: `Lv × ${config.rewardRates.ccBonusRatePerLevel}đ`,
+      sub: `Lv × ${rewardRates.ccBonusRatePerLevel}đ`,
       title: 'Chiến Binh Nụ Cười · Client Consultant',
       desc: 'Nụ cười tỏa nắng chào đón, lắng nghe và thấu hiểu phong cách của từng nàng thơ.',
       focus: 'Tư vấn chuyên sâu, chốt combo & lan tỏa niềm vui',
@@ -296,7 +313,7 @@ export default function CareerPathPage() {
         'Thưởng doanh số Combo & Sản phẩm bán lẻ',
         'Cơ hội tranh cúp Chiến Thần Bán Hàng & Minigame hàng tuần',
       ],
-      gateText: `Thâm niên CC ≥ ${config.ccToFm.minMonthsInRole} tháng + Level CC TB ≥ Lv.${config.ccToFm.minAvgLevel} + Đạt điểm thi Vận hành & Kho ≥ ${config.ccToFm.minOpsExamScore}đ ➔ Thăng cấp Floor Manager (FM)!`,
+      gateText: `Thâm niên CC ≥ ${ccToFm.minMonthsInRole} tháng + Level CC TB ≥ Lv.${ccToFm.minAvgLevel} + Đạt điểm thi Vận hành & Kho ≥ ${ccToFm.minOpsExamScore}đ ➔ Thăng cấp Floor Manager (FM)!`,
     },
     {
       id: 'fm' as const,
@@ -318,9 +335,9 @@ export default function CareerPathPage() {
       perks: [
         'Lương cứng cấp quản lý + Thưởng % Doanh thu chi nhánh',
         'Thưởng vượt target doanh số shop hàng tháng',
-        `Túi Chuối Thần Kỳ: Được cấp ${config.rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng tức thì cho nhân viên xuất sắc`,
+        `Túi Chuối Thần Kỳ: Được cấp ${rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng tức thì cho nhân viên xuất sắc`,
       ],
-      gateText: `Chi nhánh đạt Target ≥ ${config.fmToCho.minTargetHitMonths} tháng + Thất thoát kho ≤ ${(config.fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${config.fmToCho.minFacilityScore}% + eNPS nhân viên ≥ ${config.fmToCho.minStaffEnpsScore}đ ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
+      gateText: `Chi nhánh đạt Target ≥ ${fmToCho.minTargetHitMonths} tháng + Thất thoát kho ≤ ${(fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${fmToCho.minFacilityScore}% + eNPS nhân viên ≥ ${fmToCho.minStaffEnpsScore}đ ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
     },
     {
       id: 'cho' as const,
@@ -338,11 +355,11 @@ export default function CareerPathPage() {
       ],
       perks: [
         'Gói đãi ngộ Executive cấp Trưởng Ban',
-        `Thưởng lớn khi chỉ số hạnh phúc khách hàng NPS ≥ ${config.choToBoss.minCustomerNps}`,
-        `Thưởng gắn kết nội bộ khi điểm eNPS Thiên Thần ≥ ${config.choToBoss.minStaffEnps}`,
+        `Thưởng lớn khi chỉ số hạnh phúc khách hàng NPS ≥ ${choToBoss.minCustomerNps}`,
+        `Thưởng gắn kết nội bộ khi điểm eNPS Thiên Thần ≥ ${choToBoss.minStaffEnps}`,
         'Được tài trợ 100% các khóa đào tạo Lãnh đạo Khai vấn chuyên sâu',
       ],
-      gateText: `Shop có lãi P&L dương liên tục ≥ ${config.choToBoss.minProfitableMonths} tháng + Biên LN ròng ≥ ${(config.choToBoss.minNetProfitMargin * 100).toFixed(0)}% + Đã đào tạo thành công 1 FM mới & 1 CHO kế cận ➔ Bổ nhiệm làm BOSS Co-Owner!`,
+      gateText: `Shop có lãi P&L dương liên tục ≥ ${choToBoss.minProfitableMonths} tháng + Biên LN ròng ≥ ${(choToBoss.minNetProfitMargin * 100).toFixed(0)}% + Đã đào tạo thành công 1 FM mới & 1 CHO kế cận ➔ Bổ nhiệm làm BOSS Co-Owner!`,
     },
     {
       id: 'boss' as const,
@@ -368,7 +385,7 @@ export default function CareerPathPage() {
   ];
 
   const currentIslandData = islands.find((i) => i.id === activeIsland) || islands[0];
-  const expProgressStyle = { width: `${Math.min(100, Math.round((sliderOrders / config.cvToCc.minOrders) * 100))}%` };
+  const expProgressStyle = { width: `${Math.min(100, Math.round((sliderOrders / cvToCc.minOrders) * 100))}%` };
 
   return (
     <div className="min-h-screen bg-rose-50/40 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-36 transition-colors duration-200">
@@ -415,7 +432,7 @@ export default function CareerPathPage() {
                   />
                 </div>
                 <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 font-bold tabular-nums">
-                  {Math.min(100, Math.round((sliderOrders / config.cvToCc.minOrders) * 100))}% EXP
+                  {Math.min(100, Math.round((sliderOrders / cvToCc.minOrders) * 100))}% EXP
                 </span>
               </div>
             </div>
@@ -611,7 +628,7 @@ export default function CareerPathPage() {
                     q1Passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
                   }`}
                 >
-                  {sliderOrders} / {config.cvToCc.minOrders} ca {q1Passed ? '✔' : '✖'}
+                  {sliderOrders} / {cvToCc.minOrders} ca {q1Passed ? '✔' : '✖'}
                 </span>
               </div>
               <Slider
@@ -624,7 +641,7 @@ export default function CareerPathPage() {
                 }}
               />
               <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Cần tối thiểu: {config.cvToCc.minOrders} ca mi</span>
+                <span>Cần tối thiểu: {cvToCc.minOrders} ca mi</span>
                 <span className={q1Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
                   {q1Passed ? 'ĐẠT CHỈ TIÊU' : 'CHƯA ĐỦ CA'}
                 </span>
@@ -689,7 +706,7 @@ export default function CareerPathPage() {
                 }}
               />
               <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Tiêu chuẩn: Tỷ lệ Fix &le; {(config.cvToCc.maxFixRate * 100).toFixed(1)}%</span>
+                <span>Tiêu chuẩn: Tỷ lệ Fix &le; {(cvToCc.maxFixRate * 100).toFixed(1)}%</span>
                 <span className={q3Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
                   {q3Passed ? 'TAY NGHỀ VỮNG' : 'LỖI FIX CAO'}
                 </span>
@@ -721,7 +738,7 @@ export default function CareerPathPage() {
                 }}
               />
               <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Mục tiêu: Happiness Index &ge; {(config.cvToCc.minHappinessIndex * 100).toFixed(0)}%</span>
+                <span>Mục tiêu: Happiness Index &ge; {(cvToCc.minHappinessIndex * 100).toFixed(0)}%</span>
                 <span className={q4Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
                   {q4Passed ? 'SIÊU THIỆN CẢM' : 'CHƯA ĐẠT HI'}
                 </span>
@@ -755,7 +772,7 @@ export default function CareerPathPage() {
               />
               <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300 font-bold">
                 <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 border border-pink-300 dark:border-pink-700">
-                  MỐC SỐNG CÒN: &ge; {(config.cvToCc.minSelfComboRate * 100).toFixed(1)}% COMBO NOT LIVE
+                  MỐC SỐNG CÒN: &ge; {(cvToCc.minSelfComboRate * 100).toFixed(1)}% COMBO NOT LIVE
                 </span>
                 <span className={bossPassed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
                   {bossPassed ? 'ĐÃ VƯỢT ẢI TRÙM' : 'DƯỚI CHỈ TIÊU'}
@@ -773,8 +790,8 @@ export default function CareerPathPage() {
               </div>
               <p className="text-[11px] leading-relaxed">
                 Tuyệt vời! Thiên Thần đã hạ gục toàn bộ 4 chỉ số tay nghề thợ mi và vượt qua Ải Trùm Cuối với tỷ lệ tự
-                bán Combo {sliderCombo.toFixed(1)}% (&ge; {(config.cvToCc.minSelfComboRate * 100).toFixed(0)}%). Hãy
-                nhấn nút bên dưới để mở khóa chức danh <strong>Phù Thủy Sảnh (CC)</strong>!
+                bán Combo {sliderCombo.toFixed(1)}% (&ge; {(cvToCc.minSelfComboRate * 100).toFixed(0)}%). Hãy nhấn nút
+                bên dưới để mở khóa chức danh <strong>Phù Thủy Sảnh (CC)</strong>!
               </p>
             </div>
           )}
@@ -787,8 +804,8 @@ export default function CareerPathPage() {
               </div>
               <p className="text-[11px] leading-relaxed">
                 Thiên Thần đạt điểm tuyệt đối về kỹ thuật nối mi nhưng không phù hợp với bán hàng tư vấn (dưới{' '}
-                {(config.cvToCc.minSelfComboRate * 100).toFixed(0)}% Combo). Bạn hoàn toàn có thể phát huy tối đa theo
-                nhánh <strong>Chuyên Viên Bậc Cao (Master Tech)</strong> chuyên phục vụ khách VIP và đào tạo thợ mới!
+                {(cvToCc.minSelfComboRate * 100).toFixed(0)}% Combo). Bạn hoàn toàn có thể phát huy tối đa theo nhánh{' '}
+                <strong>Chuyên Viên Bậc Cao (Master Tech)</strong> chuyên phục vụ khách VIP và đào tạo thợ mới!
               </p>
             </div>
           )}
@@ -842,7 +859,7 @@ export default function CareerPathPage() {
       <CareerConfigDrawer
         open={isConfigDrawerOpen}
         onClose={() => setIsConfigDrawerOpen(false)}
-        config={config}
+        config={safeConfig}
         onConfigChange={setConfig}
         onSave={handleSaveConfig}
         saving={savingConfig}

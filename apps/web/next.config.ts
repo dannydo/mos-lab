@@ -54,7 +54,7 @@ const nextConfig: NextConfig = {
     root: process.cwd().endsWith('apps/web') ? path.resolve(process.cwd(), '../..') : process.cwd(),
   },
   experimental: {
-    optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs', '@mos-lab/shared'],
+    optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs'],
   },
   webpack: (config, { dev }) => {
     if (dev) {
@@ -81,6 +81,19 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
+    if (process.env.NODE_ENV !== 'production') {
+      return [
+        {
+          source: '/:path*',
+          headers: [
+            {
+              key: 'Cache-Control',
+              value: 'no-cache, no-store, must-revalidate',
+            },
+          ],
+        },
+      ];
+    }
     return [
       {
         // Static assets have content hashes in their filename and are safe to cache immutably

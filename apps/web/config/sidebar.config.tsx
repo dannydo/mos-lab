@@ -31,6 +31,8 @@ import {
   CalendarClock,
   MessageSquareWarning,
   Sparkles,
+  FlaskConical,
+  Trophy,
 } from 'lucide-react';
 
 import { canAccessLoca, isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
@@ -71,6 +73,37 @@ export function getSidebarGroups(
   const isCrmCategoryVisible = categoryVisibility.crm !== false;
   const isAcademyCategoryVisible = categoryVisibility.academy !== false;
 
+  // Labs in-development products
+  const labsChildren: SidebarItemConfig[] = [
+    {
+      key: 'labs-hub',
+      label: 'Vườn ươm Labs (Tổng quan)',
+      icon: <AppIcon icon={FlaskConical} size="sm" />,
+      path: '/dashboard/labs',
+    },
+    {
+      key: 'career-path',
+      label: 'Career Path (CV → BOSS)',
+      icon: <AppIcon icon={Trophy} size="sm" />,
+      path: '/dashboard/career-path',
+    },
+    {
+      key: 'pilot-dark-lashes',
+      label: 'Pilot Uốn Mi Đề Thám',
+      icon: <AppIcon icon={Sparkles} size="sm" />,
+      path: '/dashboard/pilot-dark-lashes',
+    },
+  ];
+
+  if (isSuperAdmin) {
+    labsChildren.push({
+      key: 'cc-payroll-pilot',
+      label: 'Pilot Payroll CC',
+      icon: <SafetyCertificateOutlined />,
+      path: '/dashboard/payroll-pilot',
+    });
+  }
+
   // Group 1: TRANG CHỦ
   const homeGroup: SidebarGroupConfig = {
     groupKey: 'grp-home',
@@ -101,10 +134,10 @@ export function getSidebarGroups(
         path: '/dashboard/branches',
       },
       {
-        key: 'pilot-dark-lashes',
-        label: 'Pilot Uốn Mi Đề Thám',
-        icon: <AppIcon icon={Sparkles} size="sm" />,
-        path: '/dashboard/pilot-dark-lashes',
+        key: 'labs-parent',
+        label: 'Sản phẩm phát triển (Labs)',
+        icon: <AppIcon icon={FlaskConical} size="sm" className="text-emerald-500" />,
+        children: labsChildren,
       },
     ],
   };
@@ -360,12 +393,6 @@ export function getSidebarGroups(
     groupTitle: 'NHÂN SỰ & LỊCH LÀM VIỆC',
     items: [
       {
-        key: 'career-path',
-        label: 'Lộ Trình Thăng Tiến',
-        icon: <AppIcon icon={Sparkles} size="sm" />,
-        path: '/dashboard/career-path',
-      },
-      {
         key: 'holiday-work',
         label: 'Lịch nghỉ lễ',
         icon: <AppIcon icon={CalendarClock} size="sm" />,
@@ -411,14 +438,6 @@ export function getSidebarGroups(
       },
     ],
   };
-  if (isSuperAdmin) {
-    reportsGroup.items.push({
-      key: 'cc-payroll-pilot',
-      label: 'Pilot Payroll CC',
-      icon: <SafetyCertificateOutlined />,
-      path: '/dashboard/payroll-pilot',
-    });
-  }
 
   // Group 8: QUẢN TRỊ HỆ THỐNG (Only for Admin)
   const systemGroupItems: SidebarItemConfig[] = [];
@@ -561,6 +580,9 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/omicall')) return 'omicall';
   if (pathname.includes('/dashboard/qa-shop')) return 'qa-shop';
   if (pathname.includes('/dashboard/kpi')) return 'kpi';
+  if (pathname.includes('/dashboard/labs')) return 'labs-hub';
+  if (pathname.includes('/dashboard/career-path')) return 'career-path';
+  if (pathname.includes('/dashboard/pilot-dark-lashes')) return 'pilot-dark-lashes';
   if (pathname.includes('/dashboard/payroll-pilot')) return 'cc-payroll-pilot';
 
   if (pathname.includes('/dashboard/cc')) return 'cc';
