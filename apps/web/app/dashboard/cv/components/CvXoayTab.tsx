@@ -15,10 +15,16 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CvXoayRecord, removeVietnameseTones, type ReportComparisonMode } from '@mos-lab/shared';
+import {
+  CvXoayRecord,
+  removeVietnameseTones,
+  type ReportComparisonMode,
+  calculateFractionToday,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
+import { formatCompactVND } from '../../../../lib/format-utils';
 import CcAvatar from '../../cc/components/CcAvatar';
 import { MobileRecordList } from '~/components/ui';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
@@ -54,6 +60,27 @@ interface CvLeaderboardRow {
   maxPointsAccu: number;
 }
 
+function calculateProjectedCvXoay(serviceCount: number, currentBonus: number, ratio: number): number {
+  if (ratio <= 0) return currentBonus;
+  const safeRatio = Math.max(0.001, Math.min(1.0, ratio));
+  if (serviceCount <= 0 && currentBonus <= 0) return 0;
+
+  const nHat = serviceCount > 0 ? Math.round(serviceCount / safeRatio) : 0;
+  if (nHat <= 0) return currentBonus;
+
+  let pBar = 35;
+  if (serviceCount >= 3 && currentBonus > 0) {
+    const rawP = (200 * (currentBonus / 1000 - serviceCount)) / (serviceCount * (serviceCount - 1));
+    if (!isNaN(rawP) && rawP > 5 && rawP < 80) {
+      pBar = rawP;
+    }
+  }
+
+  const factor = pBar / 200;
+  const projected = 1000 * (factor * nHat * nHat + (1 - factor) * nHat);
+  return Math.max(currentBonus, Math.round(projected));
+}
+
 export default function CvXoayTab({
   loading: parentLoading,
   dateRange,
@@ -82,6 +109,71 @@ export default function CvXoayTab({
   } | null>(null);
   const [pageSize, setPageSize] = useState<number>(50);
   const [selectedCvName, setSelectedCvName] = useState<string | null>(null);
+
+  const isMonthMode = comparisonMode === 'month';
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = React.useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(r * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
+  const projectedServices = Math.round((summary.totalServices || 0) / (ratio || 1));
+  const projectedPoints = Math.round((summary.totalPoints || 0) / (ratio || 1));
+
+  const renderForecastSubtext = (projectedVal: number, unit = '') => {
+    if (isDayMode || !projectedVal) return null;
+
+    if (isPastPeriod) {
+      return (
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
+          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
+            <span>Thực tế chốt {periodNoun}:</span>
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {unit === 'đ' ? formatCompactVND(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
+      >
+        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
+          <span className="shrink-0 flex items-center gap-1 text-slate-400">
+            <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="text-sm leading-none">
+              🔮
+            </span>
+            <span>Dự kiến:</span>
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+            ~{unit === 'đ' ? formatCompactVND(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -181,6 +273,17 @@ export default function CvXoayTab({
     }));
   }, [data]);
 
+  const projectedBonus = React.useMemo(() => {
+    if (!isMonthMode) return 0;
+    if (leaderboard.length > 0) {
+      return leaderboard.reduce(
+        (acc, r) => acc + calculateProjectedCvXoay(r.totalServices || 0, r.totalBonus || 0, ratio),
+        0
+      );
+    }
+    return Math.round((summary.totalBonus || 0) / (ratio || 1));
+  }, [isMonthMode, leaderboard, ratio, summary.totalBonus]);
+
   const filteredData = React.useMemo(() => {
     let result = data;
     if (selectedCvName) {
@@ -247,25 +350,55 @@ export default function CvXoayTab({
       dataIndex: 'totalServices',
       key: 'totalServices',
       align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold text-purple-400 text-xs">{val} Bộ</span>,
+      render: (val: number) => {
+        const projected = Math.round((val || 0) / (ratio || 1));
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-purple-400 text-xs">{val} Bộ</span>
+            {!isDayMode && !isPastPeriod && (
+              <span className="tabular-nums text-[10px] text-slate-400">🔮 ~{projected} Bộ</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: '∑ Điểm Xoay',
       dataIndex: 'totalPoints',
       key: 'totalPoints',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-blue-400 text-xs">+{val.toLocaleString('vi-VN')} pts</span>
-      ),
+      render: (val: number) => {
+        const projected = Math.round((val || 0) / (ratio || 1));
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-blue-400 text-xs">+{val.toLocaleString('vi-VN')} pts</span>
+            {!isDayMode && !isPastPeriod && (
+              <span className="tabular-nums text-[10px] text-emerald-600 dark:text-emerald-400/80">
+                🔮 ~{projected.toLocaleString('vi-VN')} pts
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thưởng Xoay',
       dataIndex: 'totalBonus',
       key: 'totalBonus',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-bold text-emerald-400 text-sm">{val.toLocaleString('vi-VN')}đ</span>
-      ),
+      render: (val: number, record: CvLeaderboardRow) => {
+        const projected = isMonthMode ? calculateProjectedCvXoay(record.totalServices || 0, val || 0, ratio) : 0;
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-bold text-emerald-400 text-sm">{val.toLocaleString('vi-VN')}đ</span>
+            {!isDayMode && !isPastPeriod && isMonthMode && projected > 0 && (
+              <span className="tabular-nums text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                🔮 ~{formatCompactVND(projected)}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -449,6 +582,7 @@ export default function CvXoayTab({
               previousValue={previousSummary?.totalServices || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} Bộ Mi`}
             />
+            {renderForecastSubtext(projectedServices, 'Bộ Mi')}
           </Card>
         </Col>
         <Col xs={24} sm={8}>
@@ -470,6 +604,7 @@ export default function CvXoayTab({
               previousValue={previousSummary?.totalPoints || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} pts`}
             />
+            {renderForecastSubtext(projectedPoints, 'pts')}
           </Card>
         </Col>
         <Col xs={24} sm={8}>
@@ -491,6 +626,7 @@ export default function CvXoayTab({
               previousValue={previousSummary?.totalBonus || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} đ`}
             />
+            {isMonthMode && renderForecastSubtext(projectedBonus, 'đ')}
           </Card>
         </Col>
       </Row>

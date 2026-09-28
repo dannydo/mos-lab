@@ -100,16 +100,17 @@ export default function CcTipTab({
   }, [dateRange]);
 
   const isPastPeriod = elapsedRatioPercent >= 100;
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+  const ratio = (elapsedRatioPercent || 100) / 100;
 
   const projectedTotalCcTipBonus = useMemo(() => {
-    const ratio = (elapsedRatioPercent || 100) / 100;
     return Math.round((summary.totalCcTipBonus || 0) / (ratio || 1));
-  }, [summary.totalCcTipBonus, elapsedRatioPercent]);
+  }, [summary.totalCcTipBonus, ratio]);
 
   const projectedTotalCustomerTip = useMemo(() => {
-    const ratio = (elapsedRatioPercent || 100) / 100;
     return Math.round((summary.totalCustomerTip || 0) / (ratio || 1));
-  }, [summary.totalCustomerTip, elapsedRatioPercent]);
+  }, [summary.totalCustomerTip, ratio]);
 
   const fetchTipData = async () => {
     setLoading(true);
@@ -242,59 +243,94 @@ export default function CcTipTab({
       dataIndex: 'totalVisits',
       key: 'totalVisits',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-blue-700 dark:text-blue-400 text-xs">👥 {val} lượt</span>
-      ),
+      render: (val: number) => {
+        const projected = Math.round((val || 0) / (ratio || 1));
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-blue-700 dark:text-blue-400 text-xs">👥 {val} lượt</span>
+            {!isDayMode && !isPastPeriod && (
+              <span className="tabular-nums text-[10px] text-slate-400">🔮 ~{projected} lượt</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Lượt Khách Tip & Tỷ Lệ',
       dataIndex: 'tippedVisits',
       key: 'tippedVisits',
       align: 'right' as const,
-      render: (val: number, record: CcTipLeaderboardEntry) => (
-        <Tooltip title={`Đã nhận tip từ ${val} / ${record.totalVisits} lượt khách (${record.tipRatePercent}%)`}>
-          <div className="w-full text-right">
-            <div className="tabular-nums font-semibold text-cyan-700 dark:text-cyan-400 text-xs">🟢 {val} lượt tip</div>
-            <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              <span className="tabular-nums text-[11px] text-slate-400 font-medium">
-                Tỷ lệ tip: <strong className="text-emerald-700 dark:text-emerald-400">{record.tipRatePercent}%</strong>
-              </span>
-              <div className="w-10">
-                <Progress
-                  percent={record.tipRatePercent}
-                  size="small"
-                  aria-label={`Tỷ lệ tip ${record.tipRatePercent}%`}
-                  strokeColor={record.tipRatePercent >= 40 ? token.colorSuccess : token.colorInfo}
-                  showInfo={false}
-                  className="m-0"
-                />
+      render: (val: number, record: CcTipLeaderboardEntry) => {
+        const projected = Math.round((val || 0) / (ratio || 1));
+        return (
+          <Tooltip title={`Đã nhận tip từ ${val} / ${record.totalVisits} lượt khách (${record.tipRatePercent}%)`}>
+            <div className="w-full text-right">
+              <div className="tabular-nums font-semibold text-cyan-700 dark:text-cyan-400 text-xs">
+                🟢 {val} lượt tip
+              </div>
+              {!isDayMode && !isPastPeriod && (
+                <div className="tabular-nums text-[10px] text-cyan-400/80">🔮 ~{projected} lượt tip</div>
+              )}
+              <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                <span className="tabular-nums text-[11px] text-slate-400 font-medium">
+                  Tỷ lệ tip:{' '}
+                  <strong className="text-emerald-700 dark:text-emerald-400">{record.tipRatePercent}%</strong>
+                </span>
+                <div className="w-10">
+                  <Progress
+                    percent={record.tipRatePercent}
+                    size="small"
+                    aria-label={`Tỷ lệ tip ${record.tipRatePercent}%`}
+                    strokeColor={record.tipRatePercent >= 40 ? token.colorSuccess : token.colorInfo}
+                    showInfo={false}
+                    className="m-0"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </Tooltip>
-      ),
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Tổng Tip Khách Cho (100%)',
       dataIndex: 'totalCustomerTipAmount',
       key: 'totalCustomerTipAmount',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-sky-700 dark:text-sky-400 text-xs">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
-        </span>
-      ),
+      render: (val: number) => {
+        const projected = Math.round((val || 0) / (ratio || 1));
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-sky-700 dark:text-sky-400 text-xs">
+              {Math.round(val || 0).toLocaleString('vi-VN')} đ
+            </span>
+            {!isDayMode && !isPastPeriod && (
+              <span className="tabular-nums text-[10px] text-purple-400/80">🔮 ~{formatCompactVND(projected)}</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thưởng CC Tip (20%)',
       dataIndex: 'totalCcTipBonus',
       key: 'totalCcTipBonus',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-bold text-emerald-700 dark:text-emerald-400 text-sm">
-          +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-        </span>
-      ),
+      render: (val: number) => {
+        const projected = Math.round((val || 0) / (ratio || 1));
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+              +{Math.round(val || 0).toLocaleString('vi-VN')} đ
+            </span>
+            {!isDayMode && !isPastPeriod && (
+              <span className="tabular-nums text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                🔮 ~{formatCompactVND(projected)}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -424,11 +460,13 @@ export default function CcTipTab({
   ];
 
   const renderForecastSubtext = (projectedVal: number) => {
+    if (isDayMode || !projectedVal) return null;
+
     if (isPastPeriod) {
       return (
-        <Tooltip title="Dữ liệu tháng đã chốt (100% thời gian)">
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
           <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
-            <span>Thực tế chốt tháng:</span>
+            <span>Thực tế chốt {periodNoun}:</span>
             <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
               {formatCompactVND(projectedVal)}
             </span>
@@ -439,11 +477,14 @@ export default function CcTipTab({
 
     return (
       <Tooltip
-        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`}
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
       >
         <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
-          <span role="img" aria-label="Dự kiến cuối tháng" className="shrink-0 text-sm leading-none">
-            🔮
+          <span className="shrink-0 flex items-center gap-1 text-slate-400">
+            <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="text-sm leading-none">
+              🔮
+            </span>
+            <span>Dự kiến:</span>
           </span>
           <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
             ~{formatCompactVND(projectedVal)}

@@ -26,7 +26,13 @@ import {
   FireOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import { CcXoayRecord, CcXoayReportResponse, removeVietnameseTones, calculateWheelBonusCap } from '@mos-lab/shared';
+import {
+  CcXoayRecord,
+  CcXoayReportResponse,
+  removeVietnameseTones,
+  calculateWheelBonusCap,
+  calculateFractionToday,
+} from '@mos-lab/shared';
 import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { formatCompactVND, formatStoreCode } from '../../../../lib/format-utils';
@@ -39,12 +45,144 @@ interface CcXoayTabProps {
   total?: number;
   summary?: CcXoayReportResponse['summary'];
   onRefresh?: () => void;
+  dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
+  comparisonMode?: 'month' | 'week' | 'day';
 }
 
-function CcXoayTabComponent({ data, loading, onRefresh, summary }: CcXoayTabProps) {
+function calculateProjectedCcXoay(
+  checkinCount: number,
+  currentBonus: number,
+  ratio: number,
+  monthlyDailyBonus?: number
+): number {
+  if (ratio <= 0) return currentBonus;
+  const safeRatio = Math.max(0.001, Math.min(1.0, ratio));
+  if (checkinCount <= 0 && currentBonus <= 0) return 0;
+
+  const nHat = checkinCount > 0 ? Math.round(checkinCount / safeRatio) : 0;
+  if (nHat <= 0) return currentBonus;
+
+  let c = 3.65;
+  if (checkinCount >= 4 && currentBonus > 0) {
+    const rawC = (currentBonus - 45 * checkinCount) / (checkinCount * (checkinCount - 1));
+    if (!isNaN(rawC) && rawC >= 1.5 && rawC <= 8.0) {
+      c = rawC;
+    }
+  }
+
+  const rawProjected = Math.max(currentBonus, Math.round(c * nHat * (nHat - 1) + 45 * nHat));
+
+  if (monthlyDailyBonus && monthlyDailyBonus > 0) {
+    const projectedDailyBonus = Math.round(monthlyDailyBonus / safeRatio);
+    const maxAllowed = Math.round(projectedDailyBonus * 1.5);
+    return Math.min(rawProjected, maxAllowed);
+  }
+
+  return rawProjected;
+}
+
+function CcXoayTabComponent({
+  data,
+  loading,
+  onRefresh,
+  summary,
+  dateRange,
+  comparisonMode = 'month',
+}: CcXoayTabProps) {
   const { token } = theme.useToken();
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
+
+  const isMonthMode = comparisonMode === 'month';
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(r * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
+  const projectedCheckins = Math.round((summary?.totalCheckins || 0) / (ratio || 1));
+  const projectedPoints = Math.round((summary?.totalPoints || 0) / (ratio || 1));
+
+  const consultantAggregates = useMemo(() => {
+    const map = new Map<string, { checkins: number; bonus: number; dailyBonus: number }>();
+    data.forEach((item) => {
+      const name = item.consultantName || 'Unknown';
+      const existing = map.get(name) || { checkins: 0, bonus: 0, dailyBonus: item.monthlyDailyBonus || 0 };
+      existing.checkins += 1;
+      existing.bonus += item.consultantBonus || 0;
+      if (item.monthlyDailyBonus && item.monthlyDailyBonus > existing.dailyBonus) {
+        existing.dailyBonus = item.monthlyDailyBonus;
+      }
+      map.set(name, existing);
+    });
+    return Array.from(map.values());
+  }, [data]);
+
+  const projectedBonus = useMemo(() => {
+    if (!isMonthMode) return 0;
+    if (consultantAggregates.length > 0) {
+      return consultantAggregates.reduce(
+        (acc, r) => acc + calculateProjectedCcXoay(r.checkins, r.bonus, ratio, r.dailyBonus),
+        0
+      );
+    }
+    return Math.round((summary?.totalBonus || 0) / (ratio || 1));
+  }, [isMonthMode, consultantAggregates, ratio, summary?.totalBonus]);
+
+  const renderForecastSubtext = (projectedVal: number, unit = '') => {
+    if (isDayMode || !projectedVal) return null;
+
+    if (isPastPeriod) {
+      return (
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
+          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
+            <span>Thực tế chốt {periodNoun}:</span>
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {unit === 'đ' ? formatCompactVND(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
+      >
+        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
+          <span className="shrink-0 flex items-center gap-1 text-slate-400">
+            <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="text-sm leading-none">
+              🔮
+            </span>
+            <span>Dự kiến:</span>
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+            ~{unit === 'đ' ? formatCompactVND(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
 
   // Compute staff-level Wheel Bonus Cap map
   const staffCapMap = useMemo(() => {
@@ -466,6 +604,7 @@ function CcXoayTabComponent({ data, loading, onRefresh, summary }: CcXoayTabProp
               previousValue={summary?.comparison?.totalCheckins || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
             />
+            {renderForecastSubtext(projectedCheckins, 'lượt')}
           </Card>
         </Col>
         <Col xs={24} sm={8}>
@@ -481,6 +620,7 @@ function CcXoayTabComponent({ data, loading, onRefresh, summary }: CcXoayTabProp
               previousValue={summary?.comparison?.totalPoints || 0}
               formatter={(value) => value.toLocaleString('vi-VN')}
             />
+            {renderForecastSubtext(projectedPoints, 'pts')}
           </Card>
         </Col>
         <Col xs={24} sm={8}>
@@ -500,6 +640,7 @@ function CcXoayTabComponent({ data, loading, onRefresh, summary }: CcXoayTabProp
               previousValue={summary?.comparison?.totalBonus || 0}
               formatter={formatCompactVND}
             />
+            {isMonthMode && renderForecastSubtext(projectedBonus, 'đ')}
           </Card>
         </Col>
       </Row>

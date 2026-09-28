@@ -20,12 +20,14 @@ import {
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import {
   BkBookingLeaderboardEntry,
   BkBookingRecord,
   type BkBookingDetailsFilter,
   removeVietnameseTones,
   type ReportComparisonMode,
+  calculateFractionToday,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -90,6 +92,70 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
   const [detailRecords, setDetailRecords] = useState<BkBookingRecord[]>([]);
+
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(r * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
+  const projectedCalls = Math.round((summary.totalCalls || 0) / (ratio || 1));
+  const projectedMissed = Math.round((summary.missedBookings || 0) / (ratio || 1));
+  const projectedPickups = Math.round((summary.totalPickups || 0) / (ratio || 1));
+  const projectedBookings = Math.round((summary.totalBookings || 0) / (ratio || 1));
+  const projectedDoneBookings = Math.round((summary.doneBookings || 0) / (ratio || 1));
+
+  const renderForecastSubtext = (projectedVal: number, unit = '') => {
+    if (isDayMode || !projectedVal) return null;
+
+    if (isPastPeriod) {
+      return (
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
+          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
+            <span>Thực tế chốt {periodNoun}:</span>
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {`${projectedVal.toLocaleString('vi-VN')} ${unit}`}
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
+      >
+        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
+          <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
+            🔮
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+            ~{`${projectedVal.toLocaleString('vi-VN')} ${unit}`}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
 
   const fetchLeaderboard = async () => {
     setLoading(true);
@@ -509,6 +575,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
               previousValue={previousSummary?.totalCalls || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} cuộc`}
             />
+            {renderForecastSubtext(projectedCalls, 'cuộc')}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6} xl={4}>
@@ -525,6 +592,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
               previousValue={previousSummary?.missedBookings || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
             />
+            {renderForecastSubtext(projectedMissed, 'booking')}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6} xl={4}>
@@ -544,6 +612,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
               previousValue={previousSummary?.totalPickups || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} pickup`}
             />
+            {renderForecastSubtext(projectedPickups, 'pickup')}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6} xl={4}>
@@ -563,6 +632,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
               previousValue={previousSummary?.totalBookings || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
             />
+            {renderForecastSubtext(projectedBookings, 'booking')}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6} xl={4}>
@@ -586,6 +656,7 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
               previousValue={previousSummary?.doneBookings || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
             />
+            {renderForecastSubtext(projectedDoneBookings, 'booking')}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6} xl={4}>

@@ -231,7 +231,15 @@ function CsSalaryReportContent() {
           <span>Tip Khách Hàng (Quỹ 3%)</span>
         </span>
       ),
-      children: <CsTipTab dateFrom={dateFrom} dateTo={dateTo} selectedStore={selectedStore} />,
+      children: (
+        <CsTipTab
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          selectedStore={selectedStore}
+          comparisonMode={dateMode === 'custom' ? 'month' : dateMode}
+          dateRange={dateFrom && dateTo ? [dayjs(dateFrom), dayjs(dateTo)] : null}
+        />
+      ),
     },
   ];
 

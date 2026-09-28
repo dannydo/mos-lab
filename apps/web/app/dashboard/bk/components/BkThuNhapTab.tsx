@@ -2,7 +2,8 @@
 
 import { MobileRecordList, TableIndexHeader } from '~/components/ui';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import dayjs from 'dayjs';
 import { Card, Table, Tag, Modal, Typography, Row, Col, Statistic, theme, Space, Button, Tooltip } from 'antd';
 import {
   WalletOutlined,
@@ -18,13 +19,20 @@ import {
   LoginOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
-import { BkPaystubRecord, BkWorkLogRecord, BkWorkLogResponse, type ReportComparisonMode } from '@mos-lab/shared';
+import {
+  BkPaystubRecord,
+  BkWorkLogRecord,
+  BkWorkLogResponse,
+  type ReportComparisonMode,
+  calculateFractionToday,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import BkAvatar from './BkAvatar';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
 import PeriodComparison from '../../../../components/ui/PeriodComparison';
+import { formatCompactVND } from '../../../../lib/format-utils';
 
 const { Text, Title } = Typography;
 
@@ -104,6 +112,154 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+  };
+
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const ratio = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(ratio * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
+  const getProjectedRecord = useCallback(
+    (record: BkPaystubRecord) => {
+      const holidayActual = record.holidayPayrollAddition || record.holidayPremiumPay || 0;
+      if (isPastPeriod) {
+        return {
+          projectedBaseSalary: record.calculatedBaseSalary || 0,
+          projectedDoneBonus: record.doneBonus || 0,
+          projectedTipBonus: record.tipBonus || 0,
+          projectedRevenueBonus: record.revenueBonus || 0,
+          projectedHolidayPay: holidayActual,
+          projectedTotalIncome: record.totalIncome || 0,
+        };
+      }
+
+      const standardDays = record.standardWorkDays || 26;
+      const actualDays = record.actualWorkDays || 0;
+      const projectedDays =
+        actualDays > 0 ? Math.min(standardDays, Math.max(actualDays, Math.round(actualDays / (ratio || 1)))) : 0;
+
+      const projectedBaseSalary =
+        standardDays > 0
+          ? Math.round(((record.monthlyBaseSalary || 0) / standardDays) * projectedDays)
+          : record.calculatedBaseSalary || 0;
+
+      const projectedDoneBonus = Math.round((record.doneBonus || 0) / (ratio || 1));
+      const projectedTipBonus = Math.round((record.tipBonus || 0) / (ratio || 1));
+      const projectedRevenueBonus = Math.round((record.revenueBonus || 0) / (ratio || 1));
+      const projectedHolidayPay = holidayActual;
+
+      const projectedTotalIncome =
+        projectedBaseSalary + projectedDoneBonus + projectedTipBonus + projectedRevenueBonus + projectedHolidayPay;
+
+      return {
+        projectedBaseSalary,
+        projectedDoneBonus,
+        projectedTipBonus,
+        projectedRevenueBonus,
+        projectedHolidayPay,
+        projectedTotalIncome,
+      };
+    },
+    [isPastPeriod, ratio]
+  );
+
+  const projectedSummary = useMemo(() => {
+    if (isPastPeriod) {
+      return {
+        projectedBaseSalary: summary.totalBaseSalary,
+        projectedDoneBonus: summary.totalDoneBonus,
+        projectedRevenueBonus: summary.totalRevenueBonus,
+        projectedTipBonus: summary.totalTipBonus,
+        projectedTotalIncome: summary.grandTotalIncome,
+      };
+    }
+
+    let sumProjectedBase = 0;
+    if (paystubs.length > 0) {
+      sumProjectedBase = paystubs.reduce((acc, r) => {
+        const proj = getProjectedRecord(r);
+        return acc + proj.projectedBaseSalary;
+      }, 0);
+    } else {
+      sumProjectedBase = Math.round((summary.totalBaseSalary || 0) / (ratio || 1));
+    }
+
+    const projectedDoneBonus = Math.round((summary.totalDoneBonus || 0) / (ratio || 1));
+    const projectedRevenueBonus = Math.round((summary.totalRevenueBonus || 0) / (ratio || 1));
+    const projectedTipBonus = Math.round((summary.totalTipBonus || 0) / (ratio || 1));
+    const holidayAddition = summary.totalHolidayPayrollAddition || summary.totalHolidayPremiumPay || 0;
+    const projectedTotalIncome =
+      sumProjectedBase + projectedDoneBonus + projectedRevenueBonus + projectedTipBonus + holidayAddition;
+
+    return {
+      projectedBaseSalary: sumProjectedBase,
+      projectedDoneBonus,
+      projectedRevenueBonus,
+      projectedTipBonus,
+      projectedTotalIncome,
+    };
+  }, [summary, paystubs, ratio, isPastPeriod, getProjectedRecord]);
+
+  const renderForecastSubtext = (projectedVal: number) => {
+    if (isDayMode) return null;
+
+    if (isPastPeriod) {
+      return (
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
+          <div
+            className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70"
+            style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+          >
+            <span>Thực tế chốt {periodNoun}:</span>
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {formatCompactVND(projectedVal)}
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00). Dự đoán về đích cuối ${periodNoun} dựa trên tốc độ hiện tại.`}
+      >
+        <div
+          className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help"
+          style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+        >
+          <span className="inline-flex items-center gap-1">
+            <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
+              🔮
+            </span>
+            <span className="text-[11px] text-slate-400">Cuối {periodNoun}:</span>
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+            ~{formatCompactVND(projectedVal)}
+          </span>
+        </div>
+      </Tooltip>
+    );
   };
 
   const fetchPaystub = async () => {
@@ -217,71 +373,151 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
       dataIndex: 'calculatedBaseSalary',
       key: 'calculatedBaseSalary',
       align: 'right' as const,
-      render: (val: number, r: BkPaystubRecord) => (
-        <Tooltip title="Click để xem chi tiết chấm công & ca làm việc (IN/OUT)">
-          <div
-            className="cursor-pointer hover:bg-blue-500/10 p-1 rounded-lg transition-colors border border-transparent hover:border-blue-500/30 inline-block text-right"
-            role="button"
-            tabIndex={0}
-            onClick={() => handleOpenWorkLogs(r)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleOpenWorkLogs(r);
-              }
-            }}
-          >
-            <span className="tabular-nums font-semibold text-xs text-blue-400 hover:underline underline-offset-2">
-              {formatCurrency(val)}
-            </span>
-          </div>
-        </Tooltip>
-      ),
+      render: (val: number, r: BkPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <Tooltip title="Click để xem chi tiết chấm công & ca làm việc (IN/OUT)">
+            <div
+              className="cursor-pointer hover:bg-blue-500/10 p-1 rounded-lg transition-colors border border-transparent hover:border-blue-500/30 inline-block text-right"
+              role="button"
+              tabIndex={0}
+              onClick={() => handleOpenWorkLogs(r)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleOpenWorkLogs(r);
+                }
+              }}
+            >
+              <span className="tabular-nums font-semibold text-xs text-blue-400 hover:underline underline-offset-2">
+                {formatCurrency(val)}
+              </span>
+              {!isDayMode && !isPastPeriod && proj.projectedBaseSalary > 0 && (
+                <div className="flex items-center justify-end gap-1 text-[11px] text-blue-400/80 font-medium tabular-nums">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedBaseSalary)}</span>
+                </div>
+              )}
+            </div>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Thưởng Done',
       dataIndex: 'doneBonus',
       key: 'doneBonus',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-emerald-400">+{formatCurrency(val)}</span>
-      ),
+      render: (val: number, r: BkPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-xs text-emerald-400">+{formatCurrency(val)}</span>
+            {!isDayMode && !isPastPeriod && proj.projectedDoneBonus > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-emerald-500/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedDoneBonus)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thưởng BK Tip',
       dataIndex: 'tipBonus',
       key: 'tipBonus',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-pink-400">+{formatCurrency(val)}</span>
-      ),
+      render: (val: number, r: BkPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-xs text-pink-400">+{formatCurrency(val)}</span>
+            {!isDayMode && !isPastPeriod && proj.projectedTipBonus > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-pink-500/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedTipBonus)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thưởng Doanh Thu',
       dataIndex: 'revenueBonus',
       key: 'revenueBonus',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-purple-400">+{formatCurrency(val)}</span>
-      ),
+      render: (val: number, r: BkPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-xs text-purple-400">+{formatCurrency(val)}</span>
+            {!isDayMode && !isPastPeriod && proj.projectedRevenueBonus > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-purple-500/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedRevenueBonus)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Phụ cấp lễ x3',
       dataIndex: 'holidayPremiumPay',
       key: 'holidayPremiumPay',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-rose-400">+{formatCurrency(val || 0)}</span>
-      ),
+      render: (val: number, r: BkPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-xs text-rose-400">+{formatCurrency(val || 0)}</span>
+            {!isDayMode && !isPastPeriod && (proj.projectedHolidayPay || 0) > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-rose-500/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedHolidayPay)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Tổng Thu Nhập Tạm Tính',
       dataIndex: 'totalIncome',
       key: 'totalIncome',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-bold text-sm text-emerald-400">{formatCurrency(val)}</span>
-      ),
+      render: (val: number, record: BkPaystubRecord) => {
+        const proj = getProjectedRecord(record);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-bold text-sm text-emerald-400">{formatCurrency(val)}</span>
+            {!isDayMode && !isPastPeriod && proj.projectedTotalIncome > 0 && (
+              <Tooltip
+                title={`Dự đoán tổng thu nhập về đích cuối ${periodNoun}: ~${formatCurrency(proj.projectedTotalIncome)}`}
+              >
+                <div className="flex items-center gap-1 text-[11px] text-emerald-500/80 font-medium tabular-nums cursor-help">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedTotalIncome)}</span>
+                </div>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thao tác',
@@ -335,6 +571,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               formatter={formatCurrency}
               compact={isMobile}
             />
+            {renderForecastSubtext(projectedSummary.projectedBaseSalary)}
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} xl={4}>
@@ -356,6 +593,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               formatter={formatCurrency}
               compact={isMobile}
             />
+            {renderForecastSubtext(projectedSummary.projectedDoneBonus)}
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} xl={4}>
@@ -377,6 +615,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               formatter={formatCurrency}
               compact={isMobile}
             />
+            {renderForecastSubtext(projectedSummary.projectedRevenueBonus)}
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} xl={4}>
@@ -398,6 +637,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               formatter={formatCurrency}
               compact={isMobile}
             />
+            {renderForecastSubtext(projectedSummary.projectedTipBonus)}
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} xl={4}>
@@ -419,6 +659,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               formatter={formatCurrency}
               compact={isMobile}
             />
+            {renderForecastSubtext(projectedSummary.projectedTotalIncome)}
           </Card>
         </Col>
       </Row>
@@ -482,24 +723,49 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
                       <dd className="truncate text-sm font-bold tabular-nums text-sky-400">
                         {formatCurrency(record.calculatedBaseSalary || 0)}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedBaseSalary || 0) > 0 && (
+                        <div className="text-[10px] text-sky-400/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedBaseSalary)}
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Thưởng</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
                         +{formatCurrency((record.doneBonus || 0) + (record.tipBonus || 0) + (record.revenueBonus || 0))}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (
+                        <div className="text-[10px] text-emerald-500/80 font-medium tabular-nums">
+                          🔮 ~
+                          {formatCompactVND(
+                            (getProjectedRecord(record).projectedDoneBonus || 0) +
+                              (getProjectedRecord(record).projectedTipBonus || 0) +
+                              (getProjectedRecord(record).projectedRevenueBonus || 0)
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Phụ cấp lễ x3</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-rose-400">
                         +{formatCurrency(record.holidayPremiumPay || 0)}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedHolidayPay || 0) > 0 && (
+                        <div className="text-[10px] text-rose-400/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedHolidayPay)}
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Thu nhập</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-amber-400">
                         {formatCurrency(record.totalIncome || 0)}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (
+                        <div className="text-[10px] text-emerald-500/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedTotalIncome)}
+                        </div>
+                      )}
                     </div>
                   </dl>
                   <div className="mt-3 flex justify-end">

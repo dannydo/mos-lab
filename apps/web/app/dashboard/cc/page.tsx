@@ -361,6 +361,8 @@ export default function CcDashboardPage() {
               onSelectConsultant={(ccName) => {
                 setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
               }}
+              dateRange={dateRange}
+              comparisonMode={viewMode}
             />
             <CcXoayTab
               data={xoayData}
@@ -368,6 +370,8 @@ export default function CcDashboardPage() {
               summary={xoaySummary}
               loading={loading}
               onRefresh={fetchCcData}
+              dateRange={dateRange}
+              comparisonMode={viewMode}
             />
           </div>
         ) : null,

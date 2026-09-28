@@ -40,6 +40,7 @@ import {
   CcWorkLogDetailResponse,
   ReportPeriodComparison,
   removeVietnameseTones,
+  calculateFractionToday,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import dayjs from 'dayjs';
@@ -121,6 +122,227 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
     totalDiamondBonus: 0,
     grandTotalIncome: 0,
   });
+
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const ratio = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(ratio * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
+  /**
+   * Công thức chuẩn dự đoán CC Xoay cuối tháng (Exact Closed-Form Model):
+   * - N_hat = round(checkinCount / ratio)
+   * - Hệ số c tăng trưởng mỗi ca giải ngược từ bonus hiện tại (hoặc mặc định 3.65đ/ca)
+   * - CC_Xoay_Raw = c * N_hat * (N_hat - 1) + 45 * N_hat
+   * - Giới hạn trần 1.5x Daily Bonus nếu có monthlyDailyBonus
+   */
+  function calculateProjectedCcXoay(
+    checkinCount: number,
+    currentBonus: number,
+    ratio: number,
+    monthlyDailyBonus?: number
+  ): number {
+    if (ratio <= 0) return currentBonus;
+    const safeRatio = Math.max(0.001, Math.min(1.0, ratio));
+    if (checkinCount <= 0 && currentBonus <= 0) return 0;
+
+    const nHat = checkinCount > 0 ? Math.round(checkinCount / safeRatio) : 0;
+    if (nHat <= 0) return currentBonus;
+
+    let c = 3.65;
+    if (checkinCount >= 4 && currentBonus > 0) {
+      const rawC = (currentBonus - 45 * checkinCount) / (checkinCount * (checkinCount - 1));
+      if (!isNaN(rawC) && rawC >= 1.5 && rawC <= 8.0) {
+        c = rawC;
+      }
+    }
+
+    const rawProjected = Math.max(currentBonus, Math.round(c * nHat * (nHat - 1) + 45 * nHat));
+
+    if (monthlyDailyBonus && monthlyDailyBonus > 0) {
+      const projectedDailyBonus = Math.round(monthlyDailyBonus / safeRatio);
+      const maxAllowed = Math.round(projectedDailyBonus * 1.5);
+      return Math.min(rawProjected, maxAllowed);
+    }
+
+    return rawProjected;
+  }
+
+  const isMonthMode = comparisonMode === 'month';
+
+  const getProjectedRecord = React.useCallback(
+    (record: CcPaystubRecord) => {
+      const holidayActual = record.holidayPayrollAddition || record.holidayPremiumPay || 0;
+      if (isPastPeriod) {
+        return {
+          projectedHourlyWage: record.hourlyWage || 0,
+          projectedCcXoayBonus: record.ccXoayBonus || 0,
+          projectedComboProductBonus: record.comboProductBonus || 0,
+          projectedCcTipBonus: record.ccTipBonus || 0,
+          projectedDiamondBonus: record.diamondBonus || 0,
+          projectedMinigameBonus: record.minigameBonus || 0,
+          projectedHolidayPay: holidayActual,
+          projectedTotalIncome: record.totalIncome || 0,
+        };
+      }
+
+      const projectedHourlyWage = Math.round((record.hourlyWage || 0) / (ratio || 1));
+
+      // Vòng xoay là mô hình lũy tiến cấp số cộng Level reset theo tháng (số khách gấp đôi -> tiền thưởng gấp 4)
+      // Sử dụng công thức chuẩn cấp số cộng (Exact Closed-Form Model). Không dự đoán theo tuần.
+      const projectedCcXoayBonus = isMonthMode
+        ? calculateProjectedCcXoay(
+            record.checkinCount || 0,
+            record.rawCcXoayBonus ?? record.ccXoayBonus ?? 0,
+            ratio,
+            record.monthlyDailyBonus
+          )
+        : 0;
+      const projectedComboProductBonus = Math.round((record.comboProductBonus || 0) / (ratio || 1));
+      const projectedCcTipBonus = Math.round((record.ccTipBonus || 0) / (ratio || 1));
+      const projectedDiamondBonus = Math.round((record.diamondBonus || 0) / (ratio || 1));
+      const projectedMinigameBonus = Math.round((record.minigameBonus || 0) / (ratio || 1));
+      const projectedHolidayPay = holidayActual;
+
+      const projectedTotalIncome = isMonthMode
+        ? projectedHourlyWage +
+          projectedCcXoayBonus +
+          projectedComboProductBonus +
+          projectedCcTipBonus +
+          projectedDiamondBonus +
+          projectedMinigameBonus +
+          projectedHolidayPay
+        : projectedHourlyWage +
+          (record.ccXoayBonus || 0) +
+          projectedComboProductBonus +
+          projectedCcTipBonus +
+          projectedDiamondBonus +
+          projectedMinigameBonus +
+          projectedHolidayPay;
+
+      return {
+        projectedHourlyWage,
+        projectedCcXoayBonus,
+        projectedComboProductBonus,
+        projectedCcTipBonus,
+        projectedDiamondBonus,
+        projectedMinigameBonus,
+        projectedHolidayPay,
+        projectedTotalIncome,
+      };
+    },
+    [isPastPeriod, ratio, isMonthMode]
+  );
+
+  const projectedSummary = useMemo(() => {
+    if (isPastPeriod) {
+      return {
+        projectedHourlyWage: summary.totalHourlyWage,
+        projectedCcXoayBonus: summary.totalCcXoayBonus,
+        projectedComboProductBonus: summary.totalComboProductBonus,
+        projectedCcTipBonus: summary.totalCcTipBonus,
+        projectedMinigameBonus: summary.totalMinigameBonus,
+        projectedTotalIncome: summary.grandTotalIncome,
+      };
+    }
+
+    const projectedHourlyWage = Math.round((summary.totalHourlyWage || 0) / (ratio || 1));
+    const projectedCcXoayBonus = isMonthMode
+      ? paystubData.length > 0
+        ? paystubData.reduce((acc, r) => acc + (getProjectedRecord(r).projectedCcXoayBonus || 0), 0)
+        : calculateProjectedCcXoay(0, summary.totalCcXoayBonus || 0, ratio)
+      : 0;
+    const projectedComboProductBonus = Math.round((summary.totalComboProductBonus || 0) / (ratio || 1));
+    const projectedCcTipBonus = Math.round((summary.totalCcTipBonus || 0) / (ratio || 1));
+    const projectedMinigameBonus = Math.round((summary.totalMinigameBonus || 0) / (ratio || 1));
+    const holidayAddition = summary.totalHolidayPayrollAddition || summary.totalHolidayPremiumPay || 0;
+
+    const projectedTotalIncome = isMonthMode
+      ? projectedHourlyWage +
+        projectedCcXoayBonus +
+        projectedComboProductBonus +
+        projectedCcTipBonus +
+        projectedMinigameBonus +
+        (summary.totalDiamondBonus || 0) +
+        holidayAddition
+      : projectedHourlyWage +
+        (summary.totalCcXoayBonus || 0) +
+        projectedComboProductBonus +
+        projectedCcTipBonus +
+        projectedMinigameBonus +
+        (summary.totalDiamondBonus || 0) +
+        holidayAddition;
+
+    return {
+      projectedHourlyWage,
+      projectedCcXoayBonus,
+      projectedComboProductBonus,
+      projectedCcTipBonus,
+      projectedMinigameBonus,
+      projectedTotalIncome,
+    };
+  }, [summary, ratio, isPastPeriod, isMonthMode, paystubData, getProjectedRecord]);
+
+  const renderForecastSubtext = (projectedVal: number) => {
+    if (isDayMode || !projectedVal) return null;
+
+    if (isPastPeriod) {
+      return (
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
+          <div
+            className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70"
+            style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+          >
+            <span>Thực tế chốt {periodNoun}:</span>
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {formatCompactVND(projectedVal)}
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00). Dự đoán về đích cuối ${periodNoun} dựa trên tốc độ hiện tại.`}
+      >
+        <div
+          className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help"
+          style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+        >
+          <span className="inline-flex items-center gap-1">
+            <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
+              🔮
+            </span>
+            <span className="text-[11px] text-slate-400">Cuối {periodNoun}:</span>
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+            ~{formatCompactVND(projectedVal)}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
 
   const [searchText, setSearchText] = useState('');
 
@@ -455,6 +677,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
       align: 'right' as const,
       render: (val: number, record: CcPaystubRecord) => {
         const rate = record.hourlyRate || 25000;
+        const proj = getProjectedRecord(record);
         return (
           <Tooltip
             title={`Click để xem Báo cáo Chi Tiết Ca Làm Việc IN/OUT (${formatHoursToHoursMinutes(record.totalWorkHours)} @ ${rate.toLocaleString('vi-VN')}đ/h)`}
@@ -477,6 +700,14 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               >
                 +{formatVND(val)}
               </div>
+              {!isDayMode && !isPastPeriod && proj.projectedHourlyWage > 0 && (
+                <div className="flex items-center justify-end gap-1 text-[11px] text-blue-400/90 font-medium tabular-nums mt-0.5">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedHourlyWage)}</span>
+                </div>
+              )}
               <div
                 className={`text-[11px] tabular-nums flex items-center justify-end gap-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}
               >
@@ -497,129 +728,203 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
       dataIndex: 'ccXoayBonus',
       key: 'ccXoayBonus',
       align: 'right' as const,
-      render: (val: number, record: CcPaystubRecord) => (
-        <Tooltip
-          title={
-            (record.ccXoayHoldBonus || 0) > 0
-              ? `Thưởng gốc ${formatVND(record.rawCcXoayBonus || 0)}đ · nhận ${formatVND(val)}đ · on hold ${formatVND(record.ccXoayHoldBonus || 0)}đ (cap 150% Daily Bonus)`
-              : `Click để xem Chi Tiết Ca Check-in Xoay (${record.checkinCount} lượt check-in)`
-          }
-        >
-          <div
-            className="text-right cursor-pointer group hover:bg-purple-500/10 p-1.5 rounded-lg transition-colors border border-transparent hover:border-purple-500/30"
-            role="button"
-            tabIndex={0}
-            aria-label={`Xem chi tiết ca Check-in Xoay của ${record.displayName}`}
-            onClick={() => handleOpenCcXoayModal(record)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleOpenCcXoayModal(record);
-              }
-            }}
+      render: (val: number, record: CcPaystubRecord) => {
+        const proj = getProjectedRecord(record);
+        return (
+          <Tooltip
+            title={
+              (record.ccXoayHoldBonus || 0) > 0
+                ? `Thưởng gốc ${formatVND(record.rawCcXoayBonus || 0)}đ · nhận ${formatVND(val)}đ · on hold ${formatVND(record.ccXoayHoldBonus || 0)}đ (cap 150% Daily Bonus)`
+                : `Click để xem Chi Tiết Ca Check-in Xoay (${record.checkinCount} lượt check-in)`
+            }
           >
             <div
-              className={`tabular-nums whitespace-nowrap font-bold text-sm group-hover:underline underline-offset-2 ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
+              className="text-right cursor-pointer group hover:bg-purple-500/10 p-1.5 rounded-lg transition-colors border border-transparent hover:border-purple-500/30"
+              role="button"
+              tabIndex={0}
+              aria-label={`Xem chi tiết ca Check-in Xoay của ${record.displayName}`}
+              onClick={() => handleOpenCcXoayModal(record)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleOpenCcXoayModal(record);
+                }
+              }}
             >
-              +{formatVND(val)}
+              <div
+                className={`tabular-nums whitespace-nowrap font-bold text-sm group-hover:underline underline-offset-2 ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
+              >
+                +{formatVND(val)}
+              </div>
+              {!isDayMode && !isPastPeriod && proj.projectedCcXoayBonus > 0 && (
+                <div className="flex items-center justify-end gap-1 text-[11px] text-purple-400/90 font-medium tabular-nums mt-0.5">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedCcXoayBonus)}</span>
+                </div>
+              )}
+              <div
+                className={`text-[11px] tabular-nums flex items-center justify-end gap-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}
+              >
+                <span>{(record.ccXoayHoldBonus || 0) > 0 ? 'Đã cap 150%' : `(${record.checkinCount} lượt)`}</span>
+                <EyeOutlined
+                  className={`text-[10px] opacity-75 group-hover:opacity-100 transition-opacity ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
+                />
+              </div>
             </div>
-            <div
-              className={`text-[11px] tabular-nums flex items-center justify-end gap-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}
-            >
-              <span>{(record.ccXoayHoldBonus || 0) > 0 ? 'Đã cap 150%' : `(${record.checkinCount} lượt)`}</span>
-              <EyeOutlined
-                className={`text-[10px] opacity-75 group-hover:opacity-100 transition-opacity ${isDark ? 'text-purple-300' : 'text-purple-600'}`}
-              />
-            </div>
-          </div>
-        </Tooltip>
-      ),
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Thưởng Combo & SP',
       dataIndex: 'comboProductBonus',
       key: 'comboProductBonus',
       align: 'right' as const,
-      render: (val: number, record: CcPaystubRecord) => (
-        <Tooltip title={`${record.comboCount} combo + ${record.productCount} sản phẩm`}>
-          <div className="text-right">
-            <span
-              className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
-            >
-              +{formatVND(val)}
-            </span>
-            <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-              ({record.comboCount} combo / {record.productCount} SP)
+      render: (val: number, record: CcPaystubRecord) => {
+        const proj = getProjectedRecord(record);
+        return (
+          <Tooltip title={`${record.comboCount} combo + ${record.productCount} sản phẩm`}>
+            <div className="text-right">
+              <span
+                className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
+              >
+                +{formatVND(val)}
+              </span>
+              {!isDayMode && !isPastPeriod && proj.projectedComboProductBonus > 0 && (
+                <div className="flex items-center justify-end gap-1 text-[11px] text-emerald-400/90 font-medium tabular-nums mt-0.5">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedComboProductBonus)}</span>
+                </div>
+              )}
+              <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                ({record.comboCount} combo / {record.productCount} SP)
+              </div>
             </div>
-          </div>
-        </Tooltip>
-      ),
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Thưởng CC Tip (20%)',
       dataIndex: 'ccTipBonus',
       key: 'ccTipBonus',
       align: 'right' as const,
-      render: (val: number, record: CcPaystubRecord) => (
-        <Tooltip title={`Nhận 20% tiền tip từ ${record.tippedVisitsCount || 0} lượt khách`}>
-          <div className="text-right">
-            <span
-              className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
-            >
-              +{formatVND(val)}
-            </span>
-            <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-              ({record.tippedVisitsCount || 0} ca tip)
+      render: (val: number, record: CcPaystubRecord) => {
+        const proj = getProjectedRecord(record);
+        return (
+          <Tooltip title={`Nhận 20% tiền tip từ ${record.tippedVisitsCount || 0} lượt khách`}>
+            <div className="text-right">
+              <span
+                className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
+              >
+                +{formatVND(val)}
+              </span>
+              {!isDayMode && !isPastPeriod && proj.projectedCcTipBonus > 0 && (
+                <div className="flex items-center justify-end gap-1 text-[11px] text-amber-400/90 font-medium tabular-nums mt-0.5">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedCcTipBonus)}</span>
+                </div>
+              )}
+              <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                ({record.tippedVisitsCount || 0} ca tip)
+              </div>
             </div>
-          </div>
-        </Tooltip>
-      ),
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Thưởng Kim Cương',
       dataIndex: 'diamondBonus',
       key: 'diamondBonus',
       align: 'right' as const,
-      render: (val: number, record: CcPaystubRecord) => (
-        <Tooltip title={`Giới thiệu ${record.diamondCount || 0} khách hàng mới`}>
-          <div className="text-right">
-            <span
-              className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-cyan-300' : 'text-cyan-600'}`}
-            >
-              +{formatVND(val)}
-            </span>
-            <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-              ({record.diamondCount || 0} khách 💎)
+      render: (val: number, record: CcPaystubRecord) => {
+        const proj = getProjectedRecord(record);
+        return (
+          <Tooltip title={`Giới thiệu ${record.diamondCount || 0} khách hàng mới`}>
+            <div className="text-right">
+              <span
+                className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-cyan-300' : 'text-cyan-600'}`}
+              >
+                +{formatVND(val)}
+              </span>
+              {!isDayMode && !isPastPeriod && proj.projectedDiamondBonus > 0 && (
+                <div className="flex items-center justify-end gap-1 text-[11px] text-cyan-400/90 font-medium tabular-nums mt-0.5">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedDiamondBonus)}</span>
+                </div>
+              )}
+              <div className={`text-[11px] tabular-nums ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                ({record.diamondCount || 0} khách 💎)
+              </div>
             </div>
-          </div>
-        </Tooltip>
-      ),
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Thưởng Nóng Minigame',
       dataIndex: 'minigameBonus',
       key: 'minigameBonus',
       align: 'right' as const,
-      render: (val: number) => (
-        <span
-          className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
-        >
-          +{formatVND(val)}
-        </span>
-      ),
+      render: (val: number, record: CcPaystubRecord) => {
+        const proj = getProjectedRecord(record);
+        return (
+          <div className="text-right">
+            <span
+              className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
+            >
+              +{formatVND(val)}
+            </span>
+            {!isDayMode && !isPastPeriod && proj.projectedMinigameBonus > 0 && (
+              <div className="flex items-center justify-end gap-1 text-[11px] text-amber-500/90 font-medium tabular-nums mt-0.5">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedMinigameBonus)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Tổng Thu Nhập Tạm Tính',
       dataIndex: 'totalIncome',
       key: 'totalIncome',
       align: 'right' as const,
-      render: (val: number) => (
-        <span
-          className={`tabular-nums whitespace-nowrap font-extrabold text-base ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
-        >
-          {formatVND(val)}
-        </span>
-      ),
+      render: (val: number, record: CcPaystubRecord) => {
+        const proj = getProjectedRecord(record);
+        return (
+          <div className="text-right">
+            <span
+              className={`tabular-nums whitespace-nowrap font-extrabold text-base ${isDark ? 'text-amber-300' : 'text-amber-600'}`}
+            >
+              {formatVND(val)}
+            </span>
+            {!isDayMode && !isPastPeriod && proj.projectedTotalIncome > 0 && (
+              <Tooltip
+                title={`Dự đoán tổng thu nhập về đích cuối ${periodNoun}: ~${formatVND(proj.projectedTotalIncome)}đ`}
+              >
+                <div className="flex items-center justify-end gap-1 text-xs text-emerald-400 font-semibold tabular-nums mt-0.5 cursor-help">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedTotalIncome)}</span>
+                </div>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thao Tác',
@@ -715,6 +1020,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               }}
               prefix={<ClockCircleOutlined />}
             />
+            {renderForecastSubtext(projectedSummary.projectedHourlyWage)}
             <CcPeriodComparison
               compact
               comparison={summary.comparison}
@@ -742,6 +1048,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               }}
               prefix={<ThunderboltOutlined />}
             />
+            {renderForecastSubtext(projectedSummary.projectedCcXoayBonus)}
             <CcPeriodComparison
               compact
               comparison={summary.comparison}
@@ -769,6 +1076,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               }}
               prefix={<GiftOutlined />}
             />
+            {renderForecastSubtext(projectedSummary.projectedComboProductBonus)}
             <CcPeriodComparison
               compact
               comparison={summary.comparison}
@@ -796,6 +1104,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               }}
               prefix={<DollarOutlined />}
             />
+            {renderForecastSubtext(projectedSummary.projectedCcTipBonus)}
             <CcPeriodComparison
               compact
               comparison={summary.comparison}
@@ -823,6 +1132,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               }}
               prefix={<TrophyOutlined />}
             />
+            {renderForecastSubtext(projectedSummary.projectedMinigameBonus)}
             <CcPeriodComparison
               compact
               comparison={summary.comparison}
@@ -851,6 +1161,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               }}
               prefix={<WalletOutlined />}
             />
+            {renderForecastSubtext(projectedSummary.projectedTotalIncome)}
             <CcPeriodComparison
               compact
               comparison={summary.comparison}
@@ -897,88 +1208,120 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
               getKey={(record) => String(record.consultantId)}
               emptyDescription="Không tìm thấy dữ liệu thu nhập CC"
               className="cc-income-mobile-record-list"
-              renderRecord={(record, index) => (
-                <div className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                    </span>
-                    <CcAvatar name={record.displayName} src={record.avatar} size={32} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
-                        {record.displayName}
-                      </div>
-                      <div className="text-xs text-slate-400">{formatStoreCode(record.store)}</div>
-                    </div>
-                    <Tooltip title={`Xem giờ làm của ${record.displayName}`}>
-                      <Button
-                        aria-label={`Xem giờ làm của ${record.displayName}`}
-                        className="!flex !h-8 !w-8 !min-w-8 !items-center !justify-center rounded-lg"
-                        icon={<ClockCircleOutlined />}
-                        size="small"
-                        type="text"
-                        onClick={() => handleOpenWorkLogModal(record)}
-                      />
-                    </Tooltip>
-                  </div>
-                  <dl className="mt-2 grid grid-cols-3 gap-x-2 gap-y-2 border-t border-slate-200 pt-2 dark:border-slate-800">
-                    {[
-                      { label: 'Lương giờ', value: record.hourlyWage || 0, color: 'text-sky-500 dark:text-sky-400' },
-                      { label: 'Xoay', value: record.ccXoayBonus || 0, color: 'text-purple-500 dark:text-purple-400' },
-                      {
-                        label: 'Combo & SP',
-                        value: record.comboProductBonus || 0,
-                        color: 'text-emerald-500 dark:text-emerald-400',
-                      },
-                      { label: 'Tip', value: record.ccTipBonus || 0, color: 'text-amber-600 dark:text-amber-300' },
-                      {
-                        label: 'Kim cương',
-                        value: record.diamondBonus || 0,
-                        color: 'text-cyan-500 dark:text-cyan-300',
-                      },
-                      {
-                        label: 'Minigame',
-                        value: record.minigameBonus || 0,
-                        color: 'text-yellow-600 dark:text-yellow-300',
-                      },
-                      {
-                        label: 'Phụ cấp lễ x3',
-                        value: record.holidayPremiumPay || 0,
-                        color: 'text-rose-500 dark:text-rose-300',
-                      },
-                    ].map((income) => (
-                      <div className="min-w-0" key={income.label}>
-                        <dt className="truncate text-[10px] leading-4 text-slate-500" title={income.label}>
-                          {income.label}
-                        </dt>
-                        <Tooltip title={`${income.label}: +${formatVND(income.value)}`}>
-                          <dd className={`truncate whitespace-nowrap text-xs font-bold tabular-nums ${income.color}`}>
-                            +{formatCompactVND(income.value)}
-                          </dd>
-                        </Tooltip>
-                      </div>
-                    ))}
-                  </dl>
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-2">
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-medium text-slate-500">∑ Thu nhập</div>
-                      <Tooltip title={`Thu nhập: ${formatVND(record.totalIncome || 0)}`}>
-                        <div className="overflow-hidden text-ellipsis whitespace-nowrap text-base font-bold tabular-nums text-amber-600 dark:text-amber-300">
-                          {formatCompactVND(record.totalIncome || 0)}
+              renderRecord={(record, index) => {
+                const proj = getProjectedRecord(record);
+                return (
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                      </span>
+                      <CcAvatar name={record.displayName} src={record.avatar} size={32} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
+                          {record.displayName}
                         </div>
+                        <div className="text-xs text-slate-400">{formatStoreCode(record.store)}</div>
+                      </div>
+                      <Tooltip title={`Xem giờ làm của ${record.displayName}`}>
+                        <Button
+                          aria-label={`Xem giờ làm của ${record.displayName}`}
+                          className="!flex !h-8 !w-8 !min-w-8 !items-center !justify-center rounded-lg"
+                          icon={<ClockCircleOutlined />}
+                          size="small"
+                          type="text"
+                          onClick={() => handleOpenWorkLogModal(record)}
+                        />
                       </Tooltip>
                     </div>
-                    <Button
-                      icon={<EyeOutlined />}
-                      size="small"
-                      type="primary"
-                      onClick={() => handleOpenDetailModal(record)}
-                    >
-                      Chi tiết
-                    </Button>
+                    <dl className="mt-2 grid grid-cols-3 gap-x-2 gap-y-2 border-t border-slate-200 pt-2 dark:border-slate-800">
+                      {[
+                        {
+                          label: 'Lương giờ',
+                          value: record.hourlyWage || 0,
+                          projected: proj.projectedHourlyWage,
+                          color: 'text-sky-500 dark:text-sky-400',
+                        },
+                        {
+                          label: 'Xoay',
+                          value: record.ccXoayBonus || 0,
+                          projected: proj.projectedCcXoayBonus,
+                          color: 'text-purple-500 dark:text-purple-400',
+                        },
+                        {
+                          label: 'Combo & SP',
+                          value: record.comboProductBonus || 0,
+                          projected: proj.projectedComboProductBonus,
+                          color: 'text-emerald-500 dark:text-emerald-400',
+                        },
+                        {
+                          label: 'Tip',
+                          value: record.ccTipBonus || 0,
+                          projected: proj.projectedCcTipBonus,
+                          color: 'text-amber-600 dark:text-amber-300',
+                        },
+                        {
+                          label: 'Kim cương',
+                          value: record.diamondBonus || 0,
+                          projected: proj.projectedDiamondBonus,
+                          color: 'text-cyan-500 dark:text-cyan-300',
+                        },
+                        {
+                          label: 'Minigame',
+                          value: record.minigameBonus || 0,
+                          projected: proj.projectedMinigameBonus,
+                          color: 'text-yellow-600 dark:text-yellow-300',
+                        },
+                        {
+                          label: 'Phụ cấp lễ x3',
+                          value: record.holidayPremiumPay || 0,
+                          projected: proj.projectedHolidayPay,
+                          color: 'text-rose-500 dark:text-rose-300',
+                        },
+                      ].map((income) => (
+                        <div className="min-w-0" key={income.label}>
+                          <dt className="truncate text-[10px] leading-4 text-slate-500" title={income.label}>
+                            {income.label}
+                          </dt>
+                          <Tooltip title={`${income.label}: +${formatVND(income.value)}`}>
+                            <dd className={`truncate whitespace-nowrap text-xs font-bold tabular-nums ${income.color}`}>
+                              +{formatCompactVND(income.value)}
+                            </dd>
+                          </Tooltip>
+                          {!isDayMode && !isPastPeriod && (income.projected || 0) > 0 && (
+                            <div className="text-[10px] text-emerald-500/80 font-medium tabular-nums">
+                              🔮 ~{formatCompactVND(income.projected)}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </dl>
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-2">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-medium text-slate-500">∑ Thu nhập</div>
+                        <Tooltip title={`Thu nhập: ${formatVND(record.totalIncome || 0)}`}>
+                          <div className="overflow-hidden text-ellipsis whitespace-nowrap text-base font-bold tabular-nums text-amber-600 dark:text-amber-300">
+                            {formatCompactVND(record.totalIncome || 0)}
+                          </div>
+                        </Tooltip>
+                        {!isDayMode && !isPastPeriod && (proj.projectedTotalIncome || 0) > 0 && (
+                          <div className="text-[11px] font-semibold text-emerald-500/90 tabular-nums">
+                            🔮 ~{formatCompactVND(proj.projectedTotalIncome)}
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        icon={<EyeOutlined />}
+                        size="small"
+                        type="primary"
+                        onClick={() => handleOpenDetailModal(record)}
+                      >
+                        Chi tiết
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              }}
             />
           </div>
         ) : (

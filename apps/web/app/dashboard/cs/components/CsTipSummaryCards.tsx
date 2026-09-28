@@ -1,15 +1,22 @@
 'use client';
 
 import React from 'react';
-import { Card, Row, Col, Skeleton } from 'antd';
+import { Card, Row, Col, Skeleton, Tooltip } from 'antd';
 import { DollarSign, Heart, User, Zap } from 'lucide-react';
-import { CsTipSummary } from '@mos-lab/shared';
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import { CsTipSummary, calculateFractionToday } from '@mos-lab/shared';
 import { AppIcon } from '~/components/ui';
 import { useTheme } from '../../../../context/ThemeContext';
+import { formatCompactVND } from '../../../../lib/format-utils';
+
+dayjs.extend(isoWeek);
 
 interface CsTipSummaryCardsProps {
   summary?: CsTipSummary;
   loading?: boolean;
+  comparisonMode?: 'day' | 'week' | 'month';
+  dateRange?: [dayjs.Dayjs, dayjs.Dayjs] | null;
 }
 
 const formatCurrency = (val?: number) => {
@@ -17,9 +24,40 @@ const formatCurrency = (val?: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 };
 
-export default function CsTipSummaryCards({ summary, loading = false }: CsTipSummaryCardsProps) {
+export default function CsTipSummaryCards({
+  summary,
+  loading = false,
+  comparisonMode = 'month',
+  dateRange,
+}: CsTipSummaryCardsProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = React.useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(r * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
 
   if (loading || !summary) {
     return (
@@ -39,6 +77,56 @@ export default function CsTipSummaryCards({ summary, loading = false }: CsTipSum
   }
 
   const { total, loca, single, csBonusRatePercent } = summary;
+
+  const projectedTotalCustomerTip = isPastPeriod
+    ? total.totalCustomerTip
+    : Math.round(total.totalCustomerTip / (ratio || 1));
+  const projectedTotalCsBonus = isPastPeriod ? total.csTipBonus : Math.round(total.csTipBonus / (ratio || 1));
+
+  const projectedLocaCustomerTip = isPastPeriod
+    ? loca.totalCustomerTip
+    : Math.round(loca.totalCustomerTip / (ratio || 1));
+  const projectedLocaCsBonus = isPastPeriod ? loca.csTipBonus : Math.round(loca.csTipBonus / (ratio || 1));
+
+  const projectedSingleCustomerTip = isPastPeriod
+    ? single.totalCustomerTip
+    : Math.round(single.totalCustomerTip / (ratio || 1));
+  const projectedSingleCsBonus = isPastPeriod ? single.csTipBonus : Math.round(single.csTipBonus / (ratio || 1));
+
+  const renderForecastSubtext = (projectedVal: number) => {
+    if (isDayMode) return null;
+
+    if (isPastPeriod) {
+      return (
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
+          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
+            <span>Thực tế chốt {periodNoun}:</span>
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {formatCompactVND(projectedVal)}
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00). Dự đoán về đích cuối ${periodNoun} dựa trên tốc độ hiện tại.`}
+      >
+        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
+          <span className="inline-flex items-center gap-1">
+            <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
+              🔮
+            </span>
+            <span className="text-[11px] text-slate-400">Cuối {periodNoun}:</span>
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+            ~{formatCompactVND(projectedVal)}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
 
   return (
     <Row gutter={[16, 16]}>
@@ -69,11 +157,17 @@ export default function CsTipSummaryCards({ summary, loading = false }: CsTipSum
                 {formatCurrency(total.totalCustomerTip)}
               </span>
             </div>
-            <div className="mt-1 flex items-center gap-1.5">
+            {renderForecastSubtext(projectedTotalCustomerTip)}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tabular-nums bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
                 <AppIcon icon={Zap} size={13} className="text-blue-600 dark:text-blue-400" />
                 Thưởng CS ({csBonusRatePercent}%): {formatCurrency(total.csTipBonus)}
               </span>
+              {!isDayMode && !isPastPeriod && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tabular-nums bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+                  🔮 ~{formatCompactVND(projectedTotalCsBonus)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -129,11 +223,17 @@ export default function CsTipSummaryCards({ summary, loading = false }: CsTipSum
                 ({loca.sharePercent}% tổng tip)
               </span>
             </div>
-            <div className="mt-1 flex items-center gap-1.5">
+            {renderForecastSubtext(projectedLocaCustomerTip)}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tabular-nums bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
                 <AppIcon icon={Zap} size={13} className="text-emerald-600 dark:text-emerald-400" />
                 Thưởng CS ({csBonusRatePercent}%): {formatCurrency(loca.csTipBonus)}
               </span>
+              {!isDayMode && !isPastPeriod && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tabular-nums bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+                  🔮 ~{formatCompactVND(projectedLocaCsBonus)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -189,11 +289,17 @@ export default function CsTipSummaryCards({ summary, loading = false }: CsTipSum
                 ({single.sharePercent}% tổng tip)
               </span>
             </div>
-            <div className="mt-1 flex items-center gap-1.5">
+            {renderForecastSubtext(projectedSingleCustomerTip)}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tabular-nums bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
                 <AppIcon icon={Zap} size={13} className="text-amber-600 dark:text-amber-400" />
                 Thưởng CS ({csBonusRatePercent}%): {formatCurrency(single.csTipBonus)}
               </span>
+              {!isDayMode && !isPastPeriod && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tabular-nums bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                  🔮 ~{formatCompactVND(projectedSingleCsBonus)}
+                </span>
+              )}
             </div>
           </div>
 

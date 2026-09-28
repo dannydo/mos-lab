@@ -27,7 +27,7 @@ import {
 } from '@ant-design/icons';
 import { RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
-import { CcDiamondEntry, CcDiamondResponse, removeVietnameseTones } from '@mos-lab/shared';
+import { CcDiamondEntry, CcDiamondResponse, removeVietnameseTones, calculateFractionToday } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
@@ -149,6 +149,36 @@ export default function CcDiamondTab({
     currentMobilePage * MOBILE_DIAMOND_PAGE_SIZE
   );
 
+  const isMonthMode = comparisonMode === 'month';
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = React.useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(r * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
+  const projectedReferrals = Math.round(totalReferrals / (ratio || 1));
+  const projectedBonus = Math.round(totalBonus / (ratio || 1));
+
   const columns = [
     {
       title: 'Hạng',
@@ -190,9 +220,19 @@ export default function CcDiamondTab({
       align: 'right' as const,
       sorter: (a: CcDiamondEntry, b: CcDiamondEntry) => a.tongKhach - b.tongKhach,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-slate-700 dark:text-slate-300">
-          {val.toLocaleString('vi-VN')}
-        </span>
+        <div className="w-full text-right">
+          <span className="tabular-nums font-semibold text-slate-700 dark:text-slate-300">
+            {val.toLocaleString('vi-VN')}
+          </span>
+          {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+            <div
+              className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+              title={`Dự kiến cả ${periodNoun}`}
+            >
+              🔮 ~{Math.round(val / ratio).toLocaleString('vi-VN')}
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -209,9 +249,19 @@ export default function CcDiamondTab({
       align: 'right' as const,
       sorter: (a: CcDiamondEntry, b: CcDiamondEntry) => a.soKhachDiamond - b.soKhachDiamond,
       render: (val: number) => (
-        <Tag color={val > 0 ? 'cyan' : 'default'} className="m-0 tabular-nums px-3 py-1 font-bold text-sm rounded-lg">
-          💎 {val} khách
-        </Tag>
+        <div className="w-full text-right">
+          <Tag color={val > 0 ? 'cyan' : 'default'} className="m-0 tabular-nums px-3 py-1 font-bold text-sm rounded-lg">
+            💎 {val} khách
+          </Tag>
+          {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+            <div
+              className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+              title={`Dự kiến cả ${periodNoun}`}
+            >
+              🔮 ~{Math.round(val / ratio)} khách
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -228,8 +278,8 @@ export default function CcDiamondTab({
       align: 'right' as const,
       sorter: (a: CcDiamondEntry, b: CcDiamondEntry) => (a.tyLeGioiThieu || 0) - (b.tyLeGioiThieu || 0),
       render: (val: number, record: CcDiamondEntry) => {
-        const ratio = getReferralRatio(record);
-        const isQualified = isDiamondQualified(record, ratio);
+        const referralRatio = getReferralRatio(record);
+        const isQualified = isDiamondQualified(record, referralRatio);
         const hasReferrals = record.soKhachDiamond > 0;
 
         if (isQualified && hasReferrals) {
@@ -238,19 +288,19 @@ export default function CcDiamondTab({
               color="success"
               className="m-0 tabular-nums px-2.5 py-0.5 font-bold text-xs rounded-md border-emerald-300"
             >
-              ✓ {ratio}% (Đạt)
+              ✓ {referralRatio}% (Đạt)
             </Tag>
           );
         }
 
         if (!isQualified && hasReferrals) {
           return (
-            <Tooltip title={`Chưa đạt điều kiện tối thiểu ≥ 3.0% (hiện tại: ${ratio}%)`}>
+            <Tooltip title={`Chưa đạt điều kiện tối thiểu ≥ 3.0% (hiện tại: ${referralRatio}%)`}>
               <Tag
                 color="error"
                 className="m-0 tabular-nums px-2.5 py-0.5 font-bold text-xs rounded-md border-rose-300"
               >
-                ⚠️ {ratio}% (&lt;3%)
+                ⚠️ {referralRatio}% (&lt;3%)
               </Tag>
             </Tooltip>
           );
@@ -258,7 +308,7 @@ export default function CcDiamondTab({
 
         return (
           <Tag color="default" className="m-0 tabular-nums px-2.5 py-0.5 font-normal text-xs rounded-md">
-            {ratio}%
+            {referralRatio}%
           </Tag>
         );
       },
@@ -272,9 +322,19 @@ export default function CcDiamondTab({
       render: (val: number, record: CcDiamondEntry) => {
         if (val > 0) {
           return (
-            <span className="tabular-nums font-bold text-base text-emerald-600 dark:text-emerald-400">
-              +{formatCurrency(val)}
-            </span>
+            <div className="w-full text-right">
+              <span className="tabular-nums font-bold text-base text-emerald-600 dark:text-emerald-400">
+                +{formatCurrency(val)}
+              </span>
+              {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+                <div
+                  className="tabular-nums text-[10px] text-emerald-400/80 font-medium mt-0.5"
+                  title={`Dự kiến cả ${periodNoun}`}
+                >
+                  🔮 ~{formatCurrency(Math.round(val / ratio))}
+                </div>
+              )}
+            </div>
           );
         }
 
@@ -285,6 +345,14 @@ export default function CcDiamondTab({
               <div className="text-[11px] text-rose-500 dark:text-rose-400 font-medium tabular-nums">
                 (Cần ≥3% để nhận {formatCurrency(record.potentialThuong)})
               </div>
+              {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+                <div
+                  className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+                  title={`Dự kiến nếu đạt cả ${periodNoun}`}
+                >
+                  🔮 ~{formatCurrency(Math.round(record.potentialThuong / ratio))}
+                </div>
+              )}
             </div>
           );
         }
@@ -314,6 +382,41 @@ export default function CcDiamondTab({
     },
   ];
 
+  const renderForecastSubtext = (projectedVal: number, unit = '') => {
+    if (isDayMode || !projectedVal) return null;
+
+    if (isPastPeriod) {
+      return (
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
+          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
+            <span>Thực tế chốt {periodNoun}:</span>
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {unit === 'đ' ? formatCurrency(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
+      >
+        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
+          <span className="shrink-0 flex items-center gap-1">
+            <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`}>
+              🔮
+            </span>
+            <span>Dự kiến:</span>
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+            ~{unit === 'đ' ? formatCurrency(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Top Summary Cards */}
@@ -340,6 +443,7 @@ export default function CcDiamondTab({
               previousValue={diamondData?.comparison?.totalReferralGuests || 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} khách`}
             />
+            {renderForecastSubtext(projectedReferrals, 'khách')}
           </Card>
         </Col>
 
@@ -365,6 +469,7 @@ export default function CcDiamondTab({
               previousValue={diamondData?.comparison?.totalDiamondBonus || 0}
               formatter={formatCurrency}
             />
+            {renderForecastSubtext(projectedBonus, 'đ')}
           </Card>
         </Col>
 

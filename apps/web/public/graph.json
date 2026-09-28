@@ -8156,7 +8156,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1586
+        "line": 1582
       }
     },
     {
@@ -8380,7 +8380,7 @@
         "path": "/api/customers/loca-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 746
+        "line": 742
       }
     },
     {
@@ -8394,7 +8394,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1027
+        "line": 1022
       }
     },
     {
@@ -29371,8 +29371,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 80738,
-        "lineCount": 1965,
+        "sizeBytes": 80552,
+        "lineCount": 1961,
         "ext": ".ts"
       }
     },
@@ -29410,8 +29410,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49715,
-        "lineCount": 1221,
+        "sizeBytes": 49602,
+        "lineCount": 1216,
         "ext": ".ts"
       }
     },
@@ -29436,7 +29436,7 @@
       "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 81604,
+        "sizeBytes": 81613,
         "lineCount": 2003,
         "ext": ".ts"
       }
@@ -33830,8 +33830,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkBookingTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28413,
-        "lineCount": 738,
+        "sizeBytes": 31638,
+        "lineCount": 807,
         "ext": ".tsx"
       }
     },
@@ -33856,8 +33856,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32137,
-        "lineCount": 825,
+        "sizeBytes": 35064,
+        "lineCount": 889,
         "ext": ".tsx"
       }
     },
@@ -33973,8 +33973,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkRevenueTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19392,
-        "lineCount": 522,
+        "sizeBytes": 22446,
+        "lineCount": 587,
         "ext": ".tsx"
       }
     },
@@ -33986,8 +33986,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37995,
-        "lineCount": 878,
+        "sizeBytes": 49980,
+        "lineCount": 1143,
         "ext": ".tsx"
       }
     },
@@ -33999,8 +33999,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19748,
-        "lineCount": 532,
+        "sizeBytes": 22805,
+        "lineCount": 602,
         "ext": ".tsx"
       }
     },
@@ -34636,8 +34636,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcDiamondTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25510,
-        "lineCount": 625,
+        "sizeBytes": 29937,
+        "lineCount": 719,
         "ext": ".tsx"
       }
     },
@@ -34662,8 +34662,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcLeaderboardCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23132,
-        "lineCount": 535,
+        "sizeBytes": 28180,
+        "lineCount": 651,
         "ext": ".tsx"
       }
     },
@@ -34688,8 +34688,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 58656,
-        "lineCount": 1500,
+        "sizeBytes": 74115,
+        "lineCount": 1841,
         "ext": ".tsx"
       }
     },
@@ -34714,8 +34714,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuongTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 48603,
-        "lineCount": 1232,
+        "sizeBytes": 50742,
+        "lineCount": 1269,
         "ext": ".tsx"
       }
     },
@@ -34740,8 +34740,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28286,
-        "lineCount": 722,
+        "sizeBytes": 30044,
+        "lineCount": 766,
         "ext": ".tsx"
       }
     },
@@ -34753,8 +34753,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22161,
-        "lineCount": 605,
+        "sizeBytes": 27475,
+        "lineCount": 744,
         "ext": ".tsx"
       }
     },
@@ -34766,8 +34766,8 @@
       "filePath": "apps/web/app/dashboard/cc/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17387,
-        "lineCount": 504,
+        "sizeBytes": 17539,
+        "lineCount": 508,
         "ext": ".tsx"
       }
     },
@@ -34779,8 +34779,8 @@
       "filePath": "apps/web/app/dashboard/cs/components/CsTipSummaryCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10943,
-        "lineCount": 219,
+        "sizeBytes": 15979,
+        "lineCount": 317,
         "ext": ".tsx"
       }
     },
@@ -34792,8 +34792,8 @@
       "filePath": "apps/web/app/dashboard/cs/components/CsTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20535,
-        "lineCount": 533,
+        "sizeBytes": 23189,
+        "lineCount": 612,
         "ext": ".tsx"
       }
     },
@@ -34805,8 +34805,8 @@
       "filePath": "apps/web/app/dashboard/cs/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14472,
-        "lineCount": 401,
+        "sizeBytes": 14681,
+        "lineCount": 409,
         "ext": ".tsx"
       }
     },
@@ -35286,8 +35286,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 52696,
-        "lineCount": 1310,
+        "sizeBytes": 65613,
+        "lineCount": 1592,
         "ext": ".tsx"
       }
     },
@@ -35299,8 +35299,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38147,
-        "lineCount": 973,
+        "sizeBytes": 42887,
+        "lineCount": 1081,
         "ext": ".tsx"
       }
     },
@@ -35312,8 +35312,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25949,
-        "lineCount": 698,
+        "sizeBytes": 31628,
+        "lineCount": 836,
         "ext": ".tsx"
       }
     },
@@ -37145,8 +37145,8 @@
       "filePath": "apps/web/lib/api/system.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12702,
-        "lineCount": 321,
+        "sizeBytes": 12741,
+        "lineCount": 326,
         "ext": ".ts"
       }
     },

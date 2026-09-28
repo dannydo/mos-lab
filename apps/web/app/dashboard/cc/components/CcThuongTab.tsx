@@ -417,6 +417,11 @@ export default function CcThuongTab({
     if (dailyPage > lastPage) setDailyPage(lastPage);
   }, [dailyPage, dailyPageSize, filteredDailyData.length]);
 
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'month' ? 'tháng' : comparisonMode === 'week' ? 'tuần' : 'ngày';
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
   // Level 1 Columns: Leaderboard
   const leaderboardColumns = [
     {
@@ -488,6 +493,14 @@ export default function CcThuongTab({
               <AppIcon icon={CircleDot} size="sm" aria-hidden />
               {formatVisitCount(record.greenVisits)} Vòng Xanh
             </div>
+            {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+              <div
+                className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+                title={`Dự kiến cả ${periodNoun}`}
+              >
+                🔮 ~{formatVisitCount(Math.round(val / ratio))} lượt
+              </div>
+            )}
           </div>
         </Tooltip>
       ),
@@ -522,6 +535,14 @@ export default function CcThuongTab({
                 />
               </div>
             </div>
+            {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+              <div
+                className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+                title={`Dự kiến cả ${periodNoun}`}
+              >
+                🔮 ~{Math.round(val / ratio)} combo
+              </div>
+            )}
           </div>
         </Tooltip>
       ),
@@ -533,9 +554,19 @@ export default function CcThuongTab({
       width: 160,
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-semibold text-sky-600 dark:text-sky-400 text-xs">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
-        </span>
+        <div className="w-full text-right">
+          <div className="tabular-nums font-semibold text-sky-600 dark:text-sky-400 text-xs">
+            {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          </div>
+          {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+            <div
+              className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+              title={`Dự kiến cả ${periodNoun}`}
+            >
+              🔮 ~{Math.round((val || 0) / ratio).toLocaleString('vi-VN')} đ
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -553,6 +584,14 @@ export default function CcThuongTab({
             <div className="tabular-nums text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               Single: {Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ
             </div>
+            {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+              <div
+                className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+                title={`Dự kiến cả ${periodNoun}`}
+              >
+                🔮 ~{Math.round(val / ratio)} SP
+              </div>
+            )}
           </div>
         </Tooltip>
       ),
@@ -563,9 +602,19 @@ export default function CcThuongTab({
       key: 'totalSales',
       align: 'right' as const,
       render: (val: number) => (
-        <span className="tabular-nums font-bold text-amber-600 dark:text-amber-400 text-xs">
-          {Math.round(val || 0).toLocaleString('vi-VN')} đ
-        </span>
+        <div className="w-full text-right">
+          <div className="tabular-nums font-bold text-amber-600 dark:text-amber-400 text-xs">
+            {Math.round(val || 0).toLocaleString('vi-VN')} đ
+          </div>
+          {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+            <div
+              className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+              title={`Dự kiến cả ${periodNoun}`}
+            >
+              🔮 ~{Math.round((val || 0) / ratio).toLocaleString('vi-VN')} đ
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -618,6 +667,14 @@ export default function CcThuongTab({
                   </Tag>
                 )}
               </div>
+              {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+                <div
+                  className="tabular-nums text-[10px] text-emerald-400/80 font-medium mt-0.5"
+                  title={`Dự kiến cả ${periodNoun}`}
+                >
+                  🔮 ~{Math.round((val || 0) / ratio).toLocaleString('vi-VN')} đ
+                </div>
+              )}
               <Progress
                 percent={record.targetCompletionRate}
                 size="small"
@@ -780,9 +837,6 @@ export default function CcThuongTab({
     },
   ];
 
-  const isPastPeriod = elapsedRatioPercent >= 100;
-  const periodNoun = comparisonMode === 'month' ? 'tháng' : comparisonMode === 'week' ? 'tuần' : 'ngày';
-
   type ComparisonMetric = 'totalComboSales' | 'totalProductSales' | 'totalSingleSales' | 'totalSales' | 'totalCcBonus';
 
   const renderComparisonSubtext = (currentValue: number, metric: ComparisonMetric) => {
@@ -858,8 +912,11 @@ export default function CcThuongTab({
           }`}
           style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
         >
-          <span role="img" aria-label="Dự kiến cuối tháng" className="shrink-0 text-sm leading-none">
-            🔮
+          <span className="shrink-0 flex items-center gap-1">
+            <span role="img" aria-label="Dự kiến cuối kỳ">
+              🔮
+            </span>
+            <span>Dự kiến:</span>
           </span>
           <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
             ~{formatCompactVND(projectedVal)}

@@ -4,26 +4,64 @@ import React, { useMemo } from 'react';
 import { Card, Table, Tag, theme, Space, Tooltip } from 'antd';
 import { TrophyOutlined, FilterOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { CircleCheck, CircleX, TriangleAlert } from 'lucide-react';
-import { CcLeaderboardEntry, calculateWheelBonusCap, themeTokens } from '@mos-lab/shared';
+import dayjs, { Dayjs } from 'dayjs';
+import { CcLeaderboardEntry, calculateWheelBonusCap, themeTokens, calculateFractionToday } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import CcAvatar from './CcAvatar';
 import { AppIcon, MobileRecordList } from '~/components/ui';
 import { useResponsiveTier, useViewportSize } from '~/hooks/useResponsiveTier';
+import { formatCompactVND } from '../../../../lib/format-utils';
 
 interface CcLeaderboardCardProps {
   leaderboard: CcLeaderboardEntry[];
   loading?: boolean;
   selectedConsultant?: string;
   onSelectConsultant?: (consultantName: string) => void;
+  dateRange?: [Dayjs, Dayjs];
+  comparisonMode?: 'month' | 'week' | 'day';
 }
 
 const fmtVnd = (v: number) => Math.round(v).toLocaleString('vi-VN');
+
+function calculateProjectedCcXoay(
+  checkinCount: number,
+  currentBonus: number,
+  ratio: number,
+  monthlyDailyBonus?: number
+): number {
+  if (ratio <= 0) return currentBonus;
+  const safeRatio = Math.max(0.001, Math.min(1.0, ratio));
+  if (checkinCount <= 0 && currentBonus <= 0) return 0;
+
+  const nHat = checkinCount > 0 ? Math.round(checkinCount / safeRatio) : 0;
+  if (nHat <= 0) return currentBonus;
+
+  let c = 3.65;
+  if (checkinCount >= 4 && currentBonus > 0) {
+    const rawC = (currentBonus - 45 * checkinCount) / (checkinCount * (checkinCount - 1));
+    if (!isNaN(rawC) && rawC >= 1.5 && rawC <= 8.0) {
+      c = rawC;
+    }
+  }
+
+  const rawProjected = Math.max(currentBonus, Math.round(c * nHat * (nHat - 1) + 45 * nHat));
+
+  if (monthlyDailyBonus && monthlyDailyBonus > 0) {
+    const projectedDailyBonus = Math.round(monthlyDailyBonus / safeRatio);
+    const maxAllowed = Math.round(projectedDailyBonus * 1.5);
+    return Math.min(rawProjected, maxAllowed);
+  }
+
+  return rawProjected;
+}
 
 export default function CcLeaderboardCard({
   leaderboard,
   loading,
   selectedConsultant,
   onSelectConsultant,
+  dateRange,
+  comparisonMode = 'month',
 }: CcLeaderboardCardProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
@@ -38,6 +76,32 @@ export default function CcLeaderboardCard({
   // Portrait phones use scan-friendly cards. A rotated phone has enough width
   // for the denser, chart-bearing table and should retain that operational view.
   const showMobileCards = tier === 'mobile' && !isPhoneLandscape;
+
+  const isMonthMode = comparisonMode === 'month';
+  const isDayMode = comparisonMode === 'day';
+
+  const elapsedRatioPercent = useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(r * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
 
   // Max bar reference for proportional widths
   const maxBarValue = useMemo(() => {
@@ -103,6 +167,8 @@ export default function CcLeaderboardCard({
       width: 100,
       render: (_: unknown, record: CcLeaderboardEntry) => {
         const lvl = record.level || Math.floor((record.totalPointsAccu || 0) / 100) + 1;
+        const projectedPoints = Math.round((record.totalPointsAccu || 0) / (ratio || 1));
+        const projectedLevel = Math.floor(projectedPoints / 100) + 1;
         return (
           <div className="flex flex-col items-center gap-0.5">
             <span className="tabular-nums font-semibold text-[11px] text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1.5 py-px rounded-full leading-tight">
@@ -111,6 +177,11 @@ export default function CcLeaderboardCard({
             <span className="tabular-nums text-[10px] text-emerald-600 dark:text-emerald-400/80">
               {(record.totalPointsAccu || 0).toLocaleString('vi-VN')} pts
             </span>
+            {!isDayMode && !isPastPeriod && (
+              <span className="tabular-nums text-[9px] text-emerald-700 dark:text-emerald-400 font-medium">
+                🔮 ~{projectedPoints.toLocaleString('vi-VN')}p (Lv.{projectedLevel})
+              </span>
+            )}
           </div>
         );
       },
@@ -124,15 +195,26 @@ export default function CcLeaderboardCard({
       key: 'checkinAndServices',
       align: 'center' as const,
       width: 80,
-      render: (_: unknown, record: CcLeaderboardEntry) => (
-        <span className="tabular-nums text-xs">
-          <span className="font-semibold" style={{ color: token.colorText }}>
-            {record.totalCheckins}
-          </span>
-          <span className="text-slate-400 mx-0.5">/</span>
-          <span className="text-slate-500 dark:text-slate-400">{record.totalServices || 0}</span>
-        </span>
-      ),
+      render: (_: unknown, record: CcLeaderboardEntry) => {
+        const projectedCheckins = Math.round((record.totalCheckins || 0) / (ratio || 1));
+        const projectedServices = Math.round((record.totalServices || 0) / (ratio || 1));
+        return (
+          <div className="flex flex-col items-center">
+            <span className="tabular-nums text-xs">
+              <span className="font-semibold" style={{ color: token.colorText }}>
+                {record.totalCheckins}
+              </span>
+              <span className="text-slate-400 mx-0.5">/</span>
+              <span className="text-slate-500 dark:text-slate-400">{record.totalServices || 0}</span>
+            </span>
+            {!isDayMode && !isPastPeriod && (
+              <span className="tabular-nums text-[9px] text-slate-400">
+                🔮 ~{projectedCheckins}/{projectedServices}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: (
@@ -150,6 +232,9 @@ export default function CcLeaderboardCard({
         const cap = calculateWheelBonusCap(daily, wheel);
         const isHardcapped = cap.capStatus === 'HARDCAPPED';
         const effective = cap.effectiveWheelBonus;
+        const projectedBonus = isMonthMode
+          ? calculateProjectedCcXoay(record.totalCheckins, cap.rawWheelBonus, ratio, daily)
+          : 0;
 
         if (isHardcapped && cap.rawWheelBonus > cap.maxWheelBonusAllowed) {
           // Over cap: show raw amount crossed out + actual received amount
@@ -160,6 +245,7 @@ export default function CcLeaderboardCard({
                   <div className="text-rose-300 font-bold">⛔ Vượt trần 1.5×</div>
                   <div>Thưởng gốc: {fmtVnd(cap.rawWheelBonus)} đ</div>
                   <div className="text-emerald-300 font-bold">Chỉ nhận: {fmtVnd(effective)} đ</div>
+                  {isMonthMode && !isPastPeriod && <div>Dự kiến về đích: {fmtVnd(projectedBonus)} đ</div>}
                 </div>
               }
             >
@@ -168,15 +254,27 @@ export default function CcLeaderboardCard({
                   {fmtVnd(cap.rawWheelBonus)} đ
                 </span>
                 <span className="tabular-nums font-bold text-xs text-rose-500">{fmtVnd(effective)} đ</span>
+                {isMonthMode && !isPastPeriod && (
+                  <span className="tabular-nums font-semibold text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    🔮 ~{formatCompactVND(projectedBonus)}
+                  </span>
+                )}
               </div>
             </Tooltip>
           );
         }
 
         return (
-          <span className="tabular-nums font-bold text-xs text-amber-700 dark:text-amber-400">
-            {fmtVnd(cap.rawWheelBonus || 0)} đ
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-bold text-xs text-amber-700 dark:text-amber-400">
+              {fmtVnd(cap.rawWheelBonus || 0)} đ
+            </span>
+            {isMonthMode && !isPastPeriod && (
+              <span className="tabular-nums font-semibold text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
+                🔮 ~{formatCompactVND(projectedBonus)}
+              </span>
+            )}
+          </div>
         );
       },
     },
@@ -453,12 +551,22 @@ export default function CcLeaderboardCard({
                       <dd className="truncate text-sm font-bold tabular-nums text-sky-400">
                         {record.totalCheckins}/{record.totalServices || 0}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (
+                        <div className="text-[10px] text-slate-400 font-medium tabular-nums">
+                          🔮 ~{Math.round((record.totalCheckins || 0) / (ratio || 1))}
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Daily</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
                         {fmtVnd(dailyBonus)} đ
                       </dd>
+                      {!isDayMode && !isPastPeriod && (
+                        <div className="text-[10px] text-emerald-400/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(Math.round(dailyBonus / (ratio || 1)))}
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Xoay</dt>
@@ -467,6 +575,14 @@ export default function CcLeaderboardCard({
                       >
                         {fmtVnd(cap.effectiveWheelBonus)} đ
                       </dd>
+                      {isMonthMode && !isPastPeriod && (
+                        <div className="text-[10px] text-emerald-400 font-medium tabular-nums">
+                          🔮 ~
+                          {formatCompactVND(
+                            calculateProjectedCcXoay(record.totalCheckins, cap.rawWheelBonus, ratio, dailyBonus)
+                          )}
+                        </div>
+                      )}
                     </div>
                   </dl>
                   <div

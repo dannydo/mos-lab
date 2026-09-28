@@ -43,6 +43,7 @@ import {
   CvWorkLogDetailRecord,
   removeVietnameseTones,
   type ReportComparisonMode,
+  calculateFractionToday,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -117,6 +118,195 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     totalHolidayPayrollAddition: number;
     grandTotalIncome: number;
   } | null>(null);
+
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = React.useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const ratio = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(ratio * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
+  /**
+   * Công thức chuẩn dự đoán CV Xoay cuối tháng (Exact Closed-Form Model):
+   * - N_hat = round(serviceCount / ratio)
+   * - Điểm kỹ thuật trung bình mỗi ca p_bar giải ngược từ bonus hiện tại (hoặc mặc định 35 pts)
+   * - CV_Xoay = 1.000đ * [ (p_bar / 200) * N_hat^2 + (1 - p_bar / 200) * N_hat ]
+   */
+  function calculateProjectedCvXoay(serviceCount: number, currentBonus: number, ratio: number): number {
+    if (ratio <= 0) return currentBonus;
+    const safeRatio = Math.max(0.001, Math.min(1.0, ratio));
+    if (serviceCount <= 0 && currentBonus <= 0) return 0;
+
+    const nHat = serviceCount > 0 ? Math.round(serviceCount / safeRatio) : 0;
+    if (nHat <= 0) return currentBonus;
+
+    let pBar = 35;
+    if (serviceCount >= 3 && currentBonus > 0) {
+      const rawP = (200 * (currentBonus / 1000 - serviceCount)) / (serviceCount * (serviceCount - 1));
+      if (!isNaN(rawP) && rawP > 5 && rawP < 80) {
+        pBar = rawP;
+      }
+    }
+
+    const factor = pBar / 200;
+    const projected = 1000 * (factor * nHat * nHat + (1 - factor) * nHat);
+    return Math.max(currentBonus, Math.round(projected));
+  }
+
+  const isMonthMode = comparisonMode === 'month';
+
+  const getProjectedRecord = React.useCallback(
+    (record: CvPaystubRecord) => {
+      const holidayActual = record.holidayPayrollAddition || record.holidayPremiumPay || 0;
+      if (isPastPeriod) {
+        return {
+          projectedHourlyWage: record.hourlyWage || 0,
+          projectedCvXoayBonus: record.cvXoayBonus || 0,
+          projectedSeniorityBonus: record.seniorityBonus || 0,
+          projectedCvTipBonus: record.cvTipBonus || 0,
+          projectedHolidayPay: holidayActual,
+          projectedTotalIncome: record.totalIncome || 0,
+        };
+      }
+
+      const projectedHourlyWage = Math.round((record.hourlyWage || 0) / (ratio || 1));
+
+      // Vòng xoay là mô hình lũy tiến cấp số cộng Level reset theo tháng (số khách gấp đôi -> tiền thưởng gấp 4)
+      // Sử dụng công thức chuẩn cấp số cộng (Exact Closed-Form Model). Không dự đoán theo tuần.
+      const projectedCvXoayBonus = isMonthMode
+        ? calculateProjectedCvXoay(record.serviceCount || 0, record.cvXoayBonus || 0, ratio)
+        : 0;
+      const projectedSeniorityBonus = isMonthMode
+        ? Math.round((projectedCvXoayBonus * (record.seniorityBonusPercent || 0)) / 100)
+        : 0;
+      const projectedCvTipBonus = Math.round((record.cvTipBonus || 0) / (ratio || 1));
+      const projectedHolidayPay = holidayActual;
+
+      const projectedTotalIncome = isMonthMode
+        ? projectedHourlyWage +
+          projectedCvXoayBonus +
+          projectedSeniorityBonus +
+          projectedCvTipBonus +
+          projectedHolidayPay
+        : projectedHourlyWage +
+          (record.cvXoayBonus || 0) +
+          (record.seniorityBonus || 0) +
+          projectedCvTipBonus +
+          projectedHolidayPay;
+
+      return {
+        projectedHourlyWage,
+        projectedCvXoayBonus,
+        projectedSeniorityBonus,
+        projectedCvTipBonus,
+        projectedHolidayPay,
+        projectedTotalIncome,
+      };
+    },
+    [isPastPeriod, ratio, isMonthMode]
+  );
+
+  const projectedSummary = React.useMemo(() => {
+    if (isPastPeriod) {
+      return {
+        projectedHourlyWage: summary.totalHourlyWage,
+        projectedCvXoayBonus: summary.totalCvXoayBonus,
+        projectedSeniorityBonus: summary.totalSeniorityBonus,
+        projectedCvTipBonus: summary.totalCvTipBonus,
+        projectedTotalIncome: summary.grandTotalIncome,
+      };
+    }
+
+    const projectedHourlyWage = Math.round((summary.totalHourlyWage || 0) / (ratio || 1));
+    const projectedCvXoayBonus = isMonthMode
+      ? paystubData.length > 0
+        ? paystubData.reduce((acc, r) => acc + (getProjectedRecord(r).projectedCvXoayBonus || 0), 0)
+        : calculateProjectedCvXoay(0, summary.totalCvXoayBonus || 0, ratio)
+      : 0;
+    const projectedSeniorityBonus = isMonthMode
+      ? paystubData.length > 0
+        ? paystubData.reduce((acc, r) => acc + (getProjectedRecord(r).projectedSeniorityBonus || 0), 0)
+        : Math.round((summary.totalSeniorityBonus || 0) / (ratio || 1))
+      : 0;
+    const projectedCvTipBonus = Math.round((summary.totalCvTipBonus || 0) / (ratio || 1));
+    const holidayAddition = summary.totalHolidayPayrollAddition || summary.totalHolidayPremiumPay || 0;
+
+    const projectedTotalIncome = isMonthMode
+      ? projectedHourlyWage + projectedCvXoayBonus + projectedSeniorityBonus + projectedCvTipBonus + holidayAddition
+      : projectedHourlyWage +
+        (summary.totalCvXoayBonus || 0) +
+        (summary.totalSeniorityBonus || 0) +
+        projectedCvTipBonus +
+        holidayAddition;
+
+    return {
+      projectedHourlyWage,
+      projectedCvXoayBonus,
+      projectedSeniorityBonus,
+      projectedCvTipBonus,
+      projectedTotalIncome,
+    };
+  }, [summary, ratio, isPastPeriod, isMonthMode, paystubData, getProjectedRecord]);
+
+  const renderForecastSubtext = (projectedVal: number) => {
+    if (isDayMode || !projectedVal) return null;
+
+    if (isPastPeriod) {
+      return (
+        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
+          <div
+            className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70"
+            style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+          >
+            <span>Thực tế chốt {periodNoun}:</span>
+            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
+              {formatCompactVND(projectedVal)}
+            </span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00). Dự đoán về đích cuối ${periodNoun} dựa trên tốc độ hiện tại.`}
+      >
+        <div
+          className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help"
+          style={isMobile ? { fontSize: 10, lineHeight: 1.35 } : undefined}
+        >
+          <span className="inline-flex items-center gap-1">
+            <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
+              🔮
+            </span>
+            <span className="text-[11px] text-slate-400">Cuối {periodNoun}:</span>
+          </span>
+          <span className="tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+            ~{formatCompactVND(projectedVal)}
+          </span>
+        </div>
+      </Tooltip>
+    );
+  };
 
   const [searchText, setSearchText] = useState('');
   const [pageSize, setPageSize] = useState<number>(20);
@@ -579,11 +769,24 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
       key: 'hourlyWage',
       width: 95,
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-medium text-xs text-slate-600 dark:text-slate-300">
-          {val.toLocaleString('vi-VN')}đ
-        </span>
-      ),
+      render: (val: number, r: CvPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-medium text-xs text-slate-600 dark:text-slate-300">
+              {val.toLocaleString('vi-VN')}đ
+            </span>
+            {!isDayMode && !isPastPeriod && proj.projectedHourlyWage > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-blue-400/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedHourlyWage)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'CV Xoay',
@@ -591,9 +794,22 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
       key: 'cvXoayBonus',
       width: 100,
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-blue-400">+{val.toLocaleString('vi-VN')}đ</span>
-      ),
+      render: (val: number, r: CvPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-xs text-blue-400">+{val.toLocaleString('vi-VN')}đ</span>
+            {!isDayMode && !isPastPeriod && proj.projectedCvXoayBonus > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-blue-400/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedCvXoayBonus)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thưởng Thâm Niên',
@@ -607,6 +823,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         const seniorityStr = years > 0 ? `${years}y ${remainingMonths}m` : `${months}m`;
         const bonus = record.seniorityBonus || 0;
         const percent = record.seniorityBonusPercent || 0;
+        const proj = getProjectedRecord(record);
 
         let colorClass = 'text-slate-500';
 
@@ -625,13 +842,21 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         }
 
         return (
-          <div>
+          <div className="flex flex-col items-end">
             <span className={`tabular-nums font-semibold text-xs block ${colorClass}`}>
               +{bonus.toLocaleString('vi-VN')}đ
             </span>
             <span className="block text-[10px] font-medium tabular-nums text-slate-500">
               {seniorityStr} {percent > 0 ? `[+${percent}%]` : '[0%]'}
             </span>
+            {!isDayMode && !isPastPeriod && proj.projectedSeniorityBonus > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-amber-500/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedSeniorityBonus)}</span>
+              </div>
+            )}
           </div>
         );
       },
@@ -642,9 +867,22 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
       key: 'cvTipBonus',
       width: 100,
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-purple-400">+{val.toLocaleString('vi-VN')}đ</span>
-      ),
+      render: (val: number, r: CvPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-semibold text-xs text-purple-400">+{val.toLocaleString('vi-VN')}đ</span>
+            {!isDayMode && !isPastPeriod && proj.projectedCvTipBonus > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-purple-400/80 font-medium tabular-nums">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(proj.projectedCvTipBonus)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Tổng Thu Nhập',
@@ -652,9 +890,26 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
       key: 'totalIncome',
       width: 120,
       align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-bold text-emerald-400 text-sm">{val.toLocaleString('vi-VN')}đ</span>
-      ),
+      render: (val: number, r: CvPaystubRecord) => {
+        const proj = getProjectedRecord(r);
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-bold text-emerald-400 text-sm">{val.toLocaleString('vi-VN')}đ</span>
+            {!isDayMode && !isPastPeriod && proj.projectedTotalIncome > 0 && (
+              <Tooltip
+                title={`Dự đoán tổng thu nhập về đích cuối ${periodNoun}: ~${formatVND(proj.projectedTotalIncome)}đ`}
+              >
+                <div className="flex items-center gap-1 text-[11px] text-emerald-500/80 font-medium tabular-nums cursor-help">
+                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                    🔮
+                  </span>
+                  <span>~{formatCompactVND(proj.projectedTotalIncome)}</span>
+                </div>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Action',
@@ -702,6 +957,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
               formatter={formatMetricValue}
               compact={useCompactMetricFormat}
             />
+            {renderForecastSubtext(projectedSummary.projectedHourlyWage)}
           </Card>
         </Col>
 
@@ -725,6 +981,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
               formatter={formatMetricValue}
               compact={useCompactMetricFormat}
             />
+            {renderForecastSubtext(projectedSummary.projectedCvXoayBonus)}
           </Card>
         </Col>
 
@@ -748,6 +1005,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
               formatter={formatMetricValue}
               compact={useCompactMetricFormat}
             />
+            {renderForecastSubtext(projectedSummary.projectedSeniorityBonus)}
           </Card>
         </Col>
 
@@ -771,6 +1029,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
               formatter={formatMetricValue}
               compact={useCompactMetricFormat}
             />
+            {renderForecastSubtext(projectedSummary.projectedCvTipBonus)}
           </Card>
         </Col>
 
@@ -794,6 +1053,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
               formatter={formatMetricValue}
               compact={useCompactMetricFormat}
             />
+            {renderForecastSubtext(projectedSummary.projectedTotalIncome)}
           </Card>
         </Col>
       </Row>
@@ -876,24 +1136,44 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       <dd className="truncate text-sm font-bold tabular-nums text-sky-400">
                         +{formatCompactVND(record.hourlyWage || 0)}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedHourlyWage || 0) > 0 && (
+                        <div className="text-[10px] text-sky-400/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedHourlyWage)}
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">CV Xoay</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-purple-400">
                         +{formatCompactVND(record.cvXoayBonus || 0)}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedCvXoayBonus || 0) > 0 && (
+                        <div className="text-[10px] text-purple-400/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedCvXoayBonus)}
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Phụ cấp lễ x3</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-rose-400">
                         +{formatCompactVND(record.holidayPremiumPay || 0)}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedHolidayPay || 0) > 0 && (
+                        <div className="text-[10px] text-rose-400/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedHolidayPay)}
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <dt className="text-[10px] text-slate-500">Thu nhập</dt>
                       <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
                         {formatCompactVND(record.totalIncome || 0)}
                       </dd>
+                      {!isDayMode && !isPastPeriod && (getProjectedRecord(record).projectedTotalIncome || 0) > 0 && (
+                        <div className="text-[10px] text-emerald-500/80 font-medium tabular-nums">
+                          🔮 ~{formatCompactVND(getProjectedRecord(record).projectedTotalIncome)}
+                        </div>
+                      )}
                     </div>
                   </dl>
                   <div className="mt-3 flex justify-end gap-2">

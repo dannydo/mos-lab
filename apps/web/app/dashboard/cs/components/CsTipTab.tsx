@@ -18,15 +18,24 @@ import {
   XCircle,
   PiggyBank,
 } from 'lucide-react';
-import { CsTipQueryParams, CsTipRecord, CsTipResponse, CsTipStoreBreakdown } from '@mos-lab/shared';
+import {
+  CsTipQueryParams,
+  CsTipRecord,
+  CsTipResponse,
+  CsTipStoreBreakdown,
+  calculateFractionToday,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { AppIcon, CollapsibleSearchField, CopyPhoneButton, DataTable } from '~/components/ui';
+import { formatCompactVND } from '../../../../lib/format-utils';
 import CsTipSummaryCards from './CsTipSummaryCards';
 
 interface CsTipTabProps {
   dateFrom?: string;
   dateTo?: string;
   selectedStore?: string;
+  comparisonMode?: 'day' | 'week' | 'month';
+  dateRange?: [dayjs.Dayjs, dayjs.Dayjs] | null;
 }
 
 const formatCurrency = (val?: number) => {
@@ -34,9 +43,41 @@ const formatCurrency = (val?: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 };
 
-export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: CsTipTabProps) {
+export default function CsTipTab({
+  dateFrom,
+  dateTo,
+  selectedStore = 'ALL',
+  comparisonMode = 'month',
+  dateRange,
+}: CsTipTabProps) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CsTipResponse | null>(null);
+
+  const isDayMode = comparisonMode === 'day';
+  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = React.useMemo(() => {
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRange?.[0]
+      ? dayjs(dateRange[0])
+      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(r * 1000) / 10;
+  }, [dateRange, comparisonMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
 
   // Filters for order records
   const [customerType, setCustomerType] = useState<'ALL' | 'LOCA' | 'SINGLE'>('ALL');
@@ -158,20 +199,48 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
       align: 'right',
-      render: (val: number) => (
-        <span className="tabular-nums font-extrabold text-indigo-600 dark:text-indigo-400">{formatCurrency(val)}</span>
-      ),
+      render: (val: number) => {
+        const projectedVal = isPastPeriod ? val : Math.round(val / (ratio || 1));
+        return (
+          <div className="flex flex-col items-end">
+            <span className="tabular-nums font-extrabold text-indigo-600 dark:text-indigo-400">
+              {formatCurrency(val)}
+            </span>
+            {!isDayMode && !isPastPeriod && projectedVal > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-indigo-500/80 font-medium tabular-nums mt-0.5">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(projectedVal)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Tổng Thưởng CS (3%)',
       dataIndex: 'totalCsTipBonus',
       key: 'totalCsTipBonus',
       align: 'right',
-      render: (val: number) => (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-extrabold tabular-nums bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800">
-          {formatCurrency(val)}
-        </span>
-      ),
+      render: (val: number) => {
+        const projectedVal = isPastPeriod ? val : Math.round(val / (ratio || 1));
+        return (
+          <div className="flex flex-col items-end">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-extrabold tabular-nums bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800">
+              {formatCurrency(val)}
+            </span>
+            {!isDayMode && !isPastPeriod && projectedVal > 0 && (
+              <div className="flex items-center gap-1 text-[11px] text-emerald-500/90 font-medium tabular-nums mt-0.5">
+                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+                  🔮
+                </span>
+                <span>~{formatCompactVND(projectedVal)}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -320,7 +389,12 @@ export default function CsTipTab({ dateFrom, dateTo, selectedStore = 'ALL' }: Cs
   return (
     <div className="space-y-4">
       {/* 1. THREE MAIN KPI CARDS */}
-      <CsTipSummaryCards summary={data?.summary} loading={loading && !data} />
+      <CsTipSummaryCards
+        summary={data?.summary}
+        loading={loading && !data}
+        comparisonMode={comparisonMode}
+        dateRange={dateRange}
+      />
 
       {/* 2. STORE BREAKDOWN SECTION */}
       <Card
