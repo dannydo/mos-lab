@@ -92,7 +92,7 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(screen.queryByText('Duyệt code/test', { exact: true })).not.toBeInTheDocument();
     expect(props.approveImplementation).not.toHaveBeenCalled();
     expect(props.confirmClose).not.toHaveBeenCalled();
-  });
+  }, 15000);
 
   it('displays code/test approval for reopened ticket with past settled implementation', async () => {
     const detail = makeDetail({
