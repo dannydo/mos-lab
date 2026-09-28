@@ -133,6 +133,7 @@ export default function AcademyWorkshopWorkspacePage() {
   const participantActions = useAcademyWorkshopParticipantActions({
     workshop,
     slug,
+    canManage,
     canManageRestricted,
     participants,
     setWorkshop,
@@ -247,7 +248,7 @@ export default function AcademyWorkshopWorkspacePage() {
                   busyParticipantId={participantActions.busyParticipantId}
                   talentLoading={talentAssessment.talentLoading}
                   talentParticipantId={talentAssessment.talentParticipantId}
-                  canManageRestricted={canManageRestricted}
+                  canManageRestricted={participantActions.canManageFee}
                   onPageChange={(nextPage, nextSize) => {
                     setPage(nextPage);
                     setPageSize(nextSize);
@@ -424,7 +425,7 @@ export default function AcademyWorkshopWorkspacePage() {
         resources={resources}
         busy={participantActions.busy}
         talentLoading={talentAssessment.talentLoading}
-        canManageRestricted={canManageRestricted}
+        canManageRestricted={participantActions.canManageFee}
         careDrawerOpen={participantActions.careDrawerOpen}
         qrDataUrl={participantActions.qrDataUrl}
         qrTargetUrl={participantActions.qrTargetUrl}
@@ -468,9 +469,17 @@ export default function AcademyWorkshopWorkspacePage() {
             participantActions.selected.id
           );
         }}
-        onOpenFee={() => {
-          if (canManageRestricted) participantActions.setFeeOpen(true);
+        onOpenFee={(participant) => {
+          if (participantActions.canManageFee) {
+            if (participant) {
+              participantActions.openFeeForParticipant(participant);
+            } else {
+              participantActions.setFeeOpen(true);
+            }
+          }
         }}
+        onDeleteFeePayment={participantActions.deleteFeePayment}
+        onWaiveFee={participantActions.waiveFee}
         onAssignInstructor={(instructorId) => {
           if (!participantActions.selected) return;
           void participantActions.mutateParticipant(

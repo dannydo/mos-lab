@@ -898,6 +898,16 @@ export const academyApi = {
         );
         return response.data.data;
       },
+      deleteFeePayment: async (
+        workshopId: number,
+        participantId: number,
+        paymentId: number
+      ): Promise<AcademyWorkshopParticipant> => {
+        const response = await api.delete<{ data: AcademyWorkshopParticipant }>(
+          `/academy-sales/workshops/${workshopId}/participants/${participantId}/fee/${paymentId}`
+        );
+        return response.data.data;
+      },
       waiveFee: async (
         workshopId: number,
         participantId: number,

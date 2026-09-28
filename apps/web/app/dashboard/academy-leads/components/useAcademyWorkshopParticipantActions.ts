@@ -10,6 +10,7 @@ import type { AcademyWorkshopFeeForm, AcademyWorkshopWalkInForm } from './Academ
 export interface UseAcademyWorkshopParticipantActionsOptions {
   workshop: Awaited<ReturnType<typeof apiClient.academySales.workshops.getBySlug>> | null;
   slug: string;
+  canManage?: boolean;
   canManageRestricted: boolean;
   participants: AcademyWorkshopParticipant[];
   setWorkshop: React.Dispatch<
@@ -22,12 +23,14 @@ export interface UseAcademyWorkshopParticipantActionsOptions {
 export function useAcademyWorkshopParticipantActions({
   workshop,
   slug,
+  canManage,
   canManageRestricted,
   participants,
   setWorkshop,
   setParticipants,
   load,
 }: UseAcademyWorkshopParticipantActionsOptions) {
+  const canManageFee = Boolean(canManage || canManageRestricted);
   const [selected, setSelected] = React.useState<AcademyWorkshopParticipant | null>(null);
   const [careDrawerOpen, setCareDrawerOpen] = React.useState(false);
   const [addLeadIds, setAddLeadIds] = React.useState<number[]>([]);
@@ -123,14 +126,16 @@ export function useAcademyWorkshopParticipantActions({
 
   const openFeeForParticipant = React.useCallback(
     (participant: AcademyWorkshopParticipant) => {
-      if (!canManageRestricted) return;
+      if (!canManageFee) return;
       setSelected(participant);
       feeForm.resetFields();
       feeForm.setFieldValue('method', 'BANK_TRANSFER');
-      if (participant.feeRemainingVnd > 0) feeForm.setFieldValue('amountVnd', participant.feeRemainingVnd);
+      const defaultAmount =
+        participant.feeRemainingVnd > 0 ? participant.feeRemainingVnd : workshop?.feeVnd && workshop.feeVnd > 0 ? workshop.feeVnd : undefined;
+      if (defaultAmount) feeForm.setFieldValue('amountVnd', defaultAmount);
       setFeeOpen(true);
     },
-    [canManageRestricted, feeForm]
+    [canManageFee, feeForm, workshop]
   );
 
   const closeFeeModal = React.useCallback(() => {
@@ -235,6 +240,34 @@ export function useAcademyWorkshopParticipantActions({
       closeFeeModal();
     },
     [closeFeeModal, mutateParticipant, selected, workshop]
+  );
+
+  const deleteFeePayment = React.useCallback(
+    async (paymentId: number) => {
+      if (!workshop || !selected) return;
+      await mutateParticipant(
+        () => apiClient.academySales.workshops.deleteFeePayment(workshop.id, selected.id, paymentId),
+        'Đã xóa bút toán phí workshop.',
+        selected.id
+      );
+    },
+    [mutateParticipant, selected, workshop]
+  );
+
+  const waiveFee = React.useCallback(
+    async (waived: boolean, reason?: string) => {
+      if (!workshop || !selected) return;
+      await mutateParticipant(
+        () =>
+          apiClient.academySales.workshops.waiveFee(workshop.id, selected.id, {
+            waived,
+            reason: reason || 'Miễn phí theo chính sách',
+          }),
+        waived ? 'Đã miễn phí workshop.' : 'Đã hủy miễn phí workshop.',
+        selected.id
+      );
+    },
+    [mutateParticipant, selected, workshop]
   );
 
   const uploadPhoto = React.useCallback(
@@ -353,6 +386,9 @@ export function useAcademyWorkshopParticipantActions({
     createWalkIn,
     reissueQr,
     saveFee,
+    deleteFeePayment,
+    waiveFee,
+    canManageFee,
     uploadPhoto,
     quickUpdateCare,
     quickCheckIn,

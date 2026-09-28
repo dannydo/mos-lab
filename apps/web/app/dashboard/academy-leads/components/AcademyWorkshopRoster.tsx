@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Avatar, Button, Input, Select, Space } from 'antd';
+import { Avatar, Button, Input, Select, Space, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { Check, Clock3, MessageCircle, X } from 'lucide-react';
@@ -265,14 +265,16 @@ export default function AcademyWorkshopRoster({
           return (
             <div className="tabular-nums">
               {canManageRestricted ? (
-                <button
-                  type="button"
-                  className={QUICK_ACTION_CLASS}
-                  disabled={busyParticipantId === row.id}
-                  onClick={() => onOpenFee(row)}
-                >
-                  {feeStatus}
-                </button>
+                <Tooltip title="Bấm để chỉnh sửa / thu phí workshop">
+                  <button
+                    type="button"
+                    className={QUICK_ACTION_CLASS}
+                    disabled={busyParticipantId === row.id}
+                    onClick={() => onOpenFee(row)}
+                  >
+                    {feeStatus}
+                  </button>
+                </Tooltip>
               ) : (
                 feeStatus
               )}

@@ -1,29 +1,16 @@
-<<<<<<< HEAD
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 import AcademyLeadDrawer from "./AcademyLeadDrawer";
 import { apiClient } from "../../../../lib/api-client";
 
-=======
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import React from "react";
-import { AcademyLeadDrawer } from "./AcademyLeadDrawer";
-
 // Mock apiClient
->>>>>>> b4cf283ba6903aa4df00fad92fb2c985e3e8bd85
 vi.mock("../../../../lib/api-client", () => ({
   apiClient: {
     academySales: {
       getLead: vi.fn(),
-<<<<<<< HEAD
       createLead: vi.fn().mockResolvedValue({ id: 1 }),
       updateLead: vi.fn().mockResolvedValue({ id: 1 }),
-=======
-      createLead: vi.fn(),
-      updateLead: vi.fn(),
->>>>>>> b4cf283ba6903aa4df00fad92fb2c985e3e8bd85
       addActivity: vi.fn(),
       createFollowUp: vi.fn(),
       updateFollowUp: vi.fn(),
@@ -32,7 +19,6 @@ vi.mock("../../../../lib/api-client", () => ({
   },
 }));
 
-<<<<<<< HEAD
 // Mock window.matchMedia for Ant Design Responsive components
 beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {
@@ -131,8 +117,6 @@ describe("AcademyLeadDrawer revenueVnd input", () => {
   });
 });
 
-=======
->>>>>>> b4cf283ba6903aa4df00fad92fb2c985e3e8bd85
 describe("AcademyLeadDrawer", () => {
   it("renders Khóa học quan tâm field with options", () => {
     const { container } = render(

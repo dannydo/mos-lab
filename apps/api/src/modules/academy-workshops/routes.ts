@@ -1162,6 +1162,29 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.delete(
+    '/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId',
+    async (request, reply) => {
+      try {
+        const { workshopId, participantId, paymentId } = request.params as {
+          workshopId: string;
+          participantId: string;
+          paymentId: string;
+        };
+        const data = await AcademyWorkshopService.deleteFeePayment(
+          fastify,
+          actorFrom(request),
+          id(workshopId, 'Workshop ID'),
+          id(participantId, 'Participant ID'),
+          id(paymentId, 'Payment ID')
+        );
+        return reply.send({ success: true, data, message: 'Đã xóa bút toán phí workshop.' });
+      } catch (cause) {
+        return error(fastify, reply, cause, 'Delete workshop fee payment');
+      }
+    }
+  );
+
   fastify.post('/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee', async (request, reply) => {
     try {
       const { workshopId, participantId } = request.params as { workshopId: string; participantId: string };

@@ -83,18 +83,15 @@ export function formatVndInput(value?: number | string | null): string {
   return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' đ';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SafeAny = any;
-
 /**
  * Parser for Ant Design InputNumber currency fields.
  * Strips non-digits so InputNumber can parse formatted values without reverting or decimal truncation.
  * e.g., "1.500.000 đ" -> "1500000"
  */
-export function parseVndInput(value?: string | number | null): SafeAny {
+export function parseVndInput(value?: string | number | null): string | number {
   if (value === undefined || value === null || value === '') return '';
   const digits = String(value).replace(/\D/g, '');
-  return digits ? (digits as SafeAny) : '';
+  return digits || '';
 }
 
 

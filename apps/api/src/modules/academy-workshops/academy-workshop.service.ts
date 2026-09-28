@@ -2469,8 +2469,8 @@ export class AcademyWorkshopService {
     participantId: number,
     input: { amountVnd: number; method: string; reference?: string | null; note?: string | null; receivedAt?: string }
   ) {
-    if (!canManageAcademyRestricted(actor)) {
-      throw new AcademySalesError('Chỉ Admin hoặc Super Admin được ghi nhận học phí workshop.', 403);
+    if (!canManageAcademySales(actor)) {
+      throw new AcademySalesError('Bạn không có quyền ghi nhận học phí workshop.', 403);
     }
     await this.participantRow(fastify, actor, workshopId, participantId);
     const amountVnd = Math.round(Number(input.amountVnd));
@@ -2496,6 +2496,27 @@ export class AcademyWorkshopService {
     return this.getParticipant(fastify, actor, workshopId, participantId);
   }
 
+  static async deleteFeePayment(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    participantId: number,
+    paymentId: number
+  ) {
+    if (!canManageAcademySales(actor)) {
+      throw new AcademySalesError('Bạn không có quyền quản lý học phí workshop.', 403);
+    }
+    await this.participantRow(fastify, actor, workshopId, participantId);
+    const payment = await fastify.prisma.crm.crmAcademyWorkshopFeePayment.findFirst({
+      where: { id: paymentId, participantId },
+    });
+    if (!payment) throw new AcademySalesError('Bút toán phí không tồn tại.', 404);
+    await fastify.prisma.crm.crmAcademyWorkshopFeePayment.delete({
+      where: { id: paymentId },
+    });
+    return this.getParticipant(fastify, actor, workshopId, participantId);
+  }
+
   static async waiveFee(
     fastify: FastifyInstance,
     actor: AcademyActor,
@@ -2504,8 +2525,8 @@ export class AcademyWorkshopService {
     waived: boolean,
     reason: string
   ) {
-    if (!canManageAcademyRestricted(actor)) {
-      throw new AcademySalesError('Chỉ Admin hoặc Super Admin được miễn học phí workshop.', 403);
+    if (!canManageAcademySales(actor)) {
+      throw new AcademySalesError('Bạn không có quyền miễn học phí workshop.', 403);
     }
     await this.participantRow(fastify, actor, workshopId, participantId);
     const cleanReason = String(reason || '').trim();

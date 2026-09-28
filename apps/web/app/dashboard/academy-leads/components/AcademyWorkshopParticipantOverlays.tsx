@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Descriptions, Form, Image, Input, InputNumber, Select, Space, Typography, Upload } from 'antd';
+import { Alert, Button, Descriptions, Form, Image, Input, InputNumber, Popconfirm, Select, Space, Typography, Upload } from 'antd';
 import type { FormInstance } from 'antd';
 import dayjs from 'dayjs';
 import {
@@ -13,6 +13,7 @@ import {
   MessageCircle,
   QrCode,
   RotateCcw,
+  Trash2,
   Trophy,
   UserPlus,
   UtensilsCrossed,
@@ -79,7 +80,9 @@ interface AcademyWorkshopParticipantOverlaysProps {
     success: string
   ) => void;
   onCheckIn: (checkedIn: boolean) => void;
-  onOpenFee: () => void;
+  onOpenFee: (participant?: AcademyWorkshopParticipant) => void;
+  onDeleteFeePayment?: (paymentId: number) => Promise<void>;
+  onWaiveFee?: (waived: boolean, reason?: string) => Promise<void>;
   onAssignInstructor: (instructorId: number | null) => void;
   onSetPhotoConsent: (consent: boolean) => void;
   onUploadPhoto: (file: File) => void;
@@ -143,6 +146,8 @@ export default function AcademyWorkshopParticipantOverlays({
   onCreateWalkIn,
   onCloseFee,
   onSaveFee,
+  onDeleteFeePayment,
+  onWaiveFee,
   onOpenZaloScript,
   selectionsOpen = false,
   selectionsParticipant = null,
@@ -167,10 +172,38 @@ export default function AcademyWorkshopParticipantOverlays({
           <div className="space-y-5">
             <Descriptions column={1} size="small" bordered>
               <Descriptions.Item label="Liên hệ">{selected.lead.phone || selected.lead.email || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Phí">
-                <span className="tabular-nums">
-                  {selected.feePaidVnd.toLocaleString('vi-VN')} đ · {WORKSHOP_FEE_LABELS[selected.feeStatus]}
-                </span>
+              <Descriptions.Item
+                label={
+                  <div className="flex items-center justify-between">
+                    <span>Phí workshop</span>
+                    {canManageRestricted && onOpenFee && (
+                      <Button
+                        size="small"
+                        type="link"
+                        className="!h-auto !p-0 text-xs text-blue-600 dark:text-blue-400"
+                        onClick={() => onOpenFee(selected)}
+                      >
+                        Cập nhật / Thu phí
+                      </Button>
+                    )}
+                  </div>
+                }
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="tabular-nums">
+                    {selected.feePaidVnd.toLocaleString('vi-VN')} đ{workshop.feeVnd > 0 ? ` / ${workshop.feeVnd.toLocaleString('vi-VN')} đ` : ''} · {WORKSHOP_FEE_LABELS[selected.feeStatus]}
+                  </span>
+                  {canManageRestricted && onOpenFee && (
+                    <Button
+                      size="small"
+                      type="dashed"
+                      className="text-xs"
+                      onClick={() => onOpenFee(selected)}
+                    >
+                      Sửa phí
+                    </Button>
+                  )}
+                </div>
               </Descriptions.Item>
               <Descriptions.Item label="Check-in">
                 {selected.checkedInAt ? dayjs(selected.checkedInAt).format('DD/MM HH:mm') : 'Chưa đến'}
@@ -299,8 +332,8 @@ export default function AcademyWorkshopParticipantOverlays({
                   {selected.checkedInAt ? 'Hoàn tác check-in' : 'Check-in'}
                 </Button>
                 {canManageRestricted && (
-                  <Button icon={<AppIcon icon={CircleDollarSign} />} onClick={onOpenFee}>
-                    Thu phí
+                  <Button icon={<AppIcon icon={CircleDollarSign} />} onClick={() => onOpenFee(selected)}>
+                    {selected.feeStatus === 'PAID' ? 'Xem / Sửa phí' : 'Thu phí workshop'}
                   </Button>
                 )}
                 <Select
@@ -494,53 +527,202 @@ export default function AcademyWorkshopParticipantOverlays({
       {canManageRestricted && (
         <AdaptiveModal
           open={feeOpen}
-          title={`${workshop.feeVnd === 0 ? 'Phí workshop' : 'Thu phí'} · ${selected?.lead.name || ''}`}
-          okText="Ghi bút toán"
-          confirmLoading={busy}
+          title={`Phí workshop · ${selected?.lead.name || ''}`}
+          width={600}
+          intent="confirm"
           footer={
-            workshop.feeVnd === 0 ? (
-              <Button type="primary" onClick={onCloseFee}>
-                Đóng
-              </Button>
-            ) : undefined
+            <AdaptiveOverlayFooter>
+              <Button onClick={onCloseFee}>Đóng</Button>
+              {workshop.feeVnd > 0 && (
+                <Button
+                  type="primary"
+                  icon={<AppIcon icon={CircleDollarSign} />}
+                  loading={busy}
+                  onClick={() => feeForm.submit()}
+                >
+                  Ghi nhận thanh toán
+                </Button>
+              )}
+            </AdaptiveOverlayFooter>
           }
-          onOk={() => feeForm.submit()}
           onCancel={onCloseFee}
           destroyOnHidden
         >
-          {workshop.feeVnd === 0 ? (
-            <div className="rounded-xl border border-inherit p-4 text-center">
-              <StatusTag status="success" label="Miễn phí" />
-              <div className="mt-3 font-semibold">Workshop đang được cấu hình phí 0đ</div>
-              <div className="mt-1 text-sm opacity-60">Học viên không cần đóng phí workshop.</div>
+          {selected && (
+            <div className="space-y-4">
+              {/* Thẻ tổng quan phí */}
+              <div className="rounded-xl border border-inherit bg-slate-50/50 p-3.5 dark:bg-slate-900/30">
+                <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+                  <div>
+                    <div className="text-slate-500 dark:text-slate-400">Phí workshop</div>
+                    <div className="mt-0.5 font-semibold tabular-nums">
+                      {workshop.feeVnd.toLocaleString('vi-VN')} đ
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500 dark:text-slate-400">Đã đóng</div>
+                    <div className="mt-0.5 font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
+                      {selected.feePaidVnd.toLocaleString('vi-VN')} đ
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500 dark:text-slate-400">Còn thiếu</div>
+                    <div className="mt-0.5 font-semibold text-rose-600 tabular-nums dark:text-rose-400">
+                      {Math.max(0, selected.feeRemainingVnd ?? (workshop.feeVnd - selected.feePaidVnd)).toLocaleString('vi-VN')} đ
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500 dark:text-slate-400">Trạng thái</div>
+                    <div className="mt-0.5">
+                      <StatusTag
+                        status={
+                          selected.feeStatus === 'PAID'
+                            ? 'success'
+                            : selected.feeStatus === 'WAIVED'
+                            ? 'default'
+                            : selected.feeStatus === 'PARTIAL'
+                            ? 'warning'
+                            : 'error'
+                        }
+                        label={WORKSHOP_FEE_LABELS[selected.feeStatus] || selected.feeStatus}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {selected.feeWaivedAt && (
+                  <div className="mt-2.5 rounded-lg border border-amber-200 bg-amber-50/60 p-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+                    Đã miễn phí vào lúc {dayjs(selected.feeWaivedAt).format('DD/MM/YYYY HH:mm')}
+                    {selected.feeWaiverReason ? ` · Lý do: ${selected.feeWaiverReason}` : ''}
+                  </div>
+                )}
+              </div>
+
+              {/* Lịch sử bút toán đã đóng */}
+              {selected.feePayments && selected.feePayments.length > 0 && (
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Lịch sử thanh toán ({selected.feePayments.length})
+                  </div>
+                  <div className="divide-y divide-inherit rounded-xl border border-inherit text-xs">
+                    {selected.feePayments.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between p-2.5">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
+                              +{p.amountVnd.toLocaleString('vi-VN')} đ
+                            </span>
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium dark:bg-slate-800">
+                              {p.method === 'BANK_TRANSFER' ? 'Chuyển khoản' : p.method === 'CASH' ? 'Tiền mặt' : p.method}
+                            </span>
+                          </div>
+                          <div className="text-[11px] opacity-60">
+                            {dayjs(p.receivedAt || p.createdAt).format('DD/MM/YYYY HH:mm')}
+                            {p.reference ? ` · GD: ${p.reference}` : ''}
+                            {p.confirmedBy ? ` · Duyệt: ${p.confirmedBy.displayName}` : ''}
+                            {p.note ? ` · ${p.note}` : ''}
+                          </div>
+                        </div>
+                        {onDeleteFeePayment && (
+                          <Popconfirm
+                            title="Xóa bút toán thanh toán này?"
+                            description="Thao tác này sẽ hoàn tác số tiền đã đóng và cập nhật lại trạng thái phí của học viên."
+                            okText="Xóa"
+                            cancelText="Hủy"
+                            okButtonProps={{ danger: true, loading: busy }}
+                            onConfirm={() => onDeleteFeePayment(p.id)}
+                          >
+                            <Button danger type="text" size="small" icon={<AppIcon icon={Trash2} />} />
+                          </Popconfirm>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Form ghi nhận thanh toán ngoài Link/QR */}
+              {workshop.feeVnd > 0 ? (
+                <div className="rounded-xl border border-inherit p-3.5">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Ghi nhận thu tiền ngoài Link/QR
+                  </div>
+                  <Form
+                    form={feeForm}
+                    layout="vertical"
+                    size="small"
+                    onFinish={onSaveFee}
+                    initialValues={{ method: 'BANK_TRANSFER' }}
+                  >
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <Form.Item
+                        name="amountVnd"
+                        label="Số tiền thực thu"
+                        rules={[{ required: true, message: 'Vui lòng nhập số tiền' }]}
+                      >
+                        <InputNumber
+                          min={1}
+                          precision={0}
+                          step={50000}
+                          className="w-full"
+                          placeholder="Số tiền thu ngoài"
+                          formatter={formatVndInput}
+                          parser={parseVndInput}
+                        />
+                      </Form.Item>
+                      <Form.Item name="method" label="Phương thức thu">
+                        <Select
+                          options={[
+                            { value: 'BANK_TRANSFER', label: 'Chuyển khoản ngoài link/QR' },
+                            { value: 'CASH', label: 'Tiền mặt' },
+                          ]}
+                        />
+                      </Form.Item>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <Form.Item name="reference" label="Mã tham chiếu / Mã GD ngân hàng">
+                        <Input placeholder="VD: FT2409... hoặc bill chuyển khoản" />
+                      </Form.Item>
+                      <Form.Item name="note" label="Ghi chú">
+                        <Input placeholder="Ghi chú thêm nếu có" />
+                      </Form.Item>
+                    </div>
+                  </Form>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-inherit p-4 text-center">
+                  <StatusTag status="success" label="Miễn phí" />
+                  <div className="mt-2 font-semibold">Workshop đang được cấu hình miễn phí 0đ</div>
+                </div>
+              )}
+
+              {/* Hành động Miễn phí / Hủy miễn phí */}
+              {onWaiveFee && workshop.feeVnd > 0 && (
+                <div className="flex items-center justify-between rounded-lg border border-dashed border-inherit p-3 text-xs">
+                  <div>
+                    <div className="font-medium">Chính sách miễn phí workshop</div>
+                    <div className="opacity-60">Áp dụng cho khách mời đặc biệt, đối tác hoặc học viên diện tài trợ.</div>
+                  </div>
+                  {selected.feeStatus === 'WAIVED' ? (
+                    <Button
+                      size="small"
+                      loading={busy}
+                      onClick={() => onWaiveFee(false)}
+                    >
+                      Hủy miễn phí
+                    </Button>
+                  ) : (
+                    <Button
+                      size="small"
+                      loading={busy}
+                      onClick={() => onWaiveFee(true, 'Miễn phí theo chính sách ban tổ chức')}
+                    >
+                      Miễn phí workshop
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
-          ) : (
-            <Form form={feeForm} layout="vertical" onFinish={onSaveFee} initialValues={{ method: 'BANK_TRANSFER' }}>
-              <Form.Item name="amountVnd" label="Số tiền" rules={[{ required: true }]}>
-                <InputNumber
-                  min={1}
-                  precision={0}
-                  step={100000}
-                  className="w-full"
-                  formatter={formatVndInput}
-                  parser={parseVndInput}
-                />
-              </Form.Item>
-              <Form.Item name="method" label="Phương thức">
-                <Select
-                  options={[
-                    { value: 'BANK_TRANSFER', label: 'Chuyển khoản' },
-                    { value: 'CASH', label: 'Tiền mặt' },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item name="reference" label="Mã tham chiếu">
-                <Input />
-              </Form.Item>
-              <Form.Item name="note" label="Ghi chú">
-                <Input.TextArea rows={2} />
-              </Form.Item>
-            </Form>
           )}
         </AdaptiveModal>
       )}
