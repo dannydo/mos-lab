@@ -839,7 +839,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Header>
 
             <Content
-              className={`dashboard-content${pathname === '/dashboard/bug-reports' ? ' dashboard-content--full-width' : ''}`}
+              className={`dashboard-content${pathname === '/dashboard/bug-reports' || pathname?.startsWith('/dashboard/pilot-dark-lashes') ? ' dashboard-content--full-width' : ''}`}
               style={{
                 background: token.colorBgContainer,
                 color: token.colorText,

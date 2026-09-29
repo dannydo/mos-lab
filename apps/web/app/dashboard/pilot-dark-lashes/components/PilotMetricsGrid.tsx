@@ -21,7 +21,7 @@ interface PilotMetricsGridProps {
 
 export function PilotMetricsGrid({ metrics }: PilotMetricsGridProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4 w-full">
       {/* Card 1: Target Progress */}
       <StatCard
         title="Tiến độ Pilot 30 Ngày"

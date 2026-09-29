@@ -289,7 +289,7 @@ export default function PilotDarkLashesPage() {
     {
       title: 'Khách hàng',
       key: 'customer',
-      width: 190,
+      width: 220,
       render: (_, r) => (
         <div className="flex flex-col gap-0.5">
           <span className="font-semibold text-sm leading-tight text-slate-800 dark:text-slate-100">
@@ -305,7 +305,7 @@ export default function PilotDarkLashesPage() {
             )}
           </div>
           {r.bookingNote && (
-            <div className="text-[11px] text-slate-400 truncate max-w-[170px]" title={r.bookingNote}>
+            <div className="text-[11px] text-slate-400 truncate max-w-xs xl:max-w-sm" title={r.bookingNote}>
               📝 {r.bookingNote}
             </div>
           )}
@@ -639,7 +639,8 @@ export default function PilotDarkLashesPage() {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 150,
+      width: 140,
+      fixed: 'right',
       render: (_, r) => (
         <div className="flex items-center gap-1">
           <Tooltip title="Mở Flow Vận Hành 7 Bước (Chụp ảnh, Feedback, Check-out)">
@@ -685,11 +686,11 @@ export default function PilotDarkLashesPage() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="w-full space-y-6">
       {/* Header Banner */}
-      <div className="rounded-2xl p-6 relative overflow-hidden border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent transition-all duration-300 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+      <div className="rounded-2xl p-5 sm:p-6 relative overflow-hidden border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent transition-all duration-300 shadow-sm w-full">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 flex-1">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <AppIcon icon={Sparkles} size="sm" className="mr-1" />
@@ -705,13 +706,13 @@ export default function PilotDarkLashesPage() {
             <Title level={2} className="!mb-1 !text-slate-900 dark:!text-slate-100 tracking-tight">
               Pilot Uốn Mi Bóng Tối
             </Title>
-            <p className="text-sm text-slate-600 dark:text-slate-300 max-w-2xl m-0">
+            <p className="text-sm text-slate-600 dark:text-slate-300 max-w-4xl m-0">
               Công cụ đo lường Unit Economics và mức độ hài lòng khách hàng sau 30 ngày. Tự động tính Contribution
               Margin từng ca và điều phối follow-up 24h–72h.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
             <Button
               icon={<AppIcon icon={RotateCw} size="sm" className={loading ? 'animate-spin' : ''} />}
               onClick={fetchPilotData}
@@ -756,10 +757,10 @@ export default function PilotDarkLashesPage() {
       <PilotMetricsGrid metrics={metrics} />
 
       {/* Main Table Card */}
-      <Card variant="outlined" className="rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+      <Card variant="outlined" className="rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 w-full">
         {/* Table Filters & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 flex-wrap flex-1">
             <Input
               placeholder="Tìm theo tên KH, SĐT, KTV..."
               prefix={<AppIcon icon={Search} size="sm" className="text-slate-400" />}
@@ -793,7 +794,7 @@ export default function PilotDarkLashesPage() {
             </Radio.Group>
           </div>
 
-          <div className="text-xs text-slate-500 tabular-nums">
+          <div className="text-xs text-slate-500 tabular-nums shrink-0">
             Hiển thị <span className="font-semibold">{filteredSessions.length}</span> ca dịch vụ
           </div>
         </div>
@@ -810,8 +811,8 @@ export default function PilotDarkLashesPage() {
             pageSizeOptions: ['15', '30', '50'],
             showTotal: (total) => `Tổng cộng ${total} ca`,
           }}
-          scroll={{ x: 1200 }}
-          className="rounded-xl"
+          scroll={{ x: 'max-content' }}
+          className="rounded-xl w-full"
         />
       </Card>
 

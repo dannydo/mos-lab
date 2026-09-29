@@ -132,7 +132,7 @@ describe('BkGameTab', () => {
     render(<BkGameTab dateRange={[dayjs('2026-09-05'), dayjs('2026-09-05')]} comparisonMode="day" />);
 
     expect(await screen.findByText('[BK_LÔNG][T9] CUỘC ĐUA KỲ THÚ')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Xem công thức tính điểm/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Xem công thức tính điểm/i })).toBeInTheDocument();
     expect(screen.getByTestId('bk-game-table-disclaimer')).toHaveTextContent(/1 Booking tạo mới hợp lệ = 1 Điểm/i);
     await waitFor(() =>
       expect(apiMocks.getBookingLeaderboard).toHaveBeenCalledWith({
