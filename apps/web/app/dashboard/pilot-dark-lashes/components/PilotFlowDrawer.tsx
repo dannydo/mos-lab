@@ -23,6 +23,10 @@ import {
   ClipboardCheck,
   Edit3,
   XCircle,
+  Microscope,
+  Bot,
+  Zap,
+  Scan,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -32,6 +36,8 @@ import type {
   PilotSession,
   PilotSessionStep,
   SavePilotAssessmentRequest,
+  PilotAiAssessment,
+  PilotAiSuitability,
 } from '@mos-lab/shared';
 import { apiClient, resolveMediaUrl } from '../../../../lib/api-client';
 import { AppIcon } from '../../../../components/ui/AppIcon';
@@ -114,6 +120,8 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
   const beforeLibraryInputRef = useRef<HTMLInputElement>(null);
   const afterCameraInputRef = useRef<HTMLInputElement>(null);
   const afterLibraryInputRef = useRef<HTMLInputElement>(null);
+  const macroCameraInputRef = useRef<HTMLInputElement>(null);
+  const macroLibraryInputRef = useRef<HTMLInputElement>(null);
 
   const [sessionSteps, setSessionSteps] = useState<PilotSessionStep[]>(session?.steps || []);
   const [criteriaList, setCriteriaList] = useState<PilotAssessmentCriterion[]>([]);
@@ -125,6 +133,11 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
   const [assessmentReason, setAssessmentReason] = useState<string>(session?.assessmentReason || '');
   const [assessmentNotes, setAssessmentNotes] = useState<string>(session?.assessmentNotes || '');
   const [isEditingAssessment, setIsEditingAssessment] = useState<boolean>(!session?.assessmentStatus);
+  const [aiAssessment, setAiAssessment] = useState<PilotAiAssessment | null>(session?.aiAssessment || null);
+  const [macroPhotoUrl, setMacroPhotoUrl] = useState<string | null>(
+    session?.beforePhotoUrl || session?.aiAssessment?.photoUrl || null
+  );
+  const [isAnalyzingAi, setIsAnalyzingAi] = useState<boolean>(false);
 
   React.useEffect(() => {
     if (open) {
@@ -150,6 +163,8 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
       setAssessmentReason(session.assessmentReason || '');
       setAssessmentNotes(session.assessmentNotes || '');
       setIsEditingAssessment(!session.assessmentStatus);
+      setAiAssessment(session.aiAssessment || null);
+      setMacroPhotoUrl(session.beforePhotoUrl || session.aiAssessment?.photoUrl || null);
 
       if (session.assessmentCriteria && session.assessmentCriteria.length > 0) {
         const evals: Record<number, { passed: boolean; note: string }> = {};
@@ -209,11 +224,11 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
     }
   };
 
-  const handleUploadPhoto = async (type: 'before' | 'after', file: File) => {
+  const handleUploadPhoto = async (type: 'before' | 'after' | 'macro', file: File) => {
     try {
       setSubmittingAction(`upload-${type}`);
-      const typeLabel = type === 'before' ? 'Trước' : 'Sau';
-      message.loading({ content: `Đang xử lý và tải ảnh ${typeLabel} khi làm...`, key: `upload-${type}` });
+      const typeLabel = type === 'before' ? 'Trước' : type === 'after' ? 'Sau' : 'Kính Macro 15x';
+      message.loading({ content: `Đang xử lý và tải ảnh ${typeLabel}...`, key: `upload-${type}` });
       const compressedBase64 = await compressImage(file);
       const uploadRes = await apiClient.pilot.uploadPhoto({
         photoData: compressedBase64,
@@ -224,10 +239,24 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
       let updated: PilotSession;
       if (type === 'before') {
         updated = await apiClient.pilot.saveBeforePhoto(session.id, { beforePhotoUrl: photoUrl });
+        setMacroPhotoUrl(photoUrl);
         message.success({ content: 'Đã lưu ảnh Trước khi làm (Before Photo)!', key: `upload-${type}` });
-      } else {
+      } else if (type === 'after') {
         updated = await apiClient.pilot.saveAfterPhoto(session.id, { afterPhotoUrl: photoUrl });
         message.success({ content: 'Đã lưu ảnh Sau khi làm (After Photo)!', key: `upload-${type}` });
+      } else {
+        // Macro photo for AI analysis
+        setMacroPhotoUrl(photoUrl);
+        // If session doesn't have before photo, also sync it as before photo
+        if (!session.beforePhotoUrl) {
+          updated = await apiClient.pilot.saveBeforePhoto(session.id, { beforePhotoUrl: photoUrl });
+        } else {
+          updated = { ...session };
+        }
+        message.success({
+          content: 'Đã tải ảnh Kính Macro 15x thành công! Sẵn sàng bấm AI Phân Tích.',
+          key: `upload-${type}`,
+        });
       }
       onSessionUpdated(updated);
     } catch (err: any) {
@@ -238,6 +267,73 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
       });
     } finally {
       setSubmittingAction(null);
+    }
+  };
+
+  const handleRunAiAnalysis = async (customPhotoUrl?: string) => {
+    const photoToUse = customPhotoUrl || macroPhotoUrl || session.beforePhotoUrl;
+    const currentEvaluations: PilotCriterionEvaluation[] = criteriaList.map((c) => ({
+      criterionId: c.id,
+      name: c.name,
+      passed: evaluations[c.id]?.passed ?? true,
+      note: evaluations[c.id]?.note || '',
+    }));
+
+    try {
+      setIsAnalyzingAi(true);
+      message.loading({
+        content: 'AI đang phân tích điều kiện mi từ ảnh Macro 15x và checklist...',
+        key: 'ai-analyzing',
+      });
+      const res = await apiClient.pilot.aiAnalyzeLash(session.id, {
+        photoUrl: photoToUse || undefined,
+        criteriaSnapshot: currentEvaluations,
+        technicianNotes: assessmentNotes || undefined,
+        captureMethod: 'MACRO_15X',
+      });
+
+      setAiAssessment(res.aiAssessment);
+      if (res.session) {
+        onSessionUpdated(res.session);
+      }
+
+      // Pre-fill fields based on AI suitability suggestion
+      if (res.aiAssessment.suitability === 'NOT_SUITABLE') {
+        setAssessmentResult('FAIL');
+        setAssessmentReason(
+          res.aiAssessment.recommendation.action ||
+            res.aiAssessment.lashProfile.summary ||
+            'Không đáp ứng tiêu chuẩn mi uốn'
+        );
+        if (res.aiAssessment.recommendation.alternativeCare) {
+          setAssessmentNotes(res.aiAssessment.recommendation.alternativeCare);
+        }
+      } else {
+        setAssessmentResult('PASS');
+        const s1 = res.aiAssessment.recommendation.solution1DurationMinutes;
+        const s2 = res.aiAssessment.recommendation.solution2DurationMinutes;
+        const rod = res.aiAssessment.recommendation.recommendedRodSize;
+        const noteItems: string[] = [];
+        if (s1 || s2 || rod) {
+          noteItems.push(`Đề xuất AI: Thuốc 1 ${s1 || 10}p · Thuốc 2 ${s2 || 8}p · Trục ${rod || 'M'}`);
+        }
+        if (res.aiAssessment.riskAttention) {
+          noteItems.push(`Lưu ý kỹ thuật: ${res.aiAssessment.riskAttention}`);
+        }
+        if (noteItems.length > 0) {
+          setAssessmentNotes(noteItems.join('. '));
+        }
+      }
+
+      message.success({ content: 'AI đã hoàn tất phân tích điều kiện mi!', key: 'ai-analyzing' });
+    } catch (err: any) {
+      console.error('[AI Analyze error]', err);
+      message.error({
+        content: err?.response?.data?.message || err?.message || 'Lỗi khi phân tích AI.',
+        key: 'ai-analyzing',
+      });
+    } finally {
+      setIsAnalyzingAi(false);
     }
   };
 
@@ -270,12 +366,20 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
     }
   };
 
-  const handleSaveAssessment = async () => {
-    if (!assessmentResult) {
+  const handleSaveAssessment = async (options?: {
+    overrideResult?: 'PASS' | 'FAIL';
+    overrideReason?: string;
+    overrideNotes?: string;
+  }) => {
+    const finalResult = options?.overrideResult || assessmentResult;
+    const finalReason = options?.overrideReason !== undefined ? options.overrideReason : assessmentReason;
+    const finalNotes = options?.overrideNotes !== undefined ? options.overrideNotes : assessmentNotes;
+
+    if (!finalResult) {
       message.error('Vui lòng chọn kết luận Đủ điều kiện hoặc Không đủ điều kiện.');
       return;
     }
-    if (assessmentResult === 'FAIL' && !assessmentReason.trim()) {
+    if (finalResult === 'FAIL' && !finalReason?.trim()) {
       message.error('Bắt buộc phải ghi Lý do không đủ điều kiện.');
       return;
     }
@@ -290,14 +394,18 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
       }));
 
       const payload: SavePilotAssessmentRequest = {
-        result: assessmentResult,
-        reason: assessmentResult === 'FAIL' ? assessmentReason.trim() : null,
-        notes: assessmentNotes.trim() || null,
+        result: finalResult,
+        reason: finalResult === 'FAIL' ? finalReason.trim() : null,
+        notes: finalNotes.trim() || null,
         criteriaSnapshot,
+        aiAssessment: aiAssessment || undefined,
       };
 
       const updated = await apiClient.pilot.saveAssessment(session.id, payload);
-      if (assessmentResult === 'PASS') {
+      setAssessmentResult(finalResult);
+      setAssessmentReason(finalReason);
+      setAssessmentNotes(finalNotes);
+      if (finalResult === 'PASS') {
         message.success('Đánh giá hoàn tất: Khách ĐỦ ĐIỀU KIỆN làm dịch vụ!');
       } else {
         message.warning('Đã ghi nhận: Khách KHÔNG ĐỦ ĐIỀU KIỆN làm dịch vụ. Chuyển thẳng Check-out.');
@@ -632,6 +740,57 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                   </div>
                 )}
 
+                {/* AI Assessment Summary if available */}
+                {(session.aiAssessment || aiAssessment) && (
+                  <div className="mt-3 p-3 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800/60 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-violet-800 dark:text-violet-300">
+                        <AppIcon icon={Sparkles} size="sm" className="text-violet-600 dark:text-violet-400" />
+                        <span>Hồ sơ AI Lash Assessment</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-200/60 dark:bg-violet-900/60 text-violet-700 dark:text-violet-300 font-semibold">
+                        {(session.aiAssessment || aiAssessment)?.method === 'MACRO_15X'
+                          ? 'Kính Macro 15x'
+                          : 'Ảnh thường'}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-700 dark:text-slate-200">
+                      <strong>Lash Profile:</strong> {(session.aiAssessment || aiAssessment)?.lashProfile?.summary}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                      {(session.aiAssessment || aiAssessment)?.lashProfile?.estimatedThickness && (
+                        <div className="p-1.5 rounded bg-white/70 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300">
+                          📏 Sợi mi:{' '}
+                          <strong>{(session.aiAssessment || aiAssessment)?.lashProfile?.estimatedThickness}</strong>
+                        </div>
+                      )}
+                      {(session.aiAssessment || aiAssessment)?.lashProfile?.cuticleCondition && (
+                        <div className="p-1.5 rounded bg-white/70 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300">
+                          🧬 Biểu bì:{' '}
+                          <strong>{(session.aiAssessment || aiAssessment)?.lashProfile?.cuticleCondition}</strong>
+                        </div>
+                      )}
+                    </div>
+
+                    {(session.aiAssessment || aiAssessment)?.riskAttention && (
+                      <div className="text-[11px] p-2 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/50 text-amber-800 dark:text-amber-300">
+                        <strong>Lưu ý kỹ thuật:</strong> {(session.aiAssessment || aiAssessment)?.riskAttention}
+                      </div>
+                    )}
+
+                    {(session.aiAssessment || aiAssessment)?.recommendation && (
+                      <div className="text-[11px] p-2 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300">
+                        <strong>Đề xuất SOP:</strong> Thuốc 1:{' '}
+                        {(session.aiAssessment || aiAssessment)?.recommendation?.solution1DurationMinutes || 10}p ·
+                        Thuốc 2: {(session.aiAssessment || aiAssessment)?.recommendation?.solution2DurationMinutes || 8}
+                        p · Trục: {(session.aiAssessment || aiAssessment)?.recommendation?.recommendedRodSize || 'M'}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {Array.isArray(session.assessmentCriteria) && session.assessmentCriteria.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60">
                     <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
@@ -660,21 +819,47 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 )}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
                 <Button
                   size="small"
-                  icon={<AppIcon icon={Edit3} size="sm" />}
+                  icon={<AppIcon icon={Sparkles} size="sm" className="text-violet-600" />}
                   onClick={() => setIsEditingAssessment(true)}
                 >
-                  Đánh giá lại / Chỉnh sửa
+                  Phân tích lại AI / Chỉnh sửa
                 </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-4 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
+              {/* Hidden file inputs for macro lens capture */}
+              <input
+                type="file"
+                ref={macroCameraInputRef}
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadPhoto('macro', file);
+                  e.target.value = '';
+                }}
+              />
+              <input
+                type="file"
+                ref={macroLibraryInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadPhoto('macro', file);
+                  e.target.value = '';
+                }}
+              />
+
+              {/* 1. CHECKLIST TIÊU CHÍ */}
               <div>
                 <div className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
-                  <span>Bảng kiểm tra tiêu chuẩn mi uốn</span>
+                  <span>1. Bảng kiểm tra tiêu chuẩn mi uốn</span>
                   {loadingCriteria && <span className="text-[11px] text-slate-400">Đang tải tiêu chí...</span>}
                 </div>
 
@@ -731,9 +916,295 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 </div>
               </div>
 
+              {/* 2. CHỤP ẢNH MI KÍNH MACRO 15X */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <AppIcon icon={Microscope} size="sm" className="text-violet-600 dark:text-violet-400" />
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                      2. Ảnh chụp mi phóng đại cận cảnh
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20">
+                    Kính Macro 15x · Cự ly chuẩn 2cm
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                  {macroPhotoUrl || session.beforePhotoUrl ? (
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950 shrink-0">
+                        <img
+                          src={resolveMediaUrl(macroPhotoUrl || session.beforePhotoUrl!)}
+                          alt="Macro Lash Photo"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-1 left-1 px-1 py-0.5 rounded bg-black/70 text-[9px] text-white font-bold">
+                          MACRO
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                          <AppIcon icon={CheckCircle} size="sm" className="text-emerald-500" />
+                          <span>Đã có ảnh mi macro 15x</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Sợi mi hiển thị rõ nét, sẵn sàng để AI đo đường kính và biểu bì keratin.
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <Button
+                            size="small"
+                            icon={<AppIcon icon={Camera} size="sm" />}
+                            onClick={() => macroCameraInputRef.current?.click()}
+                            loading={submittingAction === 'upload-macro'}
+                          >
+                            Chụp lại
+                          </Button>
+                          <Button
+                            size="small"
+                            icon={<AppIcon icon={ImageIcon} size="sm" />}
+                            onClick={() => macroLibraryInputRef.current?.click()}
+                            loading={submittingAction === 'upload-macro'}
+                          >
+                            Đổi ảnh
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        Kẹp kính Macro 15x vào camera điện thoại, tựa nhẹ vành kính cách mắt khách 2cm để chụp ảnh sợi
+                        mi phóng đại rõ nhất.
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          icon={<AppIcon icon={Camera} size="sm" />}
+                          onClick={() => macroCameraInputRef.current?.click()}
+                          loading={submittingAction === 'upload-macro'}
+                          className="h-10 rounded-lg font-semibold"
+                        >
+                          Chụp Kính Macro 15x
+                        </Button>
+                        <Button
+                          icon={<AppIcon icon={ImageIcon} size="sm" />}
+                          onClick={() => macroLibraryInputRef.current?.click()}
+                          loading={submittingAction === 'upload-macro'}
+                          className="h-10 rounded-lg"
+                        >
+                          Chọn từ thư viện
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. NÚT KÍCH HOẠT AI ANALYZE */}
+              <div className="pt-1">
+                <Button
+                  type="primary"
+                  size="large"
+                  block
+                  className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold h-12 rounded-xl shadow-md flex items-center justify-center gap-2 border-0"
+                  onClick={() => handleRunAiAnalysis()}
+                  loading={isAnalyzingAi}
+                >
+                  <AppIcon icon={Sparkles} size="sm" className="text-amber-300" />
+                  <span>AI Phân Tích Điều Kiện Mi (Macro 15x)</span>
+                </Button>
+              </div>
+
+              {/* 4. HỘP KẾT QUẢ AI PHÂN TÍCH */}
+              {aiAssessment && (
+                <div className="p-4 rounded-2xl bg-gradient-to-b from-violet-500/10 via-purple-500/5 to-transparent border border-violet-300 dark:border-violet-700/60 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-violet-200/60 dark:border-violet-800/60">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-violet-600 text-white flex items-center justify-center shadow-sm">
+                        <AppIcon icon={Bot} size="sm" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs text-violet-900 dark:text-violet-200 uppercase tracking-wide">
+                          Kết quả AI Lash Assessment
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          Mô hình:{' '}
+                          {aiAssessment.modelUsed === 'gemini-2.5-flash'
+                            ? 'Google Gemini 2.5 Flash Multimodal'
+                            : 'Hệ Thống Phân Tích Quy Tắc SOP'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {aiAssessment.suitability === 'PASS' && (
+                        <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-sm">
+                          PASS · ĐỦ ĐIỀU KIỆN
+                        </span>
+                      )}
+                      {aiAssessment.suitability === 'CAUTION' && (
+                        <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500 text-white shadow-sm">
+                          CAUTION · CẦN CÂN NHẮC
+                        </span>
+                      )}
+                      {aiAssessment.suitability === 'NOT_SUITABLE' && (
+                        <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500 text-white shadow-sm">
+                          NOT SUITABLE · KHÔNG PHÙ HỢP
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 4.1 LASH PROFILE */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                      <span>1. Lash Profile (Hồ Sơ Sợi Mi):</span>
+                    </div>
+                    <div className="text-xs text-slate-700 dark:text-slate-300 p-2.5 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800">
+                      {aiAssessment.lashProfile.summary}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {aiAssessment.lashProfile.estimatedThickness && (
+                        <div className="p-2 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">Độ dày sợi mi (Macro):</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {aiAssessment.lashProfile.estimatedThickness}
+                          </span>
+                        </div>
+                      )}
+                      {aiAssessment.lashProfile.cuticleCondition && (
+                        <div className="p-2 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">Biểu bì Keratin:</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {aiAssessment.lashProfile.cuticleCondition}
+                          </span>
+                        </div>
+                      )}
+                      {aiAssessment.lashProfile.lengthAssessment && (
+                        <div className="p-2 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">Độ dài mi:</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {aiAssessment.lashProfile.lengthAssessment}
+                          </span>
+                        </div>
+                      )}
+                      {aiAssessment.lashProfile.densityAssessment && (
+                        <div className="p-2 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">Mật độ sợi mi:</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {aiAssessment.lashProfile.densityAssessment}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 4.2 RISK / ATTENTION */}
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                      <AppIcon icon={AlertTriangle} size="sm" className="text-amber-500" />
+                      <span>2. Điểm lưu ý kỹ thuật (Risk / Attention):</span>
+                    </div>
+                    <div className="text-xs p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200">
+                      {aiAssessment.riskAttention}
+                    </div>
+                  </div>
+
+                  {/* 4.3 RECOMMENDATION */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
+                      <AppIcon icon={Zap} size="sm" className="text-indigo-500" />
+                      <span>3. Đề xuất kỹ thuật (Recommendation):</span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-900 dark:text-indigo-200 space-y-1.5">
+                      <div>{aiAssessment.recommendation.action}</div>
+                      {aiAssessment.suitability !== 'NOT_SUITABLE' && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-indigo-200/40 dark:border-indigo-800/40 text-[11px]">
+                          <span className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 font-bold text-indigo-800 dark:text-indigo-300">
+                            Thuốc 1 (Làm mềm): {aiAssessment.recommendation.solution1DurationMinutes || 10} phút
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 font-bold text-indigo-800 dark:text-indigo-300">
+                            Thuốc 2 (Tạo form): {aiAssessment.recommendation.solution2DurationMinutes || 8} phút
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 font-bold text-indigo-800 dark:text-indigo-300">
+                            Trục uốn: {aiAssessment.recommendation.recommendedRodSize || 'M'}
+                          </span>
+                        </div>
+                      )}
+                      {aiAssessment.recommendation.alternativeCare && (
+                        <div className="pt-1 text-rose-700 dark:text-rose-300 font-medium">
+                          🌱 <strong>Chăm sóc phục hồi:</strong> {aiAssessment.recommendation.alternativeCare}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* CÔ ĐẪM QUICK CONFIRM ACTIONS */}
+                  <div className="pt-2 border-t border-violet-200/60 dark:border-violet-800/60 space-y-2">
+                    <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      Cô Đẫm xác nhận theo kết luận của AI:
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {aiAssessment.suitability !== 'NOT_SUITABLE' ? (
+                        <>
+                          <Button
+                            type="primary"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 rounded-xl shadow flex items-center justify-center gap-1.5"
+                            onClick={() => handleSaveAssessment({ overrideResult: 'PASS' })}
+                            loading={submittingAction === 'save-assessment'}
+                          >
+                            <AppIcon icon={CheckCircle} size="sm" />
+                            <span>Xác Nhận ĐỦ ĐIỀU KIỆN (PASS)</span>
+                          </Button>
+                          <Button
+                            danger
+                            className="font-semibold h-10 rounded-xl"
+                            onClick={() => {
+                              setAssessmentResult('FAIL');
+                              message.info('Đã chuyển sang Không Đủ Điều Kiện. Vui lòng ghi lý do bên dưới.');
+                            }}
+                          >
+                            Đổi Sang Không Đạt (FAIL)
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            type="primary"
+                            danger
+                            className="font-bold h-10 rounded-xl shadow flex items-center justify-center gap-1.5"
+                            onClick={() => handleSaveAssessment({ overrideResult: 'FAIL' })}
+                            loading={submittingAction === 'save-assessment'}
+                          >
+                            <AppIcon icon={XCircle} size="sm" />
+                            <span>Xác Nhận KHÔNG ĐỦ ĐIỀU KIỆN (FAIL)</span>
+                          </Button>
+                          <Button
+                            className="font-semibold h-10 rounded-xl"
+                            onClick={() => {
+                              setAssessmentResult('PASS');
+                              message.info('Đã đổi sang Đủ Điều Kiện (PASS).');
+                            }}
+                          >
+                            Đổi Sang Đủ Điều Kiện (PASS)
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 italic text-center pt-1">
+                    * AI chỉ hỗ trợ đánh giá thẩm mỹ và kỹ thuật mi, không chẩn đoán y khoa. Quyết định cuối cùng do cô
+                    Đẫm xác nhận.
+                  </div>
+                </div>
+              )}
+
+              {/* 5. FORM KẾT LUẬN & ĐIỀU CHỈNH THỦ CÔNG */}
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
                 <div className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">
-                  Kết luận đánh giá điều kiện mi: <span className="text-rose-500">*</span>
+                  Kết luận đánh giá cuối cùng của Cô Đẫm: <span className="text-rose-500">*</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div
@@ -756,7 +1227,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     <div>
                       <div className="font-bold text-xs">ĐỦ ĐIỀU KIỆN (PASS)</div>
                       <div className="text-[11px] opacity-75">
-                        Mi đạt chuẩn uốn bóng tối. Tiếp tục chụp ảnh Before và thực hiện dịch vụ.
+                        Mi đạt chuẩn uốn bóng tối. Tiếp tục sang các bước làm dịch vụ.
                       </div>
                     </div>
                   </div>
@@ -797,7 +1268,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                     rows={2}
                     value={assessmentReason}
                     onChange={(e) => setAssessmentReason(e.target.value)}
-                    placeholder="VD: Mi quá ngắn dưới 4mm, sợi mi yếu gãy rụng nhiều, mí mắt sụp nặng..."
+                    placeholder="VD: Mi quá ngắn dưới 4mm, sợi mi yếu gãy rụng nhiều, mi cháy do từng nối..."
                     className="rounded-lg"
                   />
                 </div>
@@ -831,15 +1302,15 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                       ? 'bg-rose-600 hover:bg-rose-700 text-white'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   }`}
-                  onClick={handleSaveAssessment}
+                  onClick={() => handleSaveAssessment()}
                   loading={submittingAction === 'save-assessment'}
                 >
                   <AppIcon icon={CheckCircle} size="sm" />
                   {assessmentResult === 'FAIL'
                     ? 'Xác Nhận Không Đủ Điều Kiện & Chuyển Check-out'
-                    : 'Xác Nhận Đủ Điều Kiện & Bắt Đầu Chụp Ảnh'}
+                    : 'Xác Nhận Đủ Điều Kiện & Tiếp Tục Làm Dịch Vụ'}
                 </Button>
-                {isEditingAssessment && (
+                {isEditingAssessment && session.assessedAt && (
                   <Button className="h-11 rounded-xl font-medium" onClick={() => setIsEditingAssessment(false)}>
                     Hủy
                   </Button>
@@ -1055,6 +1526,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               steps={sessionSteps}
               onStepsChange={handleStepsChange}
               readOnly={isIneligible}
+              aiAssessment={session.aiAssessment || aiAssessment}
             />
           </div>
 

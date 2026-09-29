@@ -3376,6 +3376,7 @@ model CrmPilotSession {
   assessmentNotes    String?  @map("assessment_notes") @db.Text
   assessmentCriteriaJson String? @map("assessment_criteria_json") @db.LongText
   assessedAt         DateTime? @map("assessed_at") @db.DateTime(0)
+  aiAssessmentJson   String?   @map("ai_assessment_json") @db.LongText
   isStockDeducted    Boolean  @default(false) @map("is_stock_deducted")
   createdByStaffId   Int?     @map("created_by_staff_id")
   createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)

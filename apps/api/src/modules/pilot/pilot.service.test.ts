@@ -1094,3 +1094,103 @@ test('PilotService: saveAssessment PASS transitions to ASSESSED; FAIL transition
   assert.equal(checkedOutFail.totalDurationMinutes, 30);
   assert.ok(checkedOutFail.checkOutAt);
 });
+
+test('PilotAiService: heuristic analysis returns accurate recommendation for healthy lashes', async () => {
+  const { PilotAiService } = await import('./pilot-ai.service.js');
+  const fakeFastify: SafeAny = {
+    log: { warn: () => {}, info: () => {}, error: () => {} },
+  };
+
+  const result = await PilotAiService.analyzeLash(fakeFastify, {
+    criteriaSnapshot: [
+      { criterionId: 1, name: 'Độ dài mi', passed: true, note: '8mm' },
+      { criterionId: 2, name: 'Độ dày sợi mi', passed: true, note: 'Trung bình 0.08mm' },
+      { criterionId: 3, name: 'Mật độ mi', passed: true, note: 'Dày đều' },
+      { criterionId: 4, name: 'Tình trạng sợi mi', passed: true, note: 'Khỏe mạnh' },
+      { criterionId: 5, name: 'Khả năng tạo form', passed: true, note: 'Ăn thuốc tốt' },
+    ],
+    technicianNotes: 'Mi tự nhiên chưa từng uốn hay nối',
+  });
+
+  assert.equal(result.suitability, 'PASS');
+  assert.ok((result.suitabilityScore ?? 0) >= 80);
+  assert.ok(result.lashProfile.summary.length > 0);
+  assert.ok((result.recommendation.solution1DurationMinutes ?? 0) >= 10);
+  assert.ok((result.recommendation.solution2DurationMinutes ?? 0) >= 8);
+  assert.ok(['S', 'M', 'L'].includes(result.recommendation.recommendedRodSize ?? ''));
+  assert.equal(result.method, 'MACRO_15X');
+});
+
+test('PilotAiService: heuristic analysis flags NOT_SUITABLE for severely damaged lashes', async () => {
+  const { PilotAiService } = await import('./pilot-ai.service.js');
+  const fakeFastify: SafeAny = {
+    log: { warn: () => {}, info: () => {}, error: () => {} },
+  };
+
+  const result = await PilotAiService.analyzeLash(fakeFastify, {
+    criteriaSnapshot: [
+      { criterionId: 1, name: 'Độ dài mi', passed: true },
+      { criterionId: 2, name: 'Độ dày sợi mi', passed: false, note: 'Quá mỏng' },
+      { criterionId: 3, name: 'Mật độ mi', passed: true },
+      { criterionId: 4, name: 'Tình trạng sợi mi', passed: false, note: 'Mi cháy sun ngọn, rụng đứt đoạn' },
+      { criterionId: 5, name: 'Khả năng tạo form', passed: false },
+    ],
+    technicianNotes: 'Khách mới uốn lỗi bên ngoài tuần trước, mi bị sun ngọn nặng',
+  });
+
+  assert.equal(result.suitability, 'NOT_SUITABLE');
+  assert.ok((result.suitabilityScore ?? 100) < 60);
+  assert.ok(result.riskAttention.length > 0);
+  assert.ok(result.recommendation.alternativeCare != null);
+});
+
+test('PilotService: aiAnalyzeSession persists AI assessment JSON to session', async () => {
+  let savedData: SafeAny = null;
+  const mockDbSession = {
+    id: 202,
+    pilotCode: 'DARK_LASHES',
+    branchCode: 'detham',
+    customerName: 'Lê Thị C',
+    status: 'IN_ASSESSMENT',
+    assessmentStatus: null,
+    criteriaJson: null,
+    aiAssessmentJson: null,
+    photoBeforeUrl: null,
+    checkInAt: new Date('2026-09-29T10:00:00Z'),
+  };
+
+  const fakeFastify: SafeAny = {
+    log: { warn: () => {}, info: () => {}, error: () => {} },
+    prisma: {
+      crm: {
+        crmPilotSession: {
+          findUnique: async () => mockDbSession,
+          update: async ({ data }: SafeAny) => {
+            savedData = data;
+            return {
+              ...mockDbSession,
+              ...data,
+            };
+          },
+        },
+      },
+    },
+  };
+
+  const response = await PilotService.aiAnalyzeSession(fakeFastify, 202, {
+    criteriaSnapshot: [
+      { criterionId: 1, name: 'Độ dài mi', passed: true },
+      { criterionId: 2, name: 'Độ dày sợi mi', passed: true },
+      { criterionId: 3, name: 'Mật độ mi', passed: true },
+      { criterionId: 4, name: 'Tình trạng sợi mi', passed: true },
+      { criterionId: 5, name: 'Khả năng tạo form', passed: true },
+    ],
+    technicianNotes: 'Mi khỏe, ngọn đều',
+  });
+
+  assert.ok(response.aiAssessment);
+  assert.equal(response.aiAssessment.suitability, 'PASS');
+  assert.ok(savedData.aiAssessmentJson);
+  const parsed = JSON.parse(savedData.aiAssessmentJson);
+  assert.equal(parsed.suitability, 'PASS');
+});

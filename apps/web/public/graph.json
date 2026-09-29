@@ -2509,7 +2509,7 @@
         "dbSource": "crm",
         "modelName": "CrmPilotSession",
         "tableName": "crm_pilot_sessions",
-        "fieldCount": 43,
+        "fieldCount": 44,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -10018,7 +10018,7 @@
         "path": "/api/pilot/media/:filename",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 43
+        "line": 44
       }
     },
     {
@@ -10032,7 +10032,7 @@
         "path": "/api/pilot/feature-flag",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 60
+        "line": 61
       }
     },
     {
@@ -10046,7 +10046,7 @@
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 74
+        "line": 75
       }
     },
     {
@@ -10060,7 +10060,7 @@
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 85
+        "line": 86
       }
     },
     {
@@ -10074,7 +10074,7 @@
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 96
+        "line": 97
       }
     },
     {
@@ -10088,7 +10088,7 @@
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 112
+        "line": 113
       }
     },
     {
@@ -10102,7 +10102,7 @@
         "path": "/api/pilot/materials/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 127
+        "line": 128
       }
     },
     {
@@ -10116,7 +10116,7 @@
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 141
+        "line": 142
       }
     },
     {
@@ -10130,7 +10130,7 @@
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 151
+        "line": 152
       }
     },
     {
@@ -10144,7 +10144,7 @@
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 161
+        "line": 162
       }
     },
     {
@@ -10158,7 +10158,7 @@
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 176
+        "line": 177
       }
     },
     {
@@ -10172,7 +10172,7 @@
         "path": "/api/pilot/sop-steps/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 190
+        "line": 191
       }
     },
     {
@@ -10186,7 +10186,7 @@
         "path": "/api/pilot/sop-steps/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 200
+        "line": 201
       }
     },
     {
@@ -10200,7 +10200,7 @@
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 214
+        "line": 215
       }
     },
     {
@@ -10214,7 +10214,7 @@
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 224
+        "line": 225
       }
     },
     {
@@ -10228,7 +10228,7 @@
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 234
+        "line": 235
       }
     },
     {
@@ -10242,7 +10242,7 @@
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 249
+        "line": 250
       }
     },
     {
@@ -10256,7 +10256,7 @@
         "path": "/api/pilot/assessment-criteria/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 263
+        "line": 264
       }
     },
     {
@@ -10270,7 +10270,21 @@
         "path": "/api/pilot/sessions/:id/assessment",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 274
+        "line": 275
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sessions/:id/ai-analyze",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sessions/:id/ai-analyze",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sessions/:id/ai-analyze",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 291
       }
     },
     {
@@ -10284,7 +10298,7 @@
         "path": "/api/pilot/sessions/:id/steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 294
+        "line": 311
       }
     },
     {
@@ -10298,7 +10312,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/start",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 309
+        "line": 326
       }
     },
     {
@@ -10312,7 +10326,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 326
+        "line": 343
       }
     },
     {
@@ -10326,7 +10340,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/note",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 343
+        "line": 360
       }
     },
     {
@@ -10340,7 +10354,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 360
+        "line": 377
       }
     },
     {
@@ -10354,7 +10368,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 376
+        "line": 393
       }
     },
     {
@@ -10368,7 +10382,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 387
+        "line": 404
       }
     },
     {
@@ -10382,7 +10396,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 398
+        "line": 415
       }
     },
     {
@@ -10396,7 +10410,7 @@
         "path": "/api/pilot/sessions/:id/check-in",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 410
+        "line": 427
       }
     },
     {
@@ -10410,7 +10424,7 @@
         "path": "/api/pilot/sessions/:id/before-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 426
+        "line": 443
       }
     },
     {
@@ -10424,7 +10438,7 @@
         "path": "/api/pilot/sessions/:id/service-done",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 442
+        "line": 459
       }
     },
     {
@@ -10438,7 +10452,7 @@
         "path": "/api/pilot/sessions/:id/after-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 458
+        "line": 475
       }
     },
     {
@@ -10452,7 +10466,7 @@
         "path": "/api/pilot/sessions/:id/feedback",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 474
+        "line": 491
       }
     },
     {
@@ -10466,7 +10480,7 @@
         "path": "/api/pilot/sessions/:id/check-out",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 490
+        "line": 507
       }
     },
     {
@@ -10480,7 +10494,7 @@
         "path": "/api/pilot/upload-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 506
+        "line": 523
       }
     },
     {
@@ -10494,7 +10508,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 517
+        "line": 534
       }
     },
     {
@@ -10508,7 +10522,7 @@
         "path": "/api/pilot/sessions/:id/deduct-stock",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 533
+        "line": 550
       }
     },
     {
@@ -10522,7 +10536,7 @@
         "path": "/api/pilot/inventory",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 548
+        "line": 565
       }
     },
     {
@@ -10536,7 +10550,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 559
+        "line": 576
       }
     },
     {
@@ -24077,6 +24091,78 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:PilotAiSuitability",
+      "type": "SharedType",
+      "label": "PilotAiSuitability",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotAiSuitability",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotLashProfile",
+      "type": "SharedType",
+      "label": "PilotLashProfile",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotLashProfile",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotAiAssessmentRecommendation",
+      "type": "SharedType",
+      "label": "PilotAiAssessmentRecommendation",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotAiAssessmentRecommendation",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotAiAssessment",
+      "type": "SharedType",
+      "label": "PilotAiAssessment",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotAiAssessment",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotAiAnalyzeRequest",
+      "type": "SharedType",
+      "label": "PilotAiAnalyzeRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotAiAnalyzeRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotAiAssessmentResponse",
+      "type": "SharedType",
+      "label": "PilotAiAssessmentResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotAiAssessmentResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:PinnedLinkItem",
       "type": "SharedType",
       "label": "PinnedLinkItem",
@@ -28145,8 +28231,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13107118,
-        "lineCount": 284976,
+        "sizeBytes": 13108962,
+        "lineCount": 285012,
         "ext": ".ts"
       }
     },
@@ -30576,8 +30662,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22032,
-        "lineCount": 589,
+        "sizeBytes": 22288,
+        "lineCount": 599,
         "ext": ".ts"
       }
     },
@@ -31167,6 +31253,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/pilot/pilot-ai.service.ts",
+      "type": "File",
+      "label": "pilot-ai.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/pilot-ai.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15299,
+        "lineCount": 320,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/pilot/pilot.service.test.ts",
       "type": "File",
       "label": "pilot.service.test.ts",
@@ -31174,8 +31273,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 35505,
-        "lineCount": 1097,
+        "sizeBytes": 39548,
+        "lineCount": 1198,
         "ext": ".ts"
       }
     },
@@ -31187,8 +31286,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 64898,
-        "lineCount": 1876,
+        "sizeBytes": 66913,
+        "lineCount": 1945,
         "ext": ".ts"
       }
     },
@@ -31200,8 +31299,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24613,
-        "lineCount": 573,
+        "sizeBytes": 25334,
+        "lineCount": 590,
         "ext": ".ts"
       }
     },
@@ -36244,8 +36343,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70336,
-        "lineCount": 1450,
+        "sizeBytes": 96212,
+        "lineCount": 1902,
         "ext": ".tsx"
       }
     },
@@ -36322,8 +36421,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17484,
-        "lineCount": 401,
+        "sizeBytes": 18800,
+        "lineCount": 414,
         "ext": ".tsx"
       }
     },
@@ -37485,6 +37584,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/pilot.api.test.ts",
+      "type": "File",
+      "label": "pilot.api.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/pilot.api.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1694,
+        "lineCount": 55,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/pilot.api.ts",
       "type": "File",
       "label": "pilot.api.ts",
@@ -37492,8 +37604,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8828,
-        "lineCount": 209,
+        "sizeBytes": 9138,
+        "lineCount": 218,
         "ext": ".ts"
       }
     },
@@ -38441,8 +38553,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10337,
-        "lineCount": 403,
+        "sizeBytes": 12222,
+        "lineCount": 453,
         "ext": ".ts"
       }
     },
@@ -43467,6 +43579,13 @@
     {
       "id": "edge:route:POST:/api/pilot/sessions/:id/assessment:ws:apps/api",
       "source": "route:POST:/api/pilot/sessions/:id/assessment",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sessions/:id/ai-analyze:ws:apps/api",
+      "source": "route:POST:/api/pilot/sessions/:id/ai-analyze",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -51326,6 +51445,48 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:PilotAiSuitability:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiSuitability",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotLashProfile:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotLashProfile",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotAiAssessmentRecommendation:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiAssessmentRecommendation",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotAiAssessment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiAssessment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotAiAnalyzeRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiAnalyzeRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotAiAssessmentResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiAssessmentResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PinnedLinkItem:ws:packages/shared",
       "source": "type:@mos-lab/shared:PinnedLinkItem",
       "target": "ws:packages/shared",
@@ -56039,6 +56200,13 @@
     {
       "id": "edge:file:apps/api/src/modules/payroll-ledger/shadow-settlement.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/payroll-ledger/shadow-settlement.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/pilot-ai.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/pilot-ai.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -71304,6 +71472,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sessions/:id/ai-analyze",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sessions/:id/ai-analyze",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/sessions/:id/steps",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/pilot/sessions/:id/steps",
@@ -75728,6 +75903,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sessions/:id/ai-analyze",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sessions/:id/ai-analyze",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sessions/:id/steps",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/pilot/sessions/:id/steps",
@@ -77103,6 +77285,13 @@
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/assessment",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:POST:/api/pilot/sessions/:id/assessment",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sessions/:id/ai-analyze",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sessions/:id/ai-analyze",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -83162,6 +83351,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sessions/:id/ai-analyze",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sessions/:id/ai-analyze",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sessions/:id/steps",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/pilot/sessions/:id/steps",
@@ -83975,31 +84171,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2960,
-    "totalEdges": 6472,
+    "totalNodes": 2969,
+    "totalEdges": 6484,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 159,
-      "FastifyRoute": 632,
+      "FastifyRoute": 633,
       "Component": 57,
-      "SharedType": 1078,
+      "SharedType": 1084,
       "DesignToken": 12,
       "UIComponent": 204,
-      "File": 815
+      "File": 817
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1249,
-      "HANDLES_ROUTE": 632,
+      "EXPORTS": 1255,
+      "HANDLES_ROUTE": 633,
       "RENDERS": 261,
       "USES_TOKEN": 206,
-      "IMPORTS": 448,
+      "IMPORTS": 449,
       "QUERIES_MODEL": 370,
-      "API_CALL": 3306
+      "API_CALL": 3310
     },
-    "fastifyRouteCount": 637,
+    "fastifyRouteCount": 638,
     "prismaModelCount": 159,
     "nextPageCount": 57,
-    "sharedTypeCount": 1078
+    "sharedTypeCount": 1084
   },
   "routes": [
     {
@@ -87692,6 +87888,13 @@
       "moduleName": "pilot"
     },
     {
+      "method": "POST",
+      "path": "/api/pilot/sessions/:id/ai-analyze",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
       "method": "GET",
       "path": "/api/pilot/sessions/:id/steps",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
@@ -89700,7 +89903,7 @@
       "dbSource": "crm",
       "modelName": "CrmPilotSession",
       "tableName": "crm_pilot_sessions",
-      "fieldCount": 43,
+      "fieldCount": 44,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

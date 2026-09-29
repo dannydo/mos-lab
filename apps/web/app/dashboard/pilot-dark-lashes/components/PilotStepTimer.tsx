@@ -2,19 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button, Input, Popconfirm, Tooltip, message } from 'antd';
-import {
-  Check,
-  CheckCircle,
-  Clock,
-  Edit3,
-  FileText,
-  Play,
-  RotateCcw,
-  Sparkles,
-  StopCircle,
-} from 'lucide-react';
+import { Check, CheckCircle, Clock, Edit3, FileText, Play, RotateCcw, Sparkles, StopCircle } from 'lucide-react';
 import dayjs from 'dayjs';
-import type { PilotSessionStep } from '@mos-lab/shared';
+import type { PilotSessionStep, PilotAiAssessment } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { AdaptiveModal } from '../../../../components/ui/AdaptiveOverlay';
@@ -50,9 +40,16 @@ interface PilotStepTimerProps {
   steps: PilotSessionStep[];
   onStepsChange: (newSteps: PilotSessionStep[]) => void;
   readOnly?: boolean;
+  aiAssessment?: PilotAiAssessment | null;
 }
 
-export function PilotStepTimer({ sessionId, steps, onStepsChange, readOnly = false }: PilotStepTimerProps) {
+export function PilotStepTimer({
+  sessionId,
+  steps,
+  onStepsChange,
+  readOnly = false,
+  aiAssessment,
+}: PilotStepTimerProps) {
   const [now, setNow] = useState<number>(Date.now());
   const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
   const [noteModalOpen, setNoteModalOpen] = useState(false);
@@ -227,12 +224,24 @@ export function PilotStepTimer({ sessionId, steps, onStepsChange, readOnly = fal
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm text-slate-800 dark:text-slate-100">{step.stepName}</span>
+                      {step.stepName.toLowerCase().includes('làm mềm') &&
+                        aiAssessment?.recommendation?.solution1DurationMinutes && (
+                          <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20">
+                            <AppIcon icon={Sparkles} size="sm" className="mr-1 text-violet-500" />
+                            AI gợi ý: {aiAssessment.recommendation.solution1DurationMinutes} phút
+                          </span>
+                        )}
+                      {step.stepName.toLowerCase().includes('tạo form') &&
+                        aiAssessment?.recommendation?.solution2DurationMinutes && (
+                          <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20">
+                            <AppIcon icon={Sparkles} size="sm" className="mr-1 text-violet-500" />
+                            AI gợi ý: {aiAssessment.recommendation.solution2DurationMinutes} phút
+                          </span>
+                        )}
                       <span
                         className={`inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusBg}`}
                       >
-                        {isRunning && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-ping" />
-                        )}
+                        {isRunning && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-ping" />}
                         {statusLabel}
                       </span>
                     </div>

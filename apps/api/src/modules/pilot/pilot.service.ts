@@ -29,8 +29,12 @@ import type {
   ReorderPilotAssessmentCriteriaRequest,
   PilotCriterionEvaluation,
   SavePilotAssessmentRequest,
+  PilotAiAssessment,
+  PilotAiAnalyzeRequest,
+  PilotAiAssessmentResponse,
 } from '@mos-lab/shared';
 import { DEFAULT_DARK_LASH_SOP_STEPS } from '@mos-lab/shared';
+import { PilotAiService } from './pilot-ai.service.js';
 
 export function pilotMediaDir(): string {
   const configured = String(process.env.PILOT_MEDIA_DIR || '').trim();
@@ -479,6 +483,16 @@ export class PilotService {
       }
     }
 
+    let aiAssessment: PilotAiAssessment | null = null;
+    if (raw.aiAssessmentJson) {
+      try {
+        aiAssessment =
+          typeof raw.aiAssessmentJson === 'string' ? JSON.parse(raw.aiAssessmentJson) : raw.aiAssessmentJson;
+      } catch {
+        aiAssessment = null;
+      }
+    }
+
     const steps = Array.isArray(raw.steps) ? raw.steps.map((s: SafeAny) => this.formatSessionStep(s)) : [];
 
     let totalTechnicalDurationSeconds = 0;
@@ -505,6 +519,7 @@ export class PilotService {
       assessmentNotes: raw.assessmentNotes ?? null,
       assessmentCriteria,
       assessedAt: assessedAtStr,
+      aiAssessment,
       beforePhotoUrl: raw.beforePhotoUrl ?? null,
       serviceDoneAt: serviceDoneAtStr,
       afterPhotoUrl: raw.afterPhotoUrl ?? null,
@@ -1586,6 +1601,8 @@ export class PilotService {
     }
 
     const criteriaJson = data.criteriaSnapshot ? JSON.stringify(data.criteriaSnapshot) : null;
+    const aiAssessmentJson =
+      data.aiAssessment !== undefined ? (data.aiAssessment ? JSON.stringify(data.aiAssessment) : null) : undefined;
     const now = new Date();
 
     const updated = await fastify.prisma.crm.crmPilotSession.update({
@@ -1595,6 +1612,7 @@ export class PilotService {
         assessmentReason: data.result === 'FAIL' ? data.reason?.trim() : null,
         assessmentNotes: data.notes?.trim() || null,
         assessmentCriteriaJson: criteriaJson,
+        ...(aiAssessmentJson !== undefined ? { aiAssessmentJson } : {}),
         assessedAt: now,
         status: nextStatus,
       },
@@ -1605,6 +1623,51 @@ export class PilotService {
     });
 
     return this.formatSession(updated);
+  }
+
+  static async aiAnalyzeSession(
+    fastify: FastifyInstance,
+    sessionId: number,
+    data: PilotAiAnalyzeRequest
+  ): Promise<PilotAiAssessmentResponse> {
+    const existing = await fastify.prisma.crm.crmPilotSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        materials: true,
+        steps: true,
+      },
+    });
+    if (!existing) {
+      throw new PilotServiceError('Không tìm thấy ca dịch vụ pilot tương ứng.', 404);
+    }
+
+    const aiAssessment = await PilotAiService.analyzeLash(fastify, {
+      ...data,
+      photoUrl: data.photoUrl || existing.beforePhotoUrl || undefined,
+    });
+
+    const updateData: Record<string, SafeAny> = {
+      aiAssessmentJson: JSON.stringify(aiAssessment),
+    };
+
+    // If session doesn't have a beforePhotoUrl yet, but one was provided in the analysis
+    if (!existing.beforePhotoUrl && (data.photoUrl || aiAssessment.photoUrl)) {
+      updateData.beforePhotoUrl = data.photoUrl || aiAssessment.photoUrl;
+    }
+
+    const updated = await fastify.prisma.crm.crmPilotSession.update({
+      where: { id: sessionId },
+      data: updateData,
+      include: {
+        materials: true,
+        steps: true,
+      },
+    });
+
+    return {
+      aiAssessment,
+      session: this.formatSession(updated),
+    };
   }
 
   // ═══════════════════════════════════════════

@@ -23,6 +23,7 @@ import type {
   UpdatePilotAssessmentCriterionRequest,
   ReorderPilotAssessmentCriteriaRequest,
   SavePilotAssessmentRequest,
+  PilotAiAnalyzeRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { PilotService, PilotServiceError, pilotMediaDir } from './pilot.service.js';
@@ -283,6 +284,22 @@ export async function pilotRoutes(fastify: FastifyInstance) {
       return reply.send(session);
     } catch (error) {
       return sendError(fastify, reply, error, 'Save pilot session assessment error');
+    }
+  });
+
+  // AI Analyze Lash Assessment (MOS-FEAT-66)
+  fastify.post('/pilot/sessions/:id/ai-analyze', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return reply.status(400).send({ error: 'INVALID_ID', message: 'ID ca pilot không hợp lệ.' });
+      }
+      const body = request.body as PilotAiAnalyzeRequest;
+      const result = await PilotService.aiAnalyzeSession(fastify, id, body);
+      return reply.send(result);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'AI analyze lash assessment error');
     }
   });
 
