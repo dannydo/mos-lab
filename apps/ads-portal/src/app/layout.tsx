@@ -3,14 +3,7 @@ import '@ant-design/v5-patch-for-react-19';
 import type { Metadata } from 'next';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { ThemeProvider } from '../context/ThemeContext';
-import { Outfit } from 'next/font/google';
 import './globals.css';
-
-const outfit = Outfit({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['300', '400', '500', '600', '700', '800'],
-  variable: '--font-sans',
-});
 
 export const metadata: Metadata = {
   title: 'Wings Ads & Lead Portal',
@@ -23,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`h-full ${outfit.variable}`}>
+    <html lang="vi" className="h-full">
       <head>
         <meta name="color-scheme" content="light dark" />
       </head>
