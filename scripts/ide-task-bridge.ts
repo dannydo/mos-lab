@@ -131,6 +131,15 @@ async function handleWaitAndDeploy(
           );
           break;
         }
+
+        // Terminal state detection: If ticket was already settled or release checkpoint already recorded
+        if (
+          payload?.data?.code === 'IDE_RELEASE_ALREADY_RECORDED' ||
+          payload?.data?.code === 'IDE_CURRENT_APPROVAL_MISSING'
+        ) {
+          process.stdout.write('Production release already recorded or settled on server. Exiting cleanly.\n');
+          process.exit(0);
+        }
       }
     } catch {
       // Retry transient error
@@ -184,11 +193,43 @@ async function handleWaitAndDeploy(
           stdio: 'inherit',
         });
       } catch (mergeErr) {
-        process.stderr.write(`\n[BRIDGE ERROR] Merge conflict when merging ${commitSha} into main: ${mergeErr}\n`);
-        speakAsync(
-          'Anh Danny ơi, nhánh ticket bị xung đột khi merge vào main, cần xử lý xung đột git để hoàn tất deploy ạ.'
-        );
-        throw mergeErr;
+        // Auto-resolve conflicts if they are strictly in generated files (graph.html, graph.json)
+        let resolved = false;
+        try {
+          const conflictFiles = execFileSync('git', ['-C', mainRepo, 'diff', '--name-only', '--diff-filter=U'], {
+            encoding: 'utf8',
+          })
+            .trim()
+            .split('\n')
+            .filter(Boolean);
+          const isOnlyGenerated =
+            conflictFiles.length > 0 && conflictFiles.every((f) => f.startsWith('apps/web/public/graph.'));
+          if (isOnlyGenerated) {
+            process.stdout.write(
+              'Auto-resolving generated graph files conflicts with --ours and committing merge...\n'
+            );
+            execFileSync(
+              'git',
+              ['-C', mainRepo, 'checkout', '--ours', '--', 'apps/web/public/graph.html', 'apps/web/public/graph.json'],
+              { stdio: 'inherit' }
+            );
+            execFileSync('git', ['-C', mainRepo, 'add', 'apps/web/public/graph.html', 'apps/web/public/graph.json'], {
+              stdio: 'inherit',
+            });
+            execFileSync('git', ['-C', mainRepo, 'commit', '--no-edit'], { stdio: 'inherit' });
+            resolved = true;
+          }
+        } catch {
+          // Fall through to error reporting
+        }
+
+        if (!resolved) {
+          process.stderr.write(`\n[BRIDGE ERROR] Merge conflict when merging ${commitSha} into main: ${mergeErr}\n`);
+          speakAsync(
+            'Anh Danny ơi, nhánh ticket bị xung đột khi merge vào main, cần xử lý xung đột git để hoàn tất deploy ạ.'
+          );
+          throw mergeErr;
+        }
       }
 
       // 2. Push to origin main
@@ -349,6 +390,7 @@ async function main() {
     const pollIntervalMs = 5_000;
     const timeoutMs = 2 * 60 * 60 * 1000; // 2 hours
     const startTime = Date.now();
+    let commitDone = false;
 
     process.stdout.write(
       `Listening for Danny's commit approval on mOS Inbox (polling every 5s for task ${taskId})...\n`
@@ -413,11 +455,8 @@ async function main() {
               'Anh Danny đã duyệt commit trên mOS Inbox. Em đã tự động commit và chuyển sang Cổng 3 cho anh rồi ạ.'
             );
 
-            if (autoDeploy) {
-              process.stdout.write('Auto-deploy enabled: continuing to listen for Gate 3 (deploy approval)...\n');
-              await handleWaitAndDeploy(apiUrl, token, taskId, worktreePath);
-            }
-            process.exit(0);
+            commitDone = true;
+            break;
           }
         }
       } catch {
@@ -425,7 +464,16 @@ async function main() {
       }
       await new Promise((r) => setTimeout(r, pollIntervalMs));
     }
-    throw new Error('Timed out waiting for commit approval from mOS Inbox.');
+
+    if (!commitDone) {
+      throw new Error('Timed out waiting for commit approval from mOS Inbox.');
+    }
+
+    if (autoDeploy) {
+      process.stdout.write('Auto-deploy enabled: continuing to listen for Gate 3 (deploy approval)...\n');
+      await handleWaitAndDeploy(apiUrl, token, taskId, worktreePath);
+    }
+    process.exit(0);
   }
 
   const receipt = JSON.parse(readFileSync(resolve(receiptPath), 'utf8'));
