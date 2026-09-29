@@ -63,6 +63,7 @@ import type {
   TrendsResponse,
   TelesaleTargetOverview,
   TelesaleTargetConfigDto,
+  TelesaleTargetCloneDto,
   TelesaleCustomerPoolResponse,
 } from '@mos-lab/shared';
 
@@ -416,6 +417,16 @@ export const kpiApi = {
     ): Promise<{ success: boolean; config: TelesaleTargetConfigDto }> => {
       const response = await api.post('/kpi/telesale-target/config', data);
       return response.data;
+    },
+    cloneConfig: async (
+      data: TelesaleTargetCloneDto
+    ): Promise<{ success: boolean; config: TelesaleTargetConfigDto }> => {
+      const response = await api.post('/kpi/telesale-target/clone', data);
+      return response.data;
+    },
+    getMonths: async (): Promise<string[]> => {
+      const response = await api.get('/kpi/telesale-target/months');
+      return response.data?.months || ['2026-10'];
     },
     getCustomerPool: async (params: {
       stage: string;

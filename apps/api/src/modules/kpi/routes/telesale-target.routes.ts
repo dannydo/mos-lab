@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { TelesalePipelineStageKey, TelesaleTargetConfigDto } from '@mos-lab/shared';
+import { TelesalePipelineStageKey, TelesaleTargetConfigDto, TelesaleTargetCloneDto } from '@mos-lab/shared';
 import { TelesaleTargetService } from '../services/telesale-target.service.js';
 
 export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
@@ -19,7 +19,37 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // 2. Save Target Config (Manager/Admin)
+  // 2. List Configured Months
+  fastify.get('/kpi/telesale-target/months', { preHandler: [requireAuth] }, async (_request, reply) => {
+    try {
+      const months = await TelesaleTargetService.listConfiguredMonths(fastify);
+      return reply.send({ months });
+    } catch (err: any) {
+      fastify.log.error(`Failed to list telesale months: ${err.message}`);
+      return reply.status(500).send({ error: err.message || 'Internal Server Error' });
+    }
+  });
+
+  // 3. Clone Target Config from Month to Month
+  fastify.post('/kpi/telesale-target/clone', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { sourceMonth, targetMonth, overwrite } = request.body as TelesaleTargetCloneDto;
+
+    try {
+      if (!sourceMonth || !targetMonth) {
+        return reply.status(400).send({
+          error: 'Cần cung cấp cả tháng nguồn (sourceMonth) và tháng đích (targetMonth)',
+        });
+      }
+
+      const cloned = await TelesaleTargetService.cloneConfig(fastify, sourceMonth, targetMonth, Boolean(overwrite));
+      return reply.send({ success: true, config: cloned });
+    } catch (err: any) {
+      fastify.log.error(`Failed to clone telesale target config: ${err.message}`);
+      return reply.status(400).send({ error: err.message });
+    }
+  });
+
+  // 4. Save Target Config (Manager/Admin)
   fastify.post('/kpi/telesale-target/config', { preHandler: [requireAuth] }, async (request, reply) => {
     const body = request.body as TelesaleTargetConfigDto;
 

@@ -76,6 +76,63 @@ export class TelesaleTargetService {
     return config;
   }
 
+  static async cloneConfig(
+    fastify: FastifyInstance,
+    sourceMonth: string,
+    targetMonth: string,
+    overwrite = false
+  ): Promise<TelesaleTargetConfigDto> {
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(sourceMonth) || !monthRegex.test(targetMonth)) {
+      throw new Error('Định dạng tháng không hợp lệ (cần định dạng YYYY-MM, ví dụ: 2026-11)');
+    }
+    if (sourceMonth === targetMonth) {
+      throw new Error('Tháng đích phải khác tháng nguồn');
+    }
+
+    const targetKey = this.getConfigKey(targetMonth);
+    const existing = await fastify.prisma.crm.crmConfig.findUnique({
+      where: { key: targetKey },
+    });
+
+    if (existing?.value && !overwrite) {
+      throw new Error(`Kế hoạch tháng ${targetMonth} đã tồn tại! Vui lòng chọn ghi đè nếu bạn muốn thay thế.`);
+    }
+
+    const sourceConfig = await this.getConfig(fastify, sourceMonth);
+    const clonedConfig: TelesaleTargetConfigDto = {
+      ...sourceConfig,
+      month: targetMonth,
+    };
+
+    return await this.saveConfig(fastify, clonedConfig);
+  }
+
+  static async listConfiguredMonths(fastify: FastifyInstance): Promise<string[]> {
+    try {
+      const rows = await fastify.prisma.crm.crmConfig.findMany({
+        where: {
+          key: {
+            startsWith: 'TELESALE_TARGET_CONFIG_',
+          },
+        },
+        select: { key: true },
+      });
+      const months = rows
+        .map((r) => r.key.replace('TELESALE_TARGET_CONFIG_', ''))
+        .filter((m) => /^\d{4}-\d{2}$/.test(m));
+
+      if (!months.includes('2026-10')) {
+        months.push('2026-10');
+      }
+
+      return Array.from(new Set(months)).sort();
+    } catch (err) {
+      fastify.log.warn(`Failed to list configured telesale months: ${err}`);
+      return ['2026-10'];
+    }
+  }
+
   static async getOverview(
     fastify: FastifyInstance,
     month = '2026-10',

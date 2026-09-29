@@ -92,6 +92,12 @@ export interface TelesaleTargetConfigDto {
   };
 }
 
+export interface TelesaleTargetCloneDto {
+  sourceMonth: string;
+  targetMonth: string;
+  overwrite?: boolean;
+}
+
 export interface TelesaleCustomerPoolItem {
   id: number;
   customerId: number;

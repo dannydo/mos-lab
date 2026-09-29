@@ -1,9 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { Button, message, Tooltip } from 'antd';
-import { Trophy, Maximize2, Minimize2, RotateCw, Settings, ArrowLeft, Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button, message, Tooltip, DatePicker, Dropdown } from 'antd';
+import {
+  Trophy,
+  Maximize2,
+  Minimize2,
+  RotateCw,
+  Settings,
+  ArrowLeft,
+  Loader2,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+} from 'lucide-react';
+import dayjs, { Dayjs } from 'dayjs';
 import { TelesaleTargetOverview, TelesalePipelineStage } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { KpiOverviewCards } from './components/KpiOverviewCards';
@@ -11,8 +25,15 @@ import { DailyActionSchedule } from './components/DailyActionSchedule';
 import { DataPipelineStages } from './components/DataPipelineStages';
 import { CustomerPoolDrawer } from './components/CustomerPoolDrawer';
 import { TargetConfigModal } from './components/TargetConfigModal';
+import { PlanCloneModal } from './components/PlanCloneModal';
 
-export default function TelesaleTargetPage() {
+function TelesaleTargetContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlMonth = searchParams?.get('month') || '2026-10';
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(urlMonth);
+  const [availableMonths, setAvailableMonths] = useState<string[]>(['2026-10']);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [overview, setOverview] = useState<TelesaleTargetOverview | null>(null);
@@ -23,40 +44,89 @@ export default function TelesaleTargetPage() {
   const [selectedStage, setSelectedStage] = useState<TelesalePipelineStage | null>(null);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [configModalOpen, setConfigModalOpen] = useState<boolean>(false);
+  const [cloneModalOpen, setCloneModalOpen] = useState<boolean>(false);
 
-  const fetchOverview = useCallback(async (isSilent = false) => {
-    if (!isSilent) setRefreshing(true);
+  // Synchronize with URL query parameter
+  useEffect(() => {
+    if (urlMonth && urlMonth !== selectedMonth && /^\d{4}-\d{2}$/.test(urlMonth)) {
+      setSelectedMonth(urlMonth);
+    }
+  }, [urlMonth, selectedMonth]);
+
+  // Load configured months
+  const loadAvailableMonths = useCallback(async () => {
     try {
-      const data = await apiClient.telesaleTarget.getOverview('2026-10');
-      setOverview(data);
-      setError(null);
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string; error?: string } }; message?: string })?.response?.data
-          ?.message ||
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        (err as { message?: string })?.message ||
-        'Không thể tải dữ liệu mục tiêu Telesales Tháng 10';
-      setError(msg);
-      if (!isSilent) {
-        message.error('Không thể tải dữ liệu mục tiêu Telesales Tháng 10');
+      const months = await apiClient.telesaleTarget.getMonths();
+      if (months && months.length > 0) {
+        setAvailableMonths(months);
       }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    } catch {
+      // ignore
     }
   }, []);
 
   useEffect(() => {
-    fetchOverview();
+    loadAvailableMonths();
+  }, [loadAvailableMonths]);
+
+  // Fetch overview data for month
+  const fetchOverview = useCallback(
+    async (monthToFetch = selectedMonth, isSilent = false) => {
+      if (!isSilent) setRefreshing(true);
+      try {
+        const data = await apiClient.telesaleTarget.getOverview(monthToFetch);
+        setOverview(data);
+        setError(null);
+      } catch (err: unknown) {
+        const msg =
+          (err as { response?: { data?: { message?: string; error?: string } }; message?: string })?.response?.data
+            ?.message ||
+          (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+          (err as { message?: string })?.message ||
+          `Không thể tải dữ liệu mục tiêu Telesales Tháng ${monthToFetch}`;
+        setError(msg);
+        if (!isSilent) {
+          message.error(msg);
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [selectedMonth]
+  );
+
+  useEffect(() => {
+    fetchOverview(selectedMonth);
 
     // Auto-refresh every 60 seconds
     const interval = setInterval(() => {
-      fetchOverview(true);
+      fetchOverview(selectedMonth, true);
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [fetchOverview]);
+  }, [fetchOverview, selectedMonth]);
+
+  const handleMonthChange = (newMonth: string) => {
+    if (!/^\d{4}-\d{2}$/.test(newMonth)) return;
+    setSelectedMonth(newMonth);
+    router.push(`/dashboard/telesale-target?month=${newMonth}`);
+  };
+
+  const handlePrevMonth = () => {
+    const d = dayjs(`${selectedMonth}-01`).subtract(1, 'month');
+    handleMonthChange(d.format('YYYY-MM'));
+  };
+
+  const handleNextMonth = () => {
+    const d = dayjs(`${selectedMonth}-01`).add(1, 'month');
+    handleMonthChange(d.format('YYYY-MM'));
+  };
+
+  const handleCloneSuccess = (clonedMonth: string) => {
+    loadAvailableMonths();
+    handleMonthChange(clonedMonth);
+  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -80,11 +150,13 @@ export default function TelesaleTargetPage() {
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-amber-400">
         <Loader2 className="w-10 h-10 animate-spin text-amber-400" />
         <p className="mt-4 text-zinc-400 font-mono text-sm tracking-wider">
-          Đang khởi tạo War Room Telesales Tháng 10...
+          Đang khởi tạo War Room Telesales Tháng {selectedMonth.split('-')[1]}/{selectedMonth.split('-')[0]}...
         </p>
       </div>
     );
   }
+
+  const [yearStr, monthNumStr] = selectedMonth.split('-');
 
   return (
     <div
@@ -109,13 +181,13 @@ export default function TelesaleTargetPage() {
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.5"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253"
-                  />
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                  <path d="M2 12h20" />
                 </svg>
                 <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest -mt-1">WINGS</span>
               </div>
@@ -138,16 +210,81 @@ export default function TelesaleTargetPage() {
                 KẾ HOẠCH TELESALE / BOOKING
               </h1>
 
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 mt-1.5">
-                <span className="text-sm sm:text-base font-bold text-amber-300 font-mono">THÁNG 10/2026</span>
-                <span className="text-zinc-600 hidden sm:inline">•</span>
-                <span className="text-xs text-zinc-300 font-medium tracking-wide">
+              {/* Month Navigator Group */}
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mt-2">
+                {/* Prev / Dropdown / Next */}
+                <div className="inline-flex items-center gap-1 bg-black/60 border border-amber-500/40 rounded-2xl p-1 shadow-inner backdrop-blur-md">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ChevronLeft className="w-4 h-4 text-amber-400" />}
+                    onClick={handlePrevMonth}
+                    className="!text-amber-400 hover:!bg-amber-500/20 !rounded-xl !h-8 !w-8 !p-0 flex items-center justify-center"
+                    title="Tháng trước"
+                  />
+
+                  {/* Month Display & Quick Dropdown */}
+                  <Dropdown
+                    menu={{
+                      items: availableMonths.map((m) => ({
+                        key: m,
+                        label: (
+                          <span
+                            className={`font-mono text-xs flex items-center justify-between gap-4 ${
+                              m === selectedMonth ? 'font-bold text-amber-400' : ''
+                            }`}
+                          >
+                            <span>
+                              Tháng {m.split('-')[1]}/{m.split('-')[0]}
+                            </span>
+                            {m === '2026-10' && (
+                              <span className="text-[10px] text-zinc-400 px-1.5 py-0.5 rounded bg-zinc-800">Chuẩn</span>
+                            )}
+                            {m === selectedMonth && <span className="text-amber-400 text-xs">●</span>}
+                          </span>
+                        ),
+                        onClick: () => handleMonthChange(m),
+                      })),
+                    }}
+                    trigger={['click']}
+                  >
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-700/20 hover:from-amber-500/30 hover:to-amber-700/30 text-amber-300 border border-amber-500/30 text-xs sm:text-sm font-extrabold font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                      <span>
+                        THÁNG {monthNumStr}/{yearStr}
+                      </span>
+                      <span className="text-[10px] text-amber-400/80">▼</span>
+                    </button>
+                  </Dropdown>
+
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ChevronRight className="w-4 h-4 text-amber-400" />}
+                    onClick={handleNextMonth}
+                    className="!text-amber-400 hover:!bg-amber-500/20 !rounded-xl !h-8 !w-8 !p-0 flex items-center justify-center"
+                    title="Tháng sau"
+                  />
+                </div>
+
+                {/* Calendar MonthPicker for Custom Choice */}
+                <DatePicker
+                  picker="month"
+                  format="MM/YYYY"
+                  value={dayjs(`${selectedMonth}-01`)}
+                  onChange={(d: Dayjs | null) => d && d.isValid() && handleMonthChange(d.format('YYYY-MM'))}
+                  allowClear={false}
+                  className="!h-8 !rounded-xl !bg-zinc-900/80 !border-zinc-700 hover:!border-amber-500/40 !text-zinc-200 !text-xs font-mono w-28 text-center"
+                  placeholder="Chọn tháng"
+                />
+
+                <span className="text-zinc-600 hidden md:inline">•</span>
+                <span className="text-xs text-zinc-300 font-medium tracking-wide hidden sm:inline">
                   TEAMWORK · MORE BOOK · MORE DONE · GROW TOGETHER
                 </span>
-              </div>
-
-              <div className="text-[11px] text-zinc-400 mt-1 italic hidden md:block">
-                GOOD CALL • GOOD BOOK • HAPPY CLIENT • RẤT WINGS
               </div>
             </div>
           </div>
@@ -163,6 +300,17 @@ export default function TelesaleTargetPage() {
               </Button>
             </Link>
 
+            {/* Clone Plan Button */}
+            <Tooltip title="Sao chép toàn bộ chỉ tiêu kế hoạch sang tháng mới">
+              <Button
+                icon={<Copy className="w-3.5 h-3.5" />}
+                onClick={() => setCloneModalOpen(true)}
+                className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40 text-xs rounded-xl font-medium flex items-center gap-1.5 shadow-sm"
+              >
+                Sao chép Kế hoạch
+              </Button>
+            </Tooltip>
+
             <Tooltip title="Cài đặt chỉ tiêu Done của 4 nhóm khách hàng và KPI Team">
               <Button
                 icon={<Settings className="w-3.5 h-3.5" />}
@@ -176,7 +324,7 @@ export default function TelesaleTargetPage() {
             <Tooltip title="Cập nhật số liệu tức thì">
               <Button
                 icon={<RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
-                onClick={() => fetchOverview(false)}
+                onClick={() => fetchOverview(selectedMonth, false)}
                 className="bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 border-zinc-700 text-xs rounded-xl flex items-center"
               >
                 Làm mới
@@ -203,14 +351,16 @@ export default function TelesaleTargetPage() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/40 bg-amber-900/30 text-amber-400 shadow-lg shadow-amber-500/10">
             <RotateCw className="h-6 w-6" />
           </div>
-          <h3 className="mt-4 text-lg font-bold text-zinc-100">Chưa thể hiển thị dữ liệu War Room Telesales</h3>
+          <h3 className="mt-4 text-lg font-bold text-zinc-100">
+            Chưa thể hiển thị dữ liệu War Room Telesales Tháng {monthNumStr}/{yearStr}
+          </h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
             {error ||
               'Máy chủ API vừa khởi động lại hoặc đường truyền mạng chập chờn. Anh vui lòng bấm Thử lại để tải dữ liệu realtime.'}
           </p>
           <Button
             type="primary"
-            onClick={() => fetchOverview(false)}
+            onClick={() => fetchOverview(selectedMonth, false)}
             loading={refreshing}
             icon={<RotateCw className="w-4 h-4" />}
             className="mt-5 rounded-xl border-0 bg-amber-500 font-semibold text-black hover:bg-amber-400 shadow-lg shadow-amber-500/20 px-6 py-2 h-auto flex items-center gap-2 mx-auto"
@@ -251,8 +401,33 @@ export default function TelesaleTargetPage() {
         open={configModalOpen}
         onClose={() => setConfigModalOpen(false)}
         overview={overview}
-        onSuccess={() => fetchOverview(false)}
+        onSuccess={() => fetchOverview(selectedMonth, false)}
+      />
+
+      {/* 6. MODAL: PLAN CLONE (ANY MONTH) */}
+      <PlanCloneModal
+        open={cloneModalOpen}
+        onClose={() => setCloneModalOpen(false)}
+        currentMonth={selectedMonth}
+        availableMonths={availableMonths}
+        overview={overview}
+        onSuccess={handleCloneSuccess}
       />
     </div>
+  );
+}
+
+export default function TelesaleTargetPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-amber-400">
+          <Loader2 className="w-10 h-10 animate-spin text-amber-400" />
+          <p className="mt-4 text-zinc-400 font-mono text-sm tracking-wider">Đang tải War Room Telesales...</p>
+        </div>
+      }
+    >
+      <TelesaleTargetContent />
+    </Suspense>
   );
 }
