@@ -20,7 +20,7 @@ export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
   dailyBookTarget: 25,
   dailyCallPerStaff: 90,
   staffTargets: [
-    { legacyStaffId: 52454, name: 'Phượng', doneTarget: 150 },
+    { legacyStaffId: 50670, name: 'Phượng', doneTarget: 150 },
     { legacyStaffId: 52086, name: 'Kiều', doneTarget: 100 },
     { legacyStaffId: 32268, name: 'Điệp', doneTarget: 100 },
     { legacyStaffId: 52598, name: 'Vũ', doneTarget: 100 },
@@ -180,10 +180,20 @@ export class TelesaleTargetService {
         o.order_state as orderState,
         o.date_created as dateCreated,
         o.user_id as customerId,
-        COALESCE(DATEDIFF(o.date_created, up.last_order_booking), 999) as daysSinceLastVisit,
+        COALESCE(
+          (
+            SELECT DATEDIFF(o.date_created, prev_o.booking_date_start)
+            FROM \`order\` prev_o
+            WHERE prev_o.user_id = o.user_id
+              AND prev_o.order_state = 'Completed'
+              AND prev_o.date_created < o.date_created
+            ORDER BY prev_o.date_created DESC
+            LIMIT 1
+          ),
+          999
+        ) as daysSinceLastVisit,
         CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
       FROM \`order\` o
-      LEFT JOIN \`user_profile\` up ON up.user_id = o.user_id
       WHERE o.date_created >= '${startDateTimeStr}' 
         AND o.date_created <= '${endDateTimeStr}'
         AND o.created_staff_id IN (${bkIdsStr})
