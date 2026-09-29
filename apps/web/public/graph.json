@@ -28508,7 +28508,7 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 48513,
+        "sizeBytes": 48555,
         "lineCount": 1168,
         "ext": ".ts"
       }
@@ -33155,6 +33155,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopAgendaManager.test.tsx",
+      "type": "File",
+      "label": "AcademyWorkshopAgendaManager.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopAgendaManager.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2721,
+        "lineCount": 91,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopAgendaManager.tsx",
       "type": "File",
       "label": "AcademyWorkshopAgendaManager.tsx",
@@ -33162,8 +33175,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopAgendaManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23874,
-        "lineCount": 585,
+        "sizeBytes": 24250,
+        "lineCount": 591,
         "ext": ".tsx"
       }
     },
@@ -33903,8 +33916,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32281,
-        "lineCount": 773,
+        "sizeBytes": 34124,
+        "lineCount": 803,
         "ext": ".tsx"
       }
     },
@@ -36854,8 +36867,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12107,
-        "lineCount": 258,
+        "sizeBytes": 12121,
+        "lineCount": 259,
         "ext": ".tsx"
       }
     },
@@ -37231,8 +37244,8 @@
       "filePath": "apps/web/lib/academy-workshop-live.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 719,
-        "lineCount": 22,
+        "sizeBytes": 3363,
+        "lineCount": 96,
         "ext": ".ts"
       }
     },
@@ -37244,8 +37257,8 @@
       "filePath": "apps/web/lib/academy-workshop-live.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6044,
-        "lineCount": 175,
+        "sizeBytes": 7505,
+        "lineCount": 214,
         "ext": ".ts"
       }
     },
@@ -56366,6 +56379,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/components/AcademyTestCalendar.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/components/AcademyTestCalendar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopAgendaManager.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopAgendaManager.test.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83798,8 +83818,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 2954,
-    "totalEdges": 6458,
+    "totalNodes": 2955,
+    "totalEdges": 6459,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 159,
@@ -83808,14 +83828,14 @@
       "SharedType": 1077,
       "DesignToken": 12,
       "UIComponent": 204,
-      "File": 812
+      "File": 813
     },
     "edgeTypeCounts": {
       "EXPORTS": 1248,
       "HANDLES_ROUTE": 630,
       "RENDERS": 261,
       "USES_TOKEN": 206,
-      "IMPORTS": 446,
+      "IMPORTS": 447,
       "QUERIES_MODEL": 370,
       "API_CALL": 3297
     },

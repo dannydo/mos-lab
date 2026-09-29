@@ -43,6 +43,7 @@ import AcademyWorkshopAgendaTemplateLibrary from './AcademyWorkshopAgendaTemplat
 import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
 import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
 import { useAcademyWorkshopAgendaTemplates } from './useAcademyWorkshopAgendaTemplates';
+import { formatAgendaExecutionText } from '../../../../lib/academy-workshop-live';
 
 const AGENDA_KIND_LABELS: Record<AcademyWorkshopAgendaKind, string> = {
   CONTENT: 'Nội dung',
@@ -394,6 +395,11 @@ export default function AcademyWorkshopAgendaManager({
                     <span className="tabular-nums">{Math.round(item.plannedDurationSeconds / 60)} phút</span>
                     {item.description ? <span>· {item.description}</span> : null}
                   </div>
+                  {formatAgendaExecutionText(item, true) ? (
+                    <div className="mt-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      {formatAgendaExecutionText(item, true)}
+                    </div>
+                  ) : null}
                   {workshop.menuAgendaItemId === item.id ||
                   workshop.activeQuiz?.agendaItemId === item.id ||
                   workshop.equipmentAgendaItemId === item.id ? (

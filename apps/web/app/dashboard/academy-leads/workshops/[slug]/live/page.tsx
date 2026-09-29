@@ -32,6 +32,8 @@ import {
 import { apiClient } from '../../../../../../lib/api-client';
 import {
   connectAcademyWorkshopSocket,
+  formatAgendaExecutionText,
+  formatAgendaTime,
   formatWorkshopClock,
   isWorkshopQuestionExpired,
   workshopInitials,
@@ -197,6 +199,12 @@ export default function WorkshopLiveControlPage() {
                 }
               : null
           );
+        }
+        if (action === 'COMPLETE') {
+          const text = updatedItem ? formatAgendaExecutionText(updatedItem, true) : null;
+          message.success(text || 'Đã hoàn thành phần agenda.');
+        } else if (action === 'START') {
+          message.success('Đã bắt đầu phần agenda.');
         }
         await refresh();
       } catch (cause: any) {
@@ -404,6 +412,12 @@ export default function WorkshopLiveControlPage() {
                 {formatWorkshopClock(agendaRemaining)}
               </div>
               {agendaRemaining < 0 && <div className="mt-2 font-bold text-red-500">QUÁ GIỜ</div>}
+              {state.activeAgendaItem.startedAt && (
+                <div className="mt-2 text-xs opacity-75 tabular-nums">
+                  Bắt đầu lúc {formatAgendaTime(state.activeAgendaItem.startedAt)} · Kế hoạch{' '}
+                  {Math.round(state.activeAgendaItem.plannedDurationSeconds / 60)} phút
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                 {state.activeAgendaItem.status === 'RUNNING' && (
                   <Button
@@ -459,85 +473,103 @@ export default function WorkshopLiveControlPage() {
             </div>
           )}
           <div className="space-y-2">
-            {(state?.agenda ?? detail.agenda).map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-inherit p-3"
-              >
-                <div>
-                  <strong>
-                    {item.sortOrder}. {cleanAgendaTitle(item.title)}
-                  </strong>
-                  <div className="text-xs opacity-60 tabular-nums">
-                    {Math.round(item.plannedDurationSeconds / 60)} phút · {AGENDA_STATUS_LABELS[item.status]}
+            {(state?.agenda ?? detail.agenda).map((item) => {
+              const executionText = formatAgendaExecutionText(item, true);
+              return (
+                <div
+                  key={item.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-inherit p-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <strong>
+                      {item.sortOrder}. {cleanAgendaTitle(item.title)}
+                    </strong>
+                    {executionText ? (
+                      <div className="mt-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        {executionText}
+                      </div>
+                    ) : item.status === 'RUNNING' && item.startedAt ? (
+                      <div className="mt-0.5 text-xs font-medium text-blue-600 dark:text-blue-400 tabular-nums">
+                        Bắt đầu lúc {formatAgendaTime(item.startedAt)} · Đang diễn ra (
+                        {Math.round(item.plannedDurationSeconds / 60)} phút dự kiến)
+                      </div>
+                    ) : item.status === 'PAUSED' && item.startedAt ? (
+                      <div className="mt-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 tabular-nums">
+                        Bắt đầu lúc {formatAgendaTime(item.startedAt)} · Đang tạm dừng
+                      </div>
+                    ) : (
+                      <div className="mt-0.5 text-xs opacity-60 tabular-nums">
+                        {Math.round(item.plannedDurationSeconds / 60)} phút · {AGENDA_STATUS_LABELS[item.status]}
+                      </div>
+                    )}
                   </div>
-                </div>
-                <Space wrap className="justify-end">
-                  {item.status === 'PENDING' && (
-                    <Button
-                      type="primary"
-                      icon={<AppIcon icon={CirclePlay} />}
-                      loading={busy}
-                      onClick={() => void agendaCommand(item.id, 'START')}
-                    >
-                      Bắt đầu
-                    </Button>
-                  )}
-                  {item.status === 'RUNNING' && (
-                    <Button
-                      icon={<AppIcon icon={CirclePause} />}
-                      loading={busy}
-                      onClick={() => void agendaCommand(item.id, 'PAUSE')}
-                    >
-                      Tạm dừng
-                    </Button>
-                  )}
-                  {item.status === 'PAUSED' && (
-                    <Button
-                      icon={<AppIcon icon={CirclePlay} />}
-                      loading={busy}
-                      onClick={() => void agendaCommand(item.id, 'RESUME')}
-                    >
-                      Tiếp tục
-                    </Button>
-                  )}
-                  {['RUNNING', 'PAUSED'].includes(item.status) && (
-                    <Popconfirm
-                      title="Hoàn thành phần này?"
-                      description="Timeline sẽ chốt thời lượng thực tế và không tự chuyển sang phần kế tiếp."
-                      okText="Hoàn thành"
-                      cancelText="Chưa"
-                      onConfirm={() => void agendaCommand(item.id, 'COMPLETE')}
-                    >
+                  <Space wrap className="justify-end">
+                    {item.status === 'PENDING' && (
                       <Button
                         type="primary"
-                        icon={<AppIcon icon={CircleCheckBig} />}
+                        icon={<AppIcon icon={CirclePlay} />}
                         loading={busy}
-                        className="font-semibold"
+                        onClick={() => void agendaCommand(item.id, 'START')}
                       >
-                        Hoàn thành phần này
+                        Bắt đầu
                       </Button>
-                    </Popconfirm>
-                  )}
-                  {['PENDING', 'RUNNING', 'PAUSED'].includes(item.status) && (
-                    <Popconfirm
-                      title="Bỏ qua phần này?"
-                      description="Phần này sẽ được ghi nhận là đã bỏ qua trong timeline."
-                      okText="Bỏ qua"
-                      cancelText="Chưa"
-                      okButtonProps={{ danger: true }}
-                      onConfirm={() => void agendaCommand(item.id, 'SKIP')}
-                    >
-                      <Button danger type="text" icon={<AppIcon icon={SkipForward} />} loading={busy}>
-                        Bỏ qua
+                    )}
+                    {item.status === 'RUNNING' && (
+                      <Button
+                        icon={<AppIcon icon={CirclePause} />}
+                        loading={busy}
+                        onClick={() => void agendaCommand(item.id, 'PAUSE')}
+                      >
+                        Tạm dừng
                       </Button>
-                    </Popconfirm>
-                  )}
-                  {item.status === 'COMPLETED' && <StatusTag status="success" label="Đã hoàn thành" />}
-                  {item.status === 'SKIPPED' && <StatusTag status="default" label="Đã bỏ qua" />}
-                </Space>
-              </div>
-            ))}
+                    )}
+                    {item.status === 'PAUSED' && (
+                      <Button
+                        icon={<AppIcon icon={CirclePlay} />}
+                        loading={busy}
+                        onClick={() => void agendaCommand(item.id, 'RESUME')}
+                      >
+                        Tiếp tục
+                      </Button>
+                    )}
+                    {['RUNNING', 'PAUSED'].includes(item.status) && (
+                      <Popconfirm
+                        title="Hoàn thành phần này?"
+                        description="Timeline sẽ chốt thời lượng thực tế và không tự chuyển sang phần kế tiếp."
+                        okText="Hoàn thành"
+                        cancelText="Chưa"
+                        onConfirm={() => void agendaCommand(item.id, 'COMPLETE')}
+                      >
+                        <Button
+                          type="primary"
+                          icon={<AppIcon icon={CircleCheckBig} />}
+                          loading={busy}
+                          className="font-semibold"
+                        >
+                          Hoàn thành phần này
+                        </Button>
+                      </Popconfirm>
+                    )}
+                    {['PENDING', 'RUNNING', 'PAUSED'].includes(item.status) && (
+                      <Popconfirm
+                        title="Bỏ qua phần này?"
+                        description="Phần này sẽ được ghi nhận là đã bỏ qua trong timeline."
+                        okText="Bỏ qua"
+                        cancelText="Chưa"
+                        okButtonProps={{ danger: true }}
+                        onConfirm={() => void agendaCommand(item.id, 'SKIP')}
+                      >
+                        <Button danger type="text" icon={<AppIcon icon={SkipForward} />} loading={busy}>
+                          Bỏ qua
+                        </Button>
+                      </Popconfirm>
+                    )}
+                    {item.status === 'COMPLETED' && <StatusTag status="success" label="Đã hoàn thành" />}
+                    {item.status === 'SKIPPED' && <StatusTag status="default" label="Đã bỏ qua" />}
+                  </Space>
+                </div>
+              );
+            })}
           </div>
         </Card>
 
