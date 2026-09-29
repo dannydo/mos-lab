@@ -301,6 +301,118 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'CV-001',
+    book: 'REWARDS',
+    title: 'Vòng xoay CV tích lũy theo cá nhân và chốt theo tháng',
+    summary:
+      'Thưởng Vòng xoay Kỹ thuật viên (CV) là mô hình lũy tiến cấp số cộng theo từng cá nhân, reset về 0 vào ngày 1 hàng tháng và không tính theo chu kỳ tuần.',
+    commandments: [
+      'Thưởng Vòng xoay CV được tính theo cấp số cộng lũy tiến dựa trên số lượng ca hoàn thành của riêng từng Kỹ thuật viên trong tháng.',
+      'Chu kỳ Vòng xoay CV reset về 0 vào đúng 00:00:00 ngày đầu tiên của mỗi tháng; không áp dụng chu kỳ tuần hay ngày.',
+      'Do tính chất phi tuyến bậc hai O(N²), khi số lượng khách làm tăng gấp đôi thì tiền thưởng vòng xoay cá nhân tăng xấp xỉ gấp 4 lần.',
+      'Mọi báo cáo, widget KPI và Leaderboard CV lấy trực tiếp số tiền thưởng thực tế đã ghi sổ trong bảng ledger staff_bonus.',
+    ],
+    rationale:
+      'Tạo động lực mạnh mẽ cho Kỹ thuật viên gia tăng năng suất và gắn bó phục vụ khách hàng liên tục trong suốt tháng mà không bị ngắt quãng.',
+    examples: [
+      'KTV A hoàn thành 40 ca trong tháng sẽ nhận mức thưởng vòng xoay cao gấp gần 4 lần so với KTV B chỉ hoàn thành 20 ca.',
+    ],
+    tags: ['CV', 'Vòng xoay', 'cấp số cộng', 'phi tuyến', 'reset tháng', 'staff_bonus'],
+    routeScopes: ['/dashboard/cv', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-29',
+    sources: [
+      { label: 'Quy tắc Vòng xoay CV', reference: 'AGENTS.md · Rule #14' },
+      { label: 'Service tính thưởng CV', reference: 'apps/web/app/dashboard/cv/components/CvXoayTab.tsx' },
+    ],
+  },
+  {
+    id: 'FC-001',
+    book: 'REWARDS',
+    title: 'Dự đoán Vòng xoay là tổng dự đoán từng người, không lấy tổng công ty bình phương',
+    summary:
+      'Dự đoán thưởng Vòng xoay (CV & CC) cuối kỳ bắt buộc phải tính cho từng nhân viên rồi lấy tổng (∑ Bonus_hat_i), tuyệt đối không đưa tổng check-in toàn công ty vào công thức bậc 2.',
+    commandments: [
+      'Vòng xoay của CV và CC là mô hình lũy tiến phi tuyến bậc hai (O(N²)). Tuyệt đối không dùng phép ngoại suy tuyến tính thông thường.',
+      'Thẻ Header tổng của Vòng xoay (CV Xoay, CC Xoay) bắt buộc phải tính bằng tổng các giá trị dự đoán của từng nhân sự: Tổng Dự Kiến = ∑ f(N_i / r), trong đó r là tỷ lệ thời gian ca làm đã trôi qua trong kỳ.',
+      'Tuyệt đối không lấy tổng lượt check-in toàn công ty N_total đưa vào công thức cấp số cộng f(N_total) vì (∑ N_i)² ≫ ∑ N_i² sẽ làm số tiền thưởng dự đoán bị phóng đại ảo gấp hàng chục lần (120-150 triệu).',
+      'Thưởng CC Xoay dự đoán phải tuân thủ điều răn CC-003: kẹp trần tối đa 1.5× tổng CC Daily Bonus dự đoán của cùng kỳ.',
+      "Vòng xoay chỉ hỗ trợ dự đoán khi người dùng xem theo Tháng (comparisonMode === 'month'); ẩn hoàn toàn khi xem theo Tuần hoặc Ngày.",
+      "Mọi nhãn hiển thị dự đoán tại thẻ StatCard và Bảng xếp hạng bắt buộc có nhãn chữ rõ ràng '🔮 Dự kiến: ~...' để chống nhầm lẫn thị giác dấu ngã (~) thành dấu âm (-).",
+    ],
+    rationale:
+      'Bảo toàn tính chính xác toán học, ngăn ngừa số liệu phóng đại ảo làm sai lệch kỳ vọng tài chính của ban giám đốc và nhân sự.',
+    examples: [
+      'Đầu tháng ngày 5, toàn công ty có 100 check-in chia cho 10 CC (mỗi người 10 ca). Dự đoán cuối tháng phải tính cho từng CC rồi cộng lại (~20 triệu), không được lấy 100 ca ngoại suy thành 600 ca toàn công ty rồi tính f(600) sẽ ra hơn 100 triệu.',
+    ],
+    tags: ['Forecast', 'Dự đoán', 'Vòng xoay', 'CV', 'CC', 'phi tuyến', 'bậc 2', 'kẹp trần 1.5x'],
+    routeScopes: ['/dashboard/cv', '/dashboard/cc', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-29',
+    sources: [
+      { label: 'Quy tắc Dự đoán Vòng Xoay', reference: 'AGENTS.md · Rule #14 & #15' },
+      { label: 'Implementation Plan', reference: 'CvXoayTab.tsx, CcXoayTab.tsx' },
+    ],
+  },
+  {
+    id: 'CC-004',
+    book: 'REWARDS',
+    title: 'Thưởng Kim Cương chỉ trao khi tỷ lệ giới thiệu đạt từ 3% trở lên',
+    summary:
+      'Tư vấn viên (CC) chỉ được nhận thưởng khách giới thiệu (Kim Cương) khi tỷ lệ giới thiệu trong tháng đạt từ ≥ 3.0% trên tổng số lượt khách tiếp đón.',
+    commandments: [
+      'Tổng lượt khách tiếp đón của CC trong tháng được chuẩn hóa bằng (Check-in + Check-out) / 2.',
+      'Tỷ lệ giới thiệu = (Số khách mới đăng ký qua CC / Tổng lượt khách tiếp đón) × 100%.',
+      'Nếu tỷ lệ giới thiệu < 3.0%, tiền thưởng Kim Cương hiển thị 0đ (không đủ điều kiện nhận thưởng) và hệ thống hiển thị số tiền thưởng tiềm năng để khuyến khích CC phấn đấu.',
+      'Khi đạt tỷ lệ ≥ 3.0%, toàn bộ số khách giới thiệu hợp lệ được nhân với mức thưởng quy định để kết chuyển vào thu nhập.',
+    ],
+    rationale:
+      'Đảm bảo tỷ lệ chuyển đổi giới thiệu đạt ngưỡng chất lượng tối thiểu, tránh tình trạng phát sinh lẻ tẻ không tạo ra hiệu ứng lan tỏa khách hàng.',
+    examples: [
+      'CC tiếp đón 100 lượt khách và giới thiệu được 3 khách mới (3.0%): Nhận đủ thưởng Kim Cương. Nếu chỉ giới thiệu được 2 khách (2.0%): Nhận 0đ thưởng Kim Cương.',
+    ],
+    tags: ['CC', 'Kim Cương', 'Giới thiệu', 'Diamond', '3.0%', 'ngưỡng thưởng'],
+    routeScopes: ['/dashboard/cc', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-29',
+    sources: [
+      { label: 'Quy tắc Thưởng Kim Cương', reference: 'apps/web/app/dashboard/cc/components/CcDiamondTab.tsx' },
+    ],
+  },
+  {
+    id: 'COMBO-002',
+    book: 'REWARDS',
+    title: 'Doanh số Combo tính theo thực thu, thu nợ chia 50/50 theo ca',
+    summary:
+      'Doanh số tính thưởng Combo CC Daily Sales Bonus chỉ ghi nhận trên tiền thực thu trong ca; nợ cũ thu được khi khách quay lại được ghi nhận cho CC ca thu nợ và chia 50/50.',
+    commandments: [
+      'Khi bán gói Combo mới có phát sinh nợ (user_debt có debt_amount > 0), doanh số tính thưởng CC Daily Sales Bonus của ngày bán chỉ tính theo số tiền thực thu trong ca (total_price_pre_tax - unpaid_debt_amount).',
+      'Khoản tiền nợ cũ khi khách hàng quay lại thanh toán (user_debt_payment) được ghi nhận vào danh mục Doanh Số Thu Nợ (debt_collected) cho CC IN / CC OUT của ngày/ca thu nợ đó.',
+      'Khoản thưởng thu nợ được chia 50/50 nếu CC IN khác CC OUT, hoặc 100% nếu một CC phụ trách cả ca.',
+      'Tuyệt đối không tính thưởng trên doanh số nợ chưa thu tiền để bảo toàn dòng tiền thực tế của doanh nghiệp.',
+    ],
+    rationale:
+      'Gắn liền quyền lợi nhân sự với dòng tiền thực thu của tiệm, đồng thời tạo động lực cho tư vấn viên ca sau nhắc khách hoàn tất các khoản công nợ tồn đọng.',
+    examples: [
+      'Khách mua Combo 2.000.000đ nhưng chỉ trả trước 1.000.000đ, nợ 1.000.000đ: CC bán chỉ được ghi nhận 1.000.000đ vào doanh số tính thưởng ngày hôm đó. Khi khách quay lại trả 1.000.000đ còn lại, ca CC tiếp đón hôm đó sẽ được ghi nhận 1.000.000đ thu nợ chia 50/50.',
+    ],
+    tags: ['Combo', 'Thực thu', 'Thu nợ', 'Debt Collection', '50/50', 'CC'],
+    routeScopes: ['/dashboard/cc', '/dashboard/customers', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-29',
+    sources: [
+      { label: 'Quy tắc Doanh số Thực thu & Thu nợ', reference: 'AGENTS.md · Rule #46' },
+      {
+        label: 'Fastify Gamification Service',
+        reference: 'apps/api/src/modules/gamification/daily-sales-bonus.service.ts',
+      },
+    ],
+  },
+  {
     id: 'FAL-001',
     book: 'REWARDS',
     title: 'FAL tách lỗi cũ, công mới và mốc 25 phút thành một contract',

@@ -37444,8 +37444,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 63823,
-        "lineCount": 990,
+        "sizeBytes": 72466,
+        "lineCount": 1099,
         "ext": ".ts"
       }
     },
