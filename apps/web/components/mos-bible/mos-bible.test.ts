@@ -50,4 +50,21 @@ describe('Kinh Thánh mOS contextual registry', () => {
 
     expect(results.map((item) => item.id)).toContain('UI-001');
   });
+
+  it('suggests operational commandments on corresponding routes', () => {
+    const bkIds = getMosBibleCommandmentsForPath('/dashboard/bk').map((item) => item.id);
+    expect(bkIds).toContain('BK-004');
+
+    const cvIds = getMosBibleCommandmentsForPath('/dashboard/cv').map((item) => item.id);
+    expect(cvIds).toContain('CV-002');
+    expect(cvIds).toContain('CAT-003');
+
+    const customerIds = getMosBibleCommandmentsForPath('/dashboard/customers').map((item) => item.id);
+    expect(customerIds).toContain('CARE-002');
+    expect(customerIds).toContain('CUSTOMER-003');
+    expect(customerIds).toContain('CUSTOMER-004');
+
+    const catalogIds = getMosBibleCommandmentsForPath('/dashboard/catalog').map((item) => item.id);
+    expect(catalogIds).toContain('CAT-003');
+  });
 });

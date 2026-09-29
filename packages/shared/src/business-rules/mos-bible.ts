@@ -155,6 +155,37 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'BK-004',
+    book: 'BOOKING',
+    title: 'Minigame đo nỗ lực bằng 4 thước đo minh bạch',
+    summary:
+      'Game Booker/Telesales chỉ tính điểm trên 4 chỉ số chuẩn: Booking tạo mới, Cuộc gọi phát sinh, Khách nghe máy và Đơn hoàn thành.',
+    commandments: [
+      'Chỉ số Booking tạo mới (BOOKINGS) tính theo order.date_created nằm trong thời gian diễn ra game, loại trừ đơn trạng thái Cancelled; 1 booking hợp lệ = 1 điểm.',
+      'Chỉ số Cuộc gọi (CALLS) đếm toàn bộ cuộc gọi đi từ máy lẻ OmiCall của nhân sự trong thời gian game; 1 cuộc gọi = 1 điểm.',
+      'Chỉ số Khách nghe máy (PICKUPS) đếm các cuộc gọi OmiCall có thời lượng đàm thoại > 0 giây (answered); 1 cuộc nghe máy = 1 điểm.',
+      'Chỉ số Đơn hoàn thành (DONE) đếm số đơn hàng khách đã đến làm dịch vụ và hoàn tất (Completed) trong thời gian game; 1 đơn Done = 1 điểm.',
+      'Tuân thủ Điều răn BK-001: Điểm tạo booking tính theo ngày tạo đơn thực tế, không phụ thuộc ngày hẹn đến.',
+    ],
+    rationale:
+      'Minigame phải phản ánh đúng nỗ lực kết nối khách hàng và tạo booking thực tế của Telesales, dữ liệu đối soát trực tiếp từ OmiCall và ledger đơn hàng.',
+    examples: [
+      'Booker A thực hiện 50 cuộc gọi, 25 cuộc nghe máy, chốt được 10 booking mới: được tính 50 điểm CALLS, 25 điểm PICKUPS và 10 điểm BOOKINGS.',
+    ],
+    tags: ['Minigame', 'Booker', 'Telesales', 'OmiCall', 'BOOKINGS', 'CALLS', 'PICKUPS', 'DONE', 'điểm thưởng'],
+    routeScopes: ['/dashboard/bk', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-28',
+    sources: [
+      {
+        label: 'Quy tắc tính điểm Minigame',
+        reference: 'packages/shared/src/types/bk-game.ts · BK_GAME_SCORING_RULES',
+      },
+      { label: 'Service Minigame', reference: 'apps/api/src/modules/kpi/services/bk-game.service.ts' },
+    ],
+  },
+  {
     id: 'OPS-001',
     book: 'SERVICE',
     title: 'Vòng đời đơn có chủ nhân rõ ràng',
@@ -608,6 +639,102 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'CARE-002',
+    book: 'CUSTOMER',
+    title: 'Hẹn gọi lại phải gắn với kế hoạch ngày',
+    summary:
+      'Mọi tương tác hẹn gọi lại từ mốc Chạm, lịch sử cuộc gọi hay Daily Plan đều đồng bộ về một kế hoạch làm việc có ngày hẹn cụ thể.',
+    commandments: [
+      'Khách hàng được ghi nhận vào Tab Callback (has_callback = 1) khi thỏa mãn ít nhất một trong 3 điều kiện: Trạng thái điểm Chạm là CALLBACK, hoặc có lịch hẹn Daily Plan >= Hôm nay, hoặc có nhật ký cuộc gọi hẹn gọi lại >= Hôm nay.',
+      'Khi chọn trạng thái Hẹn gọi lại từ Popover điểm Chạm (LoCa hoặc Campaign), hệ thống tự động upsert bản ghi vào crm_daily_plans với plannedDate bằng callbackDate dưới bucket tương ứng (LOCA_CALLBACK hoặc CAMPAIGN_CALLBACK).',
+      'Giao diện điểm Chạm hiển thị màu tím phát sáng (#a855f7) kèm biểu tượng Đồng hồ và tooltip ngày hẹn khi có lịch gọi lại hợp lệ.',
+      'Listing query, stats query và count subquery phải đồng bộ 100% cùng điều kiện lọc để số lượng trên tab khớp với danh sách chi tiết.',
+    ],
+    rationale:
+      'Khách hàng hẹn gọi lại không được bị rơi vào quên lãng; việc tự động đưa vào Daily Plan đảm bảo nhân viên CSKH có danh sách việc cần làm mỗi ngày.',
+    examples: [
+      'Khách bảo "chiều mai gọi lại": Booker bấm Chạm chọn CALLBACK ngày mai, hệ thống tự tạo một dòng việc trong Daily Plan ngày mai cho Booker đó.',
+    ],
+    tags: ['Callback', 'Hẹn gọi lại', 'Daily Plan', 'Chạm', 'LoCa', 'Campaign', 'CSKH'],
+    routeScopes: ['/dashboard/loca', '/dashboard/nyc', '/dashboard/customers', '/dashboard/campaigns'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-28',
+    sources: [
+      { label: 'Quy tắc Callback và Daily Plan', reference: 'AGENTS.md · Rule #42' },
+      { label: 'Customer Routes Helper', reference: 'apps/api/src/modules/customers/routes.ts' },
+    ],
+  },
+  {
+    id: 'CUSTOMER-003',
+    book: 'CUSTOMER',
+    title: 'Trạng thái khách hàng xác định động theo lịch sử và gói dịch vụ',
+    summary:
+      'Trạng thái làm dịch vụ của khách hàng (user_service_type) được hệ thống tự động xác định khi tạo hoặc dời lịch hẹn, không hardcode.',
+    commandments: [
+      'Trạng thái user_service_type phải được tính toán tự động qua UserServiceTypeService khi tạo mới hoặc dời lịch hẹn.',
+      'Các phân loại chuẩn gồm: new (khách mới lần đầu), combo (đang sở hữu gói combo còn lượt), combo_last (còn đúng 1 lượt cuối trong gói), combo_expired (hết hạn sử dụng gói combo), combo_over (đã dùng hết sạch lượt trong gói), lapser (quá 60 ngày chưa quay lại tiệm), long_time (quá 180 ngày chưa quay lại tiệm).',
+      'Tuyệt đối không hardcode chuỗi "new" hoặc giữ nguyên trạng thái cũ khi lịch hẹn bị thay đổi thời gian.',
+      'Trạng thái này quyết định trực tiếp icon huy hiệu hiển thị trước tên khách hàng trên ứng dụng iPad/iOS và CRM Web.',
+    ],
+    rationale:
+      'Nhận diện đúng trạng thái giúp KTV và CC biết trước khách là khách mới cần hướng dẫn kỹ hay khách combo sắp hết lượt để kịp thời tư vấn tái ký.',
+    examples: [
+      'Khách đã mua Combo 5 lượt và đã dùng 4 lượt: trạng thái hiển thị là combo_last, nhắc CC chuẩn bị kịch bản tư vấn mua tiếp combo mới.',
+    ],
+    tags: ['user_service_type', 'khách hàng', 'combo', 'combo_last', 'lapser', 'long_time', 'phân loại khách'],
+    routeScopes: [
+      '/dashboard/customers',
+      '/dashboard/appointments',
+      '/dashboard/schedule-calendar',
+      '/dashboard/today',
+    ],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-28',
+    sources: [
+      { label: 'Quy tắc xác định user_service_type', reference: 'AGENTS.md · Rule #40' },
+      {
+        label: 'Service tính toán phân loại khách',
+        reference: 'apps/api/src/modules/customers/services/user-service-type.service.ts',
+      },
+    ],
+  },
+  {
+    id: 'CUSTOMER-004',
+    book: 'CUSTOMER',
+    title: 'Khách nước ngoài nhận diện qua đầu số viễn thông hoặc cờ định danh',
+    summary:
+      'Khách quốc tế được nhận diện tự động qua số điện thoại không thuộc chuẩn viễn thông Việt Nam, hoặc qua cờ xác nhận có chủ đích trong hồ sơ.',
+    commandments: [
+      'Số điện thoại chuẩn Việt Nam bắt đầu bằng 0 hoặc +84/84, tiếp theo là một trong các đầu số 3, 5, 7, 8, 9 và 8 chữ số (tổng 10 chữ số). Mọi số khác quy chuẩn này được xác định là số điện thoại quốc tế.',
+      'Khách hàng được tính là Khách nước ngoài (is_foreign = 1) khi số điện thoại là quốc tế HOẶC cờ up.is_foreign = 1 trong user_profile.',
+      'Nếu cờ ghi đè (is_foreign_overridden = 1) được bật, hệ thống ưu tiên tuyệt đối giá trị up.is_foreign do nhân viên vận hành xác nhận thủ công.',
+      'Bộ lọc khách nước ngoài trên danh sách khách hàng và báo cáo vận hành phải áp dụng thống nhất cùng một câu truy vấn kiểm tra định dạng viễn thông.',
+    ],
+    rationale:
+      'Khách nước ngoài có rào cản ngôn ngữ và nhu cầu tư vấn khác biệt; việc nhận diện chuẩn xác giúp xếp lịch CC biết tiếng Anh và chuẩn bị kịch bản đón tiếp phù hợp.',
+    examples: [
+      'Khách dùng số điện thoại Mỹ +1-415-555-2671: hệ thống tự động gán nhãn Khách nước ngoài mà không cần thao tác thủ công.',
+    ],
+    tags: ['khách nước ngoài', 'is_foreign', 'quốc tế', 'số điện thoại', 'user_profile', 'phân loại'],
+    routeScopes: [
+      '/dashboard/customers',
+      '/dashboard/appointments',
+      '/dashboard/schedule-calendar',
+      '/dashboard/today',
+    ],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-28',
+    sources: [
+      {
+        label: 'Service nhận diện khách nước ngoài',
+        reference: 'apps/api/src/modules/customers/services/foreign-customer.service.ts',
+      },
+    ],
+  },
+  {
     id: 'PEOPLE-001',
     book: 'PEOPLE',
     title: 'Ngày OFF cố định phải xem từ lịch gốc',
@@ -719,6 +846,46 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'CAT-003',
+    book: 'CATALOG',
+    title: 'Dòng mi, Loại dịch vụ và Nhóm dịch vụ là ba tầng độc lập',
+    summary:
+      'Không nhầm lẫn giữa Kiểu/Dòng mi (Classic, Volume, Ivylight...), Loại thao tác (Nối mới, Dặm, Tháo) và Nhóm danh mục sản phẩm dịch vụ.',
+    commandments: [
+      'Tầng 1 - Dòng Mi / Dáng Mi (lashStyle): Quy định kỹ thuật và phong cách sợi mi (Classic, Mink, Volume 3D-5D, Ultralight, Hyperlight, Flawless, Ivylight 3L-5L, Under Mink...). Định nghĩa chuẩn tại @mos-lab/shared LASH_STYLES.',
+      'Tầng 2 - Loại Dịch Vụ (serviceType): Quy định tính chất thao tác gồm Normal (Nối mi mới), Retain (Dặm mi), Fix (Bảo hành sửa lỗi), Adjust (Chỉnh sửa kỹ thuật) và Removal (Tháo mi).',
+      'Tầng 3 - Nhóm Dịch Vụ (serviceGroup): Quy định ngành hàng vận hành gồm LashesTop (Mi trên), LashesUnder (Mi dưới), Lashes, Sauna, Hair và Khác.',
+      'Khi phân tích dịch vụ, LashBenchmarkService tách riêng { lashStyle, lashCount } từ mã và tên dịch vụ; không dùng chuỗi tự do để so khớp.',
+      'Giá gợi ý của gói Combo tính theo số lượt mua nhân giá bán lẻ niêm yết của dịch vụ gốc; các lượt tặng (bonusNormalCount, bonusRetainCount) có giá quy ước 0đ.',
+    ],
+    rationale:
+      'Việc tách bạch 3 tầng phân loại giúp hệ thống tính đúng điểm kỹ thuật cho KTV, phân bổ doanh thu chính xác và ngăn ngừa sai lệch thời lượng phục vụ.',
+    examples: [
+      'Dịch vụ "Dặm Mi Ivylight 3L": Dòng mi là Ivylight, Loại dịch vụ là Retain (Dặm), Nhóm dịch vụ là LashesTop.',
+    ],
+    tags: [
+      'Dòng mi',
+      'Dáng mi',
+      'LashStyle',
+      'ServiceType',
+      'ServiceGroup',
+      'Classic',
+      'Volume',
+      'Ivylight',
+      'Combo',
+      'Catalog',
+    ],
+    routeScopes: ['/dashboard/catalog', '/dashboard/cv', '/dashboard/today', '/dashboard/customers'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-28',
+    sources: [
+      { label: 'Thuật ngữ Dòng mi', reference: 'AGENTS.md · Rule #42 & Rule #26' },
+      { label: 'Lash Styles Catalog Types', reference: 'packages/shared/src/types/catalog.ts' },
+      { label: 'Benchmark Service', reference: 'apps/api/src/modules/catalog/services/lash-benchmark.service.ts' },
+    ],
+  },
+  {
     id: 'STORE-001',
     book: 'SERVICE',
     title: 'Vận hành nối mi chỉ có hai thánh đường',
@@ -744,6 +911,34 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     sources: [
       { label: 'Tiệm nối mi hoạt động', reference: 'AGENTS.md · Rule #54' },
       { label: 'Danh sách chuẩn', reference: 'packages/shared/src/constants/system-constants.ts' },
+    ],
+  },
+  {
+    id: 'CV-002',
+    book: 'SERVICE',
+    title: 'Tốc độ làm mi tính từ iPad trong khung 90 ngày động',
+    summary:
+      'Tốc độ thao tác của KTV được đo bằng tổng thời gian thao tác thực tế trên ứng dụng iPad qua 90 ngày gần nhất, chia theo 3 nhóm dịch vụ.',
+    commandments: [
+      'Thời lượng thao tác thực tế tính bằng: preparation_minute + pre_servicing_minute + cleaning_minute + servicing_minute ghi nhận từ report_order_service trên iPad.',
+      'Khung thời gian tính toán lấy động trong 90 ngày gần nhất (actual_booking_date_start >= NOW() - 90 ngày) cho các đơn Completed thuộc nhóm dịch vụ Lashes (Lashes, LashesTop, LashesUnder).',
+      'Chỉ nhận các ca làm có thời lượng hợp lệ từ 15 đến 200 phút để loại bỏ ca lỗi dữ liệu hoặc quên bấm kết thúc trên iPad.',
+      'Phân chia thành 3 chỉ số độc lập: normalAvg (Nối mới), retainAvg (Dặm mi) và removalAvg (Tháo mi hoặc Fix).',
+      'Giao diện hiển thị Badge tốc độ linh hoạt khi KTV có bất kỳ chỉ số nào trong 3 nhóm, không ẩn badge khi nhân sự chuyên dặm hoặc tháo.',
+    ],
+    rationale:
+      'Thời lượng niêm yết trên catalog chỉ mang tính ước lượng; tốc độ thực tế từ iPad phản ánh đúng tay nghề và công suất phục vụ thực tế của từng KTV.',
+    examples: [
+      'KTV có trung bình nối mới 65 phút, dặm mi 38 phút, tháo mi 18 phút: badge hiển thị chi tiết 3 chỉ số tương ứng theo ca làm.',
+    ],
+    tags: ['KTV', 'CV', 'tốc độ', 'iPad', 'benchmark', '90 ngày', 'normalAvg', 'retainAvg', 'removalAvg'],
+    routeScopes: ['/dashboard/cv', '/dashboard/today', '/dashboard/schedule-calendar', '/dashboard/customers'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-28',
+    sources: [
+      { label: 'Quy chuẩn tốc độ KTV', reference: 'AGENTS.md · Rule #52' },
+      { label: 'Service tính toán tốc độ', reference: 'apps/api/src/modules/kpi/services/cv-speed-model.service.ts' },
     ],
   },
   {
