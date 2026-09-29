@@ -9630,6 +9630,34 @@
       }
     },
     {
+      "id": "route:GET:/api/kpi/telesale-target/months",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/telesale-target/months",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/telesale-target/months",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 23
+      }
+    },
+    {
+      "id": "route:POST:/api/kpi/telesale-target/clone",
+      "type": "FastifyRoute",
+      "label": "POST /api/kpi/telesale-target/clone",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/kpi/telesale-target/clone",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 34
+      }
+    },
+    {
       "id": "route:POST:/api/kpi/telesale-target/config",
       "type": "FastifyRoute",
       "label": "POST /api/kpi/telesale-target/config",
@@ -9640,7 +9668,7 @@
         "path": "/api/kpi/telesale-target/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 23
+        "line": 53
       }
     },
     {
@@ -9654,7 +9682,7 @@
         "path": "/api/kpi/telesale-target/pool",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 40
+        "line": 70
       }
     },
     {
@@ -12447,8 +12475,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "metadata": {
         "routePath": "/dashboard/telesale-target",
-        "apiCallsCount": 1,
-        "apiCalls": ["telesaleTarget.getOverview"]
+        "apiCallsCount": 2,
+        "apiCalls": ["telesaleTarget.getMonths", "telesaleTarget.getOverview"]
       }
     },
     {
@@ -25165,6 +25193,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TelesaleTargetCloneDto",
+      "type": "SharedType",
+      "label": "TelesaleTargetCloneDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTargetCloneDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:TelesaleCustomerPoolItem",
       "type": "SharedType",
       "label": "TelesaleCustomerPoolItem",
@@ -28508,7 +28548,7 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 48555,
+        "sizeBytes": 48553,
         "lineCount": 1168,
         "ext": ".ts"
       }
@@ -30302,8 +30342,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2813,
-        "lineCount": 71,
+        "sizeBytes": 4121,
+        "lineCount": 101,
         "ext": ".ts"
       }
     },
@@ -30516,6 +30556,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
+      "type": "File",
+      "label": "telesale-target.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2650,
+        "lineCount": 75,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "type": "File",
       "label": "telesale-target.service.ts",
@@ -30523,8 +30576,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18161,
-        "lineCount": 488,
+        "sizeBytes": 22014,
+        "lineCount": 586,
         "ext": ".ts"
       }
     },
@@ -33916,8 +33969,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 34124,
-        "lineCount": 803,
+        "sizeBytes": 34306,
+        "lineCount": 805,
         "ext": ".tsx"
       }
     },
@@ -36828,8 +36881,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DataPipelineStages.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6540,
-        "lineCount": 140,
+        "sizeBytes": 8001,
+        "lineCount": 168,
         "ext": ".tsx"
       }
     },
@@ -36841,8 +36894,21 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11944,
-        "lineCount": 231,
+        "sizeBytes": 21034,
+        "lineCount": 400,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/PlanCloneModal.tsx",
+      "type": "File",
+      "label": "PlanCloneModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/PlanCloneModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9928,
+        "lineCount": 248,
         "ext": ".tsx"
       }
     },
@@ -36867,8 +36933,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12121,
-        "lineCount": 259,
+        "sizeBytes": 18525,
+        "lineCount": 434,
         "ext": ".tsx"
       }
     },
@@ -37400,8 +37466,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16416,
-        "lineCount": 431,
+        "sizeBytes": 16862,
+        "lineCount": 442,
         "ext": ".ts"
       }
     },
@@ -38531,8 +38597,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2665,
-        "lineCount": 119,
+        "sizeBytes": 2942,
+        "lineCount": 130,
         "ext": ".ts"
       }
     },
@@ -43079,6 +43145,20 @@
     {
       "id": "edge:route:GET:/api/kpi/telesale-target:ws:apps/api",
       "source": "route:GET:/api/kpi/telesale-target",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/telesale-target/months:ws:apps/api",
+      "source": "route:GET:/api/kpi/telesale-target/months",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/kpi/telesale-target/clone:ws:apps/api",
+      "source": "route:POST:/api/kpi/telesale-target/clone",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -51897,6 +51977,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:TelesaleTargetCloneDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTargetCloneDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:TelesaleCustomerPoolItem:ws:packages/shared",
       "source": "type:@mos-lab/shared:TelesaleCustomerPoolItem",
       "target": "ws:packages/shared",
@@ -57898,6 +57985,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/PlanCloneModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/PlanCloneModal.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -66240,6 +66334,20 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/telesale-target/months",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/telesale-target/months",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/telesale-target/clone",
+      "source": "page:/dashboard/cc",
+      "target": "route:POST:/api/kpi/telesale-target/clone",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/telesale-target/config",
       "source": "page:/dashboard/cc",
       "target": "route:POST:/api/kpi/telesale-target/config",
@@ -70874,6 +70982,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/telesale-target/months",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/telesale-target/months",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/telesale-target/clone",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/kpi/telesale-target/clone",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/telesale-target/config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/kpi/telesale-target/config",
@@ -75280,6 +75402,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/telesale-target",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/telesale-target",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/telesale-target/months",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/telesale-target/months",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/telesale-target/clone",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/kpi/telesale-target/clone",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -82704,6 +82840,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/telesale-target/months",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/telesale-target/months",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/telesale-target/clone",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/kpi/telesale-target/clone",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/telesale-target/config",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/kpi/telesale-target/config",
@@ -83747,6 +83897,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/telesale-target:route:GET:/api/kpi/telesale-target/months",
+      "source": "page:/dashboard/telesale-target",
+      "target": "route:GET:/api/kpi/telesale-target/months",
+      "type": "API_CALL",
+      "label": "CALLS telesaleTarget.getMonths"
+    },
+    {
       "id": "edge:page:/login:route:POST:/api/academy/workshops/registration/:registrationCode/google",
       "source": "page:/login",
       "target": "route:POST:/api/academy/workshops/registration/:registrationCode/google",
@@ -83818,31 +83975,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2955,
-    "totalEdges": 6459,
+    "totalNodes": 2960,
+    "totalEdges": 6472,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 159,
-      "FastifyRoute": 630,
+      "FastifyRoute": 632,
       "Component": 57,
-      "SharedType": 1077,
+      "SharedType": 1078,
       "DesignToken": 12,
       "UIComponent": 204,
-      "File": 813
+      "File": 815
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1248,
-      "HANDLES_ROUTE": 630,
+      "EXPORTS": 1249,
+      "HANDLES_ROUTE": 632,
       "RENDERS": 261,
       "USES_TOKEN": 206,
-      "IMPORTS": 447,
+      "IMPORTS": 448,
       "QUERIES_MODEL": 370,
-      "API_CALL": 3297
+      "API_CALL": 3306
     },
-    "fastifyRouteCount": 635,
+    "fastifyRouteCount": 637,
     "prismaModelCount": 159,
     "nextPageCount": 57,
-    "sharedTypeCount": 1077
+    "sharedTypeCount": 1078
   },
   "routes": [
     {
@@ -87208,6 +87365,20 @@
     {
       "method": "GET",
       "path": "/api/kpi/telesale-target",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/telesale-target/months",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "POST",
+      "path": "/api/kpi/telesale-target/clone",
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"

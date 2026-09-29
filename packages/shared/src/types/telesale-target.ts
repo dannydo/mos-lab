@@ -7,6 +7,8 @@ export interface TelesaleStaffTarget {
   doneTarget: number;
   doneActual: number;
   doneToday: number;
+  comboLiveDoneActual?: number;
+  comboLiveDoneToday?: number;
   callTargetDaily: number;
   callActualToday: number;
   pickupActualToday: number;
@@ -20,6 +22,7 @@ export interface TelesalePipelineStage {
   description: string;
   doneTarget: number;
   doneActual: number;
+  comboLiveDoneActual?: number;
   totalAssignedCount: number;
   calledCount: number;
   conversionRate: number;
@@ -34,6 +37,7 @@ export interface TelesaleTargetOverview {
   teamMonth: {
     doneTarget: number;
     doneActual: number;
+    comboLiveDoneActual?: number;
     bookTarget: number;
     bookActual: number;
     pacingDaysElapsed: number;
@@ -45,6 +49,7 @@ export interface TelesaleTargetOverview {
     date: string;
     doneTarget: number;
     doneActual: number;
+    comboLiveDoneActual?: number;
     bookTarget: number;
     bookActual: number;
   };

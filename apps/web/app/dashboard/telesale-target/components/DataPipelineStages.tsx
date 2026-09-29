@@ -57,7 +57,10 @@ export const DataPipelineStages: React.FC<DataPipelineStagesProps> = ({ stages, 
       {/* 4 Stage Columns Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stages.map((stage) => {
-          const percent = Math.min(100, Math.round((stage.doneActual / (stage.doneTarget || 1)) * 100));
+          const percent = Math.round((stage.doneActual / (stage.doneTarget || 1)) * 100);
+          const isOver100 = percent > 100;
+          const comboLiveActual = stage.comboLiveDoneActual || 0;
+          const totalStageDone = stage.doneActual + comboLiveActual;
 
           return (
             <div
@@ -65,7 +68,9 @@ export const DataPipelineStages: React.FC<DataPipelineStagesProps> = ({ stages, 
               onClick={() => onSelectStage(stage)}
               className={`cursor-pointer rounded-xl bg-gradient-to-b ${getStageHeaderBg(
                 stage.key
-              )} border p-4 flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl group relative overflow-hidden`}
+              )} border p-4 flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl group relative overflow-hidden ${
+                isOver100 ? 'border-amber-400 supercharged-aura' : ''
+              }`}
             >
               {/* Top Accent Icon & Badges */}
               <div>
@@ -77,17 +82,21 @@ export const DataPipelineStages: React.FC<DataPipelineStagesProps> = ({ stages, 
                       <div className="text-xs font-black uppercase text-amber-300 tracking-wide">{stage.subLabel}</div>
                     </div>
                   </div>
-                  {stage.badge && (
+                  {isOver100 ? (
+                    <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gradient-to-r from-amber-500 to-orange-500 text-black border-0 shadow">
+                      🔥 VƯỢT {percent}%
+                    </span>
+                  ) : stage.badge ? (
                     <span className="px-2 py-0.5 text-[10px] font-black rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
                       {stage.badge}
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Target & Done Realtime Metric */}
                 <div className="my-3 bg-black/40 border border-zinc-800/80 rounded-lg p-2.5">
                   <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                    <span>Mục tiêu Done:</span>
+                    <span className="font-semibold text-zinc-300">Khách Lẻ (KPI):</span>
                     <span className="font-bold text-amber-400 font-mono">{stage.doneTarget} Done</span>
                   </div>
                   <div className="flex items-baseline justify-between">
@@ -97,10 +106,29 @@ export const DataPipelineStages: React.FC<DataPipelineStagesProps> = ({ stages, 
                       </span>
                       <span className="text-xs text-zinc-500 font-mono">/ {stage.doneTarget} Done</span>
                     </div>
-                    <span className="text-xs font-bold font-mono text-emerald-400">{percent}%</span>
+                    <span
+                      className={`text-xs font-mono font-bold ${isOver100 ? 'text-amber-400 animate-pulse font-black' : 'text-emerald-400'}`}
+                    >
+                      {isOver100 ? `🔥 ${percent}% VƯỢT` : `${percent}%`}
+                    </span>
                   </div>
-                  <Progress percent={percent} size="small" showInfo={false} className="mt-1.5" />
-                  <div className="text-[11px] text-zinc-400 mt-1 flex justify-between font-mono">
+                  <Progress
+                    percent={Math.min(100, percent)}
+                    size="small"
+                    showInfo={false}
+                    className={`mt-1.5 ${isOver100 ? 'supercharged-bar' : ''}`}
+                  />
+
+                  {/* Sub Row: Combo Live Tracking */}
+                  <div className="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-purple-300 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                      Combo Live:
+                    </span>
+                    <span className="text-purple-200 font-bold tabular-nums">{comboLiveActual} Done</span>
+                  </div>
+
+                  <div className="text-[10px] text-zinc-400 mt-1.5 flex justify-between font-mono">
                     <span>Data trong pool:</span>
                     <span className="text-zinc-200 font-semibold">{stage.totalAssignedCount} KH</span>
                   </div>

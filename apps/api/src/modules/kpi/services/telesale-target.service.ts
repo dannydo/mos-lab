@@ -10,6 +10,7 @@ import {
   SafeAny,
 } from '@mos-lab/shared';
 import { getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
+import { buildComboLiveAtBookingSql } from '../../customers/services/combo-recognition.service.js';
 
 export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
   month: '2026-10',
@@ -179,7 +180,8 @@ export class TelesaleTargetService {
         o.order_state as orderState,
         o.date_created as dateCreated,
         o.user_id as customerId,
-        COALESCE(DATEDIFF(o.date_created, up.last_order_booking), 999) as daysSinceLastVisit
+        COALESCE(DATEDIFF(o.date_created, up.last_order_booking), 999) as daysSinceLastVisit,
+        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
       FROM \`order\` o
       LEFT JOIN \`user_profile\` up ON up.user_id = o.user_id
       WHERE o.date_created >= '${startDateTimeStr}' 
@@ -193,7 +195,8 @@ export class TelesaleTargetService {
         o.id,
         o.created_staff_id as bookerId,
         o.order_state as orderState,
-        o.date_created as dateCreated
+        o.date_created as dateCreated,
+        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
       FROM \`order\` o
       WHERE o.date_created >= '${todayStartStr}' 
         AND o.date_created <= '${todayEndStr}'
@@ -206,14 +209,26 @@ export class TelesaleTargetService {
     ]);
 
     // Aggregate Team Month
+    // Not Combo Live counts towards official Done KPI target
+    // Combo Live is tracked for operational progress
     const teamMonthBookActual = monthOrders.length;
-    const teamMonthDoneActual = monthOrders.filter((o) => o.orderState === 'Completed').length;
+    const teamMonthDoneActual = monthOrders.filter(
+      (o) => o.orderState === 'Completed' && Number(o.isComboLive) !== 1
+    ).length;
+    const teamMonthComboLiveDoneActual = monthOrders.filter(
+      (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
+    ).length;
 
     // Aggregate Team Daily
     const teamDailyBookActual = todayOrders.length;
-    const teamDailyDoneActual = todayOrders.filter((o) => o.orderState === 'Completed').length;
+    const teamDailyDoneActual = todayOrders.filter(
+      (o) => o.orderState === 'Completed' && Number(o.isComboLive) !== 1
+    ).length;
+    const teamDailyComboLiveDoneActual = todayOrders.filter(
+      (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
+    ).length;
 
-    // Expected done by pacing
+    // Expected done by pacing (measured against Not Combo Live target)
     const expectedDoneToDate = config.teamDoneTarget * (daysElapsed / daysTotal);
     const pacingRatio = expectedDoneToDate > 0 ? Number((teamMonthDoneActual / expectedDoneToDate).toFixed(2)) : 1;
     const isPacingOnTrack = pacingRatio >= 0.95;
@@ -226,10 +241,20 @@ export class TelesaleTargetService {
     // Aggregate by Staff
     const staffTargets: TelesaleStaffTarget[] = config.staffTargets.map((st) => {
       const staffMonthOrders = monthOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
-      const staffDoneActual = staffMonthOrders.filter((o) => o.orderState === 'Completed').length;
+      const staffDoneActual = staffMonthOrders.filter(
+        (o) => o.orderState === 'Completed' && Number(o.isComboLive) !== 1
+      ).length;
+      const staffComboLiveDoneActual = staffMonthOrders.filter(
+        (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
+      ).length;
 
       const staffTodayOrders = todayOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
-      const staffDoneToday = staffTodayOrders.filter((o) => o.orderState === 'Completed').length;
+      const staffDoneToday = staffTodayOrders.filter(
+        (o) => o.orderState === 'Completed' && Number(o.isComboLive) !== 1
+      ).length;
+      const staffComboLiveDoneToday = staffTodayOrders.filter(
+        (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
+      ).length;
 
       const staffCallMetrics = callMetricsMap.get(st.legacyStaffId) || {
         callCount: 0,
@@ -242,7 +267,9 @@ export class TelesaleTargetService {
         name: st.name,
         doneTarget: st.doneTarget,
         doneActual: staffDoneActual,
+        comboLiveDoneActual: staffComboLiveDoneActual,
         doneToday: staffDoneToday,
+        comboLiveDoneToday: staffComboLiveDoneToday,
         callTargetDaily: config.dailyCallPerStaff,
         callActualToday: staffCallMetrics.callCount,
         pickupActualToday: staffCallMetrics.pickupCount,
@@ -250,25 +277,36 @@ export class TelesaleTargetService {
     });
 
     // 3. Aggregate 4 Pipeline Stages (Done in Month per stage)
-    const stageCounts: Record<TelesalePipelineStageKey, { done: number; totalAssigned: number }> = {
-      '0_30': { done: 0, totalAssigned: 0 },
-      '31_60': { done: 0, totalAssigned: 0 },
-      '61_120': { done: 0, totalAssigned: 0 },
-      gt_120: { done: 0, totalAssigned: 0 },
+    const stageCounts: Record<
+      TelesalePipelineStageKey,
+      { done: number; comboLiveDone: number; totalAssigned: number }
+    > = {
+      '0_30': { done: 0, comboLiveDone: 0, totalAssigned: 0 },
+      '31_60': { done: 0, comboLiveDone: 0, totalAssigned: 0 },
+      '61_120': { done: 0, comboLiveDone: 0, totalAssigned: 0 },
+      gt_120: { done: 0, comboLiveDone: 0, totalAssigned: 0 },
     };
 
-    // Classify completed month orders by daysSinceLastVisit
+    // Classify completed month orders by daysSinceLastVisit and combo status
     for (const ord of monthOrders) {
       if (ord.orderState === 'Completed') {
         const days = Number(ord.daysSinceLastVisit);
+        const isCombo = Number(ord.isComboLive) === 1;
+        let targetKey: TelesalePipelineStageKey;
         if (days <= 30) {
-          stageCounts['0_30'].done++;
+          targetKey = '0_30';
         } else if (days <= 60) {
-          stageCounts['31_60'].done++;
+          targetKey = '31_60';
         } else if (days <= 120) {
-          stageCounts['61_120'].done++;
+          targetKey = '61_120';
         } else {
-          stageCounts.gt_120.done++;
+          targetKey = 'gt_120';
+        }
+
+        if (isCombo) {
+          stageCounts[targetKey].comboLiveDone++;
+        } else {
+          stageCounts[targetKey].done++;
         }
       }
     }
@@ -310,6 +348,7 @@ export class TelesaleTargetService {
         description: 'Bảo hành kiểu Úc (1-3 ngày), Chạm 14, 19, 21 nhắc chu kỳ dặm mi',
         doneTarget: config.stageTargets['0_30'] || 200,
         doneActual: stageCounts['0_30'].done,
+        comboLiveDoneActual: stageCounts['0_30'].comboLiveDone,
         totalAssignedCount: stageCounts['0_30'].totalAssigned,
         calledCount: Math.min(stageCounts['0_30'].done * 3, stageCounts['0_30'].totalAssigned),
         conversionRate:
@@ -332,6 +371,7 @@ export class TelesaleTargetService {
         description: 'Khơi gợi nhu cầu booking làm mới (không ưu đãi)',
         doneTarget: config.stageTargets['31_60'] || 110,
         doneActual: stageCounts['31_60'].done,
+        comboLiveDoneActual: stageCounts['31_60'].comboLiveDone,
         totalAssignedCount: stageCounts['31_60'].totalAssigned,
         calledCount: Math.min(stageCounts['31_60'].done * 4, stageCounts['31_60'].totalAssigned),
         conversionRate:
@@ -349,6 +389,7 @@ export class TelesaleTargetService {
         description: '30% Mời khách hàng quay lại',
         doneTarget: config.stageTargets['61_120'] || 80,
         doneActual: stageCounts['61_120'].done,
+        comboLiveDoneActual: stageCounts['61_120'].comboLiveDone,
         totalAssignedCount: stageCounts['61_120'].totalAssigned,
         calledCount: Math.min(stageCounts['61_120'].done * 5, stageCounts['61_120'].totalAssigned),
         conversionRate:
@@ -367,6 +408,7 @@ export class TelesaleTargetService {
         description: 'Chiến dịch Cua lại vợ bầu · Teamwork cùng khai thác chung',
         doneTarget: config.stageTargets.gt_120 || 60,
         doneActual: stageCounts.gt_120.done,
+        comboLiveDoneActual: stageCounts.gt_120.comboLiveDone,
         totalAssignedCount: stageCounts.gt_120.totalAssigned,
         calledCount: Math.min(stageCounts.gt_120.done * 6, stageCounts.gt_120.totalAssigned),
         conversionRate:
@@ -396,6 +438,7 @@ export class TelesaleTargetService {
       teamMonth: {
         doneTarget: config.teamDoneTarget,
         doneActual: teamMonthDoneActual,
+        comboLiveDoneActual: teamMonthComboLiveDoneActual,
         bookTarget: config.teamBookTarget,
         bookActual: teamMonthBookActual,
         pacingDaysElapsed: daysElapsed,
@@ -407,6 +450,7 @@ export class TelesaleTargetService {
         date: todayStr,
         doneTarget: config.dailyDoneTarget,
         doneActual: teamDailyDoneActual,
+        comboLiveDoneActual: teamDailyComboLiveDoneActual,
         bookTarget: config.dailyBookTarget,
         bookActual: teamDailyBookActual,
       },

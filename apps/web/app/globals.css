@@ -7747,3 +7747,55 @@ button:not(:disabled):not(.ant-btn-loading):active,
 .mos-active-tap {
   animation: mos-tap-pulse 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
+
+/* Supercharged Flame & Gold Aura Effects for Telesales War Room Targets */
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-150%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+@keyframes pulseAura {
+  0%,
+  100% {
+    box-shadow:
+      0 0 15px rgba(245, 158, 11, 0.25),
+      0 0 30px rgba(239, 68, 68, 0.15);
+    border-color: rgba(245, 158, 11, 0.7);
+  }
+  50% {
+    box-shadow:
+      0 0 25px rgba(245, 158, 11, 0.5),
+      0 0 45px rgba(239, 68, 68, 0.3);
+    border-color: rgba(251, 191, 36, 1);
+  }
+}
+
+.supercharged-aura {
+  animation: pulseAura 2.5s infinite ease-in-out;
+}
+
+.supercharged-bar .ant-progress-bg {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f59e0b 0%, #ef4444 50%, #facc15 100%) !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6) !important;
+}
+
+.supercharged-bar .ant-progress-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  animation: shimmerSweep 1.8s infinite linear;
+}
+
+.combo-live-bar .ant-progress-bg {
+  background: linear-gradient(90deg, #a855f7 0%, #38bdf8 100%) !important;
+}
