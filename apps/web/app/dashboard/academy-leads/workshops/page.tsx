@@ -7,6 +7,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import {
   BadgeCheck,
   CalendarDays,
+  Copy,
   LogIn,
   MapPin,
   Play,
@@ -25,6 +26,7 @@ import type {
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useAcademyAccess } from '../components/AcademyAccessGate';
+import AcademyWorkshopCloneModal from '../components/AcademyWorkshopCloneModal';
 import {
   AppIcon,
   AdaptiveModal,
@@ -53,7 +55,13 @@ const STATUS_LABELS: Record<AcademyWorkshopStatus, string> = {
   ARCHIVED: 'Lưu trữ',
 };
 
-type Query = { page: number; pageSize: number; search: string; status: AcademyWorkshopStatus | 'ALL' };
+type Query = {
+  page: number;
+  pageSize: number;
+  search: string;
+  status: AcademyWorkshopStatus | 'ALL';
+  seriesKey?: string;
+};
 type WorkshopForm = Omit<
   CreateAcademyWorkshopRequest,
   'startsAt' | 'endsAt' | 'feeDueAt' | 'menuSelectionDeadline' | 'equipmentSelectionDeadline'
@@ -98,9 +106,18 @@ export default function AcademyWorkshopsPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [cloneTarget, setCloneTarget] = React.useState<AcademyWorkshopListItem | null>(null);
   const [agendaTemplates, setAgendaTemplates] = React.useState<AcademyWorkshopAgendaTemplate[]>([]);
   const [agendaTemplatesLoading, setAgendaTemplatesLoading] = React.useState(false);
   const deferredSearch = React.useDeferredValue(query.search);
+
+  const seriesOptions = React.useMemo(() => {
+    const keys = new Set<string>();
+    rows.forEach((r) => {
+      if (r.seriesKey) keys.add(r.seriesKey);
+    });
+    return Array.from(keys);
+  }, [rows]);
 
   React.useEffect(() => {
     setQuery(readQuery());
@@ -120,6 +137,7 @@ export default function AcademyWorkshopsPage() {
         limit: query.pageSize,
         search: deferredSearch || undefined,
         status: query.status,
+        seriesKey: query.seriesKey,
       });
       setRows(response.data);
       setTotal(response.total);
@@ -130,7 +148,7 @@ export default function AcademyWorkshopsPage() {
     } finally {
       setLoading(false);
     }
-  }, [canAccess, deferredSearch, hydrated, query.page, query.pageSize, query.status]);
+  }, [canAccess, deferredSearch, hydrated, query.page, query.pageSize, query.status, query.seriesKey]);
 
   React.useEffect(() => void load(), [load]);
 
@@ -257,19 +275,29 @@ export default function AcademyWorkshopsPage() {
       {
         key: 'action',
         title: 'Vận hành',
-        width: 140,
+        width: 170,
         render: (_value, row) => (
-          <Button
-            size="small"
-            icon={<AppIcon icon={row.status === 'LIVE' ? Play : Presentation} />}
-            onClick={() => router.push(`/dashboard/academy-leads/workshops/${row.slug}`)}
-          >
-            Mở workspace
-          </Button>
+          <Space size={6}>
+            <Button
+              size="small"
+              icon={<AppIcon icon={row.status === 'LIVE' ? Play : Presentation} />}
+              onClick={() => router.push(`/dashboard/academy-leads/workshops/${row.slug}`)}
+            >
+              Mở
+            </Button>
+            {canManage ? (
+              <Button
+                size="small"
+                icon={<AppIcon icon={Copy} />}
+                onClick={() => setCloneTarget(row)}
+                title="Nhân bản khóa mới"
+              />
+            ) : null}
+          </Space>
         ),
       },
     ],
-    [query.page, query.pageSize, router]
+    [canManage, query.page, query.pageSize, router]
   );
 
   const renderMobileWorkshop = React.useCallback(
@@ -297,17 +325,23 @@ export default function AcademyWorkshopsPage() {
           </IconText>
         </div>
 
-        <Button
-          block
-          className={styles.mobileWorkshopAction}
-          icon={<AppIcon icon={row.status === 'LIVE' ? Play : Presentation} />}
-          onClick={() => router.push(`/dashboard/academy-leads/workshops/${row.slug}`)}
-        >
-          Mở workspace
-        </Button>
+        <div className="flex gap-2 mt-3">
+          <Button
+            className="flex-1"
+            icon={<AppIcon icon={row.status === 'LIVE' ? Play : Presentation} />}
+            onClick={() => router.push(`/dashboard/academy-leads/workshops/${row.slug}`)}
+          >
+            Mở workspace
+          </Button>
+          {canManage ? (
+            <Button icon={<AppIcon icon={Copy} />} onClick={() => setCloneTarget(row)}>
+              Nhân bản
+            </Button>
+          ) : null}
+        </div>
       </div>
     ),
-    [router]
+    [canManage, router]
   );
 
   if (!canAccess) return <StatePanel kind="empty" title="Bạn chưa có quyền truy cập Academy Workshop." />;
@@ -339,15 +373,34 @@ export default function AcademyWorkshopsPage() {
           />
         ),
         filters: (
-          <Select
-            value={query.status}
-            className="min-w-40"
-            options={[
-              { value: 'ALL', label: 'Tất cả trạng thái' },
-              ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
-            ]}
-            onChange={(status) => setQuery((previous) => ({ ...previous, status, page: 1 }))}
-          />
+          <Space>
+            <Select
+              value={query.status}
+              className="min-w-40"
+              options={[
+                { value: 'ALL', label: 'Tất cả trạng thái' },
+                ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
+              ]}
+              onChange={(status) => setQuery((previous) => ({ ...previous, status, page: 1 }))}
+            />
+            {seriesOptions.length > 0 && (
+              <Select
+                value={query.seriesKey || 'ALL'}
+                className="min-w-44"
+                options={[
+                  { value: 'ALL', label: 'Tất cả chuỗi Series' },
+                  ...seriesOptions.map((k) => ({ value: k, label: `Series: ${k}` })),
+                ]}
+                onChange={(seriesKey) =>
+                  setQuery((previous) => ({
+                    ...previous,
+                    seriesKey: seriesKey === 'ALL' ? undefined : seriesKey,
+                    page: 1,
+                  }))
+                }
+              />
+            )}
+          </Space>
         ),
       }}
     >
@@ -492,6 +545,17 @@ export default function AcademyWorkshopsPage() {
           </Form>
         </AdaptiveModal>
       )}
+
+      <AcademyWorkshopCloneModal
+        workshopId={cloneTarget?.id ?? null}
+        workshopName={cloneTarget?.name}
+        open={Boolean(cloneTarget)}
+        onClose={() => setCloneTarget(null)}
+        onSuccess={(cloned) => {
+          setCloneTarget(null);
+          router.push(`/dashboard/academy-leads/workshops/${encodeURIComponent(cloned.slug)}`);
+        }}
+      />
     </FeaturePage>
   );
 }

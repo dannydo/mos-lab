@@ -25,7 +25,7 @@ import {
   buildAcademyWorkshopQuestionWindow,
   normalizeAcademyWorkshopQuestionInput,
 } from './academy-workshop-live.service.js';
-import { toAcademyWorkshopQuiz } from './academy-workshop.service.js';
+import { AcademyWorkshopService, toAcademyWorkshopQuiz } from './academy-workshop.service.js';
 
 test('derives workshop fee readiness exclusively from append-only ledger totals and waiver state', () => {
   assert.equal(calculateAcademyWorkshopFeeStatus(0, 0, false), 'FREE');
@@ -718,4 +718,29 @@ test('reconciles one instructor bonus per selected course and is idempotent acro
   assert.equal(created.get('7:91:1').status, 'EARNED');
   assert.equal(created.get('7:91:1').amountVnd, 300_000);
   assert.equal(created.get('7:91:2').status, 'MISSING_CONFIG');
+});
+
+test('suggests next workshop series name and slug incrementing batch number correctly', () => {
+  // Case 1: Base workshop without batch number
+  const res1 = AcademyWorkshopService.suggestNextSeriesNameAndSlug('Workshop Đổi Vận', 'workshop-doi-van');
+  assert.equal(res1.baseName, 'Workshop Đổi Vận');
+  assert.equal(res1.nextNumber, 2);
+  assert.equal(res1.suggestedName, 'Workshop Đổi Vận (K02)');
+  assert.equal(res1.suggestedSlug, 'workshop-doi-van-k02');
+  assert.equal(res1.seriesKey, 'workshop-doi-van');
+
+  // Case 2: Workshop already at K02
+  const res2 = AcademyWorkshopService.suggestNextSeriesNameAndSlug('Workshop Đổi Vận (K02)', 'workshop-doi-van-k02');
+  assert.equal(res2.baseName, 'Workshop Đổi Vận');
+  assert.equal(res2.nextNumber, 3);
+  assert.equal(res2.suggestedName, 'Workshop Đổi Vận (K03)');
+  assert.equal(res2.suggestedSlug, 'workshop-doi-van-k03');
+  assert.equal(res2.seriesKey, 'workshop-doi-van');
+
+  // Case 3: Format with Khóa / Đợt
+  const res3 = AcademyWorkshopService.suggestNextSeriesNameAndSlug('Lash Master - Khóa 9', 'lash-master-k09');
+  assert.equal(res3.baseName, 'Lash Master');
+  assert.equal(res3.nextNumber, 10);
+  assert.equal(res3.suggestedName, 'Lash Master (K10)');
+  assert.equal(res3.suggestedSlug, 'lash-master-k10');
 });

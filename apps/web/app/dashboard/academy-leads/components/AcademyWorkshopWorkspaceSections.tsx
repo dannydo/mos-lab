@@ -5,6 +5,7 @@ import { Button } from 'antd';
 import {
   BadgeCheck,
   CircleDollarSign,
+  Copy,
   ExternalLink,
   IdCard,
   ListChecks,
@@ -16,6 +17,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import type {
   AcademyInstructorBonus,
   AcademyStaffOption,
@@ -36,6 +38,7 @@ import {
   StatusTag,
 } from '../../../../components/ui';
 import AcademyWorkshopEditButton from './AcademyWorkshopEditButton';
+import AcademyWorkshopCloneModal from './AcademyWorkshopCloneModal';
 import AcademyWorkshopSharedQrButton from './AcademyWorkshopSharedQrButton';
 import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
 
@@ -58,6 +61,9 @@ export function AcademyWorkshopHeaderActions({
   onOpenPrintBadges?: () => void;
   onUpdated: (updated: AcademyWorkshopDetail) => void;
 }) {
+  const [cloneOpen, setCloneOpen] = React.useState(false);
+  const router = useRouter();
+
   return (
     <div className="academy-workshop-header-actions">
       <IconButton label="Làm mới dữ liệu" icon={RefreshCw} loading={loading} onClick={onRefresh} />
@@ -68,6 +74,7 @@ export function AcademyWorkshopHeaderActions({
         iconOnly
         onUpdated={onUpdated}
       />
+      {canEdit ? <IconButton label="Nhân bản khóa mới" icon={Copy} onClick={() => setCloneOpen(true)} /> : null}
       {onOpenPrintBadges ? (
         <IconButton label="In thẻ đeo & Điểm danh" icon={IdCard} onClick={onOpenPrintBadges} />
       ) : null}
@@ -96,6 +103,16 @@ export function AcademyWorkshopHeaderActions({
       <Button type="primary" onClick={onOpenLive}>
         <IconText icon={<AppIcon icon={Play} />}>Live Control</IconText>
       </Button>
+
+      <AcademyWorkshopCloneModal
+        workshopId={workshop.id}
+        workshopName={workshop.name}
+        open={cloneOpen}
+        onClose={() => setCloneOpen(false)}
+        onSuccess={(cloned) => {
+          router.push(`/dashboard/academy-leads/workshops/${encodeURIComponent(cloned.slug)}`);
+        }}
+      />
     </div>
   );
 }

@@ -50,6 +50,8 @@ import type {
   AssignAcademyWorkshopInstructorRequest,
   CheckInAcademyWorkshopParticipantRequest,
   CloneAcademyWorkshopQuizRequest,
+  CloneAcademyWorkshopRequest,
+  AcademyWorkshopClonePreview,
   ConfirmAcademyWorkshopPhotoRequest,
   CreateAcademyActivityRequest,
   CreateAcademyCampaignRequest,
@@ -484,6 +486,20 @@ export const academyApi = {
       },
       create: async (dto: CreateAcademyWorkshopRequest): Promise<AcademyWorkshopDetail> => {
         const response = await api.post<{ data: AcademyWorkshopDetail }>('/academy-sales/workshops', dto);
+        invalidateAcademySalesReadCache();
+        return response.data.data;
+      },
+      getClonePreview: async (workshopId: number): Promise<AcademyWorkshopClonePreview> => {
+        const response = await api.get<{ data: AcademyWorkshopClonePreview }>(
+          `/academy-sales/workshops/${workshopId}/clone-preview`
+        );
+        return response.data.data;
+      },
+      clone: async (workshopId: number, dto: CloneAcademyWorkshopRequest): Promise<AcademyWorkshopDetail> => {
+        const response = await api.post<{ data: AcademyWorkshopDetail }>(
+          `/academy-sales/workshops/${workshopId}/clone`,
+          dto
+        );
         invalidateAcademySalesReadCache();
         return response.data.data;
       },

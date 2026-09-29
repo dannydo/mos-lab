@@ -93,6 +93,12 @@ export function getSidebarGroups(
       icon: <AppIcon icon={Sparkles} size="sm" />,
       path: '/dashboard/pilot-dark-lashes',
     },
+    {
+      key: 'telesale-target-lab',
+      label: 'Mục Tiêu Telesales T10',
+      icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
+      path: '/dashboard/telesale-target',
+    },
   ];
 
   if (isSuperAdmin) {
@@ -336,6 +342,12 @@ export function getSidebarGroups(
   // Group 4: VẬN HÀNH CUỘC GỌI
   const operationsItems: SidebarItemConfig[] = [
     {
+      key: 'telesale-target',
+      label: 'Mục Tiêu Telesales T10',
+      icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
+      path: '/dashboard/telesale-target',
+    },
+    {
       key: 'plans',
       label: 'Kế hoạch gọi',
       icon: <CalendarOutlined />,
@@ -429,6 +441,12 @@ export function getSidebarGroups(
         label: 'Báo Cáo BK',
         icon: <CalendarOutlined />,
         path: '/dashboard/bk',
+      },
+      {
+        key: 'telesale-target-report',
+        label: 'Mục Tiêu Telesales T10',
+        icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
+        path: '/dashboard/telesale-target',
       },
       {
         key: 'cs',
@@ -585,6 +603,7 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/pilot-dark-lashes')) return 'pilot-dark-lashes';
   if (pathname.includes('/dashboard/payroll-pilot')) return 'cc-payroll-pilot';
 
+  if (pathname.includes('/dashboard/telesale-target')) return 'telesale-target';
   if (pathname.includes('/dashboard/cc')) return 'cc';
   if (pathname.includes('/dashboard/cv')) return 'cv';
   if (pathname.includes('/dashboard/bk')) return 'bk';

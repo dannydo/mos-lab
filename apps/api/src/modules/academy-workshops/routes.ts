@@ -6,6 +6,7 @@ import type {
   AssignAcademyWorkshopInstructorRequest,
   CheckInAcademyWorkshopParticipantRequest,
   CloneAcademyWorkshopQuizRequest,
+  CloneAcademyWorkshopRequest,
   ConfirmAcademyWorkshopPhotoRequest,
   CreateAcademyWorkshopAgendaItemRequest,
   CreateAcademyWorkshopAgendaTemplateRequest,
@@ -438,6 +439,35 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       });
     } catch (cause) {
       return error(fastify, reply, cause, 'Get workshop');
+    }
+  });
+
+  fastify.get('/academy-sales/workshops/:workshopId/clone-preview', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.getClonePreview(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID')
+      );
+      return reply.send({ success: true, data });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Get workshop clone preview');
+    }
+  });
+
+  fastify.post('/academy-sales/workshops/:workshopId/clone', async (request, reply) => {
+    try {
+      const { workshopId } = request.params as { workshopId: string };
+      const data = await AcademyWorkshopService.clone(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        (request.body || {}) as CloneAcademyWorkshopRequest
+      );
+      return reply.send({ success: true, data, message: 'Đã nhân bản workshop thành công.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Clone workshop');
     }
   });
 

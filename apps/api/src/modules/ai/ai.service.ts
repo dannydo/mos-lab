@@ -536,14 +536,17 @@ Quy định phản hồi:
 
       const agTitle = `[mOS Copilot] ${trimmedMessage.slice(0, 40)}`;
 
-      if (await AgChatBridgeService.isLocalAgAvailable()) {
+      const isTestEnv =
+        process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST) || Boolean(process.env.JEST_WORKER_ID);
+
+      if (!isTestEnv && (await AgChatBridgeService.isLocalAgAvailable())) {
         const agResult = await AgChatBridgeService.executeLocalAgPrompt(agConversationId, promptForAg, agTitle);
         if (agResult?.response?.content) {
           parsedResponse = agResult.response;
           agConversationId = agResult.conversationId;
           source = 'ag';
         }
-      } else {
+      } else if (!isTestEnv) {
         // Try remote bridge queue (when API is running on VPS and Danny's Mac daemon is polling)
         try {
           const agResult = await AgChatBridgeService.enqueueRemoteChatJob(

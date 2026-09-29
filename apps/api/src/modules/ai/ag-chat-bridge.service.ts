@@ -176,6 +176,9 @@ export class AgChatBridgeService {
    * Check whether Antigravity is accessible locally on this machine
    */
   static async isLocalAgAvailable(): Promise<boolean> {
+    if (process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST) || Boolean(process.env.JEST_WORKER_ID)) {
+      return false;
+    }
     const cmd = this.resolveAgentApiCommand();
     if (!cmd) return false;
     const env = await this.detectAntigravityLsEnv();

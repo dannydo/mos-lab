@@ -99,6 +99,8 @@ export interface AcademyWorkshopListItem {
   participantCount: number;
   checkedInCount: number;
   liveAgendaItemId: number | null;
+  parentWorkshopId?: number | null;
+  seriesKey?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -106,6 +108,7 @@ export interface AcademyWorkshopListItem {
 export interface AcademyWorkshopDetail extends AcademyWorkshopListItem {
   showInSidebar: boolean;
   displayCode: string;
+  parentWorkshop?: { id: number; name: string; slug: string } | null;
   /** Meal selection cutoff; defaults to the workshop start when unset. */
   menuSelectionDeadline: string | null;
   /** Equipment selection cutoff; defaults to the workshop start when unset. */
@@ -718,6 +721,47 @@ export interface UpdateAcademyWorkshopRequest extends Partial<CreateAcademyWorks
 export interface ListAcademyWorkshopsParams extends PageQuery {
   search?: string;
   status?: AcademyWorkshopStatus | 'ALL';
+  seriesKey?: string;
+}
+
+export interface CloneAcademyWorkshopRequest {
+  name: string;
+  slug?: string;
+  startsAt: string;
+  endsAt: string;
+  location?: string;
+  capacity?: number;
+  feeVnd?: number;
+  feeDueAt?: string | null;
+  showInSidebar?: boolean;
+  // Checklist flags (defaults to true)
+  includeAgenda?: boolean;
+  includeMenu?: boolean;
+  includeEquipment?: boolean;
+  includeDesigns?: boolean;
+  includeQuizzes?: boolean;
+}
+
+export interface AcademyWorkshopClonePreview {
+  sourceId: number;
+  sourceName: string;
+  sourceSlug: string;
+  seriesKey: string;
+  suggestedName: string;
+  suggestedSlug: string;
+  suggestedStartsAt: string;
+  suggestedEndsAt: string;
+  location: string;
+  capacity: number;
+  feeVnd: number;
+  counts: {
+    agendaItems: number;
+    menuItems: number;
+    equipmentPackages: number;
+    designs: number;
+    quizzes: number;
+    quizQuestions: number;
+  };
 }
 
 export interface ListAcademyWorkshopParticipantsParams extends PageQuery {

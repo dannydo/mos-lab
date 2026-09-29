@@ -14,7 +14,7 @@ import {
   TeamOutlined,
   UsergroupAddOutlined,
 } from '@ant-design/icons';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Target } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import type { DashboardBranchSnapshot, DashboardTodayResponse, RevenueHourlyResponse, Staff } from '@mos-lab/shared';
@@ -86,6 +86,13 @@ function getQuickActions(role?: string): QuickAction[] {
     return [
       ...operationalActions,
       {
+        key: 'telesale-target',
+        title: 'Mục Tiêu Telesales T10',
+        description: 'War Room realtime 450 Done, 650 Book và pool data khách hàng.',
+        href: '/dashboard/telesale-target',
+        icon: <Target className="w-4 h-4 text-amber-500" />,
+      },
+      {
         key: 'kpi',
         title: 'KPI & hiệu suất',
         description: 'So sánh thực hiện, leaderboard và drill-down chỉ số.',
@@ -112,6 +119,13 @@ function getQuickActions(role?: string): QuickAction[] {
   if (normalizedRole === 'telesales' || normalizedRole === 'booker') {
     return [
       {
+        key: 'telesale-target',
+        title: 'Mục Tiêu Tháng 10',
+        description: 'Chỉ tiêu cá nhân, gọi điện >= 90 Call và nhận khách theo ca.',
+        href: '/dashboard/telesale-target',
+        icon: <Target className="w-4 h-4 text-amber-500" />,
+      },
+      {
         key: 'customers',
         title: 'Khách hàng của tôi',
         description: 'Danh sách ưu tiên gọi lại và follow-up trong ngày.',
@@ -131,6 +145,13 @@ function getQuickActions(role?: string): QuickAction[] {
 
   return [
     ...operationalActions,
+    {
+      key: 'telesale-target',
+      title: 'Mục Tiêu Telesales T10',
+      description: 'War Room realtime 450 Done, 650 Book và pool data khách hàng.',
+      href: '/dashboard/telesale-target',
+      icon: <Target className="w-4 h-4 text-amber-500" />,
+    },
     {
       key: 'customers',
       title: 'Khách hàng',

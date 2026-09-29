@@ -59,3 +59,4 @@ export * from './types/ai-assistant.js';
 export * from './types/pilot.js';
 export * from './types/career-progression.js';
 export * from './types/pinned-links.js';
+export * from './types/telesale-target.js';

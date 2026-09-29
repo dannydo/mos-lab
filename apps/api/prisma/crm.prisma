@@ -1589,10 +1589,14 @@ model CrmAcademyWorkshop {
   displayCode        String    @unique @map("display_code") @db.VarChar(32)
   displayTokenVersion Int      @default(1) @map("display_token_version")
   showJoinQrOnDisplay Boolean  @default(false) @map("show_join_qr_on_display") @db.TinyInt
+  parentWorkshopId   Int?      @map("parent_workshop_id")
+  seriesKey          String?   @map("series_key") @db.VarChar(64)
   createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
   campaign      CrmAcademyCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  parentWorkshop CrmAcademyWorkshop? @relation("AcademyWorkshopSeries", fields: [parentWorkshopId], references: [id], onDelete: SetNull)
+  childWorkshops CrmAcademyWorkshop[] @relation("AcademyWorkshopSeries")
   agendaTemplate CrmAcademyWorkshopAgendaTemplate? @relation(fields: [agendaTemplateId], references: [id], onDelete: SetNull)
   menuAgendaItem CrmAcademyWorkshopAgendaItem? @relation("AcademyWorkshopMenuAgendaItem", fields: [menuAgendaItemId], references: [id], onDelete: SetNull)
   equipmentAgendaItem CrmAcademyWorkshopAgendaItem? @relation("AcademyWorkshopEquipmentAgendaItem", fields: [equipmentAgendaItemId], references: [id], onDelete: SetNull)
@@ -1618,6 +1622,8 @@ model CrmAcademyWorkshop {
   @@index([menuTemplateId])
   @@index([equipmentTemplateId])
   @@index([designTemplateId])
+  @@index([seriesKey], map: "idx_crm_academy_workshop_series_key")
+  @@index([parentWorkshopId], map: "idx_crm_academy_workshop_parent")
   @@map("crm_academy_workshops")
 }
 

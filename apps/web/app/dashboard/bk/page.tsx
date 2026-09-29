@@ -15,7 +15,7 @@ import {
   MoreOutlined,
   TrophyOutlined,
 } from '@ant-design/icons';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Target } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
@@ -324,6 +324,13 @@ export default function BkDashboardPage() {
               icon={Settings2}
               tone="primary"
               onClick={() => router.push('/dashboard/staff/teams?selected=BK')}
+            />
+
+            <IconButton
+              label="Mục Tiêu T10"
+              icon={Target}
+              tone="primary"
+              onClick={() => router.push('/dashboard/telesale-target')}
             />
           </Space>
         </div>

@@ -6243,6 +6243,16 @@ body {
   max-width: none;
 }
 
+.dashboard-content.dashboard-content--war-room {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  width: 100%;
+}
+
 .dashboard-mobile-nav .ant-drawer-body {
   display: flex;
   flex-direction: column;

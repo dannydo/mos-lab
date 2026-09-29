@@ -61,6 +61,9 @@ import type {
   ReviewPackageAuditParams,
   SalaryConfig,
   TrendsResponse,
+  TelesaleTargetOverview,
+  TelesaleTargetConfigDto,
+  TelesaleCustomerPoolResponse,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -400,6 +403,27 @@ export const kpiApi = {
   cs: {
     getTip: async (params?: CsTipQueryParams): Promise<CsTipResponse> => {
       const response = await api.get('/kpi/cs-tip', { params });
+      return response.data;
+    },
+  },
+  telesaleTarget: {
+    getOverview: async (month?: string): Promise<TelesaleTargetOverview> => {
+      const response = await api.get('/kpi/telesale-target', { params: { month } });
+      return response.data;
+    },
+    saveConfig: async (
+      data: TelesaleTargetConfigDto
+    ): Promise<{ success: boolean; config: TelesaleTargetConfigDto }> => {
+      const response = await api.post('/kpi/telesale-target/config', data);
+      return response.data;
+    },
+    getCustomerPool: async (params: {
+      stage: string;
+      bookerId?: string;
+      limit?: number;
+      offset?: number;
+    }): Promise<TelesaleCustomerPoolResponse> => {
+      const response = await api.get('/kpi/telesale-target/pool', { params });
       return response.data;
     },
   },
