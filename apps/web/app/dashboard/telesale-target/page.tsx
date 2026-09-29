@@ -16,6 +16,7 @@ export default function TelesaleTargetPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [overview, setOverview] = useState<TelesaleTargetOverview | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Drawer & Modal state
@@ -28,7 +29,15 @@ export default function TelesaleTargetPage() {
     try {
       const data = await apiClient.telesaleTarget.getOverview('2026-10');
       setOverview(data);
-    } catch {
+      setError(null);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string; error?: string } }; message?: string })?.response?.data
+          ?.message ||
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        (err as { message?: string })?.message ||
+        'Không thể tải dữ liệu mục tiêu Telesales Tháng 10';
+      setError(msg);
       if (!isSilent) {
         message.error('Không thể tải dữ liệu mục tiêu Telesales Tháng 10');
       }
@@ -187,6 +196,29 @@ export default function TelesaleTargetPage() {
           </div>
         </div>
       </header>
+
+      {/* Fallback / Error State if overview is null and not loading */}
+      {!overview && !loading && (
+        <div className="rounded-3xl border border-amber-500/30 bg-gradient-to-b from-amber-950/20 to-zinc-950 p-8 text-center backdrop-blur-xl shadow-2xl">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/40 bg-amber-900/30 text-amber-400 shadow-lg shadow-amber-500/10">
+            <RotateCw className="h-6 w-6" />
+          </div>
+          <h3 className="mt-4 text-lg font-bold text-zinc-100">Chưa thể hiển thị dữ liệu War Room Telesales</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+            {error ||
+              'Máy chủ API vừa khởi động lại hoặc đường truyền mạng chập chờn. Anh vui lòng bấm Thử lại để tải dữ liệu realtime.'}
+          </p>
+          <Button
+            type="primary"
+            onClick={() => fetchOverview(false)}
+            loading={refreshing}
+            icon={<RotateCw className="w-4 h-4" />}
+            className="mt-5 rounded-xl border-0 bg-amber-500 font-semibold text-black hover:bg-amber-400 shadow-lg shadow-amber-500/20 px-6 py-2 h-auto flex items-center gap-2 mx-auto"
+          >
+            Thử lại ngay
+          </Button>
+        </div>
+      )}
 
       {/* 2. ROW 1: KPI OVERVIEW CARDS (Team Month, Daily, Staff) */}
       {overview && <KpiOverviewCards overview={overview} />}

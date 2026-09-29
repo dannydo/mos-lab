@@ -28638,8 +28638,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27696,
-        "lineCount": 684,
+        "sizeBytes": 27704,
+        "lineCount": 685,
         "ext": ".ts"
       }
     },
@@ -33188,8 +33188,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopCloneModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10299,
-        "lineCount": 303,
+        "sizeBytes": 10260,
+        "lineCount": 289,
         "ext": ".tsx"
       }
     },
@@ -33526,8 +33526,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopWorkspaceSections.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12264,
-        "lineCount": 360,
+        "sizeBytes": 12246,
+        "lineCount": 358,
         "ext": ".tsx"
       }
     },
@@ -35983,8 +35983,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 56803,
-        "lineCount": 1398,
+        "sizeBytes": 56735,
+        "lineCount": 1394,
         "ext": ".tsx"
       }
     },
@@ -36789,8 +36789,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/CustomerPoolDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12299,
-        "lineCount": 280,
+        "sizeBytes": 12430,
+        "lineCount": 279,
         "ext": ".tsx"
       }
     },
@@ -36802,8 +36802,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7842,
-        "lineCount": 168,
+        "sizeBytes": 7671,
+        "lineCount": 154,
         "ext": ".tsx"
       }
     },
@@ -36815,8 +36815,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DataPipelineStages.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6769,
-        "lineCount": 158,
+        "sizeBytes": 6540,
+        "lineCount": 140,
         "ext": ".tsx"
       }
     },
@@ -36828,8 +36828,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12415,
-        "lineCount": 262,
+        "sizeBytes": 11944,
+        "lineCount": 231,
         "ext": ".tsx"
       }
     },
@@ -36841,8 +36841,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11261,
-        "lineCount": 289,
+        "sizeBytes": 11054,
+        "lineCount": 272,
         "ext": ".tsx"
       }
     },
@@ -36854,8 +36854,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10442,
-        "lineCount": 244,
+        "sizeBytes": 12107,
+        "lineCount": 258,
         "ext": ".tsx"
       }
     },
@@ -37387,8 +37387,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16404,
-        "lineCount": 429,
+        "sizeBytes": 16416,
+        "lineCount": 431,
         "ext": ".ts"
       }
     },
@@ -38518,7 +38518,7 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2667,
+        "sizeBytes": 2665,
         "lineCount": 119,
         "ext": ".ts"
       }
