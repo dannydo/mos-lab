@@ -172,3 +172,42 @@ export function workshopInitials(name: string) {
     .map((part) => part[0]?.toUpperCase() || '')
     .join('');
 }
+
+export function formatAgendaTime(date: string | Date | null | undefined): string {
+  if (!date) return '';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  const hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${hours}h${minutes}`;
+}
+
+export function formatAgendaDurationMinutes(durationSeconds: number): number {
+  return Math.max(1, Math.round(durationSeconds / 60));
+}
+
+export function formatAgendaExecutionText(
+  item: {
+    startedAt?: string | null;
+    completedAt?: string | null;
+    actualDurationSeconds?: number | null;
+    status?: string;
+  },
+  capitalize = false
+): string | null {
+  if (item.status !== 'COMPLETED' || !item.startedAt || !item.completedAt) {
+    return null;
+  }
+  const startTime = formatAgendaTime(item.startedAt);
+  const endTime = formatAgendaTime(item.completedAt);
+  if (!startTime || !endTime) return null;
+
+  const durationSeconds =
+    typeof item.actualDurationSeconds === 'number' && item.actualDurationSeconds >= 0
+      ? item.actualDurationSeconds
+      : Math.max(0, Math.floor((new Date(item.completedAt).getTime() - new Date(item.startedAt).getTime()) / 1000));
+  const durationMinutes = formatAgendaDurationMinutes(durationSeconds);
+
+  const prefix = capitalize ? 'Đã hoàn thành và' : 'đã hoàn thành và';
+  return `${prefix} thời gian thực tế diễn ra từ ${startTime} đến ${endTime} trong ${durationMinutes} phút`;
+}

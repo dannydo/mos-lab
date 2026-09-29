@@ -405,7 +405,7 @@ export class AcademyWorkshopLiveService {
         where: { id: item.id },
         data: {
           status,
-          startedAt: action === 'START' ? now : item.startedAt,
+          startedAt: action === 'START' ? now : item.startedAt || (action === 'COMPLETE' ? now : null),
           pausedAt: action === 'PAUSE' ? now : null,
           pausedSeconds: { increment: pauseDelta },
           completedAt: ['COMPLETE', 'SKIP'].includes(action) ? now : null,
