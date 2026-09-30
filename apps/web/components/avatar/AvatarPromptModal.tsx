@@ -23,13 +23,13 @@ const STORAGE_KEY_SNOOZE_COUNT = 'mos_avatar_snooze_count';
 export function shouldPromptForAvatar(user: SafeAny): boolean {
   if (!user || !user.id) return false;
 
-  // Check if avatar is missing or is google placeholder
+  // Check if avatar is missing or is an explicit placeholder
   const rawAvatar = user.avatarUrl || user.avatar;
   const isDefaultOrMissing =
     !rawAvatar ||
     typeof rawAvatar !== 'string' ||
     rawAvatar.trim() === '' ||
-    rawAvatar.includes('googleusercontent.com') ||
+    rawAvatar.includes('default-user') ||
     rawAvatar.includes('placeholder') ||
     rawAvatar.includes('default-avatar');
 
