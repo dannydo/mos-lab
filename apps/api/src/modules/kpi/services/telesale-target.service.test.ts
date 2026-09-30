@@ -308,3 +308,110 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
   assert.equal(staffC.revenueActual, 0);
   assert.equal(staffC.remainingDone, 100);
 });
+
+test('TelesaleTargetService.getOverview correctly counts today Book and Done when dates are Date objects (MOS-BUG-75)', async () => {
+  // Current time in ICT
+  const nowUtc = new Date();
+  const ictOffsetMs = 7 * 60 * 60 * 1000;
+  const nowIct = new Date(nowUtc.getTime() + ictOffsetMs);
+  const todayStr = nowIct.toISOString().slice(0, 10);
+
+  const mockConfig = {
+    month: todayStr.slice(0, 7),
+    teamDoneTarget: 450,
+    teamBookTarget: 650,
+    dailyDoneTarget: 18,
+    dailyBookTarget: 25,
+    dailyCallPerStaff: 90,
+    staffTargets: [
+      { legacyStaffId: 50670, name: 'Phượng', doneTarget: 150 },
+      { legacyStaffId: 52648, name: 'Kiều', doneTarget: 100 },
+    ],
+    stageTargets: { '0_30': 200, '31_60': 110, '61_120': 80, gt_120: 60 },
+  };
+
+  // Orders returned from MySQL with real JavaScript Date objects
+  const todayDateObj = new Date(`${todayStr}T10:00:00+07:00`);
+  const mockTodayOrders = [
+    // Staff 50670: 1 booking created today, and 1 appointment completed today
+    {
+      id: 101,
+      bookerId: 50670,
+      orderState: 'New',
+      dateCreated: todayDateObj,
+      bookingDateStart: new Date(`${todayStr}T14:00:00+07:00`),
+      isBookToday: 1,
+      isDoneToday: 0,
+      isComboLive: 0,
+    },
+    {
+      id: 102,
+      bookerId: 50670,
+      orderState: 'Completed',
+      dateCreated: new Date('2026-09-25T10:00:00+07:00'),
+      bookingDateStart: todayDateObj,
+      isBookToday: 0,
+      isDoneToday: 1,
+      isComboLive: 0,
+    },
+    // Staff 52648: 1 booking created today (with Date object, test fallback without isBookToday)
+    {
+      id: 103,
+      bookerId: 52648,
+      orderState: 'New',
+      dateCreated: todayDateObj,
+      bookingDateStart: new Date(`${todayStr}T16:00:00+07:00`),
+      isComboLive: 0,
+    },
+  ];
+
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async () => ({
+            key: `TELESALE_TARGET_CONFIG_${todayStr.slice(0, 7)}`,
+            value: JSON.stringify(mockConfig),
+          }),
+        },
+        crmHolidayPeriod: {
+          findMany: async () => [],
+        },
+        crmStaff: {
+          findMany: async () => [
+            { legacyStaffId: 50670, role: 'telesales', isActive: true },
+            { legacyStaffId: 52648, role: 'telesales', isActive: true },
+          ],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('prev_o.booking_date_start')) {
+            return [];
+          }
+          if (sql.includes('isComboLive')) {
+            return mockTodayOrders;
+          }
+          return [];
+        },
+      },
+    },
+    log: {
+      warn: () => {},
+      error: () => {},
+    },
+  };
+
+  const overview = await TelesaleTargetService.getOverview(mockFastify as any, todayStr.slice(0, 7));
+  
+  // Book today must be 2 (id 101 and id 103), NOT 0
+  assert.equal(overview.teamDaily.bookActual, 2);
+  // Done today must be 1 (id 102), NOT 0
+  assert.equal(overview.teamDaily.doneActual, 1);
+  // Total bookings today in dailyAction
+  assert.equal(overview.dailyAction.totalBookingsToday, 2);
+  // Staff 50670 doneToday must be 1
+  const phuong = overview.staffTargets.find((s) => s.legacyStaffId === 50670);
+  assert.ok(phuong);
+  assert.equal(phuong.doneToday, 1);
+});

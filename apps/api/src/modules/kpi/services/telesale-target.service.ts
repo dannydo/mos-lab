@@ -344,7 +344,36 @@ export class TelesaleTargetService {
 
     // Active staff IDs from config
     const targetStaffIds = config.staffTargets.map((s) => s.legacyStaffId);
-    const bkIdsStr = targetStaffIds.length > 0 ? targetStaffIds.join(',') : '50670,52648,32268,52598';
+
+    // MOS-BUG-75: Book chỉ tính từ nhân viên có Vai trò = Telesales Executive (role: 'telesales')
+    let validTelesalesIds = targetStaffIds;
+    try {
+      if (fastify.prisma?.crm?.crmStaff?.findMany) {
+        const activeTelesalesStaff = await fastify.prisma.crm.crmStaff.findMany({
+          where: {
+            role: 'telesales',
+            isActive: true,
+            legacyStaffId: { not: null, gt: 0 },
+          },
+          select: { legacyStaffId: true },
+        });
+        const activeTelesalesLegacyIds = new Set(
+          activeTelesalesStaff
+            .map((s) => s.legacyStaffId!)
+            .filter((id): id is number => typeof id === 'number' && id > 0)
+        );
+        if (activeTelesalesLegacyIds.size > 0) {
+          const filtered = targetStaffIds.filter((id) => activeTelesalesLegacyIds.has(id));
+          if (filtered.length > 0) {
+            validTelesalesIds = filtered;
+          }
+        }
+      }
+    } catch (err) {
+      fastify.log.warn(`Failed to filter Telesales Executive staff IDs: ${err}`);
+    }
+
+    const bkIdsStr = validTelesalesIds.length > 0 ? validTelesalesIds.join(',') : '50670,52648,32268,52598';
 
     // 1. Query Month Team Metrics & Staff Metrics
     // MOS-BUG-74: Book tháng tính theo ngày hẹn của khách thuộc tháng đang xem (booking_date_start)
@@ -386,6 +415,8 @@ export class TelesaleTargetService {
         o.order_state as orderState,
         o.date_created as dateCreated,
         o.booking_date_start as bookingDateStart,
+        CASE WHEN o.date_created >= '${todayStartStr}' AND o.date_created <= '${todayEndStr}' THEN 1 ELSE 0 END as isBookToday,
+        CASE WHEN o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}' AND o.order_state = 'Completed' THEN 1 ELSE 0 END as isDoneToday,
         CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
       FROM \`order\` o
       WHERE (
@@ -411,12 +442,27 @@ export class TelesaleTargetService {
       (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
     ).length;
 
+    // Helper for safe Date vs String comparison (eliminating NaN comparison bugs)
+    const isDateBetween = (val: unknown, startStr: string, endStr: string): boolean => {
+      if (!val) return false;
+      if (val instanceof Date) {
+        const t = val.getTime();
+        const startMs = new Date(startStr.replace(' ', 'T') + '+07:00').getTime();
+        const endMs = new Date(endStr.replace(' ', 'T') + '+07:00').getTime();
+        return t >= startMs && t <= endMs;
+      }
+      const s = String(val);
+      return s >= startStr && s <= endStr;
+    };
+
     // Aggregate Team Daily (MOS-BUG-75: Book hôm nay = đơn tạo trong ngày bởi Telesales Executive)
     const teamDailyBookOrders = todayOrders.filter(
-      (o) => o.dateCreated >= todayStartStr && o.dateCreated <= todayEndStr
+      (o) => Number(o.isBookToday) === 1 || isDateBetween(o.dateCreated, todayStartStr, todayEndStr)
     );
     const teamDailyDoneOrders = todayOrders.filter(
-      (o) => o.orderState === 'Completed' && o.bookingDateStart >= todayStartStr && o.bookingDateStart <= todayEndStr
+      (o) =>
+        o.orderState === 'Completed' &&
+        (Number(o.isDoneToday) === 1 || isDateBetween(o.bookingDateStart, todayStartStr, todayEndStr))
     );
     const teamDailyBookActual = teamDailyBookOrders.length;
     const teamDailyDoneActual = teamDailyDoneOrders.filter((o) => Number(o.isComboLive) !== 1).length;

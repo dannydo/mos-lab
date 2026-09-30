@@ -215,9 +215,103 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
         </div>
       </header>
 
-      {/* 2. MAIN TV MONITOR BODY: 2 GIANT HIGH-CONTRAST COLUMNS */}
+      {/* 2. MAIN TV MONITOR BODY: 2 GIANT HIGH-CONTRAST COLUMNS (MOS-BUG-75: Book dẫn dắt -> Done theo sau) */}
       <main className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 my-4 flex-1 items-stretch">
-        {/* COLUMN 1: DONE HÔM NAY (KHÁCH LẺ) */}
+        {/* COLUMN 1: BOOK HÔM NAY (TẠO LỊCH - HÀNH ĐỘNG CHÍNH DẪN DẮT) */}
+        <div
+          className={`rounded-3xl p-6 sm:p-8 lg:p-10 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
+            isBookOver100
+              ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_40px_rgba(245,158,11,0.2)]'
+              : 'bg-gradient-to-b from-blue-950/30 via-zinc-900/90 to-zinc-950/90 border-blue-500/40 hover:border-blue-400/60 shadow-[0_0_20px_rgba(59,130,246,0.15)]'
+          }`}
+        >
+          {/* Ambient inner glow */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Card Title */}
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2.5 text-zinc-300 font-bold text-sm sm:text-base lg:text-lg uppercase tracking-wider">
+                <Calendar className="w-6 h-6 text-blue-400" />
+                <span className="text-blue-200">BOOK HÔM NAY · TẠO LỊCH</span>
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-950/80 text-blue-300 border border-blue-500/40">
+                HÀNH ĐỘNG DẪN DẮT · Chỉ tiêu: ≥ {metrics.bookTarget} Book
+              </span>
+            </div>
+
+            {/* Giant Big Numbers (Readable from 5-10 meters) */}
+            <div className="mt-4 lg:mt-6 flex items-baseline justify-center sm:justify-start gap-3">
+              <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-mono text-blue-300 tabular-nums tracking-tighter drop-shadow-lg">
+                {metrics.bookActual}
+              </span>
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-bold font-mono text-zinc-500 tabular-nums">
+                / {metrics.bookTarget}
+              </span>
+              <span className="text-base sm:text-xl font-bold text-blue-400 font-mono ml-2">Book</span>
+            </div>
+
+            {/* Massive Thick Progress Bar */}
+            <div className="mt-4 lg:mt-6">
+              <Progress
+                percent={Math.min(100, metrics.bookPercent)}
+                strokeColor={isBookOver100 ? token.colorWarning : metrics.gapBook >= 0 ? token.colorInfo : token.colorWarning}
+                size={['100%', 28]}
+                showInfo={false}
+                className="rounded-2xl"
+              />
+              <div className="flex justify-between items-center text-sm sm:text-base font-mono mt-2.5 font-bold">
+                <span className="text-zinc-400">Tiến độ hoàn thành</span>
+                <span
+                  className={`text-lg sm:text-xl font-black ${
+                    isBookOver100
+                      ? 'text-amber-400 animate-pulse'
+                      : metrics.bookPercent >= 75
+                        ? 'text-blue-300'
+                        : 'text-zinc-200'
+                  }`}
+                >
+                  {isBookOver100 ? `✨ ${metrics.bookPercent}% VƯỢT CHỈ TIÊU` : `${metrics.bookPercent}%`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* High-Visibility Pacing Breakdown Line */}
+          <div className="mt-6 pt-5 border-t border-blue-900/40 bg-black/40 rounded-2xl p-4 sm:p-5 border border-blue-500/20">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-mono">
+              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
+                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Đã đạt</div>
+                <div className="text-xl sm:text-2xl font-black text-blue-200 tabular-nums">{metrics.bookActual}</div>
+              </div>
+              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
+                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Kỳ vọng giờ này</div>
+                <div className="text-xl sm:text-2xl font-black text-zinc-300 tabular-nums">{metrics.expectedBook}</div>
+              </div>
+              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
+                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Nhịp (Gap)</div>
+                <div
+                  className={`text-xl sm:text-2xl font-black tabular-nums ${
+                    metrics.gapBook >= 0 ? 'text-emerald-400' : metrics.gapBook === -1 ? 'text-amber-400' : 'text-rose-400'
+                  }`}
+                >
+                  {metrics.gapBook >= 0 ? `+${metrics.gapBook}` : metrics.gapBook}
+                </div>
+              </div>
+              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
+                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Còn thiếu</div>
+                <div className="text-xl sm:text-2xl font-black text-blue-300 tabular-nums">{metrics.remainingBook}</div>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-2 border-t border-blue-900/40 flex items-center justify-between text-xs sm:text-sm font-mono text-zinc-400">
+              <span>Định mức tối thiểu mỗi ngày:</span>
+              <span className="text-blue-300 font-bold tabular-nums">25 Cuộc hẹn thành công</span>
+            </div>
+          </div>
+        </div>
+
+        {/* COLUMN 2: DONE HÔM NAY (KHÁCH LẺ - KẾT QUẢ THEO SAU) */}
         <div
           className={`rounded-3xl p-6 sm:p-8 lg:p-10 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
             isDoneOver100
@@ -313,100 +407,6 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                 <span className="font-bold tabular-nums">+{metrics.comboLiveDoneActual} Done</span>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* COLUMN 2: BOOK HÔM NAY (TẠO LỊCH) */}
-        <div
-          className={`rounded-3xl p-6 sm:p-8 lg:p-10 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
-            isBookOver100
-              ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_40px_rgba(245,158,11,0.2)]'
-              : 'bg-gradient-to-b from-zinc-900/90 to-zinc-950/90 border-zinc-800 hover:border-amber-500/50'
-          }`}
-        >
-          {/* Ambient inner glow */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Card Title */}
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2.5 text-zinc-300 font-bold text-sm sm:text-base lg:text-lg uppercase tracking-wider">
-                <Calendar className="w-6 h-6 text-blue-400" />
-                <span>BOOK HÔM NAY · TẠO LỊCH</span>
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                Chỉ tiêu: ≥ {metrics.bookTarget} Book
-              </span>
-            </div>
-
-            {/* Giant Big Numbers (Readable from 5-10 meters) */}
-            <div className="mt-4 lg:mt-6 flex items-baseline justify-center sm:justify-start gap-3">
-              <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-mono text-zinc-100 tabular-nums tracking-tighter drop-shadow-lg">
-                {metrics.bookActual}
-              </span>
-              <span className="text-3xl sm:text-4xl lg:text-5xl font-bold font-mono text-zinc-500 tabular-nums">
-                / {metrics.bookTarget}
-              </span>
-              <span className="text-base sm:text-xl font-bold text-zinc-400 font-mono ml-2">Book</span>
-            </div>
-
-            {/* Massive Thick Progress Bar */}
-            <div className="mt-4 lg:mt-6">
-              <Progress
-                percent={Math.min(100, metrics.bookPercent)}
-                strokeColor={isBookOver100 ? token.colorWarning : metrics.gapBook >= 0 ? token.colorInfo : token.colorWarning}
-                size={['100%', 28]}
-                showInfo={false}
-                className="rounded-2xl"
-              />
-              <div className="flex justify-between items-center text-sm sm:text-base font-mono mt-2.5 font-bold">
-                <span className="text-zinc-400">Tiến độ hoàn thành</span>
-                <span
-                  className={`text-lg sm:text-xl font-black ${
-                    isBookOver100
-                      ? 'text-amber-400 animate-pulse'
-                      : metrics.bookPercent >= 75
-                        ? 'text-blue-300'
-                        : 'text-zinc-200'
-                  }`}
-                >
-                  {isBookOver100 ? `✨ ${metrics.bookPercent}% VƯỢT CHỈ TIÊU` : `${metrics.bookPercent}%`}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* High-Visibility Pacing Breakdown Line */}
-          <div className="mt-6 pt-5 border-t border-zinc-800/80 bg-black/40 rounded-2xl p-4 sm:p-5 border border-zinc-800/60">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-mono">
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Đã đạt</div>
-                <div className="text-xl sm:text-2xl font-black text-zinc-100 tabular-nums">{metrics.bookActual}</div>
-              </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Kỳ vọng giờ này</div>
-                <div className="text-xl sm:text-2xl font-black text-zinc-300 tabular-nums">{metrics.expectedBook}</div>
-              </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Nhịp (Gap)</div>
-                <div
-                  className={`text-xl sm:text-2xl font-black tabular-nums ${
-                    metrics.gapBook >= 0 ? 'text-emerald-400' : metrics.gapBook === -1 ? 'text-amber-400' : 'text-rose-400'
-                  }`}
-                >
-                  {metrics.gapBook >= 0 ? `+${metrics.gapBook}` : metrics.gapBook}
-                </div>
-              </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Còn thiếu</div>
-                <div className="text-xl sm:text-2xl font-black text-blue-300 tabular-nums">{metrics.remainingBook}</div>
-              </div>
-            </div>
-
-            <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs sm:text-sm font-mono text-zinc-400">
-              <span>Định mức tối thiểu mỗi ngày:</span>
-              <span className="text-amber-300 font-bold tabular-nums">25 Cuộc hẹn thành công</span>
-            </div>
           </div>
         </div>
       </main>

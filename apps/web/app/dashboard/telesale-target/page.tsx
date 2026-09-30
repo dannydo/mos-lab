@@ -109,13 +109,25 @@ function TelesaleTargetContent() {
   useEffect(() => {
     fetchOverview(selectedMonth);
 
-    // Auto-refresh every 60 seconds
+    // Auto-refresh: 20s if in TV fullscreen mode, 30s in normal War Room mode (MOS-BUG-75)
+    const pollInterval = tvModeOpen ? 20000 : 30000;
     const interval = setInterval(() => {
       fetchOverview(selectedMonth, true);
-    }, 60000);
+    }, pollInterval);
 
-    return () => clearInterval(interval);
-  }, [fetchOverview, selectedMonth]);
+    // Immediate refresh when tab/window gains visibility
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchOverview(selectedMonth, true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchOverview, selectedMonth, tvModeOpen]);
 
   const handleMonthChange = (newMonth: string) => {
     if (!/^\d{4}-\d{2}$/.test(newMonth)) return;
