@@ -31,6 +31,9 @@ export interface TelesalePipelineStage {
   itemsSummary: string[];
 }
 
+export type TelesalePacingStatus = 'NOT_STARTED' | 'AHEAD' | 'ON_TRACK' | 'BEHIND';
+export type TelesalePeriodStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+
 export interface TelesaleTargetOverview {
   month: string; // '2026-10'
   updatedAt: string;
@@ -40,10 +43,27 @@ export interface TelesaleTargetOverview {
     comboLiveDoneActual?: number;
     bookTarget: number;
     bookActual: number;
-    pacingDaysElapsed: number;
-    pacingDaysTotal: number;
+    // Workdays pacing & KPI management metrics (MOS-BUG-67)
+    workDaysTotal: number;
+    workDaysElapsed: number;
+    workDaysRemaining: number;
+    periodStatus: TelesalePeriodStatus;
+    pacingStatus: TelesalePacingStatus;
+    pacingStatusLabel: string; // 'Chưa bắt đầu' | 'Vượt nhịp' | 'Đúng nhịp' | 'Chậm nhịp'
+    expectedProgressRate: number; // 0..1
+    expectedDone: number;
+    expectedBook: number;
+    gapDone: number;
+    gapBook: number;
+    remainingDone: number;
+    remainingBook: number;
+    dailyRequiredDone: number;
+    dailyRequiredBook: number;
     pacingRatio: number;
     isPacingOnTrack: boolean;
+    // Backward compatibility
+    pacingDaysElapsed: number;
+    pacingDaysTotal: number;
   };
   teamDaily: {
     date: string;

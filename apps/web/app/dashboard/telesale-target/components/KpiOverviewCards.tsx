@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Row, Col, Progress } from 'antd';
+import { Row, Col, Progress, theme } from 'antd';
 import { Calendar, CheckCircle2, User, Trophy, Flame, Sparkles } from 'lucide-react';
 import { TelesaleTargetOverview } from '@mos-lab/shared';
 
@@ -10,6 +10,7 @@ interface KpiOverviewCardsProps {
 }
 
 export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) => {
+  const { token } = theme.useToken();
   const { month, teamMonth, teamDaily, staffTargets } = overview;
   const monthNumStr = month.split('-')[1] || '10';
 
@@ -25,6 +26,36 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) 
   const bookPercent = Math.round((teamMonth.bookActual / (teamMonth.bookTarget || 1)) * 100);
   const isBookOver100 = bookPercent > 100;
 
+  const isPeriodNotStarted = teamMonth.periodStatus === 'NOT_STARTED';
+  const isPeriodCompleted = teamMonth.periodStatus === 'COMPLETED';
+
+  // Workdays pacing & metrics (MOS-BUG-67)
+  const workDaysElapsed = teamMonth.workDaysElapsed ?? teamMonth.pacingDaysElapsed ?? 0;
+  const workDaysTotal = teamMonth.workDaysTotal ?? teamMonth.pacingDaysTotal ?? 26;
+
+  // Pacing status & label
+  const pacingStatus =
+    teamMonth.pacingStatus ||
+    (isPeriodNotStarted ? 'NOT_STARTED' : teamMonth.isPacingOnTrack ? 'ON_TRACK' : 'BEHIND');
+  const pacingStatusLabel =
+    teamMonth.pacingStatusLabel ||
+    (isPeriodNotStarted
+      ? 'Chưa bắt đầu'
+      : pacingStatus === 'AHEAD'
+        ? 'Vượt nhịp'
+        : pacingStatus === 'ON_TRACK'
+          ? 'Đúng nhịp'
+          : 'Chậm nhịp');
+
+  // Status-aware colors for Progress bar using semantic tokens (Requirement 5 & UI Contract)
+  const getProgressStroke = (percent: number) => {
+    if (isPeriodNotStarted) return token.colorTextQuaternary;
+    if (percent >= 100) return token.colorWarning;
+    if (pacingStatus === 'AHEAD') return token.colorSuccess;
+    if (pacingStatus === 'ON_TRACK') return token.colorInfo;
+    return token.colorWarning;
+  };
+
   // 2. Team Daily Calculations
   const dailyDonePercent = Math.round((teamDaily.doneActual / (teamDaily.doneTarget || 1)) * 100);
   const isDailyDoneOver100 = dailyDonePercent > 100;
@@ -38,11 +69,13 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) 
 
   return (
     <Row gutter={[16, 16]}>
-      {/* 1. KPI TEAM THÁNG X */}
+      {/* 1. KPI TEAM THÁNG X (MOS-BUG-67) */}
       <Col xs={24} md={8}>
         <div
           className={`relative overflow-hidden rounded-2xl bg-gradient-to-b from-amber-950/20 to-zinc-950 border p-5 shadow-2xl backdrop-blur-md h-full flex flex-col justify-between group transition-all duration-300 ${
-            isDoneOver100 ? 'border-amber-400 supercharged-aura' : 'border-amber-500/30 hover:border-amber-400/60'
+            isDoneOver100
+              ? 'border-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+              : 'border-amber-500/30 hover:border-amber-400/60'
           }`}
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
@@ -54,26 +87,36 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) 
                 <Trophy className="w-3.5 h-3.5 text-amber-400" /> KPI Team Tháng {monthNumStr}
               </span>
               <div className="flex items-center gap-1.5">
-                {isDoneOver100 && (
-                  <span className="text-[10px] px-2 py-0.5 rounded font-black font-mono bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-sm flex items-center gap-1">
+                {!isPeriodNotStarted && isDoneOver100 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded font-black font-mono bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-sm flex items-center gap-1">
                     <Sparkles className="w-3 h-3" /> VƯỢT {donePercent}%
                   </span>
                 )}
-                <span
-                  className={`text-xs px-2 py-0.5 rounded font-mono font-semibold ${
-                    teamMonth.isPacingOnTrack
-                      ? 'bg-emerald-950 text-emerald-400 border border-emerald-700/50'
-                      : 'bg-amber-950 text-amber-400 border border-amber-700/50'
-                  }`}
-                >
-                  {teamMonth.isPacingOnTrack ? '✓ Đạt nhịp pacing' : '⚡ Cần bứt phá'}
-                </span>
+                {isPeriodNotStarted ? (
+                  <span className="text-xs px-2.5 py-0.5 rounded font-mono font-semibold bg-zinc-800/80 text-zinc-400 border border-zinc-700/60">
+                    Chưa bắt đầu
+                  </span>
+                ) : (
+                  <span
+                    className={`text-xs px-2.5 py-0.5 rounded font-mono font-semibold ${
+                      pacingStatus === 'AHEAD'
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/50'
+                        : pacingStatus === 'ON_TRACK'
+                          ? 'bg-blue-950 text-blue-300 border border-blue-600/50'
+                          : 'bg-amber-950 text-amber-300 border border-amber-600/50'
+                    }`}
+                  >
+                    {pacingStatus === 'AHEAD' && '🚀 Vượt nhịp'}
+                    {pacingStatus === 'ON_TRACK' && '✓ Đúng nhịp'}
+                    {pacingStatus === 'BEHIND' && '⚡ Chậm nhịp'}
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Metrics */}
             <div className="grid grid-cols-2 gap-4 my-2">
-              {/* Done Card (2 rows: Khách lẻ Not Combo + Khách Combo Live) */}
+              {/* Done Card (Khách lẻ Not Combo + Quản trị KPI) */}
               <div className="bg-black/40 rounded-xl p-3 border border-amber-500/15 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between text-zinc-400 text-xs">
@@ -93,7 +136,8 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) 
                   </div>
 
                   <Progress
-                    percent={Math.min(100, donePercent)}
+                    percent={isPeriodNotStarted ? 0 : Math.min(100, donePercent)}
+                    strokeColor={getProgressStroke(donePercent)}
                     size="small"
                     showInfo={false}
                     className={`mt-1.5 ${isDoneOver100 ? 'supercharged-bar' : ''}`}
@@ -102,11 +146,62 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) 
                     <span className="text-zinc-400">Tiến độ</span>
                     <span
                       className={
-                        isDoneOver100 ? 'text-amber-400 font-black animate-pulse' : 'text-emerald-400 font-bold'
+                        isPeriodNotStarted
+                          ? 'text-zinc-500 font-semibold'
+                          : isDoneOver100
+                            ? 'text-amber-400 font-bold'
+                            : 'text-emerald-400 font-bold'
                       }
                     >
-                      {isDoneOver100 ? `🔥 ${donePercent}% VƯỢT CHỈ TIÊU` : `${donePercent}%`}
+                      {isPeriodNotStarted
+                        ? '0%'
+                        : isDoneOver100
+                          ? `✨ ${donePercent}% VƯỢT CHỈ TIÊU`
+                          : `${donePercent}%`}
                     </span>
+                  </div>
+
+                  {/* Management Metrics (MOS-BUG-67) */}
+                  <div className="mt-2.5 pt-2 border-t border-zinc-800/80 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono">
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Kỳ vọng:</span>
+                      <span className="text-zinc-200 font-semibold tabular-nums">
+                        {isPeriodNotStarted
+                          ? '-'
+                          : (teamMonth.expectedDone ??
+                            Math.round(teamMonth.doneTarget * (workDaysElapsed / (workDaysTotal || 1))))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Gap KPI:</span>
+                      <span
+                        className={`font-bold tabular-nums ${
+                          isPeriodNotStarted
+                            ? 'text-zinc-400'
+                            : (teamMonth.gapDone ?? 0) >= 0
+                              ? 'text-emerald-400'
+                              : 'text-rose-400'
+                        }`}
+                      >
+                        {isPeriodNotStarted
+                          ? '-'
+                          : `${(teamMonth.gapDone ?? 0) >= 0 ? '+' : ''}${teamMonth.gapDone ?? 0}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Còn lại:</span>
+                      <span className="text-zinc-200 font-semibold tabular-nums">
+                        {teamMonth.remainingDone ?? Math.max(0, teamMonth.doneTarget - teamMonth.doneActual)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Cần TB:</span>
+                      <span className="text-amber-300 font-semibold tabular-nums">
+                        {isPeriodCompleted
+                          ? '-'
+                          : `${teamMonth.dailyRequiredDone ?? 0}/ngày`}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -148,7 +243,8 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) 
                     <span className="text-zinc-500 text-xs font-mono">/ {teamMonth.bookTarget}</span>
                   </div>
                   <Progress
-                    percent={Math.min(100, bookPercent)}
+                    percent={isPeriodNotStarted ? 0 : Math.min(100, bookPercent)}
+                    strokeColor={getProgressStroke(bookPercent)}
                     size="small"
                     showInfo={false}
                     className={`mt-1.5 ${isBookOver100 ? 'supercharged-bar' : ''}`}
@@ -156,10 +252,63 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) 
                   <div className="flex justify-between items-center text-[11px] mt-1 font-mono">
                     <span className="text-zinc-400">Tiến độ</span>
                     <span
-                      className={isBookOver100 ? 'text-amber-400 font-black animate-pulse' : 'text-blue-400 font-bold'}
+                      className={
+                        isPeriodNotStarted
+                          ? 'text-zinc-500 font-semibold'
+                          : isBookOver100
+                            ? 'text-amber-400 font-bold'
+                            : 'text-blue-400 font-bold'
+                      }
                     >
-                      {isBookOver100 ? `🔥 ${bookPercent}% VƯỢT CHỈ TIÊU` : `${bookPercent}%`}
+                      {isPeriodNotStarted
+                        ? '0%'
+                        : isBookOver100
+                          ? `✨ ${bookPercent}% VƯỢT CHỈ TIÊU`
+                          : `${bookPercent}%`}
                     </span>
+                  </div>
+
+                  {/* Management Metrics (MOS-BUG-67) */}
+                  <div className="mt-2.5 pt-2 border-t border-zinc-800/80 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono">
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Kỳ vọng:</span>
+                      <span className="text-zinc-200 font-semibold tabular-nums">
+                        {isPeriodNotStarted
+                          ? '-'
+                          : (teamMonth.expectedBook ??
+                            Math.round(teamMonth.bookTarget * (workDaysElapsed / (workDaysTotal || 1))))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Gap KPI:</span>
+                      <span
+                        className={`font-bold tabular-nums ${
+                          isPeriodNotStarted
+                            ? 'text-zinc-400'
+                            : (teamMonth.gapBook ?? 0) >= 0
+                              ? 'text-emerald-400'
+                              : 'text-rose-400'
+                        }`}
+                      >
+                        {isPeriodNotStarted
+                          ? '-'
+                          : `${(teamMonth.gapBook ?? 0) >= 0 ? '+' : ''}${teamMonth.gapBook ?? 0}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Còn lại:</span>
+                      <span className="text-zinc-200 font-semibold tabular-nums">
+                        {teamMonth.remainingBook ?? Math.max(0, teamMonth.bookTarget - teamMonth.bookActual)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span>Cần TB:</span>
+                      <span className="text-blue-300 font-semibold tabular-nums">
+                        {isPeriodCompleted
+                          ? '-'
+                          : `${teamMonth.dailyRequiredBook ?? 0}/ngày`}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -171,16 +320,31 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview }) 
             </div>
           </div>
 
-          {/* Footer pacing */}
+          {/* Footer pacing (MOS-BUG-67: Ngày làm việc X/Y & Nhịp bám đuổi) */}
           <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400">
-            <span className="font-mono">
-              Ngày {teamMonth.pacingDaysElapsed}/{teamMonth.pacingDaysTotal}
-            </span>
-            <span className="text-zinc-400">
-              Nhịp bám đuổi:{' '}
-              <strong className={teamMonth.pacingRatio >= 1 ? 'text-emerald-400' : 'text-amber-400'}>
-                {(teamMonth.pacingRatio * 100).toFixed(0)}%
+            <span className="font-mono flex items-center gap-1">
+              Ngày làm việc{' '}
+              <strong className="text-zinc-200 tabular-nums">
+                {workDaysElapsed}/{workDaysTotal}
               </strong>
+            </span>
+            <span className="text-zinc-400 flex items-center gap-1.5 font-mono">
+              Nhịp bám đuổi:{' '}
+              {isPeriodNotStarted ? (
+                <strong className="text-zinc-400">Chưa bắt đầu</strong>
+              ) : (
+                <strong
+                  className={
+                    pacingStatus === 'AHEAD'
+                      ? 'text-emerald-400'
+                      : pacingStatus === 'ON_TRACK'
+                        ? 'text-blue-400'
+                        : 'text-amber-400'
+                  }
+                >
+                  {(teamMonth.pacingRatio * 100).toFixed(0)}% · {pacingStatusLabel}
+                </strong>
+              )}
             </span>
           </div>
         </div>

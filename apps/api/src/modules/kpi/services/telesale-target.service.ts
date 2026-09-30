@@ -7,6 +7,8 @@ import {
   TelesaleCustomerPoolItem,
   TelesaleStaffTarget,
   TelesalePipelineStage,
+  TelesalePacingStatus,
+  TelesalePeriodStatus,
   SafeAny,
 } from '@mos-lab/shared';
 import { getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
@@ -134,6 +136,190 @@ export class TelesaleTargetService {
     }
   }
 
+  /**
+   * Tính toán tiến độ ngày làm việc và các chỉ số quản trị KPI Team (MOS-BUG-67)
+   * - Loại trừ ngày OFF cố định (Chủ Nhật) & các kỳ nghỉ lễ đã cấu hình
+   * - Trạng thái: Chưa bắt đầu, Vượt nhịp, Đúng nhịp, Chậm nhịp
+   * - Tính Kỳ vọng, Gap KPI, Còn lại, Cần TB/ngày cho cả Done và Book
+   */
+  static async calculateTeamWorkDaysPacing(
+    fastify: FastifyInstance,
+    month: string,
+    targetStaffIds: number[],
+    nowIct: Date,
+    doneTarget: number,
+    doneActual: number,
+    bookTarget: number,
+    bookActual: number
+  ): Promise<{
+    workDaysTotal: number;
+    workDaysElapsed: number;
+    workDaysRemaining: number;
+    periodStatus: TelesalePeriodStatus;
+    pacingStatus: TelesalePacingStatus;
+    pacingStatusLabel: string;
+    expectedProgressRate: number;
+    expectedDone: number;
+    expectedBook: number;
+    gapDone: number;
+    gapBook: number;
+    remainingDone: number;
+    remainingBook: number;
+    dailyRequiredDone: number;
+    dailyRequiredBook: number;
+    pacingRatio: number;
+    isPacingOnTrack: boolean;
+  }> {
+    const [yearStr, monthNumStr] = month.split('-');
+    const year = parseInt(yearStr, 10);
+    const monthNum = parseInt(monthNumStr, 10);
+    const lastDayOfMonth = new Date(year, monthNum, 0).getDate();
+
+    // 1. Xác định các ngày nghỉ lễ đã cấu hình trong CRM DB
+    const holidayDateSet = new Set<string>();
+    try {
+      if (fastify?.prisma?.crm?.crmHolidayPeriod?.findMany) {
+        const holidayPeriods = await fastify.prisma.crm.crmHolidayPeriod.findMany({
+          where: {
+            startDate: { lte: new Date(`${month}-${String(lastDayOfMonth).padStart(2, '0')}T23:59:59.999Z`) },
+            endDate: { gte: new Date(`${month}-01T00:00:00.000Z`) },
+            status: { not: 'CANCELLED' },
+          },
+          select: { startDate: true, endDate: true },
+        });
+
+        for (const p of holidayPeriods) {
+          const cur = new Date(p.startDate);
+          const end = new Date(p.endDate);
+          while (cur <= end) {
+            const y = cur.getUTCFullYear();
+            const m = String(cur.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(cur.getUTCDate()).padStart(2, '0');
+            holidayDateSet.add(`${y}-${m}-${d}`);
+            cur.setUTCDate(cur.getUTCDate() + 1);
+          }
+        }
+      }
+    } catch (err) {
+      fastify?.log?.warn?.(`Failed to query holiday periods: ${err}`);
+    }
+
+    // 2. Liệt kê các ngày làm việc thực tế trong tháng (loại trừ Chủ Nhật và ngày nghỉ lễ đã cấu hình)
+    const workDaysList: string[] = [];
+    for (let d = 1; d <= lastDayOfMonth; d++) {
+      const dayStr = `${month}-${String(d).padStart(2, '0')}`;
+      const dateObj = new Date(Date.UTC(year, monthNum - 1, d));
+      const dayOfWeek = dateObj.getUTCDay(); // 0 = Sunday
+      const isSunday = dayOfWeek === 0;
+      const isHoliday = holidayDateSet.has(dayStr);
+      if (!isSunday && !isHoliday) {
+        workDaysList.push(dayStr);
+      }
+    }
+    const workDaysTotal = workDaysList.length;
+
+    // 3. Đánh giá trạng thái kỳ KPI & số ngày làm việc đã qua
+    const currentYear = nowIct.getUTCFullYear();
+    const currentMonthNum = nowIct.getUTCMonth() + 1;
+    const currentDate = nowIct.getUTCDate();
+
+    let periodStatus: TelesalePeriodStatus;
+    let workDaysElapsed: number;
+
+    if (currentYear < year || (currentYear === year && currentMonthNum < monthNum)) {
+      periodStatus = 'NOT_STARTED';
+      workDaysElapsed = 0;
+    } else if (currentYear > year || (currentYear === year && currentMonthNum > monthNum)) {
+      periodStatus = 'COMPLETED';
+      workDaysElapsed = workDaysTotal;
+    } else {
+      periodStatus = 'IN_PROGRESS';
+      const todayDateStr = `${month}-${String(currentDate).padStart(2, '0')}`;
+      workDaysElapsed = workDaysList.filter((d) => d <= todayDateStr).length;
+    }
+
+    const workDaysRemaining = Math.max(0, workDaysTotal - workDaysElapsed);
+    const expectedProgressRate =
+      workDaysTotal > 0 && periodStatus !== 'NOT_STARTED'
+        ? Number(Math.min(1, workDaysElapsed / workDaysTotal).toFixed(4))
+        : 0;
+
+    // 4. Mức kỳ vọng và Gap KPI
+    const expectedDone = Math.round(doneTarget * expectedProgressRate);
+    const expectedBook = Math.round(bookTarget * expectedProgressRate);
+    const gapDone = doneActual - expectedDone;
+    const gapBook = bookActual - expectedBook;
+    const remainingDone = Math.max(0, doneTarget - doneActual);
+    const remainingBook = Math.max(0, bookTarget - bookActual);
+
+    let dailyRequiredDone: number;
+    let dailyRequiredBook: number;
+
+    if (periodStatus === 'NOT_STARTED') {
+      dailyRequiredDone = workDaysTotal > 0 ? Number((doneTarget / workDaysTotal).toFixed(1)) : 0;
+      dailyRequiredBook = workDaysTotal > 0 ? Number((bookTarget / workDaysTotal).toFixed(1)) : 0;
+    } else if (periodStatus === 'IN_PROGRESS') {
+      dailyRequiredDone = workDaysRemaining > 0 ? Number((remainingDone / workDaysRemaining).toFixed(1)) : 0;
+      dailyRequiredBook = workDaysRemaining > 0 ? Number((remainingBook / workDaysRemaining).toFixed(1)) : 0;
+    } else {
+      dailyRequiredDone = 0;
+      dailyRequiredBook = 0;
+    }
+
+    // 5. Tỷ lệ bám đuổi & Nhãn trạng thái
+    let pacingRatio: number;
+    let pacingStatus: TelesalePacingStatus;
+    let pacingStatusLabel: string;
+    let isPacingOnTrack: boolean;
+
+    if (periodStatus === 'NOT_STARTED') {
+      pacingRatio = 0;
+      pacingStatus = 'NOT_STARTED';
+      pacingStatusLabel = 'Chưa bắt đầu';
+      isPacingOnTrack = false;
+    } else {
+      if (expectedDone > 0) {
+        pacingRatio = Number((doneActual / expectedDone).toFixed(2));
+      } else {
+        pacingRatio = doneActual >= doneTarget ? 1 : 1;
+      }
+
+      if (pacingRatio >= 1.05) {
+        pacingStatus = 'AHEAD';
+        pacingStatusLabel = 'Vượt nhịp';
+        isPacingOnTrack = true;
+      } else if (pacingRatio >= 0.95) {
+        pacingStatus = 'ON_TRACK';
+        pacingStatusLabel = 'Đúng nhịp';
+        isPacingOnTrack = true;
+      } else {
+        pacingStatus = 'BEHIND';
+        pacingStatusLabel = 'Chậm nhịp';
+        isPacingOnTrack = false;
+      }
+    }
+
+    return {
+      workDaysTotal,
+      workDaysElapsed,
+      workDaysRemaining,
+      periodStatus,
+      pacingStatus,
+      pacingStatusLabel,
+      expectedProgressRate,
+      expectedDone,
+      expectedBook,
+      gapDone,
+      gapBook,
+      remainingDone,
+      remainingBook,
+      dailyRequiredDone,
+      dailyRequiredBook,
+      pacingRatio,
+      isPacingOnTrack,
+    };
+  }
+
   static async getOverview(
     fastify: FastifyInstance,
     month = '2026-10',
@@ -155,17 +341,6 @@ export class TelesaleTargetService {
     const todayStr = nowIct.toISOString().slice(0, 10);
     const todayStartStr = `${todayStr} 00:00:00`;
     const todayEndStr = `${todayStr} 23:59:59`;
-
-    // Pacing calculation
-    const currentYear = nowIct.getUTCFullYear();
-    const currentMonthNum = nowIct.getUTCMonth() + 1;
-    let daysElapsed = lastDayOfMonth;
-    if (currentYear === year && currentMonthNum === monthNum) {
-      daysElapsed = Math.min(nowIct.getUTCDate(), lastDayOfMonth);
-    } else if (currentYear < year || (currentYear === year && currentMonthNum < monthNum)) {
-      daysElapsed = 1; // Future month
-    }
-    const daysTotal = lastDayOfMonth;
 
     // Active staff IDs from config
     const targetStaffIds = config.staffTargets.map((s) => s.legacyStaffId);
@@ -238,10 +413,17 @@ export class TelesaleTargetService {
       (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
     ).length;
 
-    // Expected done by pacing (measured against Not Combo Live target)
-    const expectedDoneToDate = config.teamDoneTarget * (daysElapsed / daysTotal);
-    const pacingRatio = expectedDoneToDate > 0 ? Number((teamMonthDoneActual / expectedDoneToDate).toFixed(2)) : 1;
-    const isPacingOnTrack = pacingRatio >= 0.95;
+    // Pacing & Management metrics calculation (MOS-BUG-67)
+    const pacing = await this.calculateTeamWorkDaysPacing(
+      fastify,
+      month,
+      targetStaffIds,
+      nowIct,
+      config.teamDoneTarget,
+      teamMonthDoneActual,
+      config.teamBookTarget,
+      teamMonthBookActual
+    );
 
     // 2. Query Call Metrics Today from OmiCall CDR
     const callMetricsMap = await getBkCallMetricsByLegacyStaffIds(fastify, todayStr, todayStr, targetStaffIds).catch(
@@ -451,10 +633,25 @@ export class TelesaleTargetService {
         comboLiveDoneActual: teamMonthComboLiveDoneActual,
         bookTarget: config.teamBookTarget,
         bookActual: teamMonthBookActual,
-        pacingDaysElapsed: daysElapsed,
-        pacingDaysTotal: daysTotal,
-        pacingRatio,
-        isPacingOnTrack,
+        workDaysTotal: pacing.workDaysTotal,
+        workDaysElapsed: pacing.workDaysElapsed,
+        workDaysRemaining: pacing.workDaysRemaining,
+        periodStatus: pacing.periodStatus,
+        pacingStatus: pacing.pacingStatus,
+        pacingStatusLabel: pacing.pacingStatusLabel,
+        expectedProgressRate: pacing.expectedProgressRate,
+        expectedDone: pacing.expectedDone,
+        expectedBook: pacing.expectedBook,
+        gapDone: pacing.gapDone,
+        gapBook: pacing.gapBook,
+        remainingDone: pacing.remainingDone,
+        remainingBook: pacing.remainingBook,
+        dailyRequiredDone: pacing.dailyRequiredDone,
+        dailyRequiredBook: pacing.dailyRequiredBook,
+        pacingRatio: pacing.pacingRatio,
+        isPacingOnTrack: pacing.isPacingOnTrack,
+        pacingDaysElapsed: pacing.workDaysElapsed,
+        pacingDaysTotal: pacing.workDaysTotal,
       },
       teamDaily: {
         date: todayStr,
