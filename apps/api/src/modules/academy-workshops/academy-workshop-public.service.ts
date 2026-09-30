@@ -138,6 +138,7 @@ type PublicEquipmentPackage = {
   description: string | null;
   includedItemsJson: string;
   priceVnd: number;
+  isIncludedInFee?: boolean;
   images?: Array<{ id: number; imageUrl: string; altText: string | null; sortOrder: number }>;
 };
 
@@ -154,28 +155,36 @@ function equipmentItems(value: unknown): string[] {
   }
 }
 
-function buildPublicEquipment(
+export function buildPublicEquipment(
   packages: PublicEquipmentPackage[],
   selectionEnabled: boolean
 ): AcademyWorkshopPublicRegistrationInfo['workshop']['equipment'] {
+  const includedPackage = packages.find((item) => Boolean(item.isIncludedInFee));
+  const basePrice = includedPackage ? Math.max(0, Math.round(Number(includedPackage.priceVnd) || 0)) : 0;
   return {
     required: selectionEnabled && packages.length > 0,
-    packages: packages.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      includedItems: equipmentItems(item.includedItemsJson),
-      priceVnd: Math.max(0, Math.round(Number(item.priceVnd) || 0)),
-      images: (item.images || []).map((image) => ({
-        id: image.id,
-        imageUrl: image.imageUrl,
-        altText: image.altText,
-      })),
-    })),
+    packages: packages.map((item) => {
+      const priceVnd = Math.max(0, Math.round(Number(item.priceVnd) || 0));
+      const effectivePriceVnd = includedPackage ? Math.max(0, priceVnd - basePrice) : priceVnd;
+      return {
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        includedItems: equipmentItems(item.includedItemsJson),
+        priceVnd,
+        effectivePriceVnd,
+        isIncludedInFee: Boolean(item.isIncludedInFee),
+        images: (item.images || []).map((image) => ({
+          id: image.id,
+          imageUrl: image.imageUrl,
+          altText: image.altText,
+        })),
+      };
+    }),
   };
 }
 
-function validateEquipmentSelection(
+export function validateEquipmentSelection(
   input: unknown,
   availablePackages: PublicEquipmentPackage[]
 ): { equipmentPackageId: number; packageName: string; packageContentsJson: string; priceVnd: number } | null {
@@ -192,11 +201,16 @@ function validateEquipmentSelection(
   if (!packageContents.length) {
     throw new AcademySalesError('Bộ dụng cụ được chọn chưa có danh sách chi tiết. Vui lòng liên hệ Academy.', 409);
   }
+  const includedPackage = availablePackages.find((item) => Boolean(item.isIncludedInFee));
+  const basePrice = includedPackage ? Math.max(0, Math.round(Number(includedPackage.priceVnd) || 0)) : 0;
+  const selectedPrice = Math.max(0, Math.round(Number(selected.priceVnd) || 0));
+  const effectivePriceVnd = includedPackage ? Math.max(0, selectedPrice - basePrice) : selectedPrice;
+
   return {
     equipmentPackageId: selected.id,
     packageName: selected.name,
     packageContentsJson: JSON.stringify(packageContents),
-    priceVnd: Math.max(0, Math.round(Number(selected.priceVnd) || 0)),
+    priceVnd: effectivePriceVnd,
   };
 }
 
@@ -424,6 +438,7 @@ export class AcademyWorkshopPublicJoinService {
             description: true,
             includedItemsJson: true,
             priceVnd: true,
+            isIncludedInFee: true,
             images: {
               select: { id: true, imageUrl: true, altText: true, sortOrder: true },
               orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
@@ -580,7 +595,7 @@ export class AcademyWorkshopPublicJoinService {
         : [];
       const availableEquipmentPackages = await tx.crmAcademyWorkshopEquipmentPackage.findMany({
         where: { workshopId: workshop.id, isAvailable: true },
-        select: { id: true, name: true, description: true, includedItemsJson: true, priceVnd: true },
+        select: { id: true, name: true, description: true, includedItemsJson: true, priceVnd: true, isIncludedInFee: true },
       });
       const equipmentSelection = workshop.equipment_agenda_item_id
         ? validateEquipmentSelection(input.equipmentPackageId, availableEquipmentPackages)

@@ -479,9 +479,21 @@ function WorkshopExperienceTimeline({
                             <p className={`mb-0 mt-1 truncate text-sm font-semibold ${styles.agendaTitle}`}>
                               {selectedEquipmentPackage.name}
                             </p>
-                            <p className={`mb-0 mt-0.5 text-xs font-medium tabular-nums ${styles.agendaDescription}`}>
-                              +{formatFee(selectedEquipmentPackage.priceVnd)}
-                            </p>
+                            <div className={`mb-0 mt-0.5 flex flex-wrap items-center gap-1.5 text-xs font-medium tabular-nums ${styles.agendaDescription}`}>
+                              {selectedEquipmentPackage.effectivePriceVnd === 0 ? (
+                                <>
+                                  <del className="text-slate-400 line-through opacity-75">{formatFee(selectedEquipmentPackage.priceVnd)}</del>
+                                  <span className="font-bold text-emerald-700">
+                                    {selectedEquipmentPackage.isIncludedInFee ? 'Đã bao gồm trong học phí (0 đ)' : '0 đ (Không phát sinh)'}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <del className="text-slate-400 line-through opacity-75">{formatFee(selectedEquipmentPackage.priceVnd)}</del>
+                                  <span className="font-bold text-amber-900">+{formatFee(selectedEquipmentPackage.effectivePriceVnd)}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {selectedEquipmentPackage.includedItems.length ? (
@@ -1550,9 +1562,36 @@ export default function AcademyWorkshopRegistrationPage() {
                                               <span className="min-w-0 text-base font-extrabold leading-5 text-slate-900">
                                                 {item.name}
                                               </span>
-                                              <span className="shrink-0 rounded-lg bg-amber-100 px-2.5 py-1 text-sm font-black tabular-nums text-amber-900">
-                                                +{formatFee(item.priceVnd)}
-                                              </span>
+                                              <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                                                {item.isIncludedInFee ? (
+                                                  <>
+                                                    <del className="text-xs font-semibold tabular-nums text-slate-400 line-through">
+                                                      {formatFee(item.priceVnd)}
+                                                    </del>
+                                                    <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs sm:text-sm font-black tabular-nums text-emerald-800">
+                                                      Đã bao gồm trong học phí (0 đ)
+                                                    </span>
+                                                  </>
+                                                ) : item.effectivePriceVnd === 0 ? (
+                                                  <>
+                                                    <del className="text-xs font-semibold tabular-nums text-slate-400 line-through">
+                                                      {formatFee(item.priceVnd)}
+                                                    </del>
+                                                    <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs sm:text-sm font-black tabular-nums text-emerald-800">
+                                                      0 đ (Không phát sinh)
+                                                    </span>
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <del className="text-xs font-semibold tabular-nums text-slate-400 line-through">
+                                                      {formatFee(item.priceVnd)}
+                                                    </del>
+                                                    <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs sm:text-sm font-black tabular-nums text-amber-900">
+                                                      +{formatFee(item.effectivePriceVnd)}
+                                                    </span>
+                                                  </>
+                                                )}
+                                              </div>
                                             </span>
                                             {item.description ? (
                                               <span className="mt-1.5 block text-sm leading-5 text-slate-600">
@@ -1592,9 +1631,29 @@ export default function AcademyWorkshopRegistrationPage() {
                                       <p className="m-0 min-w-0 flex-1 truncate text-sm font-extrabold text-slate-950">
                                         {selectedEquipmentPackage.name}
                                       </p>
-                                      <span className="shrink-0 text-sm font-black tabular-nums text-amber-800">
-                                        +{formatFee(selectedEquipmentPackage.priceVnd)}
-                                      </span>
+                                      <div className="flex shrink-0 items-center gap-1.5 text-sm tabular-nums">
+                                        {selectedEquipmentPackage.effectivePriceVnd === 0 ? (
+                                          <>
+                                            <del className="text-xs text-slate-400 line-through">
+                                              {formatFee(selectedEquipmentPackage.priceVnd)}
+                                            </del>
+                                            <span className="font-extrabold text-emerald-700">
+                                              {selectedEquipmentPackage.isIncludedInFee
+                                                ? 'Đã bao gồm trong học phí (0 đ)'
+                                                : '0 đ (Không phát sinh)'}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <del className="text-xs text-slate-400 line-through">
+                                              {formatFee(selectedEquipmentPackage.priceVnd)}
+                                            </del>
+                                            <span className="font-black text-amber-800">
+                                              +{formatFee(selectedEquipmentPackage.effectivePriceVnd)}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                   <Button
@@ -2018,7 +2077,9 @@ export default function AcademyWorkshopRegistrationPage() {
                               </div>
                               <div className="text-[11px] text-slate-500">
                                 {selectedEquipmentPackage
-                                  ? `+${formatFee(selectedEquipmentPackage.priceVnd)} · Chạm để đổi`
+                                  ? selectedEquipmentPackage.effectivePriceVnd === 0
+                                    ? `${selectedEquipmentPackage.isIncludedInFee ? 'Đã bao gồm trong học phí (0 đ)' : '0 đ (Không phát sinh)'} · Chạm để đổi`
+                                    : `+${formatFee(selectedEquipmentPackage.effectivePriceVnd)} · Chạm để đổi`
                                   : workshop.equipment.required
                                     ? 'Bắt buộc chọn'
                                     : 'Tùy chọn'}

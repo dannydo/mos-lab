@@ -48,6 +48,7 @@ function templateUpdateRequest(
       includedItems: equipmentPackage.includedItems,
       priceVnd: Math.max(0, Math.round(equipmentPackage.priceVnd)),
       isAvailable: equipmentPackage.isAvailable,
+      isIncludedInFee: equipmentPackage.isIncludedInFee,
       images: equipmentPackage.images.map((image) => ({ imageUrl: image.imageUrl, altText: image.altText })),
     })),
   };

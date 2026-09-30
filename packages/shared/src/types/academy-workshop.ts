@@ -290,6 +290,7 @@ export interface AcademyWorkshopEquipmentPackage {
   priceVnd: number;
   sortOrder: number;
   isAvailable: boolean;
+  isIncludedInFee: boolean;
   images: AcademyWorkshopEquipmentPackageImage[];
   createdAt: string;
   updatedAt: string;
@@ -325,6 +326,7 @@ export interface AcademyWorkshopEquipmentTemplatePackage {
   priceVnd: number;
   sortOrder: number;
   isAvailable: boolean;
+  isIncludedInFee: boolean;
   images: AcademyWorkshopEquipmentTemplatePackageImage[];
 }
 
@@ -579,7 +581,11 @@ export interface AcademyWorkshopPublicRegistrationInfo {
     equipment: {
       required: boolean;
       packages: Array<
-        Pick<AcademyWorkshopEquipmentPackage, 'id' | 'name' | 'description' | 'includedItems' | 'priceVnd'> & {
+        Pick<
+          AcademyWorkshopEquipmentPackage,
+          'id' | 'name' | 'description' | 'includedItems' | 'priceVnd' | 'isIncludedInFee'
+        > & {
+          effectivePriceVnd: number;
           images: Array<Pick<AcademyWorkshopEquipmentPackageImage, 'id' | 'imageUrl' | 'altText'>>;
         }
       >;
@@ -1002,6 +1008,7 @@ export interface UpsertAcademyWorkshopEquipmentTemplatePackageRequest {
   includedItems: string[];
   priceVnd: number;
   isAvailable?: boolean;
+  isIncludedInFee?: boolean;
   images?: CreateAcademyWorkshopEquipmentPackageImageRequest[];
 }
 
@@ -1016,6 +1023,7 @@ export interface CreateAcademyWorkshopEquipmentPackageRequest {
   includedItems: string[];
   priceVnd: number;
   isAvailable?: boolean;
+  isIncludedInFee?: boolean;
 }
 
 export type UpdateAcademyWorkshopEquipmentPackageRequest = Partial<CreateAcademyWorkshopEquipmentPackageRequest>;
