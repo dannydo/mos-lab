@@ -133,7 +133,10 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
 
               {/* Big Dominant Numbers */}
               <div className="mt-1.5 flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-black font-mono text-blue-300 tabular-nums">
+                <span
+                  data-testid="tv-monitor-card-book-actual"
+                  className="text-3xl sm:text-4xl font-black font-mono text-blue-300 tabular-nums"
+                >
                   {metrics.bookActual}
                 </span>
                 <span className="text-zinc-400 text-sm font-mono font-semibold">/ {metrics.bookTarget}</span>
@@ -209,7 +212,10 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
 
               {/* Numbers (nhỏ hơn 1 cấp so với Book) */}
               <div className="mt-1.5 flex items-baseline gap-1.5">
-                <span className="text-2xl sm:text-3xl font-bold font-mono text-zinc-100 tabular-nums">
+                <span
+                  data-testid="tv-monitor-card-done-actual"
+                  className="text-2xl sm:text-3xl font-bold font-mono text-zinc-100 tabular-nums"
+                >
                   {metrics.doneActual}
                 </span>
                 <span className="text-zinc-400 text-sm font-mono font-semibold">/ {metrics.doneTarget}</span>

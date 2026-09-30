@@ -242,7 +242,10 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
             {/* Giant Big Numbers (Readable from 5-10 meters) */}
             <div className="mt-4 lg:mt-6 flex items-baseline justify-center sm:justify-start gap-3">
-              <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-mono text-blue-300 tabular-nums tracking-tighter drop-shadow-lg">
+              <span
+                data-testid="tv-monitor-fullscreen-book-actual"
+                className="text-7xl sm:text-8xl lg:text-9xl font-black font-mono text-blue-300 tabular-nums tracking-tighter drop-shadow-lg"
+              >
                 {metrics.bookActual}
               </span>
               <span className="text-3xl sm:text-4xl lg:text-5xl font-bold font-mono text-zinc-500 tabular-nums">
@@ -255,7 +258,9 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
             <div className="mt-4 lg:mt-6">
               <Progress
                 percent={Math.min(100, metrics.bookPercent)}
-                strokeColor={isBookOver100 ? token.colorWarning : metrics.gapBook >= 0 ? token.colorInfo : token.colorWarning}
+                strokeColor={
+                  isBookOver100 ? token.colorWarning : metrics.gapBook >= 0 ? token.colorInfo : token.colorWarning
+                }
                 size={['100%', 28]}
                 showInfo={false}
                 className="rounded-2xl"
@@ -292,7 +297,11 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                 <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Nhịp (Gap)</div>
                 <div
                   className={`text-xl sm:text-2xl font-black tabular-nums ${
-                    metrics.gapBook >= 0 ? 'text-emerald-400' : metrics.gapBook === -1 ? 'text-amber-400' : 'text-rose-400'
+                    metrics.gapBook >= 0
+                      ? 'text-emerald-400'
+                      : metrics.gapBook === -1
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
                   }`}
                 >
                   {metrics.gapBook >= 0 ? `+${metrics.gapBook}` : metrics.gapBook}
@@ -336,7 +345,10 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
             {/* Giant Big Numbers (Readable from 5-10 meters) */}
             <div className="mt-4 lg:mt-6 flex items-baseline justify-center sm:justify-start gap-3">
-              <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-mono text-zinc-100 tabular-nums tracking-tighter drop-shadow-lg">
+              <span
+                data-testid="tv-monitor-fullscreen-done-actual"
+                className="text-7xl sm:text-8xl lg:text-9xl font-black font-mono text-zinc-100 tabular-nums tracking-tighter drop-shadow-lg"
+              >
                 {metrics.doneActual}
               </span>
               <span className="text-3xl sm:text-4xl lg:text-5xl font-bold font-mono text-zinc-500 tabular-nums">
@@ -349,7 +361,9 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
             <div className="mt-4 lg:mt-6">
               <Progress
                 percent={Math.min(100, metrics.donePercent)}
-                strokeColor={isDoneOver100 ? token.colorWarning : metrics.gapDone >= 0 ? token.colorSuccess : token.colorWarning}
+                strokeColor={
+                  isDoneOver100 ? token.colorWarning : metrics.gapDone >= 0 ? token.colorSuccess : token.colorWarning
+                }
                 size={['100%', 28]}
                 showInfo={false}
                 className="rounded-2xl"
@@ -386,7 +400,11 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                 <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Nhịp (Gap)</div>
                 <div
                   className={`text-xl sm:text-2xl font-black tabular-nums ${
-                    metrics.gapDone >= 0 ? 'text-emerald-400' : metrics.gapDone === -1 ? 'text-amber-400' : 'text-rose-400'
+                    metrics.gapDone >= 0
+                      ? 'text-emerald-400'
+                      : metrics.gapDone === -1
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
                   }`}
                 >
                   {metrics.gapDone >= 0 ? `+${metrics.gapDone}` : metrics.gapDone}
@@ -394,7 +412,9 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               </div>
               <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
                 <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Còn thiếu</div>
-                <div className="text-xl sm:text-2xl font-black text-amber-300 tabular-nums">{metrics.remainingDone}</div>
+                <div className="text-xl sm:text-2xl font-black text-amber-300 tabular-nums">
+                  {metrics.remainingDone}
+                </div>
               </div>
             </div>
 
