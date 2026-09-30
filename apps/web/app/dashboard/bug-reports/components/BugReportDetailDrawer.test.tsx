@@ -272,7 +272,7 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(screen.getByText('/dashboard/bk')).toBeVisible();
     expect(screen.getByText('Không ghi nhận API lỗi gần đây.')).toBeVisible();
     expect(screen.getByText('Không ghi nhận JavaScript error gần đây.')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Duyệt triển khai' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Lưu triage' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Gửi bình luận' })).not.toBeInTheDocument();
     expect(
@@ -299,7 +299,7 @@ describe('BugReportDetailDrawer behavior', () => {
       });
       render(<BugReportDetailDrawer {...propsFor(detail)} />);
       const button = await screen.findByRole('button', {
-        name: requestType === 'FEATURE' ? 'Duyệt triển khai' : 'Approve',
+        name: 'Duyệt triển khai',
       });
       if (enabled) expect(button).toBeEnabled();
       else expect(button).toBeDisabled();

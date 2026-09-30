@@ -117,7 +117,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
 
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
-    label: detail?.requestType === 'FEATURE' ? `Duyệt triển khai ${item}` : `Approve ${item}`,
+    label: `Duyệt triển khai ${item}`,
     onClick: () => void save({ status: 'APPROVED', priority: item }),
   }));
 
@@ -175,11 +175,11 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     title={
                       detail.requestType === 'FEATURE'
                         ? 'Agent phải xác nhận yêu cầu đã đủ rõ trước khi Danny duyệt triển khai'
-                        : 'Cần Agent xác nhận đủ rõ hoặc nhập biz logic/kết quả đúng trước khi approve'
+                        : 'Cần Agent xác nhận đủ rõ hoặc nhập biz logic/kết quả đúng trước khi duyệt triển khai'
                     }
                     icon={<AppIcon icon={Send} size="sm" />}
                   >
-                    {detail.requestType === 'FEATURE' ? 'Duyệt triển khai' : 'Approve'}
+                    Duyệt triển khai
                   </Button>
                 </Dropdown>
               )}
