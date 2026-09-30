@@ -43,7 +43,21 @@ describe('formatAgendaTime', () => {
 });
 
 describe('formatAgendaExecutionText', () => {
-  it('formats completed item execution time as requested in MOS-FEAT-65', () => {
+  it('formats completed item execution time compactly as requested by Danny', () => {
+    const startedAt = new Date(2026, 8, 29, 9, 25, 0).toISOString();
+    const completedAt = new Date(2026, 8, 29, 9, 35, 0).toISOString();
+
+    const text = formatAgendaExecutionText({
+      status: 'COMPLETED',
+      startedAt,
+      completedAt,
+      actualDurationSeconds: 600, // 10 minutes
+    });
+
+    expect(text).toBe('✅ 9h25 - 9h35 : 10 phút');
+  });
+
+  it('formats other durations compactly as well', () => {
     const startedAt = new Date(2026, 8, 29, 9, 45, 0).toISOString();
     const completedAt = new Date(2026, 8, 29, 10, 25, 0).toISOString();
 
@@ -54,10 +68,10 @@ describe('formatAgendaExecutionText', () => {
       actualDurationSeconds: 2400, // 40 minutes
     });
 
-    expect(text).toBe('đã hoàn thành và thời gian thực tế diễn ra từ 9h45 đến 10h25 trong 40 phút');
+    expect(text).toBe('✅ 9h45 - 10h25 : 40 phút');
   });
 
-  it('supports capitalized version at the beginning of a sentence', () => {
+  it('supports verbose version when requested', () => {
     const startedAt = new Date(2026, 8, 29, 9, 45, 0).toISOString();
     const completedAt = new Date(2026, 8, 29, 10, 25, 0).toISOString();
 
@@ -68,15 +82,15 @@ describe('formatAgendaExecutionText', () => {
         completedAt,
         actualDurationSeconds: 2400,
       },
-      true
+      { verbose: true, capitalize: true }
     );
 
     expect(text).toBe('Đã hoàn thành và thời gian thực tế diễn ra từ 9h45 đến 10h25 trong 40 phút');
   });
 
   it('calculates duration from timestamps when actualDurationSeconds is missing', () => {
-    const startedAt = new Date(2026, 8, 29, 9, 45, 0).toISOString();
-    const completedAt = new Date(2026, 8, 29, 10, 25, 0).toISOString();
+    const startedAt = new Date(2026, 8, 29, 9, 25, 0).toISOString();
+    const completedAt = new Date(2026, 8, 29, 9, 35, 0).toISOString();
 
     const text = formatAgendaExecutionText({
       status: 'COMPLETED',
@@ -84,7 +98,7 @@ describe('formatAgendaExecutionText', () => {
       completedAt,
     });
 
-    expect(text).toBe('đã hoàn thành và thời gian thực tế diễn ra từ 9h45 đến 10h25 trong 40 phút');
+    expect(text).toBe('✅ 9h25 - 9h35 : 10 phút');
   });
 
   it('returns null if item is not COMPLETED or missing timestamps', () => {

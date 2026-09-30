@@ -193,7 +193,7 @@ export function formatAgendaExecutionText(
     actualDurationSeconds?: number | null;
     status?: string;
   },
-  capitalize = false
+  options?: { verbose?: boolean; capitalize?: boolean } | boolean
 ): string | null {
   if (item.status !== 'COMPLETED' || !item.startedAt || !item.completedAt) {
     return null;
@@ -208,6 +208,11 @@ export function formatAgendaExecutionText(
       : Math.max(0, Math.floor((new Date(item.completedAt).getTime() - new Date(item.startedAt).getTime()) / 1000));
   const durationMinutes = formatAgendaDurationMinutes(durationSeconds);
 
-  const prefix = capitalize ? 'Đã hoàn thành và' : 'đã hoàn thành và';
-  return `${prefix} thời gian thực tế diễn ra từ ${startTime} đến ${endTime} trong ${durationMinutes} phút`;
+  const isVerbose = typeof options === 'object' && options?.verbose === true;
+  if (isVerbose) {
+    const prefix = options?.capitalize ? 'Đã hoàn thành và' : 'đã hoàn thành và';
+    return `${prefix} thời gian thực tế diễn ra từ ${startTime} đến ${endTime} trong ${durationMinutes} phút`;
+  }
+
+  return `✅ ${startTime} - ${endTime} : ${durationMinutes} phút`;
 }
