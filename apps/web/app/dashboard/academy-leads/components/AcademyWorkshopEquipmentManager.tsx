@@ -45,6 +45,7 @@ function equipmentFormValues(item?: AcademyWorkshopEquipmentPackage): EquipmentF
     includedItemsText: item?.includedItems.join('\n') || '',
     priceVnd: item?.priceVnd ?? 0,
     isAvailable: item?.isAvailable ?? true,
+    isIncludedInFee: item?.isIncludedInFee ?? false,
   };
 }
 
@@ -66,6 +67,7 @@ function equipmentRequest(values: EquipmentFormValues): CreateAcademyWorkshopEqu
     includedItems: itemLines(values.includedItemsText),
     priceVnd: Math.max(0, Math.round(Number(values.priceVnd) || 0)),
     isAvailable: Boolean(values.isAvailable),
+    isIncludedInFee: Boolean(values.isIncludedInFee),
   };
 }
 
@@ -188,6 +190,27 @@ export default function AcademyWorkshopEquipmentManager({
     imageForm.resetFields();
   }, [imageForm]);
 
+  const setAsIncludedPackage = React.useCallback(
+    async (item: AcademyWorkshopEquipmentPackage) => {
+      setSaving(true);
+      try {
+        const updated = await apiClient.academySales.workshops.updateEquipmentPackage(workshop.id, item.id, {
+          isIncludedInFee: true,
+        });
+        const equipmentPackages = workshop.equipmentPackages.map((current) =>
+          current.id === item.id ? updated : { ...current, isIncludedInFee: false }
+        );
+        onUpdated({ ...workshop, equipmentPackages: sortEquipment(equipmentPackages) });
+        message.success(`Đã đặt “${item.name}” làm gói quà tặng kèm trong học phí.`);
+      } catch (cause: any) {
+        message.error(cause?.response?.data?.message || 'Không thể cập nhật gói tặng kèm.');
+      } finally {
+        setSaving(false);
+      }
+    },
+    [onUpdated, workshop]
+  );
+
   const saveItem = React.useCallback(
     async (values: EquipmentFormValues) => {
       setSaving(true);
@@ -196,9 +219,14 @@ export default function AcademyWorkshopEquipmentManager({
         const item = editingItem
           ? await apiClient.academySales.workshops.updateEquipmentPackage(workshop.id, editingItem.id, request)
           : await apiClient.academySales.workshops.createEquipmentPackage(workshop.id, request);
-        const equipmentPackages = editingItem
+        let equipmentPackages = editingItem
           ? workshop.equipmentPackages.map((current) => (current.id === item.id ? item : current))
           : [...workshop.equipmentPackages, item];
+        if (request.isIncludedInFee) {
+          equipmentPackages = equipmentPackages.map((current) =>
+            current.id === item.id ? current : { ...current, isIncludedInFee: false }
+          );
+        }
         onUpdated({ ...workshop, equipmentPackages: sortEquipment(equipmentPackages) });
         closeEditor();
         message.success(editingItem ? 'Đã cập nhật bộ dụng cụ.' : 'Đã thêm bộ dụng cụ.');
@@ -410,6 +438,7 @@ export default function AcademyWorkshopEquipmentManager({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <h3 className="m-0 text-base font-extrabold">{item.name}</h3>
+                        {item.isIncludedInFee ? <StatusTag status="success" label="Tặng kèm trong gói học" /> : null}
                         {!item.isAvailable ? <StatusTag status="default" label="Tạm ẩn" /> : null}
                       </div>
                       {item.description ? (
@@ -417,7 +446,18 @@ export default function AcademyWorkshopEquipmentManager({
                       ) : null}
                     </div>
                     {canEdit ? (
-                      <div className="flex shrink-0 gap-1">
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {!item.isIncludedInFee ? (
+                          <Button
+                            size="small"
+                            type="dashed"
+                            className="!text-xs !h-7 !px-2"
+                            disabled={saving}
+                            onClick={() => void setAsIncludedPackage(item)}
+                          >
+                            Tặng kèm
+                          </Button>
+                        ) : null}
                         <IconButton label={`Sửa ${item.name}`} icon={PencilLine} onClick={() => openEdit(item)} />
                         <Popconfirm
                           title={`Xóa “${item.name}”?`}
@@ -500,15 +540,41 @@ export default function AcademyWorkshopEquipmentManager({
                     )}
                   </div>
 
-                  <div
-                    className="mt-4 flex items-center justify-between gap-3 border-t pt-3"
-                    style={{ borderColor: token.colorBorderSecondary }}
-                  >
-                    <span className="text-xs font-bold uppercase tracking-wide opacity-55">Phụ thu dụng cụ</span>
-                    <span className="tabular-nums text-lg font-extrabold" style={{ color: token.colorPrimary }}>
-                      {formatVnd(item.priceVnd)}
-                    </span>
-                  </div>
+                  {(() => {
+                    const includedPkg = workshop.equipmentPackages.find((pkg) => pkg.isIncludedInFee);
+                    const basePrice = includedPkg ? includedPkg.priceVnd : 0;
+                    const surcharge = includedPkg ? Math.max(0, item.priceVnd - basePrice) : item.priceVnd;
+                    return (
+                      <div
+                        className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-3"
+                        style={{ borderColor: token.colorBorderSecondary }}
+                      >
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold uppercase tracking-wide opacity-55">Phụ thu thực tế</span>
+                          {item.isIncludedInFee ? (
+                            <p className="mb-0 text-xs font-semibold text-emerald-600">
+                              Đã bao gồm trong học phí (0 đ)
+                            </p>
+                          ) : includedPkg ? (
+                            <p className="mb-0 text-xs font-medium text-slate-500">
+                              Chênh lệch từ gói tặng kèm ({formatVnd(basePrice)})
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className="tabular-nums text-lg font-extrabold"
+                            style={{ color: item.isIncludedInFee ? token.colorSuccess : token.colorPrimary }}
+                          >
+                            {item.isIncludedInFee ? '0 đ' : `+${formatVnd(surcharge)}`}
+                          </span>
+                          <span className="ml-2 block text-xs opacity-50 tabular-nums">
+                            Niêm yết: {formatVnd(item.priceVnd)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <ul className="mb-0 mt-3 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
                     {item.includedItems.map((includedItem) => (
                       <li key={includedItem} className="flex min-w-0 items-start gap-2 text-sm leading-5">
@@ -601,6 +667,13 @@ export default function AcademyWorkshopEquipmentManager({
             </EntityFormField>
             <EntityFormField name="isAvailable" valuePropName="checked">
               <Checkbox>Đang khả dụng — hiển thị cho học viên chọn</Checkbox>
+            </EntityFormField>
+            <EntityFormField
+              name="isIncludedInFee"
+              valuePropName="checked"
+              extra="Nếu chọn, bộ dụng cụ này được tặng kèm trong gói học phí (0 đ phụ thu). Chọn bộ khác có giá cao hơn sẽ tính chênh lệch. Chỉ một bộ được làm gói tặng kèm."
+            >
+              <Checkbox>Gói tặng kèm (Đã bao gồm trong học phí workshop)</Checkbox>
             </EntityFormField>
           </EntityForm>
         </EntityFormDrawer>

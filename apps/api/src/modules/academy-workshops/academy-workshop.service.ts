@@ -492,6 +492,7 @@ function equipmentPackage(row: SafeAny): AcademyWorkshopEquipmentPackage {
     priceVnd: Math.max(0, Math.round(Number(row.priceVnd) || 0)),
     sortOrder: Math.max(0, Number(row.sortOrder) || 0),
     isAvailable: Boolean(row.isAvailable),
+    isIncludedInFee: Boolean(row.isIncludedInFee),
     images: (row.images || []).map(equipmentPackageImage),
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
@@ -1217,6 +1218,7 @@ export class AcademyWorkshopService {
               priceVnd: pkg.priceVnd,
               sortOrder: pkg.sortOrder,
               isAvailable: pkg.isAvailable ?? true,
+              isIncludedInFee: pkg.isIncludedInFee ?? false,
             },
           });
           if (pkg.images?.length) {
@@ -1840,6 +1842,7 @@ export class AcademyWorkshopService {
     includedItems: unknown;
     priceVnd: unknown;
     isAvailable?: unknown;
+    isIncludedInFee?: unknown;
   }) {
     const name = String(input.name || '').trim();
     const description = String(input.description || '').trim() || null;
@@ -1858,6 +1861,7 @@ export class AcademyWorkshopService {
       includedItemsJson: JSON.stringify(includedItems),
       priceVnd,
       isAvailable: input.isAvailable === undefined ? true : Boolean(input.isAvailable),
+      isIncludedInFee: Boolean(input.isIncludedInFee),
     };
   }
 
@@ -1870,6 +1874,12 @@ export class AcademyWorkshopService {
     const row = await this.rowById(fastify, actor, workshopId);
     this.assertCanEditEquipment(actor);
     const item = this.normalizeEquipmentPackage(input);
+    if (item.isIncludedInFee) {
+      await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackage.updateMany({
+        where: { workshopId: row.id },
+        data: { isIncludedInFee: false },
+      });
+    }
     const sortOrder =
       Math.max(0, ...row.equipmentPackages.map((current: SafeAny) => Number(current.sortOrder) || 0)) + 1;
     const created = await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackage.create({
@@ -1897,7 +1907,14 @@ export class AcademyWorkshopService {
         input.includedItems === undefined ? parseJson<unknown[]>(existing.includedItemsJson, []) : input.includedItems,
       priceVnd: input.priceVnd === undefined ? existing.priceVnd : input.priceVnd,
       isAvailable: input.isAvailable === undefined ? existing.isAvailable : input.isAvailable,
+      isIncludedInFee: input.isIncludedInFee === undefined ? existing.isIncludedInFee : input.isIncludedInFee,
     });
+    if (item.isIncludedInFee) {
+      await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackage.updateMany({
+        where: { workshopId: row.id, id: { not: existing.id } },
+        data: { isIncludedInFee: false },
+      });
+    }
     const updated = await fastify.prisma.crm.crmAcademyWorkshopEquipmentPackage.update({
       where: { id: existing.id },
       data: item,
@@ -1976,6 +1993,7 @@ export class AcademyWorkshopService {
             priceVnd: equipmentPackage.priceVnd,
             sortOrder: equipmentPackage.sortOrder,
             isAvailable: equipmentPackage.isAvailable,
+            isIncludedInFee: equipmentPackage.isIncludedInFee ?? false,
             images: {
               create: equipmentPackage.images.map((image) => ({
                 imageUrl: image.imageUrl,

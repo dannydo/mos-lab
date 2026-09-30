@@ -99,6 +99,7 @@ function normalizeTemplatePackages(packages: SafeAny[]) {
       priceVnd,
       sortOrder: Math.max(0, Math.round(Number(equipmentPackage.sortOrder) || 0)),
       isAvailable: Boolean(equipmentPackage.isAvailable),
+      isIncludedInFee: Boolean(equipmentPackage.isIncludedInFee),
       images,
     };
   });
@@ -118,6 +119,7 @@ export function toAcademyWorkshopEquipmentTemplate(row: SafeAny): AcademyWorksho
       priceVnd: Math.max(0, Math.round(Number(equipmentPackage.priceVnd) || 0)),
       sortOrder: Math.max(0, Math.round(Number(equipmentPackage.sortOrder) || 0)),
       isAvailable: Boolean(equipmentPackage.isAvailable),
+      isIncludedInFee: Boolean(equipmentPackage.isIncludedInFee),
       images: (equipmentPackage.images || []).map((image: SafeAny) => ({
         id: Number(image.id),
         templatePackageId: Number(image.templatePackageId),

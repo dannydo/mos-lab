@@ -13,9 +13,11 @@ import {
 import { AcademyWorkshopBonusService } from './academy-workshop-bonus.service.js';
 import {
   AcademyWorkshopPublicJoinService,
+  buildPublicEquipment,
   buildPublicMenu,
   getAcademyWorkshopPublicRegistrationPhase,
   normalizeAcademyWorkshopPhone,
+  validateEquipmentSelection,
   validateMenuSelections,
 } from './academy-workshop-public.service.js';
 import {
@@ -770,3 +772,100 @@ test('suggests next workshop series name and slug incrementing batch number corr
   assert.equal(res3.suggestedName, 'Lash Master (K10)');
   assert.equal(res3.suggestedSlug, 'lash-master-k10');
 });
+
+test('calculates equipment package surcharge correctly against included package', () => {
+  const packages = [
+    {
+      id: 1,
+      name: 'Combo Cơ bản 299k',
+      description: 'Dụng cụ cơ bản kèm theo',
+      includedItemsJson: JSON.stringify(['Nhíp', 'Keo']),
+      priceVnd: 299_000,
+      isIncludedInFee: true,
+      images: [],
+    },
+    {
+      id: 2,
+      name: 'Dụng cụ mini 100k',
+      description: 'Gói nhỏ hơn',
+      includedItemsJson: JSON.stringify(['Nhíp']),
+      priceVnd: 100_000,
+      isIncludedInFee: false,
+      images: [],
+    },
+    {
+      id: 3,
+      name: 'Combo Cao cấp 599k',
+      description: 'Dụng cụ nâng cao',
+      includedItemsJson: JSON.stringify(['Nhíp cao cấp', 'Keo xịn', 'Đèn']),
+      priceVnd: 599_000,
+      isIncludedInFee: false,
+      images: [],
+    },
+  ];
+
+  // Test buildPublicEquipment
+  const publicEquipment = buildPublicEquipment(packages, true);
+  assert.equal(publicEquipment.required, true);
+  assert.equal(publicEquipment.packages.length, 3);
+
+  // Included package: effective price 0
+  const pkg1 = publicEquipment.packages.find((p) => p.id === 1);
+  assert.equal(pkg1?.isIncludedInFee, true);
+  assert.equal(pkg1?.priceVnd, 299_000);
+  assert.equal(pkg1?.effectivePriceVnd, 0);
+
+  // Cheaper package: effective price 0 (no refund/negative)
+  const pkg2 = publicEquipment.packages.find((p) => p.id === 2);
+  assert.equal(pkg2?.isIncludedInFee, false);
+  assert.equal(pkg2?.priceVnd, 100_000);
+  assert.equal(pkg2?.effectivePriceVnd, 0);
+
+  // More expensive package: effective price is difference (599k - 299k = 300k)
+  const pkg3 = publicEquipment.packages.find((p) => p.id === 3);
+  assert.equal(pkg3?.isIncludedInFee, false);
+  assert.equal(pkg3?.priceVnd, 599_000);
+  assert.equal(pkg3?.effectivePriceVnd, 300_000);
+
+  // Test validateEquipmentSelection
+  const sel1 = validateEquipmentSelection(1, packages);
+  assert.equal(sel1?.equipmentPackageId, 1);
+  assert.equal(sel1?.priceVnd, 0);
+
+  const sel2 = validateEquipmentSelection(2, packages);
+  assert.equal(sel2?.equipmentPackageId, 2);
+  assert.equal(sel2?.priceVnd, 0);
+
+  const sel3 = validateEquipmentSelection(3, packages);
+  assert.equal(sel3?.equipmentPackageId, 3);
+  assert.equal(sel3?.priceVnd, 300_000);
+});
+
+test('handles equipment packages without any included package (standard pricing)', () => {
+  const packages = [
+    {
+      id: 10,
+      name: 'Gói A',
+      description: null,
+      includedItemsJson: JSON.stringify(['Món 1']),
+      priceVnd: 200_000,
+      isIncludedInFee: false,
+    },
+    {
+      id: 11,
+      name: 'Gói B',
+      description: null,
+      includedItemsJson: JSON.stringify(['Món 2']),
+      priceVnd: 400_000,
+      isIncludedInFee: false,
+    },
+  ];
+
+  const publicEquipment = buildPublicEquipment(packages, true);
+  assert.equal(publicEquipment.packages[0].effectivePriceVnd, 200_000);
+  assert.equal(publicEquipment.packages[1].effectivePriceVnd, 400_000);
+
+  const sel = validateEquipmentSelection(11, packages);
+  assert.equal(sel?.priceVnd, 400_000);
+});
+
