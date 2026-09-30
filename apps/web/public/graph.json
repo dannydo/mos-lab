@@ -28293,8 +28293,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13129100,
-        "lineCount": 285429,
+        "sizeBytes": 13108962,
+        "lineCount": 285012,
         "ext": ".ts"
       }
     },
@@ -30711,8 +30711,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10373,
-        "lineCount": 270,
+        "sizeBytes": 10608,
+        "lineCount": 310,
         "ext": ".ts"
       }
     },
@@ -30724,8 +30724,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 31040,
-        "lineCount": 838,
+        "sizeBytes": 31008,
+        "lineCount": 834,
         "ext": ".ts"
       }
     },
@@ -33389,8 +33389,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopAgendaManager.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2721,
-        "lineCount": 91,
+        "sizeBytes": 2643,
+        "lineCount": 89,
         "ext": ".tsx"
       }
     },
@@ -37094,8 +37094,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27053,
-        "lineCount": 538,
+        "sizeBytes": 26808,
+        "lineCount": 528,
         "ext": ".tsx"
       }
     },
@@ -37588,8 +37588,8 @@
       "filePath": "apps/web/lib/academy-workshop-live.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3363,
-        "lineCount": 96,
+        "sizeBytes": 3668,
+        "lineCount": 110,
         "ext": ".ts"
       }
     },
@@ -37601,8 +37601,8 @@
       "filePath": "apps/web/lib/academy-workshop-live.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7505,
-        "lineCount": 214,
+        "sizeBytes": 7734,
+        "lineCount": 219,
         "ext": ".ts"
       }
     },

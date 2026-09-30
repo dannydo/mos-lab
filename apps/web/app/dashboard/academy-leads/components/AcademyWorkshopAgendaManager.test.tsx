@@ -83,8 +83,6 @@ describe('AcademyWorkshopAgendaManager - MOS-FEAT-65 Actual Execution Time', () 
     );
 
     expect(screen.getByText('Khai mạc & Giới thiệu')).toBeInTheDocument();
-    expect(
-      screen.getByText('Đã hoàn thành và thời gian thực tế diễn ra từ 9h45 đến 10h25 trong 40 phút')
-    ).toBeInTheDocument();
+    expect(screen.getByText('✅ 9h45 - 10h25 : 40 phút')).toBeInTheDocument();
   });
 });
