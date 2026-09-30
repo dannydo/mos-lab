@@ -207,7 +207,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <strong className="text-zinc-200 font-medium">DONE HÔM NAY</strong>
                 </span>
-                <span className="text-[10px] text-zinc-400 font-mono">Khách lẻ</span>
+                <span className="text-[10px] text-zinc-400 font-mono">Chỉ tiêu: {metrics.doneTarget} Done</span>
               </div>
 
               {/* Numbers (nhỏ hơn 1 cấp so với Book) */}
@@ -258,21 +258,10 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               </div>
             </div>
 
-            {/* Sub Combo Live */}
-            {metrics.comboLiveDoneActual > 0 ? (
-              <div className="mt-2 pt-1.5 border-t border-zinc-800/60 text-[10px] font-mono flex items-center justify-between text-purple-300">
-                <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                  Combo Live:
-                </span>
-                <span className="font-bold tabular-nums">+{metrics.comboLiveDoneActual}</span>
-              </div>
-            ) : (
-              <div className="mt-2 pt-1.5 border-t border-zinc-800/60 text-[10px] font-mono flex items-center justify-between text-zinc-400">
-                <span>Mục tiêu ngày:</span>
-                <span className="text-zinc-300">{metrics.doneTarget} Done</span>
-              </div>
-            )}
+            <div className="mt-2 pt-1.5 border-t border-zinc-800/60 text-[10px] font-mono flex items-center justify-between text-zinc-400">
+              <span>Mục tiêu ngày:</span>
+              <span className="text-zinc-300 font-semibold">{metrics.doneTarget} Done</span>
+            </div>
           </div>
         </div>
       </div>

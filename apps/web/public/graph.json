@@ -30761,8 +30761,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16695,
-        "lineCount": 501,
+        "sizeBytes": 17137,
+        "lineCount": 509,
         "ext": ".ts"
       }
     },
@@ -30774,8 +30774,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38781,
-        "lineCount": 1021,
+        "sizeBytes": 37534,
+        "lineCount": 993,
         "ext": ".ts"
       }
     },
@@ -37196,8 +37196,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14342,
-        "lineCount": 306,
+        "sizeBytes": 13807,
+        "lineCount": 295,
         "ext": ".tsx"
       }
     },
@@ -37222,8 +37222,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22372,
-        "lineCount": 457,
+        "sizeBytes": 22649,
+        "lineCount": 471,
         "ext": ".tsx"
       }
     },
@@ -60688,13 +60688,6 @@
       "target": "prisma:legacy:user_service_balance",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/kpi/services/telesale-target.service.ts",
-      "target": "prisma:crm:CrmStaff",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmConfig",
@@ -84576,7 +84569,7 @@
   ],
   "stats": {
     "totalNodes": 2987,
-    "totalEdges": 6509,
+    "totalEdges": 6508,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 159,
@@ -84593,7 +84586,7 @@
       "RENDERS": 261,
       "USES_TOKEN": 206,
       "IMPORTS": 454,
-      "QUERIES_MODEL": 372,
+      "QUERIES_MODEL": 371,
       "API_CALL": 3319
     },
     "fastifyRouteCount": 640,
