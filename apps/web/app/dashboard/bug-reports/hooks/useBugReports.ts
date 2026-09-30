@@ -322,6 +322,17 @@ export function useBugReports() {
     [load]
   );
 
+  const retryClarification = useCallback(
+    async (id: number): Promise<BugReportDetail> => {
+      const response = await apiClient.bugReports.retryClarification(id);
+      if (!response.data) throw new Error('Máy chủ không trả về trạng thái làm rõ lại.');
+      void load();
+      window.dispatchEvent(new Event('mos-bug-inbox-updated'));
+      return response.data;
+    },
+    [load]
+  );
+
   const retryImplementation = useCallback(
     async (id: number): Promise<ApproveBugReportImplementationResult> => {
       const response = await apiClient.bugReports.retryImplementation(id, { acknowledged: true });
@@ -471,6 +482,7 @@ export function useBugReports() {
     requestImplementationChanges,
     requestPlanChanges,
     approveImplementationDeploy,
+    retryClarification,
     retryImplementation,
     authorizeWorkerRecoveryRetry,
     authorizeSchemaRecoveryRetry,

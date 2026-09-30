@@ -1252,6 +1252,39 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       },
     ],
   },
+  {
+    id: 'WS-001',
+    book: 'SERVICE',
+    title: 'Thực đơn Workshop: Danh mục món hiển thị động theo dữ liệu thực tế',
+    summary:
+      'Các phân loại thực đơn Workshop (Nước uống, Món chính, Tráng miệng...) tự động hiển thị hoặc ẩn hoàn toàn theo danh sách món hiện có. Khi không phục vụ một nhóm món, người quản lý chỉ cần xóa các món trong nhóm đó.',
+    commandments: [
+      'Các nhóm thực đơn (JUICE, MAIN_COURSE, DESSERT...) chỉ hiển thị trên giao diện quản trị và trang đăng ký khi có ít nhất một món thuộc nhóm đó.',
+      'Để bỏ một nhóm thực đơn (như Tráng miệng), người vận hành tự vào tab Thực đơn của Workshop và bấm Xóa các món thuộc nhóm đó thay vì báo lỗi hệ thống.',
+      'Hệ thống lưu giữ đầy đủ lựa chọn thực đơn lịch sử của học viên đã đăng ký trước đó để đối soát nhà hàng; việc xóa món khỏi thực đơn hiện tại không làm mất dữ liệu lịch sử.',
+      'Tuyệt đối không tạo ticket báo lỗi kỹ thuật khi yêu cầu thực tế chỉ là thao tác dữ liệu cấu hình thực đơn có sẵn.',
+    ],
+    rationale:
+      'Hệ thống Workshop được thiết kế dạng dữ liệu động (data-driven), trao toàn quyền chủ động cho Host cấu hình linh hoạt danh mục phục vụ mà không cần can thiệp mã nguồn.',
+    examples: [
+      'Workshop Bí Kíp Nối Mi Triệu Đồng không phục vụ tráng miệng: Quản lý chỉ cần xóa món "Trái cây theo mùa" trong tab Thực đơn, mục Tráng miệng sẽ tự động biến mất trên cả giao diện quản trị và biểu mẫu đăng ký học viên.',
+    ],
+    tags: ['workshop', 'academy', 'thực đơn', 'menu', 'tráng miệng', 'xóa món', 'món ăn'],
+    routeScopes: ['/dashboard/academy-leads/workshops'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-30',
+    sources: [
+      {
+        label: 'Academy Workshop Menu Manager',
+        reference: 'apps/web/app/dashboard/academy-leads/components/AcademyWorkshopMenuManager.tsx',
+      },
+      {
+        label: 'Academy Workshop Service',
+        reference: 'apps/api/src/modules/academy-workshops/academy-workshop.service.ts',
+      },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

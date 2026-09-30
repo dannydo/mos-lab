@@ -109,41 +109,51 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                   >
                     {pacingStatus === 'AHEAD' && '🚀 Vượt nhịp'}
                     {pacingStatus === 'ON_TRACK' && '✓ Đúng nhịp'}
-                    {pacingStatus === 'BEHIND' && '⚡ Chậm nhịp'}
+                    {pacingStatus === 'BEHIND' &&
+                      ((teamMonth.gapBook ?? 0) >= 0 ? '⚡ Chậm nhịp · Pipeline tốt' : '⚡ Chậm nhịp')}
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Metrics */}
+            {/* Metrics Grid (MOS-BUG-74: Done Outcome nổi bật hơn Book Leading Action) */}
             <div className="grid grid-cols-2 gap-4 my-2">
-              {/* Done Card (Khách lẻ Not Combo + Quản trị KPI) */}
-              <div className="bg-black/40 rounded-xl p-3 border border-amber-500/15 flex flex-col justify-between">
+              {/* 1. Done Card (Outcome / KPI chính - nổi bật nhất về kích thước số, hierarchy và progress bar) */}
+              <div className="bg-emerald-950/20 rounded-xl p-3 border border-emerald-500/35 flex flex-col justify-between shadow-inner transition-all hover:border-emerald-400/50">
                 <div>
                   <div className="flex items-center justify-between text-zinc-400 text-xs">
                     <span className="flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <strong className="text-zinc-200">Done Khách Lẻ</strong>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <strong className="text-emerald-200 font-bold">Done Khách Lẻ</strong>
                     </span>
-                    <span className="text-[10px] text-zinc-400 font-mono">Tính KPI</span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                      KPI CHÍNH
+                    </span>
                   </div>
 
-                  {/* Main Metric: Khách lẻ Not Combo Live */}
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="text-2xl sm:text-3xl font-black font-mono text-zinc-100 tabular-nums">
+                  {/* Main Dominant Metric: Khách lẻ Not Combo Live */}
+                  <div className="mt-1.5 flex items-baseline gap-1.5">
+                    <span className="text-3xl sm:text-4xl font-black font-mono text-emerald-300 tabular-nums">
                       {teamMonth.doneActual}
                     </span>
-                    <span className="text-zinc-500 text-xs font-mono">/ {teamMonth.doneTarget} Done</span>
+                    <span className="text-zinc-400 text-xs font-mono font-semibold">/ {teamMonth.doneTarget} Done</span>
                   </div>
 
                   <Progress
                     percent={isPeriodNotStarted ? 0 : Math.min(100, donePercent)}
-                    strokeColor={getProgressStroke(donePercent)}
+                    strokeColor={
+                      isPeriodNotStarted
+                        ? token.colorTextQuaternary
+                        : isDoneOver100
+                          ? token.colorWarning
+                          : token.colorSuccess
+                    }
+                    strokeWidth={8}
                     size="small"
                     showInfo={false}
-                    className={`mt-1.5 ${isDoneOver100 ? 'supercharged-bar' : ''}`}
+                    className={`mt-2 ${isDoneOver100 ? 'supercharged-bar' : ''}`}
                   />
-                  <div className="flex justify-between items-center text-[11px] mt-1 font-mono">
+                  <div className="flex justify-between items-center text-[11px] mt-1.5 font-mono">
                     <span className="text-zinc-400">Tiến độ</span>
                     <span
                       className={
@@ -162,8 +172,8 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                     </span>
                   </div>
 
-                  {/* Management Metrics (MOS-BUG-67) */}
-                  <div className="mt-2.5 pt-2 border-t border-zinc-800/80 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono">
+                  {/* Management Metrics: Đủ 6 chỉ số đối chiếu cho Done */}
+                  <div className="mt-2.5 pt-2 border-t border-emerald-900/40 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono">
                     <div className="flex justify-between items-center text-zinc-400">
                       <span>Kỳ vọng:</span>
                       <span className="text-zinc-200 font-semibold tabular-nums">
@@ -205,7 +215,7 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                 </div>
 
                 {/* Sub Metric Row: Khách Combo Live (Tracking tiến độ) */}
-                <div className="mt-2.5 pt-2 border-t border-zinc-800/80">
+                <div className="mt-2.5 pt-2 border-t border-emerald-900/40">
                   <div className="flex items-center justify-between text-[11px] font-mono">
                     <span className="text-purple-300 font-medium flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
@@ -228,27 +238,39 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                 </div>
               </div>
 
-              {/* Book Card */}
-              <div className="bg-black/40 rounded-xl p-3 border border-amber-500/15 flex flex-col justify-between">
+              {/* 2. Book Card (Leading Action / KPI dẫn dắt - nhỏ hơn một cấp) */}
+              <div className="bg-black/40 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between transition-all hover:border-zinc-700">
                 <div>
-                  <div className="flex items-center gap-2 text-zinc-400 text-xs">
-                    <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                    <strong className="text-zinc-200">Book</strong>
+                  <div className="flex items-center justify-between text-zinc-400 text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                      <strong className="text-zinc-300 font-medium">Book Tháng</strong>
+                    </span>
+                    <span className="text-[10px] text-blue-400 font-mono bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-500/20">
+                      DẪN DẮT
+                    </span>
                   </div>
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="text-2xl sm:text-3xl font-black font-mono text-zinc-100 tabular-nums">
+                  <div className="mt-1.5 flex items-baseline gap-1.5">
+                    <span className="text-xl sm:text-2xl font-bold font-mono text-zinc-200 tabular-nums">
                       {teamMonth.bookActual}
                     </span>
-                    <span className="text-zinc-500 text-xs font-mono">/ {teamMonth.bookTarget}</span>
+                    <span className="text-zinc-500 text-xs font-mono">/ {teamMonth.bookTarget} Book</span>
                   </div>
                   <Progress
                     percent={isPeriodNotStarted ? 0 : Math.min(100, bookPercent)}
-                    strokeColor={getProgressStroke(bookPercent)}
+                    strokeColor={
+                      isPeriodNotStarted
+                        ? token.colorTextQuaternary
+                        : isBookOver100
+                          ? token.colorWarning
+                          : token.colorInfo
+                    }
+                    strokeWidth={5}
                     size="small"
                     showInfo={false}
-                    className={`mt-1.5 ${isBookOver100 ? 'supercharged-bar' : ''}`}
+                    className={`mt-2 ${isBookOver100 ? 'supercharged-bar' : ''}`}
                   />
-                  <div className="flex justify-between items-center text-[11px] mt-1 font-mono">
+                  <div className="flex justify-between items-center text-[11px] mt-1.5 font-mono">
                     <span className="text-zinc-400">Tiến độ</span>
                     <span
                       className={
@@ -259,15 +281,11 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                             : 'text-blue-400 font-bold'
                       }
                     >
-                      {isPeriodNotStarted
-                        ? '0%'
-                        : isBookOver100
-                          ? `✨ ${bookPercent}% VƯỢT CHỈ TIÊU`
-                          : `${bookPercent}%`}
+                      {isPeriodNotStarted ? '0%' : isBookOver100 ? `✨ ${bookPercent}% VƯỢT` : `${bookPercent}%`}
                     </span>
                   </div>
 
-                  {/* Management Metrics (MOS-BUG-67) */}
+                  {/* Management Metrics: Đủ 6 chỉ số đối chiếu cho Book */}
                   <div className="mt-2.5 pt-2 border-t border-zinc-800/80 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono">
                     <div className="flex justify-between items-center text-zinc-400">
                       <span>Kỳ vọng:</span>
@@ -373,18 +391,20 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                 const isOver100 = percent > 100;
                 const staffComboActual = staff.comboLiveDoneActual || 0;
 
-                // MOS-BUG-72: Resilience fallback calculations
+                // MOS-BUG-76: Resilience fallback calculations & 5-tier status
+                const isPeriodNotStarted = teamMonth.periodStatus === 'NOT_STARTED';
                 const expectedProgressRate =
                   overview.teamMonth?.expectedProgressRate ?? (workDaysTotal > 0 ? workDaysElapsed / workDaysTotal : 0);
                 const workDaysRemaining =
                   overview.teamMonth?.workDaysRemaining ?? Math.max(0, workDaysTotal - workDaysElapsed);
-                const expectedDone = staff.expectedDone ?? Math.round(staff.doneTarget * expectedProgressRate);
-                const gapDone = staff.gapDone ?? staff.doneActual - expectedDone;
+                const expectedDone =
+                  staff.expectedDone ?? (isPeriodNotStarted ? 0 : Math.round(staff.doneTarget * expectedProgressRate));
+                const gapDone = staff.gapDone ?? (isPeriodNotStarted ? 0 : staff.doneActual - expectedDone);
                 const remainingDone = staff.remainingDone ?? Math.max(0, staff.doneTarget - staff.doneActual);
 
                 let dailyRequiredDone = staff.dailyRequiredDone;
                 if (dailyRequiredDone === undefined) {
-                  if (teamMonth.periodStatus === 'NOT_STARTED') {
+                  if (isPeriodNotStarted) {
                     dailyRequiredDone = workDaysTotal > 0 ? Number((staff.doneTarget / workDaysTotal).toFixed(1)) : 0;
                   } else if (teamMonth.periodStatus === 'IN_PROGRESS') {
                     dailyRequiredDone =
@@ -397,12 +417,18 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                 let progressStatus = staff.progressStatus;
                 let progressStatusLabel = staff.progressStatusLabel;
                 if (!progressStatus || !progressStatusLabel) {
-                  if (gapDone > 0) {
+                  if (isPeriodNotStarted) {
+                    progressStatus = 'NOT_STARTED';
+                    progressStatusLabel = 'Chưa bắt đầu';
+                  } else if (gapDone > 0) {
                     progressStatus = 'AHEAD';
                     progressStatusLabel = 'Vượt tiến độ';
                   } else if (gapDone >= -1) {
                     progressStatus = 'ON_TRACK';
                     progressStatusLabel = 'Đúng tiến độ';
+                  } else if (gapDone <= -5 || (expectedDone > 0 && staff.doneActual / expectedDone < 0.7)) {
+                    progressStatus = 'CRITICAL';
+                    progressStatusLabel = 'Báo động';
                   } else {
                     progressStatus = 'BEHIND';
                     progressStatusLabel = 'Chậm tiến độ';
@@ -411,22 +437,64 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
 
                 const revenueVnd = staff.revenueActual || 0;
 
+                // 5-color 1s recognition style
+                const cardStyleClass = isOver100
+                  ? 'bg-gradient-to-b from-amber-950/40 via-zinc-950 to-black border-amber-400 supercharged-aura shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                  : progressStatus === 'NOT_STARTED'
+                    ? 'bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                    : progressStatus === 'AHEAD'
+                      ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.12)]'
+                      : progressStatus === 'ON_TRACK'
+                        ? 'bg-blue-950/20 border-blue-500/35 hover:border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.1)]'
+                        : progressStatus === 'CRITICAL'
+                          ? 'bg-rose-950/25 border-rose-500/70 hover:border-rose-400 shadow-[0_0_16px_rgba(244,63,94,0.25)] ring-1 ring-rose-500/30'
+                          : 'bg-amber-950/20 border-amber-500/40 hover:border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.12)]';
+
+                const badgeStyleClass =
+                  progressStatus === 'NOT_STARTED'
+                    ? 'bg-zinc-800/80 text-zinc-400 border border-zinc-700/80'
+                    : progressStatus === 'AHEAD'
+                      ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
+                      : progressStatus === 'ON_TRACK'
+                        ? 'bg-blue-950/80 text-blue-300 border border-blue-500/40'
+                        : progressStatus === 'CRITICAL'
+                          ? 'bg-rose-950 text-rose-300 border border-rose-500/60 font-black'
+                          : 'bg-amber-950/80 text-amber-300 border border-amber-500/40';
+
+                const progressStroke = isPeriodNotStarted
+                  ? token.colorTextQuaternary
+                  : isOver100
+                    ? token.colorWarning
+                    : progressStatus === 'AHEAD'
+                      ? token.colorSuccess
+                      : progressStatus === 'ON_TRACK'
+                        ? token.colorInfo
+                        : progressStatus === 'CRITICAL'
+                          ? token.colorError
+                          : token.colorWarning;
+
                 return (
                   <div
                     key={staff.legacyStaffId}
-                    className={`p-2.5 rounded-xl transition-all duration-300 flex flex-col justify-between ${
-                      isOver100
-                        ? 'bg-gradient-to-b from-amber-950/40 via-zinc-950 to-black border border-amber-400 supercharged-aura'
-                        : 'bg-black/40 border border-zinc-800/80 hover:border-amber-500/40'
-                    }`}
+                    className={`p-2.5 rounded-xl transition-all duration-300 flex flex-col justify-between ${cardStyleClass}`}
                   >
                     <div>
-                      {/* Row 1: Tên & +X hôm nay */}
+                      {/* 1. Tên NV & +X hôm nay */}
                       <div className="flex items-center justify-between gap-1">
                         <span className="font-bold text-zinc-100 text-sm flex items-center gap-1.5 truncate">
                           <span
                             className={`w-2 h-2 rounded-full shrink-0 ${
-                              isOver100 ? 'bg-amber-400 animate-ping' : 'bg-amber-400'
+                              isOver100
+                                ? 'bg-amber-400 animate-ping'
+                                : progressStatus === 'NOT_STARTED'
+                                  ? 'bg-zinc-600'
+                                  : progressStatus === 'AHEAD'
+                                    ? 'bg-emerald-400'
+                                    : progressStatus === 'ON_TRACK'
+                                      ? 'bg-blue-400'
+                                      : progressStatus === 'CRITICAL'
+                                        ? 'bg-rose-500'
+                                        : 'bg-amber-400'
                             }`}
                           />
                           <span className="truncate">{staff.name}</span>
@@ -436,29 +504,7 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                         </span>
                       </div>
 
-                      {/* Row 2: Badge Trạng thái & Gap KPI */}
-                      <div className="flex items-center justify-between gap-1 mt-1">
-                        <span
-                          className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shrink-0 ${
-                            progressStatus === 'AHEAD'
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                              : progressStatus === 'ON_TRACK'
-                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                                : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                          }`}
-                        >
-                          {progressStatusLabel}
-                        </span>
-                        <span
-                          className={`text-[10px] font-mono font-semibold tabular-nums ${
-                            gapDone > 0 ? 'text-emerald-400' : gapDone >= -1 ? 'text-blue-400' : 'text-rose-400'
-                          }`}
-                        >
-                          Gap: {gapDone > 0 ? `+${gapDone}` : gapDone} Done
-                        </span>
-                      </div>
-
-                      {/* Row 3: Done thực tế / KPI tháng & % hoàn thành */}
+                      {/* 2. Done / KPI tháng & % hoàn thành + Progress bar */}
                       <div className="mt-1.5">
                         <div className="flex items-baseline justify-between">
                           <div className="flex items-baseline gap-1">
@@ -469,23 +515,46 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                           </div>
                           <span
                             className={`text-[10px] font-mono font-bold tabular-nums ${
-                              isOver100 ? 'text-amber-400' : 'text-zinc-400'
+                              isPeriodNotStarted ? 'text-zinc-500' : isOver100 ? 'text-amber-400' : 'text-zinc-400'
                             }`}
                           >
-                            {isOver100 ? `🔥 ${percent}% VƯỢT` : `Đạt ${percent}%`}
+                            {isPeriodNotStarted ? '0%' : isOver100 ? `🔥 ${percent}% VƯỢT` : `Đạt ${percent}%`}
                           </span>
                         </div>
 
                         <Progress
-                          percent={Math.min(100, percent)}
+                          percent={isPeriodNotStarted ? 0 : Math.min(100, percent)}
+                          strokeColor={progressStroke}
                           size="small"
                           showInfo={false}
                           className={`mt-1 ${isOver100 ? 'supercharged-bar' : ''}`}
                         />
                       </div>
 
-                      {/* Row 4: Còn thiếu & Cần TB */}
-                      <div className="flex justify-between items-center text-[10px] mt-1.5 font-mono text-zinc-400">
+                      {/* 3. Badge Trạng thái & Gap KPI */}
+                      <div className="flex items-center justify-between gap-1 mt-2">
+                        <span
+                          className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shrink-0 ${badgeStyleClass}`}
+                        >
+                          {progressStatusLabel}
+                        </span>
+                        <span className="text-[10px] font-mono tabular-nums">
+                          {isPeriodNotStarted ? (
+                            <span className="text-zinc-500 font-medium">Gap: -</span>
+                          ) : gapDone > 0 ? (
+                            <span className="text-emerald-400 font-bold">Gap: +{gapDone} Done</span>
+                          ) : gapDone === 0 ? (
+                            <span className="text-blue-400 font-bold">Gap: 0 Done</span>
+                          ) : progressStatus === 'CRITICAL' ? (
+                            <span className="text-rose-400 font-black">Gap: {gapDone} Done</span>
+                          ) : (
+                            <span className="text-amber-400 font-bold">Gap: {gapDone} Done</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* 4. Còn thiếu & Cần TB/ngày */}
+                      <div className="flex justify-between items-center text-[10px] mt-2 font-mono text-zinc-400">
                         <span>
                           Còn thiếu: <strong className="text-zinc-200 tabular-nums">{remainingDone} Done</strong>
                         </span>
@@ -495,8 +564,8 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                       </div>
                     </div>
 
-                    {/* Row 5: Doanh thu & Combo */}
-                    <div className="mt-2 pt-1.5 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-mono">
+                    {/* 5. Doanh thu & Combo */}
+                    <div className="mt-2.5 pt-1.5 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-mono">
                       <span
                         className="text-zinc-400 truncate mr-1"
                         title={`Doanh thu: ${revenueVnd.toLocaleString('vi-VN')}đ`}

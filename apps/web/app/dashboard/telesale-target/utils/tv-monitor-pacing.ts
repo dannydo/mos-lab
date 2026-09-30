@@ -179,61 +179,60 @@ export function calculateTvMonitorMetrics(
   const remainingDone = Math.max(0, doneTarget - doneActual);
   const remainingBook = Math.max(0, bookTarget - bookActual);
 
-  // 1. Determine Team State
+  // 1. Determine Team State - Ưu tiên theo tiến độ BOOK (MOS-BUG-75)
   let teamState: TvMonitorKpiMetrics['teamState'];
   let teamStateLabel: string;
   let teamStateBadge: string;
   let teamStateColor: TvMonitorKpiMetrics['teamStateColor'];
 
-  if (donePercent >= 100 && bookPercent >= 100) {
+  if (bookPercent >= 100 && donePercent >= 100) {
     teamState = 'COMPLETED';
     teamStateLabel = 'Hoàn thành KPI';
     teamStateBadge = '🎉 HOÀN THÀNH KPI';
     teamStateColor = 'emerald';
-  } else if ((donePercent >= 85 && bookPercent >= 85) || (doneActual + bookActual) / (doneTarget + bookTarget) >= 0.85) {
-    teamState = 'APPROACHING';
-    teamStateLabel = 'Sắp chạm đích';
-    teamStateBadge = '🎯 SẮP CHẠM ĐÍCH';
-    teamStateColor = 'amber';
+  } else if (bookPercent >= 100) {
+    teamState = 'COMPLETED';
+    teamStateLabel = 'Đạt mục tiêu Book';
+    teamStateBadge = '🎉 ĐẠT MỤC TIÊU BOOK';
+    teamStateColor = 'emerald';
   } else if (pacing.rTime < 0.15) {
     teamState = 'WARMUP';
     teamStateLabel = 'Khởi động';
     teamStateBadge = '⚡ KHỞI ĐỘNG';
     teamStateColor = 'blue';
-  } else if (gapDone >= 2 && gapBook >= 2) {
+  } else if (gapBook >= 2) {
     teamState = 'ACCELERATING';
-    teamStateLabel = 'Tăng tốc';
-    teamStateBadge = '🚀 TĂNG TỐC';
+    teamStateLabel = 'Vượt tiến độ';
+    teamStateBadge = '🚀 VƯỢT TIẾN ĐỘ';
     teamStateColor = 'emerald';
-  } else if (gapDone >= -1 && gapBook >= -1) {
+  } else if (gapBook >= -1) {
     teamState = 'ON_PACE';
     teamStateLabel = 'Bám nhịp';
     teamStateBadge = '✓ BÁM NHỊP';
     teamStateColor = 'blue';
   } else {
+    // Book chậm -> cần tăng tốc (không cảnh báo quá gay gắt nếu pipeline đang duy trì)
     teamState = 'NEEDS_BREAKTHROUGH';
-    teamStateLabel = 'Cần bứt phá';
-    teamStateBadge = '🔥 CẦN BỨT PHÁ';
-    teamStateColor = 'rose';
+    teamStateLabel = 'Cần tăng tốc';
+    teamStateBadge = '⚡ CẦN TĂNG TỐC';
+    teamStateColor = 'amber';
   }
 
-  // 2. Actionable Instruction Message
+  // 2. Actionable Instruction Message (MOS-BUG-75: Hướng hành động "Còn X Book để chạm mục tiêu hôm nay")
   let actionableMessage: string;
   if (pacing.shiftStatus === 'AFTER_SHIFT') {
     if (remainingBook === 0 && remainingDone === 0) {
-      actionableMessage = '🎉 Xuất sắc! Team đã về đích thành công rực rỡ hôm nay!';
+      actionableMessage = '🎉 Xuất sắc! Team đã hoàn thành toàn bộ mục tiêu hôm nay!';
     } else {
       actionableMessage = `Kết quả ca hôm nay: ${bookActual}/${bookTarget} Book · ${doneActual}/${doneTarget} Done`;
     }
   } else {
-    if (remainingBook > 0 && remainingDone > 0) {
-      actionableMessage = `Còn ${remainingBook} Book + ${remainingDone} Done để hoàn thành mục tiêu hôm nay`;
-    } else if (remainingBook > 0) {
-      actionableMessage = `Đã đạt Done! Còn ${remainingBook} Book để hoàn thành mục tiêu hôm nay`;
+    if (remainingBook > 0) {
+      actionableMessage = `Còn ${remainingBook} Book để chạm mục tiêu hôm nay`;
     } else if (remainingDone > 0) {
-      actionableMessage = `Đã đạt Book! Còn ${remainingDone} Done để hoàn thành mục tiêu hôm nay`;
+      actionableMessage = `Đã đạt mục tiêu Book! Còn ${remainingDone} Done để hoàn tất mục tiêu hôm nay`;
     } else {
-      actionableMessage = '🎉 Tuyệt vời! Team đã hoàn thành 100% mục tiêu hôm nay!';
+      actionableMessage = '🎉 Xuất sắc! Team đã hoàn thành 100% mục tiêu hôm nay!';
     }
   }
 

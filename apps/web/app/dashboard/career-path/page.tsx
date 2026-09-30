@@ -212,24 +212,25 @@ export default function CareerPathPage() {
   };
 
   // Change preset hero
+  // Change preset hero
   const handleSelectHero = (heroVal: string) => {
     playSound('pop');
     setSelectedHero(heroVal);
     if (heroVal === 'thao_my') {
       setSliderOrders(340);
-      setSliderTip(18);
+      setSliderTip(15);
       setSliderFix(1.2);
       setSliderHi(84);
-      setSliderCombo(24.5);
+      setSliderCombo(28.0);
     } else if (heroVal === 'lan_anh') {
       setSliderOrders(180);
-      setSliderTip(-8);
+      setSliderTip(5);
       setSliderFix(3.4);
       setSliderHi(62);
-      setSliderCombo(12.0);
+      setSliderCombo(15.0);
     } else if (heroVal === 'bao_tran') {
       setSliderOrders(490);
-      setSliderTip(32);
+      setSliderTip(25);
       setSliderFix(0.4);
       setSliderHi(94);
       setSliderCombo(38.0);
@@ -238,7 +239,7 @@ export default function CareerPathPage() {
       setSliderTip(Math.round((liveData.metrics.tipRatioAboveShop || 0) * 100));
       setSliderFix(Number(((liveData.metrics.fixRate || 0) * 100).toFixed(1)));
       setSliderHi(Math.round((liveData.metrics.happinessIndex || 0.8) * 100));
-      setSliderCombo(liveData.metrics.selfComboRate ? Math.round(liveData.metrics.selfComboRate * 100) : 22);
+      setSliderCombo(liveData.metrics.selfComboRate ? Math.round(liveData.metrics.selfComboRate * 100) : 26);
     }
   };
 
@@ -276,22 +277,22 @@ export default function CareerPathPage() {
       name: 'CV · Thợ Lash',
       badge: 'Ải 1',
       icon: '👁️',
-      sub: '80% Tip + Chuối FAL',
+      sub: '70% Tip + Thâm Niên',
       title: 'Tập Sự Thiên Thần · Lash Artisan',
       desc: 'Đôi bàn tay mềm mại, từng sợi mi êm ru ru giấc ngủ nàng thơ.',
-      focus: 'Kỹ thuật tinh xảo & An toàn tuyệt đối tại giường',
+      focus: 'Kỹ thuật tinh xảo & An toàn tuyệt đối tại giường (3 tháng liền)',
       skills: [
-        { name: 'Khử Trùng Phép Thuật', desc: 'Vệ sinh giường, nhíp tiệt trùng 100%' },
+        { name: 'Khử Trùng Phép Thuật', desc: 'Vệ sinh giường, nhíp tiệt trùng 100%, 0 biên bản QA/QC' },
         { name: 'Nối Mi Êm Ái', desc: 'Đúng SLA, không cộm, không cay mắt' },
         { name: 'Bảo Hành Kỹ Thuật', desc: 'Chịu trách nhiệm sửa ca Fix không tính công' },
       ],
       perks: [
-        'Hưởng trọn vẹn 80% tổng tiền tip khách yêu quý',
+        'Hưởng trọn vẹn 70% tổng tiền tip khách yêu quý (20% CC + 3% CS)',
         'Thưởng nóng tiền tươi khi khách đánh giá 5★',
         'Thưởng giữ chân khách quen (Retention Bonus)',
-        'Nhận 15 quả Chuối vàng khi hỗ trợ ca Adjust ngắn ≤ 25p',
+        'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Đạt ${cvToCc.minOrders} ca mi + Tip > TB shop + Fix < ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI > ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}%) để thăng cấp CC!`,
+      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB shop ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp CC!`,
     },
     {
       id: 'cc' as const,
@@ -305,15 +306,19 @@ export default function CareerPathPage() {
       skills: [
         { name: 'Thấu Cảm Khách Hàng', desc: 'Nhìn dáng mắt, gợi ý dáng mi tôn nét quý phái' },
         { name: 'Bậc Thầy Chốt Combo', desc: 'Tư vấn trọn gói mi + dưỡng, tối ưu chi phí cho khách' },
-        { name: 'Chia Sẻ & Đồng Đội', desc: 'Check-in/out nhịp nhàng, chia 50/50 điểm thưởng ca' },
+        {
+          name: 'Đại Sứ Google 5★',
+          desc: `Đạt tối thiểu ${ccToFm.minMonthlyGoogleReviews || 30} Google Review 5 sao/tháng`,
+        },
       ],
       perks: [
         'Lương giờ + Thưởng Level CC tăng dần đều (Level × 65đ)',
-        '20% tiền tip từ khách hàng',
+        '20% tiền tip từ khách hàng (10% khi chia 2 CC)',
         'Thưởng doanh số Combo & Sản phẩm bán lẻ',
+        'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CC Cash hàng tháng',
         'Cơ hội tranh cúp Chiến Thần Bán Hàng & Minigame hàng tuần',
       ],
-      gateText: `Thâm niên CC ≥ ${ccToFm.minMonthsInRole} tháng + Level CC TB ≥ Lv.${ccToFm.minAvgLevel} + Đạt điểm thi Vận hành & Kho ≥ ${ccToFm.minOpsExamScore}đ ➔ Thăng cấp Floor Manager (FM)!`,
+      gateText: `Thâm niên CC ≥ ${ccToFm.minMonthsInRole} tháng + Tối thiểu ${ccToFm.minMonthlyGoogleReviews || 30} Google Review/tháng + 0 biên bản HR/QA-QC + Kiểm tra kho & CSVC hàng tuần ➔ Thăng cấp Floor Manager (FM)!`,
     },
     {
       id: 'fm' as const,
@@ -323,43 +328,48 @@ export default function CareerPathPage() {
       sub: '% Shop + Kho',
       title: 'Nhạc Trưởng Vận Hành · Floor Manager',
       desc: 'Giữ cho cả tiệm vận hành chuẩn xác như đồng hồ Thụy Sĩ. 100% Lý tính & Kỷ luật.',
-      focus: 'Quản trị kho hàng, kiểm soát 5 giác quan CSVC & điều phối tua',
+      focus: 'Quản trị kho hàng hàng tuần, kiểm soát 5 giác quan CSVC & nâng đỡ đồng đội',
       skills: [
-        { name: 'Mắt Thần Kho Bãi', desc: 'Chống thất thoát, kiểm kê xuất nhập chính xác 100%' },
-        { name: 'Nhạc Trưởng Tua Giường', desc: 'Điều phối tua công bằng, triệt tiêu thời gian khách chờ' },
+        { name: 'Mắt Thần Kho Bãi', desc: 'Kiểm kê kho & CSVC hàng tuần, chống thất thoát ≤ 0.5%' },
+        { name: 'Nâng Tầm Đồng Đội', desc: 'Chăm sóc và kèm cặp giúp nhân sự có điểm HI thấp tiến bộ hơn' },
         {
           name: 'Giám Sát 5 Giác Quan',
           desc: 'Mắt thấy sạch, tai nghe dịu, mũi ngửi thơm, giường nằm êm, trà bánh ngon',
         },
       ],
       perks: [
-        'Lương cứng cấp quản lý + Thưởng % Doanh thu chi nhánh',
+        'Lương cứng cấp quản lý + Thưởng % Doanh thu chi nhánh (0.8%)',
         'Thưởng vượt target doanh số shop hàng tháng',
         `Túi Chuối Thần Kỳ: Được cấp ${rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng tức thì cho nhân viên xuất sắc`,
+        'Thưởng Tiết Kiệm: Nhận 20% số tiền chi phí vận hành tiết kiệm được (khi kho hao hụt ≤ 0.5% & vật tư ≤ 5%)',
       ],
-      gateText: `Chi nhánh đạt Target ≥ ${fmToCho.minTargetHitMonths} tháng + Thất thoát kho ≤ ${(fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${fmToCho.minFacilityScore}% + eNPS nhân viên ≥ ${fmToCho.minStaffEnpsScore}đ ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
+      gateText: `Chi nhánh đạt Target ≥ ${fmToCho.minTargetHitMonths} tháng + Giúp đỡ người có HI thấp tiến bộ + Thất thoát kho ≤ ${(fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${fmToCho.minFacilityScore}% ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
     },
     {
       id: 'cho' as const,
       name: 'CHO · Mẹ Thiên Thần',
       badge: 'Ải 4',
       icon: '💖',
-      sub: 'NPS 1/Shop',
+      sub: 'Khách Mới 1/Shop',
       title: 'Nữ Thần Hạnh Phúc · Chief Happiness Officer',
-      desc: 'Trái tim của chi nhánh. 100% Cảm tính & Yêu thương con người. Duy nhất 1 người/Shop.',
-      focus: 'Hạnh phúc của Thiên Thần (nhân sự) & Hạnh phúc của Khách Hàng',
+      desc: 'Trái tim của chi nhánh. 100% Cảm tính & Yêu thương con người. Duy nhất 1 người/Shop. Tập trung 100% Khách Mới & Hạnh Phúc Thiên Thần (không gánh P&L).',
+      focus: 'Đón tiếp và thu hút khách mới (ra tiền!) & Nâng đỡ điểm HI Thiên Thần',
       skills: [
-        { name: 'Người Giữ Lửa Văn Hóa', desc: 'Lắng nghe tâm tư, chữa lành áp lực cho từng thợ mi' },
-        { name: 'Nâng Tầm Trải Nghiệm', desc: 'Chăm sóc khách VIP, xử lý triệt để phản hồi chưa hài lòng' },
+        { name: 'Người Giữ Lửa Văn Hóa', desc: 'Lắng nghe tâm tư, chữa lành áp lực và nâng đỡ bạn có điểm HI thấp' },
+        {
+          name: 'Lan Tỏa & Thu Hút Khách Mới',
+          desc: 'Đón tiếp chuẩn 5 sao cho khách mới đến shop (Định mức ≤ 20K/khách)',
+        },
         { name: 'Bồi Dưỡng Kế Cận', desc: 'Kèm cặp và đào tạo thế hệ FM & CHO mới tiếp quản' },
       ],
       perks: [
-        'Gói đãi ngộ Executive cấp Trưởng Ban',
-        `Thưởng lớn khi chỉ số hạnh phúc khách hàng NPS ≥ ${choToBoss.minCustomerNps}`,
-        `Thưởng gắn kết nội bộ khi điểm eNPS Thiên Thần ≥ ${choToBoss.minStaffEnps}`,
+        'Gói đãi ngộ Executive cấp Trưởng Ban (Lương cứng 11M)',
+        `Thưởng trực tiếp theo số lượng khách mới đến shop (Đạt ≥ ${choToBoss.minMonthlyNewCustomers || 60} khách mới/tháng hoặc 50K/khách)`,
+        `Thưởng gắn kết nội bộ khi điểm eNPS Thiên Thần ≥ ${choToBoss.minStaffEnps} & nâng đỡ thợ HI thấp`,
+        'Thưởng Tiết Kiệm: Đồng hưởng 20% chi phí vận hành tiết kiệm được cùng FM',
         'Được tài trợ 100% các khóa đào tạo Lãnh đạo Khai vấn chuyên sâu',
       ],
-      gateText: `Shop có lãi P&L dương liên tục ≥ ${choToBoss.minProfitableMonths} tháng + Biên LN ròng ≥ ${(choToBoss.minNetProfitMargin * 100).toFixed(0)}% + Đã đào tạo thành công 1 FM mới & 1 CHO kế cận ➔ Bổ nhiệm làm BOSS Co-Owner!`,
+      gateText: `Shop có lãi P&L dương liên tục ≥ ${choToBoss.minProfitableMonths} tháng + Khách mới đến shop ≥ ${choToBoss.minMonthlyNewCustomers || 60} khách/tháng + Biên LN ròng ≥ ${(choToBoss.minNetProfitMargin * 100).toFixed(0)}% + Đã đào tạo thành công 1 FM mới & 1 CHO kế cận ➔ Bổ nhiệm làm BOSS Co-Owner!`,
     },
     {
       id: 'boss' as const,
@@ -368,15 +378,15 @@ export default function CareerPathPage() {
       icon: '👑',
       sub: 'Cổ Tức P&L',
       title: 'Nữ Hoàng Đồng Sáng Lập · Partner & Co-Owner',
-      desc: 'Đỉnh cao sự nghiệp. Từ bàn tay cầm nhíp nối mi trở thành Bà Chủ đồng sở hữu tiệm.',
-      focus: 'Chiến lược kinh doanh, chia sẻ lợi nhuận & nhân bản chi nhánh',
+      desc: 'Đỉnh cao sự nghiệp. Từ bàn tay cầm nhíp trở thành Bà Chủ đồng sở hữu tiệm. Trách nhiệm tối cao: Tối ưu chi phí & Lợi nhuận P&L.',
+      focus: 'Tối ưu chi phí vận hành, quản trị P&L, chia sẻ lợi nhuận & nhân bản chi nhánh',
       skills: [
         { name: 'Tầm Nhìn Chiến Lược', desc: 'Đồng hành cùng Danny mở rộng chuỗi chi nhánh' },
-        { name: 'Quản Trị Lợi Nhuận', desc: 'Cân đối P&L, tối ưu chi phí, nâng cao biên lợi nhuận' },
+        { name: 'Quản Trị & Tối Ưu Chi Phí', desc: 'Cân đối P&L, siết chặt lãng phí, nâng cao biên lợi nhuận ròng' },
         { name: 'Nhân Bản Văn Hóa', desc: 'Truyền cảm hứng và bệ phóng cho hàng trăm bạn nữ trẻ yêu nghề' },
       ],
       perks: [
-        'Nhận Cổ tức Lợi nhuận P&L chi nhánh hàng quý',
+        'Nhận Cổ tức Lợi nhuận P&L chi nhánh hàng quý (15% - 20% Lợi nhuận ròng)',
         'Đặc quyền cấp vốn mở chi nhánh nhượng quyền Wings Lashes mới',
         'Tự do tài chính và vị thế Người dẫn dắt trong ngành làm đẹp',
       ],
@@ -621,7 +631,7 @@ export default function CareerPathPage() {
               <div className="flex justify-between items-center text-xs font-bold">
                 <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <span>🎯</span>
-                  <span>1. Vũ Điệu Nhíp Vàng (Ca làm)</span>
+                  <span>1. Vũ Điệu Nhíp Vàng (3 Tháng Liền)</span>
                 </span>
                 <span
                   className={`font-mono font-black tabular-nums ${
@@ -641,7 +651,7 @@ export default function CareerPathPage() {
                 }}
               />
               <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Cần tối thiểu: {cvToCc.minOrders} ca mi</span>
+                <span>Cần tối thiểu: {cvToCc.minOrders} ca mi trong 3 tháng liên tiếp</span>
                 <span className={q1Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
                   {q1Passed ? 'ĐẠT CHỈ TIÊU' : 'CHƯA ĐỦ CA'}
                 </span>
@@ -653,7 +663,7 @@ export default function CareerPathPage() {
               <div className="flex justify-between items-center text-xs font-bold">
                 <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <span>💖</span>
-                  <span>2. Cơn Mưa Tiền Tip (Hơn TB Shop)</span>
+                  <span>2. Cơn Mưa Tiền Tip (Cao Hơn TB Shop +{(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}%)</span>
                 </span>
                 <span
                   className={`font-mono font-black tabular-nums ${
@@ -664,7 +674,7 @@ export default function CareerPathPage() {
                 </span>
               </div>
               <Slider
-                min={-50}
+                min={-30}
                 max={50}
                 value={sliderTip}
                 onChange={(val) => {
@@ -673,7 +683,7 @@ export default function CareerPathPage() {
                 }}
               />
               <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Yêu cầu: % Tip &gt; 0% so với TB</span>
+                <span>Yêu cầu: % Tip cao hơn TB shop ≥ +{(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}%</span>
                 <span className={q2Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
                   {q2Passed ? 'KHÁCH CỰC MÊ' : 'CẦN NỤ CƯỜI HƠN'}
                 </span>
@@ -718,7 +728,7 @@ export default function CareerPathPage() {
               <div className="flex justify-between items-center text-xs font-bold">
                 <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <span>⭐</span>
-                  <span>4. Nụ Cười Thiên Sứ (HI)</span>
+                  <span>4. Nụ Cười Thiên Sứ (HI Check-in Thả Tim)</span>
                 </span>
                 <span
                   className={`font-mono font-black tabular-nums ${
@@ -738,7 +748,9 @@ export default function CareerPathPage() {
                 }}
               />
               <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Mục tiêu: Happiness Index &ge; {(cvToCc.minHappinessIndex * 100).toFixed(0)}%</span>
+                <span>
+                  Mục tiêu: Đạt &ge; {(cvToCc.minHappinessIndex * 100).toFixed(0)}% (TB shop 75%, 0 biên bản QA/QC)
+                </span>
                 <span className={q4Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
                   {q4Passed ? 'SIÊU THIỆN CẢM' : 'CHƯA ĐẠT HI'}
                 </span>
@@ -750,7 +762,7 @@ export default function CareerPathPage() {
               <div className="flex justify-between items-center text-xs font-black">
                 <span className="text-pink-700 dark:text-pink-300 flex items-center gap-1.5">
                   <span className="text-base">🔥</span>
-                  <span>TRÙM CUỐI: TỰ BÁN COMBO</span>
+                  <span>TRÙM CUỐI: TỰ BÁN COMBO (Khách của mình)</span>
                 </span>
                 <span
                   className={`font-mono text-sm font-black tabular-nums ${
@@ -772,12 +784,18 @@ export default function CareerPathPage() {
               />
               <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300 font-bold">
                 <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 border border-pink-300 dark:border-pink-700">
-                  MỐC SỐNG CÒN: &ge; {(cvToCc.minSelfComboRate * 100).toFixed(1)}% COMBO NOT LIVE
+                  MỐC SỐNG CÒN: &ge; {(cvToCc.minSelfComboRate * 100).toFixed(0)}% TỰ BÁN COMBO KHÁCH NỐI MI
                 </span>
                 <span className={bossPassed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
                   {bossPassed ? 'ĐÃ VƯỢT ẢI TRÙM' : 'DƯỚI CHỈ TIÊU'}
                 </span>
               </div>
+            </div>
+
+            {/* QA/QC Invariant Note */}
+            <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 flex items-center justify-between text-[10px] text-rose-800 dark:text-rose-300 font-medium">
+              <span>⚠️ Kỷ luật vàng: 0 biên bản QA/QC (Bị 1 biên bản vi phạm là FAILED ngay)</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">0 BIÊN BẢN ✔</span>
             </div>
           </div>
 
@@ -789,9 +807,10 @@ export default function CareerPathPage() {
                 <span>HOÀN THÀNH 5/5 THỬ THÁCH! VICTORY</span>
               </div>
               <p className="text-[11px] leading-relaxed">
-                Tuyệt vời! Thiên Thần đã hạ gục toàn bộ 4 chỉ số tay nghề thợ mi và vượt qua Ải Trùm Cuối với tỷ lệ tự
-                bán Combo {sliderCombo.toFixed(1)}% (&ge; {(cvToCc.minSelfComboRate * 100).toFixed(0)}%). Hãy nhấn nút
-                bên dưới để mở khóa chức danh <strong>Phù Thủy Sảnh (CC)</strong>!
+                Tuyệt vời! Thiên Thần đã hạ gục toàn bộ 4 chỉ số tay nghề thợ mi (300 ca trong 3 tháng liền, tip cao hơn
+                TB shop 10%, HI &ge; 70%, 0 biên bản QA/QC) và vượt qua Ải Trùm Cuối với tỷ lệ tự bán Combo{' '}
+                {sliderCombo.toFixed(1)}% (&ge; {(cvToCc.minSelfComboRate * 100).toFixed(0)}%). Hãy nhấn nút bên dưới để
+                mở khóa chức danh <strong>Phù Thủy Sảnh (CC)</strong>!
               </p>
             </div>
           )}
@@ -824,7 +843,7 @@ export default function CareerPathPage() {
                   : `TIẾN ĐỘ: ${passedCount}/5 ẢI ĐẠT`}
             </div>
             <div className="text-pink-600 dark:text-pink-400 font-mono text-[10px] truncate">
-              {allPassed ? 'Mở khóa Level × 65đ + 20% Tip' : 'Cần rèn luyện thêm'}
+              {allPassed ? 'Mở khóa Level × 65đ + 20% Tip (CV nhận 70%)' : 'Cần rèn luyện thêm'}
             </div>
           </div>
 

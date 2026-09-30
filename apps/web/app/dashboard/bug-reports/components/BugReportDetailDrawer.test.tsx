@@ -39,6 +39,7 @@ function propsFor(detail = makeDetail(), canTriage = true) {
     approveImplementationDeploy: vi
       .fn<Props['approveImplementationDeploy']>()
       .mockResolvedValue({ reportId: detail.id, deploymentQueued: true }),
+    retryClarification: vi.fn<Props['retryClarification']>().mockResolvedValue(detail),
     retryImplementation: vi.fn<Props['retryImplementation']>().mockResolvedValue(receipt),
     authorizeWorkerRecoveryRetry: vi.fn<Props['authorizeWorkerRecoveryRetry']>().mockResolvedValue(receipt),
     authorizeSchemaRecoveryRetry: vi.fn<Props['authorizeSchemaRecoveryRetry']>().mockResolvedValue(receipt),

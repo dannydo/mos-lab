@@ -18,7 +18,7 @@ export interface TelesaleStaffTarget {
   gapDone?: number;
   remainingDone?: number;
   dailyRequiredDone?: number;
-  progressStatus?: 'AHEAD' | 'ON_TRACK' | 'BEHIND';
+  progressStatus?: 'NOT_STARTED' | 'AHEAD' | 'ON_TRACK' | 'BEHIND' | 'CRITICAL';
   progressStatusLabel?: string;
 }
 

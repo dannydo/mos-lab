@@ -59,6 +59,7 @@ export type BugReportDetailOptions = Pick<
   | 'requestImplementationChanges'
   | 'requestPlanChanges'
   | 'approveImplementationDeploy'
+  | 'retryClarification'
   | 'retryImplementation'
   | 'authorizeWorkerRecoveryRetry'
   | 'authorizeSchemaRecoveryRetry'
@@ -78,6 +79,7 @@ export function useBugReportDetail({
   requestImplementationChanges,
   requestPlanChanges,
   approveImplementationDeploy,
+  retryClarification: retryClarificationAction,
   retryImplementation,
   authorizeWorkerRecoveryRetry: authorizeWorkerRecoveryRetryAction,
   authorizeSchemaRecoveryRetry: authorizeSchemaRecoveryRetryAction,
@@ -511,6 +513,24 @@ export function useBugReportDetail({
     }
   }, [authorizeBuildLockRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
 
+  const retryClarification = useCallback(async () => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const refreshed = await retryClarificationAction(detail.id);
+      hydrateForm(refreshed);
+      messageApi.success('Đã kích hoạt AG làm rõ lại ticket.');
+    } catch (error) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Kích hoạt làm rõ thất bại.'));
+    } finally {
+      setSaving(false);
+    }
+  }, [detail, hydrateForm, messageApi, retryClarificationAction]);
+
   const approveCommit = useCallback(async () => {
     if (!detail || commitPending.current || commitApprovalReceived) return;
     commitPending.current = true;
@@ -614,6 +634,7 @@ export function useBugReportDetail({
     load,
     save,
     confirmResolvedAndClose,
+    retryClarification,
     approveCodeExecution,
     retryCodeExecution,
     authorizeWorkerRecoveryRetry,

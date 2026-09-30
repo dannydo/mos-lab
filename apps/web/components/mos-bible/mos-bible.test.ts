@@ -66,5 +66,10 @@ describe('Kinh Thánh mOS contextual registry', () => {
 
     const catalogIds = getMosBibleCommandmentsForPath('/dashboard/catalog').map((item) => item.id);
     expect(catalogIds).toContain('CAT-003');
+
+    const workshopIds = getMosBibleCommandmentsForPath('/dashboard/academy-leads/workshops/workshop-doi-van').map(
+      (item) => item.id
+    );
+    expect(workshopIds).toContain('WS-001');
   });
 });

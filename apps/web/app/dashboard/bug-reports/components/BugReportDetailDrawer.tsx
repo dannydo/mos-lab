@@ -23,7 +23,7 @@ import {
   type InboxImplementationExecutionOwner,
   isDeferredBugReport,
 } from '@mos-lab/shared';
-import { CheckCircle2, Clock, Gavel, RefreshCw, Send } from 'lucide-react';
+import { CheckCircle2, Clock, Gavel, HelpCircle, RefreshCw, Send } from 'lucide-react';
 import {
   AdaptiveDrawer,
   AdaptiveModal,
@@ -102,6 +102,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
     load,
     save,
     confirmResolvedAndClose,
+    retryClarification,
     approveCodeExecution,
     retryCodeExecution,
     authorizeWorkerRecoveryRetry,
@@ -227,6 +228,21 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                 >
                   Yêu cầu sửa lại plan
                 </Button>
+              )}
+              {canTriage && !approvalReceived && !['CLOSED', 'REJECTED'].includes(detail.status) && (
+                <Popconfirm
+                  classNames={{ root: styles.confirmationPopup }}
+                  title="Yêu cầu AG làm rõ lại ticket?"
+                  description="Ticket sẽ chuyển về PENDING_AGENT để Antigravity (AG) rà soát sâu mã nguồn và đặt câu hỏi cho người báo."
+                  okText="Làm rõ lại (AG)"
+                  cancelText="Hủy"
+                  okButtonProps={{ loading: saving }}
+                  onConfirm={() => void retryClarification()}
+                >
+                  <Button disabled={saving} icon={<AppIcon icon={HelpCircle} size="sm" />}>
+                    Yêu cầu AG làm rõ
+                  </Button>
+                </Popconfirm>
               )}
               {canTriage &&
                 detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&

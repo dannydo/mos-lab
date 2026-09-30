@@ -1,4 +1,8 @@
-import type { CareerProgressionConfig, StaffCareerStatus } from '@mos-lab/shared';
+import {
+  DEFAULT_CAREER_PROGRESSION_CONFIG,
+  type CareerProgressionConfig,
+  type StaffCareerStatus,
+} from '@mos-lab/shared';
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
 export const careerApi = {
@@ -17,52 +21,7 @@ export const careerApi = {
       } catch (_err) {
         // Safe fallback
       }
-      return {
-        version: '2026.1',
-        updatedAt: new Date().toISOString(),
-        updatedBy: 'Fallback Init',
-        cvToCc: {
-          minOrders: 300,
-          minTipRatioAboveShop: 0.0,
-          maxFixRate: 0.02,
-          minHappinessIndex: 0.7,
-          trialDurationDays: 30,
-          minSelfComboRate: 0.2,
-          allowSelfConsultTrial: true,
-        },
-        ccToFm: {
-          minMonthsInRole: 6,
-          minAvgLevel: 10,
-          minShopComboRate: 0.25,
-          minOpsExamScore: 90,
-          minInventoryAuditScore: 95,
-        },
-        fmToCho: {
-          minTargetHitMonths: 3,
-          maxInventoryLossRate: 0.005,
-          minFacilityScore: 95,
-          minStaffEnpsScore: 80,
-          maxChoPerShop: 1,
-        },
-        choToBoss: {
-          minProfitableMonths: 12,
-          minNetProfitMargin: 0.15,
-          minCustomerNps: 85,
-          minStaffEnps: 80,
-          requiredSuccessors: {
-            fmCount: 1,
-            choCount: 1,
-          },
-        },
-        rewardRates: {
-          bananaPerFALShort: 15,
-          bananaPerFALCcShort: 5,
-          ccBonusRatePerLevel: 65,
-          tipShareCvRatio: 0.8,
-          tipShareCcRatio: 0.2,
-          fmMonthlyBananaGrant: 500,
-        },
-      };
+      return DEFAULT_CAREER_PROGRESSION_CONFIG;
     },
     updateConfig: async (payload: Partial<CareerProgressionConfig>): Promise<CareerProgressionConfig> => {
       const res = await api.put<{ success: boolean; data: CareerProgressionConfig }>('/career/config', payload);

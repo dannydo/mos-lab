@@ -26,11 +26,13 @@ export function CareerConfigDrawer({
 }: CareerConfigDrawerProps) {
   const cvToCc = config?.cvToCc || {
     minOrders: 300,
-    minTipRatioAboveShop: 0.0,
+    minConsecutiveMonths: 3,
+    minTipRatioAboveShop: 0.1,
     maxFixRate: 0.02,
     minHappinessIndex: 0.7,
+    maxDisciplinaryViolations: 0,
     trialDurationDays: 30,
-    minSelfComboRate: 0.2,
+    minSelfComboRate: 0.25,
     allowSelfConsultTrial: true,
   };
 
@@ -52,12 +54,13 @@ export function CareerConfigDrawer({
         <div className="space-y-3">
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-              <span>Số ca làm tối thiểu:</span>
+              <span>Số ca làm tối thiểu (trong 3 tháng liền):</span>
               <span className="font-mono text-pink-600">{cvToCc.minOrders} ca</span>
             </div>
             <Slider
               min={100}
               max={600}
+              step={10}
               value={cvToCc.minOrders}
               onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minOrders: val } })}
             />
@@ -70,9 +73,38 @@ export function CareerConfigDrawer({
             </div>
             <Slider
               min={5}
-              max={40}
+              max={50}
+              step={1}
               value={cvToCc.minSelfComboRate * 100}
               onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minSelfComboRate: val / 100 } })}
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+              <span>% Tip cao hơn trung bình shop:</span>
+              <span className="font-mono text-pink-600">+{(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}%</span>
+            </div>
+            <Slider
+              min={0}
+              max={30}
+              step={1}
+              value={cvToCc.minTipRatioAboveShop * 100}
+              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minTipRatioAboveShop: val / 100 } })}
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+              <span>Chỉ số HI tối thiểu (Check-in thả tim):</span>
+              <span className="font-mono text-pink-600">{(cvToCc.minHappinessIndex * 100).toFixed(0)}%</span>
+            </div>
+            <Slider
+              min={50}
+              max={95}
+              step={1}
+              value={cvToCc.minHappinessIndex * 100}
+              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minHappinessIndex: val / 100 } })}
             />
           </div>
 

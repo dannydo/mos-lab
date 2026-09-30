@@ -716,6 +716,22 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
     }
   );
 
+  fastify.post('/bug-reports/:id/retry-clarification', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
+      if (!canManageBugInbox(request.user)) {
+        throw new BugReportError('Bạn không có quyền yêu cầu làm rõ lại.', 403);
+      }
+      const data = await BugReportService.retryClarification(fastify, id, request.user.id);
+      if (await InboxFollowUpService.enqueue(fastify, id, 'CREATED', `retry:${Date.now()}`)) {
+        RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+      }
+      return reply.send({ success: true, data, message: 'Đã kích hoạt AG làm rõ lại ticket.' });
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Retry clarification failed');
+    }
+  });
+
   fastify.get('/bug-reports', { preHandler: [requireAuth, requireBugInboxRead] }, async (request, reply) => {
     try {
       return reply.send(await BugReportService.list(fastify, request.query as BugReportListQuery));

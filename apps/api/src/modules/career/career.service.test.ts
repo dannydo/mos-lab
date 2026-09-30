@@ -17,8 +17,8 @@ test('CareerProgressionService: fallback to DEFAULT_CAREER_PROGRESSION_CONFIG wh
 
   const config = await CareerProgressionService.getConfig(mockFastify);
   assert.equal(config.version, DEFAULT_CAREER_PROGRESSION_CONFIG.version);
-  assert.equal(config.cvToCc.minOrders, 300);
-  assert.equal(config.cvToCc.minSelfComboRate, 0.2);
+  assert.equal(config.cvToCc.minOrders, DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCc.minOrders);
+  assert.equal(config.cvToCc.minSelfComboRate, DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCc.minSelfComboRate);
   assert.equal(config.rewardRates.bananaPerFALShort, 15);
 });
 

@@ -363,6 +363,7 @@ export default function BugReportsPage() {
         approveImplementation={inbox.approveImplementation}
         approveImplementationCommit={inbox.approveImplementationCommit}
         approveImplementationDeploy={inbox.approveImplementationDeploy}
+        retryClarification={inbox.retryClarification}
         retryImplementation={inbox.retryImplementation}
         authorizeWorkerRecoveryRetry={inbox.authorizeWorkerRecoveryRetry}
         authorizeSchemaRecoveryRetry={inbox.authorizeSchemaRecoveryRetry}

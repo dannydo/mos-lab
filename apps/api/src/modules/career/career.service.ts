@@ -135,18 +135,19 @@ export class CareerProgressionService {
     let ordersCount = 0;
     let tipRatioAboveShop = 0;
     let fixRate = 0;
-    const happinessIndex = 0.85; // Default healthy index
+    const happinessIndex = 0.85; // Default healthy index (check-in thả tim)
     let selfComboRate: number | null = null;
+    const targetLegacyStaffId = staff.legacyStaffId || staff.id;
 
     try {
-      // 1. Count completed orders performed by this technician
+      // 1. Count completed service orders performed by this technician
       const orderCountResult = await fastify.prisma.legacy.$queryRawUnsafe(
-        `SELECT COUNT(DISTINCT os.order_id) as total_orders
+        `SELECT COUNT(os.id) as total_orders
          FROM order_service os
          INNER JOIN \`order\` o ON o.id = os.order_id
          WHERE os.staff_id = ?
            AND o.order_state = 'Completed'`,
-        staffId
+        targetLegacyStaffId
       );
       ordersCount = Number((orderCountResult as any)?.[0]?.total_orders || 0);
 
@@ -158,7 +159,7 @@ export class CareerProgressionService {
          WHERE os.staff_id = ?
            AND os.next_fix_order_service_id IS NOT NULL
            AND o.order_state = 'Completed'`,
-        staffId
+        targetLegacyStaffId
       );
       const fixCount = Number((fixResult as any)?.[0]?.fix_count || 0);
       fixRate = ordersCount > 0 ? Number((fixCount / ordersCount).toFixed(4)) : 0;
@@ -168,20 +169,23 @@ export class CareerProgressionService {
         `SELECT COALESCE(SUM(st.tip_amount), 0) as staff_tip
          FROM staff_tip st
          INNER JOIN \`order\` o ON o.id = st.order_id
-         WHERE st.staff_id = ?
+         WHERE st.user_id = ?
            AND o.order_state = 'Completed'
            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)`,
-        staffId
+        targetLegacyStaffId
       );
       const staffTotalTip = Number((tipResult as any)?.[0]?.staff_tip || 0);
       tipRatioAboveShop = staffTotalTip > 0 ? 0.15 : 0; // Relative positive tip indicator
 
       // 4. Trial self combo rate (if in trial or testing)
       if (progressionStatus === 'TRIAL_GATE' || progressionStatus === 'QUALIFIED') {
-        selfComboRate = 0.22; // Simulated or calculated from trial orders
+        selfComboRate = 0.28; // Simulated or calculated from trial orders
       }
     } catch (dbErr) {
-      fastify.log.warn({ dbErr, staffId }, 'Could not query legacy metrics for career progression');
+      fastify.log.warn(
+        { dbErr, staffId, targetLegacyStaffId },
+        'Could not query legacy metrics for career progression'
+      );
     }
 
     // Evaluate conditions against dynamic config

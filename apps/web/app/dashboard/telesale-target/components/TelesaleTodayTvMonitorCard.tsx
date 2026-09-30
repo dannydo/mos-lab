@@ -90,9 +90,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               <span className="text-amber-300 text-xs font-black uppercase tracking-wider block">
                 TV MONITOR HÔM NAY
               </span>
-              <span className="text-[10px] text-zinc-400 font-mono block">
-                {pacing.shiftStatusLabel}
-              </span>
+              <span className="text-[10px] text-zinc-400 font-mono block">{pacing.shiftStatusLabel}</span>
             </div>
           </div>
 
@@ -118,110 +116,36 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
           </div>
         </div>
 
-        {/* 2. Main KPI Two-Column High-Contrast Grid */}
+        {/* 2. Main KPI Two-Column High-Contrast Grid (MOS-BUG-75: Ưu tiên Book -> Done) */}
         <div className="grid grid-cols-2 gap-3.5 my-2.5">
-          {/* DONE HÔM NAY */}
-          <div className="bg-black/50 rounded-2xl p-3.5 border border-amber-500/25 flex flex-col justify-between transition-all hover:border-amber-400/50">
+          {/* 1. BOOK HÔM NAY (Hành động chính, nổi bật nhất trên TV Monitor) */}
+          <div className="bg-blue-950/20 rounded-2xl p-3.5 border border-blue-500/35 flex flex-col justify-between transition-all hover:border-blue-400/60 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
             <div>
               <div className="flex items-center justify-between text-zinc-400 text-xs">
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <strong className="text-zinc-100 font-bold">DONE HÔM NAY</strong>
+                  <Calendar className="w-4 h-4 text-blue-400 shrink-0" />
+                  <strong className="text-blue-200 font-bold">BOOK HÔM NAY</strong>
                 </span>
-                <span className="text-[10px] text-zinc-400 font-mono">Khách lẻ</span>
+                <span className="text-[10px] text-blue-400 font-mono font-bold bg-blue-950/80 px-1.5 py-0.5 rounded border border-blue-500/30">
+                  HÀNH ĐỘNG CHÍNH
+                </span>
               </div>
 
-              {/* Big High-Contrast Numbers */}
+              {/* Big Dominant Numbers */}
               <div className="mt-1.5 flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-black font-mono text-zinc-100 tabular-nums">
-                  {metrics.doneActual}
-                </span>
-                <span className="text-zinc-400 text-sm font-mono font-semibold">/ {metrics.doneTarget}</span>
-              </div>
-
-              {/* Thick Progress Bar */}
-              <Progress
-                percent={Math.min(100, metrics.donePercent)}
-                strokeColor={isDoneOver100 ? token.colorWarning : metrics.gapDone >= 0 ? token.colorSuccess : token.colorWarning}
-                size="small"
-                showInfo={false}
-                className="mt-2"
-              />
-
-              {/* Progress % + Milestone pulse */}
-              <div className="flex justify-between items-center text-[11px] mt-1.5 font-mono">
-                <span className="text-zinc-400">Tiến độ</span>
-                <span
-                  className={`font-black ${
-                    isDoneOver100
-                      ? 'text-amber-400 animate-pulse'
-                      : metrics.donePercent >= 75
-                        ? 'text-emerald-300'
-                        : 'text-zinc-200'
-                  }`}
-                >
-                  {isDoneOver100 ? `✨ ${metrics.donePercent}% VƯỢT` : `${metrics.donePercent}%`}
-                </span>
-              </div>
-
-              {/* Pacing Breakdown: Kỳ vọng | Gap | Còn thiếu */}
-              <div className="mt-2.5 pt-2 border-t border-zinc-800/80 space-y-1 text-[11px] font-mono">
-                <div className="flex justify-between items-center text-zinc-400">
-                  <span>Kỳ vọng giờ này:</span>
-                  <span className="text-zinc-200 font-semibold tabular-nums">{metrics.expectedDone} Done</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-400">Nhịp (Gap):</span>
-                  <span
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black border tabular-nums ${getGapBadgeClass(
-                      metrics.gapDone
-                    )}`}
-                  >
-                    {metrics.gapDone >= 0 ? `+${metrics.gapDone}` : metrics.gapDone}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-zinc-400">
-                  <span>Còn thiếu:</span>
-                  <span className="text-amber-300 font-bold tabular-nums">{metrics.remainingDone} Done</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Sub Combo Live */}
-            {metrics.comboLiveDoneActual > 0 && (
-              <div className="mt-2 pt-1.5 border-t border-zinc-800/60 text-[10px] font-mono flex items-center justify-between text-purple-300">
-                <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                  Combo Live:
-                </span>
-                <span className="font-bold tabular-nums">+{metrics.comboLiveDoneActual}</span>
-              </div>
-            )}
-          </div>
-
-            {/* BOOK HÔM NAY */}
-          <div className="bg-black/50 rounded-2xl p-3.5 border border-amber-500/25 flex flex-col justify-between transition-all hover:border-amber-400/50">
-            <div>
-              <div className="flex items-center justify-between text-zinc-400 text-xs">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                  <strong className="text-zinc-100 font-bold">BOOK HÔM NAY</strong>
-                </span>
-                <span className="text-[10px] text-zinc-400 font-mono">Tạo lịch</span>
-              </div>
-
-              {/* Big High-Contrast Numbers */}
-              <div className="mt-1.5 flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-black font-mono text-zinc-100 tabular-nums">
+                <span className="text-3xl sm:text-4xl font-black font-mono text-blue-300 tabular-nums">
                   {metrics.bookActual}
                 </span>
                 <span className="text-zinc-400 text-sm font-mono font-semibold">/ {metrics.bookTarget}</span>
               </div>
 
-              {/* Thick Progress Bar */}
+              {/* Dominant Thick Progress Bar */}
               <Progress
                 percent={Math.min(100, metrics.bookPercent)}
-                strokeColor={isBookOver100 ? token.colorWarning : metrics.gapBook >= 0 ? token.colorInfo : token.colorWarning}
+                strokeColor={
+                  isBookOver100 ? token.colorWarning : metrics.gapBook >= 0 ? token.colorInfo : token.colorWarning
+                }
+                strokeWidth={8}
                 size="small"
                 showInfo={false}
                 className="mt-2"
@@ -243,8 +167,8 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                 </span>
               </div>
 
-              {/* Pacing Breakdown: Kỳ vọng | Gap | Còn thiếu */}
-              <div className="mt-2.5 pt-2 border-t border-zinc-800/80 space-y-1 text-[11px] font-mono">
+              {/* Pacing Breakdown: Kỳ vọng giờ này | Nhịp Gap | Còn thiếu */}
+              <div className="mt-2.5 pt-2 border-t border-blue-900/40 space-y-1 text-[11px] font-mono">
                 <div className="flex justify-between items-center text-zinc-400">
                   <span>Kỳ vọng giờ này:</span>
                   <span className="text-zinc-200 font-semibold tabular-nums">{metrics.expectedBook} Book</span>
@@ -266,10 +190,83 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               </div>
             </div>
 
-            <div className="mt-2 pt-1.5 border-t border-zinc-800/60 text-[10px] font-mono flex items-center justify-between text-zinc-400">
-              <span>Chỉ tiêu ngày:</span>
-              <span className="text-amber-300 font-semibold">≥ {metrics.bookTarget} Book</span>
+            <div className="mt-2 pt-1.5 border-t border-blue-900/40 text-[10px] font-mono flex items-center justify-between text-zinc-400">
+              <span>Mục tiêu ngày:</span>
+              <span className="text-blue-300 font-semibold">≥ {metrics.bookTarget} Book</span>
             </div>
+          </div>
+
+          {/* 2. DONE HÔM NAY (Kết quả theo sau, nhỏ hơn 1 cấp) */}
+          <div className="bg-black/50 rounded-2xl p-3.5 border border-zinc-800 flex flex-col justify-between transition-all hover:border-zinc-700">
+            <div>
+              <div className="flex items-center justify-between text-zinc-400 text-xs">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <strong className="text-zinc-200 font-medium">DONE HÔM NAY</strong>
+                </span>
+                <span className="text-[10px] text-zinc-400 font-mono">Khách lẻ</span>
+              </div>
+
+              {/* Numbers (nhỏ hơn 1 cấp so với Book) */}
+              <div className="mt-1.5 flex items-baseline gap-1.5">
+                <span className="text-2xl sm:text-3xl font-bold font-mono text-zinc-100 tabular-nums">
+                  {metrics.doneActual}
+                </span>
+                <span className="text-zinc-400 text-sm font-mono font-semibold">/ {metrics.doneTarget}</span>
+              </div>
+
+              {/* Progress Bar */}
+              <Progress
+                percent={Math.min(100, metrics.donePercent)}
+                strokeColor={
+                  isDoneOver100 ? token.colorWarning : metrics.gapDone >= 0 ? token.colorSuccess : token.colorWarning
+                }
+                strokeWidth={5}
+                size="small"
+                showInfo={false}
+                className="mt-2"
+              />
+
+              {/* Progress % */}
+              <div className="flex justify-between items-center text-[11px] mt-1.5 font-mono">
+                <span className="text-zinc-400">Tiến độ</span>
+                <span
+                  className={`font-black ${
+                    isDoneOver100 ? 'text-amber-400' : metrics.donePercent >= 75 ? 'text-emerald-300' : 'text-zinc-200'
+                  }`}
+                >
+                  {isDoneOver100 ? `✨ ${metrics.donePercent}% VƯỢT` : `${metrics.donePercent}%`}
+                </span>
+              </div>
+
+              {/* Pacing Breakdown */}
+              <div className="mt-2.5 pt-2 border-t border-zinc-800/80 space-y-1 text-[11px] font-mono">
+                <div className="flex justify-between items-center text-zinc-400">
+                  <span>Kỳ vọng giờ này:</span>
+                  <span className="text-zinc-200 font-semibold tabular-nums">{metrics.expectedDone} Done</span>
+                </div>
+                <div className="flex justify-between items-center text-zinc-400">
+                  <span>Còn thiếu:</span>
+                  <span className="text-amber-300 font-bold tabular-nums">{metrics.remainingDone} Done</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub Combo Live */}
+            {metrics.comboLiveDoneActual > 0 ? (
+              <div className="mt-2 pt-1.5 border-t border-zinc-800/60 text-[10px] font-mono flex items-center justify-between text-purple-300">
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                  Combo Live:
+                </span>
+                <span className="font-bold tabular-nums">+{metrics.comboLiveDoneActual}</span>
+              </div>
+            ) : (
+              <div className="mt-2 pt-1.5 border-t border-zinc-800/60 text-[10px] font-mono flex items-center justify-between text-zinc-400">
+                <span>Mục tiêu ngày:</span>
+                <span className="text-zinc-300">{metrics.doneTarget} Done</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

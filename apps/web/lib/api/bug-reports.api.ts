@@ -258,6 +258,11 @@ export const bugReportsApi = {
       invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
       return response.data;
     },
+    retryClarification: async (id: number): Promise<{ success: boolean; data: BugReportDetail; message: string }> => {
+      const response = await api.post(`/bug-reports/${id}/retry-clarification`);
+      invalidateApiGetCache(['/bug-reports/mine', '/bug-reports']);
+      return response.data;
+    },
     releaseImplementation: async (
       id: number,
       data: ReleaseBugReportImplementationRequest

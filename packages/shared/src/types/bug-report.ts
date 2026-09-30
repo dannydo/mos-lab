@@ -840,6 +840,7 @@ export interface BugReportComment {
   kind: BugReportCommentKind;
   body: string;
   authorType: 'STAFF' | 'AGENT';
+  agentModel?: 'AG' | 'G2.5' | 'G2.0' | null;
   author: BugReportReporter | null;
   attachments: BugReportAttachment[];
   createdAt: string;
@@ -1389,4 +1390,34 @@ export function isDeferredBugReport(report?: { status?: string | null; triageNot
   if (!report || report.status !== 'REJECTED') return false;
   const note = String(report.triageNote || '').toLowerCase();
   return note.includes('[tạm hoãn]') || note.includes('tạm hoãn') || note.includes("won't do");
+}
+
+/**
+ * Resolves human-facing AI Agent display name to distinguish between Antigravity (AG)
+ * and Gemini API models (G2.0, G2.5) as requested by Danny.
+ */
+export function getBugReportAgentDisplayName(
+  comment?: { authorType?: string | null; body?: string | null; agentModel?: string | null } | null,
+  options?: { reporterMode?: boolean }
+): string {
+  if (options?.reporterMode) return 'mOS';
+  if (!comment || comment.authorType !== 'AGENT') return 'Nhân viên';
+
+  if (comment.agentModel === 'AG' || comment.agentModel === 'ANTIGRAVITY') return 'AI Agent (AG)';
+  if (comment.agentModel === 'G2.5' || comment.agentModel === 'GEMINI_2_5') return 'AI Agent (G2.5)';
+  if (comment.agentModel === 'G2.0' || comment.agentModel === 'GEMINI_2_0') return 'AI Agent (G2.0)';
+
+  const body = comment.body || '';
+  if (/agent-model:\s*G2\.0|AI Agent \(G2\.0\)|gemini-2\.0/i.test(body)) {
+    return 'AI Agent (G2.0)';
+  }
+  if (/agent-model:\s*G2\.5|AI Agent \(G2\.5\)|gemini-2\.5/i.test(body)) {
+    return 'AI Agent (G2.5)';
+  }
+  if (/agent-model:\s*AG|AI Agent \(AG\)|Antigravity|ide-task-bridge/i.test(body)) {
+    return 'AI Agent (AG)';
+  }
+
+  // Default for AG when no model specified
+  return 'AI Agent (AG)';
 }

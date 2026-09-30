@@ -11,7 +11,12 @@ import type {
   CreateBugReportAttachmentRequest,
   CreateBugReportCommentRequest,
 } from '@mos-lab/shared';
-import { BUG_REPORT_MAX_ATTACHMENTS, BUG_REPORT_MAX_ATTACHMENT_BYTES, formatVietnamDateTime } from '@mos-lab/shared';
+import {
+  BUG_REPORT_MAX_ATTACHMENTS,
+  BUG_REPORT_MAX_ATTACHMENT_BYTES,
+  formatVietnamDateTime,
+  getBugReportAgentDisplayName,
+} from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { Bot, ImagePlus, Send, X } from 'lucide-react';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
@@ -229,9 +234,7 @@ export function BugReportConversation({
           {comments.map((comment) => {
             const isAgent = comment.authorType === 'AGENT';
             const authorName = isAgent
-              ? reporterMode
-                ? 'mOS'
-                : 'AI Agent'
+              ? getBugReportAgentDisplayName(comment, { reporterMode })
               : comment.author?.displayName || 'Nhân viên';
             return (
               <article

@@ -104,9 +104,9 @@ describe('calculateTvMonitorMetrics', () => {
     expect(metrics.gapDone).toBe(0);
     expect(metrics.remainingDone).toBe(7);
 
-    // Gap >= -1 for both -> ON_PACE
+    // Gap >= -1 for book -> ON_PACE (MOS-BUG-75: Ưu tiên theo tiến độ Book)
     expect(metrics.teamState).toBe('ON_PACE');
-    expect(metrics.actionableMessage).toBe('Còn 9 Book + 7 Done để hoàn thành mục tiêu hôm nay');
+    expect(metrics.actionableMessage).toBe('Còn 9 Book để chạm mục tiêu hôm nay');
   });
 
   it('determines WARMUP during start of shift (rTime < 0.15)', () => {

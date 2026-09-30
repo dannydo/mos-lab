@@ -1252,7 +1252,7 @@ export class AcademyWorkshopService {
             for (const img of design.images) {
               await tx.crmAcademyWorkshopDesignItemImage.create({
                 data: {
-                  designId: createdDesign.id,
+                  designItemId: createdDesign.id,
                   imageUrl: img.imageUrl,
                   altText: img.altText,
                 },

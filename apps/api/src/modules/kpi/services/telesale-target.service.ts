@@ -23,7 +23,7 @@ export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
   dailyCallPerStaff: 90,
   staffTargets: [
     { legacyStaffId: 50670, name: 'Phượng', doneTarget: 150 },
-    { legacyStaffId: 52086, name: 'Kiều', doneTarget: 100 },
+    { legacyStaffId: 52648, name: 'Kiều', doneTarget: 100 },
     { legacyStaffId: 32268, name: 'Điệp', doneTarget: 100 },
     { legacyStaffId: 52598, name: 'Vũ', doneTarget: 100 },
   ],
@@ -344,16 +344,17 @@ export class TelesaleTargetService {
 
     // Active staff IDs from config
     const targetStaffIds = config.staffTargets.map((s) => s.legacyStaffId);
-    const bkIdsStr = targetStaffIds.length > 0 ? targetStaffIds.join(',') : '52454,52086,32268,52598';
+    const bkIdsStr = targetStaffIds.length > 0 ? targetStaffIds.join(',') : '50670,52648,32268,52598';
 
     // 1. Query Month Team Metrics & Staff Metrics
-    // Booking count: Rule 10 strictly requires order.date_created in period
+    // MOS-BUG-74: Book tháng tính theo ngày hẹn của khách thuộc tháng đang xem (booking_date_start)
     const monthOrdersSql = `
       SELECT 
         o.id,
         o.created_staff_id as bookerId,
         o.order_state as orderState,
         o.date_created as dateCreated,
+        o.booking_date_start as bookingDateStart,
         o.user_id as customerId,
         COALESCE(o.total_price, 0) as totalPrice,
         COALESCE(
@@ -370,23 +371,28 @@ export class TelesaleTargetService {
         ) as daysSinceLastVisit,
         CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
       FROM \`order\` o
-      WHERE o.date_created >= '${startDateTimeStr}' 
-        AND o.date_created <= '${endDateTimeStr}'
+      WHERE o.booking_date_start >= '${startDateTimeStr}' 
+        AND o.booking_date_start <= '${endDateTimeStr}'
         AND o.created_staff_id IN (${bkIdsStr})
     `;
 
     // Today Orders
+    // MOS-BUG-75: Book hôm nay tính theo ngày tạo đơn (date_created) bởi Telesales Executive;
+    // Done hôm nay tính theo ngày hẹn hoàn thành dịch vụ trong ngày (booking_date_start)
     const todayOrdersSql = `
       SELECT 
         o.id,
         o.created_staff_id as bookerId,
         o.order_state as orderState,
         o.date_created as dateCreated,
+        o.booking_date_start as bookingDateStart,
         CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
       FROM \`order\` o
-      WHERE o.date_created >= '${todayStartStr}' 
-        AND o.date_created <= '${todayEndStr}'
-        AND o.created_staff_id IN (${bkIdsStr})
+      WHERE (
+        (o.date_created >= '${todayStartStr}' AND o.date_created <= '${todayEndStr}')
+        OR (o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}' AND o.order_state = 'Completed')
+      )
+      AND o.created_staff_id IN (${bkIdsStr})
     `;
 
     const [monthOrders, todayOrders] = await Promise.all([
@@ -405,14 +411,16 @@ export class TelesaleTargetService {
       (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
     ).length;
 
-    // Aggregate Team Daily
-    const teamDailyBookActual = todayOrders.length;
-    const teamDailyDoneActual = todayOrders.filter(
-      (o) => o.orderState === 'Completed' && Number(o.isComboLive) !== 1
-    ).length;
-    const teamDailyComboLiveDoneActual = todayOrders.filter(
-      (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
-    ).length;
+    // Aggregate Team Daily (MOS-BUG-75: Book hôm nay = đơn tạo trong ngày bởi Telesales Executive)
+    const teamDailyBookOrders = todayOrders.filter(
+      (o) => o.dateCreated >= todayStartStr && o.dateCreated <= todayEndStr
+    );
+    const teamDailyDoneOrders = todayOrders.filter(
+      (o) => o.orderState === 'Completed' && o.bookingDateStart >= todayStartStr && o.bookingDateStart <= todayEndStr
+    );
+    const teamDailyBookActual = teamDailyBookOrders.length;
+    const teamDailyDoneActual = teamDailyDoneOrders.filter((o) => Number(o.isComboLive) !== 1).length;
+    const teamDailyComboLiveDoneActual = teamDailyDoneOrders.filter((o) => Number(o.isComboLive) === 1).length;
 
     // Pacing & Management metrics calculation (MOS-BUG-67)
     const pacing = await this.calculateTeamWorkDaysPacing(
@@ -442,41 +450,51 @@ export class TelesaleTargetService {
         0
       );
 
-      const staffTodayOrders = todayOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
-      const staffDoneToday = staffTodayOrders.filter(
-        (o) => o.orderState === 'Completed' && Number(o.isComboLive) !== 1
-      ).length;
-      const staffComboLiveDoneToday = staffTodayOrders.filter(
-        (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
-      ).length;
+      const staffTodayDoneOrders = teamDailyDoneOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
+      const staffDoneToday = staffTodayDoneOrders.filter((o) => Number(o.isComboLive) !== 1).length;
+      const staffComboLiveDoneToday = staffTodayDoneOrders.filter((o) => Number(o.isComboLive) === 1).length;
 
-      // MOS-BUG-72: Metrics for individual KPI (Done)
-      const staffExpectedDone = Math.round(st.doneTarget * pacing.expectedProgressRate);
-      const staffGapDone = staffDoneActual - staffExpectedDone;
-      const staffRemainingDone = Math.max(0, st.doneTarget - staffDoneActual);
-
+      // MOS-BUG-76: Metrics for individual KPI (Done)
+      let staffExpectedDone: number;
+      let staffGapDone: number;
+      let staffRemainingDone: number;
       let staffDailyRequiredDone: number;
+      let progressStatus: 'NOT_STARTED' | 'AHEAD' | 'ON_TRACK' | 'BEHIND' | 'CRITICAL';
+      let progressStatusLabel: string;
+
       if (pacing.periodStatus === 'NOT_STARTED') {
+        staffExpectedDone = 0;
+        staffGapDone = 0;
+        staffRemainingDone = st.doneTarget;
         staffDailyRequiredDone =
           pacing.workDaysTotal > 0 ? Number((st.doneTarget / pacing.workDaysTotal).toFixed(1)) : 0;
-      } else if (pacing.periodStatus === 'IN_PROGRESS') {
-        staffDailyRequiredDone =
-          pacing.workDaysRemaining > 0 ? Number((staffRemainingDone / pacing.workDaysRemaining).toFixed(1)) : 0;
+        progressStatus = 'NOT_STARTED';
+        progressStatusLabel = 'Chưa bắt đầu';
       } else {
-        staffDailyRequiredDone = 0;
-      }
+        staffExpectedDone = Math.round(st.doneTarget * pacing.expectedProgressRate);
+        staffGapDone = staffDoneActual - staffExpectedDone;
+        staffRemainingDone = Math.max(0, st.doneTarget - staffDoneActual);
 
-      let progressStatus: 'AHEAD' | 'ON_TRACK' | 'BEHIND';
-      let progressStatusLabel: string;
-      if (staffGapDone > 0) {
-        progressStatus = 'AHEAD';
-        progressStatusLabel = 'Vượt tiến độ';
-      } else if (staffGapDone >= -1) {
-        progressStatus = 'ON_TRACK';
-        progressStatusLabel = 'Đúng tiến độ';
-      } else {
-        progressStatus = 'BEHIND';
-        progressStatusLabel = 'Chậm tiến độ';
+        if (pacing.periodStatus === 'IN_PROGRESS') {
+          staffDailyRequiredDone =
+            pacing.workDaysRemaining > 0 ? Number((staffRemainingDone / pacing.workDaysRemaining).toFixed(1)) : 0;
+        } else {
+          staffDailyRequiredDone = 0;
+        }
+
+        if (staffGapDone > 0) {
+          progressStatus = 'AHEAD';
+          progressStatusLabel = 'Vượt tiến độ';
+        } else if (staffGapDone >= -1) {
+          progressStatus = 'ON_TRACK';
+          progressStatusLabel = 'Đúng tiến độ';
+        } else if (staffGapDone <= -5 || (staffExpectedDone > 0 && staffDoneActual / staffExpectedDone < 0.7)) {
+          progressStatus = 'CRITICAL';
+          progressStatusLabel = 'Báo động';
+        } else {
+          progressStatus = 'BEHIND';
+          progressStatusLabel = 'Chậm tiến độ';
+        }
       }
 
       const staffCallMetrics = callMetricsMap.get(st.legacyStaffId) || {

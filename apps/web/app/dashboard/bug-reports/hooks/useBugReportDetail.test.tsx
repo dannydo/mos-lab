@@ -35,6 +35,7 @@ function makeActions(detail = makeDetail()) {
     approveImplementationDeploy: vi
       .fn<BugReportDetailOptions['approveImplementationDeploy']>()
       .mockResolvedValue({ reportId: detail.id, deploymentQueued: true }),
+    retryClarification: vi.fn<BugReportDetailOptions['retryClarification']>().mockResolvedValue(detail),
     retryImplementation: vi.fn<BugReportDetailOptions['retryImplementation']>().mockResolvedValue(receipt),
     authorizeWorkerRecoveryRetry: vi
       .fn<BugReportDetailOptions['authorizeWorkerRecoveryRetry']>()

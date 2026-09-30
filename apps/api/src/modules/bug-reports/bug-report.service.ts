@@ -51,6 +51,7 @@ import {
   type MyBugReportsResponse,
   type ReviewBugReportRequest,
   type TriageBugReportRequest,
+  getBugReportAgentDisplayName,
 } from '@mos-lab/shared';
 import { BugReportStorage } from './bug-report.storage.js';
 import {
@@ -512,11 +513,23 @@ function attachmentDto(value: ReportWithRelations['attachments'][number]) {
 }
 
 function commentDto(value: ReportWithRelations['comments'][number]): BugReportComment {
+  const isAgent = value.authorType === 'AGENT';
+  let agentModel: 'AG' | 'G2.5' | 'G2.0' | null = null;
+  if (isAgent) {
+    if (/agent-model:\s*G2\.0|AI Agent \(G2\.0\)|gemini-2\.0/i.test(value.body)) {
+      agentModel = 'G2.0';
+    } else if (/agent-model:\s*G2\.5|AI Agent \(G2\.5\)|gemini-2\.5/i.test(value.body)) {
+      agentModel = 'G2.5';
+    } else {
+      agentModel = 'AG';
+    }
+  }
   return {
     id: value.id,
     kind: value.kind as BugReportComment['kind'],
     body: value.body,
-    authorType: value.authorType === 'AGENT' ? 'AGENT' : 'STAFF',
+    authorType: isAgent ? 'AGENT' : 'STAFF',
+    agentModel,
     author: value.author ? reporterDto(value.author) : null,
     attachments: value.attachments.map(attachmentDto),
     createdAt: value.createdAt.toISOString(),
@@ -1770,7 +1783,10 @@ function renderConversationMarkdown(report: BugReportDetail): string {
   if (!report.comments.length) return '- Chưa có trao đổi bổ sung.';
   return report.comments
     .map((comment) => {
-      const author = comment.authorType === 'AGENT' ? 'AI Agent' : comment.author?.displayName || 'Nhân viên';
+      const author =
+        comment.authorType === 'AGENT'
+          ? getBugReportAgentDisplayName(comment)
+          : comment.author?.displayName || 'Nhân viên';
       const body = comment.body
         .split('\n')
         .map((line) => `> ${line}`)
@@ -2634,6 +2650,41 @@ export class BugReportService {
       });
     });
     return true;
+  }
+
+  static async retryClarification(
+    fastify: FastifyInstance,
+    id: number,
+    actorStaffId: number
+  ): Promise<BugReportDetail> {
+    const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
+    if (!existing) throw new BugReportError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
+    if (['CLOSED', 'REJECTED', 'DUPLICATE'].includes(existing.status)) {
+      throw new BugReportError('Ticket đã đóng, không thể làm rõ lại.', 400);
+    }
+    const now = new Date();
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      const updated = await tx.crmBugReport.update({
+        where: { id },
+        data: {
+          clarificationStatus: 'PENDING_AGENT',
+          clarificationSummary: null,
+          clarifiedAt: null,
+          updatedAt: now,
+        },
+      });
+      await tx.crmBugReportAudit.create({
+        data: {
+          reportId: id,
+          actorStaffId,
+          action: 'CLARIFICATION_RETRIGGERED',
+          note: 'Danny yêu cầu AI Agent (AG) làm rõ lại ticket.',
+          beforeJson: serialize(stateSnapshot(existing)),
+          afterJson: serialize(stateSnapshot(updated)),
+        },
+      });
+    });
+    return this.detail(fastify, id);
   }
 
   static async updateAgentProgress(

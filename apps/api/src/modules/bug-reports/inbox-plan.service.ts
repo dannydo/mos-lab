@@ -13,7 +13,7 @@ import {
 import { inboxImplementationPlanVersion, inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 
 const TTL = 24 * 60 * 60 * 1000;
-const LEASE = 2 * 60 * 1000;
+const LEASE = 10 * 60 * 1000;
 const MAX = 3;
 
 const clean = (value: unknown, limit: number) =>
@@ -205,10 +205,12 @@ function visiblePlanBody(
     ].join('\n');
   }
   const plan = result.plan;
+  const engineTag = result.note?.includes('G2.0') ? 'G2.0' : result.note?.includes('G2.5') ? 'G2.5' : 'AG';
   return [
+    `<!-- agent-model: ${engineTag} -->`,
     eventKind === 'REOPEN_REANALYZED'
-      ? '## Phương án Agent sau reopen — chờ Danny duyệt lại'
-      : '## Phương án Agent đề xuất — chờ Danny duyệt',
+      ? `## Phương án Agent đề xuất sau reopen (${engineTag}) — chờ Danny duyệt lại`
+      : `## Phương án Agent đề xuất (${engineTag}) — chờ Danny duyệt`,
     '',
     `- Sự kiện: ${eventKind}.`,
     ...(reopen

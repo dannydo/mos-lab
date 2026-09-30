@@ -291,8 +291,9 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
   assert.ok(staffA.gapDone !== undefined);
   assert.ok(staffA.remainingDone !== undefined);
   assert.ok(staffA.dailyRequiredDone !== undefined);
-  assert.ok(['AHEAD', 'ON_TRACK', 'BEHIND'].includes(staffA.progressStatus!));
-  assert.ok(['Vượt tiến độ', 'Đúng tiến độ', 'Chậm tiến độ'].includes(staffA.progressStatusLabel!));
+  // MOS-BUG-76: If month has not started yet, status must be NOT_STARTED ('Chưa bắt đầu')
+  assert.equal(staffA.progressStatus, 'NOT_STARTED');
+  assert.equal(staffA.progressStatusLabel, 'Chưa bắt đầu');
 
   const staffB = overview.staffTargets.find((s) => s.legacyStaffId === 102);
   assert.ok(staffB);
