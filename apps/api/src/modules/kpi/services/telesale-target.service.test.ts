@@ -403,7 +403,7 @@ test('TelesaleTargetService.getOverview correctly counts today Book and Done whe
   };
 
   const overview = await TelesaleTargetService.getOverview(mockFastify as any, todayStr.slice(0, 7));
-  
+
   // Book today must be 2 (id 101 and id 103), NOT 0
   assert.equal(overview.teamDaily.bookActual, 2);
   // Done today must be 1 (id 102), NOT 0
@@ -414,4 +414,87 @@ test('TelesaleTargetService.getOverview correctly counts today Book and Done whe
   const phuong = overview.staffTargets.find((s) => s.legacyStaffId === 50670);
   assert.ok(phuong);
   assert.equal(phuong.doneToday, 1);
+});
+
+test('TelesaleTargetService.getOverview computes Daily Action Call & Pickup with shift filter (MOS-BUG-77)', async () => {
+  const nowUtc = new Date();
+  const ictOffsetMs = 7 * 60 * 60 * 1000;
+  const nowIct = new Date(nowUtc.getTime() + ictOffsetMs);
+  const todayStr = nowIct.toISOString().slice(0, 10);
+
+  const mockConfig = {
+    month: todayStr.slice(0, 7),
+    teamDoneTarget: 450,
+    teamBookTarget: 650,
+    dailyDoneTarget: 18,
+    dailyBookTarget: 25,
+    dailyCallPerStaff: 83,
+    dailyPickupPerStaff: 25,
+    staffTargets: [
+      { legacyStaffId: 50670, name: 'Phượng', doneTarget: 150 },
+      { legacyStaffId: 52648, name: 'Kiều', doneTarget: 100 },
+    ],
+    stageTargets: { '0_30': 200, '31_60': 110, '61_120': 80, gt_120: 60 },
+  };
+
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async () => ({
+            key: `TELESALE_TARGET_CONFIG_${todayStr.slice(0, 7)}`,
+            value: JSON.stringify(mockConfig),
+          }),
+        },
+        crmHolidayPeriod: {
+          findMany: async () => [],
+        },
+        crmStaff: {
+          findMany: async () => [
+            { legacyStaffId: 50670, role: 'telesales', isActive: true },
+            { legacyStaffId: 52648, role: 'telesales', isActive: true },
+          ],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('staff_working_shift')) {
+            // Staff 50670 is working today; Staff 52648 is NOT working today (OFF)
+            return [{ user_id: 50670, working_day_count: 1 }];
+          }
+          return [];
+        },
+      },
+    },
+    log: {
+      warn: () => {},
+      error: () => {},
+    },
+  };
+
+  const overview = await TelesaleTargetService.getOverview(mockFastify as any, todayStr.slice(0, 7));
+
+  assert.ok(overview.dailyAction);
+  assert.equal(overview.dailyAction.callTargetPerStaff, 83);
+  assert.equal(overview.dailyAction.pickupTargetPerStaff, 25);
+
+  // Since only 1 staff is working today, team targets = 1 * per staff
+  assert.equal(overview.dailyAction.teamCallTarget, 83);
+  assert.equal(overview.dailyAction.teamPickupTarget, 25);
+
+  const staffActions = overview.dailyAction.staffActions;
+  assert.ok(staffActions);
+  assert.equal(staffActions.length, 2);
+
+  const phuongAction = staffActions.find((s) => s.legacyStaffId === 50670);
+  assert.ok(phuongAction);
+  assert.equal(phuongAction.isWorkingToday, true);
+  assert.equal(phuongAction.callTarget, 83);
+  assert.equal(phuongAction.pickupTarget, 25);
+
+  const kieuAction = staffActions.find((s) => s.legacyStaffId === 52648);
+  assert.ok(kieuAction);
+  assert.equal(kieuAction.isWorkingToday, false);
+  assert.equal(kieuAction.status, 'OFF');
+  assert.equal(kieuAction.statusLabel, 'Nghỉ');
 });

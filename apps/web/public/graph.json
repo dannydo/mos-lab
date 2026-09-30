@@ -25331,6 +25331,42 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TelesaleDailyActionStatus",
+      "type": "SharedType",
+      "label": "TelesaleDailyActionStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleDailyActionStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleStaffDailyAction",
+      "type": "SharedType",
+      "label": "TelesaleStaffDailyAction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleStaffDailyAction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleDailyActionOverview",
+      "type": "SharedType",
+      "label": "TelesaleDailyActionOverview",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleDailyActionOverview",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:TelesaleTargetOverview",
       "type": "SharedType",
       "label": "TelesaleTargetOverview",
@@ -30725,8 +30761,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10623,
-        "lineCount": 311,
+        "sizeBytes": 16698,
+        "lineCount": 502,
         "ext": ".ts"
       }
     },
@@ -30738,8 +30774,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 32322,
-        "lineCount": 852,
+        "sizeBytes": 38765,
+        "lineCount": 1020,
         "ext": ".ts"
       }
     },
@@ -37069,8 +37105,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7671,
-        "lineCount": 154,
+        "sizeBytes": 19283,
+        "lineCount": 432,
         "ext": ".tsx"
       }
     },
@@ -37134,8 +37170,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11054,
-        "lineCount": 272,
+        "sizeBytes": 11700,
+        "lineCount": 284,
         "ext": ".tsx"
       }
     },
@@ -37186,7 +37222,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21958,
+        "sizeBytes": 22182,
         "lineCount": 451,
         "ext": ".tsx"
       }
@@ -37199,8 +37235,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19165,
-        "lineCount": 457,
+        "sizeBytes": 19675,
+        "lineCount": 469,
         "ext": ".tsx"
       }
     },
@@ -38902,8 +38938,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 4023,
-        "lineCount": 158,
+        "sizeBytes": 4888,
+        "lineCount": 191,
         "ext": ".ts"
       }
     },
@@ -52359,6 +52395,27 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:TelesaleDailyActionStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleDailyActionStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleStaffDailyAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleStaffDailyAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleDailyActionOverview:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleDailyActionOverview",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:TelesaleTargetOverview:ws:packages/shared",
       "source": "type:@mos-lab/shared:TelesaleTargetOverview",
       "target": "ws:packages/shared",
@@ -60631,6 +60688,13 @@
       "target": "prisma:legacy:user_service_balance",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmConfig",
@@ -84511,31 +84575,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 2984,
-    "totalEdges": 6505,
+    "totalNodes": 2987,
+    "totalEdges": 6509,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 159,
       "FastifyRoute": 635,
       "Component": 57,
-      "SharedType": 1088,
+      "SharedType": 1091,
       "DesignToken": 12,
       "UIComponent": 204,
       "File": 826
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1259,
+      "EXPORTS": 1262,
       "HANDLES_ROUTE": 635,
       "RENDERS": 261,
       "USES_TOKEN": 206,
       "IMPORTS": 454,
-      "QUERIES_MODEL": 371,
+      "QUERIES_MODEL": 372,
       "API_CALL": 3319
     },
     "fastifyRouteCount": 640,
     "prismaModelCount": 159,
     "nextPageCount": 57,
-    "sharedTypeCount": 1088
+    "sharedTypeCount": 1091
   },
   "routes": [
     {

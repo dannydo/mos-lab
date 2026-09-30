@@ -11,6 +11,7 @@ export interface TelesaleStaffTarget {
   comboLiveDoneToday?: number;
   callTargetDaily: number;
   callActualToday: number;
+  pickupTargetDaily?: number;
   pickupActualToday: number;
   // MOS-BUG-72: Enhanced individual KPI (Done) metrics
   revenueActual?: number;
@@ -42,6 +43,42 @@ export interface TelesalePipelineStage {
 export type TelesalePacingStatus = 'NOT_STARTED' | 'AHEAD' | 'ON_TRACK' | 'BEHIND';
 export type TelesalePeriodStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 
+export type TelesaleDailyActionStatus = 'EXCEEDED' | 'ACHIEVED' | 'BEHIND' | 'ALARM' | 'OFF';
+
+export interface TelesaleStaffDailyAction {
+  legacyStaffId: number;
+  name: string;
+  isWorkingToday: boolean;
+  callTarget: number;
+  callActual: number;
+  callPercent: number;
+  callGap: number;
+  pickupTarget: number;
+  pickupActual: number;
+  pickupPercent: number;
+  pickupGap: number;
+  overallPercent: number;
+  status: TelesaleDailyActionStatus;
+  statusLabel: string;
+}
+
+export interface TelesaleDailyActionOverview {
+  callTargetPerStaff: number;
+  pickupTargetPerStaff?: number;
+  teamCallTarget?: number;
+  teamCallActual?: number;
+  teamCallPercent?: number;
+  teamCallGap?: number;
+  teamPickupTarget?: number;
+  teamPickupActual?: number;
+  teamPickupPercent?: number;
+  teamPickupGap?: number;
+  staffActions?: TelesaleStaffDailyAction[];
+  bookTargetPerDay: number;
+  totalCallsToday: number;
+  totalBookingsToday: number;
+}
+
 export interface TelesaleTargetOverview {
   month: string; // '2026-10'
   updatedAt: string;
@@ -58,20 +95,19 @@ export interface TelesaleTargetOverview {
     periodStatus: TelesalePeriodStatus;
     pacingStatus: TelesalePacingStatus;
     pacingStatusLabel: string; // 'Chưa bắt đầu' | 'Vượt nhịp' | 'Đúng nhịp' | 'Chậm nhịp'
-    expectedProgressRate: number; // 0..1
+    pacingRatio: number;
+    isPacingOnTrack: boolean;
+    dailyRequiredDone: number;
+    dailyRequiredBook: number;
+    expectedProgressRate: number;
     expectedDone: number;
     expectedBook: number;
     gapDone: number;
     gapBook: number;
     remainingDone: number;
     remainingBook: number;
-    dailyRequiredDone: number;
-    dailyRequiredBook: number;
-    pacingRatio: number;
-    isPacingOnTrack: boolean;
-    // Backward compatibility
-    pacingDaysElapsed: number;
-    pacingDaysTotal: number;
+    pacingDaysElapsed?: number;
+    pacingDaysTotal?: number;
   };
   teamDaily: {
     date: string;
@@ -82,12 +118,7 @@ export interface TelesaleTargetOverview {
     bookActual: number;
   };
   staffTargets: TelesaleStaffTarget[];
-  dailyAction: {
-    callTargetPerStaff: number;
-    bookTargetPerDay: number;
-    totalCallsToday: number;
-    totalBookingsToday: number;
-  };
+  dailyAction: TelesaleDailyActionOverview;
   workSchedule: {
     morning: {
       timeRange: string;
@@ -112,6 +143,7 @@ export interface TelesaleTargetConfigDto {
   dailyDoneTarget: number;
   dailyBookTarget: number;
   dailyCallPerStaff: number;
+  dailyPickupPerStaff?: number;
   staffTargets: Array<{
     legacyStaffId: number;
     name: string;

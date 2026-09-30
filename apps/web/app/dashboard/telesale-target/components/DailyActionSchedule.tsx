@@ -1,77 +1,320 @@
 'use client';
 
 import React from 'react';
-import { Phone, Calendar, Sun, Moon, Clock } from 'lucide-react';
-import { TelesaleTargetOverview } from '@mos-lab/shared';
+import { Progress, theme } from 'antd';
+import {
+  PhoneCall,
+  PhoneIncoming,
+  Clock,
+  Sun,
+  Moon,
+  Sparkles,
+  CheckCircle2,
+  TrendingUp,
+  AlertCircle,
+  AlertTriangle,
+  MinusCircle,
+} from 'lucide-react';
+import { TelesaleTargetOverview, TelesaleStaffDailyAction, TelesaleDailyActionStatus } from '@mos-lab/shared';
 
 interface DailyActionScheduleProps {
   overview: TelesaleTargetOverview;
 }
 
 export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overview }) => {
+  const { token } = theme.useToken();
   const { dailyAction, workSchedule, staffTargets } = overview;
+
+  const callTargetPerStaff = dailyAction.callTargetPerStaff || 83;
+  const pickupTargetPerStaff = dailyAction.pickupTargetPerStaff || 25;
+  const teamCallTarget = dailyAction.teamCallTarget ?? 0;
+  const teamCallActual = dailyAction.teamCallActual ?? dailyAction.totalCallsToday ?? 0;
+  const teamCallPercent = dailyAction.teamCallPercent ?? 0;
+  const teamCallGap = dailyAction.teamCallGap ?? teamCallActual - teamCallTarget;
+
+  const teamPickupTarget = dailyAction.teamPickupTarget ?? 0;
+  const teamPickupActual = dailyAction.teamPickupActual ?? 0;
+  const teamPickupPercent = dailyAction.teamPickupPercent ?? 0;
+  const teamPickupGap = dailyAction.teamPickupGap ?? teamPickupActual - teamPickupTarget;
+
+  // Fallback if staffActions isn't populated (e.g. legacy cache)
+  const staffActions: TelesaleStaffDailyAction[] =
+    dailyAction.staffActions && dailyAction.staffActions.length > 0
+      ? dailyAction.staffActions
+      : staffTargets.map((s) => ({
+          legacyStaffId: s.legacyStaffId,
+          name: s.name,
+          isWorkingToday: true,
+          callTarget: s.callTargetDaily || 83,
+          callActual: s.callActualToday,
+          callPercent:
+            (s.callTargetDaily || 83) > 0
+              ? Number(((s.callActualToday / (s.callTargetDaily || 83)) * 100).toFixed(1))
+              : 0,
+          callGap: s.callActualToday - (s.callTargetDaily || 83),
+          pickupTarget: s.pickupTargetDaily || 25,
+          pickupActual: s.pickupActualToday,
+          pickupPercent:
+            (s.pickupTargetDaily || 25) > 0
+              ? Number(((s.pickupActualToday / (s.pickupTargetDaily || 25)) * 100).toFixed(1))
+              : 0,
+          pickupGap: s.pickupActualToday - (s.pickupTargetDaily || 25),
+          overallPercent: Number(
+            (
+              ((s.callActualToday / (s.callTargetDaily || 83) + s.pickupActualToday / (s.pickupTargetDaily || 25)) /
+                2) *
+              100
+            ).toFixed(1)
+          ),
+          status: 'ACHIEVED',
+          statusLabel: 'Đúng nhịp',
+        }));
+
+  const workingStaffCount = staffActions.filter((s) => s.isWorkingToday).length;
+
+  const getStatusBadge = (status: TelesaleDailyActionStatus, label: string) => {
+    switch (status) {
+      case 'EXCEEDED':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <Sparkles className="w-2.5 h-2.5" />
+            {label || 'Vượt'}
+          </span>
+        );
+      case 'ACHIEVED':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+            <CheckCircle2 className="w-2.5 h-2.5" />
+            {label || 'Đạt'}
+          </span>
+        );
+      case 'BEHIND':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <AlertTriangle className="w-2.5 h-2.5" />
+            {label || 'Chậm'}
+          </span>
+        );
+      case 'ALARM':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+            <AlertCircle className="w-2.5 h-2.5" />
+            {label || 'Báo động'}
+          </span>
+        );
+      case 'OFF':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700">
+            <MinusCircle className="w-2.5 h-2.5" />
+            {label || 'Nghỉ'}
+          </span>
+        );
+    }
+  };
+
+  const getProgressStrokeColor = (percent: number) => {
+    if (percent >= 100) return token.colorSuccess;
+    if (percent >= 80) return token.colorInfo;
+    if (percent >= 50) return token.colorWarning;
+    return token.colorError;
+  };
 
   return (
     <div className="space-y-4">
-      {/* 1. HÀNH ĐỘNG MỖI NGÀY */}
+      {/* 1. HÀNH ĐỘNG MỖI NGÀY (MOS-BUG-77: Tinh giản vào Call và Pickup) */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-amber-950/20 to-zinc-950 border border-amber-500/30 p-5 shadow-2xl backdrop-blur-md">
         <div className="text-amber-300 text-xs font-bold uppercase tracking-wider mb-4 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5 text-amber-400" /> Hành Động Mỗi Ngày
+            <PhoneCall className="w-3.5 h-3.5 text-amber-400" /> Hành Động Mỗi Ngày
           </span>
-          <span className="text-[11px] text-zinc-500 font-normal">Kỷ luật &amp; Hành động</span>
+          <span className="text-[11px] text-zinc-400 font-mono">{workingStaffCount} Telesales đang trực ca</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {/* Call target */}
-          <div className="bg-black/40 border border-zinc-800 p-3 rounded-xl">
-            <div className="flex items-center gap-2 text-zinc-400 text-xs mb-1">
-              <Phone className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Gọi điện</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black font-mono text-zinc-100 tabular-nums">
-                ≥ {dailyAction.callTargetPerStaff}
-              </span>
-              <span className="text-xs text-zinc-400">Call / NV</span>
-            </div>
-            <div className="text-[11px] text-zinc-500 mt-1 font-mono">
-              Đã gọi hôm nay: <span className="text-emerald-400 font-bold">{dailyAction.totalCallsToday}</span>
-            </div>
-          </div>
+        {/* 2 Core Input Cards: Gọi điện (Call) & Nghe máy (Pickup) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Cấp Team: Gọi điện (Call) */}
+          <div className="bg-black/40 border border-zinc-800/80 hover:border-emerald-500/40 transition-colors p-3.5 rounded-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                  <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
+                  Gọi điện (Call)
+                </span>
+                <span className="text-[11px] text-zinc-400 font-mono">≥ {callTargetPerStaff} Call/NV</span>
+              </div>
 
-          {/* Book target */}
-          <div className="bg-black/40 border border-zinc-800 p-3 rounded-xl">
-            <div className="flex items-center gap-2 text-zinc-400 text-xs mb-1">
-              <Calendar className="w-3.5 h-3.5 text-blue-400" />
-              <span>Tạo lịch</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black font-mono text-zinc-100 tabular-nums">
-                {dailyAction.bookTargetPerDay}
-              </span>
-              <span className="text-xs text-zinc-400">Book / ngày</span>
-            </div>
-            <div className="text-[11px] text-zinc-500 mt-1 font-mono">
-              Đã tạo hôm nay: <span className="text-blue-400 font-bold">{dailyAction.totalBookingsToday}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Breakdown cuộc gọi hôm nay của từng bạn */}
-        <div className="mt-3 pt-3 border-t border-zinc-800/80">
-          <div className="text-[11px] text-zinc-400 mb-2 font-medium flex items-center justify-between">
-            <span>Cuộc gọi hôm nay theo nhân sự:</span>
-            <span className="text-[10px] text-zinc-500 font-mono">OmiCall CDR</span>
-          </div>
-          <div className="grid grid-cols-4 gap-1.5 text-center">
-            {staffTargets.map((s) => (
-              <div key={s.legacyStaffId} className="bg-zinc-900/60 p-1.5 rounded-lg border border-zinc-800/60">
-                <div className="text-[11px] text-zinc-300 font-semibold truncate">{s.name}</div>
-                <div className="text-xs font-mono font-bold text-amber-400 tabular-nums mt-0.5">
-                  {s.callActualToday}
-                  <span className="text-[10px] text-zinc-500 font-normal">/{s.callTargetDaily}</span>
+              <div className="flex items-baseline justify-between mt-1">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black font-mono text-zinc-100 tabular-nums">{teamCallActual}</span>
+                  <span className="text-xs text-zinc-400 font-mono">/ {teamCallTarget}</span>
                 </div>
+                <div className="flex items-center gap-1 font-mono text-xs font-bold text-emerald-400 tabular-nums">
+                  <TrendingUp className="w-3 h-3" />
+                  {teamCallPercent}%
+                </div>
+              </div>
+
+              {/* Progress bar using Ant Design Progress to avoid inline style objects */}
+              <div className="mt-2.5">
+                <Progress
+                  percent={Math.min(100, Math.max(0, teamCallPercent))}
+                  strokeColor={token.colorSuccess}
+                  strokeWidth={6}
+                  size="small"
+                  showInfo={false}
+                />
+              </div>
+            </div>
+
+            {/* Gap info */}
+            <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+              <span className="text-zinc-500">Chênh lệch mục tiêu:</span>
+              {teamCallGap >= 0 ? (
+                <span className="font-mono font-bold text-emerald-400 tabular-nums">+{teamCallGap} vượt chỉ tiêu</span>
+              ) : (
+                <span className="font-mono font-bold text-amber-400 tabular-nums">
+                  Thiếu {Math.abs(teamCallGap)} cuộc
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Cấp Team: Nghe máy (Pickup) */}
+          <div className="bg-black/40 border border-zinc-800/80 hover:border-cyan-500/40 transition-colors p-3.5 rounded-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                  <PhoneIncoming className="w-3.5 h-3.5 text-cyan-400" />
+                  Nghe máy (Pickup)
+                </span>
+                <span className="text-[11px] text-zinc-400 font-mono">≥ {pickupTargetPerStaff} Pickup/NV</span>
+              </div>
+
+              <div className="flex items-baseline justify-between mt-1">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black font-mono text-zinc-100 tabular-nums">{teamPickupActual}</span>
+                  <span className="text-xs text-zinc-400 font-mono">/ {teamPickupTarget}</span>
+                </div>
+                <div className="flex items-center gap-1 font-mono text-xs font-bold text-cyan-400 tabular-nums">
+                  <TrendingUp className="w-3 h-3" />
+                  {teamPickupPercent}%
+                </div>
+              </div>
+
+              {/* Progress bar using Ant Design Progress to avoid inline style objects */}
+              <div className="mt-2.5">
+                <Progress
+                  percent={Math.min(100, Math.max(0, teamPickupPercent))}
+                  strokeColor={token.colorInfo}
+                  strokeWidth={6}
+                  size="small"
+                  showInfo={false}
+                />
+              </div>
+            </div>
+
+            {/* Gap info */}
+            <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+              <span className="text-zinc-500">Chênh lệch mục tiêu:</span>
+              {teamPickupGap >= 0 ? (
+                <span className="font-mono font-bold text-cyan-400 tabular-nums">+{teamPickupGap} vượt chỉ tiêu</span>
+              ) : (
+                <span className="font-mono font-bold text-amber-400 tabular-nums">
+                  Thiếu {Math.abs(teamPickupGap)} cuộc
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Cấp Nhân sự: Từng nhân viên hiển thị Call, Pickup, % hoàn thành và 4 trạng thái màu sắc */}
+        <div className="mt-4 pt-3.5 border-t border-zinc-800/80">
+          <div className="text-[11px] text-zinc-400 mb-2.5 font-medium flex items-center justify-between">
+            <span>Tiến độ từng nhân sự hôm nay:</span>
+            <span className="text-[10px] text-zinc-500 font-mono">OmiCall CDR Realtime</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            {staffActions.map((s) => (
+              <div
+                key={s.legacyStaffId}
+                className={`p-2.5 rounded-xl border transition-all ${
+                  !s.isWorkingToday
+                    ? 'bg-zinc-950/40 border-zinc-800/50 opacity-60'
+                    : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                {/* Header: Tên & Badge trạng thái */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-zinc-200 font-bold truncate">{s.name}</span>
+                  {getStatusBadge(s.status, s.statusLabel)}
+                </div>
+
+                {s.isWorkingToday ? (
+                  <div className="space-y-1.5 text-[11px]">
+                    {/* Call row */}
+                    <div className="flex items-center justify-between text-zinc-400">
+                      <span className="flex items-center gap-1 text-zinc-400">
+                        <PhoneCall className="w-3 h-3 text-emerald-400" /> Gọi:
+                      </span>
+                      <span className="font-mono tabular-nums font-semibold text-zinc-200">
+                        {s.callActual}
+                        <span className="text-zinc-500 font-normal">/{s.callTarget}</span>{' '}
+                        <span
+                          className={`text-[10px] font-bold ${
+                            s.callPercent >= 100
+                              ? 'text-emerald-400'
+                              : s.callPercent >= 80
+                                ? 'text-blue-400'
+                                : 'text-amber-400'
+                          }`}
+                        >
+                          ({s.callPercent}%)
+                        </span>
+                      </span>
+                    </div>
+
+                    {/* Pickup row */}
+                    <div className="flex items-center justify-between text-zinc-400">
+                      <span className="flex items-center gap-1 text-zinc-400">
+                        <PhoneIncoming className="w-3 h-3 text-cyan-400" /> Nghe:
+                      </span>
+                      <span className="font-mono tabular-nums font-semibold text-zinc-200">
+                        {s.pickupActual}
+                        <span className="text-zinc-500 font-normal">/{s.pickupTarget}</span>{' '}
+                        <span
+                          className={`text-[10px] font-bold ${
+                            s.pickupPercent >= 100
+                              ? 'text-cyan-400'
+                              : s.pickupPercent >= 80
+                                ? 'text-blue-400'
+                                : 'text-amber-400'
+                          }`}
+                        >
+                          ({s.pickupPercent}%)
+                        </span>
+                      </span>
+                    </div>
+
+                    {/* Overall mini progress bar using Ant Design Progress */}
+                    <div className="pt-1">
+                      <Progress
+                        percent={Math.min(100, Math.max(0, s.overallPercent))}
+                        strokeColor={getProgressStrokeColor(s.overallPercent)}
+                        strokeWidth={4}
+                        size="small"
+                        showInfo={false}
+                      />
+                      <div className="text-[10px] text-zinc-500 mt-0.5 flex justify-between font-mono">
+                        <span>Tổng hợp</span>
+                        <span className="font-bold text-zinc-300 tabular-nums">{s.overallPercent}%</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-2 text-center text-[11px] text-zinc-500 italic">Nghỉ ca trực hôm nay</div>
+                )}
               </div>
             ))}
           </div>

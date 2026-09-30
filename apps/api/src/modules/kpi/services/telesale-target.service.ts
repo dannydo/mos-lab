@@ -9,6 +9,9 @@ import {
   TelesalePipelineStage,
   TelesalePacingStatus,
   TelesalePeriodStatus,
+  TelesaleDailyActionStatus,
+  TelesaleStaffDailyAction,
+  TelesaleDailyActionOverview,
   SafeAny,
 } from '@mos-lab/shared';
 import { getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
@@ -20,7 +23,8 @@ export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
   teamBookTarget: 650,
   dailyDoneTarget: 18,
   dailyBookTarget: 25,
-  dailyCallPerStaff: 90,
+  dailyCallPerStaff: 83,
+  dailyPickupPerStaff: 25,
   staffTargets: [
     { legacyStaffId: 50670, name: 'Phượng', doneTarget: 150 },
     { legacyStaffId: 52648, name: 'Kiều', doneTarget: 100 },
@@ -46,7 +50,10 @@ export class TelesaleTargetService {
         where: { key: this.getConfigKey(month) },
       });
       if (row?.value) {
-        return JSON.parse(row.value) as TelesaleTargetConfigDto;
+        const parsed = JSON.parse(row.value) as TelesaleTargetConfigDto;
+        if (!parsed.dailyCallPerStaff) parsed.dailyCallPerStaff = 83;
+        if (!parsed.dailyPickupPerStaff) parsed.dailyPickupPerStaff = 25;
+        return parsed;
       }
     } catch (err) {
       fastify.log.warn(`Failed to read telesale config for ${month}, using default: ${err}`);
@@ -485,6 +492,26 @@ export class TelesaleTargetService {
       () => new Map()
     );
 
+    // 2b. Query today's working shift for target staff to evaluate isWorkingToday (MOS-BUG-77)
+    const workingShiftMap = new Map<number, boolean>();
+    let shiftRows: SafeAny[] = [];
+    try {
+      shiftRows = await fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id, working_day_count FROM staff_working_shift WHERE date = ? AND user_id IN (${targetStaffIds.join(',')})`,
+          todayStr
+        )
+        .catch(() => []);
+
+      for (const r of shiftRows) {
+        const uid = Number(r.user_id);
+        const dayCount = Number(r.working_day_count ?? 1);
+        workingShiftMap.set(uid, dayCount > 0);
+      }
+    } catch (err) {
+      fastify.log.warn(`Failed to query staff_working_shift: ${err}`);
+    }
+
     // Aggregate by Staff
     const staffTargets: TelesaleStaffTarget[] = config.staffTargets.map((st) => {
       const staffMonthOrders = monthOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
@@ -557,8 +584,9 @@ export class TelesaleTargetService {
         comboLiveDoneActual: staffComboLiveDoneActual,
         doneToday: staffDoneToday,
         comboLiveDoneToday: staffComboLiveDoneToday,
-        callTargetDaily: config.dailyCallPerStaff,
+        callTargetDaily: config.dailyCallPerStaff || 83,
         callActualToday: staffCallMetrics.callCount,
+        pickupTargetDaily: config.dailyPickupPerStaff || 25,
         pickupActualToday: staffCallMetrics.pickupCount,
         revenueActual: staffRevenueActual,
         expectedDone: staffExpectedDone,
@@ -724,7 +752,109 @@ export class TelesaleTargetService {
     const isMorningActive = currentIctHour >= 8 && currentIctHour < 12;
     const isAfternoonActive = currentIctHour >= 13 && currentIctHour < 17;
 
-    const totalCallsToday = staffTargets.reduce((acc, st) => acc + st.callActualToday, 0);
+    // MOS-BUG-77: Ô Hành Động Mỗi Ngày tập trung vào Call và Pickup
+    const callTargetPerStaff = config.dailyCallPerStaff || 83;
+    const pickupTargetPerStaff = config.dailyPickupPerStaff || 25;
+
+    const staffActions: TelesaleStaffDailyAction[] = config.staffTargets.map((st) => {
+      const isWorkingToday = shiftRows.length === 0 ? true : (workingShiftMap.get(st.legacyStaffId) ?? false);
+      const staffCallMetrics = callMetricsMap.get(st.legacyStaffId) || {
+        callCount: 0,
+        pickupCount: 0,
+        pickupRate: 0,
+      };
+      const callActual = staffCallMetrics.callCount;
+      const pickupActual = staffCallMetrics.pickupCount;
+
+      if (!isWorkingToday) {
+        return {
+          legacyStaffId: st.legacyStaffId,
+          name: st.name,
+          isWorkingToday: false,
+          callTarget: callTargetPerStaff,
+          callActual,
+          callPercent: 0,
+          callGap: 0,
+          pickupTarget: pickupTargetPerStaff,
+          pickupActual,
+          pickupPercent: 0,
+          pickupGap: 0,
+          overallPercent: 0,
+          status: 'OFF' as TelesaleDailyActionStatus,
+          statusLabel: 'Nghỉ',
+        };
+      }
+
+      const callTarget = callTargetPerStaff;
+      const pickupTarget = pickupTargetPerStaff;
+      const callPercent = callTarget > 0 ? Number(((callActual / callTarget) * 100).toFixed(1)) : 0;
+      const callGap = callActual - callTarget;
+      const pickupPercent = pickupTarget > 0 ? Number(((pickupActual / pickupTarget) * 100).toFixed(1)) : 0;
+      const pickupGap = pickupActual - pickupTarget;
+      const overallPercent = Number(((callPercent + pickupPercent) / 2).toFixed(1));
+
+      let status: TelesaleDailyActionStatus;
+      let statusLabel: string;
+      if (overallPercent >= 100) {
+        status = 'EXCEEDED';
+        statusLabel = 'Vượt';
+      } else if (overallPercent >= 80) {
+        status = 'ACHIEVED';
+        statusLabel = 'Đạt';
+      } else if (overallPercent >= 50) {
+        status = 'BEHIND';
+        statusLabel = 'Chậm';
+      } else {
+        status = 'ALARM';
+        statusLabel = 'Báo động';
+      }
+
+      return {
+        legacyStaffId: st.legacyStaffId,
+        name: st.name,
+        isWorkingToday: true,
+        callTarget,
+        callActual,
+        callPercent,
+        callGap,
+        pickupTarget,
+        pickupActual,
+        pickupPercent,
+        pickupGap,
+        overallPercent,
+        status,
+        statusLabel,
+      };
+    });
+
+    const workingStaffList = staffActions.filter((s) => s.isWorkingToday);
+    const teamCallTarget = workingStaffList.reduce((sum, s) => sum + s.callTarget, 0);
+    const teamCallActual = staffActions.reduce((sum, s) => sum + s.callActual, 0);
+    const teamCallPercent = teamCallTarget > 0 ? Number(((teamCallActual / teamCallTarget) * 100).toFixed(1)) : 0;
+    const teamCallGap = teamCallActual - teamCallTarget;
+
+    const teamPickupTarget = workingStaffList.reduce((sum, s) => sum + s.pickupTarget, 0);
+    const teamPickupActual = staffActions.reduce((sum, s) => sum + s.pickupActual, 0);
+    const teamPickupPercent =
+      teamPickupTarget > 0 ? Number(((teamPickupActual / teamPickupTarget) * 100).toFixed(1)) : 0;
+    const teamPickupGap = teamPickupActual - teamPickupTarget;
+
+    const dailyAction: TelesaleDailyActionOverview = {
+      callTargetPerStaff,
+      pickupTargetPerStaff,
+      teamCallTarget,
+      teamCallActual,
+      teamCallPercent,
+      teamCallGap,
+      teamPickupTarget,
+      teamPickupActual,
+      teamPickupPercent,
+      teamPickupGap,
+      staffActions,
+      bookTargetPerDay: config.dailyBookTarget,
+      totalCallsToday: teamCallActual,
+      totalBookingsToday: teamDailyBookActual,
+    };
 
     return {
       month,
@@ -752,8 +882,6 @@ export class TelesaleTargetService {
         dailyRequiredBook: pacing.dailyRequiredBook,
         pacingRatio: pacing.pacingRatio,
         isPacingOnTrack: pacing.isPacingOnTrack,
-        pacingDaysElapsed: pacing.workDaysElapsed,
-        pacingDaysTotal: pacing.workDaysTotal,
       },
       teamDaily: {
         date: todayStr,
@@ -764,12 +892,7 @@ export class TelesaleTargetService {
         bookActual: teamDailyBookActual,
       },
       staffTargets,
-      dailyAction: {
-        callTargetPerStaff: config.dailyCallPerStaff,
-        bookTargetPerDay: config.dailyBookTarget,
-        totalCallsToday,
-        totalBookingsToday: teamDailyBookActual,
-      },
+      dailyAction,
       workSchedule: {
         morning: {
           timeRange: '08:00 – 12:00',

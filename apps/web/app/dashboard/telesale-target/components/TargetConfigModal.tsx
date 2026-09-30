@@ -30,7 +30,8 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
         teamBookTarget: overview.teamMonth.bookTarget,
         dailyDoneTarget: overview.teamDaily.doneTarget,
         dailyBookTarget: overview.teamDaily.bookTarget,
-        dailyCallPerStaff: overview.dailyAction.callTargetPerStaff,
+        dailyCallPerStaff: overview.dailyAction.callTargetPerStaff || 83,
+        dailyPickupPerStaff: overview.dailyAction.pickupTargetPerStaff || 25,
         staffPhuong: overview.staffTargets.find((s) => s.name.includes('Phượng'))?.doneTarget || 150,
         staffKieu: overview.staffTargets.find((s) => s.name.includes('Kiều'))?.doneTarget || 100,
         staffDiep: overview.staffTargets.find((s) => s.name.includes('Điệp'))?.doneTarget || 100,
@@ -74,7 +75,8 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
         teamBookTarget: Number(values.teamBookTarget),
         dailyDoneTarget: Number(values.dailyDoneTarget),
         dailyBookTarget: Number(values.dailyBookTarget),
-        dailyCallPerStaff: Number(values.dailyCallPerStaff),
+        dailyCallPerStaff: Number(values.dailyCallPerStaff || 83),
+        dailyPickupPerStaff: Number(values.dailyPickupPerStaff || 25),
         staffTargets: [
           { legacyStaffId: 52454, name: 'Phượng', doneTarget: Number(values.staffPhuong) },
           { legacyStaffId: 52086, name: 'Kiều', doneTarget: Number(values.staffKieu) },
@@ -155,6 +157,16 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
             <Col xs={12} sm={6}>
               <Form.Item name="dailyBookTarget" label="Book / Ngày">
                 <InputNumber min={1} className="w-full" />
+              </Form.Item>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Form.Item name="dailyCallPerStaff" label="Call / NV / Ngày">
+                <InputNumber min={1} className="w-full text-emerald-400 font-bold" />
+              </Form.Item>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Form.Item name="dailyPickupPerStaff" label="Pickup / NV / Ngày">
+                <InputNumber min={1} className="w-full text-cyan-400 font-bold" />
               </Form.Item>
             </Col>
           </Row>
