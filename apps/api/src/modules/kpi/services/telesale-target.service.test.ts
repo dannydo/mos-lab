@@ -389,8 +389,23 @@ test('TelesaleTargetService.getOverview correctly counts today Book and Done whe
           if (sql.includes('prev_o.booking_date_start')) {
             return [];
           }
-          if (sql.includes('isComboLive')) {
-            return mockTodayOrders;
+          if (sql.includes('o.date_created >=')) {
+            return [
+              { id: 101, bookerId: 50670, orderState: 'New', dateCreated: todayDateObj },
+              { id: 103, bookerId: 52648, orderState: 'New', dateCreated: todayDateObj },
+            ];
+          }
+          if (sql.includes('report_order ro')) {
+            return [
+              {
+                id: 102,
+                bookerId: 50670,
+                orderState: 'Completed',
+                totalPrice: 200000,
+                bookingDateStart: todayDateObj,
+                actualBookingDateStart: todayDateObj,
+              },
+            ];
           }
           return [];
         },

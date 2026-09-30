@@ -336,7 +336,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2.5 text-zinc-300 font-bold text-sm sm:text-base lg:text-lg uppercase tracking-wider">
                 <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-                <span>DONE HÔM NAY · KHÁCH LẺ</span>
+                <span>DONE HÔM NAY</span>
               </span>
               <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
                 Chỉ tiêu: {metrics.doneTarget} Done

@@ -14,7 +14,7 @@ import {
   TelesaleDailyActionOverview,
   SafeAny,
 } from '@mos-lab/shared';
-import { getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
+import { getBkCallMetricsByLegacyStaffIds, getActiveBkTelesalesIds } from './bk-salary.service.js';
 import { buildComboLiveAtBookingSql } from '../../customers/services/combo-recognition.service.js';
 
 export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
@@ -352,35 +352,14 @@ export class TelesaleTargetService {
     // Active staff IDs from config
     const targetStaffIds = config.staffTargets.map((s) => s.legacyStaffId);
 
-    // MOS-BUG-75: Book chỉ tính từ nhân viên có Vai trò = Telesales Executive (role: 'telesales')
-    let validTelesalesIds = targetStaffIds;
+    // Active Telesales staff IDs from unified single source of truth (matching /dashboard/bk?tab=booking and /dashboard/bk?tab=done)
+    let activeBkTelesalesIds = targetStaffIds;
     try {
-      if (fastify.prisma?.crm?.crmStaff?.findMany) {
-        const activeTelesalesStaff = await fastify.prisma.crm.crmStaff.findMany({
-          where: {
-            role: 'telesales',
-            isActive: true,
-            legacyStaffId: { not: null, gt: 0 },
-          },
-          select: { legacyStaffId: true },
-        });
-        const activeTelesalesLegacyIds = new Set(
-          activeTelesalesStaff
-            .map((s) => s.legacyStaffId!)
-            .filter((id): id is number => typeof id === 'number' && id > 0)
-        );
-        if (activeTelesalesLegacyIds.size > 0) {
-          const filtered = targetStaffIds.filter((id) => activeTelesalesLegacyIds.has(id));
-          if (filtered.length > 0) {
-            validTelesalesIds = filtered;
-          }
-        }
-      }
+      activeBkTelesalesIds = await getActiveBkTelesalesIds(fastify);
     } catch (err) {
-      fastify.log.warn(`Failed to filter Telesales Executive staff IDs: ${err}`);
+      fastify.log.warn(`Failed to resolve active BK Telesales staff IDs: ${err}`);
     }
-
-    const bkIdsStr = validTelesalesIds.length > 0 ? validTelesalesIds.join(',') : '50670,52648,32268,52598';
+    const bkIdsStr = activeBkTelesalesIds.length > 0 ? activeBkTelesalesIds.join(',') : '50670,52648,32268,52598,48791';
 
     // 1. Query Month Team Metrics & Staff Metrics
     // MOS-BUG-74: Book tháng tính theo ngày hẹn của khách thuộc tháng đang xem (booking_date_start)
@@ -412,30 +391,44 @@ export class TelesaleTargetService {
         AND o.created_staff_id IN (${bkIdsStr})
     `;
 
-    // Today Orders
-    // MOS-BUG-75: Book hôm nay tính theo ngày tạo đơn (date_created) bởi Telesales Executive;
-    // Done hôm nay tính theo ngày hẹn hoàn thành dịch vụ trong ngày (booking_date_start)
-    const todayOrdersSql = `
+    // Today Orders: Exactly unified with /dashboard/bk?tab=booking and /dashboard/bk?tab=done
+    // MOS-BUG-75: Book hôm nay = đơn tạo trong ngày bởi Telesales Executive (Single Source of Truth với tab=booking)
+    const todayBookOrdersSql = `
       SELECT 
         o.id,
         o.created_staff_id as bookerId,
         o.order_state as orderState,
-        o.date_created as dateCreated,
-        o.booking_date_start as bookingDateStart,
-        CASE WHEN o.date_created >= '${todayStartStr}' AND o.date_created <= '${todayEndStr}' THEN 1 ELSE 0 END as isBookToday,
-        CASE WHEN o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}' AND o.order_state = 'Completed' THEN 1 ELSE 0 END as isDoneToday,
-        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
+        o.date_created as dateCreated
       FROM \`order\` o
-      WHERE (
-        (o.date_created >= '${todayStartStr}' AND o.date_created <= '${todayEndStr}')
-        OR (o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}' AND o.order_state = 'Completed')
-      )
-      AND o.created_staff_id IN (${bkIdsStr})
+      WHERE o.date_created >= '${todayStartStr}' 
+        AND o.date_created <= '${todayEndStr}'
+        AND o.created_staff_id IN (${bkIdsStr})
     `;
 
-    const [monthOrders, todayOrders] = await Promise.all([
+    // Done hôm nay = đơn hẹn hoàn thành dịch vụ trong ngày của Telesales Executive (Single Source of Truth với tab=done)
+    const todayDoneOrdersSql = `
+      SELECT 
+        o.id as id,
+        o.created_staff_id as bookerId,
+        o.order_state as orderState,
+        o.total_price as totalPrice,
+        o.booking_date_start as bookingDateStart,
+        ro.actual_booking_date_start as actualBookingDateStart
+      FROM \`user_profile\` up
+      LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE up.user_id IN (${bkIdsStr})
+        AND (
+          (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
+        )
+        AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
+    `;
+
+    const [monthOrders, todayBookOrders, todayDoneOrders] = await Promise.all([
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(monthOrdersSql).catch(() => []),
-      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(todayOrdersSql).catch(() => []),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(todayBookOrdersSql).catch(() => []),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(todayDoneOrdersSql).catch(() => []),
     ]);
 
     // Aggregate Team Month
@@ -449,31 +442,10 @@ export class TelesaleTargetService {
       (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
     ).length;
 
-    // Helper for safe Date vs String comparison (eliminating NaN comparison bugs)
-    const isDateBetween = (val: unknown, startStr: string, endStr: string): boolean => {
-      if (!val) return false;
-      if (val instanceof Date) {
-        const t = val.getTime();
-        const startMs = new Date(startStr.replace(' ', 'T') + '+07:00').getTime();
-        const endMs = new Date(endStr.replace(' ', 'T') + '+07:00').getTime();
-        return t >= startMs && t <= endMs;
-      }
-      const s = String(val);
-      return s >= startStr && s <= endStr;
-    };
-
-    // Aggregate Team Daily (MOS-BUG-75: Book hôm nay = đơn tạo trong ngày bởi Telesales Executive)
-    const teamDailyBookOrders = todayOrders.filter(
-      (o) => Number(o.isBookToday) === 1 || isDateBetween(o.dateCreated, todayStartStr, todayEndStr)
-    );
-    const teamDailyDoneOrders = todayOrders.filter(
-      (o) =>
-        o.orderState === 'Completed' &&
-        (Number(o.isDoneToday) === 1 || isDateBetween(o.bookingDateStart, todayStartStr, todayEndStr))
-    );
-    const teamDailyBookActual = teamDailyBookOrders.length;
-    const teamDailyDoneActual = teamDailyDoneOrders.filter((o) => Number(o.isComboLive) !== 1).length;
-    const teamDailyComboLiveDoneActual = teamDailyDoneOrders.filter((o) => Number(o.isComboLive) === 1).length;
+    // Aggregate Team Daily (MOS-BUG-75: Single Source of Truth matching /dashboard/bk?tab=booking and tab=done)
+    const teamDailyBookActual = todayBookOrders.length;
+    const teamDailyDoneActual = todayDoneOrders.length;
+    const teamDailyComboLiveDoneActual = 0;
 
     // Pacing & Management metrics calculation (MOS-BUG-67)
     const pacing = await this.calculateTeamWorkDaysPacing(
@@ -523,9 +495,9 @@ export class TelesaleTargetService {
         0
       );
 
-      const staffTodayDoneOrders = teamDailyDoneOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
-      const staffDoneToday = staffTodayDoneOrders.filter((o) => Number(o.isComboLive) !== 1).length;
-      const staffComboLiveDoneToday = staffTodayDoneOrders.filter((o) => Number(o.isComboLive) === 1).length;
+      const staffTodayDoneOrders = todayDoneOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
+      const staffDoneToday = staffTodayDoneOrders.length;
+      const staffComboLiveDoneToday = 0;
 
       // MOS-BUG-76: Metrics for individual KPI (Done)
       let staffExpectedDone: number;
