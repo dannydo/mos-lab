@@ -11,6 +11,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: process.env.PORT || '4001',
+        TZ: 'Asia/Ho_Chi_Minh',
         DEPLOY_COMMIT: process.env.DEPLOY_COMMIT || '',
         DEPLOYED_AT: process.env.DEPLOYED_AT || '',
       },

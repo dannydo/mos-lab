@@ -29,3 +29,26 @@ export function toVietnamDateString(input: Date | string | number | null | undef
   if (!iso) return null;
   return iso.split('T')[0];
 }
+
+/**
+ * Formats date into DD/MM/YYYY HH:mm string in Vietnam timezone (Asia/Ho_Chi_Minh).
+ * Guaranteed to be timezone-independent and consistent between SSR and client.
+ */
+export function formatVietnamDateTime(input: Date | string | number | null | undefined, fallback = '—'): string {
+  const iso = toVietnamISO(input);
+  if (!iso) return fallback;
+  const [datePart, timePartWithOffset] = iso.split('T');
+  const [year, month, day] = datePart.split('-');
+  const timePart = timePartWithOffset.slice(0, 5); // HH:mm
+  return `${day}/${month}/${year} ${timePart}`;
+}
+
+/**
+ * Formats date into DD/MM/YYYY string in Vietnam timezone (Asia/Ho_Chi_Minh).
+ */
+export function formatVietnamDate(input: Date | string | number | null | undefined, fallback = '—'): string {
+  const iso = toVietnamISO(input);
+  if (!iso) return fallback;
+  const [year, month, day] = iso.split('T')[0].split('-');
+  return `${day}/${month}/${year}`;
+}

@@ -845,9 +845,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 pathname?.startsWith('/dashboard/telesale-target')
                   ? ' dashboard-content--full-width'
                   : ''
-              }${pathname?.startsWith('/dashboard/telesale-target') ? ' dashboard-content--war-room' : ''}`}
+              }${
+                pathname?.startsWith('/dashboard/telesale-target') ||
+                pathname?.startsWith('/dashboard/pilot-dark-lashes')
+                  ? ' dashboard-content--war-room'
+                  : ''
+              }`}
               style={{
-                background: pathname?.startsWith('/dashboard/telesale-target') ? 'transparent' : token.colorBgContainer,
+                background:
+                  pathname?.startsWith('/dashboard/telesale-target') ||
+                  pathname?.startsWith('/dashboard/pilot-dark-lashes')
+                    ? 'transparent'
+                    : token.colorBgContainer,
                 color: token.colorText,
               }}
             >

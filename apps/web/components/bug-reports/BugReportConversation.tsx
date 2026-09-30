@@ -11,7 +11,7 @@ import type {
   CreateBugReportAttachmentRequest,
   CreateBugReportCommentRequest,
 } from '@mos-lab/shared';
-import { BUG_REPORT_MAX_ATTACHMENTS, BUG_REPORT_MAX_ATTACHMENT_BYTES } from '@mos-lab/shared';
+import { BUG_REPORT_MAX_ATTACHMENTS, BUG_REPORT_MAX_ATTACHMENT_BYTES, formatVietnamDateTime } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { Bot, ImagePlus, Send, X } from 'lucide-react';
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
@@ -255,7 +255,7 @@ export function BugReportConversation({
                       ) : null}
                     </div>
                     <Text type="secondary" className="text-xs tabular-nums">
-                      {dayjs(comment.createdAt).format('DD/MM/YYYY HH:mm')}
+                      {formatVietnamDateTime(comment.createdAt)}
                     </Text>
                   </div>
                 </div>

@@ -14,6 +14,7 @@ import {
   type BugReportSummary,
   type InboxTimingBucket,
   isDeferredBugReport,
+  formatVietnamDateTime,
 } from '@mos-lab/shared';
 import dayjs from 'dayjs';
 import { StatusTag } from '../../../components/ui';
@@ -142,7 +143,7 @@ export const TRANSITIONS: Record<BugReportStatus, BugReportStatus[]> = {
 };
 
 export function formatDate(value: string | null): string {
-  return value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '—';
+  return formatVietnamDateTime(value);
 }
 
 export function formatElapsed(value: string): string {

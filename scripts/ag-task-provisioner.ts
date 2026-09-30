@@ -1031,6 +1031,7 @@ Nhiệm vụ: Lập kế hoạch triển khai (Implementation Plan) cho ticket s
 ${job.context.clarificationSummary ? `- Tóm tắt làm rõ: "${job.context.clarificationSummary}"` : ''}
 ${job.context.businessContext ? `- Bối cảnh nghiệp vụ: "${job.context.businessContext}"` : ''}
 ${job.context.reopen ? `- Lý do reopen: "${job.context.reopen.reason}"` : ''}
+${job.context.reporterMessages?.length ? `- Phản hồi/Yêu cầu từ Danny & nhân viên:\n${job.context.reporterMessages.map((m) => `  * "${m}"`).join('\n')}` : ''}
 
 Hãy lập kế hoạch triển khai rõ ràng, an toàn, súc tích tuân thủ các Điều răn mOS.
 Trả về JSON thuần túy theo schema:

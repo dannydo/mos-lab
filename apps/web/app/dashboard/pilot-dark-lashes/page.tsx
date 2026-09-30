@@ -22,6 +22,9 @@ import {
   Trash2,
   User,
   ClipboardCheck,
+  Maximize2,
+  Minimize2,
+  Info,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -76,6 +79,27 @@ export default function PilotDarkLashesPage() {
   const [criteriaModalOpen, setCriteriaModalOpen] = useState(false);
   const [flowDrawerOpen, setFlowDrawerOpen] = useState(false);
   const [selectedFlowSession, setSelectedFlowSession] = useState<PilotSession | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setIsFullscreen(false);
+    }
+  };
 
   const [form] = Form.useForm();
   const [followUpForm] = Form.useForm();
@@ -686,70 +710,87 @@ export default function PilotDarkLashesPage() {
   ];
 
   return (
-    <div className="w-full space-y-6">
-      {/* Header Banner */}
-      <div className="rounded-2xl p-5 sm:p-6 relative overflow-hidden border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent transition-all duration-300 shadow-sm w-full">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 flex-1">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <AppIcon icon={Sparkles} size="sm" className="mr-1" />
-                Wings Lashes Đề Thám
-              </span>
-              <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                Pilot 30 Ngày (Mục tiêu 1 ca/ngày)
-              </span>
-              <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                Commercial: Danny · Technical: Cô Đẫm
-              </span>
-            </div>
-            <Title level={2} className="!mb-1 !text-slate-900 dark:!text-slate-100 tracking-tight">
-              Pilot Uốn Mi Bóng Tối
-            </Title>
-            <p className="text-sm text-slate-600 dark:text-slate-300 max-w-4xl m-0">
-              Công cụ đo lường Unit Economics và mức độ hài lòng khách hàng sau 30 ngày. Tự động tính Contribution
-              Margin từng ca và điều phối follow-up 24h–72h.
-            </p>
-          </div>
+    <div
+      className={`w-full min-h-[calc(100vh-var(--mos-header-height))] ${
+        isFullscreen ? 'p-2.5 sm:p-4' : 'p-3 sm:p-4.5 lg:p-5'
+      } space-y-3 sm:space-y-3.5 antialiased`}
+    >
+      {/* Header Banner - Ultra Compact Single Row */}
+      <div className="rounded-xl px-3 py-2 sm:px-3.5 sm:py-2.5 relative border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent transition-all duration-300 shadow-sm w-full flex items-center justify-between gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight m-0 whitespace-nowrap">
+            Pilot Uốn Mi Bóng Tối
+          </h1>
+          <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
+            <AppIcon icon={Sparkles} size={13} className="mr-1" />
+            Đề Thám
+          </span>
+          <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 whitespace-nowrap">
+            Pilot 30N (1 ca/ngày)
+          </span>
+          <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 whitespace-nowrap">
+            Đẫm Ti · Cô Đẫm
+          </span>
+          <Tooltip title="Công cụ đo lường Unit Economics và mức độ hài lòng khách hàng sau 30 ngày. Tự động tính Contribution Margin từng ca và điều phối follow-up 24h–72h.">
+            <span
+              className="cursor-pointer text-slate-400 hover:text-emerald-500 inline-flex items-center ml-0.5"
+              title="Thông tin pilot"
+            >
+              <AppIcon icon={Info} size={13} />
+            </span>
+          </Tooltip>
+        </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+        <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+          <Tooltip title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'}>
             <Button
-              icon={<AppIcon icon={RotateCw} size="sm" className={loading ? 'animate-spin' : ''} />}
+              size="small"
+              icon={<AppIcon icon={isFullscreen ? Minimize2 : Maximize2} size={13} />}
+              onClick={toggleFullscreen}
+              className="rounded-lg font-medium text-xs h-7 px-2"
+            />
+          </Tooltip>
+          <Tooltip title="Làm mới dữ liệu">
+            <Button
+              size="small"
+              icon={<AppIcon icon={RotateCw} size={13} className={loading ? 'animate-spin' : ''} />}
               onClick={fetchPilotData}
-              className="rounded-xl font-medium"
-            >
-              Làm mới
-            </Button>
-            <Button
-              icon={<AppIcon icon={ListOrdered} size="sm" />}
-              onClick={() => setSopModalOpen(true)}
-              className="rounded-xl font-medium border-teal-500/30 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/30"
-            >
-              Quy trình kỹ thuật (SOP)
-            </Button>
-            <Button
-              icon={<AppIcon icon={ClipboardCheck} size="sm" />}
-              onClick={() => setCriteriaModalOpen(true)}
-              className="rounded-xl font-medium border-violet-500/30 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/30"
-            >
-              Tiêu chí đánh giá mi
-            </Button>
-            <Button
-              icon={<AppIcon icon={Package} size="sm" />}
-              onClick={() => setMaterialModalOpen(true)}
-              className="rounded-xl font-medium border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-            >
-              Danh mục vật tư
-            </Button>
-            <Button
-              type="primary"
-              icon={<AppIcon icon={Plus} size="sm" />}
-              onClick={handleOpenCreate}
-              className="rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 border-none shadow-md shadow-emerald-500/20 text-white"
-            >
-              Thêm ca dịch vụ mới
-            </Button>
-          </div>
+              className="rounded-lg font-medium text-xs h-7 px-2"
+            />
+          </Tooltip>
+          <Button
+            size="small"
+            icon={<AppIcon icon={ListOrdered} size={13} />}
+            onClick={() => setSopModalOpen(true)}
+            className="rounded-lg font-medium text-xs h-7 px-2 border-teal-500/30 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/30"
+          >
+            SOP 7 bước
+          </Button>
+          <Button
+            size="small"
+            icon={<AppIcon icon={ClipboardCheck} size={13} />}
+            onClick={() => setCriteriaModalOpen(true)}
+            className="rounded-lg font-medium text-xs h-7 px-2 border-violet-500/30 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/30"
+          >
+            Tiêu chí mi
+          </Button>
+          <Button
+            size="small"
+            icon={<AppIcon icon={Package} size={13} />}
+            onClick={() => setMaterialModalOpen(true)}
+            className="rounded-lg font-medium text-xs h-7 px-2 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+          >
+            Vật tư
+          </Button>
+          <Button
+            type="primary"
+            size="small"
+            icon={<AppIcon icon={Plus} size={13} />}
+            onClick={handleOpenCreate}
+            className="rounded-lg font-semibold text-xs h-7 px-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 border-none shadow-sm shadow-emerald-500/20 text-white"
+          >
+            Thêm ca mới
+          </Button>
         </div>
       </div>
 

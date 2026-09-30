@@ -40,6 +40,10 @@
 6. **Zero Lingering Background Tasks & Graceful Self-Termination (Tiêu chuẩn Tự kết thúc Sạch sẽ)**:
    - Mọi script nền, bridge daemon (`ide-task-bridge.ts`), và worker bắt buộc phải có cơ chế tự kết thúc tường minh (`process.exit(0)`), gắn timeout cho mọi network call (`AbortSignal.timeout(10_000)`), và nhận diện trạng thái hoàn tất (terminal state: `FIXED`, `AWAITING_REPORTER_ACCEPTANCE`, đã chốt release) để tự thoát ngay khi hết việc, tuyệt đối không để rò rỉ socket hay loop vô tận.
    - Khi thực thi lệnh kiểm tra DB hoặc node một lần (one-liner) qua SSH/shell, bắt buộc bọc trong `try ... finally { await conn.end(); process.exit(0); }` để không làm treo kênh SSH hay Event Loop.
+7. **Comment-First Discipline & Live Ticket Context (Kỷ luật Đọc Comment Tươi & Phản hồi Trúng Đích)**:
+   - Mỗi khi trao đổi, giải đáp hay lập phương án cho bất kỳ ticket nào từ mOS Inbox, Agent **BẮT BUỘC** phải truy vấn danh sách comment mới nhất trực tiếp từ database (`crm_bug_report_comments`).
+   - Đọc kỹ, thấu hiểu tường tận từng câu hỏi kỹ thuật, ý kiến đóng góp của Danny và người dùng; tuyệt đối không đưa ra câu trả lời né tránh, rập khuôn template hay phớt lờ câu hỏi.
+   - Luôn đồng bộ câu trả lời kỹ thuật chuẩn xác trực tiếp vào comment của ticket trên hệ thống để Danny và đội ngũ theo dõi liền mạch trên web.
 
 ---
 
