@@ -5,6 +5,7 @@ import {
   calculateAcademyWorkshopFeeStatus,
   calculateAcademyWorkshopQuestionScore,
   getAcademyWorkshopQuizProgress,
+  resolveAcademyWorkshopParticipantTargetFee,
   selectAcademyWorkshopRewardParticipantIds,
   sortAcademyWorkshopTalentLeaderboard,
   type SafeAny,
@@ -34,6 +35,31 @@ test('derives workshop fee readiness exclusively from append-only ledger totals 
   assert.equal(calculateAcademyWorkshopFeeStatus(500_000, 500_000, false), 'PAID');
   assert.equal(calculateAcademyWorkshopFeeStatus(500_000, 0, true), 'WAIVED');
   assert.equal(calculateAcademyWorkshopFeeStatus(500_000, 550_000 - 50_000, false), 'PAID');
+});
+
+test('resolves workshop participant pricing tiers and calculates paid status accurately', () => {
+  const workshopFee = 1_900_000;
+  // Tier 1: Early bird 1.500k
+  const target1500 = resolveAcademyWorkshopParticipantTargetFee(workshopFee, 1_500_000);
+  assert.equal(target1500, 1_500_000);
+  assert.equal(calculateAcademyWorkshopFeeStatus(target1500, 1_500_000, false), 'PAID');
+  assert.equal(calculateAcademyWorkshopFeeStatus(target1500, 1_000_000, false), 'PARTIAL');
+
+  // Tier 2: Discount 10% (1.710.000)
+  const target10Pct = resolveAcademyWorkshopParticipantTargetFee(workshopFee, null, 190_000);
+  assert.equal(target10Pct, 1_710_000);
+  assert.equal(calculateAcademyWorkshopFeeStatus(target10Pct, 1_710_000, false), 'PAID');
+
+  // Tier 3: Discount 50% (950.000)
+  const target50Pct = resolveAcademyWorkshopParticipantTargetFee(workshopFee, 950_000);
+  assert.equal(target50Pct, 950_000);
+  assert.equal(calculateAcademyWorkshopFeeStatus(target50Pct, 950_000, false), 'PAID');
+
+  // Tier 4: Standard Full (1.900.000)
+  const targetFull = resolveAcademyWorkshopParticipantTargetFee(workshopFee, null, 0);
+  assert.equal(targetFull, 1_900_000);
+  assert.equal(calculateAcademyWorkshopFeeStatus(targetFull, 1_500_000, false), 'PARTIAL');
+  assert.equal(calculateAcademyWorkshopFeeStatus(targetFull, 1_900_000, false), 'PAID');
 });
 
 test('keeps public registration, check-in, and live workshop phases separate', () => {

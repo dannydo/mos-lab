@@ -278,7 +278,24 @@ export default function AcademyWorkshopRoster({
               ) : (
                 feeStatus
               )}
-              {row.feePaidVnd > 0 && <div className="mt-1 text-xs">{row.feePaidVnd.toLocaleString('vi-VN')} đ</div>}
+              {row.discountReason && (
+                <div
+                  className="mt-0.5 max-w-[140px] truncate text-[11px] font-medium text-indigo-600 dark:text-indigo-400"
+                  title={row.discountReason}
+                >
+                  {row.discountReason}
+                </div>
+              )}
+              {row.feePaidVnd > 0 && (
+                <div className="mt-0.5 text-xs font-semibold tabular-nums">
+                  {row.feePaidVnd.toLocaleString('vi-VN')} đ
+                </div>
+              )}
+              {row.feeRemainingVnd > 0 && row.feeStatus === 'PARTIAL' && (
+                <div className="mt-0.5 text-[11px] text-rose-500 tabular-nums dark:text-rose-400">
+                  (thiếu {row.feeRemainingVnd.toLocaleString('vi-VN')} đ)
+                </div>
+              )}
             </div>
           );
         },

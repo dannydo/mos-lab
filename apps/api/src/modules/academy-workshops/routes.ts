@@ -51,6 +51,7 @@ import type {
   UpdateAcademyWorkshopZaloTemplatesRequest,
   UpsertAcademyWorkshopQuestionRequest,
   UpsertAcademyWorkshopQuizRequest,
+  UpdateAcademyWorkshopParticipantPricingRequest,
   WaiveAcademyWorkshopFeeRequest,
 } from '@mos-lab/shared';
 import { requireAuth } from '../../middlewares/auth.js';
@@ -1230,6 +1231,23 @@ export async function academyWorkshopRoutes(fastify: FastifyInstance) {
       return reply.send({ success: true, data, message: body.waived ? 'Đã miễn phí workshop.' : 'Đã hủy miễn phí.' });
     } catch (cause) {
       return error(fastify, reply, cause, 'Waive workshop fee');
+    }
+  });
+
+  fastify.put('/academy-sales/workshops/:workshopId/participants/:participantId/pricing', async (request, reply) => {
+    try {
+      const { workshopId, participantId } = request.params as { workshopId: string; participantId: string };
+      const body = request.body as UpdateAcademyWorkshopParticipantPricingRequest;
+      const data = await AcademyWorkshopService.updateParticipantPricing(
+        fastify,
+        actorFrom(request),
+        id(workshopId, 'Workshop ID'),
+        id(participantId, 'Participant ID'),
+        body
+      );
+      return reply.send({ success: true, data, message: 'Đã cập nhật mức học phí áp dụng / ưu đãi.' });
+    } catch (cause) {
+      return error(fastify, reply, cause, 'Update participant pricing');
     }
   });
 

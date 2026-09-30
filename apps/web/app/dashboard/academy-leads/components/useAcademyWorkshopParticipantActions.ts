@@ -2,7 +2,12 @@
 
 import React from 'react';
 import { Form, message } from 'antd';
-import { removeVietnameseTones, type AcademyLead, type AcademyWorkshopParticipant } from '@mos-lab/shared';
+import {
+  removeVietnameseTones,
+  type AcademyLead,
+  type AcademyWorkshopParticipant,
+  type UpdateAcademyWorkshopParticipantPricingRequest,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { compressWorkshopImage } from './academy-workshop-image';
 import type { AcademyWorkshopFeeForm, AcademyWorkshopWalkInForm } from './AcademyWorkshopParticipantOverlays';
@@ -131,7 +136,13 @@ export function useAcademyWorkshopParticipantActions({
       feeForm.resetFields();
       feeForm.setFieldValue('method', 'BANK_TRANSFER');
       const defaultAmount =
-        participant.feeRemainingVnd > 0 ? participant.feeRemainingVnd : workshop?.feeVnd && workshop.feeVnd > 0 ? workshop.feeVnd : undefined;
+        participant.feeRemainingVnd > 0
+          ? participant.feeRemainingVnd
+          : participant.feeStatus === 'PAID'
+            ? undefined
+            : workshop?.feeVnd && workshop.feeVnd > 0
+              ? workshop.feeVnd
+              : undefined;
       if (defaultAmount) feeForm.setFieldValue('amountVnd', defaultAmount);
       setFeeOpen(true);
     },
@@ -270,6 +281,18 @@ export function useAcademyWorkshopParticipantActions({
     [mutateParticipant, selected, workshop]
   );
 
+  const updatePricing = React.useCallback(
+    async (pricing: UpdateAcademyWorkshopParticipantPricingRequest) => {
+      if (!workshop || !selected) return;
+      await mutateParticipant(
+        () => apiClient.academySales.workshops.updateParticipantPricing(workshop.id, selected.id, pricing),
+        'Đã cập nhật mức học phí áp dụng / gói ưu đãi.',
+        selected.id
+      );
+    },
+    [mutateParticipant, selected, workshop]
+  );
+
   const uploadPhoto = React.useCallback(
     async (file: File) => {
       if (!workshop || !selected) return false;
@@ -388,6 +411,7 @@ export function useAcademyWorkshopParticipantActions({
     saveFee,
     deleteFeePayment,
     waiveFee,
+    updatePricing,
     canManageFee,
     uploadPhoto,
     quickUpdateCare,
