@@ -1680,6 +1680,9 @@ model CrmAcademyWorkshopParticipant {
   feeWaivedAt              DateTime? @map("fee_waived_at") @db.DateTime(0)
   feeWaiverReason          String?   @map("fee_waiver_reason") @db.Text
   feeWaivedByStaffId       Int?      @map("fee_waived_by_staff_id")
+  appliedFeeVnd            Int?      @map("applied_fee_vnd")
+  discountVnd              Int       @default(0) @map("discount_vnd")
+  discountReason           String?   @map("discount_reason") @db.VarChar(255)
   createdAt                DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt                DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 

@@ -1,7 +1,20 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Descriptions, Form, Image, Input, InputNumber, Popconfirm, Select, Space, Typography, Upload } from 'antd';
+import {
+  Alert,
+  Button,
+  Descriptions,
+  Form,
+  Image,
+  Input,
+  InputNumber,
+  Popconfirm,
+  Select,
+  Space,
+  Typography,
+  Upload,
+} from 'antd';
 import type { FormInstance } from 'antd';
 import dayjs from 'dayjs';
 import {
@@ -13,6 +26,7 @@ import {
   MessageCircle,
   QrCode,
   RotateCcw,
+  Tag,
   Trash2,
   Trophy,
   UserPlus,
@@ -22,10 +36,12 @@ import AcademyWorkshopParticipantSelectionsModal from './AcademyWorkshopParticip
 import { WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 import {
   ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS,
+  ACADEMY_WORKSHOP_PRICING_PRESETS,
   type AcademyLead,
   type AcademyWorkshopDetail,
   type AcademyWorkshopParticipant,
   type AcademyWorkshopResourcesResponse,
+  type UpdateAcademyWorkshopParticipantPricingRequest,
 } from '@mos-lab/shared';
 import {
   AdaptiveDrawer,
@@ -83,6 +99,7 @@ interface AcademyWorkshopParticipantOverlaysProps {
   onOpenFee: (participant?: AcademyWorkshopParticipant) => void;
   onDeleteFeePayment?: (paymentId: number) => Promise<void>;
   onWaiveFee?: (waived: boolean, reason?: string) => Promise<void>;
+  onUpdatePricing?: (pricing: UpdateAcademyWorkshopParticipantPricingRequest) => Promise<void>;
   onAssignInstructor: (instructorId: number | null) => void;
   onSetPhotoConsent: (consent: boolean) => void;
   onUploadPhoto: (file: File) => void;
@@ -111,7 +128,7 @@ interface AcademyWorkshopParticipantOverlaysProps {
 export default function AcademyWorkshopParticipantOverlays({
   workshop,
   selected,
-  resources,
+  resources = { staff: [], instructors: [] },
   busy,
   talentLoading,
   canManageRestricted,
@@ -119,11 +136,11 @@ export default function AcademyWorkshopParticipantOverlays({
   qrDataUrl,
   qrTargetUrl,
   addOpen,
-  addLeadIds,
+  addLeadIds = [],
   leadSearch,
   leadLoading,
   leadError,
-  availableLeadOptions,
+  availableLeadOptions = [],
   walkInOpen,
   feeOpen,
   walkInForm,
@@ -148,6 +165,7 @@ export default function AcademyWorkshopParticipantOverlays({
   onSaveFee,
   onDeleteFeePayment,
   onWaiveFee,
+  onUpdatePricing,
   onOpenZaloScript,
   selectionsOpen = false,
   selectionsParticipant = null,
@@ -155,11 +173,116 @@ export default function AcademyWorkshopParticipantOverlays({
   onCloseSelections,
   onSaveSelections,
 }: AcademyWorkshopParticipantOverlaysProps) {
+  const [pricingPreset, setPricingPreset] = React.useState<string>('full');
+  const [customAppliedFee, setCustomAppliedFee] = React.useState<number | null>(null);
+  const [customReason, setCustomReason] = React.useState<string>('');
+  const [pricingBusy, setPricingBusy] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!selected) return;
+    if (selected.appliedFeeVnd === 1500000 || selected.discountReason?.includes('1.500')) {
+      setPricingPreset('promo_1500');
+      setCustomAppliedFee(null);
+      setCustomReason('');
+    } else if (
+      selected.appliedFeeVnd === Math.round(workshop.feeVnd * 0.9) ||
+      selected.discountReason?.includes('10%')
+    ) {
+      setPricingPreset('discount_10');
+      setCustomAppliedFee(null);
+      setCustomReason('');
+    } else if (
+      selected.appliedFeeVnd === Math.round(workshop.feeVnd * 0.5) ||
+      selected.discountReason?.includes('50%')
+    ) {
+      setPricingPreset('discount_50');
+      setCustomAppliedFee(null);
+      setCustomReason('');
+    } else if (selected.appliedFeeVnd !== null && selected.appliedFeeVnd !== undefined) {
+      if (selected.appliedFeeVnd === workshop.feeVnd) {
+        setPricingPreset('full');
+        setCustomAppliedFee(null);
+        setCustomReason('');
+      } else {
+        setPricingPreset('custom');
+        setCustomAppliedFee(selected.appliedFeeVnd);
+        setCustomReason(selected.discountReason || '');
+      }
+    } else if (selected.discountVnd > 0) {
+      setPricingPreset('custom');
+      setCustomAppliedFee(Math.max(0, workshop.feeVnd - selected.discountVnd));
+      setCustomReason(selected.discountReason || '');
+    } else {
+      setPricingPreset('full');
+      setCustomAppliedFee(null);
+      setCustomReason('');
+    }
+  }, [selected?.id, selected?.appliedFeeVnd, selected?.discountVnd, selected?.discountReason, workshop.feeVnd]);
+
+  const handleSelectPreset = (presetId: string) => {
+    setPricingPreset(presetId);
+    if (presetId === 'promo_1500') {
+      setCustomAppliedFee(1500000);
+      setCustomReason('Ưu đãi giữ chỗ sớm 1.500k');
+    } else if (presetId === 'discount_10') {
+      setCustomAppliedFee(Math.round(workshop.feeVnd * 0.9));
+      setCustomReason('Ưu đãi 10%');
+    } else if (presetId === 'discount_50') {
+      setCustomAppliedFee(Math.round(workshop.feeVnd * 0.5));
+      setCustomReason('Ưu đãi 50%');
+    } else if (presetId === 'full') {
+      setCustomAppliedFee(workshop.feeVnd);
+      setCustomReason('Vé tiêu chuẩn (Full)');
+    } else {
+      setCustomAppliedFee(
+        selected?.appliedFeeVnd ??
+          (selected?.discountVnd ? Math.max(0, workshop.feeVnd - selected.discountVnd) : workshop.feeVnd)
+      );
+      setCustomReason(selected?.discountReason || '');
+    }
+  };
+
+  const handleApplyPricing = async () => {
+    if (!onUpdatePricing || !selected) return;
+    setPricingBusy(true);
+    try {
+      let appliedFeeVnd: number | null = null;
+      let discountVnd = 0;
+      let discountReason: string | null = null;
+
+      if (pricingPreset === 'full') {
+        appliedFeeVnd = workshop.feeVnd;
+        discountVnd = 0;
+        discountReason = 'Vé tiêu chuẩn (Full)';
+      } else if (pricingPreset === 'promo_1500') {
+        appliedFeeVnd = 1500000;
+        discountVnd = Math.max(0, workshop.feeVnd - 1500000);
+        discountReason = 'Ưu đãi giữ chỗ sớm 1.500k';
+      } else if (pricingPreset === 'discount_10') {
+        appliedFeeVnd = Math.round(workshop.feeVnd * 0.9);
+        discountVnd = workshop.feeVnd - appliedFeeVnd;
+        discountReason = 'Ưu đãi 10%';
+      } else if (pricingPreset === 'discount_50') {
+        appliedFeeVnd = Math.round(workshop.feeVnd * 0.5);
+        discountVnd = workshop.feeVnd - appliedFeeVnd;
+        discountReason = 'Ưu đãi 50%';
+      } else {
+        appliedFeeVnd = customAppliedFee !== null ? Math.max(0, Math.round(customAppliedFee)) : workshop.feeVnd;
+        discountVnd = Math.max(0, workshop.feeVnd - appliedFeeVnd);
+        discountReason = customReason.trim() || 'Ưu đãi tùy chỉnh';
+      }
+
+      await onUpdatePricing({ appliedFeeVnd, discountVnd, discountReason });
+    } finally {
+      setPricingBusy(false);
+    }
+  };
+
   return (
     <>
       <AdaptiveDrawer
         open={careDrawerOpen && Boolean(selected)}
-        title={selected?.lead.name || 'Học viên'}
+        title={selected?.lead?.name || 'Học viên'}
         width={620}
         onClose={onCloseCare}
         extra={
@@ -171,7 +294,9 @@ export default function AcademyWorkshopParticipantOverlays({
         {selected && (
           <div className="space-y-5">
             <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="Liên hệ">{selected.lead.phone || selected.lead.email || '—'}</Descriptions.Item>
+              <Descriptions.Item label="Liên hệ">
+                {selected?.lead?.phone || selected?.lead?.email || '—'}
+              </Descriptions.Item>
               <Descriptions.Item
                 label={
                   <div className="flex items-center justify-between">
@@ -191,15 +316,12 @@ export default function AcademyWorkshopParticipantOverlays({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="tabular-nums">
-                    {selected.feePaidVnd.toLocaleString('vi-VN')} đ{workshop.feeVnd > 0 ? ` / ${workshop.feeVnd.toLocaleString('vi-VN')} đ` : ''} · {WORKSHOP_FEE_LABELS[selected.feeStatus]}
+                    {selected.feePaidVnd.toLocaleString('vi-VN')} đ
+                    {workshop.feeVnd > 0 ? ` / ${workshop.feeVnd.toLocaleString('vi-VN')} đ` : ''} ·{' '}
+                    {WORKSHOP_FEE_LABELS[selected.feeStatus]}
                   </span>
                   {canManageRestricted && onOpenFee && (
-                    <Button
-                      size="small"
-                      type="dashed"
-                      className="text-xs"
-                      onClick={() => onOpenFee(selected)}
-                    >
+                    <Button size="small" type="dashed" className="text-xs" onClick={() => onOpenFee(selected)}>
                       Sửa phí
                     </Button>
                   )}
@@ -225,12 +347,17 @@ export default function AcademyWorkshopParticipantOverlays({
                   </div>
                 }
               >
-                {selected.menuSelections.length > 0 ? (
+                {((selected as any)?.menuSelections?.length ?? 0) > 0 ? (
                   <div className="space-y-1">
-                    {selected.menuSelections.map((selection) => (
+                    {(selected as any).menuSelections.map((selection: any) => (
                       <div key={selection.id} className="text-xs">
                         <span className="opacity-60">
-                          {ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[selection.category]}:{' '}
+                          {
+                            ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS[
+                              selection.category as keyof typeof ACADEMY_WORKSHOP_MENU_CATEGORY_LABELS
+                            ]
+                          }
+                          :{' '}
                         </span>
                         <strong className="font-semibold">{selection.itemName}</strong>
                       </div>
@@ -294,8 +421,12 @@ export default function AcademyWorkshopParticipantOverlays({
             <div className="rounded-xl border border-inherit p-4">
               <div className="mb-3 font-semibold">1. Chăm trước workshop</div>
               <Space wrap>
-                {selected.lead.facebookChatLink ? (
-                  <Button href={selected.lead.facebookChatLink} target="_blank" icon={<AppIcon icon={MessageCircle} />}>
+                {(selected as any)?.lead?.facebookChatLink ? (
+                  <Button
+                    href={(selected as any).lead.facebookChatLink}
+                    target="_blank"
+                    icon={<AppIcon icon={MessageCircle} />}
+                  >
                     Mở Pancake/chat
                   </Button>
                 ) : null}
@@ -371,15 +502,15 @@ export default function AcademyWorkshopParticipantOverlays({
                   </Button>
                 </Upload>
               </Space>
-              {selected.photos.length > 0 && (
+              {((selected as any)?.photos?.length ?? 0) > 0 && (
                 <WorkshopImageGallery>
                   <div className="mt-3 grid grid-cols-3 gap-2">
-                    {selected.photos.map((photo) =>
+                    {(selected as any).photos.map((photo: any) =>
                       photo.signedUrl ? (
                         <Image
                           key={photo.id}
                           src={photo.signedUrl}
-                          alt={photo.caption || selected.lead.name}
+                          alt={photo.caption || selected?.lead?.name || 'Học viên'}
                           className="aspect-square rounded-lg object-cover"
                         />
                       ) : null
@@ -554,10 +685,26 @@ export default function AcademyWorkshopParticipantOverlays({
               <div className="rounded-xl border border-inherit bg-slate-50/50 p-3.5 dark:bg-slate-900/30">
                 <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
                   <div>
-                    <div className="text-slate-500 dark:text-slate-400">Phí workshop</div>
-                    <div className="mt-0.5 font-semibold tabular-nums">
-                      {workshop.feeVnd.toLocaleString('vi-VN')} đ
+                    <div className="text-slate-500 dark:text-slate-400">Phí niêm yết</div>
+                    <div className="mt-0.5 font-semibold tabular-nums">{workshop.feeVnd.toLocaleString('vi-VN')} đ</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500 dark:text-slate-400">Học phí áp dụng</div>
+                    <div className="mt-0.5 font-semibold tabular-nums text-indigo-600 dark:text-indigo-400">
+                      {(selected.appliedFeeVnd !== null && selected.appliedFeeVnd !== undefined
+                        ? selected.appliedFeeVnd
+                        : Math.max(0, workshop.feeVnd - (selected.discountVnd || 0))
+                      ).toLocaleString('vi-VN')}{' '}
+                      đ
                     </div>
+                    {(selected.appliedFeeVnd !== null || selected.discountVnd > 0) && (
+                      <div
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate"
+                        title={selected.discountReason || ''}
+                      >
+                        {selected.discountReason || 'Có ưu đãi'}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="text-slate-500 dark:text-slate-400">Đã đóng</div>
@@ -567,27 +714,28 @@ export default function AcademyWorkshopParticipantOverlays({
                   </div>
                   <div>
                     <div className="text-slate-500 dark:text-slate-400">Còn thiếu</div>
-                    <div className="mt-0.5 font-semibold text-rose-600 tabular-nums dark:text-rose-400">
-                      {Math.max(0, selected.feeRemainingVnd ?? (workshop.feeVnd - selected.feePaidVnd)).toLocaleString('vi-VN')} đ
+                    <div
+                      className={`mt-0.5 font-semibold tabular-nums ${selected.feeRemainingVnd <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
+                    >
+                      {selected.feeRemainingVnd.toLocaleString('vi-VN')} đ
                     </div>
                   </div>
-                  <div>
-                    <div className="text-slate-500 dark:text-slate-400">Trạng thái</div>
-                    <div className="mt-0.5">
-                      <StatusTag
-                        status={
-                          selected.feeStatus === 'PAID'
-                            ? 'success'
-                            : selected.feeStatus === 'WAIVED'
-                            ? 'default'
-                            : selected.feeStatus === 'PARTIAL'
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-inherit/60 pt-2 text-xs">
+                  <span className="text-slate-500 dark:text-slate-400">Trạng thái thanh toán:</span>
+                  <StatusTag
+                    status={
+                      selected.feeStatus === 'PAID'
+                        ? 'success'
+                        : selected.feeStatus === 'WAIVED'
+                          ? 'default'
+                          : selected.feeStatus === 'PARTIAL'
                             ? 'warning'
                             : 'error'
-                        }
-                        label={WORKSHOP_FEE_LABELS[selected.feeStatus] || selected.feeStatus}
-                      />
-                    </div>
-                  </div>
+                    }
+                    label={WORKSHOP_FEE_LABELS[selected.feeStatus] || selected.feeStatus}
+                  />
                 </div>
 
                 {selected.feeWaivedAt && (
@@ -597,6 +745,110 @@ export default function AcademyWorkshopParticipantOverlays({
                   </div>
                 )}
               </div>
+
+              {/* Chính sách giá vé & Gói ưu đãi học viên */}
+              {workshop.feeVnd > 0 && onUpdatePricing && (
+                <div className="rounded-xl border border-inherit p-3.5 bg-indigo-50/30 dark:bg-indigo-950/10">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <AppIcon icon={Tag} className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Gói vé & Ưu đãi áp dụng</span>
+                    </div>
+                    {selected.discountReason && (
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+                        {selected.discountReason}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {ACADEMY_WORKSHOP_PRICING_PRESETS.map((preset) => {
+                        const isSelected = pricingPreset === preset.id;
+                        let tierAmount = workshop.feeVnd;
+                        if (preset.type === 'FIXED') tierAmount = preset.fixedAmountVnd || 0;
+                        else if (preset.type === 'PERCENT')
+                          tierAmount = Math.round(workshop.feeVnd * (1 - (preset.percent || 0) / 100));
+
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            disabled={busy || pricingBusy}
+                            onClick={() => handleSelectPreset(preset.id)}
+                            className={`flex flex-col text-left p-2.5 rounded-lg border text-xs transition-all ${
+                              isSelected
+                                ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-100 font-semibold ring-1 ring-indigo-500'
+                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white/70 dark:bg-slate-800/60'
+                            }`}
+                          >
+                            <div className="font-medium truncate">{preset.label}</div>
+                            <div className="mt-1 font-bold tabular-nums text-slate-800 dark:text-slate-200">
+                              {preset.type === 'CUSTOM' ? 'Tùy chỉnh...' : `${tierAmount.toLocaleString('vi-VN')} đ`}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {pricingPreset === 'custom' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        <div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                            Mức học phí áp dụng (VND)
+                          </div>
+                          <InputNumber
+                            min={0}
+                            precision={0}
+                            step={50000}
+                            className="w-full"
+                            value={customAppliedFee}
+                            onChange={(val) => setCustomAppliedFee(val ? Number(val) : null)}
+                            placeholder="Nhập mức phí thực thu"
+                            formatter={formatVndInput}
+                            parser={parseVndInput}
+                          />
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                            Lý do / Tên gói ưu đãi
+                          </div>
+                          <Input
+                            value={customReason}
+                            onChange={(e) => setCustomReason(e.target.value)}
+                            placeholder="VD: Học bổng đối tác, ưu đãi VIP..."
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {pricingPreset === 'promo_1500' && 'Ưu đãi giữ chỗ sớm 1.500.000 đ (giảm 400.000 đ)'}
+                        {pricingPreset === 'discount_10' &&
+                          `Ưu đãi 10%: ${Math.round(workshop.feeVnd * 0.9).toLocaleString('vi-VN')} đ (giảm ${Math.round(workshop.feeVnd * 0.1).toLocaleString('vi-VN')} đ)`}
+                        {pricingPreset === 'discount_50' &&
+                          `Ưu đãi 50%: ${Math.round(workshop.feeVnd * 0.5).toLocaleString('vi-VN')} đ (giảm ${Math.round(workshop.feeVnd * 0.5).toLocaleString('vi-VN')} đ)`}
+                        {pricingPreset === 'full' && 'Vé tiêu chuẩn: 100% học phí niêm yết'}
+                        {pricingPreset === 'custom' &&
+                          (customAppliedFee !== null
+                            ? `Mức phí áp dụng: ${customAppliedFee.toLocaleString('vi-VN')} đ`
+                            : 'Nhập mức phí áp dụng tùy chỉnh')}
+                      </div>
+                      <Button
+                        size="small"
+                        type="primary"
+                        ghost
+                        loading={pricingBusy}
+                        onClick={handleApplyPricing}
+                        disabled={busy || pricingBusy}
+                      >
+                        Áp dụng gói vé này
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Lịch sử bút toán đã đóng */}
               {selected.feePayments && selected.feePayments.length > 0 && (
@@ -613,7 +865,11 @@ export default function AcademyWorkshopParticipantOverlays({
                               +{p.amountVnd.toLocaleString('vi-VN')} đ
                             </span>
                             <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium dark:bg-slate-800">
-                              {p.method === 'BANK_TRANSFER' ? 'Chuyển khoản' : p.method === 'CASH' ? 'Tiền mặt' : p.method}
+                              {p.method === 'BANK_TRANSFER'
+                                ? 'Chuyển khoản'
+                                : p.method === 'CASH'
+                                  ? 'Tiền mặt'
+                                  : p.method}
                             </span>
                           </div>
                           <div className="text-[11px] opacity-60">
@@ -701,14 +957,12 @@ export default function AcademyWorkshopParticipantOverlays({
                 <div className="flex items-center justify-between rounded-lg border border-dashed border-inherit p-3 text-xs">
                   <div>
                     <div className="font-medium">Chính sách miễn phí workshop</div>
-                    <div className="opacity-60">Áp dụng cho khách mời đặc biệt, đối tác hoặc học viên diện tài trợ.</div>
+                    <div className="opacity-60">
+                      Áp dụng cho khách mời đặc biệt, đối tác hoặc học viên diện tài trợ.
+                    </div>
                   </div>
                   {selected.feeStatus === 'WAIVED' ? (
-                    <Button
-                      size="small"
-                      loading={busy}
-                      onClick={() => onWaiveFee(false)}
-                    >
+                    <Button size="small" loading={busy} onClick={() => onWaiveFee(false)}>
                       Hủy miễn phí
                     </Button>
                   ) : (

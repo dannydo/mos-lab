@@ -131,6 +131,7 @@ import type {
   UpdateAcademyWorkshopAgendaTemplateRequest,
   UpdateAcademyWorkshopCareRequest,
   UpdateAcademyWorkshopParticipantSelectionsRequest,
+  UpdateAcademyWorkshopParticipantPricingRequest,
   UpdateAcademyWorkshopDesignItemImageRequest,
   UpdateAcademyWorkshopDesignItemRequest,
   UpdateAcademyWorkshopDesignTemplateRequest,
@@ -931,6 +932,17 @@ export const academyApi = {
       ): Promise<AcademyWorkshopParticipant> => {
         const response = await api.post<{ data: AcademyWorkshopParticipant }>(
           `/academy-sales/workshops/${workshopId}/participants/${participantId}/waive-fee`,
+          dto
+        );
+        return response.data.data;
+      },
+      updateParticipantPricing: async (
+        workshopId: number,
+        participantId: number,
+        dto: UpdateAcademyWorkshopParticipantPricingRequest
+      ): Promise<AcademyWorkshopParticipant> => {
+        const response = await api.put<{ data: AcademyWorkshopParticipant }>(
+          `/academy-sales/workshops/${workshopId}/participants/${participantId}/pricing`,
           dto
         );
         return response.data.data;

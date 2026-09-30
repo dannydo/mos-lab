@@ -12,6 +12,7 @@ export default defineConfig({
     setupFiles: ['./test/setup.ts'],
     alias: {
       '~': path.resolve(__dirname, './'),
+      '@mos-lab/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
     },
   },
 });

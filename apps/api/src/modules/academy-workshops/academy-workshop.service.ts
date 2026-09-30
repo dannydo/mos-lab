@@ -54,6 +54,7 @@ import {
   type UpdateAcademyWorkshopEquipmentPackageRequest,
   type UpdateAcademyWorkshopEquipmentPackageImageRequest,
   type UpdateAcademyWorkshopParticipantSelectionsRequest,
+  type UpdateAcademyWorkshopParticipantPricingRequest,
   type AcademyWorkshopZaloTemplate,
   type UpdateAcademyWorkshopRequest,
   type UpsertAcademyWorkshopAgendaItemRequest,
@@ -636,11 +637,19 @@ function talent(row: SafeAny) {
 }
 
 async function toParticipant(row: SafeAny, feeVnd: number, qrToken?: string): Promise<AcademyWorkshopParticipant> {
+  const appliedFeeVnd =
+    row.appliedFeeVnd !== null && row.appliedFeeVnd !== undefined
+      ? Math.max(0, Math.round(Number(row.appliedFeeVnd)))
+      : null;
+  const discountVnd = Math.max(0, Math.round(Number(row.discountVnd) || 0));
+  const discountReason = row.discountReason ? String(row.discountReason).trim() : null;
+  const effectiveFee = appliedFeeVnd !== null ? appliedFeeVnd : Math.max(0, feeVnd - discountVnd);
+
   const paid = (row.feePayments || []).reduce(
     (sum: number, payment: SafeAny) => sum + Math.round(Number(payment.amountVnd) || 0),
     0
   );
-  const feeStatus = calculateAcademyWorkshopFeeStatus(feeVnd, paid, Boolean(row.feeWaivedAt));
+  const feeStatus = calculateAcademyWorkshopFeeStatus(effectiveFee, paid, Boolean(row.feeWaivedAt));
   const photos = await Promise.all(
     (row.photos || []).map(async (photo: SafeAny) => ({
       id: Number(photo.id),
@@ -693,7 +702,10 @@ async function toParticipant(row: SafeAny, feeVnd: number, qrToken?: string): Pr
     attendanceConfirmedBy: staff(row.attendanceConfirmedBy),
     feeStatus,
     feePaidVnd: Math.max(0, paid),
-    feeRemainingVnd: feeStatus === 'WAIVED' ? 0 : Math.max(0, feeVnd - paid),
+    feeRemainingVnd: feeStatus === 'WAIVED' ? 0 : Math.max(0, effectiveFee - paid),
+    appliedFeeVnd,
+    discountVnd: appliedFeeVnd !== null ? Math.max(0, feeVnd - appliedFeeVnd) : discountVnd,
+    discountReason,
     feeWaivedAt: row.feeWaivedAt ? new Date(row.feeWaivedAt).toISOString() : null,
     feeWaiverReason: row.feeWaiverReason ?? null,
     checkedInAt: row.checkedInAt ? new Date(row.checkedInAt).toISOString() : null,
@@ -2858,6 +2870,38 @@ export class AcademyWorkshopService {
       },
     });
     return this.getParticipant(fastify, actor, workshopId, participantId);
+  }
+
+  static async updateParticipantPricing(
+    fastify: FastifyInstance,
+    actor: AcademyActor,
+    workshopId: number,
+    participantId: number,
+    input: UpdateAcademyWorkshopParticipantPricingRequest
+  ) {
+    if (!canManageAcademySales(actor)) {
+      throw new AcademySalesError('Bạn không có quyền chỉnh sửa học phí áp dụng cho học viên.', 403);
+    }
+    const workshop = await this.rowById(fastify, actor, workshopId);
+    await this.participantRow(fastify, actor, workshopId, participantId);
+
+    const appliedFeeVnd =
+      input.appliedFeeVnd !== undefined && input.appliedFeeVnd !== null
+        ? Math.max(0, Math.round(Number(input.appliedFeeVnd)))
+        : null;
+    const discountVnd = Math.max(0, Math.round(Number(input.discountVnd) || 0));
+    const discountReason = input.discountReason ? String(input.discountReason).trim().slice(0, 255) : null;
+
+    await fastify.prisma.crm.crmAcademyWorkshopParticipant.update({
+      where: { id: participantId },
+      data: {
+        appliedFeeVnd,
+        discountVnd,
+        discountReason,
+      },
+    });
+
+    return this.getParticipant(fastify, actor, workshop.id, participantId);
   }
 
   static async talentLeaderboard(fastify: FastifyInstance, actor: AcademyActor, workshopId: number) {

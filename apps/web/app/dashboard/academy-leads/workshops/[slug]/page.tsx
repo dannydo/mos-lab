@@ -480,6 +480,7 @@ export default function AcademyWorkshopWorkspacePage() {
         }}
         onDeleteFeePayment={participantActions.deleteFeePayment}
         onWaiveFee={participantActions.waiveFee}
+        onUpdatePricing={participantActions.updatePricing}
         onAssignInstructor={(instructorId) => {
           if (!participantActions.selected) return;
           void participantActions.mutateParticipant(

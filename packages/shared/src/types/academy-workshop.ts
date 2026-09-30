@@ -211,6 +211,9 @@ export interface AcademyWorkshopParticipant {
   feeStatus: AcademyWorkshopFeeStatus;
   feePaidVnd: number;
   feeRemainingVnd: number;
+  appliedFeeVnd: number | null;
+  discountVnd: number;
+  discountReason: string | null;
   feeWaivedAt: string | null;
   feeWaiverReason: string | null;
   checkedInAt: string | null;
@@ -901,6 +904,35 @@ export interface WaiveAcademyWorkshopFeeRequest {
   reason: string;
 }
 
+export interface UpdateAcademyWorkshopParticipantPricingRequest {
+  appliedFeeVnd?: number | null;
+  discountVnd?: number;
+  discountReason?: string | null;
+}
+
+export interface AcademyWorkshopPricingTierPreset {
+  id: string;
+  label: string;
+  description: string;
+  type: 'FULL' | 'FIXED' | 'PERCENT' | 'CUSTOM';
+  percent?: number;
+  fixedAmountVnd?: number;
+}
+
+export const ACADEMY_WORKSHOP_PRICING_PRESETS: AcademyWorkshopPricingTierPreset[] = [
+  { id: 'full', label: 'Vé tiêu chuẩn (Full)', description: 'Thu đủ 100% học phí niêm yết', type: 'FULL' },
+  {
+    id: 'promo_1500',
+    label: 'Ưu đãi 1.500k',
+    description: 'Ưu đãi giữ chỗ sớm 1.500.000 đ',
+    type: 'FIXED',
+    fixedAmountVnd: 1_500_000,
+  },
+  { id: 'discount_10', label: 'Ưu đãi 10%', description: 'Giảm 10% học phí niêm yết', type: 'PERCENT', percent: 10 },
+  { id: 'discount_50', label: 'Ưu đãi 50%', description: 'Học bổng / Đối tác giảm 50%', type: 'PERCENT', percent: 50 },
+  { id: 'custom', label: 'Tùy chỉnh', description: 'Nhập học phí áp dụng / mức giảm đặc biệt', type: 'CUSTOM' },
+];
+
 export interface CreateAcademyWorkshopPhotoUploadRequest {
   fileName: string;
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
@@ -1179,6 +1211,19 @@ export function calculateAcademyWorkshopFeeStatus(
   if (waived) return 'WAIVED';
   if (paid <= 0) return 'UNPAID';
   return paid >= fee ? 'PAID' : 'PARTIAL';
+}
+
+export function resolveAcademyWorkshopParticipantTargetFee(
+  workshopFeeVnd: number,
+  appliedFeeVnd?: number | null,
+  discountVnd?: number
+): number {
+  const base = Math.max(0, Math.round(Number(workshopFeeVnd) || 0));
+  if (appliedFeeVnd !== null && appliedFeeVnd !== undefined) {
+    return Math.max(0, Math.round(Number(appliedFeeVnd)));
+  }
+  const discount = Math.max(0, Math.round(Number(discountVnd) || 0));
+  return Math.max(0, base - discount);
 }
 
 export function calculateAcademyWorkshopQuestionScore(
