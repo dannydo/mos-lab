@@ -177,3 +177,133 @@ test('TelesaleTargetService.calculateTeamWorkDaysPacing handles not started, in-
   assert.equal(completedPacing.dailyRequiredDone, 0);
   assert.equal(completedPacing.dailyRequiredBook, 0);
 });
+
+test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics correctly', async () => {
+  const mockConfig = {
+    teamDoneTarget: 400,
+    teamBookTarget: 600,
+    dailyCallPerStaff: 40,
+    staffTargets: [
+      { legacyStaffId: 101, name: 'Nhân viên A', doneTarget: 100 },
+      { legacyStaffId: 102, name: 'Nhân viên B', doneTarget: 100 },
+      { legacyStaffId: 103, name: 'Nhân viên C', doneTarget: 100 },
+    ],
+    stageTargets: { '0_30': 200, '31_60': 100, '61_120': 50, gt_120: 50 },
+  };
+
+  const mockMonthOrders = [
+    // Staff 101: 3 completed orders (2 regular, 1 combo)
+    {
+      id: 1,
+      bookerId: 101,
+      orderState: 'Completed',
+      dateCreated: '2026-10-05 10:00:00',
+      isComboLive: 0,
+      totalPrice: 500000,
+      daysSinceLastVisit: 15,
+    },
+    {
+      id: 2,
+      bookerId: 101,
+      orderState: 'Completed',
+      dateCreated: '2026-10-06 11:00:00',
+      isComboLive: 0,
+      totalPrice: 300000,
+      daysSinceLastVisit: 25,
+    },
+    {
+      id: 3,
+      bookerId: 101,
+      orderState: 'Completed',
+      dateCreated: '2026-10-07 14:00:00',
+      isComboLive: 1,
+      totalPrice: 1200000,
+      daysSinceLastVisit: 45,
+    },
+    // Staff 102: 1 completed order, 1 cancelled
+    {
+      id: 4,
+      bookerId: 102,
+      orderState: 'Completed',
+      dateCreated: '2026-10-05 09:00:00',
+      isComboLive: 0,
+      totalPrice: 400000,
+      daysSinceLastVisit: 10,
+    },
+    {
+      id: 5,
+      bookerId: 102,
+      orderState: 'Cancelled',
+      dateCreated: '2026-10-06 15:00:00',
+      isComboLive: 0,
+      totalPrice: 800000,
+      daysSinceLastVisit: 10,
+    },
+  ];
+
+  const mockTodayOrders = [
+    { id: 2, bookerId: 101, orderState: 'Completed', dateCreated: '2026-10-06 11:00:00', isComboLive: 0 },
+  ];
+
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async () => ({
+            key: 'TELESALE_TARGET_CONFIG_2026-10',
+            value: JSON.stringify(mockConfig),
+          }),
+        },
+        crmHolidayPeriod: {
+          findMany: async () => [],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('prev_o.booking_date_start')) {
+            return mockMonthOrders;
+          }
+          if (sql.includes('buildComboLiveAtBookingSql')) {
+            return mockTodayOrders;
+          }
+          if (sql.includes('user_profile')) {
+            return [];
+          }
+          return [];
+        },
+      },
+    },
+    log: {
+      warn: () => {},
+      error: () => {},
+    },
+  };
+
+  const overview = await TelesaleTargetService.getOverview(mockFastify as any, '2026-10');
+  assert.equal(overview.staffTargets.length, 3);
+
+  const staffA = overview.staffTargets.find((s) => s.legacyStaffId === 101);
+  assert.ok(staffA);
+  assert.equal(staffA.doneActual, 2);
+  assert.equal(staffA.comboLiveDoneActual, 1);
+  // Revenue must sum completed orders of staff 101: 500k + 300k + 1200k = 2,000,000đ
+  assert.equal(staffA.revenueActual, 2000000);
+  assert.ok(staffA.gapDone !== undefined);
+  assert.ok(staffA.remainingDone !== undefined);
+  assert.ok(staffA.dailyRequiredDone !== undefined);
+  assert.ok(['AHEAD', 'ON_TRACK', 'BEHIND'].includes(staffA.progressStatus!));
+  assert.ok(['Vượt tiến độ', 'Đúng tiến độ', 'Chậm tiến độ'].includes(staffA.progressStatusLabel!));
+
+  const staffB = overview.staffTargets.find((s) => s.legacyStaffId === 102);
+  assert.ok(staffB);
+  assert.equal(staffB.doneActual, 1);
+  assert.equal(staffB.comboLiveDoneActual, 0);
+  // Cancelled order (800k) should NOT be counted in revenue
+  assert.equal(staffB.revenueActual, 400000);
+
+  const staffC = overview.staffTargets.find((s) => s.legacyStaffId === 103);
+  assert.ok(staffC);
+  assert.equal(staffC.doneActual, 0);
+  assert.equal(staffC.revenueActual, 0);
+  assert.equal(staffC.remainingDone, 100);
+});

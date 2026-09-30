@@ -12,6 +12,14 @@ export interface TelesaleStaffTarget {
   callTargetDaily: number;
   callActualToday: number;
   pickupActualToday: number;
+  // MOS-BUG-72: Enhanced individual KPI (Done) metrics
+  revenueActual?: number;
+  expectedDone?: number;
+  gapDone?: number;
+  remainingDone?: number;
+  dailyRequiredDone?: number;
+  progressStatus?: 'AHEAD' | 'ON_TRACK' | 'BEHIND';
+  progressStatusLabel?: string;
 }
 
 export interface TelesalePipelineStage {

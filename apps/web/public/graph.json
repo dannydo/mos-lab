@@ -1303,7 +1303,7 @@
         "dbSource": "crm",
         "modelName": "CrmAcademyWorkshopEquipmentPackage",
         "tableName": "crm_academy_workshop_equipment_packages",
-        "fieldCount": 13,
+        "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
         "relations": ["workshopId"],
@@ -1357,7 +1357,7 @@
         "dbSource": "crm",
         "modelName": "CrmAcademyWorkshopEquipmentTemplatePackage",
         "tableName": "crm_academy_workshop_equipment_template_packages",
-        "fieldCount": 12,
+        "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
         "relations": ["templateId"],
@@ -4866,7 +4866,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/consent",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1257
+        "line": 1254
       }
     },
     {
@@ -4880,7 +4880,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/upload-intent",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1279
+        "line": 1276
       }
     },
     {
@@ -4894,7 +4894,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/confirm",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1299
+        "line": 1296
       }
     },
     {
@@ -4908,7 +4908,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/participants/:participantId/instructor",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1318
+        "line": 1315
       }
     },
     {
@@ -4922,7 +4922,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/talent-leaderboard",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1338
+        "line": 1335
       }
     },
     {
@@ -4936,7 +4936,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId/command",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1353
+        "line": 1350
       }
     },
     {
@@ -4950,7 +4950,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1370
+        "line": 1367
       }
     },
     {
@@ -4964,7 +4964,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/reorder",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1385
+        "line": 1382
       }
     },
     {
@@ -4978,7 +4978,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1400
+        "line": 1397
       }
     },
     {
@@ -4992,7 +4992,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1416
+        "line": 1413
       }
     },
     {
@@ -5006,7 +5006,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/timeline-report",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1431
+        "line": 1428
       }
     },
     {
@@ -5020,7 +5020,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/live-state",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1446
+        "line": 1443
       }
     },
     {
@@ -5034,7 +5034,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/display-settings",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1458
+        "line": 1455
       }
     },
     {
@@ -5048,7 +5048,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1473
+        "line": 1470
       }
     },
     {
@@ -5062,7 +5062,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1489
+        "line": 1486
       }
     },
     {
@@ -5076,7 +5076,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/agenda-item",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1505
+        "line": 1502
       }
     },
     {
@@ -5090,7 +5090,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/clone",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1521
+        "line": 1518
       }
     },
     {
@@ -5104,7 +5104,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/save-template",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1537
+        "line": 1534
       }
     },
     {
@@ -5118,7 +5118,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/template/refresh",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1553
+        "line": 1550
       }
     },
     {
@@ -5132,7 +5132,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/from-template/:templateId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1568
+        "line": 1565
       }
     },
     {
@@ -5146,7 +5146,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1584
+        "line": 1581
       }
     },
     {
@@ -5160,7 +5160,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1601
+        "line": 1598
       }
     },
     {
@@ -5174,7 +5174,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1622
+        "line": 1619
       }
     },
     {
@@ -5188,7 +5188,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/quizzes/:quizId/command",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1645
+        "line": 1642
       }
     },
     {
@@ -5202,7 +5202,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/rewards",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1663
+        "line": 1660
       }
     },
     {
@@ -5216,7 +5216,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/rewards/:rewardId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1674
+        "line": 1671
       }
     },
     {
@@ -5230,7 +5230,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/bonuses",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1692
+        "line": 1689
       }
     },
     {
@@ -5244,7 +5244,7 @@
         "path": "/api/academy-sales/workshops/:workshopId/bonuses/:bonusId",
         "module": "academy-workshops",
         "handler": "inlineHandler",
-        "line": 1702
+        "line": 1699
       }
     },
     {
@@ -28293,8 +28293,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13125366,
-        "lineCount": 285349,
+        "sizeBytes": 13129100,
+        "lineCount": 285429,
         "ext": ".ts"
       }
     },
@@ -28683,8 +28683,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-equipment-template.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11034,
-        "lineCount": 280,
+        "sizeBytes": 11166,
+        "lineCount": 282,
         "ext": ".ts"
       }
     },
@@ -28722,8 +28722,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 36237,
-        "lineCount": 907,
+        "sizeBytes": 37113,
+        "lineCount": 922,
         "ext": ".ts"
       }
     },
@@ -28735,8 +28735,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-rules.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27671,
-        "lineCount": 773,
+        "sizeBytes": 30803,
+        "lineCount": 872,
         "ext": ".ts"
       }
     },
@@ -28774,8 +28774,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 122315,
-        "lineCount": 3015,
+        "sizeBytes": 123138,
+        "lineCount": 3033,
         "ext": ".ts"
       }
     },
@@ -28800,8 +28800,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 68871,
-        "lineCount": 1722,
+        "sizeBytes": 68829,
+        "lineCount": 1719,
         "ext": ".ts"
       }
     },
@@ -30711,8 +30711,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6696,
-        "lineCount": 180,
+        "sizeBytes": 10373,
+        "lineCount": 270,
         "ext": ".ts"
       }
     },
@@ -30724,8 +30724,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29306,
-        "lineCount": 796,
+        "sizeBytes": 31040,
+        "lineCount": 838,
         "ext": ".ts"
       }
     },
@@ -32609,8 +32609,8 @@
       "filePath": "apps/api/src/scripts/data-migrations/20260930120000_support_workshop_participant_pricing_tiers.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1522,
-        "lineCount": 44,
+        "sizeBytes": 1510,
+        "lineCount": 42,
         "ext": ".ts"
       }
     },
@@ -33038,8 +33038,8 @@
       "filePath": "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 112282,
-        "lineCount": 2115,
+        "sizeBytes": 117146,
+        "lineCount": 2176,
         "ext": ".tsx"
       }
     },
@@ -33493,8 +33493,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopEquipmentManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28809,
-        "lineCount": 660,
+        "sizeBytes": 32608,
+        "lineCount": 733,
         "ext": ".tsx"
       }
     },
@@ -33519,8 +33519,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopEquipmentTemplateLibrary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26461,
-        "lineCount": 598,
+        "sizeBytes": 26518,
+        "lineCount": 599,
         "ext": ".tsx"
       }
     },
@@ -33584,7 +33584,7 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5255,
+        "sizeBytes": 5254,
         "lineCount": 168,
         "ext": ".tsx"
       }
@@ -33597,8 +33597,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42121,
-        "lineCount": 961,
+        "sizeBytes": 42783,
+        "lineCount": 997,
         "ext": ".tsx"
       }
     },
@@ -33688,8 +33688,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopRoster.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21755,
-        "lineCount": 603,
+        "sizeBytes": 21825,
+        "lineCount": 607,
         "ext": ".tsx"
       }
     },
@@ -37074,6 +37074,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.test.tsx",
+      "type": "File",
+      "label": "KpiOverviewCards.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5234,
+        "lineCount": 168,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "type": "File",
       "label": "KpiOverviewCards.tsx",
@@ -37081,8 +37094,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29208,
-        "lineCount": 578,
+        "sizeBytes": 27053,
+        "lineCount": 538,
         "ext": ".tsx"
       }
     },
@@ -37113,6 +37126,58 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
+      "type": "File",
+      "label": "TelesaleTodayTvMonitor.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3878,
+        "lineCount": 128,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
+      "type": "File",
+      "label": "TelesaleTodayTvMonitorCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14079,
+        "lineCount": 303,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvCelebration.tsx",
+      "type": "File",
+      "label": "TelesaleTvCelebration.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvCelebration.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2693,
+        "lineCount": 114,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
+      "type": "File",
+      "label": "TelesaleTvMonitorFullscreen.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 21958,
+        "lineCount": 451,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/telesale-target/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -37120,9 +37185,35 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18525,
-        "lineCount": 434,
+        "sizeBytes": 19165,
+        "lineCount": 457,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/utils/tv-monitor-pacing.test.ts",
+      "type": "File",
+      "label": "tv-monitor-pacing.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/utils/tv-monitor-pacing.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5518,
+        "lineCount": 166,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/utils/tv-monitor-pacing.ts",
+      "type": "File",
+      "label": "tv-monitor-pacing.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/utils/tv-monitor-pacing.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8603,
+        "lineCount": 261,
+        "ext": ".ts"
       }
     },
     {
@@ -38173,8 +38264,8 @@
       "filePath": "packages/shared/src/types/academy-workshop.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 41405,
-        "lineCount": 1293,
+        "sizeBytes": 41629,
+        "lineCount": 1307,
         "ext": ".ts"
       }
     },
@@ -38797,8 +38888,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3727,
-        "lineCount": 150,
+        "sizeBytes": 3994,
+        "lineCount": 158,
         "ext": ".ts"
       }
     },
@@ -58281,6 +58372,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "target": "ws:packages/shared",
@@ -58297,6 +58395,27 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -84350,8 +84469,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 2976,
-    "totalEdges": 6497,
+    "totalNodes": 2983,
+    "totalEdges": 6501,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 159,
@@ -84360,14 +84479,14 @@
       "SharedType": 1088,
       "DesignToken": 12,
       "UIComponent": 204,
-      "File": 819
+      "File": 826
     },
     "edgeTypeCounts": {
       "EXPORTS": 1259,
       "HANDLES_ROUTE": 634,
       "RENDERS": 261,
       "USES_TOKEN": 206,
-      "IMPORTS": 450,
+      "IMPORTS": 454,
       "QUERIES_MODEL": 371,
       "API_CALL": 3316
     },
@@ -89486,7 +89605,7 @@
       "dbSource": "crm",
       "modelName": "CrmAcademyWorkshopEquipmentPackage",
       "tableName": "crm_academy_workshop_equipment_packages",
-      "fieldCount": 13,
+      "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
       "relations": ["workshopId"]
@@ -89513,7 +89632,7 @@
       "dbSource": "crm",
       "modelName": "CrmAcademyWorkshopEquipmentTemplatePackage",
       "tableName": "crm_academy_workshop_equipment_template_packages",
-      "fieldCount": 12,
+      "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
       "relations": ["templateId"]

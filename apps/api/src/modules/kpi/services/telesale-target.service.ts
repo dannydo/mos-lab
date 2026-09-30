@@ -355,6 +355,7 @@ export class TelesaleTargetService {
         o.order_state as orderState,
         o.date_created as dateCreated,
         o.user_id as customerId,
+        COALESCE(o.total_price, 0) as totalPrice,
         COALESCE(
           (
             SELECT DATEDIFF(o.date_created, prev_o.booking_date_start)
@@ -433,12 +434,13 @@ export class TelesaleTargetService {
     // Aggregate by Staff
     const staffTargets: TelesaleStaffTarget[] = config.staffTargets.map((st) => {
       const staffMonthOrders = monthOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
-      const staffDoneActual = staffMonthOrders.filter(
-        (o) => o.orderState === 'Completed' && Number(o.isComboLive) !== 1
-      ).length;
-      const staffComboLiveDoneActual = staffMonthOrders.filter(
-        (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
-      ).length;
+      const staffCompletedOrders = staffMonthOrders.filter((o) => o.orderState === 'Completed');
+      const staffDoneActual = staffCompletedOrders.filter((o) => Number(o.isComboLive) !== 1).length;
+      const staffComboLiveDoneActual = staffCompletedOrders.filter((o) => Number(o.isComboLive) === 1).length;
+      const staffRevenueActual = staffCompletedOrders.reduce(
+        (sum, o) => sum + Math.round(Number(o.totalPrice || 0)),
+        0
+      );
 
       const staffTodayOrders = todayOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
       const staffDoneToday = staffTodayOrders.filter(
@@ -447,6 +449,35 @@ export class TelesaleTargetService {
       const staffComboLiveDoneToday = staffTodayOrders.filter(
         (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
       ).length;
+
+      // MOS-BUG-72: Metrics for individual KPI (Done)
+      const staffExpectedDone = Math.round(st.doneTarget * pacing.expectedProgressRate);
+      const staffGapDone = staffDoneActual - staffExpectedDone;
+      const staffRemainingDone = Math.max(0, st.doneTarget - staffDoneActual);
+
+      let staffDailyRequiredDone: number;
+      if (pacing.periodStatus === 'NOT_STARTED') {
+        staffDailyRequiredDone =
+          pacing.workDaysTotal > 0 ? Number((st.doneTarget / pacing.workDaysTotal).toFixed(1)) : 0;
+      } else if (pacing.periodStatus === 'IN_PROGRESS') {
+        staffDailyRequiredDone =
+          pacing.workDaysRemaining > 0 ? Number((staffRemainingDone / pacing.workDaysRemaining).toFixed(1)) : 0;
+      } else {
+        staffDailyRequiredDone = 0;
+      }
+
+      let progressStatus: 'AHEAD' | 'ON_TRACK' | 'BEHIND';
+      let progressStatusLabel: string;
+      if (staffGapDone > 0) {
+        progressStatus = 'AHEAD';
+        progressStatusLabel = 'Vượt tiến độ';
+      } else if (staffGapDone >= -1) {
+        progressStatus = 'ON_TRACK';
+        progressStatusLabel = 'Đúng tiến độ';
+      } else {
+        progressStatus = 'BEHIND';
+        progressStatusLabel = 'Chậm tiến độ';
+      }
 
       const staffCallMetrics = callMetricsMap.get(st.legacyStaffId) || {
         callCount: 0,
@@ -465,6 +496,13 @@ export class TelesaleTargetService {
         callTargetDaily: config.dailyCallPerStaff,
         callActualToday: staffCallMetrics.callCount,
         pickupActualToday: staffCallMetrics.pickupCount,
+        revenueActual: staffRevenueActual,
+        expectedDone: staffExpectedDone,
+        gapDone: staffGapDone,
+        remainingDone: staffRemainingDone,
+        dailyRequiredDone: staffDailyRequiredDone,
+        progressStatus,
+        progressStatusLabel,
       };
     });
 
