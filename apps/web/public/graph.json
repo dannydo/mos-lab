@@ -30761,8 +30761,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17137,
-        "lineCount": 509,
+        "sizeBytes": 17248,
+        "lineCount": 516,
         "ext": ".ts"
       }
     },
@@ -37183,7 +37183,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3878,
+        "sizeBytes": 3862,
         "lineCount": 128,
         "ext": ".tsx"
       }

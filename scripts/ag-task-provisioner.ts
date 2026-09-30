@@ -1025,31 +1025,8 @@ export async function runClarificationWatcher(deps: ClarificationWatcherDeps): P
   const defaultAction = job.eventKind === 'REPORTER_REOPENED' ? 'REANALYSIS_CONFIRMED' : 'PROGRESS_REVIEWED';
   let action: 'PROGRESS_REVIEWED' | 'REANALYSIS_CONFIRMED' | 'ASK_REPORTER' | 'NO_OP' = defaultAction;
   let clarifierEngine: 'AG' | 'G2.5' = 'AG';
-  let note = `AI Agent (AG): Đã tự động rà soát bối cảnh mã nguồn cho ${job.ticketKey}.`;
+  let note = `AI Agent (AG): Đã tự động rà soát bối cảnh mã nguồn cho ${job.ticketKey} qua Antigravity IDE.`;
   let question: string | null = null;
-
-  // 1. Ưu tiên số 1: Dùng Antigravity cục bộ (AG) - có đầy đủ ngữ cảnh IDE và không bị phụ thuộc Gemini rate limit
-  if (await AgChatBridgeService.isLocalAgAvailable()) {
-    try {
-      const agResult = await callAgClarifier(job);
-      if (agResult) {
-        clarifierEngine = 'AG';
-        if (agResult.decision === 'ASK_REPORTER' && agResult.question) {
-          action = 'ASK_REPORTER';
-          question = `<!-- agent-model: AG -->\n${agResult.question}`;
-          note = agResult.note || 'AI Agent (AG): Cần người báo cung cấp thêm thông tin.';
-        } else {
-          action = defaultAction;
-          note = agResult.note || 'AI Agent (AG): Đã rà soát đủ thông tin kỹ thuật.';
-          question = null;
-        }
-      }
-    } catch (agErr) {
-      process.stderr.write(
-        `[${new Date().toISOString()}] [AutoClarify] AG clarification failed: ${agErr instanceof Error ? agErr.message : String(agErr)}\n`
-      );
-    }
-  }
 
   // 2. Dự phòng: Thử Gemini API nếu AG chưa xử lý và có API key
   if (action === defaultAction && !question && geminiApiKey) {
@@ -1074,15 +1051,15 @@ export async function runClarificationWatcher(deps: ClarificationWatcherDeps): P
     }
   }
 
-  // 3. Fallback làm rõ: Nếu mô tả còn ngắn hoặc thiếu chi tiết lỗi, bắt buộc hỏi người báo thay vì tự ý duyệt READY
+  // 3. Fallback làm rõ: Nếu mô tả còn quá ngắn và thiếu cả màn hình thao tác, hỏi người báo
   if (action === defaultAction && !question) {
     const desc = (job.context.description || '').trim();
     const hasErrorKeyword = /lỗi|báo lỗi|không được|crash|failed|error|hỏng/i.test(desc);
-    const isLackingDetail = desc.length < 80 || (hasErrorKeyword && !/mã|code|500|404|403|chi tiết/i.test(desc));
+    const isLackingDetail = (desc.length < 25 && !job.context.sourcePath) || (hasErrorKeyword && desc.length < 15);
     if (isLackingDetail && job.eventKind !== 'REPORTER_REOPENED') {
       action = 'ASK_REPORTER';
       question = `<!-- agent-model: AG -->\nChào bạn, để kỹ thuật hỗ trợ xử lý chính xác nhất, bạn có thể cho mình biết cụ thể khi thao tác thì hệ thống hiển thị thông báo lỗi gì (hoặc gửi ảnh chụp màn hình lỗi) được không ạ?`;
-      note = `AI Agent (AG): Cần người báo bổ sung ảnh chụp hoặc thông báo lỗi cụ thể khi thao tác.`;
+      note = `Antigravity IDE: Cần người báo bổ sung ảnh chụp hoặc thông báo lỗi cụ thể khi thao tác.`;
     }
   }
 
@@ -1117,7 +1094,7 @@ export async function callGeminiPlanner(
   job: InboxPlanWorkerJob,
   fetcher: typeof fetch = fetch
 ): Promise<{ plan: InboxPlanDraft; modelUsed: string } | null> {
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
   const hasReporterFeedback = Boolean(job.context.reporterMessages?.length);
 
   const prompt = `Bạn là kỹ sư phần mềm AI cấp cao của mOS (Wings Lashes CRM), tích hợp trong IDE Antigravity.
@@ -1304,22 +1281,6 @@ export async function runPlanWatcher(deps: {
       approvalRequest: `Duyệt triển khai phương án theo chỉ đạo của anh Danny: "${latestFeedback.slice(0, 120)}..."`,
     };
     note = `AI Agent (AG): Kế hoạch triển khai theo chỉ đạo của anh Danny: "${latestFeedback.slice(0, 90)}..."`;
-  }
-
-  // 2. Ưu tiên số 2: Dùng Antigravity cục bộ (AG) phân tích ngữ cảnh chuyên sâu
-  if (!plan && (await AgChatBridgeService.isLocalAgAvailable())) {
-    try {
-      const agPlan = await callAgPlanner(job);
-      if (agPlan && agPlan.expectedOutcome && agPlan.steps?.length) {
-        plan = agPlan;
-        planEngine = 'AG';
-        note = `AI Agent (AG): Đã tự động lập kế hoạch chi tiết cho ${job.ticketKey}.`;
-      }
-    } catch (agErr) {
-      process.stderr.write(
-        `[${new Date().toISOString()}] [AutoPlan] AG planning failed: ${agErr instanceof Error ? agErr.message : String(agErr)}\n`
-      );
-    }
   }
 
   // 3. Dự phòng: Thử Gemini API nếu có key
