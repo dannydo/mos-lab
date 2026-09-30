@@ -1,0 +1,260 @@
+export interface ShiftPacingResult {
+  rTime: number; // 0.0 to 1.0
+  minutesWorked: number; // 0 to 480
+  minutesRemaining: number; // 0 to 480
+  hoursRemaining: number;
+  minsRemaining: number;
+  shiftStatus: 'BEFORE_SHIFT' | 'IN_SHIFT_MORNING' | 'LUNCH_BREAK' | 'IN_SHIFT_AFTERNOON' | 'AFTER_SHIFT';
+  shiftStatusLabel: string;
+  countdownText: string;
+}
+
+export interface ShiftTimeInput {
+  hour: number;
+  minute: number;
+  second?: number;
+}
+
+/**
+ * Calculates work shift pacing according to business rules:
+ * - Work shift: 08:00 – 17:00 (Total 8 working hours = 480 minutes)
+ * - Lunch break: 12:00 – 13:00 (1 hour excluded, pacing frozen at 50% to prevent false delays)
+ * - R_time pacing progression:
+ *   * Before 08:00: 0%
+ *   * 08:00 – 12:00: elapsedMorning / 480 (0% -> 50%)
+ *   * 12:00 – 13:00: 50% constant
+ *   * 13:00 – 17:00: (240 + elapsedAfternoon) / 480 (50% -> 100%)
+ *   * After 17:00: 100%
+ */
+export function calculateShiftPacing(now: Date | ShiftTimeInput = new Date()): ShiftPacingResult {
+  let h: number;
+  let m: number;
+
+  if ('hour' in now) {
+    h = now.hour;
+    m = now.minute;
+  } else {
+    h = now.getHours();
+    m = now.getMinutes();
+  }
+
+  const currentTotalMinutes = h * 60 + m;
+  const shiftStartMinutes = 8 * 60; // 08:00 = 480
+  const lunchStartMinutes = 12 * 60; // 12:00 = 720
+  const lunchEndMinutes = 13 * 60; // 13:00 = 780
+  const shiftEndMinutes = 17 * 60; // 17:00 = 1020
+  const totalWorkMinutes = 8 * 60; // 480 minutes
+
+  // 1. Before Shift (< 08:00)
+  if (currentTotalMinutes < shiftStartMinutes) {
+    const untilStart = shiftStartMinutes - currentTotalMinutes;
+    const uh = Math.floor(untilStart / 60);
+    const um = untilStart % 60;
+    return {
+      rTime: 0,
+      minutesWorked: 0,
+      minutesRemaining: totalWorkMinutes,
+      hoursRemaining: 8,
+      minsRemaining: 0,
+      shiftStatus: 'BEFORE_SHIFT',
+      shiftStatusLabel: 'Chưa vào ca · Bắt đầu lúc 08:00',
+      countdownText: `Bắt đầu sau ${uh}h ${um < 10 ? '0' : ''}${um}p`,
+    };
+  }
+
+  // 2. Morning Shift (08:00 – 12:00)
+  if (currentTotalMinutes < lunchStartMinutes) {
+    const elapsed = currentTotalMinutes - shiftStartMinutes;
+    const worked = elapsed;
+    const remaining = totalWorkMinutes - worked;
+    const rTime = Math.min(0.5, worked / totalWorkMinutes);
+    const rh = Math.floor(remaining / 60);
+    const rm = remaining % 60;
+    return {
+      rTime,
+      minutesWorked: worked,
+      minutesRemaining: remaining,
+      hoursRemaining: rh,
+      minsRemaining: rm,
+      shiftStatus: 'IN_SHIFT_MORNING',
+      shiftStatusLabel: 'Ca sáng (08:00 – 12:00)',
+      countdownText: `Còn ${rh} giờ ${rm < 10 ? '0' : ''}${rm} phút`,
+    };
+  }
+
+  // 3. Lunch Break (12:00 – 13:00)
+  if (currentTotalMinutes < lunchEndMinutes) {
+    const untilAfternoon = lunchEndMinutes - currentTotalMinutes;
+    return {
+      rTime: 0.5,
+      minutesWorked: 240,
+      minutesRemaining: 240,
+      hoursRemaining: 4,
+      minsRemaining: 0,
+      shiftStatus: 'LUNCH_BREAK',
+      shiftStatusLabel: 'Nghỉ trưa (Chiều bắt đầu lúc 13:00)',
+      countdownText: `Nghỉ trưa · Ca chiều còn ${untilAfternoon}p`,
+    };
+  }
+
+  // 4. Afternoon Shift (13:00 – 17:00)
+  if (currentTotalMinutes < shiftEndMinutes) {
+    const afternoonElapsed = currentTotalMinutes - lunchEndMinutes;
+    const worked = 240 + afternoonElapsed;
+    const remaining = Math.max(0, totalWorkMinutes - worked);
+    const rTime = Math.min(1.0, worked / totalWorkMinutes);
+    const rh = Math.floor(remaining / 60);
+    const rm = remaining % 60;
+    return {
+      rTime,
+      minutesWorked: worked,
+      minutesRemaining: remaining,
+      hoursRemaining: rh,
+      minsRemaining: rm,
+      shiftStatus: 'IN_SHIFT_AFTERNOON',
+      shiftStatusLabel: 'Ca chiều (13:00 – 17:00)',
+      countdownText: `Còn ${rh} giờ ${rm < 10 ? '0' : ''}${rm} phút`,
+    };
+  }
+
+  // 5. After Shift (>= 17:00)
+  return {
+    rTime: 1.0,
+    minutesWorked: totalWorkMinutes,
+    minutesRemaining: 0,
+    hoursRemaining: 0,
+    minsRemaining: 0,
+    shiftStatus: 'AFTER_SHIFT',
+    shiftStatusLabel: 'Đã kết thúc ca làm việc (17:00)',
+    countdownText: 'Đã hết giờ ca làm việc',
+  };
+}
+
+export interface TvMonitorKpiMetrics {
+  doneTarget: number;
+  bookTarget: number;
+  doneActual: number;
+  bookActual: number;
+  comboLiveDoneActual: number;
+  donePercent: number;
+  bookPercent: number;
+  expectedDone: number;
+  expectedBook: number;
+  gapDone: number;
+  gapBook: number;
+  remainingDone: number;
+  remainingBook: number;
+  teamState: 'WARMUP' | 'ON_PACE' | 'ACCELERATING' | 'APPROACHING' | 'COMPLETED' | 'NEEDS_BREAKTHROUGH';
+  teamStateLabel: string;
+  teamStateBadge: string;
+  teamStateColor: 'blue' | 'emerald' | 'amber' | 'rose';
+  actionableMessage: string;
+}
+
+export function calculateTvMonitorMetrics(
+  teamDaily: {
+    doneTarget?: number | null;
+    bookTarget?: number | null;
+    doneActual?: number | null;
+    bookActual?: number | null;
+    comboLiveDoneActual?: number | null;
+  },
+  pacing: ShiftPacingResult
+): TvMonitorKpiMetrics {
+  const doneTarget = teamDaily.doneTarget || 18;
+  const bookTarget = teamDaily.bookTarget || 25;
+  const doneActual = teamDaily.doneActual || 0;
+  const bookActual = teamDaily.bookActual || 0;
+  const comboLiveDoneActual = teamDaily.comboLiveDoneActual || 0;
+
+  const donePercent = Math.round((doneActual / doneTarget) * 100);
+  const bookPercent = Math.round((bookActual / bookTarget) * 100);
+
+  const expectedDone = Math.round(doneTarget * pacing.rTime);
+  const expectedBook = Math.round(bookTarget * pacing.rTime);
+
+  const gapDone = doneActual - expectedDone;
+  const gapBook = bookActual - expectedBook;
+
+  const remainingDone = Math.max(0, doneTarget - doneActual);
+  const remainingBook = Math.max(0, bookTarget - bookActual);
+
+  // 1. Determine Team State
+  let teamState: TvMonitorKpiMetrics['teamState'];
+  let teamStateLabel: string;
+  let teamStateBadge: string;
+  let teamStateColor: TvMonitorKpiMetrics['teamStateColor'];
+
+  if (donePercent >= 100 && bookPercent >= 100) {
+    teamState = 'COMPLETED';
+    teamStateLabel = 'Hoàn thành KPI';
+    teamStateBadge = '🎉 HOÀN THÀNH KPI';
+    teamStateColor = 'emerald';
+  } else if ((donePercent >= 85 && bookPercent >= 85) || (doneActual + bookActual) / (doneTarget + bookTarget) >= 0.85) {
+    teamState = 'APPROACHING';
+    teamStateLabel = 'Sắp chạm đích';
+    teamStateBadge = '🎯 SẮP CHẠM ĐÍCH';
+    teamStateColor = 'amber';
+  } else if (pacing.rTime < 0.15) {
+    teamState = 'WARMUP';
+    teamStateLabel = 'Khởi động';
+    teamStateBadge = '⚡ KHỞI ĐỘNG';
+    teamStateColor = 'blue';
+  } else if (gapDone >= 2 && gapBook >= 2) {
+    teamState = 'ACCELERATING';
+    teamStateLabel = 'Tăng tốc';
+    teamStateBadge = '🚀 TĂNG TỐC';
+    teamStateColor = 'emerald';
+  } else if (gapDone >= -1 && gapBook >= -1) {
+    teamState = 'ON_PACE';
+    teamStateLabel = 'Bám nhịp';
+    teamStateBadge = '✓ BÁM NHỊP';
+    teamStateColor = 'blue';
+  } else {
+    teamState = 'NEEDS_BREAKTHROUGH';
+    teamStateLabel = 'Cần bứt phá';
+    teamStateBadge = '🔥 CẦN BỨT PHÁ';
+    teamStateColor = 'rose';
+  }
+
+  // 2. Actionable Instruction Message
+  let actionableMessage: string;
+  if (pacing.shiftStatus === 'AFTER_SHIFT') {
+    if (remainingBook === 0 && remainingDone === 0) {
+      actionableMessage = '🎉 Xuất sắc! Team đã về đích thành công rực rỡ hôm nay!';
+    } else {
+      actionableMessage = `Kết quả ca hôm nay: ${bookActual}/${bookTarget} Book · ${doneActual}/${doneTarget} Done`;
+    }
+  } else {
+    if (remainingBook > 0 && remainingDone > 0) {
+      actionableMessage = `Còn ${remainingBook} Book + ${remainingDone} Done để hoàn thành mục tiêu hôm nay`;
+    } else if (remainingBook > 0) {
+      actionableMessage = `Đã đạt Done! Còn ${remainingBook} Book để hoàn thành mục tiêu hôm nay`;
+    } else if (remainingDone > 0) {
+      actionableMessage = `Đã đạt Book! Còn ${remainingDone} Done để hoàn thành mục tiêu hôm nay`;
+    } else {
+      actionableMessage = '🎉 Tuyệt vời! Team đã hoàn thành 100% mục tiêu hôm nay!';
+    }
+  }
+
+  return {
+    doneTarget,
+    bookTarget,
+    doneActual,
+    bookActual,
+    comboLiveDoneActual,
+    donePercent,
+    bookPercent,
+    expectedDone,
+    expectedBook,
+    gapDone,
+    gapBook,
+    remainingDone,
+    remainingBook,
+    teamState,
+    teamStateLabel,
+    teamStateBadge,
+    teamStateColor,
+    actionableMessage,
+  };
+}

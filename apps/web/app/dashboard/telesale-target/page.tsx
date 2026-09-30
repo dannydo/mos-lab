@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
+  Tv,
 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import { TelesaleTargetOverview, TelesalePipelineStage } from '@mos-lab/shared';
@@ -26,11 +27,13 @@ import { DataPipelineStages } from './components/DataPipelineStages';
 import { CustomerPoolDrawer } from './components/CustomerPoolDrawer';
 import { TargetConfigModal } from './components/TargetConfigModal';
 import { PlanCloneModal } from './components/PlanCloneModal';
+import { TelesaleTvMonitorFullscreen } from './components/TelesaleTvMonitorFullscreen';
 
 function TelesaleTargetContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlMonth = searchParams?.get('month') || '2026-10';
+  const urlMode = searchParams?.get('mode');
 
   const [selectedMonth, setSelectedMonth] = useState<string>(urlMonth);
   const [availableMonths, setAvailableMonths] = useState<string[]>(['2026-10']);
@@ -39,6 +42,7 @@ function TelesaleTargetContent() {
   const [overview, setOverview] = useState<TelesaleTargetOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [tvModeOpen, setTvModeOpen] = useState<boolean>(urlMode === 'tv');
 
   // Drawer & Modal state
   const [selectedStage, setSelectedStage] = useState<TelesalePipelineStage | null>(null);
@@ -52,6 +56,12 @@ function TelesaleTargetContent() {
       setSelectedMonth(urlMonth);
     }
   }, [urlMonth, selectedMonth]);
+
+  useEffect(() => {
+    if (urlMode === 'tv') {
+      setTvModeOpen(true);
+    }
+  }, [urlMode]);
 
   // Load configured months
   const loadAvailableMonths = useCallback(async () => {
@@ -331,14 +341,14 @@ function TelesaleTargetContent() {
               </Button>
             </Tooltip>
 
-            <Tooltip title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Mở toàn màn hình TV Monitor'}>
+            <Tooltip title="Mở Chế độ TV Monitor toàn màn hình cho phòng Telesales">
               <Button
                 type="primary"
-                icon={isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                onClick={toggleFullscreen}
-                className="bg-amber-500 hover:bg-amber-400 text-black font-semibold border-0 text-xs rounded-xl shadow-lg shadow-amber-500/20 flex items-center"
+                icon={<Tv className="w-3.5 h-3.5" />}
+                onClick={() => setTvModeOpen(true)}
+                className="bg-amber-500 hover:bg-amber-400 text-black font-semibold border-0 text-xs rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
               >
-                {isFullscreen ? 'Thu nhỏ' : 'TV Monitor'}
+                TV Monitor
               </Button>
             </Tooltip>
           </div>
@@ -371,7 +381,9 @@ function TelesaleTargetContent() {
       )}
 
       {/* 2. ROW 1: KPI OVERVIEW CARDS (Team Month, Daily, Staff) */}
-      {overview && <KpiOverviewCards overview={overview} />}
+      {overview && (
+        <KpiOverviewCards overview={overview} onOpenTvFullscreen={() => setTvModeOpen(true)} />
+      )}
 
       {/* 3. ROW 2: ACTION & SCHEDULE (LEFT) + DATA PIPELINE STAGES (RIGHT) */}
       {overview && (
@@ -413,6 +425,17 @@ function TelesaleTargetContent() {
         overview={overview}
         onSuccess={handleCloneSuccess}
       />
+
+      {/* 7. DEDICATED FULLSCREEN TV MONITOR VIEW (MOS-BUG-71) */}
+      {overview && (
+        <TelesaleTvMonitorFullscreen
+          overview={overview}
+          open={tvModeOpen}
+          onClose={() => setTvModeOpen(false)}
+          onRefresh={() => fetchOverview(selectedMonth, false)}
+          refreshing={refreshing}
+        />
+      )}
     </div>
   );
 }
