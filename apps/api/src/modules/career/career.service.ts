@@ -94,14 +94,21 @@ export class CareerProgressionService {
       ...(newConfig.cvToCvPlus || {}),
     };
 
+    const mergedCvPlusReq = {
+      ...current.cvPlusToCvPlusPlus,
+      ...(newConfig.cvPlusToCvPlusPlus || {}),
+    };
+
     const merged: CareerProgressionConfig = {
       ...current,
       ...newConfig,
-      version: newConfig.version || current.version || '2026.1',
+      version: newConfig.version || current.version || '2026.4',
       updatedAt: new Date().toISOString(),
       updatedBy: updatedBy || 'Admin',
       cvToCc: mergedCvReq,
       cvToCvPlus: mergedCvReq,
+      cvPlusToCvPlusPlus: mergedCvPlusReq,
+      cvPlusPlusToFm: { ...current.cvPlusPlusToFm, ...(newConfig.cvPlusPlusToFm || {}) },
       ccToFm: { ...current.ccToFm, ...(newConfig.ccToFm || {}) },
       fmToCho: { ...current.fmToCho, ...(newConfig.fmToCho || {}) },
       choToBoss: { ...current.choToBoss, ...(newConfig.choToBoss || {}) },
@@ -469,7 +476,8 @@ export class CareerProgressionService {
   static async getStaffProgression(
     fastify: FastifyInstance,
     staffId: number,
-    forceRefresh = false
+    forceRefresh = false,
+    requestedTargetRole?: CareerRole
   ): Promise<StaffCareerStatus> {
     if (forceRefresh) {
       this.invalidateCache();
@@ -761,7 +769,9 @@ export class CareerProgressionService {
     }
 
     let targetRole: CareerRole = (progression?.targetRole as CareerRole) || 'CV_PLUS';
-    if (!progression?.targetRole) {
+    if (requestedTargetRole && ['CV_PLUS', 'CV_PLUS_PLUS', 'FM', 'CHO', 'BOSS'].includes(requestedTargetRole)) {
+      targetRole = requestedTargetRole;
+    } else if (!progression?.targetRole) {
       if (currentRole === 'CV') targetRole = 'CV_PLUS';
       else if (currentRole === 'CV_PLUS') targetRole = 'CV_PLUS_PLUS';
       else if (currentRole === 'CV_PLUS_PLUS') targetRole = 'FM';
@@ -772,15 +782,39 @@ export class CareerProgressionService {
       else if (currentRole === 'MASTER_TECH') targetRole = 'MASTER_TECH';
     }
 
+    const isCvPlusPlusTarget = targetRole === 'CV_PLUS_PLUS';
+    const activeReq = isCvPlusPlusTarget
+      ? config.cvPlusToCvPlusPlus || DEFAULT_CAREER_PROGRESSION_CONFIG.cvPlusToCvPlusPlus
+      : config.cvToCvPlus || config.cvToCc || DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCvPlus;
+
+    const minOrders = activeReq.minOrders ?? (isCvPlusPlusTarget ? 350 : 300);
+    const maxFixRate = activeReq.maxFixRate ?? (isCvPlusPlusTarget ? 0.015 : 0.02);
+    const minTipRatioAboveShop = activeReq.minTipRatioAboveShop ?? (isCvPlusPlusTarget ? 0.15 : 0.1);
+    targetTipRate = Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
+    const minBananaCount = activeReq.minBananaCount ?? (isCvPlusPlusTarget ? 60 : 45);
+    const minHappinessIndex = activeReq.minHappinessIndex ?? (isCvPlusPlusTarget ? 0.8 : 0.7);
+    const minSelfComboRate = activeReq.minSelfComboRate ?? (isCvPlusPlusTarget ? 0.3 : 0.2);
+    const requiredAudits = activeReq.minQaAudits ?? 12;
+    const requireZeroFailedAudits = activeReq.requireZeroFailedAudits !== false;
+    const expectedSerumsPerWeek = activeReq.expectedSerumsPerWeek ?? 4;
+    const expectedCombosPerMonth = activeReq.expectedCombosPerMonth ?? (isCvPlusPlusTarget ? 10 : 6);
+    const crossConsultCommissionRate = (activeReq as any).crossConsultCommissionRate ?? 0.025;
+    const crossConsultTipRate = (activeReq as any).crossConsultTipRate ?? 0.2;
+    const expectedCrossConsultOrdersPerMonth = (activeReq as any).expectedCrossConsultOrdersPerMonth ?? 20;
+    const expectedCrossConsultCombosPerMonth = (activeReq as any).expectedCrossConsultCombosPerMonth ?? 4;
+    const crossConsultAvgTipPerOrder = shopAvgTip > 15000 ? shopAvgTip : 40000;
+    const crossConsultTipAmount = Math.round(
+      expectedCrossConsultOrdersPerMonth * crossConsultAvgTipPerOrder * crossConsultTipRate
+    );
+    const crossConsultComboAmount = Math.round(
+      expectedCrossConsultCombosPerMonth * 4500000 * crossConsultCommissionRate
+    );
+
     // Quest gates evaluation against dynamic config
 
     // QA/QC Audit Quest Evaluation (Kinh Thánh mOS Điều răn CAREER-QA-001)
     // Tối thiểu QA, QC 12 lần trong 3 tháng qua (cho phép Danny tự chỉnh qua config)
-    const minWeeklyQaAudits = cvReq.minWeeklyQaAudits ?? 1;
-    const requireZeroFailedAudits = cvReq.requireZeroFailedAudits !== false;
     const evaluatedWeeks = 12; // 90 ngày tương đương 12 tuần làm việc
-    const requiredAudits =
-      cvReq.minQaAudits ?? (cvReq.minWeeklyQaAudits ? Math.round(cvReq.minWeeklyQaAudits * 12) : 12);
 
     // Truy vấn dữ liệu biên bản kiểm tra QA/QC tác phong & phòng mi thực tế từ QaShopService
     const staffAuditRecords = qaShopService
@@ -840,27 +874,20 @@ export class CareerProgressionService {
 
     const qaAuditCompleted = isQaPassed;
 
-    // 6 Tiêu Chí Nâng Cấp CV lên CV+ (Theo chuẩn Danny quy định):
-    // 1. 300 bộ mi / 3 tháng: ordersCount >= 300
-    // 2. fix < 2%: fixRate <= 0.02
-    // 3. tip > 10% trung bình của shop: staffTipRate >= targetTipRate || tipRatioAboveShop >= 0.10
-    // 4. QA AC >= 1 lần/tuần: weeklyAuditRate >= 1.0 và không có bài FAILED
-    // 5. HI > 70%: happinessIndex >= 0.70
-    // 6. Chuối Yêu Thương >= 45: bananaCount >= minBananaCount (15 quả/tháng * 3T)
-    const minBananaCount = cvReq.minBananaCount ?? 45;
-    const isOrdersPassed = ordersCount >= cvReq.minOrders;
-    const isFixPassed = fixRate <= cvReq.maxFixRate;
-    const isTipPassed = staffTipRate >= targetTipRate || tipRatioAboveShop >= cvReq.minTipRatioAboveShop;
-    const isHiPassed = happinessIndex >= cvReq.minHappinessIndex;
+    // 6 Tiêu Chí Nâng Cấp (Theo chuẩn cấu hình tương ứng CV+ hoặc CV++):
+    const isOrdersPassed = ordersCount >= minOrders;
+    const isFixPassed = fixRate <= maxFixRate;
+    const isTipPassed = staffTipRate >= targetTipRate || tipRatioAboveShop >= minTipRatioAboveShop;
+    const isHiPassed = happinessIndex >= minHappinessIndex;
     const isBananaPassed = bananaCount >= minBananaCount;
 
     const foundationCompleted =
       isOrdersPassed && isFixPassed && isTipPassed && qaAuditCompleted && isHiPassed && isBananaPassed;
 
-    const bossTrialCompleted = cvReq.allowSelfConsultTrial && selfComboRate >= cvReq.minSelfComboRate;
+    const bossTrialCompleted = activeReq.allowSelfConsultTrial !== false && selfComboRate >= minSelfComboRate;
 
     // Đạt đủ cả 6 ải cốt lõi (kèm tự chốt combo nếu bật tính năng)
-    const allPassed = foundationCompleted && (cvReq.allowSelfConsultTrial ? bossTrialCompleted : true);
+    const allPassed = foundationCompleted && (activeReq.allowSelfConsultTrial !== false ? bossTrialCompleted : true);
 
     let recommendedAction: StaffCareerStatus['recommendedAction'] = 'CONTINUE_TRAINING';
     if (allPassed) {
@@ -894,25 +921,35 @@ export class CareerProgressionService {
 
     // Tệp khách hàng có thể bán combo: 40% số khách (loại trừ khách đang có gói combo live)
     const potentialComboCustomers = Math.max(20, Math.round(monthlyOrdersCount * 0.4));
-    // Tỷ lệ chốt combo tối thiểu để duy trì chuẩn CV+: 20% tệp tiềm năng -> ~8 combo
-    const minComboRequired = Math.max(6, Math.round(potentialComboCustomers * 0.2));
-    const predictedComboCount = minComboRequired;
+    // Số gói combo dự kiến bán mỗi tháng: ưu tiên cấu hình của Danny
+    const minComboRequired = Math.max(6, Math.round(potentialComboCustomers * minSelfComboRate));
+    const predictedComboCount = expectedCombosPerMonth;
     // Giá trung bình combo thực tế tại Wings Lashes (dữ liệu DB: 4.497.831đ ~ 4.5M)
     const avgComboPrice = 4500000;
     const monthlySelfComboRev = predictedComboCount * avgComboPrice;
 
-    // Thưởng bán lẻ cây dưỡng mi Yeppeum 6ml (1.100.000đ): 10% = 110.000đ/cây
-    const lashSerumPrice = 1100000;
-    const serumCommissionAmount = Math.round(lashSerumPrice * 0.1);
+    // Chỉ tiêu dự kiến: Mỗi tuần bán được dưỡng mi (mặc định 4 cây/tuần)
+    const expectedSerumsPerMonth = expectedSerumsPerWeek * 4; // 16 cây / tháng
+    const lashSerumPrice = 1100000; // Giá bán lẻ Cây dưỡng mi Yeppeum 6ml (1.100.000đ)
+    const serumCommissionAmount = Math.round(lashSerumPrice * 0.1); // Thưởng 10% = 110.000đ/cây
+    const monthlySerumIncome = expectedSerumsPerMonth * serumCommissionAmount;
 
     let wageCurrent = hourlyWages.cv;
     let wageNext = hourlyWages.cvPlus;
     let tipShareCurrent = actualTipReceived; // Hiện tại nhận 70%
     let tipShareNext = Math.round(customerTotalTip * 0.9); // Khi lên CV+ nhận 90%
     let comboCommCurrent = 0;
-    let comboCommNext = Math.round(monthlySelfComboRev * 0.025); // 2.5% hoa hồng tự tư vấn combo (900.000đ)
+    let comboCommNext = Math.round(monthlySelfComboRev * 0.025); // 2.5% hoa hồng tự tư vấn combo
 
-    if (currentRole === 'CV_PLUS') {
+    if (isCvPlusPlusTarget) {
+      wageCurrent = currentRole === 'CV_PLUS' ? hourlyWages.cvPlus : hourlyWages.cv;
+      wageNext = hourlyWages.cvPlusPlus; // 29.500đ/h
+      tipShareCurrent = currentRole === 'CV_PLUS' ? Math.round(customerTotalTip * 0.9) : actualTipReceived;
+      tipShareNext = Math.round(customerTotalTip * 0.9 + crossConsultTipAmount); // 90% tip cá nhân + 20% tip khi tư vấn cho CV khác
+      comboCommCurrent = currentRole === 'CV_PLUS' ? Math.round(6 * avgComboPrice * 0.025) : 0;
+      // CV++: combo cá nhân + combo tư vấn chéo hộ CV khác khi FM vắng
+      comboCommNext = Math.round(expectedCombosPerMonth * avgComboPrice * 0.025 + crossConsultComboAmount);
+    } else if (currentRole === 'CV_PLUS') {
       wageCurrent = hourlyWages.cvPlus;
       wageNext = hourlyWages.cvPlusPlus;
       tipShareCurrent = Math.round(customerTotalTip * 0.9);
@@ -939,10 +976,12 @@ export class CareerProgressionService {
           : wageCurrent * actualWorkingHours + tipShareCurrent + comboCommCurrent + cvXoayAllowance;
 
     const incomeGain =
-      currentRole === 'CV' ? wageGain + tipGain + comboGain : Math.max(0, wageGain + tipGain + comboGain);
+      currentRole === 'CV' || isCvPlusPlusTarget
+        ? wageGain + tipGain + comboGain + monthlySerumIncome
+        : Math.max(0, wageGain + tipGain + comboGain);
 
     const nextTierEstimatedIncome =
-      currentRole === 'CV'
+      currentRole === 'CV' || isCvPlusPlusTarget
         ? currentEstimatedIncome + incomeGain
         : currentRole === 'CV_PLUS'
           ? wageNext * actualWorkingHours + tipShareNext + comboCommNext + 3000000
@@ -1021,6 +1060,17 @@ export class CareerProgressionService {
           avgComboPrice,
           serumCommissionAmount,
           minComboRequired,
+          expectedSerumsPerWeek,
+          expectedSerumsPerMonth,
+          serumCommissionPerItem: serumCommissionAmount,
+          monthlySerumIncome,
+          expectedCombosPerMonth,
+          crossConsultTipRate,
+          crossConsultTipAmount,
+          expectedCrossConsultOrdersPerMonth,
+          crossConsultCommissionRate,
+          crossConsultComboAmount,
+          expectedCrossConsultCombosPerMonth,
         },
       },
       lastSyncedAt: new Date().toISOString(),

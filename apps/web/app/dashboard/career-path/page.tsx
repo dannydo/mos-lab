@@ -54,6 +54,7 @@ export default function CareerPathPage() {
   const [sliderFix, setSliderFix] = useState<number>(1.2);
   const [sliderHi, setSliderHi] = useState<number>(85);
   const [sliderCombo, setSliderCombo] = useState<number>(25);
+  const [simulationTarget, setSimulationTarget] = useState<'CV_PLUS' | 'CV_PLUS_PLUS'>('CV_PLUS');
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -77,24 +78,35 @@ export default function CareerPathPage() {
 
   const { cvToCc, cvPlusToCvPlusPlus, cvPlusPlusToFm, ccToFm, fmToCho, choToBoss, rewardRates } = safeConfig;
 
-  const fetchStaffProgression = useCallback(async (staffId: number, refresh = false) => {
-    try {
-      const res = await apiClient.career.getStaffProgression(staffId, refresh);
-      setSelectedStaffStatus(res);
-      if (res?.metrics) {
-        setSliderOrders(res.metrics.ordersCount || 300);
-        setSliderCombo(Math.round((res.metrics.selfComboRate || 0.25) * 100));
-        setSliderTip(Math.round((res.metrics.tipRatioAboveShop || 0.15) * 100));
-        setSliderFix(Number(((res.metrics.fixRate || 0.01) * 100).toFixed(1)));
-        setSliderHi(Math.round((res.metrics.happinessIndex ?? 0.7) * 100));
+  const fetchStaffProgression = useCallback(
+    async (staffId: number, refresh = false, targetRole?: 'CV_PLUS' | 'CV_PLUS_PLUS') => {
+      try {
+        const res = await apiClient.career.getStaffProgression(staffId, refresh, targetRole);
+        setSelectedStaffStatus(res);
+        if (res?.metrics) {
+          setSliderOrders(res.metrics.ordersCount || 300);
+          setSliderCombo(Math.round((res.metrics.selfComboRate || 0.25) * 100));
+          setSliderTip(Math.round((res.metrics.tipRatioAboveShop || 0.15) * 100));
+          setSliderFix(Number(((res.metrics.fixRate || 0.01) * 100).toFixed(1)));
+          setSliderHi(Math.round((res.metrics.happinessIndex ?? 0.7) * 100));
+        }
+        if (res?.lastSyncedAt) {
+          setLastSyncedAt(res.lastSyncedAt);
+        }
+      } catch (_err) {
+        // fallback
       }
-      if (res?.lastSyncedAt) {
-        setLastSyncedAt(res.lastSyncedAt);
-      }
-    } catch (_err) {
-      // fallback
+    },
+    []
+  );
+
+  const handleSimulationTargetChange = (target: 'CV_PLUS' | 'CV_PLUS_PLUS') => {
+    playSound('pop');
+    setSimulationTarget(target);
+    if (selectedStaffId) {
+      fetchStaffProgression(selectedStaffId, false, target);
     }
-  }, []);
+  };
 
   // Load config & live data
   const loadData = useCallback(async () => {
@@ -117,7 +129,9 @@ export default function CareerPathPage() {
         const defaultStaff = list.find((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole)) || list[0];
         if (defaultStaff) {
           setSelectedStaffId(defaultStaff.id);
-          fetchStaffProgression(defaultStaff.id, false);
+          const defaultTarget = defaultStaff.careerRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
+          setSimulationTarget(defaultTarget);
+          fetchStaffProgression(defaultStaff.id, false, defaultTarget);
         }
       }
     } catch (_err) {
@@ -255,7 +269,10 @@ export default function CareerPathPage() {
   const handleSelectStaff = (staffId: number) => {
     playSound('pop');
     setSelectedStaffId(staffId);
-    fetchStaffProgression(staffId, false);
+    const staff = staffList.find((s) => s.id === staffId);
+    const defaultTarget = staff?.careerRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
+    setSimulationTarget(defaultTarget);
+    fetchStaffProgression(staffId, false, defaultTarget);
   };
 
   const handleSyncProd = async () => {
@@ -269,7 +286,7 @@ export default function CareerPathPage() {
       setStaffList(updatedList);
 
       if (selectedStaffId) {
-        await fetchStaffProgression(selectedStaffId, true);
+        await fetchStaffProgression(selectedStaffId, true, simulationTarget);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Lỗi làm mới dữ liệu';
@@ -346,16 +363,17 @@ export default function CareerPathPage() {
   const isMasterTech = q1Passed && q2Passed && q3Passed && q4Passed && !bossPassed;
 
   // Save admin config
-  const handleSaveConfig = async (newCvToCc: typeof cvToCc) => {
+  const handleSaveConfig = async (payload: {
+    cvToCc: typeof safeConfig.cvToCc;
+    cvToCvPlus: typeof safeConfig.cvToCvPlus;
+    cvPlusToCvPlusPlus: typeof safeConfig.cvPlusToCvPlusPlus;
+  }) => {
     try {
       setSavingConfig(true);
-      const updated = await apiClient.career.updateConfig({
-        cvToCc: newCvToCc,
-        cvToCvPlus: newCvToCc,
-      });
+      const updated = await apiClient.career.updateConfig(payload);
       setConfig(updated);
       if (selectedStaffId) {
-        await fetchStaffProgression(selectedStaffId, true);
+        await fetchStaffProgression(selectedStaffId, true, simulationTarget);
       }
       message.success('Cập nhật cấu hình thành công! Đã áp dụng ngay lập tức.');
       setIsConfigDrawerOpen(false);
@@ -537,6 +555,8 @@ export default function CareerPathPage() {
           onPromote={handlePromote}
           onSwitchSpecialist={handleSwitchSpecialist}
           loadingAction={actionLoading}
+          simulationTarget={simulationTarget}
+          onSimulationTargetChange={handleSimulationTargetChange}
         />
 
         {/* ACTIVE REALM LORE & SKILL ENCYCLOPEDIA */}

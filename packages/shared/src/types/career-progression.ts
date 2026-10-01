@@ -29,6 +29,10 @@ export interface CvToCvPlusRequirements {
   minSelfComboRate: number;
   /** Bật/tắt ải trùm cuối tự tư vấn */
   allowSelfConsultTrial: boolean;
+  /** Số cây dưỡng mi dự kiến bán mỗi tuần (mặc định: 4 cây/tuần) */
+  expectedSerumsPerWeek?: number;
+  /** Số gói combo dự kiến bán mỗi tháng (mặc định: 6 combo/tháng) */
+  expectedCombosPerMonth?: number;
 }
 
 export type CvToCcRequirements = CvToCvPlusRequirements;
@@ -36,12 +40,26 @@ export type CvToCcRequirements = CvToCvPlusRequirements;
 export interface CvPlusToCvPlusPlusRequirements {
   /** Số tháng tối thiểu ở vị trí CV+ (2 tháng) */
   minMonthsInCvPlus: number;
+  /** Số ca làm tối thiểu trong 3 tháng liên tiếp (mặc định: 350 ca) */
+  minOrders?: number;
+  /** Tỷ lệ lỗi bảo hành rụng mi Fix tối đa (0.015 = 1.5%) */
+  maxFixRate?: number;
+  /** % Tip cao hơn trung bình chi nhánh (0.15 = cao hơn 15% so với TB shop) */
+  minTipRatioAboveShop?: number;
+  /** Số Chuối yêu thương nhận được từ thiên thần khác lúc check-in trong 90 ngày (20 * 3 = 60 chuối) */
+  minBananaCount?: number;
   /** Tỷ lệ chốt combo tự thân trên khách của mình duy trì (0.30 = 30%) */
   minSelfComboRate: number;
   /** Chỉ số hạnh phúc nội bộ HI (0.80 = 80% được đồng đội tin yêu, thả tim check-in) */
   minHappinessIndex: number;
   /** Tỷ lệ hoa hồng khi tư vấn giùm cho khách của CV khác khi FM vắng mặt (0.025 = 2.5%) */
   crossConsultCommissionRate: number;
+  /** Tỷ lệ tip nhận được khi tư vấn giùm cho khách của CV khác (0.20 = 20% tip) */
+  crossConsultTipRate?: number;
+  /** Số ca tư vấn chéo dự kiến mỗi tháng cho CV khác (mặc định: 20 ca/tháng) */
+  expectedCrossConsultOrdersPerMonth?: number;
+  /** Số gói combo tư vấn chéo dự kiến chốt được cho khách của CV khác mỗi tháng (mặc định: 4 combo/tháng) */
+  expectedCrossConsultCombosPerMonth?: number;
   /** Số biên bản vi phạm của HR hoặc QA/QC tối đa cho phép (0 = không được ăn biên bản) */
   maxDisciplinaryViolations: number;
   /** Tần suất tối thiểu mời QA/QC kiểm tra tác phong & phòng nối mi (lần/tuần, mặc định: 1) */
@@ -50,6 +68,14 @@ export interface CvPlusToCvPlusPlusRequirements {
   minQaAudits?: number;
   /** Bắt buộc không có bài kiểm tra QA/QC failed nào */
   requireZeroFailedAudits: boolean;
+  /** Thời hạn thử thách tự tư vấn & dẫn dắt (ngày, mặc định: 30 ngày) */
+  trialDurationDays?: number;
+  /** Bật/tắt ải trùm cuối tự tư vấn duy trì */
+  allowSelfConsultTrial?: boolean;
+  /** Số cây dưỡng mi dự kiến bán mỗi tuần (mặc định: 4 cây/tuần) */
+  expectedSerumsPerWeek?: number;
+  /** Số gói combo dự kiến bán mỗi tháng (mặc định: 10 combo/tháng) */
+  expectedCombosPerMonth?: number;
 }
 
 export interface CvPlusPlusToFmRequirements {
@@ -212,17 +238,30 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   trialDurationDays: 30,
   minSelfComboRate: 0.2, // Tối thiểu 20% trên tệp khách tiềm năng chưa có gói combo (~8 combo/tháng)
   allowSelfConsultTrial: true,
+  expectedSerumsPerWeek: 4, // 4 cây dưỡng mi / tuần (cho phép tự chỉnh)
+  expectedCombosPerMonth: 6, // 6 combo / tháng (cho phép tự chỉnh)
 };
 
 const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   minMonthsInCvPlus: 2, // 2 tháng ở vị trí CV+
-  minSelfComboRate: 0.3, // Tự chốt combo khách mình >= 30%
+  minOrders: 350, // 350 ca / 3 tháng liền
+  maxFixRate: 0.015, // Tỷ lệ lỗi Fix <= 1.5%
+  minTipRatioAboveShop: 0.15, // Tip cao hơn 15% so với trung bình shop
+  minBananaCount: 60, // 60 chuối yêu thương / 90N (20 chuối/tháng)
   minHappinessIndex: 0.8, // Đồng đội tin yêu HI >= 80%
   crossConsultCommissionRate: 0.025, // 2.5% hoa hồng tư vấn giùm khách của CV khác khi FM vắng
+  crossConsultTipRate: 0.2, // Nhận 20% tip khi tư vấn cho khách của CV khác
+  expectedCrossConsultOrdersPerMonth: 20, // Dự kiến 20 ca tư vấn chéo / tháng
+  expectedCrossConsultCombosPerMonth: 4, // Dự kiến chốt được 4 combo chéo / tháng (~450.000đ)
   maxDisciplinaryViolations: 0,
   minWeeklyQaAudits: 1,
   minQaAudits: 12,
   requireZeroFailedAudits: true,
+  trialDurationDays: 30,
+  allowSelfConsultTrial: true,
+  minSelfComboRate: 0.3, // Tự chốt combo khách mình >= 30%
+  expectedSerumsPerWeek: 4, // 4 cây dưỡng mi / tuần
+  expectedCombosPerMonth: 10, // 10 combo / tháng
 };
 
 const DEFAULT_CV_PLUS_PLUS_TO_FM: CvPlusPlusToFmRequirements = {
@@ -433,6 +472,17 @@ export interface StaffCareerStatus {
       avgComboPrice?: number;
       serumCommissionAmount?: number;
       minComboRequired?: number;
+      expectedSerumsPerWeek?: number;
+      expectedSerumsPerMonth?: number;
+      serumCommissionPerItem?: number;
+      monthlySerumIncome?: number;
+      expectedCombosPerMonth?: number;
+      crossConsultTipRate?: number;
+      crossConsultTipAmount?: number;
+      expectedCrossConsultOrdersPerMonth?: number;
+      crossConsultCommissionRate?: number;
+      crossConsultComboAmount?: number;
+      expectedCrossConsultCombosPerMonth?: number;
     };
   };
   lastSyncedAt?: string;

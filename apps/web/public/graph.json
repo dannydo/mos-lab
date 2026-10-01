@@ -30106,8 +30106,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8628,
-        "lineCount": 241,
+        "sizeBytes": 8720,
+        "lineCount": 242,
         "ext": ".ts"
       }
     },
@@ -30132,8 +30132,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 46113,
-        "lineCount": 1149,
+        "sizeBytes": 49285,
+        "lineCount": 1199,
         "ext": ".ts"
       }
     },
@@ -31341,8 +31341,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 25078,
-        "lineCount": 685,
+        "sizeBytes": 30074,
+        "lineCount": 782,
         "ext": ".ts"
       }
     },
@@ -31354,8 +31354,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 53878,
-        "lineCount": 1386,
+        "sizeBytes": 57821,
+        "lineCount": 1480,
         "ext": ".ts"
       }
     },
@@ -35592,8 +35592,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9171,
-        "lineCount": 233,
+        "sizeBytes": 50172,
+        "lineCount": 1038,
         "ext": ".tsx"
       }
     },
@@ -35605,8 +35605,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 76446,
-        "lineCount": 1566,
+        "sizeBytes": 88810,
+        "lineCount": 1795,
         "ext": ".tsx"
       }
     },
@@ -35631,8 +35631,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29288,
-        "lineCount": 673,
+        "sizeBytes": 30309,
+        "lineCount": 693,
         "ext": ".tsx"
       }
     },
@@ -37724,8 +37724,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/CustomerPoolDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12430,
-        "lineCount": 279,
+        "sizeBytes": 12833,
+        "lineCount": 288,
         "ext": ".tsx"
       }
     },
@@ -37802,8 +37802,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12209,
-        "lineCount": 300,
+        "sizeBytes": 11106,
+        "lineCount": 277,
         "ext": ".tsx"
       }
     },
@@ -37945,8 +37945,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20870,
-        "lineCount": 497,
+        "sizeBytes": 20919,
+        "lineCount": 498,
         "ext": ".tsx"
       }
     },
@@ -38452,8 +38452,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3410,
-        "lineCount": 97,
+        "sizeBytes": 3562,
+        "lineCount": 100,
         "ext": ".ts"
       }
     },
@@ -39154,8 +39154,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 18035,
-        "lineCount": 440,
+        "sizeBytes": 21015,
+        "lineCount": 490,
         "ext": ".ts"
       }
     },

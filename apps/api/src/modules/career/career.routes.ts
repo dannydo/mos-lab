@@ -129,7 +129,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
    * Xem tiến trình thăng cấp của một nhân viên cụ thể
    * GET /api/career/staff/:staffId?refresh=true
    */
-  fastify.get<{ Params: { staffId: string }; Querystring: { refresh?: string } }>(
+  fastify.get<{ Params: { staffId: string }; Querystring: { refresh?: string; targetRole?: string } }>(
     '/career/staff/:staffId',
     {
       preHandler: [requireAuth],
@@ -137,13 +137,14 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
     async (request, reply) => {
       const staffId = Number(request.params.staffId);
       const forceRefresh = request.query?.refresh === 'true';
+      const targetRole = request.query?.targetRole as any;
 
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
       }
 
       try {
-        const status = await CareerProgressionService.getStaffProgression(fastify, staffId, forceRefresh);
+        const status = await CareerProgressionService.getStaffProgression(fastify, staffId, forceRefresh, targetRole);
         return reply.send({ success: true, data: status });
       } catch (err: any) {
         fastify.log.error({ err, staffId }, 'Failed to get staff career status');

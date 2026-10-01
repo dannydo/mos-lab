@@ -62,12 +62,15 @@ export const careerApi = {
     getStaffProgression: async (
       staffId: number,
       refresh = false,
+      targetRole?: string,
       options?: ApiRequestOptions
     ): Promise<StaffCareerStatus> => {
-      const query = refresh ? { refresh: 'true' } : undefined;
+      const query: Record<string, string> = {};
+      if (refresh) query.refresh = 'true';
+      if (targetRole) query.targetRole = targetRole;
       const res = await dedupeApiGet<{ success: boolean; data: StaffCareerStatus }>(
         `/career/staff/${staffId}`,
-        query,
+        Object.keys(query).length > 0 ? query : undefined,
         refresh ? 0 : 5000,
         options
       );

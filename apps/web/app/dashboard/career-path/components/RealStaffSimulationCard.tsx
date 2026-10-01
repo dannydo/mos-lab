@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Slider, Progress, Tooltip, Avatar } from 'antd';
+import { Slider, Progress, Tooltip, Avatar, Segmented } from 'antd';
 import {
   Sparkles,
   Trophy,
@@ -16,6 +16,7 @@ import {
   Target,
   Flame,
   Award,
+  Crown,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
 import type { StaffCareerStatus, CareerProgressionConfig } from '@mos-lab/shared';
@@ -32,6 +33,8 @@ interface RealStaffSimulationCardProps {
   onPromote?: () => void;
   onSwitchSpecialist?: () => void;
   loadingAction?: boolean;
+  simulationTarget?: 'CV_PLUS' | 'CV_PLUS_PLUS';
+  onSimulationTargetChange?: (target: 'CV_PLUS' | 'CV_PLUS_PLUS') => void;
 }
 
 interface StatRadarChartProps {
@@ -39,16 +42,23 @@ interface StatRadarChartProps {
   targetScores: number[]; // [1, 1, 1, 1, 1, 1]
   simulatedScores: number[]; // [simOrders, fix, tip, qa, hi, banana]
   qaLabel?: string;
+  customAxes?: Array<{ label: string; icon: string }>;
 }
 
 /**
  * Biểu đồ Radar RPG 6 Cánh - Hiển thị 6 chỉ số thăng hạng CV -> CV+ của Kỹ thuật viên
  */
-const StatRadarChart: React.FC<StatRadarChartProps> = ({ actualScores, targetScores, simulatedScores, qaLabel }) => {
+const StatRadarChart: React.FC<StatRadarChartProps> = ({
+  actualScores,
+  targetScores,
+  simulatedScores,
+  qaLabel,
+  customAxes,
+}) => {
   const cx = 110;
   const cy = 100;
   const R = 68;
-  const axes = [
+  const defaultAxes = [
     { label: '300 Ca/3T', icon: '🎯' },
     { label: 'Fix < 2%', icon: '🛡️' },
     { label: 'Tip > 10% Shop', icon: '💖' },
@@ -56,6 +66,7 @@ const StatRadarChart: React.FC<StatRadarChartProps> = ({ actualScores, targetSco
     { label: 'HI > 70%', icon: '😊' },
     { label: 'Chuối ≥ 45/90N', icon: '🍌' },
   ];
+  const axes = customAxes && customAxes.length === 6 ? customAxes : defaultAxes;
 
   const getPoints = (scores: number[]) => {
     return scores
@@ -195,12 +206,88 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   onPromote,
   onSwitchSpecialist,
   loadingAction,
+  simulationTarget,
+  onSimulationTargetChange,
 }) => {
+  const isTargetCvPlusPlus = (simulationTarget || status?.targetRole) === 'CV_PLUS_PLUS';
+  const targetReq = isTargetCvPlusPlus
+    ? config.cvPlusToCvPlusPlus || {
+        minMonthsInCvPlus: 2,
+        minOrders: 350,
+        maxFixRate: 0.015,
+        minTipRatioAboveShop: 0.15,
+        minBananaCount: 60,
+        minHappinessIndex: 0.8,
+        crossConsultCommissionRate: 0.025,
+        maxDisciplinaryViolations: 0,
+        minWeeklyQaAudits: 1,
+        minQaAudits: 12,
+        requireZeroFailedAudits: true,
+        trialDurationDays: 30,
+        allowSelfConsultTrial: true,
+        minSelfComboRate: 0.3,
+        expectedSerumsPerWeek: 4,
+        expectedCombosPerMonth: 10,
+      }
+    : config.cvToCvPlus ||
+      config.cvToCc || {
+        minOrders: 300,
+        minConsecutiveMonths: 3,
+        minTipRatioAboveShop: 0.1,
+        maxFixRate: 0.02,
+        minHappinessIndex: 0.7,
+        minBananaCount: 45,
+        maxDisciplinaryViolations: 0,
+        minWeeklyQaAudits: 1,
+        minQaAudits: 12,
+        requireZeroFailedAudits: true,
+        trialDurationDays: 30,
+        minSelfComboRate: 0.2,
+        allowSelfConsultTrial: true,
+        expectedSerumsPerWeek: 4,
+        expectedCombosPerMonth: 6,
+      };
+
+  const cvReq = targetReq;
+  const earnings = status?.earningsSimulation;
+
+  // Dự kiến mỗi tuần bán dưỡng mi (Theo cấu hình Danny hoặc thanh trượt)
+  const defaultSerums = earnings?.details?.expectedSerumsPerWeek ?? cvReq.expectedSerumsPerWeek ?? 4;
+  const [sliderSerums, setSliderSerums] = React.useState<number>(defaultSerums);
+
+  React.useEffect(() => {
+    if (typeof earnings?.details?.expectedSerumsPerWeek === 'number') {
+      setSliderSerums(earnings.details.expectedSerumsPerWeek);
+    } else if (typeof cvReq.expectedSerumsPerWeek === 'number') {
+      setSliderSerums(cvReq.expectedSerumsPerWeek);
+    }
+  }, [earnings?.details?.expectedSerumsPerWeek, cvReq.expectedSerumsPerWeek]);
+
+  // Dự kiến số ca bán chéo / tư vấn chéo (lên đến 300 ca/tháng theo yêu cầu Danny)
+  const defaultCrossOrders =
+    earnings?.details?.expectedCrossConsultOrdersPerMonth ??
+    (targetReq as any).expectedCrossConsultOrdersPerMonth ??
+    20;
+  const [sliderCrossOrders, setSliderCrossOrders] = React.useState<number>(defaultCrossOrders);
+
+  React.useEffect(() => {
+    if (typeof earnings?.details?.expectedCrossConsultOrdersPerMonth === 'number') {
+      setSliderCrossOrders(earnings.details.expectedCrossConsultOrdersPerMonth);
+    } else if (typeof (targetReq as any).expectedCrossConsultOrdersPerMonth === 'number') {
+      setSliderCrossOrders((targetReq as any).expectedCrossConsultOrdersPerMonth);
+    }
+  }, [earnings?.details?.expectedCrossConsultOrdersPerMonth, (targetReq as any)?.expectedCrossConsultOrdersPerMonth]);
+
   if (!status) return null;
 
-  const cvReq = config.cvToCvPlus || config.cvToCc;
   const metrics = status.metrics;
-  const earnings = status.earningsSimulation;
+
+  const targetOrders = targetReq.minOrders ?? (isTargetCvPlusPlus ? 350 : 300);
+  const targetMaxFix = targetReq.maxFixRate ?? (isTargetCvPlusPlus ? 0.015 : 0.02);
+  const minTipRatioAboveShop = targetReq.minTipRatioAboveShop ?? (isTargetCvPlusPlus ? 0.15 : 0.1);
+  const minBananaCount = targetReq.minBananaCount ?? (isTargetCvPlusPlus ? 60 : 45);
+  const minHappinessIndex = targetReq.minHappinessIndex ?? (isTargetCvPlusPlus ? 0.8 : 0.7);
+  const minSelfComboRate = targetReq.minSelfComboRate ?? (isTargetCvPlusPlus ? 0.3 : 0.2);
 
   const staffTipRate =
     metrics.staffTipRate ??
@@ -208,36 +295,32 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       ? Math.min(0.65, Math.max(0.2, ((metrics.totalTip || 0) / (metrics.ordersCount * 38000)) * 0.45))
       : 0.314);
   const shopTipRate = metrics.shopTipRate ?? 0.45; // 45.0%
-  const minTipRatioAboveShop = cvReq.minTipRatioAboveShop ?? 0.1; // +10% của shop
-  const shopBonusPercent = Number((shopTipRate * minTipRatioAboveShop * 100).toFixed(1)); // 4.5%
-  const targetTipRate = metrics.targetTipRate ?? Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3)); // 0.495 (49.5%)
+  const shopBonusPercent = Number((shopTipRate * minTipRatioAboveShop * 100).toFixed(1));
+  const targetTipRate = metrics.targetTipRate ?? Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
 
-  const staffTipRatePercent = Number((staffTipRate * 100).toFixed(1)); // e.g. 31.4%
-  const shopTipRatePercent = Number((shopTipRate * 100).toFixed(1)); // 45.0%
-  const targetTipRatePercent = Number((targetTipRate * 100).toFixed(1)); // 49.5%
+  const staffTipRatePercent = Number((staffTipRate * 100).toFixed(1));
+  const shopTipRatePercent = Number((shopTipRate * 100).toFixed(1));
+  const targetTipRatePercent = Number((targetTipRate * 100).toFixed(1));
 
-  // 6 Tiêu Chí Nâng Cấp CV lên CV+ (Theo chuẩn Danny):
-  // 1. 300 bộ mi / 3 tháng
-  const isOrdersPassed = (metrics.ordersCount || 0) >= cvReq.minOrders;
-  const ordersGap = Math.max(0, cvReq.minOrders - (metrics.ordersCount || 0));
-  const ordersProgressPercent = Math.min(
-    100,
-    Math.round(((metrics.ordersCount || 0) / (cvReq.minOrders || 300)) * 100)
-  );
+  // 6 Tiêu Chí Nâng Cấp (Theo chuẩn CV+ hoặc CV++):
+  // 1. Số ca làm / 3 tháng
+  const isOrdersPassed = (metrics.ordersCount || 0) >= targetOrders;
+  const ordersGap = Math.max(0, targetOrders - (metrics.ordersCount || 0));
+  const ordersProgressPercent = Math.min(100, Math.round(((metrics.ordersCount || 0) / (targetOrders || 300)) * 100));
 
-  // 2. fix < 2%
-  const isFixPassed = (metrics.fixRate || 0) <= cvReq.maxFixRate;
+  // 2. Tỷ lệ fix
+  const isFixPassed = (metrics.fixRate || 0) <= targetMaxFix;
 
-  // 3. tip > 10% trung bình của shop (45% + 4.5% = >= 49.5%)
+  // 3. Tỷ lệ tip
   const isTipPassed = staffTipRate >= targetTipRate || (metrics.tipRatioAboveShop || 0) >= minTipRatioAboveShop;
   const tipGapPercent = Math.max(0, Number((targetTipRatePercent - staffTipRatePercent).toFixed(1)));
   const tipExcessPercent = Math.max(0, Number((staffTipRatePercent - targetTipRatePercent).toFixed(1)));
   const tipProgressPercent = Math.min(100, Math.max(0, Math.round((staffTipRate / targetTipRate) * 100)));
 
-  // 4. QA/QC tối thiểu 12 lần trong 3 tháng qua (cho phép tự chỉnh qua minQaAudits)
+  // 4. QA/QC tối thiểu 12 lần trong 3 tháng qua
   const qaAudit = metrics.qaAudit;
   const requiredQaAudits =
-    cvReq.minQaAudits ?? (cvReq.minWeeklyQaAudits ? Math.round(cvReq.minWeeklyQaAudits * 12) : 12);
+    targetReq.minQaAudits ?? (targetReq.minWeeklyQaAudits ? Math.round(targetReq.minWeeklyQaAudits * 12) : 12);
   const totalQaAudits = qaAudit?.totalAudits ?? 0;
   const isQaPassed =
     requiredQaAudits === 0 ||
@@ -250,17 +333,17 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         ? 100
         : Math.min(100, Math.round((totalQaAudits / (requiredQaAudits || 12)) * 100));
 
-  // 5. HI > 70% (Happiness Index khách hàng check-in thả tim)
+  // 5. HI (Happiness Index)
   const happinessIndex = metrics.happinessIndex ?? 0;
-  const isHiPassed = happinessIndex >= cvReq.minHappinessIndex;
+  const isHiPassed = happinessIndex >= minHappinessIndex;
   const hiPercent = Math.round(happinessIndex * 100);
-  const hiProgressPercent = Math.min(100, Math.round((happinessIndex / (cvReq.minHappinessIndex || 0.7)) * 100));
+  const hiProgressPercent = Math.min(100, Math.round((happinessIndex / minHappinessIndex) * 100));
 
-  // 6. Chuối Yêu Thương >= 45 (15 * 3 = 45 chuối trong 90 ngày nhận từ thiên thần khác lúc check-in)
-  const minBananaCount = cvReq.minBananaCount ?? 45;
+  // 6. Chuối Yêu Thương
+  const minBananaCountVal = minBananaCount;
   const bananaCount = metrics.bananaCount ?? 0;
-  const isBananaPassed = bananaCount >= minBananaCount;
-  const bananaProgressPercent = Math.min(100, Math.round((bananaCount / minBananaCount) * 100));
+  const isBananaPassed = bananaCount >= minBananaCountVal;
+  const bananaProgressPercent = Math.min(100, Math.round((bananaCount / minBananaCountVal) * 100));
 
   // Gamified Quest XP Progress (Tổng 6 ải hoàn thành)
   const passedQuestsCount =
@@ -273,8 +356,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const xpPercent = Math.round((passedQuestsCount / 6) * 100);
 
   // What-If Dynamic Simulation
-  const isSimOrdersPassed = sliderOrders >= cvReq.minOrders;
-  const isSimComboPassed = sliderCombo / 100 >= cvReq.minSelfComboRate;
+  const isSimOrdersPassed = sliderOrders >= targetOrders;
+  const isSimComboPassed = sliderCombo / 100 >= minSelfComboRate;
   const simPassedCount =
     Number(isSimOrdersPassed) +
     Number(isFixPassed) +
@@ -285,25 +368,32 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const isSimAllPassed = simPassedCount === 6;
 
   // Radar Scores (Normalized 6 Cánh)
+  const customRadarAxes = [
+    { label: `${targetOrders} Ca/3T`, icon: '🎯' },
+    { label: `Fix < ${(targetMaxFix * 100).toFixed(1)}%`, icon: '🛡️' },
+    { label: `Tip > ${(minTipRatioAboveShop * 100).toFixed(0)}% Shop`, icon: '💖' },
+    { label: requiredQaAudits > 0 ? `QA ≥ ${requiredQaAudits}L/3T` : 'QA (Miễn)', icon: '📋' },
+    { label: `HI > ${(minHappinessIndex * 100).toFixed(0)}%`, icon: '😊' },
+    { label: `Chuối ≥ ${minBananaCountVal}/90N`, icon: '🍌' },
+  ];
+
   const radarActualScores = [
-    Math.min(1.2, (metrics.ordersCount || 0) / (cvReq.minOrders || 300)),
-    Math.max(
-      0,
-      Math.min(
-        1.2,
-        isFixPassed ? 1.0 + Math.max(0, (0.02 - (metrics.fixRate || 0)) * 10) : 1 - (metrics.fixRate || 0) / 0.04
-      )
-    ),
-    Math.min(1.2, staffTipRate / (targetTipRate || 0.495)),
-    hasFailedQa ? 0.2 : requiredQaAudits === 0 ? 1.0 : Math.min(1.2, totalQaAudits / (requiredQaAudits || 12)),
-    Math.min(1.2, happinessIndex / (cvReq.minHappinessIndex || 0.7)),
-    bananaCount >= minBananaCount
-      ? Math.min(1.2, 1.0 + Math.min(0.2, (bananaCount - minBananaCount) / 100))
-      : Math.min(0.9, bananaCount / minBananaCount),
+    Math.min(1.2, (metrics.ordersCount || 0) / (targetOrders || 300)),
+    (metrics.fixRate || 0) <= targetMaxFix
+      ? 1.0 + Math.max(0, 0.2 - (metrics.fixRate || 0) * 10)
+      : Math.max(0.2, 1.0 - ((metrics.fixRate || 0) - targetMaxFix) * 25),
+    targetTipRate > 0 ? Math.min(1.2, Math.max(0.2, staffTipRate / targetTipRate)) : 0.5,
+    requiredQaAudits > 0 ? (hasFailedQa ? 0.2 : Math.min(1.2, Math.max(0.1, totalQaAudits / requiredQaAudits))) : 1.0,
+    happinessIndex >= minHappinessIndex
+      ? Math.min(1.2, 1.0 + Math.min(0.2, (happinessIndex - minHappinessIndex) * 2))
+      : Math.max(0.2, happinessIndex / minHappinessIndex),
+    bananaCount >= minBananaCountVal
+      ? Math.min(1.2, 1.0 + Math.min(0.2, (bananaCount - minBananaCountVal) / 100))
+      : Math.min(0.9, bananaCount / minBananaCountVal),
   ];
 
   const radarSimulatedScores = [
-    Math.min(1.2, sliderOrders / (cvReq.minOrders || 300)),
+    Math.min(1.2, sliderOrders / (targetOrders || 300)),
     radarActualScores[1],
     radarActualScores[2],
     radarActualScores[3],
@@ -380,6 +470,21 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     earnings?.details?.comboGain ??
     Math.max(0, (earnings?.details?.comboCommissionNext || 0) - (earnings?.details?.comboCommissionCurrent || 0));
 
+  const weeklySerumBonus = sliderSerums * 110000;
+  const monthlySerumBonus = weeklySerumBonus * 4;
+
+  const crossTipRate = earnings?.details?.crossConsultTipRate ?? 0.2;
+  const simulatedCrossTipAmount = isTargetCvPlusPlus ? Math.round(sliderCrossOrders * 40000 * crossTipRate) : 0;
+  const baseCrossTipAmount =
+    earnings?.details?.crossConsultTipAmount ??
+    (isTargetCvPlusPlus ? Math.round(defaultCrossOrders * 40000 * crossTipRate) : 0);
+  const dynamicCrossTipDelta = isTargetCvPlusPlus ? simulatedCrossTipAmount - baseCrossTipAmount : 0;
+
+  // Dynamic Simulated Earnings based on interactive sliders
+  const activeSerumGain = monthlySerumBonus;
+  const totalSimulatedGain = wageGain + tipGain + comboGain + activeSerumGain + dynamicCrossTipDelta;
+  const simulatedNextTierIncome = (earnings?.currentEstimatedIncome || 0) + totalSimulatedGain;
+
   return (
     <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-rose-100/70 dark:border-slate-800 p-5 shadow-sm mb-6 transition-all duration-200">
       {/* Top Banner: Staff Profile & Status */}
@@ -415,57 +520,92 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          {status.status !== 'TRIAL_GATE' && !status.qualifiedQuests.allPassed && (
-            <Tooltip
-              title={
-                !isQaPassed
-                  ? hasFailedQa
-                    ? 'Không thể mở ải: Kỹ thuật viên có bài kiểm tra QA/QC tác phong hoặc phòng mi bị FAILED'
-                    : 'Không thể mở ải: Kỹ thuật viên phải mời QA/QC kiểm tra định kỳ ít nhất 1 lần/tuần'
-                  : undefined
-              }
-            >
-              <span>
-                <button
-                  onClick={onActivateTrial}
-                  disabled={loadingAction || !isQaPassed}
-                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-                >
-                  <Flame className="w-3.5 h-3.5" />
-                  Mở Ải Trùm Cuối (30 Ngày)
-                </button>
+        {/* Target Role Selector & Action Buttons */}
+        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+          {onSimulationTargetChange && (
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-1.5 flex items-center gap-1">
+                <Target className="w-3 h-3 text-rose-500" />
+                <span>Mục tiêu:</span>
               </span>
-            </Tooltip>
+              <Segmented
+                value={isTargetCvPlusPlus ? 'CV_PLUS_PLUS' : 'CV_PLUS'}
+                onChange={(val) => onSimulationTargetChange(val as 'CV_PLUS' | 'CV_PLUS_PLUS')}
+                options={[
+                  {
+                    label: (
+                      <span className="flex items-center gap-1 font-bold text-xs py-0.5">
+                        <span>Ải 1: CV+ (Tự Chủ)</span>
+                      </span>
+                    ),
+                    value: 'CV_PLUS',
+                  },
+                  {
+                    label: (
+                      <span className="flex items-center gap-1 font-bold text-xs py-0.5">
+                        <span>👑 Ải 2: CV++ (Sảnh)</span>
+                      </span>
+                    ),
+                    value: 'CV_PLUS_PLUS',
+                  },
+                ]}
+                className="font-bold text-xs bg-white dark:bg-slate-900 shadow-2xs"
+              />
+            </div>
           )}
 
-          {status.qualifiedQuests.allPassed && (
-            <Tooltip
-              title={!isQaPassed ? 'Bắt buộc đạt chuẩn kiểm định QA/QC định kỳ mới được duyệt thăng hạng' : undefined}
-            >
-              <span>
-                <button
-                  onClick={onPromote}
-                  disabled={loadingAction || !isQaPassed}
-                  className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 animate-pulse"
-                >
-                  <Trophy className="w-3.5 h-3.5" />
-                  Duyệt Thăng Hạng
-                </button>
-              </span>
-            </Tooltip>
-          )}
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            {status.status !== 'TRIAL_GATE' && !status.qualifiedQuests.allPassed && (
+              <Tooltip
+                title={
+                  !isQaPassed
+                    ? hasFailedQa
+                      ? 'Không thể mở ải: Kỹ thuật viên có bài kiểm tra QA/QC tác phong hoặc phòng mi bị FAILED'
+                      : 'Không thể mở ải: Kỹ thuật viên phải mời QA/QC kiểm tra định kỳ ít nhất 1 lần/tuần'
+                    : undefined
+                }
+              >
+                <span>
+                  <button
+                    onClick={onActivateTrial}
+                    disabled={loadingAction || !isQaPassed}
+                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    <Flame className="w-3.5 h-3.5" />
+                    Mở Ải Trùm Cuối (30 Ngày)
+                  </button>
+                </span>
+              </Tooltip>
+            )}
 
-          {onSwitchSpecialist && status.status !== 'SPECIALIST_PATH' && (
-            <button
-              onClick={onSwitchSpecialist}
-              disabled={loadingAction}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs transition-all"
-            >
-              Nhánh Master Tech
-            </button>
-          )}
+            {status.qualifiedQuests.allPassed && (
+              <Tooltip
+                title={!isQaPassed ? 'Bắt buộc đạt chuẩn kiểm định QA/QC định kỳ mới được duyệt thăng hạng' : undefined}
+              >
+                <span>
+                  <button
+                    onClick={onPromote}
+                    disabled={loadingAction || !isQaPassed}
+                    className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 animate-pulse"
+                  >
+                    <Trophy className="w-3.5 h-3.5" />
+                    Duyệt Thăng Hạng
+                  </button>
+                </span>
+              </Tooltip>
+            )}
+
+            {onSwitchSpecialist && status.status !== 'SPECIALIST_PATH' && (
+              <button
+                onClick={onSwitchSpecialist}
+                disabled={loadingAction}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs transition-all"
+              >
+                Nhánh Master Tech
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -507,7 +647,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
             </div>
           </div>
 
-          {earnings?.incomeGain ? (
+          {totalSimulatedGain ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 self-start md:self-auto shrink-0">
               <Sparkles className="w-4 h-4 text-emerald-400" />
               <div className="text-left md:text-right">
@@ -515,7 +655,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   Thu nhập tạm tính tăng thêm
                 </div>
                 <div className="text-xs font-black text-emerald-400 tabular-nums">
-                  +{formatVnd(earnings.incomeGain)}/tháng
+                  +{formatVnd(totalSimulatedGain)}/tháng
                 </div>
               </div>
             </div>
@@ -561,7 +701,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
             <div className="my-1.5">
               <div className="flex items-baseline justify-between">
                 <div className="text-sm font-black tabular-nums text-white">
-                  {metrics.ordersCount || 0} <span className="text-[10px] font-normal text-slate-400">/ 300 ca</span>
+                  {metrics.ordersCount || 0}{' '}
+                  <span className="text-[10px] font-normal text-slate-400">/ {targetOrders} ca</span>
                 </div>
                 <span
                   className={`text-[10px] font-bold tabular-nums ${
@@ -603,7 +744,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <span>🛡️</span>
                 <span className="text-[11px]">Tỷ Lệ Fix</span>
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">&lt; 2.0%</span>
+              <span className="text-[10px] text-slate-400 font-normal">&lt; {(targetMaxFix * 100).toFixed(1)}%</span>
             </div>
             <div className="my-1.5">
               <div className="flex items-baseline justify-between">
@@ -630,7 +771,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <span>✓</span> An toàn
                 </span>
               ) : (
-                <span className="text-rose-400">Vượt ngưỡng 2%</span>
+                <span className="text-rose-400">Vượt ngưỡng {(targetMaxFix * 100).toFixed(1)}%</span>
               )}
             </div>
           </div>
@@ -758,7 +899,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <span>😊</span>
                 <span className="text-[11px]">Chỉ Số HI</span>
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">&gt; 70%</span>
+              <span className="text-[10px] text-slate-400 font-normal">
+                &gt; {(minHappinessIndex * 100).toFixed(0)}%
+              </span>
             </div>
             <div className="my-1.5">
               <div className="flex items-baseline justify-between">
@@ -783,7 +926,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <span>✓</span> Hài lòng cao
                 </span>
               ) : (
-                <span className="text-amber-400">Thiếu {Math.max(0, 70 - hiPercent)}%</span>
+                <span className="text-amber-400">
+                  Thiếu {Math.max(0, Math.round(minHappinessIndex * 100) - hiPercent)}%
+                </span>
               )}
             </div>
           </div>
@@ -844,7 +989,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 m-0 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-rose-500" />
-              Chi Tiết 6 Ải Cốt Lõi Nâng Cấp CV ➔ CV+ (90 Ngày)
+              Chi Tiết 6 Ải Cốt Lõi Nâng Cấp{' '}
+              {isTargetCvPlusPlus ? 'CV+ ➔ CV++ (Đàn Chị Sảnh)' : 'CV ➔ CV+ (Thợ Tự Chủ)'} (90 Ngày)
             </h4>
             <span className="text-[11px] text-slate-400 tabular-nums font-semibold">
               Kèm kiểm định QA/QC &amp; Chuối thưởng
@@ -852,7 +998,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {/* Quest 1: 300 bộ mi / 3 tháng */}
+            {/* Quest 1: targetOrders bộ mi / 3 tháng */}
             <div
               className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
                 isOrdersPassed
@@ -863,7 +1009,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    🎯 1. 300 bộ mi / 3 tháng
+                    🎯 1. {targetOrders} bộ mi / 3 tháng
                   </span>
                   {isOrdersPassed ? (
                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
@@ -879,15 +1025,15 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <div className="flex items-baseline justify-between mt-1">
                   <div className="text-lg font-black text-slate-800 dark:text-slate-100 tabular-nums">
                     {metrics.ordersCount}{' '}
-                    <span className="text-xs font-normal text-slate-400">/ {cvReq.minOrders || 300} ca</span>
+                    <span className="text-xs font-normal text-slate-400">/ {targetOrders} ca</span>
                   </div>
                   <span className="text-[11px] font-bold tabular-nums text-slate-500 dark:text-slate-400">
-                    {Math.round(((metrics.ordersCount || 0) / (cvReq.minOrders || 300)) * 100)}%
+                    {Math.round(((metrics.ordersCount || 0) / targetOrders) * 100)}%
                   </span>
                 </div>
 
                 <Progress
-                  percent={Math.min(100, Math.round(((metrics.ordersCount || 0) / (cvReq.minOrders || 300)) * 100))}
+                  percent={Math.min(100, Math.round(((metrics.ordersCount || 0) / targetOrders) * 100))}
                   size="small"
                   showInfo={false}
                   status={isOrdersPassed ? 'success' : 'normal'}
@@ -897,11 +1043,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
               <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
                 <span>{ordersGap === 0 ? '✓ Đã cán mốc tối thiểu' : `⚡ Còn thiếu ${ordersGap} ca nữa`}</span>
-                <span className="tabular-nums">Mục tiêu: {cvReq.minOrders || 300} ca/90 ngày</span>
+                <span className="tabular-nums">Mục tiêu: {targetOrders} ca/90 ngày</span>
               </div>
             </div>
 
-            {/* Quest 2: fix < 2% */}
+            {/* Quest 2: fix < targetMaxFix */}
             <div
               className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
                 isFixPassed
@@ -912,7 +1058,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    🛡️ 2. Tỷ lệ Fix &lt; 2%
+                    🛡️ 2. Tỷ lệ Fix &lt; {(targetMaxFix * 100).toFixed(1)}%
                   </span>
                   {isFixPassed ? (
                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
@@ -929,7 +1075,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <div className="text-lg font-black text-slate-800 dark:text-slate-100 tabular-nums">
                     {((metrics.fixRate || 0) * 100).toFixed(1)}%{' '}
                     <span className="text-xs font-normal text-slate-400">
-                      (mục tiêu &lt; {((cvReq.maxFixRate || 0.02) * 100).toFixed(1)}%)
+                      (mục tiêu &lt; {(targetMaxFix * 100).toFixed(1)}%)
                     </span>
                   </div>
                   <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -950,11 +1096,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <span className="tabular-nums">
                   {metrics.fixCount || 0} ca sửa / {metrics.ordersCount || 0} ca mi
                 </span>
-                <span>Ngưỡng tối đa: &lt; {((cvReq.maxFixRate || 0.02) * 100).toFixed(1)}%</span>
+                <span>Ngưỡng tối đa: &lt; {(targetMaxFix * 100).toFixed(1)}%</span>
               </div>
             </div>
 
-            {/* Quest 3: tip > 10% trung bình của shop */}
+            {/* Quest 3: tip > minTipRatioAboveShop trung bình của shop */}
             <div
               className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
                 isTipPassed
@@ -965,7 +1111,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    💖 3. Tip &gt; 10% TB Shop
+                    💖 3. Tip &gt; {(minTipRatioAboveShop * 100).toFixed(0)}% TB Shop
                   </span>
                   {isTipPassed ? (
                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
@@ -1281,11 +1427,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <span className="font-medium">Mục tiêu số ca mi:</span>
                     <span className="font-bold tabular-nums text-rose-600 dark:text-rose-400">
                       {sliderOrders} ca mi / 3 tháng{' '}
-                      {sliderOrders >= cvReq.minOrders ? (
+                      {sliderOrders >= targetOrders ? (
                         <span className="text-emerald-500 font-bold text-[10px]">(Đủ Ải ✓)</span>
                       ) : (
                         <span className="text-amber-500 font-bold text-[10px]">
-                          (Thiếu {cvReq.minOrders - sliderOrders} ca)
+                          (Thiếu {targetOrders - sliderOrders} ca)
                         </span>
                       )}
                     </span>
@@ -1297,18 +1443,60 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
                     <span className="font-medium">Mục tiêu chốt combo (khách tiềm năng ~40%):</span>
                     <span className="font-bold tabular-nums text-purple-600 dark:text-purple-400">
-                      {sliderCombo}%{' '}
-                      {sliderCombo >= (cvReq.minSelfComboRate || 0.2) * 100 ? (
-                        <span className="text-emerald-500 font-bold text-[10px]">(Đủ Ải Duy Trì CV+ ✓)</span>
+                      {Math.round((sliderOrders / 3) * 0.4 * (sliderCombo / 100))} combo / tháng ({sliderCombo}%){' '}
+                      {sliderCombo >= minSelfComboRate * 100 ? (
+                        <span className="text-emerald-500 font-bold text-[10px]">
+                          (Đủ Ải Duy Trì {isTargetCvPlusPlus ? 'CV++' : 'CV+'} ✓)
+                        </span>
                       ) : (
                         <span className="text-amber-500 font-bold text-[10px]">
-                          (Cần ≥ {((cvReq.minSelfComboRate || 0.2) * 100).toFixed(0)}% để duy trì CV+)
+                          (Cần ≥ {(minSelfComboRate * 100).toFixed(0)}% để duy trì {isTargetCvPlusPlus ? 'CV++' : 'CV+'}
+                          )
                         </span>
                       )}
                     </span>
                   </div>
                   <Slider min={0} max={60} value={sliderCombo} onChange={setSliderCombo} className="m-0" />
                 </div>
+
+                <div>
+                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
+                    <span className="font-medium">
+                      Mục tiêu bán dưỡng mi (Dự kiến {cvReq.expectedSerumsPerWeek ?? 4} cây/tuần - Thưởng 10%):
+                    </span>
+                    <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                      {sliderSerums} cây / tuần{' '}
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        (+{formatVnd(monthlySerumBonus)}/tháng)
+                      </span>
+                    </span>
+                  </div>
+                  <Slider min={0} max={20} value={sliderSerums} onChange={setSliderSerums} className="m-0" />
+                </div>
+
+                {isTargetCvPlusPlus && (
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
+                      <span className="font-medium">
+                        Mục tiêu số ca bán chéo / tư vấn chéo hộ CV khác (Lên đến 300 ca/tháng):
+                      </span>
+                      <span className="font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                        {sliderCrossOrders} ca / tháng{' '}
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
+                          (+{formatVnd(simulatedCrossTipAmount)}/tháng 20% tip)
+                        </span>
+                      </span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={300}
+                      step={5}
+                      value={sliderCrossOrders}
+                      onChange={setSliderCrossOrders}
+                      className="m-0"
+                    />
+                  </div>
+                )}
 
                 {/* Live What-If Achievement Banner */}
                 <div
@@ -1343,6 +1531,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   targetScores={radarTargetScores}
                   simulatedScores={radarSimulatedScores}
                   qaLabel={requiredQaAudits > 0 ? `QA ≥ ${requiredQaAudits}L/3T` : 'QA (Miễn)'}
+                  customAxes={customRadarAxes}
                 />
               </div>
             </div>
@@ -1379,7 +1568,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <Progress
                       percent={Math.min(
                         100,
-                        Math.round((earnings.currentEstimatedIncome / (earnings.nextTierEstimatedIncome || 1)) * 100)
+                        Math.round((earnings.currentEstimatedIncome / (simulatedNextTierIncome || 1)) * 100)
                       )}
                       size="small"
                       showInfo={false}
@@ -1396,7 +1585,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         ):
                       </span>
                       <span className="font-black text-emerald-600 dark:text-emerald-400 tabular-nums text-sm">
-                        {formatVnd(earnings.nextTierEstimatedIncome)}
+                        {formatVnd(simulatedNextTierIncome)}
                       </span>
                     </div>
                     <Progress percent={100} size="small" showInfo={false} status="success" className="m-0" />
@@ -1406,8 +1595,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <div className="pt-1 flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-slate-400 font-medium">Tăng thêm thực nhận:</span>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-black tabular-nums">
-                      + Thêm {formatVnd(earnings.incomeGain)}/tháng (
-                      {Math.round((earnings.incomeGain / (earnings.currentEstimatedIncome || 1)) * 100)}%)
+                      + Thêm {formatVnd(totalSimulatedGain)}/tháng (
+                      {Math.round((totalSimulatedGain / (earnings.currentEstimatedIncome || 1)) * 100)}%)
                     </span>
                   </div>
                 </div>
@@ -1432,7 +1621,17 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                           <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
                             {formatVnd(earnings.details.hourlyWageNext)}
                           </strong>{' '}
-                          <span className="text-[10px] text-emerald-600 font-normal">(+2.000đ/h)</span>
+                          <span className="text-[10px] text-emerald-600 font-normal">
+                            (+
+                            {formatVnd(
+                              Math.max(
+                                0,
+                                (earnings.details.hourlyWageNext || 27500) -
+                                  (earnings.details.hourlyWageCurrent || 25500)
+                              )
+                            )}
+                            /h)
+                          </span>
                         </span>
                       </div>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs">
@@ -1441,8 +1640,14 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     </div>
                     <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                       * Dựa trên {earnings.details.actualWorkingHours || earnings.details.monthlyEstimatedHours || 260}h
-                      công thực tế tháng qua của {status.staffName} (+2.000đ ×{' '}
-                      {earnings.details.actualWorkingHours || earnings.details.monthlyEstimatedHours || 260}h)
+                      công thực tế tháng qua của {status.staffName} (+
+                      {formatVnd(
+                        Math.max(
+                          0,
+                          (earnings.details.hourlyWageNext || 27500) - (earnings.details.hourlyWageCurrent || 25500)
+                        )
+                      )}{' '}
+                      × {earnings.details.actualWorkingHours || earnings.details.monthlyEstimatedHours || 260}h)
                     </div>
                   </div>
 
@@ -1452,7 +1657,18 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
                         <span>💎 Chia tiền tip khách:</span>
                         <span className="font-normal text-slate-500 dark:text-slate-400">
-                          {status.currentRole === 'CV' ? (
+                          {isTargetCvPlusPlus ? (
+                            <>
+                              Hưởng trọn{' '}
+                              <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                90% tip khách mình
+                              </strong>{' '}
+                              +{' '}
+                              <strong className="text-amber-600 dark:text-amber-400 font-bold">
+                                20% tip khi tư vấn cho CV khác
+                              </strong>
+                            </>
+                          ) : status.currentRole === 'CV' ? (
                             <>
                               70% ➔ <strong className="text-emerald-600 dark:text-emerald-400 font-bold">90%</strong>{' '}
                               <span className="text-[10px] text-emerald-600 font-normal">(Hưởng trọn)</span>
@@ -1463,16 +1679,20 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         </span>
                       </div>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs">
-                        +{formatVnd(tipGain)}/tháng
+                        +{formatVnd(tipGain + dynamicCrossTipDelta)}/tháng
                       </span>
                     </div>
                     <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                      * Hưởng trọn 90% tip (tăng thêm +20% trên tổng tip{' '}
-                      {formatVnd(
-                        earnings.details.customerTotalTip ||
-                          Math.round((earnings.details.actualTipReceived || earnings.details.monthlyTipAvg || 0) / 0.7)
-                      )}
-                      /tháng của khách)
+                      {isTargetCvPlusPlus
+                        ? `* Hưởng trọn 90% tip khách mình + nhận 20% tip trên các ca bán chéo / tư vấn chéo cho CV khác (+${formatVnd(
+                            simulatedCrossTipAmount || earnings.details.crossConsultTipAmount || 300000
+                          )}/tháng)`
+                        : `* Hưởng trọn 90% tip (tăng thêm +20% trên tổng tip ${formatVnd(
+                            earnings.details.customerTotalTip ||
+                              Math.round(
+                                (earnings.details.actualTipReceived || earnings.details.monthlyTipAvg || 0) / 0.7
+                              )
+                          )}/tháng của khách)`}
                     </div>
                   </div>
 
@@ -1482,7 +1702,15 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
                         <span>🏹 Hoa hồng combo &amp; Dưỡng mi:</span>
                         <span className="font-normal text-slate-500 dark:text-slate-400">
-                          {status.currentRole === 'CV' ? (
+                          {isTargetCvPlusPlus ? (
+                            <>
+                              2.5% combo cá nhân +{' '}
+                              <strong className="text-purple-600 dark:text-purple-400 font-bold">
+                                Thêm tiền bán combo khi tư vấn cho CV khác
+                              </strong>{' '}
+                              + 10% Dưỡng mi
+                            </>
+                          ) : status.currentRole === 'CV' ? (
                             <>
                               0% ➔ <strong className="text-emerald-600 dark:text-emerald-400 font-bold">2.5%</strong>{' '}
                               <span className="text-[10px] text-emerald-600 font-normal">
@@ -1495,23 +1723,53 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         </span>
                       </div>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs">
-                        +{formatVnd(comboGain)}/tháng
+                        +{formatVnd(comboGain + monthlySerumBonus)}/tháng
                       </span>
                     </div>
 
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 space-y-1 leading-relaxed">
-                      <div>
-                        • <strong>Bán combo (2.5% DT):</strong> ~{earnings.details.predictedComboCount || 8} combo/tháng
-                        (chốt 20% trên ~{earnings.details.potentialComboCustomers || 40} khách tiềm năng chưa có gói, TB
-                        4.5M/combo) ➔{' '}
-                        <strong className="text-emerald-600 dark:text-emerald-400">
-                          +{formatVnd(comboGain)}/tháng
-                        </strong>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 space-y-1.5 leading-relaxed">
+                      {/* Thêm tiền bán combo khi tư vấn cho CV khác (theo yêu cầu của Danny) */}
+                      {isTargetCvPlusPlus && (
+                        <div className="p-2 rounded-lg bg-purple-500/10 dark:bg-purple-950/30 border border-purple-500/20 text-purple-800 dark:text-purple-200">
+                          <div className="flex items-center justify-between font-bold">
+                            <span>🤝 Tư vấn cho CV khác - Thêm tiền bán combo:</span>
+                            <span className="text-xs text-purple-600 dark:text-purple-400 font-black tabular-nums">
+                              +{formatVnd(earnings.details.crossConsultComboAmount || 450000)}/tháng
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-purple-700 dark:text-purple-300 mt-0.5">
+                            • Nhận {((earnings.details.crossConsultCommissionRate || 0.025) * 100).toFixed(1)}% doanh
+                            thu combo khi tư vấn chốt hộ khách của CV khác (~
+                            {earnings.details.expectedCrossConsultCombosPerMonth || 4} combo chéo × 4.5M × 2.5% = +
+                            {formatVnd(earnings.details.crossConsultComboAmount || 450000)}/tháng).
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Cây dưỡng mi theo chỉ tiêu 4 cây/tuần của Danny */}
+                      <div className="p-2 rounded-lg bg-emerald-500/10 dark:bg-emerald-950/30 border border-emerald-500/20 text-emerald-800 dark:text-emerald-200">
+                        <div className="flex items-center justify-between font-bold">
+                          <span>✨ Dự kiến bán {sliderSerums} cây dưỡng mi / tuần:</span>
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-black tabular-nums">
+                            +{formatVnd(monthlySerumBonus)}/tháng
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                          • Thưởng 10% (110.000đ/cây 1.100.000đ) ➔ <strong>+{formatVnd(weeklySerumBonus)}/tuần</strong>{' '}
+                          ({sliderSerums * 4} cây/tháng).
+                        </div>
                       </div>
+
                       <div>
-                        • <strong>Bán 1 cây dưỡng mi Yeppeum (1.100.000đ):</strong> Thưởng 10% ➔{' '}
-                        <strong className="text-emerald-600 dark:text-emerald-400">
-                          +{formatVnd(earnings.details.serumCommissionAmount || 110000)}/cây
+                        • <strong>Bán combo nối mi cá nhân (2.5% DT):</strong> ~
+                        {earnings.details.expectedCombosPerMonth ??
+                          earnings.details.predictedComboCount ??
+                          cvReq.expectedCombosPerMonth ??
+                          10}{' '}
+                        combo/tháng (chốt trên khách tiềm năng của mình, TB 4.5M/combo) ➔{' '}
+                        <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          +{formatVnd(Math.round((earnings.details.expectedCombosPerMonth ?? 10) * 4500000 * 0.025))}
+                          /tháng
                         </strong>
                       </div>
                       {sliderCombo > 0 && (
@@ -1543,10 +1801,10 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-base font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
-                        +{formatVnd(earnings.incomeGain)}/tháng
+                        +{formatVnd(totalSimulatedGain)}/tháng
                       </span>
                       <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-                        (+{Math.round((earnings.incomeGain / (earnings.currentEstimatedIncome || 1)) * 100)}%)
+                        (+{Math.round((totalSimulatedGain / (earnings.currentEstimatedIncome || 1)) * 100)}%)
                       </span>
                     </div>
                   </div>
