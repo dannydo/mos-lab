@@ -15,7 +15,8 @@ import {
   TelesaleDailyActionOverview,
   SafeAny,
 } from '@mos-lab/shared';
-import { getBkCallMetricsByLegacyStaffIds, getActiveBkTelesalesIds } from './bk-salary.service.js';
+import { getActiveBkTelesalesIds } from './bk-salary.service.js';
+import { BkLeaderboardService } from './bk-leaderboard.service.js';
 import { buildComboLiveAtBookingSql } from '../../customers/services/combo-recognition.service.js';
 
 export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
@@ -45,6 +46,23 @@ export class TelesaleTargetService {
     return `TELESALE_TARGET_CONFIG_${month}`;
   }
 
+  static normalizeStaffTargetIds(staffTargets: SafeAny[]): SafeAny[] {
+    if (!Array.isArray(staffTargets)) return [];
+    return staffTargets.map((st) => {
+      let legacyStaffId = Number(st.legacyStaffId);
+      const name = String(st.name || '');
+      if (legacyStaffId === 52454 || name.includes('Phượng')) {
+        legacyStaffId = 50670;
+      } else if (legacyStaffId === 52086 || name.includes('Kiều')) {
+        legacyStaffId = 52648;
+      }
+      return {
+        ...st,
+        legacyStaffId,
+      };
+    });
+  }
+
   static async getConfig(fastify: FastifyInstance, month = '2026-10'): Promise<TelesaleTargetConfigDto> {
     try {
       const row = await fastify.prisma.crm.crmConfig.findUnique({
@@ -54,6 +72,9 @@ export class TelesaleTargetService {
         const parsed = JSON.parse(row.value) as TelesaleTargetConfigDto;
         if (!parsed.dailyCallPerStaff) parsed.dailyCallPerStaff = 83;
         if (!parsed.dailyPickupPerStaff) parsed.dailyPickupPerStaff = 25;
+        if (parsed.staffTargets) {
+          parsed.staffTargets = this.normalizeStaffTargetIds(parsed.staffTargets) as SafeAny;
+        }
         return parsed;
       }
     } catch (err) {
@@ -63,6 +84,10 @@ export class TelesaleTargetService {
   }
 
   static async saveConfig(fastify: FastifyInstance, config: TelesaleTargetConfigDto): Promise<TelesaleTargetConfigDto> {
+    if (config.staffTargets) {
+      config.staffTargets = this.normalizeStaffTargetIds(config.staffTargets) as SafeAny;
+    }
+
     const sumStages =
       Number(config.stageTargets['0_30'] || 0) +
       Number(config.stageTargets['31_60'] || 0) +
@@ -338,9 +363,11 @@ export class TelesaleTargetService {
     const year = parseInt(yearStr, 10);
     const monthNum = parseInt(monthNumStr, 10);
 
-    const startDateTimeStr = `${month}-01 00:00:00`;
     const lastDayOfMonth = new Date(year, monthNum, 0).getDate();
-    const endDateTimeStr = `${month}-${String(lastDayOfMonth).padStart(2, '0')} 23:59:59`;
+    const startDateStr = `${month}-01`;
+    const endDateStr = `${month}-${String(lastDayOfMonth).padStart(2, '0')}`;
+    const startDateTimeStr = `${startDateStr} 00:00:00`;
+    const endDateTimeStr = `${endDateStr} 23:59:59`;
 
     // Today in ICT (UTC+7)
     const nowUtc = new Date();
@@ -353,99 +380,63 @@ export class TelesaleTargetService {
     // Active staff IDs from config
     const targetStaffIds = config.staffTargets.map((s) => s.legacyStaffId);
 
-    // Active Telesales staff IDs from unified single source of truth (matching /dashboard/bk?tab=booking and /dashboard/bk?tab=done)
+    // Active Telesales staff IDs from unified single source of truth
     let activeBkTelesalesIds = targetStaffIds;
     try {
       activeBkTelesalesIds = await getActiveBkTelesalesIds(fastify);
     } catch (err) {
       fastify.log.warn(`Failed to resolve active BK Telesales staff IDs: ${err}`);
     }
-    const bkIdsStr = activeBkTelesalesIds.length > 0 ? activeBkTelesalesIds.join(',') : '50670,52648,32268,52598,48791';
+    const combinedStaffIds = Array.from(new Set([...targetStaffIds, ...activeBkTelesalesIds]));
 
-    // 1. Query Month Team Metrics & Staff Metrics
-    // MOS-BUG-74: Book tháng tính theo ngày hẹn của khách thuộc tháng đang xem (booking_date_start)
-    const monthOrdersSql = `
-      SELECT 
-        o.id,
-        o.created_staff_id as bookerId,
-        o.order_state as orderState,
-        o.date_created as dateCreated,
-        o.booking_date_start as bookingDateStart,
-        o.user_id as customerId,
-        COALESCE(o.total_price, 0) as totalPrice,
-        COALESCE(
-          (
-            SELECT DATEDIFF(o.date_created, prev_o.booking_date_start)
-            FROM \`order\` prev_o
-            WHERE prev_o.user_id = o.user_id
-              AND prev_o.order_state = 'Completed'
-              AND prev_o.date_created < o.date_created
-            ORDER BY prev_o.date_created DESC
-            LIMIT 1
-          ),
-          999
-        ) as daysSinceLastVisit,
-        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
-      FROM \`order\` o
-      WHERE o.booking_date_start >= '${startDateTimeStr}' 
-        AND o.booking_date_start <= '${endDateTimeStr}'
-        AND o.created_staff_id IN (${bkIdsStr})
-    `;
-
-    // Today Orders: Exactly unified with /dashboard/bk?tab=booking and /dashboard/bk?tab=done
-    // MOS-BUG-75: Book hôm nay = đơn tạo trong ngày bởi Telesales Executive (Single Source of Truth với tab=booking)
-    const todayBookOrdersSql = `
-      SELECT 
-        o.id,
-        o.created_staff_id as bookerId,
-        o.order_state as orderState,
-        o.date_created as dateCreated
-      FROM \`order\` o
-      WHERE o.date_created >= '${todayStartStr}' 
-        AND o.date_created <= '${todayEndStr}'
-        AND o.created_staff_id IN (${bkIdsStr})
-    `;
-
-    // Done hôm nay = đơn hẹn hoàn thành dịch vụ trong ngày của Telesales Executive (Single Source of Truth với tab=done)
-    const todayDoneOrdersSql = `
-      SELECT 
-        o.id as id,
-        o.created_staff_id as bookerId,
-        o.order_state as orderState,
-        o.total_price as totalPrice,
-        o.booking_date_start as bookingDateStart,
-        ro.actual_booking_date_start as actualBookingDateStart
-      FROM \`user_profile\` up
-      LEFT JOIN \`order\` o ON o.created_staff_id = up.user_id 
-      LEFT JOIN report_order ro ON ro.order_id = o.id
-      WHERE up.user_id IN (${bkIdsStr})
-        AND (
-          (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
-          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
-        )
-        AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
-    `;
-
-    const [monthOrders, todayBookOrders, todayDoneOrders] = await Promise.all([
-      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(monthOrdersSql).catch(() => []),
-      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(todayBookOrdersSql).catch(() => []),
-      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(todayDoneOrdersSql).catch(() => []),
+    // 1. Fetch Month and Today metrics directly from BkLeaderboardService (Single Source of Truth)
+    const [
+      monthBookingRes,
+      todayBookingRes,
+      monthDoneRes,
+      todayDoneRes,
+      monthRevenueRes,
+    ] = await Promise.all([
+      BkLeaderboardService.getBookingLeaderboard(fastify, {
+        dateFrom: startDateStr,
+        dateTo: endDateStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getBookingLeaderboard(fastify, {
+        dateFrom: todayStr,
+        dateTo: todayStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getDoneLeaderboard(fastify, {
+        dateFrom: startDateStr,
+        dateTo: endDateStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getDoneLeaderboard(fastify, {
+        dateFrom: todayStr,
+        dateTo: todayStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getRevenueLeaderboard(fastify, {
+        dateFrom: startDateStr,
+        dateTo: endDateStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
     ]);
 
-    // Aggregate Team Month
-    // Not Combo Live counts towards official Done KPI target
-    // Combo Live is tracked for operational progress
-    const teamMonthBookActual = monthOrders.length;
-    const teamMonthDoneActual = monthOrders.filter(
-      (o) => o.orderState === 'Completed' && Number(o.isComboLive) !== 1
-    ).length;
-    const teamMonthComboLiveDoneActual = monthOrders.filter(
-      (o) => o.orderState === 'Completed' && Number(o.isComboLive) === 1
-    ).length;
+    // Team Month actuals: 100% unified with BK Leaderboard
+    const teamMonthBookActual = monthBookingRes.summary.totalBookings;
+    const teamMonthDoneActual = monthDoneRes.summary.totalDone;
+    let teamMonthComboLiveDoneActual = 0;
 
-    // Aggregate Team Daily (MOS-BUG-75: Single Source of Truth matching /dashboard/bk?tab=booking and tab=done)
-    const teamDailyBookActual = todayBookOrders.length;
-    const teamDailyDoneActual = todayDoneOrders.length;
+    // Team Daily actuals: 100% unified with BK Leaderboard
+    const teamDailyBookActual = todayBookingRes.summary.totalBookings;
+    const teamDailyDoneActual = todayDoneRes.summary.totalDone;
     const teamDailyComboLiveDoneActual = 0;
 
     // Pacing & Management metrics calculation (MOS-BUG-67)
@@ -460,32 +451,30 @@ export class TelesaleTargetService {
       teamMonthBookActual
     );
 
-    // 2. Query Call Metrics Today from OmiCall CDR
-    const callMetricsMap = await getBkCallMetricsByLegacyStaffIds(fastify, todayStr, todayStr, targetStaffIds).catch(
-      () => new Map()
-    );
-
-    // 2b. Query today's working shift for target staff to evaluate isWorkingToday (MOS-BUG-77)
+    // 2. Query today's working shift for target staff to evaluate isWorkingToday (MOS-BUG-77)
     const workingShiftMap = new Map<number, boolean>();
     let shiftRows: SafeAny[] = [];
     try {
-      shiftRows = await fastify.prisma.legacy
-        .$queryRawUnsafe<SafeAny[]>(
-          `SELECT user_id, working_day_count FROM staff_working_shift WHERE date = ? AND user_id IN (${targetStaffIds.join(',')})`,
-          todayStr
-        )
-        .catch(() => []);
+      const shiftStaffIds = Array.from(new Set([...targetStaffIds, ...activeBkTelesalesIds]));
+      if (shiftStaffIds.length > 0) {
+        shiftRows = await fastify.prisma.legacy
+          .$queryRawUnsafe<SafeAny[]>(
+            `SELECT user_id, working_day_count FROM staff_working_shift WHERE date = ? AND user_id IN (${shiftStaffIds.join(',')})`,
+            todayStr
+          )
+          .catch(() => []);
 
-      for (const r of shiftRows) {
-        const uid = Number(r.user_id);
-        const dayCount = Number(r.working_day_count ?? 1);
-        workingShiftMap.set(uid, dayCount > 0);
+        for (const r of shiftRows) {
+          const uid = Number(r.user_id);
+          const dayCount = Number(r.working_day_count ?? 1);
+          workingShiftMap.set(uid, dayCount > 0);
+        }
       }
     } catch (err) {
       fastify.log.warn(`Failed to query staff_working_shift: ${err}`);
     }
 
-    // 2c. Dynamic Telesales Staff Resolution & Avatar Lookup (MOS-FEAT-83)
+    // 3. Dynamic Telesales Staff Resolution & Avatar Lookup (MOS-FEAT-83)
     const allStaffCandidates: Array<{
       legacyStaffId: number;
       name: string;
@@ -505,6 +494,37 @@ export class TelesaleTargetService {
     for (const st of config.staffTargets) {
       staffNameMap.set(st.legacyStaffId, st.name);
       if (st.avatarUrl) staffAvatarMap.set(st.legacyStaffId, st.avatarUrl);
+    }
+
+    // Seed maps with BK Leaderboard names & avatars
+    for (const entry of monthDoneRes.leaderboard) {
+      if (entry.displayName && !staffNameMap.get(entry.bookerId)) {
+        staffNameMap.set(entry.bookerId, entry.displayName);
+      }
+      if (entry.avatar && !staffAvatarMap.get(entry.bookerId)) {
+        staffAvatarMap.set(entry.bookerId, entry.avatar);
+      }
+    }
+    for (const entry of todayBookingRes.leaderboard) {
+      if (entry.displayName && !staffNameMap.get(entry.bookerId)) {
+        staffNameMap.set(entry.bookerId, entry.displayName);
+      }
+      if (entry.avatar && !staffAvatarMap.get(entry.bookerId)) {
+        staffAvatarMap.set(entry.bookerId, entry.avatar);
+      }
+    }
+
+    // Also include any active telesales staff that aren't yet in config
+    for (const id of activeBkTelesalesIds) {
+      if (!allStaffCandidates.some((c) => c.legacyStaffId === id)) {
+        const foundName = staffNameMap.get(id) || `Telesales #${id}`;
+        allStaffCandidates.push({
+          legacyStaffId: id,
+          name: foundName,
+          doneTarget: 100,
+          avatarUrl: staffAvatarMap.get(id) || null,
+        });
+      }
     }
 
     try {
@@ -567,27 +587,72 @@ export class TelesaleTargetService {
       }
     }
 
-    // Aggregate by Staff (MOS-FEAT-83: All active telesales staff with Book & Done today + % contribution)
+    const candidateIdsStr = allCandidateIds.length > 0 ? allCandidateIds.join(',') : '50670,52648,32268,52598';
+
+    // Query month orders to determine Combo Live Done for staff targets, pipeline stages, and team totals
+    let monthOrders: SafeAny[] = [];
+    try {
+      const monthOrdersSql = `
+        SELECT 
+          o.id,
+          o.created_staff_id as bookerId,
+          o.order_state as orderState,
+          o.date_created as dateCreated,
+          o.booking_date_start as bookingDateStart,
+          ro.actual_booking_date_start as actualBookingDateStart,
+          o.user_id as customerId,
+          COALESCE(o.total_price, 0) as totalPrice,
+          COALESCE(
+            (
+              SELECT DATEDIFF(o.date_created, prev_o.booking_date_start)
+              FROM \`order\` prev_o
+              WHERE prev_o.user_id = o.user_id
+                AND prev_o.order_state = 'Completed'
+                AND prev_o.date_created < o.date_created
+              ORDER BY prev_o.date_created DESC
+              LIMIT 1
+            ),
+            999
+          ) as daysSinceLastVisit,
+          CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON ro.order_id = o.id
+        WHERE (
+          (ro.actual_booking_date_start >= '${startDateTimeStr}' AND ro.actual_booking_date_start <= '${endDateTimeStr}')
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startDateTimeStr}' AND o.booking_date_start <= '${endDateTimeStr}')
+        )
+          AND o.created_staff_id IN (${candidateIdsStr})
+          AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
+      `;
+      monthOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(monthOrdersSql).catch(() => []);
+      teamMonthComboLiveDoneActual = monthOrders.filter((o) => Number(o.isComboLive) === 1).length;
+    } catch (err) {
+      fastify.log.warn(`Failed to query month orders for telesale target: ${err}`);
+    }
+
+    // 4. Map staffTargets directly from BK Leaderboard results (Single Source of Truth)
     const staffTargets: TelesaleStaffTarget[] = allStaffCandidates.map((st) => {
-      const staffMonthOrders = monthOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
-      const staffCompletedOrders = staffMonthOrders.filter((o) => o.orderState === 'Completed');
-      const staffDoneActual = staffCompletedOrders.filter((o) => Number(o.isComboLive) !== 1).length;
-      const staffComboLiveDoneActual = staffCompletedOrders.filter((o) => Number(o.isComboLive) === 1).length;
-      const staffRevenueActual = staffCompletedOrders.reduce(
-        (sum, o) => sum + Math.round(Number(o.totalPrice || 0)),
-        0
+      const staffMonthDone = monthDoneRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
+      const staffTodayDone = todayDoneRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
+      const staffTodayBooking = todayBookingRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
+      const staffMonthRev = monthRevenueRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
+
+      const staffDoneActual = staffMonthDone?.doneCount || 0;
+      const staffDoneToday = staffTodayDone?.doneCount || 0;
+      const staffBookToday = staffTodayBooking?.totalCreatedBookings || 0;
+      const staffCallActualToday = staffTodayBooking?.callCount || 0;
+      const staffPickupActualToday = staffTodayBooking?.pickupCount || 0;
+      const staffRevenueActual = staffMonthRev?.totalRevenue || 0;
+
+      const staffComboOrders = monthOrders.filter(
+        (o) => Number(o.bookerId) === st.legacyStaffId && Number(o.isComboLive) === 1
       );
+      const staffComboLiveDoneActual = staffComboOrders.length;
 
-      const staffTodayDoneOrders = todayDoneOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
-      const staffDoneToday = staffTodayDoneOrders.length;
-      const staffComboLiveDoneToday = 0;
-
-      const staffTodayBookOrders = todayBookOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
-      const staffBookToday = staffTodayBookOrders.length;
       const bookContributionPercent =
         teamDailyBookActual > 0 ? Math.round((staffBookToday / teamDailyBookActual) * 100) : 0;
 
-      // MOS-BUG-76: Metrics for individual KPI (Done)
+      // Metrics for individual KPI (Done)
       let staffExpectedDone: number;
       let staffGapDone: number;
       let staffRemainingDone: number;
@@ -630,12 +695,6 @@ export class TelesaleTargetService {
         }
       }
 
-      const staffCallMetrics = callMetricsMap.get(st.legacyStaffId) || {
-        callCount: 0,
-        pickupCount: 0,
-        pickupRate: 0,
-      };
-
       const resolvedAvatar = staffAvatarMap.get(st.legacyStaffId) || st.avatarUrl || null;
       const resolvedName = staffNameMap.get(st.legacyStaffId) || st.name;
 
@@ -649,11 +708,11 @@ export class TelesaleTargetService {
         doneToday: staffDoneToday,
         bookToday: staffBookToday,
         bookContributionPercent,
-        comboLiveDoneToday: staffComboLiveDoneToday,
+        comboLiveDoneToday: 0,
         callTargetDaily: config.dailyCallPerStaff || 83,
-        callActualToday: staffCallMetrics.callCount,
+        callActualToday: staffCallActualToday,
         pickupTargetDaily: config.dailyPickupPerStaff || 25,
-        pickupActualToday: staffCallMetrics.pickupCount,
+        pickupActualToday: staffPickupActualToday,
         revenueActual: staffRevenueActual,
         expectedDone: staffExpectedDone,
         gapDone: staffGapDone,
@@ -670,42 +729,78 @@ export class TelesaleTargetService {
       st.isTopBookToday = maxBookToday > 0 && st.bookToday === maxBookToday;
     }
 
-    // Build today's live events feed for TV Celebration
-    const bookEvents: TelesaleTodayLiveEvent[] = todayBookOrders.map((o) => {
-      const bookerId = Number(o.bookerId);
-      return {
-        id: `book-${o.id}`,
-        type: 'BOOK' as const,
-        staffId: bookerId,
-        staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
-        avatarUrl: staffAvatarMap.get(bookerId) || null,
-        timestamp: o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
-        orderId: Number(o.id),
-      };
-    });
+    // 5. Build today's live events feed for TV Celebration
 
-    const doneEvents: TelesaleTodayLiveEvent[] = todayDoneOrders.map((o) => {
-      const bookerId = Number(o.bookerId);
-      return {
-        id: `done-${o.id}`,
-        type: 'DONE' as const,
-        staffId: bookerId,
-        staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
-        avatarUrl: staffAvatarMap.get(bookerId) || null,
-        timestamp: o.actualBookingDateStart
-          ? new Date(o.actualBookingDateStart).toISOString()
-          : o.bookingDateStart
-            ? new Date(o.bookingDateStart).toISOString()
-            : new Date().toISOString(),
-        orderId: Number(o.id),
-      };
-    });
+    const [todayBookOrders, todayDoneOrders] = await Promise.all([
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT 
+          o.id,
+          o.created_staff_id as bookerId,
+          o.order_state as orderState,
+          o.date_created as dateCreated
+        FROM \`order\` o
+        WHERE o.date_created >= '${todayStartStr}' 
+          AND o.date_created <= '${todayEndStr}'
+          AND o.created_staff_id IN (${candidateIdsStr})
+      `).catch(() => []),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT 
+          o.id as id,
+          o.created_staff_id as bookerId,
+          o.order_state as orderState,
+          o.total_price as totalPrice,
+          o.booking_date_start as bookingDateStart,
+          ro.actual_booking_date_start as actualBookingDateStart
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON ro.order_id = o.id
+        WHERE o.created_staff_id IN (${candidateIdsStr})
+          AND (
+            (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
+            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
+          )
+          AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
+      `).catch(() => []),
+    ]);
+
+    const bookEvents: TelesaleTodayLiveEvent[] = todayBookOrders
+      .filter((o) => o && o.id)
+      .map((o) => {
+        const bookerId = Number(o.bookerId);
+        return {
+          id: `book-${o.id}`,
+          type: 'BOOK' as const,
+          staffId: bookerId,
+          staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
+          avatarUrl: staffAvatarMap.get(bookerId) || null,
+          timestamp: o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
+          orderId: Number(o.id),
+        };
+      });
+
+    const doneEvents: TelesaleTodayLiveEvent[] = todayDoneOrders
+      .filter((o) => o && o.id)
+      .map((o) => {
+        const bookerId = Number(o.bookerId);
+        return {
+          id: `done-${o.id}`,
+          type: 'DONE' as const,
+          staffId: bookerId,
+          staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
+          avatarUrl: staffAvatarMap.get(bookerId) || null,
+          timestamp: o.actualBookingDateStart
+            ? new Date(o.actualBookingDateStart).toISOString()
+            : o.bookingDateStart
+              ? new Date(o.bookingDateStart).toISOString()
+              : new Date().toISOString(),
+          orderId: Number(o.id),
+        };
+      });
 
     const todayLiveEvents: TelesaleTodayLiveEvent[] = [...bookEvents, ...doneEvents].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    // 3. Aggregate 4 Pipeline Stages (Done in Month per stage)
+    // 6. Aggregate 4 Pipeline Stages (Done in Month per stage)
     const stageCounts: Record<
       TelesalePipelineStageKey,
       { done: number; comboLiveDone: number; totalAssigned: number }
@@ -716,9 +811,8 @@ export class TelesaleTargetService {
       gt_120: { done: 0, comboLiveDone: 0, totalAssigned: 0 },
     };
 
-    // Classify completed month orders by daysSinceLastVisit and combo status
-    for (const ord of monthOrders) {
-      if (ord.orderState === 'Completed') {
+    try {
+      for (const ord of monthOrders) {
         const days = Number(ord.daysSinceLastVisit);
         const isCombo = Number(ord.isComboLive) === 1;
         let targetKey: TelesalePipelineStageKey;
@@ -738,6 +832,8 @@ export class TelesaleTargetService {
           stageCounts[targetKey].done++;
         }
       }
+    } catch (err) {
+      fastify.log.warn(`Failed to compute pipeline stage month orders: ${err}`);
     }
 
     // Query customer pool counts for the 4 stages
@@ -859,24 +955,21 @@ export class TelesaleTargetService {
     const isMorningActive = currentIctHour >= 8 && currentIctHour < 12;
     const isAfternoonActive = currentIctHour >= 13 && currentIctHour < 17;
 
-    // MOS-BUG-77: Ô Hành Động Mỗi Ngày tập trung vào Call và Pickup
+    // 7. Ô Hành Động Mỗi Ngày tập trung vào Call và Pickup (MOS-BUG-77)
     const callTargetPerStaff = config.dailyCallPerStaff || 83;
     const pickupTargetPerStaff = config.dailyPickupPerStaff || 25;
 
-    const staffActions: TelesaleStaffDailyAction[] = config.staffTargets.map((st) => {
+    const staffActions: TelesaleStaffDailyAction[] = allStaffCandidates.map((st) => {
       const isWorkingToday = shiftRows.length === 0 ? true : (workingShiftMap.get(st.legacyStaffId) ?? false);
-      const staffCallMetrics = callMetricsMap.get(st.legacyStaffId) || {
-        callCount: 0,
-        pickupCount: 0,
-        pickupRate: 0,
-      };
-      const callActual = staffCallMetrics.callCount;
-      const pickupActual = staffCallMetrics.pickupCount;
+      const staffTodayBooking = todayBookingRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
+      const callActual = staffTodayBooking?.callCount || 0;
+      const pickupActual = staffTodayBooking?.pickupCount || 0;
+      const resolvedName = staffNameMap.get(st.legacyStaffId) || st.name;
 
       if (!isWorkingToday) {
         return {
           legacyStaffId: st.legacyStaffId,
-          name: st.name,
+          name: resolvedName,
           isWorkingToday: false,
           callTarget: callTargetPerStaff,
           callActual,
@@ -918,7 +1011,7 @@ export class TelesaleTargetService {
 
       return {
         legacyStaffId: st.legacyStaffId,
-        name: st.name,
+        name: resolvedName,
         isWorkingToday: true,
         callTarget,
         callActual,
@@ -936,12 +1029,12 @@ export class TelesaleTargetService {
 
     const workingStaffList = staffActions.filter((s) => s.isWorkingToday);
     const teamCallTarget = workingStaffList.reduce((sum, s) => sum + s.callTarget, 0);
-    const teamCallActual = staffActions.reduce((sum, s) => sum + s.callActual, 0);
+    const teamCallActual = todayBookingRes.summary.totalCalls;
     const teamCallPercent = teamCallTarget > 0 ? Number(((teamCallActual / teamCallTarget) * 100).toFixed(1)) : 0;
     const teamCallGap = teamCallActual - teamCallTarget;
 
     const teamPickupTarget = workingStaffList.reduce((sum, s) => sum + s.pickupTarget, 0);
-    const teamPickupActual = staffActions.reduce((sum, s) => sum + s.pickupActual, 0);
+    const teamPickupActual = todayBookingRes.summary.totalPickups;
     const teamPickupPercent =
       teamPickupTarget > 0 ? Number(((teamPickupActual / teamPickupTarget) * 100).toFixed(1)) : 0;
     const teamPickupGap = teamPickupActual - teamPickupTarget;
@@ -1091,12 +1184,12 @@ export class TelesaleTargetService {
     const total = Number(countRows[0]?.totalCount || 0);
 
     const activeStaffNames: Record<number, string> = {
-      52454: 'Phượng',
-      52086: 'Kiều',
+      50670: 'Phượng',
+      52648: 'Kiều',
       32268: 'Điệp',
       52598: 'Vũ',
     };
-    const activeStaffIds = [52454, 52086, 32268, 52598];
+    const activeStaffIds = [50670, 52648, 32268, 52598];
 
     const items: TelesaleCustomerPoolItem[] = rows.map((r, idx) => {
       const assignedId = bookerId && bookerId > 0 ? bookerId : activeStaffIds[Number(r.customerId) % 4];
