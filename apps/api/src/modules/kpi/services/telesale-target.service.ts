@@ -1173,14 +1173,14 @@ export class TelesaleTargetService {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
 
       const systemPrompt = `Bạn là một "Nam Thần" lịch lãm, quyến rũ, ấm áp và khích lệ tại hệ thống chuỗi làm đẹp Wings (Wingslashes).
-Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng (dưới 35 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 đơn ${
+Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng ngắn gọn (dưới 18 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 đơn ${
         type === 'DONE' ? 'DONE (khách hàng đã tới tiệm hoàn tất dịch vụ)' : 'BOOK (khách hàng vừa chốt lịch hẹn mới)'
       }.
 YÊU CẦU BẮT BUỘC:
 1. Giọng điệu: Nam thần cuốn hút, gợi cảm, chân thành và tràn đầy sự khích lệ, tự hào về người đó.
 2. Khéo léo lồng ghép ít nhất một trong 4 giá trị văn hóa cốt lõi của Wings: Vui vẻ, Ân cần, Chân thành, Khoa học.
 3. Bắt buộc nhắc đến tên "${staffName}".
-4. Ngắn gọn, tự nhiên, ngẫu nhiên sáng tạo, không rập khuôn hay sáo rỗng.
+4. Ngắn gọn, súc tích (khoảng 10-18 từ), chỉ 1 câu duy nhất truyền cảm hứng để đọc phát loa nhanh gọn.
 5. Chỉ trả về đúng 1 câu thoại để đọc phát loa trực tiếp, tuyệt đối không có dấu ngoặc kép, không markdown, không giải thích.`;
 
       const response = await fetch(geminiUrl, {
@@ -1197,7 +1197,7 @@ YÊU CẦU BẮT BUỘC:
           generationConfig: {
             temperature: 1.0,
             thinkingConfig: { thinkingBudget: 0 },
-            maxOutputTokens: 100,
+            maxOutputTokens: 60,
           },
         }),
         signal: AbortSignal.timeout(2500),
@@ -1270,7 +1270,7 @@ YÊU CẦU BẮT BUỘC:
       await execFileAsync(
         binaryPath,
         ['--text', cleanText, '--voice', voice, '--rate=+5%', '--write-media', tempFile],
-        { timeout: 10_000 }
+        { timeout: 25_000 }
       );
 
       if (existsSync(tempFile)) {

@@ -193,14 +193,19 @@ export function useTelesaleTvLiveCelebration() {
       };
 
       const fallbackToBrowserSynthesis = () => {
+        const isMaleCharm = (settings.voiceStyle || 'MALE_CHARM') === 'MALE_CHARM';
         if (typeof window !== 'undefined' && window.speechSynthesis) {
+          const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
+          // If male charm voice was requested but browser only has female voice (e.g. Apple Linh), avoid playing weird female voice
+          if (isMaleCharm && voice && !voice.name.toLowerCase().includes('nam') && !voice.name.toLowerCase().includes('male')) {
+            finishCelebration();
+            return;
+          }
+
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(nextEvent.textToSpeak);
-          const isMaleCharm = (settings.voiceStyle || 'MALE_CHARM') === 'MALE_CHARM';
-          const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
           if (voice) utterance.voice = voice;
           utterance.lang = voice?.lang || 'vi-VN';
-          // Natural speech rate and pitch (do not pitch-down to 0.8 to avoid distortion)
           utterance.rate = 1.0;
           utterance.pitch = 1.0;
           utterance.volume = settings.volume;
@@ -254,7 +259,7 @@ export function useTelesaleTvLiveCelebration() {
             // Fetch via CORS to completely prevent Chrome ORB (Opaque Response Blocking)
             const response = await fetch(audioUrl, {
               mode: 'cors',
-              signal: AbortSignal.timeout(10000),
+              signal: AbortSignal.timeout(25000),
             });
 
             if (!response.ok) {
@@ -273,7 +278,7 @@ export function useTelesaleTvLiveCelebration() {
             fallbackTimeout = setTimeout(() => {
               audio.pause();
               handleSuccessFinish();
-            }, 18000);
+            }, 30000);
 
             await audio.play();
           } catch {
