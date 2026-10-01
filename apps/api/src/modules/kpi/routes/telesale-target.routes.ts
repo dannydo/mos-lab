@@ -160,6 +160,9 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
       const audioBuffer = await TelesaleTargetService.synthesizeCelebrationAudio(text, voice);
       return reply
         .header('Content-Type', 'audio/mpeg')
+        .header('Cross-Origin-Resource-Policy', 'cross-origin')
+        .header('Access-Control-Allow-Origin', '*')
+        .header('Accept-Ranges', 'bytes')
         .header('Cache-Control', 'public, max-age=86400')
         .send(audioBuffer);
     } catch (err: any) {

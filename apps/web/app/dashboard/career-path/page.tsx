@@ -86,7 +86,7 @@ export default function CareerPathPage() {
         setSliderCombo(Math.round((res.metrics.selfComboRate || 0.25) * 100));
         setSliderTip(Math.round((res.metrics.tipRatioAboveShop || 0.15) * 100));
         setSliderFix(Number(((res.metrics.fixRate || 0.01) * 100).toFixed(1)));
-        setSliderHi(Math.round((res.metrics.happinessIndex || 0.85) * 100));
+        setSliderHi(Math.round((res.metrics.happinessIndex ?? 0.7) * 100));
       }
       if (res?.lastSyncedAt) {
         setLastSyncedAt(res.lastSyncedAt);
@@ -349,8 +349,14 @@ export default function CareerPathPage() {
   const handleSaveConfig = async (newCvToCc: typeof cvToCc) => {
     try {
       setSavingConfig(true);
-      const updated = await apiClient.career.updateConfig({ cvToCc: newCvToCc });
+      const updated = await apiClient.career.updateConfig({
+        cvToCc: newCvToCc,
+        cvToCvPlus: newCvToCc,
+      });
       setConfig(updated);
+      if (selectedStaffId) {
+        await fetchStaffProgression(selectedStaffId, true);
+      }
       message.success('Cập nhật cấu hình thành công! Đã áp dụng ngay lập tức.');
       setIsConfigDrawerOpen(false);
     } catch (err: unknown) {

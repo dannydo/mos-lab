@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Progress, Tooltip, Button, theme } from 'antd';
-import { Tv, CheckCircle2, Calendar, Maximize2, Sparkles, Clock, AlertCircle } from 'lucide-react';
+import { Tv, CheckCircle2, Calendar, Maximize2, Sparkles, Clock, AlertCircle, Volume2 } from 'lucide-react';
 import { TelesaleTargetOverview } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
 import { TelesaleTvCelebration } from './TelesaleTvCelebration';
@@ -98,6 +98,11 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
             <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-zinc-300 bg-black/60 px-2.5 py-1 rounded-xl border border-zinc-800 font-mono tabular-nums">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               {teamDaily.date}
+            </span>
+
+            <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-amber-300/90 bg-amber-950/40 px-2 py-1 rounded-xl border border-amber-500/30 font-medium">
+              <Volume2 className="w-3 h-3 text-amber-400" />
+              Loa TV: Bật
             </span>
 
             {onOpenFullscreen && (

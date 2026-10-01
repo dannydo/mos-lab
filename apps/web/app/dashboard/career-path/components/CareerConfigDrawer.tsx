@@ -32,6 +32,7 @@ export function CareerConfigDrawer({
     minHappinessIndex: 0.7,
     maxDisciplinaryViolations: 0,
     minWeeklyQaAudits: 1,
+    minQaAudits: 12,
     requireZeroFailedAudits: true,
     trialDurationDays: 30,
     minSelfComboRate: 0.25,
@@ -139,29 +140,56 @@ export function CareerConfigDrawer({
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-              <span>Tần suất kiểm tra QA/QC tác phong & phòng mi tối thiểu:</span>
-              <span className="font-mono text-pink-600">{cvToCc.minWeeklyQaAudits || 1} lần/tuần</span>
+              <div>
+                <span>📋 Kiểm định QA/QC tối thiểu trong 3 tháng qua:</span>
+                <p className="text-[10px] text-slate-400 font-normal mt-0.5">
+                  Tối thiểu số lần được QA/QC kiểm định tác phong & phòng mi trong 90 ngày (chuẩn 12 lần = 1 lần/tuần).
+                  Đặt = 0 nếu chưa có dữ liệu QA/QC.
+                </p>
+              </div>
+              <span className="font-mono text-pink-600 font-black">{cvToCc.minQaAudits ?? 12} lần</span>
             </div>
             <Slider
-              min={1}
-              max={3}
+              min={0}
+              max={24}
               step={1}
-              value={cvToCc.minWeeklyQaAudits || 1}
-              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minWeeklyQaAudits: val } })}
+              value={cvToCc.minQaAudits ?? 12}
+              onChange={(val) =>
+                onConfigChange({
+                  ...config,
+                  cvToCc: { ...cvToCc, minQaAudits: val, minWeeklyQaAudits: Number((val / 12).toFixed(2)) },
+                  cvToCvPlus: {
+                    ...(config.cvToCvPlus || cvToCc),
+                    minQaAudits: val,
+                    minWeeklyQaAudits: Number((val / 12).toFixed(2)),
+                  },
+                })
+              }
             />
           </div>
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-              <span>Số dư chuối tối thiểu (≥ 100 Chuối):</span>
-              <span className="font-mono text-amber-500 font-black">{cvToCc.minBananaCount ?? 100} 🍌</span>
+              <div>
+                <span>🍌 Chuối Yêu Thương check-in (15*3 = 45 / 90N):</span>
+                <p className="text-[10px] text-slate-400 font-normal mt-0.5">
+                  Chỉ đếm chuối nhận từ thiên thần khác lúc check-in trong 90 ngày (15 chuối/tháng)
+                </p>
+              </div>
+              <span className="font-mono text-amber-500 font-black">{cvToCc.minBananaCount ?? 45} 🍌</span>
             </div>
             <Slider
-              min={10}
-              max={500}
-              step={10}
-              value={cvToCc.minBananaCount ?? 100}
-              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minBananaCount: val } })}
+              min={5}
+              max={150}
+              step={5}
+              value={cvToCc.minBananaCount ?? 45}
+              onChange={(val) =>
+                onConfigChange({
+                  ...config,
+                  cvToCc: { ...cvToCc, minBananaCount: val },
+                  cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), minBananaCount: val },
+                })
+              }
             />
           </div>
 

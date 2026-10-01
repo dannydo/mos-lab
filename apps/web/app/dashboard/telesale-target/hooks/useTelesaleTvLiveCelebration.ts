@@ -193,15 +193,21 @@ export function useTelesaleTvLiveCelebration() {
       };
 
       const fallbackToBrowserSynthesis = () => {
+        const isMaleCharm = (settings.voiceStyle || 'MALE_CHARM') === 'MALE_CHARM';
         if (typeof window !== 'undefined' && window.speechSynthesis) {
+          const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
+          // If male charm voice was requested but browser only has female voice (e.g. Apple Linh), avoid playing weird female voice
+          if (isMaleCharm && voice && !voice.name.toLowerCase().includes('nam') && !voice.name.toLowerCase().includes('male')) {
+            finishCelebration();
+            return;
+          }
+
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(nextEvent.textToSpeak);
-          const isMaleCharm = (settings.voiceStyle || 'MALE_CHARM') === 'MALE_CHARM';
-          const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
           if (voice) utterance.voice = voice;
           utterance.lang = voice?.lang || 'vi-VN';
-          utterance.rate = isMaleCharm ? 0.95 : 1.05;
-          utterance.pitch = isMaleCharm ? 0.8 : 1.05;
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
           utterance.volume = settings.volume;
 
           utterance.onend = finishCelebration;
@@ -214,52 +220,75 @@ export function useTelesaleTvLiveCelebration() {
 
       // Priority 1: Studio Neural Voice via Backend Audio API (Nam Minh / Hoài My)
       const isBrowserLocal = settings.voiceStyle === 'BROWSER_LOCAL';
-      if (!isBrowserLocal && typeof window !== 'undefined' && window.Audio) {
-        try {
-          const neuralVoice = settings.voiceStyle === 'FEMALE_SWEET' ? 'vi-VN-HoaiMyNeural' : 'vi-VN-NamMinhNeural';
-          const baseUrl = resolveApiBaseUrl();
-          const audioUrl = `${baseUrl}/kpi/telesale-target/live-celebration-audio?text=${encodeURIComponent(nextEvent.textToSpeak)}&voice=${encodeURIComponent(neuralVoice)}`;
-          const audio = new Audio(audioUrl);
-          audio.volume = settings.volume;
+      if (!isBrowserLocal && typeof window !== 'undefined' && typeof window.fetch === 'function') {
+        let objectUrl: string | null = null;
+        let fallbackTimeout: NodeJS.Timeout | null = null;
+        let hasEnded = false;
 
-          let hasEnded = false;
-          const onAudioEnd = () => {
-            if (hasEnded) return;
-            hasEnded = true;
-            finishCelebration();
-          };
-
-          audio.onended = onAudioEnd;
-          audio.onerror = () => {
-            if (!hasEnded) {
-              hasEnded = true;
-              fallbackToBrowserSynthesis();
-            }
-          };
-
-          const fallbackTimeout = setTimeout(() => {
-            if (!hasEnded) {
-              hasEnded = true;
-              audio.pause();
-              finishCelebration();
-            }
-          }, 15000);
-
-          audio.play().catch(() => {
-            if (!hasEnded) {
-              hasEnded = true;
-              clearTimeout(fallbackTimeout);
-              fallbackToBrowserSynthesis();
-            }
-          });
-
-          return () => {
+        const cleanup = () => {
+          if (fallbackTimeout) {
             clearTimeout(fallbackTimeout);
-            audio.pause();
-          };
-        } catch {
+            fallbackTimeout = null;
+          }
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+          }
+        };
+
+        const handleSuccessFinish = () => {
+          if (hasEnded) return;
+          hasEnded = true;
+          cleanup();
+          finishCelebration();
+        };
+
+        const handleFailureFallback = () => {
+          if (hasEnded) return;
+          hasEnded = true;
+          cleanup();
           fallbackToBrowserSynthesis();
-        }
+        };
+
+        (async () => {
+          try {
+            const neuralVoice = settings.voiceStyle === 'FEMALE_SWEET' ? 'vi-VN-HoaiMyNeural' : 'vi-VN-NamMinhNeural';
+            const baseUrl = resolveApiBaseUrl();
+            const audioUrl = `${baseUrl}/kpi/telesale-target/live-celebration-audio?text=${encodeURIComponent(nextEvent.textToSpeak)}&voice=${encodeURIComponent(neuralVoice)}`;
+
+            // Fetch via CORS to completely prevent Chrome ORB (Opaque Response Blocking)
+            const response = await fetch(audioUrl, {
+              mode: 'cors',
+              signal: AbortSignal.timeout(25000),
+            });
+
+            if (!response.ok) {
+              throw new Error(`Audio fetch failed: ${response.status}`);
+            }
+
+            const audioBlob = await response.blob();
+            objectUrl = URL.createObjectURL(audioBlob);
+
+            const audio = new Audio(objectUrl);
+            audio.volume = settings.volume;
+
+            audio.onended = handleSuccessFinish;
+            audio.onerror = handleFailureFallback;
+
+            fallbackTimeout = setTimeout(() => {
+              audio.pause();
+              handleSuccessFinish();
+            }, 30000);
+
+            await audio.play();
+          } catch {
+            handleFailureFallback();
+          }
+        })();
+
+        return () => {
+          cleanup();
+        };
       } else {
         fallbackToBrowserSynthesis();
       }
@@ -291,53 +320,112 @@ export function useTelesaleTvLiveCelebration() {
     [processQueue, settings.eventTypeFilter]
   );
 
+  // Auto-unlock AudioContext on first user interaction
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const unlock = () => {
+      try {
+        const AudioCtx =
+          window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          ctx.resume().then(() => ctx.close()).catch(() => {});
+        }
+      } catch {}
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
+
   // 6. Ingest Live Events from API (todayLiveEvents)
   const ingestLiveEvents = useCallback(
     (events: TelesaleTodayLiveEvent[] = []) => {
       if (!events || events.length === 0) return;
 
-      // On first initial mount, register all existing events as seen to prevent blasting old events
-      if (!isInitializedRef.current) {
-        events.forEach((e) => seenEventIdsRef.current.add(e.id));
-        isInitializedRef.current = true;
-        return;
+      // Hydrate seen events from sessionStorage on first run
+      if (seenEventIdsRef.current.size === 0 && typeof window !== 'undefined') {
+        try {
+          const raw = sessionStorage.getItem('MOS_TV_SEEN_EVENT_IDS');
+          if (raw) {
+            const list: string[] = JSON.parse(raw);
+            list.forEach((id) => seenEventIdsRef.current.add(id));
+          }
+        } catch {}
       }
 
-      // Detect new events
-      for (const ev of events) {
-        if (!seenEventIdsRef.current.has(ev.id)) {
-          // Immediately mark as seen so it doesn't get processed twice
-          seenEventIdsRef.current.add(ev.id);
-          const staffName = ev.staffName || 'Bạn Telesales';
-          const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
+      const nowMs = Date.now();
+      const eventsToAnnounce: TelesaleTodayLiveEvent[] = [];
 
-          // Asynchronously query Gemini AI for unique seductive & encouraging quote
-          apiClient.telesaleTarget
-            .getCelebrationQuote({ type: ev.type, staffName })
-            .then((res) => {
-              const quote = res?.quote?.trim() || defaultQuote;
-              enqueueCelebration({
-                id: ev.id,
-                kind: ev.type,
-                staffName,
-                avatarUrl: ev.avatarUrl,
-                textToSpeak: quote,
-                badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
-                colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
-              });
-            })
-            .catch(() => {
-              enqueueCelebration({
-                id: ev.id,
-                kind: ev.type,
-                staffName,
-                avatarUrl: ev.avatarUrl,
-                textToSpeak: defaultQuote,
-                badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
-                colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
-              });
-            });
+      if (!isInitializedRef.current) {
+        isInitializedRef.current = true;
+        for (const ev of events) {
+          if (seenEventIdsRef.current.has(ev.id)) continue;
+          const evTime = new Date(ev.timestamp).getTime();
+          const ageMs = nowMs - evTime;
+          // If booking was created in the last 3 minutes (180s), celebrate it!
+          if (ageMs <= 180000) {
+            eventsToAnnounce.push(ev);
+          } else {
+            // Older events are marked as seen so they are not re-announced
+            seenEventIdsRef.current.add(ev.id);
+          }
         }
+      } else {
+        for (const ev of events) {
+          if (!seenEventIdsRef.current.has(ev.id)) {
+            eventsToAnnounce.push(ev);
+          }
+        }
+      }
+
+      // Persist seenEventIds to sessionStorage
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(
+            'MOS_TV_SEEN_EVENT_IDS',
+            JSON.stringify(Array.from(seenEventIdsRef.current))
+          );
+        } catch {}
+      }
+
+      // Process new events (limit to newest 2 if multiple fresh events arrive at once)
+      for (const ev of eventsToAnnounce.slice(0, 2)) {
+        seenEventIdsRef.current.add(ev.id);
+        const staffName = ev.staffName || 'Bạn Telesales';
+        const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
+
+        // Asynchronously query Gemini AI for unique seductive & encouraging quote
+        apiClient.telesaleTarget
+          .getCelebrationQuote({ type: ev.type, staffName })
+          .then((res) => {
+            const quote = res?.quote?.trim() || defaultQuote;
+            enqueueCelebration({
+              id: ev.id,
+              kind: ev.type,
+              staffName,
+              avatarUrl: ev.avatarUrl,
+              textToSpeak: quote,
+              badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
+              colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+            });
+          })
+          .catch(() => {
+            enqueueCelebration({
+              id: ev.id,
+              kind: ev.type,
+              staffName,
+              avatarUrl: ev.avatarUrl,
+              textToSpeak: defaultQuote,
+              badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
+              colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+            });
+          });
       }
     },
     [enqueueCelebration]

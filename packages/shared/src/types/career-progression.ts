@@ -13,12 +13,14 @@ export interface CvToCvPlusRequirements {
   maxFixRate: number;
   /** Chỉ số hài lòng khách hàng Happiness Index tối thiểu (0.70 = 70% qua hệ thống check-in thả tim) */
   minHappinessIndex: number;
-  /** Số Chuối vàng tối thiểu cần có (> 0, mặc định: 1) */
+  /** Số Chuối yêu thương nhận được từ thiên thần khác lúc check-in trong 90 ngày (15 * 3 = 45 chuối) */
   minBananaCount: number;
   /** Số biên bản vi phạm QA/QC tối đa cho phép (0 = nếu bị 1 biên bản là FAILED ngay) */
   maxDisciplinaryViolations: number;
   /** Tần suất tối thiểu mời QA/QC kiểm tra tác phong cá nhân & phòng nối mi (lần/tuần, mặc định: 1) */
   minWeeklyQaAudits: number;
+  /** Số lần kiểm định QA/QC tối thiểu trong 3 tháng qua (mặc định: 12 lần) */
+  minQaAudits?: number;
   /** Bắt buộc tất cả bài kiểm tra QA/QC phải ĐẠT (nếu failed 1 bài thì KHÔNG được nâng cấp) */
   requireZeroFailedAudits: boolean;
   /** Thời hạn thử thách tự tư vấn (ngày) */
@@ -44,6 +46,8 @@ export interface CvPlusToCvPlusPlusRequirements {
   maxDisciplinaryViolations: number;
   /** Tần suất tối thiểu mời QA/QC kiểm tra tác phong & phòng nối mi (lần/tuần, mặc định: 1) */
   minWeeklyQaAudits: number;
+  /** Số lần kiểm định QA/QC tối thiểu trong 3 tháng qua (mặc định: 12 lần) */
+  minQaAudits?: number;
   /** Bắt buộc không có bài kiểm tra QA/QC failed nào */
   requireZeroFailedAudits: boolean;
 }
@@ -200,9 +204,10 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   minTipRatioAboveShop: 0.1, // 10% cao hơn trung bình shop
   maxFixRate: 0.02,
   minHappinessIndex: 0.7, // Hệ thống HI tối thiểu 70% từ check-in thả tim
-  minBananaCount: 100, // Số dư chuối tối thiểu >= 100
+  minBananaCount: 45, // Chuối yêu thương nhận từ thiên thần khác lúc check-in trong 90 ngày (15 * 3 = 45)
   maxDisciplinaryViolations: 0, // Bị 1 biên bản QA/QC là failed
   minWeeklyQaAudits: 1, // Tối thiểu 1 lần/tuần mời QA/QC kiểm tra tác phong & phòng mi
+  minQaAudits: 12, // Tối thiểu 12 lần trong 3 tháng qua (cho phép tự chỉnh)
   requireZeroFailedAudits: true, // Nếu có bài kiểm tra failed -> KHÔNG được nâng cấp
   trialDurationDays: 30,
   minSelfComboRate: 0.25, // CV tự tư vấn khách của mình tối thiểu 25%
@@ -216,6 +221,7 @@ const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   crossConsultCommissionRate: 0.025, // 2.5% hoa hồng tư vấn giùm khách của CV khác khi FM vắng
   maxDisciplinaryViolations: 0,
   minWeeklyQaAudits: 1,
+  minQaAudits: 12,
   requireZeroFailedAudits: true,
 };
 
@@ -413,6 +419,16 @@ export interface StaffCareerStatus {
       tipShareNext: number;
       comboCommissionCurrent: number;
       comboCommissionNext: number;
+      wageGain?: number;
+      tipGain?: number;
+      comboGain?: number;
+      monthlyEstimatedHours?: number;
+      actualWorkingHours?: number;
+      monthlyTipAvg?: number;
+      actualTipReceived?: number;
+      customerTotalTip?: number;
+      monthlySelfComboRev?: number;
+      predictedComboCount?: number;
     };
   };
   lastSyncedAt?: string;
