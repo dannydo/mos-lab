@@ -519,8 +519,20 @@ test('TelesaleTargetService.getOverview calculates staff Book today, contributio
           }
           if (sql.includes('report_order ro') || sql.includes('ro.actual_booking_date_start')) {
             return [
-              { id: 201, bookerId: 50670, orderState: 'Completed', totalPrice: 500000, actualBookingDateStart: new Date() },
-              { id: 202, bookerId: 50670, orderState: 'Completed', totalPrice: 300000, actualBookingDateStart: new Date() },
+              {
+                id: 201,
+                bookerId: 50670,
+                orderState: 'Completed',
+                totalPrice: 500000,
+                actualBookingDateStart: new Date(),
+              },
+              {
+                id: 202,
+                bookerId: 50670,
+                orderState: 'Completed',
+                totalPrice: 300000,
+                actualBookingDateStart: new Date(),
+              },
             ];
           }
           if (sql.includes('user_profile')) {
@@ -530,13 +542,11 @@ test('TelesaleTargetService.getOverview calculates staff Book today, contributio
             ];
           }
           // Month orders
-          if (sql.includes("o.booking_date_start >=")) {
-            return [
-              { id: 1, bookerId: 50670, orderState: 'Completed', isComboLive: 0 },
-            ];
+          if (sql.includes('o.booking_date_start >=')) {
+            return [{ id: 1, bookerId: 50670, orderState: 'Completed', isComboLive: 0 }];
           }
           // Today book orders: Phượng has 3 books, Kiều has 1 book -> Total 4 books
-          if (sql.includes("o.date_created >=")) {
+          if (sql.includes('o.date_created >=')) {
             return [
               { id: 101, bookerId: 50670, orderState: 'New', dateCreated: new Date() },
               { id: 102, bookerId: 50670, orderState: 'New', dateCreated: new Date() },
@@ -585,3 +595,25 @@ test('TelesaleTargetService.getOverview calculates staff Book today, contributio
   assert.equal(doneEvents.length, 2);
 });
 
+test('TelesaleTargetService.getFallbackCelebrationQuote embeds staffName and cultural values', () => {
+  const bookQuote = TelesaleTargetService.getFallbackCelebrationQuote('BOOK', 'Bích Phượng');
+  assert.ok(bookQuote.includes('Bích Phượng'));
+  assert.ok(bookQuote.length > 20);
+
+  const doneQuote = TelesaleTargetService.getFallbackCelebrationQuote('DONE', 'Thuý Kiều');
+  assert.ok(doneQuote.includes('Thuý Kiều'));
+  assert.ok(doneQuote.length > 20);
+});
+
+test('TelesaleTargetService.generateLiveCelebrationQuote falls back gracefully when API error or offline', async () => {
+  const mockFastify = { log: { warn: () => {} } } as any;
+  const originalKey = process.env.GEMINI_API_KEY;
+  try {
+    delete process.env.GEMINI_API_KEY;
+    const res = await TelesaleTargetService.generateLiveCelebrationQuote(mockFastify, 'BOOK', 'Thanh Vũ');
+    assert.equal(res.source, 'fallback');
+    assert.ok(res.quote.includes('Thanh Vũ'));
+  } finally {
+    process.env.GEMINI_API_KEY = originalKey;
+  }
+});

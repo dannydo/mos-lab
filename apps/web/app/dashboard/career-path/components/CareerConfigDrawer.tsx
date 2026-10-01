@@ -153,14 +153,14 @@ export function CareerConfigDrawer({
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-              <span>Chuối vàng tối thiểu (&gt; 0 Chuối):</span>
-              <span className="font-mono text-amber-500 font-black">{cvToCc.minBananaCount ?? 1} 🍌</span>
+              <span>Số dư chuối tối thiểu (≥ 100 Chuối):</span>
+              <span className="font-mono text-amber-500 font-black">{cvToCc.minBananaCount ?? 100} 🍌</span>
             </div>
             <Slider
-              min={1}
-              max={10}
-              step={1}
-              value={cvToCc.minBananaCount ?? 1}
+              min={10}
+              max={500}
+              step={10}
+              value={cvToCc.minBananaCount ?? 100}
               onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minBananaCount: val } })}
             />
           </div>

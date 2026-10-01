@@ -69,26 +69,76 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     return staffList.find((s) => s.id === selectedStaffId) || null;
   }, [staffList, selectedStaffId]);
 
-  const getRoleBadge = (role: CareerRole) => {
+  const getRoleBadge = (role: CareerRole, compact = false) => {
     switch (role) {
       case 'CV':
-        return <StatusTag status="processing" label="CV · Thợ Mi" className="tabular-nums font-semibold m-0 text-xs" />;
+        return (
+          <StatusTag
+            status="processing"
+            label={compact ? 'CV' : 'CV · Thợ Mi'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+          />
+        );
       case 'CV_PLUS':
-        return <StatusTag status="purple" label="CV+ · Tự Chủ" className="tabular-nums font-semibold m-0 text-xs" />;
+        return (
+          <StatusTag
+            status="purple"
+            label={compact ? 'CV+' : 'CV+ · Tự Chủ'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+          />
+        );
       case 'CV_PLUS_PLUS':
-        return <StatusTag status="purple" label="CV++ · Đàn Chị" className="tabular-nums font-semibold m-0 text-xs" />;
+        return (
+          <StatusTag
+            status="purple"
+            label={compact ? 'CV++' : 'CV++ · Đàn Chị'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+          />
+        );
+      case 'MASTER_TECH':
+        return (
+          <StatusTag
+            status="gold"
+            label={compact ? 'Master Tech' : 'Master Tech · Kỹ Thuật'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+          />
+        );
       case 'CC':
-        return <StatusTag status="orange" label="CC · Tư Vấn" className="tabular-nums font-semibold m-0 text-xs" />;
+        return (
+          <StatusTag
+            status="orange"
+            label={compact ? 'CC' : 'CC · Tư Vấn'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+          />
+        );
       case 'FM':
-        return <StatusTag status="gold" label="FM · Quản Lý Sàn" className="tabular-nums font-semibold m-0 text-xs" />;
+        return (
+          <StatusTag
+            status="gold"
+            label={compact ? 'FM' : 'FM · Quản Lý Sàn'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+          />
+        );
       case 'CHO':
         return (
-          <StatusTag status="purple" label="CHO · Mẹ Thiên Thần" className="tabular-nums font-semibold m-0 text-xs" />
+          <StatusTag
+            status="purple"
+            label={compact ? 'CHO' : 'CHO · Mẹ Thiên Thần'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+          />
         );
       case 'BOSS':
-        return <StatusTag status="error" label="BOSS · Co-Owner" className="tabular-nums font-semibold m-0 text-xs" />;
+        return (
+          <StatusTag
+            status="error"
+            label={compact ? 'BOSS' : 'BOSS · Co-Owner'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+          />
+        );
       default:
-        return <StatusTag status="default" label={role} className="tabular-nums font-semibold m-0 text-xs" />;
+        return (
+          <StatusTag status="default" label={role} className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0" />
+        );
     }
   };
 
@@ -163,7 +213,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       </div>
 
       {/* Staff Grid / Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 max-h-56 overflow-y-auto pr-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 max-h-64 overflow-y-auto pr-1">
         {filteredStaff.length === 0 ? (
           <div className="col-span-full py-6 text-center text-xs text-slate-400">
             Không tìm thấy nhân viên nào phù hợp
@@ -175,44 +225,36 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
               <div
                 key={staff.id}
                 onClick={() => onSelectStaff(staff.id)}
-                className={`p-2.5 rounded-xl border cursor-pointer transition-all duration-150 flex flex-col justify-between ${
+                className={`p-2.5 rounded-xl border cursor-pointer transition-all duration-150 flex flex-col justify-between min-h-[78px] ${
                   isSelected
-                    ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-400 shadow-sm ring-2 ring-rose-400/40'
-                    : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800 hover:border-rose-300 hover:bg-rose-50/40'
+                    ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-400 dark:border-rose-500/70 shadow-xs ring-2 ring-rose-400/30'
+                    : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-500/40 hover:bg-rose-50/60 dark:hover:bg-slate-800/80'
                 }`}
               >
-                <div className="flex items-start gap-2 mb-1.5">
+                <div className="flex items-center gap-2 mb-1.5">
                   <Avatar
                     src={staff.avatarUrl || undefined}
                     className="shrink-0 bg-gradient-to-tr from-rose-400 to-amber-300 text-white font-bold text-xs"
-                    size={28}
+                    size={30}
                   >
                     {staff.displayName.slice(0, 1).toUpperCase()}
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                    <div
+                      className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate"
+                      title={staff.displayName}
+                    >
                       {staff.displayName}
                     </div>
-                    <div className="text-[10px] text-slate-400 truncate">{staff.username.split('@')[0]}</div>
+                    <div className="text-[10px] text-slate-400 truncate">@{staff.username.split('@')[0]}</div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-1 mt-auto pt-1 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-1">
-                    {getRoleBadge(staff.careerRole)}
-                    {staff.hasFailedQaAudit ? (
-                      <StatusTag status="error" label="QA ❌" className="text-[9px] py-0 px-1 m-0 leading-none" />
-                    ) : staff.qaAuditPassed ? (
-                      <StatusTag status="success" label="QA " className="text-[9px] py-0 px-1 m-0 leading-none" />
-                    ) : (
-                      <StatusTag status="warning" label="QA ⚠️" className="text-[9px] py-0 px-1 m-0 leading-none" />
-                    )}
-                  </div>
-                  {staff.ordersCount > 0 && (
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tabular-nums">
-                      {staff.ordersCount} ca
-                    </span>
-                  )}
+                <div className="flex items-center justify-between gap-1 mt-auto pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+                  {getRoleBadge(staff.careerRole, true)}
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold tabular-nums shrink-0">
+                    {staff.ordersCount || 0} ca
+                  </span>
                 </div>
               </div>
             );

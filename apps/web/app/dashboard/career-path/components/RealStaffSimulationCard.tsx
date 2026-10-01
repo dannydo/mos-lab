@@ -53,7 +53,7 @@ const StatRadarChart: React.FC<StatRadarChartProps> = ({ actualScores, targetSco
     { label: 'Tip > 10% Shop', icon: '💖' },
     { label: 'QA AC ≥ 1L/T', icon: '📋' },
     { label: 'HI > 70%', icon: '😊' },
-    { label: 'Chuối > 0', icon: '🍌' },
+    { label: 'Chuối ≥ 100', icon: '🍌' },
   ];
 
   const getPoints = (scores: number[]) => {
@@ -219,6 +219,10 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   // 1. 300 bộ mi / 3 tháng
   const isOrdersPassed = (metrics.ordersCount || 0) >= cvReq.minOrders;
   const ordersGap = Math.max(0, cvReq.minOrders - (metrics.ordersCount || 0));
+  const ordersProgressPercent = Math.min(
+    100,
+    Math.round(((metrics.ordersCount || 0) / (cvReq.minOrders || 300)) * 100)
+  );
 
   // 2. fix < 2%
   const isFixPassed = (metrics.fixRate || 0) <= cvReq.maxFixRate;
@@ -227,21 +231,27 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const isTipPassed = staffTipRate >= targetTipRate || (metrics.tipRatioAboveShop || 0) >= minTipRatioAboveShop;
   const tipGapPercent = Math.max(0, Number((targetTipRatePercent - staffTipRatePercent).toFixed(1)));
   const tipExcessPercent = Math.max(0, Number((staffTipRatePercent - targetTipRatePercent).toFixed(1)));
-  const tipProgressPercent = Math.min(100, Math.max(5, Math.round((staffTipRate / targetTipRate) * 100)));
+  const tipProgressPercent = Math.min(100, Math.max(0, Math.round((staffTipRate / targetTipRate) * 100)));
 
   // 4. QA AC >= 1 lần/tuần (và không có bài FAILED)
   const qaAudit = metrics.qaAudit;
   const isQaPassed = Boolean(qaAudit?.isPassed ?? status.qualifiedQuests.qaAuditCompleted);
   const hasFailedQa = Boolean(qaAudit?.hasFailedAudit);
+  const qaProgressPercent = isQaPassed
+    ? 100
+    : Math.min(100, Math.round(((qaAudit?.weeklyAuditRate ?? 0) / (cvReq.minWeeklyQaAudits || 1.0)) * 100));
 
   // 5. HI > 70% (Happiness Index khách hàng check-in thả tim)
   const happinessIndex = metrics.happinessIndex ?? 0.85;
   const isHiPassed = happinessIndex >= cvReq.minHappinessIndex;
   const hiPercent = Math.round(happinessIndex * 100);
+  const hiProgressPercent = Math.min(100, Math.round((happinessIndex / (cvReq.minHappinessIndex || 0.7)) * 100));
 
-  // 6. Chuối > 0 (Tích lũy từ hỗ trợ FAL, tháo mi cấp tốc, giải cứu khách)
+  // 6. Chuối >= 100 (Tích lũy từ hỗ trợ FAL, tháo mi cấp tốc, giải cứu khách)
+  const minBananaCount = cvReq.minBananaCount ?? 100;
   const bananaCount = metrics.bananaCount ?? 0;
-  const isBananaPassed = bananaCount > 0;
+  const isBananaPassed = bananaCount >= minBananaCount;
+  const bananaProgressPercent = Math.min(100, Math.round((bananaCount / minBananaCount) * 100));
 
   // Gamified Quest XP Progress (Tổng 6 ải hoàn thành)
   const passedQuestsCount =
@@ -278,7 +288,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     Math.min(1.2, staffTipRate / (targetTipRate || 0.495)),
     hasFailedQa ? 0.2 : Math.min(1.2, (qaAudit?.weeklyAuditRate ?? 0) / (cvReq.minWeeklyQaAudits || 1.0)),
     Math.min(1.2, happinessIndex / (cvReq.minHappinessIndex || 0.7)),
-    bananaCount > 0 ? Math.min(1.2, 1.0 + Math.min(0.2, bananaCount / 100)) : 0.2,
+    bananaCount >= minBananaCount
+      ? Math.min(1.2, 1.0 + Math.min(0.2, (bananaCount - minBananaCount) / 100))
+      : Math.min(0.9, bananaCount / minBananaCount),
   ];
 
   const radarSimulatedScores = [
@@ -521,9 +533,25 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <span className="text-[10px] text-slate-400 font-normal">3 Tháng</span>
             </div>
             <div className="my-1.5">
-              <div className="text-sm font-black tabular-nums text-white">
-                {metrics.ordersCount || 0} <span className="text-[10px] font-normal text-slate-400">/ 300 ca</span>
+              <div className="flex items-baseline justify-between">
+                <div className="text-sm font-black tabular-nums text-white">
+                  {metrics.ordersCount || 0} <span className="text-[10px] font-normal text-slate-400">/ 300 ca</span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold tabular-nums ${
+                    isOrdersPassed ? 'text-emerald-400' : 'text-slate-400'
+                  }`}
+                >
+                  {ordersProgressPercent}%
+                </span>
               </div>
+              <Progress
+                percent={ordersProgressPercent}
+                size="small"
+                showInfo={false}
+                status={isOrdersPassed ? 'success' : 'normal'}
+                className="m-0 mt-1.5"
+              />
             </div>
             <div className="text-[10px] font-semibold flex items-center justify-between">
               {isOrdersPassed ? (
@@ -552,9 +580,23 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <span className="text-[10px] text-slate-400 font-normal">&lt; 2.0%</span>
             </div>
             <div className="my-1.5">
-              <div className="text-sm font-black tabular-nums text-white">
-                {Number(((metrics.fixRate || 0) * 100).toFixed(1))}%
+              <div className="flex items-baseline justify-between">
+                <div className="text-sm font-black tabular-nums text-white">
+                  {Number(((metrics.fixRate || 0) * 100).toFixed(1))}%
+                </div>
+                <span
+                  className={`text-[10px] font-bold tabular-nums ${isFixPassed ? 'text-emerald-400' : 'text-rose-400'}`}
+                >
+                  {safetyShieldPercent}% an toàn
+                </span>
               </div>
+              <Progress
+                percent={safetyShieldPercent}
+                size="small"
+                showInfo={false}
+                status={isFixPassed ? 'success' : 'exception'}
+                className="m-0 mt-1.5"
+              />
             </div>
             <div className="text-[10px] font-semibold flex items-center justify-between">
               {isFixPassed ? (
@@ -586,16 +628,32 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <span className="text-[10px] text-slate-400 font-normal">≥ {targetTipRatePercent}%</span>
               </div>
               <div className="my-1.5">
-                <div className="text-sm font-black tabular-nums text-white">
-                  {staffTipRatePercent}%{' '}
-                  <span className="text-[10px] font-normal text-slate-400">
-                    (
-                    {staffTipRate >= shopTipRate
-                      ? `+${Number(((staffTipRate - shopTipRate) * 100).toFixed(1))}%`
-                      : `-${Number(((shopTipRate - staffTipRate) * 100).toFixed(1))}%`}{' '}
-                    TB)
+                <div className="flex items-baseline justify-between">
+                  <div className="text-sm font-black tabular-nums text-white">
+                    {staffTipRatePercent}%{' '}
+                    <span className="text-[10px] font-normal text-slate-400">
+                      (
+                      {staffTipRate >= shopTipRate
+                        ? `+${Number(((staffTipRate - shopTipRate) * 100).toFixed(1))}%`
+                        : `-${Number(((shopTipRate - staffTipRate) * 100).toFixed(1))}%`}{' '}
+                      TB)
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold tabular-nums ${
+                      isTipPassed ? 'text-emerald-400' : 'text-slate-400'
+                    }`}
+                  >
+                    {tipProgressPercent}%
                   </span>
                 </div>
+                <Progress
+                  percent={tipProgressPercent}
+                  size="small"
+                  showInfo={false}
+                  status={isTipPassed ? 'success' : 'normal'}
+                  className="m-0 mt-1.5"
+                />
               </div>
               <div className="text-[10px] font-semibold flex items-center justify-between">
                 {isTipPassed ? (
@@ -625,9 +683,26 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <span className="text-[10px] text-slate-400 font-normal">≥ 1L/T</span>
             </div>
             <div className="my-1.5">
-              <div className="text-sm font-black tabular-nums text-white">
-                {qaAudit?.weeklyAuditRate ?? 0} <span className="text-[10px] font-normal text-slate-400">lần/tuần</span>
+              <div className="flex items-baseline justify-between">
+                <div className="text-sm font-black tabular-nums text-white">
+                  {qaAudit?.weeklyAuditRate ?? 0}{' '}
+                  <span className="text-[10px] font-normal text-slate-400">lần/tuần</span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold tabular-nums ${
+                    isQaPassed ? 'text-emerald-400' : hasFailedQa ? 'text-rose-400' : 'text-slate-400'
+                  }`}
+                >
+                  {qaProgressPercent}%
+                </span>
               </div>
+              <Progress
+                percent={qaProgressPercent}
+                size="small"
+                showInfo={false}
+                status={isQaPassed ? 'success' : hasFailedQa ? 'exception' : 'normal'}
+                className="m-0 mt-1.5"
+              />
             </div>
             <div className="text-[10px] font-semibold flex items-center justify-between">
               {isQaPassed ? (
@@ -660,7 +735,21 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <span className="text-[10px] text-slate-400 font-normal">&gt; 70%</span>
             </div>
             <div className="my-1.5">
-              <div className="text-sm font-black tabular-nums text-white">{hiPercent}%</div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-sm font-black tabular-nums text-white">{hiPercent}%</div>
+                <span
+                  className={`text-[10px] font-bold tabular-nums ${isHiPassed ? 'text-emerald-400' : 'text-slate-400'}`}
+                >
+                  {hiProgressPercent}%
+                </span>
+              </div>
+              <Progress
+                percent={hiProgressPercent}
+                size="small"
+                showInfo={false}
+                status={isHiPassed ? 'success' : 'normal'}
+                className="m-0 mt-1.5"
+              />
             </div>
             <div className="text-[10px] font-semibold flex items-center justify-between">
               {isHiPassed ? (
@@ -686,12 +775,28 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <span>🍌</span>
                 <span className="text-[11px]">Chuối FAL</span>
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">&gt; 0</span>
+              <span className="text-[10px] text-slate-400 font-normal">≥ {minBananaCount}</span>
             </div>
             <div className="my-1.5">
-              <div className="text-sm font-black tabular-nums text-white">
-                {bananaCount} <span className="text-[10px] font-normal text-slate-400">chuối</span>
+              <div className="flex items-baseline justify-between">
+                <div className="text-sm font-black tabular-nums text-white">
+                  {bananaCount} <span className="text-[10px] font-normal text-slate-400">/ {minBananaCount} chuối</span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold tabular-nums ${
+                    isBananaPassed ? 'text-emerald-400' : 'text-slate-400'
+                  }`}
+                >
+                  {bananaProgressPercent}%
+                </span>
               </div>
+              <Progress
+                percent={bananaProgressPercent}
+                size="small"
+                showInfo={false}
+                status={isBananaPassed ? 'success' : 'normal'}
+                className="m-0 mt-1.5"
+              />
             </div>
             <div className="text-[10px] font-semibold flex items-center justify-between">
               {isBananaPassed ? (
@@ -699,7 +804,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <span>✓</span> Đã tích lũy
                 </span>
               ) : (
-                <span className="text-amber-400">Cần &gt; 0 chuối</span>
+                <span className="text-amber-400">Thiếu {Math.max(0, minBananaCount - bananaCount)} chuối</span>
               )}
             </div>
           </div>
@@ -1054,7 +1159,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               </div>
             </div>
 
-            {/* Quest 6: Chuối > 0 */}
+            {/* Quest 6: Chuối >= 100 */}
             <div
               className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
                 isBananaPassed
@@ -1065,7 +1170,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    🍌 6. Chuối &gt; 0
+                    🍌 6. Chuối ≥ {minBananaCount}
                   </span>
                   {isBananaPassed ? (
                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
@@ -1073,14 +1178,15 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-[11px]">
-                      <AlertCircle className="w-3.5 h-3.5" /> CHƯA CÓ CHUỐI
+                      <AlertCircle className="w-3.5 h-3.5" /> CHƯA ĐỦ CHUỐI
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-baseline justify-between mt-1">
                   <div className="text-lg font-black text-amber-500 dark:text-amber-400 tabular-nums">
-                    {bananaCount} 🍌 <span className="text-xs font-normal text-slate-400">(mục tiêu &gt; 0 Chuối)</span>
+                    {bananaCount} 🍌{' '}
+                    <span className="text-xs font-normal text-slate-400">(mục tiêu ≥ {minBananaCount} Chuối)</span>
                   </div>
                   <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
                     FAL Credit
@@ -1088,7 +1194,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 </div>
 
                 <Progress
-                  percent={isBananaPassed ? 100 : 0}
+                  percent={bananaProgressPercent}
                   size="small"
                   showInfo={false}
                   status={isBananaPassed ? 'success' : 'normal'}
@@ -1103,7 +1209,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <span>
                       Cứu khách:{' '}
                       <strong className="text-emerald-600 font-bold">
-                        {bananaCount > 0 ? 'Tích cực' : 'Chưa tham gia'}
+                        {bananaCount >= minBananaCount ? 'Xuất sắc' : bananaCount > 0 ? 'Tích cực' : 'Chưa tham gia'}
                       </strong>
                     </span>
                   </div>
@@ -1112,9 +1218,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
               <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
                 <span>
-                  {isBananaPassed ? '✓ Đã có Chuối hỗ trợ cứu khách' : '⚡ Cần hỗ trợ ca FAL / tháo mi để nhận Chuối'}
+                  {isBananaPassed
+                    ? `✓ Đạt mốc tối thiểu ${minBananaCount} chuối hỗ trợ cứu khách`
+                    : `⚡ Còn thiếu ${Math.max(0, minBananaCount - bananaCount)} chuối để đạt mốc ${minBananaCount}`}
                 </span>
-                <span>Chuối vàng &gt; 0</span>
+                <span>Chuối vàng ≥ {minBananaCount}</span>
               </div>
             </div>
           </div>

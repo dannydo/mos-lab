@@ -164,6 +164,8 @@ export class CareerProgressionService {
       orderBy: { displayName: 'asc' },
     });
 
+    const config = await this.getConfig(fastify);
+
     const legacyIds = crmStaffList
       .map((s) => s.legacyStaffId)
       .filter((id): id is number => typeof id === 'number' && id > 0);
@@ -358,7 +360,7 @@ export class CareerProgressionService {
         selfComboRate,
         happinessIndex: 0.85,
         bananaCount: bonusesMap[legacyId]?.banana || 0,
-        isBananaPassed: (bonusesMap[legacyId]?.banana || 0) > 0,
+        isBananaPassed: (bonusesMap[legacyId]?.banana || 0) >= (config.cvToCvPlus?.minBananaCount ?? 100),
         ccLevel: ['CC', 'FM'].includes(careerRole) ? ccLevel : null,
         monthlyPoints: ['CC', 'FM'].includes(careerRole) ? monthlyPoints : null,
         qaAuditPassed: (() => {
@@ -607,14 +609,17 @@ export class CareerProgressionService {
       }
     }
 
-    let targetRole: CareerRole = 'CV_PLUS';
-    if (currentRole === 'CV') targetRole = 'CV_PLUS';
-    else if (currentRole === 'CV_PLUS') targetRole = 'CV_PLUS_PLUS';
-    else if (currentRole === 'CV_PLUS_PLUS') targetRole = 'FM';
-    else if (currentRole === 'CC') targetRole = 'FM';
-    else if (currentRole === 'FM') targetRole = 'CHO';
-    else if (currentRole === 'CHO') targetRole = 'BOSS';
-    else if (currentRole === 'BOSS') targetRole = 'BOSS';
+    let targetRole: CareerRole = (progression?.targetRole as CareerRole) || 'CV_PLUS';
+    if (!progression?.targetRole) {
+      if (currentRole === 'CV') targetRole = 'CV_PLUS';
+      else if (currentRole === 'CV_PLUS') targetRole = 'CV_PLUS_PLUS';
+      else if (currentRole === 'CV_PLUS_PLUS') targetRole = 'FM';
+      else if (currentRole === 'CC') targetRole = 'FM';
+      else if (currentRole === 'FM') targetRole = 'CHO';
+      else if (currentRole === 'CHO') targetRole = 'BOSS';
+      else if (currentRole === 'BOSS') targetRole = 'BOSS';
+      else if (currentRole === 'MASTER_TECH') targetRole = 'MASTER_TECH';
+    }
 
     // Quest gates evaluation against dynamic config
 
@@ -688,12 +693,13 @@ export class CareerProgressionService {
     // 3. tip > 10% trung bình của shop: staffTipRate >= targetTipRate || tipRatioAboveShop >= 0.10
     // 4. QA AC >= 1 lần/tuần: weeklyAuditRate >= 1.0 và không có bài FAILED
     // 5. HI > 70%: happinessIndex >= 0.70
-    // 6. Chuối > 0: bananaCount > 0
+    // 6. Chuối >= 100: bananaCount >= minBananaCount
+    const minBananaCount = cvReq.minBananaCount ?? 100;
     const isOrdersPassed = ordersCount >= cvReq.minOrders;
     const isFixPassed = fixRate <= cvReq.maxFixRate;
     const isTipPassed = staffTipRate >= targetTipRate || tipRatioAboveShop >= cvReq.minTipRatioAboveShop;
     const isHiPassed = happinessIndex >= cvReq.minHappinessIndex;
-    const isBananaPassed = bananaCount > 0;
+    const isBananaPassed = bananaCount >= minBananaCount;
 
     const foundationCompleted =
       isOrdersPassed && isFixPassed && isTipPassed && qaAuditCompleted && isHiPassed && isBananaPassed;

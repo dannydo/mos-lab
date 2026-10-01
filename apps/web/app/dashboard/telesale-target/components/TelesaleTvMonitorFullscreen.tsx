@@ -185,6 +185,19 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
         />
       </div>
 
+      <div>
+        <span className="text-xs text-zinc-400 block mb-1">Chất giọng phát loa</span>
+        <Select
+          value={voiceSettings.voiceStyle || 'MALE_CHARM'}
+          onChange={(val) => updateVoiceSettings({ voiceStyle: val })}
+          className="w-full"
+          options={[
+            { label: '👑 Nam thần gợi cảm (Trầm ấm, 4 giá trị Wings)', value: 'MALE_CHARM' },
+            { label: '🌸 Nữ ngọt ngào (Tươi sáng & Tự nhiên)', value: 'FEMALE_SWEET' },
+          ]}
+        />
+      </div>
+
       <div className="flex items-center justify-between border-t border-zinc-800 pt-2.5">
         <div>
           <span className="text-xs font-medium block text-zinc-200">Chế độ im lặng</span>
@@ -569,10 +582,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
       </main>
 
       {/* 2.5 INDIVIDUAL STAFF CONTRIBUTIONS TODAY (MOS-FEAT-83) */}
-      <TelesaleTvStaffContributionGrid
-        staffTargets={overview.staffTargets}
-        totalTeamBookToday={metrics.bookActual}
-      />
+      <TelesaleTvStaffContributionGrid staffTargets={overview.staffTargets} totalTeamBookToday={metrics.bookActual} />
 
       {/* 3. BOTTOM SECTION: COUNTDOWN & ACTIONABLE MESSAGE & TEAM STATUS */}
       <footer className="relative z-10 border-t border-zinc-800/80 pt-4 flex flex-col lg:flex-row items-center justify-between gap-4">

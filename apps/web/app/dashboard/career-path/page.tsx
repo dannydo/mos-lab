@@ -386,7 +386,7 @@ export default function CareerPathPage() {
                   {selectedStaffStatus?.staffName ? selectedStaffStatus.staffName.slice(0, 1).toUpperCase() : '🧝‍♀️'}
                 </Avatar>
               </div>
-              <span className="absolute -bottom-1 -right-1 text-[10px] font-black bg-pink-500 text-white px-1 py-0.2 rounded-full border border-white font-mono">
+              <span className="absolute -bottom-1 -right-1 text-[9px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded-full border border-white dark:border-slate-900 font-mono whitespace-nowrap shadow-xs">
                 {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV')}
               </span>
             </div>
@@ -396,7 +396,7 @@ export default function CareerPathPage() {
                 <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
                   {selectedStaffStatus?.staffName || 'Đang chọn nhân sự...'}
                 </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300">
                   ✨ {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV')}
                 </span>
               </div>
@@ -605,9 +605,9 @@ export default function CareerPathPage() {
       </main>
 
       {/* BOTTOM ACTION BAR */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-pink-200 dark:border-slate-800 p-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-lg">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-2.5">
-          <div className="pl-14 sm:pl-0 text-[11px] leading-tight min-w-0 flex-1">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-rose-200 dark:border-slate-800 px-16 sm:px-20 py-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-lg">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          <div className="text-[11px] sm:text-xs leading-tight min-w-0 flex-1">
             <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
               {selectedStaffStatus
                 ? `${selectedStaffStatus.staffName}: ${formatCareerRoleName(selectedStaffStatus.currentRole)} ➔ ${formatCareerRoleName(selectedStaffStatus.targetRole)}`

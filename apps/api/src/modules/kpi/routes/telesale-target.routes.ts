@@ -123,5 +123,26 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
     socket.on('close', () => tvSockets.delete(socket));
     socket.on('error', () => tvSockets.delete(socket));
   });
-}
 
+  // 6. Generate Live Celebration Quote with Gemini AI & Wings Culture (Nam thần quyến rũ + Fallback)
+  fastify.post('/kpi/telesale-target/live-celebration-quote', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { type, staffName } = (request.body as { type?: 'BOOK' | 'DONE'; staffName?: string }) || {};
+    try {
+      const result = await TelesaleTargetService.generateLiveCelebrationQuote(
+        fastify,
+        type === 'DONE' ? 'DONE' : 'BOOK',
+        staffName || 'Bạn Telesales'
+      );
+      return reply.send(result);
+    } catch (err: any) {
+      fastify.log.error(`Failed to generate celebration quote: ${err.message}`);
+      return reply.send({
+        quote: TelesaleTargetService.getFallbackCelebrationQuote(
+          type === 'DONE' ? 'DONE' : 'BOOK',
+          staffName || 'Bạn Telesales'
+        ),
+        source: 'fallback',
+      });
+    }
+  });
+}

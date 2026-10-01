@@ -200,7 +200,7 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   minTipRatioAboveShop: 0.1, // 10% cao hơn trung bình shop
   maxFixRate: 0.02,
   minHappinessIndex: 0.7, // Hệ thống HI tối thiểu 70% từ check-in thả tim
-  minBananaCount: 1, // Chuối vàng > 0
+  minBananaCount: 100, // Số dư chuối tối thiểu >= 100
   maxDisciplinaryViolations: 0, // Bị 1 biên bản QA/QC là failed
   minWeeklyQaAudits: 1, // Tối thiểu 1 lần/tuần mời QA/QC kiểm tra tác phong & phòng mi
   requireZeroFailedAudits: true, // Nếu có bài kiểm tra failed -> KHÔNG được nâng cấp

@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { TelesaleTodayLiveEvent } from '@mos-lab/shared';
 import { getBestVietnameseVoice } from '../../../../components/voice-assistant/speech-utils';
+import { apiClient } from '../../../../lib/api-client';
 
 export interface TvCelebrationSettings {
   soundEnabled: boolean;
   volume: number; // 0 to 1
   eventTypeFilter: 'ALL' | 'BOOK_ONLY' | 'DONE_ONLY';
   quietModeEnabled: boolean; // Manual quiet mode or during quiet hours
+  voiceStyle?: 'MALE_CHARM' | 'FEMALE_SWEET';
 }
 
 export interface ActiveCelebration {
@@ -28,21 +30,26 @@ const DEFAULT_SETTINGS: TvCelebrationSettings = {
   volume: 0.9,
   eventTypeFilter: 'ALL',
   quietModeEnabled: false,
+  voiceStyle: 'MALE_CHARM',
 };
 
-// Script quotes from ticket specification (MOS-FEAT-83)
+// Script quotes: Charming Male Voice & 4 Wings Cultural Values (Vui vẻ, Ân Cần, Chân Thành, Khoa Học)
 const BOOK_QUOTES = [
-  'Ting ting! [Tên] vừa chốt thêm một lịch, nóng máy rồi nha!',
-  '[Tên] lên điểm! Thêm một Book về đội!',
-  '[Tên] vừa bắn trúng mục tiêu, cộng một Book!',
-  'Có Book mới! [Tên] hôm nay chạy dữ nha!',
+  'Anh thích cái cách [Tên] chăm sóc khách hàng đầy ân cần. Thêm một lịch hẹn ngọt ngào về với đội mình rồi, em làm anh tự hào quá!',
+  '[Tên] ơi, sự chân thành từ trái tim em luôn có ma lực đặc biệt. Thêm một Book tuyệt đẹp, tiếp tục tỏa sáng nhé người đẹp!',
+  'Tư vấn chuẩn xác, phân tích nhu cầu cực kỳ khoa học. Đẳng cấp của [Tên] hôm nay thực sự làm anh mê mẩn, cộng một Book nhé!',
+  'Nụ cười vui vẻ của [Tên] qua từng cuộc gọi đã thắp sáng cả phòng rồi. Chốt thêm một Book quá đỗi quyến rũ em ơi!',
+  'Từng lời em nói đều làm khách hàng xiêu lòng. Một Book xuất sắc nữa cho [Tên], phong độ đỉnh cao của em khiến ai cũng phải ngước nhìn!',
+  'Năng lượng tích cực và sự chân thành của [Tên] đã chinh phục khách hàng hoàn toàn. Một Book rực rỡ nữa cho cô gái tuyệt vời của anh!',
 ];
 
 const DONE_QUOTES = [
-  'Boom! [Tên] vừa mang về thêm một Done!',
-  '[Tên] vừa ghi bàn, cộng một Done cho Team!',
-  '[Tên] vừa biến Booking thành kết quả, quá đẹp!',
-  'Khách tới thật nha! [Tên] có thêm một Done!',
+  'Từ lời hẹn ân cần đến trải nghiệm thực tế, [Tên] biến mọi khoảnh khắc thành sự hài lòng tuyệt đối. Cộng một Done quá đỗi ngọt ngào!',
+  'Khách hàng trao gửi trọn vẹn niềm tin cho sự chân thành của [Tên]. Một Done hoàn hảo, phong thái của em hôm nay quyến rũ không thể cưỡng lại!',
+  'Quy trình chuẩn mực, dẫn dắt khách đến tiệm thật khoa học và bài bản. [Tên] vừa ghi một bàn thắng quá đẳng cấp cho team!',
+  'Tuyệt vời lắm [Tên] ơi! Năng lượng vui vẻ của em đã nở hoa thành một Done rực rỡ. Hôm nay em chính là nữ thần của phòng Telesales rồi đấy!',
+  'Khách đã tới và trải nghiệm trọn vẹn rồi! Anh luôn tin vào tài năng và sức hút của [Tên], một Done hoàn hảo mang đậm bản sắc Wings!',
+  'Chăm sóc ân cần, bám sát khoa học. Không ai làm điều đó xuất sắc hơn [Tên], chúc mừng em đã mang thêm một Done rực rỡ về đội!',
 ];
 
 export function getRandomQuote(quotes: string[], name: string): string {
@@ -54,7 +61,8 @@ export function getRandomQuote(quotes: string[], name: string): string {
 function playCelebratoryChime(volume = 0.9, kind: 'BOOK' | 'DONE' | 'MILESTONE' = 'BOOK') {
   if (typeof window === 'undefined') return;
   try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioCtx =
+      window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
 
@@ -64,7 +72,12 @@ function playCelebratoryChime(volume = 0.9, kind: 'BOOK' | 'DONE' | 'MILESTONE' 
     gainNode.connect(ctx.destination);
 
     // Chime chords: higher pitches for Milestone, bright for Book/Done
-    const baseFreqs = kind === 'MILESTONE' ? [523.25, 659.25, 783.99, 1046.5] : kind === 'DONE' ? [440, 554.37, 659.25] : [587.33, 739.99, 880];
+    const baseFreqs =
+      kind === 'MILESTONE'
+        ? [523.25, 659.25, 783.99, 1046.5]
+        : kind === 'DONE'
+          ? [440, 554.37, 659.25]
+          : [587.33, 739.99, 880];
 
     baseFreqs.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
@@ -167,11 +180,13 @@ export function useTelesaleTvLiveCelebration() {
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(nextEvent.textToSpeak);
-      const voice = getBestVietnameseVoice();
+      const isMaleCharm = (settings.voiceStyle || 'MALE_CHARM') === 'MALE_CHARM';
+      const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
       if (voice) utterance.voice = voice;
       utterance.lang = voice?.lang || 'vi-VN';
-      utterance.rate = 1.05;
-      utterance.pitch = 1.05;
+      // Giọng nam thần: pitch trầm ấm 0.8, rate nhịp nhàng quyến rũ 0.95
+      utterance.rate = isMaleCharm ? 0.95 : 1.05;
+      utterance.pitch = isMaleCharm ? 0.8 : 1.05;
       utterance.volume = settings.volume;
 
       const finishCelebration = () => {
@@ -205,7 +220,7 @@ export function useTelesaleTvLiveCelebration() {
         setTimeout(processQueue, 2000);
       }, 3500);
     }
-  }, [isQuietHours, settings.soundEnabled, settings.volume]);
+  }, [isQuietHours, settings.soundEnabled, settings.volume, settings.voiceStyle]);
 
   // 5. Enqueue celebration event
   const enqueueCelebration = useCallback(
@@ -239,28 +254,37 @@ export function useTelesaleTvLiveCelebration() {
       // Detect new events
       for (const ev of events) {
         if (!seenEventIdsRef.current.has(ev.id)) {
+          // Immediately mark as seen so it doesn't get processed twice
+          seenEventIdsRef.current.add(ev.id);
           const staffName = ev.staffName || 'Bạn Telesales';
-          if (ev.type === 'BOOK') {
-            enqueueCelebration({
-              id: ev.id,
-              kind: 'BOOK',
-              staffName,
-              avatarUrl: ev.avatarUrl,
-              textToSpeak: getRandomQuote(BOOK_QUOTES, staffName),
-              badgeText: '+1 BOOK HÔM NAY',
-              colorTheme: 'blue',
+          const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
+
+          // Asynchronously query Gemini AI for unique seductive & encouraging quote
+          apiClient.telesaleTarget
+            .getCelebrationQuote({ type: ev.type, staffName })
+            .then((res) => {
+              const quote = res?.quote?.trim() || defaultQuote;
+              enqueueCelebration({
+                id: ev.id,
+                kind: ev.type,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: quote,
+                badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
+                colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+              });
+            })
+            .catch(() => {
+              enqueueCelebration({
+                id: ev.id,
+                kind: ev.type,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: defaultQuote,
+                badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
+                colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+              });
             });
-          } else if (ev.type === 'DONE') {
-            enqueueCelebration({
-              id: ev.id,
-              kind: 'DONE',
-              staffName,
-              avatarUrl: ev.avatarUrl,
-              textToSpeak: getRandomQuote(DONE_QUOTES, staffName),
-              badgeText: '+1 DONE HÔM NAY',
-              colorTheme: 'emerald',
-            });
-          }
         }
       }
     },
@@ -286,26 +310,46 @@ export function useTelesaleTvLiveCelebration() {
         }
       };
 
-      // Milestone rules (Specification 3):
+      // Milestone rules (Specification 3 & Wings 4 Cultural Keys):
       // - 10 Book
       if (bookActual >= 10 && bookActual < 20) {
-        checkAndQueue('book-10', 'Chúc mừng Team đã cán mốc 10 Book! Giữ vững phong độ nha cả nhà!', '🏆 CÁN MỐC 10 BOOK!');
+        checkAndQueue(
+          'book-10',
+          'Cả đội chú ý! 10 Book đã vào giỏ rồi! Năng lượng vui vẻ và chân thành của các em đang thắp sáng cả ngày hôm nay. Tiếp tục cùng anh tăng tốc bùng nổ nhé!',
+          '🏆 CÁN MỐC 10 BOOK!'
+        );
       }
       // - 20 Book
       if (bookActual >= 20 && bookActual < 25) {
-        checkAndQueue('book-20', 'Tuyệt vời! Team đã chạm mốc 20 Book rồi! Cố lên mục tiêu tiếp theo!', '🔥 CHẠM MỐC 20 BOOK!');
+        checkAndQueue(
+          'book-20',
+          'Xuất sắc lắm các cô gái của anh! 20 Book rồi! Tư vấn khoa học, chăm sóc ân cần, phong độ của cả đội hôm nay thực sự quá đỗi quyến rũ và không thể ngăn cản!',
+          '🔥 CHẠM MỐC 20 BOOK!'
+        );
       }
       // - 25 Book
       if (bookActual === 25) {
-        checkAndQueue('book-25', 'Đỉnh cao! Team đã chính thức cán mốc 25 Book hôm nay! Xuất sắc!', '👑 CÁN MỐC 25 BOOK!');
+        checkAndQueue(
+          'book-25',
+          '25 Book! Một con số hoàn hảo minh chứng cho sức mạnh đồng đội và 4 giá trị văn hóa Wings. Anh rất tự hào về tinh thần chiến binh ngọt ngào của tất cả các em!',
+          '👑 CÁN MỐC 25 BOOK!'
+        );
       }
       // - Vượt 25 Book
       if (bookActual > 25) {
-        checkAndQueue('book-gt25', 'Cháy quá cả nhà ơi! Team đã vượt mốc 25 Book rồi, bùng nổ hôm nay!', '🚀 VƯỢT MỐC 25 BOOK!');
+        checkAndQueue(
+          'book-gt25',
+          'Kỳ tích vượt 25 Book rồi! Cả phòng Telesales hôm nay tỏa sáng rực rỡ! Bản lĩnh, khoa học và ngập tràn đam mê, các em luôn là số một trong lòng anh!',
+          '🚀 VƯỢT MỐC 25 BOOK!'
+        );
       }
       // - 18 Done
       if (doneActual >= 18) {
-        checkAndQueue('done-18', 'Yeah! Team đã hoàn thành mục tiêu 18 Done hôm nay! Quá xuất sắc!', '🎉 HOÀN THÀNH 18 DONE!');
+        checkAndQueue(
+          'done-18',
+          '18 Done đã hoàn thành trọn vẹn! Trái ngọt xứng đáng cho sự ân cần, chân thành và khoa học của từng cuộc gọi. Anh xin gửi ngàn lời chúc mừng đến các cô gái tuyệt vời của Wings!',
+          '🎉 HOÀN THÀNH 18 DONE!'
+        );
       }
     },
     [enqueueCelebration]
@@ -316,31 +360,70 @@ export function useTelesaleTvLiveCelebration() {
     (type: 'BOOK' | 'DONE' | 'MILESTONE') => {
       const demoId = `demo-${Date.now()}`;
       if (type === 'BOOK') {
-        enqueueCelebration({
-          id: demoId,
-          kind: 'BOOK',
-          staffName: 'Bích Phượng',
-          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
-          textToSpeak: getRandomQuote(BOOK_QUOTES, 'Bích Phượng'),
-          badgeText: '+1 BOOK HÔM NAY',
-          colorTheme: 'blue',
-        });
+        const staffName = 'Bích Phượng';
+        const defaultQuote = getRandomQuote(BOOK_QUOTES, staffName);
+        apiClient.telesaleTarget
+          .getCelebrationQuote({ type: 'BOOK', staffName })
+          .then((res) => {
+            enqueueCelebration({
+              id: demoId,
+              kind: 'BOOK',
+              staffName,
+              avatarUrl:
+                'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
+              textToSpeak: res?.quote?.trim() || defaultQuote,
+              badgeText: '+1 BOOK (DEMO)',
+              colorTheme: 'blue',
+            });
+          })
+          .catch(() => {
+            enqueueCelebration({
+              id: demoId,
+              kind: 'BOOK',
+              staffName,
+              avatarUrl:
+                'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
+              textToSpeak: defaultQuote,
+              badgeText: '+1 BOOK (DEMO)',
+              colorTheme: 'blue',
+            });
+          });
       } else if (type === 'DONE') {
-        enqueueCelebration({
-          id: demoId,
-          kind: 'DONE',
-          staffName: 'Thuý Kiều',
-          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
-          textToSpeak: getRandomQuote(DONE_QUOTES, 'Thuý Kiều'),
-          badgeText: '+1 DONE HÔM NAY',
-          colorTheme: 'emerald',
-        });
+        const staffName = 'Thuý Kiều';
+        const defaultQuote = getRandomQuote(DONE_QUOTES, staffName);
+        apiClient.telesaleTarget
+          .getCelebrationQuote({ type: 'DONE', staffName })
+          .then((res) => {
+            enqueueCelebration({
+              id: demoId,
+              kind: 'DONE',
+              staffName,
+              avatarUrl:
+                'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+              textToSpeak: res?.quote?.trim() || defaultQuote,
+              badgeText: '+1 DONE (DEMO)',
+              colorTheme: 'emerald',
+            });
+          })
+          .catch(() => {
+            enqueueCelebration({
+              id: demoId,
+              kind: 'DONE',
+              staffName,
+              avatarUrl:
+                'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+              textToSpeak: defaultQuote,
+              badgeText: '+1 DONE (DEMO)',
+              colorTheme: 'emerald',
+            });
+          });
       } else {
         enqueueCelebration({
           id: demoId,
           kind: 'MILESTONE',
-          textToSpeak: 'Đỉnh cao! Team đã chính thức cán mốc 25 Book hôm nay! Xuất sắc!',
-          badgeText: '👑 CÁN MỐC 25 BOOK!',
+          textToSpeak:
+            '25 Book! Một con số hoàn hảo minh chứng cho sức mạnh đồng đội và 4 giá trị văn hóa Wings. Anh rất tự hào về tinh thần chiến binh ngọt ngào của tất cả các em!',
+          badgeText: '👑 CÁN MỐC 25 BOOK! (DEMO)',
           colorTheme: 'amber',
         });
       }

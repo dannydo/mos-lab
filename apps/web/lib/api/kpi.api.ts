@@ -437,5 +437,12 @@ export const kpiApi = {
       const response = await api.get('/kpi/telesale-target/pool', { params });
       return response.data;
     },
+    getCelebrationQuote: async (data: {
+      type: 'BOOK' | 'DONE';
+      staffName: string;
+    }): Promise<{ quote: string; source: 'gemini' | 'fallback' }> => {
+      const response = await api.post('/kpi/telesale-target/live-celebration-quote', data);
+      return response.data;
+    },
   },
 };

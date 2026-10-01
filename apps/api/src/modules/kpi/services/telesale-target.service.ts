@@ -511,10 +511,7 @@ export class TelesaleTargetService {
       const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
         where: {
           isActive: true,
-          OR: [
-            { role: 'telesales' },
-            { legacyStaffId: { in: activeBkTelesalesIds } },
-          ],
+          OR: [{ role: 'telesales' }, { legacyStaffId: { in: activeBkTelesalesIds } }],
         },
         select: {
           id: true,
@@ -677,7 +674,10 @@ export class TelesaleTargetService {
         id: `book-${o.id}`,
         type: 'BOOK' as const,
         staffId: bookerId,
-        staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
+        staffName:
+          staffNameMap.get(bookerId) ||
+          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+          'Telesales',
         avatarUrl: staffAvatarMap.get(bookerId) || null,
         timestamp: o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
         orderId: Number(o.id),
@@ -690,7 +690,10 @@ export class TelesaleTargetService {
         id: `done-${o.id}`,
         type: 'DONE' as const,
         staffId: bookerId,
-        staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
+        staffName:
+          staffNameMap.get(bookerId) ||
+          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+          'Telesales',
         avatarUrl: staffAvatarMap.get(bookerId) || null,
         timestamp: o.actualBookingDateStart
           ? new Date(o.actualBookingDateStart).toISOString()
@@ -1124,5 +1127,98 @@ export class TelesaleTargetService {
       bookedCount: 0,
       items,
     };
+  }
+
+  static getFallbackCelebrationQuote(type: 'BOOK' | 'DONE', staffName: string): string {
+    const bookQuotes = [
+      'Anh thích cái cách [Tên] chăm sóc khách hàng đầy ân cần. Thêm một lịch hẹn ngọt ngào về với đội mình rồi, em làm anh tự hào quá!',
+      '[Tên] ơi, sự chân thành từ trái tim em luôn có ma lực đặc biệt. Thêm một Book tuyệt đẹp, tiếp tục tỏa sáng nhé người đẹp!',
+      'Tư vấn chuẩn xác, phân tích nhu cầu cực kỳ khoa học. Đẳng cấp của [Tên] hôm nay thực sự làm anh mê mẩn, cộng một Book nhé!',
+      'Nụ cười vui vẻ của [Tên] qua từng cuộc gọi đã thắp sáng cả phòng rồi. Chốt thêm một Book quá đỗi quyến rũ em ơi!',
+      'Từng lời em nói đều làm khách hàng xiêu lòng. Một Book xuất sắc nữa cho [Tên], phong độ đỉnh cao của em khiến ai cũng phải ngước nhìn!',
+      'Năng lượng tích cực và sự chân thành của [Tên] đã chinh phục khách hàng hoàn toàn. Một Book rực rỡ nữa cho cô gái tuyệt vời của anh!',
+    ];
+
+    const doneQuotes = [
+      'Từ lời hẹn ân cần đến trải nghiệm thực tế, [Tên] biến mọi khoảnh khắc thành sự hài lòng tuyệt đối. Cộng một Done quá đỗi ngọt ngào!',
+      'Khách hàng trao gửi trọn vẹn niềm tin cho sự chân thành của [Tên]. Một Done hoàn hảo, phong thái của em hôm nay quyến rũ không thể cưỡng lại!',
+      'Quy trình chuẩn mực, dẫn dắt khách đến tiệm thật khoa học và bài bản. [Tên] vừa ghi một bàn thắng quá đẳng cấp cho team!',
+      'Tuyệt vời lắm [Tên] ơi! Năng lượng vui vẻ của em đã nở hoa thành một Done rực rỡ. Hôm nay em chính là nữ thần của phòng Telesales rồi đấy!',
+      'Khách đã tới và trải nghiệm trọn vẹn rồi! Anh luôn tin vào tài năng và sức hút của [Tên], một Done hoàn hảo mang đậm bản sắc Wings!',
+      'Chăm sóc ân cần, bám sát khoa học. Không ai làm điều đó xuất sắc hơn [Tên], chúc mừng em đã mang thêm một Done rực rỡ về đội!',
+    ];
+
+    const list = type === 'DONE' ? doneQuotes : bookQuotes;
+    const template = list[Math.floor(Math.random() * list.length)] || list[0];
+    return template.replace(/\[Tên\]/g, staffName);
+  }
+
+  static async generateLiveCelebrationQuote(
+    fastify: FastifyInstance,
+    type: 'BOOK' | 'DONE',
+    staffName: string
+  ): Promise<{ quote: string; source: 'gemini' | 'fallback' }> {
+    const fallbackQuote = this.getFallbackCelebrationQuote(type, staffName);
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+
+    if (!geminiApiKey) {
+      return { quote: fallbackQuote, source: 'fallback' };
+    }
+
+    try {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+
+      const systemPrompt = `Bạn là một "Nam Thần" lịch lãm, quyến rũ, ấm áp và khích lệ tại hệ thống chuỗi làm đẹp Wings (Wingslashes).
+Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng (dưới 35 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 đơn ${
+        type === 'DONE' ? 'DONE (khách hàng đã tới tiệm hoàn tất dịch vụ)' : 'BOOK (khách hàng vừa chốt lịch hẹn mới)'
+      }.
+YÊU CẦU BẮT BUỘC:
+1. Giọng điệu: Nam thần cuốn hút, gợi cảm, chân thành và tràn đầy sự khích lệ, tự hào về người đó.
+2. Khéo léo lồng ghép ít nhất một trong 4 giá trị văn hóa cốt lõi của Wings: Vui vẻ, Ân cần, Chân thành, Khoa học.
+3. Bắt buộc nhắc đến tên "${staffName}".
+4. Ngắn gọn, tự nhiên, ngẫu nhiên sáng tạo, không rập khuôn hay sáo rỗng.
+5. Chỉ trả về đúng 1 câu thoại để đọc phát loa trực tiếp, tuyệt đối không có dấu ngoặc kép, không markdown, không giải thích.`;
+
+      const response = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `Tạo một câu chúc mừng nam thần ngẫu nhiên cho ${staffName} có đơn ${type}!` }],
+            },
+          ],
+          generationConfig: {
+            temperature: 1.0,
+            thinkingConfig: { thinkingBudget: 0 },
+            maxOutputTokens: 100,
+          },
+        }),
+        signal: AbortSignal.timeout(2500),
+      });
+
+      if (!response.ok) {
+        return { quote: fallbackQuote, source: 'fallback' };
+      }
+
+      const data = (await response.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
+      };
+
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const textPart = parts.find((p) => !p.thought && p.text) || parts[parts.length - 1];
+      const rawText = textPart?.text?.trim();
+
+      if (rawText && rawText.length > 5) {
+        const cleanText = rawText.replace(/^["'“”«»\s]+|["'“”«»\s]+$/g, '').trim();
+        return { quote: cleanText, source: 'gemini' };
+      }
+    } catch (err) {
+      fastify.log.warn(`Gemini live celebration quote generation failed, using fallback: ${err}`);
+    }
+
+    return { quote: fallbackQuote, source: 'fallback' };
   }
 }

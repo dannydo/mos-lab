@@ -33,14 +33,14 @@ export function cleanMarkdownForSpeech(markdown: string): string {
   );
 }
 
-export function getBestVietnameseVoice(): SpeechSynthesisVoice | null {
+export function getBestVietnameseVoice(preferredGender?: 'male' | 'female'): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
 
   const voices = window.speechSynthesis.getVoices();
   if (!voices || voices.length === 0) return null;
 
-  // 1. Exact Vietnamese language match
-  const viExact = voices.find(
+  // 1. Vietnamese voices list
+  const viVoices = voices.filter(
     (v) =>
       v.lang === 'vi-VN' ||
       v.lang === 'vi_VN' ||
@@ -48,9 +48,31 @@ export function getBestVietnameseVoice(): SpeechSynthesisVoice | null {
       v.name.toLowerCase().includes('vietnamese') ||
       v.name.toLowerCase().includes('tiếng việt')
   );
-  if (viExact) return viExact;
 
-  // 2. Default voice
+  // 2. Select by preferred gender if requested
+  if (preferredGender === 'male' && viVoices.length > 0) {
+    const maleVoice = viVoices.find(
+      (v) =>
+        v.name.toLowerCase().includes('nam') ||
+        v.name.toLowerCase().includes('male') ||
+        v.name.toLowerCase().includes('minh')
+    );
+    if (maleVoice) return maleVoice;
+  } else if (preferredGender === 'female' && viVoices.length > 0) {
+    const femaleVoice = viVoices.find(
+      (v) =>
+        v.name.toLowerCase().includes('hoài my') ||
+        v.name.toLowerCase().includes('linh') ||
+        v.name.toLowerCase().includes('female') ||
+        v.name.toLowerCase().includes('nữ')
+    );
+    if (femaleVoice) return femaleVoice;
+  }
+
+  // Fallback to first Vietnamese voice
+  if (viVoices.length > 0) return viVoices[0];
+
+  // Default system voice
   const defaultVoice = voices.find((v) => v.default);
   return defaultVoice || voices[0] || null;
 }

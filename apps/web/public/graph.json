@@ -9886,6 +9886,34 @@
       }
     },
     {
+      "id": "route:GET:/api/kpi/telesale-target/stream",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/telesale-target/stream",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/telesale-target/stream",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 104
+      }
+    },
+    {
+      "id": "route:POST:/api/kpi/telesale-target/live-celebration-quote",
+      "type": "FastifyRoute",
+      "label": "POST /api/kpi/telesale-target/live-celebration-quote",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/kpi/telesale-target/live-celebration-quote",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 128
+      }
+    },
+    {
       "id": "route:GET:/api/kpi/export-booker-salary",
       "type": "FastifyRoute",
       "label": "GET /api/kpi/export-booker-salary",
@@ -25819,6 +25847,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TelesaleTodayLiveEvent",
+      "type": "SharedType",
+      "label": "TelesaleTodayLiveEvent",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTodayLiveEvent",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:TelesaleTargetConfigDto",
       "type": "SharedType",
       "label": "TelesaleTargetConfigDto",
@@ -30078,8 +30118,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 36603,
-        "lineCount": 945,
+        "sizeBytes": 36956,
+        "lineCount": 951,
         "ext": ".ts"
       }
     },
@@ -31053,8 +31093,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4121,
-        "lineCount": 101,
+        "sizeBytes": 5801,
+        "lineCount": 150,
         "ext": ".ts"
       }
     },
@@ -31274,8 +31314,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17248,
-        "lineCount": 516,
+        "sizeBytes": 21614,
+        "lineCount": 612,
         "ext": ".ts"
       }
     },
@@ -31287,8 +31327,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 37534,
-        "lineCount": 993,
+        "sizeBytes": 48363,
+        "lineCount": 1217,
         "ext": ".ts"
       }
     },
@@ -35512,7 +35552,7 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16167,
+        "sizeBytes": 16171,
         "lineCount": 342,
         "ext": ".ts"
       }
@@ -35525,7 +35565,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8019,
+        "sizeBytes": 8030,
         "lineCount": 205,
         "ext": ".tsx"
       }
@@ -35538,8 +35578,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 63739,
-        "lineCount": 1330,
+        "sizeBytes": 68457,
+        "lineCount": 1437,
         "ext": ".tsx"
       }
     },
@@ -35551,8 +35591,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12387,
-        "lineCount": 271,
+        "sizeBytes": 12934,
+        "lineCount": 314,
         "ext": ".tsx"
       }
     },
@@ -35564,7 +35604,7 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29085,
+        "sizeBytes": 29146,
         "lineCount": 667,
         "ext": ".tsx"
       }
@@ -37748,8 +37788,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3832,
-        "lineCount": 124,
+        "sizeBytes": 5158,
+        "lineCount": 166,
         "ext": ".tsx"
       }
     },
@@ -37780,6 +37820,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.test.tsx",
+      "type": "File",
+      "label": "TelesaleTvLiveCelebrationBanner.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2820,
+        "lineCount": 69,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
+      "type": "File",
+      "label": "TelesaleTvLiveCelebrationBanner.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5414,
+        "lineCount": 123,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "type": "File",
       "label": "TelesaleTvMonitorFullscreen.tsx",
@@ -37787,9 +37853,61 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22649,
-        "lineCount": 471,
+        "sizeBytes": 28811,
+        "lineCount": 627,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx",
+      "type": "File",
+      "label": "TelesaleTvStaffContributionGrid.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2580,
+        "lineCount": 85,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
+      "type": "File",
+      "label": "TelesaleTvStaffContributionGrid.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7987,
+        "lineCount": 184,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.test.ts",
+      "type": "File",
+      "label": "useTelesaleTvLiveCelebration.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1745,
+        "lineCount": 34,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
+      "type": "File",
+      "label": "useTelesaleTvLiveCelebration.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17661,
+        "lineCount": 434,
+        "ext": ".ts"
       }
     },
     {
@@ -38359,8 +38477,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16862,
-        "lineCount": 442,
+        "sizeBytes": 17154,
+        "lineCount": 449,
         "ext": ".ts"
       }
     },
@@ -39009,7 +39127,7 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 17056,
+        "sizeBytes": 17078,
         "lineCount": 420,
         "ext": ".ts"
       }
@@ -39503,8 +39621,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 4887,
-        "lineCount": 190,
+        "sizeBytes": 5244,
+        "lineCount": 205,
         "ext": ".ts"
       }
     },
@@ -44177,6 +44295,20 @@
     {
       "id": "edge:route:GET:/api/kpi/telesale-target/pool:ws:apps/api",
       "source": "route:GET:/api/kpi/telesale-target/pool",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/telesale-target/stream:ws:apps/api",
+      "source": "route:GET:/api/kpi/telesale-target/stream",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/kpi/telesale-target/live-celebration-quote:ws:apps/api",
+      "source": "route:POST:/api/kpi/telesale-target/live-celebration-quote",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -53219,6 +53351,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:TelesaleTodayLiveEvent:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTodayLiveEvent",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:TelesaleTargetConfigDto:ws:packages/shared",
       "source": "type:@mos-lab/shared:TelesaleTargetConfigDto",
       "target": "ws:packages/shared",
@@ -59393,6 +59532,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/page.tsx",
       "target": "ws:packages/shared",
@@ -61596,6 +61756,13 @@
       "target": "prisma:legacy:user_service_balance",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmConfig",
@@ -67954,6 +68121,20 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/telesale-target/stream",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/telesale-target/stream",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/telesale-target/live-celebration-quote",
+      "source": "page:/dashboard/cc",
+      "target": "route:POST:/api/kpi/telesale-target/live-celebration-quote",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/export-booker-salary",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/export-booker-salary",
@@ -72700,6 +72881,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/telesale-target/stream",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/telesale-target/stream",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/telesale-target/live-celebration-quote",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/kpi/telesale-target/live-celebration-quote",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/export-booker-salary",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/export-booker-salary",
@@ -77218,6 +77413,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/telesale-target/pool",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/telesale-target/pool",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/telesale-target/stream",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/telesale-target/stream",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/telesale-target/live-celebration-quote",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/kpi/telesale-target/live-celebration-quote",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -84796,6 +85005,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/telesale-target/stream",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/telesale-target/stream",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/telesale-target/live-celebration-quote",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/kpi/telesale-target/live-celebration-quote",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/export-booker-salary",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/export-booker-salary",
@@ -85917,31 +86140,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3030,
-    "totalEdges": 6620,
+    "totalNodes": 3039,
+    "totalEdges": 6635,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 160,
-      "FastifyRoute": 646,
+      "FastifyRoute": 648,
       "Component": 57,
-      "SharedType": 1112,
+      "SharedType": 1113,
       "DesignToken": 12,
       "UIComponent": 209,
-      "File": 831
+      "File": 837
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1284,
-      "HANDLES_ROUTE": 646,
+      "EXPORTS": 1285,
+      "HANDLES_ROUTE": 648,
       "RENDERS": 266,
       "USES_TOKEN": 211,
-      "IMPORTS": 458,
-      "QUERIES_MODEL": 373,
-      "API_CALL": 3382
+      "IMPORTS": 461,
+      "QUERIES_MODEL": 374,
+      "API_CALL": 3390
     },
-    "fastifyRouteCount": 651,
+    "fastifyRouteCount": 653,
     "prismaModelCount": 160,
     "nextPageCount": 57,
-    "sharedTypeCount": 1112
+    "sharedTypeCount": 1113
   },
   "routes": [
     {
@@ -89426,6 +89649,20 @@
     {
       "method": "GET",
       "path": "/api/kpi/telesale-target/pool",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/telesale-target/stream",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "POST",
+      "path": "/api/kpi/telesale-target/live-celebration-quote",
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"
