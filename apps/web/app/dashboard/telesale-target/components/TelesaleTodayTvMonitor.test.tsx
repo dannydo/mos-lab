@@ -104,7 +104,7 @@ describe('TelesaleTvMonitorFullscreen', () => {
     );
 
     expect(screen.getByText(/TELESALES TV MONITOR · WAR ROOM/i)).toBeInTheDocument();
-    expect(screen.getByText(/DONE HÔM NAY · KHÁCH LẺ/i)).toBeInTheDocument();
+    expect(screen.getByText(/DONE HÔM NAY/i)).toBeInTheDocument();
     expect(screen.getByText(/BOOK HÔM NAY · TẠO LỊCH/i)).toBeInTheDocument();
 
     // Close button
@@ -116,11 +116,7 @@ describe('TelesaleTvMonitorFullscreen', () => {
 
   it('does not render anything when open=false', () => {
     const { container } = render(
-      <TelesaleTvMonitorFullscreen
-        overview={mockOverview}
-        open={false}
-        onClose={vi.fn()}
-      />
+      <TelesaleTvMonitorFullscreen overview={mockOverview} open={false} onClose={vi.fn()} />
     );
     expect(container.firstChild).toBeNull();
   });

@@ -34,8 +34,32 @@ export type AcademyWorkshopFeeStatus = (typeof ACADEMY_WORKSHOP_FEE_STATUSES)[nu
 export const ACADEMY_WORKSHOP_FEE_METHODS = ['BANK_TRANSFER', 'CASH', 'ADJUSTMENT'] as const;
 export type AcademyWorkshopFeeMethod = (typeof ACADEMY_WORKSHOP_FEE_METHODS)[number];
 
-export const ACADEMY_WORKSHOP_AGENDA_KINDS = ['CONTENT', 'TALENT_TEST', 'GAME', 'BREAK', 'SALES', 'OTHER'] as const;
+export const ACADEMY_WORKSHOP_AGENDA_KINDS = [
+  'CONTENT',
+  'THEORY',
+  'PRACTICE',
+  'OBSERVATION',
+  'NETWORKING',
+  'TALENT_TEST',
+  'GAME',
+  'BREAK',
+  'SALES',
+  'OTHER',
+] as const;
 export type AcademyWorkshopAgendaKind = (typeof ACADEMY_WORKSHOP_AGENDA_KINDS)[number];
+
+export const ACADEMY_WORKSHOP_AGENDA_KIND_LABELS: Record<AcademyWorkshopAgendaKind, string> = {
+  CONTENT: 'Nội dung',
+  THEORY: 'Lý thuyết',
+  PRACTICE: 'Thực hành',
+  OBSERVATION: 'Quan sát',
+  NETWORKING: 'Kết nối',
+  TALENT_TEST: 'Tố chất',
+  GAME: 'Game',
+  BREAK: 'Giải lao',
+  SALES: 'Tư vấn',
+  OTHER: 'Khác',
+};
 
 export const ACADEMY_WORKSHOP_AGENDA_STATUSES = ['PENDING', 'RUNNING', 'PAUSED', 'COMPLETED', 'SKIPPED'] as const;
 export type AcademyWorkshopAgendaStatus = (typeof ACADEMY_WORKSHOP_AGENDA_STATUSES)[number];

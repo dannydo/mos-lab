@@ -5,6 +5,7 @@ import { Alert, Button, Form, Input, InputNumber, Pagination, Popconfirm, Select
 import { ArrowDown, ArrowUp, Check, Clock3, LibraryBig, Plus, Save, Trash2, WandSparkles } from 'lucide-react';
 import {
   ACADEMY_WORKSHOP_AGENDA_KINDS,
+  ACADEMY_WORKSHOP_AGENDA_KIND_LABELS,
   type AcademyWorkshopAgendaKind,
   type AcademyWorkshopAgendaTemplate,
   type CreateAcademyWorkshopAgendaTemplateRequest,
@@ -21,14 +22,7 @@ import {
 } from '../../../../components/ui';
 import { useAcademyWorkshopAgendaTemplates } from './useAcademyWorkshopAgendaTemplates';
 
-const AGENDA_KIND_LABELS: Record<AcademyWorkshopAgendaKind, string> = {
-  CONTENT: 'Nội dung',
-  TALENT_TEST: 'Tố chất',
-  GAME: 'Game',
-  BREAK: 'Giải lao',
-  SALES: 'Tư vấn',
-  OTHER: 'Khác',
-};
+const AGENDA_KIND_LABELS: Record<AcademyWorkshopAgendaKind, string> = ACADEMY_WORKSHOP_AGENDA_KIND_LABELS;
 
 type TemplateFormValues = { title: string; description?: string | null };
 type DraftItem = {
@@ -505,7 +499,7 @@ export default function AcademyWorkshopAgendaTemplateLibrary({
                           />
                         </div>
                         <div>
-                          <label className="mb-1 block text-sm font-medium">Nhóm</label>
+                          <label className="mb-1 block text-sm font-medium">Nhóm vận hành</label>
                           <Select
                             value={item.kind}
                             className="w-full"

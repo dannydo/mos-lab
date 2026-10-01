@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   removeVietnameseTones,
+  ACADEMY_WORKSHOP_AGENDA_KINDS,
   type AcademyWorkshopAgendaTemplate,
   type CreateAcademyWorkshopAgendaTemplateRequest,
   type ListAcademyWorkshopAgendaTemplatesParams,
@@ -10,7 +11,7 @@ import {
 } from '@mos-lab/shared';
 import { AcademySalesError, canManageAcademySales, type AcademyActor } from '../academy-sales/academy-sales.service.js';
 
-const AGENDA_KINDS = new Set(['CONTENT', 'TALENT_TEST', 'GAME', 'BREAK', 'SALES', 'OTHER']);
+const AGENDA_KINDS = new Set<string>(ACADEMY_WORKSHOP_AGENDA_KINDS);
 const TEMPLATE_INCLUDE = {
   items: { orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }] },
 };

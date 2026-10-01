@@ -8,6 +8,7 @@ import {
   formatAcademyTalentBenefitLabel,
   removeVietnameseTones,
   sortAcademyWorkshopTalentLeaderboard,
+  ACADEMY_WORKSHOP_AGENDA_KINDS,
   ACADEMY_WORKSHOP_MENU_CATEGORIES,
   type AcademyTalentAssessmentQuote,
   type AcademyWorkshopAgendaItem,
@@ -96,7 +97,7 @@ const WORKSHOP_STATUSES = new Set([
   'CANCELLED',
   'ARCHIVED',
 ]);
-const AGENDA_KINDS = new Set(['CONTENT', 'TALENT_TEST', 'GAME', 'BREAK', 'SALES', 'OTHER']);
+const AGENDA_KINDS = new Set<string>(ACADEMY_WORKSHOP_AGENDA_KINDS);
 const MENU_CATEGORIES = new Set<AcademyWorkshopMenuCategory>(ACADEMY_WORKSHOP_MENU_CATEGORIES);
 const MENU_CATEGORY_ORDER = new Map<AcademyWorkshopMenuCategory, number>(
   ACADEMY_WORKSHOP_MENU_CATEGORIES.map((category, index) => [category, index])

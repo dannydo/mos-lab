@@ -18,14 +18,15 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type {
-  AcademyInstructorBonus,
-  AcademyStaffOption,
-  AcademyWorkshopAgendaItem,
-  AcademyWorkshopDetail,
-  AcademyWorkshopParticipant,
-  AcademyWorkshopReward,
-  AcademyWorkshopSummary,
+import {
+  ACADEMY_WORKSHOP_AGENDA_KIND_LABELS,
+  type AcademyInstructorBonus,
+  type AcademyStaffOption,
+  type AcademyWorkshopAgendaItem,
+  type AcademyWorkshopDetail,
+  type AcademyWorkshopParticipant,
+  type AcademyWorkshopReward,
+  type AcademyWorkshopSummary,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import {
@@ -164,7 +165,8 @@ export function AcademyWorkshopAgendaSnapshot({ agenda }: { agenda: AcademyWorks
                 {item.sortOrder}. {item.title}
               </div>
               <div className="mt-1 text-xs opacity-60">
-                {item.kind} · <span className="tabular-nums">{Math.round(item.plannedDurationSeconds / 60)} phút</span>
+                {ACADEMY_WORKSHOP_AGENDA_KIND_LABELS[item.kind] || item.kind} ·{' '}
+                <span className="tabular-nums">{Math.round(item.plannedDurationSeconds / 60)} phút</span>
               </div>
             </div>
             <StatusTag

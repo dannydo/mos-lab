@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import {
   ACADEMY_WORKSHOP_AGENDA_KINDS,
+  ACADEMY_WORKSHOP_AGENDA_KIND_LABELS,
   type AcademyWorkshopAgendaItem,
   type AcademyWorkshopAgendaKind,
   type AcademyWorkshopAgendaTemplate,
@@ -45,14 +46,7 @@ import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
 import { useAcademyWorkshopAgendaTemplates } from './useAcademyWorkshopAgendaTemplates';
 import { formatAgendaExecutionText } from '../../../../lib/academy-workshop-live';
 
-const AGENDA_KIND_LABELS: Record<AcademyWorkshopAgendaKind, string> = {
-  CONTENT: 'Nội dung',
-  TALENT_TEST: 'Tố chất',
-  GAME: 'Game',
-  BREAK: 'Giải lao',
-  SALES: 'Tư vấn',
-  OTHER: 'Khác',
-};
+const AGENDA_KIND_LABELS: Record<AcademyWorkshopAgendaKind, string> = ACADEMY_WORKSHOP_AGENDA_KIND_LABELS;
 
 const AGENDA_STATUS_LABELS = {
   PENDING: 'Chưa bắt đầu',

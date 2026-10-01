@@ -85,4 +85,72 @@ describe('AcademyWorkshopAgendaManager - MOS-FEAT-65 Actual Execution Time', () 
     expect(screen.getByText('Khai mạc & Giới thiệu')).toBeInTheDocument();
     expect(screen.getByText('✅ 9h45 - 10h25 : 40 phút')).toBeInTheDocument();
   });
+
+  it('renders labels for newly added agenda kinds: Quan sát, Thực hành, Kết nối, Lý thuyết', () => {
+    const mockWorkshop = {
+      id: 2,
+      name: 'Workshop Đổi Vận',
+      slug: 'workshop-doi-van',
+      startsAt: '2026-09-29T09:00:00Z',
+      status: 'SCHEDULED',
+      agenda: [
+        {
+          id: 201,
+          workshopId: 2,
+          title: 'Bài giảng lý thuyết',
+          kind: 'THEORY',
+          plannedDurationSeconds: 1800,
+          sortOrder: 1,
+          status: 'PENDING',
+        },
+        {
+          id: 202,
+          workshopId: 2,
+          title: 'Quan sát mẫu thực tế',
+          kind: 'OBSERVATION',
+          plannedDurationSeconds: 1200,
+          sortOrder: 2,
+          status: 'PENDING',
+        },
+        {
+          id: 203,
+          workshopId: 2,
+          title: 'Thực hành uốn mi',
+          kind: 'PRACTICE',
+          plannedDurationSeconds: 2700,
+          sortOrder: 3,
+          status: 'PENDING',
+        },
+        {
+          id: 204,
+          workshopId: 2,
+          title: 'Giao lưu học viên',
+          kind: 'NETWORKING',
+          plannedDurationSeconds: 900,
+          sortOrder: 4,
+          status: 'PENDING',
+        },
+      ],
+      menuItems: [],
+      equipmentPackages: [],
+      designs: [],
+      participants: [],
+      summary: {},
+    };
+
+    render(
+      <AcademyWorkshopAgendaManager
+        workshop={mockWorkshop as unknown as AcademyWorkshopDetail}
+        canEdit={true}
+        onUpdated={vi.fn()}
+        onRefresh={vi.fn()}
+        onOpenResourceTab={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Lý thuyết')).toBeInTheDocument();
+    expect(screen.getByText('Quan sát')).toBeInTheDocument();
+    expect(screen.getByText('Thực hành')).toBeInTheDocument();
+    expect(screen.getByText('Kết nối')).toBeInTheDocument();
+  });
 });

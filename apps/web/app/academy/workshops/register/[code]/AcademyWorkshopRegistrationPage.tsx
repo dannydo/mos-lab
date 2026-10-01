@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Coffee,
   Clock3,
+  Eye,
   Gamepad2,
   GraduationCap,
   MessageCircle,
@@ -287,6 +288,14 @@ function agendaKindMeta(kind: AcademyWorkshopAgendaKind) {
         icon: GraduationCap,
         tone: styles.agendaIconGreen,
       };
+    case 'THEORY':
+      return { label: 'Lý thuyết', icon: BookOpenCheck, tone: styles.agendaIconNeutral };
+    case 'PRACTICE':
+      return { label: 'Thực hành', icon: Sparkles, tone: styles.agendaIconViolet };
+    case 'OBSERVATION':
+      return { label: 'Quan sát', icon: Eye, tone: styles.agendaIconBlue };
+    case 'NETWORKING':
+      return { label: 'Giao lưu kết nối', icon: UsersRound, tone: styles.agendaIconGreen };
     case 'OTHER':
       return { label: 'Hoạt động workshop', icon: Clock3, tone: styles.agendaIconNeutral };
     default:
@@ -479,18 +488,28 @@ function WorkshopExperienceTimeline({
                             <p className={`mb-0 mt-1 truncate text-sm font-semibold ${styles.agendaTitle}`}>
                               {selectedEquipmentPackage.name}
                             </p>
-                            <div className={`mb-0 mt-0.5 flex flex-wrap items-center gap-1.5 text-xs font-medium tabular-nums ${styles.agendaDescription}`}>
+                            <div
+                              className={`mb-0 mt-0.5 flex flex-wrap items-center gap-1.5 text-xs font-medium tabular-nums ${styles.agendaDescription}`}
+                            >
                               {selectedEquipmentPackage.effectivePriceVnd === 0 ? (
                                 <>
-                                  <del className="text-slate-400 line-through opacity-75">{formatFee(selectedEquipmentPackage.priceVnd)}</del>
+                                  <del className="text-slate-400 line-through opacity-75">
+                                    {formatFee(selectedEquipmentPackage.priceVnd)}
+                                  </del>
                                   <span className="font-bold text-emerald-700">
-                                    {selectedEquipmentPackage.isIncludedInFee ? 'Đã bao gồm trong học phí (0 đ)' : '0 đ (Không phát sinh)'}
+                                    {selectedEquipmentPackage.isIncludedInFee
+                                      ? 'Đã bao gồm trong học phí (0 đ)'
+                                      : '0 đ (Không phát sinh)'}
                                   </span>
                                 </>
                               ) : (
                                 <>
-                                  <del className="text-slate-400 line-through opacity-75">{formatFee(selectedEquipmentPackage.priceVnd)}</del>
-                                  <span className="font-bold text-amber-900">+{formatFee(selectedEquipmentPackage.effectivePriceVnd)}</span>
+                                  <del className="text-slate-400 line-through opacity-75">
+                                    {formatFee(selectedEquipmentPackage.priceVnd)}
+                                  </del>
+                                  <span className="font-bold text-amber-900">
+                                    +{formatFee(selectedEquipmentPackage.effectivePriceVnd)}
+                                  </span>
                                 </>
                               )}
                             </div>
