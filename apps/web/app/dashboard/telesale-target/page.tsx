@@ -418,6 +418,7 @@ function TelesaleTargetContent() {
         onClose={() => setDrawerOpen(false)}
         stage={selectedStage}
         currentUserRole="admin"
+        staffList={overview?.staffTargets || []}
       />
 
       {/* 5. MODAL: KPI TARGET CONFIGURATION */}

@@ -625,3 +625,100 @@ test('TelesaleTargetService.synthesizeCelebrationAudio throws on empty text and 
   );
 });
 
+test('TelesaleTargetService strictly pulls active Telesales staff from HR (crmStaff) and prunes invalid/inactive staff (MOS-BUG-84)', async () => {
+  const mockStaffDb = [
+    // Active Telesales staff (Must be included)
+    { id: 1, legacyStaffId: 50670, name: 'Bích Phượng', displayName: 'Bích Phượng', role: 'telesales', isActive: true, avatarUrl: 'https://avatar/phuong.jpg' },
+    { id: 2, legacyStaffId: 52648, name: 'Thuý Kiều', displayName: 'Thuý Kiều', role: 'Telesales Executive', isActive: true, avatarUrl: 'https://avatar/kieu.jpg' },
+    { id: 3, legacyStaffId: 32268, name: 'Ngọc Điệp', displayName: 'Ngọc Điệp', role: 'telesales', isActive: true, avatarUrl: null },
+    { id: 4, legacyStaffId: 52598, name: 'Thanh Vũ', displayName: 'Thanh Vũ', role: 'telesales', isActive: true, avatarUrl: null },
+    // Inactive staff (Must be excluded)
+    { id: 5, legacyStaffId: 99001, name: 'Thuỳ Chang', displayName: 'Thuỳ Chang', role: 'telesales', isActive: false, avatarUrl: null },
+    { id: 6, legacyStaffId: 99002, name: 'Thanh Mai', displayName: 'Thanh Mai', role: 'telesales', isActive: false, avatarUrl: null },
+    // Non-telesales roles (Must be excluded even if active)
+    { id: 7, legacyStaffId: 48791, name: 'Tâm Nguyễn', displayName: 'Tâm Nguyễn', role: 'admin', isActive: true, avatarUrl: null },
+    { id: 8, legacyStaffId: 52454, name: 'Phương Giao', displayName: 'Phương Giao', role: 'manager', isActive: true, avatarUrl: null },
+    { id: 9, legacyStaffId: 52086, name: 'Mỹ Diệu', displayName: 'Mỹ Diệu', role: 'manager', isActive: true, avatarUrl: null },
+    { id: 10, legacyStaffId: 47510, name: 'Thanh Trúc', displayName: 'Thanh Trúc', role: 'cc', isActive: true, avatarUrl: null },
+  ];
+
+  let configStore: Record<string, string> = {
+    'TELESALE_TARGET_CONFIG_2026-10': JSON.stringify({
+      month: '2026-10',
+      teamDoneTarget: 450,
+      teamBookTarget: 650,
+      dailyDoneTarget: 18,
+      dailyBookTarget: 25,
+      // Old stale config containing manager 52454, 52086 and admin 48791
+      staffTargets: [
+        { legacyStaffId: 52454, name: 'Phương Giao', doneTarget: 150 },
+        { legacyStaffId: 52086, name: 'Mỹ Diệu', doneTarget: 100 },
+        { legacyStaffId: 48791, name: 'Tâm Nguyễn', doneTarget: 100 },
+        { legacyStaffId: 50670, name: 'Bích Phượng', doneTarget: 120 },
+      ],
+      stageTargets: { '0_30': 200, '31_60': 110, '61_120': 80, gt_120: 60 },
+    }),
+  };
+
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmStaff: {
+          findMany: async ({ where }: any) => {
+            let list = [...mockStaffDb];
+            if (where?.isActive !== undefined) {
+              list = list.filter((s) => s.isActive === where.isActive);
+            }
+            if (Array.isArray(where?.OR)) {
+              list = list.filter((s) => where.OR.some((cond: any) => cond.role === s.role));
+            }
+            if (where?.legacyStaffId?.in) {
+              list = list.filter((s) => where.legacyStaffId.in.includes(s.legacyStaffId));
+            }
+            return list;
+          },
+        },
+        crmConfig: {
+          findUnique: async ({ where }: any) => {
+            const val = configStore[where.key];
+            return val ? { key: where.key, value: val } : null;
+          },
+          update: async ({ where, data }: any) => {
+            configStore[where.key] = data.value;
+            return { key: where.key, value: data.value };
+          },
+        },
+      },
+    },
+    log: { warn: () => {}, error: () => {} },
+  };
+
+  // 1. Test getActiveTelesalesStaffFromHr
+  const hrStaff = await TelesaleTargetService.getActiveTelesalesStaffFromHr(mockFastify as any);
+  assert.equal(hrStaff.length, 4);
+  const hrIds = hrStaff.map((s) => s.legacyStaffId);
+  assert.deepEqual(hrIds.sort(), [32268, 50670, 52598, 52648].sort());
+  // None of the inactive or manager/admin staff are present
+  assert.ok(!hrIds.includes(52454));
+  assert.ok(!hrIds.includes(52086));
+  assert.ok(!hrIds.includes(48791));
+  assert.ok(!hrIds.includes(99001));
+
+  // 2. Test getConfig auto-repair and reconciliation
+  const config = await TelesaleTargetService.getConfig(mockFastify as any, '2026-10');
+  assert.equal(config.staffTargets.length, 4);
+  const configStaffIds = config.staffTargets.map((s) => s.legacyStaffId);
+  assert.deepEqual(configStaffIds.sort(), [32268, 50670, 52598, 52648].sort());
+  // Bích Phượng preserves custom doneTarget 120 from old config
+  const phuongConfig = config.staffTargets.find((s) => s.legacyStaffId === 50670);
+  assert.equal(phuongConfig?.doneTarget, 120);
+  // Others receive default target (450 / 4 = 113)
+  const kieuConfig = config.staffTargets.find((s) => s.legacyStaffId === 52648);
+  assert.equal(kieuConfig?.doneTarget, 113);
+  // Old managers and admins are purged
+  assert.ok(!configStaffIds.includes(52454));
+  assert.ok(!configStaffIds.includes(52086));
+  assert.ok(!configStaffIds.includes(48791));
+});
+
+
