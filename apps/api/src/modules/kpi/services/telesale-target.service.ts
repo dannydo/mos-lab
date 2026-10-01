@@ -187,10 +187,6 @@ export class TelesaleTargetService {
   }
 
   static async saveConfig(fastify: FastifyInstance, config: TelesaleTargetConfigDto): Promise<TelesaleTargetConfigDto> {
-    if (config.staffTargets) {
-      config.staffTargets = this.normalizeStaffTargetIds(config.staffTargets) as SafeAny;
-    }
-
     const sumStages =
       Number(config.stageTargets['0_30'] || 0) +
       Number(config.stageTargets['31_60'] || 0) +
@@ -569,7 +565,7 @@ export class TelesaleTargetService {
     const workingShiftMap = new Map<number, boolean>();
     let shiftRows: SafeAny[] = [];
     try {
-      const shiftStaffIds = Array.from(new Set([...targetStaffIds, ...activeBkTelesalesIds]));
+      const shiftStaffIds = targetStaffIds;
       if (shiftStaffIds.length > 0) {
         shiftRows = await fastify.prisma.legacy
           .$queryRawUnsafe<SafeAny[]>(
