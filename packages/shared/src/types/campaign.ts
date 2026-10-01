@@ -1,6 +1,98 @@
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ENDED' | 'ARCHIVED' | 'DELETED';
 
+export type CampaignOperationMode = 'PERSONAL' | 'SHARED_POOL';
+
+export type CampaignPoolStatus =
+  | 'AVAILABLE'
+  | 'CLAIMED'
+  | 'EXPLOITED'
+  | 'RECYCLING'
+  | 'EXCLUDED'
+  | 'BOOKED';
+
+export interface SharedPoolRecycleRules {
+  THINKING?: number | null; // Days until re-entering pool (e.g. 3)
+  NO_ANSWER?: number | null; // Days until re-entering pool (e.g. 1)
+  BUSY?: number | null; // Days until re-entering pool (e.g. 1)
+  ERROR?: number | null; // Days until re-entering pool (e.g. 1)
+  CALLBACK?: string | null; // 'CUSTOM_DATE'
+  REJECTED?: null;
+  WRONG_NUMBER?: null;
+  NO_NEED?: null;
+  BOOKED?: null;
+}
+
+export interface SharedPoolConfig {
+  batchSize: number; // e.g. 100
+  claimTtlMinutes: number; // e.g. 15
+  maxClaimsPerStaff: number; // e.g. 1
+  cooldownMinutes: number; // e.g. 60
+  warningThreshold: number; // e.g. 30 (%)
+  criticalThreshold: number; // e.g. 10 (%)
+  isPaused: boolean;
+  recycleRules?: Partial<SharedPoolRecycleRules>;
+}
+
+export const DEFAULT_SHARED_POOL_CONFIG: SharedPoolConfig = {
+  batchSize: 100,
+  claimTtlMinutes: 15,
+  maxClaimsPerStaff: 1,
+  cooldownMinutes: 60,
+  warningThreshold: 30,
+  criticalThreshold: 10,
+  isPaused: false,
+  recycleRules: {
+    THINKING: 3,
+    NO_ANSWER: 1,
+    BUSY: 1,
+    ERROR: 2,
+    CALLBACK: 'CUSTOM_DATE',
+    REJECTED: null,
+    WRONG_NUMBER: null,
+    NO_NEED: null,
+    BOOKED: null,
+  },
+};
+
+export interface SharedPoolOverviewStats {
+  activeBatchNumber: number;
+  totalBatches: number;
+  batchSize: number;
+  isPaused: boolean;
+  // Active batch metrics
+  batchTotal: number;
+  batchAvailable: number;
+  batchClaimed: number;
+  batchExploited: number;
+  batchRecycling: number;
+  batchExcluded: number;
+  batchBooked: number;
+  // Campaign-wide data pool metrics
+  totalCustomers: number;
+  totalExploited: number;
+  totalRemaining: number;
+  percentRemaining: number;
+  // Early warning & forecasting
+  warningLevel: 'NORMAL' | 'WARNING' | 'CRITICAL' | 'EXHAUSTED';
+  warningMessage: string;
+  burnRatePerHour: number;
+  estimatedHoursRemaining: number | null;
+}
+
+export interface CampaignSharedPoolLog {
+  id: number;
+  campaignId: number;
+  campaignCustomerId: number;
+  legacyUserId: number;
+  staffId: number | null;
+  staffName: string | null;
+  action: string;
+  note: string | null;
+  metadata?: string | null;
+  createdAt: string;
+}
+
 export type CampaignPromotionType =
   'PERCENT_DISCOUNT' | 'FIXED_DISCOUNT' | 'FIXED_FINAL_PRICE' | 'FREE_SERVICE' | 'FREE_PRODUCT';
 
@@ -12,6 +104,9 @@ export interface Campaign {
   startDate: string | null;
   endDate: string | null;
   status: CampaignStatus;
+  operationMode?: CampaignOperationMode;
+  sharedPoolConfig?: SharedPoolConfig | null;
+  currentBatchNumber?: number;
   createdBy: number | null;
   assignedStaffIds?: number[] | null;
   deletedAt?: string | null;
@@ -35,6 +130,29 @@ export interface CampaignCustomer {
   removedBy: number | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  // Shared Pool attributes
+  batchNumber?: number;
+  poolStatus?: CampaignPoolStatus;
+  claimedByStaffId?: number | null;
+  claimedByStaffName?: string | null;
+  claimedAt?: string | null;
+  claimExpiresAt?: string | null;
+  cooldownUntil?: string | null;
+  availableAt?: string | null;
+  lastCallStaffId?: number | null;
+  lastCallStaffName?: string | null;
+  lastCallAt?: string | null;
+  lastCallResult?: string | null;
+  lastCallNote?: string | null;
+  bookedByStaffId?: number | null;
+  bookedByStaffName?: string | null;
+  bookedAt?: string | null;
+  callCount?: number;
+  isClaimedByMe?: boolean;
+  canClaim?: boolean;
+  canCall?: boolean;
+  claimRemainingSeconds?: number;
+  cooldownRemainingSeconds?: number;
 }
 
 /**
@@ -50,6 +168,8 @@ export interface CampaignCustomersQueryParams {
   search?: string;
   touchpointKey?: string;
   bookingStatus?: CampaignBookingStatusFilter;
+  batchNumber?: number;
+  poolStatus?: CampaignPoolStatus | 'ALL';
 }
 
 export interface CampaignTouchpoint {
@@ -146,6 +266,9 @@ export interface CreateCampaignDto {
   startDate?: string;
   endDate?: string;
   status?: CampaignStatus;
+  operationMode?: CampaignOperationMode;
+  sharedPoolConfig?: SharedPoolConfig | null;
+  currentBatchNumber?: number;
   assignedStaffIds?: number[] | null;
   touchpoints?: CreateCampaignTouchpointDto[];
   promotions?: CreateCampaignPromotionDto[];
@@ -158,9 +281,43 @@ export interface UpdateCampaignDto {
   startDate?: string;
   endDate?: string;
   status?: CampaignStatus;
+  operationMode?: CampaignOperationMode;
+  sharedPoolConfig?: SharedPoolConfig | null;
+  currentBatchNumber?: number;
   assignedStaffIds?: number[] | null;
   touchpoints?: CreateCampaignTouchpointDto[];
   promotions?: CreateCampaignPromotionDto[];
+}
+
+export interface ClaimSharedCustomerDto {
+  customerId: number;
+}
+
+export interface ReleaseSharedCustomerDto {
+  customerId: number;
+}
+
+export interface UpdateSharedPoolStatusDto {
+  customerId: number;
+  callResult: string; // THINKING | NO_ANSWER | BUSY | ERROR | CALLBACK | NO_NEED | REJECTED | WRONG_NUMBER | BOOKED | COMPLETED
+  note?: string;
+  durationSec?: number;
+  callbackDate?: string;
+  isBooked?: boolean;
+}
+
+export interface AdvanceSharedPoolBatchDto {
+  targetBatchNumber?: number;
+}
+
+export interface ToggleSharedPoolPauseDto {
+  isPaused: boolean;
+}
+
+export interface ManagerPoolActionDto {
+  customerId: number;
+  action: 'RELEASE_CLAIM' | 'RETURN_TO_POOL' | 'EXCLUDE';
+  reason?: string;
 }
 
 export interface AddCampaignCustomersDto {

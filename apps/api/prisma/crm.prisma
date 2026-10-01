@@ -857,24 +857,28 @@ model CrmCcKpiDailyProjection {
 // ═══════════════════════════════════════════
 
 model CrmCustomCampaign {
-  id               Int       @id @default(autoincrement())
-  name             String    @db.VarChar(100)
-  slug             String    @unique @db.VarChar(100)
-  description      String?   @db.Text
-  startDate        DateTime? @map("start_date") @db.Date
-  endDate          DateTime? @map("end_date") @db.Date
-  status           String    @default("ACTIVE") @db.VarChar(20) // DRAFT | SCHEDULED | ACTIVE | PAUSED | COMPLETED | ENDED | ARCHIVED
-  createdBy        Int?      @map("created_by")
-  assignedStaffIds String?   @map("assigned_staff_ids") @db.Text
-  deletedAt        DateTime? @map("deleted_at") @db.DateTime(0)
-  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt        DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  id                 Int       @id @default(autoincrement())
+  name               String    @db.VarChar(100)
+  slug               String    @unique @db.VarChar(100)
+  description        String?   @db.Text
+  startDate          DateTime? @map("start_date") @db.Date
+  endDate            DateTime? @map("end_date") @db.Date
+  status             String    @default("ACTIVE") @db.VarChar(20) // DRAFT | SCHEDULED | ACTIVE | PAUSED | COMPLETED | ENDED | ARCHIVED
+  operationMode      String    @default("PERSONAL") @map("operation_mode") @db.VarChar(20) // PERSONAL | SHARED_POOL
+  sharedPoolConfig   String?   @map("shared_pool_config") @db.LongText
+  currentBatchNumber Int       @default(1) @map("current_batch_number")
+  createdBy          Int?      @map("created_by")
+  assignedStaffIds   String?   @map("assigned_staff_ids") @db.Text
+  deletedAt          DateTime? @map("deleted_at") @db.DateTime(0)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
-  creator           CrmStaff?               @relation("CampaignCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  creator           CrmStaff?                  @relation("CampaignCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   customers         CrmCampaignCustomer[]
   touchpoints       CrmCampaignTouchpoint[]
   promotions        CrmCampaignPromotion[]
   allocationBatches CrmAllocationBatch[]
+  sharedPoolLogs    CrmCampaignSharedPoolLog[]
 
   @@index([status])
   @@index([createdBy])
@@ -882,24 +886,65 @@ model CrmCustomCampaign {
 }
 
 model CrmCampaignCustomer {
-  id            Int       @id @default(autoincrement())
-  campaignId    Int       @map("campaign_id")
-  legacyUserId  Int       @map("legacy_user_id")
-  addedAt       DateTime  @default(now()) @map("added_at") @db.DateTime(0)
-  addedBy       Int?      @map("added_by")
-  removedAt     DateTime? @map("removed_at") @db.DateTime(0)
-  removedReason String?   @map("removed_reason") @db.Text
-  removedBy     Int?      @map("removed_by")
+  id                   Int       @id @default(autoincrement())
+  campaignId           Int       @map("campaign_id")
+  legacyUserId         Int       @map("legacy_user_id")
+  batchNumber          Int       @default(1) @map("batch_number")
+  poolStatus           String    @default("AVAILABLE") @map("pool_status") @db.VarChar(30) // AVAILABLE | CLAIMED | EXPLOITED | RECYCLING | EXCLUDED | BOOKED
+  claimedByStaffId     Int?      @map("claimed_by_staff_id")
+  claimedByStaffName   String?   @map("claimed_by_staff_name") @db.VarChar(100)
+  claimedAt            DateTime? @map("claimed_at") @db.DateTime(0)
+  claimExpiresAt       DateTime? @map("claim_expires_at") @db.DateTime(0)
+  cooldownUntil        DateTime? @map("cooldown_until") @db.DateTime(0)
+  availableAt          DateTime? @map("available_at") @db.DateTime(0)
+  lastCallStaffId      Int?      @map("last_call_staff_id")
+  lastCallStaffName    String?   @map("last_call_staff_name") @db.VarChar(100)
+  lastCallAt           DateTime? @map("last_call_at") @db.DateTime(0)
+  lastCallResult       String?   @map("last_call_result") @db.VarChar(50)
+  lastCallNote         String?   @map("last_call_note") @db.Text
+  bookedByStaffId      Int?      @map("booked_by_staff_id")
+  bookedByStaffName    String?   @map("booked_by_staff_name") @db.VarChar(100)
+  bookedAt             DateTime? @map("booked_at") @db.DateTime(0)
+  callCount            Int       @default(0) @map("call_count")
+  addedAt              DateTime  @default(now()) @map("added_at") @db.DateTime(0)
+  addedBy              Int?      @map("added_by")
+  removedAt            DateTime? @map("removed_at") @db.DateTime(0)
+  removedReason        String?   @map("removed_reason") @db.Text
+  removedBy            Int?      @map("removed_by")
 
   campaign       CrmCustomCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   touchpointLogs CrmCampaignTouchpointLog[]
+  sharedPoolLogs CrmCampaignSharedPoolLog[]
 
   @@index([campaignId])
   @@index([legacyUserId])
   @@index([removedAt])
   @@index([legacyUserId, removedAt])
   @@index([campaignId, removedAt])
+  @@index([campaignId, batchNumber, poolStatus])
+  @@index([claimedByStaffId, claimExpiresAt])
   @@map("crm_campaign_customers")
+}
+
+model CrmCampaignSharedPoolLog {
+  id                 Int      @id @default(autoincrement())
+  campaignId         Int      @map("campaign_id")
+  campaignCustomerId Int      @map("campaign_customer_id")
+  legacyUserId       Int      @map("legacy_user_id")
+  staffId            Int?     @map("staff_id")
+  staffName          String?  @map("staff_name") @db.VarChar(100)
+  action             String   @db.VarChar(50) // CLAIM | RELEASE_EXPIRED | RELEASE_MANUAL | CALL | STATUS_UPDATE | RECYCLE | EXCLUDE | RETURN_TO_POOL | BOOKING | NEXT_BATCH
+  note               String?  @db.Text
+  metadata           String?  @map("metadata") @db.LongText
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  campaign         CrmCustomCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignCustomer CrmCampaignCustomer @relation(fields: [campaignCustomerId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+  @@index([campaignCustomerId])
+  @@index([legacyUserId])
+  @@map("crm_campaign_shared_pool_logs")
 }
 
 model CrmCampaignTouchpoint {
