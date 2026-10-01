@@ -129,3 +129,18 @@ test('Workshop end time is derived from the planned agenda duration', () => {
 
   assert.equal(endsAt.toISOString(), '2026-08-31T04:15:00.000Z');
 });
+
+test('Agenda template accepts newly added kinds: OBSERVATION, PRACTICE, NETWORKING, THEORY', () => {
+  const items = normalizeAcademyWorkshopAgendaDefinition([
+    { title: 'Lý thuyết cơ bản', kind: 'THEORY', plannedDurationSeconds: 30 * 60, sortOrder: 1 },
+    { title: 'Quan sát mẫu', kind: 'OBSERVATION', plannedDurationSeconds: 20 * 60, sortOrder: 2 },
+    { title: 'Thực hành tay nghề', kind: 'PRACTICE', plannedDurationSeconds: 45 * 60, sortOrder: 3 },
+    { title: 'Giao lưu kết nối', kind: 'NETWORKING', plannedDurationSeconds: 15 * 60, sortOrder: 4 },
+  ]);
+
+  assert.equal(items.length, 4);
+  assert.equal(items[0].kind, 'THEORY');
+  assert.equal(items[1].kind, 'OBSERVATION');
+  assert.equal(items[2].kind, 'PRACTICE');
+  assert.equal(items[3].kind, 'NETWORKING');
+});

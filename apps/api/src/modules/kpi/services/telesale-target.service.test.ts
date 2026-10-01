@@ -197,7 +197,7 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
       id: 1,
       bookerId: 101,
       orderState: 'Completed',
-      dateCreated: '2026-10-05 10:00:00',
+      dateCreated: '2099-10-05 10:00:00',
       isComboLive: 0,
       totalPrice: 500000,
       daysSinceLastVisit: 15,
@@ -206,7 +206,7 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
       id: 2,
       bookerId: 101,
       orderState: 'Completed',
-      dateCreated: '2026-10-06 11:00:00',
+      dateCreated: '2099-10-06 11:00:00',
       isComboLive: 0,
       totalPrice: 300000,
       daysSinceLastVisit: 25,
@@ -215,7 +215,7 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
       id: 3,
       bookerId: 101,
       orderState: 'Completed',
-      dateCreated: '2026-10-07 14:00:00',
+      dateCreated: '2099-10-07 14:00:00',
       isComboLive: 1,
       totalPrice: 1200000,
       daysSinceLastVisit: 45,
@@ -225,7 +225,7 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
       id: 4,
       bookerId: 102,
       orderState: 'Completed',
-      dateCreated: '2026-10-05 09:00:00',
+      dateCreated: '2099-10-05 09:00:00',
       isComboLive: 0,
       totalPrice: 400000,
       daysSinceLastVisit: 10,
@@ -234,7 +234,7 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
       id: 5,
       bookerId: 102,
       orderState: 'Cancelled',
-      dateCreated: '2026-10-06 15:00:00',
+      dateCreated: '2099-10-06 15:00:00',
       isComboLive: 0,
       totalPrice: 800000,
       daysSinceLastVisit: 10,
@@ -242,7 +242,7 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
   ];
 
   const mockTodayOrders = [
-    { id: 2, bookerId: 101, orderState: 'Completed', dateCreated: '2026-10-06 11:00:00', isComboLive: 0 },
+    { id: 2, bookerId: 101, orderState: 'Completed', dateCreated: '2099-10-06 11:00:00', isComboLive: 0 },
   ];
 
   const mockFastify = {
@@ -250,7 +250,7 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
       crm: {
         crmConfig: {
           findUnique: async () => ({
-            key: 'TELESALE_TARGET_CONFIG_2026-10',
+            key: 'TELESALE_TARGET_CONFIG_2099-10',
             value: JSON.stringify(mockConfig),
           }),
         },
@@ -279,7 +279,7 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
     },
   };
 
-  const overview = await TelesaleTargetService.getOverview(mockFastify as any, '2026-10');
+  const overview = await TelesaleTargetService.getOverview(mockFastify as any, '2099-10');
   assert.equal(overview.staffTargets.length, 3);
 
   const staffA = overview.staffTargets.find((s) => s.legacyStaffId === 101);
