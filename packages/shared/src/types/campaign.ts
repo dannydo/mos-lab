@@ -3,13 +3,7 @@ export type CampaignStatus =
 
 export type CampaignOperationMode = 'PERSONAL' | 'SHARED_POOL';
 
-export type CampaignPoolStatus =
-  | 'AVAILABLE'
-  | 'CLAIMED'
-  | 'EXPLOITED'
-  | 'RECYCLING'
-  | 'EXCLUDED'
-  | 'BOOKED';
+export type CampaignPoolStatus = 'AVAILABLE' | 'CLAIMED' | 'EXPLOITED' | 'RECYCLING' | 'EXCLUDED' | 'BOOKED';
 
 export interface SharedPoolRecycleRules {
   THINKING?: number | null; // Days until re-entering pool (e.g. 3)
@@ -78,6 +72,34 @@ export interface SharedPoolOverviewStats {
   warningMessage: string;
   burnRatePerHour: number;
   estimatedHoursRemaining: number | null;
+  // Team member performance metrics (MOS-BUG-81)
+  staffPerformance?: CampaignStaffPerformanceResponse;
+}
+
+export interface CampaignStaffPerformance {
+  staffId: number;
+  staffName: string;
+  avatarUrl?: string | null;
+  exploitedCount: number; // Đã khai thác: X KH
+  pickupCount: number; // Pickup: X
+  bookedCount: number; // Book: X
+  conversionRate: number; // Tỷ lệ Data → Book: X%
+  claimedCount?: number; // Lượt nhận khách (Claim)
+}
+
+export interface CampaignStaffPerformanceResponse {
+  campaignId: number;
+  campaignName: string;
+  startDate: string | null;
+  endDate: string | null;
+  totalMembers: number;
+  items: CampaignStaffPerformance[];
+  summary: {
+    totalExploited: number;
+    totalPickup: number;
+    totalBooked: number;
+    avgConversionRate: number;
+  };
 }
 
 export interface CampaignSharedPoolLog {

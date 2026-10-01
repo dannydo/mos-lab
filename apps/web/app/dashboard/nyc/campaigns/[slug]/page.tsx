@@ -850,9 +850,7 @@ export default function CampaignDetailPage() {
               : (settled[1].value as any)?.items || (settled[1].value as any)?.data || [];
             setCustomers(list);
             setCustomersTotal(
-              Array.isArray(settled[1].value)
-                ? list.length
-                : Number((settled[1].value as any)?.total ?? list.length)
+              Array.isArray(settled[1].value) ? list.length : Number((settled[1].value as any)?.total ?? list.length)
             );
           }
           if (campRes.operationMode === 'SHARED_POOL' && settled[2]?.status === 'fulfilled') {
@@ -1744,11 +1742,7 @@ export default function CampaignDetailPage() {
                 )}
 
                 <Tooltip title="Lịch sử tương tác & Chống tranh công">
-                  <Button
-                    size="small"
-                    icon={<HistoryOutlined />}
-                    onClick={() => handleOpenAuditLogs(record)}
-                  />
+                  <Button size="small" icon={<HistoryOutlined />} onClick={() => handleOpenAuditLogs(record)} />
                 </Tooltip>
 
                 {isAdmin && (
@@ -2044,6 +2038,11 @@ export default function CampaignDetailPage() {
           selectedPoolStatus={selectedPoolStatus}
           onSelectPoolStatus={(status) => {
             setSelectedPoolStatus(status);
+            setCurrentPage(1);
+          }}
+          selectedStaffId={selectedBookerId === 'ALL' ? null : selectedBookerId}
+          onSelectStaff={(staffId) => {
+            setSelectedBookerId((prev) => (prev === staffId ? 'ALL' : staffId));
             setCurrentPage(1);
           }}
         />

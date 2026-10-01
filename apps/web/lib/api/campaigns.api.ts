@@ -38,6 +38,7 @@ import type {
   ToggleSharedPoolPauseDto,
   ManagerPoolActionDto,
   CampaignSharedPoolLog,
+  CampaignStaffPerformanceResponse,
 } from '@mos-lab/shared';
 
 import { api, dedupeApiGet } from './base';
@@ -334,6 +335,10 @@ export const campaignsApi = {
     },
     getSharedPoolLogs: async (campaignId: number, customerId: number): Promise<CampaignSharedPoolLog[]> => {
       const response = await api.get(`/campaigns/${campaignId}/shared-pool/customers/${customerId}/logs`);
+      return response.data;
+    },
+    getStaffPerformance: async (campaignId: number): Promise<CampaignStaffPerformanceResponse> => {
+      const response = await api.get(`/campaigns/${campaignId}/staff-performance`);
       return response.data;
     },
   },

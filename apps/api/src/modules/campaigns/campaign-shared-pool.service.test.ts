@@ -1,10 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  DEFAULT_SHARED_POOL_CONFIG,
-  CampaignPoolStatus,
-  SharedPoolConfig,
-} from '@mos-lab/shared';
+import { DEFAULT_SHARED_POOL_CONFIG, CampaignPoolStatus, SharedPoolConfig } from '@mos-lab/shared';
 
 test('Campaign Shared Pool - Default configuration validation', () => {
   assert.equal(DEFAULT_SHARED_POOL_CONFIG.batchSize, 100);
@@ -107,4 +103,103 @@ test('Campaign Shared Pool - Recycle Date Resolution', () => {
 
   const rejectedDate = resolveAvailableDate('REJECTED');
   assert.equal(rejectedDate, null);
+});
+
+test('Campaign Staff Performance - Pickup Call Classification (MOS-BUG-81)', () => {
+  const PICKUP_CALL_RESULTS = new Set([
+    'BOOKED',
+    'THINKING',
+    'CALLBACK',
+    'NO_NEED',
+    'REJECTED',
+    'WRONG_NUMBER',
+    'ANSWERED',
+    'ANSWER',
+    'CONNECTED',
+  ]);
+  const NON_PICKUP_RESULTS = new Set(['NO_ANSWER', 'BUSY', 'ERROR', 'FAILED', 'MISSED', 'UNANSWERED']);
+
+  const classifyPickup = (result: string, durationSec: number = 0): boolean => {
+    const norm = (result || '').toUpperCase();
+    return !NON_PICKUP_RESULTS.has(norm) && (PICKUP_CALL_RESULTS.has(norm) || durationSec > 0);
+  };
+
+  // Pickup = true
+  assert.equal(classifyPickup('BOOKED', 60), true);
+  assert.equal(classifyPickup('THINKING', 60), true);
+  assert.equal(classifyPickup('CALLBACK', 30), true);
+  assert.equal(classifyPickup('NO_NEED', 45), true);
+  assert.equal(classifyPickup('REJECTED', 10), true);
+  assert.equal(classifyPickup('WRONG_NUMBER', 15), true);
+  assert.equal(classifyPickup('ANSWERED', 120), true);
+
+  // Non-pickup = false (even if default durationSec is non-zero in form)
+  assert.equal(classifyPickup('NO_ANSWER', 60), false);
+  assert.equal(classifyPickup('NO_ANSWER', 0), false);
+  assert.equal(classifyPickup('BUSY', 60), false);
+  assert.equal(classifyPickup('ERROR', 60), false);
+  assert.equal(classifyPickup('FAILED', 0), false);
+  assert.equal(classifyPickup('MISSED', 0), false);
+});
+
+test('Campaign Staff Performance - Conversion Rate and Metrics Calculation (MOS-BUG-81)', () => {
+  const computeStaffPerformance = (
+    staffId: number,
+    staffName: string,
+    exploitedCustomerIds: number[],
+    pickupCounts: number,
+    bookedCustomerIds: number[]
+  ) => {
+    const exploitedCount = new Set(exploitedCustomerIds).size;
+    const bookedCount = new Set(bookedCustomerIds).size;
+    const conversionRate = exploitedCount > 0 ? Number(((bookedCount / exploitedCount) * 100).toFixed(1)) : 0;
+    return {
+      staffId,
+      staffName,
+      exploitedCount,
+      pickupCount: pickupCounts,
+      bookedCount,
+      conversionRate,
+    };
+  };
+
+  // Case 1: Staff with successful bookings (Thanh Vũ: 32 exploited, 16 pickups, 1 booking)
+  const staff1 = computeStaffPerformance(
+    70,
+    'Thanh Vũ',
+    Array.from({ length: 32 }, (_, i) => i + 1),
+    16,
+    [1]
+  );
+  assert.equal(staff1.exploitedCount, 32);
+  assert.equal(staff1.pickupCount, 16);
+  assert.equal(staff1.bookedCount, 1);
+  assert.equal(staff1.conversionRate, 3.1);
+
+  // Case 2: Staff with 0 bookings (Ngọc Điệp: 36 exploited, 26 pickups, 0 bookings)
+  const staff2 = computeStaffPerformance(
+    18,
+    'Ngọc Điệp',
+    Array.from({ length: 36 }, (_, i) => i + 100),
+    26,
+    []
+  );
+  assert.equal(staff2.exploitedCount, 36);
+  assert.equal(staff2.pickupCount, 26);
+  assert.equal(staff2.bookedCount, 0);
+  assert.equal(staff2.conversionRate, 0.0);
+
+  // Case 3: Staff with 0 exploited (assigned but hasn't started)
+  const staff3 = computeStaffPerformance(99, 'Nhân viên mới', [], 0, []);
+  assert.equal(staff3.exploitedCount, 0);
+  assert.equal(staff3.pickupCount, 0);
+  assert.equal(staff3.bookedCount, 0);
+  assert.equal(staff3.conversionRate, 0.0);
+
+  // Sorting test: bookedCount DESC, exploitedCount DESC
+  const list = [staff2, staff1, staff3];
+  list.sort((a, b) => b.bookedCount - a.bookedCount || b.exploitedCount - a.exploitedCount);
+  assert.equal(list[0].staffId, 70); // Thanh Vũ Top 1 (1 book)
+  assert.equal(list[1].staffId, 18); // Ngọc Điệp Top 2 (36 exploited, 0 book)
+  assert.equal(list[2].staffId, 99); // Nhân viên mới Top 3 (0 exploited)
 });

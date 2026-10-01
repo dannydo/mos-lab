@@ -7044,6 +7044,34 @@
       }
     },
     {
+      "id": "route:GET:/api/campaigns/:id/staff-performance",
+      "type": "FastifyRoute",
+      "label": "GET /api/campaigns/:id/staff-performance",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/campaigns/:id/staff-performance",
+        "module": "campaigns",
+        "handler": "preHandler",
+        "line": 660
+      }
+    },
+    {
+      "id": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "type": "FastifyRoute",
+      "label": "GET /api/campaigns/:id/shared-pool/staff-performance",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/campaigns/:id/shared-pool/staff-performance",
+        "module": "campaigns",
+        "handler": "preHandler",
+        "line": 661
+      }
+    },
+    {
       "id": "route:POST:/api/campaigns/:id/shared-pool/claim",
       "type": "FastifyRoute",
       "label": "POST /api/campaigns/:id/shared-pool/claim",
@@ -7054,7 +7082,7 @@
         "path": "/api/campaigns/:id/shared-pool/claim",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 645
+        "line": 664
       }
     },
     {
@@ -7068,7 +7096,7 @@
         "path": "/api/campaigns/:id/shared-pool/release",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 670
+        "line": 689
       }
     },
     {
@@ -7082,7 +7110,7 @@
         "path": "/api/campaigns/:id/shared-pool/status",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 696
+        "line": 715
       }
     },
     {
@@ -7096,7 +7124,7 @@
         "path": "/api/campaigns/:id/shared-pool/advance-batch",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 721
+        "line": 740
       }
     },
     {
@@ -7110,7 +7138,7 @@
         "path": "/api/campaigns/:id/shared-pool/toggle-pause",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 743
+        "line": 762
       }
     },
     {
@@ -7124,7 +7152,7 @@
         "path": "/api/campaigns/:id/shared-pool/manager-action",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 768
+        "line": 787
       }
     },
     {
@@ -7138,7 +7166,7 @@
         "path": "/api/campaigns/:id/shared-pool/customers/:customerId/logs",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 800
+        "line": 819
       }
     },
     {
@@ -18843,6 +18871,30 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CampaignStaffPerformance",
+      "type": "SharedType",
+      "label": "CampaignStaffPerformance",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/campaign.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CampaignStaffPerformance",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CampaignStaffPerformanceResponse",
+      "type": "SharedType",
+      "label": "CampaignStaffPerformanceResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/campaign.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CampaignStaffPerformanceResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CampaignSharedPoolLog",
       "type": "SharedType",
       "label": "CampaignSharedPoolLog",
@@ -26967,6 +27019,30 @@
       }
     },
     {
+      "id": "uicomp:SharedPoolStaffPerformanceCard.test",
+      "type": "UIComponent",
+      "label": "<SharedPoolStaffPerformanceCard.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/SharedPoolStaffPerformanceCard.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolStaffPerformanceCard.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SharedPoolStaffPerformanceCard",
+      "type": "UIComponent",
+      "label": "<SharedPoolStaffPerformanceCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/SharedPoolStaffPerformanceCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolStaffPerformanceCard",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:SharedPoolWrapupModal",
       "type": "UIComponent",
       "label": "<SharedPoolWrapupModal />",
@@ -29196,8 +29272,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38104,
-        "lineCount": 950,
+        "sizeBytes": 38173,
+        "lineCount": 957,
         "ext": ".ts"
       }
     },
@@ -29248,8 +29324,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 124859,
-        "lineCount": 3077,
+        "sizeBytes": 124835,
+        "lineCount": 3073,
         "ext": ".ts"
       }
     },
@@ -29924,8 +30000,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign-shared-pool.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4259,
-        "lineCount": 111,
+        "sizeBytes": 7854,
+        "lineCount": 206,
         "ext": ".ts"
       }
     },
@@ -29937,8 +30013,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 118045,
-        "lineCount": 3387,
+        "sizeBytes": 126709,
+        "lineCount": 3638,
         "ext": ".ts"
       }
     },
@@ -29950,8 +30026,8 @@
       "filePath": "apps/api/src/modules/campaigns/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 33283,
-        "lineCount": 820,
+        "sizeBytes": 34277,
+        "lineCount": 839,
         "ext": ".ts"
       }
     },
@@ -30002,8 +30078,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 36555,
-        "lineCount": 952,
+        "sizeBytes": 36603,
+        "lineCount": 945,
         "ext": ".ts"
       }
     },
@@ -31991,8 +32067,8 @@
       "filePath": "apps/api/src/modules/qa-shop/qa-shop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 43614,
-        "lineCount": 1155,
+        "sizeBytes": 43638,
+        "lineCount": 1157,
         "ext": ".ts"
       }
     },
@@ -33538,8 +33614,8 @@
       "filePath": "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 122397,
-        "lineCount": 2301,
+        "sizeBytes": 122303,
+        "lineCount": 2290,
         "ext": ".tsx"
       }
     },
@@ -34136,8 +34212,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopPublishControl.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15014,
-        "lineCount": 384,
+        "sizeBytes": 15031,
+        "lineCount": 372,
         "ext": ".tsx"
       }
     },
@@ -35436,8 +35512,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16101,
-        "lineCount": 335,
+        "sizeBytes": 16167,
+        "lineCount": 342,
         "ext": ".ts"
       }
     },
@@ -35449,8 +35525,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7924,
-        "lineCount": 199,
+        "sizeBytes": 8019,
+        "lineCount": 205,
         "ext": ".tsx"
       }
     },
@@ -35462,8 +35538,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 63274,
-        "lineCount": 1328,
+        "sizeBytes": 63739,
+        "lineCount": 1330,
         "ext": ".tsx"
       }
     },
@@ -35475,8 +35551,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12331,
-        "lineCount": 267,
+        "sizeBytes": 12387,
+        "lineCount": 271,
         "ext": ".tsx"
       }
     },
@@ -35488,8 +35564,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29073,
-        "lineCount": 664,
+        "sizeBytes": 29085,
+        "lineCount": 667,
         "ext": ".tsx"
       }
     },
@@ -36853,8 +36929,8 @@
       "filePath": "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 123980,
-        "lineCount": 2960,
+        "sizeBytes": 124116,
+        "lineCount": 2959,
         "ext": ".tsx"
       }
     },
@@ -38218,8 +38294,8 @@
       "filePath": "apps/web/lib/api/campaigns.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13173,
-        "lineCount": 341,
+        "sizeBytes": 13428,
+        "lineCount": 346,
         "ext": ".ts"
       }
     },
@@ -38660,8 +38736,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 92133,
-        "lineCount": 1377,
+        "sizeBytes": 92206,
+        "lineCount": 1389,
         "ext": ".ts"
       }
     },
@@ -38803,8 +38879,8 @@
       "filePath": "packages/shared/src/types/academy-workshop.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 42139,
-        "lineCount": 1330,
+        "sizeBytes": 42158,
+        "lineCount": 1335,
         "ext": ".ts"
       }
     },
@@ -38920,8 +38996,8 @@
       "filePath": "packages/shared/src/types/campaign.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11386,
-        "lineCount": 452,
+        "sizeBytes": 12172,
+        "lineCount": 474,
         "ext": ".ts"
       }
     },
@@ -42680,6 +42756,20 @@
     {
       "id": "edge:route:GET:/api/campaigns/:id/shared-pool/overview:ws:apps/api",
       "source": "route:GET:/api/campaigns/:id/shared-pool/overview",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/campaigns/:id/staff-performance:ws:apps/api",
+      "source": "route:GET:/api/campaigns/:id/staff-performance",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/campaigns/:id/shared-pool/staff-performance:ws:apps/api",
+      "source": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49076,6 +49166,20 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CampaignStaffPerformance:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CampaignStaffPerformance",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CampaignStaffPerformanceResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CampaignStaffPerformanceResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CampaignSharedPoolLog:ws:packages/shared",
       "source": "type:@mos-lab/shared:CampaignSharedPoolLog",
       "target": "ws:packages/shared",
@@ -54258,6 +54362,34 @@
     {
       "id": "edge:uicomp:SharedPoolOverviewBanner:token:color:primary",
       "source": "uicomp:SharedPoolOverviewBanner",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolStaffPerformanceCard.test:ws:apps/web",
+      "source": "uicomp:SharedPoolStaffPerformanceCard.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolStaffPerformanceCard.test:token:color:primary",
+      "source": "uicomp:SharedPoolStaffPerformanceCard.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolStaffPerformanceCard:ws:apps/web",
+      "source": "uicomp:SharedPoolStaffPerformanceCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolStaffPerformanceCard:token:color:primary",
+      "source": "uicomp:SharedPoolStaffPerformanceCard",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -62446,6 +62578,20 @@
       "label": "CALLS academySales.campaigns"
     },
     {
+      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/staff-performance",
+      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
+      "target": "route:GET:/api/campaigns/:id/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
       "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/claim",
       "source": "page:/dashboard/academy-leads/campaigns/[slug]",
       "target": "route:POST:/api/campaigns/:id/shared-pool/claim",
@@ -62827,6 +62973,20 @@
       "id": "edge:page:/dashboard/academy-leads/campaigns:route:GET:/api/campaigns/:id/shared-pool/overview",
       "source": "page:/dashboard/academy-leads/campaigns",
       "target": "route:GET:/api/campaigns/:id/shared-pool/overview",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/campaigns:route:GET:/api/campaigns/:id/staff-performance",
+      "source": "page:/dashboard/academy-leads/campaigns",
+      "target": "route:GET:/api/campaigns/:id/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/campaigns:route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "source": "page:/dashboard/academy-leads/campaigns",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
       "type": "API_CALL",
       "label": "CALLS academySales.campaigns"
     },
@@ -71119,6 +71279,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/campaigns/:id/staff-performance",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/campaigns/:id/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/claim",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/campaigns/:id/shared-pool/claim",
@@ -75627,6 +75801,20 @@
       "label": "CALLS campaigns.list"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/campaigns/:id/staff-performance",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/campaigns/:id/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/campaigns/:id/shared-pool/claim",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/campaigns/:id/shared-pool/claim",
@@ -78073,6 +78261,20 @@
       "id": "edge:page:/dashboard/omicall:route:GET:/api/academy-sales/staff",
       "source": "page:/dashboard/omicall",
       "target": "route:GET:/api/academy-sales/staff",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/campaigns/:id/staff-performance",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/campaigns/:id/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
       "type": "API_CALL",
       "label": "CALLS staff.list"
     },
@@ -83173,6 +83375,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/campaigns/:id/staff-performance",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/campaigns/:id/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/campaigns/:id/shared-pool/claim",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/campaigns/:id/shared-pool/claim",
@@ -85701,31 +85917,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3024,
-    "totalEdges": 6600,
+    "totalNodes": 3030,
+    "totalEdges": 6620,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 160,
-      "FastifyRoute": 644,
+      "FastifyRoute": 646,
       "Component": 57,
-      "SharedType": 1110,
+      "SharedType": 1112,
       "DesignToken": 12,
-      "UIComponent": 207,
+      "UIComponent": 209,
       "File": 831
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1282,
-      "HANDLES_ROUTE": 644,
-      "RENDERS": 264,
-      "USES_TOKEN": 209,
+      "EXPORTS": 1284,
+      "HANDLES_ROUTE": 646,
+      "RENDERS": 266,
+      "USES_TOKEN": 211,
       "IMPORTS": 458,
       "QUERIES_MODEL": 373,
-      "API_CALL": 3370
+      "API_CALL": 3382
     },
-    "fastifyRouteCount": 649,
+    "fastifyRouteCount": 651,
     "prismaModelCount": 160,
     "nextPageCount": 57,
-    "sharedTypeCount": 1110
+    "sharedTypeCount": 1112
   },
   "routes": [
     {
@@ -87791,6 +88007,20 @@
       "path": "/api/campaigns/:id/shared-pool/overview",
       "filePath": "apps/api/src/modules/campaigns/routes.ts",
       "handler": "inlineHandler",
+      "moduleName": "campaigns"
+    },
+    {
+      "method": "GET",
+      "path": "/api/campaigns/:id/staff-performance",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "campaigns"
+    },
+    {
+      "method": "GET",
+      "path": "/api/campaigns/:id/shared-pool/staff-performance",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "handler": "preHandler",
       "moduleName": "campaigns"
     },
     {
