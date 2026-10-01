@@ -43,7 +43,7 @@ const mockOverview: TelesaleTargetOverview = {
   },
   staffTargets: [
     {
-      legacyStaffId: 52454,
+      legacyStaffId: 50670,
       name: 'Phượng',
       doneTarget: 150,
       doneActual: 70,
@@ -62,7 +62,7 @@ const mockOverview: TelesaleTargetOverview = {
       progressStatusLabel: 'Vượt tiến độ',
     },
     {
-      legacyStaffId: 52086,
+      legacyStaffId: 52648,
       name: 'Kiều',
       doneTarget: 100,
       doneActual: 38,

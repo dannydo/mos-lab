@@ -162,8 +162,8 @@ export const CustomerPoolDrawer: React.FC<CustomerPoolDrawerProps> = ({
                 size="small"
                 options={[
                   { label: '🌟 Tất cả đã phân bổ (Team Pool)', value: 'ALL' },
-                  { label: 'Phượng (52454)', value: '52454' },
-                  { label: 'Kiều (52086)', value: '52086' },
+                  { label: 'Phượng (50670)', value: '50670' },
+                  { label: 'Kiều (52648)', value: '52648' },
                   { label: 'Điệp (32268)', value: '32268' },
                   { label: 'Vũ (52598)', value: '52598' },
                 ]}

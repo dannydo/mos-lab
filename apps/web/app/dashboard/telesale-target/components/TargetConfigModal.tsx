@@ -78,10 +78,26 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
         dailyCallPerStaff: Number(values.dailyCallPerStaff || 83),
         dailyPickupPerStaff: Number(values.dailyPickupPerStaff || 25),
         staffTargets: [
-          { legacyStaffId: 52454, name: 'Phượng', doneTarget: Number(values.staffPhuong) },
-          { legacyStaffId: 52086, name: 'Kiều', doneTarget: Number(values.staffKieu) },
-          { legacyStaffId: 32268, name: 'Điệp', doneTarget: Number(values.staffDiep) },
-          { legacyStaffId: 52598, name: 'Vũ', doneTarget: Number(values.staffVu) },
+          {
+            legacyStaffId: overview?.staffTargets.find((s) => s.name.includes('Phượng'))?.legacyStaffId || 50670,
+            name: 'Phượng',
+            doneTarget: Number(values.staffPhuong),
+          },
+          {
+            legacyStaffId: overview?.staffTargets.find((s) => s.name.includes('Kiều'))?.legacyStaffId || 52648,
+            name: 'Kiều',
+            doneTarget: Number(values.staffKieu),
+          },
+          {
+            legacyStaffId: overview?.staffTargets.find((s) => s.name.includes('Điệp'))?.legacyStaffId || 32268,
+            name: 'Điệp',
+            doneTarget: Number(values.staffDiep),
+          },
+          {
+            legacyStaffId: overview?.staffTargets.find((s) => s.name.includes('Vũ'))?.legacyStaffId || 52598,
+            name: 'Vũ',
+            doneTarget: Number(values.staffVu),
+          },
         ],
         stageTargets: {
           '0_30': Number(values.stage_0_30),

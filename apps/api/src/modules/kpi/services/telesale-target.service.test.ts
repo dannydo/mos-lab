@@ -92,7 +92,7 @@ test('TelesaleTargetService.calculateTeamWorkDaysPacing handles not started, in-
   const notStartedPacing = await TelesaleTargetService.calculateTeamWorkDaysPacing(
     mockFastify as any,
     '2026-10',
-    [50670, 52086],
+    [50670, 52648],
     nowBefore,
     450,
     0,
@@ -121,7 +121,7 @@ test('TelesaleTargetService.calculateTeamWorkDaysPacing handles not started, in-
   const inProgressPacingAhead = await TelesaleTargetService.calculateTeamWorkDaysPacing(
     mockFastify as any,
     '2026-10',
-    [50670, 52086],
+    [50670, 52648],
     nowMid,
     450,
     220, // Expected: 450 * (12/27) = 200, Actual: 220 -> Ahead (+10%)
@@ -144,7 +144,7 @@ test('TelesaleTargetService.calculateTeamWorkDaysPacing handles not started, in-
   const inProgressPacingBehind = await TelesaleTargetService.calculateTeamWorkDaysPacing(
     mockFastify as any,
     '2026-10',
-    [50670, 52086],
+    [50670, 52648],
     nowMid,
     450,
     180, // Expected: 200, Actual: 180 (90%) -> Behind
@@ -163,7 +163,7 @@ test('TelesaleTargetService.calculateTeamWorkDaysPacing handles not started, in-
   const completedPacing = await TelesaleTargetService.calculateTeamWorkDaysPacing(
     mockFastify as any,
     '2026-08',
-    [50670, 52086],
+    [50670, 52648],
     nowBefore,
     450,
     460,
@@ -260,6 +260,27 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
       },
       legacy: {
         $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('doneCount')) {
+            return [
+              { bookerId: 101, displayName: 'Nhân viên A', doneCount: 2 },
+              { bookerId: 102, displayName: 'Nhân viên B', doneCount: 1 },
+              { bookerId: 103, displayName: 'Nhân viên C', doneCount: 0 },
+            ];
+          }
+          if (sql.includes('completedOrdersCount')) {
+            return [
+              { bookerId: 101, displayName: 'Nhân viên A', completedOrdersCount: 2, totalRevenue: 2000000 },
+              { bookerId: 102, displayName: 'Nhân viên B', completedOrdersCount: 1, totalRevenue: 400000 },
+              { bookerId: 103, displayName: 'Nhân viên C', completedOrdersCount: 0, totalRevenue: 0 },
+            ];
+          }
+          if (sql.includes('totalCreatedBookings')) {
+            return [
+              { bookerId: 101, displayName: 'Nhân viên A', totalCreatedBookings: 3, doneBookings: 2, missedBookings: 0 },
+              { bookerId: 102, displayName: 'Nhân viên B', totalCreatedBookings: 2, doneBookings: 1, missedBookings: 1 },
+              { bookerId: 103, displayName: 'Nhân viên C', totalCreatedBookings: 0, doneBookings: 0, missedBookings: 0 },
+            ];
+          }
           if (sql.includes('prev_o.booking_date_start')) {
             return mockMonthOrders;
           }
@@ -354,6 +375,24 @@ test('TelesaleTargetService.getOverview correctly counts today Book and Done whe
       },
       legacy: {
         $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('doneCount')) {
+            return [
+              { bookerId: 50670, displayName: 'Bích Phượng', doneCount: 1 },
+              { bookerId: 52648, displayName: 'Thuý Kiều', doneCount: 0 },
+            ];
+          }
+          if (sql.includes('totalCreatedBookings')) {
+            return [
+              { bookerId: 50670, displayName: 'Bích Phượng', totalCreatedBookings: 1, doneBookings: 0, missedBookings: 0 },
+              { bookerId: 52648, displayName: 'Thuý Kiều', totalCreatedBookings: 1, doneBookings: 0, missedBookings: 0 },
+            ];
+          }
+          if (sql.includes('completedOrdersCount')) {
+            return [
+              { bookerId: 50670, displayName: 'Bích Phượng', completedOrdersCount: 1, totalRevenue: 200000 },
+              { bookerId: 52648, displayName: 'Thuý Kiều', completedOrdersCount: 0, totalRevenue: 0 },
+            ];
+          }
           if (sql.includes('prev_o.booking_date_start')) {
             return [];
           }
@@ -516,6 +555,24 @@ test('TelesaleTargetService.getOverview calculates staff Book today, contributio
         $queryRawUnsafe: async (sql: string) => {
           if (sql.includes('staff_working_shift')) {
             return [];
+          }
+          if (sql.includes('doneCount')) {
+            return [
+              { bookerId: 50670, displayName: 'Bích Phượng', doneCount: 2 },
+              { bookerId: 52648, displayName: 'Thuý Kiều', doneCount: 0 },
+            ];
+          }
+          if (sql.includes('totalCreatedBookings')) {
+            return [
+              { bookerId: 50670, displayName: 'Bích Phượng', totalCreatedBookings: 3, doneBookings: 2, missedBookings: 0 },
+              { bookerId: 52648, displayName: 'Thuý Kiều', totalCreatedBookings: 1, doneBookings: 0, missedBookings: 0 },
+            ];
+          }
+          if (sql.includes('completedOrdersCount')) {
+            return [
+              { bookerId: 50670, displayName: 'Bích Phượng', completedOrdersCount: 2, totalRevenue: 800000 },
+              { bookerId: 52648, displayName: 'Thuý Kiều', completedOrdersCount: 0, totalRevenue: 0 },
+            ];
           }
           if (sql.includes('report_order ro') || sql.includes('ro.actual_booking_date_start')) {
             return [

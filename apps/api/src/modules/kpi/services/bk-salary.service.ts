@@ -133,16 +133,19 @@ export async function getBkCallMetricsByLegacyStaffIds(
   });
 
   const profileNames = profiles.map((profile) => String(profile.displayName || '')).filter(Boolean);
-  const crmStaff = await fastify.prisma.crm.crmStaff.findMany({
-    where: {
-      isActive: true,
-      OR: [
-        { legacyStaffId: { in: validLegacyStaffIds } },
-        ...(profileNames.length > 0 ? [{ displayName: { in: profileNames } }] : []),
-      ],
-    },
-    select: { id: true, legacyStaffId: true, displayName: true },
-  });
+  const crmStaff =
+    (await fastify.prisma?.crm?.crmStaff
+      ?.findMany?.({
+        where: {
+          isActive: true,
+          OR: [
+            { legacyStaffId: { in: validLegacyStaffIds } },
+            ...(profileNames.length > 0 ? [{ displayName: { in: profileNames } }] : []),
+          ],
+        },
+        select: { id: true, legacyStaffId: true, displayName: true },
+      })
+      ?.catch?.(() => [])) || [];
 
   const legacyStaffIdByCrmStaffId = new Map<number, number>();
   crmStaff.forEach((staff) => {
@@ -173,14 +176,22 @@ export async function getBkCallMetricsByLegacyStaffIds(
   const start = new Date(startIso);
   const end = new Date(endIso);
   const [crmLogs, omicallLogs] = await Promise.all([
-    fastify.prisma.crm.crmCallLog.findMany({
-      where: { staffId: { in: crmStaffIds }, createdAt: { gte: start, lte: end } },
-      select: { staffId: true, callResult: true },
-    }),
-    fastify.prisma.crm.crmOmicallLog.findMany({
-      where: { staffId: { in: crmStaffIds }, createdAt: { gte: start, lte: end }, direction: 'outbound' },
-      select: { staffId: true, status: true },
-    }),
+    fastify.prisma?.crm?.crmCallLog?.findMany
+      ? fastify.prisma.crm.crmCallLog
+          .findMany({
+            where: { staffId: { in: crmStaffIds }, createdAt: { gte: start, lte: end } },
+            select: { staffId: true, callResult: true },
+          })
+          .catch(() => [])
+      : Promise.resolve([]),
+    fastify.prisma?.crm?.crmOmicallLog?.findMany
+      ? fastify.prisma.crm.crmOmicallLog
+          .findMany({
+            where: { staffId: { in: crmStaffIds }, createdAt: { gte: start, lte: end }, direction: 'outbound' },
+            select: { staffId: true, status: true },
+          })
+          .catch(() => [])
+      : Promise.resolve([]),
   ]);
 
   const crmMetrics = new Map<number, BkCallMetrics>();
@@ -437,28 +448,34 @@ export async function computeBkOrderCheckins(
 
   const orderServicesMap = new Map<number, SafeAny[]>();
   const [orderServices, userBalances] = await Promise.all([
-    fastify.prisma.legacy.order_service.findMany({
-      where: { order_id: { in: orderIds } },
-      select: {
-        order_id: true,
-        service_id: true,
-        service_price: true,
-        service_type: true,
-        discount_amount: true,
-      },
-    }),
-    userIds.length > 0
-      ? fastify.prisma.legacy.user_service_balance.findMany({
-          where: { user_id: { in: userIds } },
-          select: {
-            id: true,
-            user_id: true,
-            date_created: true,
-            date_expired: true,
-            normal_count: true,
-            retain_count: true,
-          },
-        })
+    fastify.prisma.legacy?.order_service?.findMany
+      ? fastify.prisma.legacy.order_service
+          .findMany({
+            where: { order_id: { in: orderIds } },
+            select: {
+              order_id: true,
+              service_id: true,
+              service_price: true,
+              service_type: true,
+              discount_amount: true,
+            },
+          })
+          .catch(() => [])
+      : Promise.resolve([]),
+    userIds.length > 0 && fastify.prisma.legacy?.user_service_balance?.findMany
+      ? fastify.prisma.legacy.user_service_balance
+          .findMany({
+            where: { user_id: { in: userIds } },
+            select: {
+              id: true,
+              user_id: true,
+              date_created: true,
+              date_expired: true,
+              normal_count: true,
+              retain_count: true,
+            },
+          })
+          .catch(() => [])
       : Promise.resolve([]),
   ]);
   orderServices.forEach((os) => {
