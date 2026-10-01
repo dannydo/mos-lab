@@ -28,6 +28,9 @@ import { CustomerPoolDrawer } from './components/CustomerPoolDrawer';
 import { TargetConfigModal } from './components/TargetConfigModal';
 import { PlanCloneModal } from './components/PlanCloneModal';
 import { TelesaleTvMonitorFullscreen } from './components/TelesaleTvMonitorFullscreen';
+import { calculateShiftPacing, calculateTvMonitorMetrics } from './utils/tv-monitor-pacing';
+import { useTelesaleTvLiveCelebration } from './hooks/useTelesaleTvLiveCelebration';
+import { TelesaleTvLiveCelebrationBanner } from './components/TelesaleTvLiveCelebrationBanner';
 
 function TelesaleTargetContent() {
   const router = useRouter();
@@ -106,11 +109,29 @@ function TelesaleTargetContent() {
     [selectedMonth]
   );
 
+  // Live Voice Celebration hook active on page level (MOS-FEAT-83)
+  const liveCelebration = useTelesaleTvLiveCelebration();
+
+  // Ingest live events & check milestones whenever overview is updated
+  useEffect(() => {
+    if (!overview) return;
+    if (overview.todayLiveEvents) {
+      liveCelebration.ingestLiveEvents(overview.todayLiveEvents);
+    }
+    const pacing = calculateShiftPacing(new Date());
+    const metrics = calculateTvMonitorMetrics(overview.teamDaily, pacing);
+    liveCelebration.checkMilestones(
+      overview.teamDaily.date,
+      metrics.bookActual,
+      metrics.doneActual
+    );
+  }, [overview, liveCelebration]);
+
   useEffect(() => {
     fetchOverview(selectedMonth);
 
-    // Auto-refresh: 20s if in TV fullscreen mode, 30s in normal War Room mode (MOS-BUG-75)
-    const pollInterval = tvModeOpen ? 20000 : 30000;
+    // Auto-refresh: 8s if in TV fullscreen mode, 10s in normal War Room mode for prompt celebration
+    const pollInterval = tvModeOpen ? 8000 : 10000;
     const interval = setInterval(() => {
       fetchOverview(selectedMonth, true);
     }, pollInterval);
@@ -367,6 +388,12 @@ function TelesaleTargetContent() {
         </div>
       </header>
 
+      {/* Real-time Voice & Visual Celebration Banner (MOS-FEAT-83) */}
+      <TelesaleTvLiveCelebrationBanner
+        celebration={liveCelebration.activeCelebration}
+        isSpeaking={liveCelebration.isSpeaking}
+      />
+
       {/* Fallback / Error State if overview is null and not loading */}
       {!overview && !loading && (
         <div className="rounded-3xl border border-amber-500/30 bg-gradient-to-b from-amber-950/20 to-zinc-950 p-8 text-center backdrop-blur-xl shadow-2xl">
@@ -446,6 +473,7 @@ function TelesaleTargetContent() {
           onClose={() => setTvModeOpen(false)}
           onRefresh={() => fetchOverview(selectedMonth, false)}
           refreshing={refreshing}
+          liveCelebration={liveCelebration}
         />
       )}
     </div>
