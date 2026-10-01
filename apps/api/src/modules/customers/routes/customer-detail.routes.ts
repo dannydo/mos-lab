@@ -1475,26 +1475,25 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         user
       );
       if (!canRescheduleAnyCustomer) {
-        if (
-          CustomerAccessService.isTelesales(user) &&
-          !(await ensureTelesalesCustomerAccess(request, reply, customerId))
-        ) {
-          return;
-        }
+        if (CustomerAccessService.isTelesales(user)) {
+          if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) {
+            return;
+          }
+        } else {
+          const isAssignedConsultant = assigned?.staffId === user.id;
+          if (!isAssignedConsultant) {
+            const isBkCsMember = await TeamService.isActiveCrmStaffMember(
+              fastify,
+              'BK_CS',
+              user.id,
+              'ACTIVE_BK_CS_STAFF_CONFIG'
+            );
 
-        const isAssignedConsultant = assigned?.staffId === user.id;
-        if (!isAssignedConsultant) {
-          const isBkCsMember = await TeamService.isActiveCrmStaffMember(
-            fastify,
-            'BK_CS',
-            user.id,
-            'ACTIVE_BK_CS_STAFF_CONFIG'
-          );
-
-          if (!isBkCsMember) {
-            return reply
-              .status(403)
-              .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
+            if (!isBkCsMember) {
+              return reply
+                .status(403)
+                .send({ error: 'Forbidden', message: 'Bạn không có quyền xem thông tin chi tiết khách hàng này.' });
+            }
           }
         }
       }

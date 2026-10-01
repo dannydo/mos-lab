@@ -248,6 +248,45 @@ test('Shared Pool - denied read access if customer is in an unactivated future b
   assert.equal(canAccess, false);
 });
 
+test('Shared Pool - allows read access for EXCLUDED customer in active batch', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmCustomerAssignment: {
+          findFirst: async () => null,
+        },
+        crmCampaignCustomer: {
+          findMany: async () => [
+            {
+              id: 102,
+              campaignId: 5,
+              batchNumber: 1,
+              poolStatus: 'EXCLUDED',
+              claimedByStaffId: null,
+              claimedByStaffName: null,
+              claimExpiresAt: null,
+              campaign: {
+                id: 5,
+                currentBatchNumber: 1,
+                assignedStaffIds: JSON.stringify([41]),
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const canAccess = await CustomerAccessService.canAccessCustomer(
+    fastify as never,
+    { id: 41, role: 'telesales' },
+    888
+  );
+
+  assert.equal(canAccess, true);
+});
+
+
 test('Shared Pool - mutate access requires an active Claim lock', async () => {
   const now = new Date();
   const future = new Date(now.getTime() + 15 * 60 * 1000);

@@ -78,6 +78,8 @@ export class CustomerAccessService {
     claimExpiresAt: Date | null;
     isClaimedByMe: boolean;
     isClaimedByOther: boolean;
+    batchNumber: number;
+    currentBatchNumber: number;
   } | null> {
     if (!fastify.prisma?.crm?.crmCampaignCustomer?.findMany) return null;
 
@@ -85,7 +87,6 @@ export class CustomerAccessService {
       where: {
         legacyUserId,
         removedAt: null,
-        poolStatus: { not: 'EXCLUDED' },
         campaign: {
           operationMode: 'SHARED_POOL',
           status: 'ACTIVE',
@@ -122,7 +123,7 @@ export class CustomerAccessService {
         try {
           const allowedIds = JSON.parse(campaign.assignedStaffIds);
           if (Array.isArray(allowedIds)) {
-            isMember = allowedIds.length === 0 || allowedIds.includes(staffId);
+            isMember = allowedIds.length === 0 || allowedIds.map(Number).includes(Number(staffId));
           }
         } catch {
           isMember = false;
@@ -131,26 +132,25 @@ export class CustomerAccessService {
 
       if (!isMember) continue;
 
-      const currentBatch = campaign.currentBatchNumber || 1;
-      if (record.batchNumber <= currentBatch) {
-        const isClaimedActive =
-          record.poolStatus === 'CLAIMED' &&
-          Boolean(record.claimExpiresAt && record.claimExpiresAt > now);
+      const isClaimedActive =
+        record.poolStatus === 'CLAIMED' &&
+        Boolean(record.claimExpiresAt && record.claimExpiresAt > now);
 
-        const isClaimedByMe = isClaimedActive && record.claimedByStaffId === staffId;
-        const isClaimedByOther = isClaimedActive && record.claimedByStaffId !== staffId;
+      const isClaimedByMe = isClaimedActive && Number(record.claimedByStaffId) === Number(staffId);
+      const isClaimedByOther = isClaimedActive && Number(record.claimedByStaffId) !== Number(staffId);
 
-        return {
-          campaignId: record.campaignId,
-          campaignCustomerId: record.id,
-          poolStatus: record.poolStatus,
-          claimedByStaffId: record.claimedByStaffId,
-          claimedByStaffName: record.claimedByStaffName,
-          claimExpiresAt: record.claimExpiresAt,
-          isClaimedByMe,
-          isClaimedByOther,
-        };
-      }
+      return {
+        campaignId: record.campaignId,
+        campaignCustomerId: record.id,
+        poolStatus: record.poolStatus,
+        claimedByStaffId: record.claimedByStaffId,
+        claimedByStaffName: record.claimedByStaffName,
+        claimExpiresAt: record.claimExpiresAt,
+        isClaimedByMe,
+        isClaimedByOther,
+        batchNumber: record.batchNumber,
+        currentBatchNumber: campaign.currentBatchNumber || 1,
+      };
     }
 
     return null;
@@ -178,7 +178,9 @@ export class CustomerAccessService {
     if (assignment) return true;
 
     const sharedPoolCust = await this.findActiveSharedPoolCustomer(fastify, user.id, legacyUserId);
-    return Boolean(sharedPoolCust);
+    if (!sharedPoolCust) return false;
+
+    return sharedPoolCust.batchNumber <= sharedPoolCust.currentBatchNumber;
   }
 
   /**
@@ -204,6 +206,18 @@ export class CustomerAccessService {
 
     const sharedPoolCust = await this.findActiveSharedPoolCustomer(fastify, user.id, legacyUserId);
     if (sharedPoolCust) {
+      if (sharedPoolCust.poolStatus === 'EXCLUDED') {
+        return {
+          allowed: false,
+          reason: 'Khách hàng đã bị loại khỏi chiến dịch (Excluded).',
+        };
+      }
+      if (sharedPoolCust.batchNumber > sharedPoolCust.currentBatchNumber) {
+        return {
+          allowed: false,
+          reason: 'Khách hàng thuộc đợt (batch) chưa được kích hoạt trong chiến dịch.',
+        };
+      }
       if (sharedPoolCust.isClaimedByMe) {
         return { allowed: true };
       }
